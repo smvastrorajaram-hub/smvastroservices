@@ -128,71 +128,7 @@ const RAZORPAY_BACKEND_URL="https://smvastroservices.onrender.com";
 // Single backend URL used by all protected API calls, including astrologer answer submission.
 // Keep this in the main Firebase module so it is available to the answer-submit handler.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
-// V62: same-origin Horoscope window requests short-lived Firebase auth only when needed.
-// Nothing is placed in the URL or persistent storage.
-window.addEventListener('message',async e=>{
-  if(e.origin!==location.origin||e.data?.type!=='SMV_HOROSCOPE_AUTH_REQUEST')return;
-  const source=e.source;if(!source)return;
-  try{
-    const u=auth?.currentUser||currentUser;
-    const token=u?await u.getIdToken():'';
-    source.postMessage({type:'SMV_HOROSCOPE_AUTH_RESPONSE',requestId:e.data.requestId,backend:RAZORPAY_BACKEND_URL,token,user:u?{uid:u.uid,email:u.email||''}:null},location.origin);
-  }catch(_e){source.postMessage({type:'SMV_HOROSCOPE_AUTH_RESPONSE',requestId:e.data.requestId,backend:RAZORPAY_BACKEND_URL,token:'',user:null},location.origin);}
-});
-let firebaseFunctionsPromise=null;
-async function ensureFirebaseFunctions(){
-  if(functions && httpsCallableFn) return {functions,httpsCallable:httpsCallableFn};
-  if(!firebaseFunctionsPromise){
-    firebaseFunctionsPromise=import("https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js").then(mod=>{
-      functions=mod.getFunctions(app,"asia-south1");
-      httpsCallableFn=mod.httpsCallable;
-      return {functions,httpsCallable:httpsCallableFn};
-    });
-  }
-  return firebaseFunctionsPromise;
-}
-async function callFunction(name,data={}){
-  const api=await ensureFirebaseFunctions();
-  return withTimeout(api.httpsCallable(api.functions,name)(data));
-}
-const smvReadRequests=new Map();
-async function renderApi(path, options={}, userOverride=null){
- const user=userOverride||auth?.currentUser;
- if(!user)throw new Error('Login session is missing. Please login again.');
- const method=(options.method||'GET').toUpperCase(),key=user.uid+':'+path;
- const timeoutMs=Number(options.timeoutMs)||(method==='GET'?20000:60000);
- const fetchOptions={...options};delete fetchOptions.timeoutMs;
- if(method==='GET'&&smvReadRequests.has(key))return smvReadRequests.get(key);
- const task=(async()=>{
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),timeoutMs);
-  try{
-   const token=await user.getIdToken();
-   const response=await fetch(RAZORPAY_BACKEND_URL+path,{...fetchOptions,cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json',...(fetchOptions.headers||{}),Authorization:`Bearer ${token}`}});
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok){
-    if(response.status===404&&!data.error)throw new Error('Backend API unavailable (404). Deploy the updated server.js and refund-service.js to Render and check the backend URL.'+' '+path);
-    throw new Error(data.error||`Service error (${response.status})`);
-   }
-   return data;
-  }catch(e){if(e.name==='AbortError')throw new Error('The request timed out. Refresh the status before retrying an action.');throw e;}
-  finally{clearTimeout(timer);}
- })();
- if(method==='GET')smvReadRequests.set(key,task);
- try{return await task;}finally{if(smvReadRequests.get(key)===task)smvReadRequests.delete(key);}
-}
-let razorpayCheckoutPromise=null;
-async function ensureRazorpayCheckout(){
- if(typeof window.Razorpay==='function')return;
- if(!razorpayCheckoutPromise)razorpayCheckoutPromise=new Promise((resolve,reject)=>{
-  const script=document.createElement('script');let timer;
-  const fail=()=>{clearTimeout(timer);script.remove();razorpayCheckoutPromise=null;reject(new Error('Payment checkout could not load. Check your connection and retry.'));};
-  script.src='https://checkout.razorpay.com/v1/checkout.js';script.async=true;
-  script.onload=()=>{clearTimeout(timer);if(typeof window.Razorpay==='function')resolve();else fail();};script.onerror=fail;
-  timer=setTimeout(fail,20000);document.head.appendChild(script);
- });
- return razorpayCheckoutPromise;
-}
+
 function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
  if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend. Backend: '+RAZORPAY_BACKEND_URL);
