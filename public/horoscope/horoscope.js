@@ -2682,14 +2682,8 @@ if(lat===''||lon===''){
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');
           advRoot.classList.remove('hidden');
-          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot);
+          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
           if(!allowed){
-            const onUnlock=ev=>{
-              if(ev?.detail?.feature!=='advanced_analysis')return;
-              window.removeEventListener('smv:horoscope-feature-unlocked',onUnlock);
-              runAdvancedAfterAccess().catch(err=>{console.error('Advanced calculation after payment failed:',err);advRoot.innerHTML=`<div class="error"><b>${getHoroscopeLang()==='ta'?'மேம்பட்ட கணக்கீட்டை முடிக்க முடியவில்லை.':'Advanced calculation could not be completed.'}</b><p class="small">${escSafe(err?.message||err)}</p></div>`;resultBox?.classList.remove('hidden');resultBox?.setAttribute('aria-busy','false');});
-            };
-            window.addEventListener('smv:horoscope-feature-unlocked',onUnlock);
             requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'smooth',block:'start'}));
             return d;
           }

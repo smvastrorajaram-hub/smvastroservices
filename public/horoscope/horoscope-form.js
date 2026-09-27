@@ -109,25 +109,22 @@ if(lat===''||lon===''){
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
           englishAdvancedRoot.classList.remove('hidden');
-          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot);
+          const runEnglishAdvanced=async()=>{
+            target.classList.add('hidden'); target.setAttribute('aria-busy','true');
+            englishAdvancedRoot.innerHTML='';
+            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId});
+            target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
+          };
+          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
           if(!allowed){
             target.dataset.resultLanguage=lang;
             target.scrollIntoView({behavior:'smooth',block:'start'});
             return;
           }
-          target.classList.add('hidden'); target.setAttribute('aria-busy','true');
-          englishAdvancedRoot.innerHTML='';
+          await runEnglishAdvanced();
+        }else{
+          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId});
         }
-        // This is the ONLY English Advanced request. It uses the English root,
-        // the verified core chart, and the current generation id, so an older
-        // Tamil request cannot abort or overwrite it.
-        await window.__smvLoadAdvancedAstrology({
-          date,time:normalizedTime,lat,lon,lang,
-          rootId:'englishAdvancedAstrology',
-          name:($('englishAstroName')?.value||'').trim(),
-          chart:generated||null,
-          generationId:window.__smvHoroscopeGenerationId
-        });
 
         /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +
            Transit + Dasa batch is now ready. */

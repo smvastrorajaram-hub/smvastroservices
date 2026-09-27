@@ -103,7 +103,7 @@ function advancedPreviewHtml(){
  ];
  return `<div class="smv-paid-heading-preview smv-paid-i-x-preview"><h3>${esc(ta()?'மேம்பட்ட பகுப்பாய்வு — உள்ளடக்கம்':'Advanced Analysis — Contents')}</h3>${rows.map(([r,t,subs])=>`<div class="smv-preview-part"><b>${r}. ${esc(t)}</b><ul>${subs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
 }
-async function requireFeature(feature,mount){
+async function requireFeature(feature,mount,onFeatureUnlocked){
  const cfg=(await config())[feature]||{enabled:true,price:0};
  if(!cfg.enabled){if(mount)mount.replaceChildren();return false;}
  const a=await access(feature,cfg);
@@ -112,7 +112,8 @@ async function requireFeature(feature,mount){
  mount.innerHTML=feature==='advanced_analysis'?advancedPreviewHtml():'';
  const card=payCard(feature,cfg.price,async()=>{
    mount.innerHTML='';
-   window.dispatchEvent(new CustomEvent('smv:horoscope-feature-unlocked',{detail:{feature}}));
+   if(typeof onFeatureUnlocked==='function') await onFeatureUnlocked();
+   window.dispatchEvent(new CustomEvent('smv:horoscope-feature-unlocked',{detail:{feature,handled:typeof onFeatureUnlocked==='function'}}));
  });
  mount.appendChild(card);
  // IMPORTANT: do not keep the main Horoscope generation Promise pending while the
