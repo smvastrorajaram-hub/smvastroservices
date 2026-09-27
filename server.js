@@ -2546,38 +2546,62 @@ function horoscopeFeatureKey(v){v=String(v||'').trim().toLowerCase();return ['ad
 app.get('/horoscope-feature/config',async(req,res)=>{try{return res.json({success:true,features:await getHoroscopeFeatureSettings()});}catch(e){return res.status(500).json({error:'Unable to load horoscope feature settings.'});}});
 // V65 — Horoscope-local auth check. One profile read only when the user explicitly logs in.
 app.get('/horoscope-auth/session',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{if(!user.email_verified)return res.status(403).json({error:'Verify your email before using paid horoscope services.'});const snap=await db.collection('smv_users').doc(user.uid).get();const d=snap.exists?(snap.data()||{}):{},role=String(d.role||'').toLowerCase();if(role!=='customer')return res.status(403).json({error:'A Customer account is required for Horoscope payment.'});return res.json({success:true,uid:user.uid,email:user.email||'',role:'customer'});}catch(e){return res.status(500).json({error:'Unable to verify Customer account.'});}});
-app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:false,price:cfg.price});if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});const id=`${user.uid}_${f}`,snap=await db.collection('smv_horoscope_purchases').doc(id).get(),d=snap.exists?(snap.data()||{}):{};return res.json({success:true,feature:f,enabled:true,unlocked:d.paymentStatus==='paid',price:cfg.price,paymentId:d.razorpayPaymentId||''});}catch(e){return res.status(500).json({error:'Unable to check horoscope access.'});}});
+function horoscopePaymentMode(){return RAZORPAY_KEY_ID.startsWith('rzp_live_')?'live':RAZORPAY_KEY_ID.startsWith('rzp_test_')?'test':'invalid';}
+function horoscopeModeMatches(d){return !d.razorpayMode||d.razorpayMode===horoscopePaymentMode();}
+async function recoverHoroscopePurchase(ref,d){
+ if(!horoscopeModeMatches(d))return false;
+ if(d.paymentStatus==='paid'&&d.razorpayMode===horoscopePaymentMode())return true;
+ const ids=[...new Set([d.razorpayOrderId,d.previousRazorpayOrderId,...Object.keys(d.orderAttempts||{})].filter(Boolean))];
+ for(const id of ids){
+  const quote=d.orderAttempts?.[id];if(quote?.mode&&quote.mode!==horoscopePaymentMode())continue;
+  const order=await razorpay.orders.fetch(id);
+  const expected=quote?Number(quote.amountPaise):id===d.razorpayOrderId?Number(d.amountPaise):Number(order.amount);
+  if(order.status!=='paid'||Number(order.amount_paid)!==expected||String(order.currency)!=='INR')continue;
+  await ref.set({paymentStatus:'paid',razorpayOrderId:id,amountPaise:expected,recoveredFromPaidOrder:true,razorpayMode:horoscopePaymentMode(),paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});return true;
+ }
+ return false;
+}
+app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
+ const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});
+ const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:false,price:cfg.price});
+ if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});
+ const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}`),snap=await ref.get(),d=snap.exists?(snap.data()||{}):{};
+ const unlocked=await recoverHoroscopePurchase(ref,d);return res.json({success:true,feature:f,enabled:true,unlocked,price:cfg.price,paymentId:d.razorpayPaymentId||''});
+ }catch(e){console.error('Horoscope access',e);return res.status(503).json({error:'Unable to restore paid access. Please retry; do not pay again.'});}});
 app.post('/horoscope-feature/create-order',express.json({limit:'20kb'}),async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
   const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});
-  const cfg=(await getHoroscopeFeatureSettings())[f];
-  if(!cfg.enabled)return res.status(403).json({error:'This horoscope feature is unavailable.'});
+  const mode=horoscopePaymentMode();if(mode==='invalid')return res.status(503).json({error:'Razorpay is not configured.'});
+  const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.status(403).json({error:'This horoscope feature is unavailable.'});
   if(cfg.price<=0)return res.json({success:true,feature:f,free:true,unlocked:true,amount:0});
   const amount=Math.round(cfg.price*100),id=`${user.uid}_${f}`,ref=db.collection('smv_horoscope_purchases').doc(id),snap=await ref.get(),old=snap.exists?(snap.data()||{}):{};
-  if(old.paymentStatus==='paid')return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
-
-  // V67: Never reuse an old Razorpay order for a new checkout attempt.
-  // First recover a payment that Razorpay already marked paid but whose browser callback/verification was interrupted.
-  if(old.razorpayOrderId){
-   try{
-    const previous=await razorpay.orders.fetch(String(old.razorpayOrderId));
-    if(String(previous?.status||'').toLowerCase()==='paid' && Number(previous?.amount_paid||0)===amount){
-     await ref.set({paymentStatus:'paid',recoveredFromPaidOrder:true,recoveredRazorpayOrderId:previous.id,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
-     return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount,recovered:true});
-    }
-   }catch(e){console.warn('Previous horoscope order status check failed; creating a fresh order.',e?.message||e);}
-  }
-
-  const attempt=Math.max(0,Number(old.paymentAttempt||0))+1;
-  const nonce=`${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
+  if(await recoverHoroscopePurchase(ref,old))return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
+  const attempt=Math.max(0,Number(old.paymentAttempt||0))+1,nonce=`${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
   const receipt=`SMVH-${crypto.createHash('sha1').update(`${id}|${nonce}`).digest('hex').slice(0,28)}`;
   const order=await razorpay.orders.create({amount,currency:'INR',receipt,notes:{uid:user.uid,feature:f,attempt:String(attempt)}});
-  await ref.set({userId:user.uid,feature:f,amount:cfg.price,amountPaise:amount,currency:'INR',razorpayOrderId:order.id,previousRazorpayOrderId:old.razorpayOrderId||'',paymentAttempt:attempt,paymentStatus:'pending',razorpayMode:RAZORPAY_KEY_ID.startsWith('rzp_test_')?'test':'live',updatedAt:FieldValue.serverTimestamp(),createdAt:old.createdAt||FieldValue.serverTimestamp()},{merge:true});
-  return res.json({success:true,feature:f,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,mode:RAZORPAY_KEY_ID.startsWith('rzp_test_')?'test':'live',attempt});
- }catch(e){console.error('Horoscope feature create-order error',e);return res.status(500).json({error:e?.message||'Unable to create horoscope payment.'});}
+  // Keep each attempt's ownership and quoted amount immutable. A late success must remain verifiable.
+  await db.collection('smv_horoscope_orders').doc(order.id).set({userId:user.uid,feature:f,amountPaise:amount,currency:'INR',razorpayMode:mode,createdAt:FieldValue.serverTimestamp()});
+  const alreadyPaid=await db.runTransaction(async tx=>{const latest=await tx.get(ref),d=latest.exists?latest.data():{};if(d.paymentStatus==='paid'&&horoscopeModeMatches(d))return true;
+   tx.set(ref,{userId:user.uid,feature:f,amount:cfg.price,amountPaise:amount,currency:'INR',razorpayOrderId:order.id,orderAttempts:{...(d.orderAttempts||{}),[order.id]:{amountPaise:amount,mode}},previousRazorpayOrderId:old.razorpayOrderId||'',paymentAttempt:attempt,paymentStatus:'pending',razorpayMode:mode,updatedAt:FieldValue.serverTimestamp(),createdAt:old.createdAt||FieldValue.serverTimestamp()},{merge:true});return false;});
+  if(alreadyPaid)return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
+  return res.json({success:true,feature:f,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,mode,attempt});
+ }catch(e){console.error('Horoscope order',e);return res.status(503).json({error:'Unable to prepare payment safely. Retry after access is restored.'});}
 });
-app.post('/horoscope-feature/verify-payment',express.json({limit:'20kb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{const f=horoscopeFeatureKey(req.body?.feature),orderId=String(req.body?.razorpay_order_id||''),paymentId=String(req.body?.razorpay_payment_id||''),signature=String(req.body?.razorpay_signature||'');if(!f||!orderId||!paymentId||!signature)return res.status(400).json({error:'Complete payment verification data is required.'});const cfg=(await getHoroscopeFeatureSettings())[f],id=`${user.uid}_${f}`,ref=db.collection('smv_horoscope_purchases').doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({error:'Horoscope payment record not found.'});const d=snap.data()||{},expectedAmount=Math.round(cfg.price*100);if(d.razorpayOrderId!==orderId||Number(d.amountPaise)!==expectedAmount)return res.status(409).json({error:'Horoscope payment order/price mismatch. Please create a new order.'});const expected=crypto.createHmac('sha256',RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');if(!signatureEqual(expected,signature))return res.status(400).json({error:'Payment signature verification failed.'});let payment=await razorpay.payments.fetch(paymentId);if(payment.order_id!==orderId||Number(payment.amount)!==expectedAmount||String(payment.currency)!=='INR')return res.status(409).json({error:'Razorpay payment details do not match.'});if(payment.status==='authorized'){try{payment=await razorpay.payments.capture(paymentId,expectedAmount,'INR');}catch(_){payment=await razorpay.payments.fetch(paymentId);}}if(payment.status!=='captured')return res.status(409).json({error:'Payment capture is pending.'});await ref.set({paymentStatus:'paid',razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});return res.json({success:true,verified:true,feature:f,unlocked:true,paymentId});}catch(e){console.error('Horoscope feature verify error',e);return res.status(500).json({error:e?.message||'Unable to verify horoscope payment.'});}});
+app.post('/horoscope-feature/verify-payment',express.json({limit:'20kb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
+ const f=horoscopeFeatureKey(req.body?.feature),orderId=String(req.body?.razorpay_order_id||''),paymentId=String(req.body?.razorpay_payment_id||''),signature=String(req.body?.razorpay_signature||'');
+ if(!f||!/^order_[A-Za-z0-9]+$/.test(orderId)||!/^pay_[A-Za-z0-9]+$/.test(paymentId)||!signature)return res.status(400).json({error:'Complete payment verification data is required.'});
+ const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}`),attemptRef=db.collection('smv_horoscope_orders').doc(orderId);
+ const [snap,attempt]=await Promise.all([ref.get(),attemptRef.get()]);const purchase=snap.exists?snap.data():{},d=attempt.exists?attempt.data():purchase;
+ if((attempt.exists&&(d.userId!==user.uid||d.feature!==f))||(!attempt.exists&&d.razorpayOrderId!==orderId)||!horoscopeModeMatches(d))return res.status(409).json({error:'Payment order does not belong to this account, feature or payment mode.'});
+ const amount=Number(d.amountPaise);if(!Number.isSafeInteger(amount)||amount<100)return res.status(409).json({error:'Invalid quoted payment amount.'});
+ const expected=crypto.createHmac('sha256',RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');if(!signatureEqual(expected,signature))return res.status(400).json({error:'Payment signature verification failed.'});
+ let payment=await razorpay.payments.fetch(paymentId);if(payment.order_id!==orderId||Number(payment.amount)!==amount||payment.currency!=='INR')return res.status(409).json({error:'Razorpay payment details do not match the quoted order.'});
+ if(payment.status==='authorized'){try{payment=await razorpay.payments.capture(paymentId,amount,'INR');}catch(_){payment=await razorpay.payments.fetch(paymentId);}}
+ if(payment.status!=='captured')return res.status(409).json({error:'Payment capture is pending. Do not pay again.'});
+ await ref.set({userId:user.uid,feature:f,paymentStatus:'paid',amountPaise:amount,razorpayOrderId:orderId,razorpayPaymentId:paymentId,razorpayMode:horoscopePaymentMode(),paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ return res.json({success:true,verified:true,feature:f,unlocked:true,paymentId});
+ }catch(e){console.error('Horoscope verify',e);return res.status(503).json({error:'Payment verification could not finish. Restore access before attempting another payment.'});}});
 
 // V66 — Real server-generated PDF for each independently paid Horoscope feature.
 app.post('/horoscope-feature/pdf',express.json({limit:'2mb'}),async(req,res)=>{
@@ -2587,15 +2611,18 @@ app.post('/horoscope-feature/pdf',express.json({limit:'2mb'}),async(req,res)=>{
   const cfg=(await getHoroscopeFeatureSettings())[f];
   if(!cfg.enabled||cfg.price<=0)return res.status(403).json({error:'PDF download requires an enabled paid feature.'});
   const purchase=await db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}`).get();
-  if(!purchase.exists||purchase.data()?.paymentStatus!=='paid')return res.status(403).json({error:'Verified payment is required for PDF download.'});
+  if(!purchase.exists||purchase.data()?.paymentStatus!=='paid'||!horoscopeModeMatches(purchase.data()))return res.status(403).json({error:'Verified payment is required for PDF download.'});
   const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,900000);if(!text)return res.status(400).json({error:'Report result is empty.'});
   const defaultTitle=f==='marriage_matching'?'SMV Marriage Matching Report':'SMV Horoscope Report';
   const title=String(req.body?.title||defaultTitle).trim().slice(0,120),filename=f==='marriage_matching'?'SMV-Marriage-Matching.pdf':'SMV-Horoscope.pdf';
-  res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`attachment; filename="${filename}"`);res.setHeader('Cache-Control','no-store');
-  const doc=new PDFDocument({size:'A4',margins:{top:42,bottom:42,left:44,right:44},info:{Title:title,Author:'SMV ASTRO SERVICES'}});doc.pipe(res);
-  const tamilFont=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.woff2');
-  try{doc.font(tamilFont)}catch(_){doc.font('Helvetica')}
-  doc.fontSize(18).text(title,{align:'center'}).moveDown(0.7);doc.fontSize(10.5).text(text,{align:'left',lineGap:3});doc.end();
+  // Generate completely before sending headers, so failures cannot become truncated PDFs.
+  const doc=new PDFDocument({size:'A4',margins:{top:42,bottom:42,left:44,right:44},info:{Title:title,Author:'SMV ASTRO SERVICES'}});
+  const tamilFont=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
+  doc.registerFont('Tamil',tamilFont);
+  const chunks=[],finished=new Promise((resolve,reject)=>{doc.on('data',c=>chunks.push(c));doc.once('end',()=>resolve(Buffer.concat(chunks)));doc.once('error',reject);});
+  const write=(value,size,align='left')=>{doc.fontSize(size);for(const line of value.split('\n')){const runs=line.match(/[\u0B80-\u0BFF]+|[^\u0B80-\u0BFF]+/g)||[' '];runs.forEach((run,i)=>doc.font(/[\u0B80-\u0BFF]/.test(run)?'Tamil':'Helvetica').text(run,{continued:i<runs.length-1,align,lineGap:3}));}};
+  try{write(title,18,'center');doc.moveDown(0.7);write(text,10.5);doc.end();}catch(error){doc.destroy(error);await finished.catch(()=>{});throw error;}
+  const pdf=await finished;res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`attachment; filename="${filename}"`);res.setHeader('Cache-Control','no-store');return res.send(pdf);
  }catch(e){console.error('Horoscope feature PDF error',e);if(!res.headersSent)return res.status(500).json({error:'Unable to generate PDF.'});try{res.end()}catch(_){} }
 });
 
