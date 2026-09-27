@@ -3,3 +3,6 @@
 .mm-place-results{display:grid;gap:5px;margin:5px 0 0;padding:0;background:transparent;border:0;box-shadow:none;max-height:240px;overflow-y:auto}
 .mm-place-row{display:block;margin:0;padding:3px 0;background:transparent;border:0;border-radius:0;box-shadow:none;color:inherit;font:inherit;font-weight:400;line-height:1.35;text-align:left;cursor:pointer;white-space:normal}
 .mm-place-row:hover,.mm-place-row:focus,.mm-place-row:active{background:transparent;border:0;box-shadow:none;color:inherit;outline:none;text-decoration:underline;text-underline-offset:2px}
+
+#smvMarriageMatching>.smv-horoscope-pay-gate-single{margin:14px 0 0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+#smvMarriageMatching>.smv-horoscope-pay-gate-single h3{margin-top:0}

@@ -19,10 +19,10 @@ async function buy(feature,button,onUnlocked){
  if(!state.token){await bridge();if(!state.token){alert(ta()?'கட்டணம் செலுத்த SMV ASTRO Customer Login மூலம் Horoscope திறக்கவும்.':'Open Horoscope from your logged-in SMV ASTRO Customer account to pay.');return}}
  const old=button.textContent;button.disabled=true;button.textContent=ta()?'கட்டணம் தயாராகிறது…':'Preparing payment…';
  try{const o=await api('/horoscope-feature/create-order',{method:'POST',body:JSON.stringify({feature})});if(o.free||o.alreadyPaid||o.unlocked){await onUnlocked();return}await ensureCheckout();const rz=new Razorpay({key:o.keyId,amount:o.amount,currency:o.currency||'INR',name:'SMV ASTRO SERVICES',description:feature==='advanced_analysis'?'Advanced Horoscope Analysis':'Marriage Matching',order_id:o.orderId,prefill:{email:state.user?.email||''},notes:{feature},handler:async r=>{button.textContent=ta()?'சரிபார்க்கப்படுகிறது…':'Verifying…';const v=await api('/horoscope-feature/verify-payment',{method:'POST',body:JSON.stringify({feature,razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature})});if(!v.verified)throw Error('Payment verification failed.');await onUnlocked();},modal:{ondismiss:()=>{button.disabled=false;button.textContent=old}}});rz.on('payment.failed',r=>{alert(r?.error?.description||'Payment failed.');button.disabled=false;button.textContent=old});rz.open()}catch(e){console.error(e);alert(e.message||String(e));button.disabled=false;button.textContent=old}}
-function payCard(feature,price,onUnlocked){const box=document.createElement('div');box.className='card smv-horoscope-pay-gate';box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');box.innerHTML=`<h3>${esc(title)}</h3><p class="small">${ta()?'Admin நிர்ணயித்த கட்டணம்: ':'Admin-set price: '}<b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button>`;const b=box.querySelector('button');b.onclick=()=>buy(feature,b,async()=>{await onUnlocked();box.remove()});return box}
+function payCard(feature,price,onUnlocked,singleLayer=false){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');box.innerHTML=`<h3>${esc(title)}</h3><p class="small">${ta()?'Admin நிர்ணயித்த கட்டணம்: ':'Admin-set price: '}<b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button>`;const b=box.querySelector('button');b.onclick=()=>buy(feature,b,async()=>{await onUnlocked();box.remove()});return box}
 async function access(feature,cfg){if(!cfg.enabled)return {enabled:false,unlocked:false};if(Number(cfg.price||0)<=0)return {enabled:true,unlocked:true,free:true};if(!state.token)await bridge();if(!state.token)return {enabled:true,unlocked:false,price:cfg.price};try{return await api('/horoscope-feature/access?feature='+encodeURIComponent(feature))}catch(_){return {enabled:true,unlocked:false,price:cfg.price}}}
 async function gateAdvanced(root){const cfg=(await config()).advanced_analysis||{enabled:true,price:0};const parts=[...root.querySelectorAll('.smv-advanced-part')].filter(x=>!x.classList.contains('detailed-dasha-predictions')&&!x.classList.contains('detailed-transit-predictions')).slice(0,10);if(!parts.length)return;if(!cfg.enabled){parts.forEach(p=>p.hidden=true);return}const a=await access('advanced_analysis',cfg);if(a.unlocked)return;const contents=parts.map(p=>p.querySelector('.smv-advanced-part-content')).filter(Boolean);contents.forEach(fragmentLock);const preview=parts.map((p,i)=>`${i+1}. ${(p.querySelector('.smv-advanced-part-title')||p.querySelector('h3,h4')||{}).textContent||''}`.trim()).filter(Boolean);const card=payCard('advanced_analysis',cfg.price,async()=>{contents.forEach(fragmentUnlock);parts.forEach(p=>p.hidden=false)});if(preview.length)card.insertAdjacentHTML('beforeend',`<p class="small">${esc(ta()?'கட்டணம் செய்தால் கிடைக்கும் பகுதிகள்: ':'Included after payment: ')}${preview.map(esc).join(' · ')}</p>`);parts[0].before(card)}
-async function gateMarriage(){const sec=document.getElementById('smvMarriageMatching');if(!sec)return;const cfg=(await config()).marriage_matching||{enabled:true,price:0};if(!cfg.enabled){sec.hidden=true;return}const a=await access('marriage_matching',cfg);if(a.unlocked)return;fragmentLock(sec);const card=payCard('marriage_matching',cfg.price,async()=>{fragmentUnlock(sec);sec.hidden=false});sec.append(card)}
+async function gateMarriage(){const sec=document.getElementById('smvMarriageMatching');if(!sec)return;const cfg=(await config()).marriage_matching||{enabled:true,price:0};if(!cfg.enabled){sec.hidden=true;return}const a=await access('marriage_matching',cfg);if(a.unlocked)return;fragmentLock(sec);const card=payCard('marriage_matching',cfg.price,async()=>{fragmentUnlock(sec);sec.hidden=false},true);sec.append(card)}
 async function requireFeature(feature,mount){
  const cfg=(await config())[feature]||{enabled:true,price:0};
  if(!cfg.enabled){
@@ -35,12 +35,16 @@ async function requireFeature(feature,mount){
  const a=await access(feature,cfg);
  if(a.unlocked)return true;
  if(!mount)return false;
- return await new Promise(resolve=>{
+ mount.innerHTML='';
+ const card=payCard(feature,cfg.price,async()=>{
    mount.innerHTML='';
-   const card=payCard(feature,cfg.price,async()=>{mount.innerHTML='';resolve(true)});
-   card.insertAdjacentHTML('beforeend',`<p class="small">${esc(ta()?'கட்டணம் வெற்றிகரமாக சரிபார்க்கப்பட்ட பிறகே இந்த கணக்கீடு தொடங்கும்.':'This calculation starts only after payment is verified.')}</p>`);
-   mount.appendChild(card);
+   window.dispatchEvent(new CustomEvent('smv:horoscope-feature-unlocked',{detail:{feature}}));
  });
+ card.insertAdjacentHTML('beforeend',`<p class="small">${esc(ta()?'கட்டணம் வெற்றிகரமாக சரிபார்க்கப்பட்ட பிறகே இந்த கணக்கீடு தொடங்கும்.':'This calculation starts only after payment is verified.')}</p>`);
+ mount.appendChild(card);
+ // IMPORTANT: do not keep the main Horoscope generation Promise pending while the
+ // user is deciding whether to pay. Core Horoscope is complete at this point.
+ return false;
 }
 window.__smvRequireHoroscopeFeatureAccess=requireFeature;
 window.__smvGetHoroscopeFeatureConfig=config;

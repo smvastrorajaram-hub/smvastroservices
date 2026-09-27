@@ -2670,24 +2670,33 @@ if(lat===''||lon===''){
       render(d);
       const advRoot=$('tamilAdvancedAstrology');
       if(loadAdvanced && advRoot && typeof window.__smvLoadAdvancedAstrology==='function'){
+        const runAdvancedAfterAccess=async()=>{
+          resultBox?.classList.add('hidden');
+          resultBox?.setAttribute('aria-busy','true');
+          advRoot.innerHTML='';
+          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId});
+          resultBox?.classList.remove('hidden');
+          resultBox?.setAttribute('aria-busy','false');
+        };
         // Paid Advanced Analysis must be authorized BEFORE any advanced calculation.
-        // Core horoscope remains available even when payment service is unavailable.
+        // Waiting for the user's payment must NOT keep the main Horoscope spinner alive.
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');
           advRoot.classList.remove('hidden');
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot);
           if(!allowed){
+            const onUnlock=ev=>{
+              if(ev?.detail?.feature!=='advanced_analysis')return;
+              window.removeEventListener('smv:horoscope-feature-unlocked',onUnlock);
+              runAdvancedAfterAccess().catch(err=>{console.error('Advanced calculation after payment failed:',err);advRoot.innerHTML=`<div class="error"><b>${getHoroscopeLang()==='ta'?'மேம்பட்ட கணக்கீட்டை முடிக்க முடியவில்லை.':'Advanced calculation could not be completed.'}</b><p class="small">${escSafe(err?.message||err)}</p></div>`;resultBox?.classList.remove('hidden');resultBox?.setAttribute('aria-busy','false');});
+            };
+            window.addEventListener('smv:horoscope-feature-unlocked',onUnlock);
             requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'smooth',block:'start'}));
             return d;
           }
-          resultBox?.classList.add('hidden');
-          resultBox?.setAttribute('aria-busy','true');
-          advRoot.innerHTML='';
         }
-        // The advanced loader waits for Birth Panchang, Daily Panchang, Transit,
-        // and every advanced module before returning. The result stays hidden here.
-        await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId});
+        await runAdvancedAfterAccess();
       }
       // SINGLE RELEASE: chart + all new features become visible together.
       if(resultBox){
