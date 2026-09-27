@@ -540,7 +540,7 @@
       <p class="small">பிறந்த நேர சந்திரனின் நட்சத்திரத்தை அடிப்படையாகக் கொண்ட ஆரம்ப மகாதசா balance: <b>${d.dashas.balanceYears} ஆண்டுகள்</b>.</p>
       <div id="dashaTree" class="dasha-tree"></div>
       <p class="small" style="margin-top:15px"><b>குறிப்பு:</b> இது astronomical ephemeris அடிப்படையிலான கணக்கீட்டு layer. பாரம்பரிய ஜோதிட பலன்கள் விளக்க/நம்பிக்கை சார்ந்தவை; முக்கிய வாழ்க்கை முடிவுகளுக்கு இதை ஒரே ஆதாரமாக பயன்படுத்த வேண்டாம்.</p>
-      <div class="action-row horoscope-export-actions"><button class="btn" type="button" id="printTamilHoroscope">🖨️ Print / Save as PDF</button><button class="btn gray" type="button" id="copyTamilHoroscope">📋 Copy Text</button></div>
+      <div class="action-row horoscope-export-actions"><button class="btn smv-real-pdf-download" type="button" id="downloadTamilHoroscopePdf" hidden>⬇ Download Horoscope PDF</button><button class="btn gray" type="button" id="copyTamilHoroscope">📋 Copy Text</button></div>
     </div>`;
     const advHost=document.createElement('div');
     advHost.id='tamilAdvancedAstrology';
@@ -734,7 +734,7 @@
         }catch(_e){return false;}
       };
       document.addEventListener('click',async(ev)=>{
-        const btn=ev.target?.closest?.('#printTamilHoroscope,#copyTamilHoroscope');
+        const btn=ev.target?.closest?.('#downloadTamilHoroscopePdf,#copyTamilHoroscope');
         if(!btn)return;
         ev.preventDefault();ev.stopImmediatePropagation();
         const scope=btn.closest('#tamilHoroscopeResult,#englishHoroscopeResult')||document.body;
@@ -744,23 +744,21 @@
           showExportToast(ok?'✓ Horoscope text copied':'Copy is not available in this browser. Long-press the text to copy.',ok,scope);
           return;
         }
-        // Keep printing isolated from other click handlers. Browsers normally
-        // open their native print preview; PDF can then be selected there.
-        showExportToast('Opening print / Save as PDF…',true,scope);
-        setTimeout(()=>{
-          try{
-            window.focus();
-            if(typeof window.print==='function'){ window.print(); }
-            else { showExportToast('Print is not available in this browser preview. Open in Chrome to Save as PDF.',false,scope); }
-          }catch(_e){
-            showExportToast('Print is not available in this browser preview. Open in Chrome to Save as PDF.',false,scope);
-          }
-        },180);
+        const paid=window.__smvHoroscopePaidState;
+        if(!paid?.token){showExportToast('Paid Customer Login is required for PDF download.',false,scope);return;}
+        const text=(scope.innerText||scope.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+        showExportToast('Preparing horoscope PDF…',true,scope);
+        try{
+          const r=await fetch((paid.backend||'')+'/horoscope-feature/pdf',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+paid.token},body:JSON.stringify({feature:'advanced_analysis',language:document.documentElement.lang==='ta'?'ta':'en',title:(document.documentElement.lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),text})});
+          if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'PDF generation failed.');}
+          const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='SMV-Horoscope.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);showExportToast('✓ Horoscope PDF downloaded',true,scope);
+        }catch(e){showExportToast(e.message||'PDF download failed.',false,scope);}
       },true);
     }
     bindHoroscopeInteractions(result,d,name,getHoroscopeLang());
     result.scrollIntoView({behavior:'smooth',block:'start'});
   }
+  if(!window.__smvPdfPaidListenerBound){window.__smvPdfPaidListenerBound=true;window.addEventListener('smv:horoscope-paid-access',ev=>{if(ev.detail?.feature!=='advanced_analysis')return;document.querySelectorAll('.smv-real-pdf-download').forEach(b=>b.hidden=false);});}
   function bindHoroscopeInteractions(root,d,name,lang){
     if(!root)return;
     // V151: use delegated interaction for BOTH Tamil and copied English results.

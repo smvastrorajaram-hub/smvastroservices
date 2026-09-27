@@ -3056,3 +3056,12 @@ html body .smv26-channels a:where(:not(.smv33-hero, .smv33-hero *, .smv-home-off
 .temple-copy h1{color:#fff0cb;font-size:clamp(26px,7vw,34px)}
 .temple-copy p{font-size:16px;line-height:1.65}.temple-copy .eyebrow{font-size:13px}
 }
+
+/* V65 — Horoscope-local Customer Auth. No MutationObserver; auth is event-driven. */
+.smv-horoscope-auth{padding-top:18px;padding-bottom:8px}
+.smv-horoscope-auth .card{max-width:980px;margin:0 auto}
+.smv-horoscope-auth [data-logout]{display:none}
+.smv-horoscope-auth.is-logged-in [data-login],.smv-horoscope-auth.is-logged-in [data-register]{display:none}
+.smv-horoscope-auth.is-logged-in [data-logout]{display:inline-flex}
+.smv-horoscope-pay-gate-single{padding:18px 0;margin:0;border:0;background:transparent;box-shadow:none}
+.smv-real-pdf-download[hidden]{display:none}
