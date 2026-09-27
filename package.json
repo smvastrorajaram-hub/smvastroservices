@@ -11,6 +11,7 @@
   "dependencies": {
     "express": "^4.21.2",
     "astronomy-engine": "^2.1.19",
-    "sweph": "2.10.3-7"
+    "sweph": "2.10.3-7",
+    "razorpay": "^2.9.6"
   }
 }
