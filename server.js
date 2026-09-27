@@ -482,6 +482,8 @@ app.get("/public/registration-config", (req,res)=>res.set("Cache-Control","no-st
   whatsappProviderConfigured: !!WHATSAPP_OTP_PROVIDER
 }));
 
+app.get('/api/smv-mode', (req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:'https://smvastroservices.onrender.com'}));
+
 app.get("/", (req, res) => res.status(200).json({
   service: "SMV ASTRO Razorpay Backend",
   version: "20260913-refund-v5-email-mobile-unique-v6",
