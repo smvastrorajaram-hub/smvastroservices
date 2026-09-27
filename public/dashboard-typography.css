@@ -1,0 +1,327 @@
+/* SMV ASTRO — unified dashboard typography
+   Loaded after smvastro.css. Dashboard scope only; notification typography is excluded. */
+
+/* ---------- Shared scale ---------- */
+#dashboardContent .smv-consultation-item .smv-question-text,
+#dashboardContent .smv-astrologer-dashboard .smv-astro-question-text{
+  font-size:18px!important;
+  line-height:1.45!important;
+  font-weight:600!important;
+  color:#111!important;
+}
+#dashboardContent .smv-consultation-item .smv-customer-answer-text,
+#dashboardContent .smv-astrologer-dashboard .smv-astro-answer-text{
+  font-size:16px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+
+/* ---------- Customer Dashboard ---------- */
+#dashboardContent .smv-consultation-item .smv-customer-meta-line{
+  font-size:12px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#dashboardContent .smv-consultation-item .smv-customer-meta-line>b{
+  font-size:14px!important;
+  font-weight:600!important;
+}
+#dashboardContent .smv-consultation-item .smv-customer-meta-line>span{
+  font-size:12px!important;
+  font-weight:400!important;
+}
+#dashboardContent .smv-consultation-item .smv-private-payment-note{
+  font-weight:400!important;
+  font-style:normal!important;
+  color:#000!important;
+}
+/* Customer payment actions: keep every label fully inside its button box. */
+#dashboardContent .smv-customer-payment-btn{
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:28px!important;
+  height:28px!important;
+  width:auto!important;
+  max-width:100%!important;
+  padding:3px 10px!important;
+  font-size:11px!important;
+  line-height:1!important;
+  font-weight:600!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-align:center!important;
+}
+#dashboardContent .smv-private-payment-actions{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:100%!important;
+}
+#dashboardContent .smv-private-payment-actions>.smv-customer-payment-btn{
+  flex:1 1 0!important;
+  min-width:0!important;
+  width:auto!important;
+  max-width:none!important;
+  padding-left:5px!important;
+  padding-right:5px!important;
+  font-size:10px!important;
+}
+
+/* ---------- Astrologer Dashboard ---------- */
+/* Main headings: one size everywhere. Notifications are outside these targeted sections. */
+#dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary>.card>h3,
+#dashboardContent .smv-astrologer-dashboard> .card>h3,
+#dashboardContent .smv-astrologer-dashboard #astroQuestionQueue>h3,
+#dashboardContent .smv-astrologer-dashboard #astroAnsweredBox>h3,
+#dashboardContent .smv-astrologer-dashboard .withdrawal-history-title,
+#dashboardContent .smv-astrologer-dashboard .smv-astro-main-heading{
+  font-size:20px!important;
+  line-height:1.35!important;
+  font-weight:700!important;
+}
+/* Explanations/body copy */
+#dashboardContent .smv-astrologer-dashboard> .card>p.small,
+#dashboardContent .smv-astrologer-dashboard #astroQuestionQueue>p.small,
+#dashboardContent .smv-astrologer-dashboard #astroAnsweredBox>p.small,
+#dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard>p.small{
+  font-size:14px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+/* Profile summary values are content, not labels. */
+#dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-approved-badge,
+#dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-approved-badge>span:last-child,
+#dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-astro-profile-value,
+#dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .astro-profile-bio{
+  font-size:14px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+/* Summary labels and values */
+#dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary .smv-summary-label{
+  font-size:14px!important;
+  font-weight:600!important;
+  color:#111!important;
+}
+#dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary .smv-summary-value{
+  font-size:14px!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary>.card>p{
+  font-size:14px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+/* Question/history metadata: label bold, result normal. */
+#dashboardContent .smv-astrologer-dashboard :is(.smv-astro-open-question,.astro-question-item,.astro-answer-item)>.small,
+#dashboardContent .smv-astrologer-dashboard .smv-history-detail,
+#dashboardContent .smv-astrologer-dashboard .smv-withdrawal-row>.small{
+  font-size:12px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#dashboardContent .smv-astrologer-dashboard :is(.smv-astro-open-question,.astro-question-item,.astro-answer-item)>.small>b,
+#dashboardContent .smv-astrologer-dashboard .smv-history-detail>b,
+#dashboardContent .smv-astrologer-dashboard .smv-withdrawal-row>.small>b{
+  font-size:14px!important;
+  font-weight:600!important;
+  color:#111!important;
+}
+/* Profile description */
+#dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-subheading{
+  font-size:16px!important;
+  line-height:1.4!important;
+  font-weight:600!important;
+  color:#111!important;
+}
+#dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-description-body>p,
+#dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-edit-disabled{
+  font-size:14px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#dashboardContent .smv-astrologer-dashboard .smv-history-content{
+  font-size:14px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#dashboardContent .smv-astrologer-dashboard .smv-history-amount{
+  font-size:14px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+}
+#dashboardContent .smv-astrologer-dashboard .smv-history-amount>b,
+#dashboardContent .smv-astrologer-dashboard .smv-history-amount>.success,
+#dashboardContent .smv-astrologer-dashboard .smv-history-amount>.error{
+  font-size:14px!important;
+  font-weight:600!important;
+}
+#dashboardContent .smv-astrologer-dashboard .empty{
+  font-size:14px!important;
+  line-height:1.5!important;
+  font-weight:600!important;
+}
+
+/* ---------- Admin Dashboard ---------- */
+/* Do not target .smv-notification-* here: existing notification typography stays intact. */
+#admin .card:not(:has(.smv-notification-row))>h3,
+#admin .card:not(:has(.smv-notification-row))>h4,
+#admin section:not(:has(.smv-notification-row))>h3{
+  font-size:20px!important;
+  line-height:1.35!important;
+  font-weight:700!important;
+  color:#ff1493!important;
+}
+#admin .card:not(:has(.smv-notification-row))>p,
+#admin .card:not(:has(.smv-notification-row))>.small,
+#admin .card:not(:has(.smv-notification-row))>label{
+  font-size:14px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions)>div>b:first-child{
+  font-size:18px!important;
+  line-height:1.45!important;
+  font-weight:600!important;
+}
+#admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) .small{
+  font-size:12px!important;
+  line-height:1.55!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+#admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) .small>b{
+  font-size:14px!important;
+  font-weight:600!important;
+}
+#admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) p,
+#admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) .smv-customer-answer-text,
+#admin textarea{
+  font-size:16px!important;
+  line-height:1.5!important;
+  font-weight:400!important;
+  color:#000!important;
+}
+
+/* ---------- Admin Dashboard compact controls + notification parity ----------
+   Centralized here so legacy dashboard rules cannot enlarge Admin forms. */
+#admin label{
+  font-size:13px!important;
+  line-height:1.4!important;
+  font-weight:600!important;
+  color:#111!important;
+}
+#admin label>b{font-size:13px!important;font-weight:600!important;}
+#admin input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+#admin select{
+  min-height:36px!important;
+  height:36px!important;
+  padding:6px 9px!important;
+  margin:4px 0 8px!important;
+  border-radius:6px!important;
+  font-size:13px!important;
+  line-height:1.25!important;
+  font-weight:400!important;
+}
+#admin textarea{
+  min-height:82px!important;
+  padding:7px 9px!important;
+  margin:4px 0 8px!important;
+  border-radius:6px!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+  font-weight:400!important;
+}
+#admin .action-row{gap:6px!important;margin:6px 0!important;}
+#admin .grid{gap:8px!important;}
+#admin .small{font-size:12px!important;line-height:1.45!important;}
+
+/* Admin Notifications: same hierarchy as Customer/Astrologer notifications. */
+#admin .card:has(#adminPrivateNotifications)>h3{
+  font-size:20px!important;line-height:1.35!important;font-weight:700!important;
+}
+#admin .card:has(#adminPrivateNotifications)>p.small{
+  font-size:14px!important;line-height:1.55!important;font-weight:400!important;color:#000!important;
+}
+#adminPrivateNotifications .smv-notification-title{
+  font-size:13px!important;line-height:1.35!important;font-weight:700!important;color:#b00000!important;
+}
+#adminPrivateNotifications .smv-notification-content{
+  font-size:12px!important;line-height:1.45!important;font-weight:400!important;color:#000!important;
+}
+#adminPrivateNotifications .smv-notification-meta{
+  font-size:12px!important;line-height:1.4!important;font-weight:400!important;color:#202020!important;
+}
+#adminPrivateNotifications .smv-notification-label{font-size:12px!important;font-weight:600!important;color:#202020!important;}
+#adminPrivateNotifications .smv-notification-result{font-size:12px!important;font-weight:400!important;color:#202020!important;}
+
+/* Admin compact action buttons: medium height, content-width; paired SAVE/DELETE split left/right. */
+#admin button:not(.hidden):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn),
+#admin .btn:not(.hidden):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn),
+#admin input[type="button"]:not(.hidden),#admin input[type="submit"]:not(.hidden){
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:28px!important;
+  height:28px!important;
+  min-width:0!important;
+  width:calc(50% - 4px)!important;
+  max-width:100%!important;
+  padding:3px 10px!important;
+  font-size:11px!important;
+  line-height:1!important;
+  font-weight:600!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+  overflow:visible!important;
+  flex:0 0 auto!important;
+}
+
+/* Preserve intentionally hidden Admin controls. Higher-specificity button sizing must never reveal them. */
+#admin button.hidden,
+#admin .btn.hidden,
+#admin input.hidden{display:none!important;}
+#admin [data-qcard]>.action-row{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  width:100%!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+}
+#admin [data-qcard]>.action-row>[data-qsave],
+#admin [data-qcard]>.action-row>[data-qdelete]{
+  flex:1 1 0!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+}
+#admin .action-row{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+#admin .action-row>.btn,
+#admin .action-row>button{
+  flex:1 1 calc(50% - 4px)!important;
+  width:auto!important;
+  min-width:0!important;
+}

@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
+<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="0" http-equiv="Expires"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="./manifest.webmanifest" rel="manifest"/>
+<link href="./assets/favicon-64.png" rel="icon" sizes="64x64" type="image/png"/>
+<link href="./assets/icon-192.png" rel="apple-touch-icon"/>
+<meta content="#1c193d" name="theme-color"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="SMV ASTRO" name="apple-mobile-web-app-title"/>
+<title>SMV ASTRO SERVICES</title>
+<link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-hero-family-two-girls.png" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260924-v65" rel="stylesheet"/><script defer="" src="https://checkout.razorpay.com/v1/checkout.js"></script><script src="./payment-timing.js?v=65"></script>
+<script>
+/* SMV ASTRO V122 - one-time browser fresh start.
+   Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
+(function(){
+  const RESET_KEY='smv_astro_browser_reset_v122_done';
+  try{
+    if(localStorage.getItem(RESET_KEY)!=='1'){
+      try{ localStorage.clear(); }catch(e){}
+      try{ sessionStorage.clear(); }catch(e){}
+      try{
+        if(window.caches&&caches.keys){
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+        }
+      }catch(e){}
+      try{
+        if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+        }
+      }catch(e){}
+      try{ localStorage.setItem(RESET_KEY,'1'); }catch(e){}
+    }
+  }catch(e){}
+})();
+</script>
+<script id="smv-horoscope-build-v201-cache-guard">
+/* V201 cache guard: remove stale Cache API/service-worker copies only.
+   Firebase/IndexedDB application data is not touched. */
+(function(){
+  const KEY='smv_astro_ui_build_v201';
+  try{
+    if(localStorage.getItem(KEY)!=='1'){
+      if(window.caches?.keys) caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+      localStorage.setItem(KEY,'1');
+    }
+  }catch(_e){}
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  /* V29: Keep the Bhava Chart visible and keep a separate Bhava Table heading. */
+  document.querySelectorAll('#tamilHoroscopeResult, #englishHoroscopeResult').forEach(function(root){
+    root.querySelectorAll('h3').forEach(function(h){
+      const t=(h.textContent||'').trim();
+      if(t.includes('பாவக கட்டம் (Bhava Chart)') || t.includes('பாவக கட்டம் (Bhava Table)')){
+        h.textContent='Bhava Chart';
+      }
+    });
+  });
+});
+</script>
+<script id="smv-fresh-asknow-router">
+(function(){
+  if(window.__SMV_FRESH_ASKNOW_ROUTER__) return;
+  window.__SMV_FRESH_ASKNOW_ROUTER__=true;
+  function bind(){
+    const btn=document.getElementById("askNowButton");
+    if(!btn || btn.dataset.smvBound==="1") return;
+    btn.dataset.smvBound="1";
+    btn.addEventListener("click",function(e){
+      e.preventDefault(); e.stopPropagation();
+      const fn=window.__smvOpenQuestionService;
+      if(typeof fn!=="function"){
+        console.error("ASK NOW controller is not ready");
+        return;
+      }
+      Promise.resolve(fn()).catch(err=>console.error("ASK NOW failed:",err));
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
+  window.addEventListener("load",bind,{once:true});
+})();
+</script>
+</head>
+<body class="smv-v12-theme">
+<div class="smv-master-top"><div class="smv-master-topin"><span>Guided by Ancient Wisdom   |   Empowering Your Future</span></div></div>
+<div class="smv9-header" id="smvPremiumHeaderV9">
+<div class="smv9-nav">
+<a aria-label="SMV ASTRO Home" class="smv9-brand" href="#home">
+<img alt="SMV ASTRO" src="assets/smvlogo.png"/>
+<span><strong>SMV ASTRO</strong><small>Sri Madurai Veerayah Astro Services</small></span>
+</a>
+<nav aria-label="Main navigation" class="smv9-menu">
+<a class="active" href="#home">Home</a>
+<a href="horoscope/" id="horoscopeNav" target="_blank">Horoscope</a>
+<button data-smv-route="publicBlogs" id="contentNav" type="button">Blog</button>
+<a href="#publicMedia">Media</a>
+<a class="hidden" href="#dashboard" id="dashLink">Dashboard</a>
+<a aria-hidden="true" class="hidden" href="#admin" id="adminLink" tabindex="-1">Admin</a>
+<button class="login" id="authBtn" type="button">Login</button>
+<button class="register" id="registerNav" type="button">Register</button>
+</nav>
+</div>
+</div>
+<main class="container" id="smv-public-page">
+<div aria-live="polite" class="smv-home-offer-banners hidden" id="smvHomeOfferBanners"></div>
+<div class="smv33-hero" id="home"><div class="smv33-scene"><img alt="Sri Madurai Veerayah with his consorts" class="smv33-photo" fetchpriority="high" height="936" src="assets/smv-hero-family-two-girls.png" width="1681"/><div class="smv33-copy"><div class="smv33-mobile-head">
+<div class="smv33-kicker">Sri Madurai Veerayah Astro Services</div>
+<h1>Traditional Wisdom.<br/><span>Personal Guidance.</span></h1>
+<p>Discover the meaning within your birth chart through traditional Vedic astrology. Explore detailed horoscope insights and connect with approved astrologers for guidance on career, marriage, relationships and personal growth.</p>
+<p>Bring your questions, explore your possibilities and approach life’s important decisions with a thoughtful perspective grounded in tradition.</p>
+</div><div class="smv33-desktop-head">
+<div class="smv33-kicker">Sri Madurai Veerayah Astro Services</div>
+<h1>Rooted in Tradition.<br/><span>Guidance for Life.</span></h1>
+<p>At Sri Madurai Veerayah Astro Services, we bring the rich tradition of Vedic astrology into a clear and accessible online experience. Explore your birth chart, understand planetary influences and discover perspectives on the patterns and possibilities that shape your journey.</p>
+<p>Whether your questions concern career, relationships, marriage, family or personal growth, connect with approved astrologers for individual guidance. Our detailed horoscope tools and personal consultations help you reflect on important choices with greater awareness and a deeper connection to traditional wisdom.</p>
+</div><div class="smv33-actions">
+<a class="ask" href="#askNowSection">Ask a Question <b>→</b></a>
+<a class="horoscope" href="horoscope/" target="_blank">Create Horoscope <b>→</b></a>
+</div><div class="smv33-trust">
+<span><b>♡</b> Approved Astrologers</span>
+<span><b>▣</b> Private &amp; Secure</span>
+<span><b><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></b> Traditional Vedic Guidance</span>
+</div></div></div></div>
+<div aria-label="SMV ASTRO services" class="smv-master-services">
+<a class="smv-master-service" href="#askNowSection"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-286.6848%;top:-13.0435%"/></span><strong>Ask a Question</strong><span>Get personalized answers from approved astrologers.</span></a>
+<a class="smv-master-service" href="horoscope/" target="_blank"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-29.0761%;top:-138.8587%"/></span><strong>Create Horoscope</strong><span>Accurate Vedic calculations with detailed analysis.</span></a>
+<a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult" id="privateConsultationHomeLink"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-157.6087%;top:-138.8587%"/></span><strong>Consult an Astrologer</strong><span>Connect with approved and experienced astrologers.</span></a>
+<a class="smv-master-service" href="#publicBlogs"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-286.6848%;top:-138.8587%"/></span><strong>Read Our Blog</strong><span>Insights, remedies and astrology knowledge.</span></a>
+</div>
+<section aria-label="Install SMV ASTRO App" class="smv-install-app-section" id="smvInstallAppSection"><div class="smv-install-app-card"><div class="smv-install-app-icon-wrap"><img alt="SMV ASTRO" class="smv-install-app-icon" height="64" src="./assets/icon-192.png" width="64"/></div><div class="smv-install-app-copy"><h3>📱 Install SMV ASTRO App</h3><p>Install SMV ASTRO on your phone and use it like an app from your Home Screen.</p><div aria-live="polite" class="smv-install-app-help" id="smvInstallAppHelp"></div></div><button class="smv-install-app-btn" id="smvInstallAppBtn" type="button">INSTALL APP</button></div></section>
+<section aria-labelledby="askNowHeading" class="smv-new-asknow smv-type-root" id="askNowSection">
+<div class="smv-new-asknow-inner">
+<div class="smv-new-asknow-kicker">PRIVATE ASTROLOGY CONSULTATION</div>
+<h2 id="askNowHeading">Have a Question About Your Life?</h2>
+<p>Ask a personal astrology question and receive thoughtful guidance based on your birth details. Your question is handled privately by our astrology service.</p>
+<p class="smv-new-asknow-note">Login is required before you submit your question.</p>
+<div class="smv-new-asknow-action">
+<button class="smv-new-asknow-button" id="askNowButton" type="button"><span class="asknow-label">ASK NOW</span><span aria-hidden="true" class="asknow-arrow">→</span></button>
+</div>
+</div>
+<div aria-label="Consultation topics" class="smv-master-cats"><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-6.3187%;top:-16.2088%"/></span><span>Career</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-108.7912%;top:-16.2088%"/></span><span>Marriage</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-212.9121%;top:-16.2088%"/></span><span>Health</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-316.7582%;top:-16.2088%"/></span><span>Finance</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-6.3187%;top:-137.3626%"/></span><span>Property</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-108.7912%;top:-137.3626%"/></span><span>Education</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-212.9121%;top:-137.3626%"/></span><span>Spirituality</span></div><div class="smv-master-cat"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/topics-v27.png" style="width:421.9780%;left:-316.7582%;top:-137.3626%"/></span><span>Marriage Matching</span></div></div></section>
+<div class="smv-master-proof"><div><strong>Approved Astrologers</strong><span>Reviewed profiles</span></div><div><strong>Private Consultations</strong><span>Question-focused workflow</span></div><div><strong>Vedic Horoscope</strong><span>Detailed calculations</span></div><div><strong>Secure Payments</strong><span>Integrated payment flow</span></div></div>
+<section class="feature-section smv-type-root" id="smv-content-hub">
+<div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>SMV ASTRO CONTENT</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
+<div class="feature-shell card">
+<div class="feature-top">
+<div><h2 style="margin:0">Blogs &amp; Media</h2></div>
+</div>
+<div class="smv-v173-subregion" data-sup="blogs"><div class="smv-v173-subhead"><span>Blogs</span><button aria-label="Collapse Blogs" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div class="grid" id="publicBlogs" style="margin-top:10px"><div class="empty">Loading blogs...</div></div></div>
+<div class="smv-v173-subregion" data-sup="media" style="margin-top:14px"><div aria-expanded="true" class="smv-v173-subhead smv-media-title-toggle" role="button" tabindex="0"><span>Media</span><button aria-label="Collapse Media" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div id="publicMedia" style="margin-top:10px"><div class="empty">Loading media...</div></div></div>
+</div>
+</section>
+
+
+
+<section aria-labelledby="aboutTitle" class="feature-section smv-type-root" id="about">
+<div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>ABOUT SMV ASTRO</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
+<h2 id="aboutTitle">Sri Madurai Veerayah Astro Services</h2>
+<p>SMV ASTRO brings traditional Vedic astrology into an accessible online experience. Explore your horoscope using your birth details, learn through our astrology articles and connect with approved astrologers for personal consultations.</p>
+<p>Our service combines respect for tradition with clear, thoughtful guidance on the questions that matter to you.</p>
+</section>
+<section class="feature-section smv-type-root" id="faq">
+<div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>FREQUENTLY ASKED QUESTIONS</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
+<h2>FAQ</h2>
+<div class="faq-list">
+<details><summary>How do I ask an astrology question?</summary><p>Login as a customer, choose Ask Your Questions, enter the birth details and question, then complete the secure payment flow.</p></details>
+<details><summary>Are astrologers verified?</summary><p>All astrologers are carefully reviewed and verified by SMV ASTRO before being approved for consultation services.</p></details>
+<details><summary>How can I contact SMV ASTRO?</summary><p>Use the Contact Us form to send your query directly.</p></details>
+<details><summary>Do I need an account?</summary><p>An account is required for secure customer consultation features. You can create one from Customer Registration or the Login button.</p></details>
+<details><summary>How are astrologers selected and verified?</summary><p>All astrologers are carefully reviewed and verified by SMV ASTRO before being approved for consultation services.</p></details>
+<details><summary>When will I receive my astrology answer?</summary><p>After successful payment and submission, your astrology question will normally be answered within <strong>24 hours</strong>.</p></details>
+<details><summary>Is there a refund or cancellation policy?</summary><p>Payments are generally non-refundable once an accepted question enters the consultation process. If SMV ASTRO cannot provide the purchased service, a refund may be considered.</p></details>
+<details><summary>What happens if my question is not suitable for the astrology service?</summary><p>Questions that are unrelated to astrology, inappropriate, abusive, or involve matters that SMV ASTRO cannot responsibly provide guidance on may be rejected. If the question is rejected before consultation is provided, the customer may be eligible for a refund, normally processed within <strong>48 hours</strong> of the rejection decision.</p></details>
+<details><summary>Are astrology answers guaranteed?</summary><p>No. Astrology is a traditional form of guidance and interpretation. It is not a guarantee of future events or outcomes. Customers are free to accept, consider, or disagree with the guidance provided.</p></details>
+<details><summary>How do offers and promotion codes work?</summary><p>Eligible offers may be applied automatically at payment, or you can enter a valid promotion code when the option is available. Only one eligible offer is applied to a payment, and the final amount is verified securely before payment.</p></details>
+<details><summary>How does the ₹1 New Customer Welcome Offer work?</summary><p>When the ₹1 Welcome Offer is enabled, an eligible new customer can use it for the applicable first successful question. A failed or cancelled payment does not count as a successful use of the offer.</p></details>
+<details><summary>Are festival and seasonal offers available?</summary><p>SMV ASTRO may enable limited-time festival or seasonal promotions. Availability, eligibility, price and promotion-code requirements depend on the active offer at the time of payment.</p></details>
+<details><summary>How does astrologer qualification and auto approval work?</summary><p>When the qualification system is enabled, a registered astrologer may be required to complete the SMV ASTRO Google Form qualification test. If the verified score reaches the required pass mark, the account can be approved automatically. When auto approval is disabled, the existing Admin review and approval process continues.</p></details>
+</div>
+</section>
+<section class="hidden registration-panel homepage-registration" id="register-flow" style="margin-top:8px">
+<div class="container" style="padding-top:0;padding-bottom:0">
+<div class="registration-intro">
+<button class="btn gray hidden" id="regBackBtn">← Back to Home</button>
+<div class="home-rule" style="margin-top:22px;margin-bottom:14px"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>BEGIN YOUR JOURNEY WITH SMV ASTRO</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
+<h2>Choose Your Path</h2>
+<p>Register according to your purpose. Customer and Astrologer accounts are kept separate, with each journey designed for its own needs.</p>
+</div>
+<div class="registration-options">
+<div class="registration-option customer-option">
+<div aria-hidden="true" class="registration-icon"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-29.0761%;top:-13.0435%"/></span></div>
+<div class="registration-kicker">FOR SEEKERS OF GUIDANCE</div>
+<h3>Customer Registration</h3>
+<p>Create your private customer account to access the secure consultation area and choose an approved astrologer.</p>
+<button class="btn" id="customerRegBtn"><span class="btn-icon"><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span> Register as Customer</button>
+</div>
+<div class="registration-option astrologer-option">
+<div aria-hidden="true" class="registration-icon"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-157.6087%;top:-13.0435%"/></span></div>
+<div class="registration-kicker">FOR ASTROLOGY PROFESSIONALS</div>
+<h3>Astrologer Registration</h3>
+<p>Apply to become an SMV ASTRO astrologer. Your professional profile will be reviewed before it becomes public.</p>
+<button class="btn alt" id="astroRegBtn"><span class="btn-icon"><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span> Register as Astrologer</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<main aria-label="Private Consultation View" class="smv-consult-dedicated-shell hidden" id="smv-consult-dedicated-shell">
+<section aria-label="Private Consultation" class="section hidden smv-type-root" id="private-consultation">
+<div class="wrap"><button aria-label="Back to Home" class="smv-consult-back" id="privateConsultationBack" type="button">← BACK</button></div>
+<div class="wrap">
+<div class="section-title"><h2>Private Consultation</h2><p>Choose an approved astrologer for a private consultation. The Chat Price shown below is set by Admin.</p></div>
+<div id="privateConsultationAstrologers"><div class="empty">Loading approved astrologers...</div></div>
+<div class="card hidden" id="privateConsultationQuestionCard" style="position:relative">
+<button aria-label="Close Private Consultation Question" id="privateConsultationQuestionClose" style="position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:#8b0000" title="Close" type="button">×</button>
+<h3 style="padding-right:42px">Private Consultation Question</h3>
+<div class="small" id="privateConsultationSelected"></div>
+<form id="privateConsultationQuestionForm">
+<label>Your Name<input id="privateConsultName" maxlength="120" required=""/></label>
+<label>Birth Date<input id="privateConsultBirthDate" required="" type="date"/></label>
+<label>Birth Time<input id="privateConsultBirthTime" required="" type="time"/></label>
+<label>Birth Place<input id="privateConsultBirthPlace" maxlength="200" required=""/></label>
+<label>Gender<select id="privateConsultGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+<label>Your Question<textarea id="privateConsultQuestion" maxlength="10000" required="" rows="4"></textarea></label>
+<div id="privateConsultPaymentSummary"></div>
+<button class="btn" id="privateConsultPayBtn" type="submit">PAY &amp; SUBMIT</button>
+<div class="small" id="privateConsultMsg"></div>
+</form>
+</div>
+</div>
+</section>
+</main>
+<div aria-label="Account workspace" class="container hidden" id="smv-dashboard-page"><div class="smv-workspace-bar"><a href="#home" id="workspaceHome">← Home</a><span aria-live="polite" id="smvLiveStatus" role="status">Connecting to live updates…</span></div><section class="hidden smv-type-root" id="dashboard" style="margin-top:45px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+<h2 id="dashboardTitle" style="margin:0">CUSTOMER DASHBOARD</h2>
+</div>
+<div class="small" id="sessionNotice" style="margin:8px 0 14px"></div>
+<div id="dashboardContent"></div>
+</section><section class="hidden smv-type-root" id="admin" style="margin-top:45px">
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg" style="margin-top:12px"></div><div class="stats-grid admin-summary-grid" id="adminSummary" style="margin-top:16px"></div></div>
+<div class="card" style="margin-top:16px"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div><div class="card" id="adminPrivateConsultationCard" style="margin-top:16px">
+<h3>Private Consultation — Question Approval</h3>
+<p class="small">Separate from Ask Now. Paid private questions are handled only with the customer-selected astrologer.</p>
+<div id="privateConsultWorkflowControl"></div>
+<div id="adminPrivatePending"><div class="empty">Loading private consultations...</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+<h3>Private Consultation — Answers Awaiting Approval</h3>
+<div id="adminPrivateAnswers"><div class="empty">Loading private answers...</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+<h3>Private Consultation — Answer Word Count</h3>
+<p class="small">Separate from the existing Ask Now answer word limit.</p>
+<div class="action-row"><input id="privateMinimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"><button class="btn" id="savePrivateMinimumAnswerWords" type="button">SAVE WORD COUNT</button></input></div>
+<div class="small" id="privateMinimumAnswerWordsMsg"></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Astrologer Applications</h3><div id="pendingAstros"><div class="empty">Loading applications...</div></div></div>
+<div class="card" id="adminAstrologerProfileManagementCard" style="margin-top:16px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">Astrologer Profile Management</h3><button aria-label="Collapse Astrologer Profile Management" class="smv-v170-collapse-btn" id="adminAstrologerProfileManagementToggle" title="Collapse" type="button">▼</button></div><div id="adminAstrologerProfileManagementBody"><p class="small">Allow or block profile-description editing, review submitted descriptions, or update an approved public description directly.</p><div id="adminAstrologerProfiles"><div class="empty">Loading approved astrologer profiles...</div></div></div></div>
+<div class="card" style="margin-top:16px"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></input></div>
+<div class="card" style="margin-top:16px"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
+<div class="card" id="adminHoroscopePaidFeatures" style="margin-top:16px"><h3>Horoscope Paid Features</h3><p class="small">Advanced Analysis and Marriage Matching use independent Admin prices. ₹0 means free when enabled.</p><div class="action-row"><label>Advanced Analysis <select id="advancedAnalysisEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label>₹ Price <input id="advancedAnalysisPrice" min="0" step="0.01" type="number" value="0"></label></div><div class="action-row"><label>Marriage Matching <select id="marriageMatchingEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label>₹ Price <input id="marriageMatchingPrice" min="0" step="0.01" type="number" value="0"></label><button class="btn" id="saveHoroscopePaidFeatures" type="button">SAVE HOROSCOPE PRICES</button></div><div class="small" id="horoscopePaidFeaturesMsg"></div></div><div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
+<div class="card" style="margin-top:16px"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card" style="margin-top:16px"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
+<div class="card" style="margin-top:16px"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
+<div class="card" id="adminContentManager" style="margin-top:16px">
+<h3>Blogs &amp; Downloadable Content</h3>
+<p class="small">Create, edit and publish blogs. Upload PDF documents, images and videos for customers to view or download.</p>
+<div class="card" style="margin-top:12px;background:#fffdf8">
+<h4 style="margin:0 0 10px">Blog Writer &amp; Publisher</h4>
+<input id="blogEditId" type="hidden"/>
+<label>Blog Title *</label><input id="blogTitle" maxlength="180" placeholder="Blog title"/>
+<label>Short Description</label><textarea id="blogSummary" maxlength="500" placeholder="Short description" rows="3"></textarea>
+<label>Blog Content *</label><textarea id="blogBody" placeholder="Write your full blog here..." rows="10"></textarea>
+<label>Cover Image (optional)</label><input accept="image/*" id="blogCoverFile" type="file"/>
+<div class="action-row"><button class="btn" id="saveBlogBtn" type="button">PUBLISH BLOG</button><button class="btn gray" id="clearBlogBtn" type="button">CLEAR</button></div>
+<div class="small" id="blogManagerMsg"></div>
+</div>
+<div class="card" style="margin-top:12px;background:#fffdf8">
+<h4 style="margin:0 0 10px">Upload PDF / Image / Video / Music</h4>
+<input id="mediaEditId" type="hidden"/>
+<label>Title *</label><input id="mediaTitle" maxlength="180" placeholder="Content title"/>
+<label>Description</label><textarea id="mediaDescription" maxlength="500" placeholder="Description" rows="3"></textarea>
+<label>Choose Content Type *</label>
+<div class="action-row" style="flex-wrap:wrap">
+<button class="btn gray" id="chooseMediaImage" type="button">🖼️ CHOOSE IMAGE</button>
+<button class="btn gray" id="chooseMediaPdf" type="button">📄 CHOOSE PDF</button>
+<button class="btn gray" id="chooseMediaVideo" type="button">🎥 CHOOSE VIDEO</button>
+<button class="btn gray" id="chooseMediaMusic" type="button">🎵 CHOOSE MUSIC</button>
+</div>
+<input accept="image/*" id="mediaImageFile" style="display:none" type="file"/>
+<input accept="application/pdf,.pdf" id="mediaPdfFile" style="display:none" type="file"/>
+<input accept="video/*,.mp4,.webm,.mov,.m4v" id="mediaVideoFile" style="display:none" type="file"/>
+<input accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" id="mediaMusicFile" style="display:none" type="file"/>
+<div class="small" id="mediaSelectedFile" style="margin-top:8px">No file selected.</div>
+<div class="action-row"><button class="btn" id="uploadMediaBtn" type="button">UPLOAD &amp; PUBLISH</button><button class="btn gray" id="clearMediaBtn" type="button">CLEAR</button></div>
+<div class="small" id="mediaManagerMsg"></div>
+</div>
+<div id="adminBlogsMedia" style="margin-top:14px"><div class="empty">Loading content...</div></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg" style="margin-top:8px"></div></div>
+<div class="card" style="margin-top:16px"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+</section></div>
+<section class="hidden" id="astro-register-form" style="margin-top:30px">
+<div class="card">
+<button class="btn gray" id="astroRegBackBtn">← Back</button>
+<h2 style="margin-top:18px">Astrologer Registration</h2>
+<p class="small">Your profile will remain pending until SMV ASTRO approves it.</p>
+<form id="astroRegistrationForm">
+<input id="arName" placeholder="Full Name" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
+<input id="arMobile" placeholder="Mobile Number" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
+<input id="arEmail" placeholder="Email" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="email"/>
+<label class="small">Profile Photo</label>
+<input accept="image/*" id="arPhoto" required="" type="file"/>
+<input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
+<input id="arExperience" min="0" placeholder="Experience (years)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="number"/>
+<textarea id="arBio" placeholder="Professional Bio" required="" rows="5" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"></textarea>
+<h3>Payment Method</h3>
+<input id="arBankName" placeholder="Bank Name" required=""/>
+<input id="arAccountName" placeholder="Account Holder Name" required=""/>
+<input id="arAccountNumber" inputmode="numeric" placeholder="Bank Account Number" required=""/>
+<input id="arIfsc" placeholder="IFSC Code" required=""/>
+<input id="arUpi" placeholder="UPI ID (optional)"/>
+<p class="small">Bank/UPI details are private and visible only to Admin. They will not be shown again in full to the Astrologer.</p>
+<input id="arPassword" minlength="6" placeholder="Password (min 6 characters)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="password"/>
+<button class="btn" style="margin-top:8px" type="submit">SUBMIT REGISTRATION</button>
+<div class="small" id="astroRegMsg" style="margin-top:10px"></div>
+</form>
+</div>
+</section>
+<section class="hidden" id="astro-flow"></section>
+<div aria-label="Ask Your Question" aria-modal="true" class="hidden" id="smvPublicQuestionWindow" role="dialog"><div class="smv-public-question-window-shell">
+<section class="hidden" id="ask-flow" style="margin-top:0">
+<div class="card">
+<button class="btn gray" id="askNowBackBtn">← Back</button>
+<h2 id="askTitle" style="margin-top:18px">Ask Your Question</h2>
+<p class="small" id="askRate"><b>Loading current question price...</b></p>
+<h3>Birth Details</h3>
+<p class="small">Enter the birth details of the person for whom you are asking the question.</p>
+<div class="grid">
+<div><label class="small"><b>Name</b></label><input autocomplete="name" id="birthName" placeholder="Full name" required="" type="text"/></div>
+<div><label class="small"><b>Date of Birth</b></label><input id="birthDate" required="" type="date"/></div>
+<div><label class="small"><b>Time of Birth</b></label><input id="birthTime" required="" type="time"/></div>
+<div><label class="small"><b>Place of Birth</b></label><input id="birthPlace" placeholder="City, State, Country" required="" type="text"/></div>
+<div><label class="small"><b>Gender (Optional)</b></label><select id="birthGender"><option value="">Prefer not to say</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+</div>
+<h3 style="margin-top:18px">Your Question</h3>
+<textarea id="questionText" placeholder="Write your astrology question here..." rows="6" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:12px;border:1px solid #d7dde7;border-radius:10px;font:inherit;overflow-wrap:anywhere;word-break:break-word"></textarea>
+<button class="btn" id="submitQuestionBtn" style="margin-top:12px">Proceed to Secure Payment</button>
+<div class="small" id="askMsg" style="margin-top:10px"></div>
+</div>
+</section>
+</div></div>
+<section class="card contact-section hidden smv-type-root" id="contact" style="max-width:900px;margin:30px auto;padding:28px 20px;">
+<h2>Contact Us</h2>
+<div class="smv-business-contact"><address><strong>SMV ASTRO SERVICES</strong><br/>1/54, Kamaraj Nagar,<br/>Chathiramanai, Perambalur - 621104, Tamil Nadu, India.</address><div class="smv26-channels"><a href="tel:+916381171084"><img alt="Phone" class="smv26-social-icon" height="28" src="assets/social/phone.svg" width="28"/><span>+91 6381171084</span></a><a href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="WhatsApp" class="smv26-social-icon" height="28" src="assets/social/whatsapp.svg" width="28"/><span>WhatsApp</span></a><a href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="Facebook" class="smv26-social-icon" height="28" src="assets/social/facebook.svg" width="28"/><span>Facebook</span></a><a href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="YouTube" class="smv26-social-icon" height="28" src="assets/social/youtube.svg" width="28"/><span>YouTube</span></a><a href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="Instagram" class="smv26-social-icon" height="28" src="assets/social/instagram.svg" width="28"/><span>Instagram</span></a></div></div>
+<p class="small">Have a question? Send us your details and query. Our admin team will contact you soon.</p>
+<form id="contactForm" style="display:grid;gap:12px;margin-top:18px;">
+<div>
+<label for="contactName">Name *</label>
+<input autocomplete="name" id="contactName" maxlength="100" name="name" placeholder="Your name" required="" type="text"/>
+</div>
+<div>
+<label for="contactEmail">Email *</label>
+<input autocomplete="email" id="contactEmail" maxlength="160" name="email" placeholder="your@email.com" required="" type="email"/>
+</div>
+<div>
+<label for="contactPlace">Place / City *</label>
+<input autocomplete="address-level2" id="contactPlace" maxlength="120" name="place" placeholder="Your place" required="" type="text"/>
+</div>
+<div>
+<label for="contactMobile">Mobile Number *</label>
+<input autocomplete="tel" id="contactMobile" maxlength="20" name="mobile" placeholder="Your mobile number" required="" type="tel"/>
+</div>
+<div>
+<label for="contactQuery">Query *</label>
+<textarea id="contactQuery" maxlength="3000" name="query" placeholder="Write your query here..." required=""></textarea>
+</div>
+<input aria-hidden="true" autocomplete="off" id="contactWebsite" name="website" style="position:absolute;left:-9999px;" tabindex="-1" type="text"/>
+<button class="btn" id="contactSubmit" type="submit">SEND QUERY</button>
+<div aria-live="polite" class="small" id="contactMsg" role="status"></div>
+</form>
+</section>
+<!-- SMV ASTRO Install App option: placed immediately before the final footer -->
+<div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2><span aria-hidden="true">☀</span> SMV ASTRO</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
+<div class="modal hidden" id="modal">
+<div class="modalbox" style="position:relative">
+<button aria-label="Close" onclick="closeModal()" style="position:absolute;top:10px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:inherit" title="Close" type="button">×</button>
+<div id="modalContent"></div>
+</div>
+</div>
+<script src="./smvastro.mjs?v=20260924-v65" type="module"></script>
+
+<!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
+<script>
+(function(){
+  const BACKEND_URL = "https://smv-astro-1fco.onrender.com";
+  const form = document.getElementById("contactForm");
+  if(!form) return;
+  const btn = document.getElementById("contactSubmit");
+  const msg = document.getElementById("contactMsg");
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    if(document.getElementById("contactWebsite")?.value) return;
+    btn.disabled = true;
+    btn.textContent = "SENDING...";
+    msg.textContent = "";
+    const payload = {
+      name: document.getElementById("contactName").value.trim(),
+      email: document.getElementById("contactEmail").value.trim(),
+      place: document.getElementById("contactPlace").value.trim(),
+      mobile: document.getElementById("contactMobile").value.trim(),
+      query: document.getElementById("contactQuery").value.trim()
+    };
+    try{
+      const r = await fetch(BACKEND_URL + "/contact-query", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
+      });
+      const data = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.error || "Unable to send your query. Please check the admin email settings in Render.");
+      msg.innerHTML = '<span class="success">✓ Your query has been submitted successfully. Our team will contact you soon.</span>';
+      form.reset();
+      setTimeout(()=>{ if(msg) msg.textContent=""; },5000);
+    }catch(err){
+      msg.innerHTML = '<span class="error">' + esc(err?.message || "Unable to send your query. Please try again.") + '</span>';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "SEND QUERY";
+    }
+  });
+})();
+</script>
+<script src="./public-content.mjs?v=20260924-v65" type="module"></script>
+<script>
+document.addEventListener("click",function(e){
+  const b=e.target.closest("[data-open-booking]");
+  if(!b)return;
+  const a=document.getElementById("appointment");
+  if(!a)return;
+  a.classList.remove("hidden");
+  const t=document.getElementById("apType");
+  if(t)t.value=b.dataset.openBooking;
+  a.scrollIntoView({behavior:"smooth",block:"start"});
+});
+</script>
+<script>
+/* V119: final repair layer — Contact, logout indicator, approved astrologers only. */
+(function(){
+  function openContact(e){
+    if(e){e.preventDefault();e.stopPropagation();}
+    const contact=document.getElementById('contact');
+    if(!contact)return;
+    contact.classList.remove('hidden');
+    try{contact.scrollIntoView({behavior:'smooth',block:'start'});}catch(_){contact.scrollIntoView();}
+  }
+  document.addEventListener('click',function(e){
+    const link=e.target.closest && e.target.closest('#contactNav');
+    if(link)openContact(e);
+  },true);
+  document.addEventListener('DOMContentLoaded',function(){
+    window.__smvSetupLanguage?.();
+    const link=document.getElementById('contactNav');
+    if(link)link.onclick=openContact;
+  },{once:true});
+
+  function forceAuthButtonSync(){
+    const b=document.getElementById('authBtn');
+    if(!b)return;
+    if(window.__SMV_LOGGED_OUT===true){b.textContent='Login';return;}
+    const hasUser = !!(window.__smvCurrentUserPresent===true);
+    if(!hasUser && (b.textContent||'').trim().toLowerCase()==='logout') b.textContent='Login';
+  }
+  window.addEventListener('smv:auth-user',()=>{window.__SMV_LOGGED_OUT=false;forceAuthButtonSync();});
+  window.addEventListener('smv:logged-out',function(){
+    const b=document.getElementById('authBtn');
+    if(b)b.textContent='Login';
+  });
+  setInterval(function(){
+    if(window.__SMV_LOGGED_OUT===true){const b=document.getElementById('authBtn');if(b)b.textContent='Login';}
+  },500);
+})();
+</script>
+<script id="smv-v142-location-autocomplete">
+
+(function(){
+  const place = document.getElementById('tamilBirthPlace');
+  const lat = document.getElementById('tamilLat');
+  const lon = document.getElementById('tamilLon');
+  if(!place || !lat || !lon) return;
+  const parent = place.parentElement;
+  parent.classList.add('smv-location-wrap');
+  const list = document.createElement('div');
+  list.className='smv-location-suggestions';
+  list.setAttribute('role','listbox');
+  parent.appendChild(list);
+  const status=document.createElement('div');
+  status.className='smv-location-status';
+  parent.appendChild(status);
+  let timer=null, controller=null, lastQuery='';
+  function clearList(){list.innerHTML='';list.classList.remove('show');}
+  function setStatus(text, cls){status.textContent=text||'';status.className='smv-location-status'+(cls?' '+cls:'');}
+  function choose(item){
+    place.value=item.place||'';
+    lat.value=Number(item.latitude).toFixed(6);
+    lon.value=Number(item.longitude).toFixed(6);
+    place.dataset.locationSelected='1';
+    place.dataset.latitude=String(item.latitude);
+    place.dataset.longitude=String(item.longitude);
+    clearList();
+    setStatus('');
+  }
+  function render(items){
+    clearList();
+    if(!items.length){setStatus('No matching location found. Please type a little more.','err');return;}
+    items.forEach(item=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');
+      b.textContent=item.place;
+      b.addEventListener('click',()=>choose(item));
+      list.appendChild(b);
+    });
+    list.classList.add('show');
+    setStatus('Select your exact place from the list.','');
+  }
+  async function search(q){
+    if(q.length<2){clearList();setStatus('','');return;}
+    if(q===lastQuery)return;
+    lastQuery=q;
+    if(controller) controller.abort();
+    controller=new AbortController();
+    setStatus('Searching location…','');
+    try{
+      const r=await fetch('https://smv-astro-1fco.onrender.com/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.error||'Location search failed');
+      render(data.results||[]);
+    }catch(e){
+      if(e.name==='AbortError')return;
+      clearList();setStatus(e.message||'Unable to search location.','err');
+    }
+  }
+  place.addEventListener('input',()=>{
+    place.dataset.locationSelected='0';
+    lat.value='';lon.value='';
+    lastQuery='';
+    clearTimeout(timer);
+    timer=setTimeout(()=>search(place.value.trim()),550);
+  });
+  place.addEventListener('focus',()=>{if(place.value.trim().length>=2 && list.children.length)list.classList.add('show');});
+  document.addEventListener('click',e=>{if(!parent.contains(e.target))clearList();});
+  place.addEventListener('keydown',e=>{
+    if(e.key==='Escape')clearList();
+  });
+})();
+</script>
+<script id="smv-v145-english-location-and-generator">
+(function(){
+  const BACKEND_URL='https://smv-astro-1fco.onrender.com';
+  const $=id=>document.getElementById(id);
+
+  function setupLocation(prefix){
+    const place=$(prefix+'BirthPlace'),lat=$(prefix+'Lat'),lon=$(prefix+'Lon');
+    if(!place||!lat||!lon||place.dataset.smvLocationBound==='1')return;
+    place.dataset.smvLocationBound='1';
+    const parent=place.parentElement; parent.classList.add('smv-location-wrap');
+    const list=document.createElement('div'); list.className='smv-location-suggestions'; list.setAttribute('role','listbox'); parent.appendChild(list);
+    const status=document.createElement('div'); status.className='smv-location-status'; parent.appendChild(status);
+    let timer=null,controller=null,lastQuery='';
+    function clear(){list.innerHTML='';list.classList.remove('show');}
+    function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
+    function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText('');}
+    function render(items){clear();if(!items.length){statusText('No matching location found. Please type a little more.','err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText('Select your exact place from the list.','');}
+    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;if(controller)controller.abort();controller=new AbortController();statusText('Searching location…','');try{const r=await fetch((window.SMV_BACKEND_URL||'https://smv-astro-1fco.onrender.com')+'/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Location search failed');render(Array.isArray(data.results)?data.results:[]);}catch(e){if(e.name==='AbortError')return;clear();statusText(e.message||'Unable to search location.','err');}}
+    place.addEventListener('input',()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
+    place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
+    document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
+  }
+  setupLocation('english');
+
+  $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
+    const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'';
+    if(!date||!time){alert('Enter the date and time of birth.');return;}
+    if(!place||place.length<2){
+  alert('Enter your Place of Birth.');
+  return;
+}
+
+if(lat===''||lon===''){
+  alert('If the location is not available in the search list, enter Place of Birth, Latitude and Longitude manually.');
+  return;
+}
+    // The existing, tested Swiss-Ephemeris renderer is reused as the calculation engine.
+    // Its output is then translated into English; no second astronomical engine is introduced.
+    const copy=(a,b)=>{if($(a)&&$(b))$(b).value=$(a).value;};
+    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');copy('englishNakshatra','tamilNakshatra');
+    const rmap=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
+    const emap=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    const ei=emap.indexOf($('englishRasi')?.value||'Aries');if($('tamilRasi'))$('tamilRasi').value=rmap[Math.max(0,ei)];
+    const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;
+    try{localStorage.setItem('smvLanguage','en');}catch(_e){}
+    const englishResult=$('englishHoroscopeResult');
+    // FINAL HOROSCOPE RELEASE RULE: do not open/show the horoscope result while
+    // any calculation is still running. The Create Horoscope button is the only
+    // loading indicator; chart + all new features are released together.
+    if(englishResult){
+      englishResult.classList.add('hidden');
+      englishResult.setAttribute('aria-busy','true');
+      englishResult.innerHTML='';
+    }
+    const btn=$('generateEnglishHoroscope');
+    if(btn){btn.disabled=true;btn.textContent='⏳ Creating Horoscope…';}
+    let englishProgress=$('englishHoroscopeProgress'); if(!englishProgress&&btn){englishProgress=document.createElement('div');englishProgress.id='englishHoroscopeProgress';englishProgress.className='smv-horoscope-progress';englishProgress.innerHTML='<span class="spin"></span><span>Creating Horoscope…<br>Preparing all calculations and features…</span>';btn.insertAdjacentElement('afterend',englishProgress);}
+    try{
+      const normalizeHoroscopeTime=value=>{
+        const s=String(value||'').trim();
+        let m=s.match(/^(\d{1,2}):([0-5]\d)$/);
+        if(m){const h=Number(m[1]);if(h>=0&&h<=23)return `${String(h).padStart(2,'0')}:${m[2]}`;}
+        m=s.match(/^(\d{1,2})[.:]([0-5]\d)\s*(AM|PM)$/i);
+        if(m){let h=Number(m[1]);const ap=m[3].toUpperCase();if(h<1||h>12)return '';if(ap==='AM')h=h===12?0:h;else h=h===12?12:h+12;return `${String(h).padStart(2,'0')}:${m[2]}`;}
+        return '';
+      };
+      const normalizedTime=normalizeHoroscopeTime(time);
+      if(!normalizedTime)throw new Error('Enter a valid birth time, for example 22:05 (10:05 PM).');
+      if(typeof window.__smvGenerateHoroscopeEngine!=='function')throw new Error('Horoscope engine is not ready. Please refresh the page.');
+      // ENGLISH FLOW REPAIR:
+      // Do NOT start a second Advanced request against the Tamil DOM and do NOT copy
+      // a partially populated Advanced tree. First build the core chart, copy only
+      // that stable core result, rename the containers, then run ONE complete
+      // /api/horoscope/full request directly into the English Advanced root.
+      const generated=await window.__smvGenerateHoroscopeEngine(false);
+      const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
+      if(source&&target&&source.innerHTML.trim()){
+        target.innerHTML=source.innerHTML;
+        const copiedAdv=target.querySelector('#tamilAdvancedAstrology');
+        if(copiedAdv){ copiedAdv.id='englishAdvancedAstrology'; copiedAdv.classList.add('hidden'); }
+        const copiedTransitSlot=target.querySelector('#tamilDailyTransitPanchangSlot');
+        if(copiedTransitSlot) copiedTransitSlot.id='englishDailyTransitPanchangSlot';
+
+        target.classList.add('hidden');target.setAttribute('aria-busy','true');
+        source.classList.add('hidden');
+
+        if(typeof window.__smvApplyEnglishToHoroscope!=='function') throw new Error('English horoscope translator is not ready. Please refresh the page.');
+        if(typeof window.__smvBindHoroscopeInteractions!=='function') throw new Error('English horoscope interactions are not ready. Please refresh the page.');
+        window.__smvApplyEnglishToHoroscope(target);
+        window.__smvBindHoroscopeInteractions(target,generated||{},$('englishAstroName')?.value?.trim()||'User','en');
+
+        const englishAdvancedRoot=$('englishAdvancedAstrology');
+        if(!englishAdvancedRoot || typeof window.__smvLoadAdvancedAstrology!=='function'){
+          throw new Error('English Advanced Astrology container is not ready.');
+        }
+        // This is the ONLY English Advanced request. It uses the English root,
+        // the verified core chart, and the current generation id, so an older
+        // Tamil request cannot abort or overwrite it.
+        await window.__smvLoadAdvancedAstrology({
+          date,time:normalizedTime,lat,lon,lang:'en',
+          rootId:'englishAdvancedAstrology',
+          name:($('englishAstroName')?.value||'').trim(),
+          chart:generated||null,
+          generationId:window.__smvHoroscopeGenerationId
+        });
+
+        /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +
+           Transit + Dasa batch is now ready. */
+        if(typeof window.__smvForceEnglishRahuRetrograde==='function'){
+          window.__smvForceEnglishRahuRetrograde(target);
+        }
+        target.classList.remove('hidden');
+        target.setAttribute('aria-busy','false');
+        if(typeof window.__smvFixEnglishBhavaHeaders==='function') window.__smvFixEnglishBhavaHeaders();
+        target.scrollIntoView({behavior:'smooth',block:'start'});
+      }else throw new Error('Horoscope result was not returned.');
+    }catch(e){
+      if(englishResult){englishResult.setAttribute('aria-busy','false');englishResult.classList.add('hidden');englishResult.innerHTML='';}
+      alert(e?.message||String(e));
+    }
+    finally{
+      if(englishResult) englishResult.setAttribute('aria-busy','false');
+      if(btn){btn.disabled=false;btn.textContent='Create Horoscope';}
+      if(englishProgress) englishProgress.remove();
+    }
+  });
+  $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishNakshatra','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishRasi'))$('englishRasi').value='Aries';if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+})();
+</script>
+<script>window.__SMV_V158_PATCH="Phase 3 classical-style Parashari Shadbala: Sthana, Dig, Kala, Cheshta, Naisargika and Drik components with required-strength comparison; Phase 2 layer retained for compatibility.";</script>
+<!-- FINAL HOME BUTTON EQUAL-SIZE FIX -->
+<!-- FINAL: HOME USES EXACTLY THE SAME SIZE AS THE OTHER HEADER BUTTONS -->
+<script>
+(function(){
+  function fixHome(){
+    var el=document.querySelector('header nav a[href="#home"]');
+    if(!el) return;
+    el.style.setProperty('width','102px','important');
+    el.style.setProperty('min-width','102px','important');
+    el.style.setProperty('max-width','102px','important');
+    el.style.setProperty('flex','0 0 102px','important');
+    el.style.setProperty('height','42px','important');
+    el.style.setProperty('min-height','42px','important');
+    el.style.setProperty('max-height','42px','important');
+    el.style.setProperty('box-sizing','border-box','important');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fixHome);
+  else fixHome();
+  window.addEventListener('resize',fixHome);
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  /*
+   * V25 CRITICAL FIX:
+   * The previous Bhava-header MutationObserver changed textContent inside
+   * its own observed subtree. That generated another mutation, which called
+   * the observer again indefinitely and could freeze the browser/Acode.
+   *
+   * No observer is needed. The English result is translated after generation,
+   * so we safely apply the final labels after the result exists.
+   */
+  const fixBhavaHeaders=()=>{
+    const root=document.getElementById('englishHoroscopeResult');
+    if(!root) return;
+    const table=root.querySelector('.bhava-table');
+    if(table && table.tHead){
+      const names=['House','Start','Middle','End','Rasi','Planets'];
+      const cells=table.tHead.rows[0]?.cells||[];
+      names.forEach((n,i)=>{
+        if(cells[i] && cells[i].textContent !== n) cells[i].textContent=n;
+      });
+    }
+    const h=[...root.querySelectorAll('h3')].find(x=>(x.textContent||'').includes('Bhava'));
+    if(h && h.textContent !== 'Bhava Table') h.textContent='Bhava Chart';
+  };
+  window.__smvFixEnglishBhavaHeaders=fixBhavaHeaders;
+});
+</script>
+
+<!-- SMV SAFE PUBLIC NAV REPAIR: keep existing business logic; provide direct fallbacks for header controls. -->
+<script id="smv-english-rahu-retrograde-final">
+/* English-only presentation fix:
+   Rahu/Ketu are always shown as Retrograde in Planetary Positions and
+   Sarvatobhadra Chakra, matching the requested traditional presentation.
+   No MutationObserver is used, so this cannot create a render loop/freeze. */
+(function(){
+  const isNodePlanet=(v)=>{
+    const q=String(v??'').trim().toLowerCase();
+    return q==='rahu'||q==='ketu'||q==='ராகு'||q==='கேது';
+  };
+  window.__smvForceEnglishRahuRetrograde=function(root){
+    if(!root)return;
+    root.querySelectorAll('tr').forEach(tr=>{
+      const cells=[...tr.children];
+      if(!cells.length || !isNodePlanet(cells[0]?.textContent)) return;
+      cells.forEach(td=>{
+        const q=(td.textContent||'').trim();
+        if(/^(Direct|Retrograde|வக்கிரம்|வக்ரம்|நேர்கதி)$/i.test(q)){
+          td.textContent='Retrograde';
+        }
+      });
+    });
+    root.querySelectorAll('.transit-planet').forEach(card=>{
+      const b=card.querySelector('b');
+      if(!b || !isNodePlanet(b.textContent))return;
+      card.querySelectorAll('span').forEach(sp=>{
+        if(/^(Direct|Retrograde|வக்கிரம்|வக்ரம்|நேர்கதி)$/i.test((sp.textContent||'').trim()))
+          sp.textContent='Retrograde';
+      });
+    });
+  };
+})();
+</script>
+<script id="smv-v9-2-deities-engine">
+(function(){
+  const DEITY={
+    Sun:["Shiva","Rama"], Moon:["Parvati / Gauri","Krishna"],
+    Mars:["Subramanya / Kartikeya","Narasimha"], Mercury:["Vishnu","Buddha"],
+    Jupiter:["Guru / Samba Shiva","Vamana"], Venus:["Lakshmi","Parashurama"],
+    Saturn:["Narayana","Kurma"], Rahu:["Durga","Varaha"], Ketu:["Ganesha","Matsya"]
+  };
+  const SIGNS=["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+  const LORD={Aries:"Mars",Taurus:"Venus",Gemini:"Mercury",Cancer:"Moon",Leo:"Sun",Virgo:"Mercury",Libra:"Venus",Scorpio:"Mars",Sagittarius:"Jupiter",Capricorn:"Saturn",Aquarius:"Saturn",Pisces:"Jupiter"};
+  const PMAP={சூரியன்:"Sun",சந்திரன்:"Moon",செவ்வாய்:"Mars",புதன்:"Mercury",குரு:"Jupiter",சுக்கிரன்:"Venus",சனி:"Saturn",ராகு:"Rahu",கேது:"Ketu",
+              Sun:"Sun",Moon:"Moon",Mars:"Mars",Mercury:"Mercury",Jupiter:"Jupiter",Venus:"Venus",Saturn:"Saturn",Rahu:"Rahu",Ketu:"Ketu"};
+  const RMAP={மேஷம்:"Aries",ரிஷபம்:"Taurus",மிதுனம்:"Gemini",கடகம்:"Cancer",சிம்மம்:"Leo",கன்னி:"Virgo",துலாம்:"Libra",விருச்சிகம்:"Scorpio",தனுசு:"Sagittarius",மகரம்:"Capricorn",கும்பம்:"Aquarius",மீனம்:"Pisces"};
+
+  const norm=x=>String(x??"").trim();
+  const esc=x=>String(x??"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const pkey=x=>PMAP[norm(x)]||norm(x);
+  const skey=x=>RMAP[norm(x)]||norm(x);
+  const sidx=x=>SIGNS.findIndex(s=>s.toLowerCase()===skey(x).toLowerCase());
+  const nth=(s,n)=>{const i=sidx(s);return i<0?"":SIGNS[(i+n-1)%12]};
+
+  function longitudeOf(obj){
+    const x=Number(obj?.longitude ?? obj?.lon ?? obj?.degreeLongitude);
+    if(Number.isFinite(x)) return ((x%360)+360)%360;
+    const si=sidx(obj?.rasi ?? obj?.sign);
+    const d=Number(obj?.degreeInSign ?? obj?.degree);
+    if(si>=0 && Number.isFinite(d)) return si*30+((d%30)+30)%30;
+    return NaN;
+  }
+
+  // Classical BPHS D20 / Vimsamsa:
+  // 20 divisions of 1°30′. Movable signs count from Aries,
+  // fixed signs from Sagittarius, dual/common signs from Leo.
+  function d20FromLongitude(lon){
+    if(!Number.isFinite(lon)) return null;
+    lon=((lon%360)+360)%360;
+    const natalIndex=Math.floor(lon/30);
+    const deg=lon%30;
+    const segment=Math.min(19,Math.floor(deg/1.5)); // 0..19
+    const movable=[0,3,6,9].includes(natalIndex);
+    const fixed=[1,4,7,10].includes(natalIndex);
+    const start=movable?0:(fixed?8:4);
+    const d20Index=(start+segment)%12;
+    return {
+      natalSign:SIGNS[natalIndex], segment:segment+1,
+      sign:SIGNS[d20Index], signIndex:d20Index,
+      degreeInNatalSign:deg
+    };
+  }
+
+  function d9SignOf(data,planet){
+    planet=pkey(planet);
+    const ps=Array.isArray(data?.planets)?data.planets:[];
+    const p=ps.find(x=>pkey(x?.name)===planet);
+    const direct=skey(p?.navamsa?.rasi ?? p?.navamsa?.sign ?? p?.d9?.rasi ?? p?.d9?.sign);
+    if(sidx(direct)>=0)return direct;
+    const pools=[data?.navamsa?.planets,data?.navamsa,data?.d9?.planets,data?.d9];
+    for(const pool of pools){
+      if(Array.isArray(pool)){
+        const r=pool.find(x=>pkey(x?.planet??x?.name)===planet);
+        const sg=skey(r?.rasi??r?.sign);
+        if(sidx(sg)>=0)return sg;
+      }
+    }
+    return "";
+  }
+
+  function karakaPlanet(data,key){
+    const arr=Array.isArray(data?.phase2?.charaKarakas)?data.phase2.charaKarakas:
+              Array.isArray(data?.charaKarakas)?data.charaKarakas:[];
+    const target=key.toLowerCase().replace(/\s/g,"");
+    const r=arr.find(x=>norm(x?.karaka).toLowerCase().replace(/\s/g,"").includes(target));
+    return pkey(r?.planet);
+  }
+
+  function d20Chart(data){
+    const planets=(Array.isArray(data?.planets)?data.planets:[]).map(p=>{
+      const planet=pkey(p?.name);
+      const d20=d20FromLongitude(longitudeOf(p));
+      const score=Number(p?.strength3?.totalVirupa);
+      return d20?{planet,d20,score:Number.isFinite(score)?score:null}:null;
+    }).filter(Boolean);
+
+    let lagnaObj=data?.lagna||data?.ascendant||data?.asc||data?.rasiLagna;
+    let lagnaLon=longitudeOf(lagnaObj);
+    if(!Number.isFinite(lagnaLon)){
+      const special=Array.isArray(data?.phase1?.specialLagnas?.items)?data.phase1.specialLagnas.items:[];
+      const l=special.find(x=>/^(lagna|ascendant)$/i.test(norm(x?.name)));
+      lagnaLon=longitudeOf(l);
+    }
+    const lagna=d20FromLongitude(lagnaLon);
+    return {lagna,planets};
+  }
+
+  function houseSign(lagnaSign,house){
+    const i=sidx(lagnaSign); return i<0?"":SIGNS[(i+house-1)%12];
+  }
+
+  function resolveD20House(data,chart,house){
+    if(!chart?.lagna)return null;
+    const sign=houseSign(chart.lagna.sign,house);
+    const occ=chart.planets.filter(x=>x.d20.sign===sign);
+    let chosen=null, mode="";
+    if(occ.length){
+      const withScore=occ.filter(x=>Number.isFinite(x.score));
+      if(withScore.length) chosen=[...withScore].sort((a,b)=>b.score-a.score)[0];
+      else chosen=occ[0];
+      mode=occ.length>1?"occupant-highest-shadbala":"occupant";
+    }else{
+      chosen={planet:LORD[sign],d20:{sign},score:null};
+      mode="sign-lord";
+    }
+    return {sign,occupants:occ,chosen,mode};
+  }
+
+  function deityPair(planet){
+    return DEITY[pkey(planet)]||["—","—"];
+  }
+
+  function row(type,basis,planet,sign,path,lang){
+    const map=deityPair(planet);
+    const indicator=[planet,sign].filter(Boolean).join(" / ")||"—";
+    return `<tr><td><b>${esc(type)}</b></td><td>${esc(basis)}</td><td>${esc(indicator)}</td><td>${esc(map[0])}</td><td>${esc(map[1])}</td><td>${esc(path)}</td></tr>`;
+  }
+
+  function render(part,lang,dataArg){
+    if(!part)return;
+    const data=dataArg||window.__smvDeitiesData||{};
+    const ta=lang==="ta";
+    const d20=d20Chart(data);
+
+    const d20Label=x=>ta?({
+      Aries:"மேஷம்",Taurus:"ரிஷபம்",Gemini:"மிதுனம்",Cancer:"கடகம்",Leo:"சிம்மம்",Virgo:"கன்னி",
+      Libra:"துலாம்",Scorpio:"விருச்சிகம்",Sagittarius:"தனுசு",Capricorn:"மகரம்",Aquarius:"கும்பம்",Pisces:"மீனம்"
+    }[x]||x):x;
+
+    const d20Result=(house,typeEn,typeTa,basisEn,basisTa)=>{
+      const r=resolveD20House(data,d20,house);
+      if(!r){
+        return `<tr><td><b>${ta?typeTa:typeEn}</b></td><td>${ta?basisTa:basisEn}</td><td>—</td><td>—</td><td>—</td><td>${ta?"D20 Lagna கணக்கிட தேவையான exact Lagna longitude கிடைக்கவில்லை.":"Exact Lagna longitude required for D20 Lagna was unavailable."}</td></tr>`;
+      }
+      const pl=r.chosen?.planet||"";
+      const pair=deityPair(pl);
+      const occ=r.occupants.map(x=>x.planet).join(", ");
+      const why=r.mode==="sign-lord"
+        ? (ta?`${house}ஆம் D20 வீடு ${d20Label(r.sign)} காலியாக உள்ளது → அதன் அதிபதி ${pl} எடுத்துக்கொள்ளப்பட்டது.`:`D20 house ${house} (${r.sign}) is empty → its sign lord ${pl} is used.`)
+        : (r.mode==="occupant-highest-shadbala"
+          ? (ta?`${house}ஆம் D20 வீடு ${d20Label(r.sign)}-ல் ${occ}; பல கிரகங்களில் existing Shadbala அதிகமான ${pl} தேர்வு செய்யப்பட்டது.`:`D20 house ${house} (${r.sign}) contains ${occ}; ${pl} is selected by highest available existing Shadbala among the occupants.`)
+          : (ta?`${house}ஆம் D20 வீடு ${d20Label(r.sign)}-ல் ${pl} உள்ளது; occupant முன்னுரிமை.`:`D20 house ${house} (${r.sign}) contains ${pl}; occupant takes priority.`));
+      return `<tr><td><b>${ta?typeTa:typeEn}</b></td><td>${ta?basisTa:basisEn}</td><td>${esc(pl+" / "+d20Label(r.sign))}</td><td>${esc(pair[0])}</td><td>${esc(pair[1])}</td><td>${esc((ta?`D20 Lagna ${d20Label(d20.lagna.sign)}. `:`D20 Lagna ${d20.lagna.sign}. `)+why)}</td></tr>`;
+    };
+
+    const phase2=data?.phase2||{};
+    const ka=skey(phase2?.karakamsha||data?.karakamsha||"");
+    const ak=karakaPlanet(data,"atmakaraka")||karakaPlanet(data,"ak");
+    const amk=karakaPlanet(data,"amatya")||karakaPlanet(data,"amk");
+    const bk=karakaPlanet(data,"bhratru")||karakaPlanet(data,"bhratri")||karakaPlanet(data,"bk");
+
+    const ishtaSign=ka?nth(ka,12):"";
+    const dharmaSign=ka?nth(ka,9):"";
+    const ishtaPlanet=ishtaSign?LORD[ishtaSign]:"";
+    const dharmaPlanet=dharmaSign?LORD[dharmaSign]:"";
+
+    const amkD9=d9SignOf(data,amk);
+    const palanaSign=amkD9?nth(amkD9,6):"";
+    const palanaPlanet=palanaSign?LORD[palanaSign]:"";
+    const bkD9=d9SignOf(data,bk);
+
+    const rows=[
+      d20Result(2,"Kula Devata","குல தெய்வம்","D20 → 2nd house → strongest graha / lord","D20 → 2ஆம் வீடு → வலுவான கிரகம் / அதிபதி"),
+      d20Result(4,"Grama Devata","கிராம தெய்வம்","D20 → 4th house → strongest influence","D20 → 4ஆம் வீடு → வலுவான தாக்கம்"),
+      row(ta?"இஷ்ட தெய்வம்":"Ishta Devata",ta?"ஆத்மகாரக → D9 காரகாம்சம் → 12ஆம் வீடு":"Atmakaraka → D9 Karakamsha → 12th house",ishtaPlanet,ishtaSign,ka?(ta?`ஆத்மகாரக ${ak||"—"}; காரகாம்சம் ${d20Label(ka)} → 12ஆம் ராசி ${d20Label(ishtaSign)} → தற்போதைய engine-ல் occupant/aspect data தெளிவாக இல்லாததால் ராசி அதிபதி ${ishtaPlanet} பயன்படுத்தப்பட்டது.`:`Atmakaraka ${ak||"—"}; Karakamsha ${ka} → 12th sign ${ishtaSign} → current engine does not expose a reliable occupant/aspect resolver here, so sign lord ${ishtaPlanet} is used.`):(ta?"காரகாம்ச data கிடைக்கவில்லை.":"Karakamsha data unavailable."),lang),
+      row(ta?"தர்ம தெய்வம்":"Dharma Devata",ta?"ஆத்மகாரக → D9 காரகாம்சம் → 9ஆம் வீடு":"Atmakaraka → D9 Karakamsha → 9th house",dharmaPlanet,dharmaSign,ka?(ta?`காரகாம்சம் ${d20Label(ka)} → 9ஆம் ராசி ${d20Label(dharmaSign)} → ராசி அதிபதி ${dharmaPlanet}.`:`Karakamsha ${ka} → 9th sign ${dharmaSign} → sign lord ${dharmaPlanet}.`):(ta?"காரகாம்ச data கிடைக்கவில்லை.":"Karakamsha data unavailable."),lang),
+      row(ta?"பாலன தெய்வம்":"Palana Devata",ta?"அமாத்யகாரக → D9 → அதிலிருந்து 6ஆம் வீடு":"Amatyakaraka → D9 → 6th from Amatyakaraka",palanaPlanet,palanaSign,amkD9?(ta?`${amk} D9-ல் ${d20Label(amkD9)} → 6ஆம் ராசி ${d20Label(palanaSign)} → அதிபதி ${palanaPlanet}.`:`${amk} in D9 ${amkD9} → 6th sign ${palanaSign} → lord ${palanaPlanet}.`):(ta?"அமாத்யகாரக D9 placement data கிடைக்கவில்லை.":"Amatyakaraka D9 placement unavailable."),lang),
+      `<tr><td><b>${ta?"குரு தெய்வம்":"Guru Devata"}</b></td><td>${ta?"பிராத்ரிகாரக → நவாம்ச ராசி + BK தாக்கங்கள்":"Bhratrikaraka → Navamsa sign + BK influences"}</td><td>${esc([bk,bkD9?d20Label(bkD9):""].filter(Boolean).join(" / ")||"—")}</td><td>${ta?"BK/Navamsa அடிப்படையிலான குரு சுட்டு":"BK/Navamsa-based Guru indication"}</td><td>—</td><td>${bkD9?esc((ta?`${bk} D9-ல் ${d20Label(bkD9)}; Guru Devata-க்கு Primary Deity mapping கட்டாயப்படுத்தப்படவில்லை.`:`${bk} is in ${bkD9} in D9; Primary Deity mapping is intentionally not forced for Guru Devata.`)):esc(ta?"BK Navamsa data கிடைக்கவில்லை.":"BK Navamsa data unavailable.")}</td></tr>`,
+      d20Result(5,"Upasana Devata Indication","உபாசனா தெய்வ சுட்டு","D20 → 5th house devotional indication","D20 → 5ஆம் வீடு devotional indication")
+    ].join("");
+
+    const h=ta?["தெய்வ வகை","கணக்கீட்டு அடிப்படை","சுட்டும் கிரகம் / ராசி","முதன்மை தெய்வம்","தசாவதார வடிவம்","கணக்கீட்டு பாதை"]:["Deity Type","Calculation Basis","Indicator Planet / Sign","Primary Deity","Dashavatara Form","Calculation Path"];
+    const d20Summary=d20.lagna?`<div class="smv-d20-summary"><b>${ta?"D20 / விம்சாம்ச லக்னம்":"D20 / Vimsamsa Lagna"}:</b> ${esc(d20Label(d20.lagna.sign))} <span class="small">(${ta?"1°30′ division; movable→Aries, fixed→Sagittarius, dual→Leo":"1°30′ divisions; movable→Aries, fixed→Sagittarius, dual→Leo"})</span></div>`:"";
+    (part.__smvContent||part).innerHTML=`<div class="smv-fixed-text-section smv-deities-v92">${d20Summary}<div class="adv-table-wrap"><table class="smv-ref-table smv-deities-table"><thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  window.__smvRenderDeitiesV91=render;
+  window.__smvRenderDeitiesV92=render;
+})();
+</script>
+<!-- SMV V10.2.1 SOURCE-LEVEL TARGETED FIX -->
+<script id="smv-v1021-nav-source">
+(function(){
+ const labels=new Set(["home","horoscope","astrologers","blog","media","about","contact","dashboard"]);
+ function items(){
+   return Array.from(document.querySelectorAll("#smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button"))
+     .filter(el=>labels.has((el.textContent||"").trim().toLowerCase()));
+ }
+ function select(el){
+   items().forEach(x=>{
+     x.classList.remove("active","smv-nav-current");
+     x.removeAttribute("aria-current");
+   });
+   if(el){el.classList.add("smv-nav-current");el.setAttribute("aria-current","page");}
+ }
+ function init(){
+   const all=items(); if(!all.length)return;
+   select(all.find(x=>(x.textContent||"").trim().toLowerCase()==="home")||all[0]);
+   all.forEach(el=>{
+     el.addEventListener("pointerdown",function(){select(el)},true);
+     el.addEventListener("click",function(){select(el)},true);
+   });
+ }
+ document.readyState==="loading"?document.addEventListener("DOMContentLoaded",init,{once:true}):init();
+})();
+</script>
+<!-- SMV V10.2.2 MOBILE HEADER + HERO TARGETED FIX -->
+<!-- SMV V10.3 APPROVED REFERENCE HERO VISUAL FIX -->
+<script src="./offer-banners.js?v=65"></script>
+<dialog aria-labelledby="paymentReceiptTitle" class="smv-type-root" id="paymentSuccessPanel">
+<div class="smv-receipt-card">
+<h2 id="paymentReceiptTitle">Payment Successful ✓</h2>
+<p>Your payment has been securely verified and your question is saved.</p>
+<dl id="paymentSuccessDetails">
+<dt id="paymentReceiptQuestionLabel">Question ID</dt><dd id="paymentReceiptQuestionId"></dd>
+<dt>Razorpay Payment ID</dt><dd id="paymentReceiptPaymentId"></dd>
+<div id="paymentReceiptReferenceRow"><dt>Customer Payment Reference</dt><dd id="paymentReceiptReference"></dd></div>
+<dt>Payment Date &amp; Time</dt><dd id="paymentReceiptDate"></dd>
+</dl>
+<p aria-live="polite" class="small" id="paymentReceiptStatus" role="status"></p>
+<button class="btn" id="continueAfterPayment" type="button">VIEW MY QUESTION</button>
+</div>
+</dialog>
+<script defer="" src="./payment-receipt.js?v=65"></script>
+<script id="smv-v172-ui-symbol-collapse-script">
+/* V172: robust UI-only symbol collapse. No data/Firebase/API/payment logic is changed. */
+(function(){
+'use strict';
+const TARGETS=new Set([
+'Public Question Inbox','Questions — Unanswered Queue','Earnings History','Notifications','My Consultations',
+'Admin Earnings History','Allocated Questions — Admin Control','Answers Awaiting Approval','Answers — Answered Questions',
+'Astrologer Applications','Astrologer Withdrawals','Customer Reviews','Admin Answers','Admin Reviews','Question Approval',
+'Answer Approval','Public Question Approval','Payment Method Changes — Admin Approval','Recent Questions',
+'Blogs & Downloadable Content','Blog Writer & Publisher','Upload PDF / Image / Video / Music','Commission Settings'
+]);
+const EXCLUDE=new Set(['ASTROLOGER DASHBOARD','CUSTOMER DASHBOARD','Profile','Astrologer Profile','My Questions','Total Earnings']);
+function text(x){return String(x||'').replace(/\s+/g,' ').trim()}
+function heading(card){const h=card.querySelector(':scope > h2,:scope > h3,:scope > h4');return text(h&&h.textContent)}
+function add(card){
+ if(!card || card.dataset.smvCollapseV172==='1' || card.closest('.modalbox') || !card.classList.contains('card')) return;
+ const h=heading(card); if(!h || EXCLUDE.has(h) || !TARGETS.has(h)) return;
+ card.dataset.smvCollapseV172='1'; card.classList.add('smv-v172-collapsible');
+ const btn=document.createElement('button'); btn.type='button'; btn.className='smv-v172-collapse-btn'; btn.textContent='▼'; btn.title='Collapse'; btn.setAttribute('aria-label','Collapse section');
+ btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();const closed=card.classList.toggle('smv-v172-collapsed');btn.textContent=closed?'▶':'▼';btn.title=closed?'Expand':'Collapse';btn.setAttribute('aria-label',closed?'Expand section':'Collapse section');});
+ card.appendChild(btn);
+}
+function scan(){document.querySelectorAll('#dashboardContent .card,#admin .card').forEach(add)}
+window.__smvRefreshCollapse=scan;
+function start(){scan();}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
+})();
+</script>
+<script id="smv-v173-home-symbol-script">
+/* V173: adds collapse controls only to requested Home sections. Does not alter data/API/payment logic. */
+(function(){
+'use strict';
+function addSection(id){
+  const sec=document.getElementById(id); if(!sec || sec.dataset.smvV173Home==='1') return;
+  const body=[...sec.children].filter(el=>!el.classList.contains('home-rule'));
+  if(!body.length) return;
+  const wrap=document.createElement('div'); wrap.className='smv-v173-home-collapse-body';
+  body.forEach(el=>wrap.appendChild(el)); sec.appendChild(wrap);
+  sec.dataset.smvV173Home='1'; sec.classList.add('smv-v173-home-section');
+  const btn=document.createElement('button'); btn.type='button'; btn.className='smv-v173-home-toggle'; btn.textContent='▼'; btn.title='Collapse'; btn.setAttribute('aria-label','Collapse section');
+  const rule=sec.querySelector(':scope > .home-rule'); (rule||sec).appendChild(btn);
+  btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const closed=sec.classList.toggle('smv-v173-home-collapsed');btn.textContent=closed?'▶':'▼';btn.title=closed?'Expand':'Collapse';btn.setAttribute('aria-label',closed?'Expand section':'Collapse section');});
+}
+function addSub(id){
+  const el=document.querySelector('.smv-v173-subregion[data-sup="'+id+'"]'); if(!el || el.dataset.smvV173Sub==='1') return;
+  el.dataset.smvV173Sub='1'; const btn=el.querySelector('.smv-v173-sub-collapse'); if(!btn) return;
+  btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const closed=el.classList.toggle('smv-v173-sub-collapsed');btn.textContent=closed?'▶':'▼';btn.title=closed?'Expand':'Collapse';btn.setAttribute('aria-label',closed?'Expand '+id:'Collapse '+id);});
+}
+function start(){
+  addSection('approved-astrologers');
+  addSection('english-horoscope');
+  addSection('tamil-horoscope');
+  addSub('blogs'); addSub('media');
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{start();setTimeout(start,600);setTimeout(start,1500)},{once:true}); else {start();setTimeout(start,600);setTimeout(start,1500);}
+})();
+</script>
+<script id="smv-media-title-minimize-expand-script">
+(function(){
+  'use strict';
+  function setup(){
+    const el=document.querySelector('.smv-v173-subregion[data-sup="media"]');
+    if(!el || el.dataset.smvMediaToggle==='1') return;
+    const head=el.querySelector('.smv-media-title-toggle');
+    const btn=el.querySelector('.smv-v173-sub-collapse');
+    if(!head || !btn) return;
+    el.dataset.smvMediaToggle='1';
+    function toggle(e){
+      if(e && e.target===btn) return;
+      e?.preventDefault(); e?.stopPropagation();
+      const closed=el.classList.toggle('smv-v173-sub-collapsed');
+      btn.textContent=closed?'▶':'▼';
+      btn.title=closed?'Expand':'Collapse';
+      btn.setAttribute('aria-label',closed?'Expand Media':'Collapse Media');
+      head.setAttribute('aria-expanded',String(!closed));
+    }
+    head.addEventListener('click',toggle);
+    head.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){toggle(e);}});
+    btn.addEventListener('click',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const closed=el.classList.toggle('smv-v173-sub-collapsed');
+      btn.textContent=closed?'▶':'▼';
+      btn.title=closed?'Expand':'Collapse';
+      btn.setAttribute('aria-label',closed?'Expand Media':'Collapse Media');
+      head.setAttribute('aria-expanded',String(!closed));
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup,{once:true});
+  else setup();
+  setTimeout(setup,600);
+  setTimeout(setup,1500);
+})();
+</script>
+<script id="smv-media-minimize-final-fix-script">
+(function(){
+  'use strict';
+  function setupMedia(){
+    const el=document.querySelector('.smv-v173-subregion[data-sup="media"]');
+    if(!el) return;
+    const head=el.querySelector('.smv-media-title-toggle');
+    const btn=el.querySelector('.smv-v173-sub-collapse');
+    if(!head || !btn) return;
+    function sync(){
+      const closed=el.classList.contains('smv-v173-sub-collapsed');
+      btn.textContent=closed?'▶':'▼';
+      btn.title=closed?'Expand':'Collapse';
+      btn.setAttribute('aria-label',closed?'Expand Media':'Collapse Media');
+      head.setAttribute('aria-expanded',String(!closed));
+    }
+    function toggle(){
+      el.classList.toggle('smv-v173-sub-collapsed');
+      sync();
+    }
+    if(el.dataset.smvMediaFinal==='1'){sync();return;}
+    el.dataset.smvMediaFinal='1';
+    head.addEventListener('click',function(e){
+      if(e.target===btn || btn.contains(e.target)) return;
+      e.preventDefault(); e.stopPropagation(); toggle();
+    });
+    btn.addEventListener('click',function(e){
+      e.preventDefault(); e.stopPropagation(); toggle();
+    });
+    el.addEventListener('click',function(e){
+      const title=e.target.closest('.smv-media-content-title');
+      if(title && el.contains(title)){
+        e.preventDefault(); e.stopPropagation(); toggle();
+      }
+    });
+    sync();
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',setupMedia,{once:true});
+  }else setupMedia();
+  setTimeout(setupMedia,300);
+  setTimeout(setupMedia,1000);
+  setTimeout(setupMedia,2000);
+})();
+</script>
+<script>
+/* SMV FINAL DASHBOARD-ONLY GUARD */
+(function(){
+  function clean(){
+    const view=document.getElementById("dashboard");
+    if(!view || view.classList.contains("hidden")) return;
+    ["smv-content-hub","horoscope-tools","tamil-horoscope","english-horoscope"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.classList.add("hidden");
+    });
+  }
+  window.addEventListener("hashchange",clean);
+  window.addEventListener("popstate",()=>setTimeout(clean,0));
+  document.addEventListener("smv:dashboard-opened",clean);
+})();
+</script>
+<script id="smv-v174-faq-symbol-script">
+/* V174: FAQ section collapse only. Does not change FAQ question <details> behavior. */
+(function(){
+'use strict';
+function initFAQ(){
+  const sec=document.getElementById('faq');
+  if(!sec || sec.dataset.smvV174Faq==='1') return;
+  const list=sec.querySelector(':scope > .faq-list');
+  if(!list) return;
+  sec.dataset.smvV174Faq='1';
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.className='smv-v174-faq-toggle';
+  btn.textContent='▼';
+  btn.title='Collapse';
+  btn.setAttribute('aria-label','Collapse FAQ section');
+  btn.addEventListener('click',function(e){
+    e.preventDefault(); e.stopPropagation();
+    const closed=sec.classList.toggle('smv-v174-faq-collapsed');
+    btn.textContent=closed?'▶':'▼';
+    btn.title=closed?'Expand':'Collapse';
+    btn.setAttribute('aria-label',closed?'Expand FAQ section':'Collapse FAQ section');
+  });
+  sec.appendChild(btn);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initFAQ,{once:true});
+else initFAQ();
+})();
+</script>
+<!-- ================================================================
+     SMV ASTRO — FINAL USER REQUESTED HEADER + PROFILE CLEANUP
+     Desktop/Desktop-mode only. Mobile layout remains unchanged.
+     1) Header navigation: one horizontal row under the SMV ASTRO brand.
+     2) Equal button footprint.
+     3) Remove ASTROLOGER badge from profile card.
+     4) Remove decorative 64px dash from profile card only.
+     ================================================================ -->
+<!-- SMV ASTRO FINAL DESKTOP-MODE FIX: support Android browser desktop viewport widths -->
+<!-- ================================================================
+     SMV ASTRO — REAL DESKTOP-SITE OVERRIDE
+     This MUST be last so older max-width:767px rules cannot override it.
+     ================================================================ -->
+<script id="smv-real-desktop-site-final-script">
+(function(){
+  function markDesktopSite(){
+    /* Android Chrome's Desktop Site normally removes "Android" from its UA.
+       Do not mark ordinary mobile Chrome as desktop. */
+    var ua=navigator.userAgent||'';
+    var isAndroid=/Android/i.test(ua);
+    var uaDataMobile = navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean' ? navigator.userAgentData.mobile : null;
+    var isDesktopUA = (uaDataMobile === false) || (!isAndroid && /Chrome|CriOS|Firefox|Safari|Edg/i.test(ua));
+    if(isDesktopUA){
+      document.documentElement.classList.add('smv-desktop-site');
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',markDesktopSite);
+  else markDesktopSite();
+})();
+</script>
+<!-- FINAL LAST OVERRIDE: ALL DESKTOP HEADER BUTTONS SAME SIZE - SLIGHTLY LARGER -->
+<!-- V11 restored clean styles from original cleaned build -->
+<script>window.__SMV_HOROSCOPE_FLOW_REPAIRED="2026-08-31";</script>
+<script id="smv-pwa-registration">
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(function(err){
+        console.warn('SMV ASTRO PWA service worker registration failed:',err);
+      });
+    });
+  }
+})();
+</script>
+<script id="smv-install-app-prompt">
+(function(){
+  var installSection = document.getElementById('smvInstallAppSection');
+  var installBtn = document.getElementById('smvInstallAppBtn');
+  var help = document.getElementById('smvInstallAppHelp');
+  if(!installSection || !installBtn) return;
+
+  var deferredPrompt = null;
+  var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+  var iosStandalone = window.navigator.standalone === true;
+  if(standalone || iosStandalone){
+    installSection.style.display='none';
+    return;
+  }
+
+  function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+  function isAndroid(){ return /android/i.test(navigator.userAgent); }
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.disabled = false;
+    installBtn.textContent = 'INSTALL APP';
+    help.textContent = 'Tap INSTALL APP to add SMV ASTRO to your Home Screen.';
+  });
+
+  window.addEventListener('appinstalled', function(){
+    deferredPrompt = null;
+    installSection.style.display='none';
+  });
+
+  installBtn.addEventListener('click', async function(){
+    if(deferredPrompt){
+      try{
+        deferredPrompt.prompt();
+        var choice = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if(choice && choice.outcome === 'accepted'){
+          help.textContent='SMV ASTRO is being added to your Home Screen.';
+        } else {
+          help.textContent='Install cancelled. You can use INSTALL APP again later.';
+        }
+      }catch(err){
+        console.warn('SMV ASTRO install prompt failed:',err);
+      }
+      return;
+    }
+
+    if(isIOS()){
+      help.textContent='On iPhone/iPad: tap Share → Add to Home Screen → Add.';
+    }else if(isAndroid()){
+      help.textContent='If the install prompt does not appear, open your browser menu (⋮) and choose “Add to Home screen” or “Install app”.';
+    }else{
+      help.textContent='Use your browser menu and choose “Install app” or “Add to Home screen”.';
+    }
+  });
+
+  // Before the browser exposes beforeinstallprompt, keep the option visible with a useful instruction.
+  installBtn.disabled = false;
+  if(isIOS()) help.textContent='Add SMV ASTRO from Safari: Share → Add to Home Screen.';
+  else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
+})();
+</script>
+<script defer="" src="./interface.js?v=20260924-v65"></script>
+<script src="./public-navigation.js?v=65"></script>
+</body>
+</html>

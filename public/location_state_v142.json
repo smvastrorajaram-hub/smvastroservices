@@ -1,0 +1,7 @@
+{
+  "birthPlace": "",
+  "latitude": null,
+  "longitude": null,
+  "locationSelected": false,
+  "locationSource": "geocoder"
+}
