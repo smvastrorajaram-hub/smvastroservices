@@ -219,7 +219,12 @@ function v39TransitInsight(c,d,tr,l){const ps=v39TransitPlanets(tr);if(!ps.lengt
  return `Transit convergence on that date: ${show}. ${good.length>hard.length?'Supportive activation is stronger.':hard.length>good.length?'Pressure is stronger, so the result needs careful handling rather than haste.':'Support and pressure are mixed, so the dasha result depends on practical circumstances.'}`;}
 const V39_TRANSIT_CACHE=new Map();
 function v39MidDate(w){const a=dt(w.start),b=dt(w.end,true);const x=a&&b?new Date((+a+ +b)/2):a;return x?`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`:String(w.start||'').slice(0,10);}
-async function v39TransitFor(payload,date,lang,full){const today=new Date(),td=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;if(date===td&&v39TransitPlanets(full?.transit).length)return full.transit;if(V39_TRANSIT_CACHE.has(date))return V39_TRANSIT_CACHE.get(date);const lat=Number(payload?.lat),lon=Number(payload?.lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)){V39_TRANSIT_CACHE.set(date,null);return null;}try{const base=window.SMV_BACKEND_URL||'';const r=await fetch(base+'/api/horoscope/transit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date,time:'12:00',lat,lon,language:lang,utcOffsetMinutes:Number(payload?.utcOffsetMinutes??330)})});const x=await r.json().catch(()=>null);const out=r.ok?x:null;V39_TRANSIT_CACHE.set(date,out);return out}catch(_e){V39_TRANSIT_CACHE.set(date,null);return null;}}
+async function v39TransitFor(payload,date,lang,full){
+ const lat=Number(payload?.lat),lon=Number(payload?.lon),offset=Number(payload?.utcOffsetMinutes??330),day=date instanceof Date?v54DateKey(date):String(date).slice(0,10);
+ if(!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{4}-\d{2}-\d{2}$/.test(day))return null;
+ const key=JSON.stringify([day,lat,lon,offset,lang]);if(V39_TRANSIT_CACHE.has(key))return V39_TRANSIT_CACHE.get(key);
+ try{const r=await fetch((window.SMV_BACKEND_URL||'')+'/api/horoscope/transit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:day,time:'12:00',lat,lon,language:lang,utcOffsetMinutes:offset})});const x=await r.json();const out=x?.transit||x;if(!r.ok||!v39TransitPlanets(out).length)return null;V39_TRANSIT_CACHE.set(key,out);return out;}catch(_){return null;}
+}
 
 // V40 ROOT: no planet-dictionary suffix. The Antaram sentence is derived from the
 // planet's actual natal role in THIS domain (placement, ownership, aspect/karaka),
@@ -309,7 +314,7 @@ function v42DynamicHeading(d,l,ai,payload){const st=v42Stage(ai),ta=l==='ta';if(
 function v42BasePrediction(c,data,d,l,payload,ai){const mode=(()=>{const x=classify(c,d,payload);return x.pre?'pressure':x.pos>x.neg?'support':x.neg>x.pos?'pressure':'mixed'})();const contextual=v42Event(d,mode,l,ai,payload,null);if(contextual){const ta=l==='ta';const follow=ta?(mode==='pressure'?'இங்கு பலன் மறுக்கப்படுவதில்லை; வயதிற்கும் வாழ்க்கைச் சூழலுக்கும் பொருத்தமான முறையில் பொறுமை மற்றும் சரியான வழிகாட்டல் முக்கியம்.':'இந்த ஆதரவு வயதிற்கும் வாழ்க்கைச் சூழலுக்கும் ஏற்ற செயல்பாடுகள் வழியாக வெளிப்படும்.'):(mode==='pressure'?'This does not deny the domain; patient, age-appropriate guidance matters.':'This support is expected to express through age-appropriate activity.');return `${contextual}. ${follow}`}
  return v39LifeSentence(c,data,d,l);
 }
-function v42VargaEvidence(data,d,pn,l){const q=domains[d];if(!q.v)return '';const v=division(data,q.v);if(!v||!Array.isArray(v.planets))return '';const row=v.planets.find(x=>P(x.planet||x.name)===pn);if(!row)return '';const same=v.planets.filter(x=>x!==row&&String(x.rasi||'')===String(row.rasi||'')).map(x=>P(x.planet||x.name));if(l==='ta'){if(same.length)return `${q.v===7?'சப்தாம்ச':q.v===9?'நவாம்ச':'தசாம்ச'} ஆதாரமும் இந்தக் காலத்தில் ${same.map(x=>langPlanet(x,l)).join('/')} தொடர்பால் பலனை மாற்றியமைக்கிறது`;return `${q.v===7?'சப்தாம்ச':q.v===9?'நவாம்ச':'தசாம்ச'} ஆதாரம் இந்தக் காலத்தின் பலனை உறுதிப்படுத்த பயன்படுத்தப்படுகிறது`;}return `D${q.v} evidence is used to confirm and qualify this period${same.length?' through its contact with '+same.join('/'):''}`}
+function v42VargaEvidence(data,d,pn,l){const q=domains[d];if(!q.v)return '';const v=division(data,q.v);if(!v||!Array.isArray(v.planets))return '';const row=v.planets.find(x=>P(x.planet||x.name)===pn);if(!row)return '';const same=v.planets.filter(x=>x!==row&&String(row.rasi||row.sign||'')!==''&&String(x.rasi||x.sign||'')===String(row.rasi||row.sign||'')).map(x=>P(x.planet||x.name));if(l==='ta'){if(same.length)return `${q.v===7?'சப்தாம்ச':q.v===9?'நவாம்ச':'தசாம்ச'} ஆதாரமும் இந்தக் காலத்தில் ${same.map(x=>langPlanet(x,l)).join('/')} தொடர்பால் பலனை மாற்றியமைக்கிறது`;return `${q.v===7?'சப்தாம்ச':q.v===9?'நவாம்ச':'தசாம்ச'} ஆதாரம் இந்தக் காலத்தின் பலனை உறுதிப்படுத்த பயன்படுத்தப்படுகிறது`;}return `D${q.v} evidence is used to confirm and qualify this period${same.length?' through its contact with '+same.join('/'):''}`}
 function v42PhaseMeaning(c,data,d,pn,l,tr,ai,payload){const role=v40PlanetRole(c,d,pn),q=domains[d],mode=v42Mode(c,d,pn);let main=v42Event(d,mode,l,ai,payload,pn)||(l==='ta'?V40_DOMAIN_RESULT_TA[d]?.[mode]:V40_DOMAIN_RESULT_EN[d]?.[mode])||'';const go=v39TransitInsight(c,d,tr,l);const vg=v42VargaEvidence(data,d,pn,l);if(l==='ta'){const lead=`${langPlanet(pn,l)} அந்தரம்`;const causal=role.relevantOwned.length||role.inFocus||role.aspectFocus||role.inRelevant||role.karaka?'இந்த ஜாதகத்தில் அந்த கிரகம் இந்த வாழ்க்கைப் பகுதியுடன் நேரடி தொடர்பு கொண்டிருப்பதால் ':'';return `${lead}: ${causal}${main}.${vg?' '+vg+'.':''}${go?' '+go:''}`.replace(/\s+/g,' ').trim();}return `${pn} Antaram: ${main}.${vg?' '+vg+'.':''}${go?' '+go:''}`.replace(/\s+/g,' ').trim()}
 function v42PeriodLine(c,data,d,w,l,kind,tr,payload){const s=String(w?.start||'').trim(),e=String(w?.end||'').trim(),dateText=s&&e?`${s} → ${e}`:s||e;const ai=v42AgeInfo(payload,v39MidDate(w));const theme=v42PhaseMeaning(c,data,d,w.pd,l,tr,ai,payload);const dasha=dashaText(w,l);if(l==='ta'){const prefix=kind==='past'?'கடந்தகாலத்தில்':kind==='current'?'தற்போது':'அருகிலுள்ள எதிர்காலத்தில்';return `${prefix}${dateText?' '+dateText+' காலத்தில்':''} ${dasha}. ${theme}${kind==='past'?' இது அந்த வாழ்க்கைப் பகுதி செயல்பட்ட காலச் சுட்டி; நிகழ்வு நடந்ததற்கான தனி உறுதிப்படுத்தல் அல்ல.':''}`.replace(/\s+/g,' ').trim();}const prefix=kind==='past'?'In the past':kind==='current'?'Currently':'In the near future';return `${prefix}${dateText?' ('+dateText+')':''}: ${dasha}. ${theme}${kind==='past'?' This is an activation window, not independent proof that an event occurred.':''}`.replace(/\s+/g,' ').trim()}
 async function v42RenderDomain(c,data,d,l,payload,full,cls){const x=cls||classify(c,d,payload),today=new Date(),nowAI=v42AgeInfo(payload,today);const make=async(arr,kind)=>{const out=[];for(const w of arr){const tr=await v39TransitFor(payload,v39MidDate(w),l,full);out.push(v42PeriodLine(c,data,d,w,l,kind,tr,payload));}return out.join(' ')};const past=await make(x.past,'past'),current=await make(x.current,'current'),future=await make(x.future,'future');const pastSafe=past||(l==='ta'?'கிடைக்கும் தசா வரலாற்றில் இந்த வாழ்க்கைப் பகுதிக்கான தனி கடந்தகால செயல்பாட்டு காலம் இல்லை.':'No separate past activation for this life area appears in the available dasha history.');const curSafe=current||(l==='ta'?'தற்போதைய தசா காலத் தரவு கிடைக்கவில்லை.':'Current dasha-period data is unavailable.');const futSafe=future||(l==='ta'?'அருகிலுள்ள எதிர்கால தசா காலத் தரவு கிடைக்கவில்லை.':'Near-future dasha-period data is unavailable.');return `<section class="smv-pred-domain"><h4>${esc(v42DynamicHeading(d,l,nowAI,payload))}</h4><p>${esc(v42BasePrediction(c,data,d,l,payload,nowAI))}</p><div class="smv-pred-time"><b>${l==='ta'?'கடந்தகால ஆய்வு':'Past review'}</b><p>${esc(pastSafe)}</p><b>${l==='ta'?'தற்போதைய பலன்':'Current outlook'}</b><p>${esc(curSafe)}</p><b>${l==='ta'?'அருகிலுள்ள எதிர்காலம்':'Near future'}</b><p>${esc(futSafe)}</p></div></section>`}
@@ -322,7 +327,7 @@ function v43EvidenceMatrix(c,data,d,pn,tr,payload,date){
  const v=q.v?division(data,q.v):null; let vSupport=0,vPressure=0,vContacts=[];
  if(v&&Array.isArray(v.planets)){
   const row=v.planets.find(x=>P(x.planet||x.name)===pn);
-  if(row){const same=v.planets.filter(x=>x!==row&&String(x.rasi||'')===String(row.rasi||'')).map(x=>P(x.planet||x.name));vContacts=same;
+  if(row){const same=v.planets.filter(x=>x!==row&&String(row.rasi||row.sign||'')!==''&&String(x.rasi||x.sign||'')===String(row.rasi||row.sign||'')).map(x=>P(x.planet||x.name));vContacts=same;
    for(const x of same){if(['Jupiter','Venus','Mercury','Moon'].includes(x))vSupport++;if(['Saturn','Mars','Rahu','Ketu'].includes(x))vPressure++;}
   }
  }
@@ -556,7 +561,7 @@ function v59DChartEvidence(data,d,pn,l){
  const q=domains[d]; if(!q?.v)return '';
  const v=division(data,q.v); if(!v?.planets)return '';
  const row=v.planets.find(x=>P(x.planet||x.name)===pn); if(!row)return '';
- const mates=v.planets.filter(x=>x!==row&&String(x.rasi||'')===String(row.rasi||'')).map(x=>langPlanet(P(x.planet||x.name),l)).filter(Boolean);
+ const mates=v.planets.filter(x=>x!==row&&String(row.rasi||row.sign||'')!==''&&String(x.rasi||x.sign||'')===String(row.rasi||row.sign||'')).map(x=>langPlanet(P(x.planet||x.name),l)).filter(Boolean);
  const signName=String(row.rasi||row.sign||'').trim();
  if(l==='ta')return `${q.v===10?'தசாம்ச':q.v===9?'நவாம்ச':q.v===7?'சப்தாம்ச':`D${q.v}`}த்தில் ${langPlanet(pn,l)}${signName?' '+signName+' ராசியில்':''}${mates.length?' '+mates.join('、')+' தொடர்புடன்':''}`;
  return `In D${q.v}, ${langPlanet(pn,l)}${signName?' is in '+signName:''}${mates.length?' with '+mates.join(', '):''}`;
@@ -573,16 +578,15 @@ function v59TransitEvidence(c,d,tr,l){
 }
 function v59OutcomeText(x,l){return l==='ta'?x.pick.e[3]:x.pick.e[4]}
 function v59DashaNarrative(c,data,z,x,l,payload){
- const w=z.w, ta=l==='ta', event=v59OutcomeText(x,l), ai=v42AgeInfo(payload,v49Mid(w)), age=ai?.years;
- const md=v59HouseRole(c,x.d,w.md,l), bd=v59HouseRole(c,x.d,w.ad,l), ad=v59HouseRole(c,x.d,w.pd,l);
+ const w=z.w,ta=l==='ta', event=v59OutcomeText(x,l),ai=v42AgeInfo(payload,v49Mid(w)),age=ai?.years;
+ const layers=[[w.md,'mahadasha'],[w.ad,'bhukti'],[w.pd,'antaram']].map(([planet,level])=>({planet,level,role:v59HouseRole(c,x.d,planet,l)}));
  const dc=v59DChartEvidence(data,x.d,w.pd,l)||v59DChartEvidence(data,x.d,w.ad,l)||v59DChartEvidence(data,x.d,w.md,l);
- const life=v42Event(x.d,x.pick?.m?.verdict||'mixed',l,ai,payload,w.pd)||event;
- if(ta){
-  const ev=[md&&`மகாதசை நிலையில் ${md}`,bd&&`புக்தி நிலையில் ${bd}`,ad&&`அந்தர நிலையில் ${ad}`].filter(Boolean).join('; ');
-  return `${age!=null?`இந்த காலத்தில் வயது சுமார் ${age}. `:''}${event} என்பது இந்த காலத்தின் முக்கிய சாத்தியமான வெளிப்பாடு. ${ev?ev+' என்பதால் இந்தத் துறை ஒரே கிரகச் சுட்டியால் அல்லாமல் மூன்று தசை அடுக்குகளின் தொடர்பால் செயல்படுகிறது. ':''}${dc?dc+' உறுதிப்படுத்தும் துணை ஆதாரமாக எடுத்துக்கொள்ளப்படுகிறது. ':''}${life&&life!==event?life+'. ':''}`.replace(/\s+/g,' ').trim();
- }
- const ev=[md&&`Mahadasha: ${md}`,bd&&`Bhukti: ${bd}`,ad&&`Antaram: ${ad}`].filter(Boolean).join('; ');
- return `${age!=null?`Approx. age ${age}. `:''}${event} is the principal candidate manifestation in this period. ${ev?ev+'. ':''}${dc?dc+' provides divisional-chart confirmation. ':''}${life&&life!==event?life+'. ':''}`.replace(/\s+/g,' ').trim();
+ const verdict=x.pick?.m?.verdict||'mixed';
+ const timing=ta?`இந்த ${verdict==='support'?'ஆதரவான':verdict==='pressure'?'கவனத்துக்குரிய':'கலப்பு'} காலத்தில் ${event} தொடர்பான வாய்ப்பு ஆய்வுக்கு வருகிறது.`:`During this ${verdict==='support'?'supportive':verdict==='pressure'?'cautious':'mixed'} period, the chart highlights ${event}.`;
+ const grouped=new Map();for(const v of layers){if(!v.role)continue;if(!grouped.has(v.planet))grouped.set(v.planet,{role:v.role,levels:[]});grouped.get(v.planet).levels.push(ta?({mahadasha:'மகாதசை',bhukti:'புக்தி',antaram:'அந்தரம்'}[v.level]):v.level);}const roles=[...grouped.values()].map(v=>`${v.levels.join(ta?' / ':' / ')}: ${v.role}`);
+ const evidence=roles.length?(ta?`இதற்கான பிறப்பு ஜாதக ஆதாரம்: ${roles.join('; ')}.`:`Natal timing evidence: ${roles.join('; ')}.`):'';
+ const divisional=dc?(ta?`${dc} என்ற துணைச் சுட்டியும் சேர்த்து பார்க்கப்படுகிறது.`:`The divisional-chart factor is ${dc}.`):'';
+ return [age!=null?(ta?`இந்த இடைவெளியில் வயது சுமார் ${age}.`:`Approximate age in this interval: ${age}.`):'',timing,evidence,divisional].filter(Boolean).join(' ');
 }
 function v59DashaRow(c,data,z,l,payload){
  const {w,picks}=z;if(!picks.length)return '';
@@ -591,19 +595,19 @@ function v59DashaRow(c,data,z,l,payload){
 }
 function v59TransitRow(c,z,l){
  const {w,picks,tr}=z;if(!picks.length)return '';
- const body=picks.map(x=>{const event=v59OutcomeText(x,l),te=v59TransitEvidence(c,x.d,tr,l);const m=x.pick.m||{};let link='';
-  if(l==='ta')link=(m.tSupport||0)>(m.tPressure||0)?`இந்த கோச்சார இணைப்பு “${event}” நிகழ்வை முன்னேற்றும் நேர ஒத்திசைவாக செயல்படலாம்.`:(m.tPressure||0)>(m.tSupport||0)?`“${event}” தொடர்பான முடிவில் தாமதம், மறுபரிசீலனை அல்லது கூடுதல் நடைமுறைச் சோதனை வரலாம்.`:`“${event}” தசைச் சாத்தியத்தை கோச்சாரம் தனியாக உறுதி செய்யவில்லை; நிகழ்வின் தரம் பிற செயல்படும் காரணிகளால் தீர்மானிக்கப்படும்.`;
-  else link=(m.tSupport||0)>(m.tPressure||0)?`This transit pattern can help the dasha candidate “${event}” move forward.`:(m.tPressure||0)>(m.tSupport||0)?`The dasha candidate “${event}” may face delay, reassessment or an additional practical test.`:`Transit does not independently confirm “${event}”; other active factors remain decisive.`;
-  return `<p><b>${esc(v53DomainName(x.d,l))}</b> — ${esc(te+' '+link)}</p>`;
- }).join('');return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b>${body}</div>`;
+ if(!v39TransitPlanets(tr).length)return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b><p>${l==='ta'?'கோச்சாரத் தரவு கிடைக்கவில்லை; இந்த இடைவெளிக்கான பலன் உறுதி செய்யப்படவில்லை.':'Transit data is unavailable; no transit conclusion is made for this interval.'}</p></div>`;
+ const body=picks.map(x=>{const te=v59TransitEvidence(c,x.d,tr,l),m=x.pick.m||{},support=Number(m.tSupport||0),pressure=Number(m.tPressure||0);
+ const link=l==='ta'?(support>pressure?'கோச்சார ஆதரவு, தசை காட்டும் நிகழ்வின் நேரத்தை முன்னெடுக்கிறது.':pressure>support?'கோச்சார அழுத்தம் இருப்பதால் இந்தத் துறையில் முடிவெடுக்கும் முன் கூடுதல் ஆய்வு பொருத்தமானது.':'இந்தக் காலத்தில் கோச்சாரம் தசைச் சுட்டியைத் தனியாக உறுதி செய்யவில்லை.'):(support>pressure?'Transit support strengthens the timing indicated by the dasha.':pressure>support?'Transit pressure calls for a closer review before a decision in this area.':'The transit does not independently confirm the dasha indication in this interval.');
+ return `<p><b>${esc(v53DomainName(x.d,l))}</b> — ${esc(te+' '+link)}</p>`;
+ }).join('');return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b><p class="small">${l==='ta'?'ஆய்வு தேதி':'Sample date'}: ${esc(v54DateKey(v49Mid(w)))} · ${l==='ta'?'இது காலத்தின் நடுப்பகுதி கோச்சார ஆய்வு; முழு இடைவெளிக்கும் ஒரே கிரகநிலை பொருந்தாது.':'This is a midpoint transit sample; planetary positions change within this interval.'}</p>${body}</div>`;
 }
 function v59SpecificProfile(c,data,d,l,payload){
  const ranked=(V49_EVENTS[d]||[]).map(e=>v53NatalOutcomeScore(c,data,d,e)).sort((a,b)=>b.score-a.score).filter(x=>x.score>0).slice(0,3);
  if(!ranked.length)return l==='ta'?'இந்தத் துறையில் ஒரு குறிப்பிட்ட முடிவைத் தேர்வு செய்ய போதுமான பிறப்பு ஜாதக ஆதாரம் இல்லை.':'There is not enough natal evidence to select a specific outcome in this domain.';
  const q=domains[d],lord=lords[(ls(c)+q.h-1)%12],lordH=hof(c,lord),occ=Object.keys(pm(c)).filter(n=>hof(c,n)===q.h);
  const names=ranked.map(x=>l==='ta'?x.e[3]:x.e[4]);
- if(l==='ta')return `${q.h}-ஆம் பாவத்தின் அதிபதி ${langPlanet(lord,l)} ${lordH?lordH+'-ஆம் பாவத்தில் ':''}செயல்படுகிறது${occ.length?`; ${q.h}-ஆம் பாவத்தில் ${occ.map(n=>langPlanet(n,l)).join('、')} இருப்பதும் சேர்ந்து பார்க்கப்படுகிறது`:''}. இந்த பிறப்பு அமைப்பில் அதிக மதிப்பெண் பெறும் வாழ்க்கை வெளிப்பாடுகள்: ${names.join('；')}. இவை காலம் வந்தவுடன் கட்டாயமாக நடக்கும் பட்டியல் அல்ல; XI தசை மற்றும் XII கோச்சார ஒத்திசைவு கிடைக்கும் காலங்களில்தான் நிகழ்வு-நிலைக்கு உயர்த்தப்பட வேண்டும்.`;
- return `The lord of house ${q.h}, ${langPlanet(lord,l)}, operates from house ${lordH||'—'}${occ.length?`; occupants of the focus house include ${occ.map(n=>langPlanet(n,l)).join(', ')}`:''}. The higher-scoring life-course candidates are ${names.join('; ')}. These are natal potentials, not guaranteed events; XI and XII timing must converge before they are promoted to event-level predictions.`;
+ if(l==='ta')return `${q.h}-ஆம் பாவத்தின் அதிபதி ${langPlanet(lord,l)} ${lordH?lordH+'-ஆம் பாவத்தில் ':''}செயல்படுகிறது${occ.length?`; ${q.h}-ஆம் பாவத்தில் ${occ.map(n=>langPlanet(n,l)).join('、')} இருப்பதும் சேர்ந்து பார்க்கப்படுகிறது`:''}. இந்த பிறப்பு அமைப்பில் அதிக மதிப்பெண் பெறும் வாழ்க்கை வெளிப்பாடுகள்: ${names.join('；')}. இவை காலம் வந்தவுடன் கட்டாயமாக நடக்கும் பட்டியல் அல்ல; தசை மற்றும் கோச்சார ஒத்திசைவு கிடைக்கும் காலங்களில்தான் நிகழ்வு-நிலைக்கு உயர்த்தப்பட வேண்டும்.`;
+ return `The lord of house ${q.h}, ${langPlanet(lord,l)}, operates from house ${lordH||'—'}${occ.length?`; occupants of the focus house include ${occ.map(n=>langPlanet(n,l)).join(', ')}`:''}. The higher-scoring life-course candidates are ${names.join('; ')}. These are natal potentials, not guaranteed events; Dasha and transit timing must converge before they are promoted to event-level predictions.`;
 }
 function v59RenderDomain(c,data,d,l,payload){const nowAI=v42AgeInfo(payload,new Date());return `<section class="smv-pred-domain"><h4>${esc(v42DynamicHeading(d,l,nowAI,payload))}</h4><p>${esc(v49Base(c,data,d,l,payload))}</p><b>${l==='ta'?'குறிப்பிட்ட வாழ்க்கை முடிவு':'Specific life-course outcome'}</b><p>${esc(v59SpecificProfile(c,data,d,l,payload))}</p></section>`;}
 async function renderV59(ev){
@@ -618,9 +622,17 @@ async function renderV59(ev){
  let rowsPromise=null;
  const getRows=async(onRow)=>{if(rowsPromise){const rows=await rowsPromise;if(onRow)for(const z of rows){onRow(z);await v58Yield();}return rows;}const acc=[];rowsPromise=(async()=>{const rows=await v58PeriodRows(c,full,lang,payload,full,z=>{if(onRow)onRow(z);});return rows;})();return rowsPromise;};
  const dasha=x.querySelector('[data-smv-v61-kind="dasha"]'), transit=x.querySelector('[data-smv-v61-kind="transit"]');
- const bind=(el,kind,runner)=>{if(!el)return;el.addEventListener('toggle',async()=>{if(!el.open||el.dataset.loaded==='1'||el.dataset.loading==='1')return;el.dataset.loading='1';const body=el.querySelector(`[data-smv-v61-body="${kind}"]`);v58Loading(body,lang,kind);try{await runner(body);el.dataset.loaded='1';}catch(e){console.warn('V61 nested '+kind+' failed',e);if(body)body.innerHTML=`<p class="small">${lang==='ta'?'இந்த துணைப் பலனை இப்போது கணக்கிட முடியவில்லை.':'This subsection could not be calculated now.'}</p>`;}finally{delete el.dataset.loading;}},{passive:true});};
- bind(dasha,'dasha',async body=>{const box=body.querySelector('.smv-v58-progress');await getRows(z=>{if(box)box.insertAdjacentHTML('beforeend',v59DashaRow(c,full,z,lang,payload));});if(box&&!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'வயதிற்கு பொருத்தமான தனி தசா செயல்பாடு தேர்வு செய்யப்படவில்லை.':'No age-appropriate dasha activation was selected.'}</p>`;});
- bind(transit,'transit',async body=>{const box=body.querySelector('.smv-v58-progress');const rows=await getRows();for(const z of rows){if(box)box.insertAdjacentHTML('beforeend',v59TransitRow(c,z,lang));await v58Yield();}if(box&&!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'தனியாகக் காட்ட வேண்டிய கோச்சார உறுதிப்படுத்தல் தேர்வு செய்யப்படவில்லை.':'No separate transit confirmation was selected.'}</p>`;});
+ const loaders=new Map();
+ const bind=(el,kind,runner)=>{
+  if(!el)return;let pending=null;
+  const load=async()=>{if(el.dataset.loaded==='1')return;if(pending)return pending;const body=el.querySelector(`[data-smv-v61-body="${kind}"]`);v58Loading(body,lang,kind);el.dataset.loading='1';pending=(async()=>{await runner(body);el.dataset.loaded='1';})().finally(()=>{delete el.dataset.loading;pending=null;});return pending;};
+  loaders.set(kind,load);el.addEventListener('toggle',()=>{if(el.open)load().catch(e=>{console.warn('Detailed report failed',e);el.querySelector(`[data-smv-v61-body="${kind}"]`).textContent=lang==='ta'?'கணக்கீடு நிறைவடையவில்லை. மீண்டும் திறந்து முயற்சிக்கவும்.':'Calculation did not finish. Reopen to retry.';});});
+ };
+ bind(dasha,'dasha',async body=>{const box=body.querySelector('.smv-v58-progress');const rows=await getRows();for(const z of rows){box.insertAdjacentHTML('beforeend',v59DashaRow(c,full,z,lang,payload));await v58Yield();}if(!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'கிடைத்த தரவில் தனி தசா செயல்பாடு தேர்வு செய்யப்படவில்லை.':'No distinct dasha activation was selected from the available data.'}</p>`;});
+ bind(transit,'transit',async body=>{const box=body.querySelector('.smv-v58-progress');const rows=await getRows();for(const z of rows){box.insertAdjacentHTML('beforeend',v59TransitRow(c,z,lang));await v58Yield();}if(!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'தனியான கோச்சார உறுதிப்படுத்தல் தேர்வு செய்யப்படவில்லை.':'No separate transit confirmation was selected.'}</p>`;});
+ const report=root.closest('#englishHoroscopeResult,#tamilHoroscopeResult');
+ if(report)report.__smvPrepareReport=async()=>{await loaders.get('dasha')?.();await loaders.get('transit')?.();};
+
 }
 
 window.addEventListener('smv:horoscope-full-ready',ev=>{

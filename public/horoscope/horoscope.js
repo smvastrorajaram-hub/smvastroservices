@@ -749,9 +749,7 @@
         const text=(scope.innerText||scope.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
         showExportToast('Preparing horoscope PDF…',true,scope);
         try{
-          const r=await fetch((paid.backend||'')+'/horoscope-feature/pdf',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+paid.token},body:JSON.stringify({feature:'advanced_analysis',language:document.documentElement.lang==='ta'?'ta':'en',title:(document.documentElement.lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),text})});
-          if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'PDF generation failed.');}
-          const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='SMV-Horoscope.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);showExportToast('✓ Horoscope PDF downloaded',true,scope);
+          await window.__smvDownloadPaidFeaturePdf('advanced_analysis',scope,document.documentElement.lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report');showExportToast('✓ Horoscope PDF downloaded',true,scope);
         }catch(e){showExportToast(e.message||'PDF download failed.',false,scope);}
       },true);
     }

@@ -1,6 +1,6 @@
-const CACHE="smv-offline-v48-transit-parity"+self.registration.scope+self.registration.scope;
+const CACHE="smv-offline-v69-paid-saved-reports"+self.registration.scope+self.registration.scope;
 const FILES=[
-"./","./index.html","./config.js","./boot.mjs","./horoscope.js","./horoscope-predictions.js","./horoscope-translations.js","./horoscope-language.js","./horoscope-form.js","./horoscope-details.js","./horoscope.css","./marriage-matching.js","./marriage-matching.css","./pwa.js","./manifest-en.webmanifest","./manifest-ta.webmanifest",
+"./","./index.html","./config.js","./boot.mjs","./horoscope.js","./horoscope-payment.mjs","./horoscope-saved.js","./horoscope-predictions.js","./horoscope-translations.js","./horoscope-language.js","./horoscope-form.js","./horoscope-details.js","./horoscope.css","./marriage-matching.js","./marriage-matching.css","./pwa.js","./manifest-en.webmanifest","./manifest-ta.webmanifest",
 "./assets/hero-desktop.png","./assets/hero-mobile.png","./assets/icon-192.png","./assets/icon-512.png","./assets/smv-brand-logo-v17.png","./assets/smvlogo.png","./assets/temple-frame.png",
 "./offline/wasm-provider.mjs","./offline/server-v107-wrapper.browser.mjs","./offline/dasa_engine.browser.mjs","./offline/offline-only-router.mjs","./offline/offline-engine.mjs","./offline/swiss_vedic.browser.mjs","./offline/transit_panchang.browser.mjs","./offline/parity.mjs","./offline/astro_advanced.browser.mjs","./offline/vendor/README.txt","./offline/vendor/smv-swisseph-local.mjs","./offline/vendor/CONTRACT.md","./offline/vendor/wasm/swisseph.wasm","./offline/vendor/wasm/swisseph.data","./offline/vendor/wasm/swisseph.js",
 "./licenses/GPL-3.0-RUNTIME-NOTICE.txt","./licenses/GEONAMES-CC-BY-4.0-NOTICE.txt","./fonts/noto-sans-tamil.woff2","./fonts/OFL.txt"
