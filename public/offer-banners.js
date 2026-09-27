@@ -15,7 +15,7 @@
   if(!force&&cache&&Date.now()<expires)return cache.filter(active);
   if(flight)return flight;
   flight=(async()=>{
-   const base=String(window.SMV_BACKEND_URL||document.documentElement.dataset.smvBackend||'https://smv-astro-1fco.onrender.com').replace(/\/$/,'');
+   const base=String(window.SMV_BACKEND_URL||document.documentElement.dataset.smvBackend||'https://smvastroservices.onrender.com').replace(/\/$/,'');
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
    try{
     const r=await fetch(base+'/offers/public-banners',{signal:controller.signal,headers:{Accept:'application/json'}});

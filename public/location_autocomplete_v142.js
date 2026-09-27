@@ -3,7 +3,7 @@
   const MIN_CHARS=3;
   const DEBOUNCE_MS=1200;
   const MAX_RETRIES=2;
-  const BACKEND=(window.SMV_BACKEND_URL||'https://smv-astro-1fco.onrender.com').replace(/\/$/,'');
+  const BACKEND=(window.SMV_BACKEND_URL||'https://smvastroservices.onrender.com').replace(/\/$/,'');
   function setupLocation(prefix, language){
     const place=document.getElementById(prefix+'BirthPlace');
     const lat=document.getElementById(prefix+'Lat');

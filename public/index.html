@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
-  const BACKEND_URL = "https://smv-astro-1fco.onrender.com";
+  const BACKEND_URL = "https://smvastroservices.onrender.com";
   const form = document.getElementById("contactForm");
   if(!form) return;
   const btn = document.getElementById("contactSubmit");
@@ -545,7 +545,7 @@ document.addEventListener("click",function(e){
     controller=new AbortController();
     setStatus('Searching location…','');
     try{
-      const r=await fetch('https://smv-astro-1fco.onrender.com/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
+      const r=await fetch('https://smvastroservices.onrender.com/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
       const data=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(data.error||'Location search failed');
       render(data.results||[]);
@@ -570,7 +570,7 @@ document.addEventListener("click",function(e){
 </script>
 <script id="smv-v145-english-location-and-generator">
 (function(){
-  const BACKEND_URL='https://smv-astro-1fco.onrender.com';
+  const BACKEND_URL='https://smvastroservices.onrender.com';
   const $=id=>document.getElementById(id);
 
   function setupLocation(prefix){
@@ -585,7 +585,7 @@ document.addEventListener("click",function(e){
     function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
     function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText('');}
     function render(items){clear();if(!items.length){statusText('No matching location found. Please type a little more.','err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText('Select your exact place from the list.','');}
-    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;if(controller)controller.abort();controller=new AbortController();statusText('Searching location…','');try{const r=await fetch((window.SMV_BACKEND_URL||'https://smv-astro-1fco.onrender.com')+'/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Location search failed');render(Array.isArray(data.results)?data.results:[]);}catch(e){if(e.name==='AbortError')return;clear();statusText(e.message||'Unable to search location.','err');}}
+    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;if(controller)controller.abort();controller=new AbortController();statusText('Searching location…','');try{const r=await fetch((window.SMV_BACKEND_URL||'https://smvastroservices.onrender.com')+'/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Location search failed');render(Array.isArray(data.results)?data.results:[]);}catch(e){if(e.name==='AbortError')return;clear();statusText(e.message||'Unable to search location.','err');}}
     place.addEventListener('input',()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
     place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
     document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
