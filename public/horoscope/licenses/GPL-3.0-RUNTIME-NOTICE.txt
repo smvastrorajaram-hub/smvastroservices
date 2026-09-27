@@ -1,0 +1,2 @@
+Swiss Ephemeris WebAssembly runtime in offline/vendor/wasm is from prolaxu/swisseph-wasm and is licensed GPL-3.0-or-later. It incorporates Swiss Ephemeris, which is dual-licensed by Astrodienst under GPL terms or a commercial/professional license. Source: https://github.com/prolaxu/swisseph-wasm
+This SMV offline package must be distributed consistently with the applicable open-source licenses, or with appropriate commercial licensing where required.

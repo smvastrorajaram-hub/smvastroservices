@@ -1,1 +1,6 @@
-
+Offline India place database source: GeoNames geographical database (IN.txt).
+GeoNames data is licensed under Creative Commons Attribution 4.0.
+Attribution: GeoNames — https://www.geonames.org/
+License: Creative Commons Attribution 4.0 International.
+This package stores a local, transformed/sharded copy of populated-place records
+for offline place lookup. No network geocoding is required at runtime.
