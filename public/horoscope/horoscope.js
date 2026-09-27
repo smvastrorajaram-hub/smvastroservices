@@ -2670,6 +2670,21 @@ if(lat===''||lon===''){
       render(d);
       const advRoot=$('tamilAdvancedAstrology');
       if(loadAdvanced && advRoot && typeof window.__smvLoadAdvancedAstrology==='function'){
+        // Paid Advanced Analysis must be authorized BEFORE any advanced calculation.
+        // Core horoscope remains available even when payment service is unavailable.
+        if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
+          resultBox?.classList.remove('hidden');
+          resultBox?.setAttribute('aria-busy','false');
+          advRoot.classList.remove('hidden');
+          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot);
+          if(!allowed){
+            requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'smooth',block:'start'}));
+            return d;
+          }
+          resultBox?.classList.add('hidden');
+          resultBox?.setAttribute('aria-busy','true');
+          advRoot.innerHTML='';
+        }
         // The advanced loader waits for Birth Panchang, Daily Panchang, Transit,
         // and every advanced module before returning. The result stays hidden here.
         await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId});

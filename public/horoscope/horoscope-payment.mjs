@@ -1,5 +1,6 @@
 // V61 — SMV Horoscope paid-feature gate. Core horoscope calculations remain offline-capable.
-const state={backend:String(window.SMV_BACKEND_URL||'').replace(/\/$/,''),token:'',user:null,config:null,locks:new Map()};
+const DEFAULT_BACKEND='https://smvastroservices.onrender.com';
+const state={backend:String(window.SMV_BACKEND_URL||DEFAULT_BACKEND).replace(/\/$/,''),token:'',user:null,config:null,locks:new Map()};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ta=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
 async function bridge(){
@@ -9,7 +10,7 @@ async function bridge(){
  if(result){state.backend=String(result.backend||state.backend||'').replace(/\/$/,'');state.token=result.token||'';state.user=result.user||null;}
 }
 async function api(path,opt={}){const r=await fetch(state.backend+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json',...(opt.headers||{}),...(state.token?{Authorization:'Bearer '+state.token}:{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||('Request failed: '+r.status));return j}
-async function config(){if(state.config)return state.config;await bridge();try{state.config=(await api('/horoscope-feature/config')).features||{};}catch(e){console.warn('Paid feature config unavailable; offline horoscope remains enabled.',e);state.config={advanced_analysis:{enabled:true,price:0,offlineFallback:true},marriage_matching:{enabled:true,price:0,offlineFallback:true}};}return state.config}
+async function config(){if(state.config)return state.config;await bridge();try{state.config=(await api('/horoscope-feature/config')).features||{};}catch(e){console.warn('Paid feature config unavailable; offline horoscope remains enabled.',e);state.config={advanced_analysis:{enabled:false,price:0,serviceUnavailable:true},marriage_matching:{enabled:false,price:0,serviceUnavailable:true}};}return state.config}
 function fragmentLock(el){if(!el||state.locks.has(el))return;const f=document.createDocumentFragment();while(el.firstChild)f.appendChild(el.firstChild);state.locks.set(el,f)}
 function fragmentUnlock(el){const f=state.locks.get(el);if(!f)return;el.replaceChildren(f);state.locks.delete(el)}
 function money(n){return '₹'+Number(n||0).toFixed(2)}
@@ -25,7 +26,10 @@ async function gateMarriage(){const sec=document.getElementById('smvMarriageMatc
 async function requireFeature(feature,mount){
  const cfg=(await config())[feature]||{enabled:true,price:0};
  if(!cfg.enabled){
-   if(mount) mount.innerHTML=`<div class="card smv-horoscope-pay-gate"><h3>${esc(ta()?'இந்த சேவை தற்போது கிடைக்கவில்லை':'This service is currently unavailable')}</h3><p class="small">${esc(ta()?'Admin இந்த சேவையை OFF செய்துள்ளார்.':'Admin has turned this service OFF.')}</p></div>`;
+   if(mount){
+     const unavailable=!!cfg.serviceUnavailable;
+     mount.innerHTML=`<div class="card smv-horoscope-pay-gate"><h3>${esc(ta()?'இந்த சேவை தற்போது கிடைக்கவில்லை':'This service is currently unavailable')}</h3><p class="small">${esc(unavailable?(ta()?'Payment server-ஐ தற்போது தொடர்புகொள்ள முடியவில்லை. Core Horoscope மட்டும் தொடர்ந்து பயன்படுத்தலாம்.':'The payment server is temporarily unavailable. Core Horoscope remains available.'):(ta()?'Admin இந்த சேவையை OFF செய்துள்ளார்.':'Admin has turned this service OFF.'))}</p></div>`;
+   }
    return false;
  }
  const a=await access(feature,cfg);
