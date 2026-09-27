@@ -7,7 +7,7 @@ SMV ASTRO — 25 Question Astrologer Qualification Google Form
 5) Copy the printed Published Form URL into Admin Dashboard.
 The function creates the quiz and an installable on-submit trigger automatically.
 */
-const BACKEND_WEBHOOK_URL = 'https://smv-astro-1fco.onrender.com/webhooks/google-form/astrologer-qualification';
+const BACKEND_WEBHOOK_URL = 'https://smvastroservices.onrender.com/webhooks/google-form/astrologer-qualification';
 const WEBHOOK_SECRET = 'ebe04d3714367b0907b363ce0ebe4472110029e331bd42a3e9d7b7be0a36aa6a';
 
 const FORM_ID_PROPERTY = 'SMV_ASTRO_QUIZ_FORM_ID';

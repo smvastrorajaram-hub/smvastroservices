@@ -1,0 +1,40 @@
+SMV ASTRO + HOROSCOPE MERGED — RENDER ROOT DEPLOY AUDIT
+Date: 2026-09-27
+
+Render settings:
+Build Command: npm install
+Start Command: npm start
+
+Root runtime files verified:
+- server.js
+- dashboard-events.js
+- refund-service.js
+- swiss_vedic.js
+- astro_advanced.js
+- dasa_engine.js
+- transit_panchang.js
+- package.json
+- ephe/sepl_18.se1
+- ephe/semo_18.se1
+
+server.js local require audit: PASS (all six local modules resolve from root)
+server.js syntax: PASS
+Local module syntax: PASS
+NPM dependency declaration audit: PASS
+Added runtime packages required by server.js: razorpay, firebase-admin, nodemailer
+Node built-in crypto requires no package.
+
+Horoscope payment routes present in server.js:
+GET  /horoscope-feature/config
+GET  /horoscope-feature/access
+POST /horoscope-feature/create-order
+POST /horoscope-feature/verify-payment
+
+Frontend backend references migrated to:
+https://smvastroservices.onrender.com
+
+Old backend references checked:
+Previous primary Render backend references = 0
+Deprecated webhook backend references = 0
+
+Note: Runtime startup still requires the configured Render environment variables (Firebase/Razorpay etc.).
