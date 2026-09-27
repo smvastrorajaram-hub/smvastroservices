@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.uid == "TwjeEIFS3Zcf1SxboLZoujm91Ky2" ||
+        exists(/databases/$(database)/documents/smv_admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/smv_users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/smv_users/$(request.auth.uid)).data.role == "admin")
+      );
+    }
+    function isApprovedAstrologer() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/smv_users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/smv_users/$(request.auth.uid)).data.role == "astrologer" &&
+        get(/databases/$(database)/documents/smv_users/$(request.auth.uid)).data.status == "active" &&
+        exists(/databases/$(database)/documents/smv_astrologers/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/smv_astrologers/$(request.auth.uid)).data.status == "approved";
+    }
+
+    match /smv_counters/{counterId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(["lastNumber","updatedAt"]) && request.resource.data.lastNumber == 1;
+      allow update: if signedIn() && request.resource.data.lastNumber == resource.data.lastNumber + 1 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastNumber","updatedAt"]);
+      allow delete: if false;
+    }
+    match /smv_users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name","phone","mobile","emailVerificationRequired","updatedAt"]));
+    }
+    match /smv_astrologers/{uid} {
+      allow read: if resource.data.status == "approved" || (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.status == "pending";
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name","specialization","expertise","experience","about","bio","photoData","profileDescriptionPending","profileDescriptionStatus","profileDescriptionSubmittedAt"]));
+    }
+    match /smv_payouts/{uid} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && request.resource.data.status == "pending_admin_review" && request.resource.data.keys().hasOnly(["uid","bankName","accountName","accountNumber","ifsc","upi","updatedAt","requestedAt","status"]);
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && request.resource.data.status == "pending_admin_review" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["bankName","accountName","accountNumber","ifsc","upi","updatedAt","requestedAt","status"]));
+      allow delete: if isAdmin();
+    }
+    match /smv_admins/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if request.auth.uid == "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
+    }
+    match /smv_settings/{docId} {
+      allow read: if isAdmin() || docId == "question";
+      allow write: if isAdmin();
+    }
+    match /smv_admin_audit/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+    match /smv_notifications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAdmin() || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    match /smv_questions/{questionId} {
+      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.status == "awaiting_payment";
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid || resource.data.astrologerId == request.auth.uid || isAdmin() || (isApprovedAstrologer() && resource.data.status == "paid" && resource.data.allocationStatus == "assigned_to_astrologer" && resource.data.astrologerId == request.auth.uid));
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.customerId == request.auth.uid && resource.data.status == "answered" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["reviewed","reviewSubmittedAt"])) ||
+        (isApprovedAstrologer() && resource.data.status == "paid" && resource.data.allocationStatus == "assigned_to_astrologer" && resource.data.astrologerId == request.auth.uid && request.resource.data.astrologerId == request.auth.uid && request.resource.data.status == "admin_approved" && request.resource.data.allocationStatus == "claimed_by_astrologer" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["astrologerId","astrologerName","status","allocationStatus","claimedAt","claimedBy"]));
+    }
+    match /smv_appointments/{appointmentId} {
+      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.status == "new";
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid || resource.data.astrologerId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+    match /smv_withdrawals/{withdrawalId} {
+      allow read: if signedIn() && (resource.data.astrologerId == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.astrologerId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.amount is number && request.resource.data.amount > 0 && request.resource.data.withdrawalId is string && request.resource.data.withdrawalId.matches("SMV-PMT-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}") && request.resource.data.keys().hasOnly(["astrologerId","astrologerName","amount","withdrawalId","status","createdAt","requestedAt"]);
+      allow update, delete: if isAdmin();
+    }
+    // Full bank/UPI snapshot for a withdrawal is Admin-only. The backend writes this with Admin SDK.
+    match /smv_withdrawal_payouts/{withdrawalDocId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /smv_payments/{paymentId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.customerId == request.auth.uid) || (signedIn() && resource.data.astrologerId == request.auth.uid && resource.data.type == "astrologer_earning");
+      allow write: if isAdmin();
+    }
+    match /smv_reviews/{reviewId} {
+      allow read: if resource.data.approved == true || isAdmin() || (signedIn() && (resource.data.customerId == request.auth.uid || resource.data.astrologerId == request.auth.uid));
+      allow create: if signedIn() && request.resource.data.questionId is string && request.resource.data.questionId != "" && reviewId == request.resource.data.questionId + "_" + request.auth.uid && request.resource.data.customerId == request.auth.uid && request.resource.data.astrologerId is string && request.resource.data.astrologerId != "" && request.resource.data.approved == false && request.resource.data.status == "pending" && request.resource.data.rating is number && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 && exists(/databases/$(database)/documents/smv_questions/$(request.resource.data.questionId)) && get(/databases/$(database)/documents/smv_questions/$(request.resource.data.questionId)).data.customerId == request.auth.uid && get(/databases/$(database)/documents/smv_questions/$(request.resource.data.questionId)).data.status == "answered" && get(/databases/$(database)/documents/smv_questions/$(request.resource.data.questionId)).data.astrologerId == request.resource.data.astrologerId;
+      allow update, delete: if isAdmin();
+    }
+
+    match /smv_horoscopes/{horoscopeId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.keys().hasOnly(["userId","name","birthDate","birthTime","birthPlace","latitude","longitude","timezone","calculation","language","createdAt","updatedAt"]);
+      allow update: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name","birthDate","birthTime","birthPlace","latitude","longitude","timezone","calculation","language","updatedAt"]));
+      allow delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+    match /smv_birth_charts/{chartId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+    match /smv_horoscope_reports/{reportId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == request.resource.data.userId);
+    }
+
+    // Blogs / PDF / Image / Video metadata.
+    // Full blog text and media files are stored in Cloudinary; Firestore keeps metadata.
+    match /smv_content/{contentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}

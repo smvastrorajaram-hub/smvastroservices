@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: smv-astro
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: SWISSEPH_EPHE_PATH
+        value: ./ephe
+      - key: HOUSE_SYSTEM
+        value: S
