@@ -34,17 +34,30 @@ function renderAuthStatus(message=''){
 function showAuthForm(mode='login'){const host=document.getElementById('smvHoroscopeAuth');if(!host)return;host.dataset.mode=mode;host.querySelector('[data-auth-form]')?.removeAttribute('hidden');host.querySelector('[data-name-row]')?.toggleAttribute('hidden',mode==='login');host.querySelector('[data-phone-row]')?.toggleAttribute('hidden',mode==='login');const submit=host.querySelector('[data-auth-submit]');if(submit)submit.textContent=mode==='login'?(ta()?'LOGIN':'LOGIN'):(ta()?'REGISTER':'REGISTER');host.scrollIntoView({behavior:'smooth',block:'center'});}
 async function loginLocal(){const host=document.getElementById('smvHoroscopeAuth'),email=host.querySelector('[data-email]')?.value.trim(),password=host.querySelector('[data-password]')?.value||'';if(!email||!password)throw Error(ta()?'Email மற்றும் Password தேவை.':'Email and password are required.');const {auth,authMod}=await initLocalAuth();const c=await authMod.signInWithEmailAndPassword(auth,email,password);await refreshLocalUser(c.user,true);host.querySelector('[data-auth-form]')?.setAttribute('hidden','');}
 async function registerLocal(){const host=document.getElementById('smvHoroscopeAuth'),name=host.querySelector('[data-name]')?.value.trim(),phone=host.querySelector('[data-phone]')?.value.trim(),email=host.querySelector('[data-email]')?.value.trim(),password=host.querySelector('[data-password]')?.value||'';if(!name||!phone||!email||password.length<6)throw Error(ta()?'பெயர், செல்லுபடியாகும் மொபைல், Email மற்றும் குறைந்தது 6 எழுத்து Password தேவை.':'Name, valid mobile, email and a password of at least 6 characters are required.');const {auth,authMod}=await initLocalAuth();const c=await authMod.createUserWithEmailAndPassword(auth,email,password);try{const token=await c.user.getIdToken();const r=await fetch(state.backend+'/register-customer-profile',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name,phone,language:ta()?'ta':'en'})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'Customer profile registration failed.');await authMod.sendEmailVerification(c.user);await authMod.signOut(auth);state.token='';state.user=null;renderAuthStatus(ta()?'Verification email அனுப்பப்பட்டது. Verify செய்த பிறகு Login செய்யவும்.':'Verification email sent. Verify it, then login here.');}catch(e){try{await c.user.delete()}catch(_){}throw e}}
-async function logoutLocal(){try{sessionStorage.removeItem('smv-offline-owner')}catch{}const {auth,authMod}=await initLocalAuth();await authMod.signOut(auth);state.token='';state.user=null;state.paid.clear();state.accessCache.clear();state.accessPending.clear();state.epoch++;for(const id of ['englishHoroscopeResult','tamilHoroscopeResult']){const el=document.getElementById(id);if(el){el.replaceChildren();el.classList.add('hidden');}}renderAuthStatus();window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:false}}));}
+async function logoutLocal(){try{sessionStorage.removeItem('smv-offline-owner')}catch{}const {auth,authMod}=await initLocalAuth();await authMod.signOut(auth);state.token='';state.user=null;state.paid.clear();state.accessCache.clear();state.accessPending.clear();state.epoch++;state.contexts.clear();window.__smvSwitchHoroscopeLanguage=null;window.__smvLastFullReport=null;for(const id of ['englishHoroscopeResult','tamilHoroscopeResult','mmResult']){const el=document.getElementById(id);if(el){el.replaceChildren();el.classList.add('hidden');}}renderAuthStatus();window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:false}}));}
 function bindAuthUI(){const host=document.getElementById('smvHoroscopeAuth');if(!host||host.dataset.bound==='1')return;host.dataset.bound='1';host.querySelector('[data-login]')?.addEventListener('click',()=>showAuthForm('login'));host.querySelector('[data-register]')?.addEventListener('click',()=>showAuthForm('register'));host.querySelector('[data-logout]')?.addEventListener('click',()=>logoutLocal().catch(e=>renderAuthStatus(e.message)));host.querySelector('[data-auth-submit]')?.addEventListener('click',async()=>{const b=host.querySelector('[data-auth-submit]');b.disabled=true;try{host.dataset.mode==='register'?await registerLocal():await loginLocal()}catch(e){renderAuthStatus(e.message||String(e))}finally{b.disabled=false}});initLocalAuth().then(()=>renderAuthStatus()).catch(e=>{if(!navigator.onLine){try{state.user=JSON.parse(sessionStorage.getItem('smv-offline-owner')||'null');if(state.user)window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:true,offline:true}}));}catch{}}renderAuthStatus(e.message||String(e));});}
 async function authHeaders(){if(state.auth?.currentUser&&state.user?.uid===state.auth.currentUser.uid)state.token=await state.auth.currentUser.getIdToken();return {'Content-Type':'application/json',...(state.token?{Authorization:'Bearer '+state.token}:{})};}
-async function api(path,opt={}){const r=await fetch(state.backend+path,{...opt,cache:'no-store',headers:{...await authHeaders(),...(opt.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||('Request failed: '+r.status));return j}
+async function api(path,opt={}){const r=await fetch(state.backend+path,{signal:AbortSignal.timeout(20000),...opt,cache:'no-store',headers:{...await authHeaders(),...(opt.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok||j.success===false)throw Error(j.error||('Request failed: '+r.status));return j}
 function reportContext(feature){const value=state.contexts.get(feature);if(!value)throw Error(ta()?'முதலில் பிறந்த விவரங்களை உள்ளிடவும்.':'Enter the birth details first.');return value;}
 function reportCacheKey(feature){return window.SMVReportIdentity.canonical(feature,reportContext(feature));}
 window.__smvSetReportContext=(feature,value)=>{window.SMVReportIdentity.canonical(feature,value);state.contexts.set(feature,JSON.parse(JSON.stringify(value)));};
 window.__smvGetReportContext=reportContext;
 window.__smvHoroscopeApi=api;
 function markPaid(feature,key=reportCacheKey(feature)){state.paid.add(key);state.accessCache.set(key,{enabled:true,unlocked:true,free:false});window.dispatchEvent(new CustomEvent('smv:horoscope-paid-access',{detail:{feature,key}}));}
-async function config(){if(state.config)return state.config;await initLocalAuth().catch(()=>{});try{state.config=(await api('/horoscope-feature/config')).features||{};}catch(e){console.warn('Paid feature config unavailable; offline horoscope remains enabled.',e);state.config={advanced_analysis:{enabled:false,price:0,serviceUnavailable:true},marriage_matching:{enabled:false,price:0,serviceUnavailable:true}};}return state.config}
+let configPending=null;
+async function config(){
+ // Revalidate for each new calculation; a former free price is not an entitlement.
+ if(configPending)return configPending;
+ configPending=(async()=>{
+  const data=await api('/horoscope-feature/config'),features=data.features;
+  for(const feature of ['advanced_analysis','marriage_matching']){
+   const item=features?.[feature];
+   if(!item||typeof item.enabled!=='boolean'||typeof item.price!=='number'||!Number.isFinite(item.price)||item.price<0)throw Error(ta()?'கட்டண அமைப்பை சரிபார்க்க முடியவில்லை. மீண்டும் முயலவும்.':'Unable to verify feature pricing. Please try again.');
+  }
+  state.config=features;return features;
+ })();
+ try{return await configPending;}finally{configPending=null;}
+}
 function fragmentLock(el){if(!el||state.locks.has(el))return;const f=document.createDocumentFragment();while(el.firstChild)f.appendChild(el.firstChild);state.locks.set(el,f)}
 function fragmentUnlock(el){const f=state.locks.get(el);if(!f)return;el.replaceChildren(f);state.locks.delete(el)}
 function money(n){return '₹'+Number(n||0).toFixed(2)}
@@ -68,18 +81,16 @@ async function buy(feature,button,onUnlocked){
 function payCard(feature,price,onUnlocked,singleLayer=false){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');const note=feature==='advanced_analysis'?(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு இந்த அம்சங்களின் முழுமையான கணக்கீடுகள் மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete calculations and results for these features will be shown after successful payment.'):(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு முழுமையான திருமணப் பொருத்த கணக்கீடு மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete Marriage Matching calculations and results will be shown after successful payment.');box.innerHTML=`<h3>${esc(title)}</h3><p class="small"><b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button><p class="small">${esc(note)}</p>`;const b=box.querySelector('button');b.onclick=()=>buy(feature,b,async()=>{await onUnlocked();box.remove()});return box}
 async function access(feature,cfg){
  if(!cfg.enabled)return {enabled:false,unlocked:false};
- if(Number(cfg.price||0)<=0)return {enabled:true,unlocked:true,free:true};
  if(!state.token)await initLocalAuth().catch(()=>{});
- if(!state.token)return {enabled:true,unlocked:false,price:cfg.price};
+ if(!state.token)return {enabled:true,unlocked:cfg.price===0,free:cfg.price===0,price:cfg.price};
  const key=reportCacheKey(feature),birthIdentity=reportContext(feature);
- if(state.accessCache.has(key))return state.accessCache.get(key);
  if(state.accessPending.has(key))return state.accessPending.get(key);
  const epoch=state.epoch;
- const promise=(async()=>{const out=await api('/horoscope-feature/access?feature='+encodeURIComponent(feature)+'&birthIdentity='+encodeURIComponent(JSON.stringify(birthIdentity)));if(epoch!==state.epoch)return {enabled:true,unlocked:false,price:cfg.price};state.accessCache.set(key,out);if(out.unlocked&&!out.free)markPaid(feature,key);return out;})();
+ const promise=(async()=>{const out=await api('/horoscope-feature/access?feature='+encodeURIComponent(feature)+'&birthIdentity='+encodeURIComponent(JSON.stringify(birthIdentity)));if(epoch!==state.epoch)return {enabled:true,unlocked:false,price:cfg.price};state.accessCache.set(key,out);if(out.unlocked===true&&out.free!==true)markPaid(feature,key);return out;})();
  state.accessPending.set(key,promise);try{return await promise;}finally{if(state.accessPending.get(key)===promise)state.accessPending.delete(key);}
 }
 async function gateAdvanced(root){
- const cfg=(await config()).advanced_analysis||{enabled:true,price:0};
+ const cfg=(await config()).advanced_analysis;
  const parts=[...root.querySelectorAll('.smv-advanced-part')].filter(x=>!x.classList.contains('detailed-dasha-predictions')&&!x.classList.contains('detailed-transit-predictions')).slice(0,10);
  if(!parts.length)return;
  if(!cfg.enabled){parts.forEach(p=>p.hidden=true);return}
@@ -129,14 +140,18 @@ function advancedPreviewHtml(){
  return `<div class="smv-paid-heading-preview smv-paid-i-x-preview"><h3>${esc(ta()?'மேம்பட்ட பகுப்பாய்வு — உள்ளடக்கம்':'Advanced Analysis — Contents')}</h3>${rows.map(([r,t,subs])=>`<div class="smv-preview-part"><b>${r}. ${esc(t)}</b><ul>${subs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
 }
 async function requireFeature(feature,mount,onFeatureUnlocked){
- const cfg=(await config())[feature]||{enabled:true,price:0};
+ try{
+ await initLocalAuth().catch(()=>{});
+ const epoch=state.epoch,cfg=(await config())[feature];
+ if(epoch!==state.epoch)return false;
  if(!cfg.enabled){if(mount)mount.replaceChildren();return false;}
- const requestedKey=reportCacheKey(feature),a=await access(feature,cfg);if(requestedKey!==reportCacheKey(feature))return false;
- if(a.unlocked)return true;
+ const requestedKey=reportCacheKey(feature),a=await access(feature,cfg);if(epoch!==state.epoch||requestedKey!==reportCacheKey(feature))return false;
+ if(a.enabled===false){if(mount)mount.replaceChildren();return false;}
+ if(a.enabled===true&&a.unlocked===true)return true;
  if(a.legacyNeedsLink){if(mount){mount.replaceChildren();const note=document.createElement('p');note.textContent=ta()?'முந்தைய கட்டணத்திற்கு அசல் பிறந்த விவரங்களை நிர்வாகி இணைக்க வேண்டும். மீண்டும் கட்டணம் செலுத்த வேண்டாம்.':a.error;mount.append(note);}return false;}
  if(!mount)return false;
  mount.innerHTML=feature==='advanced_analysis'?advancedPreviewHtml():'';
- const card=payCard(feature,cfg.price,async()=>{
+ const card=payCard(feature,a.price??cfg.price,async()=>{
    mount.innerHTML='';
    if(typeof onFeatureUnlocked==='function') await onFeatureUnlocked();
    window.dispatchEvent(new CustomEvent('smv:horoscope-feature-unlocked',{detail:{feature,handled:typeof onFeatureUnlocked==='function'}}));
@@ -145,6 +160,11 @@ async function requireFeature(feature,mount,onFeatureUnlocked){
  // IMPORTANT: do not keep the main Horoscope generation Promise pending while the
  // user is deciding whether to pay. Core Horoscope is complete at this point.
  return false;
+ }catch(e){
+  // Keep the completed free core visible when paid authorization is unavailable.
+  if(mount){mount.replaceChildren();const note=document.createElement('p');note.className='error';note.textContent=e.message||String(e);mount.appendChild(note);}
+  return false;
+ }
 }
 async function downloadPaidPdf(feature,source,title){
  if(!state.paid.has(reportCacheKey(feature)))throw Error('Verified paid access is required for PDF download.');

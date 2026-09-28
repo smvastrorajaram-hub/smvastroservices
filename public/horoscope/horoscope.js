@@ -2688,6 +2688,7 @@ if(lat===''||lon===''){
         };
         // Paid Advanced Analysis must be authorized BEFORE any advanced calculation.
         // Waiting for the user's payment must NOT keep the main Horoscope spinner alive.
+        if(typeof window.__smvRequireHoroscopeFeatureAccess!=='function')throw new Error('Payment access check is not ready. Reload and try again.');
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');

@@ -157,7 +157,7 @@ if(lat===''||lon===''){
           }
           await runEnglishAdvanced();
         }else{
-          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot});
+          throw new Error('Payment access check is not ready. Reload and try again.');
         }
 
         /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +
