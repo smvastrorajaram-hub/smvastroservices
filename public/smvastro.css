@@ -3578,7 +3578,7 @@ header nav .smv-demo-active:where(:not(.smv33-hero, .smv33-hero *, .smv-home-off
   .smv-master-art:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *)) { min-height: 285px !important; }
 }
 #smvPremiumHeaderV9, #smvPremiumHeaderV9 * { box-sizing: border-box; }
-#smvPremiumHeaderV9:where(:not(.hidden)) { display: block; width: 100%; background: rgb(255, 255, 255); color: rgb(23, 25, 39); border-bottom: 1px solid rgb(238, 232, 228); box-shadow: rgba(35, 20, 25, 0.07) 0px 4px 18px; position: relative; z-index: 1000; }
+#smvPremiumHeaderV9:where(:not(.hidden)) { display: block; width: 100%; background: linear-gradient(115deg, #fff6df 0%, #f5dfbb 42%, #f6e3dd 76%, #fffaf2 100%); color: rgb(23, 25, 39); border-bottom: 1px solid rgb(238, 232, 228); box-shadow: rgba(35, 20, 25, 0.07) 0px 4px 18px; position: relative; z-index: 1000; }
 #smvPremiumHeaderV9 .smv9-nav { max-width: 1280px; min-height: 78px; margin: auto; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 #smvPremiumHeaderV9 .smv9-brand { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; text-decoration: none; color: inherit; }
 #smvPremiumHeaderV9 .smv9-brand img { display: block; width: 50px; height: 50px; object-fit: contain; }

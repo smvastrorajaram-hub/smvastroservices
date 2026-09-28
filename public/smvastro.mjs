@@ -47,7 +47,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
      if(/^event: (change|ready)$/m.test(event))onChange();
     }
    }
-  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');onChange();}}
+  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');}}
   finally{if(!stopped){retry++;timer=setTimeout(connect,Math.min(15000,1000*2**Math.min(retry,4)));}}
  }
  connect();return ()=>{stopped=true;clearTimeout(timer);controller?.abort();};
@@ -192,7 +192,9 @@ let dashboardReadyUid=null;
 let dashboardReadyAt=0;
 let dashboardReadyRole=null;
 const $=id=>document.getElementById(id);
-const show=id=>$(id)?.classList.remove("hidden"); const hide=id=>$(id)?.classList.add("hidden");
+// Visibility transitions are explicit: no DOM observer or network read is needed.
+const show=id=>{ $(id)?.classList.remove("hidden"); if(id==='dashboard'||id==='admin')window.__smvSyncWorkspace?.(); };
+const hide=id=>{ $(id)?.classList.add("hidden"); if(id==='dashboard'||id==='admin')window.__smvSyncWorkspace?.(); };
 const go=id=>$(id)?.scrollIntoView({behavior:"smooth",block:"start"});
 function hideHomeSurface(){
   // Hide the COMPLETE public Home surface. Internal views such as Question Form
@@ -231,6 +233,8 @@ function smvShowRoleNav(){
 let smvInternalView="home";
 function smvEnterInternalView(view,push=true){
   smvInternalView=view;
+  window.__smvSetDedicatedConsultView?.(false);
+  window.__smvSyncWorkspace?.();
   if(view!=="home")window.__SMV_PUBLIC_ROUTE=null;
   if(push){try{history.pushState({smvView:view},"",`#${view}`);}catch(_e){}}
 }
@@ -247,10 +251,13 @@ function smvReturnHome(restoreRoleNav=true){
   pendingAfterLogin=null;
   smvInternalView="home";
 
+  window.__smvSetDedicatedConsultView?.(false);
+  window.__SMV_PUBLIC_ROUTE="home";
   // Close every internal view.
   ["dashboard","admin","ask-flow","register-flow","astro-register-form",
    "astro-flow","appointment","contact"].forEach(id=>hide(id));
 
+  showHomeSurface();
   // Restore the COMPLETE public Home surface.
   ["home","askNowSection","approved-astrologers","faq","smv-content-hub",
    "english-horoscope"].forEach(id=>{const el=$(id);if(el)el.classList.remove("hidden");});
@@ -260,6 +267,7 @@ function smvReturnHome(restoreRoleNav=true){
   if(tr){tr.classList.add("hidden");tr.innerHTML="";}
   if(er){er.classList.add("hidden");er.innerHTML="";}
 
+  window.__smvSyncWorkspace?.();
   if(restoreRoleNav) smvShowRoleNav();
   try{history.replaceState({smvView:"home"},"","#home");}catch(_e){}
   requestAnimationFrame(()=>{
@@ -553,19 +561,6 @@ $("contentNav")?.addEventListener("click",(e)=>{
   const hub=$("smv-content-hub");if(!hub)return;
   hub.classList.remove("hidden");window.__smvContentVisible=true;
   requestAnimationFrame(()=>hub.scrollIntoView({behavior:"smooth",block:"start"}));
-});
-
-  $("horoscopeNav")?.addEventListener("click",(e)=>{
-  e.preventDefault(); e.stopPropagation();
-  // V161 English-only build: open and scroll directly to the English horoscope.
-  show("horoscope-tools");
-  show("english-horoscope");
-  hide("tamil-horoscope");
-  window.__smvPublicHoroscopeVisible = true;
-  requestAnimationFrame(()=>{
-    const target=$("english-horoscope");
-    if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
-  });
 });
 
   document.querySelector('header a[href="#home"]')?.addEventListener("click",e=>{
@@ -1040,6 +1035,23 @@ async function submitAuth(mode){
 let authReadyResolve;
 const authReady=new Promise(r=>authReadyResolve=r);
 function waitForAuthReady(){return authReady;}
+// Shared public data requests. Concurrent surfaces reuse one request, including failures.
+const smvPublicDataCache=new Map();
+function smvPublicData(key,path,field){
+ const old=smvPublicDataCache.get(key);
+ if(old&&old.expires>Date.now())return old.promise;
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),15000);
+ const entry={expires:Date.now()+60000,promise:null};
+ entry.promise=fetch(RAZORPAY_BACKEND_URL+path,{signal:controller.signal}).then(async r=>{
+  const data=await r.json();if(!r.ok)throw new Error(data.error||'Public service unavailable');
+  if(!Array.isArray(data[field]))throw new Error('Invalid public service response');
+  return data[field];
+ }).catch(e=>{entry.expires=Date.now()+15000;throw e;}).finally(()=>clearTimeout(timer));
+ smvPublicDataCache.set(key,entry);return entry.promise;
+}
+window.__smvGetPublicAstrologersOnce=()=>smvPublicData('astrologers','/public/astrologers','astrologers');
+window.__smvGetPublicReviewsOnce=a=>smvPublicData('reviews:'+a.id,'/public/astrologers/'+encodeURIComponent(a.id)+'/reviews','reviews');
 // ---------- Astrologer list ----------
 async function loadAstrologers(){ return loadAstroCards(); }
 let smvAstroListRequest=null;
@@ -1059,40 +1071,9 @@ async function smvLoadAstroCards(){
    const avg=valid.length?valid.reduce((sum,r)=>sum+clampRating(r.rating),0)/valid.length:0;
    return {avg,count:valid.length};
  };
- const getReviews=async a=>{
-   try{
-     const rr=await withTimeout(fetch(RAZORPAY_BACKEND_URL+"/public/astrologers/"+encodeURIComponent(a.id)+"/reviews",{cache:"no-store"}),10000);
-     const rd=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(rd.error||`Review service returned HTTP ${rr.status}.`);
-     return Array.isArray(rd.reviews)?rd.reviews:[];
-   }catch(apiErr){
-     console.warn('Public review API unavailable; using Firestore fallback:',apiErr);
-     const snap=await withTimeout(getDocs(query(collection(db,'smv_reviews'),where('astrologerId','==',a.id),where('approved','==',true))),10000);
-     return snap.docs.map(d=>({id:d.id,...(d.data()||{})}));
-   }
- };
- const addPrivateRating=(a,summary)=>{
-   const host=$('privateConsultationAstrologers'); if(!host)return;
-   const target=[...host.querySelectorAll('.smv-private-consult-row')].find(row=>{
-     const name=(row.querySelector('h3')?.textContent||'').trim().toLowerCase();
-     return name===String(a.name||'').trim().toLowerCase();
-   });
-   if(!target)return;
-   let el=target.querySelector('.smv-private-rating-summary');
-   if(!el){el=document.createElement('div');el.className='smv-private-rating-summary';const desc=target.querySelector('.smv-private-consult-description');(desc||target.querySelector('.smv-private-consult-head')||target).insertAdjacentElement(desc?'beforebegin':'afterend',el);}
-   el.innerHTML=summary.count?`${ratingStars(summary.avg)} <strong>${summary.avg.toFixed(1)} / 5</strong>`:`<span class="smv-rating-none">No ratings yet</span>`;
- };
+ const getReviews=window.__smvGetPublicReviewsOnce;
  try{
-  let items=[];
-  try {
-    const r=await withTimeout(fetch(RAZORPAY_BACKEND_URL+"/public/astrologers",{cache:"no-store"}),12000);
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(d.error||`Astrologer service returned HTTP ${r.status}.`);
-    items=Array.isArray(d.astrologers)?d.astrologers:[];
-  } catch(backendErr) {
-    console.warn("Public astrologer backend unavailable; using Firestore fallback:",backendErr);
-    const snap=await withTimeout(getDocs(query(collection(db,"smv_astrologers"),where("status","==","approved"))),12000);
-    items=snap.docs.map(d=>({id:d.id,...(d.data()||{})}));
-  }
+  const items=await window.__smvGetPublicAstrologersOnce();
   if(!items.length){box.innerHTML='<div class="empty">No approved astrologers available yet.</div>';return;}
   box.innerHTML="";
   items.forEach(a=>{
@@ -1107,10 +1088,6 @@ async function smvLoadAstroCards(){
     ensureReviews().then(reviews=>{
       const summary=ratingSummary(reviews);
       summaryBox.innerHTML=summary.count?`${ratingStars(summary.avg)} <strong>${summary.avg.toFixed(1)} / 5</strong> <span class="smv-rating-count">(${summary.count} review${summary.count===1?'':'s'})</span>`:`<span class="smv-rating-none">No ratings yet</span>`;
-      addPrivateRating(a,summary);
-      const host=$('privateConsultationAstrologers');
-      if(host&&!host.__smvRatingObserver){host.__smvRatingObserver=new MutationObserver(()=>items.forEach(x=>{if(x.__smvSummary)addPrivateRating(x,x.__smvSummary);}));host.__smvRatingObserver.observe(host,{childList:true,subtree:true});}
-      a.__smvSummary=summary;
     }).catch(err=>{console.warn('Rating summary load failed:',err);summaryBox.innerHTML='<span class="smv-rating-none">Ratings unavailable</span>';});
     btn.onclick=async()=>{
       const opening=reviewBox.classList.contains('hidden');
@@ -1438,7 +1415,7 @@ async function logoutToHome(reason=''){
   hide('dashboard'); hide('admin'); hide('dashLink'); hide('adminLink');
   setHeaderRoleLabel('');
   smvClosePublicQuestionWindow(); hide('register-flow'); hide('astro-register-form'); hide('astro-flow'); hide('appointment'); hide('contact');
-  showHomeSurface();
+  smvReturnHome(false);
   show('smv-content-hub');
   show('english-horoscope'); window.__smvContentVisible=false;
   $('authBtn').textContent='Login'; closeModal(); window.scrollTo({top:0,behavior:'smooth'});
@@ -3831,7 +3808,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
    }
    $('authBtn').textContent=user?'Logout':'Login';
    if(user){
-     hide('smv-content-hub'); window.__smvContentVisible=false;
+     window.__smvContentVisible=false;
      lastAuthUid=user.uid; window.__SMV_LOGGED_OUT=false; touchSession(); armIdleTimer(); window.dispatchEvent(new Event('smv:auth-user'));
      if(user.uid!==ADMIN_UID && !user.emailVerified){ await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); $("authBtn").textContent="Login"; return; }
      // ASK NOW login has a protected destination. Let submitAuth() continue
@@ -3852,13 +3829,14 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
      const listenerEpoch=smvNavigationEpoch;
      const adminUser=await isCurrentAdmin();
      const headerProfile=adminUser?{role:'admin'}:await getUserProfile(user.uid).catch(()=>({role:'customer'}));
      const headerRole=adminUser?'admin':String(headerProfile?.role||'customer').toLowerCase();
+     if(currentUser?.uid!==user.uid)return;
      setHeaderRoleLabel(headerRole);
      window.__smvCurrentRole=headerRole;
+     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
      // CRITICAL LATE-RACE GUARD: ASK NOW may have started while the auth
      // listener was awaiting Firebase/profile data. Never let this older
      // listener resume and overwrite the Question Form with Dashboard.
@@ -3888,7 +3866,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        show('dashboardContent');
        $('dashboardTitle').textContent=headerRole==='astrologer'?'ASTROLOGER DASHBOARD':'CUSTOMER DASHBOARD';
        $('dashboardContent').innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
-       smvShowRoleNav(); smvInternalView="dashboard";
+       smvShowRoleNav(); smvEnterInternalView("dashboard",false);
        try{history.replaceState({smvView:"dashboard"},"","#dashboard");}catch(_e){}
        go('dashboard');
        loadDashboard(headerRole==='astrologer'?'astrologer':'customer').catch(err=>console.warn('Initial dashboard load skipped:',err));
@@ -3901,6 +3879,9 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      show('smv-content-hub'); window.__smvContentVisible=false;
      showHomeSurface();
      smvInternalView="home";
+     window.__smvCurrentRole=null;
+     if(previousUid)smvReturnHome(false);
+     window.__smvSyncWorkspace?.();
    }
  }); }
 if(firebaseInitError){

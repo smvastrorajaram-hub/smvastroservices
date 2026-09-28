@@ -49,6 +49,7 @@
   for(let el=target;el&&el!==document.body;el=el.parentElement){
    el.classList.remove('hidden','smv-v173-home-collapsed','smv-v173-sub-collapsed','smv-v174-faq-collapsed');
   }
+  window.__smvSyncWorkspace?.();
   selection(id);
   const url=new URL(location.href);url.searchParams.delete('view');url.hash=id;
   if(historyMode==='push'&&location.hash!=='#'+id)history.pushState({smvView:'public',section:id},'',url);

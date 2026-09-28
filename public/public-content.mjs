@@ -150,6 +150,50 @@
       finally{bookingSubmitting=false;btn.disabled=false;btn.textContent='REQUEST APPOINTMENT';}
     });
   }
+  let privateListRequest=null,privateListLoadedAt=0;
+  async function loadPrivateAstrologers(){
+    const host=$('privateConsultationAstrologers');if(!host)return;
+    if(privateListRequest)return privateListRequest;
+    if(privateListLoadedAt&&Date.now()-privateListLoadedAt<60000)return;
+    if(!window.__smvGetPublicAstrologersOnce)return;
+    host.innerHTML='<div class="empty">Loading approved astrologers...</div>';
+    privateListRequest=(async()=>{
+      try{
+        const items=await window.__smvGetPublicAstrologersOnce();
+        host.innerHTML='';
+        for(const a of items){
+          const row=document.createElement('article');row.className='smv-private-consult-row';
+          const photo=a.photoData||a.photoURL||a.photoUrl||'',price=Number(a.chatPrice||0);
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          const select=row.querySelector('[data-private-consult-astro]');
+          select.onclick=()=>selectPrivateAstrologer(a,select);
+          const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
+          button.onclick=async()=>{
+            const open=reviews.classList.contains('hidden');reviews.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));
+            if(!open||reviews.dataset.loaded)return;
+            reviews.textContent='Loading reviews...';
+            try{const data=await window.__smvGetPublicReviewsOnce(a);reviews.innerHTML=data.length?data.map(r=>`<div class="smv-private-sub-review"><b>${esc(r.rating)} / 5</b><p>${esc(r.review||'Verified customer review')}</p></div>`).join(''):'No approved reviews yet.';reviews.dataset.loaded='1';}
+            catch(e){reviews.textContent='Reviews are temporarily unavailable. Close and reopen to retry.';}
+          };
+          host.append(row);
+        }
+        if(!items.length)host.innerHTML='<div class="empty">No approved astrologers available yet.</div>';
+        privateListLoadedAt=Date.now();
+      }catch(e){
+        host.innerHTML='<div class="empty error">Unable to load approved astrologers. Please try again.</div><button type="button" class="smv-compact-control">TRY AGAIN</button>';
+        host.querySelector('button').onclick=()=>loadPrivateAstrologers();
+      }finally{privateListRequest=null;}
+    })();return privateListRequest;
+  }
+  function openPrivateList(){if(!$('private-consultation')?.classList.contains('hidden'))loadPrivateAstrologers();}
+  window.addEventListener('smv:private-consultation-open',openPrivateList);
+  window.addEventListener('smv:app-ready',openPrivateList);
+  openPrivateList();
+  window.addEventListener('smv:logged-out',()=>{
+    window.__smvSelectedPrivateConsultAstrologer=null;
+    $('privateConsultationQuestionForm')?.reset();
+    $('privateConsultationQuestionCard')?.classList.add('hidden');
+  });
   function selectPrivateAstrologer(astro,button){
     const user=window.__smvFirebaseCurrentUser;
     if(!user || window.__smvCurrentRole!=='customer'){
@@ -169,6 +213,20 @@
   }
   window.__smvSelectPrivateAstrologer=selectPrivateAstrologer;
 
+  let checkoutRequest=null;
+  function ensurePrivateCheckout(){
+    if(typeof window.Razorpay==='function')return Promise.resolve();
+    if(checkoutRequest)return checkoutRequest;
+    checkoutRequest=new Promise((resolve,reject)=>{
+      let script=document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      const timer=setTimeout(()=>finish(new Error('Payment checkout timed out. Please retry.')),15000);
+      function finish(error){clearTimeout(timer);script?.removeEventListener('load',loaded);script?.removeEventListener('error',failed);if(error){script?.remove();reject(error);}else resolve();}
+      function loaded(){finish(typeof window.Razorpay==='function'?null:new Error('Payment checkout unavailable.'));}
+      function failed(){finish(new Error('Payment checkout could not load. Please retry.'));}
+      if(!script){script=document.createElement('script');script.src='https://checkout.razorpay.com/v1/checkout.js';document.head.append(script);}
+      script.addEventListener('load',loaded,{once:true});script.addEventListener('error',failed,{once:true});
+    }).finally(()=>checkoutRequest=null);return checkoutRequest;
+  }
   let privateConsultSubmitting=false;
   async function submitPrivateConsultation(e){
     e.preventDefault();
@@ -203,7 +261,7 @@
         const r=await fetch(BACKEND+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body),cache:'no-store'});
         const d=await r.json().catch(()=>({}));window.__smvRecordTiming?.(path,performance.now()-started,r.ok);if(!r.ok)throw new Error(d.error||`Service returned HTTP ${r.status}.`);return d;
       };
-      const [order]=await Promise.all([api('/private-consultation/create-order',payload),window.__smvEnsureCheckout()]);
+      const [order]=await Promise.all([api('/private-consultation/create-order',payload),ensurePrivateCheckout()]);
       if(!order?.orderId||!order?.keyId||!order?.consultationId)throw new Error('Private consultation payment order was not created correctly.');
       if(order?.offerId&&msg)msg.innerHTML='<span class="success">'+esc(order.offerBannerText||order.offerName||'Offer applied')+' — Pay ₹'+(Number(order.amount||0)/100).toFixed(2)+'</span>';
       if(typeof window.Razorpay!=='function')throw new Error('Payment checkout is not ready. Please refresh and try again.');
