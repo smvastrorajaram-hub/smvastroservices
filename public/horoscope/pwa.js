@@ -4,7 +4,7 @@ const button=document.getElementById('installApp'),status=document.getElementByI
 const ta=()=>document.documentElement.lang==='ta';
 function update(){
  document.getElementById('appManifest').href=ta()?'manifest-ta.webmanifest':'manifest-en.webmanifest';
- button.textContent=ta()?'செயலியை நிறுவுக':'Install app';
+ button.querySelector('span').textContent=ta()?'SMV ஜாதகம் நிறுவுக':'Install SMV HOROSCOPE';
  button.hidden=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
  status.textContent=failed?(ta()?'இணையமில்லா கோப்புகளைச் சேமிக்க முடியவில்லை. இணைய இணைப்புடன் மீண்டும் திறக்கவும்.':'Offline download failed. Reopen with an internet connection.'):(ready?(ta()?'இணையமில்லாமல் பயன்படுத்தத் தயார்.':'Ready for offline use.'):(ta()?'இணையமில்லா பயன்பாட்டிற்கான கோப்புகள் சேமிக்கப்படுகின்றன…':'Preparing files for offline use…'));
 }

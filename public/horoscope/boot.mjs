@@ -9,7 +9,7 @@ window.SMVEngineReady=(async()=>{
     return 'offline';
   }
   try{
-    const r=await fetch(window.SMV_BACKEND_URL+'/api/smv-mode',{cache:'no-store'});
+    const r=await fetch(window.SMV_BACKEND_URL+'/api/smv-mode',{cache:'no-store',signal:AbortSignal.timeout(8000)});
     const d=await r.json();
     if(r.ok && d && d.mode==='server'){
       window.__SMV_ENGINE_MODE__='online';

@@ -63,7 +63,7 @@
    const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement.closest('script,style'))continue;for(const [ta,en]of Object.entries(map))n.nodeValue=n.nodeValue.split(ta).join(en);}return;
   }
   const map={};for(const [ta,en]of Object.entries(window.__smvHoroscopeEnglishDictionary||{}))if(!map[en])map[en]=ta;
-  Object.assign(map,window.SMVSourceTamilDictionary||{},extra,window.SMVAdditionalTamil||{});
+  Object.assign(map,window.SMVSourceTamilDictionary||{},extra,window.SMVAdditionalTamil||{},{'Yuga':'யுக','English name sound':'ஆங்கிலப் பெயர் ஒலி','Tamil name sound':'தமிழ்ப் பெயர் ஒலி','Pratipada':'பிரதமை','Dvitiya':'துவிதியை','Tritiya':'திரிதியை','Chaturthi':'சதுர்த்தி','Panchami':'பஞ்சமி','Shashthi':'ஷஷ்டி','Saptami':'சப்தமி','Ashtami':'அஷ்டமி','Navami':'நவமி','Dashami':'தசமி','Ekadashi':'ஏகாதசி','Dwadashi':'துவாதசி','Trayodashi':'திரயோதசி','Chaturdashi':'சதுர்த்தசி','Purnima':'பௌர்ணமி','Amavasya':'அமாவாசை','Garaja':'கரசை','Vanija':'வணிசை','Vishti':'பத்திரை','Bava':'பவம்','Balava':'பாலவம்','Kaulava':'கௌலவம்','Taitila':'தைதுலம்','Shakuni':'சகுனி','Chatushpada':'சதுஷ்பாதம்','Naga':'நாகவம்','Kimstughna':'கிம்ஸ்துக்னம்'});
   const keys=Object.keys(map).filter(k=>/[A-Za-z]/.test(k)).sort((a,b)=>b.length-a.length);
   const re=new RegExp('(?<![A-Za-z])(?:'+keys.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![A-Za-z])','g');
   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
@@ -79,7 +79,7 @@
   $('languageTamil').setAttribute('aria-pressed',String(lang==='ta'));$('languageEnglish').setAttribute('aria-pressed',String(lang==='en'));
   try{localStorage.setItem('smvHoroscopeLanguage',lang);}catch{}
   const result=$('englishHoroscopeResult');
-  if(old!==lang&&result.dataset.resultLanguage&&!result.classList.contains('hidden'))$('generateEnglishHoroscope').click();
+  if(old!==lang&&result.dataset.resultLanguage&&!result.classList.contains('hidden'))await window.__smvSwitchHoroscopeLanguage?.(lang);
  }
  $('languageTamil').onclick=()=>select('ta');$('languageEnglish').onclick=()=>select('en');
  let lang='en';try{lang=localStorage.getItem('smvHoroscopeLanguage')==='ta'?'ta':'en';}catch{}const requested=new URLSearchParams(location.search).get('lang');if(['ta','en'].includes(requested))lang=requested;select(lang);

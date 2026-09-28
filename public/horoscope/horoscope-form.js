@@ -23,7 +23,7 @@
   setupLocation('english');
   const text=(en,ta)=>document.documentElement.lang==='ta'?ta:en;
   let busy=false;
-  window.__smvHoroscopeIsBusy=()=>busy;
+  window.__smvHoroscopeIsBusy=()=>busy||window.__smvSnapshotBusy;
 
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
     if(busy)return;
@@ -81,6 +81,8 @@ if(lat===''||lon===''){
       // a partially populated Advanced tree. First build the core chart, copy only
       // that stable core result, rename the containers, then run ONE complete
       // /api/horoscope/full request directly into the English Advanced root.
+      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60});
+      if(await window.__smvOpenMatchingSavedReport?.('advanced_analysis',window.__smvGetReportContext('advanced_analysis')))return;
       const generated=await window.__smvGenerateHoroscopeEngine(false);
       const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
       if(source&&target&&source.innerHTML.trim()){
@@ -99,6 +101,34 @@ if(lat===''||lon===''){
         if(lang==='en')window.__smvApplyEnglishToHoroscope(target);
         window.__smvBindHoroscopeInteractions(target,generated||{},$('englishAstroName')?.value?.trim()||'User',lang);
 
+        await window.__smvLoadBasicPanchang({...window.__smvGetReportContext('advanced_analysis'),language:lang},target);
+        const originalBirth=window.__smvGetReportContext('advanced_analysis'),basicSnapshot=target.__smvBasicData,reportName=($('englishAstroName')?.value||'Horoscope').trim();
+        let completedFull=null;
+        window.__smvSwitchHoroscopeLanguage=async(next,quiet=false)=>{
+          if(busy)return;busy=true;
+          try{
+            await target.__smvPrepareReport?.();
+            window.__smvRenderCachedCore(generated);target.innerHTML=source.innerHTML;source.innerHTML='';source.classList.add('hidden');
+            const adv=target.querySelector('#tamilAdvancedAstrology');if(adv)adv.id='englishAdvancedAstrology';
+            const tr=target.querySelector('#tamilDailyTransitPanchangSlot');if(tr)tr.id='englishDailyTransitPanchangSlot';
+            window.__smvRenderBasicSnapshot(basicSnapshot,target,next,originalBirth);
+            if(next==='en')window.__smvApplyEnglishToHoroscope(target);
+            window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
+            if(completedFull)await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
+            else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
+            await window.__smvPredictionRenderPromise;
+            window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
+          }finally{busy=false;}
+        };
+
+        const buildViews=async()=>{
+          const original=target.dataset.resultLanguage||lang,docLang=document.documentElement.lang,other=original==='ta'?'en':'ta';
+          const views={};window.__smvSnapshotBusy=true;
+          try{await target.__smvPrepareReport?.();if(original==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,original);views[original]=target.innerHTML;
+            document.documentElement.lang=other;await window.__smvSwitchHoroscopeLanguage(other,true);await target.__smvPrepareReport?.();if(other==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,other);views[other]=target.innerHTML;
+          }finally{document.documentElement.lang=docLang;await window.__smvSwitchHoroscopeLanguage(original,true);await target.__smvPrepareReport?.();if(original==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,original);window.__smvSnapshotBusy=false;}
+          return views;
+        };
         const englishAdvancedRoot=$('englishAdvancedAstrology');
         if(!englishAdvancedRoot || typeof window.__smvLoadAdvancedAstrology!=='function'){
           throw new Error('English Advanced Astrology container is not ready.');
@@ -112,8 +142,12 @@ if(lat===''||lon===''){
           const runEnglishAdvanced=async()=>{
             target.classList.add('hidden'); target.setAttribute('aria-busy','true');
             englishAdvancedRoot.innerHTML='';
-            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId});
+            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot});
+            await window.__smvPredictionRenderPromise;
+            completedFull=window.__smvLastFullReport;
+            window.__smvLocalizeTamilResult?.(target,lang);target.dataset.resultLanguage=lang;
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
+            window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:window.__smvLastFullReport||generated}}));
           };
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
           if(!allowed){
@@ -123,7 +157,7 @@ if(lat===''||lon===''){
           }
           await runEnglishAdvanced();
         }else{
-          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId});
+          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot});
         }
 
         /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +
@@ -152,4 +186,5 @@ if(lat===''||lon===''){
     }
   });
   $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishNakshatra','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishRasi'))$('englishRasi').value='Aries';if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const section=$('english-horoscope');section?.classList.remove('hidden');section?.scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'','#english-horoscope');}));
 })();
