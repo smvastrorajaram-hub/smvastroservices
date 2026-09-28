@@ -1,0 +1,28 @@
+SMV ASTRO + HOROSCOPE ROOT FIX V63
+Date: 2026-09-27
+Backend: https://smvastroservices.onrender.com
+
+ROOT CAUSES FIXED
+1. Standalone /horoscope page did not define window.SMV_BACKEND_URL. Paid-feature requests therefore went to the frontend host instead of Render.
+2. boot.mjs checked ./api/smv-mode relative to /horoscope/, so online engine detection could fall back to offline even while Render was online.
+3. Tamil generation path calculated Advanced Analysis without the payment gate. English had the gate; Tamil did not.
+4. Paid-feature config failure silently fell back to price=0/free. It now keeps Core Horoscope available but does not unlock paid Advanced/Marriage features.
+5. Added public GET /api/smv-mode server contract for online/offline adapter selection.
+
+SOURCE ACCEPTANCE
+- New Render backend references: present
+- Old Render backend references: 0
+- /horoscope-feature/config: present
+- /horoscope-feature/access: present
+- /horoscope-feature/create-order: present
+- /horoscope-feature/verify-payment: present
+- /api/smv-mode: present
+- English Advanced pre-calculation payment gate: present
+- Tamil Advanced pre-calculation payment gate: present
+- Marriage Matching payment gate: present
+- Core Horoscope remains independent of paid-feature config failure
+- Local server modules: dashboard-events, refund-service, swiss_vedic, astro_advanced, dasa_engine, transit_panchang present at root
+- JS syntax checks: PASS
+
+RUNTIME NOTE
+Payment UI appears only when Admin has feature ON and price > 0 in smv_settings/horoscope_features. Price 0 intentionally means free.
