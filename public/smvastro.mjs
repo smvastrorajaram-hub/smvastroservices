@@ -133,6 +133,43 @@ function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
  if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend. Backend: '+RAZORPAY_BACKEND_URL);
 }
+// Shared authenticated transport for Admin, Customer and Astrologer actions.
+// Firebase reuses a valid ID token; payment/refund mutations are never replayed here.
+async function renderApi(path, options={}){
+  const user=auth?.currentUser;
+  if(!user)throw new Error('Please log in to continue.');
+  if(typeof path!=='string'||!path.startsWith('/')||path.startsWith('//'))throw new Error('Invalid API path.');
+  const {timeoutMs=20000,signal,...request}=options;
+  const controller=new AbortController();
+  const cancel=()=>controller.abort(signal?.reason);
+  let timer;
+  if(signal?.aborted)cancel();else signal?.addEventListener('abort',cancel,{once:true});
+  const perform=async()=>{
+    const token=await user.getIdToken();
+    if(auth?.currentUser?.uid!==user.uid)throw new Error('Your login changed. Please try again.');
+    if(controller.signal.aborted)throw new Error('Request cancelled.');
+    const headers=new Headers(request.headers||{});
+    headers.set('Authorization','Bearer '+token);
+    headers.set('Accept','application/json');
+    if(request.body!=null&&!(request.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
+    const response=await fetch(RAZORPAY_BACKEND_URL+path,{...request,headers,cache:'no-store',signal:controller.signal});
+    if(auth?.currentUser?.uid!==user.uid)throw new Error('Your login changed. Please try again.');
+    if(response.status===204)return {};
+    let data;
+    try{data=await response.json();}catch(e){throw new Error('Server returned an invalid response ('+response.status+'). Please try again.');}
+    if(!response.ok||data?.success===false){
+      const error=new Error(data?.error||data?.message||'Server request failed ('+response.status+').');
+      error.status=response.status;throw error;
+    }
+    return data;
+  };
+  try{
+    return await Promise.race([perform(),new Promise((_,reject)=>{
+      timer=setTimeout(()=>{reject(new Error('Server request timed out. Check the current status before trying again.'));controller.abort();},Number.isFinite(timeoutMs)&&timeoutMs>0?timeoutMs:20000);
+    })]);
+  }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
+}
+
 async function renderPublicApi(path, options={}){
   const headers={"Content-Type":"application/json",...(options.headers||{})};
   const response=await fetch(RAZORPAY_BACKEND_URL+path,{...options,headers});
@@ -3779,6 +3816,7 @@ $('adminReviews')
  }catch(e){
  const message='<div class="empty error">'+escapeHtml(e.message||String(e))+'</div>';
  if($('adminDataLoadMsg'))$('adminDataLoadMsg').innerHTML=message;
+ document.querySelectorAll('#admin .empty').forEach(el=>{if(/^Loading\b/i.test(el.textContent.trim()))el.innerHTML=message;});
  for(const id of ['adminPendingQuestions','adminAnswers','adminRefunds']){const el=$(id);if(el&&!el.querySelector('[data-question]'))el.innerHTML=message;}
  }
 }
