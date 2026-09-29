@@ -767,6 +767,25 @@ app.post("/submit-answer", async (req, res) => {
       wordCount, previousStatus: String(q.status || ""), nextStatus: bypassApproval ? "answered" : "processing", bypassApproval
     });
 
+    // Customer email must follow the answer-release workflow exactly:
+    // - Auto Allow ON: the answer is released now, so email the customer now.
+    // - Auto Allow OFF: do not email the customer before Admin approval.
+    //   /admin/approve-answer is the single release/email point for that path.
+    if (!bypassApproval) {
+      await questionRef.set({
+        answerEmailStatus: {
+          state: "awaiting_admin_approval",
+          updatedAt: FieldValue.serverTimestamp()
+        }
+      }, { merge: true });
+
+      return res.json({
+        ok: true,
+        answerSaved: true,
+        status: "processing"
+      });
+    }
+
     const customerEmail = String(
       q.customerEmail || await getUserEmail(q.customerId) || ""
     ).trim();
@@ -774,15 +793,17 @@ app.post("/submit-answer", async (req, res) => {
     const astrologerEmail = String(await getUserEmail(q.astrologerId) || "").trim();
     const astrologerName = String(q.astrologerName || "Astrologer");
 
-    const subject = "SMV ASTRO — Astrologer answer submitted";
+    const subject = "SMV ASTRO — Your astrology answer";
     const text = [
       `Dear ${customerName},`,
       "",
-      bypassApproval ? `${astrologerName} has answered your astrology question. The answer is now ready to view.` : `${astrologerName} has submitted an answer to your astrology question. It is now waiting for Admin review.`,
+      `${astrologerName} has answered your astrology question. The answer is now ready to view.`,
       "",
       `Question: ${q.question || ""}`,
       `Question ID: ${questionId}`,
-      ...(bypassApproval ? ["", "Astrologer Answer:", String(answer || "").trim()] : []),
+      "",
+      "Astrologer Answer:",
+      String(answer || "").trim(),
       "",
       "Regards,",
       "SMV ASTRO"
@@ -796,7 +817,7 @@ app.post("/submit-answer", async (req, res) => {
     };
 
     if (!recipients.length) {
-      const error = "No customer or admin email address is configured.";
+      const error = "No customer email address is configured.";
       console.error(`Resend delivery issue | Question ID: ${questionId} | Reason: ${error}`);
       emailStatusPatch.state = "failed";
       emailStatusPatch.error = error;
