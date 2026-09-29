@@ -797,7 +797,12 @@ app.post("/submit-answer", async (req, res) => {
 
     const q = snap.data() || {};
     const workflow = await getOpenWorkflowSettings();
-    const bypassApproval = workflow.allowWithoutAdminApproval && q.adminApprovalBypassed === true;
+    // Backward-compatible Auto Allow resolution:
+    // New records persist adminApprovalBypassed explicitly. Older paid/open questions may
+    // predate that field; when the CURRENT workflow is Auto Allow ON, treat only an
+    // explicit false as Admin-required. This lets legacy unanswered questions follow the
+    // same release path without changing login/dashboard code.
+    const bypassApproval = workflow.allowWithoutAdminApproval && q.adminApprovalBypassed !== false;
     if (String(q.astrologerId || "") !== String(user.uid)) {
       return res.status(403).json({ error: "This question is not assigned to you." });
     }
@@ -856,6 +861,41 @@ app.post("/submit-answer", async (req, res) => {
     // - Auto Allow ON: the answer is released now, so email the customer now.
     // - Auto Allow OFF: do not email the customer before Admin approval.
     //   /admin/approve-answer is the single release/email point for that path.
+    const customerEmail = await resolveCustomerEmail(q);
+    const customerName = String(q.customerName || q.birthName || "Customer");
+    const astrologerEmail = String(await getUserEmail(q.astrologerId) || "").trim();
+    const astrologerName = String(q.astrologerName || "Astrologer");
+    const answerHash=crypto.createHash("sha256").update(cleanAstrologerAnswer(answer)).digest("hex").slice(0,16);
+
+    // Every actual submission produces Admin + Astrologer event notifications once.
+    // These are event-driven writes only: no listener/retry loop and no MutationObserver.
+    await Promise.allSettled([
+      addAdminEventNotification(
+        bypassApproval ? "answer_auto_released" : "answer_waiting_approval",
+        bypassApproval ? "Answer Auto Released" : "Answer Waiting for Approval",
+        `${astrologerName} submitted an answer for ${customerName} (${questionId}).`,
+        {questionId,customerId:q.customerId||null,astrologerId:q.astrologerId||null}
+      ),
+      db.collection("smv_notifications").add({
+        userId:q.astrologerId,type:bypassApproval?"answer_auto_released":"answer_submitted",
+        title:bypassApproval?"Answer submitted and released":"Answer submitted",
+        message:bypassApproval?"Your answer was released to the customer.":"Your answer is waiting for Admin approval.",
+        questionId,createdAt:FieldValue.serverTimestamp(),read:false
+      }),
+      sendEventEmailOnce({
+        eventKey:`public:${questionId}:answer_submitted_admin:${answerHash}`,to:[ADMIN_EMAIL],
+        subject:bypassApproval?"SMV ASTRO — Answer Submitted & Released":"SMV ASTRO — Answer Waiting for Approval",
+        text:`${astrologerName} submitted an answer for ${customerName}.\n\nQuestion ID: ${questionId}\nStatus: ${bypassApproval?"Released automatically to customer":"Waiting for Admin approval"}`,
+        context:{questionId,event:bypassApproval?"answer_auto_released":"answer_waiting_approval"}
+      }),
+      sendEventEmailOnce({
+        eventKey:`public:${questionId}:answer_submitted_astrologer:${answerHash}`,to:[astrologerEmail],replyTo:ADMIN_EMAIL,
+        subject:bypassApproval?"SMV ASTRO — Your Answer Was Released":"SMV ASTRO — Answer Submitted for Review",
+        text:`Your answer for Question ID ${questionId} was submitted successfully. ${bypassApproval?"It has been released to the customer.":"It is waiting for Admin approval."}`,
+        context:{questionId,event:"answer_submission_confirmation"}
+      })
+    ]);
+
     if (!bypassApproval) {
       await questionRef.set({
         answerEmailStatus: {
@@ -864,17 +904,8 @@ app.post("/submit-answer", async (req, res) => {
         }
       }, { merge: true });
 
-      return res.json({
-        ok: true,
-        answerSaved: true,
-        status: "processing"
-      });
+      return res.json({ok:true,answerSaved:true,status:"processing"});
     }
-
-    const customerEmail = await resolveCustomerEmail(q);
-    const customerName = String(q.customerName || q.birthName || "Customer");
-    const astrologerEmail = String(await getUserEmail(q.astrologerId) || "").trim();
-    const astrologerName = String(q.astrologerName || "Astrologer");
 
     const emailContent = answerReadyEmail({customerName, astrologerName, question:q.question, questionId, answer});
     const {subject, text, html} = emailContent;
@@ -895,7 +926,6 @@ app.post("/submit-answer", async (req, res) => {
     } else {
       for (const recipient of recipients) {
         const recipientKey = recipient.toLowerCase();
-        const answerHash=crypto.createHash("sha256").update(cleanAstrologerAnswer(answer)).digest("hex").slice(0,16);
         const result = await sendEventEmailOnce({
           eventKey:`public:${questionId}:answer_ready:${answerHash}`,
           to: [recipient],
