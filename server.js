@@ -782,12 +782,13 @@ app.post("/submit-answer", async (req, res) => {
       "",
       `Question: ${q.question || ""}`,
       `Question ID: ${questionId}`,
+      ...(bypassApproval ? ["", "Astrologer Answer:", String(answer || "").trim()] : []),
       "",
       "Regards,",
       "SMV ASTRO"
     ].join("\n");
 
-    const recipients = uniqueRecipients([customerEmail, ADMIN_EMAIL]);
+    const recipients = uniqueRecipients([customerEmail]);
     const emailResults = {};
     const emailStatusPatch = {
       state: "completed",
@@ -894,12 +895,12 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
     } else if(event==="answer_submitted"){
       if(customerEmail)to=[customerEmail]; if(ADMIN_EMAIL&&!to.includes(ADMIN_EMAIL))to.push(ADMIN_EMAIL); subject="SMV ASTRO — Astrologer answer submitted"; text=`Dear ${customerName},\n\n${astrologerName} has submitted an answer to your astrology question. It is now waiting for Admin review.\n\nQuestion: ${q.question||""}\nQuestion ID: ${questionId}\n\nRegards,\nSMV ASTRO`;
     } else if(event==="answer_approved"){
-      if(customerEmail)to.push(customerEmail); if(astrologerEmail&&!to.includes(astrologerEmail))to.push(astrologerEmail); subject="SMV ASTRO — Astrology answer approved"; text=`Your astrology answer has been approved by SMV ASTRO Admin.\n\nQuestion: ${q.question||""}\nQuestion ID: ${questionId}\n\nThe customer can now view the approved answer.`;
+      if(customerEmail)to=[customerEmail]; subject="SMV ASTRO — Your astrology answer"; text=`Dear ${customerName},\n\nYour astrology answer is ready.\n\nQuestion: ${q.question||""}\nQuestion ID: ${questionId}\n\nAstrologer Answer:\n${String(q.answer||"").trim()}\n\nRegards,\nSMV ASTRO`;
     } else if(event==="answer_rejected"){
       if(astrologerEmail)to=[astrologerEmail]; subject="SMV ASTRO — Answer revision required"; text=`Dear ${astrologerName},\n\nYour submitted answer requires revision.\n\nReason: ${reason||"Please review and resubmit the answer."}\nQuestion ID: ${questionId}\n\nRegards,\nSMV ASTRO`;
     }
-    // Every question/answer event keeps a master copy for the Admin.
-    if (ADMIN_EMAIL && !to.includes(ADMIN_EMAIL)) to.push(ADMIN_EMAIL);
+    // Astrologer answer delivery is Customer-only. Other workflow events may keep the Admin copy.
+    if (!["answer_submitted","answer_approved"].includes(event) && ADMIN_EMAIL && !to.includes(ADMIN_EMAIL)) to.push(ADMIN_EMAIL);
     to = uniqueRecipients(to);
     if(!to.length) return res.status(400).json({error:"No recipient email address is available for this update."});
     await sendSystemEmail({to,replyTo:ADMIN_EMAIL,subject,text});
@@ -3007,21 +3008,13 @@ app.post("/admin/approve-answer", express.json({limit:"20kb"}), async (req, res)
     }
 
     const customerEmail = String(q.customerEmail || await getUserEmail(q.customerId) || "").trim();
-    const astrologerEmail = String(await getUserEmail(q.astrologerId) || "").trim();
     const customerName = String(q.customerName || q.birthName || "Customer");
-    const astrologerName = String(q.astrologerName || "Astrologer");
-    const subject = "SMV ASTRO — Astrology answer approved";
+    const subject = "SMV ASTRO — Your astrology answer";
     const results = {};
-    const recipients = uniqueRecipients([customerEmail, astrologerEmail, ADMIN_EMAIL]);
+    const recipients = uniqueRecipients([customerEmail]);
     for (const recipient of recipients) {
       const key = recipient.toLowerCase();
-      const isCustomer = key === customerEmail.toLowerCase();
-      const isAstrologer = key === astrologerEmail.toLowerCase();
-      const text = isCustomer
-        ? `Dear ${customerName},\n\nYour astrology answer has been approved by SMV ASTRO Admin and is now ready to view.\n\nQuestion: ${q.question || ""}\nQuestion ID: ${questionId}\n\nRegards,\nSMV ASTRO`
-        : isAstrologer
-          ? `Dear ${astrologerName},\n\nYour submitted astrology answer has been approved by SMV ASTRO Admin.\n\nQuestion ID: ${questionId}\nCommission credited: ₹${amount.toFixed(2)}\n\nRegards,\nSMV ASTRO`
-          : `SMV ASTRO answer approval notification.\n\nQuestion ID: ${questionId}\nCustomer Email: ${customerEmail || "N/A"}\nAstrologer Email: ${astrologerEmail || "N/A"}\nCommission: ₹${amount.toFixed(2)}`;
+      const text = `Dear ${customerName},\n\nYour astrology answer is ready.\n\nQuestion: ${q.question || ""}\nQuestion ID: ${questionId}\n\nAstrologer Answer:\n${String(q.answer || "").trim()}\n\nRegards,\nSMV ASTRO`;
       const result = await sendSystemEmail({to:[recipient],replyTo:ADMIN_EMAIL,subject,text});
       if (result?.failed) {
         results[key] = {status:"failed",error:String(result.error || "Unknown email error")};
