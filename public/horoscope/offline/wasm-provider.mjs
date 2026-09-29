@@ -7,10 +7,11 @@ let instance=null;
 async function loadFactory(){
   if(typeof globalThis.__SMV_CREATE_SWEPH_WASM__==='function') return globalThis.__SMV_CREATE_SWEPH_WASM__;
   try{
-    const mod=await import('./vendor/smv-swisseph-local.mjs');
+    const mod=await import('./vendor/smv-swisseph-local.mjs?v=82');
     return mod.createSMVSwissEph || mod.default;
   }catch(e){
-    throw new Error('Local Swiss Ephemeris WASM runtime is missing. Install the audited vendor runtime in offline/vendor/; no online fallback is permitted.');
+    const reason=String(e?.message||e||'unknown module-load error');
+    throw new Error('Local Swiss Ephemeris WASM runtime could not load: '+reason);
   }
 }
 export async function getSwe(){
