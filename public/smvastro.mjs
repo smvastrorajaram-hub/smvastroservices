@@ -44,10 +44,10 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
     buffer+=decoder.decode(value,{stream:true});
     let end;while((end=buffer.indexOf('\n\n'))!==-1){
      const event=buffer.slice(0,end);buffer=buffer.slice(end+2);
-     if(/^event: (change|ready)$/m.test(event))onChange();
+     if(/^event: change$/m.test(event))onChange();
     }
    }
-  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');onChange();}}
+  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');}}
   finally{if(!stopped){retry++;timer=setTimeout(connect,Math.min(15000,1000*2**Math.min(retry,4)));}}
  }
  connect();return ()=>{stopped=true;clearTimeout(timer);controller?.abort();};
@@ -192,7 +192,8 @@ let dashboardReadyUid=null;
 let dashboardReadyAt=0;
 let dashboardReadyRole=null;
 const $=id=>document.getElementById(id);
-const show=id=>$(id)?.classList.remove("hidden"); const hide=id=>$(id)?.classList.add("hidden");
+const syncAccountSurface=id=>{if(id==='dashboard'||id==='admin')window.__smvSyncWorkspace?.();};
+const show=id=>{$(id)?.classList.remove("hidden");syncAccountSurface(id);};const hide=id=>{$(id)?.classList.add("hidden");syncAccountSurface(id);};
 const go=id=>$(id)?.scrollIntoView({behavior:"smooth",block:"start"});
 function hideHomeSurface(){
   // Hide the COMPLETE public Home surface. Internal views such as Question Form
@@ -721,32 +722,39 @@ window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegist
 
 // Google Sign-In is a customer login method. Existing Email/Password, Customer ID,
 // and Astrologer ID flows remain unchanged.
-// IMPORTANT: This production site is hosted on GitHub Pages, not Firebase Hosting.
 // We therefore use Firebase signInWithPopup() only here. The redirect flow was
 // removed because storage partitioning caused Firebase "missing initial state"
 // errors on the production domain.
+let smvGoogleLoginInProgress=false;
+let smvEmailLoginInProgress=false;
 async function finishGoogleRoleLogin(googleUser, askNowLogin){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
   currentUser=googleUser;
   await googleUser.reload();
 
-  let profile=await getUserProfile(googleUser.uid);
+  // Google Sign-In is login-only. Never create a Customer profile here.
+  // A direct Firestore read intentionally has no artificial 10/15-second timeout:
+  // a slow first response is not a failed login and must not fall into registration.
+  smvProfiles.delete(googleUser.uid);
+  let profile={};
+  try{
+    const profileSnap=await getDoc(doc(db,"smv_users",googleUser.uid));
+    if(profileSnap.exists()) profile=profileSnap.data()||{};
+  }catch(profileErr){
+    console.error("Google role lookup failed",profileErr);
+    throw new Error("Unable to verify your registered account. Please try Google Login again.");
+  }
   let role=String(profile?.role||"").toLowerCase();
   const adminUser=(googleUser.uid===ADMIN_UID || role==="admin");
 
-  // Only a brand-new Google identity becomes a Customer. Existing Astrologer/Admin
-  // roles are never rewritten or duplicated by Google Sign-In.
-  if(!profile?.publicId && !adminUser && !role){
-    const profileResponse=await renderApi("/register-customer-profile",{
-      method:"POST",
-      body:JSON.stringify({name:googleUser.displayName||googleUser.email?.split("@")[0]||"Google Customer",phone:""})
-    },googleUser);
-    if(!profileResponse?.ok) throw new Error(profileResponse?.error||"Customer profile setup failed.");
-    profile=await getUserProfile(googleUser.uid);
-    role=String(profile?.role||"customer").toLowerCase();
+  if(!adminUser && !["customer","astrologer"].includes(role)){
+    try{await signOut(auth);}catch(_e){}
+    currentUser=null;
+    throw new Error("No registered SMV ASTRO account was found for this Google email. Please register first.");
   }
+  smvProfiles.set(googleUser.uid,{data:profile,at:Date.now()});
 
-  const resolvedRole=adminUser?"admin":(role||"customer");
+  const resolvedRole=adminUser?"admin":role;
   if(!["customer","astrologer","admin"].includes(resolvedRole)){
     await signOut(auth); currentUser=null;
     throw new Error("This account role could not be verified.");
@@ -798,11 +806,14 @@ async function signInWithGoogle(){
   const askNowLogin=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
   if(askNowLogin) askNowTransitionLock=true;
   try{
+    smvGoogleLoginInProgress=true;
     const provider=new GoogleAuthProvider();
     provider.setCustomParameters({prompt:"select_account"});
     const result=await withTimeout(signInWithPopup(auth,provider),30000);
     await finishGoogleRoleLogin(result?.user,askNowLogin);
+    smvGoogleLoginInProgress=false;
   }catch(e){
+    smvGoogleLoginInProgress=false;
     console.error("Google Sign-In failed",e);
     askNowTransitionLock=false;
     try{if(auth?.currentUser) await signOut(auth);}catch(_){ }
@@ -868,22 +879,51 @@ async function submitAuth(mode){
     if(askNowLogin) askNowTransitionLock=true;
     // Do not wait for a separate auth-state promise here. Firebase already returns
     // the signed-in user from signInWithEmailAndPassword; use that result directly.
-    const loginCred=await withTimeout(signInWithEmailAndPassword(auth,email,password),20000);
+    // Do not race Firebase Authentication against a client-side timeout here.
+    // A timed-out Promise.race does not cancel Firebase sign-in: on slower accounts
+    // Firebase can still authenticate moments later, the auth listener opens the
+    // dashboard, and the stale timeout then writes a false error into the Login
+    // modal. Await the canonical Firebase Auth result for this explicit login.
+    // Explicit Email/ID login owns this auth transition. The auth listener must
+    // not start a second profile/dashboard read in parallel. This both removes
+    // the login-vs-listener race and protects Firestore read quota.
+    smvEmailLoginInProgress=true;
+    const loginCred=await signInWithEmailAndPassword(auth,email,password);
     if(!loginCred?.user){throw new Error("Login did not return a Firebase user. Please try again.");}
     currentUser=loginCred.user;
-    await loginCred.user.reload(); const loginProfile=await getUserProfile(loginCred.user.uid); const loginRole=String(loginProfile?.role||"customer").toLowerCase(); const loginStatus=String(loginProfile?.status||"active").toLowerCase(); if(loginRole!=="admin" && loginCred.user.uid!==ADMIN_UID){
-      if(!loginCred.user.emailVerified){
-        await signOut(auth);
-        currentUser=null;
-        pendingAfterLogin=null;
-        msg.innerHTML='<span class="error"><b>Please verify your email first.</b><br>Check your email and click the verification link.<br><button type="button" class="btn" data-resend-verification="1" style="margin-top:10px">Resend Verification Email</button></span>';
-        return;
-      }
+    // A successful signInWithEmailAndPassword credential already contains the
+    // current verification state. Do not add a second reload network wait here.
+    // That wait used to keep the Login modal visible even though Firebase had
+    // already authenticated the user.
+    if(loginCred.user.uid!==ADMIN_UID && !loginCred.user.emailVerified){
+      smvEmailLoginInProgress=false;
+      await signOut(auth);
+      currentUser=null;
+      pendingAfterLogin=null;
+      msg.innerHTML='<span class="error"><b>Please verify your email first.</b><br>Check your email and click the verification link.<br><button type="button" class="btn" data-resend-verification="1" style="margin-top:10px">Resend Verification Email</button></span>';
+      return;
+    }
+
+    // Authentication is complete. Close Login immediately and expose a stable
+    // dashboard shell before any Firestore/profile hydration. Customer and
+    // Astrologer share this shell; the resolved role updates its heading below.
+    // ASK NOW and Admin-entry keep their protected destinations.
+    const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
+    const goToAdmin=pendingAfterLogin==="admin";
+    closeModal();
+    if(!goToQuestion && !goToAdmin && loginCred.user.uid!==ADMIN_UID){
+      hidePrimarySections("dashboard");
+      show("dashboard"); show("dashboardContent"); show("dashLink"); hide("adminLink");
+      if($("dashboardContent")) $("dashboardContent").innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+      smvShowRoleNav(); smvEnterInternalView("dashboard",true); go("dashboard");
+    }
+
+    const loginProfile=await getUserProfile(loginCred.user.uid);
+    const loginRole=String(loginProfile?.role||"customer").toLowerCase();
+    const loginStatus=String(loginProfile?.status||"active").toLowerCase(); if(loginRole!=="admin" && loginCred.user.uid!==ADMIN_UID){
       // Pending astrologers can log in. Their restricted dashboard is shown
       // below; protected consultation/earnings queries are skipped until approval.
 }
-    const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
-    const goToAdmin=pendingAfterLogin==="admin";
     const profile=await getUserProfile(loginCred.user.uid);
     const role=String(profile.role||loginRole||"customer").toLowerCase();
     const adminUser=(loginCred.user.uid===ADMIN_UID || role==="admin");
@@ -897,7 +937,7 @@ async function submitAuth(mode){
        is a normal login and opens Customer Dashboard while submitAuth() is
        trying to open the Question Form. This was the root cause of the
        screenshot: Dashboard title visible, Question Form missing. */
-    closeModal();
+    // Login modal was already closed immediately after Firebase Auth success.
 
     /* ASK NOW routing: Customer -> Customer Dashboard + Question Form.
        Astrologer -> Astrologer Dashboard. Admin -> Admin Dashboard.
@@ -1042,11 +1082,36 @@ async function submitAuth(mode){
   if(e?.code==="auth/network-request-failed") t="Network connection failed. Please try again.";
   if(/profile setup failed|server/i.test(t)) t="Registration could not finish the secure profile setup. Please check that the existing Render backend is online, then try again.";
   msg.innerHTML='<span class="error">'+escapeHtml(t)+'</span>';
- }finally{if($("submitAuth")){btn.disabled=false;btn.textContent=mode==="login"?"Login":"Create Account";}}
+ }finally{
+  smvEmailLoginInProgress=false;
+  if($("submitAuth")){btn.disabled=false;btn.textContent=mode==="login"?"Login":"Create Account";}
+ }
 }
 let authReadyResolve;
 const authReady=new Promise(r=>authReadyResolve=r);
 function waitForAuthReady(){return authReady;}
+// Shared public data promises persist when returning to the consultation view.
+let smvPublicListPromise=null;
+const smvPublicReviews=new Map();
+async function publicJSON(path){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+ try{const r=await fetch(RAZORPAY_BACKEND_URL+path,{cache:'no-store',signal:controller.signal});const d=await r.json();if(!r.ok)throw Error(d.error||'Public service unavailable');return d;}finally{clearTimeout(timer);}
+}
+window.__smvGetPublicAstrologersOnce=()=>{
+ if(!smvPublicListPromise)smvPublicListPromise=(async()=>{
+  try{const d=await publicJSON('/public/astrologers');if(!Array.isArray(d.astrologers))throw Error('Invalid directory');return d.astrologers;}
+  catch(e){const snap=await withTimeout(getDocs(query(collection(db,'smv_astrologers'),where('status','==','approved'))),12000);return snap.docs.map(d=>{const a=d.data();return {...a,id:d.id,chatPrice:Number(a.pricePerQuestion??a.chatPrice??0)};});}
+ })().catch(e=>{smvPublicListPromise=null;throw e;});
+ return smvPublicListPromise;
+};
+window.__smvGetPublicReviewsOnce=a=>{
+ const id=String(a.id||'');if(!id)return Promise.resolve([]);
+ if(!smvPublicReviews.has(id))smvPublicReviews.set(id,(async()=>{
+  try{const d=await publicJSON('/public/astrologers/'+encodeURIComponent(id)+'/reviews');if(!Array.isArray(d.reviews))throw Error('Invalid reviews');return d.reviews;}
+  catch(e){const snap=await withTimeout(getDocs(query(collection(db,'smv_reviews'),where('astrologerId','==',id),where('approved','==',true))),12000);return snap.docs.map(d=>({id:d.id,...d.data()}));}
+ })().catch(e=>{smvPublicReviews.delete(id);throw e;}));
+ return smvPublicReviews.get(id);
+};
 // ---------- Astrologer list ----------
 async function loadAstrologers(){ return loadAstroCards(); }
 let smvAstroListRequest=null;
@@ -1066,40 +1131,9 @@ async function smvLoadAstroCards(){
    const avg=valid.length?valid.reduce((sum,r)=>sum+clampRating(r.rating),0)/valid.length:0;
    return {avg,count:valid.length};
  };
- const getReviews=async a=>{
-   try{
-     const rr=await withTimeout(fetch(RAZORPAY_BACKEND_URL+"/public/astrologers/"+encodeURIComponent(a.id)+"/reviews",{cache:"no-store"}),10000);
-     const rd=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(rd.error||`Review service returned HTTP ${rr.status}.`);
-     return Array.isArray(rd.reviews)?rd.reviews:[];
-   }catch(apiErr){
-     console.warn('Public review API unavailable; using Firestore fallback:',apiErr);
-     const snap=await withTimeout(getDocs(query(collection(db,'smv_reviews'),where('astrologerId','==',a.id),where('approved','==',true))),10000);
-     return snap.docs.map(d=>({id:d.id,...(d.data()||{})}));
-   }
- };
- const addPrivateRating=(a,summary)=>{
-   const host=$('privateConsultationAstrologers'); if(!host)return;
-   const target=[...host.querySelectorAll('.smv-private-consult-row')].find(row=>{
-     const name=(row.querySelector('h3')?.textContent||'').trim().toLowerCase();
-     return name===String(a.name||'').trim().toLowerCase();
-   });
-   if(!target)return;
-   let el=target.querySelector('.smv-private-rating-summary');
-   if(!el){el=document.createElement('div');el.className='smv-private-rating-summary';const desc=target.querySelector('.smv-private-consult-description');(desc||target.querySelector('.smv-private-consult-head')||target).insertAdjacentElement(desc?'beforebegin':'afterend',el);}
-   el.innerHTML=summary.count?`${ratingStars(summary.avg)} <strong>${summary.avg.toFixed(1)} / 5</strong>`:`<span class="smv-rating-none">No ratings yet</span>`;
- };
+ const getReviews=a=>window.__smvGetPublicReviewsOnce(a);
  try{
-  let items=[];
-  try {
-    const r=await withTimeout(fetch(RAZORPAY_BACKEND_URL+"/public/astrologers",{cache:"no-store"}),12000);
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(d.error||`Astrologer service returned HTTP ${r.status}.`);
-    items=Array.isArray(d.astrologers)?d.astrologers:[];
-  } catch(backendErr) {
-    console.warn("Public astrologer backend unavailable; using Firestore fallback:",backendErr);
-    const snap=await withTimeout(getDocs(query(collection(db,"smv_astrologers"),where("status","==","approved"))),12000);
-    items=snap.docs.map(d=>({id:d.id,...(d.data()||{})}));
-  }
+  const items=await window.__smvGetPublicAstrologersOnce();
   if(!items.length){box.innerHTML='<div class="empty">No approved astrologers available yet.</div>';return;}
   box.innerHTML="";
   items.forEach(a=>{
@@ -1111,14 +1145,8 @@ async function smvLoadAstroCards(){
     const btn=row.querySelector('.smv-review-toggle'),reviewBox=row.querySelector('.smv-inline-reviews'),summaryBox=row.querySelector('.smv-astro-rating-summary');
     let loaded=false,reviewsCache=null;
     const ensureReviews=async()=>{if(reviewsCache)return reviewsCache;reviewsCache=await getReviews(a);return reviewsCache;};
-    ensureReviews().then(reviews=>{
-      const summary=ratingSummary(reviews);
-      summaryBox.innerHTML=summary.count?`${ratingStars(summary.avg)} <strong>${summary.avg.toFixed(1)} / 5</strong> <span class="smv-rating-count">(${summary.count} review${summary.count===1?'':'s'})</span>`:`<span class="smv-rating-none">No ratings yet</span>`;
-      addPrivateRating(a,summary);
-      const host=$('privateConsultationAstrologers');
-      if(host&&!host.__smvRatingObserver){host.__smvRatingObserver=new MutationObserver(()=>items.forEach(x=>{if(x.__smvSummary)addPrivateRating(x,x.__smvSummary);}));host.__smvRatingObserver.observe(host,{childList:true,subtree:true});}
-      a.__smvSummary=summary;
-    }).catch(err=>{console.warn('Rating summary load failed:',err);summaryBox.innerHTML='<span class="smv-rating-none">Ratings unavailable</span>';});
+    const displayRating=reviews=>{const avg=reviews?ratingSummary(reviews).avg:clampRating(a.rating||a.averageRating);summaryBox.innerHTML=avg?`${ratingStars(avg)} <strong>${Number(avg.toFixed(1))}/5</strong>`:'<span class="smv-rating-none">No ratings yet</span>';};
+    displayRating(null);
     btn.onclick=async()=>{
       const opening=reviewBox.classList.contains('hidden');
       reviewBox.classList.toggle('hidden',!opening);btn.setAttribute('aria-expanded',String(opening));
@@ -1126,8 +1154,8 @@ async function smvLoadAstroCards(){
       if(!opening||loaded)return;
       reviewBox.innerHTML='<div class="empty">Loading reviews...</div>';
       try{
-        const reviews=await ensureReviews();
-        reviewBox.innerHTML=reviews.length?reviews.map(r=>`<div class="smv-directory-review"><div class="stars">${ratingStars(r.rating)} <strong>${clampRating(r.rating).toFixed(1)} / 5</strong></div><p>${escapeHtml(r.review||'Verified customer review')}</p><span class="small">${escapeHtml(r.customerName||r.name||'Verified customer')}</span></div>`).join(''):'<div class="empty">No approved reviews for this astrologer yet.</div>';
+        const reviews=await ensureReviews();displayRating(reviews);
+        reviewBox.innerHTML=reviews.length?reviews.map(r=>`<div class="smv-directory-review"><div class="stars">${ratingStars(r.rating)}</div><p>${escapeHtml(r.review||'Verified customer review')}</p><span class="smv-review-customer">${escapeHtml(r.customerName||r.name||'Verified customer')}</span></div>`).join(''):'<div class="empty">No approved reviews for this astrologer yet.</div>';
         loaded=true;
       }catch(err){console.error('Directory review load failed:',err);reviewBox.innerHTML='<div class="empty error">Reviews are temporarily unavailable.</div>';}
     };
@@ -1857,7 +1885,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
  // the Question Form Back button was pressed, which could create a repeated
  // Loading -> open -> Loading cycle. Explicit data-changing actions can pass
  // force=true when a fresh render is actually required.
- if(!force && !smvDashboardDirty && Date.now()-dashboardReadyAt<15000 && dashboardReadyUid===loadUid && (!requestedRole || dashboardReadyRole===requestedRole) && smvInternalView==='dashboard' && box && !box.querySelector('.error')){
+ if(!force && !smvDashboardDirty && dashboardReadyAt>0 && dashboardReadyUid===loadUid && (!requestedRole || dashboardReadyRole===requestedRole) && smvInternalView==='dashboard' && box && !box.querySelector('.error')){
    show('dashboard');
    touchSession();
    armIdleTimer();
@@ -3841,6 +3869,9 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      hide('smv-content-hub'); window.__smvContentVisible=false;
      lastAuthUid=user.uid; window.__SMV_LOGGED_OUT=false; touchSession(); armIdleTimer(); window.dispatchEvent(new Event('smv:auth-user'));
      if(user.uid!==ADMIN_UID && !user.emailVerified){ await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); $("authBtn").textContent="Login"; return; }
+     // signInWithPopup also fires this listener. Let the explicit Google role
+     // resolver own navigation until the registered SMV role is verified.
+     if(smvGoogleLoginInProgress || smvEmailLoginInProgress){ armIdleTimer(); return; }
      // ASK NOW login has a protected destination. Let submitAuth() continue
      // to Customer Dashboard + Question Form instead of this normal dashboard-only path.
      // Never let a late auth-state callback replace an already-open Question Form.
@@ -3915,3 +3946,5 @@ if(firebaseInitError){
 }
 
 window.__SMV_APP_READY=true;
+window.dispatchEvent(new Event('smv:app-ready'));
+window.__smvSyncWorkspace?.();

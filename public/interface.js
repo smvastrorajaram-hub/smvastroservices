@@ -29,6 +29,7 @@
   const active=roots.some(el=>!el.classList.contains('hidden'));
   workspace.classList.toggle('hidden',!active);
   document.body.dataset.smvWorkspace=active?'open':'closed';
+  if(active){document.body.classList.remove('smv-consult-dedicated','smv-internal-public-view');document.getElementById('smv-consult-dedicated-shell')?.classList.add('hidden');}
   const internal=active||document.body.classList.contains('smv-consult-dedicated');
   for(const id of ['smv-public-page','smvPremiumHeaderV9','smv24-footer'])document.getElementById(id)?.classList.toggle('hidden',internal);
  }

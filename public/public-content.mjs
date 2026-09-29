@@ -150,11 +150,14 @@
       finally{bookingSubmitting=false;btn.disabled=false;btn.textContent='REQUEST APPOINTMENT';}
     });
   }
+  const privateRating=v=>Math.max(0,Math.min(5,Number(v)||0));
+  const privateStars=v=>{const n=privateRating(v);return `<span class="smv-rating-stars" aria-label="${n.toFixed(1)} out of 5">${[0,1,2,3,4].map(i=>`<span class="smv-rating-star" style="--fill:${Math.max(0,Math.min(1,n-i))*100}%">★</span>`).join('')}</span>`;};
+  const privateSummary=v=>{const n=privateRating(v);return n?`${privateStars(n)} <strong>${Number(n.toFixed(1))}/5</strong>`:'<span class="smv-rating-none">No ratings yet</span>';};
   let privateListRequest=null,privateListLoadedAt=0;
   async function loadPrivateAstrologers(){
     const host=$('privateConsultationAstrologers');if(!host)return;
     if(privateListRequest)return privateListRequest;
-    if(privateListLoadedAt&&Date.now()-privateListLoadedAt<60000)return;
+    if(privateListLoadedAt)return;
     if(!window.__smvGetPublicAstrologersOnce)return;
     host.innerHTML='<div class="empty">Loading approved astrologers...</div>';
     privateListRequest=(async()=>{
@@ -164,7 +167,7 @@
         for(const a of items){
           const row=document.createElement('article');row.className='smv-private-consult-row';
           const photo=a.photoData||a.photoURL||a.photoUrl||'',price=Number(a.chatPrice||0);
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
           const select=row.querySelector('[data-private-consult-astro]');
           select.onclick=()=>selectPrivateAstrologer(a,select);
           const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
@@ -172,7 +175,7 @@
             const open=reviews.classList.contains('hidden');reviews.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));
             if(!open||reviews.dataset.loaded)return;
             reviews.textContent='Loading reviews...';
-            try{const data=await window.__smvGetPublicReviewsOnce(a);reviews.innerHTML=data.length?data.map(r=>`<div class="smv-private-sub-review"><b>${esc(r.rating)} / 5</b><p>${esc(r.review||'Verified customer review')}</p></div>`).join(''):'No approved reviews yet.';reviews.dataset.loaded='1';}
+            try{const data=await window.__smvGetPublicReviewsOnce(a);const rated=data.filter(r=>privateRating(r.rating)>0);row.querySelector('.smv-private-rating-summary').innerHTML=privateSummary(rated.length?rated.reduce((n,r)=>n+privateRating(r.rating),0)/rated.length:0);reviews.innerHTML=data.length?data.map(r=>`<div class="smv-private-sub-review">${privateStars(r.rating)}<span class="smv-review-customer">${esc(r.customerName||r.name||'Verified customer')}</span><p>${esc(r.review||'Verified customer review')}</p></div>`).join(''):'No approved reviews yet.';reviews.dataset.loaded='1';}
             catch(e){reviews.textContent='Reviews are temporarily unavailable. Close and reopen to retry.';}
           };
           host.append(row);

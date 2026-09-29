@@ -78,6 +78,7 @@
   const params=new URLSearchParams(location.search);
   if(params.get('view')==='consult'){navigate('private-consultation',{historyMode:'replace'});return;}
   setDedicatedConsultView(false);
+  window.__smvSyncWorkspace?.();
   const id=location.hash.slice(1);if(targets.has(id)&&id!=='home')navigate(id,{historyMode:'none'});
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restore,{once:true});else restore();
