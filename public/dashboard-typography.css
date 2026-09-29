@@ -325,3 +325,13 @@
   width:auto!important;
   min-width:0!important;
 }
+
+/* V76: shared subheading scale and one compact section gap, all roles. */
+html body #dashboard #dashboardContent :is(h2,h3), html body #admin#admin .card :is(h2,h3){font-size:20px!important;line-height:1.35!important;font-weight:700!important;margin:0 0 8px!important;padding-top:0!important;}
+html body :is(#dashboard#dashboard,#admin#admin) .card::before,
+html body :is(#dashboard#dashboard,#admin#admin) :is(h2,h3,h4)::before,
+html body :is(#dashboard#dashboard,#admin#admin) :is(h2,h3,h4)::after{content:none!important;display:none!important;}
+html body :is(#dashboard#dashboard,#admin#admin) .card{padding:8px 0!important;margin:0 0 12px!important;}
+html body :is(#dashboard#dashboard,#admin#admin) .card:last-child{margin-bottom:0!important;}
+html body #dashboardContent .grid,html body #admin .grid{gap:12px!important;}
+html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin:0!important;}
