@@ -646,7 +646,7 @@ app.post("/astrologer/edit-answer", async (req, res) => {
     }
 
     const workflow = await getOpenWorkflowSettings();
-    const bypassEditable = workflow.allowWithoutAdminApproval && String(q.status || "") === "answered" && q.adminApprovalBypassed === true && !q.customerAnswerViewedAt;
+    const bypassEditable = workflow.allowWithoutAdminApproval && String(q.status || "") === "answered" && q.adminApprovalBypassed === true && !q.customerAnswerViewedAt && q.commissionStatus!=="credited";
     // In normal Admin-approval mode, approved answers are final. In open mode,
     // the astrologer may reopen the answer only until the customer has viewed it.
     if ((String(q.status || "") === "answered" || String(q.astrologerAnswerStatus || "") === "approved") && !bypassEditable) {
@@ -721,7 +721,7 @@ app.post("/submit-answer", async (req, res) => {
     // for Admin approval. Once Admin approves it (status = answered), editing
     // is no longer allowed.
     const editableStatuses = ["admin_approved", "revision_required", "processing", "admin_review"];
-    if (bypassApproval && String(q.status||"")==="answered" && q.customerAnswerViewedAt) return res.status(409).json({error:"The customer has already viewed this answer. It can no longer be edited."});
+    if (bypassApproval && String(q.status||"")==="answered" && (q.customerAnswerViewedAt||q.commissionStatus==="credited")) return res.status(409).json({error:"The customer has already viewed this answer. It can no longer be edited."});
     if (!editableStatuses.includes(String(q.status || "")) && !(bypassApproval && String(q.status||"")==="answered")) {
       return res.status(409).json({ error: "This answer can no longer be edited." });
     }
@@ -738,7 +738,7 @@ app.post("/submit-answer", async (req, res) => {
 
     // Save the answer before attempting email. This makes the submission
     // independent of browser notification calls and email-provider latency.
-    await questionRef.update({
+    await updateEditableAnswer(questionRef,"customerAnswerViewedAt",{
       answer,
       answerWordCount: wordCount,
       answerSubmittedAt: FieldValue.serverTimestamp(),
@@ -748,6 +748,7 @@ app.post("/submit-answer", async (req, res) => {
       astrologerEditMode: false,
       status: bypassApproval ? "answered" : "processing",
       astrologerAnswerStatus: bypassApproval ? "approved" : "submitted",
+      answerAvailableAt: bypassApproval ? (q.answerAvailableAt||q.answerApprovedAt||FieldValue.serverTimestamp()) : FieldValue.delete(),
       answerApprovedAt: bypassApproval ? FieldValue.serverTimestamp() : FieldValue.delete(),
       adminAnswerApprovedAt: bypassApproval ? FieldValue.serverTimestamp() : FieldValue.delete(),
       customerAnswerViewedAt: bypassApproval ? FieldValue.delete() : (q.customerAnswerViewedAt || FieldValue.delete()),
@@ -1615,53 +1616,22 @@ app.get("/astrologer/open-questions", async (req,res)=>{
   }catch(e){console.error("Open questions load failed:",e);return res.status(500).json({error:e?.message||"Unable to load open questions."});}
 });
 
-app.post("/customer/mark-answer-viewed", express.json({limit:"10kb"}), async (req,res)=>{
-  const user=await requireUser(req,res); if(!user)return;
-  try{
-    const questionId=String(req.body?.questionId||'').trim();
-    if(!questionId) return res.status(400).json({error:"Question ID is required."});
-    const ref=db.collection("smv_questions").doc(questionId);
-    const snap=await ref.get();
-    if(!snap.exists) return res.status(404).json({error:"Question not found."});
-    const q=snap.data()||{};
-    if(String(q.customerId||'')!==String(user.uid)) return res.status(403).json({error:"You do not own this question."});
-    if(String(q.status||'')!=="answered" || !String(q.answer||'').trim()) return res.status(409).json({error:"Answer is not ready yet."});
-
-    // Explicit VIEW ANSWER is the earning-unlock point. Never credit merely
-    // because the dashboard rendered the consultation.
-    if(q.customerAnswerViewedAt && String(q.commissionStatus||'')==="credited") {
-      return res.json({success:true,questionId,already:true,credited:true});
-    }
-
-    let astrologerPaymentId=String(q.astrologerPaymentId||'');
-    const amount=Number(q.astrologerCommissionAmount||q.commissionAmount||0);
-    const shouldCredit=!!q.astrologerId && Number.isFinite(amount) && amount>=0 && String(q.commissionStatus||'')!=="credited";
-    if(shouldCredit && !astrologerPaymentId){
-      const paymentId=await nextPaymentId();
-      astrologerPaymentId=paymentId.replace(/^SMV-PAY-/,"SMV-PAT-");
-      await db.collection("smv_payments").doc(astrologerPaymentId).set({
-        paymentId:astrologerPaymentId,type:"astrologer_earning",customerId:q.customerId||null,
-        astrologerId:q.astrologerId,questionId,bookingId:q.bookingId||null,
-        grossAmount:Number(q.amount||0),commissionPercent:Number(q.commissionPercent||q.commissionRate||0),
-        commissionAmount:amount,earningAmount:amount,status:"credited",paymentStatus:"pending_withdrawal",
-        source:"customer_answer_view",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
-      },{merge:false});
-    }
-    const patch={customerAnswerViewedAt:q.customerAnswerViewedAt||FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()};
-    if(shouldCredit){
-      patch.privateAstrologerCommissionRate=astrologerRate;
-        patch.privateAdminCommissionRate=Math.round((100-astrologerRate)*100)/100;
-        patch.astrologerAmount=astrologerAmount;patch.adminAmount=adminAmount;
-        patch.commissionStatus="credited"; patch.commissionCreditedAt=FieldValue.serverTimestamp();
-      patch.commissionAmount=amount; patch.astrologerCommissionAmount=amount; patch.astrologerPaymentId=astrologerPaymentId;
-    }
-    await ref.update(patch);
-    if(shouldCredit){
-      await db.collection("smv_notifications").add({userId:q.astrologerId,type:"earning_credited",title:"Earning Credited",message:`Customer viewed your answer. ₹${amount.toFixed(2)} is now available in your earnings.`,questionId,commissionAmount:amount,createdAt:FieldValue.serverTimestamp(),read:false});
-    }
-    return res.json({success:true,questionId,credited:shouldCredit,commissionAmount:shouldCredit?amount:0});
-  }catch(e){console.error("Mark answer viewed failed:",e);return res.status(500).json({error:e?.message||"Unable to open answer right now."});}
-});
+async function updateEditableAnswer(ref,viewKey,patch){
+ return db.runTransaction(async tx=>{const snap=await tx.get(ref);const current=snap.data()||{};
+ if(current[viewKey]||current.commissionStatus==='credited')throw Object.assign(new Error('Answer is completed. Editing is closed.'),{httpStatus:409});
+ tx.update(ref,patch);});
+}
+const answerCredit=require('./answer-credit')({db,FieldValue,privateAmounts:async c=>{
+ const saved={astrologerAmount:Number(c.astrologerAmount),adminAmount:Number(c.adminAmount),privateAstrologerCommissionRate:Number(c.privateAstrologerCommissionRate)};
+ return Object.values(saved).every(Number.isFinite)?saved:privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
+}});
+function markViewedRoute(kind,idKey){return async(req,res)=>{
+ const user=await requireUser(req,res);if(!user)return;
+ const id=String(req.body?.[idKey]||'').trim();if(!id)return res.status(400).json({error:'Answer ID is required.'});
+ try{const result=await answerCredit.settle(kind,id,{customerId:user.uid});return res.json({success:true,[idKey]:id,viewed:true,...result});}
+ catch(e){return res.status(e.httpStatus||500).json({error:e.message||'Unable to mark answer viewed.'});}
+};}
+app.post('/customer/mark-answer-viewed',express.json({limit:'10kb'}),markViewedRoute('public','questionId'));
 
 
 async function getAstrologerAutoApprovalSettings(includeSecret=false){
@@ -2128,12 +2098,12 @@ app.post("/astrologer/private-consultation/submit-answer",express.json({limit:"3
   const id=String(req.body?.consultationId||"").trim(),answer=String(req.body?.answer||"").trim();
   const ref=db.collection("smv_private_consultations").doc(id),s=await ref.get();if(!s.exists)return res.status(404).json({error:"Private consultation not found."});
   const c=s.data()||{};if(c.astrologerId!==user.uid)return res.status(403).json({error:"This private consultation is assigned to another astrologer."});
-  if(c.customerViewedAt)return res.status(409).json({error:"Customer has already viewed this answer. Editing is closed."});
+  if(c.customerViewedAt||c.commissionStatus==="credited")return res.status(409).json({error:"Customer has already viewed this answer. Editing is closed."});
   if(!["approved_for_astrologer","revision_required","answer_pending_admin_approval","answered"].includes(String(c.status||"")))return res.status(409).json({error:"This consultation is not available for answering or editing."});
   const wf=await getPrivateConsultWorkflow(),minimumWords=wf.minimumAnswerWords||20,wordCount=answer.split(/\s+/).filter(Boolean).length;
   if(!id||wordCount<minimumWords)return res.status(400).json({error:`Enter an answer of at least ${minimumWords} words.`,minimumAnswerWords:minimumWords,wordCount});
   const direct=wf.allowWithoutAdminApproval===true;
-  await ref.update({answer,status:direct?"answered":"answer_pending_admin_approval",answerStatus:direct?"approved":"pending_admin_approval",answerSubmittedAt:FieldValue.serverTimestamp(),answerLastEditedAt:FieldValue.serverTimestamp(),commissionStatus:"pending_customer_view",updatedAt:FieldValue.serverTimestamp()});
+  await updateEditableAnswer(ref,"customerViewedAt",{answer,status:direct?"answered":"answer_pending_admin_approval",answerStatus:direct?"approved":"pending_admin_approval",answerSubmittedAt:FieldValue.serverTimestamp(),answerLastEditedAt:FieldValue.serverTimestamp(),answerAvailableAt:direct?(c.answerAvailableAt||c.answerApprovedAt||c.answerSubmittedAt||FieldValue.serverTimestamp()):FieldValue.delete(),commissionStatus:"pending_customer_view",updatedAt:FieldValue.serverTimestamp()});
   if(!direct)await addAdminPrivateNotification("private_answer_waiting","Private Answer Waiting for Approval",`${c.astrologerName||"Selected astrologer"} submitted an answer for ${c.customerName||"Customer"}.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
   else await addAdminPrivateNotification("private_answer_auto_allowed","Private Answer Auto Allowed",`${c.astrologerName||"Selected astrologer"} submitted an answer for ${c.customerName||"Customer"}; Auto Allow released it directly.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
   await db.collection("smv_notifications").add({userId:c.customerId,type:direct?"private_answer_ready":"private_answer_submitted",title:direct?"Private consultation answer ready":"Astrologer answer submitted",message:direct?`${c.astrologerName||"Your astrologer"} submitted your private consultation answer. It is ready to view.`:`${c.astrologerName||"Your astrologer"} submitted an answer. It is waiting for Admin approval.`,consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
@@ -2144,7 +2114,7 @@ app.post("/admin/private-consultation/approve-answer",express.json({limit:"10kb"
   const id=String(req.body?.consultationId||"").trim(),ref=db.collection("smv_private_consultations").doc(id),s=await ref.get();if(!s.exists)return res.status(404).json({error:"Private consultation not found."});
   const c=s.data()||{};if(!String(c.answer||"").trim())return res.status(409).json({error:"No answer is waiting."});
   if(c.status!=="answer_pending_admin_approval")return res.status(409).json({error:"This answer is not waiting for Admin approval."});
-  await ref.update({status:"answered",answerStatus:"approved",answerApprovedAt:FieldValue.serverTimestamp(),answerApprovedBy:user.uid,commissionStatus:"pending_customer_view",updatedAt:FieldValue.serverTimestamp()});
+  await ref.update({status:"answered",answerStatus:"approved",answerAvailableAt:FieldValue.serverTimestamp(),answerApprovedAt:FieldValue.serverTimestamp(),answerApprovedBy:user.uid,commissionStatus:"pending_customer_view",updatedAt:FieldValue.serverTimestamp()});
   await db.collection("smv_notifications").add({userId:c.customerId,type:"private_answer_ready",title:"Private consultation answer ready",message:`Admin approved the answer from ${c.astrologerName||"your selected astrologer"}. Your answer is ready to view.`,consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
   await db.collection("smv_notifications").add({userId:c.astrologerId,type:"private_answer_approved",title:"Private consultation answer approved",message:"Admin approved your private consultation answer. Earnings remain pending until the customer views the answer.",consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
   await addAdminPrivateNotification("private_answer_approved","Private Answer Approved",`Answer from ${c.astrologerName||"Selected astrologer"} for ${c.customerName||"Customer"} was approved.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
@@ -3009,6 +2979,7 @@ app.post("/admin/approve-answer", express.json({limit:"20kb"}), async (req, res)
         status:"answered",
         astrologerAnswerStatus:"approved",
         commissionStatus:"pending_customer_view",
+        answerAvailableAt:FieldValue.serverTimestamp(),
         answerApprovedAt:FieldValue.serverTimestamp(),
         adminAnswerApprovedAt:FieldValue.serverTimestamp(),
         answerApprovedBy:user.uid,
@@ -3120,7 +3091,7 @@ app.get("/astrologer/earnings", async (req, res) => {
     // that predate the canonical private earning payment ledger.
     privateSnap.docs.forEach(d=>{
       const c=d.data()||{};
-      if(String(c.commissionStatus||"")!=="credited"||!c.customerViewedAt)return;
+      if(String(c.commissionStatus||"")!=="credited")return;
       if(creditedPrivateIds.has(d.id))return;
       const amount=Number(c.astrologerCreditedAmount??c.astrologerAmount??0);
       if(!Number.isFinite(amount)||amount<0)return;
@@ -3145,67 +3116,7 @@ app.get("/customer/private-consultations",async(req,res)=>{
     return res.json({success:true,customerId:user.uid,consultations});
   }catch(e){console.error("Private customer consultations load failed:",e);return res.status(500).json({error:"Unable to load private consultations."});}
 });
-app.post("/customer/private-consultation/mark-viewed",express.json({limit:"10kb"}),async(req,res)=>{
-  const user=await requireUser(req,res);if(!user)return;
-  const id=String(req.body?.consultationId||"").trim();
-  if(!id)return res.status(400).json({error:"Consultation ID is required."});
-  const ref=db.collection("smv_private_consultations").doc(id);
-  try{
-    const earningPaymentId="SMV-PC-EARN-"+id;
-    const earningRef=db.collection("smv_payments").doc(earningPaymentId);
-    const result=await db.runTransaction(async tx=>{
-      const s=await tx.get(ref);if(!s.exists)throw Object.assign(new Error("Private consultation not found."),{httpStatus:404});
-      const c=s.data()||{};
-      if(String(c.customerId||"")!==String(user.uid))throw Object.assign(new Error("You do not own this private consultation."),{httpStatus:403});
-      if(c.status!=="answered"||!String(c.answer||"").trim())throw Object.assign(new Error("Answer is not ready to view."),{httpStatus:409});
-      if(c.paymentStatus!=="paid"||c.refundId||c.status==="question_rejected")throw Object.assign(new Error("This consultation is not eligible for earnings credit."),{httpStatus:409});
-      if(c.answerStatus!=="approved")throw Object.assign(new Error("Answer is not approved for customer view."),{httpStatus:409});
-
-      const chatPrice=Number(c.chatPrice||c.amount||0);
-      let astrologerAmount=Number(c.astrologerAmount),adminAmount=Number(c.adminAmount);
-      let astrologerRate=Number(c.privateAstrologerCommissionRate);
-      if(!Number.isFinite(astrologerAmount)||!Number.isFinite(adminAmount)||!Number.isFinite(astrologerRate)){
-        const livePrivateCommission=await getPrivateCommissionSettings();
-        const snapAmounts=privateCommissionSnapshot(chatPrice,livePrivateCommission);
-        astrologerAmount=snapAmounts.astrologerAmount;adminAmount=snapAmounts.adminAmount;astrologerRate=snapAmounts.privateAstrologerCommissionRate;
-      }
-      if(!c.astrologerId||!Number.isFinite(astrologerAmount)||astrologerAmount<0||!Number.isFinite(adminAmount)||adminAmount<0)
-        throw Object.assign(new Error("Private consultation commission snapshot is invalid."),{httpStatus:409});
-
-      const alreadyCredited=String(c.commissionStatus||"")==="credited" && !!c.commissionCreditedAt;
-      const patch={customerViewedAt:c.customerViewedAt||FieldValue.serverTimestamp(),customerViewStatus:"viewed",updatedAt:FieldValue.serverTimestamp()};
-      if(!alreadyCredited){
-        tx.set(earningRef,{
-          paymentId:earningPaymentId,type:"astrologer_earning",source:"private_consultation_customer_view",
-          customerId:c.customerId||null,astrologerId:c.astrologerId,consultationId:id,questionId:null,
-          question:c.question||"Private Consultation",grossAmount:chatPrice,
-          commissionPercent:astrologerRate,
-          commissionAmount:astrologerAmount,earningAmount:astrologerAmount,adminCommissionAmount:adminAmount,
-          status:"credited",paymentStatus:"pending_withdrawal",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
-        },{merge:false});
-        patch.commissionStatus="credited";
-        patch.commissionCreditedAt=FieldValue.serverTimestamp();
-        patch.astrologerPaymentId=earningPaymentId;
-        patch.astrologerCreditedAmount=astrologerAmount;
-        patch.adminCommissionStatus="credited";
-        patch.adminCommissionCreditedAt=FieldValue.serverTimestamp();
-        patch.adminCreditedAmount=adminAmount;
-      }
-      tx.update(ref,patch);
-      return {c,alreadyCredited,astrologerAmount,adminAmount,earningPaymentId};
-    });
-
-    if(!result.c.customerViewedAt){
-      await db.collection("smv_notifications").add({userId:result.c.astrologerId,type:"private_answer_viewed",title:"Private Answer Viewed",message:`${result.c.customerName||"Customer"} viewed your private consultation answer.`,consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
-      await addAdminPrivateNotification("private_answer_viewed","Private Answer Viewed by Customer",`${result.c.customerName||"Customer"} viewed the answer from ${result.c.astrologerName||"the selected astrologer"}.`,id,{customerId:result.c.customerId,astrologerId:result.c.astrologerId});
-    }
-    if(!result.alreadyCredited){
-      await db.collection("smv_notifications").add({userId:result.c.astrologerId,type:"private_earning_credited",title:"Private Consultation Earning Credited",message:`Customer viewed your answer. ₹${result.astrologerAmount.toFixed(2)} is now available in your earnings.`,consultationId:id,commissionAmount:result.astrologerAmount,createdAt:FieldValue.serverTimestamp(),read:false});
-      await addAdminPrivateNotification("private_commission_credited","Private Consultation Commission Credited",`Customer viewed the answer. Astrologer ₹${result.astrologerAmount.toFixed(2)} and Admin ₹${result.adminAmount.toFixed(2)} were credited from the payment snapshot.`,id,{customerId:result.c.customerId,astrologerId:result.c.astrologerId,astrologerAmount:result.astrologerAmount,adminAmount:result.adminAmount});
-    }
-    return res.json({success:true,consultationId:id,viewed:true,credited:!result.alreadyCredited,astrologerAmount:result.astrologerAmount,adminAmount:result.adminAmount});
-  }catch(e){console.error("Private consultation mark-viewed/credit failed:",e);return res.status(e.httpStatus||500).json({error:e.message||"Unable to open private answer right now."});}
-});
+app.post('/customer/private-consultation/mark-viewed',express.json({limit:'10kb'}),markViewedRoute('private','consultationId'));
 
 app.get("/customer/consultations", async (req, res) => {
   res.set("Cache-Control","private, no-store, max-age=0");
@@ -3701,10 +3612,13 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
     let totalEarnings = 0;
     questionSnap.docs.forEach(d => {
       const q = d.data() || {};
-      if (q.status === "answered" && q.commissionStatus === "credited" && q.customerAnswerViewedAt) {
+      if (q.status === "answered" && q.commissionStatus === "credited") {
         totalEarnings += Number(q.astrologerCommissionAmount || q.commissionAmount || 0);
       }
     });
+
+    const privateCreditSnap=await db.collection("smv_private_consultations").where("astrologerId","==",user.uid).get();
+    privateCreditSnap.docs.forEach(d=>{const c=d.data()||{};if(c.commissionStatus==='credited')totalEarnings+=Number(c.astrologerCreditedAmount??c.astrologerAmount??0);});
 
     const withdrawalSnap = await db.collection("smv_withdrawals")
       .where("astrologerId", "==", user.uid).get();
@@ -4229,4 +4143,5 @@ app.use((req, res) => {
   return res.status(404).send("Not Found");
 });
 
+answerCredit.start();
 app.listen(PORT, "0.0.0.0", () => console.log(`SMV ASTRO Razorpay backend running on port ${PORT}`));
