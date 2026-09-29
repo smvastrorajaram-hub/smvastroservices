@@ -226,7 +226,14 @@ async function v39TransitFor(payload,date,lang,full){
  const key=JSON.stringify([day,lat,lon,offset]);if(V39_TRANSIT_CACHE.has(key))return V39_TRANSIT_CACHE.get(key);
  // The bundled Swiss engine uses the same ephemeris/formulas in both connection modes.
  v70TransitModules ||= Promise.all([import('./offline/swiss_vedic.browser.mjs'),import('./offline/transit_panchang.browser.mjs')]);
- const [sw,tp]=await v70TransitModules,input={date:day,time:'12:00',lat,lon,language:'en',utcOffsetMinutes:offset};await sw.calculateSwiss(input);const out=tp.transit(input);
+ const [sw]=await v70TransitModules,input={date:day,time:'12:00',lat,lon,language:'en',utcOffsetMinutes:offset};
+ // Root fix: do not call transit_panchang.browser.mjs' synchronous Swiss wrapper here.
+ // This path is lazy-loaded while preparing the paid report and the synchronous wrapper
+ // can run before its own WASM binding is ready. The awaited Swiss calculation below is
+ // already the authoritative transit chart needed by the prediction layer.
+ const chart=await sw.calculateSwiss(input);
+ const enPlanet={'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu'};
+ const out={ok:true,engine:chart?.engine,ayanamsa:chart?.ayanamsa,requested:{date:day,time:'12:00',latitude:lat,longitude:lon},planets:(chart?.planets||[]).map(p=>({...p,name:enPlanet[p.name]||p.name}))};
  if(!v39TransitPlanets(out).length)throw Error('Transit calculation did not complete.');V39_TRANSIT_CACHE.set(key,out);return out;
 }
 
