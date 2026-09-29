@@ -110,7 +110,7 @@ function renderAdminWorkflows({data, api, refresh, lang, escape: esc, date}) {
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserSessionPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
@@ -118,7 +118,7 @@ const firebaseConfig={apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomai
 let app=null, auth=null, db=null, functions=null, httpsCallableFn=null, firebaseInitError=null;
 try{
   app=initializeApp(firebaseConfig);
-  auth=getAuth(app);await setPersistence(auth,browserSessionPersistence);
+  auth=getAuth(app);await setPersistence(auth,browserLocalPersistence);
   db=getFirestore(app);
 }catch(initError){
   firebaseInitError=initError;
@@ -573,6 +573,22 @@ $("contentNav")?.addEventListener("click",(e)=>{
       const user=auth?.currentUser||currentUser;
       if(!user){ pendingAfterLogin="dashboard"; openAuth("login"); return; }
       currentUser=user; window.__SMV_ASK_NOW_INTENT=false; askNowTransitionLock=false;
+
+      // Reopening the role button while its dashboard is already rendered must
+      // reuse the current view. Do not re-read the profile or dashboard merely
+      // because the header button was touched again. Live change events and
+      // explicit Refresh/data-changing actions remain the only refresh triggers.
+      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden')){
+        hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
+        setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
+        try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
+        touchSession(); armIdleTimer(); return;
+      }
+      if(smvInternalView==='admin' && !$("admin")?.classList.contains('hidden')){
+        hideHomeSurface(); show('admin'); setHeaderRoleLabel('admin'); smvShowRoleNav();
+        try{history.replaceState({smvView:'admin'},'', '#admin');}catch(_e){}
+        touchSession(); armIdleTimer(); return;
+      }
       // Resolve the role once from the signed-in user's profile.  Do not call
       // isCurrentAdmin() here because it performs another profile read and can
       // race the Firebase auth listener during first dashboard load.
@@ -703,7 +719,7 @@ function openAuth(mode="login"){
     <label class="auth-field-label">${isLogin?"Email / ID":"Email"}</label><input class="auth-field" id="email" type="email" placeholder="Email" autocomplete="email">
     <label class="auth-field-label">Password</label><div class="password-wrap"><input class="auth-field" id="password" type="password" placeholder="Minimum 6 characters" autocomplete="${isLogin?"current-password":"new-password"}"><button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">${smvPasswordEye(false)}</button></div>
     <button class="btn auth-submit" id="submitAuth">${isLogin?"LOGIN":"CREATE ACCOUNT"}</button>
-    ${isLogin?`<div class="auth-divider" aria-hidden="true"><span>OR</span></div><button type="button" class="btn auth-google" id="googleAuthBtn"><span aria-hidden="true" style="font-weight:800;font-size:18px">G</span><span>Continue with Google</span></button>`:""}
+    ${isLogin?`<div class="auth-divider" aria-hidden="true"><span>OR</span></div><button type="button" class="btn auth-google" id="googleAuthBtn"><span class="google-g" aria-hidden="true"><svg viewBox="0 0 18 18" width="18" height="18"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.877 2.684-6.614Z"/><path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.715H.956v2.332A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.705A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.705V4.963H.956A9 9 0 0 0 0 9c0 1.45.347 2.824.956 4.037l3.007-2.332Z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.44 1.345l2.581-2.581C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.963l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"/></svg></span><span>Continue with Google</span></button>`:""}
     ${isLogin?`<button class="btn gray auth-secondary" id="forgotAuth">Forgot Password?</button>`:""}
     <button class="btn gray auth-secondary" id="switchAuth">${isLogin?(pendingAfterLogin==="question"?"New customer? Create account":"Create new customer account"):"I already have an account"}</button>
   </div>`);
@@ -802,7 +818,7 @@ async function signInWithGoogle(){
     msg.innerHTML='<span class="error">Google Sign-In is currently unavailable. Please use Email Login.</span>';
     return;
   }
-  btn.disabled=true; btn.innerHTML='<span aria-hidden="true" style="font-weight:800;font-size:18px">G</span><span>Signing in with Google...</span>';
+  btn.disabled=true; btn.querySelector('span:last-child').textContent='Signing in with Google...';
   const askNowLogin=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
   if(askNowLogin) askNowTransitionLock=true;
   try{
@@ -827,7 +843,7 @@ async function signInWithGoogle(){
     else if(e?.message) text=e.message;
     msg.innerHTML='<span class="error">'+escapeHtml(text)+'</span>';
   }finally{
-    btn.disabled=false; btn.innerHTML='<span aria-hidden="true" style="font-weight:800;font-size:18px">G</span><span>Continue with Google</span>';
+    btn.disabled=false; btn.querySelector('span:last-child').textContent='Continue with Google';
   }
 }
 window.signInWithGoogle=signInWithGoogle;
