@@ -197,6 +197,30 @@
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationQuestionCard')?.classList.add('hidden');
   });
+  async function refreshPrivateOfferQuote(showInvalid=false){
+    const astro=window.__smvSelectedPrivateConsultAstrologer;
+    const summary=$('privateConsultPaymentSummary'),msg=$('privateConsultOfferMsg');
+    if(!astro?.id||Number(astro.chatPrice)<1)return null;
+    const u=window.__smvFirebaseCurrentUser;
+    if(!u||String(window.__smvCurrentRole||'').toLowerCase()!=='customer')return null;
+    const code=String($('privateConsultPromoCode')?.value||'').trim();
+    try{
+      const token=await u.getIdToken();
+      const r=await fetch(BACKEND+'/offers/quote',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({service:'private_consultation',originalAmount:Number(astro.chatPrice),promoCode:code}),cache:'no-store'});
+      const q=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(q.error||`Offer service returned HTTP ${r.status}.`);
+      if(q.offerId){
+        if(summary){summary.innerHTML=`Private Consultation Chat Price: <s>₹${Number(q.originalAmount).toFixed(2)}</s> <b>₹${Number(q.finalAmount).toFixed(2)}</b>`;summary.dataset.smvOfferFinal=String(q.finalAmount);summary.dataset.smvOfferOriginal=String(q.originalAmount);}
+        if(msg)msg.innerHTML=`<span class="success">${esc(q.bannerText||q.offerName||'Offer applied')}</span>`;
+      }else{
+        if(summary){summary.textContent='Private Consultation Chat Price: ₹'+Number(astro.chatPrice).toFixed(2);delete summary.dataset.smvOfferFinal;delete summary.dataset.smvOfferOriginal;}
+        if(msg)msg.innerHTML=code&&showInvalid?'<span class="error">Promotion code is not valid or not eligible for this account.</span>':'';
+      }
+      return q;
+    }catch(err){if(msg&&showInvalid)msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';return null;}
+  }
+  $('privateConsultApplyPromo')?.addEventListener('click',()=>refreshPrivateOfferQuote(true));
+
   function selectPrivateAstrologer(astro,button){
     const user=window.__smvFirebaseCurrentUser;
     if(!user || window.__smvCurrentRole!=='customer'){
@@ -212,6 +236,7 @@
     summary.textContent='Private Consultation Chat Price: ₹'+Number(astro.chatPrice).toFixed(2);
     delete summary.dataset.smvOfferFinal;delete summary.dataset.smvOfferOriginal;
     $('privateConsultationQuestionCard')?.classList.remove('hidden');
+    refreshPrivateOfferQuote(false).catch(()=>{});
     $('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
   window.__smvSelectPrivateAstrologer=selectPrivateAstrologer;
@@ -310,6 +335,7 @@
     if(selected)selected.textContent='';
     if(summary)summary.textContent='';
     if(msg)msg.textContent='';
+    if($('privateConsultOfferMsg'))$('privateConsultOfferMsg').textContent='';
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationAstrologers')?.scrollIntoView({behavior:'smooth',block:'start'});
   });

@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <label>Gender<select id="privateConsultGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
 <label>Your Question<textarea id="privateConsultQuestion" maxlength="10000" required="" rows="4"></textarea></label>
 <div id="privateConsultPaymentSummary"></div>
+<div id="privateConsultOfferControls" class="action-row" style="margin:8px 0"><input id="privateConsultPromoCode" maxlength="40" autocomplete="off" placeholder="Promotion code (optional)" style="max-width:220px"><button class="btn" type="button" id="privateConsultApplyPromo">APPLY</button><span class="small" id="privateConsultOfferMsg"></span></div>
 <button class="btn" id="privateConsultPayBtn" type="submit">PAY &amp; SUBMIT</button>
 <div class="small" id="privateConsultMsg"></div>
 </form>
@@ -456,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20260929-v77" type="module"></script>
+<script src="./public-content.mjs?v=20260929-v80-private-offer" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
