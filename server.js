@@ -2718,7 +2718,11 @@ app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUse
  const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:false,price:cfg.price});
  if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});
  const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_${reportKey}`),snap=await ref.get(),d=snap.exists?(snap.data()||{}):{};
- const unlocked=await recoverHoroscopePurchase(ref,d);if(!unlocked&&await unresolvedLegacyHoroscope(user.uid,f))return res.json({enabled:true,unlocked:false,legacyNeedsLink:true,price:cfg.price,error:'Your earlier payment needs its original birth details linked by the administrator. Do not pay again.'});return res.json({success:true,feature:f,enabled:true,unlocked,price:cfg.price,paymentId:d.razorpayPaymentId||''});
+ const unlocked=await recoverHoroscopePurchase(ref,d);
+ // A legacy feature-level purchase has no trustworthy birth identity. It must never
+ // unlock or block a different birth chart. Admin can link that old purchase to its
+ // original birth details separately; every new report identity remains independently payable.
+ return res.json({success:true,feature:f,enabled:true,unlocked,price:cfg.price,paymentId:d.razorpayPaymentId||''});
  }catch(e){console.error('Horoscope access',e);return res.status(503).json({error:'Unable to restore paid access. Please retry; do not pay again.'});}});
 app.post('/horoscope-feature/create-order',express.json({limit:'20kb'}),async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
@@ -2730,7 +2734,7 @@ app.post('/horoscope-feature/create-order',express.json({limit:'20kb'}),async(re
   if(cfg.price<=0)return res.json({success:true,feature:f,free:true,unlocked:true,amount:0});
   const amount=Math.round(cfg.price*100),id=`${user.uid}_${f}_${reportKey}`,ref=db.collection('smv_horoscope_purchases').doc(id),snap=await ref.get(),old=snap.exists?(snap.data()||{}):{};
   if(await recoverHoroscopePurchase(ref,old))return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
-  if(await unresolvedLegacyHoroscope(user.uid,f))return res.status(409).json({error:'Your earlier payment needs its original birth details linked by the administrator. Do not pay again.'});
+  // Unresolved legacy payments are not matched to this report identity; do not block a new chart.
   const attempt=Math.max(0,Number(old.paymentAttempt||0))+1,nonce=`${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
   const receipt=`SMVH-${crypto.createHash('sha1').update(`${id}|${nonce}`).digest('hex').slice(0,28)}`;
   const order=await razorpay.orders.create({amount,currency:'INR',receipt,notes:{uid:user.uid,feature:f,reportKey,attempt:String(attempt)}});
@@ -2794,12 +2798,15 @@ app.post('/horoscope-feature/pdf',express.json({limit:'2mb'}),async(req,res)=>{
   const defaultTitle=f==='marriage_matching'?'SMV Marriage Matching Report':'SMV Horoscope Report';
   const title=String(req.body?.title||defaultTitle).trim().slice(0,120),filename=f==='marriage_matching'?'SMV-Marriage-Matching.pdf':'SMV-Horoscope.pdf';
   // Generate completely before sending headers, so failures cannot become truncated PDFs.
-  const doc=new PDFDocument({size:'A4',margins:{top:42,bottom:42,left:44,right:44},info:{Title:title,Author:'SMV ASTRO SERVICES'}});
+  const doc=new PDFDocument({size:'A4',bufferPages:true,margins:{top:58,bottom:58,left:48,right:48},info:{Title:title,Author:'SMV ASTRO SERVICES'}});
   const tamilFont=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
   doc.registerFont('Tamil',tamilFont);
   const chunks=[],finished=new Promise((resolve,reject)=>{doc.on('data',c=>chunks.push(c));doc.once('end',()=>resolve(Buffer.concat(chunks)));doc.once('error',reject);});
-  const write=(value,size,align='left')=>{doc.fontSize(size);for(const line of value.split('\n')){const runs=line.match(/[\u0B80-\u0BFF]+|[^\u0B80-\u0BFF]+/g)||[' '];runs.forEach((run,i)=>doc.font(/[\u0B80-\u0BFF]/.test(run)?'Tamil':'Helvetica').text(run,{continued:i<runs.length-1,align,lineGap:3}));}};
-  try{write(title,18,'center');doc.moveDown(0.7);write(text,10.5);doc.end();}catch(error){doc.destroy(error);await finished.catch(()=>{});throw error;}
+  const mixed=(line,size,opts={})=>{doc.fontSize(size);const runs=String(line||' ').match(/[\u0B80-\u0BFF]+|[^\u0B80-\u0BFF]+/g)||[' '];runs.forEach((run,i)=>doc.font(/[\u0B80-\u0BFF]/.test(run)?'Tamil':(opts.bold?'Helvetica-Bold':'Helvetica')).text(run,{continued:i<runs.length-1,lineGap:opts.lineGap??3,align:opts.align||'left'}));};
+  const header=()=>{doc.font('Helvetica-Bold').fontSize(15).text('SMV ASTRO SERVICES',{align:'center'});doc.moveDown(.18);doc.font('Helvetica').fontSize(8.5).text('Sri Madurai Veerayah Astro Services',{align:'center'});doc.moveDown(.35);doc.moveTo(48,doc.y).lineTo(547,doc.y).lineWidth(.7).stroke();doc.moveDown(.55);};
+  const footer=()=>{const y=785;doc.save();doc.moveTo(48,y-10).lineTo(547,y-10).lineWidth(.4).stroke();doc.font('Helvetica').fontSize(7.5).text('SMV ASTRO SERVICES  •  smvastroservices.in',48,y,{width:499,align:'center',lineBreak:false});doc.restore();};
+  doc.on('pageAdded',header);
+  try{header();mixed(title,17,{align:'center',bold:true,lineGap:5});doc.moveDown(.8);for(const raw of text.split('\n')){const line=raw.trimEnd();if(!line.trim()){doc.moveDown(.45);continue;}const heading=/^(?:[IVX]+\.|ADVANCED ANALYSIS|NUMEROLOGY|VIMSOTTARI|MARRIAGE|MATCHING|PREDICTION|REMEDIAL|TRANSIT|DASA|CHART|[A-Z][A-Z \/&-]{5,})/.test(line.trim());if(heading){doc.moveDown(.25);mixed(line,11.5,{bold:true,lineGap:4});doc.moveDown(.12);}else mixed(line,9.7,{lineGap:3.4});}for(let i=0;i<doc.bufferedPageRange().count;i++){doc.switchToPage(i);footer();}doc.end();}catch(error){doc.destroy(error);await finished.catch(()=>{});throw error;}
   const pdf=await finished;res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`attachment; filename="${filename}"`);res.setHeader('Cache-Control','no-store');return res.send(pdf);
  }catch(e){console.error('Horoscope feature PDF error',e);if(!res.headersSent)return res.status(500).json({error:'Unable to generate PDF.'});try{res.end()}catch(_){} }
 });
