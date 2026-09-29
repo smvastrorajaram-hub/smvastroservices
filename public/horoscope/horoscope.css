@@ -3065,3 +3065,15 @@ html body .smv26-channels a:where(:not(.smv33-hero, .smv33-hero *, .smv-home-off
 .smv-real-pdf-download[hidden]{display:none}
 
 #smvSavedReports{max-width:980px;margin:24px auto;padding:16px}.saved-report-tools,.saved-report-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.saved-report-row{padding:10px 0;border-bottom:1px solid #dfcfad}.saved-report-row>span{flex:1 1 180px}.saved-report-tools button,.saved-report-row button{font:inherit;font-size:13px;padding:7px 11px;border:1px solid #b18e4c;border-radius:7px;background:#fff9e9;color:#721f1f;cursor:pointer}#smvSavedViewer{margin-top:20px}.smv-horoscope-auth .btn{flex:0 0 auto;width:auto;min-width:90px;padding:8px 18px;align-items:center;justify-content:center;text-align:center;margin:0}
+
+/* V76: compact installation control and local password visibility. */
+#siteFooter .smv-install-area{max-width:420px;margin:20px auto 0;padding:0 12px;}
+#siteFooter #installApp{display:inline-flex;align-items:center;justify-content:center;gap:10px;max-width:100%;min-height:48px;padding:10px 16px;margin:0;border-radius:12px;font-size:15px;line-height:1.4;box-sizing:border-box;}
+#siteFooter #installApp[hidden]{display:none;}
+#siteFooter #installApp img{display:block;width:36px;height:36px;object-fit:contain;flex-shrink:0;margin:0;border-radius:6px;}
+#siteFooter #installApp span{white-space:normal;text-align:left;}
+#siteFooter #installStatus{font-size:12px;line-height:1.5;margin:10px 0 0;}
+#smvHoroscopeAuth .smv-password-field{position:relative;}
+#smvHoroscopeAuth .smv-password-field input{box-sizing:border-box;padding-right:50px;width:100%;}
+#smvHoroscopeAuth [data-password-toggle]{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:42px;min-width:42px;height:42px;padding:8px;margin:0;border:0;border-radius:6px;background:transparent;color:#624c39;box-shadow:none;}
+#smvHoroscopeAuth [data-password-toggle] [hidden]{display:none;}
