@@ -725,40 +725,67 @@ window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegist
 // We therefore use Firebase signInWithPopup() only here. The redirect flow was
 // removed because storage partitioning caused Firebase "missing initial state"
 // errors on the production domain.
-async function finishGoogleCustomerLogin(googleUser, askNowLogin){
+async function finishGoogleRoleLogin(googleUser, askNowLogin){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
   currentUser=googleUser;
   await googleUser.reload();
-  const existing=await getUserProfile(googleUser.uid);
-  const existingRole=String(existing?.role||"").toLowerCase();
-  if(existingRole==="astrologer" || existingRole==="admin" || googleUser.uid===ADMIN_UID){
-    askNowTransitionLock=false; window.__SMV_ASK_NOW_INTENT=false; pendingAfterLogin=null;
-    await signOut(auth); currentUser=null;
-    throw new Error("Google Sign-In is for Customer accounts only. Please use the appropriate Astrologer/Admin login.");
-  }
-  if(existingRole && existingRole!=="customer") throw new Error("This account role could not be verified.");
-  if(!existing?.publicId){
+
+  let profile=await getUserProfile(googleUser.uid);
+  let role=String(profile?.role||"").toLowerCase();
+  const adminUser=(googleUser.uid===ADMIN_UID || role==="admin");
+
+  // Only a brand-new Google identity becomes a Customer. Existing Astrologer/Admin
+  // roles are never rewritten or duplicated by Google Sign-In.
+  if(!profile?.publicId && !adminUser && !role){
     const profileResponse=await renderApi("/register-customer-profile",{
       method:"POST",
       body:JSON.stringify({name:googleUser.displayName||googleUser.email?.split("@")[0]||"Google Customer",phone:""})
     },googleUser);
     if(!profileResponse?.ok) throw new Error(profileResponse?.error||"Customer profile setup failed.");
+    profile=await getUserProfile(googleUser.uid);
+    role=String(profile?.role||"customer").toLowerCase();
   }
-  const profile=await getUserProfile(googleUser.uid);
-  setHeaderRoleLabel("customer");
+
+  const resolvedRole=adminUser?"admin":(role||"customer");
+  if(!["customer","astrologer","admin"].includes(resolvedRole)){
+    await signOut(auth); currentUser=null;
+    throw new Error("This account role could not be verified.");
+  }
+
+  setHeaderRoleLabel(resolvedRole);
+  window.__smvCurrentRole=resolvedRole;
   closeModal();
-  if(askNowLogin){
+
+  // ASK NOW remains Customer-only. Staff Google login always returns to its own dashboard.
+  if(askNowLogin && resolvedRole==="customer"){
     await openQuestionService({fastAfterLogin:true,profile});
     pendingAfterLogin=null;
     return;
   }
+  if(askNowLogin && resolvedRole!=="customer"){
+    askNowTransitionLock=false;
+    window.__SMV_ASK_NOW_INTENT=false;
+  }
+
   pendingAfterLogin=null;
-  hide("admin"); hide("adminLink"); hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
+  hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
   hide("appointment"); hide("contact"); hide("home"); hide("askNowSection"); hide("approved-astrologers"); hide("faq");
-  show("dashLink"); show("dashboard"); hidePrimarySections("dashboard");
-  smvEnterInternalView("dashboard",true);
-  await loadDashboard("customer");
+
+  if(resolvedRole==="admin"){
+    hide("dashboard"); hide("dashLink");
+    hidePrimarySections("admin"); show("admin"); show("adminLink");
+    smvShowRoleNav(); smvEnterInternalView("admin",true); go("admin");
+    await loadAdminPanel();
+    setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
+    return;
+  }
+
+  hide("admin"); hide("adminLink");
+  show("dashLink"); show("dashboard"); show("dashboardContent");
+  if($("dashboardTitle")) $("dashboardTitle").textContent=resolvedRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
+  if($("dashboardContent")) $("dashboardContent").innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
   smvShowRoleNav(); smvEnterInternalView("dashboard",true); go("dashboard");
+  await loadDashboard(resolvedRole);
 }
 
 async function signInWithGoogle(){
@@ -767,21 +794,14 @@ async function signInWithGoogle(){
     msg.innerHTML='<span class="error">Google Sign-In is currently unavailable. Please use Email Login.</span>';
     return;
   }
-  if(pendingAfterLogin==="admin"){
-    msg.innerHTML='<span class="error">Google Sign-In is available for Customer accounts only. Please use your Admin login.</span>';
-    return;
-  }
   btn.disabled=true; btn.innerHTML='<span aria-hidden="true" style="font-weight:800;font-size:18px">G</span><span>Signing in with Google...</span>';
   const askNowLogin=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
   if(askNowLogin) askNowTransitionLock=true;
   try{
     const provider=new GoogleAuthProvider();
     provider.setCustomParameters({prompt:"select_account"});
-    // Popup-only Google authentication. Do not call signInWithRedirect() here:
-    // the GitHub Pages production domain previously returned Firebase
-    // "missing initial state" when redirect storage was partitioned.
     const result=await withTimeout(signInWithPopup(auth,provider),30000);
-    await finishGoogleCustomerLogin(result?.user,askNowLogin);
+    await finishGoogleRoleLogin(result?.user,askNowLogin);
   }catch(e){
     console.error("Google Sign-In failed",e);
     askNowTransitionLock=false;
