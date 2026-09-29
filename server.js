@@ -2037,7 +2037,7 @@ app.get("/admin-data", async (req, res) => {
   try {
     // Read each collection independently. One damaged/missing collection must
     // never prevent the Admin Dashboard itself from opening.
-    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval] = await Promise.all([
+    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, offers, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval] = await Promise.all([
       readCollection("smv_users"),
       readCollection("smv_astrologers"),
       readCollection("smv_questions"),
@@ -2045,6 +2045,7 @@ app.get("/admin-data", async (req, res) => {
       readCollection("smv_private_consultations"),
       readCollection("smv_admin_notifications"),
       readCollection("smv_notifications",db.collection("smv_notifications").where("userId","==",ADMIN_UID)),
+      readCollection(OFFER_COLLECTION),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getPrivateCommissionSettings(),
       db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),
@@ -2060,6 +2061,7 @@ app.get("/admin-data", async (req, res) => {
       users: users.items,
       astrologers: astrologers.items,
       questions: questions.items,
+      offers: offers.items,
       privateConsultations: privateConsultations.items,
       adminNotifications: [
         ...adminNotifications.items,
@@ -2079,7 +2081,7 @@ app.get("/admin-data", async (req, res) => {
         })
       ],
       payments: payments.items,
-      errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null }
+      errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null, offers: offers.error || null }
     });
   } catch (e) {
     console.error("Admin data load failed:", e);
