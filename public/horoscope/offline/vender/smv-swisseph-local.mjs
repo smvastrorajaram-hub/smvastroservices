@@ -1,4 +1,4 @@
-import Swisseph from './wasm/swisseph.js';
+import Swisseph from './wasm/swisseph.mjs';
 const SWIEPH=2, SPEED=256, SIDEREAL=65536, LAHIRI=1, GREG=1;
 export async function createSMVSwissEph(){
   const M=await Swisseph({locateFile:(path)=>{const u=new URL('./wasm/'+path, import.meta.url);return (typeof process!=='undefined'&&process.versions?.node)?decodeURIComponent(u.pathname):u.href;}});
