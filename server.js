@@ -186,15 +186,54 @@ function uniqueRecipients(list) {
   return [...new Set((list || []).map(x => String(x || "").trim()).filter(Boolean))];
 }
 
-async function sendSystemEmail({ to = [], subject, text, replyTo }) {
+async function sendSystemEmail({ to = [], subject, text, html, replyTo }) {
   const recipients = uniqueRecipients(to);
   if (!recipients.length) return { skipped: true };
   try {
-    return await sendEmail({ to: recipients, subject, text, replyTo });
+    return await sendEmail({ to: recipients, subject, text, html, replyTo });
   } catch (e) {
     console.error("System email failed:", subject, e?.message || e);
     return { failed: true, error: e?.message || String(e) };
   }
+}
+
+
+const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || "https://smvastroservices.in").trim().replace(/\/$/, "");
+
+function cleanAstrologerAnswer(raw) {
+  const senderAddress = String(RESEND_FROM || "").match(/<([^>]+)>/)?.[1] || String(RESEND_FROM || "");
+  const senderEsc = senderAddress.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const identityPatterns = [
+    /^\s*SMV\s+ASTRO\s*<\s*noreply@smvastroservices\.in\s*>\s*$/gim,
+    /^\s*noreply@smvastroservices\.in\s*$/gim
+  ];
+  if (senderEsc) identityPatterns.push(new RegExp(`^\\s*(?:SMV\\s+ASTRO\\s*<\\s*)?${senderEsc}(?:\\s*>)?\\s*$`, "gim"));
+  let answer = String(raw || "").replace(/\r\n/g, "\n");
+  for (const re of identityPatterns) answer = answer.replace(re, "");
+  return answer.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function escapeEmailHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+function answerReadyEmail({customerName, astrologerName, question, questionId, answer}) {
+  const cleanAnswer = cleanAstrologerAnswer(answer);
+  const subject = "Your Astrology Consultation Answer is Ready | SMV ASTRO";
+  const reviewUrl = `${PUBLIC_SITE_URL}/#dashboard`;
+  const text = [
+    `Dear ${customerName},`, "",
+    `${astrologerName || "Your SMV ASTRO astrologer"} has answered your astrology consultation.`,
+    "Your answer is now available for review.", "",
+    `Question: ${question || ""}`, `Question ID: ${questionId}`, "",
+    "Astrologer’s Answer:", cleanAnswer, "",
+    "Write a Review / Rate your consultation:", reviewUrl,
+    "Sign in to your Customer Dashboard and select Rate & Review for this consultation.", "",
+    "Thank you for choosing SMV ASTRO.", "",
+    "Warm regards,", "SMV ASTRO", "Sri Madurai Veerayah Astro Services"
+  ].join("\n");
+  const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;line-height:1.55;color:#202124"><div style="max-width:640px;margin:auto;padding:24px"><h2 style="margin:0 0 18px">Your Astrology Consultation Answer is Ready</h2><p>Dear ${escapeEmailHtml(customerName)},</p><p>${escapeEmailHtml(astrologerName || "Your SMV ASTRO astrologer")} has answered your astrology consultation. Your answer is now available for review.</p><p><b>Question:</b> ${escapeEmailHtml(question || "")}<br><b>Question ID:</b> ${escapeEmailHtml(questionId)}</p><div style="padding:16px;border:1px solid #e0e0e0;border-radius:10px;white-space:pre-wrap"><b>Astrologer’s Answer:</b><br><br>${escapeEmailHtml(cleanAnswer)}</div><p style="margin-top:24px">We value your feedback. You can rate your consultation and write a review from your Customer Dashboard.</p><p><a href="${escapeEmailHtml(reviewUrl)}" style="display:inline-block;padding:12px 20px;background:#a40000;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Write a Review</a></p><p style="font-size:13px;color:#5f6368">For your security, sign in to the same SMV ASTRO customer account used for this consultation. The existing one-review-per-consultation rule remains in effect.</p><p>Thank you for choosing SMV ASTRO.</p><p>Warm regards,<br><b>SMV ASTRO</b><br>Sri Madurai Veerayah Astro Services</p></div></body></html>`;
+  return {subject, text, html, cleanAnswer};
 }
 
 async function sendAdminTransactionEmail({ eventType, paymentId, orderId, amount, currency, questionId, customerEmail, status }) {
@@ -793,21 +832,8 @@ app.post("/submit-answer", async (req, res) => {
     const astrologerEmail = String(await getUserEmail(q.astrologerId) || "").trim();
     const astrologerName = String(q.astrologerName || "Astrologer");
 
-    const subject = "SMV ASTRO — Your astrology answer";
-    const text = [
-      `Dear ${customerName},`,
-      "",
-      `${astrologerName} has answered your astrology question. The answer is now ready to view.`,
-      "",
-      `Question: ${q.question || ""}`,
-      `Question ID: ${questionId}`,
-      "",
-      "Astrologer Answer:",
-      String(answer || "").trim(),
-      "",
-      "Regards,",
-      "SMV ASTRO"
-    ].join("\n");
+    const emailContent = answerReadyEmail({customerName, astrologerName, question:q.question, questionId, answer});
+    const {subject, text, html} = emailContent;
 
     const recipients = uniqueRecipients([customerEmail]);
     const emailResults = {};
@@ -829,7 +855,8 @@ app.post("/submit-answer", async (req, res) => {
           to: [recipient],
           replyTo: ADMIN_EMAIL || astrologerEmail || customerEmail,
           subject,
-          text
+          text,
+          html
         });
 
         if (result?.failed) {
@@ -916,7 +943,7 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
     } else if(event==="answer_submitted"){
       if(customerEmail)to=[customerEmail]; if(ADMIN_EMAIL&&!to.includes(ADMIN_EMAIL))to.push(ADMIN_EMAIL); subject="SMV ASTRO — Astrologer answer submitted"; text=`Dear ${customerName},\n\n${astrologerName} has submitted an answer to your astrology question. It is now waiting for Admin review.\n\nQuestion: ${q.question||""}\nQuestion ID: ${questionId}\n\nRegards,\nSMV ASTRO`;
     } else if(event==="answer_approved"){
-      if(customerEmail)to=[customerEmail]; subject="SMV ASTRO — Your astrology answer"; text=`Dear ${customerName},\n\nYour astrology answer is ready.\n\nQuestion: ${q.question||""}\nQuestion ID: ${questionId}\n\nAstrologer Answer:\n${String(q.answer||"").trim()}\n\nRegards,\nSMV ASTRO`;
+      if(customerEmail)to=[customerEmail]; { const c=answerReadyEmail({customerName,astrologerName,question:q.question,questionId,answer:q.answer}); subject=c.subject; text=c.text; }
     } else if(event==="answer_rejected"){
       if(astrologerEmail)to=[astrologerEmail]; subject="SMV ASTRO — Answer revision required"; text=`Dear ${astrologerName},\n\nYour submitted answer requires revision.\n\nReason: ${reason||"Please review and resubmit the answer."}\nQuestion ID: ${questionId}\n\nRegards,\nSMV ASTRO`;
     }
@@ -3030,13 +3057,14 @@ app.post("/admin/approve-answer", express.json({limit:"20kb"}), async (req, res)
 
     const customerEmail = String(q.customerEmail || await getUserEmail(q.customerId) || "").trim();
     const customerName = String(q.customerName || q.birthName || "Customer");
-    const subject = "SMV ASTRO — Your astrology answer";
+    const astrologerName = String(q.astrologerName || "Astrologer");
+    const emailContent = answerReadyEmail({customerName, astrologerName, question:q.question, questionId, answer:q.answer});
+    const {subject, text, html} = emailContent;
     const results = {};
     const recipients = uniqueRecipients([customerEmail]);
     for (const recipient of recipients) {
       const key = recipient.toLowerCase();
-      const text = `Dear ${customerName},\n\nYour astrology answer is ready.\n\nQuestion: ${q.question || ""}\nQuestion ID: ${questionId}\n\nAstrologer Answer:\n${String(q.answer || "").trim()}\n\nRegards,\nSMV ASTRO`;
-      const result = await sendSystemEmail({to:[recipient],replyTo:ADMIN_EMAIL,subject,text});
+      const result = await sendSystemEmail({to:[recipient],replyTo:ADMIN_EMAIL,subject,text,html});
       if (result?.failed) {
         results[key] = {status:"failed",error:String(result.error || "Unknown email error")};
         console.error(`Resend delivery failed | Question ID: ${questionId} | Recipient Email: ${recipient} | Reason: ${result.error || "Unknown email error"}`);
