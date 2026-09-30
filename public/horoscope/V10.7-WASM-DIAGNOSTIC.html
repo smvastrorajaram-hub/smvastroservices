@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMV V10.7 WASM Diagnostic</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:850px;margin:auto;padding:16px;line-height:1.45}
+.card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:12px 0}
+.step{padding:9px 4px;border-bottom:1px solid #ddd}
+button{width:100%;padding:12px;font-size:16px;font-weight:700}
+pre{white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto}
+</style>
+</head>
+<body>
+<h2>SMV V10.7 — Offline WASM Diagnostic</h2>
+<p>இந்த file-ஐ existing T01–T08 Runner HTML இருக்கும் அதே folder-ல் வைக்கவும்.</p>
+
+<div class="card">
+<div class="step" id="s1">STEP 1 — HTML: ✓</div>
+<div class="step" id="s2">STEP 2 — offline-engine.mjs: waiting</div>
+<div class="step" id="s3">STEP 3 — swisseph.js: waiting</div>
+<div class="step" id="s4">STEP 4 — swisseph.wasm: waiting</div>
+<div class="step" id="s5">STEP 5 — swisseph.data: waiting</div>
+<div class="step" id="s6">STEP 6 — Module import: waiting</div>
+<div class="step" id="s7">STEP 7 — SWIEPH calculation: waiting</div>
+</div>
+
+<div class="card"><button id="run">RUN DIAGNOSTIC AGAIN</button></div>
+<div class="card"><b>Exact diagnostic:</b><pre id="log">Starting…</pre></div>
+
+<script>
+const el=id=>document.getElementById(id);
+const paths=[
+ ["s2","offline-engine.mjs","./offline/offline-engine.mjs"],
+ ["s3","swisseph.js","./offline/vendor/wasm/swisseph.js"],
+ ["s4","swisseph.wasm","./offline/vendor/wasm/swisseph.wasm"],
+ ["s5","swisseph.data","./offline/vendor/wasm/swisseph.data"]
+];
+function set(id,text){el(id).textContent=text}
+async function check(id,name,url){
+ const r=await fetch(url+"?diag="+Date.now(),{cache:"no-store"});
+ if(!r.ok) throw new Error(name+" fetch failed: HTTP "+r.status+" "+r.statusText+" | "+url);
+ const b=await r.arrayBuffer();
+ set(id,id.replace("s","STEP ")+" — "+name+": ✓ "+b.byteLength.toLocaleString()+" bytes");
+ return b.byteLength;
+}
+async function go(){
+ el("log").textContent="URL: "+location.href+"\n";
+ set("s2","STEP 2 — offline-engine.mjs: waiting");
+ set("s3","STEP 3 — swisseph.js: waiting");
+ set("s4","STEP 4 — swisseph.wasm: waiting");
+ set("s5","STEP 5 — swisseph.data: waiting");
+ set("s6","STEP 6 — Module import: waiting");
+ set("s7","STEP 7 — SWIEPH calculation: waiting");
+ try{
+   for(const x of paths) await check(...x);
+   el("log").textContent+="\nStatic file checks: PASS\nImporting offline-engine.mjs...\n";
+   const mod=await import("./offline/offline-engine.mjs?diag="+Date.now());
+   if(typeof mod.full!=="function") throw new Error("offline-engine.mjs imported, but export 'full' is not a function.");
+   set("s6","STEP 6 — Module import: ✓ export full() found");
+   el("log").textContent+="Module import: PASS\nRunning T03 diagnostic calculation...\n";
+   const req={
+     date:"1990-01-15",time:"10:30",
+     lat:9.9252,lon:78.1198,height:0,
+     timezone:"Asia/Kolkata",utcOffsetMinutes:330,
+     houseSystem:"S",language:"ta",name:"DIAGNOSTIC",
+     dailyDate:"1990-01-15",dailyTime:"10:30",tajakaYear:1990
+   };
+   const res=await mod.full(req);
+   const mode=res?.chart?.ephemerisMode;
+   if(mode!=="SWIEPH") throw new Error("Expected SWIEPH but received ephemerisMode="+mode);
+   set("s7","STEP 7 — SWIEPH calculation: ✓ SWIEPH");
+   el("log").textContent+="Engine calculation: PASS\nAyanamsa: "+res?.chart?.ayanamsa+
+     "\nLagna: "+(res?.chart?.lagna?.longitude ?? res?.chart?.lagna?.lon ?? "present")+
+     "\n\nALL 7 STEPS PASSED.";
+ }catch(e){
+   el("log").textContent+="\nFAILED\nERROR NAME: "+(e?.name||"Error")+
+     "\nERROR MESSAGE: "+(e?.message||String(e))+
+     "\n\nSTACK:\n"+(e?.stack||"not available");
+ }
+}
+el("run").onclick=go;
+go();
+</script>
+</body></html>
