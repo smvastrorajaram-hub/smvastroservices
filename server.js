@@ -5,7 +5,6 @@ try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss 
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
-const os = require("os");
 const PDFDocument = require("pdfkit");
 const { Readable } = require("stream");
 const cloudinary = require("cloudinary").v2;
@@ -2834,21 +2833,13 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
  const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId)return await pipeCloudPdf(existing,res,'inline');
- const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000);if(!text)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
+ const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000),blocks=Array.isArray(req.body?.blocks)?req.body.blocks.slice(0,12000):[];if(!text&&!blocks.length)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
  console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,feature:f,lang});
- // V94: render the complete PDF to Render's temporary disk first, then upload the finished
- // file to Cloudinary. Streaming PDFKit output directly to Cloudinary kept the HTTP upload open
- // while a 400k+ character report was being laid out; Cloudinary could close that slow request
- // with HTTP 499 / TimeoutError before doc.end() finished.
- const tempPdf=path.join(os.tmpdir(),`smv-report-${crypto.randomUUID()}.pdf`);
- let uploaded=null;
- try{
-  const fileOut=fs.createWriteStream(tempPdf);
-  const pdfWritten=new Promise((resolve,reject)=>{fileOut.once('finish',resolve);fileOut.once('error',reject);});
+ const uploadDone=new Promise((resolve,reject)=>{const upload=cloudinary.uploader.upload_stream({resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`},(error,result)=>error?reject(error):resolve(result));
   // V86 PDF visual renderer. Storage/payment/report identity flow is intentionally unchanged.
   const C={wine:'#8B0000',gold:'#B8903C',goldSoft:'#D8C28C',cream:'#FFFDF8',ink:'#202020',muted:'#5F5A54',white:'#FFFFFF',line:'#D7C899'};
   const doc=new PDFDocument({size:'A4',bufferPages:false,margins:{top:76,bottom:62,left:46,right:46},info:{Title:title,Author:'SMV ASTRO SERVICES',Subject:'Astrology report'}}),fontPath=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
-  const tamilOK=fs.existsSync(fontPath);if(tamilOK)doc.registerFont('Tamil',fontPath);doc.once('error',e=>fileOut.destroy(e));doc.pipe(fileOut);
+  const tamilOK=fs.existsSync(fontPath);if(tamilOK)doc.registerFont('Tamil',fontPath);doc.once('error',reject);upload.once('error',reject);doc.pipe(upload);
   let pageNo=0,isCover=true;
   const hasTamil=v=>/[\u0B80-\u0BFF]/.test(String(v||''));
   const fontFor=(v,bold=false)=>hasTamil(v)&&tamilOK?'Tamil':(bold?'Helvetica-Bold':'Helvetica');
@@ -2869,6 +2860,8 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
   const paragraph=(line)=>{const t=clean(line);if(!t)return;ensure(36);const y=doc.y;safeText(t,54,y,487,{size:9.6,color:C.ink,lineGap:3.6});doc.y+=5;};
   const kv=(a,b)=>{ensure(31);const y=doc.y;doc.rect(52,y,491,25).fill(C.cream).strokeColor(C.line).lineWidth(.35).stroke();safeText(a,61,y+6,205,{size:9,bold:true,color:C.wine});safeText(b,270,y+6,262,{size:9,color:C.ink});doc.y=y+29;};
   const tableRow=(cells,head=false)=>{ensure(29);const y=doc.y,h=25,n=Math.max(1,cells.length),w=491/n;cells.forEach((c,i)=>{doc.rect(52+i*w,y,w,h).fill(head?C.wine:(Math.floor(y/25)%2?C.cream:C.white)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(c,56+i*w,y+6,w-8,{size:head?8.3:8.1,bold:head,color:head?C.white:C.ink,align:'center'});});doc.y=y+h;};
+  const structuredTable=(rows)=>{if(!Array.isArray(rows)||!rows.length)return;const n=Math.max(...rows.map(r=>Array.isArray(r)?r.length:0),1),w=491/n;rows.forEach((r,ri)=>{r=Array.isArray(r)?r:[];const vals=Array.from({length:n},(_,i)=>clean(r[i]||''));let h=ri===0?28:24;for(const v of vals){doc.font(fontFor(v,ri===0)).fontSize(ri===0?7.7:7.4);h=Math.max(h,doc.heightOfString(v||' ',{width:w-10,lineGap:1.4})+10);}h=Math.min(74,h);ensure(h+2);const y=doc.y;vals.forEach((v,i)=>{doc.rect(52+i*w,y,w,h).fill(ri===0?C.wine:(ri%2?C.white:C.cream)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(v,57+i*w,y+5,w-10,{size:ri===0?7.7:7.4,bold:ri===0,color:ri===0?C.white:C.ink,align:n<=3?'left':'center',lineGap:1.4});});doc.y=y+h;});doc.y+=8;};
+  const structuredChart=(b)=>{const cells=Array.isArray(b?.cells)?b.cells.slice(0,12).map(clean):[];if(!cells.length)return;ensure(282);const x=126,y=doc.y+3,size=340,cell=size/4,slots=[[0,0],[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1]];doc.save();doc.lineWidth(.75).strokeColor('#8F704F');for(let i=0;i<12;i++){const [cx,cy]=slots[i],xx=x+cx*cell,yy=y+cy*cell;doc.rect(xx,yy,cell,cell).fill(C.white).stroke();const v=cells[i]||'—';safeText(v,xx+4,yy+7,cell-8,{size:8.2,bold:true,color:C.ink,align:'center',lineGap:1.2});}doc.rect(x+cell,y+cell,cell*2,cell*2).fill('#FFF8E9').stroke();safeText(clean(b.center||'Chart'),x+cell+6,y+cell*1.78,cell*2-12,{size:14,bold:true,color:C.wine,align:'center'});doc.restore();doc.y=y+size+14;};
   const isMajor=t=>/^(?:[IVX]+\.?\s+|\d+\.\s+|ADVANCED ANALYSIS|INTEGRATED PREDICTIONS|VIMSOTTARI|VIMSHOTTARI|REM(?:EDIAL)?|NUMEROLOGY|MARRIAGE MATCHING|HOROSCOPE CALCULATION|ஜாதக பகுப்பாய்வு|தசா பகுப்பாய்வு|கோச்சார பகுப்பாய்வு|பரிகார|எண் கணித|ஒருங்கிணைந்த)/i.test(t)||(/^[A-Z][A-Z0-9 /&–—()-]{8,}$/.test(t)&&t.length<90);
   const isSub=t=>/^(?:Current \/ Next|Birth Panchang|Daily Panchang|Daily Hora|Planetary|Navamsa|Bhava|Transit|Dasa|Bhukti|Antharam|Prediction|Career|Marriage|Education|Children|Health|Finance|கிரக|பாவ|நவாம்ச|கோச்சாரம்|பிறப்பு|தினசரி|விம்சோத்தரி|பலன்)/i.test(t)&&t.length<130;
   // Cover page: restrained burgundy/gold identity, with no report-body dump.
@@ -2877,6 +2870,10 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
   const coverTitle=clean(title);doc.font(fontFor(coverTitle,true)).fontSize(lang==='ta'?24:27).fillColor(C.wine).text(coverTitle,58,235,{width:479,align:'center',lineGap:7});doc.moveTo(155,doc.y+24).lineTo(440,doc.y+24).strokeColor(C.gold).lineWidth(1.2).stroke();
   const rawLines=text.split('\n').map(clean).filter(Boolean),identity=rawLines.slice(0,28).filter(x=>/birth|date|time|place|name|பிறந்த|பெயர்|நேரம்|இடம்/i.test(x)).slice(0,5);let cy=Math.max(360,doc.y+62);doc.rect(70,cy,455,Math.max(78,identity.length*25+32)).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.7).stroke();safeText(lang==='ta'?'அறிக்கை விவரங்கள்':'REPORT DETAILS',90,cy+16,415,{size:10,bold:true,color:C.gold,align:'center'});let iy=cy+42;(identity.length?identity:[lang==='ta'?'முழுமையான ஜாதக அறிக்கை':'Complete Astrology Report']).forEach(x=>{safeText(x,94,iy,407,{size:9.5,color:C.ink,align:'center'});iy=doc.y+4;});doc.font('Helvetica').fontSize(8).fillColor(C.muted).text('smvastroservices.in',46,780,{width:503,align:'center'});
   newContentPage();
+  if(blocks.length){
+   for(const b of blocks){const type=String(b?.type||'');if(type==='section'){section(b.text);continue;}if(type==='subhead'){subhead(b.text);continue;}if(type==='chart'){structuredChart(b);continue;}if(type==='table'){structuredTable(b.rows);continue;}if(type==='text'){paragraph(b.text);continue;}}
+   doc.end();return;
+  }
   let previousWasHeading=false;
   for(let idx=0;idx<rawLines.length;idx++){
    const line=rawLines[idx];if(!line)continue;
@@ -2891,15 +2888,10 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
    if(/\b\d{4}-\d{2}-\d{2}\b/.test(line)&&line.length<145){ensure(34);const y=doc.y;doc.rect(52,y,491,27).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.4).stroke();safeText(line,61,y+6,473,{size:8.8,bold:true,color:C.wine});doc.y=y+32;previousWasHeading=false;continue;}
    paragraph(line);previousWasHeading=false;
   }
-  doc.end();
-  await pdfWritten;
-  const stat=await fs.promises.stat(tempPdf);if(!stat.size)throw Error('Generated PDF is empty.');
-  console.log('[PDF-MEM] rendered', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:stat.size,feature:f,lang});
-  uploaded=await cloudinary.uploader.upload(tempPdf,{resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`,timeout:180000});
-  await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||stat.size),storage:'cloudinary_private_raw',updatedAt:FieldValue.serverTimestamp()},{merge:true});
-  console.log('[PDF-MEM] stored', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||stat.size),feature:f,lang});
-  return await pipeCloudPdf({publicId:uploaded.public_id},res,'inline');
- }finally{await fs.promises.unlink(tempPdf).catch(()=>{});}
+  doc.end();});
+ const uploaded=await uploadDone;await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||0),storage:'cloudinary_private_raw',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ console.log('[PDF-MEM] stored', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||0),feature:f,lang});
+ return await pipeCloudPdf({publicId:uploaded.public_id},res,'inline');
  }catch(e){console.error('Stored horoscope PDF error',e);if(!res.headersSent)return res.status(500).json({error:'Unable to generate and save PDF.'});}});
 
 app.post("/create-order", express.json(), async (req, res) => {
