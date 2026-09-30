@@ -101,7 +101,7 @@ async function buy(feature,button,onUnlocked){
   },modal:{ondismiss:reset}});rz.on('payment.failed',r=>fail(Error(r?.error?.description||'Payment failed.')));rz.open();
  }catch(e){fail(e);}
 }
-function payCard(feature,price,onUnlocked,singleLayer=false){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');const note=feature==='advanced_analysis'?(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு இந்த அம்சங்களின் முழுமையான கணக்கீடுகள் மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete calculations and results for these features will be shown after successful payment.'):(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு முழுமையான திருமணப் பொருத்த கணக்கீடு மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete Marriage Matching calculations and results will be shown after successful payment.');box.innerHTML=`<h3>${esc(title)}</h3><p class="small"><b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button><p class="small">${esc(note)}</p>`;const b=box.querySelector('button');b.onclick=()=>buy(feature,b,async()=>{await onUnlocked();box.remove()});return box}
+function payCard(feature,price,onUnlocked,singleLayer=false,beforeBuy=null){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');const note=feature==='advanced_analysis'?(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு இந்த அம்சங்களின் முழுமையான கணக்கீடுகள் மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete calculations and results for these features will be shown after successful payment.'):(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு முழுமையான திருமணப் பொருத்த கணக்கீடு மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete Marriage Matching calculations and results will be shown after successful payment.');box.innerHTML=`<h3>${esc(title)}</h3><p class="small"><b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button><p class="small">${esc(note)}</p>`;const b=box.querySelector('button');b.onclick=async()=>{try{if(typeof beforeBuy==='function')await beforeBuy();await buy(feature,b,async()=>{await onUnlocked();box.remove()});}catch(e){alert(e.message||String(e));}};return box}
 async function access(feature,cfg){
  if(!cfg.enabled)return {enabled:false,unlocked:false};
  if(!state.token)await initLocalAuth().catch(()=>{});
@@ -199,6 +199,16 @@ async function downloadPaidPdf(feature,source,title){
  const blob=await r.blob();if(!blob.size||!String(r.headers.get('content-type')).includes('application/pdf'))throw Error('The server did not return a complete PDF.');
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=feature==='marriage_matching'?'SMV-Marriage-Matching.pdf':'SMV-Horoscope.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return true;
 }
+window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
+ if(!mount)return false;
+ await initLocalAuth().catch(()=>{});
+ const cfg=(await config()).marriage_matching;
+ mount.replaceChildren();
+ if(!cfg.enabled)return false;
+ const card=payCard('marriage_matching',cfg.price,async()=>{if(typeof onUnlocked==='function')await onUnlocked();},true,beforeBuy);
+ mount.appendChild(card);
+ return true;
+};
 window.__smvDownloadPaidFeaturePdf=downloadPaidPdf;
 window.__smvIsPaidHoroscopeFeature=feature=>{try{return state.paid.has(reportCacheKey(feature));}catch{return false;}};
 window.__smvRequireHoroscopeFeatureAccess=requireFeature;
