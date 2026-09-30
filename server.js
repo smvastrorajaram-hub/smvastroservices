@@ -2826,10 +2826,10 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
  console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,feature:f,lang});
  const uploadDone=new Promise((resolve,reject)=>{const upload=cloudinary.uploader.upload_stream({resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`},(error,result)=>error?reject(error):resolve(result));
   // V86 PDF visual renderer. Storage/payment/report identity flow is intentionally unchanged.
-  const C={wine:'#8B0000',wine2:'#A10B0B',gold:'#B8903C',goldSoft:'#E6D2A0',cream:'#FFF9EC',ink:'#27231F',muted:'#665F57',rose:'#F8EEEE',white:'#FFFFFF',line:'#DDC895'};
+  const C={wine:'#8B0000',gold:'#B8903C',goldSoft:'#D8C28C',ink:'#222222',muted:'#66615B',white:'#FFFFFF',line:'#D7C899'};
   const doc=new PDFDocument({size:'A4',bufferPages:false,margins:{top:76,bottom:62,left:46,right:46},info:{Title:title,Author:'SMV ASTRO SERVICES',Subject:'Astrology report'}}),fontPath=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
   const tamilOK=fs.existsSync(fontPath);if(tamilOK)doc.registerFont('Tamil',fontPath);doc.once('error',reject);upload.once('error',reject);doc.pipe(upload);
-  let pageNo=0,isCover=true;
+  let pageNo=1,isCover=false;
   const hasTamil=v=>/[\u0B80-\u0BFF]/.test(String(v||''));
   const fontFor=(v,bold=false)=>hasTamil(v)&&tamilOK?'Tamil':(bold?'Helvetica-Bold':'Helvetica');
   const clean=v=>String(v??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/[Ø][=><?][^\s]{0,8}\s*/g,'').replace(/^[\s•·|]+/,'').trim();
@@ -2844,19 +2844,19 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
   // Decorate only after an explicit content page has been created.
   const newContentPage=()=>{isCover=false;doc.addPage();pageNo++;header();footer();doc.y=68;};
   const ensure=(h=80)=>{if(doc.y+h>770)newContentPage();};
-  const section=(label)=>{const t=clean(label);ensure(58);doc.moveDown(.35);const y=doc.y;doc.roundedRect(46,y,503,36,8).fill(C.wine);safeText(t,61,y+9,473,{size:12.2,bold:true,color:C.white});doc.y=y+46;};
-  const subhead=(label)=>{const t=clean(label);ensure(45);const y=doc.y;doc.roundedRect(46,y,503,30,7).fill(C.cream).strokeColor(C.gold).lineWidth(.8).stroke();safeText(t,58,y+7,479,{size:10.8,bold:true,color:C.wine});doc.y=y+38;};
+  const section=(label)=>{const t=clean(label);ensure(50);doc.moveDown(.25);const y=doc.y;doc.rect(46,y,503,29).fill(C.wine);safeText(t,57,y+7,481,{size:11.2,bold:true,color:C.white});doc.y=y+38;};
+  const subhead=(label)=>{const t=clean(label);ensure(38);const y=doc.y;safeText(t,52,y,491,{size:10.5,bold:true,color:C.gold});doc.strokeColor(C.goldSoft).lineWidth(.55).moveTo(52,doc.y+3).lineTo(543,doc.y+3).stroke();doc.y+=10;};
   const paragraph=(line)=>{const t=clean(line);if(!t)return;ensure(36);const y=doc.y;safeText(t,54,y,487,{size:9.6,color:C.ink,lineGap:3.6});doc.y+=5;};
-  const kv=(a,b)=>{ensure(31);const y=doc.y;doc.roundedRect(52,y,491,25,5).fill(C.cream);safeText(a,61,y+6,205,{size:9,bold:true,color:C.wine});safeText(b,270,y+6,262,{size:9,color:C.ink});doc.y=y+29;};
-  const tableRow=(cells,head=false)=>{ensure(29);const y=doc.y,h=25,n=Math.max(1,cells.length),w=491/n;cells.forEach((c,i)=>{doc.rect(52+i*w,y,w,h).fill(head?C.wine:(Math.floor(y/25)%2?C.cream:C.white)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(c,56+i*w,y+6,w-8,{size:head?8.3:8.1,bold:head,color:head?C.white:C.ink,align:'center'});});doc.y=y+h;};
+  const kv=(a,b)=>{ensure(31);const y=doc.y;doc.rect(52,y,491,25).strokeColor(C.line).lineWidth(.45).stroke();safeText(a,61,y+6,205,{size:9,bold:true,color:C.wine});safeText(b,270,y+6,262,{size:9,color:C.ink});doc.y=y+25;};
+  const tableRow=(cells,head=false)=>{ensure(29);const y=doc.y,h=25,n=Math.max(1,cells.length),w=491/n;cells.forEach((c,i)=>{doc.rect(52+i*w,y,w,h).fill(head?C.wine:C.white).strokeColor(C.line).lineWidth(.35).stroke();safeText(c,56+i*w,y+6,w-8,{size:head?8.3:8.1,bold:head,color:head?C.white:C.ink,align:'center'});});doc.y=y+h;};
   const isMajor=t=>/^(?:[IVX]+\.?\s+|\d+\.\s+|ADVANCED ANALYSIS|INTEGRATED PREDICTIONS|VIMSOTTARI|VIMSHOTTARI|REM(?:EDIAL)?|NUMEROLOGY|MARRIAGE MATCHING|HOROSCOPE CALCULATION|ஜாதக பகுப்பாய்வு|தசா பகுப்பாய்வு|கோச்சார பகுப்பாய்வு|பரிகார|எண் கணித|ஒருங்கிணைந்த)/i.test(t)||(/^[A-Z][A-Z0-9 /&–—()-]{8,}$/.test(t)&&t.length<90);
   const isSub=t=>/^(?:Current \/ Next|Birth Panchang|Daily Panchang|Daily Hora|Planetary|Navamsa|Bhava|Transit|Dasa|Bhukti|Antharam|Prediction|Career|Marriage|Education|Children|Health|Finance|கிரக|பாவ|நவாம்ச|கோச்சாரம்|பிறப்பு|தினசரி|விம்சோத்தரி|பலன்)/i.test(t)&&t.length<130;
-  // Cover page: restrained burgundy/gold identity, with no report-body dump.
-  doc.rect(0,0,595,842).fill(C.cream);doc.rect(0,0,595,165).fill(C.wine);doc.rect(0,158,595,7).fill(C.gold);
-  doc.font('Helvetica-Bold').fontSize(25).fillColor(C.white).text('SMV ASTRO SERVICES',46,58,{width:503,align:'center'});doc.font('Helvetica').fontSize(10).fillColor('#F4E5C1').text('Sri Madurai Veerayah Astro Services',46,98,{width:503,align:'center'});
-  const coverTitle=clean(title);doc.font(fontFor(coverTitle,true)).fontSize(lang==='ta'?24:27).fillColor(C.wine).text(coverTitle,58,235,{width:479,align:'center',lineGap:7});doc.moveTo(155,doc.y+24).lineTo(440,doc.y+24).strokeColor(C.gold).lineWidth(1.2).stroke();
-  const rawLines=text.split('\n').map(clean).filter(Boolean),identity=rawLines.slice(0,28).filter(x=>/birth|date|time|place|name|பிறந்த|பெயர்|நேரம்|இடம்/i.test(x)).slice(0,5);let cy=Math.max(360,doc.y+62);doc.roundedRect(70,cy,455,Math.max(78,identity.length*25+32),12).fill(C.white).strokeColor(C.goldSoft).lineWidth(1).stroke();safeText(lang==='ta'?'அறிக்கை விவரங்கள்':'REPORT DETAILS',90,cy+16,415,{size:10,bold:true,color:C.gold,align:'center'});let iy=cy+42;(identity.length?identity:[lang==='ta'?'முழுமையான ஜாதக அறிக்கை':'Complete Astrology Report']).forEach(x=>{safeText(x,94,iy,407,{size:9.5,color:C.ink,align:'center'});iy=doc.y+4;});doc.font('Helvetica').fontSize(8).fillColor(C.muted).text('smvastroservices.in',46,780,{width:503,align:'center'});
-  newContentPage();
+  // V89 lightweight professional first page: white background, restrained brand colour, no decorative cover/background.
+  header();footer();doc.y=68;
+  const coverTitle=clean(title);safeText(coverTitle,46,doc.y,503,{size:lang==='ta'?18:20,bold:true,color:C.wine,align:'center'});doc.y+=7;
+  doc.strokeColor(C.gold).lineWidth(.8).moveTo(160,doc.y).lineTo(435,doc.y).stroke();doc.y+=14;
+  const rawLines=text.split('\n').map(clean).filter(Boolean),identity=rawLines.slice(0,28).filter(x=>/birth|date|time|place|name|பிறந்த|பெயர்|நேரம்|இடம்/i.test(x)).slice(0,5);
+  if(identity.length){identity.forEach(x=>{ensure(24);safeText(x,58,doc.y,479,{size:9.2,color:C.ink,align:'center'});doc.y+=3;});doc.y+=8;}
   let previousWasHeading=false;
   for(let idx=0;idx<rawLines.length;idx++){
    const line=rawLines[idx];if(!line)continue;
@@ -2868,7 +2868,7 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
    const cells=line.split(/\s*[•|]\s*/).map(clean).filter(Boolean);
    if(cells.length>=2&&cells.length<=7){if(cells.length===2)kv(cells[0],cells[1]);else tableRow(cells,previousWasHeading);previousWasHeading=false;continue;}
    // Date-range / Dasha rows receive a compact visual card.
-   if(/\b\d{4}-\d{2}-\d{2}\b/.test(line)&&line.length<145){ensure(34);const y=doc.y;doc.roundedRect(52,y,491,27,5).fill(C.rose);safeText(line,61,y+6,473,{size:8.8,bold:true,color:C.wine});doc.y=y+32;previousWasHeading=false;continue;}
+   if(/\b\d{4}-\d{2}-\d{2}\b/.test(line)&&line.length<145){ensure(34);const y=doc.y;doc.rect(52,y,491,27).strokeColor(C.goldSoft).lineWidth(.5).stroke();safeText(line,61,y+6,473,{size:8.8,bold:true,color:C.wine});doc.y=y+32;previousWasHeading=false;continue;}
    paragraph(line);previousWasHeading=false;
   }
   doc.end();});
