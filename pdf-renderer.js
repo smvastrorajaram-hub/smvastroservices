@@ -1,4 +1,7 @@
 'use strict';
+// @pdf-lib/fontkit's Tamil shaping path uses Babel generator helpers.
+// Load the runtime before fontkit so Indic shaping works on Node/Render.
+require('regenerator-runtime/runtime');
 const fs = require('fs');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
