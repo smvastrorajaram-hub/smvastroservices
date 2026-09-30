@@ -119,16 +119,24 @@ if(lat===''||lon===''){
             if(completedFull)await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
             await window.__smvPredictionRenderPromise;
-            window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
+            window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
+            // V92: a paid report may be rendered later in the other language from the already-cached
+            // calculation. Save/generate ONLY that language now; never recalculate or build both languages.
+            if(completedFull){
+              window.__smvSetReportContext?.('advanced_analysis',{...originalBirth,language:next});
+              window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage:next,birthIdentity:window.__smvGetReportContext('advanced_analysis')||originalBirth,name:reportName,calculation:completedFull}}));
+            }
           }finally{busy=false;}
         };
 
         const buildViews=async()=>{
-          const original=target.dataset.resultLanguage||lang,docLang=document.documentElement.lang,other=original==='ta'?'en':'ta';
-          const views={};window.__smvSnapshotBusy=true;
-          try{await target.__smvPrepareReport?.();if(original==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,original);views[original]=target.innerHTML;
-            document.documentElement.lang=other;await window.__smvSwitchHoroscopeLanguage(other,true);await target.__smvPrepareReport?.();if(other==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,other);views[other]=target.innerHTML;
-          }finally{document.documentElement.lang=docLang;await window.__smvSwitchHoroscopeLanguage(original,true);await target.__smvPrepareReport?.();if(original==='en')window.__smvApplyEnglishToHoroscope(target);window.__smvLocalizeTamilResult?.(target,original);window.__smvSnapshotBusy=false;}
+          // V92: snapshot only the language currently on screen. Building the alternate language here
+          // caused the old EN -> TA -> EN delay and could start an unwanted second PDF save.
+          const current=target.dataset.resultLanguage||generationLanguage,views={};
+          await target.__smvPrepareReport?.();
+          if(current==='en')window.__smvApplyEnglishToHoroscope(target);
+          window.__smvLocalizeTamilResult?.(target,current);
+          views[current]=target.innerHTML;
           return views;
         };
         const englishAdvancedRoot=$('englishAdvancedAstrology');
