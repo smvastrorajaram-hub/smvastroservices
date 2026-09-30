@@ -7,7 +7,7 @@ let instance=null;
 async function loadFactory(){
   if(typeof globalThis.__SMV_CREATE_SWEPH_WASM__==='function') return globalThis.__SMV_CREATE_SWEPH_WASM__;
   try{
-    const mod=await import('./vendor/smv-swisseph-local.mjs?v=82');
+    const mod=await import('./vendor/smv-swisseph-local.mjs');
     return mod.createSMVSwissEph || mod.default;
   }catch(e){
     const reason=String(e?.message||e||'unknown module-load error');
