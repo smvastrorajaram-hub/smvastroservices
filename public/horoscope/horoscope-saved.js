@@ -25,10 +25,23 @@ function bind(view){view.addEventListener('click',e=>{const head=e.target.closes
 async function display(key){const uid=owner(),report=await records('get',key);if(!uid||uid!==owner()||report?.owner!==uid||report.deleted)throw Error(T('Log in to the account that saved this report.','அறிக்கையைச் சேமித்த கணக்கில் உள்நுழைக.'));const view=$('smvSavedViewer');view.dataset.reportKey=key;view.innerHTML=clean(report.views?.[ta()?'ta':'en']||report.html);view.lang=report.views?.[ta()?'ta':'en']?(ta()?'ta':'en'):report.language;view.querySelectorAll('[id]').forEach(e=>e.id='saved-'+e.id);view.hidden=false;view.scrollIntoView({behavior:'smooth',block:'start'});return report;}
 function authHeaders(){const h={};const token=window.__smvHoroscopePaidState?.token;if(token)h.Authorization='Bearer '+token;return h;}
 function pdfUrl(report,lang){return window.__smvHoroscopePaidState.backend+'/horoscope-reports/'+report.id+'/pdf?lang='+encodeURIComponent(lang||'en');}
-async function serverPdf(report,create,forcedLang,forcedText){
+function pdfStructure(root){
+ if(!root)return [];
+ const out=[],txt=n=>String(n?.innerText||n?.textContent||'').replace(/\s+/g,' ').trim();
+ const skip=n=>n.matches?.('script,style,link,iframe,object,embed,form,meta,base,button,input,.horoscope-export-actions,.smv-horoscope-pay-gate');
+ const walk=n=>{for(const el of [...n.children]){if(skip(el))continue;
+  if(el.matches('h1,h2,h3,h4,h5,.smv-advanced-part-title,.dasha-head,.hora-band')){const t=txt(el);if(t)out.push({type:'heading',level:el.matches('h1,h2')?1:el.matches('h3,.smv-advanced-part-title,.dasha-head')?2:3,text:t});continue;}
+  if(el.matches('.south-indian-chart')){const cells=[...el.querySelectorAll(':scope > .south-rasi-cell')].map(c=>txt(c));const center=txt(el.querySelector(':scope > .south-chart-center'));out.push({type:'chart',cells,center});continue;}
+  if(el.matches('table')){const rows=[...el.rows].map(r=>[...r.cells].map(c=>txt(c)));if(rows.length)out.push({type:'table',rows,headerRows:el.tHead?.rows?.length||1});continue;}
+  if(el.matches('p,.small,.mm-note,.stat,.mm-verdict,.smv-prayer-mantra,.smv-prayer-title')){const t=txt(el);if(t)out.push({type:'text',text:t,emphasis:el.matches('.stat,.mm-verdict,.smv-prayer-title')});continue;}
+  const direct=[...el.childNodes].filter(x=>x.nodeType===3).map(x=>String(x.textContent||'').trim()).filter(Boolean).join(' ');if(direct)out.push({type:'text',text:direct});walk(el);
+ }};walk(root);return out.slice(0,12000);
+}
+async function serverPdf(report,create,forcedLang,forcedText,forcedRoot){
  const headers=authHeaders();if(create)headers['Content-Type']='application/json';
- const view=$('smvSavedViewer');const text=String(forcedText??view?.innerText??'').trim();
- const lang=forcedLang||view?.lang||report.language||'en';const r=await fetch(pdfUrl(report,lang),{method:create?'POST':'GET',cache:'no-store',headers,body:create?JSON.stringify({feature:report.feature,birthIdentity:report.birthIdentity,language:lang,title:report.name||'SMV ASTRO Report',text}):undefined});
+ const view=forcedRoot||$('smvSavedViewer');const text=String(forcedText??view?.innerText??'').trim();
+ const structure=create?pdfStructure(view):[];
+ const lang=forcedLang||view?.lang||report.language||'en';const r=await fetch(pdfUrl(report,lang),{method:create?'POST':'GET',cache:'no-store',headers,body:create?JSON.stringify({feature:report.feature,birthIdentity:report.birthIdentity,language:lang,title:report.name||'SMV ASTRO Report',text,structure}):undefined});
  if(r.status===404&&!create)return null;
  if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||T('PDF service is unavailable.','PDF சேவை கிடைக்கவில்லை.'));}
  const blob=await r.blob();if(!blob.size||!String(blob.type).includes('pdf'))throw Error(T('Incomplete PDF received.','முழுமையற்ற PDF பெறப்பட்டது.'));return blob;
@@ -42,7 +55,7 @@ async function ensurePdf(key){
  await pdfRecords('put',{key:pdfKey,blob,generatedAt:Date.now()});status(T('PDF generated and saved.','PDF உருவாக்கப்பட்டு சேமிக்கப்பட்டது.'));return blob;
 }
 
-async function ensureSelectedLanguagePdf(report,lang){lang=lang==='ta'?'ta':'en';if(!report.views?.[lang]&&report.language!==lang)throw Error(T('Generate this report in the selected language first.','இந்த அறிக்கையை தேர்ந்தெடுத்த மொழியில் முதலில் உருவாக்கவும்.'));const pdfKey=report.key+':'+lang,cached=await pdfRecords('get',pdfKey);if(cached?.blob instanceof Blob&&cached.blob.size>500)return cached.blob;let blob=await serverPdf(report,false,lang,'');if(!blob){const box=document.createElement('div');box.innerHTML=clean(report.views?.[lang]||(report.language===lang?report.html:''));const text=box.innerText.trim();if(!text)throw Error('Complete report result is empty.');blob=await serverPdf(report,true,lang,text);}await pdfRecords('put',{key:pdfKey,blob,generatedAt:Date.now()});return blob;}
+async function ensureSelectedLanguagePdf(report,lang){lang=lang==='ta'?'ta':'en';if(!report.views?.[lang]&&report.language!==lang)throw Error(T('Generate this report in the selected language first.','இந்த அறிக்கையை தேர்ந்தெடுத்த மொழியில் முதலில் உருவாக்கவும்.'));const pdfKey=report.key+':'+lang,cached=await pdfRecords('get',pdfKey);if(cached?.blob instanceof Blob&&cached.blob.size>500)return cached.blob;let blob=await serverPdf(report,false,lang,'');if(!blob){const box=document.createElement('div');box.innerHTML=clean(report.views?.[lang]||(report.language===lang?report.html:''));const text=box.innerText.trim();if(!text)throw Error('Complete report result is empty.');blob=await serverPdf(report,true,lang,text,box);}await pdfRecords('put',{key:pdfKey,blob,generatedAt:Date.now()});return blob;}
 async function viewPdf(key){const blob=await ensurePdf(key),url=URL.createObjectURL(blob);location.assign(url);setTimeout(()=>URL.revokeObjectURL(url),120000);}
 async function downloadPdf(key){const report=await records('get',key),blob=await ensurePdf(key),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(report?.feature==='marriage_matching'?'SMV-Marriage-Matching':'SMV-Horoscope')+'.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 async function printReport(key){const blob=await ensurePdf(key),url=URL.createObjectURL(blob),frame=document.createElement('iframe');frame.style.position='fixed';frame.style.right='0';frame.style.bottom='0';frame.style.width='1px';frame.style.height='1px';frame.style.border='0';frame.src=url;document.body.append(frame);frame.onload=()=>{try{frame.contentWindow.focus();frame.contentWindow.print();}catch(_){location.assign(url)}setTimeout(()=>{frame.remove();URL.revokeObjectURL(url)},120000);};}
