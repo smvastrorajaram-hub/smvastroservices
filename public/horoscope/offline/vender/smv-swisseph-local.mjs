@@ -18,4 +18,4 @@ export async function createSMVSwissEph(){
     close(){M.ccall('swe_close','void',[],[])}
   };
 }
-export default createSMVSwissEph
+export default createSMVSwissEph;
