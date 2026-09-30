@@ -4410,67 +4410,6 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
   }
 });
 
-
-// Targeted Render-Free runtime diagnostic for Horoscope browser assets.
-// Read-only: no Firebase reads/writes, no Razorpay calls, and no calculation is triggered.
-app.get("/horoscope-runtime-diagnostic", (req, res) => {
-  const root = path.join(__dirname, "public", "horoscope");
-  const assets = [
-    "offline/offline-engine.mjs",
-    "offline/vendor/smv-swisseph-local.mjs",
-    "offline/vendor/wasm/swisseph.js",
-    "offline/vendor/wasm/swisseph.mjs",
-    "offline/vendor/wasm/swisseph.wasm",
-    "offline/vendor/wasm/swisseph.data"
-  ];
-
-  const checks = assets.map(relativePath => {
-    const absolutePath = path.join(root, ...relativePath.split("/"));
-    try {
-      const stat = fs.statSync(absolutePath);
-      return {
-        path: relativePath,
-        exists: stat.isFile(),
-        bytes: stat.isFile() ? stat.size : 0,
-        publicPath: "/horoscope/" + relativePath
-      };
-    } catch (e) {
-      return {
-        path: relativePath,
-        exists: false,
-        bytes: 0,
-        publicPath: "/horoscope/" + relativePath,
-        error: e && e.code ? e.code : "NOT_FOUND"
-      };
-    }
-  });
-
-  const missing = checks.filter(item => !item.exists);
-  res.set("Cache-Control", "no-store");
-  return res.status(missing.length ? 503 : 200).json({
-    ok: missing.length === 0,
-    diagnostic: "horoscope-browser-runtime-assets",
-    runtime: "render-node",
-    assets: checks,
-    missing: missing.map(item => item.path),
-    conclusion: missing.length
-      ? "One or more Horoscope runtime files are missing from the deployed Render filesystem."
-      : "All required Horoscope runtime files exist in the deployed Render filesystem. Test each publicPath next; if the custom domain still cannot open them, the remaining issue is domain/proxy/static routing rather than missing WASM files."
-  });
-});
-
-// Horoscope browser runtime assets are deployed under public/horoscope.
-// Serve only this subtree; all existing API/Firebase/Razorpay/PDF routes remain unchanged.
-const HOROSCOPE_PUBLIC_DIR = path.join(__dirname, "public", "horoscope");
-app.use("/horoscope", express.static(HOROSCOPE_PUBLIC_DIR, {
-  fallthrough: true,
-  index: false,
-  setHeaders(res, filePath) {
-    if (filePath.endsWith(".wasm")) res.setHeader("Content-Type", "application/wasm");
-    else if (filePath.endsWith(".mjs")) res.setHeader("Content-Type", "text/javascript; charset=utf-8");
-  }
-}));
-
 app.use((req, res) => {
   console.warn("Unhandled backend route:", req.method, req.originalUrl);
   if (req.path.startsWith("/api/") || req.path.includes("withdrawal")) {
