@@ -28,6 +28,8 @@
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
     if(busy)return;
     const lang=document.documentElement.lang==='ta'?'ta':'en';
+    // V90: lock the language at Generate click. Payment/PDF/save must use this immutable generation language.
+    const generationLanguage=lang;
     try{await window.SMVEngineReady;}catch{alert(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));return;}
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'';
     if(Number(date.slice(0,4))<1800||Number(date.slice(0,4))>2399){alert(text('Supported birth years: 1800–2399.','ஆதரிக்கப்படும் பிறந்த ஆண்டுகள்: 1800–2399.'));return;}
@@ -81,7 +83,7 @@ if(lat===''||lon===''){
       // a partially populated Advanced tree. First build the core chart, copy only
       // that stable core result, rename the containers, then run ONE complete
       // /api/horoscope/full request directly into the English Advanced root.
-      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60});
+      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60,language:generationLanguage});
       if(await window.__smvOpenMatchingSavedReport?.('advanced_analysis',window.__smvGetReportContext('advanced_analysis')))return;
       const generated=await window.__smvGenerateHoroscopeEngine(false);
       const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
@@ -145,13 +147,16 @@ if(lat===''||lon===''){
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot});
             await window.__smvPredictionRenderPromise;
             completedFull=window.__smvLastFullReport;
-            window.__smvLocalizeTamilResult?.(target,lang);target.dataset.resultLanguage=lang;
+            window.__smvLocalizeTamilResult?.(target,generationLanguage);target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
-            window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:window.__smvLastFullReport||generated}}));
+            window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:window.__smvLastFullReport||generated}}));
           };
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
           if(!allowed){
-            target.dataset.resultLanguage=lang;
+            target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
+            // Basic/free result must use the same final language renderer as the paid result.
+            if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
+            window.__smvLocalizeTamilResult?.(target,generationLanguage);
             target.scrollIntoView({behavior:'smooth',block:'start'});
             return;
           }
@@ -167,8 +172,9 @@ if(lat===''||lon===''){
         }
         const parts=[...target.querySelectorAll('.smv-advanced-part')];
         if(parts.length!==10||parts.slice(0,9).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
-        window.__smvLocalizeTamilResult?.(target,lang);
-        target.dataset.resultLanguage=lang;
+        if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
+        window.__smvLocalizeTamilResult?.(target,generationLanguage);
+        target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
         target.classList.remove('hidden');
         target.setAttribute('aria-busy','false');
         if(lang==='en'&&typeof window.__smvFixEnglishBhavaHeaders==='function') window.__smvFixEnglishBhavaHeaders();
