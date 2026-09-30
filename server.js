@@ -2832,7 +2832,7 @@ app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUs
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const PDF_RENDERER_VERSION='v98-pdflib-global-unicode-font';
+ const PDF_RENDERER_VERSION='v99-pdflib-storage-lifecycle-fix';
  const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
  const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000),blocks=Array.isArray(req.body?.blocks)?req.body.blocks.slice(0,12000):[];if(!text&&!blocks.length)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
  console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,blocks:blocks.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
@@ -2844,22 +2844,63 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
  // PDF is streamed immediately; durable Cloudinary storage is a background step.  This
  // removes Cloudinary HTTP 499 from the interactive PDF-generation critical path.
  res.status(200);res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition','inline; filename="SMV-ASTRO-Report.pdf"');res.setHeader('Content-Length',String(stat.size));res.setHeader('Cache-Control','private, no-store');
- const persistPdf=async()=>{
-  let lastErr=null;
+ // V99: upload_large(localPath) returns an UploadStream, not the final upload result.
+ // Resolve only from Cloudinary's completion callback so public_id/asset_id are available
+ // and the temporary file stays alive until Cloudinary has finished reading it.
+ const uploadLargePdf=(filePath,options)=>new Promise((resolve,reject)=>{
+  let settled=false;
+  const done=(err,result)=>{
+   if(settled)return;
+   if(err){settled=true;return reject(err);}
+   // Chunked uploads can report intermediate done:false responses. Persist only the final one.
+   if(result&&result.done===false)return;
+   settled=true;resolve(result||{});
+  };
   try{
+   const stream=cloudinary.uploader.upload_large(filePath,options,done);
+   if(stream&&typeof stream.once==='function')stream.once('error',err=>done(err));
+  }catch(err){done(err);}
+ });
+ const isRetryableCloudError=(err)=>{
+  const code=Number(err?.http_code||err?.statusCode||0);
+  const name=String(err?.name||'').toLowerCase();
+  const msg=String(err?.message||'').toLowerCase();
+  return code===408||code===409||code===420||code===429||code>=500||name.includes('timeout')||msg.includes('timeout')||msg.includes('econnreset')||msg.includes('eai_again')||msg.includes('socket hang up');
+ };
+ const compactDefined=(obj)=>Object.fromEntries(Object.entries(obj).filter(([,v])=>v!==undefined));
+ const persistPdf=async()=>{
+  try{
+   let uploaded=null;
    for(let attempt=1;attempt<=3;attempt++){
     try{
      console.log('[PDF-STORE] upload start',{attempt,bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});
-     // upload_large uses Cloudinary's chunked upload API for local files.  It is much less
-     // sensitive to a single long-lived request than uploader.upload/upload_stream.
-     const uploaded=await cloudinary.uploader.upload_large(tmpPdf,{resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`,chunk_size:6000000,timeout:180000});
-     await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||stat.size),storage:'cloudinary_private_raw',rendererVersion:PDF_RENDERER_VERSION,updatedAt:FieldValue.serverTimestamp()},{merge:true});
-     console.log('[PDF-MEM] stored',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||stat.size),feature:f,lang,renderer:PDF_RENDERER_VERSION,attempt});
-     lastErr=null;break;
-    }catch(err){lastErr=err;console.warn('[PDF-STORE] upload retry',{attempt,message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});if(attempt<3)await new Promise(r=>setTimeout(r,1500*attempt));}
+     uploaded=await uploadLargePdf(tmpPdf,{resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`,chunk_size:6000000,timeout:180000});
+     if(!uploaded?.public_id)throw Object.assign(new Error('Cloudinary upload completed without public_id.'),{nonRetryable:true});
+     break;
+    }catch(err){
+     const retryable=!err?.nonRetryable&&isRetryableCloudError(err);
+     console.warn('[PDF-STORE] upload failed',{attempt,retryable,message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});
+     if(!retryable||attempt===3)throw err;
+     await new Promise(r=>setTimeout(r,1500*attempt));
+    }
    }
-   if(lastErr)console.error('[PDF-STORE] durable save failed after retries',{message:lastErr?.message||String(lastErr),http_code:lastErr?.http_code||null,name:lastErr?.name||''});
-  }finally{await fs.promises.unlink(tmpPdf).catch(()=>{});}
+   // Firestore is deliberately outside the network retry loop. A validation error must not
+   // re-upload the same PDF three times. Undefined optional values are omitted globally.
+   const metadata=compactDefined({
+    feature:f,language:lang,title,birthIdentity:paid.birthIdentity,
+    publicId:uploaded?.public_id,assetId:uploaded?.asset_id||'',
+    bytes:Number(uploaded?.bytes||stat.size),storage:'cloudinary_private_raw',
+    rendererVersion:PDF_RENDERER_VERSION,updatedAt:FieldValue.serverTimestamp()
+   });
+   await savedPdfRef(user.uid,paid.reportKey,lang).set(metadata,{merge:true});
+   console.log('[PDF-MEM] stored',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:metadata.bytes,feature:f,lang,renderer:PDF_RENDERER_VERSION,publicId:metadata.publicId});
+  }catch(err){
+   console.error('[PDF-STORE] durable save failed',{message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});
+  }finally{
+   // The response stream has already finished before persistPdf starts, and uploadLargePdf
+   // does not resolve until Cloudinary is done reading. This is the only deletion point.
+   await fs.promises.unlink(tmpPdf).catch(err=>{if(err?.code!=='ENOENT')console.warn('[PDF-STORE] temp cleanup failed',err?.message||String(err));});
+  }
  };
  const src=fs.createReadStream(tmpPdf);
  src.once('error',err=>{console.error('[PDF-STREAM] local read failed',err);if(!res.headersSent)res.status(500).end();else res.destroy(err);});
