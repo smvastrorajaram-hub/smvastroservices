@@ -225,8 +225,16 @@ async function v39TransitFor(payload,date,lang,full){
  if(!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('Invalid transit date or coordinates.');
  const key=JSON.stringify([day,lat,lon,offset]);if(V39_TRANSIT_CACHE.has(key))return V39_TRANSIT_CACHE.get(key);
  // The bundled Swiss engine uses the same ephemeris/formulas in both connection modes.
- v70TransitModules ||= Promise.all([import('./offline/swiss_vedic.browser.mjs'),import('./offline/transit_panchang.browser.mjs')]);
- const [sw]=await v70TransitModules,input={date:day,time:'12:00',lat,lon,language:'en',utcOffsetMinutes:offset};
+ // V97 root fix: a rejected dynamic-import Promise must never poison all later
+ // Dasha/Transit retries for the lifetime of the page.  V94/V95 sync work did not
+ // change the prediction engine, but a transient WASM/module load failure was cached
+ // here forever, so "Reopen to retry" could never really retry.
+ if(!v70TransitModules){
+  v70TransitModules=Promise.all([import('./offline/swiss_vedic.browser.mjs'),import('./offline/transit_panchang.browser.mjs')]);
+ }
+ let transitModules;
+ try{transitModules=await v70TransitModules;}catch(err){v70TransitModules=null;throw err;}
+ const [sw]=transitModules,input={date:day,time:'12:00',lat,lon,language:'en',utcOffsetMinutes:offset};
  // Root fix: do not call transit_panchang.browser.mjs' synchronous Swiss wrapper here.
  // This path is lazy-loaded while preparing the paid report and the synchronous wrapper
  // can run before its own WASM binding is ready. The awaited Swiss calculation below is
@@ -654,13 +662,24 @@ async function renderV59(ev){
  // Remove old standalone XI/XII from V58/V59. Main Advanced Analysis remains exactly I–X.
  root.querySelectorAll('.smv-advanced-part.detailed-dasha-predictions,.smv-advanced-part.detailed-transit-predictions').forEach(n=>n.remove());
  let rowsPromise=null;
- const getRows=async(onRow)=>{if(rowsPromise){const rows=await rowsPromise;if(onRow)for(const z of rows){onRow(z);await v58Yield();}return rows;}const acc=[];rowsPromise=(async()=>{const rows=await v58PeriodRows(c,full,lang,payload,full,z=>{if(onRow)onRow(z);});return rows;})();return rowsPromise;};
+ // V98 recovery rule: only a successful 15-year calculation may remain cached.
+ // A temporary network/WASM/module failure must not poison the current page.
+ // Closing/reopening the detail, or refreshing/reopening the entitled horoscope,
+ // must start a fresh calculation without requiring another payment.
+ const getRows=async(onRow)=>{
+  if(rowsPromise){
+   try{const rows=await rowsPromise;if(onRow)for(const z of rows){onRow(z);await v58Yield();}return rows;}
+   catch(err){rowsPromise=null;throw err;}
+  }
+  rowsPromise=(async()=>v58PeriodRows(c,full,lang,payload,full,z=>{if(onRow)onRow(z);}))();
+  try{return await rowsPromise;}catch(err){rowsPromise=null;throw err;}
+ };
  const dasha=x.querySelector('[data-smv-v61-kind="dasha"]'), transit=x.querySelector('[data-smv-v61-kind="transit"]');
  const loaders=new Map();
  const bind=(el,kind,runner)=>{
   if(!el)return;let pending=null;
   const load=async()=>{if(el.dataset.loaded==='1')return;if(pending)return pending;const body=el.querySelector(`[data-smv-v61-body="${kind}"]`);v58Loading(body,lang,kind);el.dataset.loading='1';pending=(async()=>{await runner(body);body.querySelector('.adv-section > p.small')?.remove();el.dataset.loaded='1';})().finally(()=>{delete el.dataset.loading;pending=null;});return pending;};
-  loaders.set(kind,load);el.addEventListener('toggle',()=>{if(el.open)load().catch(e=>{console.warn('Detailed report failed',e);el.querySelector(`[data-smv-v61-body="${kind}"]`).textContent=lang==='ta'?'கணக்கீடு நிறைவடையவில்லை. மீண்டும் திறந்து முயற்சிக்கவும்.':'Calculation did not finish. Reopen to retry.';});});
+  loaders.set(kind,load);el.addEventListener('toggle',()=>{if(el.open)load().catch(e=>{console.warn('Detailed report failed',e);const body=el.querySelector(`[data-smv-v61-body="${kind}"]`);const reason=String(e?.message||e||'').replace(/^Detailed period\s+/,'').trim();body.textContent=(lang==='ta'?'கணக்கீடு நிறைவடையவில்லை. மீண்டும் திறந்து முயற்சிக்கவும்.':'Calculation did not finish. Reopen to retry.')+(reason?' ['+reason+']':'');});});
  };
  bind(dasha,'dasha',async body=>{const box=body.querySelector('.smv-v58-progress');const rows=await getRows();for(const z of rows){box.insertAdjacentHTML('beforeend',v59DashaRow(c,full,z,lang,payload));await v58Yield();}if(!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'கிடைத்த தரவில் தனி தசா செயல்பாடு தேர்வு செய்யப்படவில்லை.':'No distinct dasha activation was selected from the available data.'}</p>`;});
  bind(transit,'transit',async body=>{const box=body.querySelector('.smv-v58-progress');const rows=await getRows();for(const z of rows){box.insertAdjacentHTML('beforeend',v59TransitRow(c,z,lang));await v58Yield();}if(!box.innerHTML)box.innerHTML=`<p>${lang==='ta'?'தனியான கோச்சார உறுதிப்படுத்தல் தேர்வு செய்யப்படவில்லை.':'No separate transit confirmation was selected.'}</p>`;});
