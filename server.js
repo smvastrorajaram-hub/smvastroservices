@@ -2839,8 +2839,10 @@ app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)
   const withChromeMargins=(fn)=>{const m=doc.page&&doc.page.margins;if(!m)return fn();const keep={top:m.top,right:m.right,bottom:m.bottom,left:m.left};m.top=0;m.right=0;m.bottom=0;m.left=0;try{return fn();}finally{m.top=keep.top;m.right=keep.right;m.bottom=keep.bottom;m.left=keep.left;}};
   const footer=()=>{if(isCover)return;withChromeMargins(()=>{const y=805;doc.save();doc.strokeColor(C.goldSoft).lineWidth(.6).moveTo(46,y-18).lineTo(549,y-18).stroke();doc.font('Helvetica').fontSize(7.4).fillColor(C.muted).text('SMV ASTRO SERVICES  •  smvastroservices.in',46,y-10,{width:410,height:10,lineBreak:false});doc.font('Helvetica-Bold').fillColor(C.wine).text(String(pageNo),500,y-10,{width:49,height:10,align:'right',lineBreak:false});doc.restore();});};
   const header=()=>{if(isCover)return;withChromeMargins(()=>{doc.save();doc.rect(0,0,595,44).fill(C.wine);doc.font('Helvetica-Bold').fontSize(11).fillColor(C.white).text('SMV ASTRO SERVICES',46,15,{width:250,height:14,lineBreak:false});doc.font('Helvetica').fontSize(7.5).fillColor('#F4E5C1').text('Sri Madurai Veerayah Astro Services',380,17,{width:169,height:10,align:'right',lineBreak:false});doc.restore();});};
-  const decorate=()=>{if(decoratingPage)return;decoratingPage=true;try{pageNo++;header();footer();}finally{decoratingPage=false;}};doc.on('pageAdded',decorate);
-  const newContentPage=()=>{isCover=false;doc.addPage();doc.y=68;};
+  // V88: never call PDFKit text from a pageAdded listener. PDFKit can add a page while
+  // laying out header/footer text, which recursively re-enters pageAdded and overflows the stack.
+  // Decorate only after an explicit content page has been created.
+  const newContentPage=()=>{isCover=false;doc.addPage();pageNo++;header();footer();doc.y=68;};
   const ensure=(h=80)=>{if(doc.y+h>770)newContentPage();};
   const section=(label)=>{const t=clean(label);ensure(58);doc.moveDown(.35);const y=doc.y;doc.roundedRect(46,y,503,36,8).fill(C.wine);safeText(t,61,y+9,473,{size:12.2,bold:true,color:C.white});doc.y=y+46;};
   const subhead=(label)=>{const t=clean(label);ensure(45);const y=doc.y;doc.roundedRect(46,y,503,30,7).fill(C.cream).strokeColor(C.gold).lineWidth(.8).stroke();safeText(t,58,y+7,479,{size:10.8,bold:true,color:C.wine});doc.y=y+38;};
