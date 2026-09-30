@@ -5,7 +5,7 @@ try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss 
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
-const { renderStructuredPdf } = require("./pdf-renderer");
+const { renderHtmlPdf } = require("./html-pdf-renderer");
 const { Readable } = require("stream");
 const cloudinary = require("cloudinary").v2;
 const Razorpay = require("razorpay");
@@ -2832,14 +2832,14 @@ app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUs
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const PDF_RENDERER_VERSION='v100-pdflib-on-demand-structured';
+ const PDF_RENDERER_VERSION='v101-html-css-chromium';
  const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
- const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000),blocks=Array.isArray(req.body?.blocks)?req.body.blocks.slice(0,12000):[];if(!text&&!blocks.length)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
- console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,blocks:blocks.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
+ const html=String(req.body?.html||'').trim().slice(0,12000000);if(!html)return res.status(400).json({error:'Complete report HTML is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
+ console.log('[PDF-CHROMIUM] start',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),htmlChars:html.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
  const tmpPdf=path.join('/tmp',`smv-${crypto.randomUUID()}.pdf`);
- const pdfBuffer=await renderStructuredPdf({title,language:lang,text,blocks,fontPath:path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf')});
+ const pdfBuffer=await renderHtmlPdf({title,language:lang,html});
  await fs.promises.writeFile(tmpPdf,pdfBuffer);
- const stat=await fs.promises.stat(tmpPdf);console.log('[PDF-MEM] rendered',{bytes:stat.size,blocks:blocks.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
+ const stat=await fs.promises.stat(tmpPdf);console.log('[PDF-CHROMIUM] rendered',{bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});
  // V95: the user's PDF response must never wait for Cloudinary.  The completed local
  // PDF is streamed immediately; durable Cloudinary storage is a background step.  This
  // removes Cloudinary HTTP 499 from the interactive PDF-generation critical path.
