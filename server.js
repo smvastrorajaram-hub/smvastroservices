@@ -5,7 +5,7 @@ try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss 
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
-const PDFDocument = require("pdfkit");
+const { renderStructuredPdf } = require("./pdf-renderer");
 const { Readable } = require("stream");
 const cloudinary = require("cloudinary").v2;
 const Razorpay = require("razorpay");
@@ -2832,66 +2832,40 @@ app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUs
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId)return await pipeCloudPdf(existing,res,'inline');
+ const PDF_RENDERER_VERSION='v96-pdflib-structured-immediate-bg-store';
+ const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
  const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000),blocks=Array.isArray(req.body?.blocks)?req.body.blocks.slice(0,12000):[];if(!text&&!blocks.length)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
- console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,feature:f,lang});
- const uploadDone=new Promise((resolve,reject)=>{const upload=cloudinary.uploader.upload_stream({resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`},(error,result)=>error?reject(error):resolve(result));
-  // V86 PDF visual renderer. Storage/payment/report identity flow is intentionally unchanged.
-  const C={wine:'#8B0000',gold:'#B8903C',goldSoft:'#D8C28C',cream:'#FFFDF8',ink:'#202020',muted:'#5F5A54',white:'#FFFFFF',line:'#D7C899'};
-  const doc=new PDFDocument({size:'A4',bufferPages:false,margins:{top:76,bottom:62,left:46,right:46},info:{Title:title,Author:'SMV ASTRO SERVICES',Subject:'Astrology report'}}),fontPath=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
-  const tamilOK=fs.existsSync(fontPath);if(tamilOK)doc.registerFont('Tamil',fontPath);doc.once('error',reject);upload.once('error',reject);doc.pipe(upload);
-  let pageNo=0,isCover=true;
-  const hasTamil=v=>/[\u0B80-\u0BFF]/.test(String(v||''));
-  const fontFor=(v,bold=false)=>hasTamil(v)&&tamilOK?'Tamil':(bold?'Helvetica-Bold':'Helvetica');
-  const clean=v=>String(v??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/[Ø][=><?][^\s]{0,8}\s*/g,'').replace(/^[\s•·|]+/,'').trim();
-  const safeText=(v,x,y,w,opts={})=>{const t=clean(v)||' ';doc.font(fontFor(t,!!opts.bold)).fontSize(opts.size||10).fillColor(opts.color||C.ink);doc.text(t,x,y,{width:w,align:opts.align||'left',lineGap:opts.lineGap??2.4,continued:false});return doc.y;};
-  // V87: keep page header/footer outside normal PDFKit text-flow pagination.
-  let decoratingPage=false;
-  const withChromeMargins=(fn)=>{const m=doc.page&&doc.page.margins;if(!m)return fn();const keep={top:m.top,right:m.right,bottom:m.bottom,left:m.left};m.top=0;m.right=0;m.bottom=0;m.left=0;try{return fn();}finally{m.top=keep.top;m.right=keep.right;m.bottom=keep.bottom;m.left=keep.left;}};
-  const footer=()=>{if(isCover)return;withChromeMargins(()=>{const y=805;doc.save();doc.strokeColor(C.goldSoft).lineWidth(.6).moveTo(46,y-18).lineTo(549,y-18).stroke();doc.font('Helvetica').fontSize(7.4).fillColor(C.muted).text('SMV ASTRO SERVICES  •  smvastroservices.in',46,y-10,{width:410,height:10,lineBreak:false});doc.font('Helvetica-Bold').fillColor(C.wine).text(String(pageNo),500,y-10,{width:49,height:10,align:'right',lineBreak:false});doc.restore();});};
-  const header=()=>{if(isCover)return;withChromeMargins(()=>{doc.save();doc.strokeColor(C.gold).lineWidth(.8).moveTo(46,43).lineTo(549,43).stroke();doc.font('Helvetica-Bold').fontSize(10.2).fillColor(C.wine).text('SMV ASTRO SERVICES',46,19,{width:250,height:13,lineBreak:false});doc.font('Helvetica').fontSize(7.2).fillColor(C.muted).text('Sri Madurai Veerayah Astro Services',350,20,{width:199,height:10,align:'right',lineBreak:false});doc.restore();});};
-  // V88: never call PDFKit text from a pageAdded listener. PDFKit can add a page while
-  // laying out header/footer text, which recursively re-enters pageAdded and overflows the stack.
-  // Decorate only after an explicit content page has been created.
-  const newContentPage=()=>{isCover=false;doc.addPage();pageNo++;header();footer();doc.y=68;};
-  const ensure=(h=80)=>{if(doc.y+h>770)newContentPage();};
-  const section=(label)=>{const t=clean(label);ensure(58);doc.moveDown(.35);const y=doc.y;doc.rect(46,y,5,28).fill(C.wine);safeText(t,60,y+5,483,{size:11.2,bold:true,color:C.wine});doc.strokeColor(C.goldSoft).lineWidth(.55).moveTo(60,y+27).lineTo(543,y+27).stroke();doc.y=y+37;};
-  const subhead=(label)=>{const t=clean(label);ensure(45);const y=doc.y;safeText(t,52,y,491,{size:10.3,bold:true,color:C.gold});doc.strokeColor(C.goldSoft).lineWidth(.5).moveTo(52,doc.y+3).lineTo(543,doc.y+3).stroke();doc.y+=9;};
-  const paragraph=(line)=>{const t=clean(line);if(!t)return;ensure(36);const y=doc.y;safeText(t,54,y,487,{size:9.6,color:C.ink,lineGap:3.6});doc.y+=5;};
-  const kv=(a,b)=>{ensure(31);const y=doc.y;doc.rect(52,y,491,25).fill(C.cream).strokeColor(C.line).lineWidth(.35).stroke();safeText(a,61,y+6,205,{size:9,bold:true,color:C.wine});safeText(b,270,y+6,262,{size:9,color:C.ink});doc.y=y+29;};
-  const tableRow=(cells,head=false)=>{ensure(29);const y=doc.y,h=25,n=Math.max(1,cells.length),w=491/n;cells.forEach((c,i)=>{doc.rect(52+i*w,y,w,h).fill(head?C.wine:(Math.floor(y/25)%2?C.cream:C.white)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(c,56+i*w,y+6,w-8,{size:head?8.3:8.1,bold:head,color:head?C.white:C.ink,align:'center'});});doc.y=y+h;};
-  const structuredTable=(rows)=>{if(!Array.isArray(rows)||!rows.length)return;const n=Math.max(...rows.map(r=>Array.isArray(r)?r.length:0),1),w=491/n;rows.forEach((r,ri)=>{r=Array.isArray(r)?r:[];const vals=Array.from({length:n},(_,i)=>clean(r[i]||''));let h=ri===0?28:24;for(const v of vals){doc.font(fontFor(v,ri===0)).fontSize(ri===0?7.7:7.4);h=Math.max(h,doc.heightOfString(v||' ',{width:w-10,lineGap:1.4})+10);}h=Math.min(74,h);ensure(h+2);const y=doc.y;vals.forEach((v,i)=>{doc.rect(52+i*w,y,w,h).fill(ri===0?C.wine:(ri%2?C.white:C.cream)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(v,57+i*w,y+5,w-10,{size:ri===0?7.7:7.4,bold:ri===0,color:ri===0?C.white:C.ink,align:n<=3?'left':'center',lineGap:1.4});});doc.y=y+h;});doc.y+=8;};
-  const structuredChart=(b)=>{const cells=Array.isArray(b?.cells)?b.cells.slice(0,12).map(clean):[];if(!cells.length)return;ensure(282);const x=126,y=doc.y+3,size=340,cell=size/4,slots=[[0,0],[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1]];doc.save();doc.lineWidth(.75).strokeColor('#8F704F');for(let i=0;i<12;i++){const [cx,cy]=slots[i],xx=x+cx*cell,yy=y+cy*cell;doc.rect(xx,yy,cell,cell).fill(C.white).stroke();const v=cells[i]||'—';safeText(v,xx+4,yy+7,cell-8,{size:8.2,bold:true,color:C.ink,align:'center',lineGap:1.2});}doc.rect(x+cell,y+cell,cell*2,cell*2).fill('#FFF8E9').stroke();safeText(clean(b.center||'Chart'),x+cell+6,y+cell*1.78,cell*2-12,{size:14,bold:true,color:C.wine,align:'center'});doc.restore();doc.y=y+size+14;};
-  const isMajor=t=>/^(?:[IVX]+\.?\s+|\d+\.\s+|ADVANCED ANALYSIS|INTEGRATED PREDICTIONS|VIMSOTTARI|VIMSHOTTARI|REM(?:EDIAL)?|NUMEROLOGY|MARRIAGE MATCHING|HOROSCOPE CALCULATION|ஜாதக பகுப்பாய்வு|தசா பகுப்பாய்வு|கோச்சார பகுப்பாய்வு|பரிகார|எண் கணித|ஒருங்கிணைந்த)/i.test(t)||(/^[A-Z][A-Z0-9 /&–—()-]{8,}$/.test(t)&&t.length<90);
-  const isSub=t=>/^(?:Current \/ Next|Birth Panchang|Daily Panchang|Daily Hora|Planetary|Navamsa|Bhava|Transit|Dasa|Bhukti|Antharam|Prediction|Career|Marriage|Education|Children|Health|Finance|கிரக|பாவ|நவாம்ச|கோச்சாரம்|பிறப்பு|தினசரி|விம்சோத்தரி|பலன்)/i.test(t)&&t.length<130;
-  // Cover page: restrained burgundy/gold identity, with no report-body dump.
-  doc.rect(0,0,595,842).fill(C.white);doc.strokeColor(C.gold).lineWidth(1).moveTo(46,94).lineTo(549,94).stroke();
-  doc.font('Helvetica-Bold').fontSize(20).fillColor(C.wine).text('SMV ASTRO SERVICES',46,48,{width:503,align:'center'});doc.font('Helvetica').fontSize(9).fillColor(C.muted).text('Sri Madurai Veerayah Astro Services',46,76,{width:503,align:'center'});
-  const coverTitle=clean(title);doc.font(fontFor(coverTitle,true)).fontSize(lang==='ta'?24:27).fillColor(C.wine).text(coverTitle,58,235,{width:479,align:'center',lineGap:7});doc.moveTo(155,doc.y+24).lineTo(440,doc.y+24).strokeColor(C.gold).lineWidth(1.2).stroke();
-  const rawLines=text.split('\n').map(clean).filter(Boolean),identity=rawLines.slice(0,28).filter(x=>/birth|date|time|place|name|பிறந்த|பெயர்|நேரம்|இடம்/i.test(x)).slice(0,5);let cy=Math.max(360,doc.y+62);doc.rect(70,cy,455,Math.max(78,identity.length*25+32)).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.7).stroke();safeText(lang==='ta'?'அறிக்கை விவரங்கள்':'REPORT DETAILS',90,cy+16,415,{size:10,bold:true,color:C.gold,align:'center'});let iy=cy+42;(identity.length?identity:[lang==='ta'?'முழுமையான ஜாதக அறிக்கை':'Complete Astrology Report']).forEach(x=>{safeText(x,94,iy,407,{size:9.5,color:C.ink,align:'center'});iy=doc.y+4;});doc.font('Helvetica').fontSize(8).fillColor(C.muted).text('smvastroservices.in',46,780,{width:503,align:'center'});
-  newContentPage();
-  if(blocks.length){
-   for(const b of blocks){const type=String(b?.type||'');if(type==='section'){section(b.text);continue;}if(type==='subhead'){subhead(b.text);continue;}if(type==='chart'){structuredChart(b);continue;}if(type==='table'){structuredTable(b.rows);continue;}if(type==='text'){paragraph(b.text);continue;}}
-   doc.end();return;
-  }
-  let previousWasHeading=false;
-  for(let idx=0;idx<rawLines.length;idx++){
-   const line=rawLines[idx];if(!line)continue;
-   // Skip repeated site chrome/title fragments that are already represented by the PDF chrome.
-   if(/^(SMV ASTRO SERVICES|Sri Madurai Veerayah Astro Services|smvastroservices\.in)$/i.test(line))continue;
-   if(isMajor(line)){section(line);previousWasHeading=true;continue;}
-   if(isSub(line)){subhead(line);previousWasHeading=true;continue;}
-   // Structured delimiters from DOM/table extraction become real PDF rows instead of one long text run.
-   const cells=line.split(/\s*[•|]\s*/).map(clean).filter(Boolean);
-   if(cells.length>=2&&cells.length<=7){if(cells.length===2)kv(cells[0],cells[1]);else tableRow(cells,previousWasHeading);previousWasHeading=false;continue;}
-   // Date-range / Dasha rows receive a compact visual card.
-   if(/\b\d{4}-\d{2}-\d{2}\b/.test(line)&&line.length<145){ensure(34);const y=doc.y;doc.rect(52,y,491,27).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.4).stroke();safeText(line,61,y+6,473,{size:8.8,bold:true,color:C.wine});doc.y=y+32;previousWasHeading=false;continue;}
-   paragraph(line);previousWasHeading=false;
-  }
-  doc.end();});
- const uploaded=await uploadDone;await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||0),storage:'cloudinary_private_raw',updatedAt:FieldValue.serverTimestamp()},{merge:true});
- console.log('[PDF-MEM] stored', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||0),feature:f,lang});
- return await pipeCloudPdf({publicId:uploaded.public_id},res,'inline');
+ console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,blocks:blocks.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
+ const tmpPdf=path.join('/tmp',`smv-${crypto.randomUUID()}.pdf`);
+ const pdfBuffer=await renderStructuredPdf({title,language:lang,text,blocks,fontPath:path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf')});
+ await fs.promises.writeFile(tmpPdf,pdfBuffer);
+ const stat=await fs.promises.stat(tmpPdf);console.log('[PDF-MEM] rendered',{bytes:stat.size,blocks:blocks.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
+ // V95: the user's PDF response must never wait for Cloudinary.  The completed local
+ // PDF is streamed immediately; durable Cloudinary storage is a background step.  This
+ // removes Cloudinary HTTP 499 from the interactive PDF-generation critical path.
+ res.status(200);res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition','inline; filename="SMV-ASTRO-Report.pdf"');res.setHeader('Content-Length',String(stat.size));res.setHeader('Cache-Control','private, no-store');
+ const persistPdf=async()=>{
+  let lastErr=null;
+  try{
+   for(let attempt=1;attempt<=3;attempt++){
+    try{
+     console.log('[PDF-STORE] upload start',{attempt,bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});
+     // upload_large uses Cloudinary's chunked upload API for local files.  It is much less
+     // sensitive to a single long-lived request than uploader.upload/upload_stream.
+     const uploaded=await cloudinary.uploader.upload_large(tmpPdf,{resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`,chunk_size:6000000,timeout:180000});
+     await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||stat.size),storage:'cloudinary_private_raw',rendererVersion:PDF_RENDERER_VERSION,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+     console.log('[PDF-MEM] stored',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||stat.size),feature:f,lang,renderer:PDF_RENDERER_VERSION,attempt});
+     lastErr=null;break;
+    }catch(err){lastErr=err;console.warn('[PDF-STORE] upload retry',{attempt,message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});if(attempt<3)await new Promise(r=>setTimeout(r,1500*attempt));}
+   }
+   if(lastErr)console.error('[PDF-STORE] durable save failed after retries',{message:lastErr?.message||String(lastErr),http_code:lastErr?.http_code||null,name:lastErr?.name||''});
+  }finally{await fs.promises.unlink(tmpPdf).catch(()=>{});}
+ };
+ const src=fs.createReadStream(tmpPdf);
+ src.once('error',err=>{console.error('[PDF-STREAM] local read failed',err);if(!res.headersSent)res.status(500).end();else res.destroy(err);});
+ res.once('finish',()=>{console.log('[PDF-MEM] delivered',{bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});void persistPdf();});
+ src.pipe(res);
+ return;
  }catch(e){console.error('Stored horoscope PDF error',e);if(!res.headersSent)return res.status(500).json({error:'Unable to generate and save PDF.'});}});
 
 app.post("/create-order", express.json(), async (req, res) => {
