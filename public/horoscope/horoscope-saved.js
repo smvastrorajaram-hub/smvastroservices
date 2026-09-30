@@ -34,7 +34,7 @@ async function serverPdf(report,create,forcedLang,forcedText){
  const blob=await r.blob();if(!blob.size||!String(blob.type).includes('pdf'))throw Error(T('Incomplete PDF received.','முழுமையற்ற PDF பெறப்பட்டது.'));return blob;
 }
 async function ensurePdf(key){
- const report=await display(key);if(!report.paid)throw Error(T('Verified paid access is required for PDF.','PDF-க்கு சரிபார்க்கப்பட்ட கட்டண அணுகல் தேவை.'));
+ let report=await display(key);if(!report.paid){const unlocked=await verifiedPaid(report.feature,report.birthIdentity);if(!unlocked)throw Error(T('Verified paid access is required for PDF. Do not pay again; retry payment verification.','PDF-க்கு சரிபார்க்கப்பட்ட கட்டண அணுகல் தேவை. மீண்டும் பணம் செலுத்த வேண்டாம்; கட்டண சரிபார்ப்பை மீண்டும் முயற்சிக்கவும்.'));report={...report,paid:true,dirty:true};await records('put',report);await list();}
  const lang=$('smvSavedViewer')?.lang||report.language||'en',pdfKey=key+':'+lang;const cached=await pdfRecords('get',pdfKey);if(cached?.blob instanceof Blob&&cached.blob.size>500)return cached.blob;
  status(T('Opening saved PDF…','சேமித்த PDF திறக்கப்படுகிறது…'));
  let blob=await serverPdf(report,false);
