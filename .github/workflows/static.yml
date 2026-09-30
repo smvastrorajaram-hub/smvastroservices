@@ -33,6 +33,27 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      # Fail the deployment before publishing if the browser-side Horoscope
+      # Swiss Ephemeris runtime is missing from the exact GitHub Pages artifact.
+      - name: Verify Horoscope runtime assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            "public/horoscope/offline/offline-engine.mjs"
+            "public/horoscope/offline/vendor/smv-swisseph-local.mjs"
+            "public/horoscope/offline/vendor/wasm/swisseph.js"
+            "public/horoscope/offline/vendor/wasm/swisseph.mjs"
+            "public/horoscope/offline/vendor/wasm/swisseph.wasm"
+            "public/horoscope/offline/vendor/wasm/swisseph.data"
+          )
+          for file in "${required[@]}"; do
+            test -s "$file" || { echo "MISSING/EMPTY: $file"; exit 1; }
+            echo "PASS: $file ($(wc -c < "$file") bytes)"
+          done
+          echo "HOROSCOPE GITHUB-PAGES RUNTIME PREFLIGHT PASS"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
