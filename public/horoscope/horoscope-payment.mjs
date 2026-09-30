@@ -219,14 +219,9 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  if(!mount)return false;
  await initLocalAuth().catch(()=>{});
  const cfg=(await config()).marriage_matching;mount.replaceChildren();
- const nakshatraGate=document.getElementById('mmNakshatraGate');
  const showForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:cfg.enabled&&cfg.price>0}}));
  const hideForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:false,paymentRequired:true}}));
- // V96: Admin OFF means the entire Nakshatra/payment teaser is disabled, while full matching remains available.
- if(!cfg.enabled){if(nakshatraGate)nakshatraGate.hidden=true;mount.replaceChildren();showForm();return true;}
- // Admin ON + Rs.0 keeps the Nakshatra section visible and opens the full-entry form with no payment card.
- if(cfg.price<=0){if(nakshatraGate)nakshatraGate.hidden=false;showForm();return true;}
- if(nakshatraGate)nakshatraGate.hidden=false;
+ if(!cfg.enabled||cfg.price<=0){showForm();return true;}
  if(!state.user){hideForm();}
  else{try{const a=await api('/horoscope-feature/access?feature=marriage_matching&preinput=1');if(a?.unlocked){state.marriagePrepaid=true;showForm();return true;}}catch(_){}hideForm();}
  const card=payCard('marriage_matching',cfg.price,async()=>{},true);const b=card.querySelector('button');
