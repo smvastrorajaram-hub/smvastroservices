@@ -1,5 +1,6 @@
 'use strict';
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function safeReportHtml(html=''){
@@ -18,7 +19,11 @@ function documentHtml({title,language,html}){
  </style></head><body><div class="smv-print-brand">SMV ASTRO SERVICES</div><h1 class="smv-print-title">${escapeHtml(title)}</h1><main id="report">${safeReportHtml(html)}</main><div class="smv-print-footer">smvastroservices.in</div></body></html>`;
 }
 async function renderHtmlPdf(opts={}){
- const browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']});
+ const executablePath = puppeteer.executablePath();
+ if (!executablePath || !fs.existsSync(executablePath)) {
+  throw new Error('Chromium executable is missing. Render build must run npm install/postinstall before npm start.');
+ }
+ const browser=await puppeteer.launch({headless:true,executablePath,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']});
  try{
   const page=await browser.newPage();
   await page.setViewport({width:1280,height:900,deviceScaleFactor:1});
