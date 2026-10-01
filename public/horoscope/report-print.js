@@ -7,7 +7,11 @@
  const status=document.getElementById('printStatus'),button=document.getElementById('printNow'),back=document.getElementById('printBack');
  back.onclick=()=>history.length>1?history.back():location.assign('./');
  try{
-  const selection=JSON.parse(sessionStorage.getItem('smv-print-report')||'null');
+  let selection=null;
+  try{selection=JSON.parse(sessionStorage.getItem('smv-print-report')||'null');}catch(_){}
+  if(!selection){try{selection=JSON.parse(localStorage.getItem('smv-print-report-handoff')||'null');}catch(_){}}
+  if(selection?.createdAt&&Date.now()-Number(selection.createdAt)>10*60*1000)selection=null;
+  if(selection)localStorage.removeItem('smv-print-report-handoff');
   if(!selection||!selection.owner||typeof selection.key!=='string')throw Error('Open a saved report before printing.');
   const report=await readSaved(selection.key);
   if(!report||report.deleted||report.owner!==selection.owner)throw Error('This saved report is unavailable in this browser.');
