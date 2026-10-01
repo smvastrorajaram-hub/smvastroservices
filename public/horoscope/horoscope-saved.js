@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id),ta=()=>document.documentElement.lang==='ta',T=(en,t)=>ta()?t:en;
 function tokenUid(){try{const t=String(window.__smvHoroscopePaidState?.token||'').split('.')[1];if(!t)return '';const j=JSON.parse(atob(t.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(t.length/4)*4,'=')));return String(j.user_id||j.sub||'');}catch(_){return '';}}
 function owner(){return String(window.__smvHoroscopePaidState?.user?.uid||'');}
-let authEpoch=0;
+let authEpoch=0,authRefreshPending=null;
 const api=(...args)=>window.__smvHoroscopeApi(...args),live=new Map();let syncPending=null;
 async function syncApi(path,opt={}){const state=window.__smvHoroscopePaidState||{},backend=String(state.backend||window.SMV_BACKEND_URL||'').replace(/\/$/,'');const headers={...((await (async()=>{const token=state.token;return token?{Authorization:'Bearer '+token}:{};})())),...(opt.headers||{})};if(opt.body&&!headers['Content-Type'])headers['Content-Type']='application/json';const r=await fetch(backend+path,{...opt,cache:'no-store',headers});const j=await r.json().catch(()=>({}));if(!r.ok||j.success===false)throw Error(j.error||('Request failed: '+r.status));return j;}
 function dbOpen(){return new Promise((ok,no)=>{const q=indexedDB.open('smv-reports-v2',2);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('reports'))q.result.createObjectStore('reports',{keyPath:'key'});if(!q.result.objectStoreNames.contains('pdfs'))q.result.createObjectStore('pdfs',{keyPath:'key'});};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error);});}
@@ -34,40 +34,20 @@ async function prepareSavedForOutput(key,mode='view'){
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  return {report,lang};
 }
-const outputPending=new Map();
-function generationBusy(){
- if(saving.size||manualSaving.size||outputPending.size)return true;
- for(const x of live.values())if(x?.root?.getAttribute?.('aria-busy')==='true')return true;
- return document.getElementById('mmResult')?.getAttribute('aria-busy')==='true';
-}
-async function waitForGeneration(){
- if(!generationBusy())return false;
- status(T('Wait — generating PDF…','காத்திருக்கவும் — PDF உருவாக்கப்படுகிறது…'));
- const pending=[...saving.values(),...manualSaving.values()];
- if(pending.length)await Promise.allSettled(pending);
- while(generationBusy())await new Promise(r=>setTimeout(r,120));
- return true;
-}
 async function openLocalPrint(key,mode='view'){
- if(outputPending.has(key)){status(T('Wait — generating PDF…','காத்திருக்கவும் — PDF உருவாக்கப்படுகிறது…'));return outputPending.get(key);}
- const task=(async()=>{
-  const uid=owner();
-  await waitForGeneration();
-  const {report,lang}=await prepareSavedForOutput(key,mode);
-  sessionStorage.setItem('smv-print-report',JSON.stringify({key,owner:uid,language:lang,mode,createdAt:Date.now()}));
-  const url='report-print.html?mode='+encodeURIComponent(mode)+'&v=V1-flow-fix';
-  const w=window.open(url,'_blank','noopener');
-  if(!w)location.href=url;
-  status(mode==='view'?T('Opening saved report locally…','சேமித்த அறிக்கை சாதனத்திலிருந்து திறக்கப்படுகிறது…'):T('Opening browser PDF/print…','Browser PDF/அச்சிடும் வசதி திறக்கப்படுகிறது…'));
-  return true;
- })().finally(()=>outputPending.delete(key));
- outputPending.set(key,task);return task;
+ const uid=owner();
+ const {report,lang}=await prepareSavedForOutput(key,mode);
+ sessionStorage.setItem('smv-print-report',JSON.stringify({key,owner:uid,language:lang,mode,createdAt:Date.now()}));
+ const url='report-print.html?mode='+encodeURIComponent(mode)+'&v=129-local-pdf';
+ const w=window.open(url,'_blank','noopener');
+ if(!w)location.href=url;
+ status(mode==='view'?T('Opening saved report locally…','சேமித்த அறிக்கை சாதனத்திலிருந்து திறக்கப்படுகிறது…'):T('Opening browser PDF/print…','Browser PDF/அச்சிடும் வசதி திறக்கப்படுகிறது…'));
+ return true;
 }
 async function viewPdf(key){return openLocalPrint(key,'view');}
 async function downloadPdf(key){return openLocalPrint(key,'download');}
 async function printReport(key){return openLocalPrint(key,'print');}
 async function remove(key){
- if(generationBusy()){status(T('Wait — generating PDF…','காத்திருக்கவும் — PDF உருவாக்கப்படுகிறது…'));return;}
  const uid=owner(),r=await records('get',key);if(!uid||r?.owner!==uid)return;
  await records('delete',key);
  await pdfRecords('delete',key+':en').catch(()=>{});await pdfRecords('delete',key+':ta').catch(()=>{});
@@ -83,19 +63,18 @@ async function sync(){if(syncPending)return syncPending;const uid=owner(),epoch=
 function personFrom(b,role){const cap=role[0].toUpperCase()+role.slice(1),alts=role==='groom'?['groom','male','boy','person1']:['bride','female','girl','person2'];for(const k of alts){if(b?.[k]&&typeof b[k]==='object')return b[k];}const x={};for(const f of ['name','birthDate','date','dob','birthTime','time','birthPlace','place','location']){for(const k of [role+cap.replace(cap, f[0].toUpperCase()+f.slice(1)),role+f[0].toUpperCase()+f.slice(1),role+'_'+f])if(b?.[k]){x[f]=b[k];break;}}return x;}
 function personText(x,fallback=''){const date=x.birthDate||x.date||x.dob||'',time=x.birthTime||x.time||'',place=x.birthPlace||x.place||x.location||'';return [x.name||fallback,date,time,place].filter(Boolean).join(' ; ');}
 function birthLabel(r){const b=r.birthIdentity||{};if(r.feature==='marriage_matching'){return {groom:personText(personFrom(b,'groom')),bride:personText(personFrom(b,'bride'))};}const x=(b.birth&&typeof b.birth==='object'?b.birth:(b.person&&typeof b.person==='object'?b.person:b));return {single:personText(x,r.name)||r.name||T('Saved report','சேமித்த அறிக்கை')};}
-async function list(){const uid=owner(),h=$('smvSavedHoroscopeList'),m=$('smvSavedMatchingList'),panel=$('smvSavedReports');if(!h||!m)return;const hGroup=h.closest('.saved-report-group'),mGroup=m.closest('.saved-report-group');if(hGroup)hGroup.hidden=!uid;if(mGroup)mGroup.hidden=!uid;if(panel)panel.hidden=!uid;if(!uid){h.replaceChildren();m.replaceChildren();return;}const rows=(await records('all')).filter(r=>r.owner===uid&&!r.deleted).sort((a,b)=>b.savedAt-a.savedAt);if(uid!==owner())return;h.replaceChildren();m.replaceChildren();const render=(host,r)=>{const row=document.createElement('div');row.className='saved-report-row';const label=document.createElement('div');label.className='saved-report-label';const info=birthLabel(r);if(r.feature==='marriage_matching'){const g=document.createElement('div'),br=document.createElement('div');g.textContent=T('Groom Name: ','மணமகன் பெயர்: ')+(info.groom||'—');br.textContent=T('Bride Name: ','மணமகள் பெயர்: ')+(info.bride||'—');label.append(g,br);}else label.textContent=info.single;const langTag=document.createElement('div');langTag.className='saved-report-language';langTag.textContent=r.language==='ta'?'தமிழ் சேமிப்பு':'English Saved';label.append(langTag);row.append(label);const actions=document.createElement('div');actions.className='saved-report-actions';for(const [name,fn]of [[T('Download PDF','PDF பதிவிறக்க'),()=>downloadPdf(r.key)],[T('View PDF','PDF பார்க்க'),()=>viewPdf(r.key)],[T('Print','அச்சிட'),()=>printReport(r.key)],[T('Delete','நீக்க'),()=>remove(r.key)]]){const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>fn().catch(fail);actions.append(b);}row.append(actions);host.append(row);};rows.forEach(r=>render(r.feature==='marriage_matching'?m:h,r));if(!h.children.length)h.textContent=T('No saved horoscope reports yet.','சேமித்த ஜாதக அறிக்கைகள் இல்லை.');if(!m.children.length)m.textContent=T('No saved marriage matching reports yet.','சேமித்த திருமண பொருத்த அறிக்கைகள் இல்லை.');}
+let queuedSavedAction=null;
+function reportFlowBusy(){if(manualSaving.size)return true;for(const item of live.values()){if(item?.root?.isConnected&&item.root.getAttribute('aria-busy')==='true')return true;}return false;}
+function waitMessage(){status(T('Wait — generating PDF…','காத்திருக்கவும் — PDF உருவாக்கப்படுகிறது…'));}
+function runSavedAction(fn,{deletable=false}={}){if(!reportFlowBusy())return fn();if(deletable){waitMessage();return Promise.resolve();}if(queuedSavedAction){waitMessage();return Promise.resolve();}waitMessage();return new Promise((resolve,reject)=>{queuedSavedAction={fn,resolve,reject};const check=()=>{if(!queuedSavedAction)return;if(reportFlowBusy()){setTimeout(check,120);return;}const q=queuedSavedAction;queuedSavedAction=null;Promise.resolve().then(q.fn).then(q.resolve,q.reject);};setTimeout(check,120);});}
+async function list(){const uid=owner(),h=$('smvSavedHoroscopeList'),m=$('smvSavedMatchingList'),panel=$('smvSavedReports');if(!h||!m)return;const hGroup=h.closest('.saved-report-group'),mGroup=m.closest('.saved-report-group');if(hGroup)hGroup.hidden=!uid;if(mGroup)mGroup.hidden=!uid;if(panel)panel.hidden=!uid;if(!uid){h.replaceChildren();m.replaceChildren();return;}const rows=(await records('all')).filter(r=>r.owner===uid&&!r.deleted).sort((a,b)=>b.savedAt-a.savedAt);if(uid!==owner())return;h.replaceChildren();m.replaceChildren();const render=(host,r)=>{const row=document.createElement('div');row.className='saved-report-row';const label=document.createElement('div');label.className='saved-report-label';const info=birthLabel(r);if(r.feature==='marriage_matching'){const g=document.createElement('div'),br=document.createElement('div');g.textContent=T('Groom Name: ','மணமகன் பெயர்: ')+(info.groom||'—');br.textContent=T('Bride Name: ','மணமகள் பெயர்: ')+(info.bride||'—');label.append(g,br);}else label.textContent=info.single;const langTag=document.createElement('div');langTag.className='saved-report-language';langTag.textContent=r.language==='ta'?'தமிழ் சேமிப்பு':'English Saved';label.append(langTag);row.append(label);const actions=document.createElement('div');actions.className='saved-report-actions';for(const [name,fn,isDelete]of [[T('Download PDF','PDF பதிவிறக்க'),()=>downloadPdf(r.key),false],[T('View PDF','PDF பார்க்க'),()=>viewPdf(r.key),false],[T('Print','அச்சிட'),()=>printReport(r.key),false],[T('Delete','நீக்க'),()=>remove(r.key),true]]){const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>runSavedAction(fn,{deletable:isDelete}).catch(fail);actions.append(b);}row.append(actions);host.append(row);};rows.forEach(r=>render(r.feature==='marriage_matching'?m:h,r));if(!h.children.length)h.textContent=T('No saved horoscope reports yet.','சேமித்த ஜாதக அறிக்கைகள் இல்லை.');if(!m.children.length)m.textContent=T('No saved marriage matching reports yet.','சேமித்த திருமண பொருத்த அறிக்கைகள் இல்லை.');}
 /* V120: automatic/pending PDF recovery removed. PDFs are strictly on-demand. */
 async function migrateLegacy(){const uid=owner();if(!uid)return;const request=indexedDB.open('smv-horoscope-saved-v1');const old=await new Promise((ok,no)=>{request.onsuccess=()=>ok(request.result);request.onerror=()=>no(request.error)});if(!old.objectStoreNames.contains('reports')){old.close();return;}const rows=await new Promise((ok,no)=>{const q=old.transaction('reports').objectStore('reports').getAll();q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});old.close();for(const r of rows.filter(r=>r.owner===uid)){const key=uid+':'+r.id;if(!await records('get',key))await records('put',{...r,key,html:clean(r.html),paid:true,dirty:true,legacy:true,feature:'advanced_analysis',pdfState:'on_demand'});}}
-async function migrateCurrentV2(){const uid=owner();if(!uid)return;const flag='smv-report-v2-cloud-migration:'+uid;if(localStorage.getItem(flag)==='done')return;const rows=(await records('all')).filter(r=>r.owner===uid&&!r.deleted);let changed=false;for(const r of rows){if(r.paid===true&&r.dirty!==true&&!r.revision){await records('put',{...r,dirty:true,needsCloudMigration:true});changed=true;}}localStorage.setItem(flag,'done');if(changed)await list();}
-function init(){const host=$('english-horoscope'),panel=$('smvSavedReports');if(!host||!panel)return;bind($('smvSavedViewer'));function labels(){panel.querySelector('[data-h-title]').textContent=T('Saved Horoscope Reports','சேமித்த ஜாதக அறிக்கைகள்');panel.querySelector('[data-m-title]').textContent=T('Saved Marriage Matching Reports','சேமித்த திருமண பொருத்த அறிக்கைகள்');}labels();window.addEventListener('smv-language',labels);window.addEventListener('smv:horoscope-feature-config',()=>list().catch(fail));const refreshForAuth=()=>{authEpoch++;syncPending=null;live.clear();list().catch(fail);if(owner())Promise.all([migrateLegacy(),migrateCurrentV2()]).then(()=>list()).then(()=>sync()).catch(fail);};
-window.addEventListener('smv:horoscope-local-auth',refreshForAuth);
-list().catch(fail);
-// Existing Firebase session can be restored before this classic script receives the auth event.
-// Bootstrap that already-authenticated state too, and only react when the UID actually changes.
-let seenOwner=owner();if(seenOwner){Promise.all([migrateLegacy(),migrateCurrentV2()]).then(()=>list()).then(()=>sync()).catch(fail);}
-const authWatch=setInterval(()=>{const now=owner();if(now!==seenOwner){seenOwner=now;refreshForAuth();}},250);
-window.addEventListener('pagehide',()=>clearInterval(authWatch),{once:true});
-}
+async function migrateCurrentV2(){const uid=owner();if(!uid)return;const rows=(await records('all')).filter(r=>r.owner===uid&&!r.deleted&&r.paid===true&&!r.revision&&!r.dirty);for(const r of rows)await records('put',{...r,dirty:true,needsCloudMigration:true});}
+function refreshSavedReportsFromAuth(){if(authRefreshPending)return authRefreshPending;authRefreshPending=(async()=>{authEpoch++;syncPending=null;live.clear();await list();if(owner()){await migrateLegacy();await migrateCurrentV2();await list();sync().catch(console.warn);}})().finally(()=>{authRefreshPending=null;});return authRefreshPending;}
+window.__smvRefreshSavedReportsFromAuth=refreshSavedReportsFromAuth;
+function init(){const panel=$('smvSavedReports');if(!panel)return;bind($('smvSavedViewer'));function labels(){panel.querySelector('[data-h-title]').textContent=T('Saved Horoscope Reports','சேமித்த ஜாதக அறிக்கைகள்');panel.querySelector('[data-m-title]').textContent=T('Saved Marriage Matching Reports','சேமித்த திருமண பொருத்த அறிக்கைகள்');}labels();window.addEventListener('smv-language',labels);window.addEventListener('smv:horoscope-feature-config',()=>list().catch(fail));window.addEventListener('smv:horoscope-local-auth',()=>{refreshSavedReportsFromAuth().catch(fail);});refreshSavedReportsFromAuth().catch(fail);}
+
 const manualSaving=new Map();
 function featureSaveLabel(feature){return feature==='marriage_matching'?T('Save Marriage Matching','திருமண பொருத்தத்தை சேமி'):T('Save Horoscope','ஜாதகத்தை சேமி');}
 function attachSaveButton(feature,item){const root=item?.root;if(!root||!root.isConnected)return;let bar=root.querySelector(':scope > .smv-manual-save-actions');if(!bar){bar=document.createElement('div');bar.className='smv-manual-save-actions';bar.style.cssText='display:flex;justify-content:center;gap:.6rem;margin:1rem 0';const b=document.createElement('button');b.type='button';b.className='smv-manual-save-report';bar.append(b);root.append(bar);}const b=bar.querySelector('button');b.textContent=featureSaveLabel(feature);b.onclick=()=>manualSave(feature,b);}
@@ -114,7 +93,7 @@ async function captureRenderedLanguageViews(){
   await records('put',{...r,views:{...(r.views||{}),[language]:html},dirty:false,storage:'indexeddb'});
  }
 }
-async function manualSave(feature,button){if(manualSaving.has(feature))return manualSaving.get(feature);if(!owner()){fail(Error(T('Log in before saving.','சேமிப்பதற்கு முன் உள்நுழைக.')));return;}const task=(async()=>{if(button)button.disabled=true;const existing=await currentSavedReport(feature);if(existing){status(feature==='marriage_matching'?T('Marriage matching is already saved.','திருமண பொருத்தம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'):T('Horoscope is already saved.','ஜாதகம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'));await list();return existing;}const r=await saveReport(feature);const ready={...r,pdfState:'browser_native',pdfReadyAt:null,dirty:true,storage:'indexeddb'};await records('put',ready);status(feature==='marriage_matching'?T('Marriage matching saved. PDF/Print opens locally only when View/Download/Print is selected.','திருமண பொருத்தம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'):T('Horoscope saved. PDF/Print opens locally only when View/Download/Print is selected.','ஜாதகம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'));await list();setTimeout(()=>sync().catch(()=>{}),0);return ready;})().catch(fail).finally(()=>{manualSaving.delete(feature);if(button)button.disabled=false;});manualSaving.set(feature,task);return task;}
+async function manualSave(feature,button){if(manualSaving.has(feature))return manualSaving.get(feature);if(!owner()){fail(Error(T('Log in before saving.','சேமிப்பதற்கு முன் உள்நுழைக.')));return;}const task=(async()=>{if(button)button.disabled=true;const existing=await currentSavedReport(feature);if(existing){status(feature==='marriage_matching'?T('Marriage matching is already saved.','திருமண பொருத்தம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'):T('Horoscope is already saved.','ஜாதகம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'));await list();return existing;}const r=await saveReport(feature);const ready={...r,pdfState:'browser_native',pdfReadyAt:null,dirty:true,storage:'indexeddb'};await records('put',ready);status(feature==='marriage_matching'?T('Marriage matching saved. PDF/Print opens locally only when View/Download/Print is selected.','திருமண பொருத்தம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'):T('Horoscope saved. PDF/Print opens locally only when View/Download/Print is selected.','ஜாதகம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'));await list();return ready;})().catch(fail).finally(()=>{manualSaving.delete(feature);if(button)button.disabled=false;});manualSaving.set(feature,task);return task;}
 window.addEventListener('smv:report-ready',e=>{const item=e.detail;if(!item?.feature)return;live.set(item.feature,item);attachSaveButton(item.feature,item);/* V133: authenticated complete/free or paid reports auto-save. Basic-only/Admin-OFF remains manual. */if(owner()&&!item.basicOnly){queueMicrotask(()=>manualSave(item.feature).catch?.(()=>{}));}});
 window.addEventListener('smv-language',()=>{
  /* V124 invariant: language toggle never syncs or creates/fetches PDF. After the translated DOM settles, only cache that rendered language into the already-saved local report. */
