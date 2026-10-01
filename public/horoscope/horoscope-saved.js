@@ -23,21 +23,9 @@ function selectedSavedLanguage(report){
  if(report?.views?.[report?.language])return report.language;
  return report?.views?.ta?'ta':'en';
 }
-async function captureCurrentLanguageOnDemand(report){
- const wanted=ta()?'ta':'en';
- if(report?.views?.[wanted]||(report?.language===wanted&&report?.html))return report;
- const item=live.get(report?.feature),root=item?.root;
- if(!root?.isConnected||root.getAttribute('aria-busy')==='true')return report;
- const expected=await hash(report.feature,item.birthIdentity);
- if(expected!==report.id)return report;
- const html=clean(root.innerHTML);if(!html)return report;
- const next={...report,views:{...(report.views||{}),[wanted]:html},dirty:false,storage:'indexeddb'};
- await records('put',next);return next;
-}
 async function openLocalPrint(key,mode='view'){
- const uid=owner();let report=await records('get',key);
+ const uid=owner(),report=await records('get',key);
  if(!uid||report?.owner!==uid||report.deleted)throw Error(T('Log in to the account that saved this report.','அறிக்கையைச் சேமித்த கணக்கில் உள்நுழைக.'));
- report=await captureCurrentLanguageOnDemand(report);
  const lang=selectedSavedLanguage(report);
  if(!report.views?.[lang]&&!(report.language===lang&&report.html))throw Error(T('Generate this report in the selected language first.','இந்த அறிக்கையை தேர்ந்தெடுத்த மொழியில் முதலில் உருவாக்கவும்.'));
  sessionStorage.setItem('smv-print-report',JSON.stringify({key,owner:uid,language:lang,mode,createdAt:Date.now()}));
@@ -91,9 +79,11 @@ async function captureRenderedLanguageViews(){
 async function manualSave(feature,button){if(manualSaving.has(feature))return manualSaving.get(feature);if(!owner()){fail(Error(T('Log in before saving.','சேமிப்பதற்கு முன் உள்நுழைக.')));return;}const task=(async()=>{if(button)button.disabled=true;const existing=await currentSavedReport(feature);if(existing){status(feature==='marriage_matching'?T('Marriage matching is already saved.','திருமண பொருத்தம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'):T('Horoscope is already saved.','ஜாதகம் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.'));await list();return existing;}const r=await saveReport(feature);const ready={...r,pdfState:'browser_native',pdfReadyAt:null,dirty:false,storage:'indexeddb'};await records('put',ready);status(feature==='marriage_matching'?T('Marriage matching saved. PDF/Print opens locally only when View/Download/Print is selected.','திருமண பொருத்தம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'):T('Horoscope saved. PDF/Print opens locally only when View/Download/Print is selected.','ஜாதகம் சேமிக்கப்பட்டது. PDF/அச்சிடும் வசதி பார்க்க/பதிவிறக்க/அச்சிட தேர்வு செய்தால் மட்டும் சாதனத்தில் திறக்கும்.'));await list();return ready;})().catch(fail).finally(()=>{manualSaving.delete(feature);if(button)button.disabled=false;});manualSaving.set(feature,task);return task;}
 window.addEventListener('smv:report-ready',e=>{const item=e.detail;if(!item?.feature)return;live.set(item.feature,item);attachSaveButton(item.feature,item);});
 window.addEventListener('smv-language',()=>{
- /* V130 performance invariant: language switching is UI-only. Never serialize/clean the full report DOM here. The selected language is captured lazily only if View/Download/Print is requested. */
+ /* V124 invariant: language toggle never syncs or creates/fetches PDF. After the translated DOM settles, only cache that rendered language into the already-saved local report. */
  for(const [feature,item] of live)attachSaveButton(feature,item);
  queueMicrotask(()=>{for(const [feature,item] of live)attachSaveButton(feature,item);});
+ setTimeout(()=>{for(const [feature,item] of live)attachSaveButton(feature,item);captureRenderedLanguageViews().catch(console.warn);},0);
+ setTimeout(()=>captureRenderedLanguageViews().catch(console.warn),120);
 });
 window.__smvFinalizePaidReport=()=>Promise.resolve(null);
 window.__smvSaveCompleteReport=feature=>manualSave(feature);

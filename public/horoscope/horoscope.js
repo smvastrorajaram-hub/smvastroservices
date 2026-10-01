@@ -754,7 +754,7 @@
       },true);
     }
     bindHoroscopeInteractions(result,d,name,getHoroscopeLang());
-    result.scrollIntoView({behavior:'smooth',block:'start'});
+    result.scrollIntoView({behavior:'auto',block:'start'});
   }
   if(!window.__smvPdfPaidListenerBound){window.__smvPdfPaidListenerBound=true;window.addEventListener('smv:horoscope-paid-access',ev=>{if(ev.detail?.feature!=='advanced_analysis')return;document.querySelectorAll('.smv-real-pdf-download').forEach(b=>b.hidden=false);});}
   function bindHoroscopeInteractions(root,d,name,lang){
@@ -1487,7 +1487,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
           part.classList.toggle('is-expanded',isOpen);
         });
         quickNav.querySelectorAll('.smv-advanced-quick-card').forEach(card=>card.classList.toggle('is-active',!!target&&card.dataset.smvTarget===target.classList[1]&&open));
-        if(target&&open) setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'start'}),20);
+        if(target&&open) setTimeout(()=>target.scrollIntoView({behavior:'auto',block:'start'}),20);
       };
       quickNav.querySelectorAll('.smv-advanced-quick-card').forEach(card=>card.addEventListener('click',()=>{
         const target=accordionParts.find(x=>x.classList.contains(card.dataset.smvTarget));
@@ -2695,7 +2695,7 @@ if(lat===''||lon===''){
           advRoot.classList.remove('hidden');
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
           if(!allowed){
-            requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'smooth',block:'start'}));
+            requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'auto',block:'start'}));
             return d;
           }
         }
@@ -2705,7 +2705,7 @@ if(lat===''||lon===''){
       if(resultBox){
         resultBox.classList.remove('hidden');
         resultBox.setAttribute('aria-busy','false');
-        requestAnimationFrame(()=>resultBox.scrollIntoView({behavior:'smooth',block:'start'}));
+        requestAnimationFrame(()=>resultBox.scrollIntoView({behavior:'auto',block:'start'}));
       }
       return d;
     }catch(e){

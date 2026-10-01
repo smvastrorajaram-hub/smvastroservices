@@ -3081,16 +3081,3 @@ html body .smv26-channels a:where(:not(.smv33-hero, .smv33-hero *, .smv-home-off
 /* V129 mobile scroll performance: no animated document scrolling. */
 html,body{scroll-behavior:auto!important}
 @media(max-width:760px){.smv-advanced-part,.dasha-node,.card{transition:none!important}}
-
-/* V130 mobile long-report performance: skip paint/layout work for off-screen result blocks.
-   Browser print uses report-print.html and is unaffected. */
-@media (max-width:760px){
-  #englishHoroscopeResult .smv-advanced-part,
-  #tamilHoroscopeResult .smv-advanced-part,
-  #englishHoroscopeResult .dasha-node,
-  #tamilHoroscopeResult .dasha-node,
-  #smvMarriageMatching .mm-section{
-    content-visibility:auto;
-    contain-intrinsic-size:auto 420px;
-  }
-}

@@ -166,7 +166,7 @@ if(lat===''||lon===''){
             if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
             window.__smvLocalizeTamilResult?.(target,generationLanguage);
             window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:generated,basicOnly:true}}));
-            target.scrollIntoView({behavior:'smooth',block:'start'});
+            target.scrollIntoView({behavior:'auto',block:'start'});
             return;
           }
           await runEnglishAdvanced();
@@ -187,7 +187,7 @@ if(lat===''||lon===''){
         target.classList.remove('hidden');
         target.setAttribute('aria-busy','false');
         if(lang==='en'&&typeof window.__smvFixEnglishBhavaHeaders==='function') window.__smvFixEnglishBhavaHeaders();
-        target.scrollIntoView({behavior:'smooth',block:'start'});
+        target.scrollIntoView({behavior:'auto',block:'start'});
       }else throw new Error('Horoscope result was not returned.');
     }catch(e){
       if(englishResult){englishResult.setAttribute('aria-busy','false');englishResult.classList.add('hidden');englishResult.innerHTML='';}
@@ -201,5 +201,5 @@ if(lat===''||lon===''){
     }
   });
   $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishNakshatra','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishRasi'))$('englishRasi').value='Aries';if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
-document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const section=$('english-horoscope');section?.classList.remove('hidden');section?.scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'','#english-horoscope');}));
+document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const section=$('english-horoscope');section?.classList.remove('hidden');section?.scrollIntoView({behavior:'auto',block:'start'});history.replaceState(null,'','#english-horoscope');}));
 })();
