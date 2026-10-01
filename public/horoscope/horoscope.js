@@ -1748,7 +1748,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     // Keep the Advanced host hidden until the first advanced response is ready.
     // This prevents an old/partial module from flashing below the fresh horoscope.
     root.classList.add('hidden');
-    const post=(path,body=payload)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(body),signal:advancedAbortController.signal}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`);return b;});
+    const post=(path,body=payload)=>{if(typeof window.__smvHoroscopeApi==='function')return window.__smvHoroscopeApi(path,{method:'POST',body:JSON.stringify(body),signal:advancedAbortController.signal});return fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(body),signal:advancedAbortController.signal}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`);return b;});};
 
     // Birth Panchang is calculated for the native's birth date/time.
     // Daily Panchang + Planetary Transit are calculated for TODAY/NOW.

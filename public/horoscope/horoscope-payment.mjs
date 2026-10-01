@@ -28,7 +28,8 @@ async function refreshLocalUser(u,verifyRole=true){
 }
 function renderAuthStatus(message=''){
  const host=document.getElementById('smvHoroscopeAuth');if(!host)return;
- const status=host.querySelector('[data-auth-status]');if(status){status.textContent=state.user?'':(message||(ta()?'முழு ஜோதிட அறிக்கைகளுக்கு உள் நுழையவும்.':'Log in here for full astrology reports.'));status.hidden=!!state.user;}
+ const status=host.querySelector('[data-auth-status]');if(status){status.textContent=state.user?'':(message||(ta()?'முழு ஜோதிட அறிக்கைகளுக்கு இங்கே உள் நுழையவும்.':'Log in here for full astrology reports.'));status.hidden=!!state.user;}
+ if(state.user){host.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());document.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());}
  host.classList.toggle('is-logged-in',!!state.user);
 }
 function showAuthForm(mode='login'){const host=document.getElementById('smvHoroscopeAuth');if(!host)return;host.dataset.mode=mode;host.querySelector('[data-auth-form]')?.removeAttribute('hidden');host.querySelector('[data-name-row]')?.toggleAttribute('hidden',mode==='login');host.querySelector('[data-phone-row]')?.toggleAttribute('hidden',mode==='login');const submit=host.querySelector('[data-auth-submit]');if(submit)submit.textContent=mode==='login'?(ta()?'LOGIN':'LOGIN'):(ta()?'REGISTER':'REGISTER');host.scrollIntoView({behavior:'auto',block:'center'});}
@@ -150,7 +151,8 @@ async function gateAdvanced(root){
 async function gateMarriage(){
  const sec=document.getElementById('smvMarriageMatching'); if(!sec)return;
  const cfg=(await config()).marriage_matching;
- if(!cfg.enabled){sec.hidden=true;return;}
+ if(!cfg.enabled){sec.hidden=true;sec.setAttribute('aria-hidden','true');window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:false,publicPoruthamOnly:false,featureHidden:true,paymentRequired:false}}));return;}
+ sec.removeAttribute('aria-hidden');
  fragmentUnlock(sec);sec.hidden=false;
 }
 
@@ -210,14 +212,13 @@ async function requireFeature(feature,mount,onFeatureUnlocked){
  }
 }
 async function downloadPaidPdf(feature,source,title){
- if(!state.paid.has(reportCacheKey(feature)))throw Error('Verified paid access is required for PDF download.');
+ if(!state.user)throw Error(ta()?'முதலில் Customer Login செய்யவும்.':'Customer login is required.');
  if(source?.__smvPrepareReport)await source.__smvPrepareReport();
- const clone=source?.cloneNode(true);if(!clone)throw Error('Generate the report before downloading.');clone.querySelectorAll('button,script,style,.smv-horoscope-pay-gate').forEach(e=>e.remove());
- clone.querySelectorAll('p,div,section,tr,h1,h2,h3,h4,h5,li,summary').forEach(e=>e.appendChild(document.createTextNode('\n')));const text=String(clone.textContent||'').replace(/\n{3,}/g,'\n\n').trim();if(!text)throw Error('The report is empty.');
- const r=await fetch(state.backend+'/horoscope-feature/pdf',{method:'POST',cache:'no-store',headers:await authHeaders(),body:JSON.stringify({feature,birthIdentity:reportContext(feature),language:source?.dataset.resultLanguage||(ta()?'ta':'en'),title,text})});
- if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'PDF download failed.');}
- const blob=await r.blob();if(!blob.size||!String(r.headers.get('content-type')).includes('application/pdf'))throw Error('The server did not return a complete PDF.');
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=feature==='marriage_matching'?'SMV-Marriage-Matching.pdf':'SMV-Horoscope.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return true;
+ if(!source||!String(source.textContent||'').trim())throw Error(ta()?'முதலில் அறிக்கையை உருவாக்கவும்.':'Generate the report first.');
+ // V131: PDFKit/pdf-lib/Chromium/Cloud PDF are retired. Use the browser native
+ // print pipeline; on mobile this opens the system viewer where Save as PDF is available.
+ window.print();
+ return true;
 }
 window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  if(!mount)return false;
@@ -227,8 +228,10 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  const showForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:cfg.enabled&&cfg.price>0}}));
  const hideForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:false,paymentRequired:true}}));
  // V127: public users always get only the lightweight Nakshatra Porutham entry/result.
- // Admin ON/OFF controls the logged-in FULL matching feature; it does not remove the public Porutham utility.
- const sec=document.getElementById('smvMarriageMatching'); if(sec)sec.hidden=false;
+ // Admin OFF hides the complete Matching/Porutham section for every auth state.
+ const sec=document.getElementById('smvMarriageMatching');
+ if(!cfg.enabled){if(sec){sec.hidden=true;sec.setAttribute('aria-hidden','true');}if(nakshatraGate)nakshatraGate.hidden=true;mount.replaceChildren();window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:false,publicPoruthamOnly:false,featureHidden:true,paymentRequired:false}}));return false;}
+ if(sec){sec.hidden=false;sec.removeAttribute('aria-hidden');}
  if(nakshatraGate)nakshatraGate.hidden=false;
  if(!state.user){
    mount.replaceChildren();
@@ -257,7 +260,7 @@ window.addEventListener('smv:horoscope-full-ready',ev=>{setTimeout(()=>{const ro
 // Marriage matching exists before a horoscope is generated too.
 window.addEventListener('DOMContentLoaded',()=>{bindAuthUI();config().then(()=>gateMarriage()).catch(()=>{});});
 window.addEventListener('smv-language',()=>renderAuthStatus());
-window.addEventListener('smv:horoscope-local-auth',()=>{gateMarriage().catch(e=>renderAuthStatus(authErrorMessage(e)));});
+window.addEventListener('smv:horoscope-local-auth',()=>{renderAuthStatus();gateMarriage().catch(e=>renderAuthStatus(authErrorMessage(e)));});
 window.__smvHoroscopePaidState=state;
 window.__smvHoroscopeLoggedIn=()=>!!state.user;
 
