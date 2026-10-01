@@ -259,6 +259,8 @@ function consultationWhyPanel(v,pr,ks,ds,bf,gf,sync,b,g){
  const kb=kujaVilakku(ks.B,ks.G),kg=kujaVilakku(ks.G,ks.B),rb=rahuVilakku(sync.br),rg=rahuVilakku(sync.gr),nv=nadiVilakku(pr,b,g),rj=rajjuVilakku(pr);
  const triggers=[],vilakku=[],remaining=[],divisional=[],balance=[],dasha=[],review=[];
  const add=(a,x)=>{if(x&&!a.includes(x))a.push(x)};
+ if(strengthMatrix.B.balance>=2)add(supports,T('Bride chart has net marriage-support strength after 7th-lord/Shadbala/Ashtakavarga/D9 weighting.','பெண் ஜாதகத்தில் 7-ஆம் அதிபதி/ஷட்பலம்/அஷ்டகவர்க்கம்/D9 weighting பிறகு நிகர திருமண ஆதரவு உள்ளது.')); else if(strengthMatrix.B.balance<0)add(pressures,T('Bride chart retains marriage-adjustment pressure after strength weighting.','பெண் ஜாதகத்தில் strength weighting பிறகும் திருமண ஒத்திசைவு அழுத்தம் மீதமுள்ளது.'));
+ if(strengthMatrix.G.balance>=2)add(supports,T('Groom chart has net marriage-support strength after 7th-lord/Shadbala/Ashtakavarga/D9 weighting.','ஆண் ஜாதகத்தில் 7-ஆம் அதிபதி/ஷட்பலம்/அஷ்டகவர்க்கம்/D9 weighting பிறகு நிகர திருமண ஆதரவு உள்ளது.')); else if(strengthMatrix.G.balance<0)add(pressures,T('Groom chart retains marriage-adjustment pressure after strength weighting.','ஆண் ஜாதகத்தில் strength weighting பிறகும் திருமண ஒத்திசைவு அழுத்தம் மீதமுள்ளது.'));
  if(rj.state==='consult'||rj.state==='active'||rj.state==='strong')add(triggers,T('Rajju requires exception / residual review','ரஜ்ஜு விதிவிலக்கு / மீதமுள்ள நிலை ஆய்வு தேவை'));
  if(pr.critical.some(x=>/6\/8/.test(x)))add(triggers,T('Moon-sign 6/8 relationship is present','சந்திர ராசி 6/8 உறவு உள்ளது'));
  if(['active','strong'].includes(nv.state))add(triggers,T('Nadi remains active after available cancellation checks','கிடைக்கும் விலக்கு ஆய்வுக்குப் பிறகும் நாடி நிலை செயலில் உள்ளது'));
@@ -419,8 +421,6 @@ function marriageRealityPanel(b,g,pr,ks,ds,sync,v,tr){
  const strengthMatrix=marriageStrengthMatrix(b,g);
  const timingConfirm=mmTimingConfirmation(b,g,tr);
  const add=(a,x)=>{if(x&&!a.includes(x))a.push(x)};
- if(strengthMatrix.B.balance>=2)add(supports,T('Bride chart has net marriage-support strength after 7th-lord/Shadbala/Ashtakavarga/D9 weighting.','பெண் ஜாதகத்தில் 7-ஆம் அதிபதி/ஷட்பலம்/அஷ்டகவர்க்கம்/D9 weighting பிறகு நிகர திருமண ஆதரவு உள்ளது.')); else if(strengthMatrix.B.balance<0)add(pressures,T('Bride chart retains marriage-adjustment pressure after strength weighting.','பெண் ஜாதகத்தில் strength weighting பிறகும் திருமண ஒத்திசைவு அழுத்தம் மீதமுள்ளது.'));
- if(strengthMatrix.G.balance>=2)add(supports,T('Groom chart has net marriage-support strength after 7th-lord/Shadbala/Ashtakavarga/D9 weighting.','ஆண் ஜாதகத்தில் 7-ஆம் அதிபதி/ஷட்பலம்/அஷ்டகவர்க்கம்/D9 weighting பிறகு நிகர திருமண ஆதரவு உள்ளது.')); else if(strengthMatrix.G.balance<0)add(pressures,T('Groom chart retains marriage-adjustment pressure after strength weighting.','ஆண் ஜாதகத்தில் strength weighting பிறகும் திருமண ஒத்திசைவு அழுத்தம் மீதமுள்ளது.'));
  if(pr.score>=7)add(supports,T('Nakshatra/Porutham layer gives broad day-to-day compatibility support.','நட்சத்திர/பொருத்த அடுக்கு அன்றாட இணக்கத்திற்கு பொதுவான ஆதரவு தருகிறது.'));
  if(ks.balanced)add(supports,T('Kuja influence is comparable between the two charts, reducing one-sided Mars pressure.','இரு ஜாதகங்களிலும் செவ்வாய் தாக்கம் ஒப்பிடத்தக்கதால் ஒருபுறச் செவ்வாய் அழுத்தம் குறைகிறது.'));
  if(bd9&&gd9)add(supports,T('D9 is available in both charts, so married-life promise is cross-checked beyond D1.','இரு ஜாதகங்களிலும் D9 கிடைப்பதால் D1-ஐத் தாண்டி திருமண வாழ்க்கை வாக்குறுதி குறுக்கு ஆய்வு செய்யப்பட்டுள்ளது.'));
