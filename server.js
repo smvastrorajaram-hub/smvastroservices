@@ -2697,7 +2697,7 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
 
 // V61 — Admin-controlled paid Horoscope features. Price is always read server-side.
 const HOROSCOPE_FEATURE_DOC='horoscope_features';
-async function getHoroscopeFeatureSettings(){return {advanced_analysis:{enabled:true,price:0},marriage_matching:{enabled:true,price:0}};}
+async function getHoroscopeFeatureSettings(){const snap=await db.collection('smv_settings').doc(HOROSCOPE_FEATURE_DOC).get(),d=snap.exists?(snap.data()||{}):{};return {advanced_analysis:{enabled:d.advancedAnalysisEnabled!==false,price:0},marriage_matching:{enabled:d.marriageMatchingEnabled!==false,price:0}};}
 function horoscopeFeatureKey(v){v=String(v||'').trim().toLowerCase();return ['advanced_analysis','marriage_matching'].includes(v)?v:'';}
 const HoroscopeReportIdentity=require('./public/horoscope/report-identity.js');
 function horoscopeReportContext(req,feature){
@@ -2709,7 +2709,7 @@ app.get('/horoscope-feature/config',async(req,res)=>{try{return res.json({succes
 // V65 — Horoscope-local auth check. One profile read only when the user explicitly logs in.
 app.get('/horoscope-auth/session',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{if(!user.email_verified)return res.status(403).json({error:'Verify your email before using horoscope services.'});const snap=await db.collection('smv_users').doc(user.uid).get();const d=snap.exists?(snap.data()||{}):{},role=String(d.role||'').toLowerCase();if(role!=='customer')return res.status(403).json({error:'A Customer account is required for Horoscope services.'});return res.json({success:true,uid:user.uid,email:user.email||'',role:'customer'});}catch(e){return res.status(500).json({error:'Unable to verify Customer account.'});}});
 // V111: purchase/relink/recovery logic removed; both horoscope features are permanently free.
-app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});});
+app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const cfg=(await getHoroscopeFeatureSettings())[f];return res.json({success:true,feature:f,enabled:cfg.enabled===true,unlocked:cfg.enabled===true,free:true,price:0});}catch(e){return res.status(503).json({error:'Unable to load horoscope feature access.'});}});
 // V111: Advanced Horoscope and Marriage Matching are free. Paid checkout endpoints were removed.
 // Payment routes for Advanced Horoscope / Marriage Matching intentionally removed in V111.
 
@@ -3753,10 +3753,33 @@ app.post('/api/horoscope/dasa', async (req,res)=>{
 app.post('/api/horoscope/full', async (req,res)=>{
   try {
     const body=req.body||{};
+
+    // V119: Admin OFF is an execution gate, not merely a UI/CSS gate.
+    // Read the authoritative feature switch before any advanced/Tajaka/transit/Phase-4 work.
+    const featureSettings=await getHoroscopeFeatureSettings();
+    const advancedEnabled=featureSettings?.advanced_analysis?.enabled===true;
+
+    // Core/basic chart is always available while Horoscope itself is in use.
     const chart=calculateVedicChart(body);
     chart.nativeName=String(body.name||body.nativeName||'');
     chart.nameInitial=String(body.nameInitial||body.nativeNameInitial||'');
     if(!chart.nameInitial && chart.nativeName){ try { const seg=new Intl.Segmenter(undefined,{granularity:'grapheme'}); chart.nameInitial=seg.segment(chart.nativeName)[Symbol.iterator]().next().value?.segment||Array.from(chart.nativeName)[0]||''; } catch(e) { chart.nameInitial=Array.from(chart.nativeName)[0]||''; } }
+
+    if(!advancedEnabled){
+      console.log('[Full] basic-only: Advanced Analysis is OFF; advanced/Tajaka/transit/Phase-4 engines skipped.');
+      return res.json({
+        ok:true,
+        meta:{complete:true,basicOnly:true,advancedEnabled:false,version:'SMV-full-2-basic-gated'},
+        chart,
+        advanced:null,
+        birthPanchang:null,
+        dailyPanchang:null,
+        transit:null,
+        phase4:null
+      });
+    }
+
+    // Advanced Analysis ON: preserve the existing full calculation path.
     try { const targetYear=Number(body?.tajakaYear)||new Date().getFullYear(); chart.tajakaAnnual=findTajakaAnnualChart(body,targetYear); } catch(e){ chart.tajakaAnnualError=String(e?.message||e); }
     if(typeof advancedAstrology!=='function') throw new Error('Advanced astrology module is unavailable on the backend.');
     if(!TransitPanchang) throw new Error('Transit/Panchang module is unavailable on the backend.');
@@ -3769,7 +3792,7 @@ app.post('/api/horoscope/full', async (req,res)=>{
     const transit=TransitPanchang.transit({...body,date:dailyDate,time:dailyTime});
     let phase4=null;
     if(typeof phase4Dasa==='function') phase4=phase4Dasa(chart);
-    return res.json({ok:true,meta:{complete:true,version:'SMV-full-1'},chart,advanced,birthPanchang,dailyPanchang,transit,phase4});
+    return res.json({ok:true,meta:{complete:true,basicOnly:false,advancedEnabled:true,version:'SMV-full-2-basic-gated'},chart,advanced,birthPanchang,dailyPanchang,transit,phase4});
   } catch(e){
     console.error('[Full] horoscope calculation error:',e?.stack||e);
     return res.status(400).json({ok:false,error:e?.message||'Full horoscope calculation failed.'});
@@ -3779,6 +3802,11 @@ app.post('/api/horoscope/full', async (req,res)=>{
 app.post('/api/horoscope/advanced', async (req,res)=>{
   try {
     const body=req.body||{};
+    const featureSettings=await getHoroscopeFeatureSettings();
+    if(featureSettings?.advanced_analysis?.enabled!==true){
+      console.log('[Advanced] skipped: Advanced Analysis is OFF.');
+      return res.status(403).json({ok:false,disabled:true,error:'Advanced Analysis is disabled by Admin.'});
+    }
     console.log('[Advanced] request', {date:body.date,time:body.time,lat:body.lat,lon:body.lon,language:body.language});
     const chart=calculateVedicChart(body);
     chart.nativeName=String(body.name||body.nativeName||'');
