@@ -2723,6 +2723,36 @@ async function recoverHoroscopePurchase(ref,d){
  }
  return false;
 }
+function smvIdentityScalar(obj,names){
+ const wanted=new Set(names.map(x=>String(x).toLowerCase()));let found;
+ (function walk(v){if(found!==undefined||v==null)return;if(Array.isArray(v)){for(const x of v)walk(x);return;}if(typeof v!=='object')return;for(const [k,x] of Object.entries(v)){if(wanted.has(String(k).toLowerCase())&&x!==''&&x!=null){found=x;return;}}for(const x of Object.values(v))walk(x);})(obj);
+ return found;
+}
+function smvBirthCore(identity){
+ const date=String(smvIdentityScalar(identity,['date','dob','birthdate','birth_date'])||'').trim();
+ const time=String(smvIdentityScalar(identity,['time','tob','birthtime','birth_time'])||'').trim().replace(/:\d{2}(?:\.\d+)?$/,'');
+ const lat=Number(smvIdentityScalar(identity,['lat','latitude'])),lon=Number(smvIdentityScalar(identity,['lon','lng','longitude']));
+ if(!date||!time||!Number.isFinite(lat)||!Number.isFinite(lon))return '';
+ return `${date}|${time}|${lat.toFixed(4)}|${lon.toFixed(4)}`;
+}
+function smvSamePaidBirth(feature,a,b){
+ if(feature==='marriage_matching')return false; // marriage has two people; exact canonical identity remains mandatory.
+ const x=smvBirthCore(a),y=smvBirthCore(b);return !!x&&x===y;
+}
+async function resolveHoroscopePaidPurchase(uid,feature,reportKey,birthIdentity){
+ const target=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}_${reportKey}`),exact=await target.get();
+ if(exact.exists&&await recoverHoroscopePurchase(target,exact.data()||{}))return {ref:target,data:exact.data()||{},relinked:false};
+ // V104 recovery: payment and report rendering can carry differently-shaped identity objects.
+ // Only relink a verified payment when immutable birth date/time/coordinates are the same.
+ const candidates=await db.collection('smv_horoscope_purchases').where('userId','==',uid).limit(50).get();
+ for(const doc of candidates.docs){const d=doc.data()||{};if(d.feature!==feature||!smvSamePaidBirth(feature,d.birthIdentity,birthIdentity))continue;if(!await recoverHoroscopePurchase(doc.ref,d))continue;
+  const fresh=(await doc.ref.get()).data()||d;
+  await target.set({...fresh,userId:uid,feature,reportKey,birthIdentity,paymentStatus:'paid',relinkedFromReportKey:String(fresh.reportKey||doc.id),relinkedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  console.log('[HOROSCOPE-PAYMENT] relinked verified paid birth identity',{feature,reportKey,from:String(fresh.reportKey||doc.id)});
+  return {ref:target,data:fresh,relinked:true};
+ }
+ return null;
+}
 async function unresolvedLegacyHoroscope(uid,feature){const ref=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}`),snap=await ref.get();if(!snap.exists)return false;const d=snap.data();return !d.migratedReportKey&&(d.paymentStatus==='paid'||await recoverHoroscopePurchase(ref,d));}
 app.post('/admin/horoscope-feature/link-legacy',express.json({limit:'20kb'}),async(req,res)=>{const adminUser=await requireUser(req,res);if(!adminUser)return;if(!(await isAdminUser(adminUser)))return res.status(403).json({error:'Admin access required.'});try{const uid=String(req.body?.customerUid||''),feature=horoscopeFeatureKey(req.body?.feature);if(!uid||uid.includes('/')||!feature)return res.status(400).json({error:'Customer and feature are required.'});const {reportKey,birthIdentity}=horoscopeReportContext(req,feature),oldRef=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}`),target=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}_${reportKey}`),old=await oldRef.get();if(!old.exists||!await recoverHoroscopePurchase(oldRef,old.data()))return res.status(409).json({error:'No verified legacy payment.'});await db.runTransaction(async tx=>{const snap=await tx.get(oldRef),d=snap.data();if(d.migratedReportKey&&d.migratedReportKey!==reportKey)throw Error('Legacy payment already linked.');tx.set(target,{...d,userId:uid,feature,reportKey,birthIdentity,paymentStatus:'paid',legacyLinkedBy:adminUser.uid,legacyLinkedAt:FieldValue.serverTimestamp()},{merge:true});tx.set(oldRef,{migratedReportKey:reportKey},{merge:true});});return res.json({success:true,reportKey});}catch(e){return res.status(409).json({error:e.message||'Legacy payment could not be linked.'});}});
 app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
@@ -2731,8 +2761,8 @@ app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUse
  const {reportKey,birthIdentity}=horoscopeReportContext(req,f);
  const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:false,price:cfg.price});
  if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});
- const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_${reportKey}`),snap=await ref.get(),d=snap.exists?(snap.data()||{}):{};
- const unlocked=await recoverHoroscopePurchase(ref,d);
+ const resolved=await resolveHoroscopePaidPurchase(user.uid,f,reportKey,birthIdentity);
+ const d=resolved?.data||{},unlocked=!!resolved;
  // A legacy feature-level purchase has no trustworthy birth identity. It must never
  // unlock or block a different birth chart. Admin can link that old purchase to its
  // original birth details separately; every new report identity remains independently payable.
@@ -2793,8 +2823,8 @@ app.get('/horoscope-reports/:id',async(req,res)=>{const user=await requireUser(r
 app.post('/horoscope-reports',express.json({limit:'15mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
  const feature=horoscopeFeatureKey(req.body?.feature),{reportKey}=horoscopeReportContext(req,feature),report=req.body?.report;
  if(!report||report.owner!==user.uid||typeof report.html!=='string'||!['ta','en'].includes(report.language))return res.status(400).json({error:'Invalid report snapshot.'});
- const cfg=(await getHoroscopeFeatureSettings())[feature],paid=await db.collection('smv_horoscope_purchases').doc(`${user.uid}_${feature}_${reportKey}`).get();
- const verified=paid.exists&&await recoverHoroscopePurchase(paid.ref,paid.data());
+ const cfg=(await getHoroscopeFeatureSettings())[feature],resolvedPaid=await resolveHoroscopePaidPurchase(user.uid,feature,reportKey,JSON.parse(HoroscopeReportIdentity.canonical(feature,req.body?.birthIdentity)));
+ const verified=!!resolvedPaid;
  if(cfg.enabled&&cfg.price>0&&!verified)return res.status(403).json({error:'Payment is required for these birth details.'});
  const safe={...report,id:reportKey,feature,owner:user.uid,paid:verified,birthIdentity:req.body.birthIdentity,savedAt:Date.now()},text=JSON.stringify(safe);
  if(Buffer.byteLength(text)>12000000)return res.status(413).json({error:'Report exceeds the saved report limit.'});
@@ -2827,12 +2857,12 @@ async function pipeCloudPdf(meta,res,disposition='inline'){
 async function deleteSavedPdf(uid,id){
  for(const lang of ['en','ta']){const ref=savedPdfRef(uid,id,lang),snap=await ref.get();if(snap.exists){const d=snap.data();if(d.publicId&&reportCloudReady())await cloudinary.uploader.destroy(d.publicId,{resource_type:'raw',type:'private',invalidate:true}).catch(e=>console.warn('Cloudinary PDF delete:',e.message));await ref.delete();}}
 }
-async function requirePaidReport(req,res,f){const {reportKey,birthIdentity}=horoscopeReportContext(req,f),cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled||cfg.price<=0){res.status(403).json({error:'PDF requires an enabled paid feature.'});return null;}const ref=db.collection('smv_horoscope_purchases').doc(`${req.smvUser.uid}_${f}_${reportKey}`),purchase=await ref.get();if(!purchase.exists||!await recoverHoroscopePurchase(ref,purchase.data()||{})){res.status(403).json({error:'Verified payment is required for this birth report. If payment just completed, retry once; do not pay again.'});return null;}return {reportKey,birthIdentity};}
+async function requirePaidReport(req,res,f){const {reportKey,birthIdentity}=horoscopeReportContext(req,f),cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled||cfg.price<=0){res.status(403).json({error:'PDF requires an enabled paid feature.'});return null;}const resolved=await resolveHoroscopePaidPurchase(req.smvUser.uid,f,reportKey,birthIdentity);if(!resolved){res.status(403).json({error:'Verified payment is required for this birth report. If payment just completed, retry once; do not pay again.'});return null;}return {reportKey,birthIdentity};}
 app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{const id=String(req.params.id||'');if(!/^[a-f0-9]{64}$/.test(id))return res.status(400).json({error:'Invalid PDF report.'});const lang=String(req.query?.lang||'en')==='ta'?'ta':'en',saved=await readSavedPdf(user.uid,id,lang);if(!saved?.publicId)return res.status(404).json({error:'PDF has not been generated yet.'});return await pipeCloudPdf(saved,res,'inline');}catch(e){console.error('Saved PDF read',e);if(!res.headersSent)return res.status(503).json({error:'Saved PDF could not be opened.'});}});
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const PDF_RENDERER_VERSION='v103-html-css-bundled-chromium';
+ const PDF_RENDERER_VERSION='v104-html-css-bundled-chromium-payment-relink';
  const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
  const html=String(req.body?.html||'').trim().slice(0,12000000);if(!html)return res.status(400).json({error:'Complete report HTML is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
  console.log('[PDF-CHROMIUM] start',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),htmlChars:html.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});

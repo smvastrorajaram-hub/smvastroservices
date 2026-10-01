@@ -19,11 +19,12 @@ function documentHtml({title,language,html}){
  </style></head><body><div class="smv-print-brand">SMV ASTRO SERVICES</div><h1 class="smv-print-title">${escapeHtml(title)}</h1><main id="report">${safeReportHtml(html)}</main><div class="smv-print-footer">smvastroservices.in</div></body></html>`;
 }
 async function renderHtmlPdf(opts={}){
- chromium.setGraphicsMode=false;
+ // V104: @sparticuz/chromium exports a read-only module namespace in this runtime.
+ // Do not mutate setGraphicsMode; use the supported args + executablePath API only.
  const executablePath=await chromium.executablePath();
  if(!executablePath)throw new Error('Bundled Chromium executable could not be resolved.');
- const headless='shell';
- const args=await puppeteer.defaultArgs({args:chromium.args,headless});
+ const headless=true;
+ const args=[...chromium.args,'--disable-dev-shm-usage'];
  const browser=await puppeteer.launch({headless,executablePath,args,defaultViewport:{width:1280,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false,isLandscape:false}});
  try{
   const page=await browser.newPage();
