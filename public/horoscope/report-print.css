@@ -10,5 +10,20 @@
 @media print{.print-tools{display:none}}
 
 /* V125 compact browser-native PDF layout */
-@media print{html,body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:economy;print-color-adjust:economy}.report-brand{break-inside:avoid}.smv-manual-save-actions,.saved-report-actions,#smvSavedReports,#smvSavedStatus{display:none!important}}
+@media print{html,body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.report-brand{break-inside:avoid}.smv-manual-save-actions,.saved-report-actions,#smvSavedReports,#smvSavedStatus{display:none!important}}
 .smv-detail-row,.detail-row,.summary-row,.panchang-row,.year-row{display:grid!important;grid-template-columns:minmax(38mm,34%) 4mm minmax(0,1fr);column-gap:3mm;align-items:start;padding:1.4mm 0;border-bottom:.3pt solid #bbb}.smv-detail-row>:first-child,.detail-row>:first-child,.summary-row>:first-child,.panchang-row>:first-child,.year-row>:first-child{font-weight:600}.smv-detail-row>:first-child::after,.detail-row>:first-child::after,.summary-row>:first-child::after,.panchang-row>:first-child::after,.year-row>:first-child::after{content:" :";float:right}.south-indian-chart{color:#000!important;background:#fff!important}.south-rasi-cell,.south-chart-center{color:#000!important;background:#fff!important;border-color:#555!important}
+
+
+/* V132 print polish: print-only identity, alignment and full-colour output. */
+.print-birth-identity{margin:3mm auto 5mm;max-width:170mm;text-align:left;break-inside:avoid}
+.print-birth-name{text-align:center!important;font-size:18pt!important;line-height:1.35!important;font-weight:800!important;color:#8f1010!important;margin:2mm 0 4mm!important}
+.print-birth-details{width:min(155mm,100%);margin:0 auto;display:grid;grid-template-columns:42mm 4mm minmax(0,1fr);row-gap:1.6mm;align-items:start;font-size:10pt}
+.print-birth-details .label{font-weight:700;color:#5d1717}.print-birth-details .colon{text-align:center;font-weight:700}.print-birth-details .value{font-weight:500;overflow-wrap:anywhere}
+.smv-invocation{text-align:center!important;font-weight:700!important;font-size:11pt!important;color:#8f1010!important;margin:4mm auto 5mm!important;break-inside:avoid}
+.smv-year-grid,.smv-summary-grid{display:grid!important;grid-template-columns:minmax(44mm,36%) minmax(0,1fr);width:100%;max-width:165mm;margin:0 auto 4mm;border-top:.45pt solid #c9a85d}
+.smv-year-grid>div,.smv-summary-grid>div{display:contents}
+.smv-year-grid b,.smv-summary-grid b,.smv-year-grid span,.smv-summary-grid span{padding:1.35mm 2mm;border-bottom:.35pt solid #d8c99d;min-width:0;overflow-wrap:anywhere}
+.smv-year-grid b,.smv-summary-grid b{color:#6f1717;font-weight:700;background:#fff8e8}
+.smv-year-grid span,.smv-summary-grid span{color:#111;background:#fff}
+h2,h3,h4,h5,summary{color:#8f1010}.smv-advanced-part-title{border-bottom-color:#c69d45}.smv-prayer-title{color:#8f1010}.smv-ganesha-prayer,.smv-navagraha-prayer{border-color:#c9a85d;background:#fffdf6}.south-chart-center{background:#fff8df!important;color:#8f1010!important}.south-rasi-cell.has-planet,.sbc-cell.has-planet{background:#fff9e9!important}th{background:#fff3cf!important;color:#681515!important;border-color:#b99a58!important}td{border-color:#b9aa84!important}.ok{color:#176b36!important}.no,.mm-error{color:#a20e20!important}
+@media print{html,body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.report-brand h1{color:#681515!important}.report-brand{border-color:#9c762e!important}.print-birth-name,.smv-invocation,h2,h3,h4,h5,.smv-prayer-title,th{ -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}

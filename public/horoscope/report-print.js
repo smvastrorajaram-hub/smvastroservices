@@ -25,6 +25,33 @@
   root.querySelectorAll('.hidden').forEach(e=>e.classList.remove('hidden'));
   root.querySelectorAll('.dasha-node').forEach(e=>e.classList.add('open'));
   root.querySelectorAll('.smv-advanced-part').forEach(e=>e.classList.add('is-expanded'));
+  // Print-only first-page identity. Keep the live horoscope DOM unchanged.
+  const firstCard=root.querySelector('.card');
+  if(firstCard){
+   const nameNode=firstCard.querySelector('h2');
+   const compact=firstCard.querySelector('p.small[style*="text-align:center"]');
+   if(nameNode&&compact){
+    const raw=(compact.textContent||'').replace(/\s+/g,' ').trim();
+    const labels=tamil
+      ?{date:'பிறந்த தேதி',time:'நேரம்',place:'பிறந்த இடம்'}
+      :{date:'Date of Birth',time:'Time',place:'Place of Birth'};
+    const escRe=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(escRe(labels.date)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.time)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.place)+'\\s*:\\s*(.*)$','i');
+    const m=raw.match(re);
+    const identity=document.createElement('section');identity.className='print-birth-identity';
+    const n=document.createElement('h2');n.className='print-birth-name';n.textContent=nameNode.textContent.trim();identity.append(n);
+    if(m){
+     const grid=document.createElement('div');grid.className='print-birth-details';
+     [[labels.date,m[1]],[labels.time,m[2]],[labels.place,m[3]]].forEach(([label,value])=>{
+      const a=document.createElement('span');a.className='label';a.textContent=label;
+      const c=document.createElement('span');c.className='colon';c.textContent=':';
+      const v=document.createElement('span');v.className='value';v.textContent=value;
+      grid.append(a,c,v);
+     });identity.append(grid);
+    }else{const p=document.createElement('p');p.className='print-birth-fallback';p.textContent=raw;identity.append(p);}
+    nameNode.replaceWith(identity);compact.remove();
+   }
+  }
   // Keep the report compact: remove empty UI shells left after controls are stripped.
   root.querySelectorAll('div,section,p').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.south-indian-chart')){if(!e.children.length)e.remove();}});
   await document.fonts.ready;
