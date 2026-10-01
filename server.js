@@ -573,8 +573,10 @@ app.get("/public/registration-config", (req,res)=>res.set("Cache-Control","no-st
 app.get('/api/smv-mode', (req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:'https://smvastroservices.onrender.com'}));
 
 app.get("/", (req, res) => res.status(200).json({
-  service: "SMV ASTRO Razorpay Backend",
-  version: "20260913-refund-v5-email-mobile-unique-v6",
+  service: "SMV ASTRO SERVICES",
+  version: "V1",
+  buildDate: "2026-10-02",
+  commit: "V1",
   status: "online",
   razorpay: "enabled",
   firebase: "enabled"
@@ -1464,7 +1466,7 @@ app.post('/astrologer/claim-question', express.json({limit:'10kb'}), async(req,r
 });
 
 const refundService=()=>createRefundService({db,razorpay,FieldValue,keyId:RAZORPAY_KEY_ID,keySecret:RAZORPAY_KEY_SECRET});
-app.get('/api-version', (req,res)=>res.set('Cache-Control','no-store').json({version:'20260913-refund-v5-email-mobile-unique-v6',features:['refund-retry','original-price-payment-retry','email-verification-only','one-phone-one-account','whatsapp-otp-switch-ready']}));
+app.get('/api-version', (req,res)=>res.set('Cache-Control','no-store').json({version:'V1',buildDate:'2026-10-02',commit:'V1',features:['refund-retry','original-price-payment-retry','email-verification-only','one-phone-one-account','whatsapp-otp-switch-ready']}));
 
 for(const [path,retry] of [['/admin/reject-question',false],['/admin/retry-refund',true]]){
  app.post(path,express.json({limit:'10kb'}),async(req,res)=>{
