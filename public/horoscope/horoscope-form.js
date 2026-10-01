@@ -165,6 +165,7 @@ if(lat===''||lon===''){
             // Basic/free result must use the same final language renderer as the paid result.
             if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
             window.__smvLocalizeTamilResult?.(target,generationLanguage);
+            window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:generated,basicOnly:true}}));
             target.scrollIntoView({behavior:'smooth',block:'start'});
             return;
           }
