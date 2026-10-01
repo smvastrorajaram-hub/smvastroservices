@@ -3755,7 +3755,11 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
+     // V107: a restored Firebase session must reopen its dashboard when the URL/session is on #dashboard.
+     // A stale public-route marker from a previous Home/Horoscope navigation must not suppress dashboard restore.
+     const restoredHash=String(location.hash||'').toLowerCase();
+     if(window.__SMV_PUBLIC_ROUTE && restoredHash!=='#dashboard' && restoredHash!=='#admin'){smvShowRoleNav();armIdleTimer();return;}
+     if(restoredHash==='#dashboard'||restoredHash==='#admin')window.__SMV_PUBLIC_ROUTE=null;
      const listenerEpoch=smvNavigationEpoch;
      const adminUser=await isCurrentAdmin();
      const headerProfile=adminUser?{role:'admin'}:await getUserProfile(user.uid).catch(()=>({role:'customer'}));
@@ -3769,13 +3773,33 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     // Session restoration must restore AUTHENTICATION only, not the last private view.
-     // A returning browser/PWA session stays on Home until the user explicitly taps Dashboard.
-     // This also prevents a background Firebase auth restore from performing dashboard reads.
-     hide('dashboard'); hide('admin');
-     if(adminUser){hide('dashLink');show('adminLink');}else{show('dashLink');hide('adminLink');}
-     smvShowRoleNav();
-     if(smvInternalView!=='ask-flow' && !window.__SMV_PUBLIC_ROUTE){showHomeSurface();smvInternalView='home';try{history.replaceState({smvView:'home'},'',location.pathname+location.search);}catch(_e){}}
+     if(adminUser){
+       hidePrimarySections('admin');
+       show('admin');
+       hide('dashLink'); show('adminLink');
+       smvShowRoleNav();
+       smvEnterInternalView('admin',false);
+       try{history.replaceState({smvView:"admin"},"","#admin");}catch(_e){}
+       go('admin');
+       loadAdminPanel().catch(err=>console.warn('Admin restore failed:',err));
+     }
+     else {
+       show('dashLink'); hide('adminLink');
+       // Restore the dashboard immediately after auth/profile resolution.
+       // Do NOT await the full dashboard data renderer before entering the view:
+       // the first Firebase session can be slower than subsequent sessions, and
+       // blocking navigation here makes Dashboard appear stuck until Home/Login
+       // is opened again. Render the shell first, then hydrate its data.
+       hidePrimarySections('dashboard');
+       show('dashboard');
+       show('dashboardContent');
+       $('dashboardTitle').textContent='Dashboard';
+       $('dashboardContent').innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+       smvShowRoleNav(); smvInternalView="dashboard";
+       try{history.replaceState({smvView:"dashboard"},"","#dashboard");}catch(_e){}
+       go('dashboard');
+       loadDashboard(headerRole==='astrologer'?'astrologer':'customer').catch(err=>console.warn('Initial dashboard load skipped:',err));
+     }
    }else{
      window.__smvCurrentUserPresent=false;
      clearIdleTimer(); lastAuthUid=null;
