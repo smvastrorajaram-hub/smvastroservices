@@ -45,10 +45,17 @@
  function ui(lang){
   document.title=lang==='ta'?'SMV ஜாதகம் — ஸ்ரீ மதுரை வீரையா ஜாதகம்':'SMV HOROSCOPE — Sri Maduraveerayah Horoscope';
   document.querySelector('.temple-hero img').alt=lang==='ta'?'மதுரை வீரன்':'Madurai Veeran';
+  /* V121: prune generated report subtrees completely. The old SHOW_TEXT walker still
+     visited every text node inside a large Advanced report and only then skipped it,
+     which blocked the mobile main thread during EN/TA toggle. */
+  const skipSelector='#englishHoroscopeResult,#tamilHoroscopeResult,#mmResult,.smv-language-buttons,#installApp,#installStatus,#smvSavedReports';
   for(const root of [$('templeHeader'),$('home'),$('english-horoscope'),$('siteFooter')]){
-   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+   if(!root)continue;
+   const walk=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode(n){
+    if(n.nodeType===Node.ELEMENT_NODE&&n.matches?.(skipSelector))return NodeFilter.FILTER_REJECT;
+    return n.nodeType===Node.TEXT_NODE?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;
+   }});let n;
    while(n=walk.nextNode()){
-    if(n.parentElement.closest('#englishHoroscopeResult,.smv-language-buttons,#installApp,#installStatus'))continue;
     if(!originals.has(n))originals.set(n,n.nodeValue);
     const en=originals.get(n),t=en.trim();n.nodeValue=lang==='ta'&&labels[t]?en.replace(t,labels[t]):en;
    }
