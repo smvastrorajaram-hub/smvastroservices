@@ -68,16 +68,44 @@ window.__smvGetReportContext=reportContext;
 window.__smvHoroscopeApi=api;
 function markPaid(feature,key=reportCacheKey(feature)){state.paid.add(key);state.accessCache.set(key,{enabled:true,unlocked:true,free:false});window.dispatchEvent(new CustomEvent('smv:horoscope-paid-access',{detail:{feature,key}}));}
 let configPending=null;
-async function config(){
- const features={advanced_analysis:{enabled:true,price:0},marriage_matching:{enabled:true,price:0}};
- state.config=features;return features;
+async function config(force=false){
+ if(state.config&&!force)return state.config;
+ if(configPending&&!force)return configPending;
+ configPending=(async()=>{
+  try{
+   const r=await fetch(state.backend+'/horoscope-feature/config',{cache:'no-store',signal:AbortSignal.timeout(12000)});
+   const j=await r.json().catch(()=>({}));
+   if(!r.ok||!j.features)throw Error(j.error||'Unable to load feature settings.');
+   const features={
+    advanced_analysis:{enabled:j.features?.advanced_analysis?.enabled!==false,price:0},
+    marriage_matching:{enabled:j.features?.marriage_matching?.enabled!==false,price:0}
+   };
+   state.config=features;
+   window.dispatchEvent(new CustomEvent('smv:horoscope-feature-config',{detail:{features}}));
+   return features;
+  }catch(e){
+   // Safe default: do not expose admin-disabled premium sections when config cannot be verified.
+   const features=state.config||{advanced_analysis:{enabled:false,price:0},marriage_matching:{enabled:false,price:0}};
+   state.config=features;console.warn('Horoscope feature config:',e);return features;
+  }finally{configPending=null;}
+ })();return configPending;
 }
-async function access(feature,cfg={enabled:true,price:0}){return {success:true,feature,enabled:true,unlocked:true,free:true,price:0};}
-async function gateAdvanced(root){if(!root)return;root.querySelectorAll('.smv-horoscope-pay-gate').forEach(e=>e.remove());root.querySelectorAll('.smv-advanced-part-content').forEach(e=>{e.hidden=false;e.removeAttribute('hidden')});return true;}
-async function gateMarriage(){window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:false}}));return true;}
-async function requireFeature(feature,onUnlocked){if(typeof onUnlocked==='function')await onUnlocked();return true;}
-window.__smvClaimMarriagePayment=async()=>true;
+async function access(feature,cfg){cfg=cfg||((await config())[feature]||{enabled:false,price:0});return {success:true,feature,enabled:cfg.enabled===true,unlocked:cfg.enabled===true,free:true,price:0};}
+function setAdvancedVisibility(root,enabled){
+ if(!root)return;
+ root.dataset.smvAdvancedEnabled=enabled?'1':'0';
+ root.querySelectorAll('.smv-horoscope-pay-gate').forEach(e=>e.remove());
+ root.querySelectorAll('.smv-advanced-part-content').forEach(e=>{e.hidden=!enabled;e.toggleAttribute('hidden',!enabled)});
+ root.querySelectorAll('.smv-advanced-part-title').forEach(e=>{e.hidden=!enabled;e.toggleAttribute('hidden',!enabled)});
+ // Known Advanced Analysis wrappers/sections are hidden as a unit when present.
+ root.querySelectorAll('[data-feature="advanced_analysis"],[data-horoscope-feature="advanced_analysis"],.smv-advanced-analysis,.advanced-analysis-section,#advancedAnalysis,#advanced-analysis').forEach(e=>{e.hidden=!enabled;e.toggleAttribute('hidden',!enabled)});
+}
+async function gateAdvanced(root){const cfg=(await config()).advanced_analysis;setAdvancedVisibility(root,cfg.enabled===true);return cfg.enabled===true;}
+async function gateMarriage(){const cfg=(await config()).marriage_matching;const enabled=cfg.enabled===true;window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:enabled,paymentRequired:false,enabled,free:true}}));return enabled;}
+async function requireFeature(feature,onUnlocked){const cfg=(await config())[feature];if(!cfg?.enabled)return false;if(typeof onUnlocked==='function')await onUnlocked();return true;}
+window.__smvClaimMarriagePayment=async()=>((await config()).marriage_matching.enabled===true);
 async function downloadPaidPdf(feature,source,title){
+ const cfg=(await config())[feature];if(!cfg?.enabled)throw Error(ta()?'இந்த அம்சம் தற்போது Admin மூலம் OFF செய்யப்பட்டுள்ளது.':'This feature is currently disabled by Admin.');
  if(source?.__smvPrepareReport)await source.__smvPrepareReport();
  const clone=source?.cloneNode(true);if(!clone)throw Error('Generate the report before downloading.');clone.querySelectorAll('button,script,style,.smv-horoscope-pay-gate').forEach(e=>e.remove());
  clone.querySelectorAll('p,div,section,tr,h1,h2,h3,h4,h5,li,summary').forEach(e=>e.appendChild(document.createTextNode('\n')));const text=String(clone.textContent||'').replace(/\n{3,}/g,'\n\n').trim();if(!text)throw Error('The report is empty.');
@@ -86,15 +114,15 @@ async function downloadPaidPdf(feature,source,title){
  const blob=await r.blob();if(!blob.size||!String(r.headers.get('content-type')).includes('application/pdf'))throw Error('The server did not return a complete PDF.');
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=feature==='marriage_matching'?'SMV-Marriage-Matching.pdf':'SMV-Horoscope.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return true;
 }
-window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{if(mount)mount.replaceChildren();window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:false}}));if(typeof onUnlocked==='function')await onUnlocked();return true;};
+window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{if(mount)mount.replaceChildren();const enabled=await gateMarriage();if(enabled&&typeof onUnlocked==='function')await onUnlocked();return enabled;};
 window.__smvDownloadPaidFeaturePdf=downloadPaidPdf;
-window.__smvIsPaidHoroscopeFeature=feature=>true;
+window.__smvIsPaidHoroscopeFeature=feature=>state.config?.[feature]?.enabled===true;
 window.__smvRequireHoroscopeFeatureAccess=requireFeature;
 window.__smvGetHoroscopeFeatureConfig=config;
 window.addEventListener('smv:horoscope-full-ready',ev=>{setTimeout(()=>{const root=document.getElementById(ev.detail?.rootId);if(root)gateAdvanced(root).catch(console.warn);gateMarriage().catch(console.warn)},0)});
-// Marriage matching exists before a horoscope is generated too.
-window.addEventListener('DOMContentLoaded',()=>{bindAuthUI();config().then(()=>gateMarriage()).catch(()=>{});});
+window.addEventListener('DOMContentLoaded',()=>{bindAuthUI();config().then(()=>{document.querySelectorAll('#englishHoroscopeResult,#tamilHoroscopeResult,[data-horoscope-result]').forEach(root=>gateAdvanced(root).catch(console.warn));return gateMarriage();}).catch(()=>{});});
 window.addEventListener('smv:horoscope-local-auth',()=>{gateMarriage().catch(e=>renderAuthStatus(authErrorMessage(e)));});
+window.addEventListener('smv:marriage-mounted',()=>gateMarriage().catch(e=>renderAuthStatus(authErrorMessage(e))));
 window.__smvHoroscopePaidState=state;
 
 window.addEventListener('smv:marriage-mounted',()=>gateMarriage().catch(e=>renderAuthStatus(authErrorMessage(e))));
