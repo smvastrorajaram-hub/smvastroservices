@@ -3685,12 +3685,16 @@ app.post('/api/horoscope/full', async (req,res)=>{
       });
     }
 
-    // Advanced ON: anonymous/public requests must not execute Advanced CPU work.
-    const advancedUser=await requireHoroscopeCustomerForAdvanced(req,res); if(!advancedUser)return;
+    // V133 matrix: Admin ON + Rs.0 is genuinely public/free and may execute the full engine.
+    // Rs.1+ remains customer-authenticated and payment-verified before any Advanced CPU work.
     const advancedPrice=Number(featureSettings?.advanced_analysis?.price||0);
-    if(advancedPrice>0&&!await horoscopePaid(advancedUser.uid,'advanced_analysis',body))return res.status(402).json({ok:false,paymentRequired:true,feature:'advanced_analysis',price:advancedPrice,error:'Advanced Analysis payment is required.'});
+    let advancedUser=null;
+    if(advancedPrice>0){
+      advancedUser=await requireHoroscopeCustomerForAdvanced(req,res); if(!advancedUser)return;
+      if(!await horoscopePaid(advancedUser.uid,'advanced_analysis',body))return res.status(402).json({ok:false,paymentRequired:true,feature:'advanced_analysis',price:advancedPrice,error:'Advanced Analysis payment is required.'});
+    }
 
-    // Advanced ON + authenticated Customer + free price: preserve full calculation path.
+    // Advanced ON + Rs.0 (public) OR verified paid customer: preserve full calculation path.
     try { const targetYear=Number(body?.tajakaYear)||new Date().getFullYear(); chart.tajakaAnnual=findTajakaAnnualChart(body,targetYear); } catch(e){ chart.tajakaAnnualError=String(e?.message||e); }
     if(typeof advancedAstrology!=='function') throw new Error('Advanced astrology module is unavailable on the backend.');
     if(!TransitPanchang) throw new Error('Transit/Panchang module is unavailable on the backend.');
@@ -3718,9 +3722,11 @@ app.post('/api/horoscope/advanced', async (req,res)=>{
       console.log('[Advanced] skipped: Advanced Analysis is OFF.');
       return res.status(403).json({ok:false,disabled:true,error:'Advanced Analysis is disabled by Admin.'});
     }
-    const advancedUser=await requireHoroscopeCustomerForAdvanced(req,res); if(!advancedUser)return;
     const advancedPrice=Number(featureSettings?.advanced_analysis?.price||0);
-    if(advancedPrice>0&&!await horoscopePaid(advancedUser.uid,'advanced_analysis',body))return res.status(402).json({ok:false,paymentRequired:true,feature:'advanced_analysis',price:advancedPrice,error:'Advanced Analysis payment is required.'});
+    if(advancedPrice>0){
+      const advancedUser=await requireHoroscopeCustomerForAdvanced(req,res); if(!advancedUser)return;
+      if(!await horoscopePaid(advancedUser.uid,'advanced_analysis',body))return res.status(402).json({ok:false,paymentRequired:true,feature:'advanced_analysis',price:advancedPrice,error:'Advanced Analysis payment is required.'});
+    }
     console.log('[Advanced] request', {date:body.date,time:body.time,lat:body.lat,lon:body.lon,language:body.language});
     const chart=calculateVedicChart(body);
     chart.nativeName=String(body.name||body.nativeName||'');
