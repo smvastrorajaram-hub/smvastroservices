@@ -3755,11 +3755,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     // V107: a restored Firebase session must reopen its dashboard when the URL/session is on #dashboard.
-     // A stale public-route marker from a previous Home/Horoscope navigation must not suppress dashboard restore.
-     const restoredHash=String(location.hash||'').toLowerCase();
-     if(window.__SMV_PUBLIC_ROUTE && restoredHash!=='#dashboard' && restoredHash!=='#admin'){smvShowRoleNav();armIdleTimer();return;}
-     if(restoredHash==='#dashboard'||restoredHash==='#admin')window.__SMV_PUBLIC_ROUTE=null;
+     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
      const listenerEpoch=smvNavigationEpoch;
      const adminUser=await isCurrentAdmin();
      const headerProfile=adminUser?{role:'admin'}:await getUserProfile(user.uid).catch(()=>({role:'customer'}));
