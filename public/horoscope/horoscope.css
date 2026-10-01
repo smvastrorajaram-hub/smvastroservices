@@ -886,7 +886,7 @@ html.smv-desktop-site header nav:where(:not(.smv33-hero, .smv33-hero *, .smv-hom
 }
 :root { --primary: #302b68; --primary2: #51478f; --gold: #b7793c; --gold2: #d8a060; --cream: #f8f5ed; --bg: #f6f3eb; --text: #2d2a35; --card: #ffffff; --muted: #6d6674; --line: #d9d2c4; --soft: #eee9f8; --success: #176b45; --danger: #a53b3b; --maroon: #292452; --deep: #1c193d; }
 * { box-sizing: border-box; }
-html { overflow-x: hidden; scroll-behavior: smooth; }
+html { overflow-x: hidden; scroll-behavior: auto; }
 body { margin: 0px; font-family: "Noto Sans Tamil", Inter, Arial, Helvetica, sans-serif; color: var(--text); overflow-x: hidden; background: radial-gradient(circle at 10% 8%, rgba(183, 121, 60, 0.07) 0px, rgba(183, 121, 60, 0.07) 2px, transparent 3px) 0% 0% / 34px 34px, radial-gradient(circle at 90% 15%, rgba(48, 43, 104, 0.043) 0px, rgba(48, 43, 104, 0.043) 2px, transparent 3px) 0% 0% / 42px 42px, linear-gradient(rgb(251, 250, 246) 0%, rgb(243, 240, 232) 52%, rgb(251, 250, 247) 100%) 0% 0% / auto; }
 header { position: sticky; top: 0px; background: rgba(255, 250, 240, 0.97); border-bottom: 3px double var(--gold); z-index: 100; box-shadow: rgba(111, 21, 21, 0.1) 0px 5px 20px; }
 header::after { content: "✦  ॐ  ✦"; display: block; text-align: center; color: var(--gold); font-size: 10px; letter-spacing: 8px; height: 13px; line-height: 10px; background: rgb(255, 250, 240); }
@@ -2343,7 +2343,7 @@ html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHo
 }
 .smv-viii-adhidevata .smv-ref-table, .smv-karana-source-table { width: max-content; min-width: 100%; table-layout: auto; }
 .smv-viii-adhidevata { overflow: visible; }
-.smv-viii-adhidevata .smv-ref-table, .smv-karana-source-table { display: block; overflow: auto hidden; scrollbar-width: auto; scroll-behavior: smooth; }
+.smv-viii-adhidevata .smv-ref-table, .smv-karana-source-table { display: block; overflow: auto hidden; scrollbar-width: auto; scroll-behavior: auto; }
 .smv-viii-adhidevata .smv-ref-table th:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *, .site-header, .site-header *, .site-footer, .site-footer *, .temple-hero, .temple-hero *)), .smv-viii-adhidevata .smv-ref-table td:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *, .site-header, .site-header *, .site-footer, .site-footer *, .temple-hero, .temple-hero *)), .smv-karana-source-table th:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *, .site-header, .site-header *, .site-footer, .site-footer *, .temple-hero, .temple-hero *)), .smv-karana-source-table td:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *, .site-header, .site-header *, .site-footer, .site-footer *, .temple-hero, .temple-hero *)) { vertical-align: top; line-height: 1.45; text-align: left; min-width: 150px; max-width: none; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; }
 .smv-karana-source-table th:nth-child(1), .smv-karana-source-table td:nth-child(1) { min-width: 110px; }
 .smv-karana-source-table th:nth-child(2), .smv-karana-source-table td:nth-child(2) { min-width: 140px; }
@@ -2462,7 +2462,7 @@ html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHo
   #smv-adhidevata-analysis-panel .adv-table-wrap, #smv-deities-analysis-panel .adv-table-wrap, #smv-adhidevata-analysis-panel .smv-viii-table-scroll, #smv-adhidevata-analysis-panel .smv-tithi-table-scroll { width: 100% !important; max-width: 100% !important; min-width: 0px !important; overflow-x: auto !important; }
 }
 :root { --smv-red: #ef0a46; --smv-deep: #b90036; --smv-gold: #ffb400; --smv-yellow: #ffd22e; --smv-navy: #15213b; --smv-text: #333b4b; --smv-muted: #687080; --smv-cream: #fff8ef; --smv-pink: #fff0f5; --smv-line: #eee2df; --smv-white: #fff; --smv-shadow: 0 12px 32px rgba(43,28,35,.09); }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body:where(:not(.smv33-hero, .smv33-hero *, .smv-home-offer-banner, .smv-home-offer-banner *, .site-header, .site-header *, .site-footer, .site-footer *, .temple-hero, .temple-hero *)) { overflow-x: hidden; background: rgb(255, 255, 255) !important; color: var(--smv-navy) !important; }
 .smv-master-top { background: linear-gradient(90deg, rgb(239, 10, 70), rgb(195, 0, 57)); color: rgb(255, 255, 255); }
 .smv-master-topin { max-width: 1320px; margin: auto; padding: 7px 24px; display: flex; justify-content: space-between; gap: 18px; font-size: 0.72rem; }
@@ -3077,3 +3077,20 @@ html body .smv26-channels a:where(:not(.smv33-hero, .smv33-hero *, .smv-home-off
 #smvHoroscopeAuth .smv-password-field input{box-sizing:border-box;padding-right:50px;width:100%;}
 #smvHoroscopeAuth [data-password-toggle]{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:42px;min-width:42px;height:42px;padding:8px;margin:0;border:0;border-radius:6px;background:transparent;color:#624c39;box-shadow:none;}
 #smvHoroscopeAuth [data-password-toggle] [hidden]{display:none;}
+
+/* V129 mobile scroll performance: no animated document scrolling. */
+html,body{scroll-behavior:auto!important}
+@media(max-width:760px){.smv-advanced-part,.dasha-node,.card{transition:none!important}}
+
+/* V130 mobile long-report performance: skip paint/layout work for off-screen result blocks.
+   Browser print uses report-print.html and is unaffected. */
+@media (max-width:760px){
+  #englishHoroscopeResult .smv-advanced-part,
+  #tamilHoroscopeResult .smv-advanced-part,
+  #englishHoroscopeResult .dasha-node,
+  #tamilHoroscopeResult .dasha-node,
+  #smvMarriageMatching .mm-section{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 420px;
+  }
+}
