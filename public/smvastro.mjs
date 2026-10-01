@@ -32,10 +32,10 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
     buffer+=decoder.decode(value,{stream:true});
     let end;while((end=buffer.indexOf('\n\n'))!==-1){
      const event=buffer.slice(0,end);buffer=buffer.slice(end+2);
-     if(/^event: (change|ready)$/m.test(event))onChange();
+     if(/^event: change$/m.test(event))onChange();
     }
    }
-  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');onChange();}}
+  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');}}
   finally{if(!stopped){retry++;timer=setTimeout(connect,Math.min(15000,1000*2**Math.min(retry,4)));}}
  }
  connect();return ()=>{stopped=true;clearTimeout(timer);controller?.abort();};
@@ -98,7 +98,7 @@ function renderAdminWorkflows({data, api, refresh, lang, escape: esc, date}) {
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserSessionPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
@@ -106,7 +106,7 @@ const firebaseConfig={apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomai
 let app=null, auth=null, db=null, functions=null, httpsCallableFn=null, firebaseInitError=null;
 try{
   app=initializeApp(firebaseConfig);
-  auth=getAuth(app);await setPersistence(auth,browserSessionPersistence);
+  auth=getAuth(app);await setPersistence(auth,browserLocalPersistence);
   db=getFirestore(app);
 }catch(initError){
   firebaseInitError=initError;
@@ -196,7 +196,8 @@ let dashboardReadyUid=null;
 let dashboardReadyAt=0;
 let dashboardReadyRole=null;
 const $=id=>document.getElementById(id);
-const show=id=>$(id)?.classList.remove("hidden"); const hide=id=>$(id)?.classList.add("hidden");
+const syncAccountSurface=id=>{if(id==='dashboard'||id==='admin')window.__smvSyncWorkspace?.();};
+const show=id=>{$(id)?.classList.remove("hidden");syncAccountSurface(id);};const hide=id=>{$(id)?.classList.add("hidden");syncAccountSurface(id);};
 const go=id=>$(id)?.scrollIntoView({behavior:"smooth",block:"start"});
 function hideHomeSurface(){
   // Hide the COMPLETE public Home surface. Internal views such as Question Form
@@ -589,6 +590,22 @@ $("contentNav")?.addEventListener("click",(e)=>{
       const user=auth?.currentUser||currentUser;
       if(!user){ pendingAfterLogin="dashboard"; openAuth("login"); return; }
       currentUser=user; window.__SMV_ASK_NOW_INTENT=false; askNowTransitionLock=false;
+
+
+      // Reuse an already-rendered role dashboard. A repeated Dashboard tap must
+      // not trigger another profile/dashboard read; only a real data-change or
+      // explicit refresh may invalidate the cached dashboard.
+      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden')){
+        hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
+        setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
+        try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
+        touchSession(); armIdleTimer(); return;
+      }
+      if(smvInternalView==='admin' && !$("admin")?.classList.contains('hidden')){
+        hideHomeSurface(); show('admin'); setHeaderRoleLabel('admin'); smvShowRoleNav();
+        try{history.replaceState({smvView:'admin'},'', '#admin');}catch(_e){}
+        touchSession(); armIdleTimer(); return;
+      }
       // Resolve the role once from the signed-in user's profile.  Do not call
       // isCurrentAdmin() here because it performs another profile read and can
       // race the Firebase auth listener during first dashboard load.
@@ -3755,7 +3772,9 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
+     const restoredHash=String(location.hash||'').toLowerCase();
+     if(window.__SMV_PUBLIC_ROUTE && restoredHash!=='#dashboard' && restoredHash!=='#admin'){smvShowRoleNav();armIdleTimer();return;}
+     if(restoredHash==='#dashboard'||restoredHash==='#admin')window.__SMV_PUBLIC_ROUTE=null;
      const listenerEpoch=smvNavigationEpoch;
      const adminUser=await isCurrentAdmin();
      const headerProfile=adminUser?{role:'admin'}:await getUserProfile(user.uid).catch(()=>({role:'customer'}));
