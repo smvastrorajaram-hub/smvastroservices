@@ -2741,8 +2741,15 @@ function smvSamePaidBirth(feature,a,b){
 }
 async function resolveHoroscopePaidPurchase(uid,feature,reportKey,birthIdentity){
  const target=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}_${reportKey}`),exact=await target.get();
- if(exact.exists&&await recoverHoroscopePurchase(target,exact.data()||{}))return {ref:target,data:exact.data()||{},relinked:false};
- // V104 recovery: payment and report rendering can carry differently-shaped identity objects.
+ if(exact.exists){
+  const exactData=exact.data()||{};
+  if(await recoverHoroscopePurchase(target,exactData)){const fresh=(await target.get()).data()||exactData;return {ref:target,data:fresh,relinked:false};}
+  // V106 quota guard: if this exact report already has a pending/failed purchase document,
+  // do not scan up to 50 other purchases. The current identity is authoritative.
+  return null;
+ }
+ // V104 recovery is retained only when the exact report document does not exist. This keeps
+ // legacy differently-shaped paid identities recoverable without multiplying reads on every unpaid access check.
  // Only relink a verified payment when immutable birth date/time/coordinates are the same.
  const candidates=await db.collection('smv_horoscope_purchases').where('userId','==',uid).limit(50).get();
  for(const doc of candidates.docs){const d=doc.data()||{};if(d.feature!==feature||!smvSamePaidBirth(feature,d.birthIdentity,birthIdentity))continue;if(!await recoverHoroscopePurchase(doc.ref,d))continue;
@@ -2862,7 +2869,7 @@ app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUs
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const PDF_RENDERER_VERSION='v105-html-css-chromium153-node26-cjs-fix';
+ const PDF_RENDERER_VERSION='v106-html-css-bw-full-expanded-tamil-font';
  const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
  const html=String(req.body?.html||'').trim().slice(0,12000000);if(!html)return res.status(400).json({error:'Complete report HTML is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
  console.log('[PDF-CHROMIUM] start',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),htmlChars:html.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
