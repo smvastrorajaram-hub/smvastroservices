@@ -1,6 +1,9 @@
 'use strict';
 const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+const chromiumModule = require('@sparticuz/chromium');
+// @sparticuz/chromium v153 can be exposed through a CJS default wrapper on Node 26.
+// Normalize both module shapes once instead of mutating the imported namespace.
+const chromium = chromiumModule?.default || chromiumModule;
 
 function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function safeReportHtml(html=''){
@@ -21,10 +24,19 @@ function documentHtml({title,language,html}){
 async function renderHtmlPdf(opts={}){
  // V104: @sparticuz/chromium exports a read-only module namespace in this runtime.
  // Do not mutate setGraphicsMode; use the supported args + executablePath API only.
- const executablePath=await chromium.executablePath();
+ const executablePathFn = typeof chromium?.executablePath === 'function'
+   ? chromium.executablePath.bind(chromium)
+   : (typeof chromiumModule?.executablePath === 'function' ? chromiumModule.executablePath.bind(chromiumModule) : null);
+ if(!executablePathFn){
+   const exported=[...new Set([...Object.keys(chromiumModule||{}),...Object.keys(chromium||{})])].join(',');
+   throw new Error('Bundled Chromium API is incompatible: executablePath() is unavailable. Exports: '+exported);
+ }
+ const executablePath=await executablePathFn();
  if(!executablePath)throw new Error('Bundled Chromium executable could not be resolved.');
- const headless=true;
- const args=[...chromium.args,'--disable-dev-shm-usage'];
+ const chromiumArgs=Array.isArray(chromium?.args)?chromium.args:(Array.isArray(chromiumModule?.args)?chromiumModule.args:[]);
+ if(!chromiumArgs.length)throw new Error('Bundled Chromium API is incompatible: launch args are unavailable.');
+ const headless='shell';
+ const args=[...chromiumArgs,'--disable-dev-shm-usage'];
  const browser=await puppeteer.launch({headless,executablePath,args,defaultViewport:{width:1280,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false,isLandscape:false}});
  try{
   const page=await browser.newPage();
