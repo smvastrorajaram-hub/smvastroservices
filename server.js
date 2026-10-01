@@ -5,7 +5,7 @@ try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss 
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
-const { renderHtmlPdf } = require("./html-pdf-renderer");
+const PDFDocument = require("pdfkit");
 const { Readable } = require("stream");
 const cloudinary = require("cloudinary").v2;
 const Razorpay = require("razorpay");
@@ -2697,7 +2697,7 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
 
 // V61 — Admin-controlled paid Horoscope features. Price is always read server-side.
 const HOROSCOPE_FEATURE_DOC='horoscope_features';
-async function getHoroscopeFeatureSettings(){const snap=await db.collection('smv_settings').doc(HOROSCOPE_FEATURE_DOC).get(),d=snap.exists?(snap.data()||{}):{};return {advanced_analysis:{enabled:d.advancedAnalysisEnabled!==false,price:0},marriage_matching:{enabled:d.marriageMatchingEnabled!==false,price:0}};}
+async function getHoroscopeFeatureSettings(){const snap=await db.collection('smv_settings').doc(HOROSCOPE_FEATURE_DOC).get(),d=snap.exists?(snap.data()||{}):{};return {advanced_analysis:{enabled:d.advancedAnalysisEnabled!==false,price:Math.max(0,Number(d.advancedAnalysisPrice||0))},marriage_matching:{enabled:d.marriageMatchingEnabled!==false,price:Math.max(0,Number(d.marriageMatchingPrice||0))}};}
 function horoscopeFeatureKey(v){v=String(v||'').trim().toLowerCase();return ['advanced_analysis','marriage_matching'].includes(v)?v:'';}
 const HoroscopeReportIdentity=require('./public/horoscope/report-identity.js');
 function horoscopeReportContext(req,feature){
@@ -2707,11 +2707,84 @@ function horoscopeReportContext(req,feature){
 }
 app.get('/horoscope-feature/config',async(req,res)=>{try{return res.json({success:true,features:await getHoroscopeFeatureSettings()});}catch(e){return res.status(500).json({error:'Unable to load horoscope feature settings.'});}});
 // V65 — Horoscope-local auth check. One profile read only when the user explicitly logs in.
-app.get('/horoscope-auth/session',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{if(!user.email_verified)return res.status(403).json({error:'Verify your email before using horoscope services.'});const snap=await db.collection('smv_users').doc(user.uid).get();const d=snap.exists?(snap.data()||{}):{},role=String(d.role||'').toLowerCase();if(role!=='customer')return res.status(403).json({error:'A Customer account is required for Horoscope services.'});return res.json({success:true,uid:user.uid,email:user.email||'',role:'customer'});}catch(e){return res.status(500).json({error:'Unable to verify Customer account.'});}});
-// V111: purchase/relink/recovery logic removed; both horoscope features are permanently free.
-app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const cfg=(await getHoroscopeFeatureSettings())[f];return res.json({success:true,feature:f,enabled:cfg.enabled===true,unlocked:cfg.enabled===true,free:true,price:0});}catch(e){return res.status(503).json({error:'Unable to load horoscope feature access.'});}});
-// V111: Advanced Horoscope and Marriage Matching are free. Paid checkout endpoints were removed.
-// Payment routes for Advanced Horoscope / Marriage Matching intentionally removed in V111.
+app.get('/horoscope-auth/session',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{if(!user.email_verified)return res.status(403).json({error:'Verify your email before using paid horoscope services.'});const snap=await db.collection('smv_users').doc(user.uid).get();const d=snap.exists?(snap.data()||{}):{},role=String(d.role||'').toLowerCase();if(role!=='customer')return res.status(403).json({error:'A Customer account is required for Horoscope payment.'});return res.json({success:true,uid:user.uid,email:user.email||'',role:'customer'});}catch(e){return res.status(500).json({error:'Unable to verify Customer account.'});}});
+function horoscopePaymentMode(){return RAZORPAY_KEY_ID.startsWith('rzp_live_')?'live':RAZORPAY_KEY_ID.startsWith('rzp_test_')?'test':'invalid';}
+function horoscopeModeMatches(d){return !d.razorpayMode||d.razorpayMode===horoscopePaymentMode();}
+async function recoverHoroscopePurchase(ref,d){
+ if(!horoscopeModeMatches(d))return false;
+ if(d.paymentStatus==='paid'&&d.razorpayMode===horoscopePaymentMode())return true;
+ const ids=[...new Set([d.razorpayOrderId,d.previousRazorpayOrderId,...Object.keys(d.orderAttempts||{})].filter(Boolean))];
+ for(const id of ids){
+  const quote=d.orderAttempts?.[id];if(quote?.mode&&quote.mode!==horoscopePaymentMode())continue;
+  const order=await razorpay.orders.fetch(id);
+  const expected=quote?Number(quote.amountPaise):id===d.razorpayOrderId?Number(d.amountPaise):Number(order.amount);
+  if(order.status!=='paid'||Number(order.amount_paid)!==expected||String(order.currency)!=='INR')continue;
+  await ref.set({paymentStatus:'paid',razorpayOrderId:id,amountPaise:expected,recoveredFromPaidOrder:true,razorpayMode:horoscopePaymentMode(),paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});return true;
+ }
+ return false;
+}
+async function unresolvedLegacyHoroscope(uid,feature){const ref=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}`),snap=await ref.get();if(!snap.exists)return false;const d=snap.data();return !d.migratedReportKey&&(d.paymentStatus==='paid'||await recoverHoroscopePurchase(ref,d));}
+app.post('/admin/horoscope-feature/link-legacy',express.json({limit:'20kb'}),async(req,res)=>{const adminUser=await requireUser(req,res);if(!adminUser)return;if(!(await isAdminUser(adminUser)))return res.status(403).json({error:'Admin access required.'});try{const uid=String(req.body?.customerUid||''),feature=horoscopeFeatureKey(req.body?.feature);if(!uid||uid.includes('/')||!feature)return res.status(400).json({error:'Customer and feature are required.'});const {reportKey,birthIdentity}=horoscopeReportContext(req,feature),oldRef=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}`),target=db.collection('smv_horoscope_purchases').doc(`${uid}_${feature}_${reportKey}`),old=await oldRef.get();if(!old.exists||!await recoverHoroscopePurchase(oldRef,old.data()))return res.status(409).json({error:'No verified legacy payment.'});await db.runTransaction(async tx=>{const snap=await tx.get(oldRef),d=snap.data();if(d.migratedReportKey&&d.migratedReportKey!==reportKey)throw Error('Legacy payment already linked.');tx.set(target,{...d,userId:uid,feature,reportKey,birthIdentity,paymentStatus:'paid',legacyLinkedBy:adminUser.uid,legacyLinkedAt:FieldValue.serverTimestamp()},{merge:true});tx.set(oldRef,{migratedReportKey:reportKey},{merge:true});});return res.json({success:true,reportKey});}catch(e){return res.status(409).json({error:e.message||'Legacy payment could not be linked.'});}});
+app.get('/horoscope-feature/access',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
+ const f=horoscopeFeatureKey(req.query?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});
+ if(f==='marriage_matching'&&String(req.query?.preinput||'')==='1'){const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:true,free:true,price:cfg.price});if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});const pre=await db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_preinput`).get(),d=pre.exists?(pre.data()||{}):{};return res.json({success:true,feature:f,enabled:true,unlocked:pre.exists&&d.paymentStatus==='paid'&&horoscopeModeMatches(d)&&!d.claimedReportKey,price:cfg.price,paymentId:d.razorpayPaymentId||''});}
+ const {reportKey,birthIdentity}=horoscopeReportContext(req,f);
+ const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.json({success:true,feature:f,enabled:false,unlocked:false,price:cfg.price});
+ if(cfg.price<=0)return res.json({success:true,feature:f,enabled:true,unlocked:true,free:true,price:0});
+ const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_${reportKey}`),snap=await ref.get(),d=snap.exists?(snap.data()||{}):{};
+ const unlocked=await recoverHoroscopePurchase(ref,d);
+ // A legacy feature-level purchase has no trustworthy birth identity. It must never
+ // unlock or block a different birth chart. Admin can link that old purchase to its
+ // original birth details separately; every new report identity remains independently payable.
+ return res.json({success:true,feature:f,enabled:true,unlocked,price:cfg.price,paymentId:d.razorpayPaymentId||''});
+ }catch(e){console.error('Horoscope access',e);return res.status(503).json({error:'Unable to restore paid access. Please retry; do not pay again.'});}});
+app.post('/horoscope-feature/create-order',express.json({limit:'20kb'}),async(req,res)=>{
+ const user=await requireUser(req,res);if(!user)return;
+ try{
+  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});
+  const mode=horoscopePaymentMode();if(mode==='invalid')return res.status(503).json({error:'Razorpay is not configured.'});
+  const preinput=f==='marriage_matching'&&req.body?.preinput===true;
+  const {reportKey,birthIdentity}=preinput?{reportKey:'preinput',birthIdentity:{preinput:true}}:horoscopeReportContext(req,f);
+ const cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled)return res.status(403).json({error:'This horoscope feature is unavailable.'});
+  if(cfg.price<=0)return res.json({success:true,feature:f,free:true,unlocked:true,amount:0});
+  const amount=Math.round(cfg.price*100),id=`${user.uid}_${f}_${reportKey}`,ref=db.collection('smv_horoscope_purchases').doc(id),snap=await ref.get(),old=snap.exists?(snap.data()||{}):{};
+  if(await recoverHoroscopePurchase(ref,old))return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
+  // Unresolved legacy payments are not matched to this report identity; do not block a new chart.
+  const attempt=Math.max(0,Number(old.paymentAttempt||0))+1,nonce=`${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
+  const receipt=`SMVH-${crypto.createHash('sha1').update(`${id}|${nonce}`).digest('hex').slice(0,28)}`;
+  const order=await razorpay.orders.create({amount,currency:'INR',receipt,notes:{uid:user.uid,feature:f,reportKey,attempt:String(attempt)}});
+  // Keep each attempt's ownership and quoted amount immutable. A late success must remain verifiable.
+  await db.collection('smv_horoscope_orders').doc(order.id).set({userId:user.uid,feature:f,reportKey,birthIdentity,amountPaise:amount,currency:'INR',razorpayMode:mode,createdAt:FieldValue.serverTimestamp()});
+  const alreadyPaid=await db.runTransaction(async tx=>{const latest=await tx.get(ref),d=latest.exists?latest.data():{};if(d.paymentStatus==='paid'&&horoscopeModeMatches(d))return true;
+   tx.set(ref,{userId:user.uid,feature:f,reportKey,birthIdentity,amount:cfg.price,amountPaise:amount,currency:'INR',razorpayOrderId:order.id,orderAttempts:{...(d.orderAttempts||{}),[order.id]:{amountPaise:amount,mode}},previousRazorpayOrderId:old.razorpayOrderId||'',paymentAttempt:attempt,paymentStatus:'pending',razorpayMode:mode,updatedAt:FieldValue.serverTimestamp(),createdAt:old.createdAt||FieldValue.serverTimestamp()},{merge:true});return false;});
+  if(alreadyPaid)return res.json({success:true,feature:f,alreadyPaid:true,unlocked:true,amount});
+  return res.json({success:true,feature:f,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,mode,attempt});
+ }catch(e){console.error('Horoscope order',e);return res.status(503).json({error:'Unable to prepare payment safely. Retry after access is restored.'});}
+});
+app.post('/horoscope-feature/verify-payment',express.json({limit:'20kb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
+ const f=horoscopeFeatureKey(req.body?.feature),orderId=String(req.body?.razorpay_order_id||''),paymentId=String(req.body?.razorpay_payment_id||''),signature=String(req.body?.razorpay_signature||'');
+ if(!f||!/^order_[A-Za-z0-9]+$/.test(orderId)||!/^pay_[A-Za-z0-9]+$/.test(paymentId)||!signature)return res.status(400).json({error:'Complete payment verification data is required.'});
+ const preinput=f==='marriage_matching'&&req.body?.preinput===true;
+ const {reportKey,birthIdentity}=preinput?{reportKey:'preinput',birthIdentity:{preinput:true}}:horoscopeReportContext(req,f);
+ const ref=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_${reportKey}`),attemptRef=db.collection('smv_horoscope_orders').doc(orderId);
+ const [snap,attempt]=await Promise.all([ref.get(),attemptRef.get()]);const purchase=snap.exists?snap.data():{},d=attempt.exists?attempt.data():purchase;
+ if((attempt.exists&&(d.userId!==user.uid||d.feature!==f||d.reportKey!==reportKey))||(!attempt.exists&&d.razorpayOrderId!==orderId)||!horoscopeModeMatches(d))return res.status(409).json({error:'Payment order does not belong to this account, feature or payment mode.'});
+ const amount=Number(d.amountPaise);if(!Number.isSafeInteger(amount)||amount<100)return res.status(409).json({error:'Invalid quoted payment amount.'});
+ const expected=crypto.createHmac('sha256',RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');if(!signatureEqual(expected,signature))return res.status(400).json({error:'Payment signature verification failed.'});
+ let payment=await razorpay.payments.fetch(paymentId);if(payment.order_id!==orderId||Number(payment.amount)!==amount||payment.currency!=='INR')return res.status(409).json({error:'Razorpay payment details do not match the quoted order.'});
+ if(payment.status==='authorized'){try{payment=await razorpay.payments.capture(paymentId,amount,'INR');}catch(_){payment=await razorpay.payments.fetch(paymentId);}}
+ if(payment.status!=='captured')return res.status(409).json({error:'Payment capture is pending. Do not pay again.'});
+ await ref.set({userId:user.uid,feature:f,reportKey,birthIdentity,paymentStatus:'paid',amountPaise:amount,razorpayOrderId:orderId,razorpayPaymentId:paymentId,razorpayMode:horoscopePaymentMode(),paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ return res.json({success:true,verified:true,feature:f,unlocked:true,paymentId});
+ }catch(e){console.error('Horoscope verify',e);return res.status(503).json({error:'Payment verification could not finish. Restore access before attempting another payment.'});}});
+
+// V95 — Marriage payment can be completed before exposing birth-entry fields.
+// The verified pre-input payment is claimed exactly once by the first complete bride/groom identity.
+app.post('/horoscope-feature/claim-marriage-payment',express.json({limit:'20kb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
+ const f='marriage_matching',{reportKey,birthIdentity}=horoscopeReportContext(req,f),preRef=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_preinput`),targetRef=db.collection('smv_horoscope_purchases').doc(`${user.uid}_${f}_${reportKey}`);
+ await db.runTransaction(async tx=>{const [pre,target]=await Promise.all([tx.get(preRef),tx.get(targetRef)]);const p=pre.exists?(pre.data()||{}):{},t=target.exists?(target.data()||{}):{};if(t.paymentStatus==='paid'&&horoscopeModeMatches(t))return;if(!pre.exists||p.paymentStatus!=='paid'||!horoscopeModeMatches(p))throw Error('Verified marriage payment was not found.');if(p.claimedReportKey&&p.claimedReportKey!==reportKey)throw Error('This marriage payment is already linked to another pair.');tx.set(targetRef,{...p,userId:user.uid,feature:f,reportKey,birthIdentity,paymentStatus:'paid',claimedFromPreinput:true,updatedAt:FieldValue.serverTimestamp()},{merge:true});tx.set(preRef,{claimedReportKey:reportKey,claimedAt:FieldValue.serverTimestamp()},{merge:true});});
+ return res.json({success:true,feature:f,unlocked:true,reportKey});
+ }catch(e){return res.status(409).json({error:e.message||'Marriage payment could not be linked to these birth details.'});}});
 
 // Versioned complete snapshots: one sync at login; opening locally makes no database reads.
 const savedReportsFor=uid=>db.collection('smv_horoscope_saved').doc(uid).collection('reports');
@@ -2720,7 +2793,9 @@ app.get('/horoscope-reports/:id',async(req,res)=>{const user=await requireUser(r
 app.post('/horoscope-reports',express.json({limit:'15mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
  const feature=horoscopeFeatureKey(req.body?.feature),{reportKey}=horoscopeReportContext(req,feature),report=req.body?.report;
  if(!report||report.owner!==user.uid||typeof report.html!=='string'||!['ta','en'].includes(report.language))return res.status(400).json({error:'Invalid report snapshot.'});
- const verified=true; // V111 free feature: no purchase lookup / payment gate.
+ const cfg=(await getHoroscopeFeatureSettings())[feature],paid=await db.collection('smv_horoscope_purchases').doc(`${user.uid}_${feature}_${reportKey}`).get();
+ const verified=paid.exists&&paid.data().paymentStatus==='paid'&&horoscopeModeMatches(paid.data());
+ if(cfg.enabled&&cfg.price>0&&!verified)return res.status(403).json({error:'Payment is required for these birth details.'});
  const safe={...report,id:reportKey,feature,owner:user.uid,paid:verified,birthIdentity:req.body.birthIdentity,savedAt:Date.now()},text=JSON.stringify(safe);
  if(Buffer.byteLength(text)>12000000)return res.status(413).json({error:'Report exceeds the saved report limit.'});
  const ref=savedReportsFor(user.uid).doc(reportKey),old=await ref.get(),revision=crypto.randomBytes(10).toString('hex'),chunks=[];
@@ -2752,86 +2827,65 @@ async function pipeCloudPdf(meta,res,disposition='inline'){
 async function deleteSavedPdf(uid,id){
  for(const lang of ['en','ta']){const ref=savedPdfRef(uid,id,lang),snap=await ref.get();if(snap.exists){const d=snap.data();if(d.publicId&&reportCloudReady())await cloudinary.uploader.destroy(d.publicId,{resource_type:'raw',type:'private',invalidate:true}).catch(e=>console.warn('Cloudinary PDF delete:',e.message));await ref.delete();}}
 }
-async function requirePaidReport(req,res,f){const {reportKey,birthIdentity}=horoscopeReportContext(req,f);return {reportKey,birthIdentity};}
+async function requirePaidReport(req,res,f){const {reportKey,birthIdentity}=horoscopeReportContext(req,f),cfg=(await getHoroscopeFeatureSettings())[f];if(!cfg.enabled||cfg.price<=0){res.status(403).json({error:'PDF requires an enabled paid feature.'});return null;}const purchase=await db.collection('smv_horoscope_purchases').doc(`${req.smvUser.uid}_${f}_${reportKey}`).get();if(!purchase.exists||purchase.data()?.paymentStatus!=='paid'||!horoscopeModeMatches(purchase.data())){res.status(403).json({error:'Verified payment is required for this birth report.'});return null;}return {reportKey,birthIdentity};}
 app.get('/horoscope-reports/:id/pdf',async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{const id=String(req.params.id||'');if(!/^[a-f0-9]{64}$/.test(id))return res.status(400).json({error:'Invalid PDF report.'});const lang=String(req.query?.lang||'en')==='ta'?'ta':'en',saved=await readSavedPdf(user.uid,id,lang);if(!saved?.publicId)return res.status(404).json({error:'PDF has not been generated yet.'});return await pipeCloudPdf(saved,res,'inline');}catch(e){console.error('Saved PDF read',e);if(!res.headersSent)return res.status(503).json({error:'Saved PDF could not be opened.'});}});
 app.post('/horoscope-reports/:id/pdf',express.json({limit:'4mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;req.smvUser=user;try{
  if(!reportCloudReady())return res.status(503).json({error:'PDF storage is not configured on the server.'});
  const f=horoscopeFeatureKey(req.body?.feature);if(!f)return res.status(400).json({error:'Invalid horoscope feature.'});const paid=await requirePaidReport(req,res,f);if(!paid)return;if(paid.reportKey!==String(req.params.id))return res.status(409).json({error:'Birth identity does not match the saved report.'});
- const PDF_RENDERER_VERSION='v122-compact-chart-layout';
- const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId&&existing?.rendererVersion===PDF_RENDERER_VERSION)return await pipeCloudPdf(existing,res,'inline');
- const html=String(req.body?.html||'').trim().slice(0,12000000);if(!html)return res.status(400).json({error:'Complete report HTML is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
- console.log('[PDF-CHROMIUM] start',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),htmlChars:html.length,feature:f,lang,renderer:PDF_RENDERER_VERSION});
- const tmpPdf=path.join('/tmp',`smv-${crypto.randomUUID()}.pdf`);
- const pdfBuffer=await renderHtmlPdf({title,language:lang,html});
- await fs.promises.writeFile(tmpPdf,pdfBuffer);
- const stat=await fs.promises.stat(tmpPdf);console.log('[PDF-CHROMIUM] rendered',{bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});
- // V95: the user's PDF response must never wait for Cloudinary.  The completed local
- // PDF is streamed immediately; durable Cloudinary storage is a background step.  This
- // removes Cloudinary HTTP 499 from the interactive PDF-generation critical path.
- res.status(200);res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition','inline; filename="SMV-ASTRO-Report.pdf"');res.setHeader('Content-Length',String(stat.size));res.setHeader('Cache-Control','private, no-store');
- // V99: upload_large(localPath) returns an UploadStream, not the final upload result.
- // Resolve only from Cloudinary's completion callback so public_id/asset_id are available
- // and the temporary file stays alive until Cloudinary has finished reading it.
- const uploadLargePdf=(filePath,options)=>new Promise((resolve,reject)=>{
-  let settled=false;
-  const done=(err,result)=>{
-   if(settled)return;
-   if(err){settled=true;return reject(err);}
-   // Chunked uploads can report intermediate done:false responses. Persist only the final one.
-   if(result&&result.done===false)return;
-   settled=true;resolve(result||{});
-  };
-  try{
-   const stream=cloudinary.uploader.upload_large(filePath,options,done);
-   if(stream&&typeof stream.once==='function')stream.once('error',err=>done(err));
-  }catch(err){done(err);}
- });
- const isRetryableCloudError=(err)=>{
-  const code=Number(err?.http_code||err?.statusCode||0);
-  const name=String(err?.name||'').toLowerCase();
-  const msg=String(err?.message||'').toLowerCase();
-  return code===408||code===409||code===420||code===429||code>=500||name.includes('timeout')||msg.includes('timeout')||msg.includes('econnreset')||msg.includes('eai_again')||msg.includes('socket hang up');
- };
- const compactDefined=(obj)=>Object.fromEntries(Object.entries(obj).filter(([,v])=>v!==undefined));
- const persistPdf=async()=>{
-  try{
-   let uploaded=null;
-   for(let attempt=1;attempt<=3;attempt++){
-    try{
-     console.log('[PDF-STORE] upload start',{attempt,bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});
-     uploaded=await uploadLargePdf(tmpPdf,{resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`,chunk_size:6000000,timeout:180000});
-     if(!uploaded?.public_id)throw Object.assign(new Error('Cloudinary upload completed without public_id.'),{nonRetryable:true});
-     break;
-    }catch(err){
-     const retryable=!err?.nonRetryable&&isRetryableCloudError(err);
-     console.warn('[PDF-STORE] upload failed',{attempt,retryable,message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});
-     if(!retryable||attempt===3)throw err;
-     await new Promise(r=>setTimeout(r,1500*attempt));
-    }
-   }
-   // Firestore is deliberately outside the network retry loop. A validation error must not
-   // re-upload the same PDF three times. Undefined optional values are omitted globally.
-   const metadata=compactDefined({
-    feature:f,language:lang,title,birthIdentity:paid.birthIdentity,
-    publicId:uploaded?.public_id,assetId:uploaded?.asset_id||'',
-    bytes:Number(uploaded?.bytes||stat.size),storage:'cloudinary_private_raw',
-    rendererVersion:PDF_RENDERER_VERSION,updatedAt:FieldValue.serverTimestamp()
-   });
-   await savedPdfRef(user.uid,paid.reportKey,lang).set(metadata,{merge:true});
-   console.log('[PDF-MEM] stored',{heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:metadata.bytes,feature:f,lang,renderer:PDF_RENDERER_VERSION,publicId:metadata.publicId});
-  }catch(err){
-   console.error('[PDF-STORE] durable save failed',{message:err?.message||String(err),http_code:err?.http_code||null,name:err?.name||''});
-  }finally{
-   // The response stream has already finished before persistPdf starts, and uploadLargePdf
-   // does not resolve until Cloudinary is done reading. This is the only deletion point.
-   await fs.promises.unlink(tmpPdf).catch(err=>{if(err?.code!=='ENOENT')console.warn('[PDF-STORE] temp cleanup failed',err?.message||String(err));});
+ const lang=String(req.body?.language||req.query?.lang||'en').toLowerCase()==='ta'?'ta':'en',existing=await readSavedPdf(user.uid,paid.reportKey,lang);if(existing?.publicId)return await pipeCloudPdf(existing,res,'inline');
+ const text=String(req.body?.text||'').replace(/\r/g,'').trim().slice(0,2500000);if(!text)return res.status(400).json({error:'Complete report result is empty.'});const defaultTitle=f==='marriage_matching'?(lang==='ta'?'SMV திருமண பொருத்த அறிக்கை':'SMV Marriage Matching Report'):(lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report'),title=String(req.body?.title||defaultTitle).trim().slice(0,120),publicId=cloudPdfPublicId(user.uid,paid.reportKey,lang);
+ console.log('[PDF-MEM] start', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),chars:text.length,feature:f,lang});
+ const uploadDone=new Promise((resolve,reject)=>{const upload=cloudinary.uploader.upload_stream({resource_type:'raw',type:'private',public_id:publicId,overwrite:true,upload_preset:CLOUDINARY_REPORT_UPLOAD_PRESET,context:`feature=${f}|language=${lang}`},(error,result)=>error?reject(error):resolve(result));
+  // V86 PDF visual renderer. Storage/payment/report identity flow is intentionally unchanged.
+  const C={wine:'#8B0000',gold:'#B8903C',goldSoft:'#D8C28C',cream:'#FFFDF8',ink:'#202020',muted:'#5F5A54',white:'#FFFFFF',line:'#D7C899'};
+  const doc=new PDFDocument({size:'A4',bufferPages:false,margins:{top:76,bottom:62,left:46,right:46},info:{Title:title,Author:'SMV ASTRO SERVICES',Subject:'Astrology report'}}),fontPath=path.join(__dirname,'public','horoscope','fonts','noto-sans-tamil.ttf');
+  const tamilOK=fs.existsSync(fontPath);if(tamilOK)doc.registerFont('Tamil',fontPath);doc.once('error',reject);upload.once('error',reject);doc.pipe(upload);
+  let pageNo=0,isCover=true;
+  const hasTamil=v=>/[\u0B80-\u0BFF]/.test(String(v||''));
+  const fontFor=(v,bold=false)=>hasTamil(v)&&tamilOK?'Tamil':(bold?'Helvetica-Bold':'Helvetica');
+  const clean=v=>String(v??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/[Ø][=><?][^\s]{0,8}\s*/g,'').replace(/^[\s•·|]+/,'').trim();
+  const safeText=(v,x,y,w,opts={})=>{const t=clean(v)||' ';doc.font(fontFor(t,!!opts.bold)).fontSize(opts.size||10).fillColor(opts.color||C.ink);doc.text(t,x,y,{width:w,align:opts.align||'left',lineGap:opts.lineGap??2.4,continued:false});return doc.y;};
+  // V87: keep page header/footer outside normal PDFKit text-flow pagination.
+  let decoratingPage=false;
+  const withChromeMargins=(fn)=>{const m=doc.page&&doc.page.margins;if(!m)return fn();const keep={top:m.top,right:m.right,bottom:m.bottom,left:m.left};m.top=0;m.right=0;m.bottom=0;m.left=0;try{return fn();}finally{m.top=keep.top;m.right=keep.right;m.bottom=keep.bottom;m.left=keep.left;}};
+  const footer=()=>{if(isCover)return;withChromeMargins(()=>{const y=805;doc.save();doc.strokeColor(C.goldSoft).lineWidth(.6).moveTo(46,y-18).lineTo(549,y-18).stroke();doc.font('Helvetica').fontSize(7.4).fillColor(C.muted).text('SMV ASTRO SERVICES  •  smvastroservices.in',46,y-10,{width:410,height:10,lineBreak:false});doc.font('Helvetica-Bold').fillColor(C.wine).text(String(pageNo),500,y-10,{width:49,height:10,align:'right',lineBreak:false});doc.restore();});};
+  const header=()=>{if(isCover)return;withChromeMargins(()=>{doc.save();doc.strokeColor(C.gold).lineWidth(.8).moveTo(46,43).lineTo(549,43).stroke();doc.font('Helvetica-Bold').fontSize(10.2).fillColor(C.wine).text('SMV ASTRO SERVICES',46,19,{width:250,height:13,lineBreak:false});doc.font('Helvetica').fontSize(7.2).fillColor(C.muted).text('Sri Madurai Veerayah Astro Services',350,20,{width:199,height:10,align:'right',lineBreak:false});doc.restore();});};
+  // V88: never call PDFKit text from a pageAdded listener. PDFKit can add a page while
+  // laying out header/footer text, which recursively re-enters pageAdded and overflows the stack.
+  // Decorate only after an explicit content page has been created.
+  const newContentPage=()=>{isCover=false;doc.addPage();pageNo++;header();footer();doc.y=68;};
+  const ensure=(h=80)=>{if(doc.y+h>770)newContentPage();};
+  const section=(label)=>{const t=clean(label);ensure(58);doc.moveDown(.35);const y=doc.y;doc.rect(46,y,5,28).fill(C.wine);safeText(t,60,y+5,483,{size:11.2,bold:true,color:C.wine});doc.strokeColor(C.goldSoft).lineWidth(.55).moveTo(60,y+27).lineTo(543,y+27).stroke();doc.y=y+37;};
+  const subhead=(label)=>{const t=clean(label);ensure(45);const y=doc.y;safeText(t,52,y,491,{size:10.3,bold:true,color:C.gold});doc.strokeColor(C.goldSoft).lineWidth(.5).moveTo(52,doc.y+3).lineTo(543,doc.y+3).stroke();doc.y+=9;};
+  const paragraph=(line)=>{const t=clean(line);if(!t)return;ensure(36);const y=doc.y;safeText(t,54,y,487,{size:9.6,color:C.ink,lineGap:3.6});doc.y+=5;};
+  const kv=(a,b)=>{ensure(31);const y=doc.y;doc.rect(52,y,491,25).fill(C.cream).strokeColor(C.line).lineWidth(.35).stroke();safeText(a,61,y+6,205,{size:9,bold:true,color:C.wine});safeText(b,270,y+6,262,{size:9,color:C.ink});doc.y=y+29;};
+  const tableRow=(cells,head=false)=>{ensure(29);const y=doc.y,h=25,n=Math.max(1,cells.length),w=491/n;cells.forEach((c,i)=>{doc.rect(52+i*w,y,w,h).fill(head?C.wine:(Math.floor(y/25)%2?C.cream:C.white)).strokeColor(C.goldSoft).lineWidth(.35).stroke();safeText(c,56+i*w,y+6,w-8,{size:head?8.3:8.1,bold:head,color:head?C.white:C.ink,align:'center'});});doc.y=y+h;};
+  const isMajor=t=>/^(?:[IVX]+\.?\s+|\d+\.\s+|ADVANCED ANALYSIS|INTEGRATED PREDICTIONS|VIMSOTTARI|VIMSHOTTARI|REM(?:EDIAL)?|NUMEROLOGY|MARRIAGE MATCHING|HOROSCOPE CALCULATION|ஜாதக பகுப்பாய்வு|தசா பகுப்பாய்வு|கோச்சார பகுப்பாய்வு|பரிகார|எண் கணித|ஒருங்கிணைந்த)/i.test(t)||(/^[A-Z][A-Z0-9 /&–—()-]{8,}$/.test(t)&&t.length<90);
+  const isSub=t=>/^(?:Current \/ Next|Birth Panchang|Daily Panchang|Daily Hora|Planetary|Navamsa|Bhava|Transit|Dasa|Bhukti|Antharam|Prediction|Career|Marriage|Education|Children|Health|Finance|கிரக|பாவ|நவாம்ச|கோச்சாரம்|பிறப்பு|தினசரி|விம்சோத்தரி|பலன்)/i.test(t)&&t.length<130;
+  // Cover page: restrained burgundy/gold identity, with no report-body dump.
+  doc.rect(0,0,595,842).fill(C.white);doc.strokeColor(C.gold).lineWidth(1).moveTo(46,94).lineTo(549,94).stroke();
+  doc.font('Helvetica-Bold').fontSize(20).fillColor(C.wine).text('SMV ASTRO SERVICES',46,48,{width:503,align:'center'});doc.font('Helvetica').fontSize(9).fillColor(C.muted).text('Sri Madurai Veerayah Astro Services',46,76,{width:503,align:'center'});
+  const coverTitle=clean(title);doc.font(fontFor(coverTitle,true)).fontSize(lang==='ta'?24:27).fillColor(C.wine).text(coverTitle,58,235,{width:479,align:'center',lineGap:7});doc.moveTo(155,doc.y+24).lineTo(440,doc.y+24).strokeColor(C.gold).lineWidth(1.2).stroke();
+  const rawLines=text.split('\n').map(clean).filter(Boolean),identity=rawLines.slice(0,28).filter(x=>/birth|date|time|place|name|பிறந்த|பெயர்|நேரம்|இடம்/i.test(x)).slice(0,5);let cy=Math.max(360,doc.y+62);doc.rect(70,cy,455,Math.max(78,identity.length*25+32)).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.7).stroke();safeText(lang==='ta'?'அறிக்கை விவரங்கள்':'REPORT DETAILS',90,cy+16,415,{size:10,bold:true,color:C.gold,align:'center'});let iy=cy+42;(identity.length?identity:[lang==='ta'?'முழுமையான ஜாதக அறிக்கை':'Complete Astrology Report']).forEach(x=>{safeText(x,94,iy,407,{size:9.5,color:C.ink,align:'center'});iy=doc.y+4;});doc.font('Helvetica').fontSize(8).fillColor(C.muted).text('smvastroservices.in',46,780,{width:503,align:'center'});
+  newContentPage();
+  let previousWasHeading=false;
+  for(let idx=0;idx<rawLines.length;idx++){
+   const line=rawLines[idx];if(!line)continue;
+   // Skip repeated site chrome/title fragments that are already represented by the PDF chrome.
+   if(/^(SMV ASTRO SERVICES|Sri Madurai Veerayah Astro Services|smvastroservices\.in)$/i.test(line))continue;
+   if(isMajor(line)){section(line);previousWasHeading=true;continue;}
+   if(isSub(line)){subhead(line);previousWasHeading=true;continue;}
+   // Structured delimiters from DOM/table extraction become real PDF rows instead of one long text run.
+   const cells=line.split(/\s*[•|]\s*/).map(clean).filter(Boolean);
+   if(cells.length>=2&&cells.length<=7){if(cells.length===2)kv(cells[0],cells[1]);else tableRow(cells,previousWasHeading);previousWasHeading=false;continue;}
+   // Date-range / Dasha rows receive a compact visual card.
+   if(/\b\d{4}-\d{2}-\d{2}\b/.test(line)&&line.length<145){ensure(34);const y=doc.y;doc.rect(52,y,491,27).fill(C.cream).strokeColor(C.goldSoft).lineWidth(.4).stroke();safeText(line,61,y+6,473,{size:8.8,bold:true,color:C.wine});doc.y=y+32;previousWasHeading=false;continue;}
+   paragraph(line);previousWasHeading=false;
   }
- };
- const src=fs.createReadStream(tmpPdf);
- src.once('error',err=>{console.error('[PDF-STREAM] local read failed',err);if(!res.headersSent)res.status(500).end();else res.destroy(err);});
- res.once('finish',()=>{console.log('[PDF-MEM] delivered',{bytes:stat.size,feature:f,lang,renderer:PDF_RENDERER_VERSION});void persistPdf();});
- src.pipe(res);
- return;
+  doc.end();});
+ const uploaded=await uploadDone;await savedPdfRef(user.uid,paid.reportKey,lang).set({feature:f,language:lang,title,birthIdentity:paid.birthIdentity,publicId:uploaded.public_id,assetId:uploaded.asset_id||'',bytes:Number(uploaded.bytes||0),storage:'cloudinary_private_raw',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ console.log('[PDF-MEM] stored', {heapMB:Math.round(process.memoryUsage().heapUsed/1048576),rssMB:Math.round(process.memoryUsage().rss/1048576),bytes:Number(uploaded.bytes||0),feature:f,lang});
+ return await pipeCloudPdf({publicId:uploaded.public_id},res,'inline');
  }catch(e){console.error('Stored horoscope PDF error',e);if(!res.headersSent)return res.status(500).json({error:'Unable to generate and save PDF.'});}});
 
 app.post("/create-order", express.json(), async (req, res) => {
@@ -3750,36 +3804,63 @@ app.post('/api/horoscope/dasa', async (req,res)=>{
   }
 });
 
+// V128 — Server-authoritative gate for CPU-heavy horoscope calculations.
+// Public/anonymous visitors may use only /api/horoscope/calculate (basic chart).
+// Full/advanced work requires a verified Customer session and the Admin feature gate.
+async function requireAdvancedHoroscopeCalculationAccess(req,res){
+  const header=String(req.get('Authorization')||'');
+  if(!header.startsWith('Bearer ')){
+    res.status(401).json({ok:false,code:'LOGIN_REQUIRED',error:'Login is required for full horoscope analysis.'});
+    return null;
+  }
+  let user;
+  try{ user=await admin.auth().verifyIdToken(header.slice(7)); }
+  catch(e){
+    res.status(401).json({ok:false,code:'LOGIN_REQUIRED',error:'Login session expired. Please login again.'});
+    return null;
+  }
+  if(!user.email_verified){
+    res.status(403).json({ok:false,code:'EMAIL_VERIFICATION_REQUIRED',error:'Verify your email before using full horoscope analysis.'});
+    return null;
+  }
+  try{
+    const profile=await db.collection('smv_users').doc(user.uid).get();
+    const role=profile.exists?String(profile.data()?.role||'').toLowerCase():'';
+    if(role!=='customer'){
+      res.status(403).json({ok:false,code:'CUSTOMER_REQUIRED',error:'A Customer account is required for full horoscope analysis.'});
+      return null;
+    }
+    const cfg=(await getHoroscopeFeatureSettings()).advanced_analysis;
+    if(!cfg.enabled){
+      res.status(403).json({ok:false,code:'ADVANCED_DISABLED',error:'Advanced Analysis is disabled by Admin.'});
+      return null;
+    }
+    if(cfg.price<=0) return {user,cfg,paid:false,free:true};
+    const {reportKey}=horoscopeReportContext(req,'advanced_analysis');
+    const purchase=await db.collection('smv_horoscope_purchases').doc(`${user.uid}_advanced_analysis_${reportKey}`).get();
+    const d=purchase.exists?(purchase.data()||{}):{};
+    const verified=purchase.exists&&d.paymentStatus==='paid'&&horoscopeModeMatches(d);
+    if(!verified){
+      res.status(402).json({ok:false,code:'PAYMENT_REQUIRED',error:'Payment is required before Advanced Analysis calculation.',price:cfg.price});
+      return null;
+    }
+    return {user,cfg,paid:true,free:false,reportKey};
+  }catch(e){
+    console.error('[AdvancedGate] access check failed:',e?.stack||e);
+    res.status(503).json({ok:false,code:'ACCESS_CHECK_FAILED',error:'Unable to verify Advanced Analysis access.'});
+    return null;
+  }
+}
+
 app.post('/api/horoscope/full', async (req,res)=>{
   try {
+    const access=await requireAdvancedHoroscopeCalculationAccess(req,res);
+    if(!access)return;
     const body=req.body||{};
-
-    // V119: Admin OFF is an execution gate, not merely a UI/CSS gate.
-    // Read the authoritative feature switch before any advanced/Tajaka/transit/Phase-4 work.
-    const featureSettings=await getHoroscopeFeatureSettings();
-    const advancedEnabled=featureSettings?.advanced_analysis?.enabled===true;
-
-    // Core/basic chart is always available while Horoscope itself is in use.
     const chart=calculateVedicChart(body);
     chart.nativeName=String(body.name||body.nativeName||'');
     chart.nameInitial=String(body.nameInitial||body.nativeNameInitial||'');
     if(!chart.nameInitial && chart.nativeName){ try { const seg=new Intl.Segmenter(undefined,{granularity:'grapheme'}); chart.nameInitial=seg.segment(chart.nativeName)[Symbol.iterator]().next().value?.segment||Array.from(chart.nativeName)[0]||''; } catch(e) { chart.nameInitial=Array.from(chart.nativeName)[0]||''; } }
-
-    if(!advancedEnabled){
-      console.log('[Full] basic-only: Advanced Analysis is OFF; advanced/Tajaka/transit/Phase-4 engines skipped.');
-      return res.json({
-        ok:true,
-        meta:{complete:true,basicOnly:true,advancedEnabled:false,version:'SMV-full-2-basic-gated'},
-        chart,
-        advanced:null,
-        birthPanchang:null,
-        dailyPanchang:null,
-        transit:null,
-        phase4:null
-      });
-    }
-
-    // Advanced Analysis ON: preserve the existing full calculation path.
     try { const targetYear=Number(body?.tajakaYear)||new Date().getFullYear(); chart.tajakaAnnual=findTajakaAnnualChart(body,targetYear); } catch(e){ chart.tajakaAnnualError=String(e?.message||e); }
     if(typeof advancedAstrology!=='function') throw new Error('Advanced astrology module is unavailable on the backend.');
     if(!TransitPanchang) throw new Error('Transit/Panchang module is unavailable on the backend.');
@@ -3792,7 +3873,7 @@ app.post('/api/horoscope/full', async (req,res)=>{
     const transit=TransitPanchang.transit({...body,date:dailyDate,time:dailyTime});
     let phase4=null;
     if(typeof phase4Dasa==='function') phase4=phase4Dasa(chart);
-    return res.json({ok:true,meta:{complete:true,basicOnly:false,advancedEnabled:true,version:'SMV-full-2-basic-gated'},chart,advanced,birthPanchang,dailyPanchang,transit,phase4});
+    return res.json({ok:true,meta:{complete:true,version:'SMV-full-1'},chart,advanced,birthPanchang,dailyPanchang,transit,phase4});
   } catch(e){
     console.error('[Full] horoscope calculation error:',e?.stack||e);
     return res.status(400).json({ok:false,error:e?.message||'Full horoscope calculation failed.'});
@@ -3801,12 +3882,9 @@ app.post('/api/horoscope/full', async (req,res)=>{
 
 app.post('/api/horoscope/advanced', async (req,res)=>{
   try {
+    const access=await requireAdvancedHoroscopeCalculationAccess(req,res);
+    if(!access)return;
     const body=req.body||{};
-    const featureSettings=await getHoroscopeFeatureSettings();
-    if(featureSettings?.advanced_analysis?.enabled!==true){
-      console.log('[Advanced] skipped: Advanced Analysis is OFF.');
-      return res.status(403).json({ok:false,disabled:true,error:'Advanced Analysis is disabled by Admin.'});
-    }
     console.log('[Advanced] request', {date:body.date,time:body.time,lat:body.lat,lon:body.lon,language:body.language});
     const chart=calculateVedicChart(body);
     chart.nativeName=String(body.name||body.nativeName||'');
