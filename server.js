@@ -2698,6 +2698,11 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
 
 
 // V150 route-parity fix: endpoints already consumed by the deployed frontend.
+// V153 — Admin-controlled Horoscope/Matching visibility + price-mode configuration.
+const HOROSCOPE_FEATURE_DOC='horoscope_features';
+async function getHoroscopeFeatureSettings(){const snap=await db.collection('smv_settings').doc(HOROSCOPE_FEATURE_DOC).get(),d=snap.exists?(snap.data()||{}):{};return {advanced_analysis:{enabled:d.advancedAnalysisEnabled!==false,price:Math.max(0,Number(d.advancedAnalysisPrice||0))},marriage_matching:{enabled:d.marriageMatchingEnabled!==false,price:Math.max(0,Number(d.marriageMatchingPrice||0))}};}
+app.get('/horoscope-feature/config',async(req,res)=>{try{return res.json({success:true,features:await getHoroscopeFeatureSettings()});}catch(e){console.error('Horoscope feature config',e);return res.status(503).json({error:'Unable to load horoscope feature settings.'});}});
+
 app.get("/horoscope-auth/session", async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
