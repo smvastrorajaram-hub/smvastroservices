@@ -3020,17 +3020,6 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
 // Horoscope application/runtime files are not served by this backend.
 // The frontend/PWA owns its permitted static-asset delivery and offline cache policy.
 
-app.use((req, res) => {
-  console.warn("Unhandled backend route:", req.method, req.originalUrl);
-  if (req.path.startsWith("/api/") || req.path.includes("withdrawal")) {
-    return res.status(404).json({ error: "Backend endpoint not found.", path: req.originalUrl });
-  }
-  return res.status(404).send("Not Found");
-});
-
-answerCredit.start();
-
-
 // V131 — SMV HOROSCOPE paid-feature control. Calculations remain browser-local;
 // the backend only supplies Admin pricing, creates/verifies Razorpay orders and
 // records a per-customer/per-report entitlement.
@@ -3052,15 +3041,16 @@ app.get("/horoscope-feature-config",async(_req,res)=>{const c=await getHoroscope
 app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   const b=req.body||{},ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
-  if(!Number.isFinite(ap)||ap<1||!Number.isFinite(mp)||mp<1)return res.status(400).json({error:"Horoscope and Marriage Matching prices must be at least ₹1."});
+  if(!Number.isFinite(ap)||ap<0||!Number.isFinite(mp)||mp<0)return res.status(400).json({error:"Horoscope and Marriage Matching prices cannot be negative."});
   const data={advancedAnalysisEnabled:b.advancedAnalysisEnabled===true,advancedAnalysisPrice:ap,marriageMatchingEnabled:b.marriageMatchingEnabled===true,marriageMatchingPrice:mp,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
   await db.collection("smv_settings").doc("horoscopePayment").set(data,{merge:true});return res.json({success:true,settings:data});
 });
 app.post("/horoscope-payment/create-order",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
   const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey);if(!HOROSCOPE_FEATURES.has(feature)||!reportKey)return res.status(400).json({error:"Invalid Horoscope payment request."});
-  const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);if(!f.enabled)return res.json({success:true,free:true,entitled:true,feature});
-  if(!Number.isFinite(f.price)||f.price<1)return res.status(409).json({error:"Admin payment price is not configured."});
+  const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);if(!f.enabled)return res.status(403).json({error:"This feature is disabled by Admin."});
+  if(Number(f.price)===0)return res.json({success:true,free:true,entitled:true,feature});
+  if(!Number.isFinite(f.price)||f.price<0)return res.status(409).json({error:"Admin payment price is not configured."});
   const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();
   if(es.exists&&es.data()?.paymentStatus==="paid")return res.json({success:true,entitled:true,feature,reportKey});
   const amount=Math.round(f.price*100),order=await razorpay.orders.create({amount,currency:"INR",receipt:`SMV_H_${feature==='advanced_analysis'?'A':'M'}_${Date.now()}`,notes:{uid:user.uid,feature,reportKey}});
@@ -3079,5 +3069,16 @@ app.post("/horoscope-payment/verify",async(req,res)=>{
   await eref.set({paymentStatus:"paid",razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   return res.json({success:true,verified:true,entitled:true,feature,reportKey});
 });
+
+// Final 404 must remain AFTER every functional route, including Horoscope payment routes.
+app.use((req, res) => {
+  console.warn("Unhandled backend route:", req.method, req.originalUrl);
+  if (req.path.startsWith("/api/") || req.path.includes("withdrawal")) {
+    return res.status(404).json({ error: "Backend endpoint not found.", path: req.originalUrl });
+  }
+  return res.status(404).send("Not Found");
+});
+
+answerCredit.start();
 
 app.listen(PORT, "0.0.0.0", () => console.log(`SMV ASTRO Razorpay backend running on port ${PORT}`));
