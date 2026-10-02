@@ -111,6 +111,7 @@ function openPaymentProgress(feature){
  try{window.focus()}catch(_){}
  return {window:w,show:render,close(){try{if(!w.closed)w.close()}catch(_){}}};
 }
+function paymentSuccessMessage(){return ta()?'கட்டணம் வெற்றிகரமாக முடிந்தது.':'Payment completed successfully.';}
 function calculationMessage(feature){return feature==='marriage_matching'?(ta()?'முழு திருமணப் பொருத்த அறிக்கை கணக்கிடப்படுகிறது… தயவுசெய்து காத்திருக்கவும்…':'Calculating Full Marriage Matching Report... Please Wait...'):(ta()?'மேம்பட்ட பகுப்பாய்வு அறிக்கை கணக்கிடப்படுகிறது… தயவுசெய்து காத்திருக்கவும்…':'Calculating Advanced Analysis Report... Please Wait...');}
 async function buy(feature,button,onUnlocked){
  try{await ensureCustomerAuth();}catch(e){showAuthForm('login');throw e;}
@@ -128,7 +129,7 @@ async function buy(feature,button,onUnlocked){
   if(!progress)throw Error('Allow the temporary payment window and try again.');
   const RazorpayCtor=await ensureCheckoutIn(progress.window);
   const rz=new RazorpayCtor({key:o.keyId,amount:o.amount,currency:o.currency||'INR',name:'SMV ASTRO SERVICES',description:feature==='advanced_analysis'?'Advanced Horoscope Analysis':'Marriage Matching',order_id:o.orderId,prefill:{email:state.user?.email||''},notes:{feature},retry:{enabled:false},handler:async r=>{
-   try{button.textContent=ta()?'சரிபார்க்கப்படுகிறது…':'Verifying…';const v=await api('/horoscope-feature/verify-payment',{method:'POST',body:JSON.stringify({feature,birthIdentity,razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature})});if(!v.verified)throw Error('Payment verification is pending. Log in again to restore the paid access; do not pay again.');progress?.show(calculationMessage(feature));try{progress?.window?.focus()}catch(_){}await unlock(true);progress?.show(ta()?'அறிக்கை தயார்.':'Report ready.');setTimeout(()=>progress?.close(),1200);reset();}catch(e){fail(e);}
+   try{button.textContent=ta()?'சரிபார்க்கப்படுகிறது…':'Verifying…';const v=await api('/horoscope-feature/verify-payment',{method:'POST',body:JSON.stringify({feature,birthIdentity,razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature})});if(!v.verified)throw Error('Payment verification is pending. Log in again to restore the paid access; do not pay again.');progress?.show(paymentSuccessMessage());await new Promise(resolve=>setTimeout(resolve,450));progress?.show(calculationMessage(feature));try{progress?.window?.focus()}catch(_){}await unlock(true);progress?.show(ta()?'அறிக்கை தயார்.':'Report ready.');setTimeout(()=>progress?.close(),1200);reset();}catch(e){fail(e);}
   },modal:{ondismiss:()=>{progress?.close();reset();}}});rz.on('payment.failed',r=>fail(Error(r?.error?.description||'Payment failed.')));rz.open();
  }catch(e){fail(e);}
 }
@@ -295,7 +296,7 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  if(!state.user){hideForm();}
  else{try{const a=await api('/horoscope-feature/access?feature=marriage_matching&preinput=1');if(a?.unlocked){state.marriagePrepaid=true;showForm();return true;}}catch(_){}hideForm();}
  const card=payCard('marriage_matching',cfg.price,async()=>{},true);const b=card.querySelector('button');
- b.onclick=async()=>{try{if(typeof beforeBuy==='function')await beforeBuy();await buyMarriagePreinput(b,async()=>{mount.replaceChildren();showForm();if(typeof onUnlocked==='function')await onUnlocked();});}catch(e){alert(e.message||String(e));}};
+ b.onclick=async()=>{try{if(typeof beforeBuy==='function')await beforeBuy();await buy('marriage_matching',b,async()=>{mount.replaceChildren();showForm();if(typeof onUnlocked==='function')await onUnlocked();});}catch(e){alert(e.message||String(e));}};
  mount.appendChild(card);return false;
 };
 window.__smvDownloadPaidFeaturePdf=downloadPaidPdf;
