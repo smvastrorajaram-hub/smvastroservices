@@ -2718,9 +2718,12 @@ app.get('/horoscope-reports/:id',async(req,res)=>{const user=await requireUser(r
 app.post('/horoscope-reports',express.json({limit:'15mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
  const feature=horoscopeFeatureKey(req.body?.feature),{reportKey}=horoscopeReportContext(req,feature),report=req.body?.report;
  if(!report||report.owner!==user.uid||typeof report.html!=='string'||!['ta','en'].includes(report.language))return res.status(400).json({error:'Invalid report snapshot.'});
- const reportAccess=['basic','free-full','paid-full'].includes(report.reportAccess)?report.reportAccess:(report.paid===true?'paid-full':'basic');
- const paid=reportAccess!=='basic'&&report.paid===true;
- // Saved-report cloud storage is persistence only. It must never upgrade entitlement.
+ let reportAccess=['basic','free-full','paid-full'].includes(report.reportAccess)?report.reportAccess:'basic';
+ const cfg=(await getHoroscopeFeatureSettings())[feature];
+ if(reportAccess==='free-full'&&!(cfg?.enabled===true&&Number(cfg.price||0)<=0))return res.status(403).json({error:'Free full-report entitlement is not valid for this saved report.'});
+ if(reportAccess==='paid-full'&&!(await horoscopePaid(user.uid,feature,req.body?.birthIdentity)))return res.status(402).json({error:'Verified payment is required for this full saved report.'});
+ const paid=reportAccess!=='basic';
+ // Cloud storage preserves the entitlement snapshot but never upgrades it.
  const safe={...report,id:reportKey,feature,owner:user.uid,paid,reportAccess,birthIdentity:req.body.birthIdentity,savedAt:Date.now()},text=JSON.stringify(safe);
  if(Buffer.byteLength(text)>12000000)return res.status(413).json({error:'Report exceeds the saved report limit.'});
  const ref=savedReportsFor(user.uid).doc(reportKey),old=await ref.get(),revision=crypto.randomBytes(10).toString('hex'),chunks=[];
