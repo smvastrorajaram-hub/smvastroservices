@@ -131,7 +131,16 @@ async function buyMarriagePreinput(button,onUnlocked){
 }
 async function claimMarriagePayment(){const birthIdentity=reportContext('marriage_matching');const out=await api('/horoscope-feature/claim-marriage-payment',{method:'POST',body:JSON.stringify({birthIdentity})});if(out?.unlocked){state.marriagePrepaid=false;markPaid('marriage_matching');return true;}return false;}
 window.__smvClaimMarriagePayment=claimMarriagePayment;
-function payCard(feature,price,onUnlocked,singleLayer=false,beforeBuy=null){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');const note=feature==='advanced_analysis'?(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு இந்த அம்சங்களின் முழுமையான கணக்கீடுகள் மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete calculations and results for these features will be shown after successful payment.'):(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு முழுமையான திருமணப் பொருத்த கணக்கீடு மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete Marriage Matching calculations and results will be shown after successful payment.');box.innerHTML=`<h3>${esc(title)}</h3><p class="small"><b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button><p class="small">${esc(note)}</p>`;const b=box.querySelector('button');b.onclick=async()=>{try{if(typeof beforeBuy==='function')await beforeBuy();await buy(feature,b,async()=>{await onUnlocked();box.remove()});}catch(e){alert(e.message||String(e));}};return box}
+function validateAdvancedBirthDetails(){
+ const en=document.getElementById('english-horoscope');
+ const tamil=document.getElementById('tamil-horoscope');
+ const useTa=ta()&&!tamil?.hidden;
+ const ids=useTa?['tamilDob','tamilTob','tamilLat','tamilLon']:['englishDob','englishTob','englishLat','englishLon'];
+ const vals=ids.map(id=>String(document.getElementById(id)?.value??'').trim());
+ if(vals.some(v=>!v))throw Error(ta()?'கட்டணத்திற்கு முன் முழு பிறப்பு விவரங்களை உள்ளிடவும்.':'Please enter complete birth details before payment.');
+ return true;
+}
+function payCard(feature,price,onUnlocked,singleLayer=false,beforeBuy=null){const box=document.createElement('div');box.className=(singleLayer?'smv-horoscope-pay-gate smv-horoscope-pay-gate-single':'card smv-horoscope-pay-gate');box.dataset.feature=feature;const title=feature==='advanced_analysis'?(ta()?'மேம்பட்ட ஜாதக ஆய்வு':'Advanced Horoscope Analysis'):(ta()?'முழு ஜாதக திருமணப் பொருத்தம்':'Full Horoscope Marriage Matching');const note=feature==='advanced_analysis'?(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு இந்த அம்சங்களின் முழுமையான கணக்கீடுகள் மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete calculations and results for these features will be shown after successful payment.'):(ta()?'கட்டணம் வெற்றிகரமாக செலுத்திய பிறகு முழுமையான திருமணப் பொருத்த கணக்கீடு மற்றும் பலன்கள் காண்பிக்கப்படும்.':'Complete Marriage Matching calculations and results will be shown after successful payment.');box.innerHTML=`<h3>${esc(title)}</h3><p class="small"><b>${money(price)}</b></p><button class="btn" type="button">${ta()?money(price)+' செலுத்தி திறக்க':'Pay '+money(price)+' & Unlock'}</button><p class="small">${esc(note)}</p>`;const b=box.querySelector('button');b.onclick=async()=>{try{if(feature==='advanced_analysis')validateAdvancedBirthDetails();if(typeof beforeBuy==='function')await beforeBuy();await buy(feature,b,async()=>{await onUnlocked();box.remove()});}catch(e){alert(e.message||String(e));}};return box}
 async function access(feature,cfg){
  if(!cfg.enabled)return {enabled:false,unlocked:false};
  // V133: Admin ON + Rs.0 is public/free. Do not force Login or a payment gate.
@@ -241,7 +250,7 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  const cfg=(await config()).marriage_matching;mount.replaceChildren();
  const nakshatraGate=document.getElementById('mmNakshatraGate');
  const showForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:cfg.enabled&&cfg.price>0}}));
- const hideForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:false,paymentRequired:true}}));
+ const hideForm=()=>window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,paymentRequired:true}}));
  // V127: public users always get only the lightweight Nakshatra Porutham entry/result.
  // Admin OFF hides the complete Matching/Porutham section for every auth state.
  const sec=document.getElementById('smvMarriageMatching');
@@ -264,7 +273,7 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  if(!state.user){hideForm();}
  else{try{const a=await api('/horoscope-feature/access?feature=marriage_matching&preinput=1');if(a?.unlocked){state.marriagePrepaid=true;showForm();return true;}}catch(_){}hideForm();}
  const card=payCard('marriage_matching',cfg.price,async()=>{},true);const b=card.querySelector('button');
- b.onclick=async()=>{try{await buyMarriagePreinput(b,async()=>{mount.replaceChildren();showForm();if(typeof onUnlocked==='function')await onUnlocked();});}catch(e){alert(e.message||String(e));}};
+ b.onclick=async()=>{try{if(typeof beforeBuy==='function')await beforeBuy();await buyMarriagePreinput(b,async()=>{mount.replaceChildren();showForm();if(typeof onUnlocked==='function')await onUnlocked();});}catch(e){alert(e.message||String(e));}};
  mount.appendChild(card);return false;
 };
 window.__smvDownloadPaidFeaturePdf=downloadPaidPdf;
