@@ -1,4 +1,4 @@
-const CACHE='smv-v1-pdf-direct-one-icon'+self.registration.scope+self.registration.scope;
+const CACHE='smv-v1-payment-root-20261002'+self.registration.scope;
 const FILES=[
 "./","./index.html","./config.js","./boot.mjs","./horoscope.js","./horoscope-payment.mjs","./horoscope-saved.js","./report-identity.js","./report-print.css","./report-print.html","./report-print.js","./horoscope-predictions.js","./horoscope-translations.js","./horoscope-language.js","./horoscope-form.js","./horoscope-details.js","./horoscope.css","./marriage-matching.js","./marriage-matching.css","./pwa.js","./manifest-en.webmanifest","./manifest-ta.webmanifest",
 "./assets/hero-desktop.png","./assets/hero-mobile.png","./assets/icon-192.png","./assets/icon-512.png","./assets/smv-brand-logo-v17.png","./assets/smvlogo.png","./assets/vinayagar-report.png","./assets/temple-frame.png",
@@ -18,7 +18,7 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
  }
  await self.skipWaiting();
 })()));
-self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('smv-offline-')&&k.endsWith(self.registration.scope)&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('smv-')&&k.endsWith(self.registration.scope)&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
 
 function normaliseAssetResponse(pathOrUrl,response){
  const u=new URL(pathOrUrl,self.registration.scope);
