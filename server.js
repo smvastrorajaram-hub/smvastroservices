@@ -1923,19 +1923,20 @@ app.get("/admin/settings-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const [commissionSnap,questionSnap,workflowSnap,privateCommissionSnap,privateWorkflowSnap,autoApprovalSnap]=await Promise.all([
+    const [commissionSnap,questionSnap,workflowSnap,privateCommissionSnap,privateWorkflowSnap,autoApprovalSnap,horoscopePaymentSnap]=await Promise.all([
       db.collection("smv_settings").doc("commission").get(),
       db.collection("smv_settings").doc("question").get(),
       db.collection("smv_settings").doc("workflow").get(),
       db.collection("smv_settings").doc("privateCommission").get(),
       db.collection("smv_settings").doc("privateConsultationWorkflow").get(),
-      db.collection("smv_settings").doc("astrologerAutoApproval").get()
+      db.collection("smv_settings").doc("astrologerAutoApproval").get(),
+      db.collection("smv_settings").doc("horoscopePayment").get()
     ]);
     const val=snap=>snap.exists?snap.data():null;
     return res.json({success:true,settings:{
       commission:val(commissionSnap),question:val(questionSnap),workflow:val(workflowSnap),
       privateCommission:val(privateCommissionSnap),privateConsultationWorkflow:val(privateWorkflowSnap),
-      astrologerAutoApproval:val(autoApprovalSnap)
+      astrologerAutoApproval:val(autoApprovalSnap),horoscopePayment:val(horoscopePaymentSnap)
     }});
   }catch(e){
     console.error("Admin settings targeted load failed:",e);
@@ -2017,7 +2018,7 @@ app.get("/admin-data", async (req, res) => {
   try {
     // Read each collection independently. One damaged/missing collection must
     // never prevent the Admin Dashboard itself from opening.
-    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, offers, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval] = await Promise.all([
+    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, offers, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCollection("smv_users"),
       readCollection("smv_astrologers"),
       readCollection("smv_questions"),
@@ -2030,13 +2031,14 @@ app.get("/admin-data", async (req, res) => {
       getPrivateCommissionSettings(),
       db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),
       db.collection("smv_settings").doc("privateConsultationWorkflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false,minimumAnswerWords:20}).catch(()=>({allowWithoutAdminApproval:false,minimumAnswerWords:20})),
-      getAstrologerAutoApprovalSettings(true)
+      getAstrologerAutoApprovalSettings(true),
+      getHoroscopePaymentSettings()
     ]);
 
     const customers = users.items.filter(x => String(x.role || "").toLowerCase() === "customer");
     return res.json({
       success: true,
-      settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval},
+      settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment},
       customers,
       users: users.items,
       astrologers: astrologers.items,
@@ -3027,4 +3029,55 @@ app.use((req, res) => {
 });
 
 answerCredit.start();
+
+
+// V131 — SMV HOROSCOPE paid-feature control. Calculations remain browser-local;
+// the backend only supplies Admin pricing, creates/verifies Razorpay orders and
+// records a per-customer/per-report entitlement.
+const HOROSCOPE_FEATURES=new Set(["advanced_analysis","marriage_matching"]);
+function horoscopeFeatureDefaults(){return {advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};}
+async function getHoroscopePaymentSettings(){
+  try{const snap=await db.collection("smv_settings").doc("horoscopePayment").get();return {...horoscopeFeatureDefaults(),...(snap.exists?snap.data():{})};}
+  catch(_){return horoscopeFeatureDefaults();}
+}
+function horoscopeFeaturePrice(cfg,feature){return feature==="advanced_analysis"?{enabled:cfg.advancedAnalysisEnabled===true,price:Number(cfg.advancedAnalysisPrice||0)}:{enabled:cfg.marriageMatchingEnabled===true,price:Number(cfg.marriageMatchingPrice||0)};}
+function cleanReportKey(v){const s=String(v||"").trim();return /^[a-f0-9]{64}$/i.test(s)?s:"";}
+function horoscopeEntitlementId(uid,feature,reportKey){return crypto.createHash("sha256").update(`${uid}|${feature}|${reportKey}`).digest("hex");}
+async function requireCustomerOnly(user,res){
+  const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();
+  if(role!=="customer"){res.status(403).json({error:"Customer login is required for Horoscope payment."});return false;}return true;
+}
+app.get("/horoscope-auth/session",async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();return res.json({success:true,role});});
+app.get("/horoscope-feature-config",async(_req,res)=>{const c=await getHoroscopePaymentSettings();return res.json({success:true,advanced_analysis:horoscopeFeaturePrice(c,"advanced_analysis"),marriage_matching:horoscopeFeaturePrice(c,"marriage_matching")});});
+app.post("/admin/horoscope-feature-settings",async(req,res)=>{
+  const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
+  const b=req.body||{},ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
+  if(!Number.isFinite(ap)||ap<1||!Number.isFinite(mp)||mp<1)return res.status(400).json({error:"Horoscope and Marriage Matching prices must be at least ₹1."});
+  const data={advancedAnalysisEnabled:b.advancedAnalysisEnabled===true,advancedAnalysisPrice:ap,marriageMatchingEnabled:b.marriageMatchingEnabled===true,marriageMatchingPrice:mp,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
+  await db.collection("smv_settings").doc("horoscopePayment").set(data,{merge:true});return res.json({success:true,settings:data});
+});
+app.post("/horoscope-payment/create-order",async(req,res)=>{
+  const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
+  const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey);if(!HOROSCOPE_FEATURES.has(feature)||!reportKey)return res.status(400).json({error:"Invalid Horoscope payment request."});
+  const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);if(!f.enabled)return res.json({success:true,free:true,entitled:true,feature});
+  if(!Number.isFinite(f.price)||f.price<1)return res.status(409).json({error:"Admin payment price is not configured."});
+  const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();
+  if(es.exists&&es.data()?.paymentStatus==="paid")return res.json({success:true,entitled:true,feature,reportKey});
+  const amount=Math.round(f.price*100),order=await razorpay.orders.create({amount,currency:"INR",receipt:`SMV_H_${feature==='advanced_analysis'?'A':'M'}_${Date.now()}`,notes:{uid:user.uid,feature,reportKey}});
+  await eref.set({uid:user.uid,feature,reportKey,price:f.price,amount,currency:"INR",razorpayOrderId:order.id,paymentStatus:"created",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  return res.json({success:true,entitled:false,feature,reportKey,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,price:f.price});
+});
+app.post("/horoscope-payment/verify",async(req,res)=>{
+  const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
+  const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey),orderId=String(req.body?.razorpay_order_id||""),paymentId=String(req.body?.razorpay_payment_id||""),signature=String(req.body?.razorpay_signature||"");
+  if(!HOROSCOPE_FEATURES.has(feature)||!reportKey||!orderId||!paymentId||!signature)return res.status(400).json({error:"Incomplete payment verification data."});
+  const expected=crypto.createHmac("sha256",RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");if(!signatureEqual(expected,signature))return res.status(400).json({error:"Razorpay signature verification failed."});
+  const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();if(!es.exists)return res.status(404).json({error:"Payment order record was not found."});const stored=es.data()||{};
+  if(stored.razorpayOrderId!==orderId)return res.status(409).json({error:"Razorpay order mismatch."});
+  const payment=await razorpay.payments.fetch(paymentId);if(String(payment.order_id||"")!==orderId||Number(payment.amount)!==Number(stored.amount)||String(payment.currency||"")!==String(stored.currency||"INR"))return res.status(409).json({error:"Razorpay payment details do not match this report."});
+  if(!["captured","authorized"].includes(String(payment.status||"")))return res.status(409).json({error:"Razorpay payment is not successful yet."});
+  await eref.set({paymentStatus:"paid",razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  return res.json({success:true,verified:true,entitled:true,feature,reportKey});
+});
+
 app.listen(PORT, "0.0.0.0", () => console.log(`SMV ASTRO Razorpay backend running on port ${PORT}`));
