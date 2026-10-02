@@ -1,4 +1,4 @@
-const CACHE='smv-v1-marriage-paid-auto-result-fix-20261002'+self.registration.scope;
+const CACHE='smv-v1-full-e2e-audit-fix-20261002-1'+self.registration.scope;
 const FILES=[
 "./","./index.html","./config.js","./boot.mjs","./horoscope.js","./horoscope-payment.mjs","./horoscope-saved.js","./report-identity.js","./report-print.css","./report-print.html","./report-print.js","./horoscope-predictions.js","./horoscope-translations.js","./horoscope-language.js","./horoscope-form.js","./horoscope-details.js","./horoscope.css","./marriage-matching.js","./marriage-matching.css","./pwa.js","./manifest-en.webmanifest","./manifest-ta.webmanifest",
 "./assets/hero-desktop.png","./assets/hero-mobile.png","./assets/icon-192.png","./assets/icon-512.png","./assets/smv-brand-logo-v17.png","./assets/smvlogo.png","./assets/vinayagar-report.png","./assets/temple-frame.png",

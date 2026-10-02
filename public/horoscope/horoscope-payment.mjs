@@ -112,6 +112,7 @@ function openPaymentProgress(feature){
  return {window:w,show:render,close(){try{if(!w.closed)w.close()}catch(_){}}};
 }
 function paymentSuccessMessage(){return ta()?'கட்டணம் வெற்றிகரமாக முடிந்தது.':'Payment completed successfully.';}
+function paymentFailedMessage(){return ta()?'கட்டணம் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.':'Payment failed. Please try again.';}
 function calculationMessage(feature){return feature==='marriage_matching'?(ta()?'முழு திருமணப் பொருத்த அறிக்கை கணக்கிடப்படுகிறது… தயவுசெய்து காத்திருக்கவும்…':'Calculating Full Marriage Matching Report... Please Wait...'):(ta()?'மேம்பட்ட பகுப்பாய்வு அறிக்கை கணக்கிடப்படுகிறது… தயவுசெய்து காத்திருக்கவும்…':'Calculating Advanced Analysis Report... Please Wait...');}
 async function buy(feature,button,onUnlocked){
  try{await ensureCustomerAuth();}catch(e){showAuthForm('login');throw e;}
@@ -130,7 +131,7 @@ async function buy(feature,button,onUnlocked){
   const RazorpayCtor=await ensureCheckoutIn(progress.window);
   const rz=new RazorpayCtor({key:o.keyId,amount:o.amount,currency:o.currency||'INR',name:'SMV ASTRO SERVICES',description:feature==='advanced_analysis'?'Advanced Horoscope Analysis':'Marriage Matching',order_id:o.orderId,prefill:{email:state.user?.email||''},notes:{feature},retry:{enabled:false},handler:async r=>{
    try{button.textContent=ta()?'சரிபார்க்கப்படுகிறது…':'Verifying…';const v=await api('/horoscope-feature/verify-payment',{method:'POST',body:JSON.stringify({feature,birthIdentity,razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature})});if(!v.verified)throw Error('Payment verification is pending. Log in again to restore the paid access; do not pay again.');progress?.show(paymentSuccessMessage());await new Promise(resolve=>setTimeout(resolve,450));progress?.show(calculationMessage(feature));try{progress?.window?.focus()}catch(_){}await unlock(true);progress?.show(ta()?'அறிக்கை தயார்.':'Report ready.');setTimeout(()=>progress?.close(),1200);reset();}catch(e){fail(e);}
-  },modal:{ondismiss:()=>{progress?.close();reset();}}});rz.on('payment.failed',r=>fail(Error(r?.error?.description||'Payment failed.')));rz.open();
+  },modal:{ondismiss:()=>{progress?.close();reset();}}});rz.on('payment.failed',r=>fail(Error(r?.error?.description||paymentFailedMessage())));rz.open();
  }catch(e){fail(e);}
 }
 async function buyMarriagePreinput(button,onUnlocked){
@@ -147,7 +148,7 @@ async function buyMarriagePreinput(button,onUnlocked){
   const RazorpayCtor=await ensureCheckoutIn(progress.window);
   const rz=new RazorpayCtor({key:o.keyId,amount:o.amount,currency:o.currency||'INR',name:'SMV ASTRO SERVICES',description:'Marriage Matching',order_id:o.orderId,prefill:{email:state.user?.email||''},notes:{feature:'marriage_matching'},retry:{enabled:false},handler:async r=>{
    try{button.textContent=ta()?'சரிபார்க்கப்படுகிறது…':'Verifying…';const v=await api('/horoscope-feature/verify-payment',{method:'POST',body:JSON.stringify({feature:'marriage_matching',preinput:true,razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature})});if(!v.verified)throw Error('Payment verification is pending. Do not pay again.');state.marriagePrepaid=true;progress?.show(calculationMessage('marriage_matching'));try{progress?.window?.focus()}catch(_){}await onUnlocked?.();progress?.show(ta()?'அறிக்கை தயார்.':'Report ready.');setTimeout(()=>progress?.close(),1200);reset();}catch(e){progress?.close();button.disabled=false;button.textContent=ta()?'செலுத்தி திறக்க':'Pay & Unlock';alert(e.message||e);}
-  },modal:{ondismiss:()=>{progress?.close();reset();}}});rz.on('payment.failed',r=>{progress?.close();reset();alert(r?.error?.description||'Payment failed.')});rz.open();
+  },modal:{ondismiss:()=>{progress?.close();reset();}}});rz.on('payment.failed',r=>{progress?.close();reset();alert(r?.error?.description||paymentFailedMessage())});rz.open();
  }catch(e){return fail(e)}
 }
 async function claimMarriagePayment(){const birthIdentity=reportContext('marriage_matching');const out=await api('/horoscope-feature/claim-marriage-payment',{method:'POST',body:JSON.stringify({birthIdentity})});if(out?.unlocked){state.marriagePrepaid=false;markPaid('marriage_matching');return true;}return false;}
