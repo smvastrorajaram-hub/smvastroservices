@@ -28,7 +28,7 @@ async function refreshLocalUser(u,verifyRole=true){
 }
 function renderAuthStatus(message=''){
  const host=document.getElementById('smvHoroscopeAuth');if(!host)return;
- const status=host.querySelector('[data-auth-status]');if(status){status.textContent=state.user?'':(message||(ta()?'முழு ஜோதிட அறிக்கைகளுக்கு இங்கே உள் நுழையவும்.':'Log in here for full astrology reports.'));status.hidden=!!state.user;}
+ const status=host.querySelector('[data-auth-status]');if(status){status.textContent=message||'';status.hidden=!message;}
  if(state.user){host.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());document.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());}
  host.classList.toggle('is-logged-in',!!state.user);
 }
@@ -215,7 +215,7 @@ async function requireFeature(feature,mount,onFeatureUnlocked){
  const requestedKey=reportCacheKey(feature),a=await access(feature,cfg);if(epoch!==state.epoch||requestedKey!==reportCacheKey(feature))return false;
  if(a.enabled===false){if(mount)mount.replaceChildren();return false;}
  if(a.enabled===true&&a.unlocked===true)return true;
- if(a.loginRequired){if(mount){mount.replaceChildren();const note=document.createElement('p');note.className='small smv-login-required-note';note.textContent=ta()?'முழு ஜோதிட அறிக்கைகளுக்கு இங்கே உள் நுழையவும்.':'Log in here for full astrology reports.';mount.appendChild(note);}return false;}
+ if(a.loginRequired){if(mount){mount.innerHTML=feature==='advanced_analysis'?advancedPreviewHtml():'';const card=payCard(feature,a.price??cfg.price,async()=>{if(typeof onFeatureUnlocked==='function')await onFeatureUnlocked();});mount.appendChild(card);}return false;}
  if(a.legacyNeedsLink){if(mount){mount.replaceChildren();const note=document.createElement('p');note.textContent=ta()?'முந்தைய கட்டணத்திற்கு அசல் பிறந்த விவரங்களை நிர்வாகி இணைக்க வேண்டும். மீண்டும் கட்டணம் செலுத்த வேண்டாம்.':a.error;mount.append(note);}return false;}
  if(!mount)return false;
  mount.innerHTML=feature==='advanced_analysis'?advancedPreviewHtml():'';
@@ -259,7 +259,8 @@ window.__smvMountMarriagePaymentCard=async(mount,beforeBuy,onUnlocked)=>{
  if(nakshatraGate)nakshatraGate.hidden=false;
  if(!state.user){
    mount.replaceChildren();
-   window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,publicPoruthamOnly:true,featureHidden:false,paymentRequired:false}}));
+   window.dispatchEvent(new CustomEvent('smv:marriage-gate-state',{detail:{showForm:true,publicPoruthamOnly:true,featureHidden:false,paymentRequired:cfg.price>0}}));
+   if(cfg.price>0){const card=payCard('marriage_matching',cfg.price,async()=>{},true);const b=card.querySelector('button');b.onclick=()=>showAuthForm('login');mount.appendChild(card);}
    return false;
  }
  if(!cfg.enabled){
