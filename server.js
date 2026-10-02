@@ -573,10 +573,8 @@ app.get("/public/registration-config", (req,res)=>res.set("Cache-Control","no-st
 app.get('/api/smv-mode', (req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:'https://smvastroservices.onrender.com'}));
 
 app.get("/", (req, res) => res.status(200).json({
-  service: "SMV ASTRO SERVICES",
-  version: "V1",
-  buildDate: "2026-10-02",
-  commit: "V1",
+  service: "SMV ASTRO Razorpay Backend",
+  version: "20260913-refund-v5-email-mobile-unique-v6",
   status: "online",
   razorpay: "enabled",
   firebase: "enabled"
@@ -1466,7 +1464,7 @@ app.post('/astrologer/claim-question', express.json({limit:'10kb'}), async(req,r
 });
 
 const refundService=()=>createRefundService({db,razorpay,FieldValue,keyId:RAZORPAY_KEY_ID,keySecret:RAZORPAY_KEY_SECRET});
-app.get('/api-version', (req,res)=>res.set('Cache-Control','no-store').json({version:'V1',buildDate:'2026-10-02',commit:'V1',features:['refund-retry','original-price-payment-retry','email-verification-only','one-phone-one-account','whatsapp-otp-switch-ready']}));
+app.get('/api-version', (req,res)=>res.set('Cache-Control','no-store').json({version:'20260913-refund-v5-email-mobile-unique-v6',features:['refund-retry','original-price-payment-retry','email-verification-only','one-phone-one-account','whatsapp-otp-switch-ready']}));
 
 for(const [path,retry] of [['/admin/reject-question',false],['/admin/retry-refund',true]]){
  app.post(path,express.json({limit:'10kb'}),async(req,res)=>{
@@ -2720,14 +2718,19 @@ app.get('/horoscope-reports/:id',async(req,res)=>{const user=await requireUser(r
 app.post('/horoscope-reports',express.json({limit:'15mb'}),async(req,res)=>{const user=await requireUser(req,res);if(!user)return;try{
  const feature=horoscopeFeatureKey(req.body?.feature),{reportKey}=horoscopeReportContext(req,feature),report=req.body?.report;
  if(!report||report.owner!==user.uid||typeof report.html!=='string'||!['ta','en'].includes(report.language))return res.status(400).json({error:'Invalid report snapshot.'});
- const verified=true; // V111 free feature: no purchase lookup / payment gate.
- const safe={...report,id:reportKey,feature,owner:user.uid,paid:verified,birthIdentity:req.body.birthIdentity,savedAt:Date.now()},text=JSON.stringify(safe);
+ const cfg=(await getHoroscopeFeatureSettings())[feature],reportAccess=String(report.reportAccess||'');
+ let verified=false;
+ if(reportAccess==='basic')verified=true;
+ else if(reportAccess==='free-full')verified=!!cfg?.enabled&&Number(cfg.price||0)<=0;
+ else if(reportAccess==='paid-full')verified=!!cfg?.enabled&&Number(cfg.price||0)>0&&await horoscopePaid(user.uid,feature,req.body.birthIdentity);
+ if(!verified)return res.status(403).json({error:'This saved report is not authorized for the selected access level.'});
+ const safe={...report,id:reportKey,feature,owner:user.uid,paid:reportAccess!=='basic',reportAccess,birthIdentity:req.body.birthIdentity,savedAt:Date.now()},text=JSON.stringify(safe);
  if(Buffer.byteLength(text)>12000000)return res.status(413).json({error:'Report exceeds the saved report limit.'});
  const ref=savedReportsFor(user.uid).doc(reportKey),old=await ref.get(),revision=crypto.randomBytes(10).toString('hex'),chunks=[];
  // Bound UTF-8 byte size even for Tamil and supplementary characters.
  for(let i=0;i<text.length;i+=150000)chunks.push(text.slice(i,i+150000));
  const batch=db.batch();chunks.forEach((text,i)=>batch.set(ref.collection('chunks').doc(revision+'_'+i),{text}));
- batch.set(ref,{name:String(report.name||'Report').slice(0,160),feature,language:report.language,savedAt:safe.savedAt,revision,chunks:chunks.length,paid:verified});await batch.commit();
+ batch.set(ref,{name:String(report.name||'Report').slice(0,160),feature,language:report.language,savedAt:safe.savedAt,revision,chunks:chunks.length,paid:safe.paid,reportAccess});await batch.commit();
  if(old.exists){const previous=old.data();const cleanup=db.batch();for(let i=0;i<previous.chunks;i++)cleanup.delete(ref.collection('chunks').doc(previous.revision+'_'+i));await cleanup.commit();}
  return res.json({success:true,id:reportKey,savedAt:safe.savedAt,revision,paid:verified});
  }catch(e){console.error('Saved horoscope',e);return res.status(503).json({error:'Cloud save did not complete. Keep the local copy and retry sync.'});}});
