@@ -1748,6 +1748,34 @@ function markViewedRoute(kind,idKey){return async(req,res)=>{
 app.post('/customer/mark-answer-viewed',express.json({limit:'10kb'}),markViewedRoute('public','questionId'));
 
 
+// CUSTOMER DASHBOARD READ ROUTES
+// Authenticated, UID-scoped and bounded. These routes are the canonical source
+// used by public/smvastro.mjs and avoid direct browser reads for dashboard data.
+app.get('/customer/consultations',async(req,res)=>{
+ const user=await requireUser(req,res);if(!user)return;
+ try{
+  const snap=await db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get();
+  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions:snap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}))});
+ }catch(e){
+  console.error('Customer consultations load failed:',e);
+  return res.status(500).json({success:false,error:e?.message||'Unable to load customer consultations.',code:e?.code||null});
+ }
+});
+
+app.get('/customer/private-consultations',async(req,res)=>{
+ const user=await requireUser(req,res);if(!user)return;
+ try{
+  const snap=await db.collection('smv_private_consultations').where('customerId','==',user.uid).limit(100).get();
+  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations:snap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}))});
+ }catch(e){
+  console.error('Customer private consultations load failed:',e);
+  return res.status(500).json({success:false,error:e?.message||'Unable to load private consultations.',code:e?.code||null});
+ }
+});
+
+app.post('/customer/private-consultation/mark-viewed',express.json({limit:'10kb'}),markViewedRoute('private','consultationId'));
+
+
 async function getAstrologerAutoApprovalSettings(includeSecret=false){
   try{
     const s=await db.collection("smv_settings").doc("astrologerAutoApproval").get(),d=s.exists?s.data()||{}:{};
@@ -2664,9 +2692,352 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
 });
 
 
+// PUBLIC QUESTION PAYMENT ROUTES — restored for frontend/backend parity
+app.post("/create-order", express.json(), async (req, res) => {
+  const razorpayMode = RAZORPAY_KEY_ID.startsWith('rzp_test_') ? 'test' : (RAZORPAY_KEY_ID.startsWith('rzp_live_') ? 'live' : 'invalid');
+  if(razorpayMode === 'invalid'){
+    return res.status(503).json({error:'Razorpay is not configured with a valid Test or Live key.',code:'RAZORPAY_KEY_INVALID',mode:'invalid'});
+  }
+
+  const user = await requireUser(req, res);
+  if (!user) return;
+  try {
+    let questionId = String(req.body?.questionId || "").trim();
+    let qRef;
+    let q;
+    let createdNow = false;
+    if (!questionId) questionId = await nextQuestionId();
+
+    // Create/read the question on the trusted server. The browser no longer calls
+    // Firestore to create the question document, which eliminates the empty
+    // documentPath error seen before Razorpay opened.
+    if (questionId) {
+      if (questionId.includes("/") || questionId === "." || questionId === "..") {
+        return res.status(400).json({ error: "A valid questionId is required." });
+      }
+      qRef = db.collection("smv_questions").doc(questionId);
+      const qSnap = await qRef.get();
+      if (!qSnap.exists) {
+        createdNow = true;
+        const settingSnap = await db.collection("smv_settings").doc("question").get();
+        const configuredPrice = Number(settingSnap.data()?.price || 5);
+        const birth = req.body?.birthDetails || {};
+        const customerName = String(req.body?.customerName || birth.name || "").trim();
+        const questionText = String(req.body?.question || "").trim();
+        if (!customerName || !questionText || !birth.birthDate || !birth.birthTime || !String(birth.birthPlace || "").trim()) {
+          return res.status(400).json({ error: "Complete customer birth details and question are required." });
+        }
+        q = {
+          customerId: user.uid, questionId, customerName, birthName: customerName, question: questionText,
+          amount: configuredPrice, status: "awaiting_payment", paymentStatus: "pending",
+          allocationStatus: "awaiting_admin",
+          birthDetails: {
+            name: customerName, birthDate: String(birth.birthDate), birthTime: String(birth.birthTime),
+            birthPlace: String(birth.birthPlace).trim(), birthGender: String(birth.birthGender || ""),
+            timezone: "Asia/Kolkata", utcOffsetMinutes: 330
+          },
+          birthDate: String(birth.birthDate), birthTime: String(birth.birthTime),
+          birthPlace: String(birth.birthPlace).trim(), birthGender: String(birth.birthGender || ""),
+          birthTimezone: "Asia/Kolkata", birthUtcOffsetMinutes: 330,
+          createdAt: FieldValue.serverTimestamp()
+        };
+        await qRef.set(q);
+      } else {
+        q = qSnap.data();
+        if (q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
+        if (String(q.questionId || "") !== questionId) {
+          await qRef.set({ questionId }, { merge: true });
+          q = { ...q, questionId };
+        }
+        // Preserve India wall-clock birth time. Never reinterpret a user-entered
+        // HH:mm value as UTC and shift it by 5:30 hours.
+        if (!q.birthTimezone || !q.birthUtcOffsetMinutes || !q.birthDetails?.timezone) {
+          await qRef.set({
+            birthTimezone: q.birthTimezone || "Asia/Kolkata",
+            birthUtcOffsetMinutes: Number(q.birthUtcOffsetMinutes ?? 330),
+            birthDetails: {
+              ...(q.birthDetails || {}),
+              timezone: q.birthDetails?.timezone || "Asia/Kolkata",
+              utcOffsetMinutes: Number(q.birthDetails?.utcOffsetMinutes ?? 330)
+            }
+          }, { merge: true });
+          q = {
+            ...q,
+            birthTimezone: q.birthTimezone || "Asia/Kolkata",
+            birthUtcOffsetMinutes: Number(q.birthUtcOffsetMinutes ?? 330),
+            birthDetails: {
+              ...(q.birthDetails || {}),
+              timezone: q.birthDetails?.timezone || "Asia/Kolkata",
+              utcOffsetMinutes: Number(q.birthDetails?.utcOffsetMinutes ?? 330)
+            }
+          };
+        }
+      }
+    } else {
+      qRef = db.collection("smv_questions").doc();
+      questionId = qRef.id;
+      if (!questionId) return res.status(500).json({ error: "Unable to create a valid question ID." });
+
+      const settingSnap = await db.collection("smv_settings").doc("question").get();
+      const configuredPrice = Number(settingSnap.data()?.price || 5);
+      if (!Number.isFinite(configuredPrice) || configuredPrice < 1) {
+        return res.status(409).json({ error: "Question price is not configured correctly by Admin." });
+      }
+
+      const birth = req.body?.birthDetails || {};
+      const customerName = String(req.body?.customerName || birth.name || "").trim();
+      const questionText = String(req.body?.question || "").trim();
+      if (!customerName || !questionText || !birth.birthDate || !birth.birthTime || !String(birth.birthPlace || "").trim()) {
+        return res.status(400).json({ error: "Complete customer birth details and question are required." });
+      }
+
+      q = {
+        customerId: user.uid,
+        questionId,
+        customerName,
+        birthName: customerName,
+        question: questionText,
+        amount: configuredPrice,
+        status: "awaiting_payment",
+        paymentStatus: "pending",
+        allocationStatus: "awaiting_admin",
+        birthDetails: {
+          name: customerName,
+          birthDate: String(birth.birthDate),
+          birthTime: String(birth.birthTime),
+          birthPlace: String(birth.birthPlace).trim(),
+          birthGender: String(birth.birthGender || "")
+        },
+        birthDate: String(birth.birthDate),
+        birthTime: String(birth.birthTime),
+        birthPlace: String(birth.birthPlace).trim(),
+        birthGender: String(birth.birthGender || ""),
+        birthTimezone: "Asia/Kolkata",
+        birthUtcOffsetMinutes: 330,
+        createdAt: FieldValue.serverTimestamp()
+      };
+      await qRef.set(q);
+      createdNow = true;
+    }
+
+    if (!q || q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
+    // Apply offers only when this question is first created. Retry payments always keep
+    // the amount already locked on the saved question.
+    if(createdNow){
+      const quote=await resolveOfferForCustomer({uid:user.uid,service:"public_question",originalAmount:Number(q.amount||0),promoCode:req.body?.promoCode});
+      q={...q,amount:quote.finalAmount,originalAmount:quote.originalAmount,offerId:quote.offerId,offerName:quote.offerName,offerPromoCode:quote.promoCode||"",offerDiscountAmount:quote.discountAmount,offerBannerText:quote.bannerText||"",offerDisplayMode:quote.displayMode||"hidden"};
+      await qRef.set({amount:q.amount,originalAmount:q.originalAmount,offerId:q.offerId||null,offerName:q.offerName||null,offerPromoCode:q.offerPromoCode||"",offerDiscountAmount:q.offerDiscountAmount||0,offerBannerText:q.offerBannerText||"",offerDisplayMode:q.offerDisplayMode||"hidden",offerLockedAt:FieldValue.serverTimestamp()},{merge:true});
+    }
+    console.log("[create-order] questionId=", questionId, "customer=", user.uid);
+
+    if (!["awaiting_payment", "payment_failed"].includes(q.status)) {
+      if (q.paymentStatus === "paid" && q.razorpayOrderId) {
+        return res.status(200).json({
+          success: true, alreadyPaid: true, questionId,
+          orderId: q.razorpayOrderId, keyId: RAZORPAY_KEY_ID,
+          amount: Math.round(Number(q.amount || 0) * 100), currency: "INR"
+        });
+      }
+      return res.status(409).json({ error: "This question is not available for payment." });
+    }
+
+    // IMPORTANT: For an existing unpaid/failed question, always retry at the
+    // amount already locked on that question. Admin may have changed the
+    // current public question price after this question was created; that
+    // must NOT invalidate the customer's original question or force a new one.
+    // For a brand-new question, its amount was already created from the
+    // current Admin-configured price above.
+    const amount = Number(q.amount || 0);
+    if (!Number.isFinite(amount) || amount < 1) {
+      return res.status(409).json({ error: "The original question price is unavailable. Please contact Admin." });
+    }
+
+    if (q.razorpayOrderId && ["order_created", "verification_failed", "failed"].includes(q.paymentStatus)) {
+      try {
+        const existing = await razorpay.orders.fetch(q.razorpayOrderId);
+        if (existing.status === "paid") return res.status(409).json({ error: "This payment has already been completed. Please refresh your dashboard." });
+        if (Number(existing.amount) === Math.round(amount * 100) && existing.currency === "INR") {
+          return res.json({ success: true, questionId, orderId: existing.id, keyId: RAZORPAY_KEY_ID, amount: existing.amount, currency: existing.currency, reused: true });
+        }
+      } catch (e) { return res.status(409).json({error:"Unable to confirm the previous payment order. Check its status and Razorpay account/mode before retrying; no new payment was created."}); }
+    }
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100), currency: "INR",
+      receipt: `SMV_${questionId.slice(0, 25)}_${Date.now()}`,
+      notes: { questionId, customerId: user.uid, astrologerId: String(q.astrologerId || "") }
+    });
+    if (!order || !order.id || typeof order.id !== "string") {
+      console.error("Razorpay returned an order without a valid order ID", order);
+      return res.status(502).json({ error: "Razorpay order was created without a valid order ID." });
+    }
+
+    const answerSettings = await db.collection("smv_settings").doc("answer").get();
+    const minimumWords = Math.max(1, Math.min(10000, Math.floor(Number(answerSettings.data()?.minimumWords || 150))));
+    await qRef.set({ paymentMode:"live", razorpayOrderId: order.id, paymentCurrency: "INR", paymentStatus: "order_created", answerMinWords: minimumWords, paymentUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("razorpay_orders").doc(order.id).set({
+      razorpayOrderId: order.id, questionId, amount: order.amount, currency: order.currency,
+      firebaseUid: user.uid, customerEmail: user.email || null, astrologerId: String(q.astrologerId || ""),
+      serviceName: req.body?.serviceName || "Public Astrology Question", status: "created", createdAt: FieldValue.serverTimestamp()
+    });
+    return res.json({ success: true, questionId, orderId: order.id, keyId: RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency, originalAmount:Number(q.originalAmount||q.amount||0), offerId:q.offerId||null, offerName:q.offerName||null, promoCode:q.offerPromoCode||"", discountAmount:Number(q.offerDiscountAmount||0), offerBannerText:q.offerBannerText||"" });
+  } catch (e) {
+    console.error("Create order error:", e);
+    return res.status(500).json({ error: e?.error?.description || e?.description || e?.message || "Unable to create Razorpay order" });
+  }
+});
+
+async function markQuestionPaid(questionId, orderId, paymentId, signature, source) {
+  const qRef = db.collection("smv_questions").doc(questionId);
+  const workflow = await getOpenWorkflowSettings();
+  const result = await db.runTransaction(async tx => {
+    const snap = await tx.get(qRef);
+    if (!snap.exists) throw new Error("Question not found.");
+    const q = snap.data();
+    if (q.razorpayOrderId !== orderId) throw new Error("Order mismatch.");
+    if (q.paymentStatus === "paid" && q.razorpayPaymentId === paymentId) return { already: true, customerId: q.customerId, customerPaymentId: q.customerPaymentId || null };
+    const amount = Number(q.amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid question amount.");
+    const paymentDateKey = indiaDateKey();
+    const paymentCounterRef = db.collection("smv_counters").doc(`payment_${paymentDateKey}`);
+    const paymentCounterSnap = await tx.get(paymentCounterRef);
+    const paymentInfo = nextPaymentIdInTransaction(paymentDateKey, paymentCounterSnap);
+    tx.set(paymentCounterRef, { lastNumber: paymentInfo.next, dateKey: paymentDateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const customerPaymentId = paymentInfo.id;
+    const paymentRecordedAt = new Date().toISOString();
+    tx.set(db.collection("smv_payments").doc(customerPaymentId), {
+      paymentId: customerPaymentId, type: "customer_payment", customerId: q.customerId, astrologerId: null, questionId, bookingId: q.bookingId || null,
+      razorpayOrderId: orderId, razorpayPaymentId: paymentId, amount, status: "paid", paymentStatus: "paid", source, createdAt: FieldValue.serverTimestamp(), paymentRecordedAt, updatedAt: FieldValue.serverTimestamp()
+    });
+    tx.update(qRef, {
+      status: workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "pending_admin_approval",
+      paymentStatus: "paid",
+      allocationStatus: workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "awaiting_admin",
+      adminApprovalBypassed: workflow.allowWithoutAdminApproval,
+      openedToAstrologersAt: workflow.allowWithoutAdminApproval ? FieldValue.serverTimestamp() : FieldValue.delete(),
+      razorpayPaymentId: paymentId, razorpaySignature: signature,
+      paidAt: q.paidAt || FieldValue.serverTimestamp(), paymentUpdatedAt: FieldValue.serverTimestamp(), paymentConfirmedBy: source, customerPaymentId, paymentRecordedAt,
+      astrologerPaymentId: FieldValue.delete(), commissionStatus: workflow.allowWithoutAdminApproval ? "open_for_claim" : "awaiting_admin_allocation"
+    });
+    return { already: false, customerId: q.customerId, customerPaymentId, paymentRecordedAt };
+  });
+  if (!result.already) {
+    await db.collection("smv_notifications").add({ userId: result.customerId, type: "payment", title: "Payment successful", message: workflow.allowWithoutAdminApproval ? `Your payment was verified. Your question is now open to approved astrologers. Payment ID: ${result.customerPaymentId || "N/A"}.` : `Your payment was verified. Your question is now waiting for Admin approval. Payment ID: ${result.customerPaymentId || "N/A"}.`, paymentId: result.customerPaymentId || null, razorpayPaymentId: paymentId || null, questionId, createdAt: FieldValue.serverTimestamp(), read: false });
+    const qSnap = await qRef.get();
+    const q = qSnap.exists ? (qSnap.data() || {}) : {};
+    await consumeOfferAfterPayment({uid:result.customerId,service:"public_question",referenceId:questionId,paymentId,quote:{offerId:q.offerId||null,offerName:q.offerName||null,promoCode:q.offerPromoCode||"",originalAmount:Number(q.originalAmount||q.amount||0),finalAmount:Number(q.amount||0),discountAmount:Number(q.offerDiscountAmount||0)}});
+    const customerEmail = String(q.customerEmail || await getUserEmail(result.customerId) || "").trim();
+    const amount = Number(q.amount || 0);
+    await sendSystemEmail({
+      to: [customerEmail, ADMIN_EMAIL],
+      subject: "SMV ASTRO — Payment Successful",
+      replyTo: ADMIN_EMAIL,
+      text: `Payment successful for SMV ASTRO.\n\nQuestion ID: ${questionId}\nCustomer Payment ID: ${result.customerPaymentId || "N/A"}\nAmount: ₹${amount.toFixed(2)}\nRazorpay Payment ID: ${paymentId}\nRazorpay Order ID: ${orderId}\n\n${workflow.allowWithoutAdminApproval ? "Your question is now open to approved astrologers." : "Your question is now waiting for Admin approval."}`
+    });
+    await sendAdminTransactionEmail({ eventType: "PAYMENT SUCCESS", paymentId, orderId, amount, currency: "INR", questionId, customerEmail, status: "paid" });
+  }
+  return result;
+}
+
+app.post("/verify-payment", express.json(), async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  try {
+    const questionId = String(req.body?.questionId || "").trim();
+    const orderId = String(req.body?.razorpay_order_id || "").trim();
+    const paymentId = String(req.body?.razorpay_payment_id || "").trim();
+    const signature = String(req.body?.razorpay_signature || "").trim();
+    if (!questionId || !orderId || !paymentId || !signature) return res.status(400).json({ error: "Payment verification data is incomplete." });
+    const qSnap = await db.collection("smv_questions").doc(questionId).get();
+    if (!qSnap.exists) return res.status(404).json({ error: "Question not found." });
+    const q = qSnap.data();
+    if (q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
+    if (q.razorpayOrderId !== orderId) return res.status(409).json({ error: "Payment order mismatch." });
+    const expected = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");
+    if (!signatureEqual(expected, signature)) {
+      const mode = RAZORPAY_KEY_ID.startsWith("rzp_test_") ? "test" : (RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "live" : "unknown");
+      console.error("Payment verification signature mismatch", { questionId, orderId, paymentId, mode });
+      return res.status(401).json({ error: "Invalid payment signature. Check that Render RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET belong to the same Razorpay mode (both Test or both Live)." });
+    }
+    let payment = await razorpay.payments.fetch(paymentId);
+    if (payment.order_id !== orderId) return res.status(409).json({ error: "Payment order mismatch." });
+    const expectedAmount = Math.round(Number(q.amount || 0) * 100);
+    if (Number(payment.amount) !== expectedAmount) return res.status(409).json({ error: "Payment amount mismatch." });
+
+    // Razorpay can return an authorised payment before automatic capture.
+    // Capture it server-side, then fetch again and continue verification.
+    const paymentStatus = String(payment.status || "").toLowerCase();
+    if (paymentStatus === "authorized") {
+      try {
+        await razorpay.payments.capture(paymentId, expectedAmount, String(payment.currency || "INR"));
+      } catch (captureError) {
+        console.error("Razorpay capture error:", captureError);
+        // It may have been captured concurrently; re-fetch before failing.
+      }
+      payment = await razorpay.payments.fetch(paymentId);
+    }
+    if (String(payment.status).toLowerCase() !== "captured") {
+      return res.status(409).json({
+        error: "Payment is authorised but could not be captured yet.",
+        paymentStatus: payment.status || null,
+        paymentId,
+        orderId
+      });
+    }
+    const result = await markQuestionPaid(questionId, orderId, paymentId, signature, "render_checkout_verification");
+    await db.collection("razorpay_orders").doc(orderId).set({ razorpayPaymentId: paymentId, status: "verified", questionId, verifiedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ verified: true, questionId, alreadyProcessed: result.already, customerPaymentId: result.customerPaymentId || null, paymentRecordedAt: result.paymentRecordedAt || new Date().toISOString(), message: "Payment verified and consultation updated successfully." });
+  } catch (e) {
+    console.error("Payment verification error:", e);
+    return res.status(500).json({ error: e?.error?.description || e?.description || e?.message || "Payment verification failed" });
+  }
+});
+
 // STRICT OFFLINE: Horoscope + Advanced + Dasa + Transit + Panchang + Marriage Matching
 // execute in the browser/offline runtime. server.js intentionally registers no Horoscope
 // feature/payment/access/saved-report/PDF/calculation endpoints and loads no astrology engine.
+
+app.get("/astrologer/earnings", async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  try {
+    const profileSnap = await db.collection("smv_users").doc(user.uid).get();
+    const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
+    const role = String(profile.role || user.role || "").toLowerCase();
+    if (role && role !== "astrologer") return res.status(403).json({ error: "Only an astrologer account can read earnings." });
+
+    const [questionSnap, privateSnap] = await Promise.all([
+      db.collection("smv_questions").where("astrologerId", "==", user.uid).get(),
+      db.collection("smv_private_consultations").where("astrologerId", "==", user.uid).get()
+    ]);
+    const ledger = [];
+    questionSnap.docs.forEach(d => {
+      const q = d.data() || {};
+      if (q.status === "answered" && q.commissionStatus === "credited") ledger.push({
+        id: d.id,
+        question: q.question || "Consultation",
+        commission: Number(q.astrologerCommissionAmount || q.commissionAmount || 0),
+        date: q.commissionCreditedAt || q.answerApprovedAt || q.adminAnswerApprovedAt || null
+      });
+    });
+    privateSnap.docs.forEach(d => {
+      const c = d.data() || {};
+      if (c.commissionStatus === "credited") ledger.push({
+        id: d.id,
+        question: c.question || "Private Consultation",
+        commission: Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
+        date: c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
+      });
+    });
+    const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
+    ledger.sort((a,b) => toMs(b.date) - toMs(a.date));
+    const totalEarnings = Math.round(ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0) * 100) / 100;
+    return res.set('Cache-Control','no-store').json({ success: true, totalEarnings, ledger });
+  } catch (e) {
+    console.error("Astrologer earnings load failed:", e?.message || e);
+    return res.status(500).json({ error: e?.message || "Unable to load astrologer earnings." });
+  }
+});
 
 // V165 withdrawal request: all protected counter + withdrawal writes happen on Render
 // with Firebase Admin SDK. The browser no longer needs permission to write smv_counters.
