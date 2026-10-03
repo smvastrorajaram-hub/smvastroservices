@@ -1,7 +1,7 @@
 /* SMV ASTRO main-site service worker — stale-cache isolation
    Scope: static presentation/PWA assets only.
    Firebase, API, dashboard, payment and application-data requests are never intercepted. */
-const CACHE_NAME='smv-astro-static-master-20261003-a';
+const CACHE_NAME='smv-astro-static-master-20261003-v172';
 
 function isStaticPresentationAsset(url){
   if(url.origin!==self.location.origin) return false;
