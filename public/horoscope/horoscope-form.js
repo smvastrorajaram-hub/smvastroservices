@@ -1,6 +1,5 @@
 
 (function(){
-  const BACKEND_URL=(window.SMV_BACKEND_URL||'');
   const $=id=>document.getElementById(id);
 
   function setupLocation(prefix){
@@ -15,7 +14,7 @@
     function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
     function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);if($('birthUtcOffset'))$('birthUtcOffset').value='5.5';place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText('');}
     function render(items){clear();if(!items.length){statusText(text('No matching location found. Please type a little more.','பொருத்தமான இடம் கிடைக்கவில்லை. மேலும் சில எழுத்துகளை உள்ளிடவும்.'),'err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText(text('Select your exact place from the list.','பட்டியலிலிருந்து சரியான இடத்தைத் தேர்ந்தெடுக்கவும்.'),'');}
-    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;if(controller)controller.abort();controller=new AbortController();statusText(text('Searching location…','இடம் தேடப்படுகிறது…'),'');try{const r=await fetch((window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||''))+'/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Location search failed');render(Array.isArray(data.results)?data.results:[]);}catch(e){if(e.name==='AbortError')return;clear();statusText(text('Unable to search location. Enter coordinates manually.','இடத்தைத் தேட முடியவில்லை. அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'),'err');}}
+    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;statusText(text('Searching location…','இடம் தேடப்படுகிறது…'),'');try{await window.SMVEngineReady;const rows=await window.__smvSearchPlacesOnlineOffline(q,50,controller?.signal);render(rows);}catch(e){clear();statusText(text('Offline location search is unavailable. Enter coordinates manually.','ஆஃப்லைன் இடத் தேடல் கிடைக்கவில்லை. அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'),'err');}}
     place.addEventListener('input',()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
     place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
     document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
@@ -28,7 +27,7 @@
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
     if(busy)return;
     const lang=document.documentElement.lang==='ta'?'ta':'en';
-    // V90: lock the language at Generate click. Payment/PDF/save must use this immutable generation language.
+    // V90: lock the language at Generate click. The generated report language remains immutable for this calculation.
     const generationLanguage=lang;
     try{await window.SMVEngineReady;}catch{alert(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));return;}
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'';
@@ -82,9 +81,8 @@ if(lat===''||lon===''){
       // Do NOT start a second Advanced request against the Tamil DOM and do NOT copy
       // a partially populated Advanced tree. First build the core chart, copy only
       // that stable core result, rename the containers, then run ONE complete
-      // /api/horoscope/full request directly into the English Advanced root.
+      // Full calculation is routed directly to the bundled offline engine.
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60,language:generationLanguage});
-      if(await window.__smvOpenMatchingSavedReport?.('advanced_analysis',window.__smvGetReportContext('advanced_analysis')))return;
       const generated=await window.__smvGenerateHoroscopeEngine(false);
       const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
       if(source&&target&&source.innerHTML.trim()){
@@ -120,7 +118,7 @@ if(lat===''||lon===''){
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
             await window.__smvPredictionRenderPromise;
             window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
-            // V92: a paid report may be rendered later in the other language from the already-cached
+            // V92: the report may be rendered later in the other language from the already-cached
             // calculation. Save/generate ONLY that language now; never recalculate or build both languages.
             if(completedFull){
               window.__smvSetReportContext?.('advanced_analysis',{...originalBirth,language:next});
@@ -143,9 +141,7 @@ if(lat===''||lon===''){
         if(!englishAdvancedRoot || typeof window.__smvLoadAdvancedAstrology!=='function'){
           throw new Error('English Advanced Astrology container is not ready.');
         }
-        // V62 ROOT: core horoscope is free and rendered first. Advanced Analysis is
-        // never calculated behind the paywall. Admin OFF hides it; ₹0 continues free;
-        // ₹Price waits for a server-verified Razorpay payment before calculation.
+        // Core + Advanced Analysis are calculated locally in the browser.
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
           englishAdvancedRoot.classList.remove('hidden');
@@ -162,7 +158,7 @@ if(lat===''||lon===''){
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
           if(!allowed){
             target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
-            // Basic/free result must use the same final language renderer as the paid result.
+            // Basic result uses the same final language renderer.
             if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
             window.__smvLocalizeTamilResult?.(target,generationLanguage);
             window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:generated,basicOnly:true}}));
@@ -171,7 +167,7 @@ if(lat===''||lon===''){
           }
           await runEnglishAdvanced();
         }else{
-          throw new Error('Payment access check is not ready. Reload and try again.');
+          throw new Error('Offline Advanced Analysis access is not ready. Reload and try again.');
         }
 
         /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +

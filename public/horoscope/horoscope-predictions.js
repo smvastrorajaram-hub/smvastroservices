@@ -467,7 +467,7 @@ function v43Base(c,data,d,l,payload,ai){const q=domains[d],nr=natal(c,d),ta=l===
 }
 function v43PeriodLine(c,data,d,w,l,kind,tr,payload){const s=String(w?.start||'').trim(),e=String(w?.end||'').trim(),dateText=s&&e?`${s} → ${e}`:s||e,ai=v42AgeInfo(payload,v39MidDate(w));const stage=v42Stage(ai);const dasha=dashaText(w,l),natural=v43NaturalPhase(c,data,d,w,l,tr,payload);if(l==='ta'){const prefix=kind==='past'?'கடந்தகாலத்தில்':kind==='current'?'தற்போது':'அருகிலுள்ள எதிர்காலத்தில்';const retrospective=kind==='past'?' இது அந்தக் காலத்தில் செயல்பட்ட ஜோதிடச் சுட்டி; நடந்த நிகழ்வை நிரூபிப்பதாக எடுத்துக்கொள்ளப்படவில்லை.':'';return `${prefix}${dateText?' '+dateText+' காலத்தில்':''} ${dasha}. ${natural}${retrospective}`.replace(/\s+/g,' ').trim();}const prefix=kind==='past'?'In the past':kind==='current'?'Currently':'In the near future';return `${prefix}${dateText?' ('+dateText+')':''}: ${dasha}. ${natural}${kind==='past'?' This is an activation indicator, not proof that an event occurred.':''}`.replace(/\s+/g,' ').trim()}
 async function v43RenderDomain(c,data,d,l,payload,full,cls){const x=cls||classify(c,d,payload),nowAI=v42AgeInfo(payload,new Date());const make=async(arr,kind)=>{const out=[];for(const w of arr){const tr=await v39TransitFor(payload,v39MidDate(w),l,full);out.push(v43PeriodLine(c,data,d,w,l,kind,tr,payload));}return out.join(' ')};const past=await make(x.past,'past'),current=await make(x.current,'current'),future=await make(x.future,'future');const safe=(v,kind)=>v||(l==='ta'?(kind==='past'?'கிடைக்கும் தசா வரலாற்றில் இந்த வாழ்க்கைப் பகுதிக்கான தெளிவான தனி செயல்பாட்டு காலம் இல்லை.':kind==='current'?'தற்போதைய தசா காலத் தரவு கிடைக்கவில்லை.':'அருகிலுள்ள எதிர்கால தசா காலத் தரவு கிடைக்கவில்லை.'):(kind==='past'?'No distinct past activation appears in the available dasha history.':kind==='current'?'Current dasha data is unavailable.':'Near-future dasha data is unavailable.'));return `<section class="smv-pred-domain"><h4>${esc(v42DynamicHeading(d,l,nowAI,payload))}</h4><p>${esc(v43Base(c,data,d,l,payload,nowAI))}</p><div class="smv-pred-time"><b>${l==='ta'?'கடந்தகால ஆய்வு':'Past review'}</b><p>${esc(safe(past,'past'))}</p><b>${l==='ta'?'தற்போதைய பலன்':'Current outlook'}</b><p>${esc(safe(current,'current'))}</p><b>${l==='ta'?'அருகிலுள்ள எதிர்காலம்':'Near future'}</b><p>${esc(safe(future,'future'))}</p></div></section>`}
-async function renderV43(ev){const {full,payload,lang='en',rootId}=ev.detail||{},root=document.getElementById(rootId);if(!root||!full?.chart)return;const target=root.querySelector('.smv-advanced-part.integrated-predictions .smv-advanced-part-content');if(!target)return;const c=full.chart,order=['career','jobchange','skills','turning','business','finance','marriage','children','education','property','debt','health','family','parents','siblings','travel','status','fortune','spiritual','remedy'];const classes=Object.fromEntries(order.map(d=>[d,classify(c,d,payload)]));let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><p class="small">${lang==='ta'?'SMV Basic + Advanced Analysis-ல் ஏற்கனவே கணக்கிடப்பட்ட பாவம்–பாவாதிபதி, dignity/strength, கிரக/ராசி பார்வை, அர்கலா–விரோதார்கலா, அஷ்டகவர்க்கம், கிரக உறவுகள் மற்றும் D7/D9/D10 ஆதாரங்கள் மீண்டும் கணக்கிடாமல் இங்கு synthesis செய்யப்படுகின்றன. தாஜக, சஹம்கள், சர்வதோபத்ர மற்றும் சுதர்சன சக்கரங்கள் இப்போது பிறப்பு வாக்குறுதியை மாற்றாமல் timing/transit confirmation layer ஆக பயன்படுத்தப்படுகின்றன.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;for(const d of order)html+=await v43RenderDomain(c,full,d,lang,payload,full,classes[d]);html+='</div>';target.innerHTML=html}
+async function renderV43(ev){const {full,payload,lang='en',rootId}=ev.detail||{},root=document.getElementById(rootId);if(!root||!full?.chart)return;const target=root.querySelector('.smv-advanced-part.integrated-predictions .smv-advanced-part-content');if(!target)return;const c=full.chart,order=['career','jobchange','skills','turning','business','finance','marriage','children','education','property','debt','health','family','parents','siblings','travel','status','fortune','spiritual','remedy'];const classes=Object.fromEntries(order.map(d=>[d,classify(c,d,payload)]));let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><p class="small">${lang==='ta'?'பிறப்பு ஜாதகம், பிரிவு ஜாதகங்கள், தசா–புக்தி மற்றும் கோச்சாரக் கணக்குகள் ஒன்றாகப் படிக்கப்பட்டு, அவை வாழ்க்கையில் நடைமுறையாக எவ்வாறு வெளிப்படலாம் என்பதே இங்கு கூறப்படுகிறது. ஒவ்வொரு வாழ்க்கைப் பகுதியும் அதற்குரிய பாவம், அதிபதி, காரக கிரகம், பிரிவு ஜாதகம் மற்றும் கால ஒத்திசைவை அடிப்படையாகக் கொண்டே தனித்தனியாக விளக்கப்படுகிறது.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;for(const d of order)html+=await v43RenderDomain(c,full,d,lang,payload,full,classes[d]);html+='</div>';target.innerHTML=html}
 
 
 // V49 ROOT — Book-informed Event Candidate + Evidence Scorer V2.
@@ -611,15 +611,15 @@ function v58EnsureStandalonePart(root,after,cls,en,ta,roman,lang,onFirstOpen){
  head.addEventListener('click',toggle);head.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
  base.parentNode.insertBefore(part,base.nextSibling);return content;
 }
-function v58Loading(content,l,kind){if(!content)return;content.innerHTML=`<div class="adv-section"><p class="small">${l==='ta'?(kind==='dasha'?'15 ஆண்டு தசா–புக்தி–அந்தரம் பலன்கள் கணக்கிடப்படுகின்றன…':'15 ஆண்டு கோச்சார பலன்கள் கணக்கிடப்படுகின்றன…'):(kind==='dasha'?'Calculating 15-year Dasha–Bhukti–Antaram results…':'Calculating 15-year transit results…')}</p><div class="smv-v58-progress"></div></div>`;}
+function v58Loading(content,l,kind){if(!content)return;content.innerHTML=`<div class="adv-section"><p class="small">${l==='ta'?(kind==='dasha'?'தசா–புக்தி–அந்தரம் காலப் பலன்கள் கணக்கிடப்படுகின்றன…':'கோச்சார காலப் பலன்கள் கணக்கிடப்படுகின்றன…'):(kind==='dasha'?'Calculating Dasha–Bhukti–Antaram period results…':'Calculating transit period results…')}</p><div class="smv-v58-progress"></div></div>`;}
 async function renderV58(ev){
  const {full,payload,lang='en',rootId}=ev.detail||{},root=document.getElementById(rootId);if(!root||!full?.chart)return;const c=full.chart;
  const x=root.querySelector('.smv-advanced-part.integrated-predictions .smv-advanced-part-content');if(!x)return;const xPart=x.closest('.smv-advanced-part');
  // X is lightweight and renders after main horoscope only.
- let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><p class="small">${lang==='ta'?'SMV Basic + Advanced Analysis-ல் ஏற்கனவே கணக்கிடப்பட்ட பாவம்–பாவாதிபதி, dignity/strength, கிரக/ராசி பார்வை, அர்கலா–விரோதார்கலா, அஷ்டகவர்க்கம், கிரக உறவுகள் மற்றும் D7/D9/D10 ஆதாரங்கள் மீண்டும் கணக்கிடாமல் இங்கு synthesis செய்யப்படுகின்றன. தாஜக, சஹம்கள், சர்வதோபத்ர மற்றும் சுதர்சன சக்கரங்கள் இப்போது பிறப்பு வாக்குறுதியை மாற்றாமல் timing/transit confirmation layer ஆக பயன்படுத்தப்படுகின்றன.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;
+ let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><p class="small">${lang==='ta'?'பிறப்பு ஜாதகம், பிரிவு ஜாதகங்கள், தசா–புக்தி மற்றும் கோச்சாரக் கணக்குகள் ஒன்றாகப் படிக்கப்பட்டு, அவை வாழ்க்கையில் நடைமுறையாக எவ்வாறு வெளிப்படலாம் என்பதே இங்கு கூறப்படுகிறது. ஒவ்வொரு வாழ்க்கைப் பகுதியும் அதற்குரிய பாவம், அதிபதி, காரக கிரகம், பிரிவு ஜாதகம் மற்றும் கால ஒத்திசைவை அடிப்படையாகக் கொண்டே தனித்தனியாக விளக்கப்படுகிறது.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;
  for(const d of V53_ORDER){try{html+=v53RenderDomain(c,full,d,lang,payload);}catch(err){console.warn('V58 domain skipped',d,err);}}
  html+='</div>';x.innerHTML=html;
- const context=document.createElement('p');context.className='small';context.textContent=lang==='ta'?'ஆய்வு வரம்பு: அடுத்த 15 ஆண்டுகள். தேதியிட்ட மூன்று கோச்சார மாதிரிகள் லக்னத்திலிருந்து பாவங்களைக் காட்டுகின்றன; இடைப்பட்ட பெயர்ச்சி நேரங்களை இவை குறிக்கவில்லை. விரைவாக நகரும் கிரகங்கள் நடுப்பகுதி தேதிக்கே பொருந்தும். வயது, பிறந்த இடம் மற்றும் நேர வேறுபாடு பயன்படுத்தப்படுகின்றன; வாழும் நாடு, தொழில் அல்லது குடும்ப நிலை ஊகிக்கப்படவில்லை.':'Scope: the next 15 years. Three dated transit samples show houses from the natal ascendant; these are not exact ingress times. Fast-moving planets apply to the midpoint date only. Age, birth coordinates and UTC offset are used; current residence, occupation and family circumstances are not inferred.';x.prepend(context);
+ const context=document.createElement('p');context.className='small';context.textContent=v165ScopeText(payload,lang);x.prepend(context);
  let sharedRows=null,sharedPromise=null;
  const getRows=(onRow)=>{if(sharedRows)return Promise.resolve(sharedRows);if(!sharedPromise)sharedPromise=v58PeriodRows(c,full,lang,payload,full,onRow).then(r=>(sharedRows=r,r));return sharedPromise;};
  const xi=v58EnsureStandalonePart(root,x,'detailed-dasha-predictions','DETAILED DASHA–BHUKTI RESULTS — NEXT 15 YEARS','விரிவான தசா–புக்தி பலன்கள் — அடுத்த 15 ஆண்டுகள்','XI',lang,async(content)=>{
@@ -677,10 +677,123 @@ function v59DashaNarrative(c,data,z,x,l,payload){
  const divisional=dc?(ta?`${dc} என்ற துணைச் சுட்டியும் சேர்த்து பார்க்கப்படுகிறது.`:`The divisional-chart factor is ${dc}.`):'';
  return [age!=null?(ta?`இந்த இடைவெளியில் வயது சுமார் ${age}.`:`Approximate age in this interval: ${age}.`):'',timing,evidence,divisional].filter(Boolean).join(' ');
 }
+function v162NaturalText(text,l){
+ let s=String(text||'');
+ if(l==='ta'){
+  const pairs=[['activation','செயல்பாட்டு'],['prospective','எதிர்பார்க்கப்படும்'],['promise','அடிப்படை ஆதரவு'],['pressure','சவால்'],['Support','ஆதரவு'],['support','ஆதரவு'],['family-expansion','குடும்ப விரிவாக்கம்'],['conception','கருத்தரிப்பு'],['pregnancy/birth date','கர்ப்பம் அல்லது குழந்தைப் பிறப்பு தேதி'],['delay/planning/medical support','தாமதம், திட்டமிடல் அல்லது தேவையான மருத்துவ ஆலோசனை'],['Timing window','காலச் சுட்டி'],['timing window','காலச் சுட்டி'],['role-quality','பணியின் தரம்'],['routine-only role','ஒரே மாதிரியான பணி'],['cash-flow','பணப்புழக்கம்'],['formal commitment','உறுதியான திருமண முடிவு'],['communication','தெளிவான உரையாடல்'],['pattern','நடைமுறை'],['friction','கருத்து மோதல்'],['natal promise','பிறப்பு ஜாதக ஆதரவு']];
+  for(const [a,b] of pairs)s=s.split(a).join(b);
+ }
+ return s.replace(/\s+/g,' ').trim();
+}
+function v162Balance(x){const m=x?.pick?.m||{},s=Number(m.tSupport||0),p=Number(m.tPressure||0);return s>p?'support':p>s?'pressure':'mixed'}
+
+// V164 — SMV calculation-led human narrative layer.
+// Planet/house/varga/dasha/transit calculations are not changed here. This layer
+// selects the most relevant existing evidence and turns it into domain-specific life language.
+function v164DomainBalance(c,data,d){
+ const e=evidence(c,data,d,'en'),a=smvAdvancedEvidence(c,data,d,'en');
+ const support=e.supporters.length+Number(a.score?.support||0);
+ const pressure=e.pressures.length+Number(a.score?.pressure||0);
+ return {support,pressure,band:support>pressure+1?'support':pressure>support+1?'pressure':'mixed',e,a};
+}
+function v164HumanWindow(w,l,payload){
+ if(!w)return l==='ta'?'தெளிவான தனி காலம் தேர்வு ஆகவில்லை':'No distinct period was selected';
+ const age=v136AgeOn(payload,v49Mid(w)),dates=`${String(w.start||'').slice(0,10)} → ${String(w.end||'').slice(0,10)}`;
+ return dates+(age!=null?(l==='ta'?` (வயது ${age})`:` (age ${age})`):'');
+}
+function v164BestWindow(c,d,payload){
+ const x=v136Chronology(c,d,payload);
+ if(x.current?.length)return {kind:'current',w:x.current[0]};
+ if(x.future?.length)return {kind:'future',w:x.future.slice().sort((a,b)=>b.score-a.score||+a.a-+b.a)[0]};
+ if(x.past?.length)return {kind:'past',w:x.past.slice().sort((a,b)=>b.score-a.score||+b.b-+a.b)[0]};
+ return {kind:'none',w:null};
+}
+function v164BalanceSentence(d,band,l){
+ if(l!=='ta')return '';
+ const T={
+  career:{support:'பதவி, பொறுப்பு அல்லது தொழில் நிலை உயர்வை நடைமுறையில் பயன்படுத்தக்கூடிய ஆதரவு அதிகம்.',mixed:'முன்னேற்ற வாய்ப்புடன் பணிச்சுமை அல்லது திசைமாற்றத் தேவை இணைந்து வரலாம்; சரியான தேர்வு முக்கியம்.',pressure:'முன்னேற்றம் தாமதமாக இருந்தாலும் திறன், பொறுப்பு மற்றும் நிலையான முயற்சியால் தொழில் பாதையை மீண்டும் கட்டமைக்க வேண்டிய அமைப்பு உள்ளது.'},
+  jobchange:{support:'வேலை மாற்றம் நடந்தால் அது வெறும் நிறுவன மாற்றமாக இல்லாமல் பதவி, பொறுப்பு அல்லது வருமான அமைப்பை மேம்படுத்தும் வாய்ப்பு அதிகம்.',mixed:'புதிய வாய்ப்பு கிடைத்தாலும் நிலைத்தன்மை மற்றும் வளர்ச்சி இரண்டையும் ஒப்பிட்டே மாற்றம் செய்வது நல்லது.',pressure:'அவசரமாக வேலை விட்டு நகர்வதை விட புதிய வாய்ப்பின் நிபந்தனைகள் உறுதியான பின் மாற்றம் செய்வது பாதுகாப்பானது.'},
+  business:{support:'வாடிக்கையாளர் நம்பிக்கை, மீண்டும் வரும் வருமானம் மற்றும் கட்டுப்படுத்தப்பட்ட பணப்புழக்கம் வளர்ச்சியை ஆதரிக்கின்றன.',mixed:'விற்பனை வாய்ப்பு இருந்தாலும் செலவு, வசூல் மற்றும் கூட்டாண்மை பொறுப்பை தனியாகக் கட்டுப்படுத்த வேண்டும்.',pressure:'வியாபார விரிவை விட பணப்புழக்கம், கடன் மற்றும் ஒப்பந்த பாதுகாப்பை முதலில் நிலைநிறுத்த வேண்டிய காலங்கள் அதிகம் இருக்கலாம்.'},
+  finance:{support:'வருமானத்தை சேமிப்பு மற்றும் சொத்து உருவாக்கமாக மாற்றும் திறன் நல்லதாக உள்ளது.',mixed:'பணவரவு கிடைக்கும் போதும் குடும்பச் செலவு அல்லது பொறுப்புகள் சேமிப்பை குறைக்கலாம்; வரவு–செலவு ஒழுங்கு முக்கியம்.',pressure:'வருமானத்தை விட பணம் தங்குவது சவாலாக இருக்கலாம்; கடன்/அவசரச் செலவை கட்டுப்படுத்திய பிறகே செல்வ வளர்ச்சி தெளிவாகும்.'},
+  marriage:{support:'உறவு நிலைபெற்று குடும்ப ஒப்புதல் அல்லது உறுதியான திருமண முடிவாக நகரும் ஆதரவு உள்ளது.',mixed:'ஈர்ப்பு மற்றும் உறவு வாய்ப்புடன் கருத்து வேறுபாடு அல்லது குடும்பப் பொறுப்பு கலந்து வரலாம்; பொருத்தமும் சம்மதமும் முக்கியம்.',pressure:'திருமணத்தை மறுக்கும் அமைப்பு என்று கொள்ள வேண்டாம்; ஆனால் தேர்வு, குடும்ப ஒத்திசைவு அல்லது காலத் தாமதம் அதிக கவனம் கேட்கலாம்.'},
+  children:{support:'குடும்ப விரிவாக்கம் மற்றும் குழந்தை தொடர்பான மகிழ்ச்சி/பொறுப்பை ஏற்கும் காலங்களுக்கு ஆதரவு உள்ளது.',mixed:'குழந்தை தொடர்பான முயற்சியில் காலத் தேர்வு, தம்பதி ஒத்துழைப்பு மற்றும் நடைமுறைத் திட்டமிடல் முக்கியமாகும்.',pressure:'ஜோதிட ரீதியாக தாமதச் சுட்டிகள் இருக்கலாம்; இது கருவுறுதல் பற்றிய மருத்துவ முடிவு அல்ல. மருத்துவக் கவலை இருந்தால் மருத்துவர் மதிப்பீடே முதன்மை.'},
+  property:{support:'வீடு, நிலம், கட்டிடம், வாகனம் அல்லது நிரந்தர வசதி உருவாக்கும் முயற்சி பலன் தரும் ஆதரவு பெறுகிறது.',mixed:'சொத்து வாய்ப்பு இருந்தாலும் கடன் அளவு, ஆவணம், இடத் தேர்வு மற்றும் குடும்பத் தேவையை ஒன்றாகப் பார்க்க வேண்டும்.',pressure:'பெரிய சொத்து முடிவுக்கு முன் கடன், ஆவணம் மற்றும் பராமரிப்பு செலவை மிகக் கவனமாகச் சரிபார்க்க வேண்டிய அமைப்பு உள்ளது.'},
+  education:{support:'கல்வி, தேர்வு, பயிற்சி அல்லது உயர்கல்வியை நடைமுறைத் திறனாக மாற்றும் வாய்ப்பு வலுவாக உள்ளது.',mixed:'கற்றல் நல்ல பலன் தரலாம்; ஆனால் திசைமாற்றம் அல்லது இடைவேளை ஏற்பட்டால் புதிய திட்டத்துடன் தொடர வேண்டியிருக்கும்.',pressure:'கல்வியில் தாமதம் அல்லது கவனம் சிதறல் வந்தாலும் திறன் பயிற்சி மற்றும் மீண்டும் தொடங்கும் முயற்சி முக்கிய பலனாக அமையும்.'},
+  health:{support:'உடல் சக்தி மற்றும் மீள்ச்சி நல்ல ஆதரவு பெறலாம்; ஒழுங்கான தூக்கம், உணவு மற்றும் இயக்கம் அதை நிலைநிறுத்த உதவும்.',mixed:'வேலைச்சுமை மற்றும் ஓய்வு சமநிலை குலைந்தால் உடல் சோர்வு அதிகரிக்கலாம்; அறிகுறி இருந்தால் மருத்துவ மதிப்பீடு அவசியம்.',pressure:'சோர்வு அல்லது தினசரி ஒழுங்கு பாதிப்பு அதிக கவனம் கேட்கலாம்; இது நோயறிதல் அல்ல, மருத்துவ ஆலோசனைக்கு மாற்றாகவும் அல்ல.'},
+  family:{support:'குடும்ப ஒத்துழைப்பு மற்றும் பொறுப்புப் பகிர்வு நல்ல நிலைத்தன்மை தரக்கூடும்.',mixed:'அன்பும் பொறுப்பும் இருந்தாலும் பணம், நேரம் அல்லது எதிர்பார்ப்பு குறித்து தெளிவான உரையாடல் தேவைப்படும்.',pressure:'குடும்பச் சுமை ஒருவர்மீது கூடாமல் பொறுப்புகளைப் பகிர்வது மனஅழுத்தத்தை குறைக்கும்.'},
+  parents:{support:'பெற்றோர்/மூத்தோர் ஆதரவும் குடும்பத் தொடர்பும் வாழ்க்கை முடிவுகளுக்கு துணையாக அமையலாம்.',mixed:'பெற்றோர் தேவைகள் மற்றும் தனிப்பட்ட திட்டங்கள் ஒரே நேரத்தில் வரும்போது நேரம்/செலவு சமநிலை தேவைப்படும்.',pressure:'மூத்தோர் தொடர்பான பொறுப்பு சில முக்கிய முடிவுகளை தாமதப்படுத்தலாம்; குடும்ப உதவியை முன்கூட்டியே ஒருங்கிணைப்பது நல்லது.'},
+  siblings:{support:'சகோதரர்கள் அல்லது நெருங்கிய உறவுகள் முயற்சி மற்றும் வாய்ப்புகளில் உதவியாக இருக்கலாம்.',mixed:'உதவியுடன் கருத்து வேறுபாடும் இருக்கலாம்; பணம் மற்றும் பொறுப்பை தெளிவாக வைத்தால் உறவு பாதுகாக்கப்படும்.',pressure:'சகோதர உறவில் எல்லை, பணம் அல்லது பொறுப்பு குறித்த குழப்பத்தை நேரடியாகத் தெளிவுபடுத்த வேண்டியிருக்கும்.'},
+  travel:{support:'பயணம் அல்லது இடமாற்றம் வேலை, கல்வி அல்லது புதிய வாய்ப்பை விரிவாக்கக்கூடும்.',mixed:'இடமாற்றம் நல்ல வாய்ப்பைத் தரலாம்; ஆனால் குடும்பம், செலவு மற்றும் நிலைத்தன்மையை இணைத்து முடிவு செய்ய வேண்டும்.',pressure:'பயணம்/இடமாற்றத்தில் தாமதம், ஆவணம் அல்லது செலவு கவனம் கேட்கலாம்; திட்டமிட்ட நகர்வு நல்லது.'},
+  status:{support:'தொடர்ச்சியான செயல்திறன் மூலம் அங்கீகாரம், பொறுப்பு மற்றும் சமூக மதிப்பு வளரக்கூடும்.',mixed:'அங்கீகாரம் கிடைக்கும் போதும் அதனுடன் பொறுப்பும் விமர்சனமும் சேரலாம்; நிலையான செயல்திறன் முக்கியம்.',pressure:'புகழை விரைவாகத் தேடுவதை விட நம்பகத்தன்மை மற்றும் செய்த பணியின் தரத்தை கட்டுவது நீண்டகால பலன் தரும்.'},
+  fortune:{support:'வழிகாட்டல், தொடர்பு, பயணம் அல்லது கல்வி வாய்ப்புகளை சரியான நேரத்தில் பயன்படுத்தும்போது முன்னேற்றம் வேகமாகலாம்.',mixed:'வாய்ப்பு கிடைத்தாலும் அதை பயன்படுத்த தயாரிப்பு மற்றும் சரியான முடிவு தேவைப்படும்.',pressure:'அதிர்ஷ்டத்தை காத்திருப்பதை விட திறன், தொடர்பு மற்றும் திட்டமிடலை வளர்ப்பதே வாய்ப்பை உருவாக்கும்.'},
+  spiritual:{support:'வழிபாடு, தியானம் அல்லது சுயபரிசீலனை மனத் தெளிவை ஆழப்படுத்தக்கூடும்.',mixed:'உலகப் பொறுப்புகளும் உள்ளார்ந்த தேடலும் ஒன்றுடன் ஒன்று சமநிலைப்படுத்தப்பட வேண்டும்.',pressure:'சோர்வு அல்லது தனிமை உணர்வை ஆன்மிகம் மட்டும் கொண்டு மறைக்காமல் நடைமுறை ஆதரவும் தேவைப்பட்டால் பெற வேண்டும்.'},
+  skills:{support:'தொடர்பு, பகுப்பாய்வு, கற்றல் அல்லது தொழில்நுட்பத் திறனை நேரடி பணிப் பலனாக மாற்றும் திறன் நல்லது.',mixed:'பல திறன்கள் இருந்தாலும் ஒன்றிரண்டு திறன்களை ஆழமாகப் பயன்படுத்தினால் முன்னேற்றம் தெளிவாகும்.',pressure:'திறன் இருந்தும் தொடர்ச்சியின்மை பலனை குறைக்கலாம்; ஒழுங்கான பயிற்சி முக்கியம்.'},
+  debt:{support:'கடன் அல்லது போட்டிச் சூழலை கட்டுப்பாட்டுடன் நிர்வகிக்கும் திறன் உள்ளது.',mixed:'கடன் எடுத்தல்/திருப்பிச் செலுத்தல் மற்றும் ஆவணக் கடமைகளை நேரம் தவறாமல் கண்காணிக்க வேண்டும்.',pressure:'புதிய கடன் பொறுப்பை குறைத்து, திருப்பிச் செலுத்தல் மற்றும் சட்ட/ஒப்பந்த ஆவணத்தை முன்னுரிமைப்படுத்துவது பாதுகாப்பானது.'},
+  turning:{support:'மாற்றக் காலங்கள் பழைய நிலையை விட்டு மேம்பட்ட திசைக்கு நகர்த்தும் வாய்ப்பாக மாறலாம்.',mixed:'மாற்றம் ஒரே நேரத்தில் வாய்ப்பும் அசௌகரியமும் தரலாம்; ஆதரவுகளை உறுதி செய்த பின் முடிவு எடுக்கலாம்.',pressure:'பழைய அமைப்பு சிதையும் உணர்வு வந்தாலும் அதை முழு தோல்வியாக அல்லாமல் மறுகட்டமைப்பு காலமாகப் பயன்படுத்த வேண்டும்.'},
+  remedy:{support:'பெரிய தடையை விட ஒழுங்கு மற்றும் சிறிய நடைமுறை திருத்தங்கள் போதுமான பலனைத் தரக்கூடும்.',mixed:'நடைமுறை மாற்றத்துடன் தனிப்பட்ட நம்பிக்கைக்கு ஏற்ற வழிபாடு/பரிகாரத்தை துணையாகப் பயன்படுத்தலாம்.',pressure:'முதலில் சம்பந்தப்பட்ட வாழ்க்கைச் சிக்கலுக்கு நடைமுறை உதவி தேட வேண்டும்; பாரம்பரிய பரிகாரம் அதற்கு துணை மட்டுமே.'}
+ };
+ return ((T[d]||T.turning)[band]||'');
+}
+function v164DomainStory(c,data,d,l,payload,forcedBand){
+ const b=v164DomainBalance(c,data,d),band=forcedBand||b.band,e=b.e;
+ if(l!=='ta'){
+  const base=v139Reality(c,data,d,l,payload,band);
+  return String(base).replace(/ Overall support is stronger.*$/,'').replace(/ Overall pressure is stronger.*$/,'').replace(/ Support and pressure are mixed.*$/,'').trim();
+ }
+ const lord=langPlanet(e.lord,'ta'),lordH=e.lordH,fields=d==='career'?careerFields(c,'ta'):[];
+ const intro={
+  career:fields.length?`தொழில் பாதையில் ${fields.join(', ')} போன்ற பணித்திசைகள் அதிகமாக ஒத்துவருகின்றன. பொறுப்பு அதிகரிக்கும் வேலையில் திறன் தெளிவாக வெளிப்படும்.`:'தொழில் வாழ்க்கை படிப்படியாக பொறுப்பு மற்றும் தனித்திறன் மூலம் உருவாகும் அமைப்பு உள்ளது.',
+  jobchange:'வேலை மாற்றம் வெறும் இடமாற்றமாக அல்லாமல் பதவி, பணிச்சூழல், குழு அல்லது வருமான அமைப்பு மாறும் முக்கிய கட்டமாக வரக்கூடும்.',
+  business:'சுயதொழில்/வியாபாரத்தில் வாடிக்கையாளர் நம்பிக்கை, ஒப்பந்தத் தெளிவு மற்றும் பணப்புழக்கம் மூன்றும் ஒன்றாகச் செயல்படும் போது வளர்ச்சி நிலையாகும்.',
+  finance:'பணவரவு மட்டும் செல்வம் அல்ல; சேமிப்பு, கடன் கட்டுப்பாடு மற்றும் சொத்து உருவாக்கம் இணையும் போது தான் நிதிநிலை தெளிவாக மேம்படும்.',
+  marriage:'திருமணம் அல்லது நீண்டகால உறவு பரஸ்பர சம்மதம், குடும்ப ஒத்திசைவு மற்றும் பொறுப்பை ஏற்கும் தயார்நிலை ஆகியவற்றுடன் உருவாகும் முக்கிய வாழ்க்கை மாற்றமாக தெரிகிறது.',
+  children:'குழந்தை தொடர்பான பலன் குடும்ப விரிவாக்கம், பராமரிப்பு மற்றும் புதிய பொறுப்பை ஏற்கும் வாழ்க்கைக் கட்டத்துடன் இணைகிறது.',
+  property:'வீடு, நிலம், கட்டிடம், வாகனம் அல்லது நிரந்தர வசதி உருவாக்கும் எண்ணம் குடும்ப நிலைத்தன்மை மற்றும் நீண்டகால பாதுகாப்புடன் இணைந்து செயல்படும்.',
+  education:'கற்றல் வாழ்க்கையில் ஒருமுறை முடியும் விஷயம் அல்ல; பயிற்சி, உயர்கல்வி அல்லது தொழில்முறைத் திறன் மூலம் மீண்டும் முன்னேற்ற கருவியாக மாறக்கூடும்.',
+  health:'உடல்நலப் பகுதி நோயறிதல் அல்ல; வேலைச்சுமை, ஓய்வு, தூக்கம் மற்றும் தினசரி ஒழுங்கு சமநிலையைப் பார்க்கும் வாழ்க்கை வழிகாட்டல் மட்டுமே.',
+  family:'குடும்ப வாழ்க்கையில் அன்புடன் பொறுப்பும் அதிக இடம் பெறும்; பணம், நேரம் மற்றும் எதிர்பார்ப்பை தெளிவாகப் பகிர்வது இல்லற அமைதியை பாதுகாக்கும்.',
+  parents:'பெற்றோர் மற்றும் மூத்தோர் தொடர்பான பொறுப்பு வாழ்க்கையின் முக்கிய முடிவுகளில் நேரம், செலவு மற்றும் இடத் தேர்வை பாதிக்கக்கூடும்.',
+  siblings:'சகோதரர்கள்/நெருங்கிய உறவுகள் உதவி, முயற்சி மற்றும் சில நேரங்களில் கருத்து வேறுபாட்டின் மூலம் வாழ்க்கையில் தாக்கம் செலுத்தலாம்.',
+  travel:'பயணம் அல்லது இடமாற்றம் சுற்றுலாவாக மட்டும் இல்லாமல் வேலை, கல்வி, குடும்பம் அல்லது புதிய வாய்ப்புடன் இணைந்து வரக்கூடும்.',
+  status:'அங்கீகாரம் திடீர் புகழை விட செய்த பணியின் தரம், பொறுப்பு மற்றும் நம்பகத்தன்மை மூலம் படிப்படியாக உருவாகும்.',
+  fortune:'வாய்ப்புகள் வழிகாட்டல், தொடர்பு, கல்வி அல்லது பயணத்தின் மூலம் திறக்கப்படலாம்; தயாராக இருக்கும் போது அதிர்ஷ்டம் நடைமுறை பலனாக மாறும்.',
+  spiritual:'ஆன்மிகம் சவால்களில் இருந்து ஓட்டம் அல்ல; சிந்தனை, வழிபாடு அல்லது அமைதியான நேரம் மூலம் உள்ளார்ந்த தெளிவு பெறும் பாதையாக இருக்கலாம்.',
+  skills:'தொடர்பு, பகுப்பாய்வு, கற்றல் மற்றும் தனிப்பட்ட முயற்சியை நடைமுறை பலனாக மாற்றும் திறன் வாழ்க்கை முன்னேற்றத்திற்கு முக்கியம்.',
+  debt:'கடன், போட்டி அல்லது சட்ட/ஒப்பந்தப் பொறுப்புகளில் காலக்கெடு, ஆவணம் மற்றும் திருப்பிச் செலுத்தும் ஒழுங்கே பாதுகாப்பை நிர்ணயிக்கும்.',
+  turning:'வாழ்க்கைத் திருப்பங்கள் ஒரு விஷயத்தை மட்டும் மாற்றாமல் வேலை, உறவு, பணம் அல்லது வாழும் முறையை மறுபரிசீலிக்க வைக்கும் கட்டமாக வரலாம்.',
+  remedy:'பரிகாரத்தின் முதல் படி சம்பந்தப்பட்ட வாழ்க்கைச் சிக்கலில் நடைமுறை திருத்தம் செய்வதே; வழிபாடு அல்லது பாரம்பரிய பரிகாரம் துணையாக இருக்கலாம்.'
+ }[d]||'இந்த ஜாதகப் பகுதி வாழ்க்கையில் நடைமுறையாக வெளிப்படும் விதமே இங்கு விளக்கப்படுகிறது.';
+ const link=({1:'தனிப்பட்ட முடிவு மற்றும் தன்னம்பிக்கை',2:'குடும்பம், வருமானம் மற்றும் சேமிப்பு',3:'சுயமுயற்சி, தொடர்பு மற்றும் திறன்',4:'வீடு மற்றும் குடும்ப அடித்தளம்',5:'கல்வி, படைப்பாற்றல் மற்றும் குழந்தைகள்',6:'வேலை, கடன் மற்றும் போட்டி',7:'துணைவர், கூட்டாண்மை மற்றும் பொதுத் தொடர்பு',8:'கூட்டு நிதி மற்றும் பெரிய மாற்றங்கள்',9:'உயர்கல்வி, பயணம் மற்றும் வழிகாட்டல்',10:'தொழில், பதவி மற்றும் பொறுப்பு',11:'லாபம், தொடர்புகள் மற்றும் ஆசை நிறைவேற்றம்',12:'செலவு, வெளிநாடு அல்லது தூர வாழ்வு'})[lordH]||'';
+ const context=link?({career:`தொழில் வளர்ச்சி ${link} தொடர்பான முடிவுகளால் மாற்றம் பெறலாம்.`,jobchange:`வேலைமாற்ற முடிவு ${link} காரணிகளோடு இணைந்து உருவாகலாம்.`,business:`வியாபார வளர்ச்சியில் ${link} முக்கிய தாக்கம் கொடுக்கலாம்.`,finance:`பணநிலையின் உயர்வு அல்லது குறைவு ${link} வழியாக நேரடியாக பாதிக்கப்படலாம்.`,marriage:`திருமண/உறவு முடிவுகளில் ${link} முக்கிய பங்கு வகிக்கலாம்.`,children:`குழந்தை தொடர்பான திட்டம் ${link} சார்ந்த வாழ்க்கை மாற்றங்களுடன் சேர்ந்து வரலாம்.`,education:`கல்வி அல்லது பயிற்சி முடிவு ${link} தேவையோடு இணைந்து திசை மாறலாம்.`,property:`சொத்து முடிவு ${link} தொடர்பான தேவையோடு சேர்ந்து வரலாம்.`,family:`குடும்ப அமைதியில் ${link} சார்ந்த முடிவுகள் நேரடி தாக்கம் தரலாம்.`,parents:`பெற்றோர் பொறுப்பில் ${link} சார்ந்த சூழல் முக்கியமாகலாம்.`,siblings:`சகோதர உறவு ${link} தொடர்பான முடிவுகளால் பாதிக்கப்படலாம்.`,travel:`பயணம் அல்லது இடமாற்றம் ${link} தொடர்பான காரணத்தால் உருவாகக்கூடும்.`,status:`அங்கீகாரம் ${link} வழியாக அதிகமாக உருவாகலாம்.`,fortune:`வாய்ப்பு ${link} தொடர்பான சூழல் திறக்கும் போது வெளிப்படலாம்.`,skills:`திறன் ${link} பயன்படுத்தும் சூழலில் பலன் தரும்.`,debt:`கடன்/போட்டி நிலை ${link} சார்ந்த பொறுப்புகளால் மாறலாம்.`,turning:`வாழ்க்கைத் திருப்பம் ${link} தொடர்பான மாற்றத்தால் தொடங்கலாம்.`,spiritual:`உள்ளார்ந்த தேடல் ${link} தொடர்பான அனுபவத்தால் ஆழமடையலாம்.`,remedy:`திருத்தம் தேவைப்படும் பகுதி ${link} சார்ந்த நடைமுறையில் முதலில் வெளிப்படலாம்.`})[d]||'':'';
+ return `${intro} ${context} ${v164BalanceSentence(d,band,'ta')}`.replace(/\s+/g,' ').trim();
+}
+function v164TimingSentence(c,d,l,payload){
+ const sel=v164BestWindow(c,d,payload),w=sel.w;if(!w)return l==='ta'?'இந்த பலனுக்கு தனியாக வலுப்படும் காலம் தற்போதைய கணக்கில் தெளிவாகத் தேர்வு ஆகவில்லை.':'No distinct high-relevance period is selected for this result.';
+ const when=v164HumanWindow(w,l,payload);
+ if(l!=='ta')return `${when} is the strongest currently selected period for ${domains[d]?.en||d}.`;
+ const verb={career:'தொழில் முன்னேற்றம், பதவி அல்லது பொறுப்பு மாற்றம் தெளிவாக நகரக்கூடிய காலம்',jobchange:'வேலை மாற்றம் அல்லது புதிய பொறுப்பு முடிவு வலுப்படக்கூடிய காலம்',business:'வியாபார ஒப்பந்தம், வாடிக்கையாளர் வளர்ச்சி அல்லது வருமான இயக்கம் வலுப்படக்கூடிய காலம்',finance:'வருமானம், சேமிப்பு அல்லது பெரிய நிதி முடிவு முக்கியமாவதற்கான காலம்',marriage:'திருமண பேச்சு, உறவு உறுதிப்பாடு அல்லது துணைவர் தொடர்பான முக்கிய முடிவு வலுப்படக்கூடிய காலம்',children:'குடும்ப விரிவாக்கம் அல்லது குழந்தை தொடர்பான திட்டமிடல் முக்கியமாவதற்கான காலம்',property:'வீடு, நிலம், வாகனம் அல்லது இடமாற்ற முடிவு நடைமுறைக்கு நகரக்கூடிய காலம்',education:'கல்வி, தேர்வு, பயிற்சி அல்லது உயர்கல்வி முடிவு வலுப்படக்கூடிய காலம்',health:'உடல் ஒழுங்கு மற்றும் ஓய்வை அதிக கவனிக்க வேண்டிய காலம்',family:'குடும்பப் பொறுப்பு அல்லது இல்லற முடிவு முக்கியமாவதற்கான காலம்',travel:'பயணம் அல்லது இடமாற்ற வாய்ப்பு வலுப்படக்கூடிய காலம்',status:'அங்கீகாரம் அல்லது பொறுப்பு அதிகரிக்கக்கூடிய காலம்',fortune:'புதிய வாய்ப்பு திறக்கக்கூடிய காலம்',skills:'திறன் கற்றல் மற்றும் அதை பயன்படுத்தும் வாய்ப்பு அதிகரிக்கக்கூடிய காலம்',debt:'கடன்/ஒப்பந்த முடிவை ஒழுங்குபடுத்த வேண்டிய காலம்',parents:'பெற்றோர் தொடர்பான பொறுப்பு முக்கியமாவதற்கான காலம்',siblings:'சகோதர உறவு அல்லது கூட்டு முயற்சி முக்கியமாவதற்கான காலம்',spiritual:'உள்ளார்ந்த மாற்றம் மற்றும் ஆன்மிக ஈடுபாடு ஆழமடையக்கூடிய காலம்',turning:'வாழ்க்கை திசைமாற்றம் தெளிவாகும் காலம்',remedy:'திருத்தம் மற்றும் சமநிலை தேவைப்படும் காலம்'};
+ const lead=sel.kind==='current'?'தற்போது':sel.kind==='past'?'கடந்த காலத்தில் வலுவாக இருந்த கட்டம்':'அடுத்த வலுவான காலச்சேர்க்கை';
+ return `${lead}: ${when}. ${verb[d]||'இந்த வாழ்க்கைப் பலன் வலுப்படக்கூடிய காலம்'}.`;
+}
+function v164DashaMain(c,data,z,x,l,payload){
+ const w=z.w,band=x.pick?.m?.verdict||'mixed',age=v42AgeInfo(payload,v49Mid(w))?.years;
+ const period=`${w.start} → ${w.end}${age!=null?(l==='ta'?` (வயது சுமார் ${age})`:` (about age ${age})`):''}`;
+ if(l!=='ta')return `${period}. ${phaseMeaning(x.d,w.pd,l)}.`;
+ const end={support:'இந்த காலத்தில் வாய்ப்பை செயலாக்கும் ஆதரவு அதிகம்.',mixed:'வாய்ப்பும் பொறுப்பும் சேர்ந்து வரலாம்; சூழ்நிலையைப் பார்த்து முடிவு செய்ய வேண்டும்.',pressure:'அவசர முடிவை விட தாமதம், திருத்தம் அல்லது கூடுதல் தயாரிப்பு தேவைப்படலாம்.'};
+ return `${period}: ${phaseMeaning(x.d,w.pd,'ta')}. ${end[band]||end.mixed}`;
+}
+function v164TransitMain(c,data,z,x,l){
+ const m=x.pick?.m||{},s=Number(m.tSupport||0),p=Number(m.tPressure||0),band=s>p?'support':p>s?'pressure':'mixed';
+ if(l!=='ta')return v164DomainStory(c,data,x.d,l,window.__smvV136Payload||{},band);
+ const intro={support:'கோச்சார ஆதரவு அதிகரிக்கும் இந்த கட்டத்தில்',mixed:'கோச்சாரத்தில் ஆதரவும் சவாலும் கலந்து இருக்கும் இந்த கட்டத்தில்',pressure:'கோச்சார அழுத்தம் அதிகமாக இருக்கும் இந்த கட்டத்தில்'}[band];
+ const action=V70_ACTION[x.d]?.[0]||'';
+ return `${intro} ${phaseMeaningBase(x.d,'ta')} தொடர்பான நிகழ்வுகள் முன்னிலைக்கு வரலாம். ${action}`.replace(/\s+/g,' ').trim();
+}
+
 function v59DashaRow(c,data,z,l,payload){
- const {w,picks}=z;if(!picks.length)return '';
- const body=picks.map((x,i)=>`<p><b>${esc(v53DomainName(x.d,l))}${picks.length>1?' '+(i+1):''}</b> — ${esc(v59DashaNarrative(c,data,z,x,l,payload))}</p>`).join('');
- return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)} · ${esc(dashaText(w,l))}</b>${body}</div>`;
+ const {w,picks}=z;if(!picks.length)return '';const ta=l==='ta';
+ const body=picks.map(x=>{const main=v164DashaMain(c,data,z,x,l,payload),ev=v59DashaNarrative(c,data,z,x,l,payload);return `<section class="smv-v162-natural smv-v164-human"><h4>${esc(v53DomainName(x.d,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'தசை ஆதாரம் பார்க்க':'View dasha evidence'}</summary><p>${esc(ev)}</p></details></section>`}).join('');
+ return `<div class="smv-pred-period"><b>${esc(dashaText(w,l))}</b>${body}</div>`;
 }
 const V70_ACTION={
  career:['பணிப் பொறுப்புகள், திறன் தேவைகள், மேலாளர் கருத்து ஆகியவற்றை இணைத்து முன்னேற்றத் திட்டம் அமைக்கலாம்.','Review responsibilities, required skills and feedback when planning career progress.'],
@@ -704,12 +817,9 @@ const V70_ACTION={
  turning:['மாற்றத்திற்கு முன் தற்போதைய சூழல், ஆதரவுகள் மற்றும் மாற்று வழிகளை ஒப்பிடலாம்.','Compare the present situation, available support and alternatives before a transition.'],
  remedy:['அழுத்தம் ஏற்படும் பொறுப்புகளை முன்னுரிமைப்படுத்தி நடைமுறை ஆதரவை நாடலாம்.','Prioritize demanding responsibilities and seek practical support.']};
 function v59TransitRow(c,z,l){
- const {w,picks,samples=[]}=z;if(!picks.length)return '';const ta=l==='ta';
- const slow=['Jupiter','Saturn','Rahu','Ketu'],rows=slow.map(pn=>{const hs=samples.map(s=>{const p=v39TransitPlanets(s.transit).find(p=>P(p.name||p.planet)===pn);return p?v39TransitHouse(c,p):null;});if(hs.some(h=>!h))return '';return `<tr><td>${esc(langPlanet(pn,l))}</td>${hs.map(h=>`<td>${h}</td>`).join('')}</tr>`;}).join('');
- const body=picks.map(x=>{const m=x.pick.m||{},s=Number(m.tSupport||0),p=Number(m.tPressure||0),event=v59OutcomeText(x,l),role=[...new Set([w.md,w.ad,w.pd])].map(n=>v59HouseRole(c,x.d,n,l)).filter(Boolean).join('; '),hits=v59TransitEvidence(c,x.d,z.tr,l),action=V70_ACTION[x.d]?.[ta?0:1]||'';
- const assessment=ta?(s>p?`${event} தொடர்பில் ஆதரவு சுட்டிகள் அதிகம்; நடைமுறை முயற்சிக்கான காலமாக ஆய்வு செய்யலாம்.`:p>s?`${event} தொடர்பில் அழுத்தச் சுட்டிகள் அதிகம்; எதிர்பார்ப்பு மற்றும் செயல்திட்டத்தை மறுமதிப்பிடுவது பொருத்தமானது.`:`${event} தொடர்பில் கலப்பு சுட்டிகள் உள்ளன; தனி நிகழ்வாக உறுதிப்படுத்தும் ஆதாரம் போதாது.`):(s>p?`Support indicators are stronger for ${event}; this can be reviewed as a period for practical effort.`:p>s?`Pressure indicators are stronger for ${event}; reassess expectations and the action plan.`:`Indicators for ${event} are mixed; they do not establish a specific event.`);
- return `<section class="smv-transit-domain"><h4>${esc(v53DomainName(x.d,l))}</h4><p>${esc(assessment)}</p><p>${esc(hits)} ${esc(role)}</p><p>${esc(action)}</p></section>`;}).join('');
- return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)} · ${esc(dashaText(w,l))}</b><table><thead><tr><th>${ta?'மெதுவான கிரகம்':'Slow planet'}</th>${samples.map(s=>`<th>${esc(s.date)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>${body}</div>`;
+ const {w,picks}=z;if(!picks.length)return '';const ta=l==='ta',data=window.__smvV138Full||{};
+ const body=picks.map(x=>{const hits=v59TransitEvidence(c,x.d,z.tr,l),main=v164TransitMain(c,data,z,x,l);return `<section class="smv-transit-domain smv-v162-natural smv-v164-human"><h4>${esc(v53DomainName(x.d,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'கோச்சார ஆதாரம் பார்க்க':'View transit evidence'}</summary><p>${esc(hits)}</p></details></section>`}).join('');
+ return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b>${body}</div>`;
 }
 function v59SpecificProfile(c,data,d,l,payload){
  const ranked=(V49_EVENTS[d]||[]).map(e=>v53NatalOutcomeScore(c,data,d,e)).sort((a,b)=>b.score-a.score).filter(x=>x.score>0).slice(0,3);
@@ -746,11 +856,14 @@ function v136AgeOn(payload,date){const b=v136Birth(payload),x=date instanceof Da
 function v136Chronology(c,d,payload){
  const now=new Date(),birth=v136Birth(payload),min=V136_MIN_AGE[d]??0;
  const start=birth?new Date(birth.getFullYear()+min,birth.getMonth(),birth.getDate()):null;
- const rows=periods(c).map(w=>({...w,a:dt(w.start),b:dt(w.end,true),score:relScore(c,w.md,d)+relScore(c,w.ad,d)+relScore(c,w.pd,d)})).filter(w=>w.a&&w.b&&(!start||w.b>=start));
- const rank=a=>a.slice().sort((x,y)=>y.score-x.score||+y.b-+x.b);
+ const rows=periods(c).map(w=>{
+  const md=relScore(c,w.md,d),ad=relScore(c,w.ad,d),pd=relScore(c,w.pd,d);
+  return {...w,a:dt(w.start),b:dt(w.end,true),score:md+(ad*2)+(pd*3),layers:{md,ad,pd}};
+ }).filter(w=>w.a&&w.b&&(!start||w.b>=start));
+ const rank=a=>a.slice().sort((x,y)=>y.score-x.score||+x.a-+y.a);
  const past=rank(rows.filter(w=>w.b<now)).slice(0,3).sort((x,y)=>x.a-y.a);
  const current=rank(rows.filter(w=>w.a<=now&&w.b>=now)).slice(0,1);
- const future=rows.filter(w=>w.a>now).sort((x,y)=>+x.a-+y.a||y.score-x.score).slice(0,4);
+ const future=rank(rows.filter(w=>w.a>now)).slice(0,6).sort((x,y)=>+x.a-+y.a);
  return {past,current,future,start,now};
 }
 function v136Window(w,l){if(!w)return l==='ta'?'தனி காலம் கிடைக்கவில்லை':'No distinct window found';const age=v136AgeOn(window.__smvV136Payload||{},w.a);const per=dashaText(w,l);return `${String(w.start||'').slice(0,10)} → ${String(w.end||'').slice(0,10)}${age!=null?(l==='ta'?` (வயது ${age})`:` (age ${age})`):''} · ${per}`}
@@ -794,32 +907,34 @@ function v139Reality(c,data,d,l,payload,balance){
  if(ta){if(balance==='support')s+=' மொத்தத்தில் ஆதரவு காரணிகள் மேலோங்குவதால் இந்தத் துறையில் வாய்ப்பு கிடைக்கும் போது பலனை நடைமுறையில் உருவாக்கும் திறன் அதிகம்.';else if(balance==='pressure')s+=' மொத்தத்தில் pressure அதிகம்; எனவே மறுப்பு என்று அல்லாமல் தாமதம், கூடுதல் முயற்சி அல்லது திருத்தம் தேவைப்படும் பலனாகப் படிக்க வேண்டும்.';else s+=' ஆதரவும் pressure-மும் கலந்ததால் timing மற்றும் நடைமுறைத் தேர்வுகள் முடிவை அதிகமாக மாற்றும்.';}else{if(balance==='support')s+=' Overall support is stronger, so a favourable window has a better chance of becoming a practical result.';else if(balance==='pressure')s+=' Overall pressure is stronger; read this as delay, extra effort or correction rather than automatic denial.';else s+=' Support and pressure are mixed, so timing and practical choices matter more.';}
  return s;
 }
-function v136LifeInterpretation(c,data,d,l,payload){
- const x=evidence(c,data,d,l),adv=smvAdvancedEvidence(c,data,d,l),sup=x.supporters.length+adv.score.support,pre=x.pressures.length+adv.score.pressure,ta=l==='ta',balance=sup>pre?'support':pre>sup?'pressure':'mixed';
- const textTA={career:'தொழிலில் வெறும் routine பணியை விட பொறுப்பு, முடிவு எடுக்கும் வாய்ப்பு, மக்கள்/வாடிக்கையாளர் தொடர்பு அல்லது அறிவைப் பயன்படுத்தும் பணி அதிக திருப்தி தரும். காலப்போக்கில் தனக்கென ஒரு professional identity உருவாக்கும் முயற்சி வலுப்படும்.',jobchange:'வேலை மாற்றம் திடீர் ஆசையால் மட்டும் அல்லாமல் பொறுப்பு, சூழல் அல்லது முன்னேற்றத் தேவையால் உருவாகும். சரியான காலத்தில் பதவி/குழு/இட மாற்றம் புதிய வளர்ச்சிக்கான கதவாக அமையலாம்.',business:'சுயதொழில் அல்லது வியாபாரம் சாத்தியமான துறையாக இருந்தாலும் கூட்டாண்மை, வாடிக்கையாளர் நம்பிக்கை மற்றும் cash-flow கட்டுப்பாடு வெற்றியை நிர்ணயிக்கும்.',finance:'வருமானம் கிடைப்பதோடு அதை நிலையான சேமிப்பாக மாற்றும் ஒழுக்கமே செல்வ வளர்ச்சியை தீர்மானிக்கும். வாய்ப்பு கிடைக்கும் காலங்களில் திட்டமிட்ட சேமிப்பு/முதலீடு அதிக பலன் தரும்.',marriage:'திருமணம் வாழ்க்கையின் முக்கிய உறவு மற்றும் பொறுப்பு மாற்றமாக அமையும் அமைப்பு உள்ளது. துணைவருடன் communication, பரஸ்பர மரியாதை மற்றும் எதிர்பார்ப்புகளை தெளிவாகப் பகிர்வது திருமணத் தரத்தை நிர்ணயிக்கும்; ஒரு தனி கிரக காலம் மட்டும் திருமணம் நடந்தே தீரும் என்று பொருள் கொள்ளப்படாது.',children:'குழந்தை தொடர்பான பலன் குடும்ப விரிவாக்கம் மட்டுமல்ல; திட்டமிடல், பராமரிப்பு மற்றும் பொறுப்பு அதிகரிக்கும் வாழ்க்கைக் கட்டமாக வெளிப்படும். D7 மற்றும் கால ஒத்திசைவு இல்லாமல் குறிப்பிட்ட பிறப்பு காலம் கூறப்படாது.',property:'வீடு/நிலம்/வாகனம் தொடர்பான முடிவு வசதிக்காக மட்டும் அல்லாமல் குடும்ப நிலைத்தன்மை மற்றும் நீண்டகால பாதுகாப்புடன் இணைந்து வரும். வாங்குதல் அல்லது இடமாற்றம் சரியான தசை–கோச்சார காலத்தில் வலுப்படும்.',education:'கற்றதை நடைமுறையில் பயன்படுத்தும் போது கல்வி பலன் அதிகம். தொடர்ந்த பயிற்சி அல்லது உயர்கல்வி தொழில் திசையை மாற்றும் கருவியாக அமையலாம்.',health:'உடல் சக்தியை விட வேலைச்சுமை, ஓய்வு மற்றும் தினசரி ஒழுங்கை சமநிலைப்படுத்துவது முக்கியம். இது மருத்துவ diagnosis அல்ல; உடல்நலக் கவலை இருந்தால் மருத்துவர் மதிப்பீடு அவசியம்.',family:'குடும்பத்தில் பொறுப்பை ஏற்றுக்கொள்ளும் நிலை அதிகம்; தெளிவான communication இல்லாதபோது சிறிய விஷயங்களும் மனஅழுத்தமாக மாறலாம்.',travel:'பயணம்/இடமாற்றம் அனுபவம், வேலை அல்லது புதிய வாய்ப்புகளுடன் இணைந்து வாழ்க்கை நோக்கை விரிவாக்கலாம்.',status:'மெதுவாக கிடைக்கும் நம்பிக்கை, பொறுப்பு மற்றும் தொடர்ந்து காட்டும் செயல்திறன் சமூக மதிப்பை உருவாக்கும்.',fortune:'அதிர்ஷ்டம் காத்திருப்பதை விட சரியான நேரத்தில் கிடைக்கும் வாய்ப்பு, வழிகாட்டல் மற்றும் தொடர்புகளைப் பயன்படுத்தும் போது முன்னேற்றம் அதிகம்.',spiritual:'ஆன்மிகம் வாழ்க்கையிலிருந்து விலகுதல் அல்ல; அனுபவம், சிந்தனை, வழிபாடு அல்லது தனிமையான நேரம் மூலம் உள்ளார்ந்த தெளிவு வளரக்கூடும்.',turning:'சவால்கள் பழைய நடைமுறையை மாற்றச் செய்து புதிய திசையில் மீண்டும் கட்டமைக்கும் turning point ஆக மாறலாம்.',skills:'தொடர்பு, கற்றல் மற்றும் தனிப்பட்ட முயற்சி இணையும் போது திறமை தெளிவாக வெளிப்படும்.',debt:'கடன்/போட்டி/வழக்கு போன்ற விஷயங்களில் வேகமான முடிவை விட ஆவண ஒழுங்கு, கட்டுப்பாடு மற்றும் காலத்துக்கு ஏற்ற நடவடிக்கை பாதுகாப்பானது.',parents:'பெற்றோர்/மூத்தோர் தொடர்பான பொறுப்பு வாழ்க்கை முடிவுகளில் முக்கிய இடம் பெறலாம்.',siblings:'சகோதரர்கள் அல்லது நெருங்கிய உறவுகளில் உதவி மற்றும் கருத்து வேறுபாடு இரண்டும் காலகட்டத்துக்கு ஏற்ப மாறலாம்.',remedy:'மீதமுள்ள சவாலுக்கு முதலில் நடைமுறை திருத்தம், ஒழுக்கம் மற்றும் உறவு/நிதி/வேலை சார்ந்த செயல் மாற்றமே முன்னுரிமை; பாரம்பரிய பரிகாரம் துணை வழியாக மட்டும் பார்க்கப்படுகிறது.'};
- const textEN={career:'Work is likely to feel more meaningful when it includes responsibility, decision-making, client/people contact or applied knowledge rather than only repetitive routine. A distinct professional identity can strengthen with experience.',marriage:'Marriage is treated as a major relationship and responsibility transition. Communication, mutual respect and realistic expectations matter more than any single planetary period; one Venus or seventh-house activation is never treated as proof that marriage must occur.',children:'Children-related indications are read as family expansion, care and responsibility, and are timed only after D7 and period/transit convergence.',finance:'Income growth matters most when it is converted into disciplined saving and sustainable financial decisions.',property:'Home/property indications are read as a search for stability and long-term security, with purchase or relocation promoted only when timing converges.',health:'The practical focus is balancing workload, rest and routine. This is not a medical diagnosis; health concerns require clinical evaluation.'};
- let s=v139Reality(c,data,d,l,payload,balance);
- return s;
-}
+function v136LifeInterpretation(c,data,d,l,payload){return v164DomainStory(c,data,d,l,payload);}
 function v136DomainEvidence(c,data,d,l){const base=v135DomainEvidence? v135DomainEvidence(c,data,d,l):v59SpecificProfile(c,data,d,l,{});const adv=smvAdvancedEvidence(c,data,d,l);return [base,adv.out.length?(l==='ta'?'SMV Advanced Analysis ஒருங்கிணைப்பு: ':'SMV Advanced Analysis synthesis: ')+adv.out.join(' '):''].filter(Boolean).join(' ')}
-function v136Timing(c,d,l,payload){window.__smvV136Payload=payload;const x=v136Chronology(c,d,payload),ta=l==='ta';const past=x.past.length?v136Window(x.past.slice().sort((a,b)=>b.score-a.score)[0],l):(ta?'தெளிவான கடந்தகால window இல்லை':'No distinct past window');const cur=x.current[0]?v136Window(x.current[0],l):(ta?'தற்போதைய தனி activation இல்லை':'No distinct current activation');const fut=x.future.length?v136Window(x.future.slice().sort((a,b)=>b.score-a.score)[0],l):(ta?'அடுத்த window கிடைக்கவில்லை':'No future window available');return ta?`கடந்தகால முக்கிய செயல்பாடு: ${past}. தற்போதைய நிலை: ${cur}. அடுத்த prospective செயல்பாடு: ${fut}. இவை நிகழ்வு நடந்ததற்கான ஆதாரம் அல்ல; வயது மற்றும் வாழ்க்கை வரலாற்றுடன் சேர்த்து மட்டுமே பொருள் கொள்ள வேண்டும்.`:`Strongest past activation: ${past}. Current: ${cur}. Next prospective activation: ${fut}. These are timing activations, not proof that an event occurred, and must be read with age and life history.`}
+function v136Timing(c,d,l,payload){return v164TimingSentence(c,d,l,payload);}
 function v136MarriagePromise(c,data,l){const e=evidence(c,data,'marriage',l),a=smvAdvancedEvidence(c,data,'marriage',l),score=e.supporters.length+a.score.support-e.pressures.length-a.score.pressure+(e.occupants.length?1:0);if(l==='ta')return score>=1?'திருமண வாக்குறுதி: ஆதரவு காரணிகள் காணப்படுகின்றன; ஒரு தனி placement அடிப்படையில் திருமண மறுப்பு கூறப்படவில்லை.':score<=-2?'திருமண வாக்குறுதி: தாமதம்/உறவு அழுத்தம் தரும் காரணிகள் வலுவாக உள்ளன; இருந்தாலும் இதை முழுமையான திருமண மறுப்பாக எடுத்துக்கொள்ள முடியாது.':'திருமண வாக்குறுதி: ஆதரவும் சவாலும் கலந்த அமைப்பு; D9 மற்றும் கால ஒத்திசைவு முக்கியம்.';return score>=1?'Marriage promise: supportive factors are present; no denial is inferred from a single placement.':score<=-2?'Marriage promise: delay/relationship-pressure factors are strong, but this is not treated as absolute denial.':'Marriage promise: mixed support and pressure; D9 and timing convergence are important.'}
-function v136RenderDomain(c,data,d,l,payload){const ta=l==='ta',nowAI=v42AgeInfo(payload,new Date());return `<section class="smv-pred-domain smv-v135-evidence"><h4>${esc(v42DynamicHeading(d,l,nowAI,payload))}</h4><div class="smv-v135-reason-row"><b>${ta?'ஆதாரம்':'Evidence'}</b><p>${esc(v136DomainEvidence(c,data,d,l))}</p></div><div class="smv-v135-reason-row"><b>${ta?'காலச் சுட்டி':'Timing'}</b><p>${esc(v136Timing(c,d,l,payload))}</p></div><div class="smv-v135-reason-row"><b>${ta?'வாழ்க்கைப் பலன்':'Reality prediction'}</b><p>${esc((d==='marriage'?v136MarriagePromise(c,data,l)+' ':'')+v136LifeInterpretation(c,data,d,l,payload))}</p></div></section>`}
+function v136RenderDomain(c,data,d,l,payload){
+ const ta=l==='ta',life=v136LifeInterpretation(c,data,d,l,payload),timing=v136Timing(c,d,l,payload),timingFirst=['marriage','children','jobchange','property'].includes(d),evidenceText=v136DomainEvidence(c,data,d,l);
+ const story=`<p>${esc(life)}</p>`,time=`<p class="smv-v164-time"><b>${ta?'காலம்':'Timing'}:</b> ${esc(timing)}</p>`;
+ return `<section class="smv-pred-domain smv-v135-evidence smv-v162-natural smv-v164-human"><h4>${esc(v42DynamicHeading(d,l,v42AgeInfo(payload,new Date()),payload))}</h4>${timingFirst?time+story:story+time}<details><summary>${ta?'ஆதாரம் பார்க்க':'View evidence'}</summary><div class="smv-v135-reason-row"><p>${esc(evidenceText)}</p></div></details></section>`;
+}
 const V136_Q={marriage:['திருமணம் எப்போது?','When will I get married?'],career:['வேலை / தொழில் முன்னேற்றம் எப்போது?','When will my career improve?'],jobchange:['வேலை மாற்றம் எப்போது?','When is a job change likely?'],children:['குழந்தை பாக்கியம் எப்போது?','When is a children-related period?'],property:['சொத்து / வீடு வாங்கும் காலம்?','When is a property/home period?'],finance:['பணம் எப்போது மேம்படும்?','When can finances improve?'],family:['திருமண வாழ்க்கை எப்படி இருக்கும்?','How is married/family life?'],remedy:['எனக்கு என்ன தோஷம் / மீதமுள்ள அழுத்தம்?','What dosha or residual pressure is shown?']};
-function v136OnlineAnswer(c,data,d,l,payload){const ta=l==='ta',x=v136Chronology(c,d,payload);window.__smvV136Payload=payload;const bestPast=x.past.slice().sort((a,b)=>b.score-a.score)[0],bestFuture=x.future.slice().sort((a,b)=>b.score-a.score)[0];let out=[];if(d==='marriage')out.push(v136MarriagePromise(c,data,l));out.push(v136LifeInterpretation(c,data,d,l,payload));if(bestPast)out.push((ta?'கடந்தகால முக்கிய activation: ':'Strongest past activation: ')+v136Window(bestPast,l)+'.');if(bestFuture){if(d==='marriage')out.push(ta?`திருமண நிலை குறிப்பிடப்படவில்லை. திருமணம் ஆகாதவராக இருந்தால் அடுத்த prospective window: ${v136Window(bestFuture,l)}. ஏற்கனவே திருமணம் ஆனவராக இருந்தால் இதை புதிய திருமணம் என்று எடுத்துக்கொள்ளாமல் spouse/relationship தொடர்பான முக்கிய காலமாக ஆய்வு செய்ய வேண்டும்.`:`Marital status is not assumed. If unmarried, the next prospective window is ${v136Window(bestFuture,l)}. If already married, this is not labelled another marriage; it is reviewed as a spouse/relationship period.`);else out.push((ta?'அடுத்த prospective window: ':'Next prospective window: ')+v136Window(bestFuture,l)+'.');}out.push(ta?'குறிப்பு: இது ஜோதிட காலச் சுட்டி; நிகழ்வு உறுதி அல்ல.':'Note: this is an astrological timing indication, not a guaranteed event.');return out.join(' ')}
-function v136OnlineUI(c,data,l,payload){const ta=l==='ta',opts=Object.entries(V136_Q).map(([k,v])=>`<option value="${k}">${esc(v[ta?0:1])}</option>`).join('');return `<section class="smv-v136-online"><h3>🌐 ${ta?'ஆன்லைன் பலன்கள்':'Online Prediction'}</h3><p class="small">${ta?'கேள்விக்கு தேவையான prediction domain மட்டும் on-demand ஆக ஆய்வு செய்யப்படும்.':'Only the prediction domain needed for the selected question is analysed on demand.'}</p><select data-v136-q>${opts}</select><button type="button" data-v136-go>${ta?'பலன் காண்க':'Show prediction'}</button><div data-v136-answer></div></section>`}
+function v136OnlineAnswer(c,data,d,l,payload){
+ const ta=l==='ta',story=v164DomainStory(c,data,d,l,payload),timing=v164TimingSentence(c,d,l,payload);
+ if(!ta)return `${story} ${timing}`.replace(/\s+/g,' ').trim();
+ return (['marriage','children','property','jobchange'].includes(d)?`${timing} ${story}`:`${story} ${timing}`).replace(/\s+/g,' ').trim();
+}
+function v136OnlineUI(c,data,l,payload){const ta=l==='ta',opts=Object.entries(V136_Q).map(([k,v])=>`<option value="${k}">${esc(v[ta?0:1])}</option>`).join('');return `<section class="smv-v136-online"><h3>🌐 ${ta?'ஆன்லைன் பலன்கள்':'Online Prediction'}</h3><p class="small">${ta?'தேர்ந்தெடுத்த கேள்விக்குத் தேவையான ஜாதகக் கணக்குகள் மட்டும் உடனடியாக ஒருங்கிணைக்கப்பட்டு பலன் வழங்கப்படும்.':'Only the chart factors needed for the selected question are synthesised when requested.'}</p><select data-v136-q>${opts}</select><button type="button" data-v136-go>${ta?'பலன் காண்க':'Show prediction'}</button><div data-v136-answer></div></section>`}
 function v136BindOnline(root,c,data,l,payload){const box=root.querySelector('.smv-v136-online');if(!box)return;box.querySelector('[data-v136-go]')?.addEventListener('click',()=>{const d=box.querySelector('[data-v136-q]')?.value||'marriage',a=box.querySelector('[data-v136-answer]');if(!a)return;a.innerHTML=`<div class="smv-v135-reason-row"><b>${l==='ta'?'பதில்':'Answer'}</b><p>${esc(v136OnlineAnswer(c,data,d,l,payload))}</p></div><details><summary>${l==='ta'?'ஆதாரம் பார்க்க':'View evidence'}</summary><p>${esc(v136DomainEvidence(c,data,d,l))}</p></details>`;});}
 async function renderV59(ev){
  const {full,payload,lang='en',rootId}=ev.detail||{},root=document.getElementById(rootId);if(!root||!full?.chart)return;
  const x=root.querySelector('.smv-advanced-part.integrated-predictions .smv-advanced-part-content');if(!x)return;const c=full.chart;window.__smvV138Full=full;
- let lifeHtml=`<p class="small">${lang==='ta'?'SMV Basic + Advanced Analysis-ல் ஏற்கனவே கணக்கிடப்பட்ட பாவம்–பாவாதிபதி, dignity/strength, கிரக/ராசி பார்வை, அர்கலா–விரோதார்கலா, அஷ்டகவர்க்கம், கிரக உறவுகள் மற்றும் D7/D9/D10 ஆதாரங்கள் மீண்டும் கணக்கிடாமல் இங்கு synthesis செய்யப்படுகின்றன. தாஜக, சஹம்கள், சர்வதோபத்ர மற்றும் சுதர்சன சக்கரங்கள் இப்போது பிறப்பு வாக்குறுதியை மாற்றாமல் timing/transit confirmation layer ஆக பயன்படுத்தப்படுகின்றன.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;
+ let lifeHtml=`<p class="small">${lang==='ta'?'பிறப்பு ஜாதகம், பிரிவு ஜாதகங்கள், தசா–புக்தி மற்றும் கோச்சாரக் கணக்குகள் ஒன்றாகப் படிக்கப்பட்டு, அவை வாழ்க்கையில் நடைமுறையாக எவ்வாறு வெளிப்படலாம் என்பதே இங்கு கூறப்படுகிறது. ஒவ்வொரு வாழ்க்கைப் பகுதியும் அதற்குரிய பாவம், அதிபதி, காரக கிரகம், பிரிவு ஜாதகம் மற்றும் கால ஒத்திசைவை அடிப்படையாகக் கொண்டே தனித்தனியாக விளக்கப்படுகிறது.':'Existing SMV Basic + Advanced Analysis outputs—house/lord, dignity/strength, Graha/Rasi Drishti, Argala/Virodhargala, Ashtakavarga, planet relations and D7/D9/D10—are synthesised here without recalculating them. Tajaka, Sahams, Sarvatobhadra and Sudarshana are now used as timing/transit confirmation layers without overriding natal promise.'}</p>`;
  for(const d of V53_ORDER){try{lifeHtml+=v136RenderDomain(c,full,d,lang,payload);}catch(err){console.warn('V59 domain skipped',d,err);}}
  lifeHtml+=v136OnlineUI(c,full,lang,payload);
- let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><div class="smv-v61-detail-tools"><details class="smv-v61-sub" data-smv-v61-kind="life"><summary><b>${lang==='ta'?'1. வாழ்க்கைப் பலன்கள்':'1. Life Prediction'}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="life">${lifeHtml}</div></details><details class="smv-v61-sub" data-smv-v61-kind="transit"><summary><b>${lang==='ta'?'2. விரிவான கோச்சார பலன்கள் — அடுத்த 15 ஆண்டுகள்':'2. Detailed Transit Results — Next 15 Years'}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="transit"></div></details><details class="smv-v61-sub" data-smv-v61-kind="dasha"><summary><b>${lang==='ta'?'3. விரிவான தசா–புக்தி பலன்கள் — அடுத்த 15 ஆண்டுகள்':'3. Detailed Dasha–Bhukti Results — Next 15 Years'}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="dasha"></div></details></div></div>`;
+ let html=`<div class="adv-section"><h3>🔭 ${lang==='ta'?'ஒருங்கிணைந்த முழு வாழ்க்கைப் பலன்கள்':'Integrated Full-Life Predictions'}</h3><div class="smv-v61-detail-tools"><details class="smv-v61-sub" data-smv-v61-kind="life"><summary><b>${lang==='ta'?'1. வாழ்க்கைப் பலன்கள்':'1. Life Prediction'}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="life">${lifeHtml}</div></details><details class="smv-v61-sub" data-smv-v61-kind="transit"><summary><b>${lang==='ta'?`2. விரிவான கோச்சார பலன்கள் — ${v165HorizonLabel(payload,'ta')}`:`2. Detailed Transit Results — ${v165HorizonLabel(payload,'en')}`}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="transit"></div></details><details class="smv-v61-sub" data-smv-v61-kind="dasha"><summary><b>${lang==='ta'?`3. விரிவான தசா–புக்தி பலன்கள் — ${v165HorizonLabel(payload,'ta')}`:`3. Detailed Dasha–Bhukti Results — ${v165HorizonLabel(payload,'en')}`}</b></summary><div class="smv-v61-sub-body" data-smv-v61-body="dasha"></div></details></div></div>`;
  x.innerHTML=html;
  v136BindOnline(x,c,full,lang,payload);
- if(!root.querySelector('#smv-v135-prediction-style')){const st=document.createElement('style');st.id='smv-v135-prediction-style';st.textContent='.smv-v135-evidence .smv-v135-reason-row{margin:10px 0;padding:10px 12px;border-left:3px solid currentColor;background:rgba(255,255,255,.55);border-radius:6px}.smv-v135-evidence .smv-v135-reason-row>b{display:block;margin-bottom:4px}.smv-v135-evidence .smv-v135-reason-row p{margin:0;line-height:1.65}.smv-v136-online{margin:18px 0;padding:14px;border:1px solid currentColor;border-radius:10px}.smv-v136-online select,.smv-v136-online button{width:100%;margin:6px 0;padding:11px;font:inherit}.smv-v136-online [data-v136-answer]{margin-top:10px}';root.appendChild(st);}
- const context=document.createElement('p');context.className='small';context.textContent=lang==='ta'?'ஆய்வு வரம்பு: அடுத்த 15 ஆண்டுகள். தேதியிட்ட மூன்று கோச்சார மாதிரிகள் லக்னத்திலிருந்து பாவங்களைக் காட்டுகின்றன; இடைப்பட்ட பெயர்ச்சி நேரங்களை இவை குறிக்கவில்லை. விரைவாக நகரும் கிரகங்கள் நடுப்பகுதி தேதிக்கே பொருந்தும். வயது, பிறந்த இடம் மற்றும் நேர வேறுபாடு பயன்படுத்தப்படுகின்றன; வாழும் நாடு, தொழில் அல்லது குடும்ப நிலை ஊகிக்கப்படவில்லை.':'Scope: the next 15 years. Three dated transit samples show houses from the natal ascendant; these are not exact ingress times. Fast-moving planets apply to the midpoint date only. Age, birth coordinates and UTC offset are used; current residence, occupation and family circumstances are not inferred.';x.prepend(context);
+ if(!root.querySelector('#smv-v135-prediction-style')){const st=document.createElement('style');st.id='smv-v135-prediction-style';st.textContent='.smv-v162-natural details{margin:10px 0}.smv-v162-natural summary{cursor:pointer;font-weight:600}.smv-v135-evidence .smv-v135-reason-row{margin:10px 0;padding:10px 12px;border-left:3px solid currentColor;background:rgba(255,255,255,.55);border-radius:6px}.smv-v135-evidence .smv-v135-reason-row>b{display:block;margin-bottom:4px}.smv-v135-evidence .smv-v135-reason-row p{margin:0;line-height:1.65}.smv-v136-online{margin:18px 0;padding:14px;border:1px solid currentColor;border-radius:10px}.smv-v136-online select,.smv-v136-online button{width:100%;margin:6px 0;padding:11px;font:inherit}.smv-v136-online [data-v136-answer]{margin-top:10px}';root.appendChild(st);}
+ const context=document.createElement('p');context.className='small';context.textContent=v165ScopeText(payload,lang);x.prepend(context);
  // Remove old standalone XI/XII from V58/V59. Main Advanced Analysis remains exactly I–X.
  root.querySelectorAll('.smv-advanced-part.detailed-dasha-predictions,.smv-advanced-part.detailed-transit-predictions').forEach(n=>n.remove());
  let rowsPromise=null;
@@ -848,6 +963,277 @@ async function renderV59(ev){
  if(report)report.__smvPrepareReport=async()=>{await loaders.get('dasha')?.();await loaders.get('transit')?.();};
 
 }
+
+
+
+// V165 — Kala / Desa / Sruti / Yukti / Vartamana context engine.
+// Sruti here means the inherited rule-base already used by SMV (house/lord/karaka/varga);
+// it is NOT a new astronomical factor. Yukti converts that classical signal into an
+// age/place/current-era-appropriate manifestation without changing the chart calculation.
+function v165Birth(payload){return dt(payload?.date)}
+function v165Ref(payload){const d=dt(payload?.referenceDate);return d||new Date()}
+function v165AgeAt(payload,date){const b=v165Birth(payload),x=date instanceof Date?date:dt(date);if(!b||!x)return null;let a=x.getFullYear()-b.getFullYear();if(x.getMonth()<b.getMonth()||(x.getMonth()===b.getMonth()&&x.getDate()<b.getDate()))a--;return Math.max(0,a)}
+function v165Stage(age){if(age==null)return'unknown';if(age<5)return'infant';if(age<13)return'child';if(age<18)return'teen';if(age<25)return'young';if(age<45)return'adult';if(age<65)return'mid';if(age<80)return'senior';return'elder'}
+function v165Horizon(payload){
+ const now=v165Ref(payload),birth=v165Birth(payload),age=v165AgeAt(payload,now);
+ const fifteen=new Date(now);fifteen.setFullYear(fifteen.getFullYear()+15);
+ const age80=birth?new Date(birth.getFullYear()+80,birth.getMonth(),birth.getDate()):fifteen;
+ const capped=+age80<+fifteen,end=new Date(Math.min(+fifteen,+age80));
+ const ms=Math.max(0,+end-+now),years=(age!=null&&age>=80)?0:(capped?Math.max(0,Math.ceil(ms/(365.25*86400000)-1e-9)):15);
+ return {now,end,age,years,active:age==null||age<80};
+}
+function v165HorizonLabel(payload,l){const h=v165Horizon(payload);if(!h.active)return l==='ta'?'வயது 80 வரை உள்ள காலவரம்பு நிறைவு':'age-80 long-range cap reached';if(h.years>=15)return l==='ta'?'அடுத்த 15 ஆண்டுகள்':'Next 15 Years';return l==='ta'?`அடுத்த ${h.years} ஆண்டுகள் — வயது 80 வரை`:`Next ${h.years} Years — capped at age 80`}
+function v165Place(payload){return String(payload?.place||payload?.birthPlace||payload?.location||'').trim()}
+function v165Desa(payload){
+ const place=v165Place(payload),p=place.toLowerCase(),lat=Number(payload?.lat);
+ let zone='general',ta='பொதுவான உள்ளூர் சூழல்',en='general local context';
+ if(/kashmir|srinagar|ladakh|leh|kargil|gulmarg|ஜம்மு|காஷ்மீர்|லடாக்/.test(p)){zone='cold';ta='குளிர்/மலைப்பகுதி சூழல்';en='cold/high-altitude context'}
+ else if(/rajasthan|jaipur|jodhpur|jaisalmer|bikaner|barmer|ராஜஸ்தான்|ஜெய்ப்பூர்|ஜோத்பூர்/.test(p)){zone='hotdry';ta='வெப்பம்/வறட்சி அதிகமான சூழல்';en='hot/dry context'}
+ else if(/tamil nadu|தமிழ்நாடு|kerala|கேரள|puducherry|pondicherry|புதுச்சேரி/.test(p)||(Number.isFinite(lat)&&lat<14)){zone='tropical';ta='வெப்பமண்டல சூழல்';en='tropical context'}
+ return {place,zone,ta,en};
+}
+function v165DesaGuard(text,l,payload){
+ let s=String(text||'');
+ // Never issue literal hot/cold-water prescriptions from a generic astrological symbol.
+ const repl=l==='ta'?'உள்ளூர் காலநிலை மற்றும் உடல்நிலைக்கு ஏற்ற தினசரி பராமரிப்பு':'daily care appropriate to local climate and personal condition';
+ s=s.replace(/(?:ஐஸ்|குளிர்ந்த|சுடு|சூடான)\s*(?:தண்ணீர்|நீர்)[^.;]*குளி[^.;]*/gi,repl)
+    .replace(/(?:ice|cold|hot|warm)\s+water\s+(?:bath|bathing)[^.;]*/gi,repl);
+ return s.replace(/\s+/g,' ').trim();
+}
+function v165SrutiEvidence(c,d,l){
+ const q=domains[d],lord=lords[(ls(c)+q.h-1)%12],h=hof(c,lord),kar=(q.kar||[]).slice(0,3).map(x=>langPlanet(x,l)).join(l==='ta'?'、':', ');
+ if(l==='ta')return `ஸ்ருதி/மூல விதி அடுக்கு: ${q.h}-ஆம் பாவம், அதன் அதிபதி ${langPlanet(lord,l)}${h?` ${h}-ஆம் பாவத்தில்`:''}${kar?`, தொடர்புடைய காரகங்கள் ${kar}`:''} என்பவையே இந்தப் பலனின் அடிப்படை.`;
+ return `Traditional rule layer: house ${q.h}, its lord ${langPlanet(lord,l)}${h?` in house ${h}`:''}${kar?`, with significators ${kar}`:''}, forms the base rule.`;
+}
+function v165ContextEvidence(c,d,l,payload,date){
+ const age=v165AgeAt(payload,date||v165Ref(payload)),stage=v165Stage(age),desa=v165Desa(payload);
+ const stageTa={infant:'ஆரம்பக் குழந்தைப் பருவம்',child:'பள்ளி முன்/பள்ளிப் பருவம்',teen:'இளமைக் கல்வி–திறன் வளர்ச்சி',young:'கல்வியிலிருந்து தொழில்/குடும்ப வாழ்க்கைக்கான மாற்றக் கட்டம்',adult:'வயது வந்த தொழில்–குடும்ப கட்டம்',mid:'நடுத்தர வாழ்க்கை பொறுப்பு–நிலைத்தன்மைக் கட்டம்',senior:'மூத்த வாழ்க்கை அனுபவம்–பாதுகாப்பு–குடும்ப பொறுப்பு கட்டம்',elder:'80 வயதிற்குப் பிந்தைய தற்போதைய வாழ்க்கைக் கட்டம்',unknown:'வயது நிலை தெரியாத கட்டம்'};
+ if(l==='ta')return `${v165SrutiEvidence(c,d,l)} காலம்: வயது ${age??'—'} — ${stageTa[stage]}. தேசம்: ${desa.place?desa.place+'; ':''}${desa.ta}. யுக்தி: பழைய குறியீடு இன்றைய வயது/சமூக சூழலுக்கேற்ற வாழ்க்கை வடிவமாக மட்டுமே மாற்றப்படுகிறது. வர்த்தமானம்: தற்போதைய வேலை/திருமண/குழந்தை நிலை தனியாக வழங்கப்படாத இடத்தில் அது ஊகிக்கப்படாது.`;
+ return `${v165SrutiEvidence(c,d,l)} Time: age ${age??'—'} (${stage}). Place: ${desa.place?desa.place+'; ':''}${desa.en}. Reasoned adaptation converts old symbols into a present-day, age-appropriate manifestation. Current occupation/marital/parental status is not invented when it was not supplied.`;
+}
+function v165ScopeText(payload,l){const h=v165Horizon(payload),desa=v165Desa(payload);if(l==='ta'){if(!h.active)return `நீண்டகால பலன் வயது 80 வரை மட்டுமே கட்டுப்படுத்தப்பட்டுள்ளது. தற்போதைய வயது ${h.age??'—'} என்பதால் 15 ஆண்டு projection உருவாக்கப்படவில்லை. பிறப்பு இடம்${desa.place?' '+desa.place:''} தேசச் சூழல் குறிப்பாக மட்டும் பயன்படுத்தப்படுகிறது; தற்போதைய வசிப்பிடம்/வேலை/திருமண நிலை ஊகிக்கப்படாது.`;return `ஆய்வு வரம்பு: ${v165HorizonLabel(payload,'ta')}. காலம்–தேசம்–ஸ்ருதி–யுக்தி–வர்த்தமானம் அடுக்குகள் பயன்படுத்தப்படுகின்றன. வயதிற்கு பொருந்தாத வேலை/திருமணம்/குழந்தைப்பேறு போன்ற பலன்கள் மறைக்கப்படுகின்றன; குழந்தைப் பருவத்தில் பெற்றோர்/குடும்ப சூழல் முக்கியமாக்கப்படுகிறது. பிறப்பு இடம்${desa.place?' '+desa.place:''} கிடைத்த தேசச் சூழலாக மட்டுமே பயன்படுத்தப்படுகிறது; தற்போதைய வாழ்க்கை நிலை ஊகிக்கப்படாது.`}return `Scope: ${v165HorizonLabel(payload,'en')}. Time, place, traditional rule, reasoned adaptation and present-life context are applied. Age-inappropriate work/marriage/childbirth outcomes are suppressed; in childhood, parent/family context is prioritised. Birthplace${desa.place?' '+desa.place:''} is used only as the available place context; current life status is not invented.`}
+
+// Age limits: keep adult events out of childhood, and cap long-range adult-life events at 80.
+Object.assign(V50_AGE_BOUNDS,{
+ career_progress:[18,70],first_job:[18,45],career_stability:[18,75],income:[18,75],savings:[18,80],gain:[18,80],
+ relationship:[18,75],proposal:[20,75],marriage:[21,75],child_planning:[21,55],family_expansion:[21,55],
+ business_start:[18,65],business_growth:[18,75],partnership:[18,75],promotion:[18,65],job_change:[18,65],role_change:[18,70],
+ property_purchase:[21,80],vehicle:[18,80],home_change:[18,80],repayment:[18,80],litigation:[18,80],relocation:[18,80],
+ recognition:[10,80],leadership:[18,80]
+});
+const V165_PARENT_EVENTS=[
+ ['parent_work',0,[4,9,10,11],'பெற்றோரின் வேலை / பொறுப்பு / முன்னேற்ற மாற்றம்','parent work, responsibility or progress'],
+ ['household_finance',0,[2,4,9,11],'குடும்ப வரவு–செலவு அல்லது சேமிப்பு நிலை மாற்றம்','household income, expense or savings change'],
+ ['family_progress',0,[4,9,10,11],'குடும்ப முன்னேற்றம், ஆதரவு அல்லது அங்கீகாரம்','family progress, support or recognition'],
+ ['family_move',0,[3,4,9,12],'குடும்ப வீடு / இடமாற்றம் / வசிப்பிட சூழல் மாற்றம்','family home or relocation change'],
+ ['family_safety_attention',0,[6,8,12],'குடும்ப பயணம் / வாகனம் / பாதுகாப்பில் கூடுதல் கவனம்','extra family travel, vehicle or safety attention']
+];
+for(const e of V165_PARENT_EVENTS)if(!(V49_EVENTS.parents||[]).some(x=>x[0]===e[0]))V49_EVENTS.parents.push(e);
+Object.assign(V50_AGE_BOUNDS,{parent_work:[0,17],household_finance:[0,17],family_progress:[0,17],family_move:[0,17],family_safety_attention:[0,17]});
+
+// Replace the old 85-year/always-15-year windows with an age-80 cap.
+function classify(c,d,payload){
+ const all=periods(c),now=v165Ref(payload),birth=v165Birth(payload),futureEnd=v165Horizon(payload).end;
+ const scored=all.map(w=>({...w,s:relScore(c,w.md,d)+relScore(c,w.ad,d)+relScore(c,w.pd,d),a:dt(w.start),b:dt(w.end,true)})).filter(w=>w.a&&w.b);
+ const strong=scored.filter(w=>w.s>=3),historical=scored.filter(w=>w.b<now&&(!birth||w.b>=birth));
+ const pickPast=a=>a.sort((x,y)=>y.s-x.s||y.b-x.b).slice(0,3).sort((x,y)=>x.a-y.a),pickFuture=a=>a.sort((x,y)=>x.a-y.a||y.s-x.s).slice(0,4);
+ let current=strong.filter(w=>w.a<=now&&w.b>=now).sort((a,b)=>b.s-a.s).slice(0,1),past=pickPast(strong.filter(w=>w.b<now&&(!birth||w.b>=birth))),future=v165Horizon(payload).active?pickFuture(strong.filter(w=>w.a>now&&w.a<=futureEnd)):[];
+ if(!past.length)past=pickPast(historical).map(w=>({...w,fallback:true}));
+ if(!current.length)current=scored.filter(w=>w.a<=now&&w.b>=now).sort((a,b)=>b.s-a.s).slice(0,1).map(w=>({...w,fallback:true}));
+ if(!future.length&&v165Horizon(payload).active)future=pickFuture(scored.filter(w=>w.a>now&&w.a<=futureEnd)).map(w=>({...w,fallback:true}));
+ return {past,current,future};
+}
+function v51PeriodPool(c,d,payload,kind){
+ const now=v165Ref(payload),birth=v165Birth(payload),all=periods(c).map(w=>({...w,s:relScore(c,w.md,d)+relScore(c,w.ad,d)+relScore(c,w.pd,d),a:dt(w.start),b:dt(w.end,true)})).filter(w=>w.a&&w.b),futureEnd=v165Horizon(payload).end;
+ if(kind==='past')return all.filter(w=>w.b<now&&(!birth||w.b>=birth));
+ if(kind==='current')return all.filter(w=>w.a<=now&&w.b>=now);
+ if(!v165Horizon(payload).active)return [];
+ return all.filter(w=>w.a>now&&w.a<=futureEnd);
+}
+function v53FifteenYearPeriods(c,referenceDate,payloadArg){
+ const payload=(payloadArg&&typeof payloadArg==='object')?payloadArg:(window.__smvV165Payload||{}),h=v165Horizon(payload),now=h.now,end=h.end;
+ if(!h.active||+end<=+now)return [];
+ return periods(c).map(w=>({...w,a:dt(w.start),b:dt(w.end,true)})).filter(w=>w.a&&w.b&&w.b>now&&w.a<end).map(w=>{const a=new Date(Math.max(+w.a,+now)),b=new Date(Math.min(+w.b,+end));return {...w,a,b,start:a.toISOString().slice(0,10),end:b.toISOString().slice(0,10)};}).sort((x,y)=>+x.a-+y.a);
+}
+
+
+function v136Chronology(c,d,payload){
+ const now=v165Ref(payload),birth=v136Birth(payload),min=Math.max(V136_MIN_AGE[d]??0,(['career'].includes(d)?18:0)),start=birth?new Date(birth.getFullYear()+min,birth.getMonth(),birth.getDate()):null,h=v165Horizon(payload);
+ const rows=periods(c).map(w=>{const md=relScore(c,w.md,d),ad=relScore(c,w.ad,d),pd=relScore(c,w.pd,d);return {...w,a:dt(w.start),b:dt(w.end,true),score:md+(ad*2)+(pd*3),layers:{md,ad,pd}}}).filter(w=>w.a&&w.b&&(!start||w.b>=start));
+ const rank=a=>a.slice().sort((x,y)=>y.score-x.score||+x.a-+y.a),past=rank(rows.filter(w=>w.b<now)).slice(0,3).sort((x,y)=>x.a-y.a),current=rank(rows.filter(w=>w.a<=now&&w.b>=now)).slice(0,1),future=h.active?rank(rows.filter(w=>w.a>now&&w.a<=h.end)).slice(0,6).sort((x,y)=>+x.a-+y.a):[];
+ return {past,current,future,start,now};
+}
+
+function v165ChildOnlyEvent(id){return ['parent_work','household_finance','family_progress','family_move','family_safety_attention'].includes(id)}
+function v165CandidateScore(c,data,d,w,tr,payload,e,mode){
+ const [id,minAge,hs]=e,age=v49Age(payload,v49Mid(w));if(!v50AgeEligible(id,minAge,age))return {eligible:false,score:-999,age};
+ if(v165ChildOnlyEvent(id)&&!(age<18))return {eligible:false,score:-999,age};
+ const m=v43EvidenceMatrix(c,data,d,w.pd,tr,payload,v49Mid(w));
+ if(id==='family_safety_attention'&&!(m.pressure>m.support&&m.pressure>=2))return {eligible:false,score:-999,age};
+ let role=0;for(const pn of [w.md,w.ad,w.pd]){const r=v40PlanetRole(c,d,pn);if(r.h&&hs.includes(r.h))role+=2;if(r.relevantOwned.some(h=>hs.includes(h)))role+=2;if(r.aspectFocus)role+=1;}
+ let score;
+ if(mode==='transit')score=(m.tSupport+m.tPressure)*3+Math.abs(m.tSupport-m.tPressure)+m.dashaActivation*.6+role*.35+(m.vSupport+m.vPressure)*.5;
+ else score=(m.support+m.pressure)+m.dashaActivation*3+role+(m.vSupport+m.vPressure)*1.5+(m.tSupport+m.tPressure)*.25;
+ if(age<18&&d==='parents')score+=4;if(age<18&&d==='family')score+=2;if(age<13&&d==='children'&&id==='child_development')score+=3;if(age>=65&&['health','family','parents','finance','property','spiritual'].includes(d))score+=1.5;
+ if(id==='family_safety_attention')score+=m.pressure*2;
+ return {eligible:true,score,age,m,id};
+}
+function v165SelectMode(c,data,d,w,tr,payload,mode){const all=(V49_EVENTS[d]||[]).map(e=>({e,...v165CandidateScore(c,data,d,w,tr,payload,e,mode)})).filter(x=>x.eligible).sort((a,b)=>b.score-a.score);return all[0]||null}
+function v165PastBoost(c,d,payload,w){const x=v136Chronology(c,d,payload),past=(x.past||[]).slice().sort((a,b)=>b.score-a.score)[0];if(!past)return 0;const a=new Set([past.md,past.ad,past.pd]),b=[w.md,w.ad,w.pd];return b.reduce((n,p)=>n+(a.has(p)?0.35:0),0)}
+async function v53PeriodBest(c,data,w,l,payload,full){
+ const mid=v49Mid(w),tr=await v39TransitFor(payload,v54DateKey(mid),l,full),dashaPicks=[],transitPicks=[];
+ for(const d of V53_ORDER){
+  const dp=v165SelectMode(c,data,d,w,tr,payload,'dasha');if(dp){const total=dp.score+v165PastBoost(c,d,payload,w);if(total>1)dashaPicks.push({d,pick:dp,total});}
+  const tp=v165SelectMode(c,data,d,w,tr,payload,'transit');if(tp&&tp.score>=2.5)transitPicks.push({d,pick:tp,total:tp.score});
+ }
+ dashaPicks.sort((a,b)=>b.total-a.total);transitPicks.sort((a,b)=>b.total-a.total);
+ const samples=await Promise.all([w.start,v54DateKey(mid),w.end].map(async date=>({date,transit:await v39TransitFor(payload,date,l,full)})));
+ return {w,tr,samples,picks:dashaPicks.slice(0,3),dashaPicks:dashaPicks.slice(0,3),transitPicks:transitPicks.slice(0,3)};
+}
+async function v58PeriodRows(c,data,l,payload,full,onRow){
+ window.__smvV165Payload=payload||{};const rows=[],ws=v53FifteenYearPeriods(c,payload?.referenceDate,payload);
+ for(let i=0;i<ws.length;i++){const w=ws[i];try{const z=await v53PeriodBest(c,data,w,l,payload,full);if((z?.dashaPicks?.length||z?.transitPicks?.length)){rows.push(z);if(onRow)onRow(z,rows.length,ws.length);}}catch(err){throw Error('Detailed period '+w.start+' could not complete: '+err.message);}await v58Yield();}
+ return rows;
+}
+
+function v165Heading(x,age,l){const id=x?.pick?.e?.[0],d=x?.d,stage=v165Stage(age);if(l!=='ta')return (id==='child_development'?'Child development / learning':id==='parent_work'?'Parents — work / responsibility':id==='household_finance'?'Family finances':id==='family_progress'?'Family progress / support':id==='family_move'?'Family home / relocation':id==='family_safety_attention'?'Family safety attention':v53DomainName(d,l));
+ if(id==='child_development')return 'கற்றல் / படைப்பாற்றல் / குழந்தைப் பருவ வளர்ச்சி';if(id==='parent_work')return 'பெற்றோர் — வேலை / பொறுப்பு / முன்னேற்றம்';if(id==='household_finance')return 'குடும்ப வரவு–செலவு / சேமிப்பு';if(id==='family_progress')return 'குடும்ப முன்னேற்றம் / ஆதரவு';if(id==='family_move')return 'குடும்ப வீடு / இடமாற்றம்';if(id==='family_safety_attention')return 'குடும்ப பாதுகாப்பு கவனம்';
+ if(stage==='senior'||stage==='elder'){if(d==='career'||d==='jobchange'||d==='business')return 'அனுபவப் பணி / பொறுப்பு மாற்றம் / ஓய்வு திட்டம்';if(d==='children')return 'குழந்தைகள் / அடுத்த தலைமுறை';if(d==='marriage')return 'துணைவர் / குடும்ப ஒத்துழைப்பு';if(d==='education')return 'தொடர்ந்த கற்றல் / அறிவுப் பகிர்வு';}
+ return v53DomainName(d,l);
+}
+function v165Band(m,mode){if(!m)return'mixed';const s=mode==='transit'?Number(m.tSupport||0):Number(m.support||0)+Number(m.vSupport||0),p=mode==='transit'?Number(m.tPressure||0):Number(m.pressure||0)+Number(m.vPressure||0);return s>p?'support':p>s?'pressure':'mixed'}
+function v165EventNarrative(x,age,mode,l,payload){
+ const id=x.pick.e[0],d=x.d,stage=v165Stage(age),band=v165Band(x.pick.m,mode),ta=l==='ta';if(!ta)return `${x.pick.e[4]} is the age-appropriate theme selected for this period.`;
+ const child={parent_work:{support:'பெற்றோரில் ஒருவரின் வேலை, பொறுப்பு அல்லது அங்கீகாரத்தில் முன்னேற்றம் குடும்ப அன்றாடத்தை மேம்படுத்தக்கூடும்.',mixed:'பெற்றோரின் வேலை அல்லது பொறுப்பு மாறுவதால் குடும்ப நேரம், பராமரிப்பு அல்லது வசிப்பிட ஒழுங்கு மாறலாம்.',pressure:'பெற்றோரின் பணிச்சுமை அல்லது வேலைச் சிக்கல் குடும்ப நேரம் மற்றும் செலவு திட்டத்தில் கூடுதல் ஒழுங்கை தேவைப்படுத்தலாம்.'},household_finance:{support:'குடும்ப வருமானம் அல்லது சேமிப்பில் முன்னேற்றம் குழந்தையின் பராமரிப்பு மற்றும் கல்வி வசதியை மேம்படுத்த உதவலாம்.',mixed:'வரவு இருந்தாலும் செலவு/பொறுப்பு கூடலாம்; குழந்தை தொடர்பான செலவுகள் திட்டமிடப்பட்டால் சமநிலை பாதுகாக்கலாம்.',pressure:'குடும்பச் செலவு அல்லது வருமான மாற்றம் அதிக கவனம் கேட்கலாம்; அவசரச் செலவை கட்டுப்படுத்துவது முக்கியம்.'},family_progress:{support:'குடும்பத்திற்கு ஆதரவு, முன்னேற்றம் அல்லது சமூக அங்கீகாரம் கிடைக்கும் சூழல் குழந்தையின் வளர்ச்சிக்கு நல்ல அடித்தளமாக அமையலாம்.',mixed:'குடும்பத்தில் நல்ல முன்னேற்றத்துடன் புதிய பொறுப்பும் சேர்ந்து வரலாம்.',pressure:'குடும்பப் பொறுப்பு அதிகரிக்கும் போது குழந்தையின் அன்றாட ஒழுங்கு மற்றும் பராமரிப்பை நிலையாக வைத்திருப்பது முக்கியம்.'},family_move:{support:'வீடு அல்லது வசிப்பிட மாற்றம் குடும்பத்திற்கு வசதி, கல்வி அல்லது வேலை வாய்ப்பு காரணமாக பயனளிக்கலாம்.',mixed:'இடமாற்றம் புதிய வாய்ப்புடன் பழகும் சிரமத்தையும் கொண்டு வரலாம்; குழந்தையின் ஒழுங்கை மெதுவாக மாற்றுவது நல்லது.',pressure:'வீடு/இடமாற்ற முடிவில் செலவு, பயணம் மற்றும் குழந்தையின் பழக்கச் சூழலை கவனமாக இணைக்க வேண்டும்.'},family_safety_attention:{support:'குடும்ப பயணம் மற்றும் வாகன ஒழுங்கில் வழக்கமான பாதுகாப்பு கவனம் போதுமானதாக இருக்கும்.',mixed:'பயணம், வாகனம் அல்லது வீட்டு பாதுகாப்பில் கூடுதல் முன் எச்சரிக்கை நல்லது.',pressure:'பயணம்/வாகனம்/வீட்டு பாதுகாப்பில் கூடுதல் கவனம் தேவைப்படும் காலமாக மட்டும் இதைப் படிக்க வேண்டும்; விபத்து நடக்கும் என்ற தீர்ப்பாக இது கொள்ளப்படாது.'}};
+ if(child[id])return child[id][band]||child[id].mixed;
+ if(id==='child_development')return band==='support'?'மொழி, கற்றல், விளையாட்டு, படைப்பாற்றல் அல்லது நினைவாற்றல் வளர்ச்சியில் நல்ல முன்னேற்றத்தை ஊக்குவிக்கக்கூடிய கட்டம்.':band==='pressure'?'வளர்ச்சி வேகம் குழந்தைதோறும் மாறும்; தூக்கம், உணவு, விளையாட்டு மற்றும் வயதுக்கேற்ற கற்றல் ஒழுங்கை அமைதியாகப் பாதுகாக்க வேண்டிய கட்டம்.':'கற்றல், விளையாட்டு மற்றும் படைப்பாற்றல் ஒன்றாக வளரக்கூடிய காலம்; குழந்தையின் இயல்பான வேகத்தையே முன்னிலைப்படுத்த வேண்டும்.';
+ if(stage==='senior'||stage==='elder'){
+  const senior={career:'புதிய வேலை தேடல் என்று மட்டும் அல்ல; அனுபவம் பகிர்தல், ஆலோசனை, பொறுப்பு மாற்றம் அல்லது ஓய்வு திட்டம் முக்கியமாகலாம்.',jobchange:'பணியிலிருந்து வெளியேறுதல், ஆலோசனைப் பங்கு, நேர அளவு குறைத்தல் அல்லது பொறுப்பை மாற்றுதல் போன்ற நடைமுறை மாற்றமாக இது வெளிப்படலாம்.',business:'புதிய அபாயம் எடுப்பதை விட ஏற்கனவே உள்ள வருமான வழி, ஆலோசனை அல்லது குடும்ப வியாபாரப் பொறுப்பை ஒழுங்குபடுத்துவது முக்கியமாகலாம்.',finance:'வருமான வளர்ச்சியுடன் சேமிப்பு பாதுகாப்பு, மருத்துவ/குடும்பச் செலவு மற்றும் சொத்து நிர்வாகம் முக்கியமாகும்.',marriage:'இதை புதிய திருமணம் என்று தானாகப் படிக்காமல், துணைவர் உறவு, குடும்ப ஒத்துழைப்பு அல்லது companionship தொடர்பான மாற்றமாகப் பார்க்க வேண்டும்.',children:'பிறப்பை மட்டும் குறிக்காமல், குழந்தைகள்/பேரக்குழந்தைகள், அவர்களின் கல்வி–வேலை–குடும்ப முன்னேற்றம் மற்றும் உங்கள் ஆதரவு பொறுப்பு முக்கியமாகலாம்.',education:'பட்டப் படிப்பு என்று மட்டும் அல்ல; புதிய திறன், வாசிப்பு, ஆன்மிக/அறிவுப் பயிற்சி அல்லது அனுபவப் பகிர்வு முக்கியமாகலாம்.',property:'புதிய வாங்குதல் மட்டுமல்ல; சொத்து பராமரிப்பு, உரிமை மாற்றம், குடும்பப் பகிர்வு அல்லது வசிப்பிட சீரமைப்பு முக்கியமாகலாம்.'};if(senior[d])return senior[d];
+ }
+ const main={career:'வேலை அல்லது தொழில் பாதையில் பொறுப்பு, திறன் மற்றும் முன்னேற்றம் தொடர்பான மாற்றம் தெளிவாகலாம்.',jobchange:'வேலை/பணி அமைப்பில் மாற்றம் ஏற்பட்டால் அதன் நிலைத்தன்மை, வருமானம் மற்றும் வளர்ச்சி வாய்ப்பை ஒன்றாகப் பார்க்க வேண்டும்.',business:'வாடிக்கையாளர், ஒப்பந்தம், பணப்புழக்கம் அல்லது கூட்டாண்மை தொடர்பான முடிவு முக்கியமாகலாம்.',finance:'வருமானம் எவ்வளவு வருகிறது என்பதைக் காட்டிலும் அது எவ்வளவு தங்குகிறது, எவ்வாறு சேமிப்பு/சொத்தாக மாறுகிறது என்பதே முக்கியமாகும்.',marriage:'வயது, சம்மதம், குடும்ப சூழல் மற்றும் உறவின் நிலைத்தன்மை பொருந்தும் போது துணைவர்/திருமண முடிவு முன்னேறலாம்.',children:'குழந்தை தொடர்பான பலன் வயது மற்றும் தற்போதைய குடும்ப நிலை பொருந்தினால் மட்டுமே குடும்ப விரிவாக்கமாகப் படிக்கப்படுகிறது; இல்லையெனில் குழந்தைகள்/அடுத்த தலைமுறை பொறுப்பாக மாற்றிப் படிக்க வேண்டும்.',education:'கல்வி, தேர்வு, பயிற்சி அல்லது திறன் மேம்பாடு அந்த வயதின் தேவைக்கு ஏற்ப முன்னிலையாகலாம்.',property:'வீடு, நிலம், வாகனம் அல்லது வசிப்பிட மாற்றம் குடும்பத் தேவை மற்றும் பணவசதியுடன் இணைந்து முக்கியமாகலாம்.',health:'உடல் ஒழுங்கு, தூக்கம், உணவு, ஓய்வு மற்றும் தினசரி பழக்கங்களில் கவனம் தேவைப்படலாம்; இது மருத்துவ diagnosis அல்ல.',family:'குடும்ப ஆதரவு, பொறுப்புப் பகிர்வு மற்றும் அன்றாட ஒழுங்கு முக்கியமாகலாம்.',parents:'பெற்றோர்/மூத்தோர் ஆதரவு அல்லது அவர்களுக்கான பொறுப்பு வாழ்க்கை முடிவுகளில் பங்கு வகிக்கலாம்.',travel:'பயணம் அல்லது இடமாற்றம் வேலை, கல்வி, குடும்பம் அல்லது வாய்ப்பின் காரணமாக உருவாகலாம்.',status:'அங்கீகாரம் அல்லது பொறுப்பு அதிகரிப்பது செய்த பணியின் தரம் மற்றும் தொடர்ச்சியோடு இணைந்து வரலாம்.',fortune:'சரியான நேரத்தில் கிடைக்கும் வாய்ப்பை பயன்படுத்தும் திறன் முன்னேற்றத்தை உருவாக்கலாம்.',spiritual:'சிந்தனை, வழிபாடு அல்லது உள்ளார்ந்த ஒழுக்கம் வாழ்க்கை முடிவுகளில் தெளிவை அதிகரிக்கலாம்.',skills:'கற்ற திறனை நடைமுறையில் பயன்படுத்தும் வாய்ப்பு அதிகரிக்கலாம்.',debt:'கடன், ஒப்பந்தம் அல்லது போட்டி விஷயங்களில் திட்டமிட்ட அணுகுமுறை தேவைப்படும்.',turning:'பழைய அமைப்பு மாறி புதிய பாதை உருவாகும் வாழ்க்கைத் திருப்பம் வரலாம்.',remedy:'பாரம்பரிய பரிகாரத்திற்கு முன் சம்பந்தப்பட்ட வாழ்க்கைப் பழக்கம் அல்லது பொறுப்பை நடைமுறையில் திருத்துவது முதன்மை.'};
+ return main[d]||String(x.pick.e[3]||'').trim();
+}
+function v165PlanetNuance(pn,l){if(l!=='ta')return '';return ({Sun:'சூரியன் காரணமாக முடிவு/அதிகாரப் பொறுப்பு வலுப்படும்.',Moon:'சந்திரன் காரணமாக குடும்பத் தேவை மற்றும் மனநிலை மாற்றம் முக்கியமாகும்.',Mars:'செவ்வாய் காரணமாக செயல் வேகம் அதிகரிக்கும்; அவசரத்தை கட்டுப்படுத்த வேண்டும்.',Mercury:'புதன் காரணமாக பேச்சு, ஆவணம், கற்றல் அல்லது தகவல் பரிமாற்றம் முடிவை நகர்த்தும்.',Jupiter:'குரு காரணமாக விரிவு, வழிகாட்டல் அல்லது ஆதரவு கிடைக்கும் வாய்ப்பு அதிகரிக்கும்.',Venus:'சுக்கிரன் காரணமாக ஒத்துழைப்பு, உறவு அல்லது வசதி சார்ந்த அம்சம் வலுப்படும்.',Saturn:'சனி காரணமாக பொறுப்பு, தாமதம் அல்லது நீண்டகால நிலைத்தன்மை சோதிக்கப்படும்.',Rahu:'ராகு காரணமாக வழக்கத்திற்கு மாறான மாற்றம் அல்லது புதிய தொடர்பு தோன்றலாம்.',Ketu:'கேது காரணமாக பழைய முறையை மறுபரிசீலிக்கும் தேவையுண்டாகலாம்.'})[pn]||''}
+function v165DashaMain(c,data,z,x,l,payload){const w=z.w,age=v165AgeAt(payload,v49Mid(w)),period=`${w.start} → ${w.end}${age!=null?(l==='ta'?` (வயது ${age})`:` (age ${age})`):''}`,main=v165EventNarrative(x,age,'dasha',l,payload),nuance=v165PlanetNuance(w.pd,l);return v165DesaGuard(`${period}: ${main} ${nuance}`,l,payload)}
+function v165TransitMain(c,data,z,x,l,payload){const age=v165AgeAt(payload,v49Mid(z.w)),main=v165EventNarrative(x,age,'transit',l,payload),q=domains[x.d],hits=v39TransitPlanets(z.tr).map(p=>({pn:P(p.name||p.planet),h:v39TransitHouse(c,p)})).filter(a=>a.h&&q.rel.includes(a.h)&&['Jupiter','Saturn','Rahu','Ketu'].includes(a.pn));const names=[...new Set(hits.map(a=>langPlanet(a.pn,l)))].slice(0,3),band=v165Band(x.pick.m,'transit');if(l!=='ta')return `${main}${names.length?' Slow transits involved: '+names.join(', ')+'.':''}`;const lead=band==='support'?'கோச்சார ஆதரவு இந்த நிகழ்வை நகர்த்த உதவும்.':band==='pressure'?'கோச்சார அழுத்தம் காரணமாக வேகம் குறையலாம் அல்லது கூடுதல் கவனம் தேவைப்படலாம்.':'கோச்சார ஆதரவும் சவாலும் கலந்துள்ளதால் நடைமுறை சூழல் முடிவை மாற்றும்.';return v165DesaGuard(`${main} ${lead}${names.length?` முக்கிய மெதுவான கோச்சாரத் தொடர்பு: ${names.join('、')}.`:''}`,l,payload)}
+function v59DashaRow(c,data,z,l,payload){const picks=z.dashaPicks||z.picks||[],w=z.w;if(!picks.length)return '';const age=v165AgeAt(payload,v49Mid(w)),ta=l==='ta';const body=picks.map(x=>{const main=v165DashaMain(c,data,z,x,l,payload),ev=v59DashaNarrative(c,data,z,x,l,payload),ctx=v165ContextEvidence(c,x.d,l,payload,v49Mid(w));return `<section class="smv-v162-natural smv-v164-human smv-v165-context"><h4>${esc(v165Heading(x,age,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'தசை ஆதாரம் பார்க்க':'View dasha evidence'}</summary><p>${esc(ev+' '+ctx)}</p></details></section>`}).join('');return `<div class="smv-pred-period"><b>${esc(dashaText(w,l))}</b>${body}</div>`}
+function v59TransitRow(c,z,l){const payload=window.__smvV165Payload||{},picks=z.transitPicks||[],w=z.w;if(!picks.length)return '';const age=v165AgeAt(payload,v49Mid(w)),data=window.__smvV138Full||{},ta=l==='ta';const body=picks.map(x=>{const main=v165TransitMain(c,data,z,x,l,payload),hits=v59TransitEvidence(c,x.d,z.tr,l),ctx=v165ContextEvidence(c,x.d,l,payload,v49Mid(w));return `<section class="smv-transit-domain smv-v162-natural smv-v164-human smv-v165-context"><h4>${esc(v165Heading(x,age,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'கோச்சார ஆதாரம் பார்க்க':'View transit evidence'}</summary><p>${esc(hits+' '+ctx)}</p></details></section>`}).join('');return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b>${body}</div>`}
+
+// Life prediction: hide adult-native domains for a child; reframe later-life domains for seniors.
+function v165HideLifeDomain(d,age){if(age==null)return false;if(age<18)return ['career','jobchange','business','finance','marriage','property','debt','status'].includes(d);if(age<21)return ['marriage','children'].includes(d);return false}
+function v165LifeStageStory(c,data,d,l,payload){const age=v165AgeAt(payload,v165Ref(payload)),stage=v165Stage(age),base=v164DomainStory(c,data,d,l,payload);if(l!=='ta')return base;if(stage==='senior'||stage==='elder'){const fake={d,pick:{e:['',0,[],v53DomainName(d,l),''],m:{support:1,pressure:0}}};return v165EventNarrative(fake,age,'dasha',l,payload)}if(age<18&&d==='parents')return 'இந்த வயதில் ஜாதகத்தின் 4, 9, 10 மற்றும் குடும்பப் பாவச் சுட்டிகள் குழந்தையின் சொந்த வேலை/வருமானமாக அல்ல; பெற்றோரின் வேலை, குடும்ப வரவு–செலவு, வீட்டு சூழல், ஆதரவு மற்றும் பொறுப்பு மாற்றங்களாக முதலில் படிக்கப்படுகின்றன.';if(age<18&&d==='children')return 'இந்த வயதில் 5ஆம் பாவப் பலன் புத்திரப்பேறு என்று படிக்கப்படாது; கற்றல், நினைவாற்றல், படைப்பாற்றல், விளையாட்டு மற்றும் வயதுக்கேற்ற வளர்ச்சியாகப் படிக்கப்படுகிறது.';return v165DesaGuard(base,l,payload)}
+function v136LifeInterpretation(c,data,d,l,payload){return v165LifeStageStory(c,data,d,l,payload)}
+function v136DomainEvidence(c,data,d,l,payload){const base=v135DomainEvidence? v135DomainEvidence(c,data,d,l):v59SpecificProfile(c,data,d,l,payload||{}),adv=smvAdvancedEvidence(c,data,d,l),ctx=v165ContextEvidence(c,d,l,payload||window.__smvV165Payload||{},v165Ref(payload||{}));return [base,adv.out.length?(l==='ta'?'SMV Advanced Analysis ஒருங்கிணைப்பு: ':'SMV Advanced Analysis synthesis: ')+adv.out.join(' '):'',ctx].filter(Boolean).join(' ')}
+function v136RenderDomain(c,data,d,l,payload){const age=v165AgeAt(payload,v165Ref(payload));if(v165HideLifeDomain(d,age))return '';const ta=l==='ta',life=v136LifeInterpretation(c,data,d,l,payload),timing=v164TimingSentence(c,d,l,payload),timingFirst=['marriage','children','jobchange','property'].includes(d),evidenceText=v136DomainEvidence(c,data,d,l,payload);let heading=v42DynamicHeading(d,l,v42AgeInfo(payload,new Date()),payload);if(l==='ta'&&age<18&&d==='children')heading='கற்றல், படைப்பாற்றல் மற்றும் குழந்தைப் பருவ வளர்ச்சி';if(l==='ta'&&age<18&&d==='parents')heading='பெற்றோர், குடும்ப சூழல் மற்றும் ஆதரவு';if(l==='ta'&&(v165Stage(age)==='senior'||v165Stage(age)==='elder')&&d==='children')heading='குழந்தைகள், பேரக்குழந்தைகள் மற்றும் அடுத்த தலைமுறை';const story=`<p>${esc(life)}</p>`,time=`<p class="smv-v164-time"><b>${ta?'காலம்':'Timing'}:</b> ${esc(timing)}</p>`;return `<section class="smv-pred-domain smv-v135-evidence smv-v162-natural smv-v164-human smv-v165-context"><h4>${esc(heading)}</h4>${timingFirst?time+story:story+time}<details><summary>${ta?'ஆதாரம் பார்க்க':'View evidence'}</summary><div class="smv-v135-reason-row"><p>${esc(evidenceText)}</p></div></details></section>`}
+
+
+// V167 — book-guided synthesis and event-selection correction.
+// D1 stays primary; relevant varga refines rather than contradicts it.
+// Dasha and Gochara are ranked independently. Multiple independent confirmations
+// strengthen confidence; no single yoga/aspect/transit is allowed to dominate.
+function v167Iso(d){return d instanceof Date&&!isNaN(d)?d.toISOString().slice(0,10):''}
+function v167ClipToHorizon(w,payload){
+ const h=v165Horizon(payload),a=dt(w?.start),b=dt(w?.end,true);if(!a||!b||!h.active||+a>=+h.end)return null;
+ const z=new Date(Math.min(+b,+h.end));if(+z<=+a)return null;
+ return {...w,a:new Date(a),b:z,start:v167Iso(a),end:v167Iso(z)};
+}
+// Fix the age-80 leak in online/life timing windows as well as the detailed reports.
+function classify(c,d,payload){
+ const all=periods(c),now=v165Ref(payload),birth=v165Birth(payload),hard=v165Horizon(payload),raw=all.map(w=>({...w,s:relScore(c,w.md,d)+relScore(c,w.ad,d)+relScore(c,w.pd,d),a:dt(w.start),b:dt(w.end,true)})).filter(w=>w.a&&w.b);
+ const pastPool=raw.filter(w=>w.b<now&&(!birth||w.b>=birth)),futurePool=hard.active?raw.map(w=>v167ClipToHorizon(w,payload)).filter(Boolean).filter(w=>w.a>now):[];
+ const currentPool=hard.active?raw.map(w=>v167ClipToHorizon(w,payload)).filter(Boolean).filter(w=>w.a<=now&&w.b>=now):[];
+ const strong=a=>a.filter(w=>w.s>=3),pickPast=a=>a.slice().sort((x,y)=>y.s-x.s||y.b-x.b).slice(0,3).sort((x,y)=>x.a-y.a),pickFuture=a=>a.slice().sort((x,y)=>y.s-x.s||x.a-y.a).slice(0,4).sort((x,y)=>x.a-y.a);
+ let past=pickPast(strong(pastPool)),current=strong(currentPool).sort((a,b)=>b.s-a.s).slice(0,1),future=pickFuture(strong(futurePool));
+ if(!past.length)past=pickPast(pastPool).map(w=>({...w,fallback:true}));
+ if(!current.length)current=currentPool.sort((a,b)=>b.s-a.s).slice(0,1).map(w=>({...w,fallback:true}));
+ if(!future.length&&hard.active)future=pickFuture(futurePool).map(w=>({...w,fallback:true}));
+ return {past,current,future};
+}
+function v136Chronology(c,d,payload){
+ const now=v165Ref(payload),birth=v136Birth(payload),min=Math.max(V136_MIN_AGE[d]??0,(d==='career'?18:0)),start=birth?new Date(birth.getFullYear()+min,birth.getMonth(),birth.getDate()):null,h=v165Horizon(payload);
+ const rows=periods(c).map(w=>{const md=relScore(c,w.md,d),ad=relScore(c,w.ad,d),pd=relScore(c,w.pd,d);return {...w,a:dt(w.start),b:dt(w.end,true),score:md+(ad*2)+(pd*3),layers:{md,ad,pd}}}).filter(w=>w.a&&w.b&&(!start||w.b>=start));
+ const rank=a=>a.slice().sort((x,y)=>y.score-x.score||+x.a-+y.a),past=rank(rows.filter(w=>w.b<now)).slice(0,3).sort((x,y)=>x.a-y.a),current=rank(rows.map(w=>v167ClipToHorizon(w,payload)).filter(Boolean).filter(w=>w.a<=now&&w.b>=now)).slice(0,1),future=h.active?rank(rows.map(w=>v167ClipToHorizon(w,payload)).filter(Boolean).filter(w=>w.a>now)).slice(0,6).sort((x,y)=>+x.a-+y.a):[];
+ return {past,current,future,start,now};
+}
+function v167DomainAllowed(d,age){
+ if(age==null)return true;
+ if(age<5)return ['health','family','parents','education','children','travel','fortune','remedy'].includes(d);
+ if(age<13)return ['skills','education','health','family','parents','siblings','children','travel','fortune','spiritual','remedy'].includes(d);
+ if(age<18)return ['skills','turning','education','health','family','parents','siblings','travel','status','fortune','spiritual','remedy'].includes(d);
+ if(age<21)return !['marriage','children'].includes(d);
+ return true;
+}
+function v167PlanetSign(c,pn){const p=pm(c)?.[pn];return p&&Number.isFinite(Number(p.longitude))?sign(Number(p.longitude)):null}
+function v167ReferenceBonus(c,w,hs){
+ const m=pm(c),moon=v167PlanetSign(c,'Moon'),sun=v167PlanetSign(c,'Sun');let s=0;
+ for(const pn of [w?.md,w?.ad,w?.pd].filter(Boolean)){const si=v167PlanetSign(c,pn);if(si==null)continue;if(moon!=null&&hs.includes(house(si,moon)))s+=0.65;if(sun!=null&&hs.includes(house(si,sun)))s+=0.35;}
+ return Math.min(2,s);
+}
+function v167HouseLordLink(c,d,hs){const q=domains[d],lord=lords[(ls(c)+q.h-1)%12],h=hof(c,lord);return h?(hs.includes(h)?1.5:q.rel.includes(h)?.65:0):0}
+function v167SlowTransitSignal(c,tr,hs,d){
+ const q=domains[d],m=pm(c),moon=v167PlanetSign(c,'Moon'),sun=v167PlanetSign(c,'Sun'),hits=[];let score=0;
+ for(const p of v39TransitPlanets(tr)){const pn=P(p.name||p.planet);if(!['Jupiter','Saturn','Rahu','Ketu'].includes(pn))continue;const si=Number.isFinite(Number(p.longitude))?sign(Number(p.longitude)):Number(p.rasiIndex);if(!Number.isFinite(si))continue;const hl=house(si,ls(c)),hm=moon!=null?house(si,moon):null,hsun=sun!=null?house(si,sun):null;let w=0;if(hs.includes(hl))w+=2;if(hl===q.h)w+=1;if(hm&&hs.includes(hm))w+=.75;if(hsun&&hs.includes(hsun))w+=.4;if(w){score+=w;hits.push({pn,hl,hm,hsun,w});}}
+ return {score,hits};
+}
+function v167Confirmations(c,data,d,w,tr,payload,pick,mode){
+ const m=pick.m,hs=pick.e[2]||[],f=[];
+ if((m?.nr?.plus?.length||0)+(m?.nr?.minus?.length||0)+(m?.pr?.support||0)+(m?.pr?.pressure||0)>=2)f.push('D1');
+ if(v167HouseLordLink(c,d,hs)>0)f.push('Lord');
+ if(domains[d]?.v&&Number(m?.vSupport||0)+Number(m?.vPressure||0)>0)f.push('Varga');
+ const da=[w?.md,w?.ad,w?.pd].filter(Boolean).reduce((n,p)=>n+relScore(c,p,d),0);if(da>=3)f.push('Dasha');
+ const slow=v167SlowTransitSignal(c,tr,hs,d);if(slow.score>=2)f.push('Transit');
+ if(v167ReferenceBonus(c,w,hs)>=.65)f.push('Moon/Sun');
+ return {count:new Set(f).size,factors:[...new Set(f)],slow};
+}
+function v167StageBonus(d,age){if(age==null)return 0;if(age<5)return ({parents:4,family:3,health:3,education:2,children:2,travel:1,fortune:1}[d]||0);if(age<13)return ({education:4,skills:3,health:2,family:2,parents:2,children:2,siblings:1}[d]||0);if(age<18)return ({education:4,skills:3,status:2,turning:2,travel:2,health:1.5,family:1.5,parents:1.5}[d]||0);if(age>=65)return ({health:3,family:2.5,finance:2.5,property:2,parents:2,spiritual:2,children:1.5}[d]||0);return 0}
+function v167Candidates(c,data,w,tr,payload,mode){
+ const age=v165AgeAt(payload,v49Mid(w)),out=[];
+ for(const d of V53_ORDER){if(!v167DomainAllowed(d,age))continue;for(const e of (V49_EVENTS[d]||[])){
+  if(age<18&&d==='children'&&e[0]!=='child_development')continue;
+  const base=v165CandidateScore(c,data,d,w,tr,payload,e,mode);if(!base.eligible)continue;
+  const pick={e,...base},conf=v167Confirmations(c,data,d,w,tr,payload,pick,mode),ref=v167ReferenceBonus(c,w,e[2]||[]),lord=v167HouseLordLink(c,d,e[2]||[]),stage=v167StageBonus(d,age);
+  let score=base.score+conf.count*.9+ref+lord+stage;
+  if(mode==='dasha'){score+=relScore(c,w.md,d)*.8+relScore(c,w.ad,d)*1.5+relScore(c,w.pd,d)*2.4+v165PastBoost(c,d,payload,w);if(conf.count<2||score<4)continue;}
+  else {score=conf.slow.score*3+conf.count*1.25+stage+lord+Number(base.m?.dashaActivation||0)*.35;if(conf.slow.score<2||conf.count<2||score<5)continue;}
+  out.push({d,pick,total:score,confidence:conf,eventKey:e[0]});
+ }}
+ return out.sort((a,b)=>b.total-a.total);
+}
+function v167SelectTop(cands,recent,max=3){
+ const usedD=new Set(),usedE=new Set(),rE=new Set((recent||[]).flatMap(x=>x.events||[])),rD=new Set((recent||[]).flatMap(x=>x.domains||[]));
+ const ranked=cands.map(x=>({...x,adjusted:x.total-(rE.has(x.eventKey)?3:0)-(rD.has(x.d)?1.2:0)})).sort((a,b)=>b.adjusted-a.adjusted);const out=[];
+ for(const x of ranked){if(usedD.has(x.d)||usedE.has(x.eventKey))continue;out.push(x);usedD.add(x.d);usedE.add(x.eventKey);if(out.length>=max)break;}
+ if(out.length===3&&out[2].adjusted<out[0].adjusted*.62)out.pop();return out;
+}
+function v167RecentPush(recent,picks){recent.push({events:picks.map(x=>x.eventKey),domains:picks.map(x=>x.d)});while(recent.length>2)recent.shift()}
+async function v167DashaBest(c,data,w,l,payload,full,recent){const mid=v49Mid(w),tr=await v39TransitFor(payload,v54DateKey(mid),l,full),picks=v167SelectTop(v167Candidates(c,data,w,tr,payload,'dasha'),recent,3);return {kind:'dasha',w,tr,dashaPicks:picks,picks}}
+function v167TransitWindows(payload){
+ const h=v165Horizon(payload);if(!h.active||+h.end<=+h.now)return[];const rows=[];let a=new Date(h.now);while(+a<+h.end){let b=new Date(a);b.setMonth(b.getMonth()+6);if(+b>+h.end)b=new Date(h.end);if(+b<=+a)break;rows.push({a:new Date(a),b:new Date(b),start:v167Iso(a),end:v167Iso(b)});a=new Date(b);}return rows;
+}
+function v167RunningPeriod(c,date){return periods(c).map(w=>({...w,a:dt(w.start),b:dt(w.end,true)})).find(w=>w.a&&w.b&&w.a<=date&&w.b>=date)||null}
+async function v167TransitBest(c,data,w,l,payload,full,recent){const mid=v49Mid(w),tr=await v39TransitFor(payload,v54DateKey(mid),l,full),run=v167RunningPeriod(c,mid)||{md:'',ad:'',pd:''},timed={...w,md:run.md,ad:run.ad,pd:run.pd},picks=v167SelectTop(v167Candidates(c,data,timed,tr,payload,'transit'),recent,2);return {kind:'transit',w:timed,tr,transitPicks:picks}}
+// One shared lazy calculation returns two independent row sets. Dasha windows remain
+// Vimshottari periods; Gochara uses independent six-month slow-transit windows.
+async function v58PeriodRows(c,data,l,payload,full,onRow){
+ window.__smvV165Payload=payload||{};const dRows=[],tRows=[],dr=[],tr=[];
+ for(const w of v53FifteenYearPeriods(c,payload?.referenceDate,payload)){const z=await v167DashaBest(c,data,w,l,payload,full,dr);if(z.dashaPicks.length){dRows.push(z);v167RecentPush(dr,z.dashaPicks);if(onRow)onRow(z,dRows.length,0);}await v58Yield();}
+ for(const w of v167TransitWindows(payload)){const z=await v167TransitBest(c,data,w,l,payload,full,tr);if(z.transitPicks.length){tRows.push(z);v167RecentPush(tr,z.transitPicks);if(onRow)onRow(z,tRows.length,0);}await v58Yield();}
+ return [...dRows,...tRows];
+}
+function v167HouseLordHuman(c,d,l){const q=domains[d],lord=lords[(ls(c)+q.h-1)%12],h=hof(c,lord);if(!h)return'';const ta={1:'தனிப்பட்ட முடிவு/உடல் நிலை',2:'குடும்பம்/பேச்சு/சேமிப்பு',3:'முயற்சி/தொடர்பு/திறன்',4:'வீடு/மனம்/சொத்து',5:'அறிவு/படைப்பாற்றல்/குழந்தைகள்',6:'சேவை/போட்டி/கடன்',7:'துணைவர்/கூட்டாண்மை/பொது தொடர்பு',8:'மாற்றம்/கூட்டு வளம்/மறை காரணங்கள்',9:'வழிகாட்டல்/உயர்கல்வி/வாய்ப்பு',10:'தொழில்/பொறுப்பு/அங்கீகாரம்',11:'வருமானம்/வலையமைப்பு/லாபம்',12:'செலவு/வெளிநாடு/விலகல்'};const en={1:'self and vitality',2:'family, speech and savings',3:'effort, communication and skills',4:'home, mind and property',5:'intelligence, creativity and children',6:'service, competition and debt',7:'partner and public dealings',8:'change and shared resources',9:'guidance, higher learning and opportunity',10:'career, responsibility and recognition',11:'income, networks and gains',12:'expense, foreign links and release'};return l==='ta'?`${q.h}-ஆம் பாவ அதிபதி ${langPlanet(lord,l)} ${h}-ஆம் பாவத்தில் இருப்பதால் ${ta[h]} சார்ந்த சூழல் இந்த பலன் வெளிப்படும் முறையை மாற்றுகிறது.`:`The lord of house ${q.h}, ${langPlanet(lord,l)}, is in house ${h}, linking this result with ${en[h]}.`}
+function v167ConfidenceText(x,l){const n=x?.confidence?.count||0,f=x?.confidence?.factors||[];if(l==='ta')return `தனித்தனி உறுதிப்படுத்தல்கள்: ${n}${f.length?' — '+f.join(' + '):''}. ஒரே ஒரு சுட்டியை மட்டும் வைத்து இந்த முடிவு எடுக்கப்படவில்லை.`;return `Independent confirmations: ${n}${f.length?' — '+f.join(' + '):''}. This conclusion is not based on a single factor.`}
+function v167Clean(s,l){let x=String(s||'');if(l==='ta')x=x.replace(/அழுத்தம்/g,'சவால்').replace(/தணிவு/g,'சமநிலை').replace(/pressure/gi,'சவால்').replace(/activation/gi,'செயல்பாடு').replace(/prospective/gi,'எதிர்பார்க்கப்படும்');return x.replace(/\s+/g,' ').trim()}
+function v167EventMain(x,age,mode,l,payload){
+ if(l==='ta'&&x.d==='siblings')return 'சகோதரர்/சகோதரி இருந்தால் அவர்களுடனான தொடர்பு அல்லது உதவி முன்னிலையாகலாம்; இல்லையெனில் நண்பர்கள், உறவினர்கள் அல்லது நெருங்கிய சமவயது வலையமைப்பில் இதே சுட்டி வெளிப்படலாம்.';
+ if(l==='ta'&&age<18&&x.d==='children')return 'இந்த வயதில் 5ஆம் பாவச் சுட்டி புத்திரப்பேறாக அல்ல; கற்றல், நினைவாற்றல், படைப்பாற்றல், விளையாட்டு மற்றும் வயதுக்கேற்ற திறன் வளர்ச்சியாகவே படிக்கப்படுகிறது.';
+ return v165EventNarrative(x,age,mode,l,payload);
+}
+function v165Heading(x,age,l){const id=x?.eventKey||x?.pick?.e?.[0],d=x?.d,stage=v165Stage(age),label=l==='ta'?x?.pick?.e?.[3]:x?.pick?.e?.[4];if(id==='child_development')return l==='ta'?'கற்றல் / படைப்பாற்றல் / குழந்தைப் பருவ வளர்ச்சி':'Child development / learning';if(id==='parent_work')return l==='ta'?'பெற்றோர் — வேலை / பொறுப்பு / முன்னேற்றம்':'Parents — work / responsibility';if(id==='household_finance')return l==='ta'?'குடும்ப வரவு–செலவு / சேமிப்பு':'Family finances';if(id==='family_progress')return l==='ta'?'குடும்ப முன்னேற்றம் / ஆதரவு':'Family progress / support';if(id==='family_move')return l==='ta'?'குடும்ப வீடு / இடமாற்றம்':'Family home / relocation';if(id==='family_safety_attention')return l==='ta'?'குடும்ப பாதுகாப்பு கவனம்':'Family safety attention';if(stage==='senior'||stage==='elder'){if(['career','jobchange','business'].includes(d))return l==='ta'?'அனுபவப் பணி / பொறுப்பு மாற்றம் / ஓய்வு திட்டம்':'Experience, responsibility and retirement planning';if(d==='children')return l==='ta'?'குழந்தைகள் / பேரக்குழந்தைகள் / அடுத்த தலைமுறை':'Children, grandchildren and next generation';if(d==='marriage')return l==='ta'?'துணைவர் / குடும்ப ஒத்துழைப்பு':'Partner and family companionship';}return label||v53DomainName(d,l)}
+function v165DashaMain(c,data,z,x,l,payload){const w=z.w,age=v165AgeAt(payload,v49Mid(w)),period=`${w.start} → ${w.end}${age!=null?(l==='ta'?` (வயது ${age})`:` (age ${age})`):''}`,main=v167EventMain(x,age,'dasha',l,payload),nuance=v165PlanetNuance(w.pd,l);return v167Clean(v165DesaGuard(`${period}: ${main} ${nuance}`,l,payload),l)}
+function v167TransitPlanetText(hits,l){const names=[...new Set(hits.map(h=>h.pn))];if(!names.length)return'';if(l!=='ta')return ` Slow transit drivers: ${names.join(', ')}.`;const m={Jupiter:'குரு வளர்ச்சி, வாய்ப்பு அல்லது வழிகாட்டலை விரிவாக்குகிறது',Saturn:'சனி பொறுப்பு, ஒழுங்கு மற்றும் நீண்டகால நிலைத்தன்மையை சோதிக்கிறது',Rahu:'ராகு வழக்கத்திற்கு மாறான புதிய தொடர்பு அல்லது மாற்றத்தைத் தூண்டுகிறது',Ketu:'கேது தேவையற்றதை குறைத்து மறுசீரமைப்பைத் தூண்டுகிறது'};return ' '+names.map(n=>m[n]).filter(Boolean).join('; ')+'.'}
+function v165TransitMain(c,data,z,x,l,payload){const age=v165AgeAt(payload,v49Mid(z.w)),main=v167EventMain(x,age,'transit',l,payload),hits=x?.confidence?.slow?.hits||[];return v167Clean(v165DesaGuard(`${main}${v167TransitPlanetText(hits,l)}`,l,payload),l)}
+function v59DashaRow(c,data,z,l,payload){if(z?.kind&&z.kind!=='dasha')return'';const picks=z.dashaPicks||z.picks||[],w=z.w;if(!picks.length)return'';const age=v165AgeAt(payload,v49Mid(w)),ta=l==='ta';const body=picks.map(x=>{const main=v165DashaMain(c,data,z,x,l,payload),ev=v59DashaNarrative(c,data,z,x,l,payload),extra=[v167HouseLordHuman(c,x.d,l),v167ConfidenceText(x,l),v165ContextEvidence(c,x.d,l,payload,v49Mid(w))].filter(Boolean).join(' ');return `<section class="smv-v162-natural smv-v164-human smv-v165-context smv-v167-synthesis"><h4>${esc(v165Heading(x,age,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'தசை ஆதாரம் பார்க்க':'View dasha evidence'}</summary><p>${esc(v167Clean(ev+' '+extra,l))}</p></details></section>`}).join('');return `<div class="smv-pred-period"><b>${esc(dashaText(w,l))}</b>${body}</div>`}
+function v59TransitRow(c,z,l){if(z?.kind&&z.kind!=='transit')return'';const payload=window.__smvV165Payload||{},picks=z.transitPicks||[],w=z.w;if(!picks.length)return'';const age=v165AgeAt(payload,v49Mid(w)),data=window.__smvV138Full||{},ta=l==='ta';const body=picks.map(x=>{const main=v165TransitMain(c,data,z,x,l,payload),hits=v59TransitEvidence(c,x.d,z.tr,l),extra=[v167HouseLordHuman(c,x.d,l),v167ConfidenceText(x,l),v165ContextEvidence(c,x.d,l,payload,v49Mid(w))].filter(Boolean).join(' ');return `<section class="smv-transit-domain smv-v162-natural smv-v164-human smv-v165-context smv-v167-synthesis"><h4>${esc(v165Heading(x,age,l))}</h4><p>${esc(main)}</p><details><summary>${ta?'கோச்சார ஆதாரம் பார்க்க':'View transit evidence'}</summary><p>${esc(v167Clean(hits+' '+extra,l))}</p></details></section>`}).join('');return `<div class="smv-pred-period"><b>${esc(w.start)} → ${esc(w.end)}</b>${body}</div>`}
 
 window.addEventListener('smv:horoscope-full-ready',ev=>{
   // V56 ROOT FIX: the full-ready event is dispatched before horoscope-form.js
