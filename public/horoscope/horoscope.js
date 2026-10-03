@@ -1,7 +1,6 @@
 
 /* Tamil Horoscope Generator - V121: server-side astronomical calculation engine. */
 (function(){
-  const BACKEND_URL=(window.SMV_BACKEND_URL||'');
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const rasiList=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
@@ -744,19 +743,13 @@
           showExportToast(ok?'✓ Horoscope text copied':'Copy is not available in this browser. Long-press the text to copy.',ok,scope);
           return;
         }
-        const paid=window.__smvHoroscopePaidState;
-        if(!paid?.token){showExportToast('Paid Customer Login is required for PDF download.',false,scope);return;}
-        const text=(scope.innerText||scope.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
-        showExportToast('Preparing horoscope PDF…',true,scope);
-        try{
-          await window.__smvDownloadPaidFeaturePdf('advanced_analysis',scope,document.documentElement.lang==='ta'?'SMV ஜாதக அறிக்கை':'SMV Horoscope Report');showExportToast('✓ Horoscope PDF downloaded',true,scope);
-        }catch(e){showExportToast(e.message||'PDF download failed.',false,scope);}
+        showExportToast(document.documentElement.lang==='ta'?'Browser PDF / Print திறக்கப்படுகிறது…':'Opening browser PDF / Print…',true,scope);
+        setTimeout(()=>window.print(),100);
       },true);
     }
     bindHoroscopeInteractions(result,d,name,getHoroscopeLang());
     result.scrollIntoView({behavior:'auto',block:'start'});
   }
-  if(!window.__smvPdfPaidListenerBound){window.__smvPdfPaidListenerBound=true;window.addEventListener('smv:horoscope-paid-access',ev=>{if(ev.detail?.feature!=='advanced_analysis')return;document.querySelectorAll('.smv-real-pdf-download').forEach(b=>b.hidden=false);});}
   function bindHoroscopeInteractions(root,d,name,lang){
     if(!root)return;
     // V151: use delegated interaction for BOTH Tamil and copied English results.
@@ -821,27 +814,7 @@
   }
 
   async function generateAIFuture(d,name,langOverride,root){
-    const scope=root||document;
-    const btn=scope.querySelector('#generateAIFuture'), box=scope.querySelector('#aiFutureResult');
-    if(!btn||!box)return;
-    const lang=langOverride==='ta'||langOverride==='en'?langOverride:getHoroscopeLang();
-    btn.disabled=true; btn.textContent=lang==='en'?'⏳ Generating AI Future Insights...':'⏳ AI பலன் உருவாக்கப்படுகிறது...';
-    box.classList.remove('hidden'); box.innerHTML=`<p class="small">${lang==='en'?'AI is interpreting the verified horoscope data...':'சரிபார்க்கப்பட்ட ஜாதகத் தரவை AI விளக்குகிறது...'}</p>`;
-    const chart={
-      moonRasi:d.moonRasi, moonNakshatra:d.moonNakshatra, moonPada:d.moonPada,
-      lagna:d.lagna, ayanamsa:d.ayanamsa, ayanamsaName:d.ayanamsaName,
-      planets:(d.planets||[]).map(p=>({name:p.name,rasi:p.rasi,degree:p.degree,nakshatra:p.nakshatra,pada:p.pada,bhava:p.bhava,navamsa:p.navamsa?.rasi||null})),
-      bhavas:(d.bhavas||[]).map(b=>({house:b.house,arambha:b.arambha,madhya:b.madhya,antya:b.antya,rasi:b.rasi})),
-      dashas:(d.dashas?.mahadashas||d.dashas?.periods||[]).slice(0,12).map(x=>({name:x.name,start:x.start,end:x.end}))
-    };
-    try{
-      const r=await fetch((window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||''))+'/api/horoscope/ai-future',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chart,language:lang})});
-      const body=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(body.error||`AI generation failed (HTTP ${r.status})`);
-      const text=String(body.text||'').trim();
-      box.innerHTML=`<div class="home-rule"><span><img class="smv-brand-symbol" src="./assets/smv-brand-logo-v17.png" alt="" aria-hidden="true" width="20" height="20"></span><span>${lang==='en'?'AI Future Insights':'AI எதிர்கால பலன்'}</span><span><img class="smv-brand-symbol" src="./assets/smv-brand-logo-v17.png" alt="" aria-hidden="true" width="20" height="20"></span></div><p class="small">${esc(name)} · ${esc(body.model||'Gemini')}</p><div style="white-space:pre-wrap;line-height:1.75">${esc(text)}</div><p class="small" style="margin-top:14px"><b>${lang==='en'?'Note':'குறிப்பு'}:</b> ${lang==='en'?'This is a traditional astrology interpretation based on verified horoscope data; it is not a guarantee of future events.':'இது சரிபார்க்கப்பட்ட ஜாதகத் தரவை அடிப்படையாகக் கொண்ட பாரம்பரிய ஜோதிட விளக்கம் மட்டுமே; எதிர்கால நிகழ்வுகளுக்கான உத்தரவாதம் அல்ல.'}</p>`;
-    }catch(e){box.innerHTML=`<div class="error"><b>${lang==='en'?'AI Future Insights could not be generated.':'AI பலன் உருவாக்க முடியவில்லை.'}</b><p class="small">${esc(e?.message||String(e))}</p></div>`;}
-    finally{btn.disabled=false;btn.textContent=lang==='en'?'🔮 Generate AI Future Insights':'🔮 AI எதிர்கால பலன் உருவாக்குக';}
+    const scope=root||document,btn=scope.querySelector('#generateAIFuture'),box=scope.querySelector('#aiFutureResult');if(!btn||!box)return;const lang=langOverride==='ta'||langOverride==='en'?langOverride:getHoroscopeLang();box.classList.remove('hidden');box.innerHTML=`<div class="error"><b>${lang==='en'?'AI Future Insights are not included in the strict offline horoscope build.':'AI எதிர்கால பலன் strict offline ஜாதக build-ல் சேர்க்கப்படவில்லை.'}</b></div>`;
   }
 
 
@@ -1589,27 +1562,9 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
   // "renderAdvancedAstrology is not defined".
   window.renderAdvancedAstrology = renderAdvancedAstrology;
   async function loadPhase4Dasa(chartOrPayload,lang,rootId){
-    const root=document.getElementById(rootId); if(!root)return;
-    const slot=root.querySelector('#smvPhase4DasaSlot'); if(!slot)return;
-    const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    try{
-      const base=window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||'');
-      let chart=chartOrPayload;
-      if(!chart || !Array.isArray(chart.planets) || !chart.lagna){
-        const p=chartOrPayload||{};
-        const r=await fetch(base+'/api/horoscope/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-        const b=await r.json().catch(()=>({})); if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`); chart=b;
-      }
-      const r=await fetch(base+'/api/horoscope/dasa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chart})});
-      const b=await r.json().catch(()=>({})); if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`);
-      renderPhase4Dasa(b.phase4||{},lang,slot);
-      try{
-        const host=root.closest('.horoscope-result')||root.parentElement;
-        const ab=host?.querySelector?.('.advanced-astro-grid');
-        if(ab?.__smvRouteAdvancedSections) ab.__smvRouteAdvancedSections();
-      }catch(_routeDasa){}
-    }catch(e){ slot.innerHTML=`<h3>⚠️ ${lang==='ta'?'Special Dasa System':'Special Dasa System'}</h3><p class="small error">${escSafe(e?.message||e)}</p>`; }
+    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;renderPhase4Dasa(f.phase4||{},lang,slot);return;}const mod=await import('./offline/dasa_engine.browser.mjs');renderPhase4Dasa(mod.phase4Dasa(chart)||{},lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
   }
+
   function renderPhase4Dasa(data,lang,slot){
     const ta=lang==='ta', escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const names=ta?['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -1629,10 +1584,9 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     const root=document.getElementById(rootId); if(!root)return;
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const ta=lang!=='en'; const R=ta?['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-    const base=window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||''); const payload={date,time,lat:Number(lat),lon:Number(lon),language:lang,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60};
+    const payload={date,time,lat:Number(lat),lon:Number(lon),language:lang,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60};
     try{
-      const [tr,pa]=await Promise.all([fetch(base+'/api/horoscope/transit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),fetch(base+'/api/horoscope/panchang',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})]);
-      const td=await tr.json().catch(()=>({})), pd=await pa.json().catch(()=>({})); if(!tr.ok)throw new Error(td.error||'Transit calculation failed'); if(!pa.ok)throw new Error(pd.error||'Panchang calculation failed');
+      await window.SMVEngineReady;await window.SMVOffline.calculateSwiss(payload);const td=window.SMVOffline.transit(payload),pd=window.SMVOffline.panchang(payload);if(!td?.planets)throw new Error('Transit calculation failed');
       let h=`<div class="adv-section"><h3>🪐 ${ta?'கிரக கோச்சாரம்':'Planetary Transit'}</h3><div class="adv-scroll"><table class="adv-wide"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'பாகை':'Degree'}</th><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><th>${ta?'பாதம்':'Pada'}</th><th>${ta?'நிலை':'Status'}</th></tr></thead><tbody>`;
       (td.planets||[]).forEach(x=>h+=`<tr><td>${esc(x.name)}</td><td>${S(x.rasi)}</td><td>${esc(x.degree)}</td><td>${esc(x.nakshatra)}</td><td>${esc(x.pada)}</td><td>${x.retrograde?'↶ Retrograde':'Direct'}</td></tr>`); h+=`</tbody></table></div></div>`;
       h+=`<div class="adv-section"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="adv-scroll"><table class="adv-wide"><tbody><tr><th>${ta?'சூரிய ராசி':'Sun Sign'}</th><td>${S(pd.solarSign)}</td><th>${ta?'சந்திர ராசி':'Moon Sign'}</th><td>${S(pd.moonSign)}</td></tr><tr><th>${ta?'திதி':'Tithi'}</th><td>${esc(pd.tithi?.number)} — ${esc(pd.tithi?.name)}</td><th>${ta?'பக்ஷம்':'Paksha'}</th><td>${esc(pd.tithi?.half)}</td></tr><tr><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><td>${esc(pd.nakshatra?.number)} — ${esc(pd.nakshatra?.name)} / ${esc(pd.nakshatra?.pada)}</td><th>${ta?'யோகம்':'Yoga'}</th><td>${esc(pd.yoga?.number)} — ${esc(pd.yoga?.name)}</td></tr><tr><th>${ta?'கரணம்':'Karana'}</th><td>${esc(pd.karana?.name)}</td><th>${ta?'சூரிய உதயம்':'Sunrise'}</th><td>${esc(pd.sunrise)}</td></tr><tr><th>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</th><td>${esc(pd.sunset)}</td><th>${ta?'அயனாம்சம்':'Ayanamsa'}</th><td>${esc(pd.ayanamsa)}</td></tr></tbody></table></div></div>`;
@@ -1734,7 +1688,6 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     const root=document.getElementById(rootId); if(!root)return;
     const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const isCurrent=()=>generationId==null || Number(generationId)===Number(window.__smvHoroscopeGenerationId||generationId);
-    const base=window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||'');
 
     // FAST/SAFE FIX: cancel any older advanced horoscope request before starting
     // a new one.  This prevents hidden Tamil/English copies from continuing to
@@ -1748,7 +1701,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     // Keep the Advanced host hidden until the first advanced response is ready.
     // This prevents an old/partial module from flashing below the fresh horoscope.
     root.classList.add('hidden');
-    const post=(path,body=payload)=>{if(typeof window.__smvHoroscopeApi==='function')return window.__smvHoroscopeApi(path,{method:'POST',body:JSON.stringify(body),signal:advancedAbortController.signal});return fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(body),signal:advancedAbortController.signal}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`);return b;});};
+    const post=async(_path,body=payload)=>{await window.SMVEngineReady;return window.SMVOffline.full(body);};
 
     // Birth Panchang is calculated for the native's birth date/time.
     // Daily Panchang + Planetary Transit are calculated for TODAY/NOW.
@@ -1777,7 +1730,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     // Render the entire horoscope as one server-side batch. The browser does
     // not reveal any section until core chart + advanced astrology + birth
     // panchang + daily panchang + transit + special dasha are all complete.
-    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs')).advanced(cachedFull.chart,lang)}):post('/api/horoscope/full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear()});
+    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs')).advanced(cachedFull.chart,lang)}):post('full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear()});
     return response.then(async (full)=>{
       if(full?.ok!==true || full?.meta?.complete!==true) throw new Error(full?.error||'Full horoscope calculation was not completed.');
       window.__smvLastFullReport=full;
@@ -1791,14 +1744,9 @@ try{
   );
 }catch(_e){}
       // Backward-compatible fallback: older Render deployments may not yet expose
-      // §15.4.2–15.4.4 in /api/horoscope/full. Fetch the same verified advanced
+      // §15.4.2–15.4.4 are included in the bundled full offline calculation.
       // chart once and merge only the new Avastha block; all existing features stay intact.
-      if(!advancedData.avastha154){
-        try{
-          const av154Resp=await post('/api/horoscope/advanced',{...payload,tajakaYear:new Date().getFullYear()});
-          if(av154Resp?.ok) advancedData={...advancedData,avastha154:av154Resp.avastha154};
-        }catch(_e){ /* preserve existing full result if fallback is unavailable */ }
-      }
+      // Strict offline: advancedData is produced by the bundled engine in the same full calculation.
       const required=['ashtakavarga','vargas','avastha','avakhada','kota','sudarshana','sarvatobhadra','planetRelations','remedies','phase2','tajaka'];
       const missing=required.filter(k=>!Object.prototype.hasOwnProperty.call(advancedData,k));
       if(missing.length) throw new Error('Full horoscope is incomplete. Missing features: '+missing.join(', '));
@@ -1902,10 +1850,8 @@ try{
   }
   
   window.__smvLoadBasicPanchang=async function(payload,root){
-    const post=async(path,b)=>{const r=await fetch(String(window.SMV_BACKEND_URL||'').replace(/\/$/,'')+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(!r.ok||j.error)throw Error(j.error||'Panchang unavailable');return j;};
     const now=new Date(),offset=Number(payload.utcOffsetMinutes??330),local=new Date(now.getTime()+offset*60000),dailyDate=local.toISOString().slice(0,10),dailyTime=local.toISOString().slice(11,16),daily={...payload,date:dailyDate,time:dailyTime};
-    const [birth,today,tr]=await Promise.all([post('/api/horoscope/panchang',payload),post('/api/horoscope/panchang',daily),post('/api/horoscope/transit',daily)]);
-    const bp=birth.panchang||birth,dp=today.panchang||today,trans=tr.transit||tr;
+    await window.SMVEngineReady;await window.SMVOffline.calculateSwiss(payload);const bp=window.SMVOffline.panchang(payload);await window.SMVOffline.calculateSwiss(daily);const dp=window.SMVOffline.panchang(daily),trans=window.SMVOffline.transit(daily);
     const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(bp,payload.language,payload.date,payload.time);
     const transitSlot=root.querySelector('.daily-transit-panchang-slot');if(transitSlot)renderTransitPanchang(trans,dp,payload.language,transitSlot.id);
     root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,referenceDate:dailyDate,referenceTime:dailyTime};
@@ -2667,13 +2613,7 @@ if(lat===''||lon===''){
       }
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
-      const controller=new AbortController();
-      const timeout=setTimeout(()=>controller.abort(),120000);
-      let r;
-      try{
-        r=await fetch((window.SMV_BACKEND_URL||(window.SMV_BACKEND_URL||''))+'/api/horoscope/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S'}),signal:controller.signal});
-      }finally{clearTimeout(timeout);}
-      const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||`Calculation failed (HTTP ${r.status})`);
+      await window.SMVEngineReady;const full=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim()});const d=full.chart;if(!d)throw new Error(full?.error||'Calculation failed');
       // Render the core horoscope into the hidden result container first.
       render(d);
       const advRoot=$('tamilAdvancedAstrology');
@@ -2686,19 +2626,6 @@ if(lat===''||lon===''){
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');
         };
-        // Paid Advanced Analysis must be authorized BEFORE any advanced calculation.
-        // Waiting for the user's payment must NOT keep the main Horoscope spinner alive.
-        if(typeof window.__smvRequireHoroscopeFeatureAccess!=='function')throw new Error('Payment access check is not ready. Reload and try again.');
-        if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
-          resultBox?.classList.remove('hidden');
-          resultBox?.setAttribute('aria-busy','false');
-          advRoot.classList.remove('hidden');
-          const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
-          if(!allowed){
-            requestAnimationFrame(()=>resultBox?.scrollIntoView({behavior:'auto',block:'start'}));
-            return d;
-          }
-        }
         await runAdvancedAfterAccess();
       }
       // SINGLE RELEASE: chart + all new features become visible together.

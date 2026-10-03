@@ -48,7 +48,7 @@
   /* V121: prune generated report subtrees completely. The old SHOW_TEXT walker still
      visited every text node inside a large Advanced report and only then skipped it,
      which blocked the mobile main thread during EN/TA toggle. */
-  const skipSelector='#englishHoroscopeResult,#tamilHoroscopeResult,#mmResult,.smv-language-buttons,#installApp,#installStatus,#smvSavedReports';
+  const skipSelector='#englishHoroscopeResult,#tamilHoroscopeResult,#mmResult,.smv-language-buttons,#installApp,#installStatus';
   for(const root of [$('templeHeader'),$('home'),$('english-horoscope'),$('siteFooter')]){
    if(!root)continue;
    const walk=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode(n){

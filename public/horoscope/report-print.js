@@ -24,37 +24,24 @@
   const root=document.getElementById('printReport');root.innerHTML=html;
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());
   root.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['href','xlink:href','srcset','action','formaction','contenteditable'].includes(a.name))e.removeAttribute(a.name);});
-  root.querySelectorAll('details').forEach(e=>e.open=true);
+  root.querySelectorAll('details').forEach(e=>{e.open=true;e.removeAttribute('hidden');e.classList.remove('hidden','collapsed','is-collapsed');});
   root.querySelectorAll('[hidden]').forEach(e=>e.hidden=false);
   root.querySelectorAll('.hidden').forEach(e=>e.classList.remove('hidden'));
-  root.querySelectorAll('.dasha-node').forEach(e=>e.classList.add('open'));
+  root.querySelectorAll('.dasha-node').forEach(e=>{e.classList.add('open');e.classList.remove('collapsed','is-collapsed');});
+  root.querySelectorAll('.dasha-children,.dasha-body,.dasha-content,.smv-advanced-part-content').forEach(e=>{e.hidden=false;e.classList.remove('hidden','collapsed','is-collapsed');e.style.setProperty('display','block','important');e.style.setProperty('max-height','none','important');e.style.setProperty('height','auto','important');e.style.setProperty('overflow','visible','important');});
   root.querySelectorAll('.smv-advanced-part').forEach(e=>e.classList.add('is-expanded'));
-  // Print-only first-page identity. Keep the live horoscope DOM unchanged.
+  // V137: preserve the original first-page Birth Details layout; only nudge the
+  // existing birth block toward the visual centre. Do not collapse it into one line.
   const firstCard=root.querySelector('.card');
   if(firstCard){
+   firstCard.classList.add('smv-print-first-card');
    const nameNode=firstCard.querySelector('h2');
    const compact=firstCard.querySelector('p.small[style*="text-align:center"]');
-   if(nameNode&&compact){
-    const raw=(compact.textContent||'').replace(/\s+/g,' ').trim();
-    const labels=tamil
-      ?{date:'பிறந்த தேதி',time:'நேரம்',place:'பிறந்த இடம்'}
-      :{date:'Date of Birth',time:'Time',place:'Place of Birth'};
-    const escRe=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    const re=new RegExp(escRe(labels.date)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.time)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.place)+'\\s*:\\s*(.*)$','i');
-    const m=raw.match(re);
-    const identity=document.createElement('section');identity.className='print-birth-identity';
-    const n=document.createElement('h2');n.className='print-birth-name';n.textContent=nameNode.textContent.trim();identity.append(n);
-    if(m){
-     const grid=document.createElement('div');grid.className='print-birth-details';
-     [[labels.date,m[1]],[labels.time,m[2]],[labels.place,m[3]]].forEach(([label,value])=>{
-      const a=document.createElement('span');a.className='label';a.textContent=label;
-      const c=document.createElement('span');c.className='colon';c.textContent=':';
-      const v=document.createElement('span');v.className='value';v.textContent=value;
-      grid.append(a,c,v);
-     });identity.append(grid);
-    }else{const p=document.createElement('p');p.className='print-birth-fallback';p.textContent=raw;identity.append(p);}
-    nameNode.replaceWith(identity);compact.remove();
-   }
+   if(nameNode)nameNode.classList.add('smv-print-birth-name');
+   if(compact)compact.classList.add('smv-print-birth-summary');
+   const identityCandidates=[...firstCard.querySelectorAll('div,section')].filter(e=>/Ascendant|லக்னம்/.test(e.textContent||'')&&/Moon Rasi|சந்திர ராசி|ராசி/.test(e.textContent||''));
+   const identityBlock=identityCandidates.sort((a,b)=>(a.textContent||'').length-(b.textContent||'').length)[0];
+   if(identityBlock)identityBlock.classList.add('smv-print-lagna-rasi');
   }
   // Keep the report compact: remove empty UI shells left after controls are stripped.
   root.querySelectorAll('div,section,p').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.south-indian-chart')){if(!e.children.length)e.remove();}});

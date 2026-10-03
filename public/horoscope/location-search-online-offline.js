@@ -1,4 +1,4 @@
-/* V146 shared Horoscope/Matching online + offline location search.
+/* V171 shared Horoscope/Matching online + offline location search.
    Online first: OpenStreetMap Nominatim geocode.
    Offline/network failure: existing bundled SMVOffline.searchPlaces.
    Maximum requested results: 50. */
@@ -18,6 +18,6 @@ window.__smvSearchPlacesOnlineOffline=window.__smvSearchPlacesOnlineOffline||asy
       }
     }catch(e){if(e?.name==='AbortError')throw e;}
   }
-  await window.SMVEngineReady;
-  return window.SMVOffline.searchPlaces(q,max);
+  const mod=await import('./offline/places/place-search.mjs');
+  return mod.searchPlaces(q,max);
 };

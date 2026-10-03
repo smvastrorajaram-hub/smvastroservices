@@ -1,5 +1,5 @@
 @font-face{font-family:SMVTamil;src:url('fonts/noto-sans-tamil.woff2') format('woff2');font-weight:100 900;font-display:block}
-@page{size:A4;margin:16mm 13mm 18mm}
+@page{size:A4;margin:14mm 10mm 22mm}
 *{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font:10pt/1.7 SMVTamil,Arial,sans-serif}main{max-width:184mm;margin:auto}.report-brand{display:flex;justify-content:center;align-items:center;gap:6mm;border-top:1.2mm double #111;border-bottom:.4mm solid #111;padding:4mm;margin-bottom:6mm}.report-brand img{width:22mm;height:22mm;object-fit:cover;border-radius:50%;border:.6mm solid #b58a3b;background:#fff;padding:.8mm}.report-brand h1{font:700 22pt/1.3 Georgia,serif;color:#111;margin:0;letter-spacing:1pt}.report-brand p{margin:1mm 0 0;font-size:10pt;color:#333}h2,h3,h4,h5,summary{color:#111;line-height:1.6;margin:6mm 0 3mm;break-after:avoid;position:static;transform:none}h2{font-size:16pt}h3,summary{font-size:13pt}h4{font-size:11pt}p{margin:2.5mm 0;orphans:3;widows:3}.small,.mm-note{font-size:8.5pt}.card,.adv-section,.mm-person-result,.smv-pred-domain{padding:0;margin:4mm 0;border:0;background:#fff;box-shadow:none}.smv-advanced-part-title{border-bottom:1pt solid #bc9856;padding-bottom:2mm}.smv-advanced-part-content,.dasha-children,.dasha-body,.dasha-content{display:block;height:auto;max-height:none;overflow:visible}.south-indian-chart{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(26mm,auto));width:132mm;min-height:112mm;margin:5mm auto;border:1pt solid #111;break-inside:avoid;background:#fff}.south-rasi-cell{border:.4pt solid #555;min-width:0;padding:2mm;text-align:center;font-size:9pt;line-height:1.5}.south-chart-center{grid-area:2/2/4/4;display:flex;align-items:center;justify-content:center;border:.4pt solid #555;color:#111;background:#fff8df;font-size:15pt;text-align:center}.planet-line{display:block}.dynamic-rasi-number{color:#333;font-size:8pt}.lagna{color:#111;font-weight:bold}.rasi-degree{font-size:8pt;margin-left:1mm}.data-table-wrap,.adv-table-wrap{overflow:visible;width:100%;margin:3mm 0}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;line-height:1.6}th,td{border:.4pt solid #777;padding:2mm 1.5mm;vertical-align:top;overflow-wrap:anywhere}th{background:#f2f2f2;color:#111;font-weight:bold}thead{display:table-header-group}tr{break-inside:avoid}td p{margin:0}.smv-ganesha-prayer,.smv-navagraha-prayer{text-align:center;margin:5mm auto;padding:4mm;background:#fff;border:.4pt solid #777;break-inside:avoid}.smv-ganesha-img{display:block;width:24mm;height:auto;margin:0 auto 3mm}.smv-prayer-title{font-size:12pt;font-weight:bold;color:#111}.smv-prayer-mantra{margin:2mm 0}.mm-facts>div,.kota-name-details>div{display:grid;grid-template-columns:35% 65%;gap:2mm;border-bottom:.4pt solid #aaa;padding:2mm 0}.mm-verdict{padding:4mm;border:1pt double #444;background:#fff}.smv-pred-period{border-top:.4pt solid #888;padding-top:3mm;margin-top:5mm}.smv-pred-period>b{color:#111;font-size:11pt}.home-rule{display:flex;justify-content:space-between;color:#333}img,svg{max-width:100%}input,select,.horoscope-export-actions,.smv-horoscope-pay-gate{display:none}a{color:inherit;text-decoration:none}details{margin:4mm 0}summary{list-style:none}.ok{color:#215834}.no,.mm-error{color:#8f2424}
 
 .sbc-grid-full{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:repeat(9,minmax(13mm,auto));width:174mm;break-inside:avoid;margin:4mm auto}.sbc-cell{border:.4pt solid #777;padding:1mm;text-align:center;font-size:6.5pt;line-height:1.5;overflow-wrap:anywhere}.sbc-cell em,.sbc-cell small{display:block;font-style:normal;font-size:6pt}.sbc-cell.has-planet{background:#f5f5f5}.sbc-edge-label{display:none}.kota-name-details,.adv-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3mm}.kota-name-details>div{display:block}.kota-name-details span{display:block}.dasha-node{margin:3mm 0;padding-left:2mm;border-left:.5pt solid #888}.dasha-head{font-weight:bold;color:#111}.print-invocation{text-align:center;margin:4mm 0}
@@ -10,7 +10,7 @@
 @media print{.print-tools{display:none}}
 
 /* V125 compact browser-native PDF layout */
-@media print{html,body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.report-brand{break-inside:avoid}.smv-manual-save-actions,.saved-report-actions,#smvSavedReports,#smvSavedStatus{display:none!important}}
+@media print{html,body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.report-brand{break-inside:avoid}.smv-manual-save-actions{display:none!important}}
 .smv-detail-row,.detail-row,.summary-row,.panchang-row,.year-row{display:grid!important;grid-template-columns:minmax(38mm,34%) 4mm minmax(0,1fr);column-gap:3mm;align-items:start;padding:1.4mm 0;border-bottom:.3pt solid #bbb}.smv-detail-row>:first-child,.detail-row>:first-child,.summary-row>:first-child,.panchang-row>:first-child,.year-row>:first-child{font-weight:600}.smv-detail-row>:first-child::after,.detail-row>:first-child::after,.summary-row>:first-child::after,.panchang-row>:first-child::after,.year-row>:first-child::after{content:" :";float:right}.south-indian-chart{color:#000!important;background:#fff!important}.south-rasi-cell,.south-chart-center{color:#000!important;background:#fff!important;border-color:#555!important}
 
 
@@ -27,3 +27,61 @@
 .smv-year-grid span,.smv-summary-grid span{color:#111;background:#fff}
 h2,h3,h4,h5,summary{color:#8f1010}.smv-advanced-part-title{border-bottom-color:#c69d45}.smv-prayer-title{color:#8f1010}.smv-ganesha-prayer,.smv-navagraha-prayer{border-color:#c9a85d;background:#fffdf6}.south-chart-center{background:#fff8df!important;color:#8f1010!important}.south-rasi-cell.has-planet,.sbc-cell.has-planet{background:#fff9e9!important}th{background:#fff3cf!important;color:#681515!important;border-color:#b99a58!important}td{border-color:#b9aa84!important}.ok{color:#176b36!important}.no,.mm-error{color:#a20e20!important}
 @media print{html,body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.report-brand h1{color:#681515!important}.report-brand{border-color:#9c762e!important}.print-birth-name,.smv-invocation,h2,h3,h4,h5,.smv-prayer-title,th{ -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
+
+/* V136 PDF page-efficiency + stable table pagination */
+@page{size:A4;margin:12mm 10mm 22mm}
+body{font-size:8.7pt;line-height:1.42}
+main{max-width:190mm}
+.report-brand{padding:2.2mm 0;margin-bottom:3mm;gap:3mm}
+.report-brand img{width:16mm;height:16mm;padding:.5mm}.report-brand h1{font-size:17pt}.report-brand p{font-size:7.8pt;margin:.4mm 0 0}
+h2,h3,h4,h5,summary{margin:3mm 0 1.5mm;line-height:1.35}h2{font-size:13pt}h3,summary{font-size:10.5pt}h4{font-size:9.3pt}p{margin:1.2mm 0}
+.card,.adv-section,.mm-person-result,.smv-pred-domain,details{margin:2mm 0;padding:0}
+.data-table-wrap,.adv-table-wrap{margin:1.5mm 0;overflow:visible!important}
+table{font-size:6.8pt!important;line-height:1.25!important;table-layout:auto!important}
+th,td{padding:.75mm .9mm!important;line-height:1.25!important;vertical-align:top!important;overflow-wrap:normal!important;word-break:normal!important}
+thead{display:table-header-group!important}tfoot{display:table-footer-group!important}tr{break-inside:avoid!important;page-break-inside:avoid!important}
+table{break-inside:auto!important;page-break-inside:auto!important}
+/* Let long tables continue cleanly; keep only small charts/cards together. */
+.south-indian-chart,.print-chart,.smv-ganesha-prayer,.smv-navagraha-prayer{break-inside:avoid!important;page-break-inside:avoid!important}
+/* Vimshottari: dense but readable, with Bhukti blocks packed across the page. */
+.dasha-node{margin:1.2mm 0!important;padding-left:1mm!important;border-left:.35pt solid #9a9a9a!important;break-inside:auto!important}
+.dasha-head{font-size:7.5pt!important;line-height:1.25!important;margin:.7mm 0!important}
+.dasha-body,.dasha-content,.dasha-children{display:block!important;height:auto!important;max-height:none!important;overflow:visible!important}
+.dasha-node table{font-size:6.25pt!important;margin:.6mm 0!important}
+.dasha-node th,.dasha-node td{padding:.45mm .65mm!important;line-height:1.15!important}
+/* Compact repetitive calculation tables without changing their content. */
+.hora-vertical th,.hora-vertical td,.transit-position-table th,.transit-position-table td{padding:.65mm .8mm!important;font-size:6.6pt!important;line-height:1.2!important}
+.smv-year-grid b,.smv-summary-grid b,.smv-year-grid span,.smv-summary-grid span{padding:.7mm 1.2mm!important}
+.smv-detail-row,.detail-row,.summary-row,.panchang-row,.year-row{padding:.7mm 0!important}
+/* First page identity stays visually centred below Vinayagar. */
+.print-birth-identity{width:100%;max-width:150mm;margin:2mm auto 3mm!important;text-align:center!important}
+.print-birth-name{text-align:center!important;margin:1mm 0 2mm!important;font-size:15pt!important}
+.print-birth-details{width:max-content;max-width:125mm;margin:0 auto!important;grid-template-columns:max-content 4mm minmax(45mm,75mm);row-gap:.8mm!important;text-align:left;font-size:8.8pt!important}
+.print-birth-fallback{text-align:center!important}
+/* Always reveal content in the print DOM, irrespective of on-screen collapsed state. */
+details[open]>*:not(summary),.dasha-children,.dasha-body,.dasha-content,.smv-advanced-part-content{display:block!important;visibility:visible!important;max-height:none!important;height:auto!important;overflow:visible!important;opacity:1!important}
+
+/* V137 requested first-page + bilingual PDF refinements. */
+/* Keep the source Birth Details presentation; move it only slightly toward centre. */
+.smv-print-first-card>.smv-print-birth-summary{max-width:154mm;margin:1mm auto 2mm!important;text-align:center!important}
+.smv-print-first-card>.smv-print-birth-name{text-align:center!important;margin:1mm auto 1.5mm!important}
+/* Ascendant and Moon Rasi stay as two centred columns on the first page. */
+.smv-print-lagna-rasi{width:min(142mm,92%)!important;margin:2mm auto 3mm!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12mm!important;align-items:start!important;text-align:center!important}
+.smv-print-lagna-rasi>*{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
+/* Retire the V136 generated replacement grid; V137 does not create it. */
+.print-birth-identity,.print-birth-details,.print-birth-fallback{max-width:none}
+
+
+
+
+
+/* V170 centred branded header + repeatable black contact footer. */
+.report-brand{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;text-align:center!important;gap:1.2mm!important;padding:2.3mm 0 2.6mm!important;margin:0 auto 3mm!important;border-top:1.2mm double #b58a3b!important;border-bottom:.45mm solid #b58a3b!important;width:100%!important;break-inside:avoid!important}
+.report-brand img{display:block!important;width:13mm!important;height:13mm!important;margin:0 auto!important;object-fit:cover!important;border-radius:50%!important;border:.45mm solid #b58a3b!important;padding:.45mm!important;background:#fff!important}
+.report-brand-copy{display:block!important;text-align:center!important;width:100%!important}
+.report-brand h1{display:block!important;margin:.2mm auto 0!important;padding:0!important;font-family:Georgia,'Times New Roman',serif!important;font-size:16pt!important;line-height:1.15!important;font-weight:800!important;letter-spacing:.35mm!important;word-spacing:.6mm!important;white-space:nowrap!important;color:#e00024!important;-webkit-text-fill-color:#e00024!important;text-align:center!important}
+.report-brand p{display:block!important;margin:.6mm auto 0!important;padding:0!important;font-size:7.6pt!important;line-height:1.2!important;letter-spacing:.08mm!important;word-spacing:.25mm!important;color:#111!important;-webkit-text-fill-color:#111!important;text-align:center!important}
+.report-footer{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,1.55fr);align-items:center;gap:2mm;width:100%;font-size:6.7pt;line-height:1.15;color:#000;background:#fff;border-top:.35pt solid #777;padding:1.7mm 0 .5mm;margin-top:5mm}
+.report-footer span{display:flex;align-items:center;justify-content:center;gap:1.2mm;min-width:0;white-space:nowrap;color:#000!important;-webkit-text-fill-color:#000!important}
+.report-footer img{width:3.4mm!important;height:3.4mm!important;flex:0 0 3.4mm!important;object-fit:contain!important}
+@media print{.report-footer{position:fixed;left:0;right:0;bottom:-16mm;z-index:20;margin:0;background:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.report-brand h1{color:#e00024!important;-webkit-text-fill-color:#e00024!important}.report-footer,.report-footer span{color:#000!important;-webkit-text-fill-color:#000!important}}

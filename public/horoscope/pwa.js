@@ -13,8 +13,10 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;upda
 addEventListener('appinstalled',()=>{promptEvent=null;installed=true;update();});
 button.onclick=async()=>{if(promptEvent){const p=promptEvent;promptEvent=null;await p.prompt();await p.userChoice;update();}else status.textContent=ta()?'உலாவியின் மெனுவில் “முகப்புத் திரையில் சேர்” என்பதைத் தேர்ந்தெடுக்கவும். ஐபோனில் பகிர் பொத்தானைப் பயன்படுத்தவும்.':'Choose “Add to Home Screen” in your browser menu. On iPhone, use the Share button.';};
 if('serviceWorker'in navigator){
+ let reloading=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)return;reloading=true;location.reload();});
  const timer=setTimeout(()=>{if(!ready&&!failed){slow=true;update();}},45000);
- navigator.serviceWorker.register('./sw.js').then(reg=>{
+ navigator.serviceWorker.register('./sw.js?v=v171-runtime-fix-20261003',{updateViaCache:'none'}).then(async reg=>{
+  try{await reg.update();}catch(_){}
   const watch=worker=>{if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='redundant'&&!reg.active){failed=true;clearTimeout(timer);update();}});};
   watch(reg.installing);reg.addEventListener('updatefound',()=>watch(reg.installing));
   return navigator.serviceWorker.ready;
