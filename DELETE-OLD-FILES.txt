@@ -1,0 +1,6 @@
+Delete these obsolete files from the deployed source because the Horoscope subsystem no longer uses payment/saved/cloud/geocode compatibility code:
+public/horoscope/horoscope-payment.mjs
+public/horoscope/horoscope-saved.js
+public/horoscope/offline/offline-only-router.mjs
+public/horoscope/offline/parity.mjs
+public/location_autocomplete_v142.js
