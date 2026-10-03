@@ -1,14 +1,54 @@
-const CACHE_NAME='smv-astro-en-20261001-v109-dashboard-revert';
-const APP_SHELL=["./smv-current-v33.css", "./assets/topics-v27.png", "./assets/service-icons-v24.png", "./assets/footer-v24.png", "./assets/smv-premium-desktop-v20.png", "./assets/smv-veerayah-family-mobile-v14.webp", "./assets/smv-brand-logo-v17.png", "./assets/social/facebook.svg", "./assets/social/instagram.svg", "./assets/social/youtube.svg", "./assets/social/whatsapp.svg", "./assets/social/phone.svg", "./sitemap.html", "./terms.html", "./privacy.html", "./legal-pages-v16.css", "./layout-v26.css", "./public-navigation.js?v=15", "./dashboard-live.mjs?v=13", "./index.html", "./interface.js?v=20260917-v13", "./app.mjs?v=20260918-v17", "./public-content.mjs?v=20260911c", "./admin-workflows.mjs?v=20260911c", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_SHELL)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('smv-astro-')&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+/* SMV ASTRO main-site service worker — stale-cache isolation
+   Scope: static presentation/PWA assets only.
+   Firebase, API, dashboard, payment and application-data requests are never intercepted. */
+const CACHE_NAME='smv-astro-static-master-20261003-a';
+
+function isStaticPresentationAsset(url){
+  if(url.origin!==self.location.origin) return false;
+  const p=url.pathname.toLowerCase();
+  // Horoscope owns its own nested service worker/runtime.
+  if(p==='/horoscope' || p.startsWith('/horoscope/')) return false;
+  return p.endsWith('/sw.js') ||
+    p.includes('/assets/') ||
+    /\.css$/.test(p) ||
+    /\.(png|jpe?g|webp|gif|svg|ico|avif)$/.test(p) ||
+    /(?:logo|icon|favicon)/.test(p) ||
+    /\.webmanifest$/.test(p);
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    await caches.open(CACHE_NAME);
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys
+      .filter(k=>k.startsWith('smv-astro-static-') && k!==CACHE_NAME)
+      .map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+
 self.addEventListener('fetch',event=>{
- const req=event.request,url=new URL(req.url);
- if(req.method!=='GET'||url.origin!==self.location.origin)return;
- if(req.mode==='navigate'){
-  event.respondWith(fetch(req,{cache:'no-cache'}).then(res=>{if(res.ok && (url.pathname.endsWith('/index.html')||url.pathname.endsWith('/'))){const copy=res.clone();caches.open(CACHE_NAME).then(c=>c.put('./index.html',copy));}return res;}).catch(()=>caches.match('./index.html')));return;
- }
- if(['image','style','script','font'].includes(req.destination)||url.pathname.endsWith('.webmanifest')){
-  event.respondWith(fetch(req,{cache:'no-cache'}).then(res=>{if(res.ok){const copy=res.clone();caches.open(CACHE_NAME).then(c=>c.put(req,copy));}return res;}).catch(()=>caches.match(req)));
- }
+  const req=event.request;
+  if(req.method!=='GET') return;
+  const url=new URL(req.url);
+  if(!isStaticPresentationAsset(url)) return;
+
+  event.respondWith((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    try{
+      const response=await fetch(req,{cache:'no-cache'});
+      if(response && response.ok) await cache.put(req,response.clone());
+      return response;
+    }catch(err){
+      const cached=await cache.match(req,{ignoreSearch:true});
+      if(cached) return cached;
+      throw err;
+    }
+  })());
 });

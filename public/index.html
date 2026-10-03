@@ -283,7 +283,8 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card" style="margin-top:16px"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></input></div>
 <div class="card" style="margin-top:16px"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
 <div class="card" style="margin-top:16px"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
-<div class="card" id="adminHoroscopePaidFeatures" style="margin-top:16px"><h3>Horoscope Paid Features</h3><p class="small">Advanced Analysis and Marriage Matching use independent Admin prices. ₹0 means free when enabled.</p><div class="action-row"><label>Advanced Analysis <select id="advancedAnalysisEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label>₹ Price <input id="advancedAnalysisPrice" min="0" step="0.01" type="number" value="0"></label></div><div class="action-row"><label>Marriage Matching <select id="marriageMatchingEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label>₹ Price <input id="marriageMatchingPrice" min="0" step="0.01" type="number" value="0"></label><button class="btn" id="saveHoroscopePaidFeatures" type="button">SAVE HOROSCOPE PRICES</button></div><div class="small" id="horoscopePaidFeaturesMsg"></div></div><div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
+<div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
+<div class="card" id="horoscopePaidFeaturesCard" style="margin-top:16px"><h3>Horoscope Paid Features</h3><p class="small">Admin OFF = Basic horoscope only / Matching hidden. Admin ON + ₹0 = full feature available without payment. Admin ON + ₹1 or more = paid feature gate.</p><div class="grid"><label><b>Advanced Horoscope</b><select id="advancedAnalysisEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label><b>Horoscope Price ₹</b><input id="advancedAnalysisPrice" type="number" min="0" step="0.01" value="0"></label><label><b>Marriage Matching</b><select id="marriageMatchingEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label><label><b>Matching Price ₹</b><input id="marriageMatchingPrice" type="number" min="0" step="0.01" value="0"></label></div><div class="action-row"><button class="btn" id="saveHoroscopeFeatureSettings" type="button">SAVE HOROSCOPE SETTINGS</button></div><div class="small" id="horoscopeFeatureSettingsMsg"></div></div>
 <div class="card" style="margin-top:16px"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card" style="margin-top:16px"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
 <div class="card" style="margin-top:16px"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
 <div class="card" id="adminContentManager" style="margin-top:16px">
@@ -505,208 +506,6 @@ document.addEventListener("click",function(e){
   setInterval(function(){
     if(window.__SMV_LOGGED_OUT===true){const b=document.getElementById('authBtn');if(b)b.textContent='Login';}
   },500);
-})();
-</script>
-<script id="smv-v142-location-autocomplete">
-
-(function(){
-  const place = document.getElementById('tamilBirthPlace');
-  const lat = document.getElementById('tamilLat');
-  const lon = document.getElementById('tamilLon');
-  if(!place || !lat || !lon) return;
-  const parent = place.parentElement;
-  parent.classList.add('smv-location-wrap');
-  const list = document.createElement('div');
-  list.className='smv-location-suggestions';
-  list.setAttribute('role','listbox');
-  parent.appendChild(list);
-  const status=document.createElement('div');
-  status.className='smv-location-status';
-  parent.appendChild(status);
-  let timer=null, controller=null, lastQuery='';
-  function clearList(){list.innerHTML='';list.classList.remove('show');}
-  function setStatus(text, cls){status.textContent=text||'';status.className='smv-location-status'+(cls?' '+cls:'');}
-  function choose(item){
-    place.value=item.place||'';
-    lat.value=Number(item.latitude).toFixed(6);
-    lon.value=Number(item.longitude).toFixed(6);
-    place.dataset.locationSelected='1';
-    place.dataset.latitude=String(item.latitude);
-    place.dataset.longitude=String(item.longitude);
-    clearList();
-    setStatus('');
-  }
-  function render(items){
-    clearList();
-    if(!items.length){setStatus('No matching location found. Please type a little more.','err');return;}
-    items.forEach(item=>{
-      const b=document.createElement('button');
-      b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');
-      b.textContent=item.place;
-      b.addEventListener('click',()=>choose(item));
-      list.appendChild(b);
-    });
-    list.classList.add('show');
-    setStatus('Select your exact place from the list.','');
-  }
-  async function search(q){
-    if(q.length<2){clearList();setStatus('','');return;}
-    if(q===lastQuery)return;
-    lastQuery=q;
-    if(controller) controller.abort();
-    controller=new AbortController();
-    setStatus('Searching location…','');
-    try{
-      const r=await fetch('https://smvastroservices.onrender.com/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok) throw new Error(data.error||'Location search failed');
-      render(data.results||[]);
-    }catch(e){
-      if(e.name==='AbortError')return;
-      clearList();setStatus(e.message||'Unable to search location.','err');
-    }
-  }
-  place.addEventListener('input',()=>{
-    place.dataset.locationSelected='0';
-    lat.value='';lon.value='';
-    lastQuery='';
-    clearTimeout(timer);
-    timer=setTimeout(()=>search(place.value.trim()),550);
-  });
-  place.addEventListener('focus',()=>{if(place.value.trim().length>=2 && list.children.length)list.classList.add('show');});
-  document.addEventListener('click',e=>{if(!parent.contains(e.target))clearList();});
-  place.addEventListener('keydown',e=>{
-    if(e.key==='Escape')clearList();
-  });
-})();
-</script>
-<script id="smv-v145-english-location-and-generator">
-(function(){
-  const BACKEND_URL='https://smvastroservices.onrender.com';
-  const $=id=>document.getElementById(id);
-
-  function setupLocation(prefix){
-    const place=$(prefix+'BirthPlace'),lat=$(prefix+'Lat'),lon=$(prefix+'Lon');
-    if(!place||!lat||!lon||place.dataset.smvLocationBound==='1')return;
-    place.dataset.smvLocationBound='1';
-    const parent=place.parentElement; parent.classList.add('smv-location-wrap');
-    const list=document.createElement('div'); list.className='smv-location-suggestions'; list.setAttribute('role','listbox'); parent.appendChild(list);
-    const status=document.createElement('div'); status.className='smv-location-status'; parent.appendChild(status);
-    let timer=null,controller=null,lastQuery='';
-    function clear(){list.innerHTML='';list.classList.remove('show');}
-    function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
-    function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText('');}
-    function render(items){clear();if(!items.length){statusText('No matching location found. Please type a little more.','err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText('Select your exact place from the list.','');}
-    async function search(q){if(q.length<2){clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;if(controller)controller.abort();controller=new AbortController();statusText('Searching location…','');try{const r=await fetch((window.SMV_BACKEND_URL||'https://smvastroservices.onrender.com')+'/api/geocode?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Location search failed');render(Array.isArray(data.results)?data.results:[]);}catch(e){if(e.name==='AbortError')return;clear();statusText(e.message||'Unable to search location.','err');}}
-    place.addEventListener('input',()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
-    place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
-    document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
-  }
-  setupLocation('english');
-
-  $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
-    const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'';
-    if(!date||!time){alert('Enter the date and time of birth.');return;}
-    if(!place||place.length<2){
-  alert('Enter your Place of Birth.');
-  return;
-}
-
-if(lat===''||lon===''){
-  alert('If the location is not available in the search list, enter Place of Birth, Latitude and Longitude manually.');
-  return;
-}
-    // The existing, tested Swiss-Ephemeris renderer is reused as the calculation engine.
-    // Its output is then translated into English; no second astronomical engine is introduced.
-    const copy=(a,b)=>{if($(a)&&$(b))$(b).value=$(a).value;};
-    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');copy('englishNakshatra','tamilNakshatra');
-    const rmap=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
-    const emap=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-    const ei=emap.indexOf($('englishRasi')?.value||'Aries');if($('tamilRasi'))$('tamilRasi').value=rmap[Math.max(0,ei)];
-    const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;
-    try{localStorage.setItem('smvLanguage','en');}catch(_e){}
-    const englishResult=$('englishHoroscopeResult');
-    // FINAL HOROSCOPE RELEASE RULE: do not open/show the horoscope result while
-    // any calculation is still running. The Create Horoscope button is the only
-    // loading indicator; chart + all new features are released together.
-    if(englishResult){
-      englishResult.classList.add('hidden');
-      englishResult.setAttribute('aria-busy','true');
-      englishResult.innerHTML='';
-    }
-    const btn=$('generateEnglishHoroscope');
-    if(btn){btn.disabled=true;btn.textContent='⏳ Creating Horoscope…';}
-    let englishProgress=$('englishHoroscopeProgress'); if(!englishProgress&&btn){englishProgress=document.createElement('div');englishProgress.id='englishHoroscopeProgress';englishProgress.className='smv-horoscope-progress';englishProgress.innerHTML='<span class="spin"></span><span>Creating Horoscope…<br>Preparing all calculations and features…</span>';btn.insertAdjacentElement('afterend',englishProgress);}
-    try{
-      const normalizeHoroscopeTime=value=>{
-        const s=String(value||'').trim();
-        let m=s.match(/^(\d{1,2}):([0-5]\d)$/);
-        if(m){const h=Number(m[1]);if(h>=0&&h<=23)return `${String(h).padStart(2,'0')}:${m[2]}`;}
-        m=s.match(/^(\d{1,2})[.:]([0-5]\d)\s*(AM|PM)$/i);
-        if(m){let h=Number(m[1]);const ap=m[3].toUpperCase();if(h<1||h>12)return '';if(ap==='AM')h=h===12?0:h;else h=h===12?12:h+12;return `${String(h).padStart(2,'0')}:${m[2]}`;}
-        return '';
-      };
-      const normalizedTime=normalizeHoroscopeTime(time);
-      if(!normalizedTime)throw new Error('Enter a valid birth time, for example 22:05 (10:05 PM).');
-      if(typeof window.__smvGenerateHoroscopeEngine!=='function')throw new Error('Horoscope engine is not ready. Please refresh the page.');
-      // ENGLISH FLOW REPAIR:
-      // Do NOT start a second Advanced request against the Tamil DOM and do NOT copy
-      // a partially populated Advanced tree. First build the core chart, copy only
-      // that stable core result, rename the containers, then run ONE complete
-      // /api/horoscope/full request directly into the English Advanced root.
-      const generated=await window.__smvGenerateHoroscopeEngine(false);
-      const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
-      if(source&&target&&source.innerHTML.trim()){
-        target.innerHTML=source.innerHTML;
-        const copiedAdv=target.querySelector('#tamilAdvancedAstrology');
-        if(copiedAdv){ copiedAdv.id='englishAdvancedAstrology'; copiedAdv.classList.add('hidden'); }
-        const copiedTransitSlot=target.querySelector('#tamilDailyTransitPanchangSlot');
-        if(copiedTransitSlot) copiedTransitSlot.id='englishDailyTransitPanchangSlot';
-
-        target.classList.add('hidden');target.setAttribute('aria-busy','true');
-        source.classList.add('hidden');
-
-        if(typeof window.__smvApplyEnglishToHoroscope!=='function') throw new Error('English horoscope translator is not ready. Please refresh the page.');
-        if(typeof window.__smvBindHoroscopeInteractions!=='function') throw new Error('English horoscope interactions are not ready. Please refresh the page.');
-        window.__smvApplyEnglishToHoroscope(target);
-        window.__smvBindHoroscopeInteractions(target,generated||{},$('englishAstroName')?.value?.trim()||'User','en');
-
-        const englishAdvancedRoot=$('englishAdvancedAstrology');
-        if(!englishAdvancedRoot || typeof window.__smvLoadAdvancedAstrology!=='function'){
-          throw new Error('English Advanced Astrology container is not ready.');
-        }
-        // This is the ONLY English Advanced request. It uses the English root,
-        // the verified core chart, and the current generation id, so an older
-        // Tamil request cannot abort or overwrite it.
-        await window.__smvLoadAdvancedAstrology({
-          date,time:normalizedTime,lat,lon,lang:'en',
-          rootId:'englishAdvancedAstrology',
-          name:($('englishAstroName')?.value||'').trim(),
-          chart:generated||null,
-          generationId:window.__smvHoroscopeGenerationId
-        });
-
-        /* SINGLE ENGLISH RELEASE: the complete core + Advanced + Panchang +
-           Transit + Dasa batch is now ready. */
-        if(typeof window.__smvForceEnglishRahuRetrograde==='function'){
-          window.__smvForceEnglishRahuRetrograde(target);
-        }
-        target.classList.remove('hidden');
-        target.setAttribute('aria-busy','false');
-        if(typeof window.__smvFixEnglishBhavaHeaders==='function') window.__smvFixEnglishBhavaHeaders();
-        target.scrollIntoView({behavior:'smooth',block:'start'});
-      }else throw new Error('Horoscope result was not returned.');
-    }catch(e){
-      if(englishResult){englishResult.setAttribute('aria-busy','false');englishResult.classList.add('hidden');englishResult.innerHTML='';}
-      alert(e?.message||String(e));
-    }
-    finally{
-      if(englishResult) englishResult.setAttribute('aria-busy','false');
-      if(btn){btn.disabled=false;btn.textContent='Create Horoscope';}
-      if(englishProgress) englishProgress.remove();
-    }
-  });
-  $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishNakshatra','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishRasi'))$('englishRasi').value='Aries';if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
 })();
 </script>
 <script>window.__SMV_V158_PATCH="Phase 3 classical-style Parashari Shadbala: Sthana, Dig, Kala, Cheshta, Naisargika and Drik components with required-strength comparison; Phase 2 layer retained for compatibility.";</script>
@@ -1317,5 +1116,6 @@ else initFAQ();
 </script>
 <script defer="" src="./interface.js?v=20260929-v77"></script>
 <script src="./public-navigation.js?v=20260929-v77"></script>
+<script type="module" src="./question-place-bindings.mjs?v=20261003-v163"></script>
 </body>
 </html>

@@ -273,7 +273,9 @@
         birthTime:String($('privateConsultBirthTime')?.value||''),
         birthPlace:String($('privateConsultBirthPlace')?.value||'').trim(),
         birthGender:String($('privateConsultGender')?.value||''),
-        timezone:'Asia/Kolkata',utcOffsetMinutes:330
+        latitude:Number($('privateConsultBirthPlace')?.dataset.latitude)||null,
+        longitude:Number($('privateConsultBirthPlace')?.dataset.longitude)||null,
+        timezone:$('privateConsultBirthPlace')?.dataset.timezone||'Asia/Kolkata',utcOffsetMinutes:330
       }
     };
     if(!payload.customerName||!payload.question||!payload.birthDetails.birthDate||!payload.birthDetails.birthTime||!payload.birthDetails.birthPlace){
