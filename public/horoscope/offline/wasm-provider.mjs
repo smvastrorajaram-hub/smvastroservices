@@ -10,25 +10,10 @@ async function loadFactory(){
   if(typeof globalThis.__SMV_CREATE_SWEPH_WASM__==='function') return globalThis.__SMV_CREATE_SWEPH_WASM__;
   if(factoryPromise)return factoryPromise;
   factoryPromise=(async()=>{
-    const base=new URL('./vendor/smv-swisseph-local.mjs',import.meta.url);
-    try{
-      // Keep the stable module URL so V99's Service Worker can return the last
-      // known-good cached Swiss runtime. Do not cache-bust this import: query
-      // variants can bypass the exact cached module and recreate intermittent
-      // "Failed to fetch" behaviour when the network is unstable.
-      const probe=await fetch(base.href,{cache:'reload'});
-      if(!probe.ok)throw new Error('HTTP '+probe.status+' for '+base.pathname);
-      const mod=await import(base.href);
-      const f=mod.createSMVSwissEph||mod.default;
-      if(typeof f!=='function')throw new Error('Swiss module loaded without factory export.');
-      return f;
-    }catch(e){
-      // Never keep a rejected module/factory promise. A later reopen/retry can
-      // make a clean attempt after network/cache recovery.
-      factoryPromise=null;
-      const reason=String(e?.message||e||'unknown module-load error');
-      throw new Error('Local Swiss Ephemeris WASM runtime could not load: '+reason);
-    }
+    const mod=await import('./vendor/smv-swisseph-local.mjs');
+    const f=mod.createSMVSwissEph||mod.default;
+    if(typeof f!=='function')throw new Error('Swiss module loaded without factory export.');
+    return f;
   })();
   return factoryPromise;
 }
