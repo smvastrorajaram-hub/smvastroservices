@@ -3408,7 +3408,7 @@ async function requireCustomerOnly(user,res){
   if(role!=="customer"){res.status(403).json({error:"Customer login is required for Horoscope payment."});return false;}return true;
 }
 app.get("/horoscope-auth/session",async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();return res.json({success:true,role});});
-app.get("/horoscope-feature-config",async(_req,res)=>{const c=await getHoroscopePaymentSettings();return res.json({success:true,advanced_analysis:horoscopeFeaturePrice(c,"advanced_analysis"),marriage_matching:horoscopeFeaturePrice(c,"marriage_matching")});});
+app.get("/horoscope-feature-config",async(_req,res)=>{res.set("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");res.set("Pragma","no-cache");res.set("Expires","0");const c=await getHoroscopePaymentSettings();return res.json({success:true,advanced_analysis:horoscopeFeaturePrice(c,"advanced_analysis"),marriage_matching:horoscopeFeaturePrice(c,"marriage_matching")});});
 app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   const b=req.body||{},ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
