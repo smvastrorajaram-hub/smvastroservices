@@ -491,6 +491,10 @@ function smvClosePublicQuestionWindow(){
 }
 window.__smvOpenQuestionService=openQuestionService;
 function smvDateTime(value){ try { if(value==null || value==='') return '—'; let d=null; if(value instanceof Date) d=value; else if(typeof value?.toDate==='function') d=value.toDate(); else if(typeof value==='object' && value){ const sec=value.seconds ?? value._seconds; const ns=value.nanoseconds ?? value._nanoseconds ?? 0; if(sec!=null) d=new Date(Number(sec)*1000+Math.floor(Number(ns)/1e6)); else if(value.timestamp) return smvDateTime(value.timestamp); else if(value.date) return smvDateTime(value.date); else if(value.value) return smvDateTime(value.value); } if(!d) d=new Date(value); if(Number.isNaN(d.getTime())) return '—'; return d.toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}); } catch(e){ return '—'; } }
+function smvDateSortMs(value){ try { if(value==null||value==='')return 0; if(typeof value?.toMillis==='function')return Number(value.toMillis())||0; if(typeof value?.toDate==='function')return value.toDate().getTime()||0; if(value instanceof Date)return value.getTime()||0; if(typeof value==='object'&&value){const sec=value.seconds??value._seconds;const ns=value.nanoseconds??value._nanoseconds??0;if(sec!=null)return Number(sec)*1000+Math.floor(Number(ns)/1e6);if(value.timestamp!=null)return smvDateSortMs(value.timestamp);if(value.date!=null)return smvDateSortMs(value.date);if(value.value!=null)return smvDateSortMs(value.value);} const n=typeof value==='number'?value:Date.parse(String(value));return Number.isFinite(n)?n:0;}catch(_e){return 0;} }
+function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
+function smvDashboardData(item){try{return typeof item?.data==='function'?(item.data()||{}):(item||{});}catch(_e){return {};}}
+function smvSortDashboardDesc(items){return (Array.isArray(items)?items:[]).slice().sort((a,b)=>smvDashboardActivityMs(smvDashboardData(b))-smvDashboardActivityMs(smvDashboardData(a)));}
 window.__smvOpenQuestionService=openQuestionService;
   window.__smvOpenRegister=openRegister;
 
@@ -749,7 +753,7 @@ function openAuth(mode="login"){
   const passwordToggle=$("passwordToggle");
   passwordToggle.onclick=()=>{const p=$("password");const showing=p.type==="text";p.type=showing?"password":"text";passwordToggle.innerHTML=smvPasswordEye(!showing);passwordToggle.setAttribute("aria-pressed",String(!showing));passwordToggle.setAttribute("aria-label",showing?"Show password":"Hide password")};
   if(isLogin){
-    const setMethod=(m)=>{loginMethod=m; const input=$("email"); if(!input)return; const idMode=m!=="email"; input.type=idMode?"text":"email"; input.placeholder=m==="customerId"?"Customer ID (e.g. smv-cus-7k4m9x2d6r8v3p5n)":m==="astrologerId"?"Astrologer ID (e.g. smv-ast-5m8d3k7r2v9x4p6n)":"Email address"; input.autocomplete=idMode?"username":"email"; $("loginEmailMode")?.classList.toggle("active",m==="email"); $("loginCustomerIdMode")?.classList.toggle("active",m==="customerId"); $("loginAstrologerIdMode")?.classList.toggle("active",m==="astrologerId");};
+    const setMethod=(m)=>{loginMethod=m; const input=$("email"); if(!input)return; const idMode=m!=="email"; input.type=idMode?"text":"email"; input.placeholder=m==="customerId"?"Customer ID (e.g. smvcr-48372)":m==="astrologerId"?"Astrologer ID (e.g. smvar-27164)":"Email address"; input.autocomplete=idMode?"username":"email"; $("loginEmailMode")?.classList.toggle("active",m==="email"); $("loginCustomerIdMode")?.classList.toggle("active",m==="customerId"); $("loginAstrologerIdMode")?.classList.toggle("active",m==="astrologerId");};
     $("loginEmailMode").onclick=()=>setMethod("email"); $("loginCustomerIdMode").onclick=()=>setMethod("customerId"); $("loginAstrologerIdMode").onclick=()=>setMethod("astrologerId"); setMethod("email");
   }
   $("submitAuth").onclick=()=>submitAuth(mode); $("switchAuth").onclick=()=>openAuth(isLogin?"register":"login");
@@ -2106,8 +2110,12 @@ const userStatus=String(
      }
    }catch(e){console.warn('Open questions load skipped:',e);}
 
-   qs=inboxSnap;
-   const activeQuestions=qs.docs.filter(d=>['paid','admin_review','answer_draft','revision_required'].includes(d.data().status));
+   // Every Astrologer Dashboard operational list is newest-first. Notifications
+   // remain on their existing independent order by explicit user request.
+   const astroQuestionDocs=smvSortDashboardDesc(inboxSnap.docs);
+   qs={...inboxSnap,docs:astroQuestionDocs};
+   availableQuestions=smvSortDashboardDesc(availableQuestions);
+   const activeQuestions=astroQuestionDocs.filter(d=>['paid','admin_review','answer_draft','revision_required'].includes(d.data().status));
    const approved=ad.status==='approved';
   // Canonical earnings ledger comes from the trusted Render backend. This
   // prevents a successfully credited astrologer payment from being omitted
@@ -2117,7 +2125,7 @@ const userStatus=String(
   try {
     const epRemote = readAstro(2);
     totalEarnings = Number(epRemote?.totalEarnings || 0);
-    ledger = Array.isArray(epRemote?.ledger) ? epRemote.ledger : [];
+    ledger = smvSortDashboardDesc(Array.isArray(epRemote?.ledger) ? epRemote.ledger : []);
   } catch (earningsErr) {
     console.warn('Canonical astrologer earnings endpoint unavailable; using question fallback:', earningsErr);
     const earningsDocs = qs.docs.filter(d => {
@@ -2209,7 +2217,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
   <p class="small">Submitted answers stay here and are marked with their current approval status.</p>
   ${qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && !!q.answer && ['admin_review','answered'].includes(String(q.status||''));}).length ? qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && !!q.answer && ['admin_review','answered'].includes(String(q.status||''));}).map(d=>{const q=d.data()||{};const status=q.status==='answered'?(q.commissionStatus==='credited'?'COMPLETED / EARNING CREDITED':q.customerAnswerViewedAt?'SUBMITTED / CUSTOMER VIEWED':'SUBMITTED / WAITING FOR CUSTOMER VIEW'):'SUBMITTED — WAITING FOR ADMIN APPROVAL';const canEdit=q.status==='answered'&&q.adminApprovalBypassed===true&&!q.customerAnswerViewedAt&&q.commissionStatus!=='credited';const birthName=q.birthName||q.birthDetails?.name||'';const birthDate=q.birthDate||q.birthDetails?.birthDate||'';const birthTime=q.birthTime||q.birthDetails?.birthTime||'';const birthPlace=q.birthPlace||q.birthDetails?.birthPlace||'';const birthGender=q.birthGender||q.birthDetails?.birthGender||'';return `<div class="card astro-answer-item" style="margin:10px 0"><div class="badge">${status}</div><div class="smv-astro-question-text" style="margin-top:8px">${escapeHtml(q.question||'Question')}</div><div class="small"><b>Birth Details:</b> ${escapeHtml(birthName)} · ${escapeHtml(birthDate)} · ${escapeHtml(birthTime)} · ${escapeHtml(birthPlace)} · ${escapeHtml(birthGender)}</div><div class="small"><b>Question ID:</b> ${escapeHtml(d.id)} · <b>Date & Time:</b> ${escapeHtml(smvDateTime(q.answerApprovedAt||q.updatedAt||q.answerSubmittedAt||q.createdAt))}</div><div class="smv-astro-answer-text" style="margin-top:10px;white-space:pre-wrap;line-height:1.65">${escapeHtml(q.answer||'')}</div><div class="small" style="margin-top:8px"><b>Status:</b> ${escapeHtml(status)}</div>${canEdit?`<button class="btn gray" data-edit-final-answer="${escapeHtml(d.id)}" type="button">EDIT ANSWER</button>`:''}</div>`;}).join('') : '<div class="empty">No answered questions yet.</div>'}
 </div>
-<div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?withdrawalSnap.docs.slice().sort((a,b)=>Number(b.data().createdAt?.seconds||0)-Number(a.data().createdAt?.seconds||0)).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^smv-pmt-/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
+<div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^smv-pmt-/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
   const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
@@ -2507,7 +2515,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
   // Private Consultation is deliberately separate from Ask Now/Open Questions.
   try{
     const pr=await renderApi('/astrologer/private-consultations',{method:'GET'});
-    const pcs=Array.isArray(pr?.consultations)?pr.consultations:[];
+    const pcs=smvSortDashboardDesc(Array.isArray(pr?.consultations)?pr.consultations:[]);
     const privateMinWords=Math.max(1,Number(pr?.settings?.minimumAnswerWords||20));
     const privateAuto=pr?.settings?.allowWithoutAdminApproval===true;
     const privateAstroRate=Number(pr?.settings?.privateCommission?.astrologerRate??20);
@@ -2549,7 +2557,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
       return (st||'PENDING').replaceAll('_',' ').toUpperCase();
     };
     const histTime=c=>c.commissionCreditedAt||c.customerViewedAt||c.answerApprovedAt||c.answerSubmittedAt||c.questionApprovedAt||c.paidAt||c.updatedAt||c.createdAt;
-    historyItems.sort((a,b)=>{const av=histTime(a),bv=histTime(b);const am=av?.seconds?av.seconds*1000:(Date.parse(av||'')||0),bm=bv?.seconds?bv.seconds*1000:(Date.parse(bv||'')||0);return bm-am;});
+    historyItems.sort((a,b)=>smvDateSortMs(histTime(b))-smvDateSortMs(histTime(a)));
     histBox.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h3 class="smv-astro-main-heading" style="margin:0">Private Consultation History</h3><button type="button" id="privateConsultHistoryToggle" class="smv-v170-collapse-btn" aria-label="Minimize or expand Private Consultation History">▼</button></div><div id="privateConsultHistoryBody" style="margin-top:12px">${historyItems.length?historyItems.map(c=>{
       const chat=Number(c.chatPrice||c.amount||0);
       const earning=Number(Number.isFinite(Number(c.astrologerCreditedAmount))?c.astrologerCreditedAmount:(Number.isFinite(Number(c.astrologerAmount))?c.astrologerAmount:(chat*privateAstroRate/100)));
@@ -2792,8 +2800,8 @@ ${ad.status === 'rejected' && ad.rejectionReason
    if(!cr?.success||!Array.isArray(cr.questions))throw new Error(cr?.error||'Unable to load current questions.');
    if(cr.customerId && cr.customerId!==loadUid)throw new Error('The response belongs to a different login session.');
    if(!active())return;
-   const consultationItems=cr.questions.slice().sort((a,b)=>Date.parse(b.createdAt||'')-Date.parse(a.createdAt||''));
-   const privateConsultationItems=privateCr?.success&&Array.isArray(privateCr.consultations)?privateCr.consultations.slice().sort((a,b)=>Date.parse(b.createdAt||'')-Date.parse(a.createdAt||'')):[];
+   const consultationItems=cr.questions.slice().sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
+   const privateConsultationItems=privateCr?.success&&Array.isArray(privateCr.consultations)?privateCr.consultations.slice().sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a)):[];
    const hasPendingRefund=false;
    const paid=consultationItems.filter(q=>q.status!=='awaiting_payment').length;
    const qCount=consultationItems.length;
@@ -3090,7 +3098,7 @@ loadPublicContent();
 function smvRenderPrivateConsultAdmin(data){
  const host=$('adminPrivatePending'),answers=$('adminPrivateAnswers'),control=$('privateConsultWorkflowControl');
  if(!host||!answers||!control)return;
- const items=Array.isArray(data?.privateConsultations)?data.privateConsultations:[];
+ const items=smvSortDashboardDesc(Array.isArray(data?.privateConsultations)?data.privateConsultations:[]);
  const adminNotes=Array.isArray(data?.adminNotifications)?data.adminNotifications.slice():[];
  const adminNoteBox=$('adminPrivateNotifications');
  if(adminNoteBox){const seen=new Set(),unique=adminNotes.filter(n=>{const k=[n.type||'',n.consultationId||n.questionId||n.astrologerId||'',n.title||''].join('|');if(seen.has(k))return false;seen.add(k);return true;});const nt=n=>{const t=n?.createdAt;if(t?.seconds)return Number(t.seconds)*1000;if(typeof t==='string')return Date.parse(t)||0;if(t instanceof Date)return t.getTime();return 0;};unique.sort((a,b)=>nt(b)-nt(a));adminNoteBox.innerHTML=unique.length?unique.slice(0,100).map(n=>`<article class="smv-notification-row smv-admin-notification-row"><h4 class="smv-notification-title">${escapeHtml(n.title||'Admin Event')}</h4><p class="smv-notification-content">${escapeHtml(n.message||'')}</p><p class="smv-notification-meta"><span class="smv-notification-label">Date &amp; Time:</span> <span class="smv-notification-result">${escapeHtml(smvDateTime(n.createdAt))}</span></p></article>`).join(''):'<div class="empty">No Admin notifications.</div>';}
@@ -3179,6 +3187,11 @@ async function loadAdminPanelData(background=false){
   ]);
   const adminRead=i=>{if(adminReads[i].status==='rejected')throw adminReads[i].reason;return adminReads[i].value;};
   const adminData=adminRead(0);
+  // Keep every date-based Admin operational list newest-first. Notification arrays
+  // are deliberately excluded so their existing behaviour remains untouched.
+  ['users','customers','astrologers','questions','payments','privateConsultations'].forEach(k=>{
+    if(Array.isArray(adminData?.[k]))adminData[k]=smvSortDashboardDesc(adminData[k]);
+  });
   if(currentUser?.uid!==adminLoadUid)return;
   if(background&&($('admin')?.classList.contains('hidden')||smvEditing('admin'))){smvLiveQueue?.request();return;}
 
@@ -3355,7 +3368,7 @@ async function loadAdminPanelData(background=false){
   const payoutBox=$('adminPayoutChanges');
   try{
     const payoutSnap=await withTimeout(getDocs(query(collection(db,'smv_payouts'),where('status','==','pending_admin_review'))),12000);
-    const pendingPayouts=payoutSnap.docs.filter(d=>{const a=astros.docs.find(x=>x.id===d.id)?.data()||{};return String(a.status||'').toLowerCase()==='approved';});
+    const pendingPayouts=smvSortDashboardDesc(payoutSnap.docs.filter(d=>{const a=astros.docs.find(x=>x.id===d.id)?.data()||{};return String(a.status||'').toLowerCase()==='approved';}));
     payoutBox.innerHTML=pendingPayouts.length?pendingPayouts.map(d=>{const p=d.data()||{};const a=astros.docs.find(x=>x.id===d.id)?.data()||{};return `<div class="card" style="margin:10px 0"><h3>${escapeHtml(a.name||d.id)}</h3><div class="small"><b>Astrologer ID:</b> ${escapeHtml(d.id)} · <b>Submitted:</b> ${escapeHtml(smvDateTime(p.requestedAt||p.updatedAt))}</div><div class="small" style="margin-top:8px"><b>PRIVATE PAYMENT DETAILS:</b> Bank: ${escapeHtml(p.bankName||'')} · Holder: ${escapeHtml(p.accountName||'')} · Account: ${escapeHtml(p.accountNumber||'')} · IFSC: ${escapeHtml(p.ifsc||'')} · UPI: ${escapeHtml(p.upi||'—')}</div><div class="action-row" style="margin-top:10px"><button class="btn" data-payout-approve="${escapeHtml(d.id)}">APPROVE</button><button class="btn gray" data-payout-reject="${escapeHtml(d.id)}">REJECT</button></div><input id="payoutReject_${escapeHtml(d.id)}" placeholder="Rejection reason (required if rejecting)"></div>`;}).join(''):'<div class="empty">No payment method changes waiting for Admin approval.</div>';
     payoutBox.querySelectorAll('[data-payout-approve]').forEach(b=>b.onclick=async()=>{const id=b.dataset.payoutApprove;b.disabled=true;try{const r=await withTimeout(renderApi('/admin/payout-change-status',{method:'POST',body:JSON.stringify({astrologerId:id,status:'approved'})}),15000);if(!r?.success)throw new Error(r?.error||'Unable to approve payment method.');alert('Payment method approved.');await loadAdminPanel();}catch(e){alert(e.message||String(e));b.disabled=false;}});
     payoutBox.querySelectorAll('[data-payout-reject]').forEach(b=>b.onclick=async()=>{const id=b.dataset.payoutReject,reason=$('payoutReject_'+id)?.value.trim()||'';if(!reason){alert('Enter rejection reason.');return;}b.disabled=true;try{const r=await withTimeout(renderApi('/admin/payout-change-status',{method:'POST',body:JSON.stringify({astrologerId:id,status:'rejected',reason})}),15000);if(!r?.success)throw new Error(r?.error||'Unable to reject payment method.');alert('Payment method rejected.');await loadAdminPanel();}catch(e){alert(e.message||String(e));b.disabled=false;}});
@@ -3363,7 +3376,7 @@ async function loadAdminPanelData(background=false){
 
   // Public Question Admin Approval: Admin selects exactly one approved astrologer and commission rate.
   const withdrawalSnap=await getDocs(collection(db,'smv_withdrawals'));
-  const withdrawalDocs=withdrawalSnap.docs.slice().sort((a,b)=>Number(b.data().createdAt?.seconds||0)-Number(a.data().createdAt?.seconds||0)).slice(0,50);
+  const withdrawalDocs=smvSortDashboardDesc(withdrawalSnap.docs).slice(0,50);
   $('adminWithdrawals').innerHTML=withdrawalDocs.length?withdrawalDocs.map(d=>{const w=d.data();return `<div class="card" style="margin:10px 0"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <b>${escapeHtml(w.status||'pending').toUpperCase()}</b><div class="small">Astrologer: ${escapeHtml(w.astrologerName||w.astrologerId||'')} · Astrologer ID: ${escapeHtml(w.astrologerId||'')}<br><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}${String(w.status||'').toLowerCase()==='paid' && /^smv-pmt-/i.test(String(w.adminPaymentId||'')) ? `<br><b>Admin Payment ID:</b> ${escapeHtml(w.adminPaymentId)}` : ''}<br>Requested: ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${String(w.status||'').toLowerCase()==='paid' && w.paidAt ? `<br><b>Paid Date & Time:</b> ${escapeHtml(smvDateTime(w.paidAt))}` : ''}</div><div id="withdrawBank_${d.id}" class="small" style="margin-top:8px"><b>PRIVATE PAYMENT DETAILS:</b> Loading…</div><div class="action-row">${w.status==='pending'?`<button class="btn" data-wstatus="${d.id}" data-status="processing">MARK PROCESSING</button><button class="btn gray" data-wstatus="${d.id}" data-status="rejected">REJECT</button>`:''}${w.status==='processing'?`<button class="btn" data-wstatus="${d.id}" data-status="paid">MARK PAID</button>`:''}${String(w.status||'').toLowerCase()==='paid' && !/^smv-pmt-/i.test(String(w.adminPaymentId||''))?`<button class="btn" data-wstatus="${d.id}" data-status="paid">CREATE ADMIN PAYMENT ID</button>`:''}</div></div>`}).join(''):'<div class="empty">No withdrawal requests.</div>';
   for(const d of withdrawalDocs){
     try{
@@ -3550,13 +3563,14 @@ async function loadAdminPanelData(background=false){
   });
   /* ADMIN EARNINGS HISTORY — display-only ledger from credited answered questions. */
   try {
-    const adminEarnedQuestions = questions.docs.filter(d=>{const q=d.data()||{};return q.status==='answered' && q.commissionStatus==='credited';}).slice().sort((a,b)=>{const at=Number(b.data()?.commissionCreditedAt?.seconds||b.data()?.answerApprovedAt?.seconds||0);const bt=Number(a.data()?.commissionCreditedAt?.seconds||a.data()?.answerApprovedAt?.seconds||0);return at-bt;});
+    const adminEarnedQuestions = smvSortDashboardDesc(questions.docs.filter(d=>{const q=d.data()||{};return q.status==='answered' && q.commissionStatus==='credited';}));
     const creditedPayments = payments.docs.filter(d=>{const p=d.data()||{};return String(p.type||'').toLowerCase()==='astrologer_earning' && String(p.status||'').toLowerCase()==='credited';});
     let adminTotal=0;
     const questionLedgerIds=new Set();
-    const questionRows=adminEarnedQuestions.map(d=>{const q=d.data()||{};questionLedgerIds.add(String(d.id));const paid=Number(q.amount||q.customerAmount||0);const astro=Number(q.astrologerCommissionAmount||q.commissionAmount||0);const adminEarn=Math.max(0,Math.round((paid-astro)*100)/100);adminTotal+=adminEarn;const dt=q.commissionCreditedAt||q.answerApprovedAt||q.adminAnswerApprovedAt||q.updatedAt||q.createdAt||null;const dateText=smvDateTime(dt);const customer=q.customerName||q.birthName||q.birthDetails?.name||'Customer';return `<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Customer:</b> ${escapeHtml(customer)} · <b>Question ID:</b> ${escapeHtml(d.id)}</div><div class="small">${escapeHtml(q.question||'Consultation')}</div><div class="small">Credited: ${escapeHtml(dateText)}</div></div>`;}).join('');
-    const paymentRows=creditedPayments.filter(d=>{const p=d.data()||{};return !questionLedgerIds.has(String(p.questionId||''));}).map(d=>{const p=d.data()||{};const gross=Number(p.grossAmount||0);const astro=Number(p.commissionAmount||p.earningAmount||0);const adminEarn=Math.max(0,Math.round((gross-astro)*100)/100);adminTotal+=adminEarn;const dt=p.createdAt||p.updatedAt||p.creditedAt||null;const dateText=smvDateTime(dt);return `<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Payment ID:</b> ${escapeHtml(p.paymentId||d.id)} · ${p.consultationId?`<b>Private Consultation ID:</b> ${escapeHtml(p.consultationId)}`:`<b>Question ID:</b> ${escapeHtml(p.questionId||'—')}`}</div><div class="small">${p.consultationId?'Private Consultation':'Astrologer'} earning credited</div><div class="small">Credited: ${escapeHtml(dateText)}</div></div>`;}).join('');
-    const adminRows=questionRows+paymentRows;
+    const earningRows=[];
+    adminEarnedQuestions.forEach(d=>{const q=d.data()||{};questionLedgerIds.add(String(d.id));const paid=Number(q.amount||q.customerAmount||0);const astro=Number(q.astrologerCommissionAmount||q.commissionAmount||0);const adminEarn=Math.max(0,Math.round((paid-astro)*100)/100);adminTotal+=adminEarn;const dt=q.commissionCreditedAt||q.answerApprovedAt||q.adminAnswerApprovedAt||q.updatedAt||q.createdAt||null;const customer=q.customerName||q.birthName||q.birthDetails?.name||'Customer';earningRows.push({time:smvDateSortMs(dt),html:`<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Customer:</b> ${escapeHtml(customer)} · <b>Question ID:</b> ${escapeHtml(d.id)}</div><div class="small">${escapeHtml(q.question||'Consultation')}</div><div class="small">Credited: ${escapeHtml(smvDateTime(dt))}</div></div>`});});
+    creditedPayments.filter(d=>{const p=d.data()||{};return !questionLedgerIds.has(String(p.questionId||''));}).forEach(d=>{const p=d.data()||{};const gross=Number(p.grossAmount||0);const astro=Number(p.commissionAmount||p.earningAmount||0);const adminEarn=Math.max(0,Math.round((gross-astro)*100)/100);adminTotal+=adminEarn;const dt=p.creditedAt||p.updatedAt||p.createdAt||null;earningRows.push({time:smvDateSortMs(dt),html:`<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Payment ID:</b> ${escapeHtml(p.paymentId||d.id)} · ${p.consultationId?`<b>Private Consultation ID:</b> ${escapeHtml(p.consultationId)}`:`<b>Question ID:</b> ${escapeHtml(p.questionId||'—')}`}</div><div class="small">${p.consultationId?'Private Consultation':'Astrologer'} earning credited</div><div class="small">Credited: ${escapeHtml(smvDateTime(dt))}</div></div>`});});
+    const adminRows=earningRows.sort((a,b)=>b.time-a.time).map(x=>x.html).join('');
     
 $('adminEarningsHistory').innerHTML=`<div class="stats-grid" style="margin-bottom:12px"><div class="stat">Total Admin Earnings <b>₹${adminTotal.toFixed(2)}</b></div><div class="stat">Completed Consultations <b>${adminEarnedQuestions.length}</b></div></div>${adminRows||'<div class="empty">No credited admin earnings yet.</div>'}`;
   } catch(e) { console.warn('Admin earnings history load skipped:',e); if($('adminEarningsHistory'))$('adminEarningsHistory').innerHTML='<div class="empty">Admin earnings history could not be loaded right now.</div>'; }
@@ -3569,8 +3583,9 @@ $('adminReviews').innerHTML =
   reviewsSnap.empty
     ? '<div class="empty">No reviews yet.</div>'
     : reviewsSnap.docs
-        .slice(-50)
-        .reverse()
+        .slice()
+        .sort((a,b)=>smvDashboardActivityMs(b.data()||{})-smvDashboardActivityMs(a.data()||{}))
+        .slice(0,50)
         .map(d => {
 
           const r = d.data();
