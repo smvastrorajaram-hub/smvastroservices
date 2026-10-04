@@ -8,6 +8,8 @@
   const BASE='./horoscope/offline/places/';
   let manifest=null;
   const shardCache=new Map();
+  const aliasCache=new WeakMap();
+  const searchState=new Map();
   const norm=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -36,15 +38,23 @@
     shardCache.set(k,rows);
     return rows;
   }
+  function aliasesFor(row){
+    let cached=aliasCache.get(row);
+    if(cached) return cached;
+    cached=(row[8]||[]).map(norm).filter(Boolean);
+    aliasCache.set(row,cached);
+    return cached;
+  }
   async function searchPlaces(q,limit){
     const n=norm(q);
     if(n.length<2) return [];
-    const rows=await getShard(keyFor(n));
+    const key=keyFor(n),rows=await getShard(key);
+    const prior=searchState.get(key);
+    const source=prior&&n.startsWith(prior.query)&&n.length>prior.query.length?prior.rows:rows;
     const out=[];
-    for(const x of rows){
+    for(const x of source){
       let best=99;
-      for(const raw of (x[8]||[])){
-        const a=norm(raw);
+      for(const a of aliasesFor(x)){
         if(a===n){best=0;break;}
         if(a.startsWith(n)) best=Math.min(best,1);
         else if(a.includes(' '+n)) best=Math.min(best,2);
@@ -52,6 +62,7 @@
       }
       if(best<99) out.push({x,score:best});
     }
+    searchState.set(key,{query:n,rows:out.map(v=>v.x)});
     out.sort((a,b)=>a.score-b.score||(Number(b.x[7])||0)-(Number(a.x[7])||0)||String(a.x[1]||'').localeCompare(String(b.x[1]||'')));
     return out.slice(0,limit||8).map(({x})=>{
       const district=x[3]||'', state=x[2]||'';
@@ -114,12 +125,22 @@
       },260);
     });
     input.addEventListener('keydown',e=>{if(e.key==='Escape') close();});
-    document.addEventListener('pointerdown',e=>{if(e.target!==input&&!box.contains(e.target)) close();},{passive:true});
+    box.__smvClose=close;
+    input.__smvPlaceBox=box;
   }
 
   function init(){
     bind('birthPlace');
     bind('privateConsultBirthPlace');
+    if(!document.documentElement.dataset.smvPlaceOutsideBound){
+      document.documentElement.dataset.smvPlaceOutsideBound='1';
+      document.addEventListener('pointerdown',e=>{
+        document.querySelectorAll('.smv-main-place-results.smv-open').forEach(box=>{
+          const input=box.previousElementSibling;
+          if(e.target!==input&&!box.contains(e.target)) box.__smvClose?.();
+        });
+      },{passive:true});
+    }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })();

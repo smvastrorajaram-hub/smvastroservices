@@ -14,10 +14,10 @@
     const {getApps,initializeApp}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js');
     const fs=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
     const {getFirestore}=fs;
-    const {getAuth,setPersistence,browserSessionPersistence}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js');
+    const {getAuth}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js');
     const app=getApps().length?getApps()[0]:initializeApp(FBCONFIG);
     db=getFirestore(app);
-    auth=getAuth(app);await setPersistence(auth,browserSessionPersistence);
+    auth=getAuth(app); // Main app owns auth persistence; do not override it from this secondary module.
     fbApi={
       collection:fs.collection,getDocs:fs.getDocs,query:fs.query,where:fs.where,orderBy:fs.orderBy,limit:fs.limit,
       doc:fs.doc,getDoc:fs.getDoc,addDoc:fs.addDoc,updateDoc:fs.updateDoc,deleteDoc:fs.deleteDoc,
@@ -56,26 +56,43 @@
     }
   }
   window.__smvOpenPublicAstrologerProfile=openPublicAstrologerProfile;
+  let publicReviewsRequest=null,publicReviewsLoaded=false;
   async function loadReviews(){
     const box=$('publicReviews');if(!box)return;
-    try{
-      const f=await fb();
-      const snap=await f.getDocs(f.query(f.collection(db,'smv_reviews'),f.where('approved','==',true),f.limit(12)));
-      if(snap.empty){box.innerHTML='<div class="empty">No public reviews yet. Be the first verified customer to share your experience.</div>';return;}
-      const reviews=await Promise.all(snap.docs.map(async d=>{
-        const r=d.data();
-        let astro={}; let customer={};
-        try{if(r.astrologerId){const a=await f.getDoc(f.doc(db,'smv_astrologers',r.astrologerId));if(a.exists())astro=a.data()||{};}}catch(e){console.warn('Astrologer profile lookup failed',e);}
-        try{if(r.customerId){const c=await f.getDoc(f.doc(db,'smv_users',r.customerId));if(c.exists())customer=c.data()||{};}}catch(e){console.warn('Customer profile lookup failed',e);}
-        const stars='★'.repeat(Math.max(0,Math.min(5,Number(r.rating||0))))+'☆'.repeat(5-Math.max(0,Math.min(5,Number(r.rating||0))));
-        const astroName=astro.name||r.astrologerName||'SMV ASTRO Astrologer';
-        const astroPhoto=astro.photoData||astro.photoURL||astro.photoUrl||'';
-        const customerName=customer.name||customer.displayName||r.customerName||'Verified Customer';
-        const photo=astroPhoto?`<img src="${esc(astroPhoto)}" alt="${esc(astroName)}" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);">`:`<div style="width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#f7df9b;color:#7b1e1e;font-weight:800;font-size:22px;border:2px solid var(--gold);">${esc(String(astroName).charAt(0).toUpperCase())}</div>`;
-        return `<div class="card review-card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${photo}<div><div style="font-weight:800;font-size:18px">${esc(astroName)}</div><div class="small">Astrologer</div></div></div><div class="stars">${stars}</div><p style="white-space:pre-wrap">“${esc(r.review||'Verified customer review')}”</p><p class="small"><b>Customer: ${esc(customerName)}</b></p></div>`;
-      }));
-      box.innerHTML=reviews.join('');
-    }catch(e){console.error('Public reviews load failed',e);box.innerHTML='<div class="empty">Reviews are temporarily unavailable.</div>';}
+    if(publicReviewsLoaded)return;
+    if(publicReviewsRequest)return publicReviewsRequest;
+    publicReviewsRequest=(async()=>{
+      try{
+        const f=await fb();
+        const [snap,astrologers]=await Promise.all([
+          f.getDocs(f.query(f.collection(db,'smv_reviews'),f.where('approved','==',true),f.limit(12))),
+          window.__smvGetPublicAstrologersOnce?.().catch(()=>[])||Promise.resolve([])
+        ]);
+        if(snap.empty){box.innerHTML='<div class="empty">No public reviews yet. Be the first verified customer to share your experience.</div>';publicReviewsLoaded=true;return;}
+        const astroMap=new Map((Array.isArray(astrologers)?astrologers:[]).map(a=>[String(a.id||''),a]));
+        const reviews=snap.docs.map(d=>{
+          const r=d.data()||{},astro=astroMap.get(String(r.astrologerId||''))||{};
+          const stars='★'.repeat(Math.max(0,Math.min(5,Number(r.rating||0))))+'☆'.repeat(5-Math.max(0,Math.min(5,Number(r.rating||0))));
+          const astroName=astro.name||r.astrologerName||'SMV ASTRO Astrologer';
+          const astroPhoto=astro.photoData||astro.photoURL||astro.photoUrl||'';
+          const customerName=r.customerName||r.name||'Verified Customer';
+          const photo=astroPhoto?`<img src="${esc(astroPhoto)}" alt="${esc(astroName)}" loading="lazy" decoding="async" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);">`:`<div style="width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#f7df9b;color:#7b1e1e;font-weight:800;font-size:22px;border:2px solid var(--gold);">${esc(String(astroName).charAt(0).toUpperCase())}</div>`;
+          return `<div class="card review-card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${photo}<div><div style="font-weight:800;font-size:18px">${esc(astroName)}</div><div class="small">Astrologer</div></div></div><div class="stars">${stars}</div><p style="white-space:pre-wrap">“${esc(r.review||'Verified customer review')}”</p><p class="small"><b>Customer: ${esc(customerName)}</b></p></div>`;
+        });
+        box.innerHTML=reviews.join('');publicReviewsLoaded=true;
+      }catch(e){console.error('Public reviews load failed',e);box.innerHTML='<div class="empty">Reviews are temporarily unavailable.</div>';}
+      finally{publicReviewsRequest=null;}
+    })();
+    return publicReviewsRequest;
+  }
+  function armPublicReviewsLazyLoad(){
+    const box=$('publicReviews');if(!box)return;
+    box.innerHTML='<div class="empty">Reviews load when this section is viewed.</div>';
+    if(!('IntersectionObserver' in window)){return;}
+    const io=new IntersectionObserver(entries=>{
+      if(entries.some(e=>e.isIntersecting)){io.disconnect();loadReviews().catch(()=>{});}
+    },{rootMargin:'300px 0px'});
+    io.observe(box);
   }
   async function authHeaders(){await fb();const u=auth?.currentUser;if(!u)throw new Error('Please login as Admin to use this feature.');return {Authorization:'Bearer '+await u.getIdToken()};}
   // Admin question actions are owned by admin-workflows.mjs.
@@ -167,7 +184,7 @@
         for(const a of items){
           const row=document.createElement('article');row.className='smv-private-consult-row';
           const photo=a.photoData||a.photoURL||a.photoUrl||'',price=Number(a.chatPrice||0);
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
           const select=row.querySelector('[data-private-consult-astro]');
           select.onclick=()=>selectPrivateAstrologer(a,select).catch(err=>{console.error('Private Consultation selection failed:',err);alert('Unable to open the consultation form. Please try again.');});
           const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
@@ -406,7 +423,7 @@
     window.__SMV_ADMIN_HOOKED=true;
     window.__smvRefreshAdminSections=refreshAdminSections;
   }
-  setupBooking();setupAsk();if($('publicQuestionPrice'))loadQuestionPrice().catch(()=>{});if(window.__smvReloadAstrologers)window.__smvReloadAstrologers().catch(()=>{});else window.addEventListener('smv:app-ready',()=>window.__smvReloadAstrologers?.().catch(()=>{}),{once:true});hookAdmin();loadReviews().catch(()=>{});
+  setupBooking();setupAsk();if($('publicQuestionPrice'))loadQuestionPrice().catch(()=>{});hookAdmin();armPublicReviewsLazyLoad();
   // Admin data loaders are triggered explicitly after Admin authentication.
 })();
   document.getElementById("contactNav")?.addEventListener("click",e=>{e.preventDefault();document.getElementById("contact")?.classList.remove("hidden");document.getElementById("contact")?.scrollIntoView({behavior:"smooth",block:"start"});});

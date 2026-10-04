@@ -1,9 +1,10 @@
-/* SMV ASTRO main-site service worker V187 — static/PWA + main location-search assets only.
+/* SMV ASTRO main-site service worker V207 — cache-first static/PWA + on-demand main location-search assets.
    Firebase, API, dashboard, payment and application-data requests are never intercepted. */
-const CACHE_NAME='smv-astro-static-master-20261003-v187';
+const CACHE_NAME='smv-astro-static-master-20261004-v207-ui';
 const PLACE_BOOT=[
-  './main-location-search-v187.js?v=187',
+  './main-location-search-v187.js?v=204-phase2',
   './main-ui-v187.css?v=187',
+  './smv-ui-v207.css?v=207',
   './horoscope/offline/places/india-manifest.json?v=187'
 ];
 
@@ -52,16 +53,18 @@ self.addEventListener('fetch',event=>{
 
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_NAME);
+    const cached=await cache.match(req);
+    if(cached) return cached;
     try{
       const response=await fetch(req,{cache:'no-cache'});
       if(response&&response.ok) await cache.put(req,response.clone());
       return response;
     }catch(err){
-      // First look in this main-site cache, then in any existing Horoscope cache.
-      const own=await cache.match(req,{ignoreSearch:true});
-      if(own) return own;
-      const any=await caches.match(req,{ignoreSearch:true});
+      // Exact cross-cache fallback first. Ignore the query only for bundled
+      // place data so offline location search survives a query-version change.
+      const any=await caches.match(req);
       if(any) return any;
+      if(isPlaceAsset(url)){const placeFallback=await caches.match(req,{ignoreSearch:true});if(placeFallback)return placeFallback;}
       throw err;
     }
   })());

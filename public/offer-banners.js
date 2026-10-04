@@ -44,5 +44,10 @@
  async function home(force=false){const host=document.getElementById('smvHomeOfferBanners');if(!host)return;try{render(host,await getOffers(force),'home_banner',()=>window.__smvOpenQuestionService?.());}catch(e){console.warn('Offer banner unavailable:',e.message);}}
  window.SMVOfferBanners={getOffers,render,markup,theme,themes};
  window.addEventListener('smv:offers-changed',async()=>{expires=0;await home(true);document.querySelectorAll('.smv-customer-offer-banners').forEach(host=>render(host,cache||[],'customer_dashboard',()=>window.__smvOpenQuestionService?.()));});
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>home(),{once:true});else home();
+ function scheduleHome(){
+  const run=()=>home().catch(()=>{});
+  if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:1200});
+  else setTimeout(run,350);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleHome,{once:true});else scheduleHome();
 })();

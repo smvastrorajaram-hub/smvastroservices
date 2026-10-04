@@ -19,7 +19,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./assets/favicon-64.png" rel="icon" sizes="64x64" type="image/png"/>
 <link href="./assets/icon-192.png" rel="apple-touch-icon"/>
-<meta content="#1c193d" name="theme-color"/>
+<meta content="#8b1717" name="theme-color"/>
 <meta content="yes" name="mobile-web-app-capable"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
@@ -27,7 +27,7 @@
 <title>SMV ASTRO SERVICES | Astrology Services & Online Horoscope</title>
 <meta name="description" content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration.">
 <link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-mobile-premium-header-v185.webp" media="(max-width: 899px)" rel="preload"/>
-<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260929-v77" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><script defer="" src="https://checkout.razorpay.com/v1/checkout.js"></script><script src="./payment-timing.js?v=65"></script>
+<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260929-v77" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><link href="./smv-ui-v207.css?v=207" rel="stylesheet"/><script src="./payment-timing.js?v=65"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -101,141 +101,7 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SMV ASTRO SERVICES","alternateName":"Sri Madurai Veerayah Astro Services","url":"https://smvastroservices.in/","inLanguage":["en","ta"]}</script>
-<script defer src="./main-location-search-v187.js?v=187"></script>
-
-<style id="smv-v188-index-only-header-footer-fix">
-/* V188 — lightweight index-only visual correction. Mobile only. */
-@media (max-width:899px){
-  /* Keep the devotional header photograph clean: no white/cream wash over the image. */
-  #smvPremiumHeaderV9:where(:not(.hidden)){
-    background-image:url("./assets/smv-mobile-premium-header-v185.webp")!important;
-    background-color:transparent!important;
-  }
-
-  /* The navigation/button strip alone keeps the soft white balance. */
-  #smvPremiumHeaderV9 .smv9-menu{
-    background:rgba(255,250,239,.58)!important;
-    -webkit-backdrop-filter:blur(2px)!important;
-    backdrop-filter:blur(2px)!important;
-  }
-
-  /* Brand remains centred over the clean photograph. */
-  #smvPremiumHeaderV9 .smv9-brand,
-  #smvPremiumHeaderV9 .smv9-brand > span,
-  #smvPremiumHeaderV9 .smv9-brand strong,
-  #smvPremiumHeaderV9 .smv9-brand small{
-    text-align:center!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-  }
-
-  /* Footer brand: text only, no decorative sun/star icon. */
-  #smv24-footer .smv24-brand{
-    width:100%!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    align-items:center!important;
-    text-align:center!important;
-  }
-  #smv24-footer .smv24-brand h2,
-  #smv24-footer .smv24-brand p,
-  #smv24-footer .smv24-brand small,
-  #smv24-footer .smv24-brand em{
-    width:100%!important;
-    text-align:center!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-  }
-}
-</style>
-
-<style id="smv-v189-private-consult-mobile-compact-wide">
-/* V190 — PRIVATE CONSULTATION ONLY. Ask Now question-form CSS is intentionally unchanged. */
-@media (max-width:700px){
-  .smv-consult-dedicated-shell{
-    width:100vw!important;
-    max-width:none!important;
-    margin:0!important;
-    padding:6px 4px 18px!important;
-    box-sizing:border-box!important;
-  }
-  #private-consultation{
-    width:100%!important;
-    max-width:none!important;
-    padding-top:2px!important;
-  }
-  #private-consultation > .wrap{
-    width:100%!important;
-    max-width:none!important;
-    padding-left:4px!important;
-    padding-right:4px!important;
-    margin-left:0!important;
-    margin-right:0!important;
-    box-sizing:border-box!important;
-  }
-  #privateConsultationQuestionCard{
-    width:100%!important;
-    max-width:none!important;
-    margin:4px 0!important;
-    padding:10px 12px 12px!important;
-    border-radius:14px!important;
-    box-sizing:border-box!important;
-  }
-  #privateConsultationQuestionCard h3{
-    margin:0 0 2px!important;
-    padding-right:36px!important;
-    font-size:22px!important;
-    line-height:1.15!important;
-  }
-  #privateConsultationSelected{
-    margin:0 0 4px!important;
-    line-height:1.25!important;
-  }
-  #privateConsultationQuestionForm{
-    display:block!important;
-    margin:0!important;
-    padding:0!important;
-  }
-  #privateConsultationQuestionForm > label{
-    display:block!important;
-    margin:5px 0 0!important;
-    line-height:1.2!important;
-  }
-  #privateConsultationQuestionForm > label > input,
-  #privateConsultationQuestionForm > label > select,
-  #privateConsultationQuestionForm > label > textarea{
-    width:100%!important;
-    max-width:none!important;
-    box-sizing:border-box!important;
-    margin:3px 0 0!important;
-    padding:7px 10px!important;
-    min-height:42px!important;
-  }
-  #privateConsultationQuestionForm > label > input,
-  #privateConsultationQuestionForm > label > select{
-    height:44px!important;
-  }
-  #privateConsultQuestion{
-    min-height:78px!important;
-    height:78px!important;
-    resize:vertical!important;
-  }
-  #privateConsultPaymentSummary{
-    margin:5px 0 2px!important;
-  }
-  #privateConsultOfferControls{
-    margin:5px 0!important;
-    gap:6px!important;
-  }
-  #privateConsultPayBtn{
-    margin-top:5px!important;
-  }
-  #privateConsultationQuestionClose{
-    top:5px!important;
-    right:7px!important;
-  }
-}
-</style>
+<script defer src="./main-location-search-v187.js?v=204-phase2"></script>
 
 </head>
 <body class="smv-v12-theme">
@@ -283,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult" id="privateConsultationHomeLink"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-157.6087%;top:-138.8587%"/></span><strong>Consult an Astrologer</strong><span>Connect with approved and experienced astrologers.</span></a>
 <a class="smv-master-service" href="#publicBlogs"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons-v24.png" style="width:417.3913%;left:-286.6848%;top:-138.8587%"/></span><strong>Read Our Blog</strong><span>Insights, remedies and astrology knowledge.</span></a>
 </div>
-<section aria-label="Install SMV ASTRO App" class="smv-install-app-section" id="smvInstallAppSection"><div class="smv-install-app-card"><div class="smv-install-app-icon-wrap"><img alt="SMV ASTRO" class="smv-install-app-icon" height="64" src="./assets/icon-192.png" width="64"/></div><div class="smv-install-app-copy"><h3>📱 Install SMV ASTRO App</h3><p>Install SMV ASTRO on your phone and use it like an app from your Home Screen.</p><div aria-live="polite" class="smv-install-app-help" id="smvInstallAppHelp"></div></div><button class="smv-install-app-btn" id="smvInstallAppBtn" type="button">INSTALL APP</button></div></section>
+<section aria-label="Install SMV ASTRO App" class="smv-install-app-section" id="smvInstallAppSection"><div class="smv-install-app-card"><div class="smv-install-app-icon-wrap"><img alt="SMV ASTRO" class="smv-install-app-icon" height="64" src="./assets/icon-192.png" width="64"/></div><div class="smv-install-app-copy"><h2>📱 Install SMV ASTRO App</h2><p>Install SMV ASTRO on your phone and use it like an app from your Home Screen.</p><div aria-live="polite" class="smv-install-app-help" id="smvInstallAppHelp"></div></div><button class="smv-install-app-btn" id="smvInstallAppBtn" type="button">INSTALL APP</button></div></section>
 <section aria-labelledby="askNowHeading" class="smv-new-asknow smv-type-root" id="askNowSection">
 <div class="smv-new-asknow-inner">
 <div class="smv-new-asknow-kicker">PRIVATE ASTROLOGY CONSULTATION</div>
@@ -300,10 +166,10 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>SMV ASTRO CONTENT</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
 <div class="feature-shell card">
 <div class="feature-top">
-<div><h2 style="margin:0">Blogs &amp; Media</h2></div>
+<div><h2>Astrology Insights &amp; Media</h2></div>
 </div>
-<div class="smv-v173-subregion" data-sup="blogs"><div class="smv-v173-subhead"><span>Blogs</span><button aria-label="Collapse Blogs" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div class="grid" id="publicBlogs" style="margin-top:10px"><div class="empty">Loading blogs...</div></div></div>
-<div class="smv-v173-subregion" data-sup="media" style="margin-top:14px"><div aria-expanded="true" class="smv-v173-subhead smv-media-title-toggle" role="button" tabindex="0"><span>Media</span><button aria-label="Collapse Media" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div id="publicMedia" style="margin-top:10px"><div class="empty">Loading media...</div></div></div>
+<div class="smv-v173-subregion" data-sup="blogs"><div class="smv-v173-subhead"><span>Blogs</span><button aria-label="Collapse Blogs" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div class="grid" id="publicBlogs"><div class="empty">Blogs load when this section is opened.</div></div></div>
+<div class="smv-v173-subregion" data-sup="media"><div aria-expanded="true" class="smv-v173-subhead smv-media-title-toggle" role="button" tabindex="0"><span>Media</span><button aria-label="Collapse Media" class="smv-v173-sub-collapse" title="Collapse" type="button">▼</button></div><div id="publicMedia"><div class="empty">Media loads when this section is opened.</div></div></div>
 </div>
 </section>
 
@@ -334,12 +200,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <details><summary>How does astrologer qualification and auto approval work?</summary><p>When the qualification system is enabled, a registered astrologer may be required to complete the SMV ASTRO Google Form qualification test. If the verified score reaches the required pass mark, the account can be approved automatically. When auto approval is disabled, the existing Admin review and approval process continues.</p></details>
 </div>
 </section>
-<section class="hidden registration-panel homepage-registration" id="register-flow" style="margin-top:8px">
-<div class="container" style="padding-top:0;padding-bottom:0">
+<section class="hidden registration-panel homepage-registration" id="register-flow">
+<div class="container">
 <div class="registration-intro">
 <button class="btn gray hidden" id="regBackBtn">← Back to Home</button>
-<div class="home-rule" style="margin-top:22px;margin-bottom:14px"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>BEGIN YOUR JOURNEY WITH SMV ASTRO</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
-<h2>Choose Your Path</h2>
+<div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span><span>BEGIN YOUR JOURNEY WITH SMV ASTRO</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo-v17.png" width="20"/></span></div>
+<h2>Choose Your Account Type</h2>
 <p>Register according to your purpose. Customer and Astrologer accounts are kept separate, with each journey designed for its own needs.</p>
 </div>
 <div class="registration-options">
@@ -367,9 +233,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="wrap">
 <div class="section-title"><h2>Private Consultation</h2><p>Choose an approved astrologer for a private consultation. The Chat Price shown below is set by Admin.</p></div>
 <div id="privateConsultationAstrologers"><div class="empty">Loading approved astrologers...</div></div>
-<div class="card hidden" id="privateConsultationQuestionCard" style="position:relative">
-<button aria-label="Close Private Consultation Question" id="privateConsultationQuestionClose" style="position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:#8b0000" title="Close" type="button">×</button>
-<h3 style="padding-right:42px">Private Consultation Question</h3>
+<div class="card hidden" id="privateConsultationQuestionCard">
+<button aria-label="Close Private Consultation Question" id="privateConsultationQuestionClose" title="Close" type="button">×</button>
+<h3>Private Consultation Question</h3>
 <div class="small" id="privateConsultationSelected"></div>
 <form id="privateConsultationQuestionForm">
 <label>Your Name<input id="privateConsultName" maxlength="120" required=""/></label>
@@ -379,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <label>Gender<select id="privateConsultGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
 <label>Your Question<textarea id="privateConsultQuestion" maxlength="10000" required="" rows="4"></textarea></label>
 <div id="privateConsultPaymentSummary"></div>
-<div id="privateConsultOfferControls" class="action-row" style="margin:8px 0"><input id="privateConsultPromoCode" maxlength="40" autocomplete="off" placeholder="Promotion code (optional)" style="max-width:220px"><button class="btn" type="button" id="privateConsultApplyPromo">APPLY</button><span class="small" id="privateConsultOfferMsg"></span></div>
+<div id="privateConsultOfferControls" class="action-row"><input id="privateConsultPromoCode" maxlength="40" autocomplete="off" placeholder="Promotion code (optional)"><button class="btn" type="button" id="privateConsultApplyPromo">APPLY</button><span class="small" id="privateConsultOfferMsg"></span></div>
 <button class="btn" id="privateConsultPayBtn" type="submit">PAY &amp; SUBMIT</button>
 <div class="small" id="privateConsultMsg"></div>
 </form>
@@ -387,47 +253,47 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </section>
 </main>
-<div aria-label="Account workspace" class="container hidden" id="smv-dashboard-page"><div class="smv-workspace-bar"><a href="#home" id="workspaceHome">← Home</a><span aria-live="polite" id="smvLiveStatus" role="status">Connecting to live updates…</span></div><section class="hidden smv-type-root" id="dashboard" style="margin-top:45px">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-<h2 id="dashboardTitle" style="margin:0">CUSTOMER DASHBOARD</h2>
+<div aria-label="Account workspace" class="container hidden" id="smv-dashboard-page"><div class="smv-workspace-bar"><a href="#home" id="workspaceHome">← Home</a><span aria-live="polite" id="smvLiveStatus" role="status">Connecting to live updates…</span></div><section class="hidden smv-type-root" id="dashboard">
+<div>
+<h2 id="dashboardTitle">CUSTOMER DASHBOARD</h2>
 </div>
-<div class="small" id="sessionNotice" style="margin:8px 0 14px"></div>
+<div class="small" id="sessionNotice"></div>
 <div id="dashboardContent"></div>
-</section><section class="hidden smv-type-root" id="admin" style="margin-top:45px">
-<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg" style="margin-top:12px"></div><div class="stats-grid admin-summary-grid" id="adminSummary" style="margin-top:16px"></div></div>
-<div class="card" style="margin-top:16px"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div><div class="card" id="adminPrivateConsultationCard" style="margin-top:16px">
+</section><section class="hidden smv-type-root" id="admin">
+<div class="card"><div><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg"></div><div class="stats-grid admin-summary-grid" id="adminSummary"></div></div>
+<div class="card"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div><div class="card" id="adminPrivateConsultationCard">
 <h3>Private Consultation — Question Approval</h3>
 <p class="small">Separate from Ask Now. Paid private questions are handled only with the customer-selected astrologer.</p>
 <div id="privateConsultWorkflowControl"></div>
 <div id="adminPrivatePending"><div class="empty">Loading private consultations...</div></div>
 </div>
-<div class="card" style="margin-top:16px">
+<div class="card">
 <h3>Private Consultation — Answers Awaiting Approval</h3>
 <div id="adminPrivateAnswers"><div class="empty">Loading private answers...</div></div>
 </div>
-<div class="card" style="margin-top:16px">
+<div class="card">
 <h3>Private Consultation — Answer Word Count</h3>
 <p class="small">Separate from the existing Ask Now answer word limit.</p>
 <div class="action-row"><input id="privateMinimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"><button class="btn" id="savePrivateMinimumAnswerWords" type="button">SAVE WORD COUNT</button></input></div>
 <div class="small" id="privateMinimumAnswerWordsMsg"></div>
 </div>
-<div class="card" style="margin-top:16px"><h3>Astrologer Applications</h3><div id="pendingAstros"><div class="empty">Loading applications...</div></div></div>
-<div class="card" id="adminAstrologerProfileManagementCard" style="margin-top:16px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">Astrologer Profile Management</h3><button aria-label="Collapse Astrologer Profile Management" class="smv-v170-collapse-btn" id="adminAstrologerProfileManagementToggle" title="Collapse" type="button">▼</button></div><div id="adminAstrologerProfileManagementBody"><p class="small">Allow or block profile-description editing, review submitted descriptions, or update an approved public description directly.</p><div id="adminAstrologerProfiles"><div class="empty">Loading approved astrologer profiles...</div></div></div></div>
-<div class="card" style="margin-top:16px"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></input></div>
-<div class="card" style="margin-top:16px"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
-<div class="card" style="margin-top:16px"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card" style="margin-top:16px"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
-<div class="card" style="margin-top:16px"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
-<div class="card" id="adminContentManager" style="margin-top:16px">
+<div class="card"><h3>Astrologer Applications</h3><div id="pendingAstros"><div class="empty">Loading applications...</div></div></div>
+<div class="card" id="adminAstrologerProfileManagementCard"><div><h3>Astrologer Profile Management</h3><button aria-label="Collapse Astrologer Profile Management" class="smv-v170-collapse-btn" id="adminAstrologerProfileManagementToggle" title="Collapse" type="button">▼</button></div><div id="adminAstrologerProfileManagementBody"><p class="small">Allow or block profile-description editing, review submitted descriptions, or update an approved public description directly.</p><div id="adminAstrologerProfiles"><div class="empty">Loading approved astrologer profiles...</div></div></div></div>
+<div class="card"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
+<div class="card"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
+<div class="card"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
+<div class="card"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
+<div class="card"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></input></div>
+<div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
+<div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
+<div class="card"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
+<div class="card"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
+<div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
+<div class="card" id="adminContentManager">
 <h3>Blogs &amp; Downloadable Content</h3>
 <p class="small">Create, edit and publish blogs. Upload PDF documents, images and videos for customers to view or download.</p>
-<div class="card" style="margin-top:12px;background:#fffdf8">
-<h4 style="margin:0 0 10px">Blog Writer &amp; Publisher</h4>
+<div class="card">
+<h4>Blog Writer &amp; Publisher</h4>
 <input id="blogEditId" type="hidden"/>
 <label>Blog Title *</label><input id="blogTitle" maxlength="180" placeholder="Blog title"/>
 <label>Short Description</label><textarea id="blogSummary" maxlength="500" placeholder="Short description" rows="3"></textarea>
@@ -436,13 +302,13 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="action-row"><button class="btn" id="saveBlogBtn" type="button">PUBLISH BLOG</button><button class="btn gray" id="clearBlogBtn" type="button">CLEAR</button></div>
 <div class="small" id="blogManagerMsg"></div>
 </div>
-<div class="card" style="margin-top:12px;background:#fffdf8">
-<h4 style="margin:0 0 10px">Upload PDF / Image / Video / Music</h4>
+<div class="card">
+<h4>Upload PDF / Image / Video / Music</h4>
 <input id="mediaEditId" type="hidden"/>
 <label>Title *</label><input id="mediaTitle" maxlength="180" placeholder="Content title"/>
 <label>Description</label><textarea id="mediaDescription" maxlength="500" placeholder="Description" rows="3"></textarea>
 <label>Choose Content Type *</label>
-<div class="action-row" style="flex-wrap:wrap">
+<div class="action-row">
 <button class="btn gray" id="chooseMediaImage" type="button">🖼️ CHOOSE IMAGE</button>
 <button class="btn gray" id="chooseMediaPdf" type="button">📄 CHOOSE PDF</button>
 <button class="btn gray" id="chooseMediaVideo" type="button">🎥 CHOOSE VIDEO</button>
@@ -452,29 +318,29 @@ document.addEventListener('DOMContentLoaded', function(){
 <input accept="application/pdf,.pdf" id="mediaPdfFile" style="display:none" type="file"/>
 <input accept="video/*,.mp4,.webm,.mov,.m4v" id="mediaVideoFile" style="display:none" type="file"/>
 <input accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" id="mediaMusicFile" style="display:none" type="file"/>
-<div class="small" id="mediaSelectedFile" style="margin-top:8px">No file selected.</div>
+<div class="small" id="mediaSelectedFile">No file selected.</div>
 <div class="action-row"><button class="btn" id="uploadMediaBtn" type="button">UPLOAD &amp; PUBLISH</button><button class="btn gray" id="clearMediaBtn" type="button">CLEAR</button></div>
 <div class="small" id="mediaManagerMsg"></div>
 </div>
-<div id="adminBlogsMedia" style="margin-top:14px"><div class="empty">Loading content...</div></div>
+<div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
-<div class="card" style="margin-top:16px"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg" style="margin-top:8px"></div></div>
-<div class="card" style="margin-top:16px"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+<div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
+<div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
 </section></div>
-<section class="hidden" id="astro-register-form" style="margin-top:30px">
+<section class="hidden" id="astro-register-form">
 <div class="card">
 <button class="btn gray" id="astroRegBackBtn">← Back</button>
-<h2 style="margin-top:18px">Astrologer Registration</h2>
+<h2>Astrologer Registration</h2>
 <p class="small">Your profile will remain pending until SMV ASTRO approves it.</p>
 <form id="astroRegistrationForm">
-<input id="arName" placeholder="Full Name" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
-<input id="arMobile" placeholder="Mobile Number" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
-<input id="arEmail" placeholder="Email" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="email"/>
+<input id="arName" placeholder="Full Name" required=""/>
+<input id="arMobile" placeholder="Mobile Number" required=""/>
+<input id="arEmail" placeholder="Email" required="" type="email"/>
 <label class="small">Profile Photo</label>
 <input accept="image/*" id="arPhoto" required="" type="file"/>
-<input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"/>
-<input id="arExperience" min="0" placeholder="Experience (years)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="number"/>
-<textarea id="arBio" placeholder="Professional Bio" required="" rows="5" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px"></textarea>
+<input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required=""/>
+<input id="arExperience" min="0" placeholder="Experience (years)" required="" type="number"/>
+<textarea id="arBio" placeholder="Professional Bio" required="" rows="5"></textarea>
 <h3>Payment Method</h3>
 <input id="arBankName" placeholder="Bank Name" required=""/>
 <input id="arAccountName" placeholder="Account Holder Name" required=""/>
@@ -482,18 +348,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <input id="arIfsc" placeholder="IFSC Code" required=""/>
 <input id="arUpi" placeholder="UPI ID (optional)"/>
 <p class="small">Bank/UPI details are private and visible only to Admin. They will not be shown again in full to the Astrologer.</p>
-<input id="arPassword" minlength="6" placeholder="Password (min 6 characters)" required="" style="width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:10px" type="password"/>
-<button class="btn" style="margin-top:8px" type="submit">SUBMIT REGISTRATION</button>
-<div class="small" id="astroRegMsg" style="margin-top:10px"></div>
+<input id="arPassword" minlength="6" placeholder="Password (min 6 characters)" required="" type="password"/>
+<button class="btn" type="submit">SUBMIT REGISTRATION</button>
+<div class="small" id="astroRegMsg"></div>
 </form>
 </div>
 </section>
 <section class="hidden" id="astro-flow"></section>
 <div aria-label="Ask Your Question" aria-modal="true" class="hidden" id="smvPublicQuestionWindow" role="dialog"><div class="smv-public-question-window-shell">
-<section class="hidden" id="ask-flow" style="margin-top:0">
+<section class="hidden" id="ask-flow">
 <div class="card">
 <button class="btn gray" id="askNowBackBtn">← Back</button>
-<h2 id="askTitle" style="margin-top:18px">Ask Your Question</h2>
+<h2 id="askTitle">Ask Your Question</h2>
 <p class="small" id="askRate"><b>Loading current question price...</b></p>
 <h3>Birth Details</h3>
 <p class="small">Enter the birth details of the person for whom you are asking the question.</p>
@@ -504,18 +370,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <div><label class="small"><b>Place of Birth</b></label><input id="birthPlace" placeholder="City, State, Country" required="" type="text"/></div>
 <div><label class="small"><b>Gender (Optional)</b></label><select id="birthGender"><option value="">Prefer not to say</option><option>Male</option><option>Female</option><option>Other</option></select></div>
 </div>
-<h3 style="margin-top:18px">Your Question</h3>
-<textarea id="questionText" placeholder="Write your astrology question here..." rows="6" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:12px;border:1px solid #d7dde7;border-radius:10px;font:inherit;overflow-wrap:anywhere;word-break:break-word"></textarea>
-<button class="btn" id="submitQuestionBtn" style="margin-top:12px">Proceed to Secure Payment</button>
-<div class="small" id="askMsg" style="margin-top:10px"></div>
+<h3>Your Question</h3>
+<textarea id="questionText" placeholder="Write your astrology question here..." rows="6"></textarea>
+<button class="btn" id="submitQuestionBtn">Proceed to Secure Payment</button>
+<div class="small" id="askMsg"></div>
 </div>
 </section>
 </div></div>
-<section class="card contact-section hidden smv-type-root" id="contact" style="max-width:900px;margin:30px auto;padding:28px 20px;">
+<section class="card contact-section hidden smv-type-root" id="contact">
 <h2>Contact Us</h2>
 <div class="smv-business-contact"><address><strong>SMV ASTRO SERVICES</strong><br/>1/54, Kamaraj Nagar,<br/>Chathiramanai, Perambalur - 621104, Tamil Nadu, India.</address><div class="smv26-channels"><a href="tel:+916381171084"><img alt="Phone" class="smv26-social-icon" height="28" src="assets/social/phone.svg" width="28"/><span>+91 6381171084</span></a><a href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="WhatsApp" class="smv26-social-icon" height="28" src="assets/social/whatsapp.svg" width="28"/><span>WhatsApp</span></a><a href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="Facebook" class="smv26-social-icon" height="28" src="assets/social/facebook.svg" width="28"/><span>Facebook</span></a><a href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="YouTube" class="smv26-social-icon" height="28" src="assets/social/youtube.svg" width="28"/><span>YouTube</span></a><a href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="Instagram" class="smv26-social-icon" height="28" src="assets/social/instagram.svg" width="28"/><span>Instagram</span></a></div></div>
 <p class="small">Have a question? Send us your details and query. Our admin team will contact you soon.</p>
-<form id="contactForm" style="display:grid;gap:12px;margin-top:18px;">
+<form id="contactForm">
 <div>
 <label for="contactName">Name *</label>
 <input autocomplete="name" id="contactName" maxlength="100" name="name" placeholder="Your name" required="" type="text"/>
@@ -542,15 +408,15 @@ document.addEventListener('DOMContentLoaded', function(){
 </form>
 </section>
 <!-- SMV ASTRO Install App option: placed immediately before the final footer -->
-<div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2>SMV ASTRO</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank" rel="noopener">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank" rel="noopener">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank" rel="noopener">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
+<div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2>SMV ASTRO SERVICES</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank" rel="noopener">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank" rel="noopener">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank" rel="noopener">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
 <div class="modal hidden" id="modal">
-<div class="modalbox" style="position:relative">
-<button aria-label="Close" onclick="closeModal()" style="position:absolute;top:10px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:inherit" title="Close" type="button">×</button>
+<div class="modalbox">
+<button aria-label="Close" onclick="closeModal()" title="Close" type="button">×</button>
 <div id="modalContent"></div>
 </div>
 </div>
 <script src="./dashboard-window.js?v=20260929-v78"></script>
-<script src="./smvastro.mjs?v=20261004-v201-compact-id-standard" type="module"></script>
+<script src="./smvastro.mjs?v=20261004-v204-phase2" type="module"></script>
 
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
@@ -594,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261004-v196-id-payment-fast" type="module"></script>
+<script src="./public-content.mjs?v=20261004-v204-phase2" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
@@ -944,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <!-- SMV V10.2.2 MOBILE HEADER + HERO TARGETED FIX -->
 <!-- SMV V10.3 APPROVED REFERENCE HERO VISUAL FIX -->
-<script src="./offer-banners.js?v=65"></script>
+<script src="./offer-banners.js?v=204-phase2"></script>
 <dialog aria-labelledby="paymentReceiptTitle" class="smv-type-root" id="paymentSuccessPanel">
 <div class="smv-receipt-card">
 <h2 id="paymentReceiptTitle">Payment Successful ✓</h2>
@@ -1251,6 +1117,6 @@ else initFAQ();
 })();
 </script>
 <script defer="" src="./interface.js?v=20260929-v77"></script>
-<script src="./public-navigation.js?v=20260929-v77"></script>
+<script src="./public-navigation.js?v=20261004-v204-phase2"></script>
 </body>
 </html>

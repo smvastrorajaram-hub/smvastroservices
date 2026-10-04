@@ -44,7 +44,7 @@
   }
   if(id==='contact')target.classList.remove('hidden');
   if(id==='home')window.dispatchEvent(new Event('smv:payment-ui-reset'));
-  if(['publicBlogs','publicMedia','smv-content-hub'].includes(id))window.__smvContentVisible=true;
+  if(['publicBlogs','publicMedia','smv-content-hub'].includes(id)){window.__smvContentVisible=true;window.__smvEnsurePublicContent?.().catch(err=>console.warn('Public content lazy load failed:',err));}
   if(id==='english-horoscope')window.__smvPublicHoroscopeVisible=true;
   for(let el=target;el&&el!==document.body;el=el.parentElement){
    el.classList.remove('hidden','smv-v173-home-collapsed','smv-v173-sub-collapsed','smv-v174-faq-collapsed');
