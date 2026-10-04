@@ -409,11 +409,68 @@ function smvRandomCode(length = 16) {
 function newSmvId(prefix) {
   return `${String(prefix || "smv").toLowerCase()}-${smvRandomCode(16)}`;
 }
+
+// Customer/Astrologer public IDs are intentionally compact numeric IDs.
+// Five digits keeps the requested 4–5 digit style while providing the larger
+// collision space. A registry document is claimed in the same registration
+// transaction, so two simultaneous registrations cannot receive the same ID.
+function newCompactPublicId(prefix) {
+  return `${String(prefix || "smv").toLowerCase()}-${crypto.randomInt(10000, 100000)}`;
+}
+function publicIdCollisionError() {
+  const err = new Error("PUBLIC_ID_COLLISION");
+  err.code = "PUBLIC_ID_COLLISION";
+  return err;
+}
+
+// Firestore Admin Timestamp / serialized Timestamp / ISO date normalizer.
+// Customer dashboard results must be ordered by real timestamps, never by
+// document IDs. Random professional IDs intentionally carry no date/order data.
+function smvTimeMillis(value) {
+  try {
+    if (value == null || value === "") return 0;
+    if (typeof value?.toMillis === "function") return Number(value.toMillis()) || 0;
+    if (typeof value?.toDate === "function") return value.toDate().getTime() || 0;
+    if (value instanceof Date) return value.getTime() || 0;
+    if (typeof value === "object") {
+      const sec = value.seconds ?? value._seconds;
+      const ns = value.nanoseconds ?? value._nanoseconds ?? 0;
+      if (sec != null) return Number(sec) * 1000 + Math.floor(Number(ns) / 1e6);
+      if (value.timestamp != null) return smvTimeMillis(value.timestamp);
+      if (value.date != null) return smvTimeMillis(value.date);
+      if (value.value != null) return smvTimeMillis(value.value);
+    }
+    const n = typeof value === "number" ? value : Date.parse(String(value));
+    return Number.isFinite(n) ? n : 0;
+  } catch (_e) { return 0; }
+}
+
+function smvNewestActivityMillis(item = {}) {
+  return smvTimeMillis(
+    item.paymentRecordedAt || item.paidAt || item.paymentUpdatedAt ||
+    item.commissionCreditedAt || item.customerViewedAt || item.answerApprovedAt || item.answerSubmittedAt ||
+    item.adminQuestionApprovedAt || item.questionApprovedAt || item.requestedAt || item.date ||
+    item.updatedAt || item.createdAt || item.submittedAt
+  );
+}
 function normalizeSmvLoginId(value, expectedType = "") {
   const raw = String(value || "").trim();
   const type = String(expectedType || "").toLowerCase();
-  const newMatch = raw.match(/^smv-(cus|ast)-[2-9a-hj-km-np-z]{8,32}$/i);
-  if (newMatch && (!type || newMatch[1].toLowerCase() === type)) return raw.toLowerCase();
+
+  // V199 compact public IDs: customer = smvcr-12345, astrologer = smvar-12345.
+  const v199Match = raw.match(/^(smvcr|smvar)-\d{5}$/i);
+  if (v199Match) {
+    const matchedType = v199Match[1].toLowerCase() === "smvar" ? "ast" : "cus";
+    if (!type || matchedType === type) return raw.toLowerCase();
+  }
+
+  // Keep V198 compact IDs valid for existing accounts.
+  const compactMatch = raw.match(/^smv-(cus|ast)-\d{4,5}$/i);
+  if (compactMatch && (!type || compactMatch[1].toLowerCase() === type)) return raw.toLowerCase();
+  // Keep V196/V197 random IDs valid for accounts already created during that rollout.
+  const randomMatch = raw.match(/^smv-(cus|ast)-[2-9a-hj-km-np-z]{8,32}$/i);
+  if (randomMatch && (!type || randomMatch[1].toLowerCase() === type)) return raw.toLowerCase();
+  // Keep the older dated uppercase IDs valid as well.
   const oldMatch = raw.match(/^SMV-(CUS|AST)-\d{8}-\d{2,}$/i);
   if (oldMatch && (!type || oldMatch[1].toLowerCase() === type)) return raw.toUpperCase();
   return "";
@@ -430,15 +487,15 @@ function indiaDateKey(date = new Date()) {
   return `${parts.day}${parts.month}${parts.year}`;
 }
 
-async function nextCustomerId() {
-  return newSmvId("smv-cus");
+function nextCustomerId() {
+  return newCompactPublicId("smvcr");
 }
 
 app.post("/lookup-customer-login", async (req, res) => {
   try {
     const customerId = normalizeSmvLoginId(req.body?.customerId, "cus");
     if (!customerId) {
-      return res.status(400).json({ error: "Enter a valid Customer ID, for example smv-cus-7k4m9x2d6r8v3p5n." });
+      return res.status(400).json({ error: "Enter a valid Customer ID, for example smvcr-48372." });
     }
     const snap = await db.collection("smv_users").where("publicId", "==", customerId).limit(1).get();
     if (snap.empty) return res.status(404).json({ error: "Customer ID was not found. Please check your Customer ID." });
@@ -454,8 +511,8 @@ app.post("/lookup-customer-login", async (req, res) => {
   }
 });
 
-async function nextPublicId(prefix) {
-  return String(prefix || "").toUpperCase() === "AT" ? newSmvId("smv-ast") : newSmvId("smv-cus");
+function nextPublicId(prefix) {
+  return String(prefix || "").toUpperCase() === "AT" ? newCompactPublicId("smvar") : newCompactPublicId("smvcr");
 }
 
 app.post("/lookup-id-login", async (req, res) => {
@@ -468,7 +525,7 @@ app.post("/lookup-id-login", async (req, res) => {
     const snap = await db.collection("smv_users").where("publicId", "==", publicId).limit(1).get();
     if (snap.empty) return res.status(404).json({ error: "This ID was not found. Please check the ID and try again." });
     const data = snap.docs[0].data() || {};
-    const expectedRole = /^smv-ast-/i.test(publicId) ? "astrologer" : "customer";
+    const expectedRole = /^(?:smvar-|smv-ast-)/i.test(publicId) ? "astrologer" : "customer";
     if (String(data.role || "").toLowerCase() !== expectedRole) return res.status(403).json({ error: "This ID is not valid for this login type." });
     const uid = String(data.uid || snap.docs[0].id);
     const user = await admin.auth().getUser(uid);
@@ -498,20 +555,36 @@ app.post("/register-customer-profile", async (req, res) => {
     }
     const preflight = await findExistingPhoneOwners(phoneNorm, user.uid);
     if (preflight.taken) return phoneAlreadyRegisteredResponse(res, req.body?.language === "ta" ? "ta" : "en");
-    const publicId = await nextCustomerId();
-    await db.runTransaction(async tx => {
-      await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
-      tx.set(ref, {
-        uid: user.uid, name, phone: phoneNorm.e164, mobile: phoneNorm.e164, phoneNormalized: phoneNorm.e164,
-        email: user.email || "", role: "customer", status: "active", publicId, customerId: publicId,
-        emailVerificationRequired: true,
-        phoneVerificationRequired: PHONE_VERIFICATION_MODE === "whatsapp",
-        phoneVerified: false,
-        verificationMethod: PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",
-        createdAt: existing.exists ? (existing.data()?.createdAt || FieldValue.serverTimestamp()) : FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
-    });
+    let publicId = "";
+    let registered = false;
+    for (let attempt = 0; attempt < 20 && !registered; attempt++) {
+      publicId = nextCustomerId();
+      try {
+        await db.runTransaction(async tx => {
+          const publicIdRef = db.collection("smv_public_ids").doc(publicId);
+          const publicIdSnap = await tx.get(publicIdRef);
+          if (publicIdSnap.exists) throw publicIdCollisionError();
+          // This helper performs the second/last transaction read before writes.
+          await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
+          tx.set(publicIdRef, { publicId, uid:user.uid, role:"customer", createdAt:FieldValue.serverTimestamp() });
+          tx.set(ref, {
+            uid: user.uid, name, phone: phoneNorm.e164, mobile: phoneNorm.e164, phoneNormalized: phoneNorm.e164,
+            email: user.email || "", role: "customer", status: "active", publicId, customerId: publicId,
+            emailVerificationRequired: true,
+            phoneVerificationRequired: PHONE_VERIFICATION_MODE === "whatsapp",
+            phoneVerified: false,
+            verificationMethod: PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",
+            createdAt: existing.exists ? (existing.data()?.createdAt || FieldValue.serverTimestamp()) : FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp()
+          }, { merge: true });
+        });
+        registered = true;
+      } catch (e) {
+        if (e?.code === "PUBLIC_ID_COLLISION" || e?.message === "PUBLIC_ID_COLLISION") continue;
+        throw e;
+      }
+    }
+    if (!registered) throw new Error("Unable to allocate a unique Customer ID. Please try again.");
     return res.json({ ok: true, publicId, phone: phoneNorm.e164, phoneVerificationMode: PHONE_VERIFICATION_MODE });
   } catch (e) {
     if (e?.code === "PHONE_ALREADY_REGISTERED" || e?.message === "PHONE_ALREADY_REGISTERED") return phoneAlreadyRegisteredResponse(res, req.body?.language === "ta" ? "ta" : "en");
@@ -539,15 +612,30 @@ app.post("/register-astrologer-profile", async (req, res) => {
     if(existing.exists && existingRole==="astrologer" && existing.data()?.publicId) return res.json({ok:true,alreadyRegistered:true,publicId:existing.data().publicId});
     const preflight = await findExistingPhoneOwners(phoneNorm, user.uid);
     if (preflight.taken) return phoneAlreadyRegisteredResponse(res, b.language === "ta" ? "ta" : "en");
-    const publicId=await nextPublicId("AT");
+    let publicId="";
+    let registered=false;
     const notificationRef=db.collection("smv_notifications").doc(user.uid+"_"+Date.now());
-    await db.runTransaction(async tx => {
-      await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "astrologer");
-      tx.set(userRef,{uid:user.uid,name,phone:phoneNorm.e164,mobile:phoneNorm.e164,phoneNormalized:phoneNorm.e164,email:user.email||"",publicId,role:"astrologer",status:"pending",emailVerificationRequired:true,phoneVerificationRequired:PHONE_VERIFICATION_MODE === "whatsapp",phoneVerified:false,verificationMethod:PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
-      tx.set(astroRef,{uid:user.uid,name,publicId,specialization,expertise:specialization,experience,about:bio,bio,photoData,status:"pending",role:"astrologer",createdAt:FieldValue.serverTimestamp()},{merge:true});
-      tx.set(payoutRef,{uid:user.uid,bankName,accountName,accountNumber,ifsc,upi,updatedAt:FieldValue.serverTimestamp(),status:"pending_admin_review"},{merge:true});
-      tx.set(notificationRef,{userId:user.uid,type:"registration",title:"Registration submitted",message:"Your astrologer application is pending Admin approval.",createdAt:FieldValue.serverTimestamp(),read:false});
-    });
+    for(let attempt=0;attempt<20&&!registered;attempt++){
+      publicId=nextPublicId("AT");
+      try{
+        await db.runTransaction(async tx => {
+          const publicIdRef=db.collection("smv_public_ids").doc(publicId);
+          const publicIdSnap=await tx.get(publicIdRef);
+          if(publicIdSnap.exists)throw publicIdCollisionError();
+          await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "astrologer");
+          tx.set(publicIdRef,{publicId,uid:user.uid,role:"astrologer",createdAt:FieldValue.serverTimestamp()});
+          tx.set(userRef,{uid:user.uid,name,phone:phoneNorm.e164,mobile:phoneNorm.e164,phoneNormalized:phoneNorm.e164,email:user.email||"",publicId,role:"astrologer",status:"pending",emailVerificationRequired:true,phoneVerificationRequired:PHONE_VERIFICATION_MODE === "whatsapp",phoneVerified:false,verificationMethod:PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+          tx.set(astroRef,{uid:user.uid,name,publicId,specialization,expertise:specialization,experience,about:bio,bio,photoData,status:"pending",role:"astrologer",createdAt:FieldValue.serverTimestamp()},{merge:true});
+          tx.set(payoutRef,{uid:user.uid,bankName,accountName,accountNumber,ifsc,upi,updatedAt:FieldValue.serverTimestamp(),status:"pending_admin_review"},{merge:true});
+          tx.set(notificationRef,{userId:user.uid,type:"registration",title:"Registration submitted",message:"Your astrologer application is pending Admin approval.",createdAt:FieldValue.serverTimestamp(),read:false});
+        });
+        registered=true;
+      }catch(e){
+        if(e?.code==="PUBLIC_ID_COLLISION"||e?.message==="PUBLIC_ID_COLLISION")continue;
+        throw e;
+      }
+    }
+    if(!registered)throw new Error("Unable to allocate a unique Astrologer ID. Please try again.");
     return res.json({ok:true,publicId,phone:phoneNorm.e164,phoneVerificationMode:PHONE_VERIFICATION_MODE});
   } catch(e){
     if (e?.code === "PHONE_ALREADY_REGISTERED" || e?.message === "PHONE_ALREADY_REGISTERED") return phoneAlreadyRegisteredResponse(res, req.body?.language === "ta" ? "ta" : "en");
@@ -1717,7 +1805,7 @@ app.get("/astrologer/open-questions", async (req,res)=>{
     if(!workflow.allowWithoutAdminApproval) return res.json({success:true,allowWithoutAdminApproval:false,questions:[]});
     const [snap,commissionSnap]=await Promise.all([db.collection("smv_questions").where("status","==","available_to_astrologers").get(),db.collection("smv_settings").doc("commission").get().catch(()=>null)]);
     const pct=Number(commissionSnap?.exists?commissionSnap.data()?.astroPercent:20);
-    const questions=snap.docs.map(d=>({id:d.id,...d.data()})).filter(q=>q.paymentStatus==='paid' && !q.astrologerId && String(q.status||'')==='available_to_astrologers' && String(q.allocationStatus||'')==='available_to_astrologers').slice(0,100).map(q=>({...q,commissionPercent:Number.isFinite(pct)?pct:20,astrologerCommissionAmount:Math.round(Number(q.amount||0)*(Number.isFinite(pct)?pct:20))/100}));
+    const questions=snap.docs.map(d=>({id:d.id,...d.data()})).filter(q=>q.paymentStatus==='paid' && !q.astrologerId && String(q.status||'')==='available_to_astrologers' && String(q.allocationStatus||'')==='available_to_astrologers').sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100).map(q=>({...q,commissionPercent:Number.isFinite(pct)?pct:20,astrologerCommissionAmount:Math.round(Number(q.amount||0)*(Number.isFinite(pct)?pct:20))/100}));
     return res.json({success:true,allowWithoutAdminApproval:true,questions});
   }catch(e){console.error("Open questions load failed:",e);return res.status(500).json({error:e?.message||"Unable to load open questions."});}
 });
@@ -1747,7 +1835,10 @@ app.get('/customer/consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
   const snap=await db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get();
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions:snap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}))});
+  const questions=snap.docs
+    .map(d=>({id:d.id,questionId:d.id,...d.data()}))
+    .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions});
  }catch(e){
   console.error('Customer consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load customer consultations.',code:e?.code||null});
@@ -1758,7 +1849,10 @@ app.get('/customer/private-consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
   const snap=await db.collection('smv_private_consultations').where('customerId','==',user.uid).limit(100).get();
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations:snap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}))});
+  const consultations=snap.docs
+    .map(d=>({id:d.id,consultationId:d.id,...d.data()}))
+    .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations});
  }catch(e){
   console.error('Customer private consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load private consultations.',code:e?.code||null});
@@ -1925,9 +2019,9 @@ app.get("/admin/private-consultations-data", async (req, res) => {
     ]);
     return res.json({
       success:true,
-      privateConsultations:consultSnap.docs.map(d=>({id:d.id,...d.data()})),
-      users:usersSnap.docs.map(d=>({id:d.id,...d.data()})),
-      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})),
+      privateConsultations:consultSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
+      users:usersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
+      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
       settings:{
         privateCommission:privateCommissionSnap.exists?privateCommissionSnap.data():null,
         privateConsultationWorkflow:privateWorkflowSnap.exists?privateWorkflowSnap.data():null
@@ -1969,7 +2063,7 @@ app.get("/admin/withdrawals-data", async (req, res) => {
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
     const snap=await db.collection("smv_withdrawals").get();
-    return res.json({success:true,withdrawals:snap.docs.map(d=>({id:d.id,...d.data()}))});
+    return res.json({success:true,withdrawals:snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a))});
   }catch(e){
     console.error("Admin withdrawals targeted load failed:",e);
     return res.status(500).json({error:e?.message||"Unable to load Admin withdrawal data."});
@@ -1986,8 +2080,8 @@ app.get("/admin/astrologers-data", async (req, res) => {
     ]);
     return res.json({
       success:true,
-      users:usersSnap.docs.map(d=>({id:d.id,...d.data()})),
-      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()}))
+      users:usersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
+      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a))
     });
   }catch(e){
     console.error("Admin astrologers targeted load failed:",e);
@@ -2007,8 +2101,8 @@ app.get("/admin/questions-data", async (req, res) => {
     ]);
     return res.json({
       success:true,
-      questions:questionsSnap.docs.map(d=>({id:d.id,...d.data()})),
-      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})),
+      questions:questionsSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
+      astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
       settings:{
         commission:commissionSnap.exists?commissionSnap.data():null,
         workflow:workflowSnap.exists?workflowSnap.data():{allowWithoutAdminApproval:false}
@@ -2055,16 +2149,17 @@ app.get("/admin-data", async (req, res) => {
       getHoroscopePaymentSettings()
     ]);
 
-    const customers = users.items.filter(x => String(x.role || "").toLowerCase() === "customer");
+    const newestFirst = items => (items || []).slice().sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    const customers = newestFirst(users.items.filter(x => String(x.role || "").toLowerCase() === "customer"));
     return res.json({
       success: true,
       settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment},
       customers,
-      users: users.items,
-      astrologers: astrologers.items,
-      questions: questions.items,
+      users: newestFirst(users.items),
+      astrologers: newestFirst(astrologers.items),
+      questions: newestFirst(questions.items),
       offers: offers.items,
-      privateConsultations: privateConsultations.items,
+      privateConsultations: newestFirst(privateConsultations.items),
       adminNotifications: [
         ...adminNotifications.items,
         ...legacyNotifications.items.filter(n=>String(n.userId||"")===String(ADMIN_UID||"")),
@@ -2082,7 +2177,7 @@ app.get("/admin-data", async (req, res) => {
           return events;
         })
       ],
-      payments: payments.items,
+      payments: newestFirst(payments.items),
       errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null, offers: offers.error || null }
     });
   } catch (e) {
@@ -2229,7 +2324,7 @@ app.get("/astrologer/private-consultations",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;
   const a=await db.collection("smv_astrologers").doc(user.uid).get();if(!a.exists||!["approved","active"].includes(String(a.data()?.status||"").toLowerCase()))return res.status(403).json({error:"Approved astrologer access required."});
   const snap=await db.collection("smv_private_consultations").where("astrologerId","==",user.uid).get();
-  const allItems=snap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.paymentStatus==="paid");
+  const allItems=snap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.paymentStatus==="paid").sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
   const items=allItems.filter(c=>!["pending_admin_approval","question_rejected"].includes(String(c.status||"")));
   const history=allItems.filter(c=>{
     const st=String(c.status||"");
