@@ -1,0 +1,88 @@
+/* SMV ASTRO V187 — main-site mobile footer centering + Ask/Private place suggestions */
+@media (max-width:760px){
+  html body #smv24-footer .smv24-footer-top{
+    padding-top:22px!important;
+  }
+  html body #smv24-footer .smv24-brand{
+    width:100%!important;
+    max-width:520px!important;
+    margin:0 auto 18px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+  html body #smv24-footer .smv24-brand h2{
+    width:100%!important;
+    margin:0 auto 8px!important;
+    text-align:center!important;
+    font-size:clamp(30px,9vw,42px)!important;
+    line-height:1.12!important;
+    letter-spacing:.01em!important;
+  }
+  html body #smv24-footer .smv24-brand p{
+    width:100%!important;
+    max-width:430px!important;
+    margin:0 auto 8px!important;
+    text-align:center!important;
+    font-size:clamp(17px,4.8vw,21px)!important;
+    line-height:1.35!important;
+  }
+  html body #smv24-footer .smv24-brand small{
+    display:block!important;
+    width:100%!important;
+    margin:4px auto 0!important;
+    text-align:center!important;
+    letter-spacing:.18em!important;
+    line-height:1.5!important;
+  }
+  html body #smv24-footer .smv24-brand em{
+    display:block!important;
+    width:100%!important;
+    max-width:430px!important;
+    margin:14px auto 20px!important;
+    text-align:center!important;
+    font-size:clamp(22px,6.5vw,29px)!important;
+    line-height:1.28!important;
+  }
+}
+
+/* Plain, readable location suggestions; no heavy boxed widget. */
+.smv-main-place-host{position:relative!important;}
+.smv-main-place-results{
+  display:none;
+  margin:5px 0 0;
+  padding:0;
+  border-top:1px solid rgba(120,86,45,.24);
+  background:transparent;
+  position:relative;
+  z-index:80;
+}
+.smv-main-place-results.smv-open{display:block;}
+.smv-main-place-row{
+  display:block;
+  width:100%;
+  margin:0;
+  padding:9px 4px;
+  border:0;
+  border-bottom:1px solid rgba(120,86,45,.18);
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  line-height:1.35;
+}
+.smv-main-place-row:hover,
+.smv-main-place-row:focus{
+  outline:none;
+  background:rgba(255,244,211,.55);
+}
+.smv-main-place-note{
+  padding:8px 4px;
+  font-size:12px;
+  line-height:1.4;
+  color:#6f625a;
+}
+.smv-main-place-note.smv-error{color:#9a1b1b;}

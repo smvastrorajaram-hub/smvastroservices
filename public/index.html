@@ -26,7 +26,8 @@
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title"/>
 <title>SMV ASTRO SERVICES | Astrology Services & Online Horoscope</title>
 <meta name="description" content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration.">
-<link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-hero-family-two-girls.png" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260929-v77" rel="stylesheet"/><script defer="" src="https://checkout.razorpay.com/v1/checkout.js"></script><script src="./payment-timing.js?v=65"></script>
+<link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-mobile-premium-header-v185.webp" media="(max-width: 899px)" rel="preload"/>
+<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260929-v77" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><script defer="" src="https://checkout.razorpay.com/v1/checkout.js"></script><script src="./payment-timing.js?v=65"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -100,6 +101,142 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SMV ASTRO SERVICES","alternateName":"Sri Madurai Veerayah Astro Services","url":"https://smvastroservices.in/","inLanguage":["en","ta"]}</script>
+<script defer src="./main-location-search-v187.js?v=187"></script>
+
+<style id="smv-v188-index-only-header-footer-fix">
+/* V188 — lightweight index-only visual correction. Mobile only. */
+@media (max-width:899px){
+  /* Keep the devotional header photograph clean: no white/cream wash over the image. */
+  #smvPremiumHeaderV9:where(:not(.hidden)){
+    background-image:url("./assets/smv-mobile-premium-header-v185.webp")!important;
+    background-color:transparent!important;
+  }
+
+  /* The navigation/button strip alone keeps the soft white balance. */
+  #smvPremiumHeaderV9 .smv9-menu{
+    background:rgba(255,250,239,.58)!important;
+    -webkit-backdrop-filter:blur(2px)!important;
+    backdrop-filter:blur(2px)!important;
+  }
+
+  /* Brand remains centred over the clean photograph. */
+  #smvPremiumHeaderV9 .smv9-brand,
+  #smvPremiumHeaderV9 .smv9-brand > span,
+  #smvPremiumHeaderV9 .smv9-brand strong,
+  #smvPremiumHeaderV9 .smv9-brand small{
+    text-align:center!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+
+  /* Footer brand: text only, no decorative sun/star icon. */
+  #smv24-footer .smv24-brand{
+    width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    align-items:center!important;
+    text-align:center!important;
+  }
+  #smv24-footer .smv24-brand h2,
+  #smv24-footer .smv24-brand p,
+  #smv24-footer .smv24-brand small,
+  #smv24-footer .smv24-brand em{
+    width:100%!important;
+    text-align:center!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+}
+</style>
+
+<style id="smv-v189-private-consult-mobile-compact-wide">
+/* V190 — PRIVATE CONSULTATION ONLY. Ask Now question-form CSS is intentionally unchanged. */
+@media (max-width:700px){
+  .smv-consult-dedicated-shell{
+    width:100vw!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:6px 4px 18px!important;
+    box-sizing:border-box!important;
+  }
+  #private-consultation{
+    width:100%!important;
+    max-width:none!important;
+    padding-top:2px!important;
+  }
+  #private-consultation > .wrap{
+    width:100%!important;
+    max-width:none!important;
+    padding-left:4px!important;
+    padding-right:4px!important;
+    margin-left:0!important;
+    margin-right:0!important;
+    box-sizing:border-box!important;
+  }
+  #privateConsultationQuestionCard{
+    width:100%!important;
+    max-width:none!important;
+    margin:4px 0!important;
+    padding:10px 12px 12px!important;
+    border-radius:14px!important;
+    box-sizing:border-box!important;
+  }
+  #privateConsultationQuestionCard h3{
+    margin:0 0 2px!important;
+    padding-right:36px!important;
+    font-size:22px!important;
+    line-height:1.15!important;
+  }
+  #privateConsultationSelected{
+    margin:0 0 4px!important;
+    line-height:1.25!important;
+  }
+  #privateConsultationQuestionForm{
+    display:block!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  #privateConsultationQuestionForm > label{
+    display:block!important;
+    margin:5px 0 0!important;
+    line-height:1.2!important;
+  }
+  #privateConsultationQuestionForm > label > input,
+  #privateConsultationQuestionForm > label > select,
+  #privateConsultationQuestionForm > label > textarea{
+    width:100%!important;
+    max-width:none!important;
+    box-sizing:border-box!important;
+    margin:3px 0 0!important;
+    padding:7px 10px!important;
+    min-height:42px!important;
+  }
+  #privateConsultationQuestionForm > label > input,
+  #privateConsultationQuestionForm > label > select{
+    height:44px!important;
+  }
+  #privateConsultQuestion{
+    min-height:78px!important;
+    height:78px!important;
+    resize:vertical!important;
+  }
+  #privateConsultPaymentSummary{
+    margin:5px 0 2px!important;
+  }
+  #privateConsultOfferControls{
+    margin:5px 0!important;
+    gap:6px!important;
+  }
+  #privateConsultPayBtn{
+    margin-top:5px!important;
+  }
+  #privateConsultationQuestionClose{
+    top:5px!important;
+    right:7px!important;
+  }
+}
+</style>
+
 </head>
 <body class="smv-v12-theme">
 <div class="smv-master-top"><div class="smv-master-topin"><span>Guided by Ancient Wisdom   |   Empowering Your Future</span></div></div>
@@ -122,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <main class="container" id="smv-public-page">
 <div aria-live="polite" class="smv-home-offer-banners hidden" id="smvHomeOfferBanners"></div>
-<div class="smv33-hero" id="home"><div class="smv33-scene"><img alt="Sri Madurai Veerayah with his consorts" class="smv33-photo" fetchpriority="high" height="936" src="assets/smv-hero-family-two-girls.png" width="1681"/><div class="smv33-copy"><div class="smv33-mobile-head">
+<div class="smv33-hero" id="home"><div class="smv33-scene"><img alt="Sri Vinayagar, Sri Madurai Veerayah with Bommi and Vellaiyammal, and Sri Murugan" class="smv33-photo" fetchpriority="high" height="1272" src="assets/smv-mobile-premium-hero-v185.webp" width="941"/><div class="smv33-copy"><div class="smv33-mobile-head">
 <div class="smv33-kicker">Sri Madurai Veerayah Astro Services</div>
 <h1>Traditional Wisdom.<br/><span>Personal Guidance.</span></h1>
 <p>Discover the meaning within your birth chart through traditional Vedic astrology. Explore detailed horoscope insights and connect with approved astrologers for guidance on career, marriage, relationships and personal growth.</p>
@@ -283,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card" style="margin-top:16px"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></input></div>
 <div class="card" style="margin-top:16px"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
 <div class="card" style="margin-top:16px"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div><div class="card" id="horoscopePaymentAdmin" style="margin-top:16px"><h3>Horoscope &amp; Marriage Matching Payment</h3><p class="small">Controls only paid access. Horoscope, Advanced Analysis and Marriage calculations remain in the customer browser.</p><div class="grid"><label><b>Advanced Analysis Payment</b><select id="advancedAnalysisPaymentEnabled"><option value="false">OFF — Hide Feature</option><option value="true">ON — Free if Price is ₹0 / Razorpay if above ₹0</option></select></label><label><b>Advanced Analysis Price ₹</b><input id="advancedAnalysisPrice" type="number" min="0" step="0.01"></label><label><b>Marriage Matching Payment</b><select id="marriageMatchingPaymentEnabled"><option value="false">OFF — Hide Feature</option><option value="true">ON — Free if Price is ₹0 / Razorpay if above ₹0</option></select></label><label><b>Marriage Matching Price ₹</b><input id="marriageMatchingPrice" type="number" min="0" step="0.01"></label></div><div class="action-row"><button class="btn" id="saveHoroscopePaymentSettings" type="button">SAVE HOROSCOPE PAYMENT</button></div><div class="small" id="horoscopePaymentSettingsMsg"></div></div>
+<div class="card" style="margin-top:16px"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
 <div class="card" style="margin-top:16px"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card" style="margin-top:16px"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
 <div class="card" style="margin-top:16px"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
 <div class="card" id="adminContentManager" style="margin-top:16px">
@@ -405,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </form>
 </section>
 <!-- SMV ASTRO Install App option: placed immediately before the final footer -->
-<div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2><span aria-hidden="true">☀</span> SMV ASTRO</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank" rel="noopener">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank" rel="noopener">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank" rel="noopener">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
+<div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2>SMV ASTRO</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank" rel="noopener">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank" rel="noopener">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank" rel="noopener">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
 <div class="modal hidden" id="modal">
 <div class="modalbox" style="position:relative">
 <button aria-label="Close" onclick="closeModal()" style="position:absolute;top:10px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:inherit" title="Close" type="button">×</button>
@@ -413,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js?v=20260929-v78"></script>
-<script src="./smvastro.mjs?v=20260929-v79-offer-ui" type="module"></script>
+<script src="./smvastro.mjs?v=20261004-v194-private-session" type="module"></script>
 
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
@@ -457,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20260929-v80-private-offer" type="module"></script>
+<script src="./public-content.mjs?v=20261004-v194-private-session" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
@@ -822,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <button class="btn" id="continueAfterPayment" type="button">VIEW MY QUESTION</button>
 </div>
 </dialog>
-<script defer="" src="./payment-receipt.js?v=65"></script>
+<script defer="" src="./payment-receipt.js?v=192"></script>
 <script id="smv-v172-ui-symbol-collapse-script">
 /* V172: robust UI-only symbol collapse. No data/Firebase/API/payment logic is changed. */
 (function(){
@@ -1115,6 +1252,5 @@ else initFAQ();
 </script>
 <script defer="" src="./interface.js?v=20260929-v77"></script>
 <script src="./public-navigation.js?v=20260929-v77"></script>
-<script type="module" src="./question-place-bindings.mjs?v=20261003-final-regression-fix"></script>
 </body>
 </html>

@@ -1,0 +1,371 @@
+/* SMV ASTRO V185 — mobile premium merged header + hero reference.
+   Mobile only. Desktop remains unchanged. */
+@media (max-width: 899px){
+  .smv-master-top{display:none!important;}
+
+  /* HEADER: use the top crop from the SAME devotional image as the hero,
+     so the header and hero read as one continuous premium scene. */
+  #smvPremiumHeaderV9:where(:not(.hidden)){
+    position:relative!important;
+    z-index:1000!important;
+    width:100%!important;
+    height:clamp(166px,42.507vw,235px)!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    border:0!important;
+    box-shadow:none!important;
+    color:#2f1c17!important;
+    background-image:
+      linear-gradient(180deg,rgba(255,249,236,.46) 0%,rgba(255,246,226,.34) 52%,rgba(255,245,224,.54) 100%),
+      url("assets/smv-mobile-premium-header-v185.webp")!important;
+    background-size:100% 100%!important;
+    background-position:center top!important;
+    background-repeat:no-repeat!important;
+  }
+  #smvPremiumHeaderV9 .smv9-nav{
+    position:relative!important;
+    z-index:2!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:clamp(8px,2.1vw,14px) 14px clamp(8px,1.8vw,12px)!important;
+    gap:0!important;
+    background:transparent!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Entire identity is centred — logo, title and subtitle share one axis. */
+  #smvPremiumHeaderV9 .smv9-brand{
+    position:relative!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0 auto!important;
+    padding:0!important;
+    gap:2px!important;
+    text-align:center!important;
+    background:transparent!important;
+    text-decoration:none!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand > img{
+    position:static!important;
+    display:block!important;
+    width:clamp(44px,11.5vw,62px)!important;
+    height:clamp(44px,11.5vw,62px)!important;
+    max-width:none!important;
+    margin:0 auto 2px!important;
+    object-fit:contain!important;
+    border:0!important;
+    border-radius:50%!important;
+    filter:drop-shadow(0 2px 4px rgba(54,28,13,.24))!important;
+    transform:none!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand > span{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    margin:0!important;
+    line-height:1!important;
+    text-align:center!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand strong{
+    display:block!important;
+    width:100%!important;
+    margin:0!important;
+    color:#c80b46!important;
+    font-family:Georgia,"Times New Roman",serif!important;
+    font-size:clamp(27px,7.15vw,38px)!important;
+    line-height:.98!important;
+    font-weight:800!important;
+    letter-spacing:.15px!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+    text-shadow:0 1px 0 rgba(255,255,255,.72),0 2px 4px rgba(70,32,15,.12)!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand small{
+    display:block!important;
+    width:100%!important;
+    margin-top:5px!important;
+    color:#4f3438!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(9.5px,2.45vw,12.5px)!important;
+    line-height:1.15!important;
+    font-weight:650!important;
+    letter-spacing:.02px!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+    text-shadow:0 1px 0 rgba(255,255,255,.75)!important;
+  }
+
+  #smvPremiumHeaderV9 .smv9-menu{
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    align-items:end!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    gap:2px!important;
+    background:rgba(255,250,239,.32)!important;
+    border:0!important;
+    border-radius:14px!important;
+    overflow:visible!important;
+    backdrop-filter:blur(1.5px)!important;
+  }
+  #smvPremiumHeaderV9 .smv9-menu > a,
+  #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:0!important;
+    min-height:34px!important;
+    margin:0!important;
+    padding:7px 2px 8px!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    color:#2b2020!important;
+    box-shadow:none!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(10px,2.7vw,13px)!important;
+    line-height:1!important;
+    font-weight:750!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    text-shadow:0 1px 0 rgba(255,255,255,.65)!important;
+  }
+  #smvPremiumHeaderV9 .smv9-menu > .login,
+  #smvPremiumHeaderV9 .smv9-menu > .register{
+    margin:0!important;
+    padding:7px 2px 8px!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    color:#2b2020!important;
+  }
+  #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current,
+  #smvPremiumHeaderV9 .smv9-menu > a.active{
+    color:#df0050!important;
+  }
+  #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current::after,
+  #smvPremiumHeaderV9 .smv9-menu > a.active::after{
+    content:""!important;
+    display:block!important;
+    position:absolute!important;
+    left:14%!important;
+    right:14%!important;
+    bottom:1px!important;
+    height:3px!important;
+    border-radius:10px!important;
+    background:#e50055!important;
+  }
+
+  /* HERO: second crop of the same source image begins exactly where the
+     header crop ends. No side gutter; no second white header block. */
+  html body.smv-v12-theme #home.smv33-hero{
+    position:relative!important;
+    left:50%!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    margin:0 0 0 -50vw!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:#fffaf1!important;
+    overflow:hidden!important;
+  }
+  html body.smv-v12-theme #home .smv33-scene{
+    display:block!important;
+    width:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fffaf1!important;
+  }
+  html body.smv-v12-theme #home .smv33-photo{
+    position:relative!important;
+    inset:auto!important;
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    aspect-ratio:auto!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    object-fit:contain!important;
+    object-position:center top!important;
+  }
+
+  /* Premium parchment fade brings the live HTML copy into the photo. */
+  html body.smv-v12-theme #home .smv33-copy{
+    position:relative!important;
+    z-index:3!important;
+    width:100%!important;
+    min-height:0!important;
+    margin-top:clamp(-152px,-27vw,-112px)!important;
+    padding:clamp(125px,25vw,165px) clamp(20px,5.2vw,30px) 26px!important;
+    box-sizing:border-box!important;
+    color:#30201c!important;
+    background:linear-gradient(180deg,
+      rgba(255,249,238,0) 0%,
+      rgba(255,249,238,.60) 14%,
+      rgba(255,249,238,.93) 31%,
+      #fffaf2 52%,
+      #fffaf2 100%)!important;
+    transform:none!important;
+    text-align:left!important;
+  }
+  html body.smv-v12-theme #home .smv33-mobile-head{display:block!important;}
+  html body.smv-v12-theme #home .smv33-desktop-head{display:none!important;}
+  html body.smv-v12-theme #home .smv33-kicker{
+    margin:0 0 10px!important;
+    color:#9a5a10!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(9px,2.3vw,11px)!important;
+    line-height:1.2!important;
+    font-weight:800!important;
+    letter-spacing:.18em!important;
+    text-transform:uppercase!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #home .smv33-copy h1{
+    margin:0 0 14px!important;
+    color:#3c1715!important;
+    font-family:Georgia,"Times New Roman",serif!important;
+    font-size:clamp(33px,8.6vw,47px)!important;
+    line-height:.98!important;
+    font-weight:750!important;
+    letter-spacing:-.45px!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #home .smv33-copy h1 span{
+    color:#e50056!important;
+    font-weight:750!important;
+  }
+  html body.smv-v12-theme #home .smv33-copy p{
+    margin:0!important;
+    color:#352b28!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(14px,3.45vw,17px)!important;
+    line-height:1.52!important;
+    font-weight:450!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #home .smv33-mobile-head p + p{display:none!important;}
+
+  html body.smv-v12-theme #home .smv33-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:10px!important;
+    margin-top:20px!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions a{
+    position:relative!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:0!important;
+    min-height:54px!important;
+    padding:11px 10px 11px 40px!important;
+    border-radius:17px!important;
+    box-sizing:border-box!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(11px,2.85vw,14px)!important;
+    line-height:1.15!important;
+    font-weight:800!important;
+    text-align:center!important;
+    text-decoration:none!important;
+    box-shadow:0 7px 18px rgba(148,44,55,.10)!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions a::before{
+    content:""!important;
+    position:absolute!important;
+    left:13px!important;
+    top:50%!important;
+    width:21px!important;
+    height:21px!important;
+    transform:translateY(-50%)!important;
+    background-repeat:no-repeat!important;
+    background-position:center!important;
+    background-size:contain!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions .ask{
+    color:#fff!important;
+    border:1px solid #e60053!important;
+    background:linear-gradient(135deg,#e90058,#d90048)!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions .ask::before{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a4 4 0 0 1-4 4H8l-5 3 1.7-5.1A7 7 0 0 1 3 12V9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6z'/%3E%3Cpath d='M8 9h8M8 13h5'/%3E%3C/svg%3E")!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions .horoscope{
+    color:#cb0b45!important;
+    border:1.5px solid #df315d!important;
+    background:rgba(255,250,243,.86)!important;
+  }
+  html body.smv-v12-theme #home .smv33-actions .horoscope::before{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d70a4c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18M8 14h3M13 14h3M8 18h3'/%3E%3C/svg%3E")!important;
+  }
+
+  html body.smv-v12-theme #home .smv33-trust{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:0!important;
+    margin-top:18px!important;
+    color:#39281f!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(9px,2.45vw,12px)!important;
+    line-height:1.16!important;
+    font-weight:700!important;
+  }
+  html body.smv-v12-theme #home .smv33-trust span{
+    position:relative!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:6px!important;
+    min-width:0!important;
+    padding:0 8px!important;
+    text-align:center!important;
+  }
+  html body.smv-v12-theme #home .smv33-trust span + span::before{
+    content:""!important;
+    position:absolute!important;
+    left:0!important;
+    top:5px!important;
+    bottom:5px!important;
+    width:1px!important;
+    background:#d8b98f!important;
+  }
+  html body.smv-v12-theme #home .smv33-trust b{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:38px!important;
+    height:38px!important;
+    border:1px solid #ead5b4!important;
+    border-radius:50%!important;
+    background:#fff8e9!important;
+    color:#985300!important;
+    font-size:23px!important;
+    line-height:1!important;
+    box-shadow:0 4px 12px rgba(113,70,27,.08)!important;
+  }
+  html body.smv-v12-theme #home .smv33-trust img{
+    width:26px!important;
+    height:26px!important;
+    object-fit:contain!important;
+  }
+}

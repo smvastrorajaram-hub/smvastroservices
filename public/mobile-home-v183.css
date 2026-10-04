@@ -1,0 +1,50 @@
+/* SMV ASTRO V183 — mobile-only hero + centered brand.
+   Desktop layout is intentionally untouched. */
+@media (max-width: 899px){
+  /* Keep the brand exactly centred above the mobile navigation. */
+  #smvPremiumHeaderV9 .smv9-nav{
+    text-align:center!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand{
+    width:max-content!important;
+    max-width:100%!important;
+    margin:0 auto 7px!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand span{
+    align-items:center!important;
+    text-align:center!important;
+  }
+
+  /* Break only the hero out of the normal content gutter: true edge-to-edge mobile image. */
+  html body.smv-v12-theme #home.smv33-hero{
+    position:relative!important;
+    left:50%!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    margin-left:-50vw!important;
+    margin-right:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    overflow:hidden!important;
+  }
+  html body.smv-v12-theme #home .smv33-scene{
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  html body.smv-v12-theme #home .smv33-photo{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    aspect-ratio:720 / 929!important;
+    object-fit:cover!important;
+    object-position:center center!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+  }
+}
