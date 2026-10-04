@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js?v=20260929-v78"></script>
-<script src="./smvastro.mjs?v=20261004-v194-private-session" type="module"></script>
+<script src="./smvastro.mjs?v=20261004-v196-id-payment-fast" type="module"></script>
 
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261004-v194-private-session" type="module"></script>
+<script src="./public-content.mjs?v=20261004-v196-id-payment-fast" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
@@ -951,15 +951,15 @@ document.addEventListener('DOMContentLoaded', function(){
 <p>Your payment has been securely verified and your question is saved.</p>
 <dl id="paymentSuccessDetails">
 <dt id="paymentReceiptQuestionLabel">Question ID</dt><dd id="paymentReceiptQuestionId"></dd>
-<dt>Razorpay Payment ID</dt><dd id="paymentReceiptPaymentId"></dd>
-<div id="paymentReceiptReferenceRow"><dt>Customer Payment Reference</dt><dd id="paymentReceiptReference"></dd></div>
+<dt>Payment ID</dt><dd id="paymentReceiptPaymentId"></dd>
+<div id="paymentReceiptReferenceRow"><dt>Razorpay Reference</dt><dd id="paymentReceiptReference"></dd></div>
 <dt>Payment Date &amp; Time</dt><dd id="paymentReceiptDate"></dd>
 </dl>
 <p aria-live="polite" class="small" id="paymentReceiptStatus" role="status"></p>
 <button class="btn" id="continueAfterPayment" type="button">VIEW MY QUESTION</button>
 </div>
 </dialog>
-<script defer="" src="./payment-receipt.js?v=195-private-isolated-window"></script>
+<script defer="" src="./payment-receipt.js?v=196-id-payment-fast"></script>
 <script id="smv-v172-ui-symbol-collapse-script">
 /* V172: robust UI-only symbol collapse. No data/Firebase/API/payment logic is changed. */
 (function(){

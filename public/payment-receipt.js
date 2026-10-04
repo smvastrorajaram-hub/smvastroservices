@@ -1,4 +1,4 @@
-/* SMV V195 payment-window + verified receipt flow.
+/* SMV V196 professional-ID + fast verified payment flow.
    - Opens a dedicated payment window/tab from the user's click.
    - Mobile loading/receipt uses a true full-screen layout (no tiny desktop card first).
    - After verified success, the opener switches to Customer Dashboard immediately;
@@ -110,10 +110,16 @@
      returnUrl.searchParams.set('smvTargetId',currentReceipt.id);
      returnUrl.searchParams.set('smvPaymentId',currentReceipt.paymentId||'');
      flow?.next?.('Opening your Customer Dashboard…');
+     try{
+      paymentTab.sessionStorage.setItem('smv_payment_return_snapshot',JSON.stringify({
+       kind:currentReceipt.kind,id:currentReceipt.id,paymentId:currentReceipt.paymentId||'',
+       question:currentReceipt.question||'',amount:Number(currentReceipt.amount||0),date:currentReceipt.date||''
+      }));
+     }catch(_e){}
      setTimeout(()=>{
       try{ paymentTab.location.replace(returnUrl.toString()); }
       catch(_e){ paymentTab.location.href=returnUrl.toString(); }
-     },350);
+     },80);
      receipt=null;activeFlow=null;
      const panel=$('paymentSuccessPanel');try{panel?.close?.();}catch{}
      return;
@@ -149,18 +155,18 @@
  }
  window.__smvShowVerifiedPayment=function(result,kind='public',flow=activeFlow){
   const id=String((kind==='private'?result?.consultationId:result?.questionId)||'').trim();
-  const paymentId=String(result?.paymentId||result?.customerPaymentId||result?.razorpayPaymentId||'').trim();
+  const paymentId=String(result?.customerPaymentId||result?.paymentId||result?.razorpayPaymentId||'').trim();
   const uid=window.__smvFirebaseCurrentUser?.uid;
   if(result?.verified!==true||!id||!paymentId||!uid)throw new Error('Verified payment receipt is incomplete. Use your dashboard to check this payment; do not pay again.');
   clearTimeout(timer);busy=false;
   const date=new Date(result.paymentRecordedAt||Date.now()).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST';
-  receipt={uid,id,kind,flow,paymentId,date};
-  if(flow?.success?.({id,paymentId,date,kind})){timer=setTimeout(continueToQuestion,2200);return;}
-  safeText('paymentReceiptQuestionLabel',kind==='private'?'Private Consultation ID':'Question ID');safeText('paymentReceiptQuestionId',id);safeText('paymentReceiptPaymentId',paymentId);safeText('paymentReceiptReference',result.customerPaymentId||'');
-  const row=$('paymentReceiptReferenceRow');if(row)row.hidden=!result.customerPaymentId;safeText('paymentReceiptDate',date);safeText('paymentReceiptStatus','Payment successful. Opening your Customer Dashboard…');
+  receipt={uid,id,kind,flow,paymentId,date,question:String(result?.question||''),amount:Number(result?.amount||0)};
+  if(flow?.success?.({id,paymentId,date,kind})){timer=setTimeout(continueToQuestion,900);return;}
+  safeText('paymentReceiptQuestionLabel',kind==='private'?'Private Consultation ID':'Question ID');safeText('paymentReceiptQuestionId',id);safeText('paymentReceiptPaymentId',paymentId);safeText('paymentReceiptReference',result.razorpayPaymentId||'');
+  const row=$('paymentReceiptReferenceRow');if(row)row.hidden=!result.razorpayPaymentId;safeText('paymentReceiptDate',date);safeText('paymentReceiptStatus','Payment successful. Opening your Customer Dashboard…');
   const button=$('continueAfterPayment');if(button){button.disabled=false;button.textContent='VIEW MY QUESTION';button.onclick=continueToQuestion;}
   const panel=$('paymentSuccessPanel');if(panel?.showModal){try{panel.showModal();}catch{}}
-  timer=setTimeout(continueToQuestion,2200);
+  timer=setTimeout(continueToQuestion,900);
  };
  $('paymentSuccessPanel')?.addEventListener('cancel',event=>{event.preventDefault();continueToQuestion();});
  window.addEventListener('popstate',()=>{if(receipt)continueToQuestion();});

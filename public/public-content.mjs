@@ -307,8 +307,12 @@
     }
     const originalLabel=btn?.textContent||'PAY & SUBMIT';
     const paymentFlow=window.__smvStartPaymentWindow?.('private')||null;
+    const checkoutReadyPromise=(paymentFlow
+      ? paymentFlow.ensureRazorpay()
+      : ensurePrivateCheckout().then(()=>window))
+      .then(value=>({value}),error=>({error}));
     privateConsultSubmitting=true;if(btn){btn.disabled=true;btn.textContent=originalLabel;}
-    paymentFlow?.status?.('Creating Private Consultation ID and secure payment order…');
+    paymentFlow?.status?.('Preparing secure payment…');
     try{
       const u=window.__smvFirebaseCurrentUser;
       if(!u || String(window.__smvCurrentRole||'').toLowerCase()!=='customer')throw new Error('Please login with your Customer account before payment.');
@@ -320,7 +324,9 @@
       };
       const order=await api('/private-consultation/create-order',payload);
       paymentFlow?.status?.('Private Consultation ID created. Opening secure Payment Gateway…');
-      const checkoutWindow=paymentFlow?await paymentFlow.ensureRazorpay():(await ensurePrivateCheckout(),window);
+      const checkoutReady=await checkoutReadyPromise;
+      if(checkoutReady?.error)throw checkoutReady.error;
+      const checkoutWindow=checkoutReady?.value;
       const RazorpayCtor=checkoutWindow?.Razorpay||window.Razorpay;
       if(!order?.orderId||!order?.keyId||!order?.consultationId)throw new Error('Private consultation payment order was not created correctly.');
       if(order?.offerId&&msg)msg.innerHTML='<span class="success">'+esc(order.offerBannerText||order.offerName||'Offer applied')+' — Pay ₹'+(Number(order.amount||0)/100).toFixed(2)+'</span>';
