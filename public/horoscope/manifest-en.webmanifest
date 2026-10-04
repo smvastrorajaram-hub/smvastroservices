@@ -6,7 +6,7 @@
   "start_url": "/horoscope/?lang=en",
   "scope": "/horoscope/",
   "display": "standalone",
-  "background_color": "#082f33",
+  "background_color": "#fffaf0",
   "theme_color": "#082f33",
   "icons": [
     {

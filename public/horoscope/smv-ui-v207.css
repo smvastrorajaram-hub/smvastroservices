@@ -1,0 +1,87 @@
+/* SMV HOROSCOPE V207 — focused UI system for Horoscope, Matching and saved reports. */
+:root{
+  --smv207-red:#8b1717;--smv207-red-strong:#701010;--smv207-red-soft:#a52a23;
+  --smv207-gold:#b88935;--smv207-ivory:#fffaf0;--smv207-surface:#fff;
+  --smv207-ink:#2d2522;--smv207-muted:#6e625b;--smv207-line:#e4d7bf;
+  --smv207-danger:#9c2525;--smv207-radius-sm:8px;--smv207-radius:12px;--smv207-radius-lg:16px;
+  --smv207-shadow-sm:0 4px 14px rgba(69,38,22,.06);--smv207-content:1180px;
+  --smv207-body:clamp(15px,.25vw + 14px,16px);--smv207-small:clamp(12px,.18vw + 11px,14px);
+  --smv207-h2:clamp(23px,1.8vw,31px);--smv207-h3:clamp(18px,1vw,22px)
+}
+html{text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body.smv-v12-theme{font-family:Inter,"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:var(--smv207-body);line-height:1.6;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+html[lang="ta"] body{font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.68}
+
+/* Forms and content hierarchy */
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching,#smvHoroscopeAuth) :where(h2,h3,h4){font-family:inherit;text-wrap:balance;overflow-wrap:anywhere}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching) h2{font-size:var(--smv207-h2)!important;line-height:1.22!important;font-weight:850!important;color:var(--smv207-red)!important;letter-spacing:-.012em!important}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching) h3{font-size:var(--smv207-h3)!important;line-height:1.3!important;font-weight:800!important;color:#473a34!important}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope){max-width:var(--smv207-content);margin-inline:auto;padding-inline:clamp(8px,2.2vw,22px)}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope)>.card{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;padding:clamp(14px,2.2vw,22px)!important;border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius)!important;box-shadow:var(--smv207-shadow-sm)!important;background:#fff!important}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching,#smvHoroscopeAuth) label{color:#463b35;font-weight:650;line-height:1.35}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching,#smvHoroscopeAuth) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){width:100%;max-width:100%;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid #d8cbb8!important;border-radius:var(--smv207-radius-sm)!important;background:#fff!important;color:var(--smv207-ink)!important;font:inherit;line-height:1.35;box-shadow:0 1px 2px rgba(60,35,20,.025) inset;transition:border-color .16s ease,box-shadow .16s ease}
+body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope,#smvMarriageMatching,#smvHoroscopeAuth) :where(input,select,textarea):focus-visible{outline:0!important;border-color:var(--smv207-red)!important;box-shadow:0 0 0 3px rgba(139,23,23,.13)!important}
+body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#8c8179;opacity:1}
+body.smv-v12-theme .small{font-size:var(--smv207-small);line-height:1.5}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult){margin-top:20px;min-width:0}
+
+/* Actions */
+body.smv-v12-theme .btn{min-height:44px;border:1px solid var(--smv207-red-strong)!important;border-radius:var(--smv207-radius-sm)!important;background:linear-gradient(135deg,var(--smv207-red),var(--smv207-red-soft))!important;color:#fff!important;font-family:inherit;font-weight:800!important;line-height:1.15;box-shadow:0 5px 14px rgba(112,16,16,.15)!important;transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
+body.smv-v12-theme .btn.gray,body.smv-v12-theme .btn.alt{background:#fff!important;color:var(--smv207-red)!important;border-color:#cdaaaa!important;box-shadow:none!important}
+body.smv-v12-theme .btn.danger,body.smv-v12-theme .smv-dialog-actions .btn.danger{background:var(--smv207-danger)!important;color:#fff!important;border-color:#7e1e1e!important}
+body.smv-v12-theme .btn:focus-visible{outline:3px solid rgba(184,137,53,.35)!important;outline-offset:2px}
+body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow:none!important;cursor:not-allowed}
+body.smv-v12-theme .action-row{gap:8px!important;align-items:center;flex-wrap:wrap}
+
+/* Auth strip remains temple-themed; form surface is cleaned up only. */
+.smv-horoscope-auth{border-color:rgba(184,137,53,.42)!important;box-shadow:none!important}
+.smv-horoscope-auth .header-account{gap:8px}.smv-horoscope-auth .action-row{gap:7px!important}.smv-horoscope-auth .small{font-size:12px!important;line-height:1.4!important}
+
+/* Generated Horoscope results */
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.card,.adv-section,.phase1-module,.v5-module,.numerology-module,.birth-time-panchang,.hora-section,.avastha154-section){border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius)!important;box-shadow:none!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-section,.phase1-module,.v5-module,.numerology-module,.birth-time-panchang,.hora-section,.avastha154-section){margin-block:12px!important;background:#fff!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.home-rule,.smv-part-heading){color:var(--smv207-red)!important;font-weight:850!important;letter-spacing:.015em}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.small,.mm-note){color:var(--smv207-muted)!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-table-wrap,.data-table-wrap,.bhava-table-wrap,.smv-viii-table-scroll,.smv-tithi-table-scroll,.adv-scroll){max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--smv207-radius-sm)}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table{border-collapse:collapse;max-width:100%;font-variant-numeric:tabular-nums}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(table,.data-table,.smv-ref-table,.bhava-table,.strength-table,.panchang-data-table) th{font-weight:800!important;color:#4a352d!important;background:#fff7e8!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(table,.data-table,.smv-ref-table,.bhava-table,.strength-table,.panchang-data-table) :where(th,td){border-color:#e7dcc9!important;line-height:1.42;vertical-align:top}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) details{border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius-sm)!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) summary{font-weight:760;line-height:1.4}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.error,.mm-error){color:var(--smv207-danger)!important;background:#fff5f4;border-color:#ecc8c4!important}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .horoscope-export-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Marriage Matching */
+#smvMarriageMatching{max-width:980px!important;margin:clamp(24px,4vw,42px) auto!important;padding:clamp(14px,2.4vw,24px)!important;border:1px solid var(--smv207-line)!important;border-radius:var(--smv207-radius-lg)!important;background:#fff!important;box-shadow:var(--smv207-shadow-sm)!important}
+#smvMarriageMatching .mm-grid{gap:clamp(10px,1.5vw,16px)!important}
+#smvMarriageMatching .mm-birth-grid fieldset{padding:12px!important;border:1px solid #eadfca!important;border-radius:var(--smv207-radius)!important;background:#fffdfa}
+#smvMarriageMatching .mm-birth-grid legend{color:var(--smv207-red)!important;font-weight:850!important;background:#fffdfa;border-radius:6px}
+#smvMarriageMatching #mmCheck{min-height:44px!important;padding:10px 18px!important;border:1px solid var(--smv207-red-strong)!important;border-radius:var(--smv207-radius-sm)!important;background:linear-gradient(135deg,var(--smv207-red),var(--smv207-red-soft))!important;color:#fff!important;font-weight:850!important;box-shadow:0 5px 14px rgba(112,16,16,.14)!important}
+#smvMarriageMatching .mm-full-results{gap:14px!important}
+#smvMarriageMatching .mm-person-result{padding:14px!important;border:1px solid var(--smv207-line)!important;border-radius:var(--smv207-radius)!important;background:#fff!important}
+#smvMarriageMatching .mm-facts>div{grid-template-columns:minmax(130px,30%) 1fr!important;gap:12px!important;padding:9px 0!important;border-bottom-color:#eee3d4!important}
+#smvMarriageMatching :where(.mm-verdict,.mm-consult-why,.mm-reality,.mm-human-topic,.mm-strength-matrix,.mm-benefits){border-radius:var(--smv207-radius)!important;border-color:var(--smv207-line)!important}
+#smvMarriageMatching .mm-verdict{font-weight:850!important}
+#smvMarriageMatching .mm-place-results{margin-top:5px!important;padding:2px 0!important}
+#smvMarriageMatching .mm-place-row{padding:4px 2px!important;line-height:1.4!important;text-underline-offset:2px}
+
+/* Saved reports: preserve the compact header-integrated color treatment, only normalize geometry. */
+#smvSavedReports.smv-saved-reports{max-width:980px!important;margin:6px auto 12px!important;padding:3px 8px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#smvSavedReports .smv-saved-group{padding:4px 0!important}
+#smvSavedReports .smv-saved-group h3{font-size:.9rem!important;line-height:1.2!important;margin:0 0 3px!important}
+#smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:4px!important;min-height:31px!important;padding:4px 0!important}
+#smvSavedReports .smv-saved-row b{font-size:.78rem!important;line-height:1.18!important}#smvSavedReports .smv-saved-row small{font-size:.62rem!important;line-height:1.15!important}
+#smvSavedReports .smv-saved-row button{min-width:42px!important;min-height:28px!important;padding:4px 6px!important;border-radius:6px!important;font-size:.65rem!important}
+
+@media(max-width:640px){
+  :root{--smv207-h2:clamp(21px,5.8vw,26px);--smv207-h3:clamp(17px,4.6vw,21px)}
+  body.smv-v12-theme :where(#english-horoscope,#tamil-horoscope){padding-inline:6px}
+  body.smv-v12-theme .action-row>.btn{flex:1 1 auto;min-width:min(140px,100%)}
+  #smvMarriageMatching{margin:22px 6px!important;padding:12px 10px!important}
+  #smvMarriageMatching .mm-birth-grid fieldset{padding:10px!important}
+  #smvMarriageMatching .mm-facts>div{grid-template-columns:1fr!important;gap:3px!important}
+  body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-section,.phase1-module,.v5-module,.numerology-module,.birth-time-panchang,.hora-section,.avastha154-section){padding:10px!important}
+  body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table{font-size:12px}
+  #smvSavedReports.smv-saved-reports{padding-inline:3px!important}#smvSavedReports .smv-saved-row{gap:3px!important}#smvSavedReports .smv-saved-row button{min-width:38px!important;padding-inline:5px!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

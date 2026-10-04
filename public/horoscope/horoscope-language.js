@@ -2,7 +2,7 @@
 (()=>{
  const $=id=>document.getElementById(id);
  const labels={
-'SMV HOROSCOPE':'SMV ஜாதகம்','Sri Maduraveerayah Horoscope':'ஸ்ரீ மதுரை வீரையா ஜாதகம்','Horoscope interpretations are for reflection and personal guidance.':'ஜாதக விளக்கங்கள் சிந்தனைக்கும் தனிப்பட்ட வழிகாட்டலுக்கும் உரியவை.','UTC offset (hours)':'உலக நேர வேறுபாடு (மணி)','Use the birth location offset on the birth date, including daylight saving.':'பிறந்த நாளில் அந்த இடத்திற்கு உரிய நேர வேறுபாட்டை உள்ளிடவும்; கோடைக்கால நேர மாற்றத்தையும் சேர்க்கவும்.',
+'SMV HOROSCOPE':'SMV ஜாதகம்','Sri Maduraveerayah Horoscope':'ஸ்ரீ மதுரை வீரையா ஜாதகம்','Horoscope interpretations are for reflection and personal guidance.':'ஜாதக விளக்கங்கள் சிந்தனைக்கும் தனிப்பட்ட வழிகாட்டலுக்கும் உரியவை.','Birth Time Zone (UTC Offset)':'பிறந்த இட நேர மண்டலம் (UTC வேறுபாடு)','Use the UTC offset that was in effect at the birth place on the birth date, including daylight saving when relevant.':'பிறந்த நாளில் அந்த இடத்தில் அமலில் இருந்த UTC நேர வேறுபாட்டை உள்ளிடவும்; தேவையானால் கோடைக்கால நேர மாற்றத்தையும் சேர்க்கவும்.',
   'Create Horoscope':'ஜாதகம் உருவாக்குக','ENGLISH HOROSCOPE':'தமிழ் ஜாதகம்',
   'Enter birth date, birth time and select the exact birth place.':'பிறந்த தேதி, நேரம் மற்றும் சரியான பிறந்த இடத்தை உள்ளிடவும்.',
   Name:'பெயர்',Rasi:'ராசி','Date of Birth':'பிறந்த தேதி','Time of Birth':'பிறந்த நேரம்','Place of Birth':'பிறந்த இடம்',Latitude:'அட்சரேகை',Longitude:'தீர்க்கரேகை','Nakshatra (Optional)':'நட்சத்திரம் (விருப்பம்)',Reset:'மீட்டமை',

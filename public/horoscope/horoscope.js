@@ -1586,7 +1586,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     const ta=lang!=='en'; const R=ta?['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
     const payload={date,time,lat:Number(lat),lon:Number(lon),language:lang,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60};
     try{
-      await window.SMVEngineReady;await window.SMVOffline.calculateSwiss(payload);const td=window.SMVOffline.transit(payload),pd=window.SMVOffline.panchang(payload);if(!td?.planets)throw new Error('Transit calculation failed');
+      await window.SMVEngineReady;const td=window.SMVOffline.transit(payload),pd=window.SMVOffline.panchang(payload);if(!td?.planets)throw new Error('Transit calculation failed');
       let h=`<div class="adv-section"><h3>🪐 ${ta?'கிரக கோச்சாரம்':'Planetary Transit'}</h3><div class="adv-scroll"><table class="adv-wide"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'பாகை':'Degree'}</th><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><th>${ta?'பாதம்':'Pada'}</th><th>${ta?'நிலை':'Status'}</th></tr></thead><tbody>`;
       (td.planets||[]).forEach(x=>h+=`<tr><td>${esc(x.name)}</td><td>${S(x.rasi)}</td><td>${esc(x.degree)}</td><td>${esc(x.nakshatra)}</td><td>${esc(x.pada)}</td><td>${x.retrograde?'↶ Retrograde':'Direct'}</td></tr>`); h+=`</tbody></table></div></div>`;
       h+=`<div class="adv-section"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="adv-scroll"><table class="adv-wide"><tbody><tr><th>${ta?'சூரிய ராசி':'Sun Sign'}</th><td>${S(pd.solarSign)}</td><th>${ta?'சந்திர ராசி':'Moon Sign'}</th><td>${S(pd.moonSign)}</td></tr><tr><th>${ta?'திதி':'Tithi'}</th><td>${esc(pd.tithi?.number)} — ${esc(pd.tithi?.name)}</td><th>${ta?'பக்ஷம்':'Paksha'}</th><td>${esc(pd.tithi?.half)}</td></tr><tr><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><td>${esc(pd.nakshatra?.number)} — ${esc(pd.nakshatra?.name)} / ${esc(pd.nakshatra?.pada)}</td><th>${ta?'யோகம்':'Yoga'}</th><td>${esc(pd.yoga?.number)} — ${esc(pd.yoga?.name)}</td></tr><tr><th>${ta?'கரணம்':'Karana'}</th><td>${esc(pd.karana?.name)}</td><th>${ta?'சூரிய உதயம்':'Sunrise'}</th><td>${esc(pd.sunrise)}</td></tr><tr><th>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</th><td>${esc(pd.sunset)}</td><th>${ta?'அயனாம்சம்':'Ayanamsa'}</th><td>${esc(pd.ayanamsa)}</td></tr></tbody></table></div></div>`;
@@ -1730,7 +1730,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     // Render the entire horoscope as one server-side batch. The browser does
     // not reveal any section until core chart + advanced astrology + birth
     // panchang + daily panchang + transit + special dasha are all complete.
-    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs')).advanced(cachedFull.chart,lang)}):post('full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear()});
+    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs')).advanced(cachedFull.chart,lang)}):post('full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear(),__smvPrecomputedChart:(chart&&Array.isArray(chart.planets)&&chart.lagna)?chart:undefined,__smvPrecomputedBasic:cachedBasic||undefined});
     return response.then(async (full)=>{
       if(full?.ok!==true || full?.meta?.complete!==true) throw new Error(full?.error||'Full horoscope calculation was not completed.');
       window.__smvLastFullReport=full;
@@ -1851,10 +1851,10 @@ try{
   
   window.__smvLoadBasicPanchang=async function(payload,root){
     const now=new Date(),offset=Number(payload.utcOffsetMinutes??330),local=new Date(now.getTime()+offset*60000),dailyDate=local.toISOString().slice(0,10),dailyTime=local.toISOString().slice(11,16),daily={...payload,date:dailyDate,time:dailyTime};
-    await window.SMVEngineReady;await window.SMVOffline.calculateSwiss(payload);const bp=window.SMVOffline.panchang(payload);await window.SMVOffline.calculateSwiss(daily);const dp=window.SMVOffline.panchang(daily),trans=window.SMVOffline.transit(daily);
+    await window.SMVEngineReady;const bp=window.SMVOffline.panchang(payload);const dp=window.SMVOffline.panchang(daily),trans=window.SMVOffline.transit(daily);
     const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(bp,payload.language,payload.date,payload.time);
     const transitSlot=root.querySelector('.daily-transit-panchang-slot');if(transitSlot)renderTransitPanchang(trans,dp,payload.language,transitSlot.id);
-    root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,referenceDate:dailyDate,referenceTime:dailyTime};
+    root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,referenceDate:dailyDate,referenceTime:dailyTime,language:payload.language==='en'?'en':'ta'};
   };
 function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
     const ta=lang==='ta',
@@ -2613,7 +2613,9 @@ if(lat===''||lon===''){
       }
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
-      await window.SMVEngineReady;const full=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim()});const d=full.chart;if(!d)throw new Error(full?.error||'Calculation failed');
+      // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
+      // are calculated once later, after access/gating is resolved.
+      await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');
       // Render the core horoscope into the hidden result container first.
       render(d);
       const advRoot=$('tamilAdvancedAstrology');
