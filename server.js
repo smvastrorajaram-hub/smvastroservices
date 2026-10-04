@@ -388,6 +388,37 @@ function signatureEqual(expected, actual) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+// Professional public IDs: lowercase, date-free, non-sequential and safe to read/type.
+// Excludes visually ambiguous characters 0/o and 1/i/l. 16 base-31 characters
+// provide a very large collision space without any Firestore counter read/write.
+const SMV_ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+function smvRandomCode(length = 16) {
+  const alphabet = SMV_ID_ALPHABET;
+  const limit = Math.floor(256 / alphabet.length) * alphabet.length;
+  let out = "";
+  while (out.length < length) {
+    const bytes = crypto.randomBytes(Math.max(16, length - out.length));
+    for (const value of bytes) {
+      if (value >= limit) continue;
+      out += alphabet[value % alphabet.length];
+      if (out.length >= length) break;
+    }
+  }
+  return out;
+}
+function newSmvId(prefix) {
+  return `${String(prefix || "smv").toLowerCase()}-${smvRandomCode(16)}`;
+}
+function normalizeSmvLoginId(value, expectedType = "") {
+  const raw = String(value || "").trim();
+  const type = String(expectedType || "").toLowerCase();
+  const newMatch = raw.match(/^smv-(cus|ast)-[2-9a-hj-km-np-z]{8,32}$/i);
+  if (newMatch && (!type || newMatch[1].toLowerCase() === type)) return raw.toLowerCase();
+  const oldMatch = raw.match(/^SMV-(CUS|AST)-\d{8}-\d{2,}$/i);
+  if (oldMatch && (!type || oldMatch[1].toLowerCase() === type)) return raw.toUpperCase();
+  return "";
+}
+
 
 // Registration profile endpoints: Firestore profile/counter writes are performed
 // server-side with Firebase Admin SDK so customer/astrologer registration does
@@ -400,22 +431,14 @@ function indiaDateKey(date = new Date()) {
 }
 
 async function nextCustomerId() {
-  // Customer IDs are date-based in India (IST): SMV-CUS-DDMMYYYY-01, -02, ...
-  const dateKey = indiaDateKey();
-  const ref = db.collection("smv_counters").doc(`customer_${dateKey}`);
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-    tx.set(ref, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return `SMV-CUS-${dateKey}-${String(next).padStart(2, "0")}`;
-  });
+  return newSmvId("smv-cus");
 }
 
 app.post("/lookup-customer-login", async (req, res) => {
   try {
-    const customerId = String(req.body?.customerId || "").trim().toUpperCase();
-    if (!/^SMV-CUS-\d{8}-\d{2,}$/.test(customerId)) {
-      return res.status(400).json({ error: "Enter a valid Customer ID, for example SMV-CUS-20082026-01." });
+    const customerId = normalizeSmvLoginId(req.body?.customerId, "cus");
+    if (!customerId) {
+      return res.status(400).json({ error: "Enter a valid Customer ID, for example smv-cus-7k4m9x2d6r8v3p5n." });
     }
     const snap = await db.collection("smv_users").where("publicId", "==", customerId).limit(1).get();
     if (snap.empty) return res.status(404).json({ error: "Customer ID was not found. Please check your Customer ID." });
@@ -431,29 +454,21 @@ app.post("/lookup-customer-login", async (req, res) => {
   }
 });
 
-async function nextPublicId(prefix, dateKey) {
-  const isCustomer = prefix === "CS";
-  const kind = isCustomer ? "customer" : "astrologer";
-  const ref = db.collection("smv_counters").doc(`${kind}_${dateKey}`);
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-    tx.set(ref, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    const idPrefix = isCustomer ? "SMV-CUS" : "SMV-AST";
-    return `${idPrefix}-${dateKey}-${String(next).padStart(2, "0")}`;
-  });
+async function nextPublicId(prefix) {
+  return String(prefix || "").toUpperCase() === "AT" ? newSmvId("smv-ast") : newSmvId("smv-cus");
 }
 
 app.post("/lookup-id-login", async (req, res) => {
   try {
-    const publicId = String(req.body?.publicId || "").trim().toUpperCase();
-    if (!/^SMV-(CUS|AST)-\d{8}-\d{2,}$/.test(publicId)) {
+    const rawPublicId = String(req.body?.publicId || "").trim();
+    const publicId = normalizeSmvLoginId(rawPublicId);
+    if (!publicId) {
       return res.status(400).json({ error: "Enter a valid Customer or Astrologer ID." });
     }
     const snap = await db.collection("smv_users").where("publicId", "==", publicId).limit(1).get();
     if (snap.empty) return res.status(404).json({ error: "This ID was not found. Please check the ID and try again." });
     const data = snap.docs[0].data() || {};
-    const expectedRole = publicId.startsWith("SMV-AST-") ? "astrologer" : "customer";
+    const expectedRole = /^smv-ast-/i.test(publicId) ? "astrologer" : "customer";
     if (String(data.role || "").toLowerCase() !== expectedRole) return res.status(403).json({ error: "This ID is not valid for this login type." });
     const uid = String(data.uid || snap.docs[0].id);
     const user = await admin.auth().getUser(uid);
@@ -524,7 +539,7 @@ app.post("/register-astrologer-profile", async (req, res) => {
     if(existing.exists && existingRole==="astrologer" && existing.data()?.publicId) return res.json({ok:true,alreadyRegistered:true,publicId:existing.data().publicId});
     const preflight = await findExistingPhoneOwners(phoneNorm, user.uid);
     if (preflight.taken) return phoneAlreadyRegisteredResponse(res, b.language === "ta" ? "ta" : "en");
-    const dateKey=indiaDateKey(), publicId=await nextPublicId("AT",dateKey);
+    const publicId=await nextPublicId("AT");
     const notificationRef=db.collection("smv_notifications").doc(user.uid+"_"+Date.now());
     await db.runTransaction(async tx => {
       await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "astrologer");
@@ -1014,35 +1029,12 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
 });
 
 
-async function nextQuestionId() {
-  const dateKey = indiaDateKey();
-  const ref = db.collection("smv_counters").doc(`question_${dateKey}`);
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-    tx.set(ref, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return `SMV-QST-${dateKey}-${String(next).padStart(2, "0")}`;
-  });
+function nextQuestionId() {
+  return newSmvId("smv-qst");
 }
 
-function nextPaymentIdInTransaction(dateKey, snap) {
-  const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-  return {
-    id: `SMV-PAY-${dateKey}-${String(next).padStart(2, "0")}`,
-    next
-  };
-}
-
-
-async function nextPaymentId() {
-  const dateKey = indiaDateKey();
-  const ref = db.collection("smv_counters").doc(`payment_${dateKey}`);
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-    tx.set(ref, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return `SMV-PAY-${dateKey}-${String(next).padStart(2, "2")}`;
-  });
+function nextPaymentId() {
+  return newSmvId("smv-pay");
 }
 
 async function nextBookingId() {
@@ -2622,14 +2614,19 @@ app.post("/private-consultation/cancel-payment",express.json({limit:"10kb"}),asy
 app.post("/private-consultation/recover-payment",express.json({limit:"10kb"}),async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{const id=String(req.body?.consultationId||"").trim(),ref=db.collection("smv_private_consultations").doc(id),s=await ref.get();if(!s.exists)return res.status(404).json({error:"Private consultation not found."});const c=s.data()||{};
- if(c.customerId!==user.uid)return res.status(403).json({error:"You do not own this private consultation."});if(c.paymentStatus==="paid")return res.json({success:true,recovered:true,alreadyPaid:true});
+ if(c.customerId!==user.uid)return res.status(403).json({error:"You do not own this private consultation."});if(c.paymentStatus==="paid")return res.json({success:true,recovered:true,alreadyPaid:true,consultationId:id,paymentId:c.customerPaymentId||c.razorpayPaymentId||null,customerPaymentId:c.customerPaymentId||null,razorpayPaymentId:c.razorpayPaymentId||null,paymentRecordedAt:c.paymentRecordedAt||null});
  if(!c.razorpayOrderId)return res.status(409).json({error:"No Razorpay order is available to recover."});
  const list=await razorpay.orders.fetchPayments(c.razorpayOrderId),expected=Math.round(Number(c.chatPrice||c.amount||0)*100),captured=(list?.items||[]).find(p=>p.status==="captured"&&Number(p.amount)===expected);
  if(!captured)return res.json({success:true,recovered:false});
  const wf=await getPrivateConsultWorkflow(),auto=wf.allowWithoutAdminApproval===true;
- await ref.set({paymentStatus:"paid",status:auto?"approved_for_astrologer":"pending_admin_approval",allocationStatus:"selected_astrologer",questionApprovalBypassed:auto,razorpayPaymentId:captured.id,paidAt:FieldValue.serverTimestamp(),paymentRecoveredAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
- await addAdminPrivateNotification("private_payment_recovered","Private Consultation Payment Recovered",`${c.customerName||"Customer"} payment ₹${Number(c.chatPrice||c.amount||0).toFixed(2)} recovered from Razorpay.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
- return res.json({success:true,recovered:true,consultationId:id,paymentId:captured.id});
+ const customerPaymentId=String(c.customerPaymentId||nextPaymentId());
+ const paymentRecordedAt=String(c.paymentRecordedAt||new Date().toISOString());
+ const recoveryBatch=db.batch();
+ recoveryBatch.set(ref,{paymentStatus:"paid",status:auto?"approved_for_astrologer":"pending_admin_approval",allocationStatus:"selected_astrologer",questionApprovalBypassed:auto,customerPaymentId,razorpayPaymentId:captured.id,paidAt:FieldValue.serverTimestamp(),paymentRecordedAt,paymentRecoveredAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ recoveryBatch.set(db.collection("smv_payments").doc(customerPaymentId),{paymentId:customerPaymentId,type:"customer_payment",customerId:c.customerId,astrologerId:c.astrologerId||null,consultationId:id,razorpayOrderId:c.razorpayOrderId,razorpayPaymentId:captured.id,amount:Number(c.chatPrice||c.amount||0),status:"paid",paymentStatus:"paid",source:"private_payment_recovery",paymentRecordedAt,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+ await recoveryBatch.commit();
+ setImmediate(()=>addAdminPrivateNotification("private_payment_recovered","Private Consultation Payment Recovered",`${c.customerName||"Customer"} payment ₹${Number(c.chatPrice||c.amount||0).toFixed(2)} recovered from Razorpay.`,id,{customerId:c.customerId,astrologerId:c.astrologerId,paymentId:customerPaymentId,razorpayPaymentId:captured.id}).catch(e=>console.error("Private recovery notification failed:",e)));
+ return res.json({success:true,recovered:true,consultationId:id,paymentId:customerPaymentId,customerPaymentId,razorpayPaymentId:captured.id,paymentRecordedAt});
  }catch(e){return res.status(500).json({error:e?.message||"Unable to recover payment."});}
 });
 app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), async(req,res)=>{
@@ -2660,34 +2657,44 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
     if(c.paymentStatus!=="paid"){
       const privateWorkflow=await getPrivateConsultWorkflow();
       const autoAllow=privateWorkflow.allowWithoutAdminApproval===true;
-      await ref.update({
-        paymentStatus:"paid",status:autoAllow?"approved_for_astrologer":"pending_admin_approval",allocationStatus:"selected_astrologer",
-        questionApprovalBypassed:autoAllow,
-        razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),
-        paymentRecordedAt:new Date().toISOString(),updatedAt:FieldValue.serverTimestamp()
-      });
       const finalStatus=autoAllow?"approved_for_astrologer":"pending_admin_approval";
-      res.json({success:true,verified:true,consultationId,paymentId,paymentRecordedAt:new Date().toISOString(),status:finalStatus,paymentStatus:"paid"});
+      const customerPaymentId=nextPaymentId();
+      const paymentRecordedAt=new Date().toISOString();
+      const batch=db.batch();
+      batch.update(ref,{
+        paymentStatus:"paid",status:finalStatus,allocationStatus:"selected_astrologer",
+        questionApprovalBypassed:autoAllow,customerPaymentId,
+        razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),
+        paymentRecordedAt,updatedAt:FieldValue.serverTimestamp()
+      });
+      batch.set(db.collection("smv_payments").doc(customerPaymentId),{
+        paymentId:customerPaymentId,type:"customer_payment",customerId:c.customerId,astrologerId:c.astrologerId||null,
+        consultationId,razorpayOrderId:orderId,razorpayPaymentId:paymentId,amount:Number(c.chatPrice||c.amount||0),
+        status:"paid",paymentStatus:"paid",source:"private_checkout_verification",paymentRecordedAt,
+        createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
+      });
+      await batch.commit();
+      res.json({success:true,verified:true,consultationId,paymentId:customerPaymentId,customerPaymentId,razorpayPaymentId:paymentId,paymentRecordedAt,status:finalStatus,paymentStatus:"paid",question:String(c.question||""),amount:Number(c.chatPrice||c.amount||0)});
       setImmediate(async()=>{
         try{
           await Promise.allSettled([
-            consumeOfferAfterPayment({uid:user.uid,service:"private_consultation",referenceId:consultationId,paymentId,quote:{offerId:c.offerId||null,offerName:c.offerName||null,promoCode:c.offerPromoCode||"",originalAmount:Number(c.originalChatPrice||c.chatPrice||c.amount||0),finalAmount:Number(c.chatPrice||c.amount||0),discountAmount:Number(c.offerDiscountAmount||0)}}),
+            consumeOfferAfterPayment({uid:user.uid,service:"private_consultation",referenceId:consultationId,paymentId:customerPaymentId,quote:{offerId:c.offerId||null,offerName:c.offerName||null,promoCode:c.offerPromoCode||"",originalAmount:Number(c.originalChatPrice||c.chatPrice||c.amount||0),finalAmount:Number(c.chatPrice||c.amount||0),discountAmount:Number(c.offerDiscountAmount||0)}}),
             addAdminPrivateNotification("private_payment_received","Private Consultation Payment Received",`${c.customerName||"Customer"} paid ₹${Number(c.chatPrice||c.amount||0).toFixed(2)} for ${c.astrologerName||"the selected astrologer"}.`,consultationId,{customerId:c.customerId,astrologerId:c.astrologerId}),
-            db.collection("smv_notifications").add({userId:c.customerId,type:"private_consultation_payment",title:"Private consultation payment successful",message:autoAllow?`Your private consultation is now visible to ${c.astrologerName||"the selected astrologer"}.`:`Your private consultation with ${c.astrologerName||"the selected astrologer"} is waiting for Admin approval.`,consultationId,createdAt:FieldValue.serverTimestamp(),read:false})
+            db.collection("smv_notifications").add({userId:c.customerId,type:"private_consultation_payment",title:"Private consultation payment successful",message:autoAllow?`Your private consultation is now visible to ${c.astrologerName||"the selected astrologer"}.`:`Your private consultation with ${c.astrologerName||"the selected astrologer"} is waiting for Admin approval.`,consultationId,paymentId:customerPaymentId,createdAt:FieldValue.serverTimestamp(),read:false})
           ]);
           const customerEmail=await resolveCustomerEmail(c), astrologerEmail=await resolveAstrologerEmail(c);
           const amount=Number(c.chatPrice||c.amount||0);
           await Promise.allSettled([
-            sendEventEmailOnce({eventKey:`private:${consultationId}:payment_success:${paymentId}`,to:[customerEmail],subject:"SMV ASTRO — Private Consultation Payment Successful",replyTo:ADMIN_EMAIL,text:`Your private consultation payment was successful.\n\nConsultation ID: ${consultationId}\nAmount: ₹${amount.toFixed(2)}\nPayment ID: ${paymentId}\n\n${autoAllow?"Your consultation is now available to your selected astrologer.":"Your consultation is waiting for Admin approval."}`,context:{consultationId,paymentId,event:"payment_success"}}),
-            sendEventEmailOnce({eventKey:`private:${consultationId}:payment_admin:${paymentId}`,to:[ADMIN_EMAIL],subject:"SMV ASTRO — Private Consultation Payment Received",text:`Private consultation payment received.\n\nConsultation ID: ${consultationId}\nCustomer: ${c.customerName||"Customer"}\nAstrologer: ${c.astrologerName||"Astrologer"}\nAmount: ₹${amount.toFixed(2)}\nPayment ID: ${paymentId}`,context:{consultationId,paymentId,event:"payment_admin"}}),
-            autoAllow?sendEventEmailOnce({eventKey:`private:${consultationId}:astrologer_new_paid:${paymentId}`,to:[astrologerEmail],subject:"SMV ASTRO — New Paid Private Consultation",text:`A paid private consultation is now available to you.\n\nConsultation ID: ${consultationId}\nCustomer: ${c.customerName||"Customer"}`,context:{consultationId,paymentId,event:"astrologer_new_paid"}}):Promise.resolve(),
-            addAdminEventNotification("private_payment_received","Private Consultation Payment Received",`${c.customerName||"Customer"} paid ₹${amount.toFixed(2)} for ${c.astrologerName||"the selected astrologer"}.`,{consultationId,paymentId})
+            sendEventEmailOnce({eventKey:`private:${consultationId}:payment_success:${paymentId}`,to:[customerEmail],subject:"SMV ASTRO — Private Consultation Payment Successful",replyTo:ADMIN_EMAIL,text:`Your private consultation payment was successful.\n\nConsultation ID: ${consultationId}\nAmount: ₹${amount.toFixed(2)}\nPayment ID: ${customerPaymentId}\n\n${autoAllow?"Your consultation is now available to your selected astrologer.":"Your consultation is waiting for Admin approval."}`,context:{consultationId,paymentId:customerPaymentId,event:"payment_success"}}),
+            sendEventEmailOnce({eventKey:`private:${consultationId}:payment_admin:${paymentId}`,to:[ADMIN_EMAIL],subject:"SMV ASTRO — Private Consultation Payment Received",text:`Private consultation payment received.\n\nConsultation ID: ${consultationId}\nCustomer: ${c.customerName||"Customer"}\nAstrologer: ${c.astrologerName||"Astrologer"}\nAmount: ₹${amount.toFixed(2)}\nPayment ID: ${customerPaymentId}\nRazorpay Payment ID: ${paymentId}`,context:{consultationId,paymentId:customerPaymentId,event:"payment_admin"}}),
+            autoAllow?sendEventEmailOnce({eventKey:`private:${consultationId}:astrologer_new_paid:${paymentId}`,to:[astrologerEmail],subject:"SMV ASTRO — New Paid Private Consultation",text:`A paid private consultation is now available to you.\n\nConsultation ID: ${consultationId}\nCustomer: ${c.customerName||"Customer"}`,context:{consultationId,paymentId:customerPaymentId,event:"astrologer_new_paid"}}):Promise.resolve(),
+            addAdminEventNotification("private_payment_received","Private Consultation Payment Received",`${c.customerName||"Customer"} paid ₹${amount.toFixed(2)} for ${c.astrologerName||"the selected astrologer"}.`,{consultationId,paymentId:customerPaymentId,razorpayPaymentId:paymentId})
           ]);
         }catch(e){console.error("Post-verification private bookkeeping failed:",e);}
       });
       return;
     }
-    return res.json({success:true,verified:true,consultationId,paymentId,paymentRecordedAt:c.paymentRecordedAt||null,status:String(c.status||"pending_admin_approval"),paymentStatus:"paid"});
+    return res.json({success:true,verified:true,consultationId,paymentId:c.customerPaymentId||c.razorpayPaymentId||paymentId,customerPaymentId:c.customerPaymentId||null,razorpayPaymentId:c.razorpayPaymentId||paymentId,paymentRecordedAt:c.paymentRecordedAt||null,status:String(c.status||"pending_admin_approval"),paymentStatus:"paid",question:String(c.question||""),amount:Number(c.chatPrice||c.amount||0)});
   }catch(e){console.error("Private consultation verify-payment error:",e);return res.status(500).json({error:e?.message||"Unable to verify private consultation payment."});}
 });
 
@@ -2695,88 +2702,25 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
 // PUBLIC QUESTION PAYMENT ROUTES — restored for frontend/backend parity
 app.post("/create-order", express.json(), async (req, res) => {
   const razorpayMode = RAZORPAY_KEY_ID.startsWith('rzp_test_') ? 'test' : (RAZORPAY_KEY_ID.startsWith('rzp_live_') ? 'live' : 'invalid');
-  if(razorpayMode === 'invalid'){
+  if (razorpayMode === 'invalid') {
     return res.status(503).json({error:'Razorpay is not configured with a valid Test or Live key.',code:'RAZORPAY_KEY_INVALID',mode:'invalid'});
   }
 
   const user = await requireUser(req, res);
   if (!user) return;
   try {
-    let questionId = String(req.body?.questionId || "").trim();
+    const suppliedQuestionId = String(req.body?.questionId || "").trim();
+    let questionId = suppliedQuestionId;
     let qRef;
     let q;
     let createdNow = false;
-    if (!questionId) questionId = await nextQuestionId();
 
-    // Create/read the question on the trusted server. The browser no longer calls
-    // Firestore to create the question document, which eliminates the empty
-    // documentPath error seen before Razorpay opened.
-    if (questionId) {
-      if (questionId.includes("/") || questionId === "." || questionId === "..") {
-        return res.status(400).json({ error: "A valid questionId is required." });
-      }
+    if (!questionId) {
+      // No date/counter transaction: a cryptographically random professional ID is
+      // generated in-process, then the new question is written exactly once.
+      questionId = nextQuestionId();
       qRef = db.collection("smv_questions").doc(questionId);
-      const qSnap = await qRef.get();
-      if (!qSnap.exists) {
-        createdNow = true;
-        const settingSnap = await db.collection("smv_settings").doc("question").get();
-        const configuredPrice = Number(settingSnap.data()?.price || 5);
-        const birth = req.body?.birthDetails || {};
-        const customerName = String(req.body?.customerName || birth.name || "").trim();
-        const questionText = String(req.body?.question || "").trim();
-        if (!customerName || !questionText || !birth.birthDate || !birth.birthTime || !String(birth.birthPlace || "").trim()) {
-          return res.status(400).json({ error: "Complete customer birth details and question are required." });
-        }
-        q = {
-          customerId: user.uid, questionId, customerName, birthName: customerName, question: questionText,
-          amount: configuredPrice, status: "awaiting_payment", paymentStatus: "pending",
-          allocationStatus: "awaiting_admin",
-          birthDetails: {
-            name: customerName, birthDate: String(birth.birthDate), birthTime: String(birth.birthTime),
-            birthPlace: String(birth.birthPlace).trim(), birthGender: String(birth.birthGender || ""),
-            timezone: "Asia/Kolkata", utcOffsetMinutes: 330
-          },
-          birthDate: String(birth.birthDate), birthTime: String(birth.birthTime),
-          birthPlace: String(birth.birthPlace).trim(), birthGender: String(birth.birthGender || ""),
-          birthTimezone: "Asia/Kolkata", birthUtcOffsetMinutes: 330,
-          createdAt: FieldValue.serverTimestamp()
-        };
-        await qRef.set(q);
-      } else {
-        q = qSnap.data();
-        if (q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
-        if (String(q.questionId || "") !== questionId) {
-          await qRef.set({ questionId }, { merge: true });
-          q = { ...q, questionId };
-        }
-        // Preserve India wall-clock birth time. Never reinterpret a user-entered
-        // HH:mm value as UTC and shift it by 5:30 hours.
-        if (!q.birthTimezone || !q.birthUtcOffsetMinutes || !q.birthDetails?.timezone) {
-          await qRef.set({
-            birthTimezone: q.birthTimezone || "Asia/Kolkata",
-            birthUtcOffsetMinutes: Number(q.birthUtcOffsetMinutes ?? 330),
-            birthDetails: {
-              ...(q.birthDetails || {}),
-              timezone: q.birthDetails?.timezone || "Asia/Kolkata",
-              utcOffsetMinutes: Number(q.birthDetails?.utcOffsetMinutes ?? 330)
-            }
-          }, { merge: true });
-          q = {
-            ...q,
-            birthTimezone: q.birthTimezone || "Asia/Kolkata",
-            birthUtcOffsetMinutes: Number(q.birthUtcOffsetMinutes ?? 330),
-            birthDetails: {
-              ...(q.birthDetails || {}),
-              timezone: q.birthDetails?.timezone || "Asia/Kolkata",
-              utcOffsetMinutes: Number(q.birthDetails?.utcOffsetMinutes ?? 330)
-            }
-          };
-        }
-      }
-    } else {
-      qRef = db.collection("smv_questions").doc();
-      questionId = qRef.id;
-      if (!questionId) return res.status(500).json({ error: "Unable to create a valid question ID." });
+      createdNow = true;
 
       const settingSnap = await db.collection("smv_settings").doc("question").get();
       const configuredPrice = Number(settingSnap.data()?.price || 5);
@@ -2791,150 +2735,223 @@ app.post("/create-order", express.json(), async (req, res) => {
         return res.status(400).json({ error: "Complete customer birth details and question are required." });
       }
 
+      const quote = await resolveOfferForCustomer({
+        uid:user.uid, service:"public_question", originalAmount:configuredPrice,
+        promoCode:req.body?.promoCode
+      });
       q = {
-        customerId: user.uid,
-        questionId,
-        customerName,
-        birthName: customerName,
-        question: questionText,
-        amount: configuredPrice,
-        status: "awaiting_payment",
-        paymentStatus: "pending",
-        allocationStatus: "awaiting_admin",
-        birthDetails: {
-          name: customerName,
-          birthDate: String(birth.birthDate),
-          birthTime: String(birth.birthTime),
-          birthPlace: String(birth.birthPlace).trim(),
-          birthGender: String(birth.birthGender || "")
+        customerId:user.uid, customerEmail:user.email || null, questionId,
+        customerName, birthName:customerName, question:questionText,
+        amount:quote.finalAmount, originalAmount:quote.originalAmount,
+        offerId:quote.offerId || null, offerName:quote.offerName || null,
+        offerPromoCode:quote.promoCode || "", offerDiscountAmount:quote.discountAmount || 0,
+        offerBannerText:quote.bannerText || "", offerDisplayMode:quote.displayMode || "hidden",
+        offerLockedAt:FieldValue.serverTimestamp(),
+        status:"awaiting_payment", paymentStatus:"pending", allocationStatus:"awaiting_admin",
+        birthDetails:{
+          name:customerName, birthDate:String(birth.birthDate), birthTime:String(birth.birthTime),
+          birthPlace:String(birth.birthPlace).trim(), birthGender:String(birth.birthGender || ""),
+          timezone:"Asia/Kolkata", utcOffsetMinutes:330
         },
-        birthDate: String(birth.birthDate),
-        birthTime: String(birth.birthTime),
-        birthPlace: String(birth.birthPlace).trim(),
-        birthGender: String(birth.birthGender || ""),
-        birthTimezone: "Asia/Kolkata",
-        birthUtcOffsetMinutes: 330,
-        createdAt: FieldValue.serverTimestamp()
+        birthDate:String(birth.birthDate), birthTime:String(birth.birthTime),
+        birthPlace:String(birth.birthPlace).trim(), birthGender:String(birth.birthGender || ""),
+        birthTimezone:"Asia/Kolkata", birthUtcOffsetMinutes:330,
+        createdAt:FieldValue.serverTimestamp()
       };
       await qRef.set(q);
-      createdNow = true;
+    } else {
+      if (questionId.includes("/") || questionId === "." || questionId === "..") {
+        return res.status(400).json({ error: "A valid questionId is required." });
+      }
+      qRef = db.collection("smv_questions").doc(questionId);
+      const qSnap = await qRef.get();
+      if (!qSnap.exists) return res.status(404).json({ error: "Saved question not found. Please start a new Ask Now question." });
+      q = qSnap.data() || {};
+      if (q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
+      if (String(q.questionId || "") !== questionId) {
+        await qRef.set({ questionId }, { merge:true });
+        q = { ...q, questionId };
+      }
+      if (!q.birthTimezone || !q.birthUtcOffsetMinutes || !q.birthDetails?.timezone) {
+        const birthPatch = {
+          birthTimezone:q.birthTimezone || "Asia/Kolkata",
+          birthUtcOffsetMinutes:Number(q.birthUtcOffsetMinutes ?? 330),
+          birthDetails:{
+            ...(q.birthDetails || {}),
+            timezone:q.birthDetails?.timezone || "Asia/Kolkata",
+            utcOffsetMinutes:Number(q.birthDetails?.utcOffsetMinutes ?? 330)
+          }
+        };
+        await qRef.set(birthPatch,{merge:true});
+        q={...q,...birthPatch};
+      }
     }
 
     if (!q || q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
-    // Apply offers only when this question is first created. Retry payments always keep
-    // the amount already locked on the saved question.
-    if(createdNow){
-      const quote=await resolveOfferForCustomer({uid:user.uid,service:"public_question",originalAmount:Number(q.amount||0),promoCode:req.body?.promoCode});
-      q={...q,amount:quote.finalAmount,originalAmount:quote.originalAmount,offerId:quote.offerId,offerName:quote.offerName,offerPromoCode:quote.promoCode||"",offerDiscountAmount:quote.discountAmount,offerBannerText:quote.bannerText||"",offerDisplayMode:quote.displayMode||"hidden"};
-      await qRef.set({amount:q.amount,originalAmount:q.originalAmount,offerId:q.offerId||null,offerName:q.offerName||null,offerPromoCode:q.offerPromoCode||"",offerDiscountAmount:q.offerDiscountAmount||0,offerBannerText:q.offerBannerText||"",offerDisplayMode:q.offerDisplayMode||"hidden",offerLockedAt:FieldValue.serverTimestamp()},{merge:true});
-    }
-    console.log("[create-order] questionId=", questionId, "customer=", user.uid);
+    console.log("[create-order] questionId=", questionId, "customer=", user.uid, "new=", createdNow);
 
     if (!["awaiting_payment", "payment_failed"].includes(q.status)) {
       if (q.paymentStatus === "paid" && q.razorpayOrderId) {
         return res.status(200).json({
-          success: true, alreadyPaid: true, questionId,
-          orderId: q.razorpayOrderId, keyId: RAZORPAY_KEY_ID,
-          amount: Math.round(Number(q.amount || 0) * 100), currency: "INR"
+          success:true, alreadyPaid:true, questionId, orderId:q.razorpayOrderId,
+          keyId:RAZORPAY_KEY_ID, amount:Math.round(Number(q.amount || 0) * 100), currency:"INR"
         });
       }
       return res.status(409).json({ error: "This question is not available for payment." });
     }
 
-    // IMPORTANT: For an existing unpaid/failed question, always retry at the
-    // amount already locked on that question. Admin may have changed the
-    // current public question price after this question was created; that
-    // must NOT invalidate the customer's original question or force a new one.
-    // For a brand-new question, its amount was already created from the
-    // current Admin-configured price above.
     const amount = Number(q.amount || 0);
     if (!Number.isFinite(amount) || amount < 1) {
       return res.status(409).json({ error: "The original question price is unavailable. Please contact Admin." });
     }
 
+    // Safe retry: re-use an existing unpaid Razorpay order instead of creating a
+    // second payable order for the same question.
     if (q.razorpayOrderId && ["order_created", "verification_failed", "failed"].includes(q.paymentStatus)) {
       try {
         const existing = await razorpay.orders.fetch(q.razorpayOrderId);
         if (existing.status === "paid") return res.status(409).json({ error: "This payment has already been completed. Please refresh your dashboard." });
         if (Number(existing.amount) === Math.round(amount * 100) && existing.currency === "INR") {
-          return res.json({ success: true, questionId, orderId: existing.id, keyId: RAZORPAY_KEY_ID, amount: existing.amount, currency: existing.currency, reused: true });
+          return res.json({ success:true, questionId, orderId:existing.id, keyId:RAZORPAY_KEY_ID, amount:existing.amount, currency:existing.currency, reused:true });
         }
-      } catch (e) { return res.status(409).json({error:"Unable to confirm the previous payment order. Check its status and Razorpay account/mode before retrying; no new payment was created."}); }
+      } catch (e) {
+        return res.status(409).json({error:"Unable to confirm the previous payment order. Check its status and Razorpay account/mode before retrying; no new payment was created."});
+      }
     }
 
-    const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100), currency: "INR",
-      receipt: `SMV_${questionId.slice(0, 25)}_${Date.now()}`,
-      notes: { questionId, customerId: user.uid, astrologerId: String(q.astrologerId || "") }
-    });
+    // Razorpay order creation and answer-word setting read are independent, so
+    // run them in parallel. Only the order binding write blocks checkout opening.
+    const [order, answerSettings] = await Promise.all([
+      razorpay.orders.create({
+        amount:Math.round(amount * 100), currency:"INR",
+        receipt:`SMVQ_${questionId.slice(-16)}_${String(Date.now()).slice(-10)}`,
+        notes:{questionId, customerId:user.uid, astrologerId:String(q.astrologerId || "")}
+      }),
+      db.collection("smv_settings").doc("answer").get().catch(()=>null)
+    ]);
     if (!order || !order.id || typeof order.id !== "string") {
       console.error("Razorpay returned an order without a valid order ID", order);
       return res.status(502).json({ error: "Razorpay order was created without a valid order ID." });
     }
 
-    const answerSettings = await db.collection("smv_settings").doc("answer").get();
-    const minimumWords = Math.max(1, Math.min(10000, Math.floor(Number(answerSettings.data()?.minimumWords || 150))));
-    await qRef.set({ paymentMode:"live", razorpayOrderId: order.id, paymentCurrency: "INR", paymentStatus: "order_created", answerMinWords: minimumWords, paymentUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("razorpay_orders").doc(order.id).set({
-      razorpayOrderId: order.id, questionId, amount: order.amount, currency: order.currency,
-      firebaseUid: user.uid, customerEmail: user.email || null, astrologerId: String(q.astrologerId || ""),
-      serviceName: req.body?.serviceName || "Public Astrology Question", status: "created", createdAt: FieldValue.serverTimestamp()
+    const minimumWords = Math.max(1, Math.min(10000, Math.floor(Number(answerSettings?.data?.()?.minimumWords || 150))));
+    await qRef.set({
+      paymentMode:"live", razorpayOrderId:order.id, paymentCurrency:"INR",
+      paymentStatus:"order_created", answerMinWords:minimumWords,
+      paymentUpdatedAt:FieldValue.serverTimestamp()
+    }, { merge:true });
+
+    // Audit bookkeeping is intentionally non-blocking. Verification still checks
+    // the trusted question document/order ID, so checkout safety is unchanged.
+    setImmediate(()=>db.collection("razorpay_orders").doc(order.id).set({
+      razorpayOrderId:order.id, questionId, amount:order.amount, currency:order.currency,
+      firebaseUid:user.uid, customerEmail:user.email || null,
+      astrologerId:String(q.astrologerId || ""), serviceName:req.body?.serviceName || "Public Astrology Question",
+      status:"created", createdAt:FieldValue.serverTimestamp()
+    }).catch(e=>console.error("Public Razorpay order audit failed:",e)));
+
+    return res.json({
+      success:true, questionId, orderId:order.id, keyId:RAZORPAY_KEY_ID,
+      amount:order.amount, currency:order.currency,
+      originalAmount:Number(q.originalAmount || q.amount || 0),
+      offerId:q.offerId || null, offerName:q.offerName || null,
+      promoCode:q.offerPromoCode || "", discountAmount:Number(q.offerDiscountAmount || 0),
+      offerBannerText:q.offerBannerText || ""
     });
-    return res.json({ success: true, questionId, orderId: order.id, keyId: RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency, originalAmount:Number(q.originalAmount||q.amount||0), offerId:q.offerId||null, offerName:q.offerName||null, promoCode:q.offerPromoCode||"", discountAmount:Number(q.offerDiscountAmount||0), offerBannerText:q.offerBannerText||"" });
   } catch (e) {
     console.error("Create order error:", e);
-    return res.status(500).json({ error: e?.error?.description || e?.description || e?.message || "Unable to create Razorpay order" });
+    return res.status(500).json({ error:e?.error?.description || e?.description || e?.message || "Unable to create Razorpay order" });
   }
 });
 
-async function markQuestionPaid(questionId, orderId, paymentId, signature, source) {
+async function markQuestionPaid(questionId, orderId, paymentId, signature, source, workflowOverride = null) {
   const qRef = db.collection("smv_questions").doc(questionId);
-  const workflow = await getOpenWorkflowSettings();
+  const workflow = workflowOverride || await getOpenWorkflowSettings();
+  const candidatePaymentId = nextPaymentId();
+  const paymentRecordedAt = new Date().toISOString();
+
   const result = await db.runTransaction(async tx => {
     const snap = await tx.get(qRef);
     if (!snap.exists) throw new Error("Question not found.");
-    const q = snap.data();
+    const q = snap.data() || {};
     if (q.razorpayOrderId !== orderId) throw new Error("Order mismatch.");
-    if (q.paymentStatus === "paid" && q.razorpayPaymentId === paymentId) return { already: true, customerId: q.customerId, customerPaymentId: q.customerPaymentId || null };
+    if (q.paymentStatus === "paid" && q.razorpayPaymentId === paymentId) {
+      return {
+        already:true, customerId:q.customerId, customerPaymentId:q.customerPaymentId || null,
+        paymentRecordedAt:q.paymentRecordedAt || null, amount:Number(q.amount || 0),
+        question:String(q.question || ""), customerEmail:String(q.customerEmail || ""),
+        offerId:q.offerId || null, offerName:q.offerName || null, offerPromoCode:q.offerPromoCode || "",
+        originalAmount:Number(q.originalAmount || q.amount || 0), offerDiscountAmount:Number(q.offerDiscountAmount || 0)
+      };
+    }
     const amount = Number(q.amount || 0);
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid question amount.");
-    const paymentDateKey = indiaDateKey();
-    const paymentCounterRef = db.collection("smv_counters").doc(`payment_${paymentDateKey}`);
-    const paymentCounterSnap = await tx.get(paymentCounterRef);
-    const paymentInfo = nextPaymentIdInTransaction(paymentDateKey, paymentCounterSnap);
-    tx.set(paymentCounterRef, { lastNumber: paymentInfo.next, dateKey: paymentDateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    const customerPaymentId = paymentInfo.id;
-    const paymentRecordedAt = new Date().toISOString();
+    const customerPaymentId = candidatePaymentId;
     tx.set(db.collection("smv_payments").doc(customerPaymentId), {
-      paymentId: customerPaymentId, type: "customer_payment", customerId: q.customerId, astrologerId: null, questionId, bookingId: q.bookingId || null,
-      razorpayOrderId: orderId, razorpayPaymentId: paymentId, amount, status: "paid", paymentStatus: "paid", source, createdAt: FieldValue.serverTimestamp(), paymentRecordedAt, updatedAt: FieldValue.serverTimestamp()
+      paymentId:customerPaymentId, type:"customer_payment", customerId:q.customerId,
+      astrologerId:null, questionId, bookingId:q.bookingId || null,
+      razorpayOrderId:orderId, razorpayPaymentId:paymentId, amount,
+      status:"paid", paymentStatus:"paid", source,
+      createdAt:FieldValue.serverTimestamp(), paymentRecordedAt, updatedAt:FieldValue.serverTimestamp()
     });
+    const nextStatus = workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "pending_admin_approval";
     tx.update(qRef, {
-      status: workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "pending_admin_approval",
-      paymentStatus: "paid",
-      allocationStatus: workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "awaiting_admin",
-      adminApprovalBypassed: workflow.allowWithoutAdminApproval,
-      openedToAstrologersAt: workflow.allowWithoutAdminApproval ? FieldValue.serverTimestamp() : FieldValue.delete(),
-      razorpayPaymentId: paymentId, razorpaySignature: signature,
-      paidAt: q.paidAt || FieldValue.serverTimestamp(), paymentUpdatedAt: FieldValue.serverTimestamp(), paymentConfirmedBy: source, customerPaymentId, paymentRecordedAt,
-      astrologerPaymentId: FieldValue.delete(), commissionStatus: workflow.allowWithoutAdminApproval ? "open_for_claim" : "awaiting_admin_allocation"
+      status:nextStatus,
+      paymentStatus:"paid",
+      allocationStatus:workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "awaiting_admin",
+      adminApprovalBypassed:workflow.allowWithoutAdminApproval,
+      openedToAstrologersAt:workflow.allowWithoutAdminApproval ? FieldValue.serverTimestamp() : FieldValue.delete(),
+      razorpayPaymentId:paymentId, razorpaySignature:signature,
+      paidAt:q.paidAt || FieldValue.serverTimestamp(), paymentUpdatedAt:FieldValue.serverTimestamp(),
+      paymentConfirmedBy:source, customerPaymentId, paymentRecordedAt,
+      astrologerPaymentId:FieldValue.delete(),
+      commissionStatus:workflow.allowWithoutAdminApproval ? "open_for_claim" : "awaiting_admin_allocation"
     });
-    return { already: false, customerId: q.customerId, customerPaymentId, paymentRecordedAt };
+    return {
+      already:false, customerId:q.customerId, customerPaymentId, paymentRecordedAt,
+      amount, question:String(q.question || ""), status:nextStatus,
+      customerEmail:String(q.customerEmail || ""),
+      offerId:q.offerId || null, offerName:q.offerName || null, offerPromoCode:q.offerPromoCode || "",
+      originalAmount:Number(q.originalAmount || q.amount || 0), offerDiscountAmount:Number(q.offerDiscountAmount || 0)
+    };
   });
+
   if (!result.already) {
-    await db.collection("smv_notifications").add({ userId: result.customerId, type: "payment", title: "Payment successful", message: workflow.allowWithoutAdminApproval ? `Your payment was verified. Your question is now open to approved astrologers. Payment ID: ${result.customerPaymentId || "N/A"}.` : `Your payment was verified. Your question is now waiting for Admin approval. Payment ID: ${result.customerPaymentId || "N/A"}.`, paymentId: result.customerPaymentId || null, razorpayPaymentId: paymentId || null, questionId, createdAt: FieldValue.serverTimestamp(), read: false });
-    const qSnap = await qRef.get();
-    const q = qSnap.exists ? (qSnap.data() || {}) : {};
-    await consumeOfferAfterPayment({uid:result.customerId,service:"public_question",referenceId:questionId,paymentId,quote:{offerId:q.offerId||null,offerName:q.offerName||null,promoCode:q.offerPromoCode||"",originalAmount:Number(q.originalAmount||q.amount||0),finalAmount:Number(q.amount||0),discountAmount:Number(q.offerDiscountAmount||0)}});
-    const customerEmail = String(q.customerEmail || await getUserEmail(result.customerId) || "").trim();
-    const amount = Number(q.amount || 0);
-    await sendSystemEmail({
-      to: [customerEmail, ADMIN_EMAIL],
-      subject: "SMV ASTRO — Payment Successful",
-      replyTo: ADMIN_EMAIL,
-      text: `Payment successful for SMV ASTRO.\n\nQuestion ID: ${questionId}\nCustomer Payment ID: ${result.customerPaymentId || "N/A"}\nAmount: ₹${amount.toFixed(2)}\nRazorpay Payment ID: ${paymentId}\nRazorpay Order ID: ${orderId}\n\n${workflow.allowWithoutAdminApproval ? "Your question is now open to approved astrologers." : "Your question is now waiting for Admin approval."}`
+    setImmediate(async()=>{
+      try {
+        const customerEmail = String(result.customerEmail || await getUserEmail(result.customerId) || "").trim();
+        const amount = Number(result.amount || 0);
+        await Promise.allSettled([
+          db.collection("smv_notifications").add({
+            userId:result.customerId, type:"payment", title:"Payment successful",
+            message:workflow.allowWithoutAdminApproval
+              ? `Your payment was verified. Your question is now open to approved astrologers. Payment ID: ${result.customerPaymentId || "N/A"}.`
+              : `Your payment was verified. Your question is now waiting for Admin approval. Payment ID: ${result.customerPaymentId || "N/A"}.`,
+            paymentId:result.customerPaymentId || null, razorpayPaymentId:paymentId || null,
+            questionId, createdAt:FieldValue.serverTimestamp(), read:false
+          }),
+          consumeOfferAfterPayment({
+            uid:result.customerId, service:"public_question", referenceId:questionId,
+            paymentId:result.customerPaymentId || paymentId,
+            quote:{
+              offerId:result.offerId, offerName:result.offerName,
+              promoCode:result.offerPromoCode || "", originalAmount:result.originalAmount,
+              finalAmount:amount, discountAmount:result.offerDiscountAmount
+            }
+          }),
+          customerEmail ? sendSystemEmail({
+            to:[customerEmail, ADMIN_EMAIL], subject:"SMV ASTRO — Payment Successful", replyTo:ADMIN_EMAIL,
+            text:`Payment successful for SMV ASTRO.\n\nQuestion ID: ${questionId}\nCustomer Payment ID: ${result.customerPaymentId || "N/A"}\nAmount: ₹${amount.toFixed(2)}\nRazorpay Payment ID: ${paymentId}\nRazorpay Order ID: ${orderId}\n\n${workflow.allowWithoutAdminApproval ? "Your question is now open to approved astrologers." : "Your question is now waiting for Admin approval."}`
+          }) : Promise.resolve(),
+          sendAdminTransactionEmail({
+            eventType:"PAYMENT SUCCESS", paymentId, orderId, amount, currency:"INR",
+            questionId, customerEmail, status:"paid"
+          })
+        ]);
+      } catch (e) {
+        console.error("Post-verification public payment bookkeeping failed:", e);
+      }
     });
-    await sendAdminTransactionEmail({ eventType: "PAYMENT SUCCESS", paymentId, orderId, amount, currency: "INR", questionId, customerEmail, status: "paid" });
   }
   return result;
 }
@@ -2947,49 +2964,73 @@ app.post("/verify-payment", express.json(), async (req, res) => {
     const orderId = String(req.body?.razorpay_order_id || "").trim();
     const paymentId = String(req.body?.razorpay_payment_id || "").trim();
     const signature = String(req.body?.razorpay_signature || "").trim();
-    if (!questionId || !orderId || !paymentId || !signature) return res.status(400).json({ error: "Payment verification data is incomplete." });
-    const qSnap = await db.collection("smv_questions").doc(questionId).get();
-    if (!qSnap.exists) return res.status(404).json({ error: "Question not found." });
-    const q = qSnap.data();
-    if (q.customerId !== user.uid) return res.status(403).json({ error: "You do not own this question." });
-    if (q.razorpayOrderId !== orderId) return res.status(409).json({ error: "Payment order mismatch." });
+    if (!questionId || !orderId || !paymentId || !signature) {
+      return res.status(400).json({ error:"Payment verification data is incomplete." });
+    }
+
     const expected = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");
     if (!signatureEqual(expected, signature)) {
       const mode = RAZORPAY_KEY_ID.startsWith("rzp_test_") ? "test" : (RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "live" : "unknown");
-      console.error("Payment verification signature mismatch", { questionId, orderId, paymentId, mode });
-      return res.status(401).json({ error: "Invalid payment signature. Check that Render RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET belong to the same Razorpay mode (both Test or both Live)." });
+      console.error("Payment verification signature mismatch", {questionId, orderId, paymentId, mode});
+      return res.status(401).json({ error:"Invalid payment signature. Check that Render RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET belong to the same Razorpay mode (both Test or both Live)." });
     }
-    let payment = await razorpay.payments.fetch(paymentId);
-    if (payment.order_id !== orderId) return res.status(409).json({ error: "Payment order mismatch." });
-    const expectedAmount = Math.round(Number(q.amount || 0) * 100);
-    if (Number(payment.amount) !== expectedAmount) return res.status(409).json({ error: "Payment amount mismatch." });
 
-    // Razorpay can return an authorised payment before automatic capture.
-    // Capture it server-side, then fetch again and continue verification.
-    const paymentStatus = String(payment.status || "").toLowerCase();
-    if (paymentStatus === "authorized") {
+    // Firestore question ownership, Razorpay payment status and workflow setting
+    // are independent reads. Start them together to remove avoidable serial wait.
+    const qRef = db.collection("smv_questions").doc(questionId);
+    const qPromise = qRef.get();
+    const paymentPromise = razorpay.payments.fetch(paymentId);
+    const workflowPromise = getOpenWorkflowSettings();
+    const [qSnap, initialPayment, workflow] = await Promise.all([qPromise, paymentPromise, workflowPromise]);
+
+    if (!qSnap.exists) return res.status(404).json({ error:"Question not found." });
+    const q = qSnap.data() || {};
+    if (q.customerId !== user.uid) return res.status(403).json({ error:"You do not own this question." });
+    if (q.razorpayOrderId !== orderId) return res.status(409).json({ error:"Payment order mismatch." });
+
+    let payment = initialPayment;
+    if (payment.order_id !== orderId) return res.status(409).json({ error:"Payment order mismatch." });
+    const expectedAmount = Math.round(Number(q.amount || 0) * 100);
+    if (Number(payment.amount) !== expectedAmount) return res.status(409).json({ error:"Payment amount mismatch." });
+
+    if (String(payment.status || "").toLowerCase() === "authorized") {
       try {
         await razorpay.payments.capture(paymentId, expectedAmount, String(payment.currency || "INR"));
       } catch (captureError) {
         console.error("Razorpay capture error:", captureError);
-        // It may have been captured concurrently; re-fetch before failing.
       }
       payment = await razorpay.payments.fetch(paymentId);
     }
     if (String(payment.status).toLowerCase() !== "captured") {
       return res.status(409).json({
-        error: "Payment is authorised but could not be captured yet.",
-        paymentStatus: payment.status || null,
-        paymentId,
-        orderId
+        error:"Payment is authorised but could not be captured yet.",
+        paymentStatus:payment.status || null, paymentId, orderId
       });
     }
-    const result = await markQuestionPaid(questionId, orderId, paymentId, signature, "render_checkout_verification");
-    await db.collection("razorpay_orders").doc(orderId).set({ razorpayPaymentId: paymentId, status: "verified", questionId, verifiedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return res.json({ verified: true, questionId, alreadyProcessed: result.already, customerPaymentId: result.customerPaymentId || null, paymentRecordedAt: result.paymentRecordedAt || new Date().toISOString(), message: "Payment verified and consultation updated successfully." });
+
+    const result = await markQuestionPaid(questionId, orderId, paymentId, signature, "render_checkout_verification", workflow);
+
+    // The durable question/payment transaction above is the verification boundary.
+    // Razorpay order audit metadata can finish after the customer receives success.
+    setImmediate(()=>db.collection("razorpay_orders").doc(orderId).set({
+      razorpayPaymentId:paymentId, status:"verified", questionId,
+      verifiedAt:FieldValue.serverTimestamp()
+    }, {merge:true}).catch(e=>console.error("Public Razorpay verify audit failed:",e)));
+
+    return res.json({
+      verified:true, questionId, alreadyProcessed:result.already,
+      customerPaymentId:result.customerPaymentId || null,
+      paymentId:result.customerPaymentId || null,
+      razorpayPaymentId:paymentId,
+      paymentRecordedAt:result.paymentRecordedAt || new Date().toISOString(),
+      question:result.question || q.question || "",
+      amount:Number(result.amount ?? q.amount ?? 0),
+      status:result.status || q.status || "paid",
+      message:"Payment verified and consultation updated successfully."
+    });
   } catch (e) {
     console.error("Payment verification error:", e);
-    return res.status(500).json({ error: e?.error?.description || e?.description || e?.message || "Payment verification failed" });
+    return res.status(500).json({ error:e?.error?.description || e?.description || e?.message || "Payment verification failed" });
   }
 });
 
@@ -3109,14 +3150,7 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       });
     }
 
-    const dateKey = indiaDateKey();
-    const counterRef = db.collection("smv_counters").doc(`withdrawal_request_${dateKey}`);
-    const withdrawalId = await db.runTransaction(async tx => {
-      const snap = await tx.get(counterRef);
-      const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-      tx.set(counterRef, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return `SMV-WDT-${dateKey}-${String(next).padStart(2, "0")}`;
-    });
+    const withdrawalId = newSmvId("smv-wdt");
 
     // The approved payout method is stored in smv_payouts/{astrologerUid}.
     // Read it at withdrawal time so Admin can pay to the exact approved method.
@@ -3172,8 +3206,8 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
   }
 });
 
-// V169: Admin marks an astrologer withdrawal as paid.
-// Idempotent: creates SMV-PMT exactly once, including repairing an older
+// V196: Admin marks an astrologer withdrawal as paid.
+// Idempotent: creates smv-pmt exactly once, including repairing an older
 // paid withdrawal that was saved without an Admin Payment ID.
 app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
@@ -3182,9 +3216,6 @@ app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req,
     const withdrawalDocId = String(req.body?.withdrawalDocId || "").trim();
     if (!withdrawalDocId) return res.status(400).json({error:"Withdrawal document ID is required."});
     const withdrawalRef = db.collection("smv_withdrawals").doc(withdrawalDocId);
-    const dateKey = indiaDateKey();
-    const counterRef = db.collection("smv_counters").doc(`admin_payment_${dateKey}`);
-
     const result = await db.runTransaction(async tx => {
       const snap = await tx.get(withdrawalRef);
       if (!snap.exists) throw new Error("Withdrawal request not found.");
@@ -3193,20 +3224,17 @@ app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req,
 
       // Already paid with a proper PMT: safe retry, return the same ID.
       const existingAdminPaymentId = String(w.adminPaymentId || "").trim();
-      if (status === "paid" && /^SMV-PMT-/.test(existingAdminPaymentId)) {
+      if (status === "paid" && /^smv-pmt-/i.test(existingAdminPaymentId)) {
         return {paymentId: existingAdminPaymentId, withdrawalId:String(w.withdrawalId || ""), amount:Number(w.amount || 0), repaired:false};
       }
 
       // A previous version may have marked the withdrawal paid but failed to
-      // attach SMV-PMT. Repair it here without changing the SMV-WDT.
+      // attach smv-pmt. Repair it here without changing the existing Withdrawal ID.
       if (status !== "processing" && status !== "paid") {
         throw new Error("Only a processing withdrawal can be marked as paid.");
       }
 
-      const c = await tx.get(counterRef);
-      const next = (c.exists ? Number(c.data()?.lastNumber || 0) : 0) + 1;
-      const id = `SMV-PMT-${dateKey}-${String(next).padStart(2,"0")}`;
-      tx.set(counterRef, {lastNumber:next, dateKey, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+      const id = newSmvId("smv-pmt");
       tx.update(withdrawalRef, {
         status:"paid",
         adminPaymentId:id,

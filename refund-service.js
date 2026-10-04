@@ -46,7 +46,7 @@ function createRefundService({db,razorpay,FieldValue,keyId,keySecret,fetchImpl=f
   try{
    if(q.refundId){const result=await save(ref,q,await razorpay.refunds.fetch(q.refundId));await notify(q,user,questionId,result);return result;}
    const paymentId=String(q.razorpayPaymentId||'');
-   if(!/^pay_[A-Za-z0-9]+$/.test(paymentId))fail('Real Razorpay payment ID is missing. The SMV-PAY reference cannot be used to issue a refund.');
+   if(!/^pay_[A-Za-z0-9]+$/.test(paymentId))fail('Real Razorpay payment ID is missing. The smv-pay reference cannot be used to issue a refund.');
    let payment;
    try{payment=await razorpay.payments.fetch(paymentId);}catch(e){fail('Razorpay payment lookup failed. Check the same account and mode used for this payment. Old Test payments cannot be refunded with Live keys. '+String(e?.error?.description||e.message||''),502);}
    if(q.razorpayOrderId&&payment.order_id!==q.razorpayOrderId)fail('Payment and question order IDs do not match.');
