@@ -74,7 +74,7 @@ service cloud.firestore {
     }
     match /smv_withdrawals/{withdrawalId} {
       allow read: if signedIn() && (resource.data.astrologerId == request.auth.uid || isAdmin());
-      allow create: if signedIn() && request.resource.data.astrologerId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.amount is number && request.resource.data.amount > 0 && request.resource.data.withdrawalId is string && request.resource.data.withdrawalId.matches("(smv-wdt-[2-9a-hj-km-np-z]{8,32}|SMV-WDT-[0-9]{8}-[0-9]{2,})") && request.resource.data.keys().hasOnly(["astrologerId","astrologerName","amount","withdrawalId","status","createdAt","requestedAt"]);
+      allow create: if signedIn() && request.resource.data.astrologerId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.amount is number && request.resource.data.amount > 0 && request.resource.data.withdrawalId is string && request.resource.data.withdrawalId.matches("(smvwd-[2-9a-hj-km-np-z]{8,32}|smv-wdt-[2-9a-hj-km-np-z]{8,32}|SMV-WDT-[0-9]{8}-[0-9]{2,})") && request.resource.data.keys().hasOnly(["astrologerId","astrologerName","amount","withdrawalId","status","createdAt","requestedAt"]);
       allow update, delete: if isAdmin();
     }
     // Full bank/UPI snapshot for a withdrawal is Admin-only. The backend writes this with Admin SDK.

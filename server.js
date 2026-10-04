@@ -456,15 +456,13 @@ function smvNewestActivityMillis(item = {}) {
 function normalizeSmvLoginId(value, expectedType = "") {
   const raw = String(value || "").trim();
   const type = String(expectedType || "").toLowerCase();
-
-  // V199 compact public IDs: customer = smvcr-12345, astrologer = smvar-12345.
-  const v199Match = raw.match(/^(smvcr|smvar)-\d{5}$/i);
-  if (v199Match) {
-    const matchedType = v199Match[1].toLowerCase() === "smvar" ? "ast" : "cus";
-    if (!type || matchedType === type) return raw.toLowerCase();
+  // Current compact IDs: smvcr-12345 (customer), smvar-12345 (astrologer).
+  const currentMatch = raw.match(/^(smvcr|smvar)-\d{5}$/i);
+  if (currentMatch) {
+    const currentType = currentMatch[1].toLowerCase() === "smvar" ? "ast" : "cus";
+    if (!type || currentType === type) return raw.toLowerCase();
   }
-
-  // Keep V198 compact IDs valid for existing accounts.
+  // Backward compatibility for V198/V199 compact IDs.
   const compactMatch = raw.match(/^smv-(cus|ast)-\d{4,5}$/i);
   if (compactMatch && (!type || compactMatch[1].toLowerCase() === type)) return raw.toLowerCase();
   // Keep V196/V197 random IDs valid for accounts already created during that rollout.
@@ -1118,11 +1116,11 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
 
 
 function nextQuestionId() {
-  return newSmvId("smv-qst");
+  return newSmvId("smvqt");
 }
 
 function nextPaymentId() {
-  return newSmvId("smv-pay");
+  return newSmvId("smvcp");
 }
 
 async function nextBookingId() {
@@ -3245,7 +3243,7 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       });
     }
 
-    const withdrawalId = newSmvId("smv-wdt");
+    const withdrawalId = newSmvId("smvwd");
 
     // The approved payout method is stored in smv_payouts/{astrologerUid}.
     // Read it at withdrawal time so Admin can pay to the exact approved method.
@@ -3302,7 +3300,7 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
 });
 
 // V196: Admin marks an astrologer withdrawal as paid.
-// Idempotent: creates smv-pmt exactly once, including repairing an older
+// Idempotent: creates smvpt exactly once, including repairing an older
 // paid withdrawal that was saved without an Admin Payment ID.
 app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
@@ -3319,17 +3317,17 @@ app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req,
 
       // Already paid with a proper PMT: safe retry, return the same ID.
       const existingAdminPaymentId = String(w.adminPaymentId || "").trim();
-      if (status === "paid" && /^smv-pmt-/i.test(existingAdminPaymentId)) {
+      if (status === "paid" && /^(?:smvpt-|smv-pmt-)/i.test(existingAdminPaymentId)) {
         return {paymentId: existingAdminPaymentId, withdrawalId:String(w.withdrawalId || ""), amount:Number(w.amount || 0), repaired:false};
       }
 
       // A previous version may have marked the withdrawal paid but failed to
-      // attach smv-pmt. Repair it here without changing the existing Withdrawal ID.
+      // attach smvpt. Repair it here without changing the existing Withdrawal ID.
       if (status !== "processing" && status !== "paid") {
         throw new Error("Only a processing withdrawal can be marked as paid.");
       }
 
-      const id = newSmvId("smv-pmt");
+      const id = newSmvId("smvpt");
       tx.update(withdrawalRef, {
         status:"paid",
         adminPaymentId:id,
