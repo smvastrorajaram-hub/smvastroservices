@@ -325,8 +325,16 @@ const DASHBOARD_SIGNAL_PATHS=new Set([
   '/admin/private-consultation/reject-answer','/admin/offers/save','/admin/offers/delete',
   '/private-consultation/recover-payment','/private-consultation/verify-payment','/admin/credit-commission',
   '/admin/reject-answer','/admin/approve-answer','/customer/private-consultation/mark-viewed','/verify-payment',
-  '/astrologer/withdrawal-request','/admin/withdrawal-mark-paid','/razorpay/webhook'
+  '/astrologer/withdrawal-request','/admin/withdrawal-mark-paid','/admin/dashboard-touch','/razorpay/webhook'
 ]);
+
+// Phase 1: short-lived Admin snapshot cache. It prevents duplicate whole-dashboard
+// reads when the same Admin screen is opened/refreshed repeatedly. Every successful
+// backend mutation below invalidates it synchronously before the lightweight change
+// signal is written, so action results are never served from stale cache.
+let adminDataCache={payload:null,expiresAt:0};
+function invalidateAdminDataCache(){adminDataCache={payload:null,expiresAt:0};}
+
 function dashboardSignalCategory(path=''){
   const p=String(path||'');
   if(p.startsWith('/admin/offers/'))return 'offers';
@@ -345,6 +353,7 @@ app.use((req,res,next)=>{
   if(DASHBOARD_SIGNAL_PATHS.has(req.path)){
     res.once('finish',()=>{
       if(res.statusCode>=200 && res.statusCode<300){
+        invalidateAdminDataCache();
         setImmediate(()=>db.collection('smv_settings').doc('dashboardChange').set({
           version:FieldValue.increment(1),updatedAt:FieldValue.serverTimestamp(),path:req.path,category:dashboardSignalCategory(req.path)
         },{merge:true}).catch(e=>console.warn('Dashboard change signal skipped:',e?.message||e)));
@@ -963,6 +972,13 @@ app.post("/submit-answer", async (req, res) => {
         message:bypassApproval?"Your answer was released to the customer.":"Your answer is waiting for Admin approval.",
         questionId,createdAt:FieldValue.serverTimestamp(),read:false
       }),
+      q.customerId ? db.collection("smv_notifications").doc(`${q.customerId}_answer_submitted_${questionId}`).set({
+        userId:q.customerId,type:bypassApproval?"answer_ready":"astrologer_answer_submitted",
+        title:bypassApproval?"Answer Ready":"Astrologer Answer Submitted",
+        message:bypassApproval?"Your astrologer answer is ready to view.":`Astro ${astrologerName.replace(/^Astro\s+/i,"")} has submitted an answer to your question. It is now waiting for Admin approval.`,
+        questionId,customerPaymentId:q.customerPaymentId||"",astrologerId:q.astrologerId||"",astrologerName,
+        createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),read:false
+      },{merge:true}) : Promise.resolve(),
       sendEventEmailOnce({
         eventKey:`public:${questionId}:answer_submitted_admin:${answerHash}`,to:[ADMIN_EMAIL],
         subject:bypassApproval?"SMV ASTRO — Answer Submitted & Released":"SMV ASTRO — Answer Waiting for Approval",
@@ -2060,11 +2076,40 @@ app.get("/admin/withdrawals-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const snap=await db.collection("smv_withdrawals").get();
-    return res.json({success:true,withdrawals:snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a))});
+    const snap=await db.collection("smv_withdrawals").orderBy("createdAt","desc").limit(50).get();
+    const withdrawals=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,50);
+    // Fetch private payout snapshots in one server-side batch instead of issuing
+    // one authenticated HTTP request per withdrawal card from the browser.
+    const refs=withdrawals.map(w=>db.collection("smv_withdrawal_payouts").doc(String(w.id||"")));
+    const payoutSnaps=refs.length?await db.getAll(...refs):[];
+    const payoutById=new Map(payoutSnaps.filter(x=>x.exists).map(x=>[x.id,x.data()||{}]));
+    const enriched=withdrawals.map(w=>{
+      const p=payoutById.get(String(w.id||""))||{};
+      const payout={
+        bankName:String(p.bankName||"").trim(),accountName:String(p.accountName||"").trim(),
+        accountNumber:String(p.accountNumber||"").trim(),ifsc:String(p.ifsc||"").trim().toUpperCase(),
+        upi:String(p.upi||"").trim()
+      };
+      payout.available=!!(payout.bankName||payout.accountName||payout.accountNumber||payout.ifsc||payout.upi);
+      return {...w,payout};
+    });
+    return res.set('Cache-Control','no-store').json({success:true,withdrawals:enriched});
   }catch(e){
     console.error("Admin withdrawals targeted load failed:",e);
     return res.status(500).json({error:e?.message||"Unable to load Admin withdrawal data."});
+  }
+});
+
+app.get("/admin/reviews-data", async (req,res)=>{
+  const user=await requireUser(req,res);if(!user)return;
+  if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
+  try{
+    const snap=await db.collection("smv_reviews").orderBy("createdAt","desc").limit(50).get();
+    const reviews=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,50);
+    return res.set('Cache-Control','no-store').json({success:true,reviews});
+  }catch(e){
+    console.error("Admin reviews targeted load failed:",e);
+    return res.status(500).json({error:e?.message||"Unable to load Admin reviews."});
   }
 });
 
@@ -2112,10 +2157,22 @@ app.get("/admin/questions-data", async (req, res) => {
   }
 });
 
+app.post("/admin/dashboard-touch", async (req,res)=>{
+  const user=await requireUser(req,res);if(!user)return;
+  if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
+  // Cache invalidation + realtime signal are handled by the mutation middleware
+  // after this successful response. This endpoint is used only after direct
+  // Firestore Admin UI writes that do not pass through another backend route.
+  return res.json({success:true});
+});
+
 app.get("/admin-data", async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
   if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
+  if(adminDataCache.payload && Date.now()<adminDataCache.expiresAt){
+    return res.set('Cache-Control','no-store').json(adminDataCache.payload);
+  }
 
   const readCollection = async (name,source=db.collection(name)) => {
     try {
@@ -2149,7 +2206,7 @@ app.get("/admin-data", async (req, res) => {
 
     const newestFirst = items => (items || []).slice().sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
     const customers = newestFirst(users.items.filter(x => String(x.role || "").toLowerCase() === "customer"));
-    return res.json({
+    const payload={
       success: true,
       settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment},
       customers,
@@ -2177,7 +2234,9 @@ app.get("/admin-data", async (req, res) => {
       ],
       payments: newestFirst(payments.items),
       errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null, offers: offers.error || null }
-    });
+    };
+    adminDataCache={payload,expiresAt:Date.now()+8000};
+    return res.set('Cache-Control','no-store').json(payload);
   } catch (e) {
     console.error("Admin data load failed:", e);
     return res.status(500).json({ error: e?.message || "Unable to load Admin data." });
@@ -3135,38 +3194,49 @@ app.get("/astrologer/earnings", async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
   try {
-    const profileSnap = await db.collection("smv_users").doc(user.uid).get();
+    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, privateWorkflow, privateCommission] = await Promise.all([
+      db.collection("smv_users").doc(user.uid).get(),
+      db.collection("smv_questions").where("astrologerId", "==", user.uid).get(),
+      db.collection("smv_private_consultations").where("astrologerId", "==", user.uid).get(),
+      db.collection("smv_withdrawals").where("astrologerId", "==", user.uid).get(),
+      getPrivateConsultWorkflow(),
+      getPrivateCommissionSettings()
+    ]);
     const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
     const role = String(profile.role || user.role || "").toLowerCase();
     if (role && role !== "astrologer") return res.status(403).json({ error: "Only an astrologer account can read earnings." });
 
-    const [questionSnap, privateSnap] = await Promise.all([
-      db.collection("smv_questions").where("astrologerId", "==", user.uid).get(),
-      db.collection("smv_private_consultations").where("astrologerId", "==", user.uid).get()
-    ]);
+    const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    const privateConsultations=allPrivate.filter(c=>!["pending_admin_approval","question_rejected"].includes(String(c.status||"")));
+    const privateHistory=allPrivate.filter(c=>{const st=String(c.status||"");return st==="question_rejected"||st==="revision_required"||st==="answer_pending_admin_approval"||st==="answered"||!!c.customerViewedAt||String(c.commissionStatus||"")==="credited";});
+    const withdrawals=withdrawalSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+
     const ledger = [];
-    questionSnap.docs.forEach(d => {
-      const q = d.data() || {};
+    for(const q of questions){
       if (q.status === "answered" && q.commissionStatus === "credited") ledger.push({
-        id: d.id,
-        question: q.question || "Consultation",
-        commission: Number(q.astrologerCommissionAmount || q.commissionAmount || 0),
-        date: q.commissionCreditedAt || q.answerApprovedAt || q.adminAnswerApprovedAt || null
+        id:q.id, question:q.question || "Consultation",
+        commission:Number(q.astrologerCommissionAmount || q.commissionAmount || 0),
+        date:q.commissionCreditedAt || q.answerApprovedAt || q.adminAnswerApprovedAt || null
       });
-    });
-    privateSnap.docs.forEach(d => {
-      const c = d.data() || {};
+    }
+    for(const c of allPrivate){
       if (c.commissionStatus === "credited") ledger.push({
-        id: d.id,
-        question: c.question || "Private Consultation",
-        commission: Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
-        date: c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
+        id:c.id, question:c.question || "Private Consultation",
+        commission:Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
+        date:c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
       });
-    });
+    }
     const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
     ledger.sort((a,b) => toMs(b.date) - toMs(a.date));
     const totalEarnings = Math.round(ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0) * 100) / 100;
-    return res.set('Cache-Control','no-store').json({ success: true, totalEarnings, ledger });
+    return res.set('Cache-Control','no-store').json({
+      success:true,totalEarnings,ledger,questions,withdrawals,
+      privateDashboard:{
+        success:true,consultations:privateConsultations,history:privateHistory,
+        settings:{minimumAnswerWords:privateWorkflow.minimumAnswerWords,allowWithoutAdminApproval:privateWorkflow.allowWithoutAdminApproval,privateCommission}
+      }
+    });
   } catch (e) {
     console.error("Astrologer earnings load failed:", e?.message || e);
     return res.status(500).json({ error: e?.message || "Unable to load astrologer earnings." });

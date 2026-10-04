@@ -1,59 +1,71 @@
-const CACHE='smv-offline-v1-flow-root-fix-'+self.registration.scope;
-const FILES=[
-"./","./index.html","./config.js","./boot.mjs","./horoscope.js","./horoscope-payment.mjs","./horoscope-saved.js","./report-identity.js","./report-print.css","./report-print.html","./report-print.js","./horoscope-predictions.js","./horoscope-translations.js","./horoscope-language.js","./horoscope-form.js","./horoscope-details.js","./horoscope.css","./marriage-matching.js","./marriage-matching.css","./pwa.js","./manifest-en.webmanifest","./manifest-ta.webmanifest",
-"./assets/hero-desktop.png","./assets/hero-mobile.png","./assets/icon-192.png","./assets/icon-512.png","./assets/smv-brand-logo-v17.png","./assets/smvlogo.png","./assets/vinayagar-report.png","./assets/temple-frame.png",
-"./offline/wasm-provider.mjs","./offline/places/place-search.mjs","./offline/places/timezone.mjs","./offline/places/india-manifest.json","./offline/server-v107-wrapper.browser.mjs","./offline/dasa_engine.browser.mjs","./offline/offline-only-router.mjs","./offline/offline-engine.mjs","./offline/swiss_vedic.browser.mjs","./offline/transit_panchang.browser.mjs","./offline/parity.mjs","./offline/astro_advanced.browser.mjs","./offline/vendor/README.txt","./offline/vendor/smv-swisseph-local.mjs","./offline/vendor/CONTRACT.md","./offline/vendor/wasm/swisseph.wasm","./offline/vendor/wasm/swisseph.data","./offline/vendor/wasm/swisseph.js","./offline/vendor/wasm/swisseph.mjs",
-"./licenses/GPL-3.0-RUNTIME-NOTICE.txt","./licenses/GEONAMES-CC-BY-4.0-NOTICE.txt","./fonts/noto-sans-tamil.woff2","./fonts/OFL.txt"
+/* SMV ASTRO main-site service worker V208 — cache-first static/PWA + on-demand main location-search assets.
+   Firebase, API, dashboard, payment and application-data requests are never intercepted. */
+const CACHE_NAME='smv-astro-static-master-20261004-v208-reopt';
+const PLACE_BOOT=[
+  './main-location-search-v187.js?v=208-reopt',
+  './main-ui-v187.css?v=187',
+  './smv-ui-v207.css?v=207',
+  './horoscope/offline/places/india-manifest.json?v=187'
 ];
-self.addEventListener('install',e=>e.waitUntil((async()=>{
- const c=await caches.open(CACHE);
- // V99: one optional asset must not abort the whole SW installation. Cache every
- // available asset independently; critical Swiss files are also fetched on demand.
- for(const f of FILES){
-  try{
-   const r=await fetch(new Request(f,{cache:'reload'}));
-   if(r.ok)await c.put(f,normaliseAssetResponse(f,r));
-   else console.warn('[SMV-SW] precache skipped',f,r.status);
-  }catch(err){console.warn('[SMV-SW] precache fetch failed',f,String(err?.message||err));}
- }
- await self.skipWaiting();
-})()));
-self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('smv-offline-')&&k.endsWith(self.registration.scope)&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
 
-function normaliseAssetResponse(pathOrUrl,response){
- const u=new URL(pathOrUrl,self.registration.scope);
- const path=u.pathname.toLowerCase();
- if(!/\.(?:m?js|wasm)$/.test(path))return response.clone();
- const h=new Headers(response.headers);
- // ES modules are rejected by browsers when a host/proxy serves .mjs as
- // text/plain/octet-stream. Preserve bytes/status but force the standards MIME.
- if(/\.m?js$/.test(path))h.set('Content-Type','text/javascript; charset=utf-8');
- if(/\.wasm$/.test(path))h.set('Content-Type','application/wasm');
- return new Response(response.clone().body,{status:response.status,statusText:response.statusText,headers:h});
+function isPlaceAsset(url){
+  if(url.origin!==self.location.origin) return false;
+  const p=url.pathname.toLowerCase();
+  return p.endsWith('/main-location-search-v187.js') ||
+    p.endsWith('/main-ui-v187.css') ||
+    p.includes('/horoscope/offline/places/');
+}
+function isStaticPresentationAsset(url){
+  if(url.origin!==self.location.origin) return false;
+  const p=url.pathname.toLowerCase();
+  if(isPlaceAsset(url)) return true;
+  // Horoscope owns its own nested service worker/runtime.
+  if(p==='/horoscope' || p.startsWith('/horoscope/')) return false;
+  return p.endsWith('/sw.js') ||
+    p.includes('/assets/') ||
+    /\.css$/.test(p) ||
+    /\.(png|jpe?g|webp|gif|svg|ico|avif)$/.test(p) ||
+    /(?:logo|icon|favicon)/.test(p) ||
+    /\.webmanifest$/.test(p);
 }
 
-self.addEventListener('fetch',e=>{
- if(e.request.method!=='GET')return;
- const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;
- const isSwiss=/\/horoscope\/offline\/(?:vendor\/|wasm-provider\.mjs|swiss_vedic\.browser\.mjs|transit_panchang\.browser\.mjs)/.test(u.pathname);
- const fresh=e.request.mode==='navigate'||(/\.(?:m?js|css|html)$/.test(u.pathname)&&!isSwiss);
- e.respondWith((async()=>{
-  const c=await caches.open(CACHE);
-  // V99 Swiss runtime: cached-good first prevents a temporary network failure from
-  // breaking a previously working entitled horoscope. Network is used to seed/update.
-  if(isSwiss){
-   const cached=await c.match(e.request,{ignoreSearch:true})||await c.match(u.pathname,{ignoreSearch:true});
-   if(cached)return normaliseAssetResponse(u.href,cached);
-   const r=await fetch(new Request(e.request,{cache:'reload'}));
-   if(!r.ok)throw Error('Swiss runtime asset unavailable: '+u.pathname+' ('+r.status+')');
-   const fixed=normaliseAssetResponse(u.href,r);
-   await c.put(e.request,fixed.clone());
-   return fixed;
-  }
-  if(fresh){
-   try{const r=await fetch(e.request);if(r.ok){const fixed=normaliseAssetResponse(u.href,r);await c.put(e.request,fixed.clone());return fixed;}throw Error('Asset unavailable');}
-   catch(error){const cached=await c.match(e.request)||await c.match(u.pathname);if(cached)return normaliseAssetResponse(u.href,cached);throw error;}
-  }
-  return await c.match(e.request,{ignoreSearch:true})||fetch(e.request);
- })());
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await Promise.allSettled(PLACE_BOOT.map(u=>cache.add(u)));
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k.startsWith('smv-astro-static-')&&k!==CACHE_NAME).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch',event=>{
+  const req=event.request;
+  if(req.method!=='GET') return;
+  const url=new URL(req.url);
+  if(!isStaticPresentationAsset(url)) return;
+
+  event.respondWith((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    const cached=await cache.match(req);
+    if(cached) return cached;
+    try{
+      const response=await fetch(req,{cache:'no-cache'});
+      if(response&&response.ok) await cache.put(req,response.clone());
+      return response;
+    }catch(err){
+      // Exact cross-cache fallback first. Ignore the query only for bundled
+      // place data so offline location search survives a query-version change.
+      const any=await caches.match(req);
+      if(any) return any;
+      if(isPlaceAsset(url)){const placeFallback=await caches.match(req,{ignoreSearch:true});if(placeFallback)return placeFallback;}
+      throw err;
+    }
+  })());
 });
