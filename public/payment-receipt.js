@@ -1,4 +1,4 @@
-/* SMV V192 payment-window + verified receipt flow.
+/* SMV V195 payment-window + verified receipt flow.
    - Opens a dedicated payment window/tab from the user's click.
    - Mobile loading/receipt uses a true full-screen layout (no tiny desktop card first).
    - After verified success, the opener switches to Customer Dashboard immediately;
@@ -25,7 +25,12 @@
   const mobile=isMobile();
   try{
    const features=mobile?'noopener=no,resizable=yes,scrollbars=yes':(()=>{const width=480,height=680,left=Math.max(0,(screen.availWidth-width)/2),top=Math.max(0,(screen.availHeight-height)/2);return `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;})();
-   w=window.open('about:blank', 'SMVPaymentWindow', features);
+   // V195: never reuse a previous Razorpay checkout browsing context.
+   // A completed payment tab can later become the Customer Dashboard; reusing the
+   // same named window and rewriting its document can leave Razorpay's previous
+   // checkout frame/contentWindow stale and trigger a false "browser not supported".
+   const paymentWindowName='SMVPaymentWindow_'+Date.now()+'_'+Math.floor(performance.now());
+   w=window.open('about:blank', paymentWindowName, features);
    if(w){w.document.open();w.document.write(popupHtml(kind,mobile));w.document.close();w.focus();}
   }catch(_e){w=null;}
   const target=()=>w&&!w.closed?w:null;
