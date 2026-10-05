@@ -46,7 +46,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
    const token=await getToken();if(stopped)return;
    const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
    if(!response.ok||!response.body)throw new Error('Live connection unavailable');
-   retry=0;onStatus('Live updates connected');
+   retry=0;
    const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
    while(!stopped){
     const {done,value}=await reader.read();if(done)break;
@@ -56,7 +56,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
      if(/^event: change$/m.test(event))onChange();
     }
    }
-  }catch(e){if(!stopped&&e.name!=='AbortError'){onStatus('Reconnecting live updates…');}}
+  }catch(e){if(!stopped&&e.name!=='AbortError'){console.warn('Dashboard live connection retrying:',e.message||e);}}
   finally{if(!stopped){retry++;timer=setTimeout(connect,Math.min(15000,1000*2**Math.min(retry,4)));}}
  }
  connect();return ()=>{stopped=true;clearTimeout(timer);controller?.abort();};
@@ -187,7 +187,7 @@ async function renderPublicApi(path, options={}){
   return data;
 }
 const ADMIN_UID="TwjeEIFS3Zcf1SxboLZoujm91Ky2";
-let currentUser=null, selectedAstro=null, pendingAfterLogin=null, questionServicePrice=5, pendingQuestionId="", pendingQuestionFingerprint="", loginMethod="email";
+let currentUser=null, selectedAstro=null, pendingAfterLogin=null, questionServicePrice=5, pendingQuestionId="", pendingQuestionFingerprint="";
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
 // ASK NOW is a protected navigation transaction. Firebase auth callbacks must never
 // redirect it to Dashboard while the transaction is opening the Question Form.
@@ -226,17 +226,22 @@ function hideDashboardPublicSections(){
   ["smv-content-hub","horoscope-tools","tamil-horoscope","english-horoscope"].forEach(id=>hide(id));
 }
 
-function smvShowRoleNav(){
-  document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>showElement(el));
-
-  // ONE role-aware Dashboard button only.
-  const dash=$("dashLink"), admin=$("adminLink");
-  if(dash) showElement(dash);
+function smvSyncHeaderAuthNav(user=auth?.currentUser||currentUser){
+  const signedIn=!!user;
+  const dash=$("dashLink"), admin=$("adminLink"), authButton=$("authBtn"), register=$("registerNav");
+  if(authButton) authButton.textContent=signedIn?"Logout":"Login";
+  if(register) signedIn?hideElement(register):showElement(register);
+  if(dash) signedIn?showElement(dash):hideElement(dash);
+  // Admin intentionally uses the same single Dashboard entry as every role.
   if(admin){
     hideElement(admin);
     admin.setAttribute('aria-hidden','true');
     admin.setAttribute('tabindex','-1');
   }
+}
+function smvShowRoleNav(){
+  document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>showElement(el));
+  smvSyncHeaderAuthNav(auth?.currentUser||currentUser);
 }
 
 let smvInternalView="home";
@@ -526,32 +531,18 @@ document.querySelectorAll('header a[href="#home"]').forEach(el=>{
   new MutationObserver(sync).observe(b,{childList:true,characterData:true,subtree:true});
 })();
 
-// Header role label: logged-in role is shown in green.
+// Header keeps one stable Dashboard label for Customer, Astrologer and Admin.
 function setHeaderRoleLabel(role){
-  const dash=$('dashLink'), admin=$('adminLink');
-  const r=String(role||'').toLowerCase();
-
+  const dash=$("dashLink"), admin=$("adminLink");
+  const r=String(role||"").toLowerCase();
   if(dash){
-    dash.classList.remove('smv-role-green');
-    dash.textContent='Dashboard';
-
-    if(r==='customer'){
-      dash.textContent='Customer';
-      dash.classList.add('smv-role-green');
-    }else if(r==='astrologer'){
-      dash.textContent='Astrologer';
-      dash.classList.add('smv-role-green');
-    }else if(r==='admin'){
-      dash.textContent='Admin';
-      dash.classList.add('smv-role-green');
-    }
+    dash.textContent="Dashboard";
+    dash.classList.toggle("smv-role-green",["customer","astrologer","admin"].includes(r));
   }
-
-  // Admin has NO separate header button.
   if(admin){
-    admin.classList.add('hidden');
-    admin.setAttribute('aria-hidden','true');
-    admin.setAttribute('tabindex','-1');
+    admin.classList.add("hidden");
+    admin.setAttribute("aria-hidden","true");
+    admin.setAttribute("tabindex","-1");
   }
 }
 
@@ -710,6 +701,48 @@ async function isCurrentAdmin(){
   return String(profile.role||'').toLowerCase()==='admin';
 }
 let smvBoardRequest=null;
+const SMV_ADMIN_SHORTCUTS=[
+ ['adminPendingQuestions','Public Questions','parent'],
+ ['adminAnswers','Answers','parent'],
+ ['adminPrivatePending','Private Questions','parent'],
+ ['adminRefunds','Refunds','parent'],
+ ['adminHoroscopePriceSet','Horoscope Settings','self'],
+ ['adminOffersPromotions','Offers','self'],
+ ['adminWithdrawals','Withdrawals','parent'],
+ ['adminCommissionSettings','Commission','self']
+];
+function smvEnsureAdminQuickLinks(){
+ const admin=$('admin'); if(!admin)return null;
+ let nav=$('smvAdminQuickLinks')||admin.querySelector('.smv-admin-shortcuts');
+ if(!nav){nav=document.createElement('div');nav.className='smv-admin-shortcuts';}
+ nav.id='smvAdminQuickLinks'; nav.setAttribute('role','navigation'); nav.setAttribute('aria-label','Admin quick links');
+ if(nav.dataset.smvBuilt!=='1'){
+  nav.replaceChildren();
+  for(const [id,label,mode] of SMV_ADMIN_SHORTCUTS){
+   const b=document.createElement('button');b.type='button';b.className='smv-admin-shortcut';b.textContent=label;b.dataset.adminShortcut=id;
+   b.addEventListener('click',()=>{const el=$(id),target=mode==='parent'?el?.parentElement:el;target?.scrollIntoView({behavior:'smooth',block:'start'});});
+   nav.appendChild(b);
+  }
+  nav.dataset.smvBuilt='1';
+ }
+ const summaryCard=$('adminSummary')?.closest('.card')||admin.querySelector(':scope > .card');
+ const loadMsg=$('adminDataLoadMsg');
+ if(summaryCard){
+  /* Keep shortcuts immediately below the Admin Dashboard title/subtitle.
+     Dynamic summary/workflow inserts and live refreshes must never push them down. */
+  if(loadMsg && loadMsg.parentElement===summaryCard){
+   if(nav.parentElement!==summaryCard || nav.nextElementSibling!==loadMsg) summaryCard.insertBefore(nav,loadMsg);
+  }else if(nav.parentElement!==summaryCard){
+   const title=summaryCard.querySelector('.admin-dashboard-title');
+   const titleBlock=title?.parentElement;
+   if(titleBlock?.parentElement) titleBlock.insertAdjacentElement('afterend',nav);
+   else summaryCard.insertBefore(nav,summaryCard.firstChild?.nextSibling||null);
+  }
+ }else if(nav.parentElement!==admin) admin.insertBefore(nav,admin.firstChild);
+ return nav;
+}
+window.__smvEnsureAdminQuickLinks=smvEnsureAdminQuickLinks;
+
 async function smvAdminTouch(){
  try{await renderApi('/admin/dashboard-touch',{method:'POST',body:JSON.stringify({})});}
  catch(e){console.warn('Admin dashboard cache/signal touch skipped:',e);}
@@ -751,29 +784,23 @@ function smvPasswordEye(visible){
 function openAuth(mode="login"){
   if(mode==='login')hidePublicHoroscopeSections?.();
   hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
-  closeModal(); loginMethod="email"; const isLogin=mode==="login";
+  closeModal(); const isLogin=mode==="login";
   openModal(`<div class="auth-shell" data-auth-mode="${isLogin?'login':'register'}">
     <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo-v17.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
     <div id="authMsg" class="small"></div>
     ${!isLogin?`<label class="auth-field-label">Full Name</label><input class="auth-field" id="name" placeholder="Your full name" autocomplete="name"><label class="auth-field-label">Mobile Number</label><input class="auth-field" id="phone" placeholder="Your mobile number" autocomplete="tel">`:""}
-    ${isLogin?`<div class="auth-tabs"><button type="button" class="btn gray" id="loginEmailMode">Email Login</button><button type="button" class="btn gray" id="loginCustomerIdMode">Customer ID</button><button type="button" class="btn gray" id="loginAstrologerIdMode">Astrologer ID</button></div>`:""}
-    <label class="auth-field-label">${isLogin?"Email / ID":"Email"}</label><input class="auth-field" id="email" type="email" placeholder="Email" autocomplete="email">
-    <label class="auth-field-label">Password</label><div class="password-wrap"><input class="auth-field" id="password" type="password" placeholder="Minimum 6 characters" autocomplete="${isLogin?"current-password":"new-password"}"><button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">${smvPasswordEye(false)}</button></div>
+    <label class="auth-field-label"><strong>${isLogin?"Email / Customer ID / Astrologer ID":"Email"}</strong></label><input class="auth-field" id="email" type="${isLogin?'text':'email'}" placeholder="${isLogin?'Email / Customer ID / Astrologer ID':'Email'}" autocomplete="${isLogin?'username':'email'}"${isLogin?' autocapitalize="none" spellcheck="false"':''}>
+    <label class="auth-field-label"><strong>Password</strong></label><div class="password-wrap"><input class="auth-field" id="password" type="password" placeholder="Minimum 6 characters" autocomplete="${isLogin?"current-password":"new-password"}"><button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">${smvPasswordEye(false)}</button></div>
     <button class="btn auth-submit" id="submitAuth">${isLogin?"LOGIN":"CREATE ACCOUNT"}</button>
-    ${isLogin?`<div class="auth-divider" aria-hidden="true"><span>OR</span></div><button type="button" class="btn auth-google" id="googleAuthBtn"><span class="google-g" aria-hidden="true"><svg viewBox="0 0 18 18" width="18" height="18"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.877 2.684-6.614Z"/><path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.715H.956v2.332A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.705A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.705V4.963H.956A9 9 0 0 0 0 9c0 1.45.347 2.824.956 4.037l3.007-2.332Z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.44 1.345l2.581-2.581C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.963l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"/></svg></span><span>Continue with Google</span></button>`:""}
-    ${isLogin?`<button class="btn gray auth-secondary" id="forgotAuth">Forgot Password?</button>`:""}
-    <button class="btn gray auth-secondary" id="switchAuth">${isLogin?(pendingAfterLogin==="question"?"New customer? Create account":"Create new customer account"):"I already have an account"}</button>
+    ${isLogin?`<div class="auth-divider" aria-hidden="true"><span>OR</span></div><button type="button" class="btn auth-google" id="googleAuthBtn"><span class="google-g" aria-hidden="true"><svg viewBox="0 0 18 18" width="18" height="18"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.877 2.684-6.614Z"/><path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.715H.956v2.332A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.705A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.705V4.963H.956A9 9 0 0 0 0 9c0 1.45.347 2.824.956 4.037l3.007-2.332Z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.44 1.345l2.581-2.581C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.963l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"/></svg></span><span>Continue with Google</span></button><div class="auth-note"><a href="#" id="forgotAuth">Forgot Password?</a><span aria-hidden="true"> · </span><a href="#" id="switchAuth">Create new customer account</a></div>`:`<button class="btn gray auth-secondary" id="switchAuth">I already have an account</button>`}
   </div>`);
   $("modal")?.classList.add("auth-modal-active");
   const passwordToggle=$("passwordToggle");
   passwordToggle.onclick=()=>{const p=$("password");const showing=p.type==="text";p.type=showing?"password":"text";passwordToggle.innerHTML=smvPasswordEye(!showing);passwordToggle.setAttribute("aria-pressed",String(!showing));passwordToggle.setAttribute("aria-label",showing?"Show password":"Hide password")};
-  if(isLogin){
-    const setMethod=(m)=>{loginMethod=m; const input=$("email"); if(!input)return; const idMode=m!=="email"; input.type=idMode?"text":"email"; input.placeholder=m==="customerId"?"Customer ID (e.g. smvcr-48372)":m==="astrologerId"?"Astrologer ID (e.g. smvar-27164)":"Email address"; input.autocomplete=idMode?"username":"email"; $("loginEmailMode")?.classList.toggle("active",m==="email"); $("loginCustomerIdMode")?.classList.toggle("active",m==="customerId"); $("loginAstrologerIdMode")?.classList.toggle("active",m==="astrologerId");};
-    $("loginEmailMode").onclick=()=>setMethod("email"); $("loginCustomerIdMode").onclick=()=>setMethod("customerId"); $("loginAstrologerIdMode").onclick=()=>setMethod("astrologerId"); setMethod("email");
-  }
-  $("submitAuth").onclick=()=>submitAuth(mode); $("switchAuth").onclick=()=>openAuth(isLogin?"register":"login");
+  $("submitAuth").onclick=()=>submitAuth(mode); $("switchAuth").onclick=(e)=>{e?.preventDefault?.();openAuth(isLogin?"register":"login")};
+  $("password")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitAuth(mode)}});
   if(isLogin && $("googleAuthBtn")) $("googleAuthBtn").onclick=()=>signInWithGoogle();
-  if($("forgotAuth")) $("forgotAuth").onclick=async()=>{const email=$("email").value.trim(),m=$("authMsg"); if(!email){m.innerHTML='<span class="error">Enter your registered email first.</span>';return;} try{const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");await withTimeout(sendPasswordResetEmail(auth,email));m.innerHTML='<span class="success">Password reset email sent. Please check Inbox and Spam.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
+  if($("forgotAuth")) $("forgotAuth").onclick=async(e)=>{e?.preventDefault?.();const identifier=$("email").value.trim(),m=$("authMsg"); if(!identifier){m.innerHTML='<span class="error">Enter your registered Email, Customer ID or Astrologer ID first.</span>';return;} try{const resolved=await smvResolveLoginIdentifier(identifier);const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");await withTimeout(sendPasswordResetEmail(auth,resolved.email));m.innerHTML='<span class="success">Password reset email sent. Please check Inbox and Spam.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
 }
 window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegister;
 
@@ -950,21 +977,24 @@ document.addEventListener("click",e=>{
  resendBtn.dataset.sending="1";
  resendVerificationEmail().finally(()=>{resendBtn.dataset.sending="";});
 });
+async function smvResolveLoginIdentifier(identifier){
+ const value=String(identifier||"").trim();
+ if(!value)throw new Error("Enter your Email, Customer ID or Astrologer ID.");
+ if(value.includes("@"))return {email:value,role:"email"};
+ const lookup=await withTimeout(renderPublicApi("/lookup-id-login",{method:"POST",body:JSON.stringify({publicId:value})}),15000);
+ const email=String(lookup?.email||"").trim();
+ if(!email)throw new Error("This ID is not linked to a login email.");
+ return {email,role:String(lookup?.role||"").toLowerCase(),publicId:String(lookup?.publicId||value)};
+}
 async function submitAuth(mode){
  if(mode==="login") smvUnlockDashboardNavigation();
  const msg=$("authMsg"),rawLogin=$("email").value.trim(),email=rawLogin,password=$("password").value;
- if(!rawLogin||!password){msg.innerHTML='<span class="error">Please enter your email or Customer ID and password.</span>';return;}
+ if(!rawLogin||!password){msg.innerHTML='<span class="error">Please enter your Email, Customer ID or Astrologer ID and password.</span>';return;}
  const btn=$("submitAuth");btn.disabled=true;btn.textContent=mode==="login"?"Signing in...":"Creating...";
  try{
   if(mode==="login"){
-    let email=rawLogin;
-    if(loginMethod==="customerId" || loginMethod==="astrologerId"){
-      const lookup=await withTimeout(renderPublicApi("/lookup-id-login",{method:"POST",body:JSON.stringify({publicId:rawLogin})}),15000);
-      const expectedRole=loginMethod==="astrologerId"?"astrologer":"customer";
-      if(String(lookup?.role||"").toLowerCase()!==expectedRole) throw new Error(loginMethod==="astrologerId"?"This is not a valid Astrologer ID.":"This is not a valid Customer ID.");
-      email=String(lookup?.email||"").trim();
-      if(!email) throw new Error("The ID is not linked to a login email.");
-    }
+    const resolvedLogin=await smvResolveLoginIdentifier(rawLogin);
+    const email=resolvedLogin.email;
     // ASK NOW owns this authentication transaction. Set the lock BEFORE calling
     // Firebase so an onAuthStateChanged callback can never open Dashboard between
     // sign-in success and Question Form rendering.
@@ -1578,8 +1608,7 @@ async function logoutToHome(reason=''){
   currentUser=null;
   window.__smvCurrentUserPresent=false; window.__smvCurrentRole=null;
   window.__SMV_LOGGED_OUT=true;
-  const authButton=$('authBtn');
-  if(authButton) authButton.textContent='Login';
+  smvSyncHeaderAuthNav(null);
   setTimeout(()=>{if(!auth?.currentUser && $('authBtn')) $('authBtn').textContent='Login';},300);
   setTimeout(()=>{if(!auth?.currentUser && $('authBtn')) $('authBtn').textContent='Login';},1200);
   hide('dashboard'); hide('admin'); hide('dashLink'); hide('adminLink');
@@ -1588,7 +1617,7 @@ async function logoutToHome(reason=''){
   showHomeSurface();
   show('smv-content-hub');
   show('english-horoscope'); window.__smvContentVisible=false;
-  $('authBtn').textContent='Login'; closeModal(); window.scrollTo({top:0,behavior:'smooth'});
+  smvSyncHeaderAuthNav(null); closeModal(); window.scrollTo({top:0,behavior:'smooth'});
   window.__SMV_LOGGED_OUT=true;
   try{window.dispatchEvent(new Event('smv:logged-out'));}catch(_){ }
   if(reason) alert(reason);
@@ -3124,6 +3153,7 @@ async function loadAdminPanelData(background=false){
  if(!currentUser || !(await isCurrentAdmin())){hide('admin');hide('adminLink');return;}
   if(!background)loadAdminContent().catch(e=>console.warn('Admin content unavailable:',e));
  if(!background){hidePrimarySections('admin');show('smv-dashboard-page');show('admin');}
+ smvEnsureAdminQuickLinks();
  setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
  try{
   const adminLoadUid=currentUser.uid;
@@ -3155,18 +3185,23 @@ async function loadAdminPanelData(background=false){
   const customers=(adminData.customers||[]).length, pendingDocs=astros.docs.filter(d=>d.data().status==='pending');
   const userMap=new Map(users.docs.map(d=>[d.id,d.data()]));
   $('adminSummary').innerHTML=`<div class="stat">Customers <b>${customers}</b></div><div class="stat">Astrologers <b>${astros.size}</b></div><div class="stat">Pending <b>${pendingDocs.length}</b></div><div class="stat">Questions <b>${questions.size}</b></div>`;
+  const adminQuickLinks=smvEnsureAdminQuickLinks();
+  const adminSummaryCard=$('adminSummary')?.closest('.card');
   const apmt=$('adminAstrologerProfileManagementToggle'),apmb=$('adminAstrologerProfileManagementBody');
   if(apmt&&apmb&&!apmt.dataset.smvBound){apmt.dataset.smvBound='1';apmt.onclick=()=>{const hidden=apmb.classList.toggle('hidden');apmt.textContent=hidden?'▶':'▼';apmt.title=hidden?'Expand':'Collapse';apmt.setAttribute('aria-label',(hidden?'Expand':'Collapse')+' Astrologer Profile Management');};}
 
   let aqCard=$('astrologerAutoApprovalCard');
-  if(!aqCard){aqCard=document.createElement('div');aqCard.id='astrologerAutoApprovalCard';aqCard.className='card';$('adminSummary')?.insertAdjacentElement('afterend',aqCard);}
+  if(!aqCard){aqCard=document.createElement('div');aqCard.id='astrologerAutoApprovalCard';aqCard.className='card';}
+  const adminDynamicAnchor=adminQuickLinks||adminSummaryCard;
+  if(adminDynamicAnchor && aqCard.previousElementSibling!==adminDynamicAnchor) adminDynamicAnchor.insertAdjacentElement('afterend',aqCard);
   const aq=adminData.settings?.astrologerAutoApproval||{enabled:false,formUrl:'',passMark:20,defaultChatPrice:25,webhookSecret:''};
   aqCard.innerHTML=`<h3>Astrologer Auto Approval — Google Form Qualification</h3><div class="grid"><label><b>Auto Approval</b><select id="astroAutoApprovalEnabled"><option value="false">OFF — Manual Admin Approval</option><option value="true">ON — Auto Approve Passed Test</option></select></label><label><b>Pass Mark / 25</b><input id="astroAutoPassMark" type="number" min="1" max="25" step="1"></label><label><b>Default Private Chat Price ₹</b><input id="astroAutoChatPrice" type="number" min="1" step="0.01"></label><label><b>Published Google Form URL</b><input id="astroAutoFormUrl" type="url" placeholder="https://docs.google.com/forms/..."></label><label><b>Apps Script Web App URL</b><input id="astroQuizSyncWebAppUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></label></div><p class="small">When enabled: registered pending Astrologer → 25-question Google Form quiz → verified score reaches this backend → pass mark reached → account auto approved. When OFF, existing Admin manual approval continues unchanged.</p><div class="small"><b>Webhook Secret:</b> <code id="astroQuizWebhookSecret">${escapeHtml(aq.webhookSecret||'Not generated yet')}</code></div><div class="action-row"><button class="btn" id="saveAstroAutoApproval">SAVE AUTO APPROVAL</button><button class="btn gray" id="rotateAstroQuizSecret">ROTATE WEBHOOK SECRET</button></div><div class="small" id="astroAutoApprovalMsg"></div>`;
   $('astroAutoApprovalEnabled').value=String(aq.enabled===true);$('astroAutoPassMark').value=Number(aq.passMark||20);$('astroAutoChatPrice').value=Number(aq.defaultChatPrice||25);$('astroAutoFormUrl').value=aq.formUrl||'';$('astroQuizSyncWebAppUrl').value=aq.syncWebAppUrl||'';
   const saveAQ=async rotate=>{const b=rotate?$('rotateAstroQuizSecret'):$('saveAstroAutoApproval');b.disabled=true;try{const r=await renderApi('/admin/astrologer-auto-approval/settings',{method:'POST',body:JSON.stringify({enabled:$('astroAutoApprovalEnabled').value==='true',passMark:Number($('astroAutoPassMark').value),defaultChatPrice:Number($('astroAutoChatPrice').value),formUrl:$('astroAutoFormUrl').value.trim(),syncWebAppUrl:$('astroQuizSyncWebAppUrl').value.trim(),rotateSecret:rotate})});$('astroQuizWebhookSecret').textContent=r.webhookSecret;$('astroAutoApprovalMsg').innerHTML='<span class="success">Astrologer Auto Approval settings saved.</span>';}catch(e){$('astroAutoApprovalMsg').innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;}};
   $('saveAstroAutoApproval').onclick=()=>saveAQ(false);$('rotateAstroQuizSecret').onclick=()=>saveAQ(true);
   let qm=$('astrologerQuizQuestionManager');
-  if(!qm){qm=document.createElement('div');qm.id='astrologerQuizQuestionManager';qm.className='card';aqCard.insertAdjacentElement('afterend',qm);}
+  if(!qm){qm=document.createElement('div');qm.id='astrologerQuizQuestionManager';qm.className='card';}
+  if(qm.previousElementSibling!==aqCard) aqCard.insertAdjacentElement('afterend',qm);
   const renderQuizManager=async()=>{
     try{
       const r=await renderApi('/admin/astrologer-quiz/questions',{method:'GET'}),qs=r.questions||[];
@@ -3192,6 +3227,12 @@ async function loadAdminPanelData(background=false){
   let settings={astroPercent:20,adminPercent:80}; try{const ss=adminRead(1);if(ss.exists())settings=ss.data();}catch(e){}
   let questionSettings={price:5}; try{const qps=adminRead(2);if(qps.exists())questionSettings=qps.data();}catch(e){}
   $('questionPrice').value=Number(questionSettings.price||5);
+  const hp=adminData.settings?.horoscopePayment||{advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};
+  if($('advancedAnalysisPaymentEnabled'))$('advancedAnalysisPaymentEnabled').value=String(hp.advancedAnalysisEnabled===true);
+  if($('advancedAnalysisPrice'))$('advancedAnalysisPrice').value=Number(hp.advancedAnalysisPrice??51);
+  if($('marriageMatchingPaymentEnabled'))$('marriageMatchingPaymentEnabled').value=String(hp.marriageMatchingEnabled===true);
+  if($('marriageMatchingPrice'))$('marriageMatchingPrice').value=Number(hp.marriageMatchingPrice??51);
+  if($('saveHoroscopePaymentSettings'))$('saveHoroscopePaymentSettings').onclick=async()=>{const b=$('saveHoroscopePaymentSettings'),msg=$('horoscopePaymentSettingsMsg');b.disabled=true;try{const payload={advancedAnalysisEnabled:$('advancedAnalysisPaymentEnabled').value==='true',advancedAnalysisPrice:Number($('advancedAnalysisPrice').value),marriageMatchingEnabled:$('marriageMatchingPaymentEnabled').value==='true',marriageMatchingPrice:Number($('marriageMatchingPrice').value)},r=await renderApi('/admin/horoscope-feature-settings',{method:'POST',body:JSON.stringify(payload)}),a={enabled:r.settings.advancedAnalysisEnabled===true,price:Number(r.settings.advancedAnalysisPrice??0)},m={enabled:r.settings.marriageMatchingEnabled===true,price:Number(r.settings.marriageMatchingPrice??0)};try{localStorage.setItem('smv-horoscope-feature-config',JSON.stringify({advanced_analysis:a,marriage_matching:m}));}catch(_){}msg.innerHTML='<span class="success">Horoscope settings saved. Advanced: '+(a.enabled?'ON':'OFF')+' ₹'+a.price.toFixed(2)+' · Marriage: '+(m.enabled?'ON':'OFF')+' ₹'+m.price.toFixed(2)+'</span>';}catch(e){msg.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;}};
   renderAdminOffers(Array.isArray(adminData.offers)?adminData.offers:null).catch(e=>console.error('Offers manager load failed:',e));
   $('saveQuestionPrice').onclick=async()=>{const price=Math.round(Number($('questionPrice').value)*100)/100;if(!Number.isFinite(price)||price<1){$('questionPriceMsg').innerHTML='<span class="error">Enter a valid price of at least ₹1.</span>';return;}const b=$('saveQuestionPrice');b.disabled=true;b.textContent='SAVING...';try{await setDoc(doc(db,'smv_settings','question'),{price,updatedAt:serverTimestamp(),updatedBy:currentUser.uid});await smvAdminTouch();questionServicePrice=price;if($('askRate'))$('askRate').innerHTML=`<b>₹${price.toFixed(2)} per Question</b>`;if($('publicQuestionPrice'))$('publicQuestionPrice').textContent=`₹${price.toFixed(2)}`;$('questionPriceMsg').innerHTML='<span class="success">Current public question price saved: ₹'+price.toFixed(2)+'</span>';}catch(e){$('questionPriceMsg').innerHTML='<span class="error">Unable to save price: '+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;b.textContent='SAVE PRICE';}};
   $('astroCommission').value=settings.astroPercent??20;$('adminCommission').value=settings.adminPercent??80;
@@ -3874,7 +3915,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
    if(previousUid && (!user || previousUid!==user.uid)){
      hide('dashboard'); hide('admin'); hide('dashLink'); hide('adminLink');
    }
-   $('authBtn').textContent=user?'Logout':'Login';
+   smvSyncHeaderAuthNav(user);
    if(user){
      hide('smv-content-hub'); window.__smvContentVisible=false;
      lastAuthUid=user.uid; window.__SMV_LOGGED_OUT=false; touchSession(); armIdleTimer(); window.dispatchEvent(new Event('smv:auth-user'));
@@ -3883,7 +3924,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        // callback before the trusted backend has created smv_users/public ID.
        // Do not sign out the just-created user until that registration transaction finishes.
        if(smvRegistrationInProgress){ armIdleTimer(); return; }
-       await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); $("authBtn").textContent="Login"; return;
+       await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); smvSyncHeaderAuthNav(null); return;
      }
      // signInWithPopup also fires this listener. Let the explicit Google role
      // resolver own navigation until the registered SMV role is verified.
@@ -4012,6 +4053,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      clearIdleTimer(); lastAuthUid=null;
      hide('dashLink');hide('adminLink');hide('dashboard');hide('admin');
      setHeaderRoleLabel('');
+     smvSyncHeaderAuthNav(null);
      show('smv-content-hub'); window.__smvContentVisible=false;
      showHomeSurface();
      smvInternalView="home";

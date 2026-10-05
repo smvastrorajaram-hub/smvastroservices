@@ -1,6 +1,6 @@
-/* SMV ASTRO main-site service worker V208 — cache-first static/PWA + on-demand main location-search assets.
+/* SMV ASTRO main-site service worker V213 — cache-first static/PWA + on-demand main location-search assets.
    Firebase, API, dashboard, payment and application-data requests are never intercepted. */
-const CACHE_NAME='smv-astro-static-master-20261004-v208-reopt';
+const CACHE_NAME='smv-astro-static-master-20261004-v213-admin-center';
 const PLACE_BOOT=[
   './main-location-search-v187.js?v=208-reopt',
   './main-ui-v187.css?v=187',
