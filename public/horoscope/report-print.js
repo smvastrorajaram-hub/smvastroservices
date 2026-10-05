@@ -28,10 +28,10 @@
   grid.replaceChildren();
   if(report.feature==='marriage_matching'){
    title.textContent=tamil?'திருமணப் பொருத்த அறிக்கை':'Marriage Matching Report';sub.textContent=tamil?'இரு ஜாதக வேத ஜோதிட பொருத்த ஆய்வு':'Two-chart Vedic compatibility analysis';
-   const b=report.calculation?.bride||{},g=report.calculation?.groom||{};
-   const bn=b.birthName||b.nativeName||String(report.name||'').split('/')[0]?.trim()||'Bride',gn=g.birthName||g.nativeName||String(report.name||'').split('/')[1]?.trim()||'Groom';
-   addCoverPerson(grid,tamil?'பெண்':'Bride',bn,coverDate(b.birth?.date||b.birthDate,tamil),b.birth?.time||b.birthTime||'—',b.birthPlace||b.birth?.place||'—',tamil);
-   addCoverPerson(grid,tamil?'ஆண்':'Groom',gn,coverDate(g.birth?.date||g.birthDate,tamil),g.birth?.time||g.birthTime||'—',g.birthPlace||g.birth?.place||'—',tamil);
+   const cb=report.cover?.bride||{},cg=report.cover?.groom||{},b=report.calculation?.bride||{},g=report.calculation?.groom||{};
+   const bn=cb.name||b.birthName||b.nativeName||String(report.name||'').split('/')[0]?.trim()||'Bride',gn=cg.name||g.birthName||g.nativeName||String(report.name||'').split('/')[1]?.trim()||'Groom';
+   addCoverPerson(grid,tamil?'பெண்':'Bride',bn,coverDate(cb.date||b.birth?.date||b.birthDate,tamil),cb.time||b.birth?.time||b.birthTime||'—',cb.place||b.birthPlace||b.birth?.place||'—',tamil);
+   addCoverPerson(grid,tamil?'ஆண்':'Groom',gn,coverDate(cg.date||g.birth?.date||g.birthDate,tamil),cg.time||g.birth?.time||g.birthTime||'—',cg.place||g.birthPlace||g.birth?.place||'—',tamil);
    primary.textContent=`${bn}  ×  ${gn}`;
   }else{
    title.textContent='Sri Maduraveerayah Horoscope';sub.textContent=tamil?'முழு வேத ஜோதிட வாழ்க்கைப் பலன்':'Complete Vedic life-prediction report';grid.classList.add('is-single');
