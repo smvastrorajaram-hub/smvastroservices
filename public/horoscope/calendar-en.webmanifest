@@ -1,9 +1,9 @@
 {
-  "id": "/horoscope/calendar.html",
-  "name": "SMV CALENDER",
-  "short_name": "SMV CALENDER",
+  "id": "/horoscope/calendar",
+  "name": "SMV CALENDAR",
+  "short_name": "SMV CALENDAR",
   "lang": "en",
-  "start_url": "/horoscope/calendar.html?lang=en",
+  "start_url": "/horoscope/calendar.html?lang=en&source=pwa",
   "scope": "/horoscope/",
   "display": "standalone",
   "background_color": "#eef3eb",
@@ -27,5 +27,15 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "categories": [
+    "lifestyle",
+    "utilities"
+  ],
+  "prefer_related_applications": false
 }
