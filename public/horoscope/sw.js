@@ -1,5 +1,5 @@
 /* V174: latest-online + strict offline fallback. Prevent stale runtime from pinning old V170/V172 UI. */
-const CACHE='smv-horoscope-v211-calendar'+self.registration.scope;
+const CACHE='smv-horoscope-v212-calendar'+self.registration.scope;
 const CORE=[
 './calendar.html','./calendar-data.mjs','./calendar-worker.mjs','./daily-calendar.mjs','./daily-calendar.css','./calendar-pwa.mjs','./calendar-en.webmanifest','./calendar-ta.webmanifest','./assets/calendar-192.png','./assets/calendar-512.png','./assets/calendar-maskable.png','./assets/vinayagar-cover.svg',
 './','./index.html','./smv-ui-v207.css','./config.js','./boot.mjs','./horoscope.js','./horoscope-auth.mjs','./report-store.mjs','./report-identity.js','./report-print.css','./report-print.html','./report-print.js','./horoscope-predictions.js','./horoscope-translations.js','./horoscope-language.js','./location-search-online-offline.js','./horoscope-form.js','./horoscope-details.js','./horoscope.css','./marriage-matching.js','./marriage-matching.css','./pwa.js','./manifest-en.webmanifest','./manifest-ta.webmanifest',
