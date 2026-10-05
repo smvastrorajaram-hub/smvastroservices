@@ -90,9 +90,34 @@ window.addEventListener('storage',e=>{if(e.key==='smv-horoscope-feature-config')
 function stable(v){if(Array.isArray(v))return '['+v.map(stable).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}';return JSON.stringify(v);}
 async function reportKey(feature){const ctx=contexts.get(feature);if(!ctx)throw Error(ta()?'முதலில் பிறந்த விவரங்களை உள்ளிடவும்.':'Enter the birth details first.');const canonical=JSON.parse(JSON.stringify(ctx));if(canonical&&typeof canonical==='object')delete canonical.language;const bytes=new TextEncoder().encode(stable({feature,ctx:canonical})),hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 function flowText(en,tt){return ta()?tt:en;}
-function openPaymentWindow(){try{const w=window.open('','SMVHoroscopePayment','popup=yes,width=430,height=360,resizable=yes,scrollbars=yes');if(w){w.document.open();w.document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SMV ASTRO Payment</title><style>body{font-family:system-ui,sans-serif;margin:0;background:#fffaf3;color:#202020;display:grid;min-height:100vh;place-items:center}.box{width:min(88%,360px);padding:28px;border:1px solid #ead9bd;border-radius:18px;text-align:center;box-shadow:0 10px 30px #0002}h2{color:#8b164e;margin-top:0}.spin{width:34px;height:34px;border:4px solid #ddd;border-top-color:#8b164e;border-radius:50%;margin:18px auto;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}</style><div class="box"><h2>SMV ASTRO</h2><div class="spin"></div><p id="s">Connecting to Payment Gateway…</p></div>');w.document.close();return w;}}catch{}return null;}
-function paymentStatus(text){if(paymentWindow&&!paymentWindow.closed){const e=paymentWindow.document.getElementById('s');if(e)e.textContent=text;paymentWindow.focus();return;}let e=document.getElementById('smvPaymentFlowFallback');if(!e){e=document.createElement('div');e.id='smvPaymentFlowFallback';e.style.cssText='position:fixed;z-index:99999;inset:auto 12px 18px 12px;margin:auto;max-width:420px;padding:16px;border-radius:14px;background:#fff8ee;border:1px solid #d8bd8a;box-shadow:0 8px 30px #0004;text-align:center;font-weight:700';document.body.append(e);}e.textContent=text;}
-function closePaymentWindow(){try{if(paymentWindow&&!paymentWindow.closed)paymentWindow.close();}catch{}paymentWindow=null;paymentFeature='';document.getElementById('smvPaymentFlowFallback')?.remove();}
+function isMobilePaymentViewport(){return matchMedia('(max-width:820px)').matches||matchMedia('(pointer:coarse)').matches;}
+function paymentLoaderMarkup(){return '<div class="smv-payment-loader-card"><h2>SMV ASTRO</h2><div class="smv-payment-spinner" aria-hidden="true"></div><p id="s">Connecting to Payment Gateway…</p></div>';}
+function openPaymentWindow(){
+ if(isMobilePaymentViewport())return null;
+ try{
+  const width=460,height=430,left=Math.max(0,Math.round((screen.availWidth-width)/2)),top=Math.max(0,Math.round((screen.availHeight-height)/2));
+  const w=window.open('','SMVHoroscopePayment',`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+  if(w){
+   w.document.open();
+   w.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>SMV ASTRO Payment</title><style>*{box-sizing:border-box}html,body{width:100%;min-height:100%;margin:0}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fffaf3;color:#202020;display:grid;place-items:center;padding:20px}.smv-payment-loader-card{width:min(100%,360px);padding:28px 22px;border:1px solid #ead9bd;border-radius:18px;text-align:center;background:#fffaf3;box-shadow:0 10px 30px #0002}.smv-payment-loader-card h2{color:#8b164e;margin:0}.smv-payment-spinner{width:34px;height:34px;border:4px solid #ddd;border-top-color:#8b164e;border-radius:50%;margin:18px auto;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}#s{margin:0;line-height:1.45}</style></head><body>'+paymentLoaderMarkup()+'</body></html>');
+   w.document.close();return w;
+  }
+ }catch{}
+ return null;
+}
+function clearPaymentFallback(){document.getElementById('smvPaymentFlowFallback')?.remove();}
+function paymentStatus(text){
+ if(paymentWindow&&!paymentWindow.closed){const e=paymentWindow.document.getElementById('s');if(e)e.textContent=text;paymentWindow.focus();return;}
+ let host=document.getElementById('smvPaymentFlowFallback');
+ if(!host){
+  host=document.createElement('div');host.id='smvPaymentFlowFallback';host.setAttribute('role','status');host.setAttribute('aria-live','polite');
+  host.style.cssText='position:fixed;z-index:2147483000;inset:0;width:100vw;height:100vh;height:100dvh;padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));display:grid;place-items:center;background:rgba(255,250,243,.96);overflow:auto;box-sizing:border-box';
+  host.innerHTML='<style>#smvPaymentFlowFallback *{box-sizing:border-box}#smvPaymentFlowFallback .smv-payment-loader-card{width:min(92vw,360px);padding:26px 22px;border:1px solid #ead9bd;border-radius:18px;text-align:center;background:#fffaf3;box-shadow:0 10px 30px #0002}#smvPaymentFlowFallback h2{color:#8b164e;margin:0;font-size:clamp(20px,5vw,26px)}#smvPaymentFlowFallback .smv-payment-spinner{width:34px;height:34px;border:4px solid #ddd;border-top-color:#8b164e;border-radius:50%;margin:18px auto;animation:smvPaySpin 1s linear infinite}@keyframes smvPaySpin{to{transform:rotate(360deg)}}#smvPaymentFlowFallback #s{margin:0;font-weight:700;line-height:1.45;font-size:clamp(14px,3.8vw,17px)}</style>'+paymentLoaderMarkup();
+  document.body.append(host);
+ }
+ const e=host.querySelector('#s');if(e)e.textContent=text;
+}
+function closePaymentWindow(){try{if(paymentWindow&&!paymentWindow.closed)paymentWindow.close();}catch{}paymentWindow=null;paymentFeature='';clearPaymentFallback();}
 async function loadRazorpay(target=window){if(target.Razorpay)return;await new Promise((resolve,reject)=>{const d=target.document,old=d.querySelector('script[data-smv-razorpay]');if(old){if(target.Razorpay)return resolve();old.addEventListener('load',resolve,{once:true});old.addEventListener('error',reject,{once:true});return;}const sc=d.createElement('script');sc.src='https://checkout.razorpay.com/v1/checkout.js';sc.dataset.smvRazorpay='1';sc.onload=resolve;sc.onerror=()=>reject(Error('Razorpay Checkout could not be loaded.'));d.head.append(sc);});}
 async function payForFeature(feature){
  if(!state.user){showAuthForm('login');throw Error(flowText('Login first, then continue to payment.','முதலில் Login செய்து பிறகு Payment தொடரவும்.'));}
@@ -102,6 +127,7 @@ async function payForFeature(feature){
  const checkoutWindow=(paymentWindow&&!paymentWindow.closed)?paymentWindow:window;
  await loadRazorpay(checkoutWindow);
  paymentStatus(flowText('Payment Gateway ready. Opening Razorpay…','Payment Gateway தயார். Razorpay திறக்கப்படுகிறது…'));
+ if(checkoutWindow===window)clearPaymentFallback();
  return await new Promise((resolve,reject)=>{let settled=false;const fail=e=>{if(settled)return;settled=true;paymentStatus(flowText('Payment was not completed.','Payment நிறைவடையவில்லை.'));setTimeout(()=>closePaymentWindow(),1800);reject(e instanceof Error?e:Error(String(e||'Payment was not completed.')));};const RazorpayCtor=checkoutWindow.Razorpay||window.Razorpay;const rz=new RazorpayCtor({key:order.keyId,amount:order.amount,currency:order.currency||'INR',name:'SMV ASTRO SERVICES',description:feature==='advanced_analysis'?'Full Horoscope Report':'Full Marriage Matching Report',order_id:order.orderId,handler:async r=>{try{paymentStatus(flowText('Payment received. Verifying Payment…','Payment பெறப்பட்டது. Payment சரிபார்க்கப்படுகிறது…'));await authApi('/horoscope-payment/verify',{method:'POST',body:JSON.stringify({feature,reportKey:key,...r})});rememberPaidAccess(feature,key);paymentStatus(feature==='advanced_analysis'?flowText('Payment verified. Full Horoscope is starting…','Payment உறுதி செய்யப்பட்டது. முழு ஜாதகம் தொடங்குகிறது…'):flowText('Payment verified. Full Marriage Matching is starting…','Payment உறுதி செய்யப்பட்டது. முழு திருமணப் பொருத்தம் தொடங்குகிறது…'));settled=true;setTimeout(()=>closePaymentWindow(),850);resolve(true);}catch(e){fail(e);}},modal:{ondismiss:()=>fail(Error(flowText('Payment window was closed.','Payment window மூடப்பட்டது.')))},theme:{color:'#8b164e'}});rz.on?.('payment.failed',r=>fail(Error(r?.error?.description||'Payment failed.')));rz.open();});
 }
 function featureLabel(feature){return feature==='advanced_analysis'?flowText('Full Horoscope Report','முழு ஜாதக அறிக்கை'):flowText('Full Marriage Matching Report','முழு திருமணப் பொருத்த அறிக்கை');}

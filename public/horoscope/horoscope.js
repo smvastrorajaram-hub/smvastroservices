@@ -2011,6 +2011,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
     return `${prelude}<div class="card birth-time-panchang" style="margin:0 0 18px"><h3>📅 ${ta?'பிறந்த பஞ்சாங்கம்':'Birth Panchang'}</h3><div class="small">${ta?'திருக்கணித பஞ்சாங்க கணிப்பு':'Thirukanitha Panchang calculation'}</div>${birthTable}<div class="hora-section birth-current-hora"><b>${ta?'ஹோரா :':'Hora :'}</b>${horaHtml}</div></div>`;
   }
 
+window.SMVRenderDaily=renderTransitPanchang;
 function renderTransitPanchang(t,p,lang,rootId){
     const box=document.getElementById(rootId); if(!box)return;
     const ta=lang==='ta';

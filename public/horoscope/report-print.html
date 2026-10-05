@@ -1,5 +1,45 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'"><title>SMV HOROSCOPE — Print</title><link rel="stylesheet" href="report-print.css?v=170-header-footer"><script defer src="report-print.js?v=170-header-footer"></script></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'"><title>SMV HOROSCOPE — Print</title><link rel="stylesheet" href="report-print.css?v=210-calendar-cover"><script defer src="report-print.js?v=210-calendar-cover"></script></head><body>
 <nav class="print-tools"><button id="printBack" type="button">Back</button><button id="printNow" type="button" disabled>Print / Save as PDF</button><p id="printStatus" role="status"></p></nav>
-<header class="report-brand"><img alt="SMV ASTRO" src="assets/smvlogo.png"><div class="report-brand-copy"><h1>SMV Astro Services</h1><p>SMV HOROSCOPE · Sri Maduraveerayah Horoscope</p></div></header><div class="print-invocation"><img class="smv-ganesha-img" alt="Vinayagar" src="assets/vinayagar-report.png"></div><main id="printReport"></main><footer class="report-footer" aria-label="SMV Astro Services contact details"><span><img src="assets/web-black.svg" alt="Website">www.smvastroservices.in</span><span><img src="assets/phone-black.svg" alt="Phone">6381171084</span><span><img src="assets/whatsapp-black.svg" alt="WhatsApp">8072973399</span><span><img src="assets/email-black.svg" alt="Email">smvastroservices@gmail.com</span></footer>
+<section class="smv-print-cover smv-vector-cover smv-cover-v19" id="smvPrintCover" aria-label="SMV ASTRO SERVICES premium Vedic astrology report cover">
+  <div class="smv-cover-frame">
+    <div class="smv-cover-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="smv-cover-emblem"><img src="assets/vinayagar-cover.svg" alt="Sri Vinayagar"></div>
+    <header class="smv-cover-brand">
+      <div class="smv-cover-kicker">SRI MADURAVEERAYAH ASTRO SERVICES</div>
+      <h1>SMV ASTRO SERVICES</h1>
+      <p id="smvCoverReportTitle">Sri Maduraveerayah Horoscope</p>
+    </header>
+
+    <div class="smv-cover-rule" aria-hidden="true"><span></span><b>✦</b><span></span></div>
+
+    <section class="smv-cover-birth" aria-label="Birth details"><div class="smv-cover-birth-grid" id="smvCoverBirthGrid"></div></section>
+
+    <section class="smv-cover-seal-note" aria-label="Report identity"><b id="smvCoverPrimaryName">SMV ASTRO</b><span id="smvCoverSubtitle">Traditional Vedic Astrology Report</span></section>
+
+    <footer class="smv-cover-contact" aria-label="SMV ASTRO contact details">
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9z"/></svg><b>www.smvastroservices.in</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h4l2 5-3 2c1 3 3 5 6 6l2-3 4 2v4c0 1-1 2-2 2C10 21 3 14 3 5c0-1 1-2 2-2h2z"/></svg><b>6381171084</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 1 7 12l2 5-5-2a8 8 0 1 1-4-15z"/><path d="M9 8c1 3 3 5 6 6"/></svg><b>8072973399</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg><b>smvastroservices@gmail.com</b></span>
+    </footer>
+  </div>
+</section>
+
+<section class="smv-matching-welcome" id="smvMatchingWelcome" hidden aria-label="Sri Vinayakar welcome page">
+  <div class="smv-welcome-frame"><div class="smv-cover-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <svg class="smv-welcome-ornament" viewBox="0 0 900 210" aria-hidden="true"><g fill="none" stroke="#bd8d2e" stroke-width="4"><path d="M40 166h820M96 166V68h80V42h80v26h80M804 166V68h-80V42h-80v26h-80"/><path d="M450 28l22 34h-44zM450 61v54M405 115h90M383 137h134"/></g><path d="M450 82c-40 12-61 38-61 65M450 82c40 12 61 38 61 65" fill="none" stroke="#95141a" stroke-width="4"/></svg>
+    <div class="smv-welcome-halo"><img src="assets/vinayagar-report.png" alt="Lord Vinayakar"></div>
+    <p class="smv-welcome-eyebrow" id="smvWelcomeEyebrow">SMV ASTRO SERVICES</p>
+    <h2 id="smvWelcomeTitle">Sri Vinayakar Blessing</h2>
+    <p class="smv-welcome-mantra" id="smvWelcomeMantra">Om Gam Ganapataye Namah</p>
+    <p class="smv-welcome-verse" id="smvWelcomeVerse">Vakratunda Mahakaya<br>Surya Koti Samaprabha<br>Nirvighnam Kurume Deva<br>Sarva Karyeshu Sarvada</p>
+    <div class="smv-welcome-rule"><span></span><b>✦</b><span></span></div>
+    <p class="smv-welcome-meaning" id="smvWelcomeMeaning">May Lord Vinayakar remove obstacles and bless this marriage compatibility study with clarity, harmony and auspicious guidance.</p>
+    <p class="smv-welcome-invocation" id="smvWelcomeInvocation">Om Sri Madurai Veeran Thunai</p>
+    <p class="smv-welcome-pair" id="smvWelcomePair"></p>
+  </div>
+</section>
+
+<main id="printReport"></main>
 </body></html>

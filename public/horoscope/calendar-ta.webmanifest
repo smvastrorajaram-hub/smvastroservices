@@ -1,0 +1,31 @@
+{
+  "id": "/horoscope/calendar.html",
+  "name": "SMV CALENDER",
+  "short_name": "SMV CALENDER",
+  "lang": "ta",
+  "start_url": "/horoscope/calendar.html?lang=ta",
+  "scope": "/horoscope/",
+  "display": "standalone",
+  "background_color": "#eef3eb",
+  "theme_color": "#155a52",
+  "icons": [
+    {
+      "src": "assets/calendar-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/calendar-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/calendar-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

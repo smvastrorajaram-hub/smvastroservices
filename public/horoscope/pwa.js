@@ -15,7 +15,7 @@ button.onclick=async()=>{if(promptEvent){const p=promptEvent;promptEvent=null;aw
 if('serviceWorker'in navigator){
  let reloading=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)return;reloading=true;location.reload();});
  const timer=setTimeout(()=>{if(!ready&&!failed){slow=true;update();}},45000);
- navigator.serviceWorker.register('./sw.js?v=v171-runtime-fix-20261003',{updateViaCache:'none'}).then(async reg=>{
+ navigator.serviceWorker.register('./sw.js?v=v173-runtime-cache-root-fix-20261003',{updateViaCache:'none'}).then(async reg=>{
   try{await reg.update();}catch(_){}
   const watch=worker=>{if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='redundant'&&!reg.active){failed=true;clearTimeout(timer);update();}});};
   watch(reg.installing);reg.addEventListener('updatefound',()=>watch(reg.installing));
