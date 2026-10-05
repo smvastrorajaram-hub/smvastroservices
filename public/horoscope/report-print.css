@@ -140,53 +140,122 @@ body{position:relative}
   #printReport .smv-v61-sub-body,#printReport .smv-advanced-part-content,#printReport .dasha-body,#printReport .dasha-content,#printReport .dasha-children,#printReport .smv-prediction-body,#printReport .prediction-body{display:block!important;visibility:visible!important;max-height:none!important;height:auto!important;overflow:visible!important;opacity:1!important}
 }
 
+/* V17 premium vector cover: HTML/SVG only, no devotional bitmap/photo. */
+.smv-vector-cover{display:block!important;width:100%;max-width:184mm;margin:0 auto 8mm!important;padding:0!important;background:#fff!important;color:#1f1710!important}
+.smv-cover-frame{position:relative;min-height:265mm;padding:14mm 11mm 10mm;border:1.1mm solid #b98425;outline:.35mm solid #e3c06a;outline-offset:-3mm;background:radial-gradient(circle at 50% 18%,#fffdf3 0,#fffaf0 34%,#fff 72%);overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center}
+.smv-cover-frame::before,.smv-cover-frame::after{content:"";position:absolute;width:44mm;height:44mm;border:1mm double #d2a34b;border-radius:50%;opacity:.18;pointer-events:none}.smv-cover-frame::before{left:-23mm;top:102mm}.smv-cover-frame::after{right:-23mm;bottom:60mm}
+.smv-cover-ornament{position:absolute;left:7mm;right:7mm;width:calc(100% - 14mm);height:auto;pointer-events:none}.smv-cover-ornament-top{top:3mm;height:37mm}
+.smv-cover-emblem{width:31mm;height:31mm;margin:21mm auto 2mm;position:relative;z-index:2}.smv-cover-emblem svg{display:block;width:100%;height:100%}
+.smv-cover-brand{position:relative;z-index:2;width:100%;text-align:center;margin:0 auto}.smv-cover-kicker{font:700 7.1pt/1.3 SMVTamil,Arial,sans-serif;letter-spacing:.42mm;color:#8b6a2c;text-transform:uppercase;margin-bottom:1.5mm}.smv-cover-brand h1{margin:0!important;font:800 26pt/1.1 Georgia,'Times New Roman',serif!important;letter-spacing:.45mm!important;color:#d40000!important;-webkit-text-fill-color:#d40000!important;text-align:center!important}.smv-cover-brand p{margin:1.7mm auto 0!important;font:700 11.5pt/1.3 SMVTamil,Arial,sans-serif;color:#4e3216;letter-spacing:.12mm}.smv-cover-rule{width:84%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:3mm;margin:5mm auto 4mm;color:#b98425}.smv-cover-rule span{height:.35mm;background:linear-gradient(90deg,transparent,#c89b3e 35%,#c89b3e)}.smv-cover-rule span:last-child{background:linear-gradient(90deg,#c89b3e,#c89b3e 65%,transparent)}.smv-cover-rule b{font-size:11pt;color:#9b151b}
+.smv-cover-birth{width:100%;position:relative;z-index:2}.smv-cover-birth-grid{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4mm}.smv-cover-birth-grid.is-single{grid-template-columns:minmax(0,148mm);justify-content:center}.smv-cover-person{min-width:0;text-align:left;border:.45mm solid #d4b36b;border-radius:3mm;padding:4mm 4.5mm;background:linear-gradient(180deg,rgba(255,252,239,.96),rgba(255,255,255,.98));box-shadow:0 1.2mm 4mm rgba(92,55,11,.08)}.smv-cover-person h2{margin:0 0 2.2mm!important;text-align:center!important;font-size:13.2pt!important;line-height:1.25!important;color:#8e1218!important;border-bottom:.35mm solid #d7bd7b;padding-bottom:1.6mm}.smv-cover-person .smv-cover-detail{display:grid;grid-template-columns:27mm 3mm minmax(0,1fr);gap:1.1mm 1.6mm;align-items:start;font-size:8.2pt;line-height:1.45;padding:.6mm 0}.smv-cover-person .smv-cover-detail b{font-weight:750;color:#53351e}.smv-cover-person .smv-cover-detail i{font-style:normal;text-align:center;color:#9c722d;font-weight:700}.smv-cover-person .smv-cover-detail span{overflow-wrap:anywhere;color:#111}
+.smv-cover-seal-note{margin:5mm auto 0;padding:2.6mm 8mm;border-top:.35mm solid #d8bd78;border-bottom:.35mm solid #d8bd78;display:flex;flex-direction:column;gap:.6mm;position:relative;z-index:2;min-width:70mm;max-width:150mm}.smv-cover-seal-note b{font:800 11pt/1.2 Georgia,'Times New Roman',serif;color:#7d1117;letter-spacing:.22mm}.smv-cover-seal-note span{font-size:7.8pt;color:#665039}.smv-cover-lotus{width:112mm;height:19mm;margin:auto auto 1mm;position:relative;z-index:1;opacity:.95}
+.smv-cover-contact{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.7mm 4mm;padding-top:3.2mm;border-top:.45mm solid #c99b3f;position:relative;z-index:2}.smv-cover-contact span{min-width:0;display:flex;align-items:center;justify-content:center;gap:1.5mm;font-size:7.3pt;line-height:1.25;color:#111;white-space:nowrap}.smv-cover-contact svg{width:4.2mm;height:4.2mm;fill:none;stroke:#9c151b;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}.smv-cover-contact b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
 
-/* V224 - Marriage Matching premium dynamic first page. */
-.smv-print-cover.smv-matching-cover{background:#fffdf6!important}
-.smv-matching-cover-frame{position:relative;width:min(190mm,100%);min-height:274mm;margin:0 auto;padding:7mm 8mm 6mm;border:1.2mm double #0f5d5a;outline:.35mm solid #c79c45;outline-offset:-3mm;background:linear-gradient(180deg,#fbfff9 0%,#fffaf0 55%,#fffdf8 100%);display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden}
-.smv-matching-cover-frame:before,.smv-matching-cover-frame:after{content:'✦';position:absolute;top:3.3mm;color:#c69535;font-size:11pt}.smv-matching-cover-frame:before{left:5mm}.smv-matching-cover-frame:after{right:5mm}
-.smv-matching-cover-kicker{font:700 6.8pt/1.2 Georgia,'Times New Roman',serif;letter-spacing:1.1mm;color:#8b6b31;margin:.5mm 0 1mm}
-.smv-matching-cover-brand{font:800 20pt/1.1 Georgia,'Times New Roman',serif;letter-spacing:.45mm;color:#e31919;margin:0 0 1mm}
-.smv-matching-cover-title{font-weight:800;font-size:14pt;line-height:1.25;color:#6f1717;margin:0 0 3mm}
-.smv-matching-cover-scene{display:block;width:158mm!important;height:103mm!important;object-fit:cover!important;object-position:center 44%!important;margin:0 auto 4mm!important;border:.45mm solid #c9a04d!important;border-radius:2mm!important;box-shadow:0 1.2mm 4mm #6e4f241f!important;background:#fff!important}
-.smv-matching-cover-people{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin:0 auto 3mm}
-.smv-matching-cover-person{padding:3mm 3.5mm;border:.4mm solid #d3a94c;border-radius:3mm;background:#fffaf0;text-align:left;min-width:0}
-.smv-matching-cover-person h3{margin:0 0 2mm!important;padding-bottom:1.3mm;border-bottom:.3pt solid #d7b76b;text-align:center!important;font-size:10.5pt!important;color:#8f1010!important}
-.smv-matching-cover-person>div{display:grid;grid-template-columns:28mm 3mm minmax(0,1fr);row-gap:.8mm;align-items:start;font-size:7.6pt;line-height:1.35}
-.smv-matching-cover-person b{color:#4b2a1b}.smv-matching-cover-person span{text-align:center;font-weight:800}.smv-matching-cover-person em{font-style:normal;color:#111;overflow-wrap:anywhere}
-.smv-matching-cover-pair{min-width:88mm;padding:2mm 6mm;border:.35mm solid #d1ad61;border-radius:2mm;background:#fff8e9;margin:.5mm auto 3mm;display:flex;flex-direction:column;gap:.6mm;color:#6c1818}
-.smv-matching-cover-pair strong{font:800 10pt/1.2 Georgia,'Times New Roman',serif}.smv-matching-cover-pair span{font-size:7.4pt;color:#5b4535}
-.smv-matching-cover-contact{margin-top:auto;width:100%;padding-top:2.2mm;border-top:.35pt solid #d3b97d;display:grid;grid-template-columns:1.3fr .8fr .9fr 1.55fr;gap:2mm;align-items:center;font-size:6.25pt;font-weight:700;color:#111}
-.smv-matching-cover-contact span{display:flex;align-items:center;justify-content:center;gap:1mm;min-width:0;white-space:nowrap}
-.smv-matching-cover-contact img{display:block;width:3.4mm!important;height:3.4mm!important;max-width:3.4mm!important;object-fit:contain!important;margin:0!important;background:transparent!important}
-@media print{
- .smv-print-cover.smv-matching-cover{width:210mm!important;height:297mm!important;padding:0!important;background:#fffdf6!important;align-items:center!important;justify-content:center!important}
- .smv-matching-cover-frame{width:196mm!important;height:283mm!important;min-height:0!important;margin:0!important;padding:6.5mm 8mm 5.5mm!important}
- .smv-matching-cover-scene{width:158mm!important;height:103mm!important;max-height:103mm!important;object-fit:cover!important}
- .smv-matching-cover-contact img{width:3.4mm!important;height:3.4mm!important;max-width:3.4mm!important}
-}
+/* Matching opening summary: 10 Porutham first, then complete dosha status list. */
+.mm-front-porutham,.mm-front-dosha-summary{break-inside:auto;margin:2mm 0 5mm!important}.mm-front-porutham>h3,.mm-front-dosha-summary>h3{text-align:center!important;font-size:14pt!important;margin:2mm 0 3mm!important}.mm-porutham-score{text-align:center;font-weight:800;font-size:11pt;margin:1mm 0 3mm}.mm-front-porutham-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5mm 4mm}.mm-front-porutham-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2mm;align-items:start;padding:1.3mm 0;border-bottom:.3pt solid #d6c49b}.mm-front-porutham-row b{font-weight:800;color:#5f1717}.mm-front-porutham-row strong{font-size:8pt;text-align:right}.mm-front-porutham-row small{grid-column:1/-1;color:#555;line-height:1.3}.mm-front-dosha-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2.2mm 4mm}.mm-front-dosha-card{border:.35mm solid #d6c08b;border-radius:2mm;padding:2.6mm 3mm;background:#fffdf7;break-inside:avoid}.mm-front-dosha-card h4{margin:0 0 1.6mm!important;padding:0 0 1.2mm;border-bottom:.3mm solid #d8bf7c;font-size:10pt!important;font-weight:850!important;color:#7f1218!important}.mm-front-dosha-status{display:grid;grid-template-columns:17mm minmax(0,1fr);gap:.8mm 1.5mm;font-size:8pt;line-height:1.35;padding:.35mm 0}.mm-front-dosha-status b{font-weight:800;color:#33251a}.mm-front-dosha-status strong{font-weight:800}.mm-front-dosha-status .ok{color:#176b36!important}.mm-front-dosha-status .warn{color:#9b6400!important}.mm-front-dosha-status .no{color:#a20e20!important}.mm-front-pair-only{grid-column:1/-1}.mm-front-summary-note{font-size:8pt;line-height:1.45;color:#4e4335;margin:2mm 0 0}
 
-/* V224 - Marriage Matching: remove standalone prayer-sheet spacing and keep a compact Vinayagar Vanakkam on result page 2. */
-.smv-matching-vinayagar-intro{
-  width:min(168mm,100%);margin:0 auto 3.2mm;padding:2.8mm 4mm 3mm;
-  text-align:center;border:0;border-bottom:.55pt solid #c9a85d;background:#fffdf7;
-  break-inside:avoid!important;page-break-inside:avoid!important;
-  break-after:auto!important;page-break-after:auto!important;
-}
-.smv-matching-vinayagar-img{display:block;width:17mm;height:auto;margin:0 auto 1.2mm;object-fit:contain}
-.smv-matching-vinayagar-intro h2{margin:.4mm 0 1mm!important;font-size:13pt!important;line-height:1.25!important;color:#8f1010!important}
-.smv-matching-vinayagar-mantra{font-weight:800;color:#8f1010;font-size:9.2pt;line-height:1.35;margin:.6mm 0}
-.smv-matching-vinayagar-sloka{font-weight:650;font-size:8.4pt;line-height:1.45;margin:.8mm 0 1mm;color:#241812}
-.smv-matching-vinayagar-intro p{max-width:142mm;margin:1mm auto!important;font-size:7.6pt!important;line-height:1.4!important;color:#2c251d}
-.smv-matching-invocation{margin:1.4mm auto 0;padding-top:1.2mm;border-top:.35pt solid #d9bd78;font-size:9.1pt;font-weight:800;color:#8f1010}
+@media screen and (max-width:720px){.smv-cover-frame{min-height:auto;padding:28px 18px 20px}.smv-cover-brand h1{font-size:clamp(25px,8vw,38px)!important}.smv-cover-birth-grid{grid-template-columns:1fr}.smv-cover-contact{grid-template-columns:1fr}.smv-cover-contact span{white-space:normal}.mm-front-porutham-grid,.mm-front-dosha-list{grid-template-columns:1fr}.mm-front-pair-only{grid-column:auto}.smv-cover-lotus{margin-top:18px}}
+
 @media print{
-  .smv-matching-vinayagar-intro{margin-top:0!important;padding-top:1.8mm!important;background:#fffdf7!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  .smv-matching-vinayagar-intro + .mm-person-result,
-  .smv-matching-vinayagar-intro + section{margin-top:2mm!important;break-before:auto!important;page-break-before:auto!important}
+ @page:first{size:A4;margin:0}
+ .smv-vector-cover{width:210mm!important;height:297mm!important;max-width:none!important;margin:0!important;padding:0!important;display:block!important;break-after:page!important;page-break-after:always!important;background:#fff!important;overflow:hidden!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .smv-cover-frame{width:210mm!important;height:297mm!important;min-height:297mm!important;padding:14mm 13mm 10mm!important;border:1.2mm solid #b98425!important;outline:.35mm solid #e3c06a!important;outline-offset:-3mm!important;box-shadow:none!important}
+ .smv-cover-emblem{margin-top:22mm!important}.smv-cover-lotus{margin-top:auto!important}
+ .smv-cover-brand h1,.smv-cover-brand p,.smv-cover-person,.smv-cover-contact,.smv-cover-kicker,.smv-cover-seal-note{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ #printReport{break-before:page!important;page-break-before:always!important}
+ .mm-front-porutham-grid,.mm-front-dosha-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .mm-front-dosha-card{background:#fffdf7!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+@media print{
+ .smv-cover-lotus{position:absolute!important;left:49mm!important;bottom:31mm!important;width:112mm!important;height:19mm!important;margin:0!important}
+ .smv-cover-contact{position:absolute!important;left:14mm!important;right:14mm!important;bottom:10mm!important;width:auto!important;margin:0!important}
 }
 
-/* V224 - A4-ratio premium devotional front cover. Keep every deity/contact inside the first sheet. */
-.smv-print-cover img{object-fit:contain!important;background:#f7eed8!important}
+
+/* V20 - natural long-form pagination.
+   Semantic chapters are not forced onto individual physical pages. Related paragraphs
+   flow together and only headings/cards avoid awkward splitting. */
 @media print{
-  .smv-print-cover img{object-fit:contain!important;background:#f7eed8!important}
+ #printReport .smv-v16-longform-print{display:block!important;visibility:visible!important;overflow:visible!important;max-height:none!important;height:auto!important}
+ #printReport .smv-print-chapter-page,
+ #printReport [data-smv-v16-page="1"]{
+   display:block!important;
+   position:static!important;
+   float:none!important;
+   clear:both!important;
+   break-before:auto!important;
+   page-break-before:auto!important;
+   break-inside:auto!important;
+   page-break-inside:auto!important;
+   max-height:none!important;
+   height:auto!important;
+   overflow:visible!important;
+   margin:0 0 5mm!important;
+ }
+ #printReport [data-smv-v16-page="1"]>h4{break-after:avoid!important;page-break-after:avoid!important;margin-bottom:2.2mm!important}
+ #printReport [data-smv-v16-page="1"]>p{orphans:3;widows:3;margin:.9mm 0 2.2mm!important;line-height:1.58!important}
+ #printReport .smv-v20-rich-block{border-bottom:1px solid rgba(157,111,28,.18);padding-bottom:2.5mm!important}
 }
+
+/* V19 premium temple-vector cover refinement + matching Vinayakar welcome page. */
+.smv-cover-v19 .smv-cover-frame{background:linear-gradient(180deg,#fffdf7 0,#fffaf0 48%,#fff 100%)!important;box-shadow:0 3mm 10mm rgba(74,45,7,.08);isolation:isolate}
+.smv-cover-v19 .smv-cover-art{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.smv-cover-v19 .smv-cover-emblem{width:34mm;height:34mm;margin:27mm auto 2.5mm;z-index:2;filter:drop-shadow(0 1.2mm 2mm rgba(85,44,4,.18))}
+.smv-cover-v19 .smv-cover-kicker{font-size:7.4pt;letter-spacing:.48mm;color:#8b6527}
+.smv-cover-v19 .smv-cover-brand h1{font-size:27pt!important;letter-spacing:.42mm!important;text-shadow:0 .3mm 0 #fff0c4}
+.smv-cover-v19 .smv-cover-brand p{font-size:12pt;color:#593715}
+.smv-cover-v19 .smv-cover-person{border-color:#cfa64e;background:rgba(255,254,248,.94);box-shadow:0 1.5mm 5mm rgba(91,55,8,.09)}
+.smv-cover-v19 .smv-cover-person h2{color:#82151a!important;border-bottom-color:#d9b961}
+.smv-cover-v19 .smv-cover-seal-note{background:rgba(255,250,230,.72);border-radius:1.4mm;border-left:.35mm solid #d8bd78;border-right:.35mm solid #d8bd78}
+.smv-cover-v19 .smv-cover-contact{background:rgba(255,255,255,.72);padding-bottom:1mm}
+
+.smv-matching-welcome{width:100%;max-width:184mm;margin:0 auto 8mm;background:#fff;color:#21180f}
+.smv-welcome-frame{position:relative;min-height:260mm;padding:25mm 18mm 16mm;border:1mm solid #bd8d2e;outline:.3mm solid #e2c676;outline-offset:-3mm;background:radial-gradient(circle at 50% 26%,#fff5c8 0,#fffdf6 26%,#fff 66%);display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden}
+.smv-welcome-frame::before,.smv-welcome-frame::after{content:"";position:absolute;width:48mm;height:48mm;border:1mm double #d9bc72;border-radius:50%;opacity:.16}.smv-welcome-frame::before{left:-24mm;top:88mm}.smv-welcome-frame::after{right:-24mm;bottom:46mm}
+.smv-welcome-ornament{position:absolute;top:4mm;left:8mm;width:calc(100% - 16mm);height:42mm}
+.smv-welcome-halo{position:relative;width:58mm;height:58mm;margin:18mm auto 3mm;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#fff9db 0,#f4d986 52%,#a66d16 54%,#7d1016 60%,#fff7dc 63%,transparent 64%);filter:drop-shadow(0 2mm 4mm rgba(91,48,9,.16))}
+.smv-welcome-halo::before{content:"";position:absolute;inset:-7mm;border:1px solid #d2ae55;border-radius:50%;opacity:.55}
+.smv-welcome-halo img{width:48mm;height:38mm;object-fit:contain;position:relative;z-index:1;filter:saturate(1.08) contrast(1.03)}
+.smv-welcome-eyebrow{margin:4mm 0 1mm;font-size:7.5pt;line-height:1.3;letter-spacing:.55mm;color:#8c682d;font-weight:800;text-transform:uppercase}
+.smv-welcome-frame h2{margin:1mm 0 4mm!important;color:#8b151a!important;font:800 22pt/1.25 Georgia,SMVTamil,serif!important;text-align:center!important}
+.smv-welcome-mantra{margin:1mm 0!important;color:#8b151a;font-size:14pt;line-height:1.45;font-weight:850}
+.smv-welcome-verse{margin:3mm 0!important;font-size:11.5pt;line-height:1.75;font-weight:650;color:#2f261c}
+.smv-welcome-rule{width:62%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:3mm;margin:5mm auto;color:#a87317}.smv-welcome-rule span{height:.35mm;background:#cda247}.smv-welcome-rule b{font-size:16pt;color:#92141a}
+.smv-welcome-meaning{max-width:142mm;margin:2mm auto!important;font-size:10.2pt;line-height:1.75;color:#4a3d30}
+.smv-welcome-invocation{margin:auto 0 2mm!important;padding:3mm 10mm;border-top:.4mm solid #d7b665;border-bottom:.4mm solid #d7b665;color:#8c151a;font-size:13pt;font-weight:850;letter-spacing:.1mm}
+.smv-welcome-pair{margin:2mm 0 0!important;color:#62431e;font-size:9pt;font-weight:700}
+
+@media screen and (max-width:720px){
+ .smv-welcome-frame{min-height:auto;padding:58px 22px 28px}
+ .smv-welcome-halo{margin-top:36px;width:150px;height:150px}.smv-welcome-halo img{width:124px;height:96px}
+ .smv-welcome-frame h2{font-size:clamp(25px,8vw,36px)!important}
+ .smv-welcome-mantra{font-size:20px}.smv-welcome-verse{font-size:16px;line-height:1.75}.smv-welcome-meaning{font-size:15px;line-height:1.75}
+}
+
+@media print{
+ .smv-cover-v19 .smv-cover-frame{width:210mm!important;height:297mm!important;min-height:297mm!important;padding:14mm 13mm 10mm!important}
+ .smv-cover-v19 .smv-cover-emblem{margin-top:27mm!important}
+ .smv-matching-welcome{width:210mm!important;height:297mm!important;max-width:none!important;margin:0!important;padding:0!important;display:block!important;break-after:page!important;page-break-after:always!important;overflow:hidden!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .smv-matching-welcome[hidden]{display:none!important}
+ .smv-welcome-frame{width:210mm!important;height:297mm!important;min-height:297mm!important;padding:25mm 18mm 15mm!important;border:1.1mm solid #bd8d2e!important;outline:.3mm solid #e2c676!important;outline-offset:-3mm!important;box-shadow:none!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .smv-welcome-halo{margin-top:19mm!important}.smv-welcome-invocation{margin-top:auto!important}
+}
+
+/* V210: centred Vinayagar, ivory/jade cover and four lotus corners. */
+.smv-cover-v19 .smv-cover-frame{background:linear-gradient(145deg,#eef7f1,#fffdf2 48%,#edf4f4)!important;border-color:#12625c!important;outline-color:#c49543!important}
+.smv-cover-v19 .smv-cover-emblem{width:83mm!important;height:83mm!important;margin:7mm auto 3mm!important;filter:none!important;flex-shrink:0}
+.smv-cover-v19 .smv-cover-emblem img{width:83mm!important;height:83mm!important;max-height:83mm!important;object-fit:contain!important;margin:auto!important}
+.smv-cover-v19 .smv-cover-brand h1{font-size:25pt!important;color:#ed161e!important;-webkit-text-fill-color:#ed161e!important}
+.smv-cover-corners{position:absolute;inset:5mm;pointer-events:none}.smv-cover-corners i{position:absolute;width:22mm;height:22mm;border:1mm double #bf9041;border-radius:0 80% 0 80%;background:radial-gradient(ellipse at top left,#14756d22,transparent 70%)}
+.smv-cover-corners i:nth-child(1){left:0;top:0}.smv-cover-corners i:nth-child(2){right:0;top:0;transform:rotate(90deg)}.smv-cover-corners i:nth-child(3){right:0;bottom:0;transform:rotate(180deg)}.smv-cover-corners i:nth-child(4){left:0;bottom:0;transform:rotate(270deg)}
+#printReport{background:#fff}
+#printReport .card,#printReport .smv-print-first-card{background-image:none!important;background-color:#fff!important}
+#printReport .smv-ganesha-prayer{background:#fbfdf9!important;border:1.2mm double #b89045!important;padding:4mm!important}
+#printReport .smv-ganesha-img{width:32mm!important;height:auto!important;display:block!important;margin:0 auto 2mm!important}
+.smv-welcome-frame{background:linear-gradient(145deg,#f0f8f4,#fffdf5)!important;border-color:#12625c!important;outline-color:#c49543!important}
+.smv-welcome-frame>svg{display:none!important}
+@media print{#printReport{break-before:auto!important;page-break-before:auto!important}.smv-cover-v19 .smv-cover-frame{padding-top:12mm!important}.smv-cover-v19 .smv-cover-emblem{margin-top:7mm!important}}
+.smv-cover-frame:before,.smv-cover-frame:after{display:none!important}
+.smv-welcome-frame:before,.smv-welcome-frame:after{display:none!important}
+.smv-welcome-halo{background:none!important;filter:none!important;border:.6mm double #bc994e!important}
+.smv-welcome-halo img{width:46mm!important;height:46mm!important;object-fit:contain!important;box-shadow:none!important}

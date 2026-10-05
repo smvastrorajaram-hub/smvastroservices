@@ -1,0 +1,45 @@
+/* SMV HOROSCOPE V226 — header button arrangement only. */
+#templeHeader .header-navigation{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  gap:10px!important;
+  width:min(100%,620px)!important;
+  margin:18px auto 0!important;
+}
+#templeHeader .header-navigation>a{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  text-align:center!important;
+}
+#templeHeader .smv-horoscope-auth{
+  width:min(100%,620px)!important;
+  margin:14px auto 0!important;
+}
+#templeHeader .smv-horoscope-auth .header-account>.action-row{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  width:min(100%,420px)!important;
+  margin:0 auto!important;
+}
+#templeHeader .smv-horoscope-auth .header-account>.action-row>.btn{
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  justify-content:center!important;
+}
+#templeHeader .smv-horoscope-auth.is-logged-in .header-account>.action-row{
+  grid-template-columns:minmax(0,210px)!important;
+  justify-content:center!important;
+}
+@media(max-width:600px){
+  #templeHeader .header-navigation{width:100%!important;gap:8px!important}
+  #templeHeader .header-navigation>a{padding-inline:5px!important;font-size:13px!important}
+  #templeHeader .smv-horoscope-auth{width:100%!important;padding-inline:0!important}
+  #templeHeader .smv-horoscope-auth .header-account>.action-row{width:min(100%,360px)!important;gap:10px!important}
+}

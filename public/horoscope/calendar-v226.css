@@ -1,0 +1,40 @@
+/* SMV CALENDAR V226 — two small UI corrections only. */
+/* Language buttons remain; remove only the surrounding container box. */
+.calendar-language-switch{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  gap:8px!important;
+}
+/* Actual current day: separate from the user-selected date. */
+.cal-month-grid button.cal-today{
+  position:relative!important;
+  border-color:#b88935!important;
+  box-shadow:inset 0 0 0 2px #b88935!important;
+}
+.cal-month-grid button.cal-today[aria-current="date"]{
+  box-shadow:inset 0 0 0 2px #176d62,inset 0 0 0 4px #f6df9c!important;
+}
+.cal-today-label{
+  position:absolute!important;
+  top:4px!important;
+  right:4px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin:0!important;
+  padding:2px 5px!important;
+  border-radius:999px!important;
+  background:#8b1717!important;
+  color:#fff!important;
+  font-size:8px!important;
+  line-height:1.15!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+}
+@media(max-width:680px){
+  .calendar-language-switch{gap:6px!important}
+  .cal-today-label{font-size:7.5px!important;padding:2px 4px!important}
+}
