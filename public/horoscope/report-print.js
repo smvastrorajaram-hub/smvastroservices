@@ -1,7 +1,7 @@
 /* V125 browser-native saved-report output: IndexedDB -> print-ready HTML -> browser Print/Save as PDF. */
 (async()=>{
  async function readSaved(key){
-  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open('smv-reports-v2',2);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(Error('Saved-report database is busy.'));});
+  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open('smv-reports-v2',3);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(Error('Saved-report database is busy.'));});
   try{return await new Promise((resolve,reject)=>{const q=db.transaction('reports','readonly').objectStore('reports').get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}finally{db.close();}
  }
  function coverDate(v,tamil){
