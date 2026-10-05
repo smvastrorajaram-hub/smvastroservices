@@ -14,12 +14,11 @@
 <link rel="icon" href="../assets/calendar-192.png">
 <link rel="apple-touch-icon" href="../assets/calendar-192.png">
 <link rel="stylesheet" href="../horoscope.css?v=209-css-clean">
-<link rel="stylesheet" href="../daily-calendar.css?v=216">
+<link rel="stylesheet" href="../daily-calendar.css?v=221">
 </head>
 <body class="calendar-only">
 <header>
-<a href="../">SMV HOROSCOPE</a>
-<strong>SMV CALENDAR</strong>
+<div class="calendar-brand-links"><a href="../../" target="_blank" rel="noopener">SMV ASTRO</a><a href="../" target="_blank" rel="noopener">SMV HOROSCOPE</a><strong>SMV CALENDAR</strong></div>
 <nav><button id="calTamil" lang="ta">தமிழ்</button><button id="calEnglish" lang="en">English</button></nav>
 </header>
 <main><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
@@ -27,8 +26,9 @@
 <button id="calInstall" type="button"><img src="../assets/calendar-192.png" width="36" height="36" alt=""> <span>Install SMV CALENDAR</span></button>
 <p id="calInstallStatus" role="status"></p>
 </footer>
+<script src="../location-search-online-offline.js?v=221"></script>
 <script src="../horoscope.js?v=216-transit"></script>
 <script type="module" src="calendar-pwa.mjs?v=216"></script>
-<script type="module" src="../daily-calendar.mjs?v=216"></script>
+<script type="module" src="../daily-calendar.mjs?v=221"></script>
 </body>
 </html>
