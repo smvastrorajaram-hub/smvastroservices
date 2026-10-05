@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-v215-child-scope';
+const CACHE='smv-calendar-v216-child-scope';
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css',
