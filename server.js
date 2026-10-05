@@ -3644,27 +3644,54 @@ async function requireCustomerOnly(user,res){
 }
 app.get("/horoscope-auth/session",async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();return res.json({success:true,role});});
 
+// V223 — Render-log-only PDF email audit. No customer-facing loading/generating UI.
+// These phase logs make it possible to distinguish request delivery, Chromium PDF
+// generation, email delivery and RAM pressure without storing the report or PDF.
+function smvPdfEmailMemory(){
+  const m=process.memoryUsage();
+  const mb=n=>Math.round((Number(n)||0)/1048576);
+  return {rssMB:mb(m.rss),heapUsedMB:mb(m.heapUsed),heapTotalMB:mb(m.heapTotal),externalMB:mb(m.external)};
+}
+function smvMaskedEmail(value=''){
+  const s=String(value||'').trim(),at=s.indexOf('@');
+  if(at<1)return '';
+  const local=s.slice(0,at),domain=s.slice(at+1);
+  return `${local.slice(0,1)}***@${domain}`;
+}
+
 app.post('/horoscope-report/email-pdf',express.json({limit:'18mb'}),async(req,res)=>{
+  const job=`${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
+  const started=Date.now();
+  let phase='authentication',feature='',language='en',name='SMV ASTRO Report',email='',htmlBytes=0;
   const user=await requireUser(req,res);if(!user)return;
   if(!(await requireCustomerOnly(user,res)))return;
   try{
-    const feature=String(req.body?.feature||'').trim();
+    phase='validation';
+    feature=String(req.body?.feature||'').trim();
     if(!HOROSCOPE_FEATURES.has(feature))return res.status(400).json({error:'Invalid saved-report type.'});
-    const language=req.body?.language==='ta'?'ta':'en';
-    const name=String(req.body?.name||'SMV ASTRO Report').trim().slice(0,180)||'SMV ASTRO Report';
+    language=req.body?.language==='ta'?'ta':'en';
+    name=String(req.body?.name||'SMV ASTRO Report').trim().slice(0,180)||'SMV ASTRO Report';
     const html=String(req.body?.html||'');
     if(!html.trim())return res.status(400).json({error:'Saved report HTML is missing.'});
+    htmlBytes=Buffer.byteLength(html,'utf8');
     // Keep the renderer bounded. The browser save remains untouched even when an
     // unusually large report cannot be emailed.
-    if(Buffer.byteLength(html,'utf8')>14*1024*1024)return res.status(413).json({error:'Saved report is too large for background email PDF generation.'});
-    const email=String(user.email||await getUserEmail(user.uid)||'').trim();
+    if(htmlBytes>14*1024*1024)return res.status(413).json({error:'Saved report is too large for background email PDF generation.'});
+    email=String(user.email||await getUserEmail(user.uid)||'').trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(409).json({error:'Customer account email is unavailable.'});
+
+    console.log('[PDF_EMAIL] START',JSON.stringify({job,feature,language,name:name.slice(0,80),recipient:smvMaskedEmail(email),htmlMB:+(htmlBytes/1048576).toFixed(2),...smvPdfEmailMemory()}));
     const title=feature==='marriage_matching'
       ? (language==='ta'?`திருமணப் பொருத்த அறிக்கை — ${name}`:`Marriage Matching Report — ${name}`)
       : (language==='ta'?`ஸ்ரீ மதுரைவீரையா ஜாதக அறிக்கை — ${name}`:`Sri Maduraveerayah Horoscope — ${name}`);
+
+    phase='pdf_generation';
+    const pdfStarted=Date.now();
     const {renderHtmlPdf}=require('./html-pdf-renderer');
     const pdf=await renderHtmlPdf({title,language,html});
     if(!Buffer.isBuffer(pdf)||pdf.length<1000)throw new Error('PDF generation did not return a valid document.');
+    console.log('[PDF_EMAIL] PDF GENERATED',JSON.stringify({job,seconds:+((Date.now()-pdfStarted)/1000).toFixed(2),pdfMB:+(pdf.length/1048576).toFixed(2),...smvPdfEmailMemory()}));
+
     const filename=smvSafePdfFilename(feature==='marriage_matching'?`SMV-MARRIAGE-MATCHING-${name}`:`SMV-HOROSCOPE-${name}`);
     const subject=feature==='marriage_matching'?'SMV ASTRO — Marriage Matching PDF':'SMV ASTRO — Horoscope PDF';
     const text=language==='ta'
@@ -3673,10 +3700,14 @@ app.post('/horoscope-report/email-pdf',express.json({limit:'18mb'}),async(req,re
     const mailHtml=language==='ta'
       ? '<p>வணக்கம்,</p><p>SMV ASTRO-வில் சேமித்த உங்கள் PDF அறிக்கை இந்த மின்னஞ்சலில் இணைக்கப்பட்டுள்ளது.</p><p>SMV ASTRO SERVICES</p>'
       : '<p>Hello,</p><p>Your saved SMV ASTRO PDF report is attached to this email.</p><p>SMV ASTRO SERVICES</p>';
+
+    phase='email_delivery';
+    const mailStarted=Date.now();
     await sendPdfAttachmentEmail({to:email,subject,text,html:mailHtml,pdfBuffer:pdf,filename});
+    console.log('[PDF_EMAIL] SENT',JSON.stringify({job,recipient:smvMaskedEmail(email),emailSeconds:+((Date.now()-mailStarted)/1000).toFixed(2),totalSeconds:+((Date.now()-started)/1000).toFixed(2),pdfMB:+(pdf.length/1048576).toFixed(2),...smvPdfEmailMemory()}));
     return res.json({success:true,email,filename,sizeBytes:pdf.length});
   }catch(e){
-    console.error('Horoscope PDF email failed:',e?.message||e);
+    console.error('[PDF_EMAIL] FAILED',JSON.stringify({job,phase,feature,language,recipient:smvMaskedEmail(email),htmlMB:+(htmlBytes/1048576).toFixed(2),totalSeconds:+((Date.now()-started)/1000).toFixed(2),error:String(e?.message||e).slice(0,500),...smvPdfEmailMemory()}));
     return res.status(502).json({error:e?.message||'Unable to generate or email the PDF report.'});
   }
 });
