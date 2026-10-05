@@ -1,130 +1,246 @@
-# SMV ASTRO SERVICES
+# SMV ASTRO SERVICES — Production README
 
-## Production Source Audit --- 29 September 2026
+**Project:** SMV ASTRO / Sri Madurai Veerayah Astro Services  
+**Website:** https://smvastroservices.in  
+**Audit baseline:** latest clean source + V222 Calendar/UI/FAQ overlay + V223 Non-AI runtime/documentation cleanup  
+**README / Non-AI runtime audit date:** 5 October 2026
 
-This repository powers **SMV ASTRO / Sri Madurai Veerayah Astro
-Services**.
+## 1. Project purpose
 
-### Audit scope
+SMV ASTRO is a bilingual-oriented Vedic astrology web application and consultation platform. It combines browser-based horoscope and calendar calculation tools with customer, astrologer and administrator workflows.
 
-The current production source was audited from the latest SMV ASTRO
-baseline with the latest changed files applied in descending order. This
-audit covers the main SMV ASTRO website and service workflows only.
+Main public/service areas include:
 
-**Horoscope and Marriage Matching calculation sections are intentionally
-excluded from this audit.**
+- SMV ASTRO homepage, About, FAQ, Blog/Media, Contact and legal pages.
+- Customer registration/login and Customer Dashboard.
+- Astrologer registration, qualification/approval and Astrologer Dashboard.
+- Admin Dashboard and workflow/settings controls.
+- Public astrology questions and private consultations.
+- SMV HOROSCOPE: birth-chart calculation, D1/Bhava/divisional analysis, Dasa, advanced astrology, transit, Panchang, numerology, remedial and programmed prediction sections.
+- Marriage Matching with Nakshatra Porutham and expanded rule-based compatibility analysis when enabled.
+- SMV CALENDAR with Panchang, Hora, transits, Moon-sign information, Chandrashtama/Tara Bala and supported festival/vrat/holiday references.
+- PWA/offline support for supported Horoscope/Calendar assets and bundled India place search.
+- Saved browser reports and browser print / Save as PDF workflow.
 
-Covered areas:
+## 2. Non-AI calculation and prediction policy
 
--   Home, header, navigation, footer, public content, Blog/Media, FAQ
-    and contact surfaces
--   Customer registration and login
--   Astrologer registration, qualification and login
--   Google authentication
--   Admin authentication and dashboard
--   Customer dashboard and all non-horoscope subsections
--   Astrologer dashboard and all subsections
--   Public Ask Question workflow
--   Private Consultation workflow
--   Admin question approval / allocation / reallocation
--   Public and Private answer submission / approval
--   Customer viewed / commission flow
--   Reviews and ratings
--   Offers, automatic offers and promotion codes
--   Home + Customer offer banners
--   Razorpay order / verify / retry / refund integration paths
--   Withdrawals and payout-management paths
--   Admin notifications
--   Resend email event flow
--   Firebase read/realtime behavior relevant to quota
--   Dashboard state reuse and live-update invalidation
--   PWA/session/navigation integration outside the Horoscope application
+### Production/runtime statement
 
-### Locked behavior preserved
+**SMV ASTRO does not use generative AI to calculate or generate its astrology results.**
 
--   Login and Dashboard opening logic is treated as working and must not
-    be changed casually.
--   Returning to an already hydrated Dashboard reuses the existing
-    dashboard state unless a real data-changing action requires refresh.
--   Dashboard live connection `ready`, `error`, or reconnect events do
-    not themselves force a full reload; actual change events are
-    coalesced.
--   MutationObserver must not initiate Firebase reads, backend requests,
-    payment calls, or dashboard refreshes.
--   Public and Private answer email rules:
-    -   Auto Allow ON → answer can be released to the customer
-        immediately.
-    -   Auto Allow OFF → customer answer email is sent only after Admin
-        approval.
--   Email failure must not roll back a successful
-    payment/question/answer business transaction.
--   Automatic offers do not require a promo code.
-    Manual/No-Code-Required behavior remains separate according to the
-    saved offer configuration.
--   Offers selected for both Public Question and Private Consultation
-    are evaluated for both services.
--   Home + Customer banner visibility follows the saved banner display
-    target.
--   Payment retries preserve the original service/question context
-    rather than creating an unrelated duplicate transaction.
+The audited source does **not** use ChatGPT, OpenAI, Gemini, Anthropic or another generative-AI model/API to:
 
-### Current audit result
+- calculate a horoscope or planetary position;
+- calculate Lagna, houses, Nakshatra/Pada or divisional charts;
+- calculate Vimshottari Dasa/Bhukthi/Antaram;
+- calculate Panchang, Hora, Transit or SMV CALENDAR results;
+- calculate Marriage Matching or its rule-based verdict/supporting checks;
+- generate the automated horoscope prediction sections; or
+- rewrite calculated astrology data into an AI-generated personalised prediction.
 
-**Static/source audit: PASS with two bounded quota-watch items
-documented below.**
+Automated astrology outputs are generated by **programmed astronomical/Vedic-astrology calculations, lookup tables and deterministic/rule-based interpretation logic**. Personal consultation answers are separate and are written by approved astrologers through the consultation workflow.
 
-The source passed:
+### Source audit evidence
 
--   JavaScript syntax validation for the main backend and all public
-    JS/MJS files.
--   HTML ID uniqueness check: no duplicate IDs found in the audited
-    `index.html`.
--   Local HTML asset-reference check: no missing local assets were
-    found.
--   Client/backend route contract check for the audited non-horoscope
-    calls; query-string variants map to their corresponding backend
-    routes.
--   MutationObserver audit: the active observer found in the main
-    application only synchronizes Logout-button styling; it does not
-    perform network/Firebase/payment work.
--   Admin Offer initial-load audit: Offers are supplied through the
-    Admin data load instead of an extra initial `/admin/offers` request.
-    `/admin/offers` remains available for explicit save
-    verification/refresh.
--   Dashboard refresh deduplication and existing-dashboard reuse are
-    present.
+The 5 October 2026 source audit found:
 
-### Firebase quota notes
+- no OpenAI, Anthropic, Gemini or generative-AI SDK in `package.json`;
+- no runtime fetch/API route to an AI model provider in the audited application code;
+- Horoscope/Calendar calculation code uses local/programmed engines and Swiss Ephemeris/WebAssembly resources;
+- the prediction module is rule/evidence based and consumes calculated chart data;
+- the Marriage Matching module calculates compatibility through programmed rules;
+- the legacy disabled `AI Future Insights` UI strings/handler were removed in this update so the source no longer carries that obsolete user-facing AI feature residue.
 
-Two intentional bounded mechanisms remain and should not be converted
-into uncontrolled polling:
+**Scope note:** this is a runtime/output audit. Source code alone cannot prove which development tools were historically used while editing the website, so the project does not make a false historical authorship claim. The accurate public claim is that the live astrology calculations, automated predictions and matching/calendar outputs are **not AI-generated and not AI-calculated**.
 
-1.  The Public Question price uses one Firestore `onSnapshot` listener
-    for `smv_settings/question` per page session. It updates only when
-    that document changes.
-2.  A Customer Dashboard with a pending refund can schedule a 20-second
-    reconciliation refresh while the pending refund condition exists.
+## 3. Calculation architecture
 
-Neither is driven by MutationObserver. Do not add retry loops, repeated
-collection reads, or observer-triggered API calls around them.
+### Horoscope
 
-### Deployment
+The Horoscope application accepts birth date, birth time, place/coordinates and language/display input. Supported calculations are performed through the project’s programmed astrology modules and local/browser calculation stack. The output can include core chart data, Dasa periods, advanced derived values, transit/Panchang data, numerology, rule-based predictions and remedial guidance according to the active feature configuration.
 
-Frontend/static files are deployed with the SMV ASTRO site.
+### Programmed prediction engine
 
-Backend changes in `server.js` require the Render backend deployment
-used by the production site.
+Automated prediction text is not free-form model generation. The prediction code evaluates calculated chart evidence such as houses/lords, placements, aspects/conjunctions, functional nature, Dasa timing, divisional confirmation and transit-related factors, then selects/composes the corresponding programmed interpretation text.
 
-Keep Firebase credentials and email/payment secrets server-side. Do not
-commit production secrets to GitHub.
+### Marriage Matching
 
-### Runtime verification
+Marriage Matching uses programmed compatibility checks. Depending on active access settings, the public/locked layer can be limited while the enabled full report can include broader D1/divisional, Dosha, Dasa, planetary-strength and rule-based compatibility analysis.
 
-This audit validates source structure and static contracts. Live
-Firebase Auth, Firestore, Razorpay, Resend delivery and Render
-environment secrets cannot be fully simulated by a source-only test
-environment. After deployment, use a controlled test account to verify
-one complete Public Question and one complete Private Consultation
-transaction without repeatedly generating paid orders.
+### SMV CALENDAR
 
-See `FINAL-AUDIT-REPORT.md` for the detailed section-by-section result.
+SMV CALENDAR uses programmed calendar/Panchang/transit computation. Its worker caches repeated month/day results and reuses calculated data for Tamil/English rendering instead of recalculating only because the display language changed.
+
+## 4. Astronomy / ephemeris stack
+
+The source includes Swiss Ephemeris resources and browser WebAssembly integration for supported local calculations, together with project astrology modules such as:
+
+- `swiss_vedic.js` / browser Swiss Vedic module;
+- `astro_advanced.js`;
+- `dasa_engine.js`;
+- `transit_panchang.js`;
+- Horoscope prediction and marriage-matching modules;
+- Calendar worker/data modules.
+
+Third-party notices and license files must remain with the deployed source where required. See `THIRD_PARTY_LICENSES.md`, `SWISSEPH_LICENSE_NOTICE.md` and the Horoscope license directory.
+
+## 5. Language behavior
+
+SMV HOROSCOPE and SMV CALENDAR support Tamil and English presentation. The intended design is to reuse already calculated data when only the display language changes. A language toggle must not be turned into a second astrology calculation, Firestore read loop or AI-generation request.
+
+## 6. Place search
+
+Horoscope and Calendar place lookup can use an online lookup when available and bundled India place data as an offline fallback. Manual latitude/longitude entry is also supported where exposed by the UI.
+
+Place lookup is a location-resolution function; it is not an AI astrology calculation.
+
+## 7. Access and feature gating
+
+Advanced Horoscope and Marriage Matching access is controlled by the current feature configuration returned by the backend.
+
+The source supports these general states:
+
+- feature disabled: public/basic or limited output only;
+- feature enabled with price `0`: enabled full access without a report charge, subject to the login/access flow;
+- feature enabled with price above `0`: report index/lock and verified payment entitlement before full access.
+
+Do not bypass the server-side entitlement/payment checks when a paid state is active.
+
+## 8. Saved reports, print and PDF
+
+Eligible signed-in customer reports can be stored as browser-side Saved Reports. Saved report data is distinct from consultation/account records stored through the backend/Firebase workflow.
+
+The current report flow supports reopening and browser print / Save as PDF. Browser-generated report output must use the already calculated report snapshot and must not call a generative-AI service.
+
+## 9. Public Question and Private Consultation
+
+Customer consultation features are separate from automated report calculations.
+
+A consultation can involve:
+
+1. customer authentication and question/birth-detail submission;
+2. price/offer/payment handling when configured;
+3. admin approval/allocation behavior according to workflow settings;
+4. an approved astrologer claiming/receiving the question;
+5. astrologer-written answer submission;
+6. customer viewing/review flow; and
+7. commission/refund/status handling as applicable.
+
+**Human consultation answers are not the automated programmed prediction section.** They are supplied by the approved astrologer handling the consultation.
+
+## 10. Accounts and roles
+
+The application distinguishes Customer, Astrologer and Admin workflows. Role-specific dashboards and authorization checks must remain isolated. Horoscope customer authentication is also used where full-report access or Saved Reports requires a signed-in customer.
+
+Firebase Authentication/Firestore are used for account and application data. Google sign-in is available where configured.
+
+## 11. Payments, offers and refunds
+
+The source contains Razorpay integration for service/report payment flows where the corresponding setting and price require payment. Backend verification is required before paid entitlement is considered valid.
+
+Offer/promotion logic can include automatic or code-based offers according to Admin configuration. Refund handling records provider state/reference information and must remain idempotent where implemented.
+
+Payment infrastructure is unrelated to the astrology calculation method and does not provide AI prediction services.
+
+## 12. Email and notifications
+
+The backend contains service-email support (for example Resend, with configured fallback behavior where applicable) for operational messages such as consultation status. Email delivery failure must not be treated as proof that the underlying successful business transaction failed.
+
+No generative-AI service is required to create horoscope calculations or predictions for email delivery.
+
+## 13. Privacy and data handling
+
+Birth details, account information, consultation questions/answers, payment references and operational records are handled according to `public/privacy.html`.
+
+For automated astrology results, the audited calculation flow does **not** send birth/chart/matching/Panchang/Transit data to a generative-AI model for calculation or prediction generation.
+
+Other third-party providers can still process the data required for their own stated function, including authentication, database/hosting, payment, email or online place lookup. Do not describe those providers as astrology AI services.
+
+## 14. Offline / PWA behavior
+
+SMV HOROSCOPE and SMV CALENDAR contain installable PWA/offline components. Supported calculation assets, ephemeris resources and India place-search shards are cached/bundled for offline fallback.
+
+Internet access is still required for functions that depend on online services, including authentication, cloud account/dashboard records, payment verification, email delivery and online place lookup.
+
+Service-worker changes must be versioned carefully so a stale cache does not mask a production update.
+
+## 15. Performance and quota safeguards
+
+Preserve these source-level rules:
+
+- no MutationObserver-triggered Firebase/API/payment calls;
+- avoid repeated Firestore reads when cached/current state is available;
+- do not turn language switching into a recalculation;
+- keep calculation work in dedicated modules/workers rather than inflating the main homepage;
+- debounce place search and reuse cached calculation results where implemented;
+- do not create uncontrolled refresh/retry loops;
+- keep dashboard state reuse behavior unless a real data-changing event requires refresh.
+
+## 16. Main project structure
+
+Key production paths include:
+
+- `index.html` / `public/index.html` — main SMV ASTRO site and FAQ.
+- `public/horoscope/` — Horoscope, Marriage Matching, Saved Reports and Calendar web apps.
+- `public/horoscope/calendar/` — separate SMV CALENDAR PWA shell.
+- `public/horoscope/offline/` — browser calculation modules, Swiss Ephemeris/WASM assets and offline place data.
+- `public/terms.html` — Terms & Conditions.
+- `public/privacy.html` — Privacy Policy.
+- `public/sitemap.html` / `public/sitemap.xml` — human-readable/XML sitemap.
+- `smvastro.mjs` / `public/smvastro.mjs` — main frontend application workflows.
+- `server.js` — backend API, account/workflow/payment/email/admin logic.
+- `firestore.rules` / `firestore.indexes.json` — Firebase data access/index configuration.
+
+## 17. Public documentation consistency rule
+
+The following public statements must remain consistent after future changes:
+
+1. Astrology calculations and automated predictions are **not AI-generated and not AI-calculated**.
+2. Automated results come from programmed astronomical/Vedic-astrology calculation and rule engines.
+3. Personal consultation answers are a separate human astrologer service.
+4. Astrology guidance does not guarantee future outcomes and is not a substitute for qualified medical, legal or financial advice.
+5. Privacy documentation must be updated before any future feature begins sending astrology data to a new third-party processing service.
+
+If a future release intentionally introduces an AI/model feature, it must not silently reuse the current non-AI wording. The README, Terms, Privacy Policy, FAQ and relevant UI disclosures must first be updated to describe the feature accurately and the user-data flow must be reviewed.
+
+## 18. Security rules
+
+- Never commit Firebase service-account secrets, Razorpay secrets, email-provider secrets or other production credentials.
+- Keep privileged Admin operations server-authorized.
+- Validate paid entitlements server-side.
+- Do not expose authentication tokens in URLs.
+- Do not ask users to submit card PINs, passwords or OTPs through support/consultation content.
+
+## 19. Deployment
+
+Frontend/static/PWA files are deployed to the SMV ASTRO web host. Backend changes in `server.js` require deployment to the configured Node/Render backend. Environment variables and secrets must be configured in the deployment environment, not hard-coded into public source.
+
+After deployment, verify cache/service-worker versioning so the browser is loading the new files rather than a previous cached build.
+
+## 20. Regression checklist
+
+Before calling a release final, verify at minimum:
+
+- homepage/header/footer/navigation and FAQ;
+- Customer, Astrologer and Admin login/dashboard behavior;
+- Google and normal authentication where enabled;
+- Public Question and Private Consultation flows;
+- current Admin approval/allocation settings;
+- payment/offer/refund paths that are enabled;
+- Horoscope Basic/full access matrix;
+- Marriage Matching limited/full access matrix;
+- Tamil/English switch without unnecessary recalculation;
+- all supported online/offline place-search flows;
+- SMV CALENDAR Panchang/Hora/transit/month rendering;
+- Saved Reports open/delete/print behavior;
+- PWA install/offline cache behavior;
+- no new AI/model SDK, endpoint or data-transfer path has been introduced into astrology calculation/prediction flows;
+- `README.md`, Terms, Privacy, Sitemap and FAQ still describe the deployed behavior accurately.
+
+## 21. Non-AI audit result — 5 October 2026
+
+**Result: PASS after legacy cleanup.**
+
+The audited runtime/source contains no active generative-AI astrology calculation or prediction integration. A legacy disabled `AI Future Insights` UI handler/translation residue was identified in `public/horoscope/horoscope.js` and removed. After cleanup, remaining uses of the words “AI” / “generative AI” are documentation/disclosure statements explaining that the service does not use AI for astrology calculation/prediction, plus source comments documenting the absence of such endpoints.
+
+This README is the current technical/product reference for the non-AI calculation position of SMV ASTRO. Keep it synchronized with production behavior.
