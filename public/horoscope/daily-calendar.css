@@ -45,3 +45,9 @@
  #smvDailyCalendar .transit-chart .transit-degree{font-size:.72em!important}
  #smvDailyCalendar .transit-table-card{padding-top:12px;margin-top:12px}
 }
+
+/* V221 Calendar location search + compact responsive top navigation. */
+.calendar-only>header .calendar-brand-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.calendar-only>header .calendar-brand-links a,.calendar-only>header .calendar-brand-links strong{white-space:nowrap}
+.cal-place-label{position:relative;z-index:4}.cal-place-search{display:block;position:relative}.cal-place-results{display:none;position:absolute;z-index:40;left:0;right:0;top:calc(100% + 5px);max-height:280px;overflow:auto;background:#fff;border:1px solid #b4c9c0;border-radius:10px;box-shadow:0 10px 26px #173e3a24}.cal-place-results.is-open{display:block}.cal-place-option{display:block!important;width:100%!important;min-height:0!important;padding:10px 12px!important;border:0!important;border-bottom:1px solid #e3ebe6!important;border-radius:0!important;text-align:left!important;background:#fff!important;color:#173e3a!important}.cal-place-option:last-child{border-bottom:0!important}.cal-place-option:hover,.cal-place-option:focus{background:#edf5ef!important}.cal-place-note{padding:10px 12px;font-size:13px;color:#587069}.cal-place-note.is-error{color:#8b3030}.cal-location[open]{overflow:visible}.cal-location form{overflow:visible}
+@media(max-width:680px){.calendar-only>header{align-items:flex-start!important}.calendar-only>header .calendar-brand-links{gap:8px;font-size:14px}.calendar-only>header nav{margin-left:auto}.cal-place-results{max-height:220px}.cal-controls,#calLocation{gap:10px}.cal-controls label,#calLocation label{min-width:140px}}
