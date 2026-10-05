@@ -10,7 +10,17 @@ async function loadFactory(){
   if(typeof globalThis.__SMV_CREATE_SWEPH_WASM__==='function') return globalThis.__SMV_CREATE_SWEPH_WASM__;
   if(factoryPromise)return factoryPromise;
   factoryPromise=(async()=>{
-    const mod=await import('./vendor/smv-swisseph-local.mjs');
+    let mod;
+    const vendorUrl=new URL('./vendor/smv-swisseph-local.mjs?v=186',import.meta.url).href;
+    try{mod=await import(vendorUrl);}
+    catch(firstError){
+      try{mod=await import('./vendor/smv-swisseph-local.mjs');}
+      catch(secondError){
+        const e=new Error('SMV local Swiss Ephemeris module could not be loaded. Ensure offline/vendor and offline/vendor/wasm files are deployed.');
+        e.cause=secondError||firstError;
+        throw e;
+      }
+    }
     const f=mod.createSMVSwissEph||mod.default;
     if(typeof f!=='function')throw new Error('Swiss module loaded without factory export.');
     return f;
