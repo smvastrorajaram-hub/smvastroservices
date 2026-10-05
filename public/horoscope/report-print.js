@@ -1,43 +1,8 @@
 /* V125 browser-native saved-report output: IndexedDB -> print-ready HTML -> browser Print/Save as PDF. */
 (async()=>{
  async function readSaved(key){
-  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open('smv-reports-v2',3);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(Error('Saved-report database is busy.'));});
+  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open('smv-reports-v2',2);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(Error('Saved-report database is busy.'));});
   try{return await new Promise((resolve,reject)=>{const q=db.transaction('reports','readonly').objectStore('reports').get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}finally{db.close();}
- }
- function coverDate(v,tamil){
-  const raw=String(v||'').trim();if(!raw)return '—';
-  const d=new Date(raw.includes('T')?raw:raw+'T00:00:00');if(Number.isNaN(+d))return raw;
-  try{return new Intl.DateTimeFormat(tamil?'ta-IN':'en-IN',{day:'2-digit',month:'long',year:'numeric'}).format(d)}catch{return raw}
- }
- function compactBirthFromReport(root,tamil){
-  const firstCard=root.querySelector('.card'),compact=firstCard?.querySelector('p.small[style*="text-align:center"]');
-  if(!compact)return null;
-  const raw=(compact.textContent||'').replace(/\s+/g,' ').trim(),labels=tamil?{date:'பிறந்த தேதி',time:'நேரம்',place:'பிறந்த இடம்'}:{date:'Date of Birth',time:'Time',place:'Place of Birth'};
-  const escRe=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const re=new RegExp(escRe(labels.date)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.time)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.place)+'\\s*:\\s*(.*)$','i'),m=raw.match(re);
-  return m?{date:m[1],time:m[2],place:m[3]}:{raw};
- }
- function addCoverPerson(grid,title,name,date,time,place,tamil){
-  const card=document.createElement('article');card.className='smv-cover-person';
-  const h=document.createElement('h2');h.textContent=(title?title+' · ':'')+(name||'—');card.append(h);
-  const add=(label,value)=>{const row=document.createElement('div');row.className='smv-cover-detail';const b=document.createElement('b');b.textContent=label;const i=document.createElement('i');i.textContent=':';const v=document.createElement('span');v.textContent=value||'—';row.append(b,i,v);card.append(row)};
-  add(tamil?'பிறந்த தேதி':'Date of Birth',date||'—');add(tamil?'நேரம்':'Time',time||'—');add(tamil?'பிறந்த இடம்':'Place of Birth',place||'—');grid.append(card);
- }
- function populatePremiumCover(report,root,tamil){
-  const grid=document.getElementById('smvCoverBirthGrid'),title=document.getElementById('smvCoverReportTitle'),primary=document.getElementById('smvCoverPrimaryName'),sub=document.getElementById('smvCoverSubtitle');if(!grid||!title||!primary||!sub)return;
-  grid.replaceChildren();
-  if(report.feature==='marriage_matching'){
-   title.textContent=tamil?'திருமணப் பொருத்த அறிக்கை':'Marriage Matching Report';sub.textContent=tamil?'இரு ஜாதக வேத ஜோதிட பொருத்த ஆய்வு':'Two-chart Vedic compatibility analysis';
-   const cb=report.cover?.bride||{},cg=report.cover?.groom||{},b=report.calculation?.bride||{},g=report.calculation?.groom||{};
-   const bn=cb.name||b.birthName||b.nativeName||String(report.name||'').split('/')[0]?.trim()||'Bride',gn=cg.name||g.birthName||g.nativeName||String(report.name||'').split('/')[1]?.trim()||'Groom';
-   addCoverPerson(grid,tamil?'பெண்':'Bride',bn,coverDate(cb.date||b.birth?.date||b.birthDate,tamil),cb.time||b.birth?.time||b.birthTime||'—',cb.place||b.birthPlace||b.birth?.place||'—',tamil);
-   addCoverPerson(grid,tamil?'ஆண்':'Groom',gn,coverDate(cg.date||g.birth?.date||g.birthDate,tamil),cg.time||g.birth?.time||g.birthTime||'—',cg.place||g.birthPlace||g.birth?.place||'—',tamil);
-   primary.textContent=`${bn}  ×  ${gn}`;
-  }else{
-   title.textContent='Sri Maduraveerayah Horoscope';sub.textContent=tamil?'முழு வேத ஜோதிட வாழ்க்கைப் பலன்':'Complete Vedic life-prediction report';grid.classList.add('is-single');
-   const compact=compactBirthFromReport(root,tamil),id=report.identity||{};
-   addCoverPerson(grid,'',report.name||'Horoscope',compact?.date||coverDate(id.date,tamil),compact?.time||id.time||'—',compact?.place||'—',tamil);primary.textContent=report.name||'SMV HOROSCOPE';
-  }
  }
  const status=document.getElementById('printStatus'),button=document.getElementById('printNow'),back=document.getElementById('printBack');
  back.onclick=()=>history.length>1?history.back():location.assign('./');
@@ -54,54 +19,85 @@
   const html=report.views?.[lang]||(report.language===lang?report.html:'');
   if(typeof html!=='string'||!html.trim())throw Error(tamil?'இந்த மொழியில் சேமித்த அறிக்கை இல்லை.':'The saved report is not available in this language.');
   document.documentElement.lang=lang;
+
+  // V224: Marriage Matching gets a dynamic premium first page. The richer devotional
+  // scene replaces the plain single-Ganesha artwork while keeping both birth identities.
+  const cover=document.querySelector('.smv-print-cover');
+  if(cover&&report.feature==='marriage_matching'){
+   const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+   const monthsEn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+   const monthsTa=['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
+   const fmtDate=v=>{const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return String(v||'—');const y=+m[1],mo=+m[2],d=+m[3];return tamil?`${String(d).padStart(2,'0')} ${monthsTa[mo-1]||''}, ${y}`:`${String(d).padStart(2,'0')} ${monthsEn[mo-1]||''}, ${y}`;};
+   const c=report.calculation||{},br=c.bride||{},gr=c.groom||{};
+   const person=(x,fallback)=>{const b=x.birth||{};return {name:x.birthName||x.nativeName||fallback,date:fmtDate(b.date||x.birthDate||''),time:b.time||x.birthTime||'—',place:x.birthPlace||b.place||b.placeName||'—'};};
+   const B=person(br,tamil?'பெண்':'Bride'),G=person(gr,tamil?'ஆண்':'Groom');
+   const labelDate=tamil?'பிறந்த தேதி':'Date of Birth',labelTime=tamil?'நேரம்':'Time',labelPlace=tamil?'பிறந்த இடம்':'Place of Birth';
+   const personCard=(who,x)=>`<section class="smv-matching-cover-person"><h3>${h(who)} · ${h(x.name)}</h3><div><b>${h(labelDate)}</b><span>:</span><em>${h(x.date)}</em><b>${h(labelTime)}</b><span>:</span><em>${h(x.time)}</em><b>${h(labelPlace)}</b><span>:</span><em>${h(x.place)}</em></div></section>`;
+   cover.classList.add('smv-matching-cover');
+   cover.setAttribute('aria-label',tamil?'SMV ASTRO திருமணப் பொருத்த அறிக்கை':'SMV ASTRO Marriage Matching Report');
+   cover.innerHTML=`<div class="smv-matching-cover-frame">
+    <div class="smv-matching-cover-kicker">SRI MADURAVEERAYAH ASTRO SERVICES</div>
+    <div class="smv-matching-cover-brand">SMV ASTRO SERVICES</div>
+    <div class="smv-matching-cover-title">${tamil?'திருமணப் பொருத்த அறிக்கை':'Marriage Matching Report'}</div>
+    <img class="smv-matching-cover-scene" src="assets/smv-devotional-scene-v224.webp?v=224" alt="Sri Vinayagar, Sri Madurai Veerayah, Bommi, Vellaiyammal and Sri Murugan devotional scene">
+    <div class="smv-matching-cover-people">${personCard(tamil?'பெண்':'Bride',B)}${personCard(tamil?'ஆண்':'Groom',G)}</div>
+    <div class="smv-matching-cover-pair"><strong>${h(B.name)} × ${h(G.name)}</strong><span>${tamil?'இரு ஜாதக வேத ஜோதிட பொருத்த ஆய்வு':'Two-horoscope Vedic astrology compatibility review'}</span></div>
+    <div class="smv-matching-cover-contact">
+      <span><img src="assets/web-black.svg" alt="">www.smvastroservices.in</span>
+      <span><img src="assets/phone-black.svg" alt="">6381171084</span>
+      <span><img src="assets/whatsapp-black.svg" alt="">8072973399</span>
+      <span><img src="assets/email-black.svg" alt="">smvastroservices@gmail.com</span>
+    </div>
+   </div>`;
+  }
+
   back.textContent=tamil?'திரும்புக':'Back';
   button.textContent=tamil?'அச்சிட / PDF சேமிக்க':'Print / Save as PDF';
   const root=document.getElementById('printReport');root.innerHTML=html;
-  populatePremiumCover(report,root,tamil);
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());
   root.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['href','xlink:href','srcset','action','formaction','contenteditable'].includes(a.name))e.removeAttribute(a.name);});
-  // Human-reading-first print/PDF: optional technical evidence stays available on screen but is not expanded into the printed report.
-  root.querySelectorAll('[data-print-technical="1"]').forEach(e=>e.remove());
   root.querySelectorAll('details').forEach(e=>{e.open=true;e.setAttribute('open','');});
-  // V20: unwrap long-form <details> for reliable browser printing, but do not force
-  // one semantic chapter onto one physical page. Natural pagination keeps pages dense
-  // while the expanded prediction text supplies the actual report depth.
-  root.querySelectorAll('details.smv-v16-longform,details.mm-v16-longform').forEach(d=>{
-    const holder=document.createElement('div');
-    holder.className='smv-v16-longform-print';
-    [...d.childNodes].forEach(n=>{if(n.nodeType===1&&n.tagName==='SUMMARY')return;holder.appendChild(n);});
-    d.replaceWith(holder);
-  });
-  const longPages=[...root.querySelectorAll('[data-smv-v16-page="1"]')];
-  longPages.forEach((e,i)=>{e.dataset.smvPrintChapter=String(i+1);});
-  root.dataset.smvLongChapterCount=String(longPages.length);
-  const welcome=document.getElementById('smvMatchingWelcome');
-  if(welcome){
-   if(report.feature==='marriage_matching'){
-    welcome.hidden=false;
-    const bn=report.calculation?.bride?.birthName||report.calculation?.bride?.nativeName||String(report.name||'').split('/')[0]?.trim()||'Bride';
-    const gn=report.calculation?.groom?.birthName||report.calculation?.groom?.nativeName||String(report.name||'').split('/')[1]?.trim()||'Groom';
-    document.getElementById('smvWelcomeTitle').textContent=tamil?'ஸ்ரீ விநாயகர் அருள் வரவேற்பு':'Sri Vinayakar Blessing';
-    document.getElementById('smvWelcomeMantra').textContent=tamil?'ஓம் கம் கணபதயே நமஹ':'Om Gam Ganapataye Namah';
-    document.getElementById('smvWelcomeVerse').innerHTML=tamil?'வக்ரதுண்ட மஹாகாய<br>சூர்ய கோடி சமப்ரப<br>நிர்விக்னம் குருமே தேவ<br>சர்வ கார்யேஷு சர்வதா':'Vakratunda Mahakaya<br>Surya Koti Samaprabha<br>Nirvighnam Kurume Deva<br>Sarva Karyeshu Sarvada';
-    document.getElementById('smvWelcomeMeaning').textContent=tamil?'வளைந்த துதிக்கையும் பெரும் திருமேனியும் உடைய விநாயகப் பெருமானே, கோடி சூரியர்களைப் போல் பிரகாசிப்பவரே, இந்த இரு ஜாதகத் திருமணப் பொருத்த ஆய்வில் தடைகளை நீக்கி தெளிவு, ஒற்றுமை மற்றும் நல்ல வழிகாட்டலை அருள்வாயாக.':'May Lord Vinayakar remove obstacles and bless this two-chart marriage compatibility study with clarity, harmony and auspicious guidance.';
-    document.getElementById('smvWelcomeInvocation').textContent=tamil?'ஓம் ஸ்ரீ மதுரை வீரன் துணை':'Om Sri Madurai Veeran Thunai';
-    document.getElementById('smvWelcomePair').textContent=`${bn}  ×  ${gn}`;
-   }else welcome.hidden=true;
-  }
   root.querySelectorAll('[hidden]').forEach(e=>e.hidden=false);
   root.querySelectorAll('.hidden').forEach(e=>e.classList.remove('hidden'));
-  // The complete interactive Vimshottari tree can span many calculation-only pages. The new Dasha/Bhukti human reading carries the timing interpretation in print.
-  const rawDasha=root.querySelector('#dashaTree');
-  if(rawDasha){
-    let prev=rawDasha.previousElementSibling;
-    while(prev&&!prev.classList.contains('transit-before-vimsottari')){const x=prev.previousElementSibling;prev.remove();prev=x;}
-    rawDasha.remove();
-  }
+  root.querySelectorAll('.dasha-node').forEach(e=>e.classList.add('open'));
   root.querySelectorAll('.smv-advanced-part').forEach(e=>e.classList.add('is-expanded'));
   root.querySelectorAll('[aria-expanded]').forEach(e=>e.setAttribute('aria-expanded','true'));
   root.querySelectorAll('.collapsed,.is-collapsed').forEach(e=>{e.classList.remove('collapsed','is-collapsed');e.classList.add('open','is-expanded');});
   root.querySelectorAll('.smv-v61-sub-body,.smv-advanced-part-content,.dasha-body,.dasha-content,.dasha-children,.smv-prediction-body,.prediction-body').forEach(e=>{e.hidden=false;e.style.display='block';e.style.maxHeight='none';e.style.height='auto';e.style.overflow='visible';});
+
+  // V224 Marriage Matching print flow:
+  // 1) remove the old full-page Vinayagar welcome/prayer sheet from legacy saved snapshots;
+  // 2) place one compact Vinayagar Vanakkam at the top of the first result page;
+  // 3) continue the matching result immediately below it without another page break.
+  if(report.feature==='marriage_matching'){
+   const mantraRe=/(Om\s*Gam\s*Ganapataye|Vakratunda|Nirvighnam|Sarva\s*Karyeshu|ஓம்\s*கம்\s*கணபதயே|வக்ரதுண்ட|நிர்விக்னம்|சர்வ\s*கார்யேஷு)/i;
+   const resultRe=/(Nakshatra\s+Porutham|Dasa\s+Porutham|Marriage\s+Matching|Birth\s+details|நட்சத்திர.*பொருத்த|தசப்\s*பொருத்த|திருமணப்\s*பொருத்த|பிறப்பு\s+விவரங்கள்)/i;
+   const all=[...root.querySelectorAll('section,article,div')];
+   const candidates=all.filter(el=>{
+    if(el.classList.contains('smv-matching-vinayagar-intro'))return false;
+    const tx=(el.textContent||'').replace(/\s+/g,' ').trim();
+    if(!tx||tx.length>1800||!mantraRe.test(tx))return false;
+    if(el.querySelector('table,.mm-person-result,.mm-full-results'))return false;
+    // A legacy standalone prayer page may mention the report/couple names, but it must not contain result sections.
+    return !resultRe.test(tx.replace(/Marriage\s+Matching/ig,''));
+   });
+   const set=new Set(candidates);
+   const topCandidates=candidates.filter(el=>{let p=el.parentElement;while(p&&p!==root){if(set.has(p))return false;p=p.parentElement;}return true;});
+   topCandidates.forEach(el=>el.remove());
+
+   const host=root.querySelector('.mm-full-results')||root;
+   host.querySelector(':scope > .smv-matching-vinayagar-intro')?.remove();
+   const prayer=document.createElement('section');
+   prayer.className='smv-matching-vinayagar-intro';
+   prayer.setAttribute('aria-label',tamil?'ஸ்ரீ விநாயகர் வணக்கம்':'Sri Vinayakar Vanakkam');
+   prayer.innerHTML=`<img class="smv-matching-vinayagar-img" src="assets/vinayagar-report.png" alt="Lord Vinayagar">
+    <h2>${tamil?'ஸ்ரீ விநாயகர் வணக்கம்':'Sri Vinayakar Vanakkam'}</h2>
+    <div class="smv-matching-vinayagar-mantra">${tamil?'ஓம் கம் கணபதயே நமஹ':'Om Gam Ganapataye Namah'}</div>
+    <div class="smv-matching-vinayagar-sloka">${tamil?'வக்ரதுண்ட மஹாகாய<br>சூர்ய கோடி சமப்ரப<br>நிர்விக்னம் குருமே தேவ<br>சர்வ கார்யேஷு சர்வதா':'Vakratunda Mahakaya<br>Surya Koti Samaprabha<br>Nirvighnam Kurume Deva<br>Sarva Karyeshu Sarvada'}</div>
+    <p>${tamil?'இந்த இரு ஜாதக திருமணப் பொருத்த ஆய்வில் தடைகளை நீக்கி, தெளிவு, ஒற்றுமை மற்றும் நல்ல வழிகாட்டலை அருள்வாயாக.':'May Lord Vinayagar remove obstacles and bless this two-horoscope marriage compatibility review with clarity, harmony and good guidance.'}</p>
+    <div class="smv-matching-invocation">${tamil?'ஓம் ஸ்ரீ மதுரை வீரன் துணை':'Om Sri Madurai Veeran Thunai'}</div>`;
+   host.insertBefore(prayer,host.firstChild);
+  }
   // Print-only first-page identity. Keep the live horoscope DOM unchanged.
   const firstCard=root.querySelector('.card');
   if(firstCard){
