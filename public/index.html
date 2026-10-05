@@ -27,7 +27,7 @@
 <title>SMV ASTRO SERVICES | Astrology Services & Online Horoscope</title>
 <meta name="description" content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration.">
 <link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-mobile-premium-header-v185.webp" media="(max-width: 899px)" rel="preload"/>
-<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=20260929-v77" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><link href="./smv-ui-v207.css?v=207" rel="stylesheet"/><script src="./payment-timing.js?v=65"></script>
+<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=213-admin-center" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" media="(max-width: 899px)" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><link href="./smv-ui-v207.css?v=207" rel="stylesheet"/><script src="./payment-timing.js?v=65"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SMV ASTRO SERVICES","alternateName":"Sri Madurai Veerayah Astro Services","url":"https://smvastroservices.in/","inLanguage":["en","ta"]}</script>
-<script defer src="./main-location-search-v187.js?v=204-phase2"></script>
+<script defer src="./main-location-search-v187.js?v=208-reopt"></script>
 
 </head>
 <body class="smv-v12-theme">
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <main class="container" id="smv-public-page">
 <div aria-live="polite" class="smv-home-offer-banners hidden" id="smvHomeOfferBanners"></div>
-<div class="smv33-hero" id="home"><div class="smv33-scene"><img alt="Sri Vinayagar, Sri Madurai Veerayah with Bommi and Vellaiyammal, and Sri Murugan" class="smv33-photo" fetchpriority="high" height="1272" src="assets/smv-mobile-premium-hero-v185.webp" width="941"/><div class="smv33-copy"><div class="smv33-mobile-head">
+<div class="smv33-hero smv-css-island" id="home"><div class="smv33-scene"><img alt="Sri Vinayagar, Sri Madurai Veerayah with Bommi and Vellaiyammal, and Sri Murugan" class="smv33-photo" fetchpriority="high" height="1272" src="assets/smv-mobile-premium-hero-v185.webp" width="941"/><div class="smv33-copy"><div class="smv33-mobile-head">
 <div class="smv33-kicker">Sri Madurai Veerayah Astro Services</div>
 <h1>Traditional Wisdom.<br/><span>Personal Guidance.</span></h1>
 <p>Discover the meaning within your birth chart through traditional Vedic astrology. Explore detailed horoscope insights and connect with approved astrologers for guidance on career, marriage, relationships and personal growth.</p>
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </section>
 </main>
-<div aria-label="Account workspace" class="container hidden" id="smv-dashboard-page"><div class="smv-workspace-bar"><a href="#home" id="workspaceHome">← Home</a><span aria-live="polite" id="smvLiveStatus" role="status">Connecting to live updates…</span></div><section class="hidden smv-type-root" id="dashboard">
+<div aria-label="Account workspace" class="container hidden" id="smv-dashboard-page"><div class="smv-workspace-bar"><a href="#home" id="workspaceHome">← Home</a><span aria-live="polite" id="smvLiveStatus" role="status"></span></div><section class="hidden smv-type-root" id="dashboard">
 <div>
 <h2 id="dashboardTitle">CUSTOMER DASHBOARD</h2>
 </div>
@@ -287,7 +287,8 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
 <div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
 <div class="card"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></input></div><div class="small" id="questionPriceMsg"></div></div>
-<div class="card"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
+<div class="card" id="adminHoroscopePriceSet"><h3>Horoscope Price Set</h3><p class="small">Set access and price for Advanced Horoscope Analysis and Marriage Matching. When enabled with ₹0, the feature remains free.</p><div class="grid"><div><label class="small" for="advancedAnalysisPaymentEnabled"><b>Advanced Analysis</b></label><select id="advancedAnalysisPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="advancedAnalysisPrice"><b>Advanced Analysis Price ₹</b></label><input id="advancedAnalysisPrice" min="0" placeholder="Advanced Analysis price" step="0.01" type="number"/></div><div><label class="small" for="marriageMatchingPaymentEnabled"><b>Marriage Matching</b></label><select id="marriageMatchingPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="marriageMatchingPrice"><b>Marriage Matching Price ₹</b></label><input id="marriageMatchingPrice" min="0" placeholder="Marriage Matching price" step="0.01" type="number"/></div></div><div class="action-row"><button class="btn" id="saveHoroscopePaymentSettings" type="button">SAVE HOROSCOPE SETTINGS</button></div><div class="small" id="horoscopePaymentSettingsMsg"></div></div>
+<div class="card" id="adminCommissionSettings"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
 <div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
 <div class="card" id="adminContentManager">
 <h3>Blogs &amp; Downloadable Content</h3>
@@ -411,12 +412,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2>SMV ASTRO SERVICES</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="horoscope/" target="_blank" rel="noopener">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="horoscope/" target="_blank" rel="noopener">Birth Chart Analysis</a><a href="#askNowSection">Career Guidance</a><a href="horoscope/#smvMarriageMatching" target="_blank" rel="noopener">Marriage Matching</a><a href="#askNowSection">Health &amp; Wellness</a><a href="#askNowSection">Remedies &amp; Solutions</a><a href="#askNowSection">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
 <div class="modal hidden" id="modal">
 <div class="modalbox">
-<button aria-label="Close" onclick="closeModal()" title="Close" type="button">×</button>
+<button aria-label="Close" onclick="closeModal()" title="Close" type="button" style="position:absolute;right:10px;top:8px;z-index:4;width:32px;height:32px;min-width:32px;padding:0;margin:0;font-size:30px;line-height:30px;cursor:pointer">×</button>
 <div id="modalContent"></div>
 </div>
 </div>
 <script src="./dashboard-window.js?v=20260929-v78"></script>
-<script src="./smvastro.mjs?v=20261004-v204-phase2" type="module"></script>
+<script src="./smvastro.mjs?v=20261004-v9-admin-shortcuts" type="module"></script>
 
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
@@ -810,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <!-- SMV V10.2.2 MOBILE HEADER + HERO TARGETED FIX -->
 <!-- SMV V10.3 APPROVED REFERENCE HERO VISUAL FIX -->
-<script src="./offer-banners.js?v=204-phase2"></script>
+<script src="./offer-banners.js?v=209-css-clean"></script>
 <dialog aria-labelledby="paymentReceiptTitle" class="smv-type-root" id="paymentSuccessPanel">
 <div class="smv-receipt-card">
 <h2 id="paymentReceiptTitle">Payment Successful ✓</h2>
@@ -835,7 +836,7 @@ const TARGETS=new Set([
 'Admin Earnings History','Allocated Questions — Admin Control','Answers Awaiting Approval','Answers — Answered Questions',
 'Astrologer Applications','Astrologer Withdrawals','Customer Reviews','Admin Answers','Admin Reviews','Question Approval',
 'Answer Approval','Public Question Approval','Payment Method Changes — Admin Approval','Recent Questions',
-'Blogs & Downloadable Content','Blog Writer & Publisher','Upload PDF / Image / Video / Music','Commission Settings'
+'Blogs & Downloadable Content','Blog Writer & Publisher','Upload PDF / Image / Video / Music','Horoscope Price Set','Commission Settings'
 ]);
 const EXCLUDE=new Set(['ASTROLOGER DASHBOARD','CUSTOMER DASHBOARD','Profile','Astrologer Profile','My Questions','Total Earnings']);
 function text(x){return String(x||'').replace(/\s+/g,' ').trim()}
@@ -1116,7 +1117,7 @@ else initFAQ();
   else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
 })();
 </script>
-<script defer="" src="./interface.js?v=20260929-v77"></script>
+<script defer="" src="./interface.js?v=211-dashboard-stability"></script>
 <script src="./public-navigation.js?v=20261004-v204-phase2"></script>
 </body>
 </html>

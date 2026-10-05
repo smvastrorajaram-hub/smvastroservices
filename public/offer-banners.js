@@ -28,7 +28,7 @@
  function badge(o){if(o.discountType==='fixed_price')return '₹'+Number(o.offerPrice)+' SPECIAL';if(o.discountType==='percentage')return Number(o.discountValue)+'% OFF';if(o.discountType==='flat')return '₹'+Number(o.discountValue)+' OFF';return 'SPECIAL OFFER';}
  function markup(o){
   const t=theme(o),start=date(o.startAt),end=date(o.endAt),period=[start,end].filter(Boolean).join(' – ');
-  return `<div class="smv-home-offer-banner smv-offer-theme-${t}" role="button" tabindex="0" aria-label="${esc(o.bannerText||o.name)}. Ask a Question" data-offer-id="${esc(o.id)}"${o.endAt?` data-offer-expiry="${esc(o.endAt)}"`:''}><span class="smv-offer-art" aria-hidden="true"><img src="assets/offers/${t}.svg" alt=""></span><span class="smv-offer-copy"><span class="smv-offer-kicker"><span class="smv-offer-badge">${esc(badge(o))}</span><span class="smv-offer-name">${esc(o.name)}</span></span><strong class="smv-offer-title">${esc(o.bannerText||o.name||'Special Offer')}</strong><span class="smv-offer-meta">${period?`<span class="smv-offer-period">${esc(period)} IST</span>`:''}${!o.automatic&&o.promoCode?`<span class="smv-offer-code">Promo: ${esc(o.promoCode)}</span>`:''}${end?`<span class="smv-offer-countdown" data-offer-end="${esc(o.endAt)}"></span>`:''}</span></span><span class="smv-offer-cta"><span>ASK NOW</span> →</span></div>`;
+  return `<div class="smv-home-offer-banner smv-css-island smv-offer-theme-${t}" role="button" tabindex="0" aria-label="${esc(o.bannerText||o.name)}. Ask a Question" data-offer-id="${esc(o.id)}"${o.endAt?` data-offer-expiry="${esc(o.endAt)}"`:''}><span class="smv-offer-art" aria-hidden="true"><img src="assets/offers/${t}.svg" alt=""></span><span class="smv-offer-copy"><span class="smv-offer-kicker"><span class="smv-offer-badge">${esc(badge(o))}</span><span class="smv-offer-name">${esc(o.name)}</span></span><strong class="smv-offer-title">${esc(o.bannerText||o.name||'Special Offer')}</strong><span class="smv-offer-meta">${period?`<span class="smv-offer-period">${esc(period)} IST</span>`:''}${!o.automatic&&o.promoCode?`<span class="smv-offer-code">Promo: ${esc(o.promoCode)}</span>`:''}${end?`<span class="smv-offer-countdown" data-offer-end="${esc(o.endAt)}"></span>`:''}</span></span><span class="smv-offer-cta"><span>ASK NOW</span> →</span></div>`;
  }
  function tick(){
   document.querySelectorAll('[data-offer-expiry]').forEach(el=>{if(Date.parse(el.dataset.offerExpiry)<=Date.now())el.remove();});
@@ -44,10 +44,5 @@
  async function home(force=false){const host=document.getElementById('smvHomeOfferBanners');if(!host)return;try{render(host,await getOffers(force),'home_banner',()=>window.__smvOpenQuestionService?.());}catch(e){console.warn('Offer banner unavailable:',e.message);}}
  window.SMVOfferBanners={getOffers,render,markup,theme,themes};
  window.addEventListener('smv:offers-changed',async()=>{expires=0;await home(true);document.querySelectorAll('.smv-customer-offer-banners').forEach(host=>render(host,cache||[],'customer_dashboard',()=>window.__smvOpenQuestionService?.()));});
- function scheduleHome(){
-  const run=()=>home().catch(()=>{});
-  if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:1200});
-  else setTimeout(run,350);
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleHome,{once:true});else scheduleHome();
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>home(),{once:true});else home();
 })();

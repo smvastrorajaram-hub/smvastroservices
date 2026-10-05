@@ -10,14 +10,9 @@
   syncInstall();mode.addEventListener?.('change',syncInstall);full.addEventListener?.('change',syncInstall);
   window.addEventListener('appinstalled',()=>{installed=true;syncInstall();});
   // Home owns the banner. Its parent visibility also hides it on internal routes.
-  const admin=document.getElementById('admin');
-  if(admin){
-    const nav=document.createElement('div');nav.className='smv-admin-shortcuts';nav.setAttribute('role','navigation');nav.setAttribute('aria-label',t('Admin sections','நிர்வாகப் பகுதிகள்'));
-    for(const [id,en,tamil] of [['adminPendingQuestions','Questions','கேள்விகள் / ஒதுக்கீடு'],['adminAnswers','Answers','பதில் அங்கீகாரம்'],['adminRefunds','Refunds','பணத்திருப்பம்']]){
-      const b=document.createElement('button');b.type='button';b.className='smv-admin-shortcut';b.textContent=t(en,tamil);b.onclick=()=>document.getElementById(id)?.parentElement.scrollIntoView({behavior:'smooth',block:'start'});nav.append(b);
-    }
-    admin.insertBefore(nav,admin.firstChild);
-  }
+  // Admin quick links are owned by smvastro.mjs so background dashboard refreshes
+  // can preserve/re-anchor them without MutationObserver or duplicate DOM builders.
+  window.__smvEnsureAdminQuickLinks?.();
 })();
 
 // Account screens live outside the public Home main element.
