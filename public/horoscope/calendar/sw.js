@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-v221-location-optimized';
+const CACHE='smv-calendar-v225-layout-order';
 const PLACE_SHARDS=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z'];
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',

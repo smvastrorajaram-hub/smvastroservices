@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#155a52">
+<meta name="theme-color" content="#0f514c">
+<meta name="color-scheme" content="light">
 <meta name="application-name" content="SMV CALENDAR">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,21 +15,24 @@
 <link rel="icon" href="../assets/calendar-192.png">
 <link rel="apple-touch-icon" href="../assets/calendar-192.png">
 <link rel="stylesheet" href="../horoscope.css?v=209-css-clean">
-<link rel="stylesheet" href="../daily-calendar.css?v=221">
+<link rel="stylesheet" href="../daily-calendar.css?v=225-layout">
 </head>
 <body class="calendar-only">
-<header>
-<div class="calendar-brand-links"><a href="../../" target="_blank" rel="noopener">SMV ASTRO</a><a href="../" target="_blank" rel="noopener">SMV HOROSCOPE</a><strong>SMV CALENDAR</strong></div>
-<nav><button id="calTamil" lang="ta">தமிழ்</button><button id="calEnglish" lang="en">English</button></nav>
+<header class="calendar-topbar">
+<nav class="calendar-product-nav" aria-label="SMV services">
+<a href="../../" target="_blank" rel="noopener">SMV ASTRO</a>
+<a href="../" target="_blank" rel="noopener">SMV HOROSCOPE</a>
+<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>
+</nav>
+<nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </header>
-<main><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
+<main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
 <footer class="calendar-install" id="smvCalendarInstallArea" hidden>
-<button id="calInstall" type="button"><img src="../assets/calendar-192.png" width="36" height="36" alt=""> <span>Install SMV CALENDAR</span></button>
-<p id="calInstallStatus" role="status"></p>
+<div class="calendar-install-inner"><button id="calInstall" type="button"><img src="../assets/calendar-192.png" width="36" height="36" alt=""> <span>Install SMV CALENDAR</span></button><p id="calInstallStatus" role="status"></p></div>
 </footer>
-<script src="../location-search-online-offline.js?v=221"></script>
-<script src="../horoscope.js?v=216-transit"></script>
-<script type="module" src="calendar-pwa.mjs?v=216"></script>
-<script type="module" src="../daily-calendar.mjs?v=221"></script>
+<script src="../location-search-online-offline.js?v=222"></script>
+<script src="../horoscope.js?v=222-calendar-render"></script>
+<script type="module" src="calendar-pwa.mjs?v=222"></script>
+<script type="module" src="../daily-calendar.mjs?v=225-order"></script>
 </body>
 </html>
