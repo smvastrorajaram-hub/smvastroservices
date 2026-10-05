@@ -1,8 +1,8 @@
-const CACHE='smv-calendar-v225-layout-order';
+const CACHE='smv-calendar-v226-today-language';
 const PLACE_SHARDS=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z'];
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
- '../daily-calendar.mjs','../daily-calendar.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
+ '../daily-calendar.mjs','../daily-calendar.css','../calendar-v226.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
  '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
