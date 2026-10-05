@@ -1,12 +1,13 @@
-/* V220 account-synced saved reports: first-index bootstrap + visible sync verification.
-   Local IndexedDB remains the fast/offline source. Firestore stores ONE lightweight
-   account index document plus compressed/chunked report snapshots. No listeners,
-   polling, MutationObserver, server PDF, Cloudinary, or automatic payload reads. */
+/* V222 account-synced saved reports + hidden real-PDF email after explicit Save.
+   Local IndexedDB, account sync, saved-list Open and browser Print/Save-as-PDF remain unchanged.
+   Real PDF email uses the authenticated Render endpoint only after the customer explicitly presses Save.
+   No loading/generating UI is shown; no Cloudinary PDF upload or server-side PDF persistence is used. */
 const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;
 const CLOUD_COLLECTION='smv_horoscope_reports';
 const CLOUD_INDEX_KIND='saved_index_v1',CLOUD_PAYLOAD_KIND='saved_payload_v1',CLOUD_CHUNK_KIND='saved_chunk_v1';
 const CLOUD_SCHEMA=1,CHUNK_CHARS=480000,MAX_CHUNKS=48,BATCH_CHUNKS=16;
 const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:'auth.smvastroservices.in',projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
+const REPORT_EMAIL_ENDPOINT='https://smvastroservices.onrender.com/horoscope-report/email-pdf';
 const ta=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cloud={uid:'',loaded:false,reports:{},loadPromise:null,migratePromise:null,ctxPromise:null,status:'',error:''};
@@ -31,6 +32,34 @@ async function recoverLegacy(uid){if(!uid||typeof indexedDB.databases!=='functio
 
 function cleanHtml(root){const c=root.cloneNode(true);c.querySelectorAll('details').forEach(d=>{d.open=!d.matches('[data-print-technical="1"]');if(d.open)d.setAttribute('open','');else d.removeAttribute('open');});c.querySelectorAll('[hidden]').forEach(e=>{if(!e.matches('.smv-horoscope-pay-gate'))e.hidden=false;});c.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());c.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['contenteditable','action','formaction'].includes(a.name))e.removeAttribute(a.name);});return c.innerHTML;}
 function safeClone(v,fallback={}){try{return JSON.parse(JSON.stringify(v??fallback));}catch{return fallback;}}
+
+async function horoscopeIdToken(){
+ await window.__smvEnsureHoroscopeAuthReady?.();
+ const [appMod,authMod]=await Promise.all([import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js')]);
+ const app=appMod.getApps().find(a=>a.name==='smv-horoscope-local');
+ if(!app)throw Error('Customer login session is unavailable.');
+ const auth=authMod.getAuth(app),u=auth.currentUser;
+ if(!u)throw Error('Customer login is required.');
+ return u.getIdToken();
+}
+function appendSaveMessage(msg,text){if(!msg||!text)return;const base=String(msg.textContent||'').trim();msg.textContent=base?base+' · '+text:text;}
+async function emailSavedPdfInBackground(r,detail,msg){
+ try{
+  const lang=detail?.root?.dataset?.resultLanguage||detail?.generationLanguage||r?.language||'en';
+  const html=r?.views?.[lang]||(r?.language===lang?r?.html:'')||r?.html||'';
+  if(!html.trim())throw Error('Saved report HTML is unavailable.');
+  const token=await horoscopeIdToken();
+  const response=await fetch(REPORT_EMAIL_ENDPOINT,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({feature:r.feature,name:r.name,language:lang==='ta'?'ta':'en',html}),cache:'no-store'});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||('HTTP '+response.status));
+  const email=String(data.email||owner()?.email||'').trim();
+  appendSaveMessage(msg,ta()?`PDF மின்னஞ்சலுக்கு அனுப்பப்பட்டது${email?' · '+email:''}`:`PDF emailed${email?' to '+email:''}.`);
+ }catch(e){
+  console.warn('Background PDF email failed:',e?.message||e);
+  appendSaveMessage(msg,ta()?'PDF மின்னஞ்சல் அனுப்ப முடியவில்லை; சேமித்த அறிக்கை பாதுகாப்பாக உள்ளது.':'PDF email could not be sent; the saved report is unaffected.');
+ }
+}
+
 function personFromCalc(v={},fallback=''){const birth=v?.birth||{};return {name:String(v?.birthName||v?.nativeName||v?.name||fallback||''),date:String(birth?.date||v?.birthDate||v?.dob||''),time:String(birth?.time||v?.birthTime||v?.tob||''),place:String(v?.birthPlace||birth?.place||v?.place||'')};}
 function coverFromReport(r){if(r?.cover&&typeof r.cover==='object')return safeClone(r.cover,{});if(r?.feature==='marriage_matching'){const calc=r?.calculation||{},parts=String(r?.name||'').split('/');return {bride:personFromCalc(calc?.bride||{},parts[0]?.trim()||'Bride'),groom:personFromCalc(calc?.groom||{},parts[1]?.trim()||'Groom')};}const id=r?.identity||{};return {person:{name:String(r?.name||'Horoscope'),date:String(id?.date||id?.birthDate||''),time:String(id?.time||id?.birthTime||''),place:String(id?.place||id?.birthPlace||'')}};}
 function cloudSnapshot(r){const lang=r?.language==='ta'?'ta':'en',views=r?.views&&typeof r.views==='object'?safeClone(r.views,{}):(typeof r?.html==='string'?{[lang]:r.html}:{}),html=typeof r?.html==='string'?r.html:(views[lang]||views.en||views.ta||'');return {schema:2,key:String(r.key),owner:reportOwnerId(r),feature:String(r.feature||'advanced_analysis'),name:String(r.name||'Report').slice(0,160),language:lang,identity:safeClone(r.identity||{},{}),views,html,cover:coverFromReport(r),createdAt:Number(r.createdAt||Date.now()),updatedAt:Number(r.updatedAt||Date.now()),deleted:false};}
@@ -65,7 +94,7 @@ const latest=new WeakMap();
 async function save(detail,{awaitCloud=true}={}){const u=owner();if(!u)throw Error(ta()?'Save செய்ய Customer Login தேவை.':'Customer login is required to save.');const lang=detail.root?.dataset?.resultLanguage||detail.generationLanguage||document.documentElement.lang||'en',identity=detail.birthIdentity||{},canonicalIdentity=safeClone(identity,{});if(canonicalIdentity&&typeof canonicalIdentity==='object')delete canonicalIdentity.language;const finger=await digest({feature:detail.feature,identity:canonicalIdentity}),key=`${u.uid}:${detail.feature}:${finger}`,old=(await mine(u.uid)).find(x=>x.key===key),views={...(old?.views||{}),[lang]:cleanHtml(detail.root)};let calculation=null;try{calculation=JSON.parse(JSON.stringify(detail.calculation||null));}catch{}const r={key,owner:u.uid,feature:detail.feature,name:String(detail.name||'Report'),language:lang,identity,views,html:views[lang],calculation,cover:coverFromReport({feature:detail.feature,name:detail.name,identity,calculation}),createdAt:old?.createdAt||Date.now(),updatedAt:Date.now(),deleted:false,cloudId:old?.cloudId||'',cloudSyncedAt:old?.cloudSyncedAt||0};await put(r);await renderList();if(awaitCloud){setSyncStatus(ta()?'Account sync நடைபெறுகிறது…':'Syncing to your account…');const ok=await syncOne(r);setSyncStatus(ok?(ta()?'Account sync முடிந்தது.':'Account sync complete.'):'',ok?'':(ta()?'Local save பாதுகாப்பாக உள்ளது; account sync பின்னர் மீண்டும் முயலும்.':'Saved locally; account sync will retry later.'));await renderList();return {...r,__cloudSynced:ok};}syncOne(r).then(()=>renderList()).catch(()=>{});return r;}
 function handoff(r,lang,mode){const x={owner:reportOwnerId(r),key:r.key,language:lang||r.language||'en',mode,createdAt:Date.now()};sessionStorage.setItem('smv-print-report',JSON.stringify(x));localStorage.setItem('smv-print-report-handoff',JSON.stringify(x));location.assign(`report-print.html?mode=${encodeURIComponent(mode)}`);}
 async function saveAndPrint(detail){const r=await save(detail,{awaitCloud:false});handoff(r,detail.root?.dataset?.resultLanguage||detail.generationLanguage,'print');}
-function attach(detail){const root=detail.root,u=owner();if(!root||!u)return;latest.set(root,detail);root.querySelector(':scope > .smv-manual-save-actions')?.remove();const box=document.createElement('div');box.className='smv-manual-save-actions';box.innerHTML=`<button type="button" data-save>${ta()?'சேமிக்க':'Save'}</button><button type="button" data-print>${ta()?'அச்சிட / PDF சேமிக்க':'Print / Save as PDF'}</button><span data-msg></span>`;root.append(box);queueMicrotask(()=>{if(box.parentElement===root&&root.lastElementChild!==box)root.append(box);});const msg=box.querySelector('[data-msg]');box.querySelector('[data-save]').onclick=async e=>{e.currentTarget.disabled=true;try{const r=await save(detail,{awaitCloud:true});msg.textContent=r.__cloudSynced?(ta()?'சேமிக்கப்பட்டு account-ல் ஒத்திசைக்கப்பட்டது.':'Saved and synced to your account.'):(ta()?'Browser-ல் சேமிக்கப்பட்டது; account sync பின்னர் மீண்டும் முயலும்.':'Saved in this browser; account sync will retry.');}catch(x){msg.textContent=x.message||x;}finally{e.currentTarget.disabled=false;}};box.querySelector('[data-print]').onclick=async e=>{e.currentTarget.disabled=true;try{await saveAndPrint(detail);}catch(x){msg.textContent=x.message||x;e.currentTarget.disabled=false;}};}
+function attach(detail){const root=detail.root,u=owner();if(!root||!u)return;latest.set(root,detail);root.querySelector(':scope > .smv-manual-save-actions')?.remove();const box=document.createElement('div');box.className='smv-manual-save-actions';box.innerHTML=`<button type="button" data-save>${ta()?'சேமிக்க':'Save'}</button><button type="button" data-print>${ta()?'அச்சிட / PDF சேமிக்க':'Print / Save as PDF'}</button><span data-msg></span>`;root.append(box);queueMicrotask(()=>{if(box.parentElement===root&&root.lastElementChild!==box)root.append(box);});const msg=box.querySelector('[data-msg]');box.querySelector('[data-save]').onclick=async e=>{e.currentTarget.disabled=true;try{const r=await save(detail,{awaitCloud:true});msg.textContent=r.__cloudSynced?(ta()?'சேமிக்கப்பட்டு account-ல் ஒத்திசைக்கப்பட்டது.':'Saved and synced to your account.'):(ta()?'Browser-ல் சேமிக்கப்பட்டது; account sync பின்னர் மீண்டும் முயலும்.':'Saved in this browser; account sync will retry.');emailSavedPdfInBackground(r,detail,msg);}catch(x){msg.textContent=x.message||x;}finally{e.currentTarget.disabled=false;}};box.querySelector('[data-print]').onclick=async e=>{e.currentTarget.disabled=true;try{await saveAndPrint(detail);}catch(x){msg.textContent=x.message||x;e.currentTarget.disabled=false;}};}
 function panel(){let p=document.getElementById('smvSavedReports');if(p)return p;const auth=document.getElementById('smvHoroscopeAuth');if(!auth)return null;p=document.createElement('section');p.id='smvSavedReports';p.className='smv-saved-reports';p.hidden=true;auth.insertAdjacentElement('afterend',p);return p;}
 function savedGroup(title,rows,empty){return `<section class="smv-saved-group"><h3>${title}</h3>${rows.length?rows.map((r,i)=>`<div class="smv-saved-row"><span><b>${esc(r.name||'Report')}</b><small>${new Date(reportTime(r)||Date.now()).toLocaleString()}</small></span><button type="button" data-open="${i}">${ta()?'திற':'Open'}</button><button type="button" data-pdf="${i}">PDF</button><button type="button" class="smv-delete-report" data-delete="${i}">${ta()?'நீக்குக':'Delete'}</button></div>`).join(''):`<p>${empty}</p>`}</section>`;}
 async function combinedRows(uid){const locals=await mine(uid),localBy=new Map(locals.map(r=>[String(r.key),r])),out=[],seen=new Set();for(const [id,m0]of Object.entries(cloud.reports||{})){if(!m0||m0.deleted||!m0.key)continue;const m={...m0,id:String(m0.id||id)},l=localBy.get(String(m.key));if(l&&reportTime(l)>=Number(m.updatedAt||0)){out.push({...l,_cloudMeta:m});}else out.push({key:String(m.key),owner:uid,feature:String(m.feature||'advanced_analysis'),name:String(m.name||'Report'),language:m.language==='ta'?'ta':'en',createdAt:Number(m.createdAt||m.updatedAt||Date.now()),updatedAt:Number(m.updatedAt||Date.now()),deleted:false,_cloudMeta:m,_cloudOnly:true});seen.add(String(m.key));}for(const l of locals)if(!seen.has(String(l.key)))out.push({...l,_localOnly:true});return out.sort((a,b)=>reportTime(b)-reportTime(a));}
