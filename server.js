@@ -3585,50 +3585,6 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
 // V131 — SMV HOROSCOPE paid-feature control. Calculations remain browser-local;
 // the backend only supplies Admin pricing, creates/verifies Razorpay orders and
 // records a per-customer/per-report entitlement.
-
-// V222 — Real PDF email delivery for saved Horoscope / Marriage Matching reports.
-// The report PDF is generated in memory by the existing bundled Chromium renderer
-// and attached directly to the customer's verified account email. Nothing is
-// uploaded to Cloudinary or persisted as a server-side PDF file.
-function smvSafePdfFilename(value='SMV-ASTRO-REPORT') {
-  const base=String(value||'SMV-ASTRO-REPORT')
-    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^A-Za-z0-9._-]+/g,'-').replace(/-+/g,'-')
-    .replace(/^[-_.]+|[-_.]+$/g,'').slice(0,110)||'SMV-ASTRO-REPORT';
-  return base.toLowerCase().endsWith('.pdf')?base:base+'.pdf';
-}
-async function sendPdfAttachmentEmail({to,subject,text,html,pdfBuffer,filename}) {
-  const recipients=Array.isArray(to)?to.filter(Boolean):[to].filter(Boolean);
-  if(!recipients.length)throw new Error('No recipient email address is available.');
-  const pdf=Buffer.isBuffer(pdfBuffer)?pdfBuffer:Buffer.from(pdfBuffer||[]);
-  if(!pdf.length)throw new Error('Generated PDF is empty.');
-  if(RESEND_API_KEY){
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),45000);
-    try{
-      const r=await fetch('https://api.resend.com/emails',{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},
-        body:JSON.stringify({
-          from:RESEND_FROM,to:recipients,subject,text,html,
-          attachments:[{filename:smvSafePdfFilename(filename),content:pdf.toString('base64'),content_type:'application/pdf'}]
-        }),
-        signal:controller.signal
-      });
-      const body=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(body?.message||body?.name||`Resend API returned HTTP ${r.status}`);
-      return body;
-    } finally {clearTimeout(timer);}
-  }
-  if(smtpTransport){
-    return smtpTransport.sendMail({
-      from:SMTP_FROM,to:recipients,subject,text,html,
-      attachments:[{filename:smvSafePdfFilename(filename),content:pdf,contentType:'application/pdf'}]
-    });
-  }
-  throw new Error('Email provider is not configured. Set RESEND_API_KEY and RESEND_FROM in Render.');
-}
-
 const HOROSCOPE_FEATURES=new Set(["advanced_analysis","marriage_matching"]);
 function horoscopeFeatureDefaults(){return {advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};}
 async function getHoroscopePaymentSettings(){
@@ -3643,75 +3599,6 @@ async function requireCustomerOnly(user,res){
   if(role!=="customer"){res.status(403).json({error:"Customer login is required for Horoscope payment."});return false;}return true;
 }
 app.get("/horoscope-auth/session",async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();return res.json({success:true,role});});
-
-// V223 — Render-log-only PDF email audit. No customer-facing loading/generating UI.
-// These phase logs make it possible to distinguish request delivery, Chromium PDF
-// generation, email delivery and RAM pressure without storing the report or PDF.
-function smvPdfEmailMemory(){
-  const m=process.memoryUsage();
-  const mb=n=>Math.round((Number(n)||0)/1048576);
-  return {rssMB:mb(m.rss),heapUsedMB:mb(m.heapUsed),heapTotalMB:mb(m.heapTotal),externalMB:mb(m.external)};
-}
-function smvMaskedEmail(value=''){
-  const s=String(value||'').trim(),at=s.indexOf('@');
-  if(at<1)return '';
-  const local=s.slice(0,at),domain=s.slice(at+1);
-  return `${local.slice(0,1)}***@${domain}`;
-}
-
-app.post('/horoscope-report/email-pdf',express.json({limit:'18mb'}),async(req,res)=>{
-  const job=`${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
-  const started=Date.now();
-  let phase='authentication',feature='',language='en',name='SMV ASTRO Report',email='',htmlBytes=0;
-  const user=await requireUser(req,res);if(!user)return;
-  if(!(await requireCustomerOnly(user,res)))return;
-  try{
-    phase='validation';
-    feature=String(req.body?.feature||'').trim();
-    if(!HOROSCOPE_FEATURES.has(feature))return res.status(400).json({error:'Invalid saved-report type.'});
-    language=req.body?.language==='ta'?'ta':'en';
-    name=String(req.body?.name||'SMV ASTRO Report').trim().slice(0,180)||'SMV ASTRO Report';
-    const html=String(req.body?.html||'');
-    if(!html.trim())return res.status(400).json({error:'Saved report HTML is missing.'});
-    htmlBytes=Buffer.byteLength(html,'utf8');
-    // Keep the renderer bounded. The browser save remains untouched even when an
-    // unusually large report cannot be emailed.
-    if(htmlBytes>14*1024*1024)return res.status(413).json({error:'Saved report is too large for background email PDF generation.'});
-    email=String(user.email||await getUserEmail(user.uid)||'').trim();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(409).json({error:'Customer account email is unavailable.'});
-
-    console.log('[PDF_EMAIL] START',JSON.stringify({job,feature,language,name:name.slice(0,80),recipient:smvMaskedEmail(email),htmlMB:+(htmlBytes/1048576).toFixed(2),...smvPdfEmailMemory()}));
-    const title=feature==='marriage_matching'
-      ? (language==='ta'?`திருமணப் பொருத்த அறிக்கை — ${name}`:`Marriage Matching Report — ${name}`)
-      : (language==='ta'?`ஸ்ரீ மதுரைவீரையா ஜாதக அறிக்கை — ${name}`:`Sri Maduraveerayah Horoscope — ${name}`);
-
-    phase='pdf_generation';
-    const pdfStarted=Date.now();
-    const {renderHtmlPdf}=require('./html-pdf-renderer');
-    const pdf=await renderHtmlPdf({title,language,html});
-    if(!Buffer.isBuffer(pdf)||pdf.length<1000)throw new Error('PDF generation did not return a valid document.');
-    console.log('[PDF_EMAIL] PDF GENERATED',JSON.stringify({job,seconds:+((Date.now()-pdfStarted)/1000).toFixed(2),pdfMB:+(pdf.length/1048576).toFixed(2),...smvPdfEmailMemory()}));
-
-    const filename=smvSafePdfFilename(feature==='marriage_matching'?`SMV-MARRIAGE-MATCHING-${name}`:`SMV-HOROSCOPE-${name}`);
-    const subject=feature==='marriage_matching'?'SMV ASTRO — Marriage Matching PDF':'SMV ASTRO — Horoscope PDF';
-    const text=language==='ta'
-      ? 'SMV ASTRO-வில் சேமித்த உங்கள் PDF அறிக்கை இணைக்கப்பட்டுள்ளது.'
-      : 'Your saved SMV ASTRO PDF report is attached.';
-    const mailHtml=language==='ta'
-      ? '<p>வணக்கம்,</p><p>SMV ASTRO-வில் சேமித்த உங்கள் PDF அறிக்கை இந்த மின்னஞ்சலில் இணைக்கப்பட்டுள்ளது.</p><p>SMV ASTRO SERVICES</p>'
-      : '<p>Hello,</p><p>Your saved SMV ASTRO PDF report is attached to this email.</p><p>SMV ASTRO SERVICES</p>';
-
-    phase='email_delivery';
-    const mailStarted=Date.now();
-    await sendPdfAttachmentEmail({to:email,subject,text,html:mailHtml,pdfBuffer:pdf,filename});
-    console.log('[PDF_EMAIL] SENT',JSON.stringify({job,recipient:smvMaskedEmail(email),emailSeconds:+((Date.now()-mailStarted)/1000).toFixed(2),totalSeconds:+((Date.now()-started)/1000).toFixed(2),pdfMB:+(pdf.length/1048576).toFixed(2),...smvPdfEmailMemory()}));
-    return res.json({success:true,email,filename,sizeBytes:pdf.length});
-  }catch(e){
-    console.error('[PDF_EMAIL] FAILED',JSON.stringify({job,phase,feature,language,recipient:smvMaskedEmail(email),htmlMB:+(htmlBytes/1048576).toFixed(2),totalSeconds:+((Date.now()-started)/1000).toFixed(2),error:String(e?.message||e).slice(0,500),...smvPdfEmailMemory()}));
-    return res.status(502).json({error:e?.message||'Unable to generate or email the PDF report.'});
-  }
-});
-
 app.get("/horoscope-feature-config",async(_req,res)=>{res.set("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");res.set("Pragma","no-cache");res.set("Expires","0");const c=await getHoroscopePaymentSettings();return res.json({success:true,advanced_analysis:horoscopeFeaturePrice(c,"advanced_analysis"),marriage_matching:horoscopeFeaturePrice(c,"marriage_matching")});});
 app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
