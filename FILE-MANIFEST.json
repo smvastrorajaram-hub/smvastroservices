@@ -1,0 +1,117 @@
+[
+  {
+    "path": ".github/workflows/build-test-apks.yml",
+    "sha256": "8635e9d49bf6176105a89309ef40caa65a81ead4c4002f90bbbe89b289768eb1",
+    "size": 1675
+  },
+  {
+    "path": "README-EN.md",
+    "sha256": "7f23b4d7499ca9da5e471f74a2b8838c32d142888cc48435dd075a230cb3ec5c",
+    "size": 561
+  },
+  {
+    "path": "README-TA.md",
+    "sha256": "7d34fecb2babc833e55163ee3ee14cac35022ab8d1ac0183730e5ec9f8dbf0ee",
+    "size": 3190
+  },
+  {
+    "path": "assetlinks/assetlinks-template.json",
+    "sha256": "f9d9e7cf0b35f0b85e637800c3a96e88ab7db7c47a518972f8b099fb6c069fba",
+    "size": 280
+  },
+  {
+    "path": "build.gradle",
+    "sha256": "1851b39621c0b209c671426bad3b4b87193034f1f0b812518d58957565b20533",
+    "size": 73
+  },
+  {
+    "path": "gradle.properties",
+    "sha256": "c3154e3d5f1a042cf9c144e754b436fd100b11dfa2a71a9a4fc5772f8f5c5661",
+    "size": 106
+  },
+  {
+    "path": "prepare-icons.sh",
+    "sha256": "20e05e16d35f524ddbf49619c224ff0e60f964e1ff887cb705485573ae7cdb44",
+    "size": 484
+  },
+  {
+    "path": "settings.gradle",
+    "sha256": "665a0c8555f9950272bea6d0f3edf234785078083879e8f896977863107ae99a",
+    "size": 379
+  },
+  {
+    "path": "smvastro/build.gradle",
+    "sha256": "192effec2744358832d2ba44b765f9f3e1a1892bdbc18e6b51afc9fd4fd7c2a7",
+    "size": 563
+  },
+  {
+    "path": "smvastro/src/main/AndroidManifest.xml",
+    "sha256": "c990f10998e3dd3eb39244d6d0a0b48872610d35678dd4792a3750d9e833ff94",
+    "size": 1525
+  },
+  {
+    "path": "smvastro/src/main/res/drawable/app_icon.xml",
+    "sha256": "da76a198d0d91dce07af9de52d1bc7afbf36ef1e79a239f77e1e2dd668adfbe5",
+    "size": 446
+  },
+  {
+    "path": "smvastro/src/main/res/values/colors.xml",
+    "sha256": "534a87bfdf73b8c7ed6b91f587f5a91868916372cc2d3f1b8931df9227ac46d2",
+    "size": 120
+  },
+  {
+    "path": "smvastro/src/main/res/values/strings.xml",
+    "sha256": "36629a7570bfca85fd4bd5d33080673d065517f94839b4b5e0aa805ab9f6f30a",
+    "size": 245
+  },
+  {
+    "path": "smvcalendar/build.gradle",
+    "sha256": "d47faae0cafb654c048ae233bcb5e39d94e6dcc3281fe8b374d365c0212686dc",
+    "size": 581
+  },
+  {
+    "path": "smvcalendar/src/main/AndroidManifest.xml",
+    "sha256": "54982c2a88453bdeb24b20b261e70eb351f9042e98a051ea1cb30cf59837020f",
+    "size": 1576
+  },
+  {
+    "path": "smvcalendar/src/main/res/drawable/app_icon.xml",
+    "sha256": "3c05eccc0ef8b4fb4eb2fca87f033e4eab9dba06d8ba2a07b4da2a35ab94045d",
+    "size": 447
+  },
+  {
+    "path": "smvcalendar/src/main/res/values/colors.xml",
+    "sha256": "09dfab5e24fdce7cbe5ca3174030eaa2f5f500b285af024ff3d540d76c6dd441",
+    "size": 120
+  },
+  {
+    "path": "smvcalendar/src/main/res/values/strings.xml",
+    "sha256": "3218d3c630a1457825d3783552a8f4a0d8d5f943d1e76bb0435bb12e038f21d5",
+    "size": 248
+  },
+  {
+    "path": "smvhoroscope/build.gradle",
+    "sha256": "318c719b5bf72e51ba7d9bebd6ed0e880050f5bd9ced8c4ade3d517a825dc1ad",
+    "size": 583
+  },
+  {
+    "path": "smvhoroscope/src/main/AndroidManifest.xml",
+    "sha256": "6569be1da0d133d0478cd7b8d422e6156d8108a97942dc5389038b1f2366552e",
+    "size": 1567
+  },
+  {
+    "path": "smvhoroscope/src/main/res/drawable/app_icon.xml",
+    "sha256": "f6aabda7b900ea8c4e3f663f313368f3d566f6c9a5305b3e3a3dc963021832cf",
+    "size": 374
+  },
+  {
+    "path": "smvhoroscope/src/main/res/values/colors.xml",
+    "sha256": "35751a0d9924ac88dbc70c5bdfe837281e01786aa47e1902d21486675c0756b6",
+    "size": 120
+  },
+  {
+    "path": "smvhoroscope/src/main/res/values/strings.xml",
+    "sha256": "f912cc2704a3e75fe256066ad5fdb8de9049fce9e554dee710a866ae07221e9f",
+    "size": 249
+  }
+]
