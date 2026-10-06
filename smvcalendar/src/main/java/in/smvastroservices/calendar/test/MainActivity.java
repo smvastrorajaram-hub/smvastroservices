@@ -91,6 +91,18 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleNavigation(Uri.parse(url));
             }
+
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                hidePwaInstallUi(view);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                hidePwaInstallUi(view);
+            }
         });
 
         webView.setWebChromeClient(new WebChromeClient() {
@@ -117,6 +129,20 @@ public class MainActivity extends Activity {
         });
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> openExternal(Uri.parse(url)));
+    }
+
+    private void hidePwaInstallUi(WebView view) {
+        if (view == null) return;
+        String script = "(function(){try{" +
+                "var id='smv-android-test-hide-pwa-install';" +
+                "if(!document.getElementById(id)){" +
+                "var s=document.createElement('style');s.id=id;" +
+                "s.textContent='#smvInstallAppSection,#smvHoroscopeInstallArea,#smvCalendarInstallArea,.cal-app-link{display:none!important;visibility:hidden!important}';" +
+                "(document.head||document.documentElement).appendChild(s);" +
+                "}" +
+                "['smvInstallAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.setAttribute('aria-hidden','true');}});" +
+                "}catch(e){}})();";
+        view.evaluateJavascript(script, null);
     }
 
     private boolean handleNavigation(Uri uri) {
