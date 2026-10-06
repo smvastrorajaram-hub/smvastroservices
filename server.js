@@ -2064,7 +2064,7 @@ app.get("/admin/settings-data", async (req, res) => {
     return res.json({success:true,settings:{
       commission:val(commissionSnap),question:val(questionSnap),workflow:val(workflowSnap),
       privateCommission:val(privateCommissionSnap),privateConsultationWorkflow:val(privateWorkflowSnap),
-      astrologerAutoApproval:val(autoApprovalSnap),horoscopePayment:val(horoscopePaymentSnap)
+      astrologerAutoApproval:val(autoApprovalSnap),horoscopePayment:normalizeHoroscopeSettings(val(horoscopePaymentSnap)||horoscopeFeatureDefaults())
     }});
   }catch(e){
     console.error("Admin settings targeted load failed:",e);
@@ -3586,12 +3586,21 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
 // the backend only supplies Admin pricing, creates/verifies Razorpay orders and
 // records a per-customer/per-report entitlement.
 const HOROSCOPE_FEATURES=new Set(["advanced_analysis","marriage_matching"]);
-function horoscopeFeatureDefaults(){return {advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};}
+function horoscopeFeatureDefaults(){return {advancedAnalysisEnabled:false,advancedAnalysisPrice:0,marriageMatchingEnabled:false,marriageMatchingPrice:0};}
+function normalizeHoroscopeFeature(enabled,price){
+  const p=Math.round(Number(price)*100)/100;
+  return enabled===true&&Number.isFinite(p)&&p>=1?{enabled:true,price:p}:{enabled:false,price:0};
+}
+function normalizeHoroscopeSettings(raw={}){
+  const a=normalizeHoroscopeFeature(raw.advancedAnalysisEnabled,raw.advancedAnalysisPrice);
+  const m=normalizeHoroscopeFeature(raw.marriageMatchingEnabled,raw.marriageMatchingPrice);
+  return {...raw,advancedAnalysisEnabled:a.enabled,advancedAnalysisPrice:a.price,marriageMatchingEnabled:m.enabled,marriageMatchingPrice:m.price};
+}
 async function getHoroscopePaymentSettings(){
-  try{const snap=await db.collection("smv_settings").doc("horoscopePayment").get();return {...horoscopeFeatureDefaults(),...(snap.exists?snap.data():{})};}
+  try{const snap=await db.collection("smv_settings").doc("horoscopePayment").get();return normalizeHoroscopeSettings({...horoscopeFeatureDefaults(),...(snap.exists?snap.data():{})});}
   catch(_){return horoscopeFeatureDefaults();}
 }
-function horoscopeFeaturePrice(cfg,feature){return feature==="advanced_analysis"?{enabled:cfg.advancedAnalysisEnabled===true,price:Number(cfg.advancedAnalysisPrice||0)}:{enabled:cfg.marriageMatchingEnabled===true,price:Number(cfg.marriageMatchingPrice||0)};}
+function horoscopeFeaturePrice(cfg,feature){return feature==="advanced_analysis"?normalizeHoroscopeFeature(cfg.advancedAnalysisEnabled,cfg.advancedAnalysisPrice):normalizeHoroscopeFeature(cfg.marriageMatchingEnabled,cfg.marriageMatchingPrice);}
 function cleanReportKey(v){const s=String(v||"").trim();return /^[a-f0-9]{64}$/i.test(s)?s:"";}
 function horoscopeEntitlementId(uid,feature,reportKey){return crypto.createHash("sha256").update(`${uid}|${feature}|${reportKey}`).digest("hex");}
 async function requireCustomerOnly(user,res){
@@ -3599,20 +3608,21 @@ async function requireCustomerOnly(user,res){
   if(role!=="customer"){res.status(403).json({error:"Customer login is required for Horoscope payment."});return false;}return true;
 }
 app.get("/horoscope-auth/session",async(req,res)=>{const user=await requireUser(req,res);if(!user)return;const snap=await db.collection("smv_users").doc(user.uid).get();const role=String(snap.data()?.role||"customer").toLowerCase();return res.json({success:true,role});});
-app.get("/horoscope-feature-config",async(_req,res)=>{res.set("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");res.set("Pragma","no-cache");res.set("Expires","0");const c=await getHoroscopePaymentSettings();return res.json({success:true,advanced_analysis:horoscopeFeaturePrice(c,"advanced_analysis"),marriage_matching:horoscopeFeaturePrice(c,"marriage_matching")});});
+app.get("/horoscope-feature-config",async(_req,res)=>{res.set("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");res.set("Pragma","no-cache");res.set("Expires","0");const c=await getHoroscopePaymentSettings(),a=horoscopeFeaturePrice(c,"advanced_analysis"),m=horoscopeFeaturePrice(c,"marriage_matching");return res.json({success:true,advanced_analysis:{...a,mode:a.enabled?"paid":"free_login"},marriage_matching:{...m,mode:m.enabled?"paid":"free_login"}});});
 app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  const b=req.body||{},ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
-  if(!Number.isFinite(ap)||ap<0||!Number.isFinite(mp)||mp<0)return res.status(400).json({error:"Horoscope and Marriage Matching prices cannot be negative."});
-  const data={advancedAnalysisEnabled:b.advancedAnalysisEnabled===true,advancedAnalysisPrice:ap,marriageMatchingEnabled:b.marriageMatchingEnabled===true,marriageMatchingPrice:mp,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
+  const b=req.body||{},ae=b.advancedAnalysisEnabled===true,me=b.marriageMatchingEnabled===true;
+  const ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
+  if(ae&&(!Number.isFinite(ap)||ap<1))return res.status(400).json({error:"Advanced Analysis ON requires a price of at least ₹1."});
+  if(me&&(!Number.isFinite(mp)||mp<1))return res.status(400).json({error:"Marriage Matching ON requires a price of at least ₹1."});
+  const data={advancedAnalysisEnabled:ae,advancedAnalysisPrice:ae?ap:0,marriageMatchingEnabled:me,marriageMatchingPrice:me?mp:0,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
   await db.collection("smv_settings").doc("horoscopePayment").set(data,{merge:true});return res.json({success:true,settings:data});
 });
 app.post("/horoscope-payment/create-order",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
   const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey);if(!HOROSCOPE_FEATURES.has(feature)||!reportKey)return res.status(400).json({error:"Invalid Horoscope payment request."});
-  const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);if(!f.enabled)return res.status(403).json({error:"This feature is disabled by Admin."});
-  if(Number(f.price)===0)return res.json({success:true,free:true,entitled:true,feature});
-  if(!Number.isFinite(f.price)||f.price<0)return res.status(409).json({error:"Admin payment price is not configured."});
+  const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);
+  if(!f.enabled||!Number.isFinite(f.price)||Number(f.price)<1)return res.status(409).json({error:"Payment is OFF for this feature. Customer Login unlocks the full report free."});
   const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();
   if(es.exists&&es.data()?.paymentStatus==="paid")return res.json({success:true,entitled:true,feature,reportKey});
   const amount=Math.round(f.price*100),order=await razorpay.orders.create({amount,currency:"INR",receipt:`SMV_H_${feature==='advanced_analysis'?'A':'M'}_${Date.now()}`,notes:{uid:user.uid,feature,reportKey}});
