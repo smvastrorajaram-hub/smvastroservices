@@ -1,0 +1,229 @@
+/* SMV V238 — lightweight user-supplied covers with live report-data overlays.
+   Background artwork stays static and compressed; names/birth details remain real HTML text. */
+
+#smvPrintCover.smv-user-image-cover{
+  width:100%!important;
+  max-width:184mm!important;
+  margin:0 auto 8mm!important;
+  padding:0!important;
+  background:#fff!important;
+}
+#smvPrintCover.smv-user-image-cover .smv-cover-frame{
+  position:relative!important;
+  width:100%!important;
+  min-height:260mm!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+  background:#fff!important;
+  display:block!important;
+}
+
+/* The supplied artwork is used directly. Only one is visible per report type. */
+.smv-user-cover-bg{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  display:none!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  background:#fff!important;
+}
+#smvCoverBirthGrid.is-single ~ .smv-user-cover-horoscope{display:block!important}
+#smvCoverBirthGrid:not(.is-single) ~ .smv-user-cover-matching{display:block!important}
+
+/* Existing hidden data targets — the headings are already painted in the supplied artwork. */
+.smv-cover-data-only,
+#smvPrintCover .smv-cover-brand,
+#smvPrintCover .smv-cover-rule,
+#smvPrintCover .smv-cover-contact,
+#smvPrintCover .smv-cover-corners,
+#smvPrintCover .smv-cover-emblem{display:none!important}
+
+/* Dynamic overlay shared rules. */
+#smvCoverBirthGrid{
+  position:absolute!important;
+  z-index:4!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+}
+#smvCoverBirthGrid .smv-cover-person{
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  min-width:0!important;
+  color:#2b2f50!important;
+  background:rgba(255,248,232,.985)!important;
+  overflow:hidden!important;
+}
+#smvCoverBirthGrid .smv-cover-person h2,
+#smvCoverBirthGrid .smv-cover-detail{
+  margin:0!important;
+  padding:0 1.2mm!important;
+  border:0!important;
+  min-width:0!important;
+  color:#2b2f50!important;
+  font-family:SMVTamil,Arial,sans-serif!important;
+  font-weight:700!important;
+  line-height:1.15!important;
+}
+#smvCoverBirthGrid .smv-cover-person h2{
+  display:flex!important;
+  align-items:center!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#smvCoverBirthGrid .smv-cover-detail{
+  display:flex!important;
+  align-items:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
+#smvCoverBirthGrid .smv-cover-detail b,
+#smvCoverBirthGrid .smv-cover-detail i{display:none!important}
+#smvCoverBirthGrid .smv-cover-detail span{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#2b2f50!important;
+  font-weight:650!important;
+}
+
+/* Horoscope cover: mask only the placeholder-value column, keeping the supplied labels/frame visible. */
+#smvCoverBirthGrid.is-single{
+  left:52.4%!important;
+  top:73.15%!important;
+  width:30.7%!important;
+  height:10.95%!important;
+  display:block!important;
+}
+#smvCoverBirthGrid.is-single .smv-cover-person{
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  grid-template-rows:repeat(4,minmax(0,1fr))!important;
+}
+#smvCoverBirthGrid.is-single .smv-cover-person h2,
+#smvCoverBirthGrid.is-single .smv-cover-detail{
+  font-size:8.4pt;
+}
+
+/* Marriage Matching cover: two independent value-column masks. */
+#smvCoverBirthGrid:not(.is-single){
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+}
+#smvCoverBirthGrid:not(.is-single) .smv-cover-person{
+  position:absolute!important;
+  top:69.65%!important;
+  width:17.3%!important;
+  height:12.35%!important;
+  display:grid!important;
+  grid-template-rows:repeat(4,minmax(0,1fr))!important;
+}
+#smvCoverBirthGrid:not(.is-single) .smv-cover-person:nth-child(1){left:31.25%!important}
+#smvCoverBirthGrid:not(.is-single) .smv-cover-person:nth-child(2){left:78.15%!important}
+
+/* Matching pair banner: report-print.js already supplies Bride × Groom dynamically. */
+#smvPrintCover .smv-cover-seal-note{
+  position:absolute!important;
+  z-index:5!important;
+  left:28.5%!important;
+  top:83.75%!important;
+  width:43%!important;
+  height:4.35%!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0 2mm!important;
+  border:0!important;
+  border-radius:0!important;
+  background:rgba(255,248,232,.985)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+}
+#smvPrintCover .smv-cover-seal-note b{
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  color:#761010!important;
+  font-family:SMVTamil,Georgia,'Times New Roman',serif!important;
+  font-weight:850!important;
+  line-height:1.05!important;
+  letter-spacing:0!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#smvPrintCover .smv-cover-seal-note span{display:none!important}
+#smvCoverBirthGrid.is-single ~ .smv-cover-seal-note{display:none!important}
+
+/* Marriage Matching page 2 only: remove the four-corner flower/lotus ornament.
+   The rest of the compact Vinayakar welcome and report remain unchanged. */
+#smvMatchingWelcome .smv-cover-corners{display:none!important}
+#smvMatchingWelcome .smv-welcome-frame::before,
+#smvMatchingWelcome .smv-welcome-frame::after{display:none!important}
+
+@media screen and (max-width:720px){
+  #smvPrintCover.smv-user-image-cover .smv-cover-frame{aspect-ratio:1087/1536;min-height:0!important}
+  #smvCoverBirthGrid.is-single .smv-cover-person h2,
+  #smvCoverBirthGrid.is-single .smv-cover-detail{padding:0 4px!important}
+  #smvCoverBirthGrid:not(.is-single) .smv-cover-person h2,
+  #smvCoverBirthGrid:not(.is-single) .smv-cover-detail{padding:0 3px!important}
+}
+
+@media print{
+  @page:first{size:A4;margin:0}
+  #smvPrintCover.smv-user-image-cover{
+    width:210mm!important;
+    height:297mm!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    display:block!important;
+    break-after:page!important;
+    page-break-after:always!important;
+    overflow:hidden!important;
+    background:#fff!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #smvPrintCover.smv-user-image-cover .smv-cover-frame{
+    width:210mm!important;
+    height:297mm!important;
+    min-height:297mm!important;
+    overflow:hidden!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  .smv-user-cover-bg,
+  #smvCoverBirthGrid .smv-cover-person,
+  #smvPrintCover .smv-cover-seal-note{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #smvMatchingWelcome .smv-cover-corners,
+  #smvMatchingWelcome .smv-welcome-frame::before,
+  #smvMatchingWelcome .smv-welcome-frame::after{display:none!important}
+}
