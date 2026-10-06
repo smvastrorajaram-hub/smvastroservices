@@ -1,1 +1,28 @@
+plugins { id "com.android.application" }
 
+android {
+    namespace "in.smvastroservices.calendar.test"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "in.smvastroservices.calendar.test"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0-test"
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ""
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.7.3"
+}
