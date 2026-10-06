@@ -155,3 +155,10 @@
  #calDaily .transit-position-table th,#calDaily .transit-position-table td{padding:4px 1px!important}
  #calDaily .transit-position-table .transit-table-degree{font-size:8.3px!important}
 }
+
+
+/* V228 — actual current date: colour-only indicator, no Today/இன்று label. */
+#smvDailyCalendar .cal-month-grid button.cal-today{background:#f7d978!important;border:2px solid #a96d00!important;box-shadow:inset 0 0 0 2px #fff6cf!important}
+#smvDailyCalendar .cal-month-grid button.cal-today>strong{color:#572f00!important;font-weight:900!important;text-shadow:0 1px 0 #fff4c7}
+#smvDailyCalendar .cal-month-grid button.cal-today.cal-special{background:#f7d978!important}
+#smvDailyCalendar .cal-month-grid button.cal-today[aria-current="date"]{background:#f7d978!important;border:2px solid #a96d00!important;box-shadow:inset 0 0 0 2px #fff6cf!important}

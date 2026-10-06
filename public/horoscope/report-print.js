@@ -87,6 +87,8 @@
     document.getElementById('smvWelcomeMeaning').textContent=tamil?'வளைந்த துதிக்கையும் பெரும் திருமேனியும் உடைய விநாயகப் பெருமானே, கோடி சூரியர்களைப் போல் பிரகாசிப்பவரே, இந்த இரு ஜாதகத் திருமணப் பொருத்த ஆய்வில் தடைகளை நீக்கி தெளிவு, ஒற்றுமை மற்றும் நல்ல வழிகாட்டலை அருள்வாயாக.':'May Lord Vinayakar remove obstacles and bless this two-chart marriage compatibility study with clarity, harmony and auspicious guidance.';
     document.getElementById('smvWelcomeInvocation').textContent=tamil?'ஓம் ஸ்ரீ மதுரை வீரன் துணை':'Om Sri Madurai Veeran Thunai';
     document.getElementById('smvWelcomePair').textContent=`${bn}  ×  ${gn}`;
+    welcome.classList.add('is-compact');
+    root.prepend(welcome);
    }else welcome.hidden=true;
   }
   root.querySelectorAll('[hidden]').forEach(e=>e.hidden=false);
