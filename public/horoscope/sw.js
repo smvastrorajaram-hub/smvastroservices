@@ -1,20 +1,130 @@
-const CACHE='smv-horoscope-v230-print-store-version-restore'+self.registration.scope;
-const CORE=['./','./index.html','./smv-ui-v207.css','./config.js','./boot.mjs','./horoscope.js','./horoscope-auth.mjs','./report-store.mjs','./report-identity.js','./report-print.css','./report-print.html','./report-print.js','./horoscope-predictions.js','./horoscope-translations.js','./horoscope-language.js','./location-search-online-offline.js','./horoscope-form.js','./horoscope-details.js','./horoscope.css','./marriage-matching.js','./marriage-matching.css','./pwa.js','./manifest-en.webmanifest','./manifest-ta.webmanifest',
-'./assets/smvlogo.png','./assets/vinayagar-report.png','./assets/hero-mobile.png','./assets/hero-desktop.png','./assets/temple-frame.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png','./assets/icon-512.svg','./assets/smv-brand-logo-v17.png','./assets/web-black.svg','./assets/phone-black.svg','./assets/whatsapp-black.svg','./assets/email-black.svg',
-'./offline/wasm-provider.mjs','./offline/offline-engine.mjs','./offline/server-v107-wrapper.browser.mjs','./offline/dasa_engine.browser.mjs','./offline/swiss_vedic.browser.mjs','./offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs','./offline/vendor/smv-swisseph-local.mjs','./offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.js','./offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data','./offline/places/place-search.mjs','./offline/places/timezone.mjs','./offline/places/india-manifest.json',
-...['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z'].map(x=>'./offline/places/india/'+x+'.json')];
-function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.registration.scope).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
-async function cacheCoreParallel(cache,items,concurrency=4){
-  let i=0;
-  const worker=async()=>{while(i<items.length){const f=items[i++];try{const r=await fetch(new Request(f,{cache:'reload'}));if(r.ok)await cache.put(f,fixed(f,r));}catch(_){/* optional/missing asset must not block update */}}};
-  await Promise.all(Array.from({length:Math.min(concurrency,items.length)},worker));
+/*
+  SMV HOROSCOPE service worker — ONLINE SOURCE OF TRUTH
+
+  There is deliberately NO V-number cache.
+
+  Browser-visible frontend, Admin/access files and Print files are never served
+  from Cache Storage. When online, Chrome / Opera / other browsers request the
+  current deployed files from the network with cache:'no-store'.
+
+  Only /offline/ calculation/location assets may use the one stable offline
+  cache, and even those are network-first when internet is available.
+*/
+const OFFLINE_CACHE='smv-horoscope-offline';
+
+const OFFLINE_ASSETS=[
+  './offline/wasm-provider.mjs',
+  './offline/offline-engine.mjs',
+  './offline/server-v107-wrapper.browser.mjs',
+  './offline/dasa_engine.browser.mjs',
+  './offline/swiss_vedic.browser.mjs',
+  './offline/transit_panchang.browser.mjs',
+  './offline/astro_advanced.browser.mjs',
+  './offline/vendor/smv-swisseph-local.mjs',
+  './offline/vendor/wasm/swisseph.mjs',
+  './offline/vendor/wasm/swisseph.js',
+  './offline/vendor/wasm/swisseph.wasm',
+  './offline/vendor/wasm/swisseph.data',
+  './offline/places/place-search.mjs',
+  './offline/places/timezone.mjs',
+  './offline/places/india-manifest.json',
+  ...['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z']
+    .map(x=>'./offline/places/india/'+x+'.json')
+];
+
+function fixed(url,response){
+  const headers=new Headers(response.headers);
+  const p=new URL(url,self.registration.scope).pathname.toLowerCase();
+  if(/\.m?js$/.test(p))headers.set('Content-Type','text/javascript; charset=utf-8');
+  if(/\.json$/.test(p))headers.set('Content-Type','application/json; charset=utf-8');
+  if(/\.wasm$/.test(p))headers.set('Content-Type','application/wasm');
+  if(/\.data$/.test(p))headers.set('Content-Type','application/octet-stream');
+  return new Response(response.clone().body,{
+    status:response.status,
+    statusText:response.statusText,
+    headers
+  });
 }
-self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);await cacheCoreParallel(c,CORE,4);await self.skipWaiting();})()));
-self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('smv-horoscope-')&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;const scopePath=new URL(self.registration.scope).pathname;const calendarPath=scopePath+'calendar/';if(u.pathname.startsWith(calendarPath))return;const sameScope=u.pathname.startsWith(scopePath);if(!sameScope)return;e.respondWith((async()=>{const c=await caches.open(CACHE);if(e.request.mode==='navigate'){try{const r=await fetch(e.request,{cache:'no-store'});if(r&&r.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}const nav=await c.match('./index.html');return nav?fixed(u.href,nav):new Response('SMV HOROSCOPE offline page is not cached.',{status:503});}
- const critical=/\/(?:pwa\.js|report-print\.js|report-store\.mjs|location-search-online-offline\.js|manifest-(?:en|ta)\.webmanifest)$/.test(u.pathname);
- if(critical){try{const r=await fetch(e.request,{cache:'no-store'});if(r&&r.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}const fallback=await c.match(e.request,{ignoreSearch:true})||await c.match(u.pathname,{ignoreSearch:true});if(fallback)return fixed(u.href,fallback);}
- const hit=await c.match(e.request,{ignoreSearch:true})||await c.match(u.pathname,{ignoreSearch:true});
- if(hit){e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r&&r.ok)await c.put(e.request,r.clone());}).catch(()=>{}));return fixed(u.href,hit);}
- try{const r=await fetch(e.request,{cache:'no-store'});if(r&&r.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}
- return new Response('SMV HOROSCOPE offline asset is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});})());});
+
+async function refreshOfflineAssets(){
+  const cache=await caches.open(OFFLINE_CACHE);
+  let i=0;
+  const worker=async()=>{
+    while(i<OFFLINE_ASSETS.length){
+      const asset=OFFLINE_ASSETS[i++];
+      try{
+        const r=await fetch(new Request(asset,{cache:'reload'}));
+        if(r.ok)await cache.put(asset,fixed(asset,r));
+      }catch(_){}
+    }
+  };
+  await Promise.all(Array.from({length:4},worker));
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    await refreshOfflineAssets();
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    // Remove every historical versioned Horoscope cache.
+    for(const key of await caches.keys()){
+      if(key!==OFFLINE_CACHE && key.startsWith('smv-horoscope-')){
+        await caches.delete(key);
+      }
+    }
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin)return;
+
+  const scopePath=new URL(self.registration.scope).pathname;
+  if(!url.pathname.startsWith(scopePath))return;
+
+  const relative=url.pathname.slice(scopePath.length);
+  const isOfflineAsset=relative.startsWith('offline/');
+
+  if(isOfflineAsset){
+    event.respondWith((async()=>{
+      const cache=await caches.open(OFFLINE_CACHE);
+      try{
+        // Online always gets the latest offline engine/location asset first.
+        const network=await fetch(event.request,{cache:'no-store'});
+        if(network&&network.ok){
+          await cache.put(event.request,network.clone());
+          return fixed(url.href,network);
+        }
+      }catch(_){}
+
+      const saved=
+        await cache.match(event.request,{ignoreSearch:true}) ||
+        await cache.match(url.pathname,{ignoreSearch:true});
+      if(saved)return fixed(url.href,saved);
+
+      return new Response('Offline calculation asset is unavailable.',{
+        status:503,
+        headers:{'Content-Type':'text/plain; charset=utf-8'}
+      });
+    })());
+    return;
+  }
+
+  // EVERYTHING ELSE is online authoritative:
+  // navigation, HTML, CSS, JS, Admin access, language UI, saved-report UI,
+  // report-print HTML/CSS/JS and cover assets.
+  event.respondWith(
+    fetch(event.request,{cache:'no-store'})
+      .catch(()=>new Response(
+        'This screen requires an online connection to load the current SMV ASTRO version.',
+        {status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}}
+      ))
+  );
+});
