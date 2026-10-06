@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">SMV CALENDAR</string>
-    <string name="asset_statements">[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://smvastroservices.in"}}]</string>
+    <string name="asset_statements">[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://calendar.smvastroservices.in"}}]</string>
 </resources>
