@@ -1,0 +1,62 @@
+name: Build SMV Android Test APKs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "smvastro/**"
+      - "smvhoroscope/**"
+      - "smvcalendar/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "prepare-icons.sh"
+      - ".github/workflows/build-test-apks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Use current official SMV icons
+        run: bash prepare-icons.sh
+
+      - name: Build 3 APKs
+        run: gradle --no-daemon :smvastro:assembleDebug :smvhoroscope:assembleDebug :smvcalendar:assembleDebug
+
+      - name: Collect
+        run: |
+          mkdir -p dist
+          cp smvastro/build/outputs/apk/debug/smvastro-debug.apk "dist/SMV-ASTRO-TEST.apk"
+          cp smvhoroscope/build/outputs/apk/debug/smvhoroscope-debug.apk "dist/SMV-HOROSCOPE-TEST.apk"
+          cp smvcalendar/build/outputs/apk/debug/smvcalendar-debug.apk "dist/SMV-CALENDAR-TEST.apk"
+          sha256sum dist/*.apk > dist/SHA256SUMS.txt
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ANDROID-TEST-APKS
+          path: dist/*
+          retention-days: 7
