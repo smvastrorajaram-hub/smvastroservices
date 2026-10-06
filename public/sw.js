@@ -1,14 +1,54 @@
-/* SMV ASTRO main-site service worker V221 — static/PWA + on-demand main location-search assets.
-   Firebase, API, dashboard, payment and application-data requests are never intercepted. */
-const CACHE_NAME='smv-astro-static-master-20261005-v221-calendar-nav';
-const PLACE_BOOT=[
-  './main-location-search-v187.js?v=208-reopt',
-  './main-ui-v187.css?v=187',
-  './smv-ui-v207.css?v=207',
-  './horoscope/offline/places/india-manifest.json?v=187'
-];
-function isPlaceAsset(url){if(url.origin!==self.location.origin)return false;const p=url.pathname.toLowerCase();return p.endsWith('/main-location-search-v187.js')||p.endsWith('/main-ui-v187.css')||p.includes('/horoscope/offline/places/');}
-function isStaticPresentationAsset(url){if(url.origin!==self.location.origin)return false;const p=url.pathname.toLowerCase();if(isPlaceAsset(url))return true;if(p==='/horoscope'||p.startsWith('/horoscope/'))return false;return p.endsWith('/sw.js')||p.includes('/assets/')||/\.css$/.test(p)||/\.(png|jpe?g|webp|gif|svg|ico|avif)$/.test(p)||/(?:logo|icon|favicon)/.test(p)||/\.webmanifest$/.test(p);}
-self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await Promise.allSettled(PLACE_BOOT.map(u=>cache.add(u)));await self.skipWaiting();})()));
-self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('smv-astro-static-')&&k!==CACHE_NAME).map(k=>caches.delete(k)));await self.clients.claim();})()));
-self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(!isStaticPresentationAsset(url))return;event.respondWith((async()=>{const cache=await caches.open(CACHE_NAME);const navScript=url.pathname.endsWith('/main-location-search-v187.js');if(navScript){try{const response=await fetch(req,{cache:'no-store'});if(response?.ok){await cache.put(req,response.clone());return response;}}catch(_){}const fallback=await cache.match(req,{ignoreSearch:true})||await caches.match(req,{ignoreSearch:true});if(fallback)return fallback;}const cached=await cache.match(req);if(cached)return cached;try{const response=await fetch(req,{cache:'no-cache'});if(response?.ok)await cache.put(req,response.clone());return response;}catch(err){const any=await caches.match(req);if(any)return any;if(isPlaceAsset(url)){const placeFallback=await caches.match(req,{ignoreSearch:true});if(placeFallback)return placeFallback;}throw err;}})());});
+/* SMV ASTRO main-site service worker — ONLINE AUTHORITY.
+   No versioned frontend cache. No app-shell cache.
+   Frontend/Admin/UI always use the deployed network source.
+   Only offline place-search data may fall back to one stable cache. */
+const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
+
+function isOfflinePlaceAsset(url){
+  if(url.origin!==self.location.origin)return false;
+  const p=url.pathname.toLowerCase();
+  return p.endsWith('/main-location-search-v187.js')||p.includes('/horoscope/offline/places/');
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k!==OFFLINE_PLACE_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
+    await self.clients.claim();
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    await Promise.all(clients.map(c=>{try{return c.navigate(c.url)}catch(_){return null}}));
+  })());
+});
+
+self.addEventListener('fetch',event=>{
+  const req=event.request;
+  if(req.method!=='GET')return;
+  const url=new URL(req.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(isOfflinePlaceAsset(url)){
+    event.respondWith((async()=>{
+      const cache=await caches.open(OFFLINE_PLACE_CACHE);
+      try{
+        const network=await fetch(req,{cache:'no-store'});
+        if(network&&network.ok)await cache.put(req,network.clone());
+        return network;
+      }catch(_){
+        const saved=await cache.match(req,{ignoreSearch:true})||await cache.match(url.pathname,{ignoreSearch:true});
+        if(saved)return saved;
+        return new Response('Offline place-search data is unavailable.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+      }
+    })());
+    return;
+  }
+
+  // HTML, JS, CSS, images, Admin UI and all other main-site presentation are online-only.
+  event.respondWith(fetch(req,{cache:'no-store'}).catch(()=>new Response(
+    'Connect to the internet to load the current SMV ASTRO site.',
+    {status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}}
+  )));
+});
