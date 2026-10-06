@@ -18,6 +18,7 @@
             android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
             android:exported="true"
             android:label="@string/app_name">
+
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
                 android:value="https://smvastroservices.in/" />
@@ -30,10 +31,20 @@
                 android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
                 android:resource="@color/color_primary" />
 
+            <meta-data
+                android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
+                android:value="webview" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
+
     </application>
 </manifest>
