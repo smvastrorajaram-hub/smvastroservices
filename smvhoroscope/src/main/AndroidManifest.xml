@@ -21,7 +21,7 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://smvastroservices.in/horoscope/?lang=en&amp;source=android-test" />
+                android:value="https://horoscope.smvastroservices.in/?lang=en&amp;source=android-test" />
 
             <meta-data
                 android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
@@ -33,10 +33,11 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
-                android:value="webview" />
+                android:value="customtabs" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
