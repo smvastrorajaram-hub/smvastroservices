@@ -1,25 +1,28 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'"><title>SMV HOROSCOPE — Print</title><link rel="stylesheet" href="report-print.css?v=228-matching-page2-compact"><link rel="stylesheet" href="report-cover-professional.css?v=239-integrated-cover"><script defer src="report-print.js?v=228-matching-page2-compact"></script><script defer src="report-cover-dynamic.js?v=239-integrated-cover"></script></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'"><title>SMV HOROSCOPE — Print</title><link rel="stylesheet" href="report-print.css?v=228-matching-page2-compact"><script defer src="report-print.js?v=228-matching-page2-compact"></script></head><body>
 <nav class="print-tools"><button id="printBack" type="button">Back</button><button id="printNow" type="button" disabled>Print / Save as PDF</button><p id="printStatus" role="status"></p></nav>
-
-<section class="smv-print-cover smv-vector-cover smv-cover-v19 smv-user-image-cover" id="smvPrintCover" aria-label="SMV ASTRO SERVICES report cover">
+<section class="smv-print-cover smv-vector-cover smv-cover-v19" id="smvPrintCover" aria-label="SMV ASTRO SERVICES premium Vedic astrology report cover">
   <div class="smv-cover-frame">
-    <!-- Existing report-print.js writes dynamic birth details into this grid. -->
-    <div class="smv-cover-birth-grid" id="smvCoverBirthGrid"></div>
-
-    <!-- Existing report-print.js writes Bride × Groom here for matching. -->
-    <section class="smv-cover-seal-note" aria-label="Report identity">
-      <b id="smvCoverPrimaryName">SMV ASTRO</b>
-      <span id="smvCoverSubtitle">Traditional Vedic Astrology Report</span>
-    </section>
-
-    <!-- Kept only as data targets for the existing print code; text is already part of the supplied artwork. -->
-    <header class="smv-cover-brand smv-cover-data-only" aria-hidden="true">
+    <div class="smv-cover-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="smv-cover-emblem"><img src="assets/vinayagar-cover.svg" alt="Sri Vinayagar"></div>
+    <header class="smv-cover-brand">
+      <div class="smv-cover-kicker">SRI MADURAVEERAYAH ASTRO SERVICES</div>
+      <h1>SMV ASTRO SERVICES</h1>
       <p id="smvCoverReportTitle">Sri Maduraveerayah Horoscope</p>
     </header>
 
-    <img class="smv-user-cover-bg smv-user-cover-horoscope" src="assets/smv-horoscope-cover-light-v238.webp" alt="">
-    <img class="smv-user-cover-bg smv-user-cover-matching" src="assets/smv-matching-cover-light-v238.webp" alt="">
+    <div class="smv-cover-rule" aria-hidden="true"><span></span><b>✦</b><span></span></div>
+
+    <section class="smv-cover-birth" aria-label="Birth details"><div class="smv-cover-birth-grid" id="smvCoverBirthGrid"></div></section>
+
+    <section class="smv-cover-seal-note" aria-label="Report identity"><b id="smvCoverPrimaryName">SMV ASTRO</b><span id="smvCoverSubtitle">Traditional Vedic Astrology Report</span></section>
+
+    <footer class="smv-cover-contact" aria-label="SMV ASTRO contact details">
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9z"/></svg><b>www.smvastroservices.in</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h4l2 5-3 2c1 3 3 5 6 6l2-3 4 2v4c0 1-1 2-2 2C10 21 3 14 3 5c0-1 1-2 2-2h2z"/></svg><b>6381171084</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 1 7 12l2 5-5-2a8 8 0 1 1-4-15z"/><path d="M9 8c1 3 3 5 6 6"/></svg><b>8072973399</b></span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg><b>smvastroservices@gmail.com</b></span>
+    </footer>
   </div>
 </section>
 
