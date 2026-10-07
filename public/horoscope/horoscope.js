@@ -237,14 +237,17 @@
     const sectionRule=document.querySelector('#tamil-horoscope .home-rule span:nth-child(2)');
     const btn=$('generateTamilHoroscope'), clear=$('clearTamilHoroscope');
     const labels=[...document.querySelectorAll('#tamil-horoscope label b')];
-    const texts=ta?['பெயர்','ராசி','பிறந்த தேதி','பிறந்த நேரம்','பிறந்த இடம்','','','நட்சத்திரம் (விருப்பம்)']:['Name','Rasi','Date of Birth','Birth Time','Birth Place','','','Nakshatra (Optional)'];
+    const texts=ta?['பெயர்','ராசி','பிறந்த தேதி','பிறந்த நேரம்','பிறந்த இடம்','அட்சரேகை (Latitude)','தீர்க்கரேகை (Longitude)','நட்சத்திரம் (விருப்பம்)','தற்போதைய தொழில் நிலை (விருப்பம்)','திருமண நிலை (விருப்பம்)','தற்போதைய வசிப்பிடம் (விருப்பம்)']:['Name','Rasi','Date of Birth','Birth Time','Birth Place','Latitude','Longitude','Nakshatra (Optional)','Current Work Status (Optional)','Marital Status (Optional)','Current Residence (Optional)'];
     labels.forEach((el,i)=>{if(texts[i])el.textContent=texts[i];});
     if(heading)heading.textContent=ta?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope';
     if(sectionRule)sectionRule.textContent=ta?'தமிழ் ஜோதிட வழிகாட்டி':'Horoscope';
     if(btn){btn.textContent=ta?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope';}
     if(clear)clear.textContent=ta?'மீட்டமை':'Reset';
-    const fields={tamilAstroName:ta?'உங்கள் பெயர்':'Your name',tamilBirthPlace:ta?'நகரம், மாநிலம்':'City, State',tamilNakshatra:ta?'எ.கா. ரோகிணி':'e.g. Rohini',tamilLat:ta?'எ.கா. 13.0827':'e.g. 13.0827',tamilLon:ta?'எ.கா. 80.2707':'e.g. 80.2707'};
+    const fields={tamilAstroName:ta?'உங்கள் பெயர்':'Your name',tamilBirthPlace:ta?'நகரம், மாநிலம்':'City, State',tamilNakshatra:ta?'எ.கா. ரோகிணி':'e.g. Rohini',tamilLat:ta?'எ.கா. 13.0827':'e.g. 13.0827',tamilLon:ta?'எ.கா. 80.2707':'e.g. 80.2707',tamilCurrentResidence:ta?'நகரம், மாநிலம், நாடு':'City, State, Country'};
     Object.entries(fields).forEach(([id,v])=>{const el=$(id);if(el)el.placeholder=v;});
+    const workLabels=ta?{'':'குறிப்பிடவில்லை',employed:'வேலை / பணியாளர்',business:'வியாபாரம் / சுயதொழில்',student:'மாணவர்',homemaker:'இல்லத்தரசி / இல்லப் பொறுப்பு',unemployed:'தற்போது வேலை இல்லை',retired:'ஓய்வு',other:'மற்றவை'}:{'':'Not specified',employed:'Job / Employed',business:'Business / Self-employed',student:'Student',homemaker:'Homemaker',unemployed:'Currently not working',retired:'Retired',other:'Other'};
+    const maritalLabels=ta?{'':'குறிப்பிடவில்லை',unmarried:'திருமணம் ஆகாதவர்',married:'திருமணமானவர்',separated:'பிரிந்து வாழ்பவர்',divorced:'விவாகரத்து',widowed:'துணையை இழந்தவர்',prefer_not_say:'குறிப்பிட விரும்பவில்லை'}:{'':'Not specified',unmarried:'Unmarried',married:'Married',separated:'Separated',divorced:'Divorced',widowed:'Widowed',prefer_not_say:'Prefer not to say'};
+    for(const [id,map] of [['tamilCurrentWork',workLabels],['tamilMaritalStatus',maritalLabels]]){const el=$(id);if(el)[...el.options].forEach(o=>{if(Object.prototype.hasOwnProperty.call(map,o.value))o.textContent=map[o.value];});}
     const r=$('tamilRasi');
     if(r){
       const vals=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
@@ -1670,7 +1673,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     transitTarget.insertAdjacentHTML('beforeend',html);
   }
 
-    async function loadAdvancedAstrology({date,time,lat,lon,lang,rootId,name='',chart=null,generationId=null,cachedFull=null,cachedBasic=null}){
+    async function loadAdvancedAstrology({date,time,lat,lon,lang,rootId,name='',chart=null,generationId=null,cachedFull=null,cachedBasic=null,birthPlace='',currentWork='',maritalStatus='',currentResidence=''}){
     const root=document.getElementById(rootId); if(!root)return;
     const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const isCurrent=()=>generationId==null || Number(generationId)===Number(window.__smvHoroscopeGenerationId||generationId);
@@ -1683,7 +1686,10 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     window.__smvAdvancedAbortController=advancedAbortController;
     if(root){ root.innerHTML=''; root.classList.add('hidden'); }
 
-    const payload={date,time,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:lang,name:String(name||'')};
+    let reportContext={};try{reportContext=window.__smvGetReportContext?.('advanced_analysis')||{}}catch(_e){}
+    const useEnglish=rootId==='englishAdvancedAstrology',dom=id=>document.getElementById((useEnglish?'english':'tamil')+id);
+    const contextWork=String(currentWork||reportContext.currentWork||dom('CurrentWork')?.value||'').trim(),contextMarital=String(maritalStatus||reportContext.maritalStatus||dom('MaritalStatus')?.value||'').trim(),contextResidence=String(currentResidence||reportContext.currentResidence||dom('CurrentResidence')?.value||'').trim(),contextBirthPlace=String(birthPlace||reportContext.birthPlace||dom('BirthPlace')?.value||'').trim();
+    const payload={date,time,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:lang,name:String(name||''),birthPlace:contextBirthPlace,currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence};
     // Keep the Advanced host hidden until the first advanced response is ready.
     // This prevents an old/partial module from flashing below the fresh horoscope.
     root.classList.add('hidden');
@@ -2563,7 +2569,7 @@ function renderTransitPanchang(t,p,lang,rootId){
     const date=$('tamilDob')?.value||'', time=$('tamilTob')?.value||'';
     const lat=$('tamilLat')?.value||'', lon=$('tamilLon')?.value||'';
     if(!date||!time){alert('பிறந்த தேதி மற்றும் பிறந்த நேரத்தை உள்ளிடவும்.');return;}
-   const placeValue=String($('tamilBirthPlace')?.value||'').trim();
+   const placeValue=String($('tamilBirthPlace')?.value||'').trim(),currentWork=String($('tamilCurrentWork')?.value||'').trim(),maritalStatus=String($('tamilMaritalStatus')?.value||'').trim(),currentResidence=String($('tamilCurrentResidence')?.value||'').trim();
 
 if(!placeValue){
   alert('பிறந்த இடத்தை உள்ளிடவும்.');
@@ -2603,6 +2609,7 @@ if(lat===''||lon===''){
       }
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
+      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang()});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
       // are calculated once later, after access/gating is resolved.
       await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');
@@ -2614,7 +2621,7 @@ if(lat===''||lon===''){
           resultBox?.classList.add('hidden');
           resultBox?.setAttribute('aria-busy','true');
           advRoot.innerHTML='';
-          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId});
+          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId,birthPlace:placeValue,currentWork,maritalStatus,currentResidence});
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');
         };
@@ -2643,7 +2650,7 @@ if(lat===''||lon===''){
     if($('englishHoroscopeResult'))$('englishHoroscopeResult').innerHTML='';
     generate();
   });
-  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilDob','tamilTob','tamilBirthPlace','tamilNakshatra','tamilLat','tamilLon'].forEach(id=>{if($(id))$(id).value='';});if($('tamilBirthPlace')){$('tamilBirthPlace').dataset.locationSelected='0';$('tamilBirthPlace').dataset.latitude='';$('tamilBirthPlace').dataset.longitude='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilDob','tamilTob','tamilBirthPlace','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});if($('tamilBirthPlace')){$('tamilBirthPlace').dataset.locationSelected='0';$('tamilBirthPlace').dataset.latitude='';$('tamilBirthPlace').dataset.longitude='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
   // V149: expose horoscope helpers so the separate English section can safely
   // reuse the renderer without relying on JavaScript lexical scope from another IIFE.
   window.__smvHoroscopeEnglishDictionary = EN;
