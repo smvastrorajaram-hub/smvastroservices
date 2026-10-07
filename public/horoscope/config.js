@@ -1,5 +1,5 @@
 // SMV HOROSCOPE backend configuration.
-// Admin/access decisions are online-only. No browser Admin-setting cache is used.
+// Admin/access decisions are online-only. No browser Admin-setting cache is authoritative.
 window.SMV_BACKEND_URL = '';
 
 (()=>{
@@ -7,7 +7,7 @@ window.SMV_BACKEND_URL = '';
 
 const DEFAULT_BACKEND='https://smvastroservices.onrender.com';
 const FEATURES=new Set(['advanced_analysis','marriage_matching']);
-const LEGACY_BROWSER_KEYS=[
+const LEGACY_KEYS=[
   'smv-horoscope-feature-config',
   'smv-horoscope-feature-policy-v244',
   'smv-horoscope-policy-v245'
@@ -15,13 +15,39 @@ const LEGACY_BROWSER_KEYS=[
 
 let legacyRenderLock=null;
 
-for(const key of LEGACY_BROWSER_KEYS){
+for(const key of LEGACY_KEYS){
   try{localStorage.removeItem(key)}catch(_){}
 }
 
 const ta=()=>document.documentElement.lang==='ta'||document.body?.classList?.contains('tamil-mode');
 const T=(en,tt)=>ta()?tt:en;
 const backend=()=>String(window.SMV_BACKEND_URL||DEFAULT_BACKEND).trim().replace(/\/+$/,'');
+
+/*
+  Compatibility guard:
+  horoscope-auth.mjs in older runtime code still creates a GET request with
+  Cache-Control / Pragma request headers. Those headers force a CORS preflight.
+  Strip them ONLY for /horoscope-feature-config so every old/new caller becomes
+  the same simple online GET. This is not a cache fallback.
+*/
+const nativeFetch=window.fetch.bind(window);
+window.fetch=(input,init={})=>{
+  try{
+    const raw=typeof input==='string'?input:String(input?.url||'');
+    const url=new URL(raw,location.href);
+    if(url.pathname.endsWith('/horoscope-feature-config')){
+      const headers=new Headers(init?.headers||((typeof input==='object'&&input?.headers)?input.headers:undefined));
+      headers.delete('Cache-Control');
+      headers.delete('Pragma');
+      return nativeFetch(input,{
+        ...init,
+        cache:'no-store',
+        headers
+      });
+    }
+  }catch(_){}
+  return nativeFetch(input,init);
+};
 
 function normalizeFeature(v){
   const price=Number(v?.price??0);
@@ -32,17 +58,21 @@ function normalizeFeature(v){
 }
 
 async function getOnlineConfig(){
-  // IMPORTANT:
-  // cache:'no-store' + timestamp prevents browser HTTP reuse.
-  // Do NOT send Cache-Control/Pragma request headers here: those headers trigger
-  // a CORS preflight in Chrome/Opera and caused the old
-  // "Online access check required" false failure.
-  const response=await fetch(backend()+'/horoscope-feature-config?_='+Date.now(),{
-    cache:'no-store',
-    headers:{'Accept':'application/json'}
-  });
+  for(const key of LEGACY_KEYS){
+    try{localStorage.removeItem(key)}catch(_){}
+  }
+
+  const response=await nativeFetch(
+    backend()+'/horoscope-feature-config?_='+Date.now(),
+    {
+      cache:'no-store',
+      headers:{'Accept':'application/json'}
+    }
+  );
+
   const json=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(json?.error||('HTTP '+response.status));
+
   return {
     advanced_analysis:normalizeFeature(json?.advanced_analysis),
     marriage_matching:normalizeFeature(json?.marriage_matching)
@@ -85,26 +115,25 @@ async function stateFor(feature){
   const actualPrice=Number(raw?.price||0);
   const paidMode=raw?.enabled===true&&actualPrice>=1;
 
-  // ADMIN OFF + Rs.0:
-  // Basic calculation only. There is intentionally NO free-full unlock,
-  // NO payment button and NO Print/Save attachment for the current result.
+  // ADMIN OFF + Rs.0 -> BASIC ONLY.
+  // No payment, no full unlock, no Print/Save for the current result.
   if(!paidMode){
-    // marriage-matching.js historically treats price<=0 as public FULL.
-    // Return a synthetic gate price of 1 only to keep it on public/basic mode;
-    // renderPolicyLock() below suppresses the payment gate completely.
     return {
       feature,mode:'basic',
-      enabled:true,price:1,actualPrice:0,
+      enabled:true,
+      // Synthetic value keeps legacy Marriage Matching on public/basic mode.
+      price:1,actualPrice:0,
       loggedIn,entitled:false,fullAllowed:false
     };
   }
 
-  // ADMIN ON + Rs.1+:
-  // Basic remains visible until this exact report is paid.
+  // ADMIN ON + Rs.1+ -> PAID MODE.
+  // Login does not unlock Full. Only verified payment for this report does.
   const entitled=loggedIn ? await paidEntitled(feature) : false;
   return {
     feature,mode:'paid',
-    enabled:true,price:actualPrice,actualPrice,
+    enabled:true,
+    price:actualPrice,actualPrice,
     loggedIn,entitled,fullAllowed:entitled
   };
 }
@@ -132,6 +161,7 @@ function syncPaidButton(root,price){
   if(!root)return;
   const button=root.querySelector('[data-smv-unlock]');
   if(!button)return;
+
   const loggedIn=!!window.__smvHoroscopeLoggedIn?.();
   button.textContent=loggedIn
     ? `${T('Unlock Full Report — ₹','முழு அறிக்கை திறக்க — ₹')}${Number(price||0).toFixed(2)}`
@@ -153,7 +183,6 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
   }
 
   if(state.mode==='basic'){
-    // OFF + Rs.0: no payment/index panel at all.
     clearGate(root);
     return;
   }
@@ -163,7 +192,6 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
     return;
   }
 
-  // Reuse the already-working paid benefits/index + Razorpay implementation.
   legacyRenderLock(
     feature,
     root,
@@ -204,7 +232,6 @@ async function requireAccess(feature,gateRoot,onUnlock){
 }
 
 async function configForLegacy(){
-  // Online-only. There is no localStorage/cache fallback.
   return getOnlineConfig();
 }
 
@@ -221,8 +248,8 @@ function protect(name,value,onSet){
   }
 }
 
-// horoscope-auth.mjs still owns Login + Razorpay + entitlement verification.
-// It cannot overwrite the current Admin access rule.
+// Single browser access policy.
+// horoscope-auth.mjs continues to provide Auth/Razorpay implementation only.
 protect('__smvGetHoroscopeFeatureConfig',configForLegacy);
 protect('__smvFeatureState',stateFor);
 protect('__smvRequireHoroscopeFeatureAccess',requireAccess);
@@ -230,34 +257,24 @@ protect('__smvRenderFeatureLock',renderPolicyLock,v=>{
   if(typeof v==='function')legacyRenderLock=v;
 });
 
-function clearCurrentCalculationResults(){
+function clearCurrentResults(){
   for(const id of [
     'englishHoroscopeResult',
     'tamilHoroscopeResult',
     'englishAdvancedAstrology',
     'mmResult'
   ]){
-    const element=document.getElementById(id);
-    if(!element)continue;
-    element.replaceChildren();
-    element.classList.add('hidden');
-    element.removeAttribute('aria-busy');
+    const el=document.getElementById(id);
+    if(!el)continue;
+    el.replaceChildren();
+    el.classList.add('hidden');
+    el.removeAttribute('aria-busy');
   }
-
-  // Remove only current-result action bars. Saved Reports remain account-owned
-  // and are handled by report-store.mjs.
-  document.querySelectorAll(
-    '#englishHoroscopeResult .smv-manual-save-actions,'+
-    '#tamilHoroscopeResult .smv-manual-save-actions,'+
-    '#mmResult .smv-manual-save-actions'
-  ).forEach(e=>e.remove());
 }
 
-function clearAfterOtherAuthHandlers(){
-  // marriage-matching.js remounts on the same auth event. Run after that
-  // synchronous remount so an old matching snapshot cannot remain visible.
-  queueMicrotask(clearCurrentCalculationResults);
-  setTimeout(clearCurrentCalculationResults,0);
+function clearAfterAuthRemount(){
+  queueMicrotask(clearCurrentResults);
+  setTimeout(clearCurrentResults,0);
 }
 
 window.__smvOnlineAccessPolicy={
@@ -272,14 +289,12 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
     return;
   }
 
-  // LOGOUT:
-  // current Horoscope/Matching calculation is closed completely.
-  clearAfterOtherAuthHandlers();
+  // Logout must close all current calculations.
+  clearAfterAuthRemount();
 });
 
 window.addEventListener('smv-language',()=>{
-  // A logged-out language remount must not restore an old Matching snapshot.
-  if(!window.__smvHoroscopeLoggedIn?.())clearAfterOtherAuthHandlers();
+  if(!window.__smvHoroscopeLoggedIn?.())clearAfterAuthRemount();
   else queueMicrotask(syncAllPaidButtons);
 });
 })();
