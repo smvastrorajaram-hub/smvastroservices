@@ -1,5 +1,5 @@
 // SMV HOROSCOPE backend configuration.
-// Admin/access decisions are online-only. No browser Admin-setting cache is authoritative.
+// Access settings are online-only; astrology calculations remain browser-local.
 window.SMV_BACKEND_URL = '';
 
 (()=>{
@@ -14,6 +14,7 @@ const LEGACY_KEYS=[
 ];
 
 let legacyRenderLock=null;
+const modeCache=new Map();
 
 for(const key of LEGACY_KEYS){
   try{localStorage.removeItem(key)}catch(_){}
@@ -24,11 +25,9 @@ const T=(en,tt)=>ta()?tt:en;
 const backend=()=>String(window.SMV_BACKEND_URL||DEFAULT_BACKEND).trim().replace(/\/+$/,'');
 
 /*
-  Compatibility guard:
-  horoscope-auth.mjs in older runtime code still creates a GET request with
-  Cache-Control / Pragma request headers. Those headers force a CORS preflight.
-  Strip them ONLY for /horoscope-feature-config so every old/new caller becomes
-  the same simple online GET. This is not a cache fallback.
+  Older horoscope-auth.mjs may still request /horoscope-feature-config with
+  Cache-Control/Pragma request headers. Strip those headers only for this one
+  public GET so Chrome/Opera do not create a failing CORS preflight.
 */
 const nativeFetch=window.fetch.bind(window);
 window.fetch=(input,init={})=>{
@@ -36,14 +35,13 @@ window.fetch=(input,init={})=>{
     const raw=typeof input==='string'?input:String(input?.url||'');
     const url=new URL(raw,location.href);
     if(url.pathname.endsWith('/horoscope-feature-config')){
-      const headers=new Headers(init?.headers||((typeof input==='object'&&input?.headers)?input.headers:undefined));
+      const headers=new Headers(
+        init?.headers ||
+        ((typeof input==='object'&&input?.headers)?input.headers:undefined)
+      );
       headers.delete('Cache-Control');
       headers.delete('Pragma');
-      return nativeFetch(input,{
-        ...init,
-        cache:'no-store',
-        headers
-      });
+      return nativeFetch(input,{...init,cache:'no-store',headers});
     }
   }catch(_){}
   return nativeFetch(input,init);
@@ -92,11 +90,14 @@ async function stateFor(feature){
   const loggedIn=await restoreLogin();
 
   if(!FEATURES.has(feature)){
-    return {
+    const state={
       feature,mode:'online_unavailable',
       enabled:true,price:1,actualPrice:0,
-      loggedIn,entitled:false,fullAllowed:false
+      loggedIn,entitled:false,fullAllowed:false,
+      exportAllowed:false
     };
+    modeCache.set(feature,state.mode);
+    return state;
   }
 
   let config;
@@ -104,38 +105,67 @@ async function stateFor(feature){
     config=await getOnlineConfig();
   }catch(error){
     console.warn('Current Admin Horoscope setting could not be read online.',error);
-    return {
+    const state={
       feature,mode:'online_unavailable',
       enabled:true,price:1,actualPrice:0,
-      loggedIn,entitled:false,fullAllowed:false
+      loggedIn,entitled:false,fullAllowed:false,
+      exportAllowed:false
     };
+    modeCache.set(feature,state.mode);
+    return state;
   }
 
   const raw=config[feature];
   const actualPrice=Number(raw?.price||0);
   const paidMode=raw?.enabled===true&&actualPrice>=1;
 
-  // ADMIN OFF + Rs.0 -> BASIC ONLY.
-  // No payment, no full unlock, no Print/Save for the current result.
   if(!paidMode){
-    return {
-      feature,mode:'basic',
-      enabled:true,
-      // Synthetic value keeps legacy Marriage Matching on public/basic mode.
-      price:1,actualPrice:0,
-      loggedIn,entitled:false,fullAllowed:false
-    };
+    /*
+      ADMIN OFF:
+      Before Login:
+        Horoscope Basic only.
+        Marriage Matching Nakshatra Porutham only.
+      After Customer Login:
+        Full Advanced Horoscope / Full Marriage Matching.
+        NO Save / Print.
+
+      marriage-matching.js uses price<=0 as its "full allowed" signal.
+      Therefore OFF+logged-out returns a synthetic price=1 so it remains on
+      public Nakshatra mode, while OFF+logged-in returns price=0 so it runs Full.
+    */
+    const state=loggedIn
+      ? {
+          feature,mode:'off_full_no_export',
+          enabled:true,price:0,actualPrice:0,
+          loggedIn:true,entitled:true,fullAllowed:true,
+          exportAllowed:false
+        }
+      : {
+          feature,mode:'off_public_basic',
+          enabled:true,price:1,actualPrice:0,
+          loggedIn:false,entitled:false,fullAllowed:false,
+          exportAllowed:false
+        };
+
+    modeCache.set(feature,state.mode);
+    return state;
   }
 
-  // ADMIN ON + Rs.1+ -> PAID MODE.
-  // Login does not unlock Full. Only verified payment for this report does.
+  /*
+    ADMIN ON + Rs.1+:
+    Login before/after still begins with Basic/Nakshatra + paid benefits lock.
+    Only verified payment unlocks Full and permits Save/Print.
+  */
   const entitled=loggedIn ? await paidEntitled(feature) : false;
-  return {
+  const state={
     feature,mode:'paid',
-    enabled:true,
-    price:actualPrice,actualPrice,
-    loggedIn,entitled,fullAllowed:entitled
+    enabled:true,price:actualPrice,actualPrice,
+    loggedIn,entitled,fullAllowed:entitled,
+    exportAllowed:entitled
   };
+
+  modeCache.set(feature,state.mode);
+  return state;
 }
 
 function clearGate(root){
@@ -182,7 +212,16 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
     return;
   }
 
-  if(state.mode==='basic'){
+  // Admin OFF before login:
+  // keep the public/basic calculation controls, but show NO payment panel.
+  if(state.mode==='off_public_basic'){
+    clearGate(root);
+    return;
+  }
+
+  // Admin OFF after login:
+  // Full calculation is already allowed; no payment panel.
+  if(state.mode==='off_full_no_export'){
     clearGate(root);
     return;
   }
@@ -192,6 +231,7 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
     return;
   }
 
+  // Admin ON + Rs.1+: reuse the existing benefits/index + Razorpay flow.
   legacyRenderLock(
     feature,
     root,
@@ -212,9 +252,14 @@ async function requireAccess(feature,gateRoot,onUnlock){
     return false;
   }
 
-  if(state.mode==='basic'){
+  if(state.mode==='off_public_basic'){
     clearGate(gateRoot);
     return false;
+  }
+
+  if(state.mode==='off_full_no_export'){
+    clearGate(gateRoot);
+    return true;
   }
 
   if(state.fullAllowed){
@@ -248,14 +293,36 @@ function protect(name,value,onSet){
   }
 }
 
-// Single browser access policy.
-// horoscope-auth.mjs continues to provide Auth/Razorpay implementation only.
+// Single access-policy entry points.
+// horoscope-auth.mjs remains responsible only for auth/payment implementation.
 protect('__smvGetHoroscopeFeatureConfig',configForLegacy);
 protect('__smvFeatureState',stateFor);
 protect('__smvRequireHoroscopeFeatureAccess',requireAccess);
 protect('__smvRenderFeatureLock',renderPolicyLock,v=>{
   if(typeof v==='function')legacyRenderLock=v;
 });
+
+/*
+  Full calculation while Admin is OFF must NOT become a saved/printable report.
+
+  config.js is loaded before report-store.mjs. This capture listener marks the
+  report as basicOnly for export/storage purposes ONLY when the calculation
+  was Full because of OFF+logged-in mode. The visible Full result remains.
+*/
+window.addEventListener('smv:report-ready',event=>{
+  const feature=event?.detail?.feature;
+  if(!FEATURES.has(feature))return;
+
+  if(modeCache.get(feature)==='off_full_no_export'){
+    event.detail.basicOnly=true;
+    event.detail.noSavePrint=true;
+
+    queueMicrotask(()=>{
+      const root=event?.detail?.root;
+      root?.querySelectorAll?.('.smv-manual-save-actions').forEach(el=>el.remove());
+    });
+  }
+},true);
 
 function clearCurrentResults(){
   for(const id of [
@@ -279,17 +346,24 @@ function clearAfterAuthRemount(){
 
 window.__smvOnlineAccessPolicy={
   state:stateFor,
-  refresh:getOnlineConfig
+  refresh:getOnlineConfig,
+  currentMode:feature=>modeCache.get(feature)||''
 };
 
 window.addEventListener('smv:horoscope-local-auth',event=>{
   if(event?.detail?.loggedIn){
+    /*
+      Matching remounts on this same event. Its applyFeatureMode() will now see:
+      OFF + logged in => price 0 / entitled true => Full Matching button.
+      ON + paid => existing payment state.
+    */
     queueMicrotask(syncAllPaidButtons);
     setTimeout(syncAllPaidButtons,0);
     return;
   }
 
-  // Logout must close all current calculations.
+  // Logout closes any Full/current calculation and returns to public/basic mode.
+  modeCache.clear();
   clearAfterAuthRemount();
 });
 
