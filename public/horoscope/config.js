@@ -372,3 +372,57 @@ window.addEventListener('smv-language',()=>{
   else queueMicrotask(syncAllPaidButtons);
 });
 })();
+/*
+  PUBLIC NAKSHATRA PORUTHAM FAST PATH
+
+  marriage-matching.js calls getChart(prefix, true) for public Nakshatra
+  Porutham, but the current getChart() does not pass that basicOnly flag into
+  SMVOffline.full(). The offline engine itself already supports
+  body.basicOnly === true and then skips Tajaka, Advanced, Panchang, Transit
+  and Dasa.
+
+  This narrow wrapper applies basicOnly:true ONLY while:
+    - Marriage Matching calculation is actively running, and
+    - the button is in publicPoruthamOnly mode.
+
+  Full Matching, paid Full Matching and Horoscope calculations are untouched.
+*/
+(()=>{
+'use strict';
+
+function installPublicNakshatraBasicPath(){
+  const offline=window.SMVOffline;
+  if(!offline||typeof offline.full!=='function')return false;
+  if(offline.full.__smvPublicNakshatraBasicFix===true)return true;
+
+  const original=offline.full.bind(offline);
+
+  const wrapped=async body=>{
+    const button=document.getElementById('mmCheck');
+    const publicOnly=button?.dataset?.publicPoruthamOnly==='1';
+    const matchingBusy=window.__smvMatchingCalculationBusy===true;
+
+    if(publicOnly&&matchingBusy){
+      return original({...body,basicOnly:true});
+    }
+
+    return original(body);
+  };
+
+  Object.defineProperty(wrapped,'__smvPublicNakshatraBasicFix',{
+    value:true,
+    configurable:false
+  });
+
+  offline.full=wrapped;
+  return true;
+}
+
+Promise.resolve(window.SMVEngineReady)
+  .then(()=>installPublicNakshatraBasicPath())
+  .catch(()=>{});
+
+window.addEventListener('smv:engine-mode',()=>{
+  installPublicNakshatraBasicPath();
+});
+})();
