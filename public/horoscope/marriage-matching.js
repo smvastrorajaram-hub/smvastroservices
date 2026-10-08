@@ -1010,6 +1010,46 @@ function mmV247UniqueGeneratedHtml(html){
  wrap.querySelectorAll('section,article').forEach(n=>{if(!String(n.textContent||'').trim())n.remove()});
  return wrap.innerHTML;
 }
+
+/* V248 — FULL MATCHING RESULT PRESERVATION.
+   Generate every distinct result family first; suppress only exact duplicate paragraphs. */
+function mmV248PreserveHtml(html){
+ const wrap=document.createElement('div');wrap.innerHTML=html||'';const seen=new Set();
+ wrap.querySelectorAll('[data-print-technical="1"]').forEach(n=>n.removeAttribute('data-print-technical'));
+ wrap.querySelectorAll('details').forEach(n=>{n.open=true;n.setAttribute('open','')});
+ wrap.querySelectorAll('p').forEach(p=>{
+   const t=String(p.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+   if(t.length<70)return;
+   if(seen.has(t)){p.remove();return}
+   seen.add(t);
+ });
+ wrap.querySelectorAll('section,article').forEach(n=>{if(!String(n.textContent||'').trim())n.remove()});
+ return wrap.innerHTML;
+}
+function mmV248FullHumanResults(b,g,pr,ks,ds,sync,v){
+ const parts=[];
+ // D1/D9 overview, real-life synthesis, consultation chain and node/Naga/Kala-Sarpa interpretation.
+ parts.push(marriageCompatibilityOverviewPanel(b,g,pr,ks,sync,v)||'');
+ parts.push(marriageHumanD1D9Panel(b,g)||'');
+ parts.push(marriageRealityPanel(b,g,pr,ks,ds,sync,v,matchingTransit)||'');
+ parts.push(consultationWhyPanel(v,pr,ks,ds,chartFacts(b),chartFacts(g),sync,b,g)||'');
+ parts.push(nodeDoshaHumanPanel(b,g,sync)||'');
+ // Preserve the original detailed 15-year relationship result in addition to the newer concise age-capped timing chapter.
+ parts.push(marriageDasha15YearPanel(b,g,ks,sync,ds)||'');
+ // Restore detailed Porutham + Dosha + Remedy chapters.
+ parts.push(marriageV216LongForm(b,g,pr,ks,ds,sync,v)||'');
+ // Restore all 25 topics at Bride + Groom + Couple-synthesis depth.
+ if(Array.isArray(MM_HUMAN_TOPICS))parts.push(MM_HUMAN_TOPICS.map((topic,i)=>mmV216TopicPages(b,g,topic,i)).join(''));
+ // Restore annual relationship timing pages and secondary functional-dosha refinements.
+ parts.push(mmV216TimingPages(b,g,ks,sync)||'');
+ if(typeof mmV220FunctionalDoshaPages==='function')parts.push(mmV220FunctionalDoshaPages(b,g,pr)||'');
+ const raw=parts.join('');
+ return `<section class="mm-person-result mm-v248-full-human-results"><h3>${T('Complete Detailed Matching Results — all unique result families preserved','முழு விரிவான பொருத்த முடிவுகள் — அனைத்து தனித்த result வகைகளும் பாதுகாக்கப்பட்டுள்ளன')}</h3><p class="mm-note">${T('No result panel is removed to control repetition. The full D1/D9, 25-area Bride/Groom/Couple, Porutham, Dosha/Vilakku, timing and decision-chain results are generated first. Only a paragraph that is exactly identical is suppressed.','repetition குறைப்பதற்காக எந்த result panel-மும் நீக்கப்படாது. D1/D9, 25 தலைப்புகளின் பெண்/ஆண்/இருவர் வாசிப்பு, பொருத்தம், தோஷம்/விலக்கு, காலம் மற்றும் முடிவு-காரணச் சங்கிலி அனைத்தும் முதலில் முழுமையாக உருவாக்கப்படும். அப்படியே ஒரே paragraph மீண்டும் வந்தால் மட்டும் இரண்டாவது copy நீக்கப்படும்.')}</p>${mmV248PreserveHtml(raw)}</section>`;
+}
+function mmV248VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand){
+ const raw=marriageStrengthMatrixPanel(b,g)+renderPerson(T('Bride horoscope review','பெண் ஜாதக ஆய்வு'),bf)+renderPerson(T('Groom horoscope review','ஆண் ஜாதக ஆய்வு'),gf)+ku+doshaPanel(pr,ks,sync,b,g)+extraDoshaPanel(b,g)+residualLagnaDoshaPanel(b,g)+papasamyamPanel(b,g)+numerologyPanel(b,g)+gochar+sand+renderDashaDosha(sync)+houseBasedRemedyPanel(b,g,ks)+guidancePanel(pr,ks,sync,b,g);
+ return `<section class="mm-person-result mm-v248-calculation-results"><h3>${T('Complete Matching Calculation Results','முழு பொருத்த கணக்கீட்டு முடிவுகள்')}</h3><p class="mm-note">${T('All distinct calculation blocks are kept visible and printable. Exact duplicate prose can be suppressed, but a different score, planet, house, date or partner result is never removed as a duplicate.','அனைத்து தனித்த கணக்கீட்டு blocks-மும் visible/printable ஆக பாதுகாக்கப்படுகின்றன. அப்படியே ஒரே prose மட்டும் duplicate ஆக நீக்கலாம்; வேறு score, கிரகம், பாவம், தேதி அல்லது partner result duplicate என்று நீக்கப்படாது.')}</p>${mmV248PreserveHtml(raw)}</section>`;
+}
 function mmV247RestoredHumanResults(b,g,pr,ks,ds,sync,v){
  let html='';
  // Restore the D1/D9 overview and the decision-chain panels, but not the old 25-topic long-form duplicate.
@@ -1024,7 +1064,7 @@ function mmV247VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand)
 }
 async function renderMatching(b,g,out,quiet=false){
  const bf=chartFacts(b),gf=chartFacts(g),pr=porutham(b,g),ks=kujaSamyam(b,g),ds=dashaSandhi(b,g),sync=dashaDoshaSync(b,g),v=fullVerdict(pr,ks,ds,bf,gf,sync,b,g),gochar=await gocharPanel(b,g,matchingTransit),por=mmFrontPoruthamPanel(pr),doshaFront=mmFrontDoshaSummaryPanel(b,g,pr,ks,sync,ds);const ku=`<section class="mm-person-result"><h3>${T('Dosha balance / cancellation review','தோஷ சமநிலை / விலக்கு ஆய்வு')}</h3><div class="mm-facts"><div><b>${T('Bride Kuja','பெண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.B.text)}</span></div><div><b>${T('Groom Kuja','ஆண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.G.text)}</span></div></div></section>`,sand=`<section class="mm-person-result"><h3>${T('Dasha Sandhi','தசா சந்தி')}</h3><p>${ds.length?ds.map(x=>`${esc(x.a.lord)} → ${esc(x.a.end)} / ${esc(x.b.lord)} → ${esc(x.b.end)} · ${x.days} ${T('days apart','நாட்கள் இடைவெளி')}`).join('<br>'):T('No Mahadasha endings within one year of each other in the available range.','கிடைத்த காலவரம்பில் இருவரின் மகாதசை முடிவுகள் ஒரு வருடத்திற்குள் அருகில் இல்லை.')}</p></section>`;
- out.innerHTML=`<div class="mm-full-results mm-v247-results">${por}${doshaFront}${matchingIdentityPanel(b,g)}${mmV246MainSynthesis(b,g,pr,ks,sync,v)}${mmV246PersonNarrative(b,T('Bride','பெண்'))}${mmV246PersonNarrative(g,T('Groom','ஆண்'))}${mmV247RestoredHumanResults(b,g,pr,ks,ds,sync,v)}${mmV246CoupleBook(b,g)}${mmV244ResidualDoshaDeep(b,g,pr,ks,sync)}${mmV246TimingPanel(b,g,ks,sync,ds)}${marriageRemedyPlanPanel(b,g,pr,ks,sync)}${mmV247VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand)}</div>`;
+ out.innerHTML=`<div class="mm-full-results mm-v248-results">${por}${doshaFront}${matchingIdentityPanel(b,g)}${mmV246MainSynthesis(b,g,pr,ks,sync,v)}${mmV246PersonNarrative(b,T('Bride','பெண்'))}${mmV246PersonNarrative(g,T('Groom','ஆண்'))}${mmV248FullHumanResults(b,g,pr,ks,ds,sync,v)}${mmV246CoupleBook(b,g)}${mmV244ResidualDoshaDeep(b,g,pr,ks,sync)}${mmV246TimingPanel(b,g,ks,sync,ds)}${marriageRemedyPlanPanel(b,g,pr,ks,sync)}${mmV248VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand)}</div>`;
  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);window.__smvLocalizeTamilResult?.(out,lang());localizeMatchingResult(out);out.dataset.resultLanguage=lang();if(!quiet)window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'marriage_matching',root:out,prepareViews:()=>matchingViews(b,g,out),birthIdentity:window.__smvGetReportContext('marriage_matching'),name:(b.birthName||b.nativeName||'')+' / '+(g.birthName||g.nativeName||''),calculation:{bride:b,groom:g,transit:matchingTransit}}}));
 }
 function mount(){
