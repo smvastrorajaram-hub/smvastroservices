@@ -1,6 +1,7 @@
 const {createRefundService,bankReferences}=require('./refund-service');
 const express = require("express");
 const crypto = require("crypto");
+const PredictionSynthesis = require("./prediction-synthesis");
 const Razorpay = require("razorpay");
 const admin = require("firebase-admin");
 
@@ -3641,6 +3642,25 @@ app.post("/horoscope-payment/verify",async(req,res)=>{
   await eref.set({paymentStatus:"paid",razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   return res.json({success:true,verified:true,entitled:true,feature,reportKey});
 });
+
+
+// V249 — deterministic online prediction synthesis. No AI/LLM/model is called.
+function smvPredictionRoute(kind){
+  return (req,res)=>{
+    try{
+      const evidence=req.body?.evidence;
+      if(!evidence||typeof evidence!=="object")return res.status(400).json({error:"Prediction evidence is required."});
+      const result=PredictionSynthesis.synthesize(kind,evidence);
+      res.set("Cache-Control","no-store");
+      return res.json(result);
+    }catch(e){
+      console.error(`[Prediction ${kind}]`,e?.stack||e);
+      return res.status(400).json({error:e?.message||"Prediction synthesis failed.",nonAI:true});
+    }
+  };
+}
+app.post("/api/prediction/horoscope",smvPredictionRoute("horoscope"));
+app.post("/api/prediction/matching",smvPredictionRoute("matching"));
 
 // Final 404 must remain AFTER every functional route, including Horoscope payment routes.
 app.use((req, res) => {
