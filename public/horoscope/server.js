@@ -3,6 +3,7 @@ const express = require("express");
 let SwissVedic = null;
 try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss Ephemeris module unavailable:', e.message); }
 const crypto = require("crypto");
+const PredictionSynthesis = require("./prediction-synthesis");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 const Razorpay = require("razorpay");
@@ -47,11 +48,6 @@ const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "").trim();
 const RESEND_API_KEY = String(process.env.RESEND_API_KEY || "").trim();
 const RESEND_FROM = String(process.env.RESEND_FROM || "onboarding@resend.dev").trim();
 const RESEND_TEST_RECIPIENT = String(process.env.RESEND_TEST_RECIPIENT || ADMIN_EMAIL || "").trim();
-const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || "").trim();
-const GEMINI_MODEL = "gemini-3.7-flash";
-const AI_RATE_LIMIT_MAX = Number(process.env.AI_RATE_LIMIT_MAX || 10);
-const AI_RATE_LIMIT_WINDOW_MS = Number(process.env.AI_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000);
-const aiRateBuckets = new Map();
 
 const PHONE_VERIFICATION_MODE = String(process.env.PHONE_VERIFICATION_MODE || "email_unique").trim().toLowerCase();
 const WHATSAPP_OTP_PROVIDER = String(process.env.WHATSAPP_OTP_PROVIDER || "").trim().toLowerCase();
@@ -3934,6 +3930,12 @@ app.get("/api/geocode", async (req, res) => {
   }
 });;;;;
 
+
+// V249 — deterministic online prediction synthesis. No AI/LLM/model is called.
+function smvPredictionRoute(kind){return (req,res)=>{try{const evidence=req.body?.evidence;if(!evidence||typeof evidence!=="object")return res.status(400).json({error:"Prediction evidence is required."});const result=PredictionSynthesis.synthesize(kind,evidence);res.set("Cache-Control","no-store");return res.json(result)}catch(e){console.error(`[Prediction ${kind}]`,e?.stack||e);return res.status(400).json({error:e?.message||"Prediction synthesis failed.",nonAI:true})}}}
+app.post("/api/prediction/horoscope",smvPredictionRoute("horoscope"));
+app.post("/api/prediction/matching",smvPredictionRoute("matching"));
+
 app.post("/api/horoscope/calculate", async (req,res)=>{
   try {
     const body=req.body||{};
@@ -3953,92 +3955,7 @@ app.post("/api/horoscope/calculate", async (req,res)=>{
   }
 });
 
-app.post("/api/horoscope/ai-future", express.json({ limit: "60kb" }), async (req, res) => {
-  try {
-    if (!GEMINI_API_KEY) {
-      return res.status(503).json({ error: "AI future generation is not configured. Add GEMINI_API_KEY in Render Environment Variables." });
-    }
-    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
-    const now = Date.now();
-    const bucket = aiRateBuckets.get(ip) || { start: now, count: 0 };
-    if (now - bucket.start >= AI_RATE_LIMIT_WINDOW_MS) { bucket.start = now; bucket.count = 0; }
-    bucket.count += 1;
-    aiRateBuckets.set(ip, bucket);
-    if (bucket.count > AI_RATE_LIMIT_MAX) {
-      return res.status(429).json({ error: "AI பலன் உருவாக்கும் வரம்பு தற்காலிகமாக நிறைவடைந்துள்ளது. சில நிமிடங்கள் கழித்து மீண்டும் முயற்சிக்கவும்." });
-    }
-
-    const chart = req.body?.chart;
-    const language = String(req.body?.language || "en").toLowerCase() === "ta" ? "ta" : "en";
-    if (!chart || typeof chart !== "object") return res.status(400).json({ error: "Chart data is required." });
-
-    // IMPORTANT: Gemini is an interpretation layer only. It must not recalculate
-    // astronomy or replace Swiss Ephemeris / Bhava Sphuta values.
-    const prompt = `
-You are the ${language === "ta" ? "Tamil" : "English"}-language interpretation assistant for SMV ASTRO.
-Generate a traditional Vedic astrology interpretation using ONLY the verified chart data supplied below.
-Do NOT recalculate planetary positions, ascendant, houses, bhava sphuta, or dasha dates. Do not invent missing data.
-Clearly distinguish traditional astrological interpretation from factual certainty. Never promise or guarantee future events.
-Write in clear, respectful ${language === "ta" ? "Tamil" : "English"} only. Do not mix languages.
-Avoid medical, legal, financial or other high-stakes instructions; where such topics arise, advise the user to consult a qualified professional.
-
-Return these sections with concise headings:
-${language === "ta" ? `1. பொதுவான வாழ்க்கை நோக்கு
-2. தொழில் / கல்வி
-3. பணநிலை
-4. திருமணம் / உறவுகள்
-5. குடும்பம்
-6. முக்கிய வாய்ப்புகள்
-7. கவனிக்க வேண்டிய காலங்கள்
-8. பாரம்பரிய பரிகார வழிகாட்டல் (optional, non-coercive)
-9. முக்கிய குறிப்பு — இது பாரம்பரிய ஜோதிட விளக்கம்; உறுதியான எதிர்கால உத்தரவாதம் அல்ல.` : `1. General Life Outlook
-2. Career / Education
-3. Finance
-4. Marriage / Relationships
-5. Family
-6. Important Opportunities
-7. Important Periods
-8. Traditional Guidance (optional, non-coercive)
-9. Important Note — this is a traditional astrology interpretation and not a guarantee of future events.`}
-
-Verified chart data:
-${JSON.stringify(chart, null, 2)}
-`;
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
-    try {
-      let body = {}, r = null, lastDetail = "";
-      for (let attempt = 0; attempt < 3; attempt++) {
-        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-          method: "POST",
-          headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: `You are a careful ${language === "ta" ? "Tamil" : "English"} Vedic astrology interpretation assistant. Use only supplied verified chart data, respond only in ${language === "ta" ? "Tamil" : "English"}, and never claim certainty.` }] },
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 2800, thinkingConfig: { thinkingLevel: "low" } }
-          }),
-          signal: controller.signal
-        });
-        body = await r.json().catch(() => ({}));
-        if (r.ok) break;
-        lastDetail = body?.error?.message || `Gemini API HTTP ${r.status}`;
-        if (![429,500,502,503,504].includes(r.status) || attempt === 2) break;
-        await new Promise(resolve => setTimeout(resolve, 1200 * (2 ** attempt)));
-      }
-      if (!r?.ok) {
-        if (r?.status === 503) lastDetail = "Gemini is temporarily busy. The app retried automatically; please try again in a few seconds.";
-        return res.status(502).json({ error: `AI service error: ${lastDetail}` });
-      }
-      const text = body?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("\\n").trim();
-      if (!text) return res.status(502).json({ error: "AI service returned an empty interpretation. Please try again." });
-      return res.json({ ok: true, model: GEMINI_MODEL, text });
-    } finally { clearTimeout(timer); }
-  } catch (e) {
-    console.error("AI future generation error:", e);
-    return res.status(500).json({ error: e?.name === "AbortError" ? "AI service timed out. Please try again." : (e?.message || "AI generation failed.") });
-  }
-});
+app.post("/api/horoscope/ai-future", (_req,res)=>res.status(410).json({error:"AI prediction is disabled. SMV ASTRO uses deterministic non-AI synthesis.",nonAI:true}));
 
 app.post("/api/horoscope/calculate-legacy", async (req,res)=>{
   try { return res.json(calculateVedicChart(req.body||{})); }
