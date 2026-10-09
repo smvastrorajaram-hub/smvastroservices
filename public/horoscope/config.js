@@ -117,22 +117,47 @@ async function stateFor(feature){
 
   const raw=config[feature];
   const actualPrice=Number(raw?.price||0);
-  const paidMode=raw?.enabled===true&&actualPrice>=1;
+  const adminEnabled=raw?.enabled===true;
+  const paidMode=adminEnabled&&actualPrice>=1;
 
+  /*
+    V260: The admin ON/OFF switch and configured Rupee amount are two
+    INDEPENDENT inputs. In particular, ADMIN OFF + Rs.1 is NOT paid mode.
+
+    ADMIN OFF + Rs.0:
+      Basic Horoscope only, Nakshatra Porutham only, before/after login.
+      No full-report Save/Print/PDF or payment panel.
+
+    ADMIN OFF + Rs.1+:
+      Before login: Basic Horoscope / public Nakshatra Porutham only.
+      After customer login: Full Horoscope and Full Marriage Matching with
+      Save + browser-native PDF/Print (no Razorpay payment).
+
+    NOTE: marriage-matching.js uses synthetic price<=0 as the full matching
+    mode signal. Set synthetic price=1 for basic and 0 for free full.
+    Actual Admin price is separately preserved in actualPrice.
+  */
+  if(!adminEnabled){
+    let state;
+    if(actualPrice>=1&&loggedIn){
+      state={
+        feature,mode:'off_full_export',enabled:true,
+        price:0,actualPrice,loggedIn:true,
+        entitled:true,fullAllowed:true,exportAllowed:true
+      };
+    }else{
+      state={
+        feature,mode:actualPrice>=1?'off_public_basic':'off_zero_basic',
+        enabled:true,price:1,actualPrice,loggedIn,
+        entitled:false,fullAllowed:false,exportAllowed:false
+      };
+    }
+    modeCache.set(feature,state.mode);
+    return state;
+  }
+
+  // ADMIN ON + Rs.0: preserve the existing V259 behavior unchanged.
   if(!paidMode){
-    /*
-      ADMIN OFF:
-      Before Login:
-        Horoscope Basic only.
-        Marriage Matching Nakshatra Porutham only.
-      After Customer Login:
-        Full Advanced Horoscope / Full Marriage Matching.
-        NO Save / Print.
-
-      marriage-matching.js uses price<=0 as its "full allowed" signal.
-      Therefore OFF+logged-out returns a synthetic price=1 so it remains on
-      public Nakshatra mode, while OFF+logged-in returns price=0 so it runs Full.
-    */
     const state=loggedIn
       ? {
           feature,mode:'off_full_no_export',
@@ -146,7 +171,6 @@ async function stateFor(feature){
           loggedIn:false,entitled:false,fullAllowed:false,
           exportAllowed:false
         };
-
     modeCache.set(feature,state.mode);
     return state;
   }
@@ -214,14 +238,14 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
 
   // Admin OFF before login:
   // keep the public/basic calculation controls, but show NO payment panel.
-  if(state.mode==='off_public_basic'){
+  if(state.mode==='off_public_basic'||state.mode==='off_zero_basic'){
     clearGate(root);
     return;
   }
 
   // Admin OFF after login:
   // Full calculation is already allowed; no payment panel.
-  if(state.mode==='off_full_no_export'){
+  if(state.mode==='off_full_no_export'||state.mode==='off_full_export'){
     clearGate(root);
     return;
   }
@@ -252,7 +276,7 @@ async function requireAccess(feature,gateRoot,onUnlock){
     return false;
   }
 
-  if(state.mode==='off_public_basic'){
+  if(state.mode==='off_public_basic'||state.mode==='off_zero_basic'){
     clearGate(gateRoot);
     return false;
   }
@@ -303,11 +327,11 @@ protect('__smvRenderFeatureLock',renderPolicyLock,v=>{
 });
 
 /*
-  Full calculation while Admin is OFF must NOT become a saved/printable report.
+  Preserve the previously locked Admin-ON + Rs.0 no-export behavior.
 
-  config.js is loaded before report-store.mjs. This capture listener marks the
-  report as basicOnly for export/storage purposes ONLY when the calculation
-  was Full because of OFF+logged-in mode. The visible Full result remains.
+  The V260 Admin-OFF + Rs.1 Full case must NEVER be marked as basicOnly:
+  report-store.mjs adds Save + Print/PDF actions to the completed full report.
+  This listener only marks the pre-existing V259 no-export mode as basicOnly.
 */
 window.addEventListener('smv:report-ready',event=>{
   const feature=event?.detail?.feature;
@@ -354,7 +378,8 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
   if(event?.detail?.loggedIn){
     /*
       Matching remounts on this same event. Its applyFeatureMode() will now see:
-      OFF + logged in => price 0 / entitled true => Full Matching button.
+      OFF + Rs.1 logged in => synthetic price 0 => Full Matching button.
+      OFF + Rs.0 => synthetic price 1 => Nakshatra-only button.
       ON + paid => existing payment state.
     */
     queueMicrotask(syncAllPaidButtons);
