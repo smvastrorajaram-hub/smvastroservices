@@ -1270,11 +1270,10 @@
       const mantraPart=makePart('daily-mantras-analysis','DAILY LIFE MANTRAS','தினசரி வாழ்க்கையில் சொல்ல வேண்டிய மந்திரங்கள்','VII');
       const adhidevataPart=makePart('adhidevata-analysis','ADHIDEVATAS','அதிதேவதைகள்','VIII');
       const deitiesPart=makePart('deities-analysis','DEITIES','தெய்வங்கள்','IX');
-      const predictionPart=makePart('integrated-predictions','INTEGRATED PREDICTIONS','ஒருங்கிணைந்த பலன்கள்','X');
-      [chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionPart].forEach(p=>shell.appendChild(p));
-      const accordionParts=[chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionPart];
+      [chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart].forEach(p=>shell.appendChild(p));
+      const accordionParts=[chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart];
 
-      const parts={chart:chartPart,dasa:dasaPart,tajaka:tajakaPart,transit:transitPart,remedy:remedyPart,numerology:numerologyPart,mantras:mantraPart,adhidevata:adhidevataPart,deities:deitiesPart,predictions:predictionPart};
+      const parts={chart:chartPart,dasa:dasaPart,tajaka:tajakaPart,transit:transitPart,remedy:remedyPart,numerology:numerologyPart,mantras:mantraPart,adhidevata:adhidevataPart,deities:deitiesPart};
       window.__smvRenderDeitiesV92?.(deitiesPart,language,data);
 
       const textOf=n=>String(

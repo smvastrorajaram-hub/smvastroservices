@@ -212,8 +212,7 @@ function advancedPreviewHtml(){
  ['VI','எண் கணிதம்',['பிறப்பு எண்','வாழ்க்கைப் பாதை எண்','பெயர் எண்']],
  ['VII','தினசரி வாழ்க்கை மந்திரங்கள்',['ஜாதக ஆதார தினசரி மந்திரங்கள்']],
  ['VIII','அதிதேவதைகள்',['கிரக / ஜாதக ஆதார அதிதேவதை ஆய்வு']],
- ['IX','தெய்வங்கள்',['ஜாதக ஆதார தெய்வ வழிகாட்டல்']],
- ['X','ஒருங்கிணைந்த பலன்கள்',['20 வாழ்க்கைப் பகுதிகளின் ஒருங்கிணைந்த பலன்கள்','1. விரிவான தசா–புக்தி பலன்கள் — அடுத்த 15 ஆண்டுகள்','2. விரிவான கோச்சார பலன்கள் — அடுத்த 15 ஆண்டுகள்']]
+ ['IX','தெய்வங்கள்',['ஜாதக ஆதார தெய்வ வழிகாட்டல்']]
  ]:[
  ['I','CHART ANALYSIS',['Bhava Special Features','Special Lagnas','Arudha Padas A1–A12','Graha / Rasi Drishti','Ashtakavarga / strengths / yogas']],
  ['II','DASA ANALYSIS',['Ashtottari','Narayana Dasa','Lagna Kendradi','Sudasa / Drig Dasa','Kalachakra Dasa']],
@@ -223,8 +222,7 @@ function advancedPreviewHtml(){
  ['VI','NUMEROLOGY',['Birth number','Life-path number','Name number']],
  ['VII','DAILY LIFE MANTRAS',['Chart-based daily mantras']],
  ['VIII','ADHIDEVATAS',['Planet/chart-based Adhidevata review']],
- ['IX','DEITIES',['Chart-based deity guidance']],
- ['X','INTEGRATED PREDICTIONS',['20 life-domain integrated predictions','1. Detailed Dasha–Bhukti Results — Next 15 Years','2. Detailed Transit Results — Next 15 Years']]
+ ['IX','DEITIES',['Chart-based deity guidance']]
  ];
  return `<div class="smv-paid-heading-preview smv-paid-i-x-preview"><h3>${esc(ta()?'மேம்பட்ட பகுப்பாய்வு — உள்ளடக்கம்':'Advanced Analysis — Contents')}</h3>${rows.map(([r,t,subs])=>`<div class="smv-preview-part"><b>${r}. ${esc(t)}</b><ul>${subs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
 }
@@ -259,7 +257,6 @@ async function requireFeature(feature,mount,onFeatureUnlocked){
 }
 async function downloadPaidPdf(feature,source,title){
  if(!state.user)throw Error(ta()?'முதலில் Customer Login செய்யவும்.':'Customer login is required.');
- if(source?.__smvPrepareReport)await source.__smvPrepareReport();
  if(!source||!String(source.textContent||'').trim())throw Error(ta()?'முதலில் அறிக்கையை உருவாக்கவும்.':'Generate the report first.');
  // V131: PDFKit/pdf-lib/Chromium/Cloud PDF are retired. Use the browser native
  // print pipeline; on mobile this opens the system viewer where Save as PDF is available.

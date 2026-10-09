@@ -57,6 +57,9 @@
   back.textContent=tamil?'திரும்புக':'Back';
   button.textContent=tamil?'அச்சிட / PDF சேமிக்க':'Print / Save as PDF';
   const root=document.getElementById('printReport');root.innerHTML=html;
+  // Legacy V263-and-earlier saved Horoscope snapshots can still contain retired Section X.
+  // Omit Section X on view/print without rewriting a customer's existing saved record.
+  if(report.feature==='advanced_analysis')root.querySelectorAll('.integrated-predictions,.smv-advanced-quick-card[data-smv-target="integrated-predictions"]').forEach(e=>e.remove());
   populatePremiumCover(report,root,tamil);
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());
   root.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['href','xlink:href','srcset','action','formaction','contenteditable'].includes(a.name))e.removeAttribute(a.name);});

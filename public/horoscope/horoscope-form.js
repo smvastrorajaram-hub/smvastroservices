@@ -107,7 +107,6 @@ if(lat===''||lon===''){
         window.__smvSwitchHoroscopeLanguage=async(next,quiet=false)=>{
           if(busy)return;busy=true;
           try{
-            await target.__smvPrepareReport?.();
             window.__smvRenderCachedCore(generated);target.innerHTML=source.innerHTML;source.innerHTML='';source.classList.add('hidden');
             const adv=target.querySelector('#tamilAdvancedAstrology');if(adv)adv.id='englishAdvancedAstrology';
             const tr=target.querySelector('#tamilDailyTransitPanchangSlot');if(tr)tr.id='englishDailyTransitPanchangSlot';
@@ -116,7 +115,6 @@ if(lat===''||lon===''){
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
             if(completedFull)await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
-            await window.__smvPredictionRenderPromise;
             window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
             // V92: the report may be rendered later in the other language from the already-cached
             // calculation. Save/generate ONLY that language now; never recalculate or build both languages.
@@ -131,7 +129,6 @@ if(lat===''||lon===''){
           // V92: snapshot only the language currently on screen. Building the alternate language here
           // caused the old EN -> TA -> EN delay and could start an unwanted second PDF save.
           const current=target.dataset.resultLanguage||generationLanguage,views={};
-          await target.__smvPrepareReport?.();
           if(current==='en')window.__smvApplyEnglishToHoroscope(target);
           window.__smvLocalizeTamilResult?.(target,current);
           views[current]=target.innerHTML;
@@ -149,7 +146,6 @@ if(lat===''||lon===''){
             target.classList.add('hidden'); target.setAttribute('aria-busy','true');
             englishAdvancedRoot.innerHTML='';
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
-            await window.__smvPredictionRenderPromise;
             completedFull=window.__smvLastFullReport;
             window.__smvLocalizeTamilResult?.(target,generationLanguage);target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
@@ -176,7 +172,7 @@ if(lat===''||lon===''){
           window.__smvForceEnglishRahuRetrograde(target);
         }
         const parts=[...target.querySelectorAll('.smv-advanced-part')];
-        if(parts.length!==10||parts.slice(0,9).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
+        if(parts.length!==9||parts.slice(0,9).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
         if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
         window.__smvLocalizeTamilResult?.(target,generationLanguage);
         target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
