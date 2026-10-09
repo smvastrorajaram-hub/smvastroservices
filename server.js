@@ -3590,7 +3590,11 @@ const HOROSCOPE_FEATURES=new Set(["advanced_analysis","marriage_matching"]);
 function horoscopeFeatureDefaults(){return {advancedAnalysisEnabled:false,advancedAnalysisPrice:0,marriageMatchingEnabled:false,marriageMatchingPrice:0};}
 function normalizeHoroscopeFeature(enabled,price){
   const p=Math.round(Number(price)*100)/100;
-  return enabled===true&&Number.isFinite(p)&&p>=1?{enabled:true,price:p}:{enabled:false,price:0};
+  // V260: Preserve the Admin-configured price even when the payment switch is
+  // OFF. OFF + Rs.1 grants the free full report after Customer login, whereas
+  // OFF + Rs.0 is basic only. ON + Rs.1+ retains the paid/Razorpay flow.
+  const savedPrice=Number.isFinite(p)&&p>=0?p:0;
+  return {enabled:enabled===true&&savedPrice>=1,price:savedPrice};
 }
 function normalizeHoroscopeSettings(raw={}){
   const a=normalizeHoroscopeFeature(raw.advancedAnalysisEnabled,raw.advancedAnalysisPrice);
@@ -3616,7 +3620,10 @@ app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   const ap=Math.round(Number(b.advancedAnalysisPrice)*100)/100,mp=Math.round(Number(b.marriageMatchingPrice)*100)/100;
   if(ae&&(!Number.isFinite(ap)||ap<1))return res.status(400).json({error:"Advanced Analysis ON requires a price of at least ₹1."});
   if(me&&(!Number.isFinite(mp)||mp<1))return res.status(400).json({error:"Marriage Matching ON requires a price of at least ₹1."});
-  const data={advancedAnalysisEnabled:ae,advancedAnalysisPrice:ae?ap:0,marriageMatchingEnabled:me,marriageMatchingPrice:me?mp:0,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
+  if(!Number.isFinite(ap)||ap<0||!Number.isFinite(mp)||mp<0)return res.status(400).json({error:"Horoscope prices must be zero or a positive number."});
+  // Do not zero-out prices while Admin is OFF; the OFF 0/1 access policy
+  // depends on this value surviving the Admin save and public config API.
+  const data={advancedAnalysisEnabled:ae,advancedAnalysisPrice:ap,marriageMatchingEnabled:me,marriageMatchingPrice:mp,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
   await db.collection("smv_settings").doc("horoscopePayment").set(data,{merge:true});return res.json({success:true,settings:data});
 });
 app.post("/horoscope-payment/create-order",async(req,res)=>{
