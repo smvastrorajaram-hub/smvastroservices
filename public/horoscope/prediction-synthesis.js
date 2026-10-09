@@ -5,7 +5,7 @@
    IMPORTANT: This module does not call any AI/LLM/model or external prediction API.
    It converts already-calculated astrology evidence into stable, rule-based prose. */
 
-const VERSION='smv-deterministic-synthesis-v259';
+const VERSION='smv-deterministic-synthesis-v262';
 const HOROSCOPE_VERSION=VERSION;
 
 const H_DOMAINS={
@@ -306,10 +306,10 @@ function synthHoroscope(e){
   const c={...ctx,age};
   const intro=lang==='ta'?'உங்கள் பிறப்பு ஜாதகத்தில் தெரியும் குணநலன்கள், உறவுகள், திறமைகள் மற்றும் பொறுப்புகளை வாழ்க்கையில் எவ்வாறு புரிந்துகொள்ளலாம் என்பதை முதலில் பார்க்கலாம். அதன் பிறகு தசா–புக்தி மற்றும் கோச்சாரத்தை இணைத்து, எந்தக் காலத்தில் எந்த விஷயம் முன்னிலைப்படலாம் என்பதை விளக்குகிறோம். இவை பாரம்பரிய ஜோதிட விளக்கங்கள்; குறிப்பிட்ட நிகழ்வு உறுதியாக நடக்கும் என்ற வாக்குறுதி அல்ல.':'We begin with the temperament, relationships, abilities and responsibilities suggested by your birth chart. We then connect these with Dasha–Bhukti and transits to explain which matters may become more prominent at different times. These are traditional astrological interpretations, not promises that a particular event must happen.';
   const ordered=[];for(const h of houses.slice().sort((a,b)=>num(a.house)-num(b.house))){ordered.push(v253House(h,c,e,lang));if(num(h.house)===4){const sc=v252SupportChapter(e,lang);if(sc)ordered.push(sc)}if(num(h.house)===5){const ec=v252EducationChapter(e,lang);if(ec)ordered.push(ec)}}
-  const timingAreas=domains.map(d=>v252DomainTiming(d,e,lang)).filter(Boolean);const eduTiming=v252EducationTiming(e,lang);if(eduTiming)timingAreas.unshift(eduTiming);const care=v251CareWindows(e,lang);if(care)timingAreas.push(care);
-  if(age==null||age>18){for(const d of domains){const chapter=v253Domain(d,c,lang);if(chapter)ordered.push(chapter)}}
-  const phases=dashas.map(z=>v253Phase(z,e,lang)).filter(z=>z.paragraphs.length);
-  const transitGroups=new Map();for(const z of arr(e.transits)){const k=z.planet+'|'+z.house;let group=transitGroups.get(k);if(!group){group={title:lang==='ta'?v251Planet(z.planet,lang)+' கோச்சாரம் · '+z.house+'-ஆம் பாவம்':z.planet+' transit · house '+z.house,paragraphs:[]};transitGroups.set(k,group)}group.paragraphs.push(v253Transit(z,lang,e))}timingAreas.push(...transitGroups.values());
+  const timingAreas=domains.map(d=>v262DomainTiming(d,e,lang)).filter(Boolean);const current=v262CurrentPeriod(e,lang);if(current)timingAreas.unshift(current);const eduTiming=v252EducationTiming(e,lang);if(eduTiming)timingAreas.unshift(eduTiming);const care=v251CareWindows(e,lang);if(care)timingAreas.push(care);
+  if(age==null||age>18){for(const d of domains){const chapter=v262Domain(d,c,e,lang);if(chapter)ordered.push(chapter)}}
+  const phases=dashas.map((z,i)=>v262Phase(z,e,lang,i)).filter(z=>z.paragraphs.length);
+  const transitGroups=new Map();for(const z of arr(e.transits)){const k=z.planet+'|'+z.house;let group=transitGroups.get(k);if(!group){group={title:lang==='ta'?v251Planet(z.planet,lang)+' கோச்சாரம் · '+z.house+'-ஆம் பாவம்':z.planet+' transit · house '+z.house,paragraphs:[]};transitGroups.set(k,group)}if(!group._windows)group._windows=[];group._windows.push(`${z.start} → ${z.end}`);if(!group.paragraphs.length)group.paragraphs.push(v253Transit(z,lang,e))}for(const group of transitGroups.values()){if(group._windows.length>1)group.paragraphs.unshift(lang==='ta'?`ஒரே கிரகம்–பாவத் தொடர்பு பலமுறை தோன்றும் காலங்கள்: ${group._windows.join('； ')}. கீழுள்ள ஒரே கிரக விளக்கம் இந்த எல்லா காலங்களுக்கும் பொதுவானது; தனித்த சம்பவங்கள் என எண்ண வேண்டாம்.`:`Repeated windows of the same planet-house link: ${group._windows.join('; ')}. The natal explanation below applies to all windows; these are not separate event promises.`);delete group._windows;}timingAreas.push(...transitGroups.values());
   return {intro,context:v253ContextFrame(e,lang),placements:v257PlacementReport(e,lang),life:ordered,timing:{intro:lang==='ta'?'தசா பெரிய பின்னணி; புக்தி அந்த பின்னணியில் இப்போது செயல்படும் பகுதி; அந்தரம் அருகிலுள்ள மாற்றப் புள்ளி; கோச்சாரம் பிறப்பு வாக்குறுதியை உருவாக்காமல் அதன் வேகம், சுமை, வாய்ப்பு மற்றும் முடிவு நேரத்தை மாற்றும் துணை காரணம். ஒவ்வொரு காலத்தின் பலனும் அப்போதைய வயதிற்கு ஏற்றவாறு வாசிக்கப்படுகிறது. குழந்தைக்கு கல்வி/பாதுகாப்பு/உடல்–மனம், மாணவருக்கு பாடம்/தேர்வு/திறன், பெரியவருக்கு தொழில்/குடும்பம்/சொத்து, மூத்த வயதில் உடல்நலம்/குடும்ப ஆதரவு/அனுபவப் பகிர்வு முன்னிலைப்படும்.':'Mahadasha is the broad background, Bhukti the active sub-focus, Antara the nearer change-point, and transit only modifies pace, load, opportunity and timing within the natal promise. Each period is interpreted for the age at that time: care/education/body-mind for children, study/exams/skills for students, work/family/assets for adults, and health/support/legacy in later life.',phases,areas:timingAreas}};
  };
  return {ok:true,nonAI:true,engine:HOROSCOPE_VERSION,ta:build('ta'),en:build('en')};
@@ -373,15 +373,137 @@ function synthMatching(e){
    'For travel, routine, assets and long-term maturity, the key is whether decisions continue to fit each other as life changes.'
   ];
   const clusters=arr(e?.clusters).map((c,ci)=>{const b=num(c.brideAvg),g=num(c.groomAvg),diff=Math.abs(b-g),title=lang==='ta'?text(c.titleTa):text(c.titleEn),score=lang==='ta'?`பெண் ${signed(b)} · ஆண் ${signed(g)}.`:`Bride ${signed(b)} · Groom ${signed(g)}.`;const note=lang==='ta'?(clusterNotesTa[ci]||`${title} பகுதியில் தனித்த நடைமுறை விளைவுகள் கீழே பிரிக்கப்படுகின்றன.`):(clusterNotesEn[ci]||`Distinct practical consequences are separated below for ${title}.`);const bal=lang==='ta'?(diff>=1.5?`${title} பகுதியில் ஆதரவு சமமாக இல்லை; வலுவான பக்கம் கட்டுப்பாட்டாக அல்ல, சமநிலையாக பயன்படுத்தப்பட வேண்டும்.`:`${title} பகுதியில் ஆதரவு நெருக்கமாக இருப்பதால் வேறுபாடு வரும் இடத்தை நடைமுறை ஒப்பந்தம் தீர்மானிக்கும்.`):(diff>=1.5?`Support is uneven in ${title}; the stronger side should be used for balance rather than control.`:`Support is relatively close in ${title}, so practical agreements decide how differences are handled.`);return {title,evidence:[score,`${note} ${bal}`]}});
-  const topics=arr(e?.topics).map(t=>v253MatchingTopic(t,lang,e)),timing=compactTiming(e,lang);
+  const topics=arr(e?.topics).map(t=>v262MatchingTopic(t,lang,e)),timing=compactTiming(e,lang);
   return {intro,ageNote:matchingAgeNote(e,lang),verdict:pickLang(e?.verdict,lang),clusters,topics,timing};
  };
  return {ok:true,nonAI:true,engine:VERSION,ta:build('ta'),en:build('en')};
 }
 
+
+/* V262: Evidence-anchored narrative reconstruction. Distinguish natal promise,
+   active Dasha, relevant transit and varga corroboration. Missing support is
+   reported as missing, never silently converted into a dated life event. */
+function v262PeriodOverlaps(a,b,c,d){return !!(a&&b&&c&&d&&a<=d&&b>=c)}
+function v262Placed(e,name){return arr(e?.positions).find(p=>p.planet===name&&v259ValidHouse(p.house))||null}
+function v262NativeLink(d,z,e){
+ const h=Number(d.house),lord=text(d.lord),p=[z.md,z.ad].filter(Boolean),ties=[];
+ for(const name of p){
+  const pos=v262Placed(e,name);
+  if(name===lord)ties.push({name,how:'lord'});
+  else if(pos && (Number(pos.house)===h||arr(pos.ownedHouses).some(n=>Number(n)===h)))ties.push({name,how:Number(pos.house)===h?'position':'ownership'});
+ }
+ return ties;
+}
+function v262TransitLink(d,start,end,e){
+ return arr(e.transits).filter(t=>v262PeriodOverlaps(t.start,t.end,start,end)&&(
+ Number(t.house)===Number(d.house) || (t.focusId===d.id&&Number(t.house)===Number(d.house))
+ )).slice(0,2);
+}
+function v262LinkSentence(d,z,e,lang){
+ const ta=lang==='ta',ties=v262NativeLink(d,z,e),trans=v262TransitLink(d,z.start,z.end,e),dest=v259ValidHouse(d.lordHouse)?Number(d.lordHouse):null,planet=v251Planet(d.lord,lang),title=(H_DOMAINS[d.id]||{})[lang]||d.id;
+ if(!ties.length)return {qualified:false,paragraph:ta?`${title} குறித்து ${z.start} முதல் ${z.end} வரையான காலத்தை தனிப்பட்ட நிகழ்வாக உறுதி செய்ய, தசாநாதன் அல்லது புக்திநாதனுக்கும் அந்தப் பாவம்/அதிபதிக்கும் நேரடியான தொடர்பு இத்தரவுகளில் பதிவாகவில்லை. எனவே குறிப்பிட்ட நிகழ்வு அல்லது நாள் கணிப்பு அளிக்கப்படவில்லை.`:`No direct link between the active Dasha/Bhukti lords and the house or ruler of ${title} is recorded for ${z.start}–${z.end}. A dated event is therefore not asserted.`,transit:trans.length>0};
+ const tiesTxt=ties.map(t=>`${v251Planet(t.name,lang)}${t.how==='lord'?(ta?' இந்தப் பாவத்தின் அதிபதியாக இருப்பது':', ruler of the house'):t.how==='position'?(ta?' அந்தப் பாவத்தில் அமர்ந்திருப்பது':' occupying the house'):(ta?' அந்தப் பாவத்திற்கு அதிபதியாக இருப்பது':' ruling the house')}`).join(ta?' மற்றும் ':' and ');
+ const varga=d.vargaAvailable===true&&Number(d.varga)>1?(ta?` D${d.varga}-இல் ${Number(d.vargaStrength)>0?'ஆதரவு':Number(d.vargaStrength)<0?'சிரமம்':'கலப்பு நிலை'} பதிவு செய்யப்பட்டுள்ளது; அது D1-இன் முடிவுக்கு ${Number(d.vargaStrength)>0?'துணை ஆதாரமாக':'தகுந்த வரம்பாக'} அமைகிறது.`:` The D${d.varga} cross-check is ${Number(d.vargaStrength)>0?'supportive':Number(d.vargaStrength)<0?'demanding':'mixed'}, qualifying the natal indication.`):'';
+ const transit=trans.length?(ta?` அதே காலத்தில் ${trans.map(t=>`${v251Planet(t.planet,lang)} ${t.house}-ஆம் பாவக் கோச்சாரம் (${t.start}–${t.end})`).join(' மற்றும் ')} பொருந்துகிறது; இது கால ஒத்திசைவு மட்டுமே, சம்பவம் நிகழும் உறுதி அல்ல.`:` A matching house transit overlaps: ${trans.map(t=>`${v251Planet(t.planet,lang)} through house ${t.house} (${t.start}–${t.end})`).join('; ')}; this is convergence, not certainty.`):(ta?' குறிப்பிட்ட பாவத்துக்கான நேரடி கோச்சார ஒத்திசைவு இக்காலத்தில் பதிவாகவில்லை; எனவே நிகழ்வுக் காலத்தை மேலும் சுருக்க முடியாது.':' No direct transit of that house is recorded in this interval, so timing is not narrowed further.');
+ return {qualified:true,transit:!!trans.length,paragraph:ta?`${title} குறிக்கும் ${d.house}-ஆம் பாவத்தின் அதிபதி ${planet}${dest?' '+dest+'-ஆம் பாவத்தில் இருக்கிறது':''}. ${z.start} முதல் ${z.end} வரை தசை–புக்தி நேரடி ஆதாரம்: ${tiesTxt}. பிறப்பு நிலை கூறும் வாய்ப்பை இந்தக் கால ஆதாரத்துடன் இணைத்தே வாசிக்கிறோம்; சம்பவத்தை உறுதி செய்யவில்லை.${varga}${transit}`:`For ${title}, house ${d.house} is ruled by ${planet}${dest?' placed in house '+dest:''}. During this period ${tiesTxt} connects the Dasha/Bhukti sequence to the natal topic.${varga}${transit}`};
+}
+function v262Domain(d,c,e,lang){
+ const ta=lang==='ta',title=(H_DOMAINS[d.id]||{})[lang]||d.id,n=Number(d.house),ruler=text(d.lord),dest=v259ValidHouse(d.lordHouse)?Number(d.lordHouse):null;
+ const house=arr(e.houses).find(h=>Number(h.house)===n),occ=arr(d.occupants).filter(Boolean),events=v253Unique(arr(d.events?.[lang]).map(v=>cleanEvent(v,lang))).slice(0,2);
+ const state=d.state==='support'?(ta?'ஆதரவு அதிகமாக':'supportive'):d.state==='pressure'?(ta?'சிரமம் அதிகமாக':'demanding'):(ta?'கலவையாக':'mixed');
+ const sections=[];
+ if(ruler&&dest){
+  const connector=V253_ROUTE[dest]?.[ta?1:0]|| (ta?'அந்தப் பாவத்தின் வாழ்க்கைச் சூழல்':'the ruler’s life area');
+  const aspects=[...arr(house?.supportAspects).map(p=>ta?`${v251Planet(p,lang)} உதவி பார்வை`:`${p} supportive aspect`),...arr(house?.pressureAspects).map(p=>ta?`${v251Planet(p,lang)} அழுத்த பார்வை`:`${p} demanding aspect`)];
+  const first=ta?`${title} தொடர்பான ${n}-ஆம் பாவத்தை ${v251Planet(ruler,lang)} நடத்தி ${dest}-ஆம் பாவத்தில் நிற்கிறது. இதனால் ${title} சார்ந்த அனுபவம் ${connector} வழியாக வரலாம். மதிப்பீடு ${state} இருப்பதற்கு${occ.length?' '+occ.map(p=>v251Planet(p,lang)).join(', ')+' இருப்பும்':''}${aspects.length?' '+aspects.join(', ')+' தொடர்பும்':''} கூடுதல் காரணமாகின்றன.`:`House ${n} of ${title} is ruled by ${ruler} in house ${dest}, linking this subject to ${connector}. The balance is ${state}${occ.length?', with '+occ.join(', ')+' occupying the house':''}${aspects.length?', and '+aspects.join(', ')+ ' in aspect':''}.`;
+  sections.push({title:ta?'ஜாதகத்தில் காணப்படும் கிரகத் தொடர்பு':'The natal planetary link',paragraphs:[first]});
+ }else sections.push({title:ta?'ஆதாரம் முழுமையாகவில்லை':'Missing natal basis',paragraphs:[ta?`${title} குறித்த பாவ–அதிபதி இருப்பிடம் முழுவதும் கிடைக்கவில்லை. தனிப்பட்ட வாழ்க்கை முடிவை இங்கு ஊகிக்கவில்லை.`:`The required house/ruler placement for ${title} is incomplete; an individual conclusion is not invented.`]});
+ if(events.length&&ruler&&dest){
+  let contrast=ta?(d.state==='support'?'செயலாக்க உதவும் வாய்ப்பு இருக்கலாம்':d.state==='pressure'?'முதலில் சிரமத்தைச் சரிசெய்த பிறகே முன்னேற்றம் தெளிவாகலாம்':'வாய்ப்பும் பொறுப்பும் ஒன்றாக வரலாம்'):(d.state==='support'?'there may be usable support':d.state==='pressure'?'a constraint may need resolving first':'opportunity may come with extra responsibility');
+  sections.push({title:ta?'வாழ்க்கையில் இது வெளிப்படும் விதம்':'Possible lived expression',paragraphs:[ta?`${events.join(' மற்றும் ')} போன்ற நிகழ்வு வகைகளில் ${contrast}. இது கிரகக் கணக்கிலிருந்து பெறப்படும் சாத்திய விளக்கம்; எல்லோருக்கும் அதே சம்பவம் வரும் என்று பொருளல்ல.`:`For situations such as ${events.join(' and ')}, ${contrast}. These are conditional interpretations of the recorded placements, not fixed outcomes.`]});
+ }
+ if(d.vargaAvailable===true&&Number(d.varga)>1)sections.push({title:`D${d.varga}`,paragraphs:[ta?`D1-இன் இந்த வாசிப்புடன் D${d.varga} மதிப்பீட்டை ஒப்பிட்டால் ${Number(d.vargaStrength)>0?'கூடுதல் ஆதரவு':Number(d.vargaStrength)<0?'மீளாய்வு தேவைப்படும் குறை':'ஒரேபோல முடிவு தராத கலப்பு நிலை'} தெரிகிறது. இது துணை ஆதாரம்; D1-ஐ மாற்றும் தனித் தீர்ப்பு அல்ல.`:`D${d.varga} ${Number(d.vargaStrength)>0?'adds support':Number(d.vargaStrength)<0?'flags a constraint':'is mixed'} against D1. It qualifies rather than replaces the natal finding.`]});
+ const best=d?.timing?.best;
+ if(best?.start&&best?.end){const z=arr(e.dashas).find(q=>v262PeriodOverlaps(q.start,q.end,best.start,best.end)&&v262NativeLink(d,q,e).length);
+  if(z){const link=v262LinkSentence(d,z,e,lang);sections.push({title:ta?'தசை–புக்தியின் கால ஆதாரம்':'Dasha–Bhukti timing evidence',paragraphs:[link.paragraph],provenance:`dasha:${z.md}/${z.ad};domain:${d.id}`});}
+ }
+ const hint=contextHintForDomain(d.id,c,lang);if(hint&&ruler&&dest)sections.push({title:ta?'வாழ்க்கைச் சூழலில் கவனிக்க வேண்டியது':'Lived context',paragraphs:[hint]});
+ return {id:d.id,title,provenance:{natalHouse:n,houseLord:ruler},...v254Sections(sections)};
+}
+
+function v262CurrentPeriod(e,lang){
+ const c=e?.currentPeriod,ta=lang==='ta';
+ if(!c?.referenceDate||e?.referenceDate&&c.referenceDate!==e.referenceDate)return null;
+ const a=c.mahadasha,b=c.antardasha,p=c.pratyantardasha;
+ if(!(a?.lord&&b?.lord&&p?.lord))return null;
+ const valid=[a,b,p].every(x=>x.start<=c.referenceDate&&c.referenceDate<x.end);
+ if(!valid)return null;
+ const nativeToEnglish=n=>Object.keys(V251_PLANET_TA).find(k=>V251_PLANET_TA[k]===n)||n;
+ const planets=[a.lord,b.lord,p.lord].map(nativeToEnglish);
+ const per=[a,b,p].map((z,i)=>`${v251Planet(planets[i],lang)} (${z.start} → ${z.end})`);
+ const houseLinks=planets.map((q,i)=>{const pos=v262Placed(e,q);return pos?(ta?`${v251Planet(q,lang)} ${pos.house}-ஆம் பாவத்தில்${arr(pos.ownedHouses).length?', '+arr(pos.ownedHouses).join(', ')+'-ஆம் பாவ அதிபத்தியத்துடன்':''}`:`${v251Planet(q,lang)} occupies house ${pos.house}${arr(pos.ownedHouses).length?' and rules house '+arr(pos.ownedHouses).join(', '):''}`):''}).filter(Boolean);
+ const paragraphs=[ta?`${c.referenceDate} அன்று நடைபெறும் கால வரிசை: மகாதசை ${per[0]}; புக்தி ${per[1]}; அந்தரம் ${per[2]}.`:`On ${c.referenceDate}, active Mahadasha: ${per[0]}; Antardasha: ${per[1]}; Pratyantardasha: ${per[2]}.`,ta?`${houseLinks.length?'பிறப்புக் கிரகத் தொடர்புகள்: '+houseLinks.join('； ')+'. ':''}இந்த மூன்று நிலைகளில் அந்தரம் குறுகிய காலச் செயல்பாட்டைக் காட்டலாம்; அந்தரநாதன் மட்டும் கொண்டு திருமணம், நோய் அல்லது வேலை மாற்றம் போன்ற நிகழ்வை உறுதி செய்ய முடியாது.`:`${houseLinks.length?'Natal links: '+houseLinks.join('; ')+'. ':''}The Pratyantardasha narrows a period; its lord alone does not prove a marriage, illness, job change or other specific event.`];
+ return {id:'active-md-ad-pd',title:ta?'தற்போதைய மகாதசை–புக்தி–அந்தரம்: மூன்று அடுக்கு கால ஆதாரம்':'Current Mahadasha–Antardasha–Pratyantardasha',paragraphs,provenance:{referenceDate:c.referenceDate,md:planets[0],ad:planets[1],pd:planets[2]}};
+}
+
+function v262DomainTiming(d,e,lang){
+ const best=d?.timing?.best;if(!(best?.start&&best?.end))return null;
+ const hit=arr(e.dashas).find(z=>v262PeriodOverlaps(z.start,z.end,best.start,best.end)&&v262NativeLink(d,z,e).length);
+ if(!hit)return null;
+ const link=v262LinkSentence(d,hit,e,lang);
+ if(!link.qualified)return null;
+ return {id:d.id,title:(H_DOMAINS[d.id]||{})[lang]||d.id,paragraphs:[`${best.start} → ${best.end}: ${link.paragraph}`],provenance:{natalHouse:d.house,houseLord:d.lord,md:hit.md,ad:hit.ad,transitCrossCheck:link.transit}};
+}
+function v262Phase(z,e,lang,index){
+ const ta=lang==='ta',label=`${z.start} → ${z.end}`,md=v251Planet(z.md,lang),ad=v251Planet(z.ad,lang);
+ const active=[z.md,z.ad].map(p=>v262Placed(e,p)),facts=active.map((p,i)=>p?(ta?`${[md,ad][i]} ${p.house}-ஆம் பாவத்தில்${arr(p.ownedHouses).length?', '+arr(p.ownedHouses).join(', ')+'-ஆம் அதிபத்தியத்துடன்':''}`:`${[md,ad][i]} in house ${p.house}${arr(p.ownedHouses).length?', ruling '+arr(p.ownedHouses).join(', '):''}`):'').filter(Boolean);
+ const sections=[{title:ta?'தசை–புக்தியின் தனிப்பட்ட பிறப்பு ஆதாரம்':'Natal activation of period lords',paragraphs:[ta?`${label}: ${md} மகாதசை, ${ad} புக்தி. ${facts.length?facts.join('; ')+' என்ற பிறப்பு நிலைகளே கால விளக்கத்தின் முதன்மை ஆதாரம்.':'இரு கால அதிபதிகளின் பாவ இருப்பிடம் கிடைக்காததால் குறிப்பிட்ட நிகழ்வு கணிக்கப்படவில்லை.'}`:`${label}: ${md} Mahadasha with ${ad} Bhukti. ${facts.length?facts.join('; ')+' establish the natal context.':'The natal positions of the period lords are incomplete; no particular event is inferred.'}`]}];
+ const candidates=arr(z.priorities).map(q=>({q,d:arr(e.domains).find(d=>d.id===q.id)})).filter(x=>x.d&&v262NativeLink(x.d,z,e).length);
+ // At most two distinct natal-supported topics per period: avoid identical advice banks.
+ for(const {q,d} of candidates.slice(0,2)){
+  const anchor=v262LinkSentence(d,z,e,lang),event=pickLang(q.event,lang),state=q.state==='support'?(ta?'ஆதரவுடன்':'with support'):q.state==='pressure'?(ta?'கூடுதல் பொறுப்புடன்':'with constraints'):(ta?'கலவையான சூழலில்':'with mixed conditions');
+  sections.push({title:pickLang(q.title,lang)||d.id,paragraphs:[ta?`${label} கட்டத்தில் ${event||'இந்த வாழ்க்கைப் பகுதி'} ${state} முன்வரக்கூடும். ${anchor.paragraph}`:`During ${label}, ${event||'this subject'} may become relevant ${state}. ${anchor.paragraph}`],provenance:{domain:d.id,natalHouse:d.house,md:z.md,ad:z.ad,transitCrossCheck:anchor.transit}});
+ }
+ if(!candidates.length)sections.push({title:ta?'நிகழ்வுக்கான ஆதார வரம்பு':'Limit of event evidence',paragraphs:[ta?'இக்காலத்துக்கு கணிக்கப்பட்ட பொது முன்னுரிமைகள் இருந்தாலும் அவற்றை தசை–புக்தி அதிபதிகளுடன் நேரடியாக இணைக்கும் பாவ ஆதாரம் கிடைக்கவில்லை. ஆகவே திருமணம், வேலை மாற்றம் அல்லது சொத்து வாங்குதல் போன்ற நிகழ்வை உறுதியாகக் கூறவில்லை.':'General event priorities exist, but none is directly supported by the recorded natal links of these Dasha/Bhukti lords. A specific marriage, career or property event is not asserted.']});
+ if(z.age!=null&&Number(z.age)<18)sections.push({title:ta?'வயதிற்கேற்ற பொருள்':'Age-appropriate interpretation',paragraphs:[v252StageLabel(z.age,lang)]});
+ return {title:`${label} · ${md}–${ad}`,...v254Sections(sections)};
+}
+function v262MatchingTopic(t,lang,e){
+ const prior=v253MatchingTopic(t,lang,e),ta=lang==='ta',topic=prior.title;
+ const b=arr(t.brideProfile?.layers).filter(x=>['D1','D9'].includes(x.division)),g=arr(t.groomProfile?.layers).filter(x=>['D1','D9'].includes(x.division));
+ const describe=(layers,who)=>layers.map(layer=>{
+  const h=arr(layer.houses).find(q=>Number(q.house)!==1)||arr(layer.houses)[0];if(!h)return null;
+  const lord=h.lord?v251Planet(h.lord,lang):null,dest=v259ValidHouse(h.lordHouse)?Number(h.lordHouse):null,occupied=arr(h.occupants).filter(Boolean).map(x=>v251Planet(x,lang));
+  if(!lord||!dest)return null;
+  return ta?`${topic} பற்றி ${who} ${layer.division}-இல் ${h.house}-ஆம் பாவ அதிபதி ${lord} ${dest}-ஆம் பாவத்தில்${occupied.length?'; அந்தப் பாவத்தில் '+occupied.join(', '):''} இருப்பது முக்கியமான தொடர்பு.`:`For ${topic}, ${who} ${layer.division} places ruler ${lord} of house ${h.house} in house ${dest}${occupied.length?', occupied by '+occupied.join(', '):''}.`;
+ }).filter(Boolean);
+ const facts=[...describe(b,ta?'பெண்':'bride'),...describe(g,ta?'ஆண்':'groom')];
+ const bs=t.brideScore==null?NaN:Number(t.brideScore),gs=t.groomScore==null?NaN:Number(t.groomScore),have=Number.isFinite(bs)&&Number.isFinite(gs);
+ const difference=have?Math.abs(bs-gs):null,state=t.state;
+ const contrast=state==='mutual'?(ta?'இருவரின் கணக்கீட்டு ஆதரவும் இணைகிறது.':'Both profiles carry supporting indicators.'):state==='pressure'?(ta?'இருவரின் கணக்கீட்டிலும் ஒரே துறையில் கவனிக்க வேண்டிய நிலை உள்ளது.':'Both profiles indicate a demanding area.'):difference!=null&&difference>=1.5?(ta?'இருவரின் ஆதரவின் அளவு வேறுபடுகிறது; ஒருவர் தாங்கும் பொறுப்பு மற்றவருக்கு அதே வேகத்தில் வராமல் இருக்கலாம்.':'The weight of support differs between partners; their pace of responsibility may diverge.'):(ta?'இருவரிடமும் ஆதரவு மற்றும் சவால் இணைந்திருப்பதால் ஒரு முடிவாகச் சொல்ல முடியாது.':'The indicators are mixed, not a single yes/no outcome.');
+ const evidenceComplete=facts.length===4;
+ if(!evidenceComplete)return {...prior,paragraphs:v253Unique([ta?`${topic}: இருவருக்குமான D1/D9 ஆதாரங்கள் முழுமையாக இல்லை; மதிப்பெண் மட்டும் வைத்து தனிப்பட்ட இயல்பைத் தீர்மானிக்க முடியாது.`:`${topic}: D1/D9 evidence is incomplete for one or both partners; score is not enough to establish a personal outcome.`,...facts])};
+ const advice=pickLang(t.guidance,lang)||prior.paragraphs?.at(-1)||'';
+ // Topic detail retains meaningful unique human advice, but prevents identical advice+guidance duplicates.
+ const guidance=advice&&prior.paragraphs?.some(x=>x===advice)?advice:advice;
+ const paragraphs=[ta?`${topic}: பெண் ${have?bs.toFixed(2):'—'}, ஆண் ${have?gs.toFixed(2):'—'} மதிப்பீடு. ${contrast}`:`${topic}: bride ${have?bs.toFixed(2):'—'}, groom ${have?gs.toFixed(2):'—'} assessment. ${contrast}`,...facts,ta?`இந்த ஜாதகத் தொடர்புகளை நடைமுறை வாழ்க்கையுடன் இணைத்துப் பார்க்கும்போது: ${pickLang(state==='pressure'?t.careReading:t.supportReading,lang)||pickLang(t.careReading,lang)||'நேரடித் தரவு முழுமையில்லை.'}`:`Read alongside actual shared experience: ${pickLang(state==='pressure'?t.careReading:t.supportReading,lang)||pickLang(t.careReading,lang)||'Additional evidence needed.'}`,guidance];
+ const ba=yearsAt(e?.brideBirthDate,e?.referenceDate),ga=yearsAt(e?.groomBirthDate,e?.referenceDate);
+ if(ba!=null&&ba<18||ga!=null&&ga<18)return prior; // preserve existing child safeguarding
+ return {...prior,paragraphs:v253Unique(paragraphs),provenance:{bride:b.map(x=>x.division),groom:g.map(x=>x.division),topicIndex:t.index}};
+}
+function v262Polish(out){
+ // Edits only report text, never numerical/planet evidence. Finish common Tamil
+ // leakage from technical prose; prevent rendering English scaffolding in Tamil.
+ const taWord={formal:'முறையான',mentor:'வழிகாட்டி',capacity:'திறன்',client:'வாடிக்கையாளர்',routine:'ஒழுங்கு',reaction:'எதிர்வினை',project:'திட்டம்',portfolio:'செயல்திறன் தொகுப்பு',certification:'சான்றிதழ்',support:'ஆதரவு',review:'மறுஆய்வு',signal:'சுட்டி',prediction:'கணிப்பு',output:'விளைவு',skill:'திறன்',practice:'பயிற்சி',context:'சூழல்',communication:'தொடர்பு',commitment:'பொறுப்பேற்பு',academic:'கல்விசார்',peer:'சமவயதினர்',boundary:'எல்லை',privacy:'தனியுரிமை',caregiver:'பராமரிப்பாளர்',stress:'மனஅழுத்தம்'};
+ const translate=v=>typeof v==='string'?v.replace(/\b(?:formal|mentor|capacity|client|routine|reaction|project|portfolio|certification|support|review|signal|prediction|output|skill|practice|context|communication|commitment|academic|peer|boundary|privacy|caregiver|stress)\b/gi,m=>taWord[m.toLowerCase()]||m):v;
+ const walk=(v,depth=0)=>{if(depth>20)return v;if(Array.isArray(v))return v.map(x=>walk(x,depth+1));if(v&&typeof v==='object')for(const k of Object.keys(v))if(!['id','provenance','planet','start','end','birthDate'].includes(k))v[k]=walk(v[k],depth+1);return typeof v==='string'?translate(v):v};
+ if(out?.ta)walk(out.ta);
+ return out;
+}
+
 function synthesize(kind,evidence){
- if(kind==='horoscope')return v253CleanReport(synthHoroscope(evidence||{}));
- if(kind==='matching')return v253CleanReport(synthMatching(evidence||{}));
+ if(kind==='horoscope')return v262Polish(v253CleanReport(synthHoroscope(evidence||{})));
+ if(kind==='matching')return v262Polish(v253CleanReport(synthMatching(evidence||{})));
  throw new Error('Unsupported prediction synthesis kind.');
 }
 
