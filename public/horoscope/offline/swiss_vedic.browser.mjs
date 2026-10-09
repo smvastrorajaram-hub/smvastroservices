@@ -41,7 +41,7 @@ const EXALTATION = {
 };
 const DEBILITATION = {
   'சூரியன்':{rasi:6,degree:10}, 'சந்திரன்':{rasi:7,degree:3},
-  'செவ்வாய்':{rasi:1,degree:28}, 'புதன்':{rasi:11,degree:15},
+  'செவ்வாய்':{rasi:3,degree:28}, 'புதன்':{rasi:11,degree:15},
   'குரு':{rasi:9,degree:5}, 'சுக்கிரன்':{rasi:5,degree:27},
   'சனி':{rasi:0,degree:20}
 };
