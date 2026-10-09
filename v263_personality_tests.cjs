@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict');const fs=require('node:fs'),vm=require('node:vm');
+const path='/mnt/data/smv_v263/source',eng=require(path+'/prediction-synthesis.js');
+const results={engine:eng.VERSION,sampleHoroscopeCount:3,sampleMarriagePairs:1,checks:[],caveats:['Real positions from V262 fixtures do not validate lived personality','This is source-level and HTML-string verification, not live Android/Opera/PWA/PDF E2E','Independent astrologer and actual customer review not performed']};
+function test(name,fn){try{fn();results.checks.push({name,pass:true})}catch(e){results.checks.push({name,pass:false,error:e.message})}}
+for(let i=1;i<=3;i++){
+ const record=JSON.parse(fs.readFileSync('/mnt/data/smv_v262/horoscope_report_'+i+'.json','utf8'));
+ const out=eng.synthesize('horoscope',record.evidence);
+ fs.writeFileSync('/mnt/data/smv_v263/horoscope_report_'+i+'.json',JSON.stringify({input:record.input,evidence:record.evidence,output:out},null,2));
+ test(`physical-chart-${i}: direct nature paragraphs before astrological inventory`,()=>{for(const lang of ['ta','en']){const h=out[lang].life.find(x=>x.house===1);assert(h.sections[0].title.includes(lang==='ta'?'நேரடி குணபலன்':'Direct temperament'));assert(h.sections[0].paragraphs.length>=4);assert(!h.sections[0].paragraphs[0].startsWith('1-ஆம் பாவம்'));}});
+ test(`physical-chart-${i}: all 12 houses have immediate practical readings`,()=>{for(const lang of ['ta','en']){for(let n=1;n<=12;n++){let h=out[lang].life.find(x=>x.house===n);assert(h.sections[0].paragraphs.length>0);assert(!h.sections[0].title.includes('Main life interpretation'));}}});
+ test(`physical-chart-${i}: speech thinking courage emotional and relationship topical sections`,()=>{let houses=out.ta.life;for(const [n,term] of [[2,'பேசும் விதம்'],[3,'முயற்சி'],[4,'மன அமைதி'],[5,'அறிவுத்திறன்'],[7,'உறவில்'],[10,'வேலையில்']])assert(houses.find(x=>x.house===n).sections[0].title.includes(term),`${n} ${term}`);});
+ test(`physical-chart-${i}: still preserves original 12 house evidence and dates`,()=>{assert(out.ta.life.some(x=>x.house===12));assert(out.ta.timing.phases.length>0);assert(out.ta.timing.areas.some(x=>x.id==='active-md-ad-pd'));assert.equal(out.engine,eng.VERSION);});
+}
+const a=[1,2,3].map(i=>eng.synthesize('horoscope',JSON.parse(fs.readFileSync('/mnt/data/smv_v262/horoscope_report_'+i+'.json','utf8')).evidence));
+test('Three astronomical samples have chart-distinct first direct paragraph',()=>{const ps=a.map(x=>x.ta.life[0].sections[0].paragraphs[0]);assert.equal(new Set(ps).size,3)});
+test('Distinct Moon/Mercury/Mars placements influence personality paragraphs',()=>{let ps=a.map(x=>x.ta.life[0].sections[0].paragraphs.slice(1,4).join(' '));assert.equal(new Set(ps).size,3)});
+test('No claimed exact diagnosis of anger or intelligence based on placement',()=>{for(const x of a)assert(!x.ta.life[0].sections[0].paragraphs.some(s=>s.includes('கண்டிப்பாக கோபக்காரர்')||s.includes('நிச்சயமாக புத்திசாலி'))) });
+let sample=JSON.parse(fs.readFileSync('/mnt/data/smv_v262/matching_report_1.json','utf8'));
+sample.output=eng.synthesize('matching',sample.evidence);fs.writeFileSync('/mnt/data/smv_v263/matching_report_1.json',JSON.stringify(sample,null,2));
+test('Marriage matching direct compare of individual temperaments',()=>{let s=sample.output.ta.topics[0].paragraphs;assert(s[0].includes('மணமகள் குணம்'));assert(s[1].includes('மணமகன் குணம்'));assert.notEqual(s[0],s[1]);assert(s[2].includes('நியாய')||s[2].includes('மற்றவர்'));});
+test('All matching topics retained exactly once',()=>{for(const l of ['ta','en']){assert.equal(sample.output[l].topics.length,25);assert.equal(new Set(sample.output[l].topics.map(x=>x.index)).size,25)}});
+test('HTML first practical reading displayed ahead of long positions table',()=>{const c={window:{SMV_BACKEND_URL:''},Date,TextEncoder,AbortController,setTimeout,clearTimeout,globalThis:null};c.globalThis=c;vm.runInNewContext(fs.readFileSync(path+'/public/horoscope/prediction-online.js','utf8'),c);const html=c.window.SMVPredictionOnline.horoscopeLifeHtml(a[0],'ta');const direct=html.indexOf('முதலில் இவர் எப்படிப்பட்டவர்?'),positions=html.indexOf('smv-v257-positions');assert(direct>-1&&positions>-1&&direct<positions);assert.equal((html.match(/class="smv-v257-positions"/g)||[]).length,1)});
+test('No prediction functions added in protected payment/auth configs',()=>{for(const f of ['server.js','public/horoscope/config.js','public/horoscope/report-store.mjs','public/horoscope/horoscope-auth.mjs'])assert(fs.readFileSync('/mnt/data/smv_v263/full_source/'+f).equals(fs.readFileSync('/mnt/data/smv_v262/source/'+f)),f)});
+for(const age of [2,14])test(`Child age ${age} no adult-oriented direct relationship/work personality`,()=>{let x=JSON.parse(fs.readFileSync('/mnt/data/smv_v262/horoscope_report_1.json','utf8')).evidence;x.context.age=age;const h=eng.synthesize('horoscope',x).ta.life;assert(h.find(z=>z.house===1).sections[0].title.includes('குணபலன்'));assert(!h.find(z=>z.house===7).sections[0].title.includes('உறவில் எப்படி'));assert(!h.find(z=>z.house===10).sections[0].title.includes('வேலையில் எப்படிப்பட்ட'));});
+results.passed=results.checks.filter(x=>x.pass).length;results.failed=results.checks.filter(x=>!x.pass).length;
+fs.writeFileSync('/mnt/data/smv_v263/personality_test_results.json',JSON.stringify(results,null,2));console.log(JSON.stringify({passed:results.passed,failed:results.failed,failures:results.checks.filter(x=>!x.pass)},null,2));if(results.failed)process.exitCode=1;

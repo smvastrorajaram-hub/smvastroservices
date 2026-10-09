@@ -1,0 +1,117 @@
+{
+  "version": "smv-deterministic-synthesis-v263",
+  "checks": [
+    {
+      "name": "V262 local deterministic synthesis",
+      "pass": true
+    },
+    {
+      "name": "Both copies of synthesis match",
+      "pass": true
+    },
+    {
+      "name": "Browser and Node synthesis agree",
+      "pass": true
+    },
+    {
+      "name": "EN and TA preserve 12 house charts",
+      "pass": true
+    },
+    {
+      "name": "EN and TA preserve 25 marriage topics",
+      "pass": true
+    },
+    {
+      "name": "D1 + D9 are evidence-labeled per marriage topic",
+      "pass": true
+    },
+    {
+      "name": "Missing D1/D9 profile not treated as full individual finding",
+      "pass": true
+    },
+    {
+      "name": "Different planetary positions give differing narratives",
+      "pass": true
+    },
+    {
+      "name": "Life chapters preserve astro-specific position context",
+      "pass": true
+    },
+    {
+      "name": "Active MD AD are stated in timing",
+      "pass": true
+    },
+    {
+      "name": "No dasha means no domain-specific timing promises",
+      "pass": true
+    },
+    {
+      "name": "Dasha domain rows require natal links",
+      "pass": true
+    },
+    {
+      "name": "Multiple same-house transits consolidated not 5 repeated paragraphs",
+      "pass": true
+    },
+    {
+      "name": "Child charts avoid adult house interpretations",
+      "pass": true
+    },
+    {
+      "name": "Elder life-stage lens present",
+      "pass": true
+    },
+    {
+      "name": "Tamil common English leakage tokens translated",
+      "pass": true
+    },
+    {
+      "name": "Offline current dasha lookup no nulls in three real ephemeris charts",
+      "pass": true
+    },
+    {
+      "name": "Original V261 planetary calculations not edited",
+      "pass": true
+    },
+    {
+      "name": "V260 admin/off pricing untouched",
+      "pass": true
+    },
+    {
+      "name": "Auth, saved PDF, PWA, quota-related files remain untouched",
+      "pass": true
+    },
+    {
+      "name": "Prediction evidence change scoped to active current-period field",
+      "pass": true
+    },
+    {
+      "name": "Client API uses V262 local synthesis and busts stale IndexedDB version",
+      "pass": true
+    },
+    {
+      "name": "Client HTML retains exactly 25 marriage topics",
+      "pass": true
+    },
+    {
+      "name": "No LLM or extra network in synthesis",
+      "pass": true
+    },
+    {
+      "name": "Deterministic with identical evidence",
+      "pass": true
+    },
+    {
+      "name": "Current MD/AD/PD chapter reads only validated chart evidence",
+      "pass": true
+    }
+  ],
+  "stress": {
+    "syntheticHoroscopes": 100,
+    "syntheticMatching": 100,
+    "errors": []
+  },
+  "scope": "Structural fixtures, not actual forecast accuracy",
+  "passCount": 26,
+  "failCount": 0
+}

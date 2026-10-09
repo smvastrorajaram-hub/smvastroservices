@@ -1,0 +1,40 @@
+{
+  "version": "V263",
+  "baseline": "V262 source and unchanged V260 Admin access matrix",
+  "newFiles": [
+    {
+      "path": "prediction-synthesis.js",
+      "beforeSHA256": "ed54e198d5228ff7e431f2cf68f52f988bb0f8170fec2a3daa2595387a46d12f",
+      "afterSHA256": "5a9a917c938f9b3457ae4a354981cd0ce233f339ebb2f3eb6f93d4806cd5d399",
+      "bytes": 391413
+    },
+    {
+      "path": "public/horoscope/prediction-synthesis.js",
+      "beforeSHA256": "ed54e198d5228ff7e431f2cf68f52f988bb0f8170fec2a3daa2595387a46d12f",
+      "afterSHA256": "5a9a917c938f9b3457ae4a354981cd0ce233f339ebb2f3eb6f93d4806cd5d399",
+      "bytes": 391413
+    },
+    {
+      "path": "public/horoscope/prediction-online.js",
+      "beforeSHA256": "558f3398ec541057dd7e25ee50cd86680dc41aa30ab8b5a33f01022158112314",
+      "afterSHA256": "4636a4459fc52910673852d9bb0d8b066d2d7aa4620f1e5b01c372499a15b1ac",
+      "bytes": 8653
+    },
+    {
+      "path": "public/horoscope/index.html",
+      "beforeSHA256": "6cf949ca0715c4cd76bde5671dc9fc4ea95610b02b5851ae62d760189ee32ec1",
+      "afterSHA256": "f46c047d559962f9699fba416948e16396fe6a335a5e61811e2a2071188e96bc",
+      "bytes": 17502
+    }
+  ],
+  "notChanged": [
+    "server.js",
+    "public/horoscope/config.js",
+    "public/horoscope/horoscope-predictions.js",
+    "public/horoscope/marriage-matching.js",
+    "public/horoscope/report-store.mjs",
+    "public/horoscope/report-print.js",
+    "public/horoscope/horoscope-auth.mjs",
+    "public/horoscope/sw.js"
+  ]
+}

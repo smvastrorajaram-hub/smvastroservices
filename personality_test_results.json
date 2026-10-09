@@ -1,0 +1,98 @@
+{
+  "engine": "smv-deterministic-synthesis-v263",
+  "sampleHoroscopeCount": 3,
+  "sampleMarriagePairs": 1,
+  "checks": [
+    {
+      "name": "physical-chart-1: direct nature paragraphs before astrological inventory",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-1: all 12 houses have immediate practical readings",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-1: speech thinking courage emotional and relationship topical sections",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-1: still preserves original 12 house evidence and dates",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-2: direct nature paragraphs before astrological inventory",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-2: all 12 houses have immediate practical readings",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-2: speech thinking courage emotional and relationship topical sections",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-2: still preserves original 12 house evidence and dates",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-3: direct nature paragraphs before astrological inventory",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-3: all 12 houses have immediate practical readings",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-3: speech thinking courage emotional and relationship topical sections",
+      "pass": true
+    },
+    {
+      "name": "physical-chart-3: still preserves original 12 house evidence and dates",
+      "pass": true
+    },
+    {
+      "name": "Three astronomical samples have chart-distinct first direct paragraph",
+      "pass": true
+    },
+    {
+      "name": "Distinct Moon/Mercury/Mars placements influence personality paragraphs",
+      "pass": true
+    },
+    {
+      "name": "No claimed exact diagnosis of anger or intelligence based on placement",
+      "pass": true
+    },
+    {
+      "name": "Marriage matching direct compare of individual temperaments",
+      "pass": true
+    },
+    {
+      "name": "All matching topics retained exactly once",
+      "pass": true
+    },
+    {
+      "name": "HTML first practical reading displayed ahead of long positions table",
+      "pass": true
+    },
+    {
+      "name": "No prediction functions added in protected payment/auth configs",
+      "pass": true
+    },
+    {
+      "name": "Child age 2 no adult-oriented direct relationship/work personality",
+      "pass": true
+    },
+    {
+      "name": "Child age 14 no adult-oriented direct relationship/work personality",
+      "pass": true
+    }
+  ],
+  "caveats": [
+    "Real positions from V262 fixtures do not validate lived personality",
+    "This is source-level and HTML-string verification, not live Android/Opera/PWA/PDF E2E",
+    "Independent astrologer and actual customer review not performed"
+  ],
+  "passed": 21,
+  "failed": 0
+}
