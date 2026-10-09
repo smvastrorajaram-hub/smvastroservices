@@ -170,7 +170,7 @@ function buildAntardasha(mdLord, fullStart, fullEnd, birthDate){
     };
   }).filter(x=>!x.hiddenBeforeBirth);
 }
-function dashaAtBirth(moonSiderealLon,date){
+function dashaAtBirth(moonSiderealLon,date,referenceDate,offsetMinutes=330){
   const n=nakshatraInfo(moonSiderealLon), span=360/27, progressed=(norm360(moonSiderealLon)%span)/span;
   const lord=n.lord, total=DASHA_YEARS[lord], balance=total*(1-progressed);
   if (!lord || !Number.isFinite(total) || !Number.isFinite(balance)) throw new Error("Unable to calculate Vimshottari Dasha from Moon longitude.");
@@ -186,11 +186,22 @@ function dashaAtBirth(moonSiderealLon,date){
     }
     start=end;
   }
+  // A current period is always relative to the report reference date, never the birth date.
+  // The last boundary is exclusive. Do not manufacture a lord outside the computed range.
+  const asOf = /^\d{4}-\d{2}-\d{2}$/.test(String(referenceDate||''))
+    ? String(referenceDate) : isoDate(new Date(Date.now()+Number(offsetMinutes||330)*60000));
+  const inRange = row => row && row.start <= asOf && asOf < row.end;
+  const md = periods.find(inRange);
+  const ad = md?.antardashas?.find(inRange);
+  const pd = ad?.pratyantars?.find(inRange);
   return {
     balanceYears:Number(balance.toFixed(2)),
     order:DASHA_ORDER,
     periods,
-    current:{mahadasha:null,antardasha:null,pratyantardasha:null}
+    current:{referenceDate:asOf,
+      mahadasha: md ? {lord:md.lord,start:md.start,end:md.end} : null,
+      antardasha: ad ? {lord:ad.lord,start:ad.start,end:ad.end} : null,
+      pratyantardasha: pd ? {lord:pd.lord,start:pd.start,end:pd.end} : null}
   };
 }
 
@@ -222,7 +233,7 @@ export async function calculateVedicChart(input){
   if(Array.isArray(chart.planets)) chart.planets=chart.planets.map(p=>({...p,degree:Number.isFinite(Number(p.longitude))?degText(Number(p.longitude)):p.degree}));
   if(chart.lagna&&Number.isFinite(Number(chart.lagna.longitude))) chart.lagna={...chart.lagna,degree:degText(Number(chart.lagna.longitude))};
   const moon=chart.planets.find(p=>p.name==='சந்திரன்');
-  chart.dashas=dashaAtBirth(moon.longitude,new Date(chart.birth.utc_jd?(chart.birth.utc_jd-2440587.5)*86400000:Date.parse(chart.birth.date+'T'+chart.birth.time+':00+05:30')));
+  chart.dashas=dashaAtBirth(moon.longitude,new Date(chart.birth.utc_jd?(chart.birth.utc_jd-2440587.5)*86400000:Date.parse(chart.birth.date+'T'+chart.birth.time+':00+05:30')),input?.referenceDate||input?.reportDate,input?.utcOffsetMinutes);
   return chart;
 }
 export {findTajakaAnnualChart};
