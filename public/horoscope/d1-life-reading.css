@@ -1,0 +1,9 @@
+/* V265 — D1 full-life reading; one clean flow, no cards or decorative page breaks. */
+.smv-d1-life-reading { margin: 28px 0 36px; padding: 0 4px; color: inherit; }
+.smv-d1-life-reading > h2 { text-align: center; margin: 18px 0 12px; font-size: clamp(1.3rem, 2.3vw, 1.75rem); font-weight: 750; color: #76231c; }
+.smv-d1-life-method { text-align: center; margin: 0 auto 24px; font-size: .88rem; line-height: 1.6; max-width: 76ch; }
+.smv-d1-life-topic { margin: 0 0 26px; }
+.smv-d1-life-topic > h3 { margin: 28px 0 15px; padding: 0 0 9px; border-bottom: 1px solid #dfcfc0; font-size: clamp(1.08rem, 1.95vw, 1.32rem); line-height: 1.6; font-weight: 700; color: #572c23; }
+.smv-d1-life-paragraph { margin: 0 0 13px; text-align: left; font-size: 15px; font-weight: 400; line-height: 1.84; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .smv-d1-life-reading { padding: 0; } .smv-d1-life-paragraph { font-size: 14.5px; line-height: 1.9; } }
+@media print { .smv-d1-life-reading { padding: 0; margin: 12px 0; } .smv-d1-life-topic > h3 { break-after: avoid; } .smv-d1-life-paragraph { break-inside: avoid; } }

@@ -1821,6 +1821,18 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
+        // V265: a NEW D1-only twelve-topic life reading, not the deleted Section X.
+        // It is mounted only in the already-authorized full horoscope, using
+        // the natal D1 chart returned by the same calculation (no second fetch).
+        // The nine pre-existing Advanced parts keep their original count/order.
+        if (!window.SMVLifePredictionD1 || typeof window.SMVLifePredictionD1.html!=='function')
+          throw new Error('D1 life reading engine is missing. Check d1-life-reading.js deployment.');
+        const oldLife=root.querySelector('[data-smv-d1-life="1"]');
+        if(oldLife)oldLife.remove();
+        const lifeHost=document.createElement('div');
+        lifeHost.className='smv-d1-life-report';
+        lifeHost.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang);
+        root.appendChild(lifeHost);
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');
