@@ -2,6 +2,17 @@
 (()=>{
  const $=id=>document.getElementById(id);
  const labels={
+ 'Current Work Status (Optional)':'தற்போதைய வேலை நிலை (விருப்பம்)',
+ 'Marital Status (Optional)':'திருமண நிலை (விருப்பம்)',
+ 'Current Residence (Optional)':'தற்போது வசிக்கும் இடம் (விருப்பம்)',
+ 'Not specified':'குறிப்பிடப்படவில்லை','Job / Employed':'பணியில் உள்ளவர்',
+ 'Business / Self-employed':'வியாபாரம் / சுயதொழில்','Student':'மாணவர்',
+ 'Homemaker':'குடும்பப் பராமரிப்பில் உள்ளவர்','Currently not working':'தற்போது பணியில் இல்லை',
+ 'Retired':'ஓய்வு பெற்றவர்','Other':'மற்றவை','Unmarried':'திருமணமாகாதவர்',
+ 'Married':'திருமணமானவர்','Separated':'பிரிந்து வாழ்பவர்','Divorced':'மணவிலக்கு பெற்றவர்',
+ 'Widowed':'வாழ்க்கைத்துணையை இழந்தவர்','Prefer not to say':'தெரிவிக்க விருப்பமில்லை',
+ 'City, State, Country':'நகரம், மாநிலம், நாடு',
+
 'SMV HOROSCOPE':'SMV ஜாதகம்','Sri Maduraveerayah Horoscope':'ஸ்ரீ மதுரை வீரையா ஜாதகம்','Horoscope interpretations are for reflection and personal guidance.':'ஜாதக விளக்கங்கள் சிந்தனைக்கும் தனிப்பட்ட வழிகாட்டலுக்கும் உரியவை.','Birth Time Zone (UTC Offset)':'பிறந்த இட நேர மண்டலம் (UTC வேறுபாடு)','Use the UTC offset that was in effect at the birth place on the birth date, including daylight saving when relevant.':'பிறந்த நாளில் அந்த இடத்தில் அமலில் இருந்த UTC நேர வேறுபாட்டை உள்ளிடவும்; தேவையானால் கோடைக்கால நேர மாற்றத்தையும் சேர்க்கவும்.',
   'Create Horoscope':'ஜாதகம் உருவாக்குக','ENGLISH HOROSCOPE':'தமிழ் ஜாதகம்',
   'Enter birth date, birth time and select the exact birth place.':'பிறந்த தேதி, நேரம் மற்றும் சரியான பிறந்த இடத்தை உள்ளிடவும்.',
