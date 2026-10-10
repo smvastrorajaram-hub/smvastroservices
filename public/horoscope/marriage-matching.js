@@ -1112,9 +1112,121 @@ function mmV250EvidenceResults(b,g,pr,ks,ds,sync,v){
 }
 function mmV249LocalFallback(b,g,pr,ks,sync,v){return `${mmV246MainSynthesis(b,g,pr,ks,sync,v)}${mmV246PersonNarrative(b,T('Bride','பெண்'))}${mmV246PersonNarrative(g,T('Groom','ஆண்'))}${mmV246CoupleBook(b,g)}`}
 
+/* V279: Report-only interpretation layer. NEVER changes the existing dosha,
+   porutham, matching, cancellation, Dasha or Gochara calculations. */
+function mmV279LifeAreas(c){
+ const lag=Number(c?.lagna?.longitude);if(!Number.isFinite(lag))return '';
+ const aspects=(n,focus)=>{const p=planet(c,n);if(!p)return false;const offsets=n===P.Jupiter?[5,7,9]:n===P.Saturn?[3,7,10]:n===P.Mars?[4,7,8]:[7];return offsets.includes(((focus-house(p.longitude,lag)+12)%12)+1);};
+ const items=[
+  {h:2,kar:P.Jupiter,ta:'செல்வமும் குடும்பப் பேச்சும்',en:'Savings and family communication',good:'வருமானத்தைச் சேமிப்பாக மாற்றுவதற்கு திட்டமிட்ட குடும்ப ஒத்துழைப்பு உதவலாம்.',bad:'வரவு இருந்தாலும் செலவு/குடும்பக் கடமைகளை முறையாகப் பிரிக்க வேண்டிய சூழல் இருக்கலாம்.',goodEn:'Family cooperation can help convert income into savings.',badEn:'Income may require clearer decisions on expenses and family duties.'},
+  {h:4,kar:P.Moon,ta:'வீடும் குடும்ப அமைதியும்',en:'Home and emotional security',good:'வீட்டில் பொறுப்புகளும் பராமரிப்பும் தெளிவாகப் பகிரப்பட்டால் மனநிம்மதி அதிகமாகலாம்.',bad:'வீடு, வசிப்பிடம் அல்லது குடும்ப எதிர்பார்ப்பில் கருத்து வேறுபாடுகளை பேசித் தீர்க்க வேண்டியிருக்கும்.',goodEn:'Sharing household duties clearly may support emotional security.',badEn:'Residence and family expectations may require additional discussion.'},
+  {h:6,kar:P.Mars,ta:'வேலைச்சுமையும் சவால்களை எதிர்கொள்வதும்',en:'Workload and handling difficulties',good:'பணிகளை ஒழுங்குபடுத்திச் சவால்களைச் சமாளிக்கும் நடை உதவலாம்.',bad:'அதிக வேலைச்சுமையைத் தனியாகச் சுமக்காமல் பொறுப்புகளைப் பகிர்வது அவசியமாகலாம்.',goodEn:'Organised responsibilities can support constructive problem-solving.',badEn:'Sharing workload rather than carrying everything alone may be important.'},
+  {h:10,kar:P.Mercury,ta:'தொழிலும் சமூகப் பொறுப்பும்',en:'Career and public responsibilities',good:'தொழிலில் திறமையை வெளிப்படுத்தி குடும்பக் கடமையுடன் சமநிலைப்படுத்த வாய்ப்புள்ளது.',bad:'வேலை மாற்றம் அல்லது பொறுப்பு உயர்வு வந்தால் தனிப்பட்ட நேரத்தைத் திட்டமிடுதல் தேவைப்படலாம்.',goodEn:'Career responsibilities may be balanced with family priorities.',badEn:'Career changes may require planned personal and family time.'}
+ ];
+ return items.map(x=>{const r=LORD[(si(lag)+x.h-1)%12],lp=planet(c,r),rh=lp?house(lp.longitude,lag):null,own=lp?si(lp.longitude):null,
+  strong=lp&&(EXALT[r]===own||(OWN[r]||[]).includes(own)),strained=lp&&([6,8,12].includes(rh)||DEBIL[r]===own),aff=Object.values(P).filter(n=>[P.Saturn,P.Mars,P.Rahu,P.Ketu].includes(n)&&(aspects(n,x.h)||planet(c,n)&&house(planet(c,n).longitude,lag)===x.h)),help=[P.Jupiter,P.Venus].filter(n=>aspects(n,x.h));
+  const lead=strong?T(x.goodEn,x.good):strained?T(x.badEn,x.bad):T('Both possibilities need to be compared with responsibilities and house strength.','பாவாதிபதி மற்றும் நடைமுறைப் பொறுப்புகளை ஒப்பிட்டு சாதக–பாதகத்தைத் தீர்மானிக்க வேண்டும்.');
+  const kar=planet(c,x.kar),karInfo=kar?` · ${T('Natural significator','இயற்கைக் காரகன்')} ${mmPlanetText(x.kar)} ${house(kar.longitude,lag)} ${T('house','பாவம்')} (${dignity(x.kar,kar.longitude)})`:'';const signInfo=(lp?`${x.h} ${T('house lord','பாவாதிபதி')} ${mmPlanetText(r)} → ${rh} ${T('house','பாவம்')} (${dignity(r,lp.longitude)})`:`${x.h} ${T('house','பாவம்')}: ${T('ruler data unavailable','அதிபதி தரவு இல்லை')}`)+karInfo;
+  const detail=help.length?T('Jupiter/Venus gives an additional traditional moderating aspect.','குரு/சுக்கிரன் பார்வை கூடுதல் சுபத் தொடர்பாக உள்ளது.'):aff.length?T('Challenging planetary contact calls for measured expectations, not certainty of harm.','பாபக் கிரகத் தொடர்பு இருப்பதால் எதிர்பார்ப்புகளை நிதானமாகக் கையாள வேண்டும்; பாதிப்பு உறுதி அல்ல.') :T('No selected strong influence should be invented without chart evidence.','தெளிவான தொடர்பு இல்லாத இடத்தில் புதிய பலனை கற்பனை செய்யக்கூடாது.');
+  return `<p><b>${esc(T(x.en,x.ta))}:</b> ${esc(signInfo)}. ${esc(lead)} ${esc(detail)}</p>`;
+ }).join('');
+}
+function mmV279Person(c,title){
+ const lag=Number(c?.lagna?.longitude),p=n=>planet(c,n);if(!Number.isFinite(lag))return `<p>${T('D1 Lagna data not available.','D1 லக்னத் தரவு இல்லை.')}</p>`;
+ const li=si(lag),lord=LORD[li],lp=p(lord),moon=p(P.Moon),mars=p(P.Mars),mer=p(P.Mercury),ven=p(P.Venus),jup=p(P.Jupiter),s7=LORD[(li+6)%12],s7p=p(s7);
+ const place=x=>x?`${sign(si(x.longitude))} · ${T('house','பாவம்')} ${house(x.longitude,lag)}`:'—';
+ const tone=(li===0||li===4||li===8)?T('direct, expressive and goal-led','நேரடியாகவும் இலக்கை நோக்கியும் செயல்படும்'):(li===1||li===5||li===9)?T('practical, deliberate and stability-seeking','நடைமுறை, நிதானம் மற்றும் நிலைத்தன்மையை விரும்பும்'):(li===2||li===6||li===10)?T('observant, conversational and adaptable','கவனித்து உரையாடி சூழ்நிலைக்கேற்ப மாறும்'):T('sensitive, reflective and relationship-conscious','உணர்வுகளை கவனித்து உறவை மதிக்கும்');
+ const initiative=mars&&[1,3,6,10,11].includes(house(mars.longitude,lag))?T('readiness to take the initiative','முன்னின்று செயல்படும் விருப்பம்'):T('a need to plan before confrontation','எதிர்ப்பைச் சந்திக்கும் முன்பு திட்டமிடும் விருப்பம்');
+ const communication=mer&&[3,6,10,11].includes(house(mer.longitude,lag))?T('explaining ideas and working through details','கருத்துகளை விளக்கி விவரங்களை ஆராய்தல்'):T('thinking through what to say during disagreement','கருத்து வேறுபாட்டில் சொற்களை நிதானமாகத் தேர்வுசெய்தல்');
+ return `<section class="mm-person-result mm-v279-individual"><h3>${esc(title)} — ${T('D1 life and character','D1 வாழ்க்கை மற்றும் குணநலன்')}</h3>
+ <p>${T('Lagna','லக்னம்')} ${esc(sign(li))}; ${T('Lagna lord','லக்னாதிபதி')} ${esc(mmPlanetText(lord))} ${esc(place(lp))}${lp?` (${esc(dignity(lord,lp.longitude))})`:''}.</p>
+ <p>${T('From the sign and Lagna-lord relationship, the traditional reading highlights a style that is','லக்னத்தின் இயல்பையும் லக்னாதிபதியின் தொடர்பையும் ஒன்றிணைத்தால்')} ${esc(tone)}${lang()==='ta'?' குணநடையாக விளக்கலாம்.':' as a potential response style.'} ${T('Initiative:','முயற்சி:')} ${esc(initiative)}. ${T('Communication:','பேச்சு:')} ${esc(communication)}.</p>
+ ${mmV279LifeAreas(c)}
+ <p>${T('Natal Moon','ஜன்ம சந்திரன்')}: ${esc(place(moon))}. ${T('Venus','சுக்கிரன்')}: ${esc(place(ven))}. ${T('Jupiter','குரு')}: ${esc(place(jup))}. ${T('Seventh lord','ஏழாம் பாவாதிபதி')} ${esc(mmPlanetText(s7))}: ${esc(place(s7p))}. ${T('The 7th lord and Moon qualify how this person approaches shared responsibility; no single placement fixes actual behaviour.','சந்திரன் மற்றும் ஏழாம் அதிபதியின் தொடர்புகளைக் கொண்டு குடும்பப் பொறுப்பு, நம்பிக்கை, உணர்வுகளைப் பகிரும் நடை ஆகியவற்றைத் தனித்தனியாக மதிப்பிட வேண்டும். ஒரே கிரகம் உண்மையான நடத்தையை நிர்ணயிக்காது.')}</p>
+ </section>`;
+}
+function mmV279Relation(b,g){
+ const bl=Number(b?.lagna?.longitude),gl=Number(g?.lagna?.longitude),bm=planet(b,P.Moon),gm=planet(g,P.Moon);
+ if(!Number.isFinite(bl)||!Number.isFinite(gl)||!bm||!gm)return `<p>${T('Both D1 charts are needed to compare temperaments.','இருவரின் D1 கிரக நிலைகளும் இருந்தால்தான் குணஒற்றுமையை ஒப்பிட முடியும்.')}</p>`;
+ const ascDist=house(gl,bl),moonDist=house(gm.longitude,bm.longitude),moon68=[6,8].includes(moonDist),asc68=[6,8].includes(ascDist),moonSame=moonDist===1;
+ const bt=mmHumanElementStyle(b,{anchor:P.Mars}),gt=mmHumanElementStyle(g,{anchor:P.Mars});
+ const bh=mmHumanElementStyle(b,{anchor:P.Mercury}),gh=mmHumanElementStyle(g,{anchor:P.Mercury});
+ const level=moon68&&asc68?'review':moon68||asc68?'mixed':'support';
+ const result=level==='review'?T('More deliberate compatibility review is needed; this is not a definitive NO MATCH.','இரு அடிப்படைகளிலும் 6/8 உறவு இருப்பதால் கூடுதல் ஒத்திசைவு ஆய்வு தேவை. இதுவே திருமண நிராகரிப்பு அல்ல.'):
+ level==='mixed'?T('Some response styles differ; compatibility is conditional on how disagreement is handled.','சில குணங்கள் மாறுபடலாம்; கருத்து வேறுபாட்டை எப்படிக் கையாள்கிறார்கள் என்பதிலேயே நடைமுறை ஒற்றுமை அமையும்.'):
+ T('No major 6/8 conflict appears in these two references, but mutual understanding still needs verification.','இந்த இரண்டு அடிப்படைகளில் முக்கிய 6/8 மோதல் கண்டறியப்படவில்லை. இருந்தாலும் உண்மையான ஒற்றுமைக்கு இருவரின் அனுபவமும் உரையாடலும் அவசியம்.');
+ return `<section class="mm-person-result mm-v279-couple"><h3>${T('Character and life-style compatibility','இருவரின் குணநலன் மற்றும் வாழ்க்கை ஒற்றுமை')}</h3>
+ <p>${T('Bride D1 Mars response','பெண் ஜாதகத்தில் செவ்வாய் சார்ந்த செயல்முறை')}: ${esc(bt)}. ${T('Groom','ஆண்')}: ${esc(gt)}.</p>
+ <p>${T('Bride Mercury communication pattern','பெண் புதன் சார்ந்த பேச்சு / கருத்துப் பரிமாற்றம்')}: ${esc(bh)}. ${T('Groom','ஆண்')}: ${esc(gh)}.</p>
+ <p>${T('Mutual Lagna interval','லக்னங்களுக்கிடையிலான ராசி இடைவெளி')} ${ascDist}/${13-ascDist}; ${T('Moon-sign interval','சந்திர ராசி இடைவெளி')} ${moonDist}/${13-moonDist}. ${esc(result)}</p>
+ <p>${T('Practical review: ask both people directly how they handle anger, spending, residence, parent involvement and time alone. A chart is not a substitute for their stated preferences.','நடைமுறை உறுதிப்பாடு: கோபம், செலவுகள், வசிப்பிடம், பெற்றோர் பங்கு, தனிப்பட்ட நேரம் ஆகியவற்றில் இருவரும் உண்மையில் எப்படி நடந்து கொள்கிறார்கள் என்று நேரடியாகக் கேட்டு ஒப்பிட வேண்டும். ஜாதகச் சுட்டிகளால் அவற்றை மாற்றிக் கூற முடியாது.')}</p></section>`;
+}
+function mmV279DoshaMap(b,g,ks,sync){
+ const B=structuredLagnaDoshas(b),G=structuredLagnaDoshas(g),kb=kujaVilakku(ks.B,ks.G),kg=kujaVilakku(ks.G,ks.B);
+ const rows=[
+ ['Kuja/Mars','செவ்வாய் / குஜ',P.Mars,kb,kg,'kuja',T('Conflict tempo, assertiveness and shared decisions','கோபத்தின் வேகம், வலுவான கருத்து, கூட்டு முடிவுகள்')],
+ ['Rahu','ராகு',P.Rahu,B.rahu,G.rahu,'structured',T('Expectation, family influence and transparency','எதிர்பார்ப்பு, குடும்ப அழுத்தம், வெளிப்படையான உரையாடல்')],
+ ['Ketu','கேது',P.Ketu,B.ketu,G.ketu,'structured',T('Withdrawal, distance and rebuilding connection','மனவிலகல், உறவில் இடைவெளி, மீண்டும் இணைதல்')],
+ ['Mangalya','மாங்கல்ய',P.Venus,B.mangalya,G.mangalya,'structured',T('Commitment, shared security and duties','உறுதி, பாதுகாப்பு உணர்வு, இருவரின் பொறுப்புகள்')],
+ ['Putra','புத்திர',P.Jupiter,B.putra,G.putra,'structured',T('Parenthood expectations and joint decisions, not fertility diagnosis','குழந்தைகள் குறித்த எதிர்பார்ப்பு, கூட்டு முடிவு; கருத்தரிப்புத் தீர்ப்பு அல்ல')],
+ ['Venus','சுக்கிர',P.Venus,B.sukra,G.sukra,'structured',T('Affection, physical boundaries and mutual consent','அன்பை வெளிப்படுத்துதல், தனிப்பட்ட எல்லை, பரஸ்பர ஒப்புதல்')],
+ ['Kalathra','களத்திர',P.Venus,B.kalathra,G.kalathra,'structured',T('7th-house partnership and conflict repair','ஏழாம் பாவத் துணைவர் தொடர்பு, கருத்து வேறுபாட்டைச் சரிசெய்தல்')],
+ ['Kala Sarpa','கால சர்ப்ப',P.Rahu,kalaSarpaAssessment(b),kalaSarpaAssessment(g),'kala',T('Periods of changing priorities and uncertain plans','மாறும் முன்னுரிமைகள், திட்டங்களில் தெளிவு தேவை')],
+ ['Naga/Sarpa','நாக / சர்ப்ப',P.Rahu,nagaDoshaAssessment(b),nagaDoshaAssessment(g),'naga',T('Trust, family narratives and untested worries','நம்பிக்கை, குடும்ப நம்பிக்கைகள், தேவையற்ற அச்சம்')]
+ ];
+ return rows.map(([en,ta,planetName,x,y,kind,effect])=>({name:T(en,ta),planetName,B:x,G:y,kind,effect,bs:mmFrontState(kind,x),gs:mmFrontState(kind,y)}));
+}
+function mmV279DoshaExplanation(b,g,ks,sync){
+ const rows=mmV279DoshaMap(b,g,ks,sync),start=mmAnalysisDate(),end=mmYearsAfter(start,3);
+ const describe=(x,side)=>{const arr=v=>Array.isArray(v)?v:[];const vals=[...arr(x?.hits),...arr(x?.reasons),...arr(x?.pressure),...arr(x?.modifiers),...arr(x?.aggravators)].slice(0,4).map(v=>typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v));return `${side}: ${x?.label||x?.text||'—'}${vals.length?' · '+vals.join('; '):''}`;};
+ const remedy=name=>name===P.Mars?T('Pause before disputes, establish a cooling-off rule and written decisions on property or spending.','சண்டையின் போது இடைவெளி எடுப்பது, உடனடி முடிவுகளைத் தவிர்ப்பது, சொத்து/செலவுத் தீர்மானங்களை எழுதிப் பகிர்வது.'):
+ name===P.Rahu||name===P.Ketu?T('Confirm facts directly, avoid secrecy and involve a trusted mediator for prolonged mistrust.','வதந்திகளை விட நேரடியாக உண்மையை உறுதிசெய்தல்; ரகசியங்களைத் தவிர்த்தல்; நம்பிக்கைப் பிரச்சினை நீடித்தால் நடுவரின் உதவி.'):
+ name===P.Jupiter?T('Agree on education, children and financial readiness; consult qualified medical advisers for health questions.','கல்வி, குழந்தைகள், நிதி ஆயத்தம் குறித்து இருவரும் முடிவெடுத்தல்; மருத்துவக் கேள்விக்கு மருத்துவ நிபுணரை அணுகுதல்.'):
+ T('Agree on boundaries, mutual consent, household duties and a realistic savings plan.','தனிப்பட்ட எல்லை, பரஸ்பர ஒப்புதல், குடும்பப் பொறுப்பு, சேமிப்புத் திட்டம் ஆகியவற்றில் தெளிவான உடன்பாடு.');
+ const blocks=rows.map(r=>{
+  const bv=r.bs.v,gv=r.gs.v,equal=bv===gv,asym=bv>gv?T('The bride has the higher residual indicator.','பெண் ஜாதகத்தில் மீதமுள்ள சுட்டி அதிகம்.'):T('The groom has the higher residual indicator.','ஆண் ஜாதகத்தில் மீதமுள்ள சுட்டி அதிகம்.');
+  const verdict=equal?(bv===0?T('No comparable residual dosha was isolated.','இருவரிலும் குறிப்பிடத்தக்க மீதத் தோஷம் கண்டறியப்படவில்லை.'):T('Both have comparable indicators; equal does not mean full cancellation.','இருவருக்கும் ஒத்த அளவிலான சுட்டிகள் உள்ளன; சமநிலை என்பது முழு தோஷ விலக்கு அல்ல.')):asym+' '+T('A mismatch calls for extra discussion, not a predicted marriage failure.','ஒருதலைப்பட்ச அமைப்பு கூடுதல் ஆய்வைக் கேட்கிறது; திருமண வாழ்வு கண்டிப்பாக பாதிக்கும் என்ற தீர்ப்பு அல்ல.');
+  const active=[P.Mars,P.Rahu,P.Ketu].includes(r.planetName)?T('The related Dasha/Bhukti windows are checked separately below for the next three years.','அந்தக் கிரகத்தின் அடுத்த மூன்று ஆண்டு தசா/புக்தி தொடர்பு கீழே தனியாகப் பார்க்கப்படுகிறது.') : '';
+  return `<article class="mm-v279-dosha-item"><h4>${esc(r.name)} — ${T('root, cancellation, remaining effect','மூல காரணம், விலக்கு, மீதித் தாக்கம்')}</h4>
+  <p><strong>${T('Bride','பெண்')}:</strong> ${esc(r.bs.text)} · <strong>${T('Groom','ஆண்')}:</strong> ${esc(r.gs.text)}</p>
+  <p>${esc(describe(r.B,T('Bride','பெண்')))}. ${esc(describe(r.G,T('Groom','ஆண்')))}.</p>
+  <p>${esc(verdict)} ${T('Traditional area of concern:','பாரம்பரியமாகத் தொடர்புபடுத்தப்படும் வாழ்க்கைப் பகுதி:')} ${esc(r.effect)}. ${esc(active)}</p>
+  <p><strong>${T('Specific practical remedy','இந்தத் தொடர்புக்குரிய நடைமுறைப் பரிகாரம்')}:</strong> ${esc(remedy(r.planetName))}</p></article>`;
+ }).join('');
+ return `<section class="mm-person-result mm-v279-doshas"><h3>${T('Dosha: actual source → Vilakku → remaining condition → life impact','தோஷத்தின் மூல காரணம் → விலக்கு → மீதிநிலை → வாழ்க்கைப் பலன்')}</h3><p>${T('A dosha name alone never proves a future event. Each state below comes from the EXISTING calculation and its cancellation result; absent data is not treated as absence.','தோஷப் பெயர் மட்டும் எதிர்கால நிகழ்வை உறுதிசெய்யாது. கீழுள்ள நிலைகள் ஏற்கெனவே கணக்கிடப்பட்ட தோஷம் மற்றும் விலக்கு முடிவுகளிலிருந்து பெறப்பட்டவை. தரவு இல்லை என்பதை தோஷம் இல்லை என்று கருதவில்லை.')}</p>${blocks}
+ <p>${T('Nadi/Rajju/Shashtashtaka and other pair-only tests remain in the unchanged Porutham/Dosha calculation panels below.','நாடி, ரஜ்ஜு, சஷ்டாஷ்டகம் உள்ளிட்ட இருவருக்குமான தோஷ/பொருத்தக் கணக்கீடுகள் கீழேயுள்ள மாற்றப்படாத கணக்கீட்டு முடிவுகளில் தொடர்கின்றன.')}</p></section>`;
+}
+function mmV279PeriodAndTransit(c,who,ks,sync,isBride){
+ const start=mmAnalysisDate(),end=mmYearsAfter(start,3),kuja=kujaVilakku(isBride?ks.B:ks.G,isBride?ks.G:ks.B),rahu=rahuVilakku(isBride?sync.br:sync.gr),periods=mmDashaTimeline(c,start,end),kl=['active','strong','partial','consult'].includes(kuja.state),rl=['active','complex'].includes(rahu.state),lan=Number(c?.lagna?.longitude),moon=planet(c,P.Moon),p=n=>planet(c,n);
+ const bind=periods.filter(w=>w.level==='AD').slice(0,15).map(w=>{
+  const md=p(w.parent),ad=p(w.lord),h=md&&ad?house(ad.longitude,md.longitude):null,shas=h===6||h===8;
+  const important=(w.parent===P.Mars||w.lord===P.Mars)&&kl||(w.parent===P.Rahu||w.lord===P.Rahu||w.parent===P.Ketu||w.lord===P.Ketu)&&rl;
+  let relief=false;
+  if(shas){for(const k of [P.Jupiter,P.Venus]){const benefic=p(k);if(!benefic||DEBIL[k]===si(benefic.longitude))continue;for(const x of [md,ad])if(x&&(aspectProfile(k,benefic,x).exists||conjunctionProfile(benefic,x).sameSign))relief=true;}}
+  const press=shas&&[P.Saturn,P.Mars,P.Rahu,P.Ketu].includes(w.parent)&&[P.Saturn,P.Mars,P.Rahu,P.Ketu].includes(w.lord);
+  const flag=shas?(relief?T('6/8 relation with supporting benefic contact; partial mitigation to review','சஷ்டாஷ்டக 6/8 தொடர்புடன் சுபகிரக ஆதரவும் உள்ளது; பகுதி விலக்கு ஆய்வு'):press?T('6/8 with challenging lords; increased traditional review flag','சஷ்டாஷ்டக 6/8-இல் பாபக் கிரகத் தொடர்பு; அதிகக் கவன ஆய்வு'):T('6/8 relation; assess dignity, aspects and protection','சஷ்டாஷ்டக 6/8 தொடர்பு; பலம், பார்வை, விலக்கு ஆய்வு')):T('No 6/8 MD/AD sign relationship detected','மகாதசை–புக்திக்கிடையே 6/8 உறவு கண்டறியப்படவில்லை');
+  const state=important?T('Relevant to previously detected residual Mars/node pattern','முன்பு கண்டறிந்த மீதிச் செவ்வாய்/ராகு–கேது அமைப்புடன் தொடர்புடைய காலம்'):T('No Mars/node residual activation inferred solely from the lord name','கிரகப் பெயரை மட்டும் வைத்து செவ்வாய்/ராகு தோஷம் செயல்படுவதாகக் கருதவில்லை');
+  return `<p><b>${esc(w.label)} · ${esc(w.start)} – ${esc(w.end)}</b><br>${esc(flag)}. ${esc(state)}.</p>`;
+ }).join('')||`<p>${T('Relevant Antardasha data is missing in this three-year window.','மூன்று ஆண்டு காலவரம்பில் புக்தித் தரவு கிடைக்கவில்லை.')}</p>`;
+ const tr=matchingTransit,pl=Array.isArray(tr?.planets)?tr.planets:[],signAt=n=>{const v=pl.find(x=>mmCanonPlanet(x.name)===n);return v?.longitude!=null&&Number.isFinite(Number(v.longitude))?si(v.longitude):mmSignIndexAny(v?.rasi??v?.sign);};
+ const trRows=[P.Jupiter,P.Saturn,P.Rahu,P.Ketu,P.Mars].map(n=>{const s=signAt(n);if(s==null||!Number.isFinite(lan)||!moon)return T(`${mmPlanetText(n)}: data missing.`,`${mmPlanetText(n)}: பெயர்ச்சித் தரவு கிடைக்கவில்லை.`);const l=((s-si(lan)+12)%12)+1,m=((s-si(moon.longitude)+12)%12)+1;
+  const sat=n===P.Saturn&&m===1?T('Janma Sani / Saturn in natal Moon sign','ஜென்ம சனி'):n===P.Saturn&&m===8?T('Ashtama Sani / Saturn 8th from Moon','அஷ்டம சனி'):'';
+  const mdSat=periods.some(w=>(w.lord===P.Saturn||w.parent===P.Saturn)&&mmWindowDates(w)[0]<=start&&mmWindowDates(w)[1]>=start);
+  return `${mmPlanetText(n)} — ${T('Lagna house','லக்னத்திற்கு')} ${l}, ${T('Moon house','சந்திர ராசிக்கு')} ${m}${sat?' · '+sat:''}${sat&&mdSat?' · '+T('Saturn Dasha/Bhukti also operates on the reference date','ஆய்வுத் தேதியில் சனி தசா/புக்தியும் நடைபெறுகிறது'):''}${l===8||m===8?' · '+T('8th-place review','எட்டாம் இட ஆய்வு'):''}${l===1?' · '+T('Lagna transit','லக்னப் பெயர்ச்சி'):''}`;
+ }).map(x=>`<li>${esc(x)}</li>`).join('');
+ return `<section class="mm-v279-time-person"><h4>${esc(who)} — ${T('Next three years: Dasha/Bhukti and 6/8','அடுத்த மூன்று ஆண்டுகள்: தசா–புக்தி மற்றும் சஷ்டாஷ்டகம்')}</h4>${bind}<h4>${T('Gochara on selected calculation date','கணக்கீட்டுத் தேதிக்கான கோச்சாரம்')}</h4><ul>${trRows}</ul><p>${T('This is a single-day transit snapshot, not a forecast of unchanged planetary positions throughout the three years. A transit warning alone cannot establish relationship harm.','இது தேர்ந்தெடுத்த தேதியின் பெயர்ச்சி நிலை மட்டுமே; அடுத்த மூன்று ஆண்டுகளிலும் இதே ராசியில் இருப்பதாகக் கருதக்கூடாது. பெயர்ச்சியின் எச்சரிக்கை மட்டும் வாழ்க்கைப் பாதிப்பை உறுதி செய்யாது.')}</p></section>`;
+}
+function mmV279Reading(b,g,ks,sync){
+ return `<div class="mm-v279-reading"><h2>${T('Individual life readings, character and compatibility','இருவரின் வாழ்க்கை, குணநலன் மற்றும் ஒத்திசைவு பலன்கள்')}</h2>
+ ${mmV279Person(b,T('Bride','பெண்'))}${mmV279Person(g,T('Groom','ஆண்'))}${mmV279Relation(b,g)}
+ ${mmV279DoshaExplanation(b,g,ks,sync)}
+ <section class="mm-person-result mm-v279-timing"><h3>${T('Existing residual doshas: coming 3-year Dasha and transit activation','மீதமுள்ள தோஷங்கள்: அடுத்த 3 ஆண்டுத் தசா–புக்தி, பெயர்ச்சி தொடர்புகள்')}</h3>
+ ${mmV279PeriodAndTransit(b,T('Bride','பெண்'),ks,sync,true)}${mmV279PeriodAndTransit(g,T('Groom','ஆண்'),ks,sync,false)}</section>
+ </div>`;
+}
 async function renderMatching(b,g,out,quiet=false){
  const bf=chartFacts(b),gf=chartFacts(g),pr=porutham(b,g),ks=kujaSamyam(b,g),ds=dashaSandhi(b,g),sync=dashaDoshaSync(b,g),v=fullVerdict(pr,ks,ds,bf,gf,sync,b,g),gochar=await gocharPanel(b,g,matchingTransit),por=mmFrontPoruthamPanel(pr),doshaFront=mmFrontDoshaSummaryPanel(b,g,pr,ks,sync,ds);const ku=`<section class="mm-person-result"><h3>${T('Dosha balance / cancellation review','தோஷ சமநிலை / விலக்கு ஆய்வு')}</h3><div class="mm-facts"><div><b>${T('Bride Kuja','பெண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.B.text)}</span></div><div><b>${T('Groom Kuja','ஆண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.G.text)}</span></div></div></section>`,sand=`<section class="mm-person-result"><h3>${T('Dasha Sandhi','தசா சந்தி')}</h3><p>${ds.length?ds.map(x=>`${esc(x.a.lord)} → ${esc(x.a.end)} / ${esc(x.b.lord)} → ${esc(x.b.end)} · ${x.days} ${T('days apart','நாட்கள் இடைவெளி')}`).join('<br>'):T('No Mahadasha endings within one year of each other in the available range.','கிடைத்த காலவரம்பில் இருவரின் மகாதசை முடிவுகள் ஒரு வருடத்திற்குள் அருகில் இல்லை.')}</p></section>`;
- out.innerHTML=`<div class="mm-full-results mm-v250-results">${por}${doshaFront}${matchingIdentityPanel(b,g)}<div data-smv-v250-online-matching><p>${T('Preparing your relationship reading…','திருமண வாழ்க்கைப் பலன்கள் தயாராகின்றன…')}</p></div>${mmV250EvidenceResults(b,g,pr,ks,ds,sync,v)}${mmV244ResidualDoshaDeep(b,g,pr,ks,sync)}${marriageRemedyPlanPanel(b,g,pr,ks,sync)}${mmV248VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand)}</div>`;const onlineBox=out.querySelector('[data-smv-v250-online-matching]');if(onlineBox){try{const api=window.SMVPredictionOnline;if(!api)throw Error('Online synthesis client is unavailable.');const evidence=mmV250Evidence(b,g,pr,ks,ds,sync,v),result=await api.requestMatching(evidence),html=api.matchingHtml(result,lang());if(!html)throw Error('Online synthesis returned no readable result.');onlineBox.innerHTML=html;onlineBox.dataset.smvOnline='1'}catch(err){console.warn('Online deterministic marriage synthesis fallback:',err);onlineBox.innerHTML=mmV249LocalFallback(b,g,pr,ks,sync,v);onlineBox.dataset.smvOnline='0'}}
+ out.innerHTML=`<div class="mm-full-results mm-v279-results">${por}${doshaFront}${matchingIdentityPanel(b,g)}${mmV279Reading(b,g,ks,sync)}${mmV248VisibleCalculationResults(b,g,bf,gf,pr,ks,ds,sync,gochar,ku,sand)}</div>`;
  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);window.__smvLocalizeTamilResult?.(out,lang());localizeMatchingResult(out);out.dataset.resultLanguage=lang();if(!quiet)window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'marriage_matching',root:out,prepareViews:()=>matchingViews(b,g,out),birthIdentity:window.__smvGetReportContext('marriage_matching'),name:(b.birthName||b.nativeName||'')+' / '+(g.birthName||g.nativeName||''),calculation:{bride:b,groom:g,transit:matchingTransit}}}));
 }
 function mount(){

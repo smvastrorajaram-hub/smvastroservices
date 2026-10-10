@@ -1,4 +1,4 @@
-/* SMV ASTRO V271 — D1-based 0–80-year timeline.
+/* SMV ASTRO V273 — age-boundary-safe D1 0–80-year timeline.
    Triggered ONLY after authorized Full Horoscope; no Firebase/API/network calls.
    Real Vimshottari MD/AD boundaries come from full.chart.dashas.periods.
    Jupiter/Saturn/Rahu/Ketu future positions come from local Swiss WASM.
@@ -31,29 +31,67 @@ function four(tr){if(!Array.isArray(tr?.planets))throw Error('Swiss transit does
 function stage(n){return n<5?'early':n<=17?'school':n<=24?'emerging':n<=59?'adult':n<=69?'mature':'senior';}
 function reduceTopic(t,ta){const rows=t.paragraphs||[];const choices=rows.filter(x=>x?.evidence?.planet||x?.evidence?.signal!==undefined||x?.evidence?.md);
  return choices.length?choices.slice(0,2).map(x=>x.text).join(' '):(rows[0]?.text||'');}
-function clipPeriods(full){const born=birthDate(full);if(!born)throw Error('Birth date missing');const end=yearAfter(born,80);const start=day(born),limit=day(end),chart=full?.chart||full;
+/* V279: A rolling forecast begins at the actual report reference date, not at birth.
+   Age remains calculated FROM BIRTH. Vimshottari re-enters its 120-year cycle
+   after the already calculated source periods are exhausted. */
+const ORDER=['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'];
+const DURATION=[7,20,6,10,7,18,16,19,17];
+const PLANET_EN={Ketu:'கேது',Venus:'சுக்கிரன்',Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Rahu:'ராகு',Jupiter:'குரு',Saturn:'சனி',Mercury:'புதன்'};
+const yearsAge=(born,at)=>{let n=+at.slice(0,4)-+born.slice(0,4);if(at.slice(5)<born.slice(5))n--;return n;};
+function extendDashaSequence(source,limit){
+ const rows=source.slice();
+ if(!rows.length)throw Error('No Mahadasha periods were supplied.');
+ let tail=rows[rows.length-1],cursor=day(tail.end),n=0;
+ while(cursor<limit){
+  if(++n>25)throw Error('Vimshottari continuation exceeded 25 periods');
+  const last=ORDER.indexOf(PLANET_EN[tail.lord]||tail.lord);
+  if(last<0)throw Error('Unsupported Vimshottari lord: '+String(tail.lord));
+  const index=(last+1)%9,mdLord=ORDER[index],years=DURATION[index],mdStart=stamp(cursor),mdEnd=yearAfter(mdStart,years);
+  const stop=day(mdEnd),fullDays=(stop-cursor)/ONE_DAY;
+  const ads=[],parts=[];for(let j=0;j<9;j++)parts.push(DURATION[(index+j)%9]);
+  let cumulative=0,left=cursor;
+  for(let j=0;j<9;j++){
+   cumulative+=parts[j];const right=j===8?stop:(cursor+Math.round(fullDays*cumulative/120)*ONE_DAY);
+   ads.push({lord:ORDER[(index+j)%9],start:stamp(left),end:stamp(right)});left=right;
+  }
+  tail={lord:mdLord,start:mdStart,end:mdEnd,antardashas:ads,derivedContinuation:true};
+  rows.push(tail);cursor=stop;
+ }
+ return rows;
+}
+function clipPeriods(full,referenceDate){
+ const born=birthDate(full);if(!born)throw Error('Birth date missing');
+ const requested=referenceDate||stamp(Date.now());day(requested);
+ const begin=requested<born?born:requested; // never issue a negative-age forecast
+ const end=yearAfter(begin,80),start=day(begin),limit=day(end),chart=full?.chart||full;
  const majors=chart?.dashas?.periods;if(!Array.isArray(majors)||!majors.length)throw Error('Mahadasha sequence missing');
- const out=[];
- for(const md of majors){if(!Array.isArray(md.antardashas))continue;for(const ad of md.antardashas){if(!md.start||!ad.start||!md.end||!ad.end)continue;const left=Math.max(start,day(md.start),day(ad.start));const right=Math.min(limit,day(md.end),day(ad.end));if(left>=right)continue;out.push({md:md.lord,ad:ad.lord,from:stamp(left),to:stamp(right),age:Math.max(0,Math.floor((left-start)/(365.2425*ONE_DAY)))});}}
- out.sort((a,b)=>a.from.localeCompare(b.from));if(out.length===0)throw Error('No antardasha coverage through 80 years');
- // Require unbroken coverage; report data gaps rather than invent periods.
- if(out[0].from!==born||out[out.length-1].to!==end||out.some((x,i)=>i>0&&out[i-1].to!==x.from))throw Error('Mahadasha/Bhukti intervals do not continuously cover birth through age 80.');
- return {birth:born,end,periods:out};
+ const available=extendDashaSequence(majors,limit),out=[];
+ const lifeBoundaries=[4,13,18,25,60,70,80].map(n=>yearAfter(born,n));
+ for(const md of available){if(!Array.isArray(md.antardashas))continue;for(const ad of md.antardashas){
+  if(!md.start||!ad.start||!md.end||!ad.end)continue;
+  const left=Math.max(start,day(md.start),day(ad.start)),right=Math.min(limit,day(md.end),day(ad.end));if(left>=right)continue;
+  const from=stamp(left),to=stamp(right),breaks=[from,...lifeBoundaries.filter(x=>x>from&&x<to),to];
+  for(let i=0;i<breaks.length-1;i++)out.push({md:md.lord,ad:ad.lord,from:breaks[i],to:breaks[i+1],age:Math.max(0,yearsAge(born,breaks[i])),stageSplit:breaks.length>2,derivedContinuation:!!md.derivedContinuation});
+ }}
+ out.sort((a,b)=>a.from.localeCompare(b.from));
+ if(!out.length||out[0].from!==begin||out[out.length-1].to!==end||out.some((x,i)=>i>0&&out[i-1].to!==x.from))
+  throw Error('Mahadasha/Bhukti intervals do not continuously cover the next 80 years.');
+ return {birth:born,referenceDate:begin,end,periods:out,continuationCount:out.filter(x=>x.derivedContinuation).length};
 }
 function dashaNarrative(full,periods,language){
  const core=globalThis.SMVTimePredictionD1;if(!core||typeof core.renderDasha!=='function')throw Error('Current Dasha reading engine unavailable');
  const entries=[];
- const linkedSeen=new Set(); // one-time explanation for an unchanged natal link
+ const linkedSeen=new Set(); // retain distinct house- and period-specific evidence
  for(const p of periods){const reading=core.renderDasha(full,p.from,language);if(!reading.ok)throw Error('Dasha reading missing at '+p.from+': '+reading.reason);
-  entries.push({...p,topics:reading.topics.map(t=>({number:t.number,title:t.title,positive:(t.paragraphs[0]||{}).text||'',negative:(t.paragraphs[1]||{}).text||'',linked:t.paragraphs.filter(x=>x.evidence?.relatedHouse&&x.relatedHouse!==t.number).slice(0,1).map(x=>x.text).filter(text=>{if(linkedSeen.has(text))return false;linkedSeen.add(text);return true;}),health:[1,6,8,12].includes(t.number)?t.paragraphs.find(x=>x.text.includes('மருத்துவ')||x.text.includes('preventive care'))?.text||'':''}))});
+  entries.push({...p,topics:reading.topics.map(t=>({number:t.number,title:t.title,positive:(t.paragraphs[0]||{}).text||'',negative:(t.paragraphs[1]||{}).text||'',linked:t.paragraphs.slice(2).filter(x=>x.evidence?.relatedHouse||x.evidence?.signal!==undefined||x.evidence?.planet||x.evidence?.md).slice(0,3).map(x=>x.text).filter(text=>{const key=p.from+'|'+t.number+'|'+text;if(linkedSeen.has(key))return false;linkedSeen.add(key);return true;}),health:[1,6,8,12].includes(t.number)?t.paragraphs.find(x=>x.text.includes('மருத்துவ')||x.text.includes('preventive care'))?.text||'':''}))});
  }
  return entries;
 }
 async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
- const dates=clipPeriods(full),born=day(dates.birth),end=day(dates.end),input=sourceInput(full,payload),store=new Map();
+ const dates=clipPeriods(full,payload?.referenceDate),born=day(dates.referenceDate),end=day(dates.end),input=sourceInput(full,payload),store=new Map();
  const dateData=t=>{const key=stamp(t);if(store.has(key))return store.get(key);const data=four(transit({...input,date:key}));store.set(key,data);return data;};
  // Initialize the same local Swiss WASM used by the existing horoscope engine.
- await calculateSwiss({...input,date:dates.birth});
+ await calculateSwiss({...input,date:dates.referenceDate});
  let last=born,lastPos=dateData(born),events=[],samples=[],step=7*ONE_DAY,iterations=0;
  const pushEvent=(planet,a,b,oldSign,newSign)=>{let lo=a,hi=b;while(hi-lo>ONE_DAY){const mid=lo+Math.floor((hi-lo)/(2*ONE_DAY))*ONE_DAY;const snap=dateData(mid);if(snap[planet].sign===oldSign)lo=mid;else hi=mid;}events.push({date:stamp(hi),planet,from:oldSign,to:newSign,positions:dateData(hi)});};
  for(let cursor=Math.min(born+step,end);;cursor=Math.min(cursor+step,end)){
@@ -66,10 +104,10 @@ async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
  }
  // The yearly focus uses an exact (calculated) midway snapshot, not invented long-range transit positions.
  for(let y=0;y<80;y++){
-  const from=yearAfter(dates.birth,y),to=yearAfter(dates.birth,y+1),mid=stamp(day(from)+Math.floor((day(to)-day(from))/(2*ONE_DAY))*ONE_DAY);
-  samples.push({age:y,from,to,date:mid,pos:dateData(day(mid)),events:events.filter(e=>e.date>=from&&e.date<to)});
+  const from=yearAfter(dates.referenceDate,y),to=yearAfter(dates.referenceDate,y+1),mid=stamp(day(from)+Math.floor((day(to)-day(from))/(2*ONE_DAY))*ONE_DAY);
+  samples.push({age:yearsAge(dates.birth,from),forecastYear:y+1,from,to,date:mid,pos:dateData(day(mid)),events:events.filter(e=>e.date>=from&&e.date<to)});
  }
- return {birth:dates.birth,end:dates.end,years:samples,events,stepDays:7,precision:'sign-change date refined to a daily boundary after seven-day sampling; very short reversals between samples cannot be ruled out',samplesChecked:store.size};
+ return {birth:dates.birth,referenceDate:dates.referenceDate,end:dates.end,years:samples,events,stepDays:7,precision:'sign-change date refined to a daily boundary after seven-day sampling; very short reversals between samples cannot be ruled out',samplesChecked:store.size};
 }
 function transitNarrative(full,timeline,language){
  const core=globalThis.SMVTimePredictionD1;if(!core?.renderTransit)throw Error('Transit interpreter unavailable');
@@ -107,19 +145,19 @@ function eventNarrative(full,timeline,language){
 }
 function dashaHTML(entries,lang='ta'){
  const ta=lang!=='en';
- return `<div class="smv-80-content" data-long-dasha="1"><h3>${ta?'பிறப்பிலிருந்து 80 வயது வரை — ஒவ்வொரு தசா–புக்தி காலமும்':'Age 0–80 — Every Mahadasha and Bhukti'}</h3>
+ return `<div class="smv-80-content" data-long-dasha="1"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து அடுத்த 80 ஆண்டுகள் — தசா–புக்திகள்':'Next 80 years from report date — Dasha and Bhukti'}</h3>
  <p>${ta?'இது கணக்கீட்டின் கால எல்லை மட்டுமே; ஜாதகரின் ஆயுள் அளவைப் பற்றிய முடிவு அல்ல. ஒவ்வொரு காலத்திலும் சாதகப் போக்கும் சவாலான போக்கும் தனித்தனியாகக் காட்டப்படுகின்றன.':'This is the 80-year reporting horizon, not a lifespan estimate. Supportive and challenging tendencies are distinguished in each period.'}</p>
- ${entries.map((x,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?`${safe(x.md)} மகாதசை · ${safe(x.ad)} புக்தி`:`${safe(x.md)} Mahadasha · ${safe(x.ad)} Bhukti`} — ${x.from} – ${x.to} (${ta?'தொடக்க வயது':'from age'} ${x.age})</summary>${x.topics.map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4><p>${safe(t.positive)}</p><p>${safe(t.negative)}</p>${t.linked.map(s=>`<p>${safe(s)}</p>`).join('')}${t.health?`<p class="smv-80-health">${safe(t.health)}</p>`:''}</section>`).join('')}</details>`).join('')}</div>`;
+ ${entries.map((x,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?`${safe(x.md)} மகாதசை · ${safe(x.ad)} புக்தி`:`${safe(x.md)} Mahadasha · ${safe(x.ad)} Bhukti`} — ${x.from} – ${x.to} (${ta?'வயது':'age'} ${x.age}; ${ta?(x.age<4?'பிஞ்சுப் பருவம்':x.age<13?'குழந்தைப் பருவம்':x.age<18?'பதின்ம வயது':x.age<25?'இளமை':x.age<60?'பொறுப்புப் பருவம்':x.age<70?'முதிர் பருவம்':'மூத்த வயது'):(x.age<4?'early childhood':x.age<13?'childhood':x.age<18?'teenage':x.age<25?'early adulthood':x.age<60?'adulthood':x.age<70?'later adulthood':'older adulthood')})</summary>${x.topics.map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4><p>${safe(t.positive)}</p><p>${safe(t.negative)}</p>${t.linked.map(s=>`<p>${safe(s)}</p>`).join('')}${t.health?`<p class="smv-80-health">${safe(t.health)}</p>`:''}</section>`).join('')}</details>`).join('')}</div>`;
 }
 function transitHTML(timeline,years,events=[],lang='ta'){
  const ta=lang!=='en';
- return `<div class="smv-80-content" data-long-transit="1"><h3>${ta?'பிறப்பிலிருந்து 80 வயது வரை — குரு, சனி, ராகு, கேது':'Age 0–80 — Jupiter, Saturn, Rahu, Ketu'}</h3>
- <p>${ta?'ஒவ்வொரு வயது ஆண்டிற்கும் நடுப்பகுதியில் கணக்கிடப்பட்ட கோச்சார நிலைகளின் 12 பாவ விளக்கம்; ஆண்டு முழுவதும் நிலைகள் மாறாதவை அல்ல. கீழே கொடுக்கப்பட்ட பெயர்ச்சி மாற்றத் தேதிகள் தனியே கணக்கிடப்பட்டவை. இது நோய் அல்லது ஆயுள் முடிவை நிர்ணயிக்கும் முறை அல்ல.':'Each age-year reading uses a calculated midpoint transit snapshot and 12 natal areas, not unchanged planets for the entire year. Sign transitions are listed for the year. It cannot determine illness or lifespan.'}</p>
+ return `<div class="smv-80-content" data-long-transit="1"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து அடுத்த 80 ஆண்டுகள் — குரு, சனி, ராகு, கேது':'Next 80 years from report date — Jupiter, Saturn, Rahu, Ketu'}</h3>
+ <p>${ta?'அறிக்கைத் தேதியிலிருந்து ஒவ்வொரு அடுத்த ஆண்டின் நடுவில் கணக்கிடப்பட்ட கோச்சார நிலைகளின் 12 பாவ விளக்கம்; ஆண்டு முழுவதும் நிலைகள் மாறாதவை அல்ல. கீழே கொடுக்கப்பட்ட பெயர்ச்சி மாற்றத் தேதிகள் தனியே கணக்கிடப்பட்டவை. இது நோய் அல்லது ஆயுள் முடிவை நிர்ணயிக்கும் முறை அல்ல.':'Each forecast year reading uses a calculated midpoint transit snapshot and 12 natal areas, not unchanged planets for the entire year. Sign transitions are listed for the year. It cannot determine illness or lifespan.'}</p>
  <p>${ta?'கோச்சார தேதித் துல்லியம்: ஏழு நாட்களுக்கு ஒருமுறை பரிசோதித்து, கண்டறிந்த ராசி மாறுதலை நாள் எல்லை வரை நுணுக்கமாகத் தேடியது. ஏழு நாளுக்குள் முழுமையாக நிகழ்ந்து திரும்பும் அரிய வக்ர மாற்றங்கள் தவறியிருக்கலாம்.':'Precision: sampled at seven-day intervals, detected changes narrowed to a day; short reversals between samples may be missed.'}</p>
- ${years.map((y,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?'வயது':'Age'} ${y.age}–${y.age+1} · ${y.from} – ${y.to}</summary>
+ ${years.map((y,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?'கணிப்பு ஆண்டு':'Forecast year'} ${y.forecastYear} · ${ta?'வயது':'age'} ${y.age}–${y.age+1} · ${y.from} – ${y.to}</summary>
  <p>${ta?'கணக்கிட்ட நடுத்தேதி':'Calculated reference date'}: ${y.date} · ${KEY.map(p=>`${ta?KTA[p]:p} ${(ta?ZTA:ZEN)[y.pos[p].sign]}`).join(' · ')}</p>
  ${y.events.length?`<p><strong>${ta?'இந்த ஆண்டில் கண்டறியப்பட்ட பெயர்ச்சி ராசி மாற்றங்கள்':'Detected sign changes during this year'}:</strong> ${y.events.map(e=>`${e.date}: ${ta?KTA[e.planet]:e.planet} ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}`).join('; ')}</p>`:''}
- ${y.topics.filter(t=>t.paragraphs.length).map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4>${t.paragraphs.map(p=>`<p>${safe(p)}</p>`).join('')}</section>`).join('')}${y.topics.every(t=>!t.paragraphs.length)?`<p>${ta?'முன்னர் விளக்கப்பட்ட அதே தொடர்புகளை மீண்டும் எழுதாமல் இந்த ஆண்டின் கிரகநிலைகள் மட்டும் காட்டப்பட்டுள்ளன.':'For this year only the calculated placements are shown; already explained natal links are not repeated.'}</p>`:''}
+ ${y.topics.filter(t=>t.paragraphs.length).map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4>${t.paragraphs.map(p=>`<p>${safe(p)}</p>`).join('')}</section>`).join('')}${y.topics.every(t=>!t.paragraphs.length)?`<p>${ta?'இந்த ஆண்டில் புதிதான வலுவான பெயர்ச்சித் தொடர்பு கண்டறியப்படாததால் ஏற்கெனவே கூறிய விளக்கங்களை மீண்டும் அச்சிடவில்லை.':'No newly distinct strong transit links were identified in this yearly snapshot; earlier explanations are not reprinted.'}</p>`:''}
  ${events.filter(e=>e.date>=y.from&&e.date<y.to&&e.topics.length).map(e=>`<section class="smv-80-event"><h4>${e.date} · ${ta?KTA[e.planet]:e.planet}: ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}</h4>${e.topics.map(t=>`<p><strong>${t.number}. ${safe(t.title)}:</strong> ${t.paragraphs.map(safe).join(' ')}</p>`).join('')}</section>`).join('')}</details>`).join('')}
  </div>`;
 }
@@ -130,12 +168,12 @@ export function translate80Year(full,base,lang='ta'){
  return {...base,dasha,transitYears,transitEvents,language:lang};
 }
 export async function build80Year(full,payload,{lang='ta',onProgress,signal}={}){
- const {periods,birth,end}=clipPeriods(full),dasha=dashaNarrative(full,periods,lang);
+ const {periods,birth,referenceDate,end,continuationCount}=clipPeriods(full,payload?.referenceDate),dasha=dashaNarrative(full,periods,lang);
  onProgress?.({stage:'dasha',done:1,total:1});
  const transitTimeline=await computeTransitTimeline(full,payload,{onProgress,signal});
  const transitYears=transitNarrative(full,transitTimeline,lang);
  const transitEvents=eventNarrative(full,transitTimeline,lang);
- return {birth,end,dasha,transitYears,transitEvents,transitTimeline,language:lang,meta:{dashaPeriods:dasha.length,transitSignChanges:transitTimeline.events.length,ageYears:80,samplesChecked:transitTimeline.samplesChecked}};
+ return {birth,referenceDate,end,dasha,transitYears,transitEvents,transitTimeline,language:lang,meta:{dashaPeriods:dasha.length,transitSignChanges:transitTimeline.events.length,ageYears:80,fromReportDate:referenceDate,throughDate:end,derivedContinuations:continuationCount,samplesChecked:transitTimeline.samplesChecked}};
 }
 export function render80Year(report,lang=report.language||'ta'){
  return {dashaHTML:dashaHTML(report.dasha,lang),transitHTML:transitHTML(report.transitTimeline,report.transitYears,report.transitEvents,lang)};

@@ -1899,9 +1899,9 @@ try{
           longStatus.textContent=lang==='ta'?'80 ஆண்டு காலவரிசை உள்ளூர் கணக்கீட்டில் உருவாகிறது…':'Building the 80-year timeline using local calculations…';
           longDasha.querySelector('p.smv-d1-life-method')?.insertAdjacentElement('afterend',longStatus);
           const c=full?.chart||full;
-          const longKey=JSON.stringify([c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
+          const longKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
           const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
-          const longJobReady=import('./d1-80-year-reading.mjs?v=271-source-clean').then(async mod=>{
+          const longJobReady=import('./d1-80-year-reading.mjs?v=279-report-date-horizon').then(async mod=>{
             let job=longCache.get(longKey);
             if(!job){
               job=mod.build80Year(full,payload,{lang,onProgress:p=>{
@@ -1918,7 +1918,7 @@ try{
             function panel(kind,markup){
               const details=document.createElement('details');details.className='smv-80-container';details.dataset.smvLongRange=kind;
               const summary=document.createElement('summary');
-              summary.textContent=(lang==='ta'?'0–80 வயது முழு காலவரிசை: ':'Complete age 0–80 timeline: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
+              summary.textContent=(lang==='ta'?'அறிக்கைத் தேதியிலிருந்து அடுத்த 80 ஆண்டுகள்: ':'Next 80 years from report date: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
               details.appendChild(summary);
               const body=document.createElement('div');body.innerHTML=markup;details.appendChild(body);
               return details;
