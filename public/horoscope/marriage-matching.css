@@ -40,3 +40,38 @@
  #smvMarriageMatching .mm-front-dosha-card{padding:13px 14px!important}
  #smvMarriageMatching .mm-front-dosha-status{grid-template-columns:76px minmax(0,1fr)!important;gap:8px!important}
 }
+
+/* V281: readable, single-layer D1 couple topics and one-pass dosha chapter.
+ * Scoped to Marriage Matching; no globals / dashboard / horoscope rules changed. */
+#smvMarriageMatching .mm-v281-results{max-width:100%;overflow-wrap:break-word}
+#smvMarriageMatching .mm-v281-results .mm-v281-topic-book,
+#smvMarriageMatching .mm-v281-results .mm-v281-character,
+#smvMarriageMatching .mm-v281-results .mm-v281-doshas{padding:clamp(14px,3vw,24px);margin:16px 0;border:1px solid #e6d6b4;border-radius:13px;background:#fff;box-shadow:none}
+#smvMarriageMatching .mm-v281-results .mm-v281-topic-book h2,
+#smvMarriageMatching .mm-v281-results .mm-v281-character h2,
+#smvMarriageMatching .mm-v281-results .mm-v281-doshas h2{font-size:clamp(1.28rem,4vw,1.6rem);color:#8b111b;margin:0 0 12px;text-align:left;line-height:1.38}
+#smvMarriageMatching .mm-v281-topic{padding:17px 0;border-top:1px solid #e9dfd0;break-inside:avoid-page;page-break-inside:avoid}
+#smvMarriageMatching .mm-v281-topic>h3,
+#smvMarriageMatching .mm-v281-dosha-one>h4{font-size:clamp(1.09rem,3.7vw,1.32rem);margin:0 0 10px;color:#a01626;line-height:1.42;overflow-wrap:anywhere}
+#smvMarriageMatching .mm-v281-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#smvMarriageMatching .mm-v281-people>section{padding:12px;border:1px solid #ede2d2;border-radius:9px;min-width:0;background:#fffefa}
+#smvMarriageMatching .mm-v281-people h4{font-size:1.02rem;font-weight:780;margin:0 0 8px;color:#672326}
+#smvMarriageMatching .mm-v281-people p,
+#smvMarriageMatching .mm-v281-topic p,
+#smvMarriageMatching .mm-v281-personality-item p,
+#smvMarriageMatching .mm-v281-dosha-one p{font-size:1rem;line-height:1.75;word-break:normal;overflow-wrap:break-word;margin:7px 0}
+#smvMarriageMatching .mm-v281-people .mm-v281-evidence{color:#594e40;font-size:.91rem;line-height:1.65;padding:10px;border-left:3px solid #c5a25c;background:#fbf8f1}
+#smvMarriageMatching .mm-v281-verdict{padding:10px 13px;margin-top:12px;background:#f7faf6;border-left:4px solid #387b53;border-radius:4px;color:#293b30}
+#smvMarriageMatching .mm-v281-verdict[data-mm-v281-status="mixed"]{background:#fff9ed;border-color:#bd862e;color:#58411b}
+#smvMarriageMatching .mm-v281-verdict[data-mm-v281-status="different"]{background:#fff2f1;border-color:#b35656;color:#642d2d}
+#smvMarriageMatching .mm-v281-character .mm-v281-personality-item,
+#smvMarriageMatching .mm-v281-doshas .mm-v281-dosha-one{padding:14px 0;border-top:1px solid #e8dfd4;break-inside:avoid-page}
+#smvMarriageMatching .mm-v281-dosha-one h5{font-size:1rem;color:#5d272c;margin:10px 0 5px}
+#smvMarriageMatching .mm-v281-house-note{padding:9px 11px;background:#fcf7ed;border-left:3px solid #b58c4d}
+#smvMarriageMatching .mm-v281-remedy-list{padding-left:1.5rem;margin:9px 0 14px}
+#smvMarriageMatching .mm-v281-remedy-list li{margin:6px 0;font-size:.97rem;line-height:1.7}
+#smvMarriageMatching .mm-v281-character-final{margin:14px 0;padding:14px;border:1px solid #d7c6a2;border-radius:9px;background:#fffdf8}
+#smvMarriageMatching .mm-v281-age-warning{border:2px solid #b44646;background:#fffbf9;padding:15px;margin:15px 0;color:#5f2525}
+#smvMarriageMatching .mm-v281-dosha-one .mm-v281-dosha-person{padding:8px 12px;border-left:3px solid #d6be90;background:#fefdfb;margin:8px 0}
+@media(max-width:680px){#smvMarriageMatching .mm-v281-people{grid-template-columns:1fr;gap:8px}#smvMarriageMatching .mm-v281-people>section{padding:10px}#smvMarriageMatching .mm-v281-results .mm-v281-topic-book,#smvMarriageMatching .mm-v281-results .mm-v281-character,#smvMarriageMatching .mm-v281-results .mm-v281-doshas{padding:13px;margin:13px 0}#smvMarriageMatching .mm-v281-verdict{padding:9px}#smvMarriageMatching .mm-v281-remedy-list{padding-left:1.25rem}}
+@media print{#smvMarriageMatching .mm-v281-people{grid-template-columns:1fr}#smvMarriageMatching .mm-v281-results .mm-v281-topic-book,#smvMarriageMatching .mm-v281-results .mm-v281-character,#smvMarriageMatching .mm-v281-results .mm-v281-doshas{box-shadow:none}}
