@@ -1270,8 +1270,9 @@
       const mantraPart=makePart('daily-mantras-analysis','DAILY LIFE MANTRAS','தினசரி வாழ்க்கையில் சொல்ல வேண்டிய மந்திரங்கள்','VII');
       const adhidevataPart=makePart('adhidevata-analysis','ADHIDEVATAS','அதிதேவதைகள்','VIII');
       const deitiesPart=makePart('deities-analysis','DEITIES','தெய்வங்கள்','IX');
-      // X. Predictions is a NEW D1-only life-reading category. It does not
-      // revive the removed historical 'Integrated Predictions' renderer.
+      // X. Predictions: I = natal D1 only; II = D1 + actual MD/AD + age;
+      // III = D1 + actual dated Jupiter/Saturn/Rahu/Ketu transits + age.
+      // No legacy Integrated Predictions renderer is revived.
       const predictionsPart=makePart('life-predictions','PREDICTIONS','பலன்கள்','X');
       [chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionsPart].forEach(p=>shell.appendChild(p));
       const accordionParts=[chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionsPart];
@@ -1833,6 +1834,12 @@ try{
         const lifeSlot=root.querySelector('.smv-advanced-part.life-predictions .smv-advanced-part-content');
         if(!lifeSlot) throw new Error('Predictions section X is missing. Check the Advanced report deployment.');
         lifeSlot.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang);
+        // V267: use the SAME full chart, Vimshottari periods and daily transit
+        // snapshot already produced in this calculation. No new engine call,
+        // network access, date guessing or independent client-side recalc.
+        if(!window.SMVTimePredictionD1 || typeof window.SMVTimePredictionD1.html!=='function')
+          throw new Error('Time-based D1 prediction module is missing. Check d1-time-reading.js deployment.');
+        lifeSlot.insertAdjacentHTML('beforeend',window.SMVTimePredictionD1.html(full,dailyDate,lang));
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');
