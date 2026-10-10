@@ -122,7 +122,12 @@ if(lat===''||lon===''){
             window.__smvRenderBasicSnapshot(basicSnapshot,target,next,originalBirth);
             if(next==='en')window.__smvApplyEnglishToHoroscope(target);
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
-            if(completedFull)await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
+            if(completedFull){
+              await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
+              // Wait for Section X's complete report-date-to-age-80 reading on language
+              // switches before the next snapshot can be announced as ready.
+              await ensureLongPredictionComplete(target.querySelector('#englishAdvancedAstrology'));
+            }
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
             window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
             // V92: the report may be rendered later in the other language from the already-cached
@@ -157,6 +162,24 @@ if(lat===''||lon===''){
             throw new Error('Full report section(s) missing: '+namesMissing+(missing.includes('IX. Deities')?' (horoscope-details.js must load successfully)':''));
           }
         };
+        // The Section X long-range engine is asynchronous. The full horoscope
+        // must NOT be declared ready, printed or saved while its Dasha/Bhukti
+        // and transit windows are still being generated. This is a readiness
+        // check only; it does not issue Firestore reads, repeat natal calculation
+        // or modify payment/access rules.
+        const ensureLongPredictionComplete=async advancedRoot=>{
+          if(!advancedRoot)return;
+          const x=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
+          if(!x)return; // In a genuine Basic-only flow Section X is absent.
+          const pending=advancedRoot.__smvLongTimelineReady;
+          if(pending)await pending;
+          const dasha=x.querySelector('[data-smv-long-range="dasha"]');
+          const transit=x.querySelector('[data-smv-long-range="transit"]');
+          if(!dasha||!transit){
+            const error=x.querySelector('.smv-80-status')?.textContent||'';
+            throw new Error('Section X forecast through age 80 is incomplete. '+error.slice(0,200));
+          }
+        };
         // Core + Advanced Analysis are calculated locally in the browser.
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
@@ -166,6 +189,10 @@ if(lat===''||lon===''){
             englishAdvancedRoot.innerHTML='';
             phase='full-advanced-calculation';
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
+            // V283: do not publish a partial PDF when Section X's separate
+            // asynchronous 80th-birthday timeline has not yet been added.
+            phase='full-age80-timeline';
+            await ensureLongPredictionComplete(englishAdvancedRoot);
             // Validate ALL sections BEFORE signalling report-ready / Save / Print.
             // The old flow notified report-store first and rejected missing IX later.
             phase='advanced-content-validation';
