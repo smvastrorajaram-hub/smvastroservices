@@ -1865,20 +1865,27 @@ try{
         if(sections.every(Boolean)){
           const suffix=rootId==='tamilAdvancedAstrology'?'ta':'en';
           sections.forEach((section,i)=>{section.id=`smv-predictions-${suffix}-${i+1}`;});
-          const jump=document.createElement('nav');
+          const jump=document.createElement('div');
           jump.className='smv-predictions-jump';
+          jump.setAttribute('role','navigation');
           jump.setAttribute('aria-label',lang==='ta'?'பலன் துணைப்பகுதிகளுக்குச் செல்ல':'Jump to prediction subsections');
           const labels=lang==='ta'
             ?['I. முழு வாழ்க்கை பலன்கள் (D1)','II. தசா–புக்தி + வயது','III. பெயர்ச்சி + வயது']
             :['I. Complete life (D1)','II. Dasha–Bhukti + Age','III. Transit + Age'];
           labels.forEach((label,i)=>{
-            const btn=document.createElement('button');btn.type='button';
-            btn.className='smv-predictions-jump-button';
-            btn.dataset.smvJumpPrediction=String(i+1);
-            btn.textContent=label;
-            btn.setAttribute('aria-controls',sections[i].id);
-            btn.addEventListener('click',()=>sections[i].scrollIntoView({behavior:'auto',block:'start'}));
-            jump.appendChild(btn);
+            // Use keyboard-accessible navigation items instead of the globally styled
+            // nav/button/anchor tags, whose theme made text invisible on red.
+            const link=document.createElement('div');
+            link.className='smv-predictions-jump-item';
+            link.dataset.smvJumpPrediction=String(i+1);
+            link.setAttribute('role','link');
+            link.setAttribute('tabindex','0');
+            link.textContent=label;
+            link.setAttribute('aria-controls',sections[i].id);
+            const visit=()=>sections[i].scrollIntoView({behavior:'auto',block:'start'});
+            link.addEventListener('click',visit);
+            link.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();visit();}});
+            jump.appendChild(link);
           });
           lifeSlot.prepend(jump);
         }

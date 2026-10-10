@@ -14,3 +14,12 @@
 @media print { .smv-d1-age-guidance { break-after: avoid; } }
 
 .smv-d1-topic-opening {margin: 2px 0 17px; font-size: .97rem; line-height: 1.8; font-weight: 500;}
+
+/* V270: prediction navigation is a semantic div+role group to avoid the
+   website's global <nav> and <button>/<a> theme affecting report colours. */
+.smv-predictions-jump { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:8px 0 22px; padding:8px 0 18px; border-bottom:1px solid #d7c9be; background:transparent; }
+.smv-predictions-jump-item { display:block; width:100%; min-width:0; box-sizing:border-box; padding:12px 14px; background:#fff7ed; border:1px solid #bba68f; border-radius:7px; color:#702b24; font-size:clamp(14px,2vw,16px); line-height:1.5; text-align:left; font-weight:700; white-space:normal; overflow-wrap:anywhere; cursor:pointer; }
+.smv-predictions-jump-item:focus-visible { outline:3px solid #215c90; outline-offset:2px; }
+.smv-predictions-jump-item:hover { border-color:#702b24; text-decoration:underline; }
+.smv-d1-life-reading[id],.smv-d1-time-reading[id] { scroll-margin-top:72px; }
+@media print { .smv-predictions-jump { display:none; } }
