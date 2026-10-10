@@ -86,16 +86,108 @@
  if(topic===4&&ctx.currentResidence&&ctx.birthPlace&&ctx.currentResidence.toLowerCase()!==ctx.birthPlace.toLowerCase())return ta?'தற்போது பிறப்பிடத்திலிருந்து வேறு இடத்தில் வசிப்பதாகத் தெரிவித்துள்ளதால் குடும்பத் தொடர்பு அல்லது பயணத் தீர்மானங்களில் அந்த நடைமுறைத் தூரத்தையும் கவனிக்கலாம்.':'You report living away from your birthplace; consider that practical distance for home or travel decisions.';
  return '';}
  function ageTopic(topic,stage,ctx,ta){const s=stagePhrase(topic,stage,ta),c=contextPhrase(topic,ctx,ta);return [s,c].filter(Boolean).join(' ');}
- function renderDasha(full,asOf,lang='ta',context={}){const ta=lang!=='en',date=dateString(asOf);if(!date)return {ok:false,reason:'invalid-reference-date'};const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};const period=chosenPeriod(chart?.dashas?.periods,date);if(!period)return {ok:false,reason:'no-covered-mahadasha-bhukti'};const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[];
- for(let i=0;i<12;i++){const f=i+1,m=periodImpact(d,period.md,f),a=periodImpact(d,period.ad,f),all=Array.from({length:12},(_,j)=>{const r=j+1,lens=BASE.lens(d,f,r),mp=periodImpact(d,period.md,r),ap=periodImpact(d,period.ad,r);return {relatedHouse:r,lens,mdImpact:mp,adImpact:ap,activation:(r===f?m.points*2+a.points:0)+mp.points*2+ap.points+(lens.links.length?lens.links.length:0)};});
- const relevant=all.filter(x=>x.relatedHouse!==f&&x.activation>=5&&x.lens.relevance>=2).sort((x,y)=>y.activation-x.activation||x.relatedHouse-y.relatedHouse).slice(0,2),direct=m.points*2+a.points,score=BASE.houseScore(d,d.houses[i])+BASE.scorePlanet(d,d.planets[period.md])+BASE.scorePlanet(d,d.planets[period.ad]),tone=score>=1?0:1,main=(ta?DASHA_TA:DASHA_EN)[i][tone],phrase=ta?`${LABEL[period.md]} தசையில் ${PERIOD_TA[period.md]} முன்னிலையாகலாம்; ${LABEL[period.ad]} புக்தி ${PERIOD_TA[period.ad]} என்பதைக் கூட்டுகிறது.`:`The ${period.md} major period emphasizes ${PERIOD_EN[period.md]}, while ${period.ad} sub-period adds ${PERIOD_EN[period.ad]}.`;
- const paragraphs=[];if(direct>=3){const active=m.points>=a.points?m:a;const cause=active.marks.includes('rules')?(ta?'இந்தப் பாவத்தின் அதிபதியாக இருப்பதால்':'rules this natal house'):active.marks.includes('occupies')?(ta?'இந்தப் பாவத்திலேயே இருப்பதால்':'occupies this natal house'):active.marks.includes('aspects')?(ta?'இந்தப் பாவத்தைப் பார்ப்பதால்':'aspects this natal house'):(ta?'பாவாதிபதியுடன் தொடர்புடையதால்':'connects with the house ruler');paragraphs.push({relatedHouse:f,text:ta?`${main}; தற்போதைய ${LABEL[active.planet]} ${cause} இந்தக் காலத் தொடர்பு கவனம் பெறுகிறது. இது வாய்ப்பு அல்லது சவாலாக வெளிப்படுவது பிறப்பு ஜாதகப் பலத்தையும் நடைமுறைச் சூழலையும் பொறுத்தது.`:`${main}; this timing link is emphasized because ${active.planet} ${cause}. Natal strength and real circumstances determine how it may unfold.`,evidence:{md:m,ad:a,focusHouse:f,signal:score}});}else{paragraphs.push({relatedHouse:f,text:ta?`${main}; என்றாலும் இந்தத் துறையில் உடனடியாக ஒரு குறிப்பிட்ட நிகழ்வு நடைபெறும் என்று கூறத் தேவையான நேரடித் தசா–புக்தித் தொடர்பு இல்லை.`:`${main}; however, direct Dasha–Bhukti evidence is not sufficient to claim a specific event in this area.`,evidence:{md:m,ad:a,focusHouse:f,signal:score}});}
- for(const r of relevant){const other=(ta?CROSS_TA:CROSS_EN)[r.relatedHouse-1],signal=r.lens.score,word=signal>=1?(ta?'ஒன்றோடொன்று இணைந்து வெளிப்பட':'combine'):(ta?'ஒரே நேரத்தில் கவனம் கோர':'compete');const strongest=r.mdImpact.points>=r.adImpact.points?period.md:period.ad;const text=ta?`${other} தொடர்பும் ${(DASHA_TA[i][tone])} என்ற போக்கும் இக்காலத்தில் ${word} வாய்ப்பு உள்ளது; அதற்கு ${LABEL[strongest]} பிறப்பு ஜாதகத்தின் ${d.planets[strongest].house}-ஆம் பாவத்திலிருந்து தொடர்பு கொள்வதே முக்கிய காரணமாகும்.`:`Choices involving ${other} may ${word} with ${DASHA_EN[i][tone]}; the natal connection of ${strongest} from house ${d.planets[strongest].house} explains why this area is highlighted.`;
- paragraphs.push({relatedHouse:r.relatedHouse,text,evidence:r});}
- const ageLine=ageTopic(f,age.stage,ctx,ta);if(ageLine)paragraphs.push({relatedHouse:f,text:ageLine,evidence:{context:'age-and-user-declared',stage:age.stage}});
- topics.push({number:f,title:BASE.THEMES[i][ta?0:1],analyzedHouses:12,opening:'',ageGuidance:'',paragraphs,evidenceMatrix:all});
+ // V271: Each period is interpreted from *actual* natal links, not a universal
+ // paragraph repeated for all 12 houses. Missing links never become events.
+ const NATAL_SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
+ const NATAL_SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+ const BHAAVA_TA=['தனிப்பட்ட அணுகுமுறை','குடும்ப பேச்சு மற்றும் பொருளாதாரம்','முயற்சி மற்றும் சகோதர உதவி','வீட்டுப் பொறுப்பு மற்றும் மன அமைதி','கல்வி, சிந்தனை மற்றும் குழந்தைகள்','போட்டி, கடன் மற்றும் அன்றாட உடல்நலப் பழக்கம்','உறவு மற்றும் கூட்டுச் செயல்பாடு','எதிர்பாராத மாற்றங்கள் மற்றும் பாதுகாப்பு','வழிகாட்டுதல் மற்றும் நீண்டகால நம்பிக்கை','தொழில் மற்றும் பொறுப்புப் பங்கீடு','வருமான வாய்ப்பு மற்றும் சமூக உறவு','செலவு, ஓய்வு மற்றும் தனிப்பட்ட நேரம்'];
+ const BHAAVA_EN=['personal choices','family resources and speech','initiative and sibling ties','home duties and inner peace','learning and children','competition, obligations and health routines','partner communication','unexpected changes and contingency planning','mentoring and belief','work and responsibility','income and social connections','spending and private rest'];
+ const PLANET_LENS_TA={Sun:['தலைமைப் பொறுப்பு','அதிகாரத்துடன் ஏற்படக்கூடிய கருத்து வேறுபாடு'],Moon:['மனநிலை மற்றும் நெருக்கம்','உணர்ச்சி வேகத்தால் முடிவை மாற்றுதல்'],Mars:['முயற்சி மற்றும் துணிவு','அவசர நடவடிக்கை மற்றும் மோதல்'],Mercury:['கணக்கீடும் பேச்சுவார்த்தையும்','விவரம் சரிபார்க்காமல் எடுத்த முடிவு'],Jupiter:['வழிகாட்டலும் கற்றலும்','அளவுக்கு அதிக எதிர்பார்ப்பு'],Venus:['ஒத்துழைப்பும் இணக்கமும்','வசதி சார்ந்த கூடுதல் செலவு'],Saturn:['ஒழுங்கும் நீடித்த முயற்சியும்','தாமதமும் பொறுப்புச் சுமையும்'],Rahu:['புதிய செயல்முறை தேடலும்','சரிபார்க்கப்படாத புதுமையில் அவசரம்'],Ketu:['தேவையற்றதை விலக்கும் தெளிவும்','திடீர் விலகலும் கவனக்குறைவும்']};
+ const PLANET_LENS_EN={Sun:['leadership and responsibility','authority-related friction'],Moon:['emotional attentiveness','reacting too quickly to feelings'],Mars:['initiative and courage','rushed actions and conflict'],Mercury:['detailed analysis and negotiation','insufficiently checked decisions'],Jupiter:['guidance and education','unrealistic expectations'],Venus:['cooperation and harmony','comfort-driven expense'],Saturn:['discipline and sustained effort','delay and overload'],Rahu:['experimenting with new methods','unchecked risk-taking'],Ketu:['letting go of unneeded burdens','abrupt withdrawal']};
+ function linkedPlanetSummary(d,planet,topic,lang){
+  const ta=lang!=='en',pl=d.planets[planet],h=d.houses[topic-1],r=d.houses[pl.house-1],pts=BASE.scorePlanet(d,pl),marks=periodImpact(d,planet,topic).marks;
+  const planetLabel=ta?LABEL[planet]:planet;
+  const rel=marks.includes('rules')? (ta?'இந்தப் பாவத்திற்கு அதிபதியாகவும்': 'as ruler of this house'):
+       marks.includes('occupies')?(ta?'இதே பாவத்தில் நின்றும்':'being placed in this house'):
+       marks.includes('aspects')?(ta?'இந்தப் பாவத்தைப் பார்த்தும்':'through an aspect to this house'):
+       marks.includes('conjuncts-lord')?(ta?'பாவாதிபதியுடன் சேர்ந்தும்':'by joining its ruler'):
+       marks.includes('aspects-lord')?(ta?'பாவாதிபதியைப் பார்த்தும்':'by aspecting its ruler'):
+       (ta?'நேரடித் தொடர்பு குறைவாக இருந்தும்':'with no direct natal link');
+  const sign=(ta?NATAL_SIGNS_TA:NATAL_SIGNS_EN)[pl.sign],quality=pts>=2?(ta?'வலிமையான நிலையில்':'in a supported state'):pts<=-2?(ta?'அழுத்தம் கொண்ட நிலையில்':'under natal strain'):(ta?'கலப்பான நிலையில்':'with mixed strength');
+  return {label:planetLabel,planet,pts,marks,house:pl.house,relatedLord:r.lord,relation:rel,sign,quality,positive:(ta?PLANET_LENS_TA:PLANET_LENS_EN)[planet][0],negative:(ta?PLANET_LENS_TA:PLANET_LENS_EN)[planet][1]};
  }
- return {ok:true,kind:'dasha',referenceDate:date,age:age.age,ageStage:age.stage,period,topics};}
+ function lifeStageLink(topic,age,ta){
+  if(['infant','child','teen'].includes(age.stage)){
+   if(topic===5)return ta?'இந்த வயதில் பாடங்களை ஏற்றுக்கொள்ளும் முறை, விளையாட்டால் கற்றல், ஆசிரியர் ஆதரவு போன்ற வளர்ச்சி சார்ந்த பலன்களுக்கே முன்னுரிமை.':'At this age, interpret education as learning habits and teacher support.';
+   if(topic===7)return ta?'திருமண நிகழ்வு அல்ல; நண்பர்கள், பெற்றோர், நெருங்கியவர்களுடன் நம்பிக்கையை வளர்க்கும் பழக்கமாகப் பார்க்க வேண்டும்.':'This concerns trust with caregivers and friends, not a marriage event.';
+   if(topic===10)return ta?'பதவி அல்லது சம்பளம் அல்ல; திறன் பயிற்சி, ஆசிரியருடன் ஒத்துழைப்பு, பொறுப்பைக் கற்றுக்கொள்வது என்பதே பொருத்தமான வாசிப்பு.':'Read professional houses as practical learning and developing responsibility, not a new job.';
+  }
+  if(['mature','senior'].includes(age.stage)){
+   if(topic===6)return ta?'முறையான உடல்நலக் கண்காணிப்பும் தனக்கேற்ற அன்றாட ஒழுங்கும் இப்பருவத்தில் முக்கியம்; குறிப்பிட்ட நோய் என்று ஊகிக்கக் கூடாது.':'Prioritize reasonable routines and preventive care, not a diagnosis.';
+   if(topic===7)return ta?'ஏற்கெனவே உள்ள நெருங்கிய உறவுகளைப் பராமரிப்பதும் உரையாடலுக்கு நேரம் ஒதுக்குவதும்தான் இப்பருவத்தின் முதன்மைப் பொருள்.':'Emphasize caring for existing relationships at this life stage.';
+   if(topic===10)return ta?'புதிய பதவி பெறுதல் என்ற ஒரே பொருளில் அல்ல; அனுபவப் பகிர்வு, பொறுப்புக் குறைப்பு அல்லது தன்னார்வச் செயலாகவும் வாசிக்க வேண்டும்.':'Read this as experience sharing or adjusted commitments, not automatic promotion.';
+  }
+  if(age.stage==='young'&&topic===10)return ta?'பயிற்சியிலிருந்து வேலைத் திறன் உருவாகும் மாற்றப் பருவமாகக் கொள்ள வேண்டும்.':'Interpret this as a transition from training to independent skills.';
+  return '';
+ }
+ function cautionForTopic(topic,md,ad,age,ta){
+  if([1,6,8,12].includes(topic))return ta?
+    `${LABEL[md]}–${LABEL[ad]} காலத்தில் 1, 6, 8, 12 பாவங்களின் தொடர்பை மரபு ரீதியில் கவனித்தாலும், குறிப்பிட்ட நோய், விபத்து அல்லது ஆயுள் முடியும் வயதை இதனால் நிர்ணயிக்க முடியாது. ${age.age>=60?'முறையான மருத்துவப் பரிசோதனை, மருந்து ஒழுங்கு மற்றும் ஓய்வு பற்றிய கவனமே முதன்மை.':'உடற்பயிற்சி, தூக்க நேரம், மன அழுத்தம் மற்றும் தேவையான மருத்துவப் பராமரிப்பில் ஒழுங்கு முக்கியம்.'}`:
+    'Traditional house links do not diagnose disease, accidents, or lifespan. Appropriate preventive care and professional medical assessment take priority.';
+  return '';
+ }
+ function dashaEffectsForAge(index,age,ta){
+  const k=index+1;
+  if(['infant','child','teen'].includes(age.stage)){
+   const taMap={5:['படிப்பில் கவனம் செலுத்துவதற்கும் புதிய விஷயங்களைப் பயிற்சி செய்யவும் வாய்ப்பு','பாடச் சுமை அல்லது கவனச் சிதறலால் கற்றல் இடையூறு'],7:['நண்பர்களுடன் ஒத்துழைத்து கருத்தைப் பகிரும் பழக்கம் வளர்தல்','நண்பர்கள் அல்லது பெரியவர்களின் வழிகாட்டுதலைத் தவறாகப் புரிந்துகொள்ளும் சூழல்'],10:['வகுப்புப் பணி, சிறிய பொறுப்பு மற்றும் திறன் பயிற்சியில் முன்னேற்றம்','மிகுதியான எதிர்பார்ப்பால் பள்ளிப் பொறுப்புகளில் மனச்சுமை'],11:['நண்பர்கள், குழுச் செயல்கள் மற்றும் பயிற்சியில் ஒத்துழைப்பு','நண்பர்களுடன் ஒப்பிடுவதால் கவலை அல்லது கவனச்சிதறல்']};
+   const enMap={5:['progress in lessons and practical skills','study pressure and distraction'],7:['learning cooperation and communication with friends','misunderstandings with peers or caregivers'],10:['developing skills and age-appropriate responsibility','overly demanding study expectations'],11:['support from friends and group learning','unhelpful comparison with peers']};
+   if((ta?taMap:enMap)[k])return (ta?taMap:enMap)[k];
+  }
+  if(['mature','senior'].includes(age.stage)){
+   const taMap={5:['அனுபவத்தை இளையோருடன் பகிர்வதற்கான வாய்ப்பு','குடும்பத்தில் எல்லா முடிவையும் தானே ஏற்கும் சுமை'],7:['ஏற்கெனவே உள்ள நெருங்கிய உறவுகளுடன் நேரத்தைப் பகிர்தல்','பழைய கருத்து வேறுபாடுகளைப் பேசாமல் ஒதுக்குவது'],10:['அனுபவத்தை வழிகாட்டலாக மாற்றும் வாய்ப்பு','தனக்கேற்ற பொறுப்பின் அளவைத் தேர்ந்தெடுக்காத சுமை']};
+   const enMap={5:['sharing experience with younger people','carrying too many family decisions'],7:['giving time to established relationships','leaving old disputes undiscussed'],10:['mentoring and practical experience','taking on unmanageable commitments']};
+   if((ta?taMap:enMap)[k])return (ta?taMap:enMap)[k];
+  }
+  return (ta?DASHA_TA:DASHA_EN)[index];
+ }
+ function transitEffectsForAge(index,age,ta){
+  const k=index+1;
+  if(['infant','child','teen'].includes(age.stage)){
+   const taMap={5:['கற்றல் பழக்கங்களில் முன்னேற்றம்','படிப்பில் கவனச் சிதறல்'],7:['பரஸ்பர ஒத்துழைப்பில் பழக்கம் பெறுதல்','நண்பர்களிடையே கருத்து வேறுபாடு'],10:['பயிற்சி மற்றும் வகுப்புப் பொறுப்பில் முன்னேற்றம்','கற்றலுக்குத் தேவைக்கு அதிகப் பொறுப்பு'],11:['நண்பர்களுடன் குழுச் செயல்களில் பங்கேற்பது','சுற்றத்தினருடன் ஒப்பிடும் சிரமம்']};
+   const enMap={5:['strengthening learning habits','losing study focus'],7:['developing cooperation','misunderstanding friends'],10:['learning routines and class duties','excessive expectations on learning'],11:['learning through groups and friends','comparison with peers']};
+   if((ta?taMap:enMap)[k])return (ta?taMap:enMap)[k];
+  }
+  if(['mature','senior'].includes(age.stage)){
+   const taMap={5:['குடும்பத்தினருடன் அறிவையும் அனுபவத்தையும் பகிர்தல்','அளவுக்கு அதிக அறிவுரை காரணமான இடைவெளி'],10:['பொறுப்புகளைக் குறைத்து அனுபவப் பகிர்வு','உடல்நலத் தேவையை மீறி பணிச்சுமை ஏற்றல்']};
+   const enMap={5:['sharing experience with family','too much unsolicited advice'],10:['mentoring and simplifying responsibilities','duties that strain wellbeing']};
+   if((ta?taMap:enMap)[k])return (ta?taMap:enMap)[k];
+  }
+  return (ta?TRANSIT_TA:TRANSIT_EN)[index];
+ }
+ function renderDasha(full,asOf,lang='ta',context={}){
+  const ta=lang!=='en',date=dateString(asOf);
+  if(!date)return {ok:false,reason:'invalid-reference-date'};
+  const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);
+  if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};
+  const period=chosenPeriod(chart?.dashas?.periods,date);
+  if(!period)return {ok:false,reason:'no-covered-mahadasha-bhukti'};
+  const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[];
+  for(let i=0;i<12;i++){
+   const focus=i+1,focusHouse=d.houses[i],focusScore=BASE.houseScore(d,focusHouse);
+   const all=Array.from({length:12},(_,j)=>{const rel=j+1,lens=BASE.lens(d,focus,rel),mdImpact=periodImpact(d,period.md,rel),adImpact=periodImpact(d,period.ad,rel);return {relatedHouse:rel,lens,mdImpact,adImpact,activation:mdImpact.points*2+adImpact.points+lens.relevance};});
+   const md=linkedPlanetSummary(d,period.md,focus,lang),ad=linkedPlanetSummary(d,period.ad,focus,lang);
+   const signal=focusScore+md.pts+ad.pts;
+   const primary=(md.marks.length>ad.marks.length?md:ad),second=(primary===md?ad:md);
+   const base=dashaEffectsForAge(i,age,ta),area=(ta?BHAAVA_TA:BHAAVA_EN)[i];
+   const positive=signal>=-2,negative=signal<=3;
+   const opening=ta?
+    `இந்தப் புக்தியில் ${area} தொடர்பாக ${positive?base[0]:base[1]} என்ற போக்கு கணிக்கப்படுகிறது. ${primary.label} ${primary.sign} ராசியின் ${primary.house}-ஆம் பாவத்தில் ${primary.quality} இருப்பதுடன், ${primary.relation} செயல்படுகிறது; ${second.label} ${second.house}-ஆம் பாவத்திலிருந்து ${second.relation} இப்பலனின் அளவை மாற்றுகிறார்.`:
+    `During this subperiod ${area} may involve ${positive?base[0]:base[1]}. ${primary.label} in ${primary.sign}, natal house ${primary.house}, acts ${primary.relation}; ${second.label} from house ${second.house} modifies the emphasis.`;
+   const paragraphs=[{relatedHouse:focus,text:opening,evidence:{focusHouse:focus,md,ad,signal,period}}];
+   const risk=ta?`சாதக வாய்ப்பு: ${positive?base[0]:md.positive}; இதற்குத் துணையாக ${ad.positive} என்ற செயல் முறை உதவலாம். சவாலான பக்கம்: ${negative?base[1]:ad.negative}; ${md.negative} அதிகரிக்காமல் முடிவுகளை நிதானமாகக் கையாள வேண்டும்.`:
+    `Supportive potential: ${positive?base[0]:md.positive}, with ${ad.positive}. Possible difficulty: ${negative?base[1]:ad.negative}, especially ${md.negative}.`;
+   paragraphs.push({relatedHouse:focus,text:risk,evidence:{focusHouse:focus,md,ad,positive,negative}});
+   const linked=all.filter(x=>x.relatedHouse!==focus&&(x.mdImpact.points+x.adImpact.points>=4)&&x.lens.relevance>=2).sort((a,b)=>b.activation-a.activation||a.relatedHouse-b.relatedHouse).slice(0,2);
+   for(const x of linked){const whom=x.mdImpact.points>=x.adImpact.points?md:ad,side=focusScore+x.lens.score>=0,other=(ta?BHAAVA_TA:BHAAVA_EN)[x.relatedHouse-1],trait=side?whom.positive:whom.negative;
+     paragraphs.push({relatedHouse:x.relatedHouse,text:ta?
+     `${area} பற்றிய முடிவில் ${other} சார்ந்த நிலையும் கலந்து வரலாம். ${whom.label} ${whom.house}-ஆம் பாவத்தில் இருந்து ${x.relatedHouse}-ஆம் பாவத்துடன் தொடர்பு கொண்டிருப்பதால், ${trait} என்ற நடைமுறை விளைவு உருவாகலாம்; ஆனால் அது சூழ்நிலைக்கேற்ப மாறக்கூடும்.`:
+     `Decisions about ${area} can also depend on ${other}. ${whom.label} in house ${whom.house} links to house ${x.relatedHouse}, where ${trait} may modify the outcome.`,evidence:x});}
+   const stage=lifeStageLink(focus,age,ta),user=contextPhrase(focus,ctx,ta),caution=([1,6,8,12].includes(focus)&&focusScore<=0)?cautionForTopic(focus,period.md,period.ad,age,ta):'';
+   for(const x of [stage,user,caution].filter(Boolean))paragraphs.push({relatedHouse:focus,text:x,evidence:{stage:age.stage,source:'age-or-provided-context'}});
+   topics.push({number:focus,title:BASE.THEMES[i][ta?0:1],analyzedHouses:12,paragraphs,evidenceMatrix:all});
+  }
+  return {ok:true,kind:'dasha',referenceDate:date,age:age.age,ageStage:age.stage,period,topics};
+ }
  function signIndex(v){if(typeof v==='number'&&Number.isFinite(v))return Math.floor(((v%360)+360)%360/30);const t=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'],e=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const s=String(v||'').trim();let i=t.indexOf(s);if(i<0)i=e.findIndex(x=>x.toLowerCase()===s.toLowerCase());return i;}
  function normalizedTransit(transit,asOf){if(!transit||dateString(transit?.requested?.date)!==asOf||!Array.isArray(transit.planets))return null;const out={};for(const p of transit.planets){const n=normName(p.name);if(!['Jupiter','Saturn','Rahu','Ketu'].includes(n))continue;const sign=signIndex(p.rasi??p.longitude);if(sign>=0)out[n]={sign,retrograde:Boolean(p.retrograde)};}return ['Jupiter','Saturn','Rahu','Ketu'].every(k=>out[k])?out:null;}
  function transitImpact(d,positions,p,house){const x=positions[p],from=((x.sign-d.lagna+12)%12)+1,target=d.houses[house-1],lord=d.planets[target.lord],marks=[];if(from===house)marks.push('transit-through');if(['Jupiter','Saturn'].includes(p)&&aspect(p,from,house))marks.push('transit-aspect');if(lord.sign===x.sign)marks.push('natal-lord-contact');return {planet:p,transitHouse:from,house,marks,points:marks.reduce((n,m)=>n+({"transit-through":5,"transit-aspect":3,"natal-lord-contact":2}[m]||0),0)};}
@@ -110,16 +202,63 @@
   if(age.stage==='senior'&&[5,7,10].includes(topic))return ta?'ஏற்கெனவே உள்ள உறவுகளுக்கும் அனுபவப் பகிர்வுக்கும் நேரம் ஒதுக்குதல்':'devoting attention to existing relationships and sharing experience';
   return defaultLine;
  }
- function renderTransit(full,asOf,lang='ta',context={}){const ta=lang!=='en',date=dateString(asOf);if(!date)return {ok:false,reason:'invalid-reference-date'};const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};const pos=normalizedTransit(full?.transit,date);if(!pos)return {ok:false,reason:'transit-missing-or-date-mismatch'};const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[],ps=['Jupiter','Saturn','Rahu','Ketu'];
- for(let i=0;i<12;i++){const f=i+1,all=Array.from({length:12},(_,j)=>{const r=j+1,links=ps.map(p=>transitImpact(d,pos,p,r)),lens=BASE.lens(d,f,r);return {relatedHouse:r,links,lens,activation:Math.max(...links.map(z=>z.points))+(r===f?2:0)+(lens.links.length?2:0)};}),direct=all[i].links.filter(x=>x.points>0).sort((a,b)=>b.points-a.points||ps.indexOf(a.planet)-ps.indexOf(b.planet)),indirect=all.filter(x=>x.relatedHouse!==f&&x.lens.relevance>=2&&x.activation>=5&&x.links.some(p=>p.points>=3)).sort((a,b)=>b.activation-a.activation||a.relatedHouse-b.relatedHouse).slice(0,2),rows=[];
- const score=BASE.houseScore(d,d.houses[i]),story=transitStory(f,age,ctx,ta,score);if(direct.length){const planet=direct[0].planet,source=direct[0],role=(ta?TRANSIT_ROLE_TA:TRANSIT_ROLE_EN)[planet];rows.push({relatedHouse:f,text:ta?`${TR_TA[planet]} பெயர்ச்சி பிறப்பு ஜாதகத்தின் ${source.transitHouse}-ஆம் பாவம் வழியாக இத்துறையைத் தொடுகிறது. இதனால் ${story} என்ற நிலை ${role} வெளிப்படலாம்; விளைவின் தன்மை பிறப்பு ஜாதகப் பலத்தையும் தற்போதைய வாழ்வுச் சூழலையும் பொறுத்தது.`:`${planet} transiting natal house ${source.transitHouse} activates this domain through its location or aspect. It may express as ${story}, with the emphasis on ${role}; the natal support and real situation still matter.`,evidence:{focusHouse:f,planet,marks:source.marks,impacts:direct}});}else{rows.push({relatedHouse:f,text:ta?`இப்போதைய பெயர்ச்சி இத்துறையை நேரடியாகத் தொடாததால் ${story} என்பது குறிப்பிட்ட நாளில் நிகழும் உறுதியான மாற்றம் என்று சொல்ல இயலாது.`:`Since none of the four assessed slow transits directly activates this topic, ${story} is not a guaranteed event on this date.`,evidence:{focusHouse:f,impacts:all[i].links}});}
- for(const r of indirect){const peak=[...r.links].sort((a,b)=>b.points-a.points)[0];const which=(ta?CROSS_TA:CROSS_EN)[r.relatedHouse-1];rows.push({relatedHouse:r.relatedHouse,text:ta?`${which} சார்ந்த செயல்கள், ${story} என்ற வாழ்க்கை நிலையை மாற்றக்கூடும்; ஏனெனில் ${TR_TA[peak.planet]} அந்தத் தொடர்புடைய பாவத்தை ${peak.marks.includes('transit-through')?'நேரடியாகக் கடப்பதால்':'பார்வை அல்லது அதிபதித் தொடர்பால் தொடுவதால்'}, இரு தேவைகளுக்கும் இடையே தேர்வு செய்ய வேண்டிய சூழலை கவனிக்கலாம்.`:`The transit contacts ${which}, which can affect ${story}; ${peak.planet} activates that related house through its current position or accepted aspect; this is a cross-domain influence, not a promised outcome.`,evidence:r});}
- topics.push({number:f,title:BASE.THEMES[i][ta?0:1],analyzedHouses:12,opening:'',ageGuidance:'',paragraphs:rows,evidenceMatrix:all});
+ // V271 transit narrative: only describe areas connected to the actual moving
+ // planet, with different favourable and difficult consequences.
+ function renderTransit(full,asOf,lang='ta',context={}){
+  const ta=lang!=='en',date=dateString(asOf);
+  if(!date)return {ok:false,reason:'invalid-reference-date'};
+  const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);
+  if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};
+  const pos=normalizedTransit(full?.transit,date);
+  if(!pos)return {ok:false,reason:'transit-missing-or-date-mismatch'};
+  const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[],ps=['Jupiter','Saturn','Rahu','Ketu'];
+  for(let i=0;i<12;i++){
+   const focus=i+1,h=d.houses[i],score=BASE.houseScore(d,h);
+   const all=Array.from({length:12},(_,j)=>{const relatedHouse=j+1,links=ps.map(p=>transitImpact(d,pos,p,relatedHouse)),lens=BASE.lens(d,focus,relatedHouse);return {relatedHouse,links,lens,activation:links.reduce((a,x)=>a+x.points,0)+lens.relevance};});
+   const onHouse=all[i].links.filter(x=>x.points>0).sort((a,b)=>b.points-a.points||ps.indexOf(a.planet)-ps.indexOf(b.planet));
+   const rows=[],life=(ta?BHAAVA_TA:BHAAVA_EN)[i],lifeStory=transitStory(focus,age,ctx,ta,score);
+   for(const activated of onHouse.slice(0,2)){
+    const p=activated.planet,other=d.planets[h.lord],natal=linkedPlanetSummary(d,h.lord,focus,lang),planetHouse=activated.transitHouse;
+    const gained=score+(p==='Jupiter'?2:p==='Saturn'?-1:p==='Rahu'?-2:-1);
+    const ageEffects=transitEffectsForAge(i,age,ta),opportunity=ageEffects[0],challenge=ageEffects[1];
+    const actual=activated.marks.includes('transit-through')?(ta?'நேரடியாகக் கடக்கிறது':'passes through'):
+      activated.marks.includes('transit-aspect')?(ta?'பாரம்பரியப் பார்வையால் பார்க்கிறது':'aspects'):
+      (ta?'பாவாதிபதி இருக்கும் ராசியைத் தொடுகிறது':'contacts the sign of its natal ruler');
+    const caution=p==='Saturn'?(ta?'முடிவு தாமதமானாலும் பணியை முறையாகப் பகிர்ந்து தொடர்ந்து செய்வது முக்கியம்.':'Delays reward careful pacing and shared duties.'):
+      p==='Rahu'?(ta?'புதிய வாய்ப்பில் ஆவல் ஏற்பட்டாலும் ஒப்பந்தங்களையும் விவரங்களையும் உறுதி செய்ய வேண்டும்.':'Check practical details before acting on novel options.'):
+      p==='Ketu'?(ta?'பழைய முறையை விட்டு விலகுவதற்கு முன் அதனால் ஏற்படும் நடைமுறை விளைவுகளைப் பரிசீலிக்க வேண்டும்.':'Consider practical consequences before withdrawing from an existing approach.'):
+      (ta?'வாய்ப்பை விரிவாக்குவதற்கு முன்பு அது எந்த அளவு பொறுப்பை உருவாக்கும் என்பதையும் அறிந்துகொள்ள வேண்டும்.':'Consider the commitments that accompany growth.');
+    rows.push({relatedHouse:focus,text:ta?
+      `${TR_TA[p]} தற்போது பிறப்பு ஜாதகத்தில் ${planetHouse}-ஆம் பாவத்தில் நின்று ${life} சார்ந்த ${focus}-ஆம் பாவத்தை ${actual}. பிறப்பு அதிபதி ${natal.label} ${natal.sign} ராசியின் ${natal.house}-ஆம் பாவத்தில் ${natal.quality} இருப்பதால், ${gained>=0?opportunity:challenge} என்ற நடைமுறை விளைவு மற்ற சூழல்களுடன் சேர்ந்து வெளிப்படலாம். ${caution}`:
+      `${p} in natal house ${planetHouse} ${actual} the house of ${life}. Its lord ${natal.label} is in ${natal.sign}, natal house ${natal.house}, ${natal.quality}; this may favour ${gained>=0?opportunity:challenge}. ${caution}`,
+      evidence:{focusHouse:focus,planet:p,transitHouse:planetHouse,marks:activated.marks,natalLord:other,signal:gained}});
+    if(gained<1||activated.points>=5)rows.push({relatedHouse:focus,text:ta?
+      `${TR_TA[p]} ${planetHouse}-ஆம் பாவத்திலிருந்து ${life} தொடர்பைத் தூண்டும்போது சாதக வாய்ப்பு: ${opportunity}. பாதகமான வாய்ப்பு: ${challenge}. ${p==='Jupiter'?'விரிவாக்கமும்':'மாற்றமும்'} தரும் நிலையை உடனடி நிகழ்வாகக் கொள்ளாமல் தற்போதைய சூழலுடன் இணைத்துப் பார்க்க வேண்டும்.`:
+      `${p} from house ${planetHouse}: supportive possibility ${opportunity}; possible difficulty ${challenge}. This is not a guaranteed event.`,evidence:{planet:p,focusHouse:focus,positive:opportunity,negative:challenge}});
+   }
+   // Related-house evidence is included only for a genuine D1 link and transit activation.
+   const indirect=all.filter(x=>x.relatedHouse!==focus&&x.lens.relevance>=4&&x.links.some(z=>z.points>=3))
+     .sort((x,y)=>y.activation-x.activation||x.relatedHouse-y.relatedHouse).slice(0,onHouse.length?1:2);
+   for(const x of indirect){const chosen=x.links.filter(z=>z.points>=3).sort((a,b)=>b.points-a.points)[0],other=(ta?BHAAVA_TA:BHAAVA_EN)[x.relatedHouse-1];
+    const role=(ta?PLANET_LENS_TA:PLANET_LENS_EN)[chosen.planet],strength=score+x.lens.score,action=role[strength<0?1:0];
+    rows.push({relatedHouse:x.relatedHouse,text:ta?
+      `${other} மீது ${TR_TA[chosen.planet]} பெயர்ச்சித் தொடர்பு ஏற்படுகிறது. அந்தப் பாவத்துக்கும் ${life} சார்ந்த பாவத்துக்கும் பிறப்பு ஜாதகத்தில் ${x.lens.links.length} நேரடித் தொடர்புகள் உள்ளதால், ${action} என்ற செயல்முறை இப்பகுதியிலும் எதிரொலிக்கலாம். இதை குறிப்பிட்ட நாளில் நடக்கவிருக்கும் சம்பவமாகச் சொல்ல முடியாது.`:
+      `The ${chosen.planet} transit touches ${other}. With ${x.lens.links.length} natal links to ${life}, ${action} may matter across both areas; this is not a dated certainty.`,evidence:x});}
+   if(!rows.length){
+    const lord=d.planets[h.lord];
+    rows.push({relatedHouse:focus,text:ta?
+      `இந்தத் தேதியில் நான்கு மெதுவான பெயர்ச்சிக் கிரகங்களும் ${life} சார்ந்த பாவத்துடன் வலுவான நேரடித் தொடர்பு பெறவில்லை. அதன் அதிபதி ${LABEL[h.lord]} ${lord.house}-ஆம் பாவத்தில் இருப்பது பிறப்புத் தன்மையை விளக்கும்; ஆனால் இந்த நாளுக்குத் தனியாக உறுதியான பலனைச் சொல்லப் போதுமான பெயர்ச்சி ஆதாரம் இல்லை.`:
+      `None of the four assessed slow transits has a strong direct link to ${life} on this date. Its natal ruler ${h.lord} in house ${lord.house} does not alone establish an event.`,evidence:{focusHouse:focus,direct:false}});
+   }
+   const stage='',personal=contextPhrase(focus,ctx,ta);
+   if(onHouse.length||indirect.length){for(const x of [stage,personal].filter(Boolean))rows.push({relatedHouse:focus,text:x,evidence:{source:'age-or-provided-context'}});}
+   topics.push({number:focus,title:BASE.THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:all});
+  }
+  return {ok:true,kind:'transit',referenceDate:date,age:age.age,ageStage:age.stage,transiting:pos,topics};
  }
- return {ok:true,kind:'transit',referenceDate:date,age:age.age,ageStage:age.stage,transiting:pos,topics};}
  function htmlBlock(rep,lang){const ta=lang!=='en',kind=rep.kind==='transit'?'transit':'dasha',title=kind==='dasha'?(ta?'II. D1, தசா–புக்தி மற்றும் வயதின் அடிப்படையிலான வாழ்க்கைப் பலன்கள்':'II. D1, Dasha–Bhukti and Age-Based Predictions'):(ta?'III. D1, குரு–சனி–ராகு–கேது பெயர்ச்சி மற்றும் வயதின் அடிப்படையிலான பலன்கள்':'III. D1, Jupiter–Saturn–Rahu–Ketu Transits and Age-Based Predictions');if(!rep.ok)return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}"><h2>${title}</h2><p>${ta?'கணக்கிடப்பட்ட காலத் தரவு கிடைக்காததால் ஊகப் பலன் காட்டப்படவில்லை.':'Missing calculated timing data: no result has been invented.'}</p></section>`;
  const p=rep.period;const info=kind==='dasha'?(ta?`தேதி: ${rep.referenceDate} · வயது: ${rep.age} · ${LABEL[p.md]} மகாதசை (${p.mdStart} – ${p.mdEnd}) · ${LABEL[p.ad]} புக்தி (${p.adStart} – ${p.adEnd}). இந்த முழுப் புக்திக்குமான வாசிப்பு; ஒவ்வொரு நாளும் புதிய நிகழ்வு என்று அர்த்தமில்லை.`:`Date ${rep.referenceDate} · Age ${rep.age} · ${p.md} major period (${p.mdStart}–${p.mdEnd}), ${p.ad} sub-period (${p.adStart}–${p.adEnd}). This is a reading for the period, not a new event on each date.`):(ta?`பெயர்ச்சி தேதி: ${rep.referenceDate} · வயது: ${rep.age} · குரு, சனி, ராகு, கேது நிலைகள் பிறப்பு D1-உடன் ஒப்பிடப்பட்டுள்ளன.`:`Transit date ${rep.referenceDate} · Age ${rep.age} · Jupiter, Saturn, Rahu and Ketu compared against natal D1.`);
  const topics=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-${kind}-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(z=>`<p class="smv-d1-life-paragraph" data-d1-${kind}-related-house="${z.relatedHouse}">${esc(z.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}" lang="${ta?'ta':'en'}"><h2>${title}</h2><p class="smv-d1-life-method">${esc(info)}</p>${topics}</section>`;}
  function html(full,asOf,lang='ta',context={}){return htmlBlock(renderDasha(full,asOf,lang,context),lang)+htmlBlock(renderTransit(full,asOf,lang,context),lang);}
- return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'269-time-context-evidence-synthesis'});
+ return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'271-d1-linked-positive-negative-long-range'});
 });

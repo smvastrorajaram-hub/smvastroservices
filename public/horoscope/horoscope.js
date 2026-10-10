@@ -1889,6 +1889,68 @@ try{
           });
           lifeSlot.prepend(jump);
         }
+        // V271: build the complete 0–80-year Mahadasha/Bhukti + calculated
+        // four-planet transit timeline without altering access, Firebase or payments.
+        // Do not run for Basic/Public: this code executes only inside Full renderer.
+        const longDasha=lifeSlot.querySelector('[data-d1-time="dasha"]');
+        const longTransit=lifeSlot.querySelector('[data-d1-time="transit"]');
+        if(longDasha&&longTransit&&!longDasha.classList.contains('smv-predictions-unavailable')){
+          const longStatus=document.createElement('p');longStatus.className='smv-80-status';
+          longStatus.textContent=lang==='ta'?'80 ஆண்டு காலவரிசை உள்ளூர் கணக்கீட்டில் உருவாகிறது…':'Building the 80-year timeline using local calculations…';
+          longDasha.querySelector('p.smv-d1-life-method')?.insertAdjacentElement('afterend',longStatus);
+          const c=full?.chart||full;
+          const longKey=JSON.stringify([c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
+          const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
+          const longJobReady=import('./d1-80-year-reading.mjs?v=271-source-clean').then(async mod=>{
+            let job=longCache.get(longKey);
+            if(!job){
+              job=mod.build80Year(full,payload,{lang,onProgress:p=>{
+                if(!longStatus.isConnected||p.stage!=='transit')return;
+                const percent=Math.min(100,Math.round(100*p.done/Math.max(1,p.total)));
+                longStatus.textContent=(lang==='ta'?'80 ஆண்டுப் பெயர்ச்சி கணக்கீடு: ':'80-year transit calculations: ')+percent+'%';
+              }});
+              longCache.set(longKey,job);
+            }
+            let base;try{base=await job;}catch(e){if(longCache.get(longKey)===job)longCache.delete(longKey);throw e;}
+            if(!lifeSlot.isConnected||!longStatus.isConnected)return;
+            const report=base.language===lang?base:mod.translate80Year(full,base,lang);
+            const out=mod.render80Year(report,lang);
+            function panel(kind,markup){
+              const details=document.createElement('details');details.className='smv-80-container';details.dataset.smvLongRange=kind;
+              const summary=document.createElement('summary');
+              summary.textContent=(lang==='ta'?'0–80 வயது முழு காலவரிசை: ':'Complete age 0–80 timeline: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
+              details.appendChild(summary);
+              const body=document.createElement('div');body.innerHTML=markup;details.appendChild(body);
+              return details;
+            }
+            const md=longDasha.querySelector('p.smv-d1-life-method'),tr=longTransit.querySelector('p.smv-d1-life-method');
+            md?.insertAdjacentElement('afterend',panel('dasha',out.dashaHTML));
+            tr?.insertAdjacentElement('afterend',panel('transit',out.transitHTML));
+            longStatus.textContent=(lang==='ta'?'80 ஆண்டு காலவரிசை தயார்: ':'80-year timeline ready: ')+report.meta.dashaPeriods+(lang==='ta'?' தசா–புக்திகள், ':' Dasha–Bhukti periods, ')+report.meta.transitSignChanges+(lang==='ta'?' கோச்சார ராசி மாற்றங்கள். மேலுள்ள பட்டைகளைத் திறக்கவும்.':' transit sign changes. Expand the sections above.');
+            window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
+          }).catch(e=>{if(longStatus.isConnected)longStatus.textContent=(lang==='ta'?'80 ஆண்டு காலவரிசை உருவாக்க முடியவில்லை: ':'Could not generate the 80-year timeline: ')+String(e?.message||e);});
+          root.__smvLongTimelineReady=longJobReady;
+          root.dataset.smvLongPending='1';
+          longJobReady.finally(()=>{root.dataset.smvLongPending='0';});
+          // A Save/Print tap while local 80-year calculation is still running
+          // must not snapshot a partial report; preserve the existing handlers.
+          if(!root.__smvLongSaveGateBound){
+            root.__smvLongSaveGateBound=true;
+            root.addEventListener('click',async event=>{
+              const button=event.target?.closest?.('[data-save],[data-print]');
+              if(!button||!root.contains(button)||root.dataset.smvLongPending!=='1')return;
+              event.preventDefault();event.stopImmediatePropagation();
+              button.disabled=true;
+              await root.__smvLongTimelineReady;
+              if(button.isConnected){button.disabled=false;button.click();}
+            },true);
+          }
+          if(!window.__smvLongPrintHandlers){
+            window.__smvLongPrintHandlers=true;
+            window.addEventListener('beforeprint',()=>{document.querySelectorAll('details.smv-80-container,details.smv-80-window').forEach(el=>{el.dataset.smvPrintWasOpen=el.open?'1':'0';el.open=true;});});
+            window.addEventListener('afterprint',()=>{document.querySelectorAll('details.smv-80-container,details.smv-80-window').forEach(el=>{if(el.dataset.smvPrintWasOpen==='0')el.open=false;delete el.dataset.smvPrintWasOpen;});});
+          }
+        }
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');

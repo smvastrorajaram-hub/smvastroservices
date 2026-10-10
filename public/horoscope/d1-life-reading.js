@@ -261,27 +261,53 @@
  function situation(topic,ctx,ta){if(!ctx)return '';const t=String(ctx.currentWork||'').toLowerCase(),m=String(ctx.maritalStatus||'').toLowerCase();if(topic===10&&t){const student=/student|studying|படிப்பு|மாணவ|கல்வி/.test(t),retired=/retired|pension|ஓய்வு/.test(t),business=/business|self.employed|வியாபாரம்|தொழில்முனை/.test(t);return ta?(student?'நீங்கள் தற்போது படிப்பில் இருப்பதாகத் தெரிவித்துள்ளதால் இதை வேலை உயர்வாக அல்ல, கற்றல் மற்றும் பயிற்சித் திறனாகப் பார்க்க வேண்டும்.':retired?'நீங்கள் ஓய்வுபெற்றிருப்பதாகத் தெரிவித்துள்ளதால் புதிய பதவியை அல்ல, அனுபவப் பகிர்வையும் அன்றாட ஒழுங்கையும் மையமாக்க வேண்டும்.':business?'நீங்கள் சொந்தத் தொழில் செய்வதாகத் தெரிவித்துள்ளதால் இத்தொடர்பு வாடிக்கையாளர், முடிவு மற்றும் பொறுப்புப் பகிர்வில் பார்க்கப்படுகிறது.':'நீங்கள் தெரிவித்த தற்போதைய பணிச்சூழலுடன் இந்த இயல்பை ஒப்பிட்டுப் பார்ப்பது பொருத்தமானது.'):(student?'As you report studying, read this as learning and training, not a job promotion.':retired?'As you report retirement, apply this to mentoring and daily routines rather than new posts.':business?'As you report self-employment, apply this to clients, decisions and shared duties.':'Relate this tendency to the current work situation you described.');}
   if(topic===7&&m){const single=/unmarried|single|திருமணமாகவில்லை|மணமாகாத/.test(m);const married=/married|திருமணமான|திருமணம் ஆன/.test(m);if(single)return ta?'நீங்கள் திருமணமாகவில்லை என்று தெரிவித்துள்ளதால் இப்பலனை இப்போதுள்ள நெருங்கிய உறவுகளிலும் எதிர்காலத் துணைத் தேர்விலும் பொருத்திப் பார்க்கலாம்.':'As you report being unmarried, consider close relationships and future partner preferences, not an existing spouse.';if(married)return ta?'நீங்கள் திருமணமானவர் என்று தெரிவித்துள்ளதால் இப்பலன் நடைமுறையில் பொறுப்புகளைப் பகிர்வதிலும் கருத்துப் பரிமாற்றத்திலும் பார்க்கப்படுகிறது.':'As you report being married, interpret this through current communication and shared responsibilities.';}
   if(topic===4&&ctx.currentResidence&&ctx.birthPlace&&ctx.currentResidence.trim().toLowerCase()!==ctx.birthPlace.trim().toLowerCase())return ta?'தற்போதைய வசிப்பிடம் பிறப்பிடத்திலிருந்து வேறுபடுவதாக நீங்கள் தெரிவித்துள்ளீர்கள்; குடும்பத் தொடர்பு, பயணம் மற்றும் தனிப்பட்ட நேரத்தை அதன் நடைமுறைச் சூழலுடன் இணைத்துப் பார்க்கலாம்.':'You report living somewhere other than your birthplace; interpret home ties and travel within that practical setting.';return '';}
- function render(chart,lang='ta',context={}){const ta=lang!=='en',d=toD1(chart),ctx=sanitizeContext(context),topics=[];for(let i=0;i<12;i++){
-  const focus=i+1,all=Array.from({length:12},(_,j)=>lens(d,focus,j+1)),primary=all[i],f=d.houses[i],lord=d.planets[f.lord],score=houseScore(d,f),traits=ta?TRAITS_TA:TRAITS_EN,base=ta?DOMAINS_TA:DOMAINS_EN,rows=[];
-  const lead=score>=1?base[i][0]:score<=-2?base[i][1]:(ta?`${base[i][0]}; சூழல் கடினமாகும்போது ${base[i][1]}`:`${base[i][0]}; under strain, ${base[i][1]}`);
-  const active=[...f.occupants,...f.aspects, f.lord];const character=active.sort((a,b)=>Math.abs(scorePlanet(d,d.planets[b]))-Math.abs(scorePlanet(d,d.planets[a])))[0]||f.lord;
-  const effect=scorePlanet(d,d.planets[character])>=0?traits[character][0]:traits[character][1];
-  rows.push({house:focus,text:ta?`${lead} என்பது இவ்வமைப்பில் காணக்கூடிய ஒரு போக்காகும். அதனுடன் ${effect} இணைவதால் இது அன்றாட நடவடிக்கைகளிலும் வெளிப்படலாம்.`:`The chart emphasizes ${lead}. ${effect} is a related tendency in everyday choices.`,evidence:primary});
-  const notable=all.filter(x=>x.relatedHouse!==focus&&x.relevance>=3).sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,3);
-  for(const row of notable){const rel=row.relatedHouse,theme=(ta?CROSS_TA:CROSS_EN)[rel-1],mode=row.score>=2?'positive':row.score<=-2?'challenging':'mixed',behavior=(ta?DOMAINS_TA:DOMAINS_EN)[i][mode==='challenging'?1:0],detail=traits[row.planet][row.score<0?1:0];
-   const lived=(ta?ROUTES_TA:ROUTES_EN)[i][rel-1].replace(/[.]$/,'');
-   const line=ta?(mode==='positive'?`${lived}; இந்தப் பலனில் ${detail} என்ற கிரகச் சார்பான இயல்பு கூடுதலாக வலுப்பெறலாம்.`:
-      mode==='challenging'?`${lived}; ஆனால் ${detail} என்ற எதிர்வினை இவ்விரு வாழ்க்கைத் துறைகளையும் ஒருசேரச் சிரமப்படுத்தலாம்.`:
-      `${lived}; அதனுடன் ${detail} என்ற அணுகுமுறை கலந்து வரக்கூடும்.`):
-      (mode==='positive'?`${lived}; the associated planetary tendency is ${detail}.`:
-       mode==='challenging'?`${lived}; however, ${detail} can complicate the interaction between these domains.`:
-       `${lived}; a related tendency is ${detail}.`);
-   rows.push({house:rel,text:line,evidence:row});
+ // V271: narrative assembly is based on the most relevant *distinct* natal
+ // connections. D1 facts never become an unsupported factual diagnosis.
+ function render(chart,lang='ta',context={}){
+  const ta=lang!=='en',d=toD1(chart),ctx=sanitizeContext(context),topics=[];
+  const traitSet=ta?TRAITS_TA:TRAITS_EN,verbs=ta?DOMAINS_TA:DOMAINS_EN;
+  for(let i=0;i<12;i++){
+   const focus=i+1,house=d.houses[i],lord=d.planets[house.lord],score=houseScore(d,house);
+   const analyzed=Array.from({length:12},(_,j)=>lens(d,focus,j+1));
+   const candidates=[...new Set([house.lord,...house.occupants,...house.aspects])]
+    .sort((a,b)=>Math.abs(scorePlanet(d,d.planets[b]))-Math.abs(scorePlanet(d,d.planets[a]))||a.localeCompare(b));
+   const main=candidates[0]||house.lord,secondary=candidates.find(p=>p!==main)||house.lord;
+   const lead=score>=2?verbs[i][0]:score<=-2?verbs[i][1]:ta?`${verbs[i][0]}; ஆனால் சூழ்நிலை அழுத்தமாகும்போது ${verbs[i][1]}`:`${verbs[i][0]}; under pressure, ${verbs[i][1]}`;
+   const signName=(ta?SIGNS_TA:SIGNS_EN)[lord.sign],first=traitSet[main][scorePlanet(d,d.planets[main])<0?1:0],second=traitSet[secondary][scorePlanet(d,d.planets[secondary])<0?1:0];
+   const cause=ta?`${house.lord===main?'இந்தப் பாவத்தின் அதிபதி': 'இந்தப் பாவத்துடன் தொடர்புடைய '+TA[main]} ${house.lord===main?TA[house.lord]:''} ${signName} ராசியின் ${lord.house}-ஆம் பாவத்தில் இருப்பதும், ${house.occupants.length?house.occupants.map(p=>TA[p]).join('–')+' இங்கு இருப்பதும்':'இந்தப் பாவம் கிரகமின்றி அதன் அதிபதியின் நிலையைச் சார்ந்திருப்பதும்'} இந்தக் கலப்பை உருவாக்குகிறது.`:
+    `The ruler ${house.lord} occupies ${signName} in house ${lord.house}; ${house.occupants.length?house.occupants.join(' and ')+' occupy this natal house':'this house has no occupants'}.`;
+   const mainText=ta?
+    `${lead} என்ற நடைமுறைப் போக்கு இருக்கலாம். இதில் ${first} என்ற செயல் முறையும் ${second} என்ற அணுகுமுறையும் சேர்ந்து வெளிப்படலாம். ${cause}`:
+    `A possible pattern is ${lead}; it combines ${first} with ${second}. ${cause}`;
+   const rows=[{house:focus,text:mainText,evidence:{focusHouse:focus,score,dominant:main,secondary,occupants:house.occupants,rulerHouse:lord.house}}];
+   const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.relevance>=3)
+     .sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,3);
+   for(const line of notable){const rel=line.relatedHouse,ruler=d.planets[d.houses[rel-1].lord],influence=line.planet,quality=scorePlanet(d,d.planets[influence]);
+    const behavior=(ta?ROUTES_TA:ROUTES_EN)[i][rel-1].replace(/[.]$/,'');
+    const h=ta?SIGNS_TA[ruler.sign]:SIGNS_EN[ruler.sign],related=ta?TA[d.houses[rel-1].lord]:d.houses[rel-1].lord;
+    const influenceWord=traitSet[influence][quality<0?1:0],direction=line.score>=2?'support':line.score<=-2?'strain':'mixed';
+    const relationship=ta?(
+      line.links.includes('mutual-exchange')?'இரு பாவாதிபதிகளும் ஒருவருக்கொருவர் இடம் மாறி இருப்பதால்':
+      line.links.includes('lords-conjunct')?'இரு பாவாதிபதிகளும் ஒரே பாவத்தில் சேர்ந்து இருப்பதால்':
+      line.links.includes('focus-lord-in-related')?'முதன்மைப் பாவத்தின் அதிபதி தொடர்புடைய பாவத்தில் இருப்பதால்':
+      line.links.includes('related-lord-in-focus')?'தொடர்புடைய பாவத்தின் அதிபதி முதன்மைப் பாவத்தில் இருப்பதால்':
+      line.links.length?'பார்வை அல்லது பாவாதிபதி தொடர்பு இருப்பதால்':
+      'இரு பாவங்களுக்கிடையே பலவீனமான துணைத் தொடர்பு மட்டும் இருப்பதால்'):
+      (line.links.includes('mutual-exchange')?'the rulers exchange houses':line.links.includes('lords-conjunct')?'the rulers join in one house':line.links.length?'the natal rulers or aspects connect':'the natal connection is weaker');
+    const tilt=direction==='support'?(ta?'சூழ்நிலை துணையாக அமைந்தால் இந்தத் திறனை முன்னேற்றமாக மாற்றும் வாய்ப்பு இருக்கலாம்.':'When supported, this can be developed constructively.'):
+       direction==='strain'?(ta?'எதிர்பார்ப்பு மற்றும் செயல்படும் வேகம் மாறுபடும்போது உறவு அல்லது முயற்சியில் சிரமம் உருவாகலாம்.':'Competing expectations can create friction.'):
+        (ta?'சாதகமும் சவாலும் கலந்திருந்தால் சூழ்நிலைக்கு ஏற்ப செயல்முறையை மாற்றுவது நல்லது.':'Results depend on how the competing needs are balanced.');
+    rows.push({house:rel,text:ta?
+      `${behavior}; ${relationship}, ${related} ${h} ராசியின் ${ruler.house}-ஆம் பாவத்தில் இருந்து இந்தக் காரகத்துவத்தை மாற்றுகிறார். ${TA[influence]} தொடர்பால் ${influenceWord} என்ற இயல்பு சேர்கிறது. ${tilt}`:
+      `${behavior}; ${relationship}. ${related} in ${h}, house ${ruler.house}, changes this connection; ${influence} adds ${influenceWord}. ${tilt}`,
+      evidence:{...line,linkedLordHouse:ruler.house,linkedLordSign:ruler.sign,direction}});
+   }
+   const practical=situation(focus,ctx,ta);
+   if(practical)rows.push({house:focus,text:practical,evidence:{source:'user-declared-situation'}});
+   topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:analyzed});
   }
-  const practical=situation(focus,ctx,ta);if(practical)rows.push({house:focus,text:practical,evidence:{context:'user-provided',focusHouse:focus}});
-  topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:all});
+  return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
- return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'Whole-sign Parashari drishti; selective evidence narrative',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};}
  function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'ஒவ்வொரு தலைப்பிற்கும் 12 பாவங்களும் ஆய்வு செய்யப்பட்டு தொடர்புள்ள பலன்கள் மட்டும் தொகுக்கப்பட்டுள்ளன.':'All twelve houses are examined for every topic; only relevant connections are narrated.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'269-d1-evidence-synthesis'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'271-individual-linked-d1-narrative'});
 });
