@@ -5,6 +5,8 @@
 (function(root,factory){const b=typeof module==='object'&&module.exports?require('./d1-life-reading.js'):root?.SMVLifePredictionD1;const api=factory(b);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SMVTimePredictionD1=api;})(typeof window!=='undefined'?window:globalThis,function(BASE){'use strict';
  const REL=(typeof module==='object'&&module.exports)?require('./d1-relationships.js'):globalThis.SMVD1Relationships;
  const KARA=(typeof module==='object'&&module.exports)?require('./d1-karaka-functional.js'):globalThis.SMVD1KarakaFunctional;
+ const DERIVED=(typeof module==='object'&&module.exports)?require('./d1-derived-matters.js'):globalThis.SMVD1DerivedMatters;
+ if(!DERIVED||typeof DERIVED.periodNote!=='function')throw Error('Load d1-derived-matters.js before d1-time-reading.js');
  if(!REL||typeof REL.analyze!=='function')throw Error('Load d1-relationships.js before d1-time-reading.js');
  if(!BASE||typeof BASE.toD1!=='function')throw Error('Load d1-life-reading.js before d1-time-reading.js');
  const P=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
@@ -190,8 +192,9 @@
       const p=d.planets[k];return p&&(d.houses[focus-1].lord===k||p.house===focus||REL.aspectHouse(d,k,focus));
    });
    const functionalPeriod=running?KARA.periodNote(d,running,lang,focus,age.age):null;
+   const derivedPeriod=DERIVED.PER_FOCUS[focus]?.length?DERIVED.periodNote(d,DERIVED.PER_FOCUS[focus][0],[period.md,period.ad],lang,age.age):null;
    const paragraphs=[
-     {relatedHouse:focus,text:supportive+periodRelation+(functionalPeriod?.text?' '+functionalPeriod.text:''),evidence:{focusHouse:focus,md,ad,signal,period,side:'supportive',relational:!!periodRelation,functional: functionalPeriod?.evidence||null}},
+     {relatedHouse:focus,text:supportive+periodRelation+(functionalPeriod?.text?' '+functionalPeriod.text:'')+(derivedPeriod?.text?' '+derivedPeriod.text:''),evidence:{focusHouse:focus,md,ad,signal,period,side:'supportive',relational:!!periodRelation,functional: functionalPeriod?.evidence||null}},
      {relatedHouse:focus,text:challenge,evidence:{focusHouse:focus,md,ad,signal,period,side:'challenging'}}
    ];
    const linked=(['infant','child','teen'].includes(age.stage)?[]:all.filter(x=>x.relatedHouse!==focus&&(x.mdImpact.points+x.adImpact.points>=4)&&x.lens.relevance>=2).sort((a,b)=>b.activation-a.activation||a.relatedHouse-b.relatedHouse).slice(0,2));
@@ -267,7 +270,8 @@
     // functional nature of this *natal* house ruler is a separate fact.
     // Do not equate transit Rahu/Ketu with an invented natal drishti.
     const lordRole=KARA.periodNote(d,h.lord,lang,focus,age.age);
-    rows.push({relatedHouse:focus,text:opportunityText+' '+difficultText+(rows.length===0&&lordRole.text?' '+lordRole.text:''),evidence:{focusHouse:focus,planet:p,transitHouse:planetHouse,marks:activated.marks,natalLord:other,signal:gained,side:'both',functional:lordRole.evidence}});
+    const derivedTransit=(DERIVED.PER_FOCUS[focus]?.length && activated.marks?.length)?DERIVED.periodNote(d,DERIVED.PER_FOCUS[focus][0],[p],lang,age.age):null;
+    rows.push({relatedHouse:focus,text:opportunityText+' '+difficultText+(rows.length===0&&lordRole.text?' '+lordRole.text:'')+(rows.length===0&&derivedTransit?.text?' '+derivedTransit.text:''),evidence:{focusHouse:focus,planet:p,transitHouse:planetHouse,marks:activated.marks,natalLord:other,signal:gained,side:'both',functional:lordRole.evidence}});
    }
    // Related-house evidence is included only for a genuine D1 link and transit activation.
    const indirect=(['infant','child','teen'].includes(age.stage)?[]:all.filter(x=>x.relatedHouse!==focus&&x.lens.links.length>0&&x.lens.relevance>=4&&x.links.some(z=>z.points>=3))

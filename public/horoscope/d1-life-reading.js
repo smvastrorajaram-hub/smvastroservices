@@ -5,6 +5,8 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SMVLifePredictionD1=api;})(typeof window!=='undefined'?window:globalThis,function(){'use strict';
  const REL=(typeof module==='object'&&module.exports)?require('./d1-relationships.js'):globalThis.SMVD1Relationships;
  const KARA=(typeof module==='object'&&module.exports)?require('./d1-karaka-functional.js'):globalThis.SMVD1KarakaFunctional;
+ const DERIVED=(typeof module==='object'&&module.exports)?require('./d1-derived-matters.js'):globalThis.SMVD1DerivedMatters;
+ if(!DERIVED||typeof DERIVED.forFocus!=='function')throw Error('Load d1-derived-matters.js before d1-life-reading.js');
  if(!REL||typeof REL.analyze!=='function')throw Error('Load d1-relationships.js before d1-life-reading.js');
  const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
  const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -322,6 +324,9 @@
    const karakaReading=KARA.description(d,focus,lang);
    if(karakaReading.text){rows.splice(2,0,{house:focus,text:karakaReading.text,
        evidence:karakaReading.evidence});}
+   // V276: derived houses + matter-specific karaka, house/lord/occupation/aspect
+   // (one evidenced reading per relevant focus, not a 12x12 text expansion).
+   for(const derived of DERIVED.forFocus(d,focus,lang)){if(derived.text)rows.push({house:focus,text:derived.text,evidence:derived.evidence});}
    const practical=situation(focus,ctx,ta);
    if(practical)rows.push({house:focus,text:practical,evidence:{source:'user-declared-situation'}});
    topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:analyzed});
@@ -329,5 +334,5 @@
   return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
  function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'இந்தப் பகுதி D1 ஜாதகத்தின் வாழ்நாள் இயல்பு மற்றும் சாத்தியமான வாழ்க்கை அணுகுமுறைகளைப் பற்றியது; பிறந்த குழந்தையில் இவை இப்போதே வெளிப்படும் என்ற பொருள் இல்லை. வயதிற்கேற்ற கால விளக்கங்கள் II, III பகுதிகளில் வழங்கப்படுகின்றன.':'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'275-karaka-functional-synthesis'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'276-derived-matters'});
 });
