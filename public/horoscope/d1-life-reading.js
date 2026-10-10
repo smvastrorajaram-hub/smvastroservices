@@ -3,6 +3,9 @@
    Belief-based traditional interpretations, not verifiable personality diagnoses.
    No remote service, cache mutation, or chart recalculation. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SMVLifePredictionD1=api;})(typeof window!=='undefined'?window:globalThis,function(){'use strict';
+ const REL=(typeof module==='object'&&module.exports)?require('./d1-relationships.js'):globalThis.SMVD1Relationships;
+ const KARA=(typeof module==='object'&&module.exports)?require('./d1-karaka-functional.js'):globalThis.SMVD1KarakaFunctional;
+ if(!REL||typeof REL.analyze!=='function')throw Error('Load d1-relationships.js before d1-life-reading.js');
  const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
  const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
  const PN=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
@@ -249,7 +252,7 @@
  function signIndex(v){if(Number.isInteger(v)&&v>=0&&v<12)return v;if(typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<360)return Math.floor(v/30);const s=String(v??'').trim();const ta=SIGNS_TA.indexOf(s),en=SIGNS_EN.findIndex(x=>x.toLowerCase()===s.toLowerCase());return ta>=0?ta:en;}
  function planetName(v){return ALIASES[String(v??'').trim()]||ALIASES[String(v??'').trim().toLowerCase()]||null;}
  function dignity(p){const n=p.key,s=p.sign;if(n==='Rahu'||n==='Ketu')return 'neutral';if(EXALTED[n]===s)return 'exalted';if(DEBILITATED[n]===s)return 'debilitated';if((OWNS[n]||[]).includes(s))return 'own';return 'neutral';}
- function toD1(chart){const source=chart?.chart&&chart.chart.lagna?chart.chart:chart;const lagna=signIndex(source?.lagna?.rasi??source?.lagna?.longitude);if(lagna<0)throw Error('D1 Lagna is required; no default sign.');const planets={};for(const p of source?.planets||[]){const key=planetName(p?.name||p?.planet);if(!key)continue;const sign=signIndex(p?.rasi??p?.longitude);if(sign<0)continue;planets[key]={key,sign,house:(sign-lagna+12)%12+1,retrograde:Boolean(p?.strength?.retrograde||p?.retrograde),combust:Boolean(p?.strength?.combustion),dignity:null};}
+ function toD1(chart){const source=chart?.chart&&chart.chart.lagna?chart.chart:chart;const lagna=signIndex(source?.lagna?.rasi??source?.lagna?.longitude);if(lagna<0)throw Error('D1 Lagna is required; no default sign.');const planets={};for(const p of source?.planets||[]){const key=planetName(p?.name||p?.planet);if(!key)continue;const sign=signIndex(p?.rasi??p?.longitude);if(sign<0)continue;planets[key]={key,sign,longitude:(Number.isFinite(Number(p?.longitude))&&p?.longitude!==null&&p?.longitude!==''&&Math.floor((((Number(p.longitude)%360)+360)%360)/30)===sign)?(((Number(p.longitude)%360)+360)%360):null,house:(sign-lagna+12)%12+1,retrograde:Boolean(p?.strength?.retrograde||p?.retrograde),combust:Boolean(p?.strength?.combustion),dignity:null};}
   if(Object.keys(TA).some(x=>!planets[x]))throw Error('Nine valid D1 planetary signs required.');const houses=Array.from({length:12},(_,i)=>({no:i+1,sign:(lagna+i)%12,lord:PN[(lagna+i)%12],occupants:[],aspects:[]}));for(const p of Object.values(planets)){p.dignity=dignity(p);houses[p.house-1].occupants.push(p.key);for(const step of DRISHTI[p.key]||[]){houses[(p.house+step-2)%12].aspects.push(p.key);}}for(const h of houses){h.aspects=[...new Set(h.aspects)];h.occupants=[...new Set(h.occupants)];}return {lagna,planets,houses};}
  function scorePlanet(d,p){if(!p)return 0;let n={exalted:3,own:2,neutral:0,debilitated:-3}[p.dignity]||0;if(p.combust&&p.key!=='Sun')n--;for(const k of d.houses[p.house-1].aspects){if(['Jupiter','Venus'].includes(k))n++;if(['Saturn','Mars'].includes(k))n--;}return Math.max(-4,Math.min(4,n));}
  function houseScore(d,h){let n=scorePlanet(d,d.planets[h.lord]);for(const k of h.occupants){if(['Jupiter','Venus','Mercury'].includes(k))n++;if(['Saturn','Mars','Rahu','Ketu'].includes(k))n--;}for(const k of h.aspects){if(['Jupiter','Venus'].includes(k))n++;if(['Saturn','Mars'].includes(k))n--;}return Math.max(-4,Math.min(4,n));}
@@ -302,20 +305,29 @@
       line.links.length?'பார்வை அல்லது பாவாதிபதி தொடர்பு இருப்பதால்':
       'இரு பாவங்களுக்கிடையே பலவீனமான துணைத் தொடர்பு மட்டும் இருப்பதால்'):
       (line.links.includes('mutual-exchange')?'the rulers exchange houses':line.links.includes('lords-conjunct')?'the rulers join in one house':line.links.length?'the natal rulers or aspects connect':'the natal connection is weaker');
-    const tilt=direction==='support'?(ta?'சூழ்நிலை துணையாக அமைந்தால் இந்தத் திறனை முன்னேற்றமாக மாற்றும் வாய்ப்பு இருக்கலாம்.':'When supported, this can be developed constructively.'):
-       direction==='strain'?(ta?'எதிர்பார்ப்பு மற்றும் செயல்படும் வேகம் மாறுபடும்போது உறவு அல்லது முயற்சியில் சிரமம் உருவாகலாம்.':'Competing expectations can create friction.'):
-        (ta?'சாதகமும் சவாலும் கலந்திருந்தால் சூழ்நிலைக்கு ஏற்ப செயல்முறையை மாற்றுவது நல்லது.':'Results depend on how the competing needs are balanced.');
+    const tilt=''; // V273: omit identical non-evidence-based advice repeated on every natal house link.
     rows.push({house:rel,text:ta?
-      `${behavior}; ${relationship}, ${related} ${h} ராசியின் ${ruler.house}-ஆம் பாவத்தில் இருந்து இந்தக் காரகத்துவத்தை மாற்றுகிறார். ${TA[influence]} தொடர்பால் ${influenceWord} என்ற இயல்பு சேர்கிறது. ${tilt}`:
+      `${behavior}; ${relationship}, ${related} ${h} ராசியின் ${ruler.house}-ஆம் பாவத்தில் இருந்து இந்தக் காரகத்துவத்தை மாற்றுகிறார். ${TA[influence]} தொடர்பால் ${influenceWord} என்ற இயல்பு சேர்கிறது.${tilt}`:
       `${behavior}; ${relationship}. ${related} in ${h}, house ${ruler.house}, changes this connection; ${influence} adds ${influenceWord}. ${tilt}`,
       evidence:{...line,linkedLordHouse:ruler.house,linkedLordSign:ruler.sign,direction}});
    }
+   // V274: a single D1 evidence-led synthesis; do not emit every possible
+   // 12x12 permutation as another generic paragraph. Each contact is real.
+   const relationshipReading=REL.narration(d,focus,lang);
+   if(relationshipReading.text){rows.splice(1,0,{house:focus,text:relationshipReading.text,
+       evidence:{source:'d1-parashari-relational',...relationshipReading.evidence}});}
+   // V275: primary naisargika karaka (Table 15) + distinct reference
+   // house from the karaka (Table 12 / graha lagna), then functional
+   // rulership and conditional dusthana reading. Only once per topic.
+   const karakaReading=KARA.description(d,focus,lang);
+   if(karakaReading.text){rows.splice(2,0,{house:focus,text:karakaReading.text,
+       evidence:karakaReading.evidence});}
    const practical=situation(focus,ctx,ta);
    if(practical)rows.push({house:focus,text:practical,evidence:{source:'user-declared-situation'}});
    topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:analyzed});
   }
   return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
- function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'ஒவ்வொரு தலைப்பிற்கும் 12 பாவங்களும் ஆய்வு செய்யப்பட்டு தொடர்புள்ள பலன்கள் மட்டும் தொகுக்கப்பட்டுள்ளன.':'All twelve houses are examined for every topic; only relevant connections are narrated.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'272-factual-lord-position-correction'});
+ function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'இந்தப் பகுதி D1 ஜாதகத்தின் வாழ்நாள் இயல்பு மற்றும் சாத்தியமான வாழ்க்கை அணுகுமுறைகளைப் பற்றியது; பிறந்த குழந்தையில் இவை இப்போதே வெளிப்படும் என்ற பொருள் இல்லை. வயதிற்கேற்ற கால விளக்கங்கள் II, III பகுதிகளில் வழங்கப்படுகின்றன.':'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'275-karaka-functional-synthesis'});
 });
