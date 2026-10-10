@@ -7,3 +7,10 @@
 .smv-d1-life-paragraph { margin: 0 0 13px; text-align: left; font-size: 15px; font-weight: 400; line-height: 1.84; white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .smv-d1-life-reading { padding: 0; } .smv-d1-life-paragraph { font-size: 14.5px; line-height: 1.9; } }
 @media print { .smv-d1-life-reading { padding: 0; margin: 12px 0; } .smv-d1-life-topic > h3 { break-after: avoid; } .smv-d1-life-paragraph { break-inside: avoid; } }
+
+/* V267 — same single-layer typography for sections II and III. */
+.smv-d1-time-reading { margin-top: 35px; }
+.smv-d1-age-guidance { margin: 4px 0 17px; font-size: .94rem; line-height: 1.75; font-weight: 550; }
+@media print { .smv-d1-age-guidance { break-after: avoid; } }
+
+.smv-d1-topic-opening {margin: 2px 0 17px; font-size: .97rem; line-height: 1.8; font-weight: 500;}

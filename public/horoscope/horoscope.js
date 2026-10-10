@@ -1270,10 +1270,14 @@
       const mantraPart=makePart('daily-mantras-analysis','DAILY LIFE MANTRAS','தினசரி வாழ்க்கையில் சொல்ல வேண்டிய மந்திரங்கள்','VII');
       const adhidevataPart=makePart('adhidevata-analysis','ADHIDEVATAS','அதிதேவதைகள்','VIII');
       const deitiesPart=makePart('deities-analysis','DEITIES','தெய்வங்கள்','IX');
-      [chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart].forEach(p=>shell.appendChild(p));
-      const accordionParts=[chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart];
+      // X. Predictions: I = natal D1 only; II = D1 + actual MD/AD + age;
+      // III = D1 + actual dated Jupiter/Saturn/Rahu/Ketu transits + age.
+      // No legacy Integrated Predictions renderer is revived.
+      const predictionsPart=makePart('life-predictions','PREDICTIONS','பலன்கள்','X');
+      [chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionsPart].forEach(p=>shell.appendChild(p));
+      const accordionParts=[chartPart,dasaPart,tajakaPart,transitPart,remedyPart,numerologyPart,mantraPart,adhidevataPart,deitiesPart,predictionsPart];
 
-      const parts={chart:chartPart,dasa:dasaPart,tajaka:tajakaPart,transit:transitPart,remedy:remedyPart,numerology:numerologyPart,mantras:mantraPart,adhidevata:adhidevataPart,deities:deitiesPart};
+      const parts={chart:chartPart,dasa:dasaPart,tajaka:tajakaPart,transit:transitPart,remedy:remedyPart,numerology:numerologyPart,mantras:mantraPart,adhidevata:adhidevataPart,deities:deitiesPart,predictions:predictionsPart};
       window.__smvRenderDeitiesV92?.(deitiesPart,language,data);
 
       const textOf=n=>String(
@@ -1821,18 +1825,21 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
-        // V265: a NEW D1-only twelve-topic life reading, not the deleted Section X.
-        // It is mounted only in the already-authorized full horoscope, using
-        // the natal D1 chart returned by the same calculation (no second fetch).
-        // The nine pre-existing Advanced parts keep their original count/order.
+        // V266: Put the already-calculated D1 life reading under
+        // X. Predictions > I. Complete Life Predictions (12 topics).
+        // The prior deleted 'Integrated Predictions' code remains removed.
+        // No extra API/Firestore request or calculation is introduced.
         if (!window.SMVLifePredictionD1 || typeof window.SMVLifePredictionD1.html!=='function')
           throw new Error('D1 life reading engine is missing. Check d1-life-reading.js deployment.');
-        const oldLife=root.querySelector('[data-smv-d1-life="1"]');
-        if(oldLife)oldLife.remove();
-        const lifeHost=document.createElement('div');
-        lifeHost.className='smv-d1-life-report';
-        lifeHost.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang);
-        root.appendChild(lifeHost);
+        const lifeSlot=root.querySelector('.smv-advanced-part.life-predictions .smv-advanced-part-content');
+        if(!lifeSlot) throw new Error('Predictions section X is missing. Check the Advanced report deployment.');
+        lifeSlot.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang);
+        // V267: use the SAME full chart, Vimshottari periods and daily transit
+        // snapshot already produced in this calculation. No new engine call,
+        // network access, date guessing or independent client-side recalc.
+        if(!window.SMVTimePredictionD1 || typeof window.SMVTimePredictionD1.html!=='function')
+          throw new Error('Time-based D1 prediction module is missing. Check d1-time-reading.js deployment.');
+        lifeSlot.insertAdjacentHTML('beforeend',window.SMVTimePredictionD1.html(full,dailyDate,lang));
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');
