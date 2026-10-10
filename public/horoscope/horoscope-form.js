@@ -29,6 +29,7 @@
     const lang=document.documentElement.lang==='ta'?'ta':'en';
     // V90: lock the language at Generate click. The generated report language remains immutable for this calculation.
     const generationLanguage=lang;
+    let phase='startup';
     try{await window.SMVEngineReady;}catch{alert(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));return;}
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'',currentWork=$('englishCurrentWork')?.value||'',maritalStatus=$('englishMaritalStatus')?.value||'',currentResidence=$('englishCurrentResidence')?.value?.trim()||'';
     if(Number(date.slice(0,4))<1800||Number(date.slice(0,4))>2399){alert(text('Supported birth years: 1800–2399.','ஆதரிக்கப்படும் பிறந்த ஆண்டுகள்: 1800–2399.'));return;}
@@ -54,18 +55,23 @@ if(lat===''||lon===''){
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
     busy=true;document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
     const englishResult=$('englishHoroscopeResult');
+    // Clear only the previous, user-visible diagnostic. No automatic re-fetch or retry.
+    $('smvHoroscopeGenerationError')?.remove();
     // FINAL HOROSCOPE RELEASE RULE: do not open/show the horoscope result while
     // any calculation is still running. The Create Horoscope button is the only
     // loading indicator; chart + all new features are released together.
     if(englishResult){
       englishResult.classList.add('hidden');
       englishResult.setAttribute('aria-busy','true');
+      englishResult.removeAttribute('data-smv-report-incomplete');
       englishResult.innerHTML='';
     }
+    window.__smvLastFullReport=null; // New user-triggered calculation must not inherit an older full report.
     const btn=$('generateEnglishHoroscope');
     if(btn){btn.disabled=true;btn.textContent=text('⏳ Creating Horoscope…','⏳ ஜாதகம் உருவாகிறது…');}
     let englishProgress=$('englishHoroscopeProgress'); if(!englishProgress&&btn){englishProgress=document.createElement('div');englishProgress.id='englishHoroscopeProgress';englishProgress.className='smv-horoscope-progress';englishProgress.innerHTML='<span class="spin"></span><span>'+text('Creating Horoscope… Preparing all calculations and features…','ஜாதகம் உருவாகிறது… அனைத்துக் கணக்கீடுகளும் தயாராகின்றன…')+'</span>';btn.insertAdjacentElement('afterend',englishProgress);}
     try{
+      phase='birth-details';
       const normalizeHoroscopeTime=value=>{
         const s=String(value||'').trim();
         let m=s.match(/^(\d{1,2}):([0-5]\d)$/);
@@ -83,7 +89,9 @@ if(lat===''||lon===''){
       // that stable core result, rename the containers, then run ONE complete
       // Full calculation is routed directly to the bundled offline engine.
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:place,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60,language:generationLanguage});
+      phase='core-calculation';
       const generated=await window.__smvGenerateHoroscopeEngine(false);
+      if(!generated || !Array.isArray(generated.planets)) throw new Error('Birth chart did not finish: no valid D1 planet data was returned.');
       const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
       if(source&&target&&source.innerHTML.trim()){
         target.innerHTML=source.innerHTML;
@@ -101,6 +109,7 @@ if(lat===''||lon===''){
         if(lang==='en')window.__smvApplyEnglishToHoroscope(target);
         window.__smvBindHoroscopeInteractions(target,generated||{},$('englishAstroName')?.value?.trim()||'User',lang);
 
+        phase='panchang-and-transit';
         await window.__smvLoadBasicPanchang({...window.__smvGetReportContext('advanced_analysis'),language:lang},target);
         const originalBirth=window.__smvGetReportContext('advanced_analysis'),basicSnapshot=target.__smvBasicData,reportName=($('englishAstroName')?.value||'Horoscope').trim();
         let completedFull=null;
@@ -138,6 +147,16 @@ if(lat===''||lon===''){
         if(!englishAdvancedRoot || typeof window.__smvLoadAdvancedAstrology!=='function'){
           throw new Error('English Advanced Astrology container is not ready.');
         }
+        const verifyCompleteAdvanced=()=>{
+          const parts=[...englishAdvancedRoot.querySelectorAll('.smv-advanced-part')];
+          const names=['I. Chart','II. Dasha','III. Tajaka','IV. Transit','V. Remedies','VI. Numerology','VII. Mantras','VIII. Adhidevatas','IX. Deities','X. Predictions'];
+          const missing=parts.map((part,i)=>({name:names[i]||'Other',content:part.querySelector('.smv-advanced-part-content')}))
+            .filter(entry=>!entry.content?.textContent.trim()).map(entry=>entry.name);
+          if(parts.length!==10||missing.length){
+            const namesMissing=missing.join(', ') || ('Expected 10 sections; got '+parts.length);
+            throw new Error('Full report section(s) missing: '+namesMissing+(missing.includes('IX. Deities')?' (horoscope-details.js must load successfully)':''));
+          }
+        };
         // Core + Advanced Analysis are calculated locally in the browser.
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
           target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
@@ -145,7 +164,12 @@ if(lat===''||lon===''){
           const runEnglishAdvanced=async()=>{
             target.classList.add('hidden'); target.setAttribute('aria-busy','true');
             englishAdvancedRoot.innerHTML='';
+            phase='full-advanced-calculation';
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
+            // Validate ALL sections BEFORE signalling report-ready / Save / Print.
+            // The old flow notified report-store first and rejected missing IX later.
+            phase='advanced-content-validation';
+            verifyCompleteAdvanced();
             completedFull=window.__smvLastFullReport;
             window.__smvLocalizeTamilResult?.(target,generationLanguage);target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
@@ -171,8 +195,7 @@ if(lat===''||lon===''){
         if(lang==='en'&&typeof window.__smvForceEnglishRahuRetrograde==='function'){
           window.__smvForceEnglishRahuRetrograde(target);
         }
-        const parts=[...target.querySelectorAll('.smv-advanced-part')];
-        if(parts.length!==10||parts.slice(0,10).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
+        verifyCompleteAdvanced(); // Recheck the final mounted tree, without another engine call.
         if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
         window.__smvLocalizeTamilResult?.(target,generationLanguage);
         target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
@@ -182,8 +205,37 @@ if(lat===''||lon===''){
         target.scrollIntoView({behavior:'auto',block:'start'});
       }else throw new Error('Horoscope result was not returned.');
     }catch(e){
-      if(englishResult){englishResult.setAttribute('aria-busy','false');englishResult.classList.add('hidden');englishResult.innerHTML='';}
-      console.error(e);alert(text('Horoscope could not be completed. Check the birth details and downloaded app files.','ஜாதகத்தை முழுமையாக உருவாக்க முடியவில்லை. பிறப்பு விவரங்களையும் செயலிக் கோப்புகளையும் சரிபார்க்கவும்.'));
+      // V277: never erase a successfully computed D1 chart because an Advanced
+      // renderer, optional deity script, transit or a report-section check failed.
+      // Do not expose an incomplete full report as a finished Paid/Free report.
+      console.error('[SMV Horoscope generation]',{phase,error:e});
+      window.__smvLastFullReport=null; // Never expose a partially rendered Full report as the latest successful one.
+      const message=String(e?.message||e||'Unknown error').slice(0,350);
+      if(englishResult){
+        englishResult.setAttribute('aria-busy','false');
+        const advanced=englishResult.querySelector('#englishAdvancedAstrology');
+        if(advanced){advanced.innerHTML='';advanced.classList.add('hidden');}
+        if(englishResult.querySelector('.horoscope-result') || englishResult.textContent.trim().length>100){
+          // Basic chart remains readable; no report-ready is dispatched here.
+          englishResult.classList.remove('hidden');
+          englishResult.dataset.smvReportIncomplete='1';
+          englishResult.querySelectorAll('[data-print],[data-save]').forEach(el=>{el.hidden=true;});
+        }else{
+          englishResult.classList.add('hidden');
+          englishResult.innerHTML='';
+        }
+      }
+      const warning=document.createElement('div');warning.id='smvHoroscopeGenerationError';
+      warning.className='error';warning.setAttribute('role','alert');
+      warning.style.cssText='margin:12px 0;padding:14px;border:1px solid #b83b43;border-radius:10px;white-space:normal;overflow-wrap:anywhere';
+      const title=document.createElement('b');
+      title.textContent=text('Full horoscope could not be completed; the birth-chart calculation is preserved if available.','முழு ஜாதக அறிக்கை நிறைவடையவில்லை. கணக்கிடப்பட்ட அடிப்படை ஜாதகம் இருந்தால் அது பாதுகாக்கப்பட்டுள்ளது.');
+      const detail=document.createElement('p');detail.className='small';
+      detail.textContent=text('Failed stage: ','பிழை ஏற்பட்ட பகுதி: ')+phase+' — '+message;
+      const advice=document.createElement('p');advice.className='small';
+      advice.textContent=text('Retry after verifying that the latest horoscope files are deployed. No payment or report has been saved for this incomplete generation.','புதிய Horoscope கோப்புகள் முழுமையாக Deploy ஆனதை உறுதி செய்து மீண்டும் முயற்சிக்கவும். நிறைவடையாத அறிக்கை முழு அறிக்கையாகச் சேமிக்கப்படாது.');
+      warning.append(title,detail,advice);
+      (englishResult?.parentElement||btn?.parentElement||document.body).insertBefore(warning,englishResult||null);
     }
     finally{
       if(englishResult) englishResult.setAttribute('aria-busy','false');

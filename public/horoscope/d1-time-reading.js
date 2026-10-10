@@ -143,11 +143,11 @@
  function transitEffectsForAge(index,age,ta){return AGE_OUTCOMES[age.stage]?.transit[ta?'ta':'en'][index]||(ta?TRANSIT_TA:TRANSIT_EN)[index];}
  function renderDasha(full,asOf,lang='ta',context={}){
   const ta=lang!=='en',date=dateString(asOf);
-  if(!date)return {ok:false,reason:'invalid-reference-date'};
+  if(!date)return {ok:false,kind:'dasha',reason:'invalid-reference-date'};
   const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);
-  if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};
+  if(!age)return {ok:false,kind:'dasha',reason:'missing-birth-date-or-before-birth'};
   const period=chosenPeriod(chart?.dashas?.periods,date);
-  if(!period)return {ok:false,reason:'no-covered-mahadasha-bhukti'};
+  if(!period)return {ok:false,kind:'dasha',reason:'no-covered-mahadasha-bhukti'};
   const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[];
   for(let i=0;i<12;i++){
    const focus=i+1,focusHouse=d.houses[i],focusScore=BASE.houseScore(d,focusHouse);
@@ -228,11 +228,11 @@
  // planet, with different favourable and difficult consequences.
  function renderTransit(full,asOf,lang='ta',context={}){
   const ta=lang!=='en',date=dateString(asOf);
-  if(!date)return {ok:false,reason:'invalid-reference-date'};
+  if(!date)return {ok:false,kind:'transit',reason:'invalid-reference-date'};
   const chart=full?.chart||full,age=ageInfo(chartBirthDate(full),date);
-  if(!age)return {ok:false,reason:'missing-birth-date-or-before-birth'};
+  if(!age)return {ok:false,kind:'transit',reason:'missing-birth-date-or-before-birth'};
   const pos=normalizedTransit(full?.transit,date);
-  if(!pos)return {ok:false,reason:'transit-missing-or-date-mismatch'};
+  if(!pos)return {ok:false,kind:'transit',reason:'transit-missing-or-date-mismatch'};
   const d=BASE.toD1(chart),ctx=filteredContext(context),topics=[],ps=['Jupiter','Saturn','Rahu','Ketu'];
   for(let i=0;i<12;i++){
    const focus=i+1,h=d.houses[i],score=BASE.houseScore(d,h);
