@@ -1833,13 +1833,55 @@ try{
           throw new Error('D1 life reading engine is missing. Check d1-life-reading.js deployment.');
         const lifeSlot=root.querySelector('.smv-advanced-part.life-predictions .smv-advanced-part-content');
         if(!lifeSlot) throw new Error('Predictions section X is missing. Check the Advanced report deployment.');
-        lifeSlot.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang);
+        lifeSlot.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang,{currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace});
         // V267: use the SAME full chart, Vimshottari periods and daily transit
         // snapshot already produced in this calculation. No new engine call,
         // network access, date guessing or independent client-side recalc.
-        if(!window.SMVTimePredictionD1 || typeof window.SMVTimePredictionD1.html!=='function')
-          throw new Error('Time-based D1 prediction module is missing. Check d1-time-reading.js deployment.');
-        lifeSlot.insertAdjacentHTML('beforeend',window.SMVTimePredictionD1.html(full,dailyDate,lang));
+        // V268: II and III were previously appended AFTER all 144 paragraphs of I.
+        // On a phone, this meant the new topics could appear to be missing.
+        // Keep the three report sections and preserve the print/save path, adding a small,
+        // source-level jump index at the top of X so all three sections are findable.
+        // A missing time engine or runtime problem must be visible, not silently
+        // mistaken for a successful prediction (no fabricated reading).
+        const unavailable=(kind, title)=>`<section class="smv-d1-life-reading smv-d1-time-reading smv-predictions-unavailable" data-d1-time="${kind}"><h2>${title}</h2><p>${lang==='ta'?'இந்தப் பலன் தற்போது உருவாகவில்லை. D1 காலப்பலன் module / கணக்கீட்டுத் தரவைச் சரிபார்க்கவும்.':'This prediction did not generate. Check the D1 time module and calculation data.'}</p></section>`;
+        try{
+          if (!window.SMVTimePredictionD1 || typeof window.SMVTimePredictionD1.html!=='function')
+            throw new Error('Missing d1-time-reading.js: SMVTimePredictionD1.html is unavailable');
+          const timeHtml=window.SMVTimePredictionD1.html(full,dailyDate,lang,{currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace});
+          if(!timeHtml.includes('data-d1-time="dasha"') || !timeHtml.includes('data-d1-time="transit"'))
+            throw new Error('Time-based renderer did not produce both II and III sections');
+          lifeSlot.insertAdjacentHTML('beforeend',timeHtml);
+        }catch(timeErr){
+          console.error('[SMV Predictions II/III]',timeErr);
+          lifeSlot.insertAdjacentHTML('beforeend',
+            unavailable('dasha',lang==='ta'?'II. D1, தசா–புக்தி மற்றும் வயது வாழ்க்கைப் பலன்கள்':'II. D1, Dasha–Bhukti and Age Predictions')+
+            unavailable('transit',lang==='ta'?'III. D1, பெயர்ச்சி மற்றும் வயது வாழ்க்கைப் பலன்கள்':'III. D1, Transit and Age Predictions'));
+        }
+        const sections=[
+          lifeSlot.querySelector('[data-smv-d1-life="1"]'),
+          lifeSlot.querySelector('[data-d1-time="dasha"]'),
+          lifeSlot.querySelector('[data-d1-time="transit"]')
+        ];
+        if(sections.every(Boolean)){
+          const suffix=rootId==='tamilAdvancedAstrology'?'ta':'en';
+          sections.forEach((section,i)=>{section.id=`smv-predictions-${suffix}-${i+1}`;});
+          const jump=document.createElement('nav');
+          jump.className='smv-predictions-jump';
+          jump.setAttribute('aria-label',lang==='ta'?'பலன் துணைப்பகுதிகளுக்குச் செல்ல':'Jump to prediction subsections');
+          const labels=lang==='ta'
+            ?['I. முழு வாழ்க்கை பலன்கள் (D1)','II. தசா–புக்தி + வயது','III. பெயர்ச்சி + வயது']
+            :['I. Complete life (D1)','II. Dasha–Bhukti + Age','III. Transit + Age'];
+          labels.forEach((label,i)=>{
+            const btn=document.createElement('button');btn.type='button';
+            btn.className='smv-predictions-jump-button';
+            btn.dataset.smvJumpPrediction=String(i+1);
+            btn.textContent=label;
+            btn.setAttribute('aria-controls',sections[i].id);
+            btn.addEventListener('click',()=>sections[i].scrollIntoView({behavior:'auto',block:'start'}));
+            jump.appendChild(btn);
+          });
+          lifeSlot.prepend(jump);
+        }
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');
