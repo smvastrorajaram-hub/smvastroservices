@@ -212,7 +212,8 @@ function advancedPreviewHtml(){
  ['VI','எண் கணிதம்',['பிறப்பு எண்','வாழ்க்கைப் பாதை எண்','பெயர் எண்']],
  ['VII','தினசரி வாழ்க்கை மந்திரங்கள்',['ஜாதக ஆதார தினசரி மந்திரங்கள்']],
  ['VIII','அதிதேவதைகள்',['கிரக / ஜாதக ஆதார அதிதேவதை ஆய்வு']],
- ['IX','தெய்வங்கள்',['ஜாதக ஆதார தெய்வ வழிகாட்டல்']]
+ ['IX','தெய்வங்கள்',['ஜாதக ஆதார தெய்வ வழிகாட்டல்']],
+ ['X','பலன்கள்',['I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்']]
  ]:[
  ['I','CHART ANALYSIS',['Bhava Special Features','Special Lagnas','Arudha Padas A1–A12','Graha / Rasi Drishti','Ashtakavarga / strengths / yogas']],
  ['II','DASA ANALYSIS',['Ashtottari','Narayana Dasa','Lagna Kendradi','Sudasa / Drig Dasa','Kalachakra Dasa']],
@@ -222,7 +223,8 @@ function advancedPreviewHtml(){
  ['VI','NUMEROLOGY',['Birth number','Life-path number','Name number']],
  ['VII','DAILY LIFE MANTRAS',['Chart-based daily mantras']],
  ['VIII','ADHIDEVATAS',['Planet/chart-based Adhidevata review']],
- ['IX','DEITIES',['Chart-based deity guidance']]
+ ['IX','DEITIES',['Chart-based deity guidance']],
+ ['X','PREDICTIONS',['I. Complete Life Predictions of the Native']]
  ];
  return `<div class="smv-paid-heading-preview smv-paid-i-x-preview"><h3>${esc(ta()?'மேம்பட்ட பகுப்பாய்வு — உள்ளடக்கம்':'Advanced Analysis — Contents')}</h3>${rows.map(([r,t,subs])=>`<div class="smv-preview-part"><b>${r}. ${esc(t)}</b><ul>${subs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
 }

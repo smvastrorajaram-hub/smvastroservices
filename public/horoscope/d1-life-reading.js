@@ -1,5 +1,5 @@
 /* SMV ASTRO V265 — D1-only, twelve-lens life reading.
-   Independent of the removed 'Integrated Predictions / Section X'.
+   New section X. Predictions is separate from the removed legacy Integrated Predictions.
    All twelve houses are evaluated separately for each of twelve life topics.
    No D7/D9/D10, dasha, transit, remote requests, UI overrides or randomness.
    Interpretations reflect a traditional belief system, not established facts.
@@ -512,7 +512,7 @@
  function html(chart,lang='ta'){
    const report=render(chart,lang),ta=report.lang==='ta';
    const out=report.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(x=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${x.house}">${esc(x.text)}</p>`).join('')}</section>`).join('');
-   return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${report.lang}"><h2>${ta?'ஜாதகரின் முழு வாழ்க்கை பலன்':'Complete Life Reading of the Native'}</h2><p class="smv-d1-life-method">${ta?'D1 ராசிக் கட்டத்தின் 12 பாவங்களை ஒவ்வொரு தலைப்பிற்கும் தனித்தனியாக ஆராய்ந்து வழங்கப்படும் பாரம்பரிய ஜோதிட விளக்கம்.':'A traditional reading of all twelve houses through each distinct D1 life topic.'}</p>${out}</section>`;
+   return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${report.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'D1 ராசிக் கட்டத்தின் 12 பாவங்களை ஒவ்வொரு தலைப்பிற்கும் தனித்தனியாக ஆராய்ந்து வழங்கப்படும் பாரம்பரிய ஜோதிட விளக்கம்.':'A traditional reading of all twelve houses through each distinct D1 life topic.'}</p>${out}</section>`;
  }
- return Object.freeze({render,html,toD1,version:'265-d1-twelve-topics'});
+ return Object.freeze({render,html,toD1,version:'266-x-predictions-life-topic-i'});
 });

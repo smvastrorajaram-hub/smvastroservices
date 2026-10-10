@@ -172,7 +172,7 @@ if(lat===''||lon===''){
           window.__smvForceEnglishRahuRetrograde(target);
         }
         const parts=[...target.querySelectorAll('.smv-advanced-part')];
-        if(parts.length!==9||parts.slice(0,9).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
+        if(parts.length!==10||parts.slice(0,10).some(p=>!p.querySelector('.smv-advanced-part-content')?.textContent.trim()))throw new Error(text('The core Advanced Analysis sections are incomplete. Please retry.','முக்கிய மேம்பட்ட பகுப்பாய்வு பகுதிகள் முழுமையாக வரவில்லை. மீண்டும் முயற்சிக்கவும்.'));
         if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
         window.__smvLocalizeTamilResult?.(target,generationLanguage);
         target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
