@@ -1889,25 +1889,25 @@ try{
           });
           lifeSlot.prepend(jump);
         }
-        // V271: build the complete 0–80-year Mahadasha/Bhukti + calculated
+        // V280: report-date through 80th birthday Mahadasha/Bhukti + calculated
         // four-planet transit timeline without altering access, Firebase or payments.
         // Do not run for Basic/Public: this code executes only inside Full renderer.
         const longDasha=lifeSlot.querySelector('[data-d1-time="dasha"]');
         const longTransit=lifeSlot.querySelector('[data-d1-time="transit"]');
         if(longDasha&&longTransit&&!longDasha.classList.contains('smv-predictions-unavailable')){
           const longStatus=document.createElement('p');longStatus.className='smv-80-status';
-          longStatus.textContent=lang==='ta'?'80 ஆண்டு காலவரிசை உள்ளூர் கணக்கீட்டில் உருவாகிறது…':'Building the 80-year timeline using local calculations…';
+          longStatus.textContent=lang==='ta'?'80 வயது வரையிலான காலவரிசை கணக்கிடப்படுகிறது…':'Building the forecast through age 80…';
           longDasha.querySelector('p.smv-d1-life-method')?.insertAdjacentElement('afterend',longStatus);
           const c=full?.chart||full;
           const longKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
           const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
-          const longJobReady=import('./d1-80-year-reading.mjs?v=279-report-date-horizon').then(async mod=>{
+          const longJobReady=import('./d1-80-year-reading.mjs?v=284-period-differences').then(async mod=>{
             let job=longCache.get(longKey);
             if(!job){
               job=mod.build80Year(full,payload,{lang,onProgress:p=>{
                 if(!longStatus.isConnected||p.stage!=='transit')return;
                 const percent=Math.min(100,Math.round(100*p.done/Math.max(1,p.total)));
-                longStatus.textContent=(lang==='ta'?'80 ஆண்டுப் பெயர்ச்சி கணக்கீடு: ':'80-year transit calculations: ')+percent+'%';
+                longStatus.textContent=(lang==='ta'?'80 வயது வரையிலான பெயர்ச்சிக் கணக்கீடு: ':'Transits to age 80: ')+percent+'%';
               }});
               longCache.set(longKey,job);
             }
@@ -1918,7 +1918,7 @@ try{
             function panel(kind,markup){
               const details=document.createElement('details');details.className='smv-80-container';details.dataset.smvLongRange=kind;
               const summary=document.createElement('summary');
-              summary.textContent=(lang==='ta'?'அறிக்கைத் தேதியிலிருந்து அடுத்த 80 ஆண்டுகள்: ':'Next 80 years from report date: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
+              summary.textContent=(lang==='ta'?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை: ':'From report date until age 80: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
               details.appendChild(summary);
               const body=document.createElement('div');body.innerHTML=markup;details.appendChild(body);
               return details;
@@ -1926,13 +1926,15 @@ try{
             const md=longDasha.querySelector('p.smv-d1-life-method'),tr=longTransit.querySelector('p.smv-d1-life-method');
             md?.insertAdjacentElement('afterend',panel('dasha',out.dashaHTML));
             tr?.insertAdjacentElement('afterend',panel('transit',out.transitHTML));
-            longStatus.textContent=(lang==='ta'?'80 ஆண்டு காலவரிசை தயார்: ':'80-year timeline ready: ')+report.meta.dashaPeriods+(lang==='ta'?' தசா–புக்திகள், ':' Dasha–Bhukti periods, ')+report.meta.transitSignChanges+(lang==='ta'?' கோச்சார ராசி மாற்றங்கள். மேலுள்ள பட்டைகளைத் திறக்கவும்.':' transit sign changes. Expand the sections above.');
+            longStatus.textContent=report.meta.ageLimitReached
+              ? (lang==='ta'?'ஜாதகர் 80 வயதை அடைந்துவிட்டதால் புதிய காலப்பலன்கள் உருவாக்கப்படவில்லை.':'Age 80 already reached; no future periods are calculated.')
+              : (lang==='ta'?'80 வயது வரையிலான காலவரிசை தயார் (':'Timeline to age 80 ready (')+report.meta.forecastYears+(lang==='ta'?' கணிப்பு ஆண்டுகள்): ': ' forecast years): ')+report.meta.dashaPeriods+(lang==='ta'?' தசா–புக்திகள், ':' Dasha–Bhukti periods, ')+report.meta.transitSignChanges+(lang==='ta'?' கோச்சார ராசி மாற்றங்கள்.':' transit sign changes.');
             window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
-          }).catch(e=>{if(longStatus.isConnected)longStatus.textContent=(lang==='ta'?'80 ஆண்டு காலவரிசை உருவாக்க முடியவில்லை: ':'Could not generate the 80-year timeline: ')+String(e?.message||e);});
+          }).catch(e=>{if(longStatus.isConnected)longStatus.textContent=(lang==='ta'?'80 வயது வரையிலான காலவரிசை உருவாக்க முடியவில்லை: ':'Could not generate the timeline to age 80: ')+String(e?.message||e);});
           root.__smvLongTimelineReady=longJobReady;
           root.dataset.smvLongPending='1';
           longJobReady.finally(()=>{root.dataset.smvLongPending='0';});
-          // A Save/Print tap while local 80-year calculation is still running
+          // A Save/Print tap while the local up-to-age-80 forecast is running
           // must not snapshot a partial report; preserve the existing handlers.
           if(!root.__smvLongSaveGateBound){
             root.__smvLongSaveGateBound=true;
