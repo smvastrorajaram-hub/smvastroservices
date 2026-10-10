@@ -170,20 +170,34 @@
    const primary=(md.marks.length>ad.marks.length?md:ad),second=(primary===md?ad:md);
    const base=dashaEffectsForAge(i,age,ta),area=(ta?BHAAVA_TA:BHAAVA_EN)[i];
    const positive=signal>=-2,negative=signal<=3;
-   const opening=ta?
-    `இந்தப் புக்தியில் ${area} தொடர்பாக ${positive?base[0]:base[1]} என்ற போக்கு கணிக்கப்படுகிறது. ${primary.label} ${primary.sign} ராசியின் ${primary.house}-ஆம் பாவத்தில் ${primary.quality} இருப்பதுடன், ${primary.relation} செயல்படுகிறது; ${second.label} ${second.house}-ஆம் பாவத்திலிருந்து ${second.relation} இப்பலனின் அளவை மாற்றுகிறார்.`:
-    `During this subperiod ${area} may involve ${positive?base[0]:base[1]}. ${primary.label} in ${primary.sign}, natal house ${primary.house}, acts ${primary.relation}; ${second.label} from house ${second.house} modifies the emphasis.`;
-   const paragraphs=[{relatedHouse:focus,text:opening,evidence:{focusHouse:focus,md,ad,signal,period}}];
-   const risk=ta?`சாதக வாய்ப்பு: ${positive?base[0]:md.positive}; இதற்குத் துணையாக ${ad.positive} என்ற செயல் முறை உதவலாம். சவாலான பக்கம்: ${negative?base[1]:ad.negative}; ${md.negative} அதிகரிக்காமல் முடிவுகளை நிதானமாகக் கையாள வேண்டும்.`:
-    `Supportive potential: ${positive?base[0]:md.positive}, with ${ad.positive}. Possible difficulty: ${negative?base[1]:ad.negative}, especially ${md.negative}.`;
-   paragraphs.push({relatedHouse:focus,text:risk,evidence:{focusHouse:focus,md,ad,positive,negative}});
+   // V272: each major/sub period gets a TWO-SIDED READING grounded in
+   // natal lordship and actual MD/AD placements. Avoid separate generic
+   // 'supportive potential' paragraphs that repeated in thousands of windows.
+   const natalTie=all.filter(x=>x.relatedHouse!==focus&&
+       (x.mdImpact.points+x.adImpact.points>=4)&&x.lens.links.length)
+      .sort((a,b)=>b.activation-a.activation||a.relatedHouse-b.relatedHouse)[0];
+   const nearby=natalTie? (ta?BHAAVA_TA:BHAAVA_EN)[natalTie.relatedHouse-1]:'';
+   const natalLink=natalTie?(ta?` இந்த அமைப்பில் ${nearby} தொடர்பும் சேர்ந்ததால் அந்தத் துறையில் எடுக்கும் முடிவு ${area} பற்றிய அணுகுமுறையையும் மாற்றக்கூடும்.`:
+     ` The same placements also activate ${nearby}, linking decisions across those two areas.`):'';
+   const supportive=ta?
+    `${LABEL[period.md]} மகாதசையில் ${LABEL[period.ad]} புக்தி நடக்கும்போது ${area} தொடர்பாக ${base[0]} என்ற வழியில் முன்னேற்றத்தைத் தேடக்கூடும். ${primary.label} ${primary.sign} ராசியில் ${primary.house}-ஆம் பாவத்தில் ${primary.quality} இருப்பதும் ${primary.relation} செயல்படுவதும் இந்த வாய்ப்பின் முக்கிய ஜாதக ஆதாரமாகும். ${second.label} ${second.house}-ஆம் பாவத்திலிருந்து ${second.relation} இந்த முயற்சிக்குத் துணையாகவோ கட்டுப்பாடாகவோ அமையலாம்.${natalLink}`:
+    `In ${period.md} major period and ${period.ad} subperiod, ${area} may develop through ${base[0]}. Natal ${primary.label} in ${primary.sign}, house ${primary.house}, ${primary.quality}, acts ${primary.relation}. ${second.label} in house ${second.house} ${second.relation}.${natalLink}`;
+   const challenge=ta?
+    `இதே காலத்தின் சவாலான பக்கம் ${base[1]} என்பதாக இருக்கலாம். ${md.label} (${md.sign}, ${md.house}-ஆம் பாவம்) மற்றும் ${ad.label} (${ad.sign}, ${ad.house}-ஆம் பாவம்) இருவரின் தொடர்பு ${signal>=2?'ஒப்பீட்டளவில் ஆதரவாக இருந்தாலும் இந்தச் சிக்கல் முற்றிலும் நீங்கிவிடாது':'கலப்பான அல்லது அழுத்தமான நிலையில் இருப்பதால் பொறுப்புகளின் அளவை உணர்ந்து செயல்பட வேண்டியிருக்கலாம்'}. ${md.negative} என்பதைக் கவனிப்பதோடு ${ad.negative} என்ற போக்கையும் அளவோடு கையாள வேண்டியிருக்கும்.`:
+    `The difficult side of this period may be ${base[1]}. Natal ${md.label} (${md.sign}, house ${md.house}) and ${ad.label} (${ad.sign}, house ${ad.house}) have combined signal ${signal}; guard against ${md.negative} and ${ad.negative}.`;
+   const paragraphs=[
+     {relatedHouse:focus,text:supportive,evidence:{focusHouse:focus,md,ad,signal,period,side:'supportive'}},
+     {relatedHouse:focus,text:challenge,evidence:{focusHouse:focus,md,ad,signal,period,side:'challenging'}}
+   ];
    const linked=all.filter(x=>x.relatedHouse!==focus&&(x.mdImpact.points+x.adImpact.points>=4)&&x.lens.relevance>=2).sort((a,b)=>b.activation-a.activation||a.relatedHouse-b.relatedHouse).slice(0,2);
    for(const x of linked){const whom=x.mdImpact.points>=x.adImpact.points?md:ad,side=focusScore+x.lens.score>=0,other=(ta?BHAAVA_TA:BHAAVA_EN)[x.relatedHouse-1],trait=side?whom.positive:whom.negative;
      paragraphs.push({relatedHouse:x.relatedHouse,text:ta?
      `${area} பற்றிய முடிவில் ${other} சார்ந்த நிலையும் கலந்து வரலாம். ${whom.label} ${whom.house}-ஆம் பாவத்தில் இருந்து ${x.relatedHouse}-ஆம் பாவத்துடன் தொடர்பு கொண்டிருப்பதால், ${trait} என்ற நடைமுறை விளைவு உருவாகலாம்; ஆனால் அது சூழ்நிலைக்கேற்ப மாறக்கூடும்.`:
      `Decisions about ${area} can also depend on ${other}. ${whom.label} in house ${whom.house} links to house ${x.relatedHouse}, where ${trait} may modify the outcome.`,evidence:x});}
-   const stage=lifeStageLink(focus,age,ta),user=contextPhrase(focus,ctx,ta),caution=([1,6,8,12].includes(focus)&&focusScore<=0)?cautionForTopic(focus,period.md,period.ad,age,ta):'';
-   for(const x of [stage,user,caution].filter(Boolean))paragraphs.push({relatedHouse:focus,text:x,evidence:{stage:age.stage,source:'age-or-provided-context'}});
+   // Age is already reflected by dashaEffectsForAge; avoid reprinting identical
+   // life-stage and medical notes in each topic and every future window.
+   const user=contextPhrase(focus,ctx,ta);
+   if(user)paragraphs.push({relatedHouse:focus,text:user,evidence:{stage:age.stage,source:'user-declared-context'}});
    topics.push({number:focus,title:BASE.THEMES[i][ta?0:1],analyzedHouses:12,paragraphs,evidenceMatrix:all});
   }
   return {ok:true,kind:'dasha',referenceDate:date,age:age.age,ageStage:age.stage,period,topics};
@@ -228,22 +242,40 @@
       p==='Rahu'?(ta?'புதிய வாய்ப்பில் ஆவல் ஏற்பட்டாலும் ஒப்பந்தங்களையும் விவரங்களையும் உறுதி செய்ய வேண்டும்.':'Check practical details before acting on novel options.'):
       p==='Ketu'?(ta?'பழைய முறையை விட்டு விலகுவதற்கு முன் அதனால் ஏற்படும் நடைமுறை விளைவுகளைப் பரிசீலிக்க வேண்டும்.':'Consider practical consequences before withdrawing from an existing approach.'):
       (ta?'வாய்ப்பை விரிவாக்குவதற்கு முன்பு அது எந்த அளவு பொறுப்பை உருவாக்கும் என்பதையும் அறிந்துகொள்ள வேண்டும்.':'Consider the commitments that accompany growth.');
-    rows.push({relatedHouse:focus,text:ta?
-      `${TR_TA[p]} தற்போது பிறப்பு ஜாதகத்தில் ${planetHouse}-ஆம் பாவத்தில் நின்று ${life} சார்ந்த ${focus}-ஆம் பாவத்தை ${actual}. பிறப்பு அதிபதி ${natal.label} ${natal.sign} ராசியின் ${natal.house}-ஆம் பாவத்தில் ${natal.quality} இருப்பதால், ${gained>=0?opportunity:challenge} என்ற நடைமுறை விளைவு மற்ற சூழல்களுடன் சேர்ந்து வெளிப்படலாம். ${caution}`:
-      `${p} in natal house ${planetHouse} ${actual} the house of ${life}. Its lord ${natal.label} is in ${natal.sign}, natal house ${natal.house}, ${natal.quality}; this may favour ${gained>=0?opportunity:challenge}. ${caution}`,
-      evidence:{focusHouse:focus,planet:p,transitHouse:planetHouse,marks:activated.marks,natalLord:other,signal:gained}});
-    if(gained<1||activated.points>=5)rows.push({relatedHouse:focus,text:ta?
-      `${TR_TA[p]} ${planetHouse}-ஆம் பாவத்திலிருந்து ${life} தொடர்பைத் தூண்டும்போது சாதக வாய்ப்பு: ${opportunity}. பாதகமான வாய்ப்பு: ${challenge}. ${p==='Jupiter'?'விரிவாக்கமும்':'மாற்றமும்'} தரும் நிலையை உடனடி நிகழ்வாகக் கொள்ளாமல் தற்போதைய சூழலுடன் இணைத்துப் பார்க்க வேண்டும்.`:
-      `${p} from house ${planetHouse}: supportive possibility ${opportunity}; possible difficulty ${challenge}. This is not a guaranteed event.`,evidence:{planet:p,focusHouse:focus,positive:opportunity,negative:challenge}});
+    const transitFact=ta?`${TR_TA[p]} ${planetHouse}-ஆம் பாவத்திலிருந்து ${focus}-ஆம் பாவத்தை ${actual}; அந்தப் பாவாதிபதி ${natal.label} ${natal.sign} ராசியில் ${natal.house}-ஆம் பாவத்தில் ${natal.quality} உள்ளார்.`:
+      `${p} in transit house ${planetHouse} ${actual} natal house ${focus}; the natal ruler ${natal.label} is in ${natal.sign}, house ${natal.house}, ${natal.quality}.`;
+    const opportunityText=ta?
+      `${transitFact} இந்த அமைப்பில் சாதகமாக வெளிப்பட்டால் ${opportunity} என்ற செயலில் முன்னேற்றம் இருக்கலாம். ${p==='Jupiter'?'வாய்ப்பின் பரப்பை விரிவாக்குவதற்கு':'இருக்கும் பொறுப்பை மறுசீரமைப்பதற்கு'} முன் ${natal.label} குறிக்கும் பிறப்பு ஜாதகச் சூழலையும் கருத்தில் கொள்ள வேண்டும்.`:
+      `${transitFact} A constructive expression may involve ${opportunity}; weigh the natal ruler's situation before acting.`;
+    const difficultText=ta?
+      `${TR_TA[p]} பெயர்ச்சியின் சவாலான வெளிப்பாடு ${challenge} என்ற நிலையை ஏற்படுத்தக்கூடும். பிறப்பு பாவாதிபதியின் பலமதிப்பீடு ${score>=2?'ஆதரவாக':'அழுத்தமும் சாதகமும் கலந்த நிலையில்'} இருப்பதால், ${caution}`:
+      `The challenging expression of ${p} may include ${challenge}. Natal house score ${score}: ${caution}`;
+    // A single cause -> supportive/challenging reading prevents the same
+    // transit contact from being narrated twice in every year/ingress.
+    rows.push({relatedHouse:focus,text:opportunityText+' '+difficultText,evidence:{focusHouse:focus,planet:p,transitHouse:planetHouse,marks:activated.marks,natalLord:other,signal:gained,side:'both'}});
    }
    // Related-house evidence is included only for a genuine D1 link and transit activation.
-   const indirect=all.filter(x=>x.relatedHouse!==focus&&x.lens.relevance>=4&&x.links.some(z=>z.points>=3))
+   const indirect=all.filter(x=>x.relatedHouse!==focus&&x.lens.links.length>0&&x.lens.relevance>=4&&x.links.some(z=>z.points>=3))
      .sort((x,y)=>y.activation-x.activation||x.relatedHouse-y.relatedHouse).slice(0,onHouse.length?1:2);
-   for(const x of indirect){const chosen=x.links.filter(z=>z.points>=3).sort((a,b)=>b.points-a.points)[0],other=(ta?BHAAVA_TA:BHAAVA_EN)[x.relatedHouse-1];
-    const role=(ta?PLANET_LENS_TA:PLANET_LENS_EN)[chosen.planet],strength=score+x.lens.score,action=role[strength<0?1:0];
+   for(const x of indirect){
+    const chosen=x.links.filter(z=>z.points>=3).sort((a,b)=>b.points-a.points)[0];
+    const other=(ta?BHAAVA_TA:BHAAVA_EN)[x.relatedHouse-1];
+    const otherLord=d.planets[d.houses[x.relatedHouse-1].lord];
+    const focusLord=d.planets[h.lord];
+    const strength=score+x.lens.score;
+    const action=(ta?PLANET_LENS_TA:PLANET_LENS_EN)[chosen.planet][strength<0?1:0];
+    const place=ta?`அதன் அதிபதி ${(ta?LABEL[d.houses[x.relatedHouse-1].lord]:d.houses[x.relatedHouse-1].lord)} ${(ta?NATAL_SIGNS_TA:NATAL_SIGNS_EN)[otherLord.sign]} ராசியில் ${otherLord.house}-ஆம் பாவத்தில் இருக்கிறார்; ${life} பாவாதிபதி ${(ta?LABEL[h.lord]:h.lord)} ${focusLord.house}-ஆம் பாவத்தில் உள்ளார்.`:
+      `Its ruler occupies ${(ta?NATAL_SIGNS_TA:NATAL_SIGNS_EN)[otherLord.sign]}, house ${otherLord.house}; the ruler of ${life} occupies house ${focusLord.house}.`;
+    const actualLink=x.lens.links.includes('mutual-exchange')?(ta?'இரு அதிபதிகள் பரிவர்த்தனை பெற்றுள்ளன':'The rulers exchange houses'):
+      x.lens.links.includes('lords-conjunct')?(ta?'இரு அதிபதிகள் சேர்ந்துள்ளன':'The two rulers are conjunct'):
+      x.lens.links.includes('focus-lord-in-related')?(ta?'முதன்மைப் பாவாதிபதி தொடர்புடைய பாவத்தில் இருக்கிறார்':'The focus ruler occupies the related house'):
+      x.lens.links.includes('related-lord-in-focus')?(ta?'தொடர்புடைய பாவாதிபதி முதன்மைப் பாவத்தில் இருக்கிறார்':'The related ruler occupies the focus house'):
+      (ta?'பிறப்பு ஜாதகத்தில் பார்வைத் தொடர்பு உள்ளது':'A natal aspect links these houses');
     rows.push({relatedHouse:x.relatedHouse,text:ta?
-      `${other} மீது ${TR_TA[chosen.planet]} பெயர்ச்சித் தொடர்பு ஏற்படுகிறது. அந்தப் பாவத்துக்கும் ${life} சார்ந்த பாவத்துக்கும் பிறப்பு ஜாதகத்தில் ${x.lens.links.length} நேரடித் தொடர்புகள் உள்ளதால், ${action} என்ற செயல்முறை இப்பகுதியிலும் எதிரொலிக்கலாம். இதை குறிப்பிட்ட நாளில் நடக்கவிருக்கும் சம்பவமாகச் சொல்ல முடியாது.`:
-      `The ${chosen.planet} transit touches ${other}. With ${x.lens.links.length} natal links to ${life}, ${action} may matter across both areas; this is not a dated certainty.`,evidence:x});}
+      `${TR_TA[chosen.planet]} ${x.links.find(z=>z.planet===chosen.planet).transitHouse}-ஆம் பாவத்திலிருந்து ${other} தொடர்பைத் தூண்டுகிறது. ${actualLink}; ${place} இந்த இரு தொடர்புகளும் இணையும் சூழலில் ${action} என்ற விளைவு வலுப்படலாம்; இது நிகழ்வு நடந்தே தீரும் என்ற உறுதி அல்ல.`:
+      `${chosen.planet} activates ${other} through its transit from house ${chosen.transitHouse}. ${actualLink}; ${place} This connection may emphasise ${action}, not a certain event.`,
+      evidence:{...x,planet:chosen.planet,impacts:x.links,transitHouse:chosen.transitHouse,linkedLordHouse:otherLord.house}});
+   }
    if(!rows.length){
     const lord=d.planets[h.lord];
     rows.push({relatedHouse:focus,text:ta?
@@ -258,7 +290,8 @@
  }
  function htmlBlock(rep,lang){const ta=lang!=='en',kind=rep.kind==='transit'?'transit':'dasha',title=kind==='dasha'?(ta?'II. D1, தசா–புக்தி மற்றும் வயதின் அடிப்படையிலான வாழ்க்கைப் பலன்கள்':'II. D1, Dasha–Bhukti and Age-Based Predictions'):(ta?'III. D1, குரு–சனி–ராகு–கேது பெயர்ச்சி மற்றும் வயதின் அடிப்படையிலான பலன்கள்':'III. D1, Jupiter–Saturn–Rahu–Ketu Transits and Age-Based Predictions');if(!rep.ok)return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}"><h2>${title}</h2><p>${ta?'கணக்கிடப்பட்ட காலத் தரவு கிடைக்காததால் ஊகப் பலன் காட்டப்படவில்லை.':'Missing calculated timing data: no result has been invented.'}</p></section>`;
  const p=rep.period;const info=kind==='dasha'?(ta?`தேதி: ${rep.referenceDate} · வயது: ${rep.age} · ${LABEL[p.md]} மகாதசை (${p.mdStart} – ${p.mdEnd}) · ${LABEL[p.ad]} புக்தி (${p.adStart} – ${p.adEnd}). இந்த முழுப் புக்திக்குமான வாசிப்பு; ஒவ்வொரு நாளும் புதிய நிகழ்வு என்று அர்த்தமில்லை.`:`Date ${rep.referenceDate} · Age ${rep.age} · ${p.md} major period (${p.mdStart}–${p.mdEnd}), ${p.ad} sub-period (${p.adStart}–${p.adEnd}). This is a reading for the period, not a new event on each date.`):(ta?`பெயர்ச்சி தேதி: ${rep.referenceDate} · வயது: ${rep.age} · குரு, சனி, ராகு, கேது நிலைகள் பிறப்பு D1-உடன் ஒப்பிடப்பட்டுள்ளன.`:`Transit date ${rep.referenceDate} · Age ${rep.age} · Jupiter, Saturn, Rahu and Ketu compared against natal D1.`);
- const topics=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-${kind}-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(z=>`<p class="smv-d1-life-paragraph" data-d1-${kind}-related-house="${z.relatedHouse}">${esc(z.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}" lang="${ta?'ta':'en'}"><h2>${title}</h2><p class="smv-d1-life-method">${esc(info)}</p>${topics}</section>`;}
+ const medical=kind==='dasha'?(ta?' 1, 6, 8, 12 பாவங்களை வைத்து நோயையோ ஆயுள் முடியும் தேதியையோ தீர்மானிக்க முடியாது; உடல்நலத்தில் மருத்துவ ஆலோசனைதான் முதன்மை.':' House connections do not diagnose illness or determine lifespan; clinical advice takes priority.'):(ta?' பெயர்ச்சி என்பது ஆயுள் அல்லது குறிப்பிட்ட நோயைக் கணிக்கும் மருத்துவ முறை அல்ல.':' Transit readings cannot determine lifespan or diagnose illness.');
+ const topics=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-${kind}-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(z=>`<p class="smv-d1-life-paragraph" data-d1-${kind}-related-house="${z.relatedHouse}">${esc(z.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}" lang="${ta?'ta':'en'}"><h2>${title}</h2><p class="smv-d1-life-method">${esc(info+medical)}</p>${topics}</section>`;}
  function html(full,asOf,lang='ta',context={}){return htmlBlock(renderDasha(full,asOf,lang,context),lang)+htmlBlock(renderTransit(full,asOf,lang,context),lang);}
- return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'271-d1-linked-positive-negative-long-range'});
+ return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'272-d1-evidence-led-repetition-reduction'});
 });

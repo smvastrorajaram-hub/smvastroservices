@@ -43,8 +43,9 @@ function clipPeriods(full){const born=birthDate(full);if(!born)throw Error('Birt
 function dashaNarrative(full,periods,language){
  const core=globalThis.SMVTimePredictionD1;if(!core||typeof core.renderDasha!=='function')throw Error('Current Dasha reading engine unavailable');
  const entries=[];
+ const linkedSeen=new Set(); // one-time explanation for an unchanged natal link
  for(const p of periods){const reading=core.renderDasha(full,p.from,language);if(!reading.ok)throw Error('Dasha reading missing at '+p.from+': '+reading.reason);
-  entries.push({...p,topics:reading.topics.map(t=>({number:t.number,title:t.title,positive:(t.paragraphs[0]||{}).text||'',negative:(t.paragraphs[1]||{}).text||'',linked:t.paragraphs.filter(x=>x.evidence?.relatedHouse&&x.relatedHouse!==t.number).slice(0,1).map(x=>x.text),health:[1,6,8,12].includes(t.number)?t.paragraphs.find(x=>x.text.includes('மருத்துவ')||x.text.includes('preventive care'))?.text||'':''}))});
+  entries.push({...p,topics:reading.topics.map(t=>({number:t.number,title:t.title,positive:(t.paragraphs[0]||{}).text||'',negative:(t.paragraphs[1]||{}).text||'',linked:t.paragraphs.filter(x=>x.evidence?.relatedHouse&&x.relatedHouse!==t.number).slice(0,1).map(x=>x.text).filter(text=>{if(linkedSeen.has(text))return false;linkedSeen.add(text);return true;}),health:[1,6,8,12].includes(t.number)?t.paragraphs.find(x=>x.text.includes('மருத்துவ')||x.text.includes('preventive care'))?.text||'':''}))});
  }
  return entries;
 }
@@ -73,16 +74,25 @@ async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
 function transitNarrative(full,timeline,language){
  const core=globalThis.SMVTimePredictionD1;if(!core?.renderTransit)throw Error('Transit interpreter unavailable');
  const years=[];
+ const yearParagraphSeen=new Map(); // same wording without new transit evidence is referred to, not reprinted
  for(const y of timeline.years){const arr=KEY.map(planet=>({name:language==='en'?planet:KTA[planet],rasi:(language==='en'?ZEN:ZTA)[y.pos[planet].sign],retrograde:y.pos[planet].retrograde}));
   const alt={...full,transit:{requested:{date:y.date},planets:arr}};
   const data=core.renderTransit(alt,y.date,language);
   if(!data.ok)throw Error('Could not read transit window '+y.from);
-  years.push({...y,topics:data.topics.map(t=>({number:t.number,title:t.title,paragraphs:t.paragraphs.slice(0,2).map(z=>z.text),evidence:t.paragraphs.slice(0,2).map(z=>z.evidence)}))});
+  years.push({...y,topics:data.topics.map(t=>{const retained=[],evidence=[],previousAges=[];
+   for(const z of t.paragraphs.slice(0,2)){
+    const txt=String(z.text||'').trim();if(!txt)continue;
+    if(yearParagraphSeen.has(txt)){previousAges.push(yearParagraphSeen.get(txt));continue;}
+    yearParagraphSeen.set(txt,y.age);retained.push(txt);evidence.push(z.evidence);
+   }
+   return {number:t.number,title:t.title,paragraphs:retained,evidence,repeatedFrom:previousAges.length?Math.min(...previousAges):null};
+  })});
  }
  return years;
 }
 function eventNarrative(full,timeline,language){
  const core=globalThis.SMVTimePredictionD1;if(!core?.renderTransit)throw Error('Transit interpreter unavailable');
+ const seenEventText=new Set();
  return timeline.events.map(event=>{
   const planets=KEY.map(planet=>({name:language==='en'?planet:KTA[planet],rasi:(language==='en'?ZEN:ZTA)[event.positions[planet].sign],retrograde:event.positions[planet].retrograde}));
   const interpretation=core.renderTransit({...full,transit:{requested:{date:event.date},planets}},event.date,language);
@@ -90,7 +100,7 @@ function eventNarrative(full,timeline,language){
   const activated=interpretation.topics.map(topic=>{
    const picked=topic.paragraphs.filter(x=>x.evidence?.planet===event.planet||x.evidence?.impacts?.some?.(z=>z.planet===event.planet));
    const score=picked.reduce((v,x)=>v+(x.evidence?.signal??0),0);
-   return {number:topic.number,title:topic.title,score,paragraphs:picked.slice(0,2).map(x=>x.text)};
+   return {number:topic.number,title:topic.title,score,paragraphs:picked.slice(0,2).map(x=>x.text).filter(str=>{if(seenEventText.has(str))return false;seenEventText.add(str);return true;})};
   }).filter(x=>x.paragraphs.length).sort((a,b)=>Math.abs(b.score)-Math.abs(a.score)||a.number-b.number).slice(0,4);
   return {date:event.date,planet:event.planet,from:event.from,to:event.to,topics:activated};
  });
@@ -109,8 +119,8 @@ function transitHTML(timeline,years,events=[],lang='ta'){
  ${years.map((y,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?'வயது':'Age'} ${y.age}–${y.age+1} · ${y.from} – ${y.to}</summary>
  <p>${ta?'கணக்கிட்ட நடுத்தேதி':'Calculated reference date'}: ${y.date} · ${KEY.map(p=>`${ta?KTA[p]:p} ${(ta?ZTA:ZEN)[y.pos[p].sign]}`).join(' · ')}</p>
  ${y.events.length?`<p><strong>${ta?'இந்த ஆண்டில் கண்டறியப்பட்ட பெயர்ச்சி ராசி மாற்றங்கள்':'Detected sign changes during this year'}:</strong> ${y.events.map(e=>`${e.date}: ${ta?KTA[e.planet]:e.planet} ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}`).join('; ')}</p>`:''}
- ${y.topics.map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4>${t.paragraphs.map(p=>`<p>${safe(p)}</p>`).join('')}</section>`).join('')}
- ${events.filter(e=>e.date>=y.from&&e.date<y.to).map(e=>`<section class="smv-80-event"><h4>${e.date} · ${ta?KTA[e.planet]:e.planet}: ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}</h4>${e.topics.map(t=>`<p><strong>${t.number}. ${safe(t.title)}:</strong> ${t.paragraphs.map(safe).join(' ')}</p>`).join('')}</section>`).join('')}</details>`).join('')}
+ ${y.topics.filter(t=>t.paragraphs.length).map(t=>`<section class="smv-80-topic"><h4>${t.number}. ${safe(t.title)}</h4>${t.paragraphs.map(p=>`<p>${safe(p)}</p>`).join('')}</section>`).join('')}${y.topics.every(t=>!t.paragraphs.length)?`<p>${ta?'முன்னர் விளக்கப்பட்ட அதே தொடர்புகளை மீண்டும் எழுதாமல் இந்த ஆண்டின் கிரகநிலைகள் மட்டும் காட்டப்பட்டுள்ளன.':'For this year only the calculated placements are shown; already explained natal links are not repeated.'}</p>`:''}
+ ${events.filter(e=>e.date>=y.from&&e.date<y.to&&e.topics.length).map(e=>`<section class="smv-80-event"><h4>${e.date} · ${ta?KTA[e.planet]:e.planet}: ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}</h4>${e.topics.map(t=>`<p><strong>${t.number}. ${safe(t.title)}:</strong> ${t.paragraphs.map(safe).join(' ')}</p>`).join('')}</section>`).join('')}</details>`).join('')}
  </div>`;
 }
 export function translate80Year(full,base,lang='ta'){

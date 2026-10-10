@@ -274,10 +274,18 @@
    const main=candidates[0]||house.lord,secondary=candidates.find(p=>p!==main)||house.lord;
    const lead=score>=2?verbs[i][0]:score<=-2?verbs[i][1]:ta?`${verbs[i][0]}; ஆனால் சூழ்நிலை அழுத்தமாகும்போது ${verbs[i][1]}`:`${verbs[i][0]}; under pressure, ${verbs[i][1]}`;
    const signName=(ta?SIGNS_TA:SIGNS_EN)[lord.sign],first=traitSet[main][scorePlanet(d,d.planets[main])<0?1:0],second=traitSet[secondary][scorePlanet(d,d.planets[secondary])<0?1:0];
-   const cause=ta?`${house.lord===main?'இந்தப் பாவத்தின் அதிபதி': 'இந்தப் பாவத்துடன் தொடர்புடைய '+TA[main]} ${house.lord===main?TA[house.lord]:''} ${signName} ராசியின் ${lord.house}-ஆம் பாவத்தில் இருப்பதும், ${house.occupants.length?house.occupants.map(p=>TA[p]).join('–')+' இங்கு இருப்பதும்':'இந்தப் பாவம் கிரகமின்றி அதன் அதிபதியின் நிலையைச் சார்ந்திருப்பதும்'} இந்தக் கலப்பை உருவாக்குகிறது.`:
-    `The ruler ${house.lord} occupies ${signName} in house ${lord.house}; ${house.occupants.length?house.occupants.join(' and ')+' occupy this natal house':'this house has no occupants'}.`;
+   // V272 FACT INTEGRITY: the strongest influencing planet is NOT always
+   // the lord of this house. The old wording incorrectly assigned the
+   // house LORD's sign/position to the dominant influencing planet.
+   const dominantPlanet=d.planets[main],dominantSign=(ta?SIGNS_TA:SIGNS_EN)[dominantPlanet.sign];
+   const dominantEvidence=main!==house.lord?(ta?
+      ` மேலும் ${TA[main]} ${dominantSign} ராசியில் ${dominantPlanet.house}-ஆம் பாவத்தில் இருந்து இந்தப் பாவத்தை ${house.aspects.includes(main)?'பார்க்கிறார்':house.occupants.includes(main)?'தனது இருப்பிடத்தால் பாதிக்கிறார்':'மற்ற கிரகத் தொடர்புகள் வழியே பாதிக்கிறார்'}.`:
+      ` ${main} in ${dominantSign}, house ${dominantPlanet.house}, adds its ${house.aspects.includes(main)?'aspect':'natal influence'}.`):'';
+   const cause=ta?
+      `இதன் பாவாதிபதி ${TA[house.lord]} ${signName} ராசியில் ${lord.house}-ஆம் பாவத்தில் இருக்கிறார். ${house.occupants.length?`${house.occupants.map(p=>TA[p]).join('–')} ஆகியோர் இப்பாவத்தில் உள்ளனர்.`:'இந்தப் பாவத்தில் நேரடிக் கிரக இருப்பு இல்லை.'}${dominantEvidence}`:
+      `The ruler ${house.lord} is in ${signName}, house ${lord.house}. ${house.occupants.length?house.occupants.join(' and ')+' occupy this house':'This house has no planet physically present'}.${dominantEvidence}`;
    const mainText=ta?
-    `${lead} என்ற நடைமுறைப் போக்கு இருக்கலாம். இதில் ${first} என்ற செயல் முறையும் ${second} என்ற அணுகுமுறையும் சேர்ந்து வெளிப்படலாம். ${cause}`:
+    `${lead}${lead.trim().endsWith('போக்கு')?' காணப்படலாம்.':' என்ற இயல்பு இருக்கலாம்.'} இதில் ${first} என்ற செயல் முறையும் ${second} என்ற அணுகுமுறையும் இணைந்து வெளிப்படலாம். ${cause}`:
     `A possible pattern is ${lead}; it combines ${first} with ${second}. ${cause}`;
    const rows=[{house:focus,text:mainText,evidence:{focusHouse:focus,score,dominant:main,secondary,occupants:house.occupants,rulerHouse:lord.house}}];
    const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.relevance>=3)
@@ -309,5 +317,5 @@
   return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
  function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'ஒவ்வொரு தலைப்பிற்கும் 12 பாவங்களும் ஆய்வு செய்யப்பட்டு தொடர்புள்ள பலன்கள் மட்டும் தொகுக்கப்பட்டுள்ளன.':'All twelve houses are examined for every topic; only relevant connections are narrated.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'271-individual-linked-d1-narrative'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'272-factual-lord-position-correction'});
 });
