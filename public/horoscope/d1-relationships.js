@@ -108,7 +108,7 @@
  const special=(!onlyPlanet&&specialMars(d,focus));
  if(special){if(brief)return {text:special[ta?'ta':'en'],evidence:a};const c=contact;return {text:special[ta?'ta':'en']+(c?' '+contactLine(d,a,c,ta):''),evidence:a};}
  const positive=ta?OUTCOME_TA[focus-1][0]:OUTCOME_EN[focus-1][0],caution=ta?OUTCOME_TA[focus-1][1]:OUTCOME_EN[focus-1][1];
- const lordFact=ta?`${focus}-ஆம் பாவத்தின் அதிபதி ${p} ${sign} ராசியில் ${a.ownerPosition}-ஆம் பாவத்தில் ${strength} நிலையில் உள்ளார். இவர் ${owners} பாவங்களுக்கும் அதிபதி.`:`House ${focus} ruler ${p} occupies ${sign}, house ${a.ownerPosition}, with ${strength} dignity and rules houses ${owners}.`;
+ const lordFact=ta?`${focus}-ஆம் பாவத்தின் அதிபதி ${p} ${sign} ராசியில் ${a.ownerPosition}-ஆம் பாவத்தில் ${strength} நிலையில் உள்ளார். இவர் ${a.ownerOwnership.map(h=>h+"-ஆம்").join(", ")} பாவங்களுக்கு அதிபதி.`:`House ${focus} ruler ${p} occupies ${sign}, house ${a.ownerPosition}, with ${strength} dignity and rules houses ${owners}.`;
  const angle=a.ownerPosition===focus?'root':a.ownerAspects.includes(focus)?'aspect':'other';
  const con=angle==='aspect'?(ta?'பாவாதிபதி தன் பாவத்தை நேரடியாகப் பார்ப்பதால் அதன் செயல்விளைவுக்கான ஜோதிடத் தொடர்பு வலுவாகிறது.':'The ruler directly aspects its own house, strengthening this traditional link.'):
  angle==='root'?(ta?'பாவாதிபதி அதே பாவத்தில் இருப்பதால் அதன் காரகத்துவங்கள் நேரடியாக வெளிப்படலாம்.':'The ruler occupies its own house, making its themes more immediate.'):(ta?'இந்த நிலையை மட்டுமே வைத்து குறிப்பிட்ட நிகழ்வை முடிவு செய்ய இயலாது.':'This alone does not establish a particular event.');

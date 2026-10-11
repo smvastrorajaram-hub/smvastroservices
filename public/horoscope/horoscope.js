@@ -1901,7 +1901,7 @@ try{
           const c=full?.chart||full;
           const longKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
           const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
-          const longJobReady=import('./d1-80-year-reading.mjs?v=284-period-differences').then(async mod=>{
+          const longJobReady=import('./d1-80-year-reading.mjs?v=285-evidence-change').then(async mod=>{
             let job=longCache.get(longKey);
             if(!job){
               job=mod.build80Year(full,payload,{lang,onProgress:p=>{

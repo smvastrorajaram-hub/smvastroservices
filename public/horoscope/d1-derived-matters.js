@@ -134,7 +134,7 @@
    return {text:'',activated:false,evidence:a,reason:'minor-no-adult-family-events'};
   const lead=hits[0],area=ta?MATTERS[key].ta:MATTERS[key].en;
   const minor=Number.isFinite(age)&&age<18;
-  const detail=ta?`${PN[lead.planet]} இந்தச் செய்திக்குரிய பாவம்/காரகத் தொடர்பில் (${lead.why.join(', ')}) இருப்பதால் ${area} சார்ந்த குடும்ப முடிவுகளை பரிசீலிக்கும் மரபுவழிக் குறிப்பு உள்ளது.`:
+  const detail=ta?`${PN[lead.planet]} இந்தச் செய்திக்குரிய பாவம்/காரகத் தொடர்பில் (${lead.why.map(x=>x==='ruler-or-karaka'?'பாவாதிபதி அல்லது காரகன்':x.startsWith('occupies-')?x.slice(9)+'-ஆம் பாவ இருப்பிடம்':x.startsWith('aspects-')?x.slice(8)+'-ஆம் பாவப் பார்வை':x).join(', ')}) இருப்பதால் ${area} சார்ந்த குடும்ப முடிவுகளை பரிசீலிக்கும் மரபுவழிக் குறிப்பு உள்ளது.`:
    `${lead.planet} actually links to ${area} (${lead.why.join(', ')}); this is a traditional contextual signal, not a predicted event.`;
   const safety=minor?(ta?'சிறுவர் வயதில் இதை பெற்றோர் மேற்கொள்ளும் பராமரிப்பு மற்றும் நிதித் திட்டங்களுக்குரியதாக மட்டுமே கொள்ள வேண்டும்.':'For a minor this applies to caregiver planning, not adult finances or marriage.'):
    key==='native_health'?(ta?'இதன்மூலம் நோய், நீண்டகால பாதிப்பு அல்லது ஆயுள் காலத்தை உறுதியாகக் கணிக்க முடியாது.':'No disease, chronic diagnosis or lifespan can be inferred.'):

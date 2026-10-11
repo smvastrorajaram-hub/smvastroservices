@@ -168,10 +168,10 @@
      ` The same placements also activate ${nearby}, linking decisions across those two areas.`):'';
    const hasDirect=md.marks.length>0||ad.marks.length>0;
    const supportive=!hasDirect?(ta?`${LABEL[period.md]}–${LABEL[period.ad]} காலத்தில் ${area} பாவத்திற்கு நேரடி வலுவான தொடர்பு இல்லை. ${base[0]} என்பது இந்த வயதிற்கான பொதுவான வளர்ச்சி வாய்ப்பாகவே பார்க்கப்படுகிறது; நிகழ்வு உறுதி எனக் கூறவில்லை.`:`${period.md}/${period.ad} has no strong direct link to ${area}. ${base[0]} is an age-appropriate general possibility, not a predicted event.`):ta?
-    `${LABEL[period.md]} மகாதசை – ${LABEL[period.ad]} புக்திக் காலத்தில் ${area} சார்ந்து ${base[0]} என்பது வயதிற்கேற்ற ஒரு சாத்தியமான வளர்ச்சி வழி. பிறப்பு ஜாதகப்படி ${primary.label} ${primary.sign} ராசியில் ${primary.house}-ஆம் பாவத்தில் ${primary.quality} இருக்கிறார்; ${primary.relation} தொடர்புபெறுகிறார். ${second.label} ${second.house}-ஆம் பாவத்தில் உள்ளதும் இந்த மதிப்பீட்டுடன் இணைக்கப்படுகிறது.${natalLink}`:
+    `${LABEL[period.md]} மகாதசை – ${LABEL[period.ad]} புக்திக் காலத்தில் ${area} சார்ந்து ${base[0]} என்று இந்தக் காலத்தில் எடுத்துரைக்கலாம். பிறப்பு ஜாதகப்படி ${primary.label} ${primary.sign} ராசியில் ${primary.house}-ஆம் பாவத்தில் ${primary.quality} இருக்கிறார்; ${primary.relation} தொடர்புபெறுகிறார். ${second.label} ${second.house}-ஆம் பாவத்தில் உள்ளதும் இந்த மதிப்பீட்டுடன் இணைக்கப்படுகிறது.${natalLink}`:
     `During ${period.md}/${period.ad}, an age-relevant constructive reading for ${area} is ${base[0]}. Natal support considered: ${primary.label} in ${primary.sign}, house ${primary.house} (${primary.quality}) and ${second.label} in house ${second.house}.${natalLink}`;
    const challenge=ta?
-    `கவனிக்க வேண்டிய அம்சம்: ${base[1]}. ${md.label} (${md.sign}, ${md.house}-ஆம் பாவம்), ${ad.label} (${ad.sign}, ${ad.house}-ஆம் பாவம்) ஆகிய பிறப்புநிலைகளை ஒப்பிடும்போது ${signal>=2?'ஆதரவும் கட்டுப்பாடும் கலந்த வாசிப்பே பொருத்தமானது':'சவாலுக்கான பாரம்பரியக் குறியீடுகள் காணப்படுகின்றன; அது நிகழ்வு நடந்தே தீரும் என்பதல்ல'}. ${['infant','child','teen'].includes(age.stage)?'':`${md.negative} மற்றும் ${ad.negative} போன்ற போக்குகளை நடைமுறைச் சூழலில் மதிப்பிடலாம்.`}`:
+    `இதன் மறுபக்கமாக ${base[1]} என்ற சூழலையும் ஆராய வேண்டும். ${md.label} (${md.sign}, ${md.house}-ஆம் பாவம்), ${ad.label} (${ad.sign}, ${ad.house}-ஆம் பாவம்) ஆகிய பிறப்புநிலைகளை ஒப்பிடும்போது ${signal>=2?'ஆதரவும் கட்டுப்பாடும் கலந்த வாசிப்பே பொருத்தமானது':'ஒரு குறிப்பிட்ட முடிவை உறுதி செய்ய முடியாத கலவையான கிரக ஆதாரங்கள் உள்ளன'}. ${['infant','child','teen'].includes(age.stage)?'':`${md.negative} மற்றும் ${ad.negative} போன்ற போக்குகளை நடைமுறைச் சூழலில் மதிப்பிடலாம்.`}`:
     `The difficult side of this period may be ${base[1]}. Natal ${md.label} (${md.sign}, house ${md.house}) and ${ad.label} (${ad.sign}, house ${ad.house}) have combined signal ${signal}; ${['infant','child','teen'].includes(age.stage)?'':`guard against ${md.negative} and ${ad.negative}.`}`;
    // Apply natal ownership/dignity/friendship only when the operating period
    // actually activates this house or its lord. Never infer from enmity alone.
@@ -258,11 +258,12 @@
     const natalContacts=REL.analyze(d,focus).contacts;
     const actualNatalContact=age.age>=18&&natalContacts.some(c=>c.planet===p);
     const natalDetail=actualNatalContact?REL.narration(d,focus,lang,{onlyPlanet:p,brief:true}).text:'';
+    const planetManner=ta?({Jupiter:'கல்வி, ஆலோசனை மற்றும் வாய்ப்புகளை நிதானமாக மதிப்பிடுவதில்',Saturn:'கடமை, காலவரம்பு மற்றும் பொறுப்பு பகிர்வில்',Rahu:'புதிய பாதையைத் தேர்வுசெய்யும் முன் தகவல்களைச் சரிபார்ப்பதில்',Ketu:'தேவையற்ற சுமைகளைக் குறைத்து முக்கியமானவற்றில் கவனம் செலுத்துவதில்'}[p]):({Jupiter:'learning, advice and evaluated opportunity',Saturn:'duty, timing and shared responsibility',Rahu:'checking facts before pursuing novelty',Ketu:'simplifying priorities and commitments'}[p]);
     const opportunityText=ta?
-      `${life} சார்ந்து வயதிற்கேற்ப பார்க்கக்கூடிய சாதகமான நிலை: ${opportunity}. இதை ஆதரிக்கக்கூடிய பாரம்பரியக் கிரகத் தொடர்பு: ${transitFact}${natalDetail?' பிறப்புத் தொடர்பின் துணை ஆதாரம்: '+natalDetail:''} `:
+      `${TR_TA[p]} பெயர்ச்சியால் ${life} தொடர்பில் ${opportunity} என்ற வாய்ப்பை ${planetManner} பொருத்திப் பார்க்கலாம். அதன் கிரக ஆதாரம்: ${transitFact}${natalDetail?' பிறப்புத் தொடர்பின் துணை ஆதாரம்: '+natalDetail:''} `:
       `For ${life}, an age-relevant constructive possibility is ${opportunity}. The traditional evidence is ${transitFact}${natalDetail?' Natal supporting context: '+natalDetail:''}`;
     const difficultText=ta?
-      `கவனிக்க வேண்டிய நடைமுறை அம்சம்: ${challenge}. ${TR_TA[p]}  ${caution}`:
+      `இந்த மாற்றத்தின் மறுபக்கமாக ${challenge} என்ற சிரமம் தோன்றக்கூடிய சூழலைக் கவனிக்க வேண்டும். ${TR_TA[p]}: ${caution}`:
       `An age-appropriate point requiring care is ${challenge}. Natal house score ${score} does not guarantee an event. ${caution}`;
     // A single cause -> supportive/challenging reading prevents the same
     // transit contact from being narrated twice in every year/ingress.
@@ -314,5 +315,5 @@
  const medical=kind==='dasha'?(ta?' 1, 6, 8, 12 பாவங்களை வைத்து நோயையோ ஆயுள் முடியும் தேதியையோ தீர்மானிக்க முடியாது; உடல்நலத்தில் மருத்துவ ஆலோசனைதான் முதன்மை.':' House connections do not diagnose illness or determine lifespan; clinical advice takes priority.'):(ta?' பெயர்ச்சி என்பது ஆயுள் அல்லது குறிப்பிட்ட நோயைக் கணிக்கும் மருத்துவ முறை அல்ல.':' Transit readings cannot determine lifespan or diagnose illness.');
  const topics=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-${kind}-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(z=>`<p class="smv-d1-life-paragraph" data-d1-${kind}-related-house="${z.relatedHouse}">${esc(z.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading smv-d1-time-reading" data-d1-time="${kind}" lang="${ta?'ta':'en'}"><h2>${title}</h2><p class="smv-d1-life-method">${esc(info+agePreface+certainty+medical)}</p>${topics}</section>`;}
  function html(full,asOf,lang='ta',context={}){return htmlBlock(renderDasha(full,asOf,lang,context),lang)+htmlBlock(renderTransit(full,asOf,lang,context),lang);}
- return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'275-functional-dasha-transit'});
+ return Object.freeze({renderDasha,renderTransit,html,htmlBlock,ageInfo,chosenPeriod,normalizedTransit,version:'285-evidence-led-dasha-transit'});
 });

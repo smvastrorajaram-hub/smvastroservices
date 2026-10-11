@@ -292,41 +292,56 @@
    const mainText=ta?
     `${lead}${lead.trim().endsWith('போக்கு')?' காணப்படலாம்.':' என்ற இயல்பு இருக்கலாம்.'} இதில் ${first} என்ற செயல் முறையும் ${second} என்ற அணுகுமுறையும் இணைந்து வெளிப்படலாம். ${cause}`:
     `A possible pattern is ${lead}; it combines ${first} with ${second}. ${cause}`;
-   const rows=[{house:focus,text:mainText,evidence:{focusHouse:focus,score,dominant:main,secondary,occupants:house.occupants,rulerHouse:lord.house}}];
-   const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.relevance>=3)
-     .sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,3);
-   for(const line of notable){const rel=line.relatedHouse,ruler=d.planets[d.houses[rel-1].lord],influence=line.planet,quality=scorePlanet(d,d.planets[influence]);
-    const behavior=(ta?ROUTES_TA:ROUTES_EN)[i][rel-1].replace(/[.]$/,'');
-    const h=ta?SIGNS_TA[ruler.sign]:SIGNS_EN[ruler.sign],related=ta?TA[d.houses[rel-1].lord]:d.houses[rel-1].lord;
-    const influenceWord=traitSet[influence][quality<0?1:0],direction=line.score>=2?'support':line.score<=-2?'strain':'mixed';
-    const relationship=ta?(
-      line.links.includes('mutual-exchange')?'இரு பாவாதிபதிகளும் ஒருவருக்கொருவர் இடம் மாறி இருப்பதால்':
-      line.links.includes('lords-conjunct')?'இரு பாவாதிபதிகளும் ஒரே பாவத்தில் சேர்ந்து இருப்பதால்':
-      line.links.includes('focus-lord-in-related')?'முதன்மைப் பாவத்தின் அதிபதி தொடர்புடைய பாவத்தில் இருப்பதால்':
-      line.links.includes('related-lord-in-focus')?'தொடர்புடைய பாவத்தின் அதிபதி முதன்மைப் பாவத்தில் இருப்பதால்':
-      line.links.length?'பார்வை அல்லது பாவாதிபதி தொடர்பு இருப்பதால்':
-      'இரு பாவங்களுக்கிடையே பலவீனமான துணைத் தொடர்பு மட்டும் இருப்பதால்'):
-      (line.links.includes('mutual-exchange')?'the rulers exchange houses':line.links.includes('lords-conjunct')?'the rulers join in one house':line.links.length?'the natal rulers or aspects connect':'the natal connection is weaker');
-    const tilt=''; // V273: omit identical non-evidence-based advice repeated on every natal house link.
-    rows.push({house:rel,text:ta?
-      `${behavior}; ${relationship}, ${related} ${h} ராசியின் ${ruler.house}-ஆம் பாவத்தில் இருந்து இந்தக் காரகத்துவத்தை மாற்றுகிறார். ${TA[influence]} தொடர்பால் ${influenceWord} என்ற இயல்பு சேர்கிறது.${tilt}`:
-      `${behavior}; ${relationship}. ${related} in ${h}, house ${ruler.house}, changes this connection; ${influence} adds ${influenceWord}. ${tilt}`,
-      evidence:{...line,linkedLordHouse:ruler.house,linkedLordSign:ruler.sign,direction}});
+   // V285: Human-reading order: actual D1 house evidence -> lived implication
+   // -> most relevant REAL linked house -> independent natural significator.
+   // Keep the 12x12 matrix for auditing; stop printing generic 12x12 permutations.
+   const occupants=house.occupants.map(k=>ta?TA[k]:k);
+   const aspects=house.aspects.map(k=>ta?TA[k]:k);
+   const ownerOther=d.houses.map((x,ix)=>x.lord===house.lord?ix+1:null).filter(x=>x&&x!==focus);
+   const dignity=lord.dignity;
+   const pattern=dignity==='exalted'||dignity==='own'?(ta?'சுயமாக முயற்சி செய்து நிலைநிறுத்தும் திறன் முன்னிலையாகலாம்':'the capacity to sustain an initiative is emphasised'):
+      dignity==='debilitated'?(ta?'செய்வதற்கும் நிலைநிறுத்துவதற்கும் இடையில் கூடுதல் பயிற்சியும் நிதானமும் தேவைப்படலாம்':'more care may be needed to sustain an initiative'):
+      score<0?(ta?'முடிவுகளைச் சரிபார்த்து செயல்படுவதால் தேவையற்ற அழுத்தத்தைத் தவிர்க்கலாம்':'reviewing decisions may reduce avoidable pressure'):
+      (ta?'முயற்சிக்கும் சூழ்நிலைக்குமான சமநிலையைக் கவனிப்பது பயனுள்ளதாக இருக்கும்':'effort and circumstances need balancing');
+   const ownerEffect=ownerOther.length?(ta?` இவரே ${ownerOther.map(x=>x+'-ஆம்').join(', ')} பாவத்திற்கும் அதிபதி என்பதால், அந்தத் துறையின் பொறுப்பும் இங்கே கலந்து வரலாம்.`:` The same ruler also governs house ${ownerOther.join(', ')}, which should be read as a separate responsibility.`):'';
+   const root=ta?
+     `${lead}; ${pattern}. ${TA[house.lord]} ${signName} ராசியில் ${lord.house}-ஆம் பாவத்தில் உள்ளதால் ${focus}-ஆம் பாவத்தின் அனுபவம் ${lord.house}-ஆம் பாவ வாழ்க்கைச் சூழலுடன் இணைகிறது.${ownerEffect}`:
+     `${lead}; ${pattern}. Ruler ${house.lord} in ${signName}, house ${lord.house}, links house ${focus} to that setting.${ownerEffect}`;
+   const force=ta?
+     `${occupants.length?`இந்தப் பாவத்தில் ${occupants.join(', ')} இருப்பதால் அவர்களின் தனித்த காரகத்துவங்களும் வெளிப்படலாம்.`:'இந்தப் பாவத்தில் கிரகம் இல்லாததால் பாவாதிபதியின் நிலையே முதன்மையானது.'} ${aspects.length?`${aspects.join(', ')} பார்வை சேர்வதால் அவற்றின் ஆதரவு அல்லது கட்டுப்பாடு சூழ்நிலையை மாற்றலாம்.`:''} ${first} என்ற செயல்பாடும் ${second} என்ற மறுபக்கமும் இந்தத் தலைப்பில் ஒன்றாகக் கவனிக்கப்பட வேண்டும்.`:
+     `${occupants.length?occupants.join(', ')+' occupy this house.':'No planet occupies this house; give priority to its ruler.'} ${aspects.length?'Aspects from '+aspects.join(', ')+ ' modify the result.':''} ${first} interacts with ${second}.`;
+   const rows=[{house:focus,text:root,evidence:{focusHouse:focus,score,dominant:main,rulerHouse:lord.house,source:'d1-primary-v285'}},
+     {house:focus,text:force,evidence:{focusHouse:focus,occupants:house.occupants,aspects:house.aspects,source:'d1-aspects-v285'}}];
+   const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.links.length&&x.relevance>=4)
+     .sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,2);
+   for(const x of notable){
+     const relevant=d.houses[x.relatedHouse-1],relatedLord=d.planets[relevant.lord],bridge=(ta?ROUTES_TA:ROUTES_EN)[i][x.relatedHouse-1].replace(/[.]$/,'');
+     const tie=x.links.includes('mutual-exchange')?(ta?'பரிவர்த்தனை':'mutual exchange'):
+       x.links.includes('lords-conjunct')?(ta?'இரு அதிபதிகள் சேர்க்கை':'rulers conjunct'):
+       x.links.includes('focus-lord-in-related')?(ta?'இந்தப் பாவத்தின் அதிபதி அடுத்த பாவத்தில் இருப்பது':'the focus ruler occupies the related house'):
+       x.links.includes('related-lord-in-focus')?(ta?'தொடர்புடைய அதிபதி இந்தப் பாவத்தில் இருப்பது':'the related ruler occupies this house'):(ta?'பாவாதிபதி / பார்வைத் தொடர்பு':'ruler or aspect connection');
+     rows.push({house:x.relatedHouse,text:ta?
+       `${focus}-ஆம் பாவத்துக்கும் ${x.relatedHouse}-ஆம் பாவத்துக்கும் ${tie} உள்ளது. ${bridge}. ${TA[relevant.lord]} ${relatedLord.house}-ஆம் பாவத்தில் இருப்பதால் இரு துறைகளுக்கான முடிவுகளைத் தனித்தனியாக அல்லாமல் ஒன்றாகத் திட்டமிடும் சூழல் அமையலாம்.`:
+       `Houses ${focus} and ${x.relatedHouse} connect through ${tie}. ${bridge}; ${relevant.lord} in house ${relatedLord.house} joins the practical decisions in these areas.`,
+       evidence:{...x,source:'d1-direct-natal-link-v285'}});
    }
-   // V274: a single D1 evidence-led synthesis; do not emit every possible
-   // 12x12 permutation as another generic paragraph. Each contact is real.
-   const relationshipReading=REL.narration(d,focus,lang);
-   if(relationshipReading.text){rows.splice(1,0,{house:focus,text:relationshipReading.text,
-       evidence:{source:'d1-parashari-relational',...relationshipReading.evidence}});}
-   // V275: primary naisargika karaka (Table 15) + distinct reference
-   // house from the karaka (Table 12 / graha lagna), then functional
-   // rulership and conditional dusthana reading. Only once per topic.
-   const karakaReading=KARA.description(d,focus,lang);
-   if(karakaReading.text){rows.splice(2,0,{house:focus,text:karakaReading.text,
-       evidence:karakaReading.evidence});}
-   // V276: derived houses + matter-specific karaka, house/lord/occupation/aspect
-   // (one evidenced reading per relevant focus, not a 12x12 text expansion).
-   for(const derived of DERIVED.forFocus(d,focus,lang)){if(derived.text)rows.push({house:focus,text:derived.text,evidence:derived.evidence});}
+   // A genuine natural significator is evidence, not an extra repetitive
+   // fortune claim. Explicitly separate its position from the house ruler.
+   const k=KARA.karaka(d,focus);
+   if(k.planet!==house.lord && (k.planetHouse===focus||k.referencedHouse===focus||k.planetHouse===lord.house)){
+     rows.push({house:focus,text:ta?
+       `${TA[k.planet]} இந்தத் தலைப்பின் இயற்கைக் காரகன்; அவர் ${k.planetHouse}-ஆம் பாவத்தில் உள்ளார். பாவாதிபதியின் நிலைக்கு இது தனியான துணை ஆதாரம்; ஒரே ஆதாரத்தை இருமுறை நன்மையாகவோ தீமையாகவோ எண்ணவில்லை.`:
+       `${k.planet} is the natural significator and occupies house ${k.planetHouse}; this is a distinct reference and must not be double-counted.`,
+       evidence:{source:'d1-independent-karaka-v285',...k}});
+   }
+   // Preserve the exceptional Aries/Mars insight once, not in every house.
+   if(d.lagna===0&&d.planets.Mars?.sign===9&&[1,4,5,10].includes(focus)){
+     const rel=REL.narration(d,focus,lang,{brief:true});
+     if(rel.text)rows.push({house:focus,text:rel.text,evidence:{source:'d1-mars-exception-v285'}});
+   }
+   // Matter-specific derived work remains available for audit and compatibility,
+   // but its boilerplate is not repeated in each topic of the human report.
+   const derivedEvidence=DERIVED.forFocus(d,focus,lang);
    const practical=situation(focus,ctx,ta);
    if(practical)rows.push({house:focus,text:practical,evidence:{source:'user-declared-situation'}});
    topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:analyzed});
@@ -334,5 +349,5 @@
   return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
  function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'இந்தப் பகுதி D1 ஜாதகத்தின் வாழ்நாள் இயல்பு மற்றும் சாத்தியமான வாழ்க்கை அணுகுமுறைகளைப் பற்றியது; பிறந்த குழந்தையில் இவை இப்போதே வெளிப்படும் என்ற பொருள் இல்லை. வயதிற்கேற்ற கால விளக்கங்கள் II, III பகுதிகளில் வழங்கப்படுகின்றன.':'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'276-derived-matters'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'285-focused-human-natal'});
 });
