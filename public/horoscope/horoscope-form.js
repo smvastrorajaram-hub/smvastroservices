@@ -175,7 +175,7 @@ if(lat===''||lon===''){
           if(pending)await pending;
           const dasha=x.querySelector('[data-smv-long-range="dasha"]');
           const transit=x.querySelector('[data-smv-long-range="transit"]');
-          if(!dasha||!transit){
+          if(!dasha||!transit||!transit.querySelector('[data-smv-full-timeline-complete="1"]')){
             const error=x.querySelector('.smv-80-status')?.textContent||'';
             throw new Error('Section X forecast through age 80 is incomplete. '+error.slice(0,200));
           }
@@ -274,3 +274,113 @@ if(lat===''||lon===''){
   $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishNakshatra','englishLat','englishLon','englishCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});if($('englishRasi'))$('englishRasi').value='Aries';if($('englishCurrentWork'))$('englishCurrentWork').value='';if($('englishMaritalStatus'))$('englishMaritalStatus').value='';if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
 document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const section=$('english-horoscope');section?.classList.remove('hidden');section?.scrollIntoView({behavior:'auto',block:'start'});history.replaceState(null,'','#english-horoscope');}));
 })();
+
+
+/* SMV-LIFE-CONTEXT-V294
+ * User-chosen, optional, ephemeral accessibility/wellbeing guidance.
+ * It NEVER detects disability or mental-health conditions from a chart,
+ * alters planetary calculation, sends data, or becomes a saved PDF/report.
+ * Deliberately attaches preview *outside* english/tamilHoroscopeResult.
+ * Does not use MutationObserver, network, IndexedDB or localStorage. */
+(function(root){'use strict';
+ const NEEDS=new Set(['mobility','vision','hearing','wellbeing','learning']);
+ const $=id=>document.getElementById(id);
+ const DATA={
+  mobility:{
+   ta:['கல்வி மற்றும் திறன் வளர்ச்சிக்கான பலனை அணுகக்கூடிய வகுப்பறை, பயிற்சி இடம், போக்குவரத்து வசதிகளுடன் பொருத்தி திட்டமிடுங்கள். உடல் இயக்க உதவி தேவைப்படுவது அறிவாற்றலையோ படைப்புத்திறனையோ குறிக்கவில்லை.','பணி அல்லது வருமானத்திற்கான பலனைத் தொலைதூரப் பணி, அணுகலுள்ள பணியிடம், உதவித் தொழில்நுட்பம் மற்றும் வேலைப் பொறுப்பின் தன்மை ஆகியவற்றோடு இணைத்துப் பயன்படுத்துங்கள்.','குடும்பம், நண்பர்கள் மற்றும் சுயசார்பில் தேவையான அணுகல் வசதிகளைத் தேர்ந்தெடுக்கும் உரிமையும் தனிப்பட்ட முடிவுகளும் முக்கியம்.'],
+   en:['Apply learning and skill themes to accessible classrooms, training spaces and transport. Mobility support does not imply reduced understanding or creativity.','Read career and income themes alongside accessible workplaces, remote work, suitable duties and assistive tools.','Preserve personal decisions and autonomy in family and social life; support and accessibility are not a measure of worth.']},
+  vision:{
+   ta:['கல்விப் பலனைத் திரைவாசிப்பான், ஒலிப்புத்தகம், பெரிய எழுத்து அல்லது பிற விருப்பமான வாசிப்பு முறைகளுடன் இணைத்துப் பயன்படுத்துங்கள்.','பணிசார் திறன்களை அணுகக்கூடிய மென்பொருள், பேசும் கருவிகள், மாற்று வாசிப்பு வடிவங்கள் ஆகியவற்றின் உதவியுடன் நடைமுறைப்படுத்தலாம்.','அன்றாடப் பயணம், செய்திகள், உறவுகளின் தகவல் பரிமாற்றம் ஆகியவற்றில் நீங்கள் தேர்ந்தெடுக்கும் அணுகல் முறைகள் முக்கியம்.'],
+   en:['Read education themes together with screen readers, audio, large text or whichever reading format is suitable.','Apply career themes with accessible software, spoken tools and adaptable document formats.','Independent travel, information and relationships benefit from access methods chosen by the person.']},
+  hearing:{
+   ta:['கல்வி மற்றும் பயிற்சியில் எழுத்துப்பூர்வ விளக்கம், வசன வரிகள் அல்லது விருப்பமான சைகை மொழி உதவி போன்றவற்றைச் சேர்த்துக் கொள்ளுங்கள்.','பணியிடம் அல்லது வியாபாரத்தில் கூட்டக் குறிப்புகள், எழுதப்பட்ட தகவல், காட்சியமைப்பு அறிவிப்புகள் ஆகியவை தகவல் சமநிலைக்கு உதவும்.','உறவுகளிலும் நண்பர்களுடனும் உரையாடும் முறையை இணக்கமாகத் தேர்ந்தெடுப்பதால் முடிவுகள் தெளிவாகப் பகிரப்படுகின்றன.'],
+   en:['Apply learning themes using captions, written guidance or preferred sign-language support.','Work and business communication can use meeting notes, clear written instructions and visual alerts.','In relationships, agreeing on accessible communication helps everyone understand decisions.']},
+  wellbeing:{
+   ta:['உணர்ச்சி நலவாழ்வுக்கான ஆதரவு இருப்பதாலேயே அறிவாற்றலையோ தீர்மானத் திறனையோ குறைவாக மதிப்பிடக்கூடாது; கல்வி, ஆர்வம், திறமையைத் தனியே அணுகுங்கள்.','பணிச்சுமை, அட்டவணை, ஆதரவான உறவுகள், தேவையான இடைவெளி ஆகியவற்றைத் திட்டமிடுதல் தொழில் சார்ந்த பலன்களின் நடைமுறைப் பகுதி.','குடும்பம் அல்லது நண்பர்களிடம் உதவி கேட்பது, பொருத்தமான தொழில்முறை ஆதரவை அணுகுவது ஆகியவை தனிப்பட்ட விருப்பங்களும் உரிமைகளும்; ஜாதகம் நோயைக் கண்டறியாது.'],
+   en:['Emotional-wellbeing support does not imply reduced intelligence or decision-making ability; consider learning and skills on their own merits.','Translate work themes into manageable schedules, supportive relationships and appropriate breaks.','Seeking support from trusted people or qualified professionals is a personal choice; the horoscope does not diagnose a mental-health condition.']},
+  learning:{
+   ta:['கற்றலுக்கான உதவி தேவைப்படுவதால் திறமை இல்லை என்ற முடிவு வராது; காட்சிப் பயிற்சி, செயல்முறைப் பயிற்சி, கூடுதல் நேரம் போன்ற ஏற்ற வழிகளைத் தேர்ந்தெடுங்கள்.','தொழில் அல்லது திறன் வளர்ச்சிப் பலன்களைத் தெளிவான சிறு பணிகள், படிப்படியான விளக்கம், பொருத்தமான உதவிக் கருவிகளுடன் செயல்படுத்துங்கள்.','உறவுகள் மற்றும் சுயமுடிவுகளில் அந்த நபரின் விருப்பமும் புரிதலுக்கேற்ற தகவல் வழங்கலும் முன்னுரிமை பெறுகின்றன.'],
+   en:['Learning support does not mean a lack of ability; consider visual instruction, hands-on practice and appropriate time.','Apply skills and work themes through clear steps, suitable instructions and assistive tools.','Communication and personal decisions should respect the person’s preferences and access to understandable information.']}
+ };
+ function computeAge(date){
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return null;
+   const [y,m,d]=date.split('-').map(Number),b=new Date(y,m-1,d),now=new Date();
+   if(b.getFullYear()!==y||b.getMonth()!==m-1||b.getDate()!==d||b>now)return null;
+   let a=now.getFullYear()-y; if(now.getMonth()+1<m||(now.getMonth()+1===m&&now.getDate()<d))a--;
+   return a;
+ }
+ function guidance({need,consent,age,work='',lang='ta'}={}){
+   if(!consent||!NEEDS.has(need))return null;
+   const ta=lang!=='en';const b=DATA[need][ta?'ta':'en'];const minor=age!==null&&age!==undefined&&age<18;
+   const senior=age!==null&&age!==undefined&&age>=60;
+   const student=work==='student'||minor;
+   const headings=ta?['கல்வி / திறன்','தொழில் / பொறுப்பு','உறவு / அன்றாட வாழ்க்கை']:['Education / skills','Work / responsibilities','Relationships / daily life'];
+   const applied=[...b];
+   if(minor){
+      applied[1]=ta?'இந்த வயதில் தொழில் அல்லது திருமண நிகழ்வைக் கணிக்காமல் பள்ளி, பயிற்சி, பாதுகாப்பான பயணம் மற்றும் பெற்றோர்/பராமரிப்பாளர் வழங்கும் நடைமுறை உதவிகளுக்கு முன்னுரிமை கொடுக்க வேண்டும்.':'At this age, focus on school, accessible activities, safe travel and practical support from trusted adults rather than adult employment or marriage outcomes.';
+   }else if(student){
+      applied[1]=ta?'தற்போதைய கல்வியிலிருந்து திறனை வளர்க்கும் பயிற்சி மற்றும் அணுகக்கூடிய எதிர்காலப் பணிமுறைகளைத் தேர்ந்தெடுப்பதே இப்போது பொருத்தமான வாழ்க்கைத் திட்டம்.':'The present focus is on accessible learning-to-work routes, training and skill development rather than an assumed current job.';
+   }else if(senior){
+      applied[1]=ta?'இந்த வயதில் வேலைப் பதவி அல்லது புதிய தொழில் பற்றிய பொதுவான முடிவை விட சுயமுடிவு, விருப்பமான செயல்பாடுகள், அணுகல் வசதிகள் மற்றும் அன்றாட ஆதரவை முன்னிலைப்படுத்துங்கள்.':'At this age, emphasize autonomy, chosen activities, access and everyday support rather than assuming a new full-time career.';
+   }
+   return {ageGroup:minor?'minor':senior?'senior':'adult',lang:ta?'ta':'en',headings,paragraphs:applied,
+      title:ta?'விருப்ப வாழ்க்கைச் சூழலுக்கு ஏற்ற நடைமுறை வாசிப்பு':'Optional life-context guidance',
+      note:ta?'இது நீங்கள் விருப்பமாகத் தேர்ந்தெடுத்த அணுகல்/நலவாழ்வு சூழலைப் பயன்படுத்தும் கூடுதல் வழிகாட்டுதல். ஜாதகத்தால் மாற்றுத்திறனையோ மனநல நிலையையோ கண்டறியவில்லை. இந்த உரை திரையில் மட்டுமே தோன்றும்; சேமிக்கப்பட்ட அறிக்கை அல்லது PDF-இல் இடம்பெறாது.':'This additional guidance uses a context you voluntarily selected. No disability or mental-health condition has been inferred from the chart. It appears only on screen, not in saved reports or PDFs.'};
+ }
+ function buildPanel(prefix,lang){
+   const box=$(prefix+'LifeContextPreview'),result=$(prefix+'HoroscopeResult');if(!box||!result)return;
+   const consent=!!$(prefix+'LifeContextConsent')?.checked;
+   const need=$(prefix+'LifeContextNeed')?.value||'';
+   const age=computeAge($(prefix+'Dob')?.value),work=$(prefix+'CurrentWork')?.value||'';
+   const content=guidance({need,consent,age,work,lang});
+   // Only display with an actually generated FULL D1 result, never the public Basic gate.
+   if(!content||!result.querySelector('[data-smv-d1-life="1"]')){box.hidden=true;box.replaceChildren();return;}
+   box.replaceChildren();box.hidden=false;
+   box.style.cssText='margin:14px 0;padding:14px;border:1px solid #bdb5a2;border-radius:9px;background:#fff';
+   const heading=document.createElement('h3');heading.textContent=content.title;box.append(heading);
+   // Each context view is anchored to the *already generated* D1 report.
+   // Never recalculate a chart, infer a diagnosis, or invent a new natal outcome.
+   const minor=content.ageGroup==='minor',senior=content.ageGroup==='senior';
+   const focus=minor?[5,3,4]:senior?[5,11,12]:work==='student'?[5,3,11]:need==='wellbeing'?[4,10,12]:[5,10,7];
+   content.paragraphs.forEach((paragraph,i)=>{
+    const sub=document.createElement('h4');sub.textContent=content.headings[i];box.append(sub);
+    const source=result.querySelector('[data-d1-topic="'+focus[i]+'"] .smv-d1-life-paragraph');
+    if(source&&source.textContent.trim()){
+     const evidence=document.createElement('p');evidence.className='smv-context-evidence';
+     evidence.textContent=(lang==='en'?'Existing D1 reading: ':'ஏற்கெனவே கணிக்கப்பட்ட D1 பலன்: ')+source.textContent.trim();
+     box.append(evidence);
+    }
+    const p=document.createElement('p');p.textContent=paragraph;box.append(p);
+   });
+   const note=document.createElement('p');note.className='small';note.textContent=content.note;box.append(note);
+ }
+ function refresh(){const lang=document.documentElement.lang==='ta'?'ta':'en';
+  // Rebuilds from on-screen user selections only. No network, chart recalc, or storage.
+  buildPanel('english',lang);buildPanel('tamil','ta');
+ }
+ if(typeof document!=='undefined'){
+  document.addEventListener('change',ev=>{if(/^(english|tamil)LifeContext(?:Need|Consent)$/.test(ev.target?.id||''))refresh();});
+  window.addEventListener('smv:horoscope-full-ready',()=>queueMicrotask(refresh));
+  window.addEventListener('smv:report-ready',()=>queueMicrotask(refresh));
+  document.addEventListener('click',ev=>{if(['clearEnglishHoroscope','clearTamilHoroscope'].includes(ev.target?.id)){
+   const p=ev.target.id==='clearEnglishHoroscope'?'english':'tamil';
+   const consent=$(p+'LifeContextConsent'),need=$(p+'LifeContextNeed');if(consent)consent.checked=false;if(need)need.value='';
+   const panel=$(p+'LifeContextPreview');if(panel){panel.hidden=true;panel.replaceChildren();}
+  }});
+  // Protect against accidentally carrying one person's selected support context
+  // into another birth record. Only clear it after a preview was actually used.
+  const used={english:false,tamil:false};
+  window.addEventListener('smv:horoscope-full-ready',()=>queueMicrotask(()=>{
+   for(const p of ['english','tamil']){const preview=$(p+'LifeContextPreview');if(preview&&!preview.hidden)used[p]=true;}
+  }));
+  document.addEventListener('input',ev=>{
+   const match=/^(english|tamil)(AstroName|Dob|Tob|BirthPlace|Lat|Lon)$/.exec(ev.target?.id||'');
+   if(!match||!used[match[1]])return;
+   const p=match[1];used[p]=false;
+   const consent=$(p+'LifeContextConsent'),need=$(p+'LifeContextNeed');
+   if(consent)consent.checked=false;if(need)need.value='';
+   const panel=$(p+'LifeContextPreview');if(panel){panel.hidden=true;panel.replaceChildren();}
+  });
+ }
+ root.SMVLifeContextV294=Object.freeze({guidance,computeAge,refresh,version:'294-consent-only-ephemeral'});
+})(typeof window!=='undefined'?window:globalThis);
