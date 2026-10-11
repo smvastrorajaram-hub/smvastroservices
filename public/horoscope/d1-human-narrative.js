@@ -90,57 +90,7 @@ function state(d,house,options){
 }
 function classify(d,p){return p?.dignity==='exalted'||p?.dignity==='own'?'support':p?.dignity==='debilitated'||p?.combust?'pressure':'mixed';}
 function sentence(s){return s.replace(/\.$/,'')+'.';}
-function build(d,lang='ta',options={}){
- const ta=lang!=='en',names=ta?TA_SIGNS:EN_SIGNS;const rising=ta?RISING_TA:RISING_EN;const signs=ta?SIGN_STYLE_TA:SIGN_STYLE_EN;
- const planets=ta?PLANET_TA:PLANET_EN;const arenas=ta?ARENA_TA:ARENA_EN,domains=ta?DOMAIN_TA:DOMAIN_EN,conditions=ta?CONDITION_TA:CONDITION_EN;
- const first=d.houses[0],chief=d.planets[first.lord],seen=new Set(),topics=[];const globalSeen=new Set();
- const level=(i)=>state(d,i,options);
- for(let idx=0;idx<12;idx++){
-  const house=d.houses[idx],lord=d.planets[house.lord],score=level(idx+1),body=[];
-  // Pass 1: only once, at the beginning of the first topic.
-  if(idx===0){
-   for(const t of rising[d.lagna])addOnce(body,seen,t,1,{pass:1,source:'rising-sign',sign:d.lagna});
-   if(chief){
-    const style=signs[chief.sign],m=planets[first.lord][0];
-    addOnce(body,seen,ta?`இவருடைய அடிப்படையான அணுகுமுறையுடன் ${style} இணைந்து செயல்படலாம். இதனால் ${m}; இந்த இரண்டு தன்மைகளும் சமமாக வெளிப்படும்போது பிறருக்கான அக்கறையும் தனக்கான உறுதியும் ஒன்றை ஒன்று நிறைவு செய்யும்.`:`The underlying character is also shaped by ${style}. ${sentence(m)} Their approach to others and their personal resolve may need balancing.`,1,{pass:1,source:'ruler-sign',ruler:first.lord,sign:chief.sign});
-    addOnce(body,seen,ta?`இவரது அடிப்படை இயல்பு குறிப்பாக ${arenas[chief.house-1]} அதிகம் வெளிப்படக்கூடும். அங்கு ஒரு சிக்கல் தோன்றும்போது அதை வெறுமனே ஒதுக்காமல் தன்னுடைய முறையில் தீர்வு காண விரும்பலாம்.`:`Their individual approach may show most clearly in ${arenas[chief.house-1]}. They may prefer tackling a difficulty rather than leaving it unresolved.`,1,{pass:1,source:'ruler-house',ruler:first.lord,house:chief.house});
-    if(classify(d,chief)==='pressure')addOnce(body,seen,ta?'தனக்குச் சரியானது என்று தோன்றும் செயலிலும் ஆரம்பத்தில் தடை அல்லது தயக்கம் ஏற்பட்டால் திறமை குறைந்துவிட்டதாகக் கருதாமல் நடைமுறையை மாற்றிக் கொள்ளும் பொறுமை தேவைப்படலாம்.':'If an initiative encounters resistance, adapting the method may work better than doubting every ability.',1,{pass:1,source:'ruler-strength',dignity:chief.dignity});
-    const partners=Object.values(d.planets).filter(p=>p.key!==chief.key&&p.house===chief.house).sort((a,b)=>a.key.localeCompare(b.key));
-    for(const p of bestDistinct(partners.map(x=>x.key),3)){
-      const a=planets[p],b=planets[chief.key];
-      addOnce(body,seen,ta?`சில சூழ்நிலைகளில் ${a[0]}; அதே நேரத்தில் ${b[0]}. இந்த இரண்டின் காரணமாக எடுத்துக் கொள்ளும் பொறுப்புகளில் அக்கறையும் எதிர்பார்ப்பும் ஒன்றாகக் கலந்து வரக்கூடும்.`:`At times, ${a[0].charAt(0).toLowerCase()+a[0].slice(1)}; meanwhile, ${b[0].charAt(0).toLowerCase()+b[0].slice(1)}. These tendencies may interact in their responsibilities.`,1,{pass:1,source:'ruler-conjunction',with:p});
-    }
-    const near=bestDistinct([...first.occupants,...first.aspects].filter(p=>p!==chief.key),4);
-    for(const p of near){const a=planets[p],occ=first.occupants.includes(p);addOnce(body,seen,ta?`${occ?'மற்றவர்களிடம் உடனடியாகத் தெரியக்கூடிய நடத்தையில்':'தனிப்பட்ட முடிவுகளின் பின்னணியில்'} ${a[0]}. அதற்கான மறுபக்கம், ${a[1]}.`:`${occ?'Their outward conduct':'Their decisions'} may reflect this pattern: ${a[0].charAt(0).toLowerCase()+a[0].slice(1)}. A possible difficulty is that ${a[1].charAt(0).toLowerCase()+a[1].slice(1)}.`,1,{pass:1,source:occ?'rising-occupant':'rising-aspect',planet:p});}
-    if(!partners.length&&!near.length)addOnce(body,seen,ta?`உணர்ச்சியையும் செயலையும் ஒரே நேரத்தில் சமநிலைப்படுத்துவது ${arenas[chief.house-1]} முக்கியமாக இருக்கலாம். பிறர் எதிர்பார்ப்பைக் கேட்டாலும் தன்னுடைய முடிவின் பொறுப்பைத் தானே ஏற்க விரும்புவார்.`:`Balancing feelings with practical action can be important in ${arenas[chief.house-1]}. They may prefer owning their decision after hearing others out.`,1,{pass:1,source:'unmodified-chief',house:chief.house});
-   }
-  }
-  // Pass 2: all houses, including 1. Topic-specific life and body meanings.
-  const strongest=house.occupants[0]||house.aspects[0]||house.lord;
-  const signature=planets[strongest][0];
-  const hiddenReason={pass:2,source:'topic-life-or-body',focus:idx+1,ruler:house.lord,rulerHouse:lord.house,rulerSign:lord.sign,influence:strongest};
-  const personalLife=ta
-   ? `${domains[idx][0]} இந்தச் சூழலில் ${signs[lord.sign]} வெளிப்படும் போது ${signature.charAt(0).toLowerCase()+signature.slice(1)} என்பதும் தனிப்பட்ட அணுகுமுறையை மாற்றக்கூடும்.`
-   : `${domains[idx][0]} In this setting, ${signs[lord.sign]} and ${signature.charAt(0).toLowerCase()+signature.slice(1)} may influence their approach.`;
-  addOnce(body,globalSeen,personalLife,idx+1,hiddenReason);
-  const strength=level(idx+1);
-  const specific=ta?(strength==='support'?'தனக்குப் பொருத்தமான ஒழுங்கைக் தொடர்ந்து கடைப்பிடிக்கும் போது உடலையும் மனதையும் சீராக வைத்திருக்க முடியும்.':strength==='pressure'?'சோர்வு அல்லது வேலை அழுத்தம் அதிகரிக்கும் நேரங்களில் இடைவெளி எடுத்துக்கொண்டு உடலுக்குத் தேவையான பராமரிப்பைத் தவறவிடாமல் இருக்க வேண்டும்.':'ஒரே மாதிரியான பழக்கம் எல்லாச் சூழலிலும் பொருந்தாமல் போகலாம்; வேலை மற்றும் ஓய்வு முறைகளைத் தேவைக்கேற்ப சீரமைப்பது உதவும்.')
-   :(strength==='support'?'An orderly routine may make day-to-day care easier.':strength==='pressure'?'Work pressure calls for adequate pauses and appropriate care.':'Routines may need adjusting as circumstances change.');
-  addOnce(body,globalSeen,ta?`${domains[idx][1]} ${specific} ${signs[lord.sign]} என்ற தனிப்பட்ட அணுகுமுறையுடன் இந்தப் பழக்கங்களைத் தொடர்வது இவருக்குப் பொருந்தலாம்.`:`${domains[idx][1]} ${specific} A personal style of ${signs[lord.sign]} may influence these routines.`,idx+1,{...hiddenReason,source:'topic-physical-living',strength});
-  // The house lord acts through its real position; describe the combined lived effect, not the equation.
-  const context=arenas[lord.house-1],temperament=signs[lord.sign],same=lord.house===idx+1;
-  const CONNECTION_TA=[
-    'தன்னைப் பற்றிய எண்ணங்களில்','குடும்பத்தில் பணமும் வார்த்தைகளும் சம்பந்தமான முடிவுகளில்','தனக்கான முயற்சியைத் தொடங்கும்போது','வீடு அல்லது சொத்துப் பொறுப்பை ஏற்கும்போது','படிப்பையும் குழந்தைகளின் எதிர்காலத்தையும் அணுகும்போது','போட்டியும் வேலைச்சுமையும் நேரிடும்போது','வாழ்க்கைத்துணையுடன் இணைந்து முடிவெடுக்கும்போது','எதிர்பாராத திருப்பங்களைச் சந்திக்கும்போது','பெரியோரிடமிருந்து ஆலோசனை பெறும்போது','தொழில் பொறுப்புகளை நிறைவேற்றும்போது','நண்பர்களுடன் இணைந்து இலக்கைத் தேர்ந்தெடுக்கும்போது','செலவுக்கான எல்லையையும் ஓய்வையும் திட்டமிடும்போது'];
-  const CONNECTION_EN=['in decisions about their identity','in speech and financial choices within the family','when launching a personal effort','when dealing with home or property duties','when thinking about learning and children','when pressure builds at work','when making joint decisions with a partner','when handling unexpected change','when receiving guidance','when fulfilling professional duties','when setting goals with friends','when planning rest and expenditure'];
-  if(idx!==0){
-    const scene=ta?CONNECTION_TA[idx]:CONNECTION_EN[idx];
-    if(same){addOnce(body,globalSeen,ta?`${scene} தன்னுடைய தனிப்பட்ட முடிவுக்கும் சுயப் பொறுப்பிற்கும் அதிக மதிப்பு கொடுக்கலாம். ${temperament} என்பதும் இந்த அணுகுமுறையுடன் இணைந்து செயல்படும்.`:`They may value autonomy ${scene}. Their approach can reflect ${temperament}.`,idx+1,{pass:2,source:'house-ruler-same',lord:house.lord});}
-    else{addOnce(body,globalSeen,ta?`${scene} ${context} ஏற்பட்ட அனுபவங்களையும் மனதில் வைத்துச் செயல்படலாம். ${temperament} இந்த முடிவுகளில் கலந்திருப்பதால் அவரவருடைய தேவைகளுக்கேற்ப நிதானமாக அணுக முயல்வார்.`:`Their experience of ${context} may influence choices ${scene}. ${temperament} may colour their approach.`,idx+1,{pass:2,source:'house-ruler-placement',lord:house.lord,house:lord.house,sign:lord.sign});}
-  }
-  const occupants=bestDistinct(house.occupants,3),aspects=bestDistinct(house.aspects.filter(x=>!occupants.includes(x)),2);
-  for(const p of (idx===0?[]:occupants)){const a=planets[p];addOnce(body,globalSeen,ta?`${(ta?CONNECTION_TA[idx]:CONNECTION_EN[idx])} இவரிடம் ${a[0]}. இது ${context} பெற்ற அனுபவத்தால் கூடுதலாக வெளிப்படலாம். ஆனால் ${a[1]}; அவசரப்படாமல் பேசுவது பயனாகலாம்.`:`When ${CONNECTION_EN[idx]}, ${a[0].charAt(0).toLowerCase()+a[0].slice(1)}. Experience in ${context} may intensify this. Yet ${a[1].charAt(0).toLowerCase()+a[1].slice(1)}.`,idx+1,{pass:2,source:'house-occupant',planet:p});}
-  for(const p of (idx===0?[]:aspects)){const a=planets[p];addOnce(body,globalSeen,ta?`${CONNECTION_TA[idx]} ${a[0]}. ஆனால் ${a[1]}. ${signs[lord.sign]} இவரது முடிவில் கலந்து வருவதால் பிறருடைய அணுகுமுறையையும் புரிந்துகொண்டு செயல்படுவது உதவும்.`:`When ${CONNECTION_EN[idx]}, ${a[0].charAt(0).toLowerCase()+a[0].slice(1)}. Yet ${a[1].charAt(0).toLowerCase()+a[1].slice(1)}. ${signs[lord.sign]} can influence their choices.`,idx+1,{pass:2,source:'house-aspect',planet:p});}
-  const RESULT_TA=[
+  const RESULTS_TA=[
    ['தன்னம்பிக்கையுடன் முன்னேற நினைக்கும் போது பிறரின் ஆலோசனையையும் கேட்டால் முடிவு வலுப்படும்.','தன்னிடம் உள்ள ஆற்றலை ஒரே நேரத்தில் பல வேலைகளில் செலவிட்டால் மனச்சோர்வு வரலாம்.','ஒரு சூழலில் துணிவாகவும் இன்னொரு சூழலில் நிதானமாகவும் நடந்துகொள்ளத் தெரிந்திருப்பது உதவும்.'],
    ['குடும்பப் பேச்சில் தெளிவும் செலவுகளில் கட்டுப்பாடும் இருந்தால் பணம் குறித்த நம்பிக்கை வளரும்.','உணர்ச்சிவசப்பட்டுக் கொடுத்த பணவாக்குறுதிகளைப் பின்னர் நிறைவேற்றுவது சிரமமாகலாம்.','சேமிக்க வேண்டும் என்ற விருப்பத்தையும் குடும்பத் தேவைக்குச் செலவிட வேண்டிய சூழலையும் சமப்படுத்தலாம்.'],
    ['திறமையைச் சிறு முயற்சிகளாகத் தொடர்ந்து பயிற்சி செய்தால் பயன் தென்படலாம்.','மற்றவருடன் போட்டியிட்டு எல்லாவற்றையும் விரைவாக முடிக்க நினைத்தால் உறவில் உரசல் வரலாம்.','துணிவுடன் தொடங்கிய காரியத்தைத் திட்டமிட்டு நிறைவேற்றுவது முக்கியம்.'],
@@ -154,7 +104,7 @@ function build(d,lang='ta',options={}){
    ['சுற்றத்தாரின் ஒத்துழைப்பையும் தன் திறமையையும் இணைத்தால் சில இலக்குகளை எளிதாக அணுகலாம்.','நண்பருக்காக அளவுக்கு மீறிய பொருளாதாரப் பொறுப்பை ஏற்றால் மனக்கசப்பு ஏற்படலாம்.','புதிய வருமான வாய்ப்புக்கும் நீண்டகாலச் சேமிப்புக்கும் இடையே சமநிலை தேவை.'],
    ['ஓய்வையும் தனிமையையும் விருப்பமாகத் திட்டமிட்டால் மனதுக்குத் தெளிவு கிடைக்கலாம்.','சோர்வை மறைத்து வேலை தொடர்ந்தால் உடலுக்குத் தேவையான பராமரிப்பு தள்ளிப்போகலாம்.','பிறருக்கான நேரத்துடன் தனக்கான அமைதியான நேரத்தையும் ஒதுக்கிக்கொள்ளலாம்.']
   ];
-  const RESULT_EN=[
+  const RESULTS_EN=[
    ['Confidence is more useful when balanced with advice.','Taking on everything at once can become exhausting.','Resolve and patience can support each other.'],
    ['Clear promises and measured spending support family trust.','Emotional financial promises may be hard to keep.','Saving and meeting family needs both matter.'],
    ['Steady practice can turn curiosity into skill.','Competition can put strain on personal ties.','Initiative works best when followed through.'],
@@ -168,11 +118,331 @@ function build(d,lang='ta',options={}){
    ['Cooperation can help personal ambitions.','A friend’s financial obligation should not become one’s own automatically.','Income and reserves require different plans.'],
    ['Planned time alone may restore clarity.','Working through fatigue can postpone needed rest.','Keep room for both companionship and solitude.']
   ];
-  const conclusion=(ta?RESULT_TA:RESULT_EN)[idx][score==='support'?0:score==='pressure'?1:2];
-  addOnce(body,globalSeen,ta?`${conclusion} குறிப்பாக ${arenas[lord.house-1]} உள்ள அனுபவங்கள் வழியாக ${planets[house.lord][0].charAt(0).toLowerCase()+planets[house.lord][0].slice(1)} என்பதும் வெளிப்படக்கூடும்.`:`${conclusion} This may be shaped by ${arenas[lord.house-1]} and ${planets[house.lord][0].charAt(0).toLowerCase()+planets[house.lord][0].slice(1)}.`,idx+1,{pass:2,source:'topic-synthesis',grade:score});
-  topics.push({number:idx+1,title:(ta?TITLES_TA:TITLES_EN)[idx],paragraphs:body,analyzedHouses:12,evidence:{lagna:d.lagna,houseLord:house.lord,lordSign:lord.sign,lordHouse:lord.house,occupants,aspects,score,ownerDignity:options.planetDignity?options.planetDignity(d,lord):null,ownerFunctional:options.functional?options.functional(d,house.lord):null}});
- }
- return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'two-pass chart-based living narrative',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
+
+// V288: contextual D1 narrative synthesis. No chart math is recalculated here.
+const IMPACT_TA = [
+// Character
+['தன் முடிவுக்கு மதிப்புக் கிடைக்க வேண்டும் என்ற எண்ணம் அவருடைய சுயமரியாதையைத் தூண்டலாம்.','உடனிருப்பவர்களின் உணர்ச்சியை விரைவாகப் புரிந்துகொள்வதால் தன் முடிவையே மறுபரிசீலனை செய்யலாம்.','சிக்கலைத் தள்ளிப்போடாமல் நேருக்கு நேர் சந்திக்கும் துணிவு வெளிப்படலாம்.','எதற்கும் காரணம் கேட்டு அறிந்த பிறகே உறுதியாகப் பேச விரும்பலாம்.','நடந்த அனுபவத்தில் இருந்து நெறியைத் தேடி மற்றவர்களுக்கு வழிகாட்ட முனைவார்.','மற்றவர் மனம் புண்படாதவாறு நடப்பதில் அக்கறை எடுத்துக்கொள்வார்.','ஒரு பொறுப்பை ஏற்றால் முடிவு வரும்வரை பிடிவாதமாக உழைக்க விரும்பலாம்.','வழக்கமான தீர்வுக்கு மாறான வாய்ப்பைத் தேடுவதில் ஆர்வம் இருக்கலாம்.','தனக்கென அமைதியான நேரம் ஒதுக்கி ஆழமாகச் சிந்திக்க விரும்பலாம்.'],
+// Family
+['குடும்பத்தில் தன் வாக்குறுதியை நிலைநிறுத்துவதே கௌரவம் என்ற எண்ணம் இருக்கலாம்.','குடும்பத்தினரின் மனநிலைக்கு ஏற்ப பேச்சின் நயத்தை மாற்றிக்கொள்வார்.','பணப் பிரச்சினையை உடனே தீர்க்க முயலும்போது கடுமையாகப் பேசுவதைத் தவிர்க்க வேண்டும்.','சேமிப்பு, கணக்கு, ஆவணங்கள் ஆகியவற்றைத் தெளிவாக வைத்திருக்க விரும்பலாம்.','குடும்பப் பொருளாதாரத்தில் நியாயமும் நீண்டகாலத் திட்டமும் முன்னிலையாகலாம்.','உறவுகளுக்காகச் செலவிடுவதிலும் வசதிகளைப் பகிர்வதிலும் மகிழ்ச்சி காணலாம்.','வீட்டுச் செலவுக்கு தெளிவான எல்லை வைக்க முயல்வார்.','வருமானத்திற்கு புதிய வழிகளை ஆராயும் ஆர்வத்துடன் அபாயத்தையும் கணக்கிட வேண்டும்.','தேவையற்ற பேச்சையும் செலவையும் குறைத்து எளிமையைத் தேர்ந்தெடுக்கலாம்.'],
+// Initiative
+['முயற்சியைத் தொடங்கும்போது தலைமை ஏற்கும் விருப்பம் மேலோங்கலாம்.','உடன்பிறந்தோரின் தேவைகளை அறிந்து இணைந்து முயற்சி செய்ய விரும்பலாம்.','தடை வந்தால் செயலிலேயே பதில் அளிக்கும் துணிவு வெளிப்படும்.','எழுத்து, தகவல் பரிமாற்றம், பயிற்சி வழியாகத் திறமை வளர்க்க முயல்வார்.','கற்ற திறனை மற்றவருடன் பகிர்ந்தால்தான் அதன் மதிப்பு நிறைவு பெறும் என்று எண்ணலாம்.','கலைநயத்தோடு ஒரு திறமையை வளர்ப்பதில் ஆர்வம் இருக்கலாம்.','மெதுவான பயிற்சியையும் தொடர்ந்து செய்வதால் திறன் வலுப்படலாம்.','ஒரே வழியைப் பிடிக்காமல் புதிய முறைகளை முயன்று பார்க்க விரும்பலாம்.','குறைவாகப் பேசிச் செயலின் உள்ளார்ந்த தரத்தை மேம்படுத்த முயல்வார்.'],
+// Home
+['வீட்டில் பொறுப்பை ஏற்று அனைவருக்கும் தெளிவான ஒழுங்கை ஏற்படுத்த விரும்பலாம்.','வீட்டாரின் மனநிலையைத் தன் அமைதியுடன் தொடர்புபடுத்திக் கொள்வார்.','சொத்து அல்லது வாகன முடிவில் அவசரம் காட்டாமல் கருத்து கேட்பது உதவும்.','வீட்டுத் திட்டங்கள், ஆவணங்கள், பழுது பார்ப்பு ஆகியவற்றில் விவரம் பார்த்துச் செயல்படலாம்.','மூத்தவர்களின் அனுபவத்தைக் கேட்டு குடும்ப முடிவு எடுப்பதில் நம்பிக்கை வைப்பார்.','வீட்டின் அழகையும் அன்பான சூழலையும் பேணுவதில் கவனம் செலுத்தலாம்.','குடும்பத்திற்கு நீண்டகாலப் பாதுகாப்பு அமைப்பதில் பொறுப்புணர்வு இருக்கும்.','வசிப்பிடத்தில் மாற்றம் தேடும்போது நிதி மற்றும் குடும்பத் தேவையை ஒப்பிட வேண்டும்.','வெளிச் சத்தத்திலிருந்து விலகிய தனிப்பட்ட இடம் இவருக்கு அமைதியைத் தரலாம்.'],
+// Education
+['கற்றதைச் செய்து காட்டி அங்கீகாரம் பெற விரும்பலாம்.','குழந்தைகள் அல்லது மாணவர்களின் உணர்வைப் புரிந்துகொண்டு கற்பிக்க முயல்வார்.','போட்டியில் விரைவாக முன்னேற வேண்டும் என்ற எண்ணம் பயிற்சியைத் தூண்டலாம்.','ஒரு விஷயத்தைப் பல கோணங்களில் படித்து விளக்கும் திறன் வளரலாம்.','அறிவைப் பகிரும் வாய்ப்புகள் படிப்பு மற்றும் வழிகாட்டுதலுக்கு ஊக்கம் தரலாம்.','கலை, மொழி அல்லது படைப்பாற்றலைக் கற்றலில் இணைக்க விரும்பலாம்.','மெதுவாகப் புரிந்தாலும் ஆழமாகத் தேர்ச்சி பெறுவது இவருக்குப் பொருந்தலாம்.','புதுமையான கல்வி வழியை நாடும்போது அடிப்படைத் திறனையும் பேண வேண்டும்.','தனியாக வாசிப்பதும் ஆராய்வதும் சிந்தனையைத் தெளிவாக்கலாம்.'],
+// Service
+['வேலைக்கான பொறுப்பில் தன் திறனை நிரூபிக்க விரும்பலாம்.','சக பணியாளர்களின் மனநிலையை உணர்ந்து வேலைப் பகிர்வு செய்ய முயல்வார்.','போட்டியை எதிர்கொள்ளும் வேகம் அதிகம் இருந்தாலும் அவசரச் சண்டையைத் தவிர்க்க வேண்டும்.','சிறிய தவறுகளை முன்பே கண்டுபிடித்து தினசரிப் பணியைச் சீரமைக்கலாம்.','சிக்கலுக்கு வழிகாட்டி அமைதியாகத் தீர்வு காண விரும்பலாம்.','கடினமான வேலை உறவிலும் மரியாதை காக்க முயல்வார்.','நீண்டகால உழைப்பால் போட்டியைச் சமாளிக்க வேண்டிய நிலை அமையலாம்.','புதிய வேலை முறையை முயலும்போது அதன் செலவையும் அபாயத்தையும் சோதிக்க வேண்டும்.','தனித்து கவனமாகச் செய்யும் பணியில் திருப்தி காணலாம்.'],
+// Marriage
+['உறவில் தன்மானமும் ஒருவருக்கொருவர் மதிப்பளிப்பதும் முக்கியமாக இருக்கலாம்.','துணைவரின் மனக்கவலையை உணர்ந்து ஆறுதல் கூற விரும்பலாம்.','கூட்டாக எடுக்கும் முடிவில் நேரடித்தன்மை உதவினாலும் வேகத்தைக் குறைப்பது நல்லது.','பேசித் தெளிவுபடுத்தும் பழக்கம் சிறிய கருத்துவேறுபாடுகளைத் தவிர்க்கலாம்.','உறவில் நம்பிக்கையும் நீண்டகாலப் பொறுப்பும் முன்னிலையாகலாம்.','அன்பையும் அன்றாட அக்கறையையும் வெளிப்படுத்துவதற்கு முக்கியத்துவம் கொடுப்பார்.','உறவுக்காகச் சுமக்கும் கடமை உணர்வை உரையாடலுடனும் இணைக்க வேண்டும்.','வித்தியாசமான எதிர்பார்ப்புகளை வெளிப்படையாகப் பேசுவது புரிதலை வளர்க்கலாம்.','தனிப்பட்ட இடமும் நெருக்கமும் இரண்டும் தேவைப்படலாம்.'],
+// Change
+['சவால் வந்தால் தன்னம்பிக்கையுடன் முன்னின்று சமாளிக்க விரும்பலாம்.','எதிர்பாராத மாற்றங்கள் மனதைத் தொடும் போது நம்பகமானவருடன் பேசுவது உதவும்.','அவசரத் தீர்வு ஒரு சிக்கலைக் கூட்டாமல் இருக்கத் தகவலைச் சரிபார்க்க வேண்டும்.','மாறிய சூழலைத் தெளிவாகப் புரிய ஆவணங்களையும் காரணங்களையும் ஆராய்வார்.','கடின அனுபவத்தில் இருந்து வாழ்க்கைப் பாடம் கற்க முனைவார்.','மாற்றம் வந்தாலும் உறவுகளின் ஆதரவைப் பேண முயல்வார்.','நீண்டகாலச் சவாலைச் சிறு படிகளாகக் கையாளும் நிதானம் இருக்கலாம்.','புதிதாகக் கிடைக்கும் வழியின் அபாயத்தை முன்பே மதிப்பிட வேண்டும்.','சில மாற்றங்களைத் தனியாக ஆராய்ந்த பிறகே பிறரிடம் பகிர விரும்பலாம்.'],
+// Guidance
+['தன் கொள்கையை வெளிப்படையாகக் கூறுவதில் உறுதி இருக்கலாம்.','தந்தை அல்லது ஆசிரியரின் உணர்வைக் கருத்தில் கொண்டு ஆலோசனையை ஏற்றுக்கொள்வார்.','தொலைநோக்கை நோக்கிய பயணத்தில் துணிவுடன் செயல்பட விரும்பலாம்.','கேள்வி கேட்டு காரணம் புரிந்த பின்னரே ஒரு கருத்தை ஏற்றுக்கொள்ளலாம்.','ஆசிரியர், பெரியவர், நூல்கள் ஆகியவற்றின் வழி அறிவைப் பெருக்க ஆர்வம் இருக்கலாம்.','கலை மற்றும் மனித உறவுகள் வழியே மதிப்பீடுகளை வளர்த்துக்கொள்ளலாம்.','நீண்டகால அனுபவத்தை மதிப்பதால் மெதுவாகக் கற்றாலும் உறுதியாக நிற்பார்.','புதிய சிந்தனையை ஆராயும்போது உண்மைத் தகவல்களைப் பிரித்தறிய வேண்டும்.','தனிமையில் சிந்திப்பதும் ஆன்மிகக் கேள்விகளைக் கேட்பதும் ஈர்க்கலாம்.'],
+// Career
+['தொழிலில் பொறுப்பு அல்லது தலைமை ஏற்க வேண்டும் என்ற ஆசை வரலாம்.','பணியிட மனிதர்களின் தேவையைப் புரிந்துகொண்டு ஒத்துழைக்க முயல்வார்.','தாமதமான வேலையை விரைந்து முடிக்க முயல்வதுடன் குழுவின் வேகத்தையும் மதிக்க வேண்டும்.','தகவல், கணக்கு, திட்டமிடல் ஆகியவற்றின் மூலம் வேலைத் திறன் வெளிப்படலாம்.','ஆலோசனை, பயிற்சி அல்லது வழிகாட்டுதல் பொறுப்பில் திருப்தி இருக்கலாம்.','வாடிக்கையாளர் உறவு மற்றும் பணியிட மரியாதைக்கு முக்கியத்துவம் கொடுப்பார்.','கட்டமைப்பு மற்றும் நீடித்த முயற்சியின் மூலம் முன்னேற்றம் நாடலாம்.','புதிய தொழில்நுட்பத்தையோ வேறுபட்ட பணிமுறையையோ முயன்று பார்க்கலாம்.','ஆழமாக ஆராய்ந்து அமைதியாக முடிக்கும் வேலை இவருக்குப் பொருந்தலாம்.'],
+// Income
+['தன் முயற்சிக்கான உரிய பலன் கிடைக்க வேண்டும் என்ற எதிர்பார்ப்பு இருக்கலாம்.','நண்பர்களின் உணர்வையும் குடும்பத் தேவையையும் கருத்தில் கொண்டு ஆதாயத்தைப் பகிர்வார்.','அதிக வருமானம் தேடும் வேகத்துடன் இழப்பு அபாயத்தையும் அளவிட வேண்டும்.','தொடர்பு வட்டம், தகவல் மற்றும் கணக்குப் பழக்கம் ஆதாய வாய்ப்புகளை அறிய உதவலாம்.','நீண்டகால இலக்கை நோக்கிய முதலீட்டுச் சிந்தனை மேலோங்கலாம்.','உறவுகளின் ஒத்துழைப்பும் கலைநயமான முயற்சியும் ஆதரவாக இருக்கலாம்.','மெதுவாகச் சேமித்து வளர்த்துக் கொள்ளும் ஒழுங்கு இருக்கலாம்.','புதுமையான வாய்ப்புகளில் ஈர்ப்பு இருந்தாலும் நம்பகத்தன்மையைச் சரிபார்க்க வேண்டும்.','தேவைப்பட்ட அளவிலான உறவுகளையே பேணி எளிமையான இலக்கை நாடலாம்.'],
+// Spending
+['தனக்கான நேரத்தைச் செலவிடுவதிலும் தன் விருப்பத்துக்கு முக்கியத்துவம் கொடுக்கலாம்.','பிறருக்காகச் செலவிடும்போது உணர்ச்சி முடிவுகள் வராமல் எல்லை வைக்க வேண்டும்.','உடனடி வசதிக்காகச் செலவிடும் அவசரத்தைத் திட்டத்துடன் சமப்படுத்தலாம்.','செலவுகளைப் பதிவு செய்தால் மனஅமைதியுடன் ஓய்வையும் திட்டமிடலாம்.','சேவை, கற்றல் அல்லது தானம் சார்ந்த செலவில் அர்த்தம் காணலாம்.','அழகான சூழலும் சுகமான ஓய்வும் வேண்டி செலவிட விரும்பலாம்.','வீண்செலவைக் கட்டுப்படுத்தி நீண்டகாலப் பாதுகாப்புக்காக ஒதுக்கலாம்.','திடீர் செலவுக்கு முன் இரண்டாம் முறை யோசித்துப் பார்க்க வேண்டும்.','தனிமை, வாசிப்பு அல்லது ஆன்மிகத் தேடலில் ஓய்வு காணலாம்.']
+];
+const IMPACT_EN = [
+['Recognition for a considered decision may matter to them.','They may reassess a choice after noticing how someone else feels.','They may prefer facing a problem directly instead of delaying it.','They may ask for reasons before committing to a view.','They may turn experience into advice for others.','They may take care not to bruise another person’s feelings.','They may persevere with a duty long after others have stopped.','An unconventional solution may catch their attention.','Private reflection may help them reach a decision.'],
+['Keeping a promise may be central to family trust.','The tone of a family conversation may change with others’ feelings.','A quick response to money worries may need softer words.','Clear records can make earnings and savings easier to distinguish.','Long-term fairness may guide family financial decisions.','Sharing comforts may be a way of expressing affection.','Setting a budget may feel like a duty to the household.','Fresh income ideas need a check on risk as well as promise.','They may prefer fewer commitments and simpler spending.'],
+['They may be willing to take the lead in a new effort.','Attending to siblings’ needs may encourage teamwork.','They may answer obstacles through action rather than argument.','Writing, explanation or structured practice may build skill.','Sharing a learned skill may feel as important as acquiring it.','Artistic care may shape how they practise a craft.','Small repeated efforts may suit their learning pace.','They may test a different method when the first fails.','Working quietly on underlying quality may appeal to them.'],
+['They may try to bring order to household responsibilities.','The emotional atmosphere at home can affect their ease.','Property and vehicle choices should not be rushed.','Household plans and documents may receive detailed attention.','They may seek an elder’s advice in a family decision.','Beauty and warmth may matter in their domestic setting.','Building long-term security for family may feel important.','A change of residence should be weighed against family and cost.','A private, quiet space may help them recover.'],
+['They may prefer demonstrating what they have learned.','They may teach with an awareness of a learner’s feelings.','Competition may motivate practice but also impatience.','They may examine a subject from several angles before explaining it.','Learning and mentoring may reinforce each other.','Language, art or creativity may enliven study.','Deep understanding may come through steady repetition.','New learning methods work best alongside firm foundations.','Private study may sharpen their thinking.'],
+['They may want to be accountable for work entrusted to them.','Sensing colleagues’ concerns may help teamwork.','Speed in competition is useful only when temper is managed.','Checking small errors may improve daily work.','They may resolve difficulties by advising patiently.','Courtesy may protect a difficult working relationship.','Progress may depend on sustained effort rather than a shortcut.','A new procedure should be tested for cost and risk.','They may value tasks requiring quiet concentration.'],
+['Mutual respect may be as important as affection in partnership.','They may notice a partner’s distress and offer comfort.','Directness can help joint decisions when paired with patience.','Talking through expectations may prevent avoidable disputes.','They may value reliability and long-term commitment.','They may show care through gestures and daily attention.','Responsibility should not replace emotional conversation.','Unusual expectations are easier to manage when stated openly.','They may need both closeness and private space.'],
+['They may prefer taking charge when a challenge arrives.','Unexpected change may be easier to face with trusted support.','Checking the facts can prevent a hurried answer from worsening a problem.','They may examine the reasons and records behind a change.','Difficult experience may prompt deeper learning.','They may try to keep relationships steady during disruption.','Breaking a long challenge into stages may help.','The risks of a new opening need assessment.','They may prefer to process a change privately before discussing it.'],
+['They may speak firmly about values and convictions.','An elder’s feelings may shape how guidance is received.','They may pursue a distant goal with courage.','They may question an idea before accepting it.','Teachers, books and experienced people may attract their attention.','Art and human relationships may shape their beliefs.','They may respect lessons earned through long experience.','New beliefs may require careful distinction between claim and evidence.','Solitude may foster philosophical or spiritual questions.'],
+['They may hope to take responsibility or lead at work.','Understanding colleagues’ needs may encourage cooperation.','Finishing quickly must be balanced with a team’s pace.','Information, accounts and planning may showcase their skills.','Teaching or advisory roles may feel rewarding.','Client relationships and workplace courtesy may matter.','They may seek progress through structure and persistence.','They may experiment with tools or unfamiliar procedures.','Quiet investigation and accurate delivery may suit them.'],
+['They may expect fair returns for sustained effort.','They may balance friends’ needs against family resources.','Higher earnings should be weighed against possible loss.','Networks, information and records may reveal opportunities.','Long-range goals may guide their saving and investment habits.','Collaboration and creative work may contribute to their aims.','Accumulating reserves slowly may suit them.','New opportunities deserve verification before commitment.','They may prefer a close circle and modest financial goals.'],
+['They may want control over how private time is spent.','Emotional spending on others needs clear limits.','Spontaneous purchases may need a second look.','Recording outgoings may make room for planned rest.','They may find meaning in spending on learning or service.','Comfort and beauty may draw part of their budget.','They may keep expenses restrained for future security.','Unexpected expense deserves careful review.','Quiet study or contemplation may feel restorative.']
+];
+const KEY_ORDER=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const CONTEXT_TA=[
+'தன்னம்பிக்கையை வெளிப்படுத்த வேண்டிய தருணங்கள்',
+'குடும்பத்தின் தேவைகளையும் பண வரவுச் செலவையும் சமாளித்த அனுபவங்கள்',
+'சொந்த முயற்சியிலும் உடன்பிறந்தோருடனான பழக்கத்திலும் கிடைக்கும் பாடங்கள்',
+'வீட்டின் அமைதி, தாயாரின் நலம், சொத்து சார்ந்த பொறுப்புகள்',
+'படிப்பு, சிந்தனை, படைப்பாற்றல், இளையவர்களைக் கவனித்தல்',
+'அன்றாட வேலை, போட்டி, கடன் மற்றும் வழக்கமான உடல்நலப் பராமரிப்பு',
+'நெருங்கிய உறவு, துணைவர், கூட்டாக எடுக்கும் முடிவுகள்',
+'சிக்கலுக்குப் பிறகு மீண்டும் வழக்கத்தை அமைத்துக்கொள்ளும் அனுபவங்கள்',
+'தந்தை, ஆசிரியர்கள், தொலைவான முயற்சிகள் மற்றும் நம்பிக்கைகள்',
+'தொழிலில் செய்யும் வேலை, பொறுப்புப் பகிர்வு மற்றும் பொதுமரியாதை',
+'நண்பர்கள், மூத்த உடன்பிறப்புகள், ஆதாயம் மற்றும் எதிர்கால இலக்குகள்',
+'செலவுகள், தூக்கம், தனிப்பட்ட நேரம், தனிமையில் கிடைக்கும் தெளிவு'
+];
+const CONTEXT_EN=[
+'moments requiring personal confidence',
+'family needs and the management of earnings and spending',
+'experience gained through personal effort and siblings',
+'home, care for a mother and responsibilities involving property',
+'education, creativity and caring for younger people',
+'daily work, competition, debt and health routines',
+'close relationships and shared decisions',
+'learning to rebuild a routine after disruption',
+'parents, teachers, long journeys and guiding beliefs',
+'work, shared responsibility and public expectations',
+'friends, elder siblings, gains and future plans',
+'expenses, sleep, private time and reflective solitude'
+];
+const FOCUS_TA=[
+'தன்னைப் பற்றிய முடிவுகளை எடுத்துக் கொள்ளும் விதத்தில்',
+'வீட்டில் பணத்தைப் பற்றிப் பேசும் விதத்தில்',
+'ஒரு திறமையைப் பயின்று செயல்படுத்தும் விதத்தில்',
+'வீட்டு வசதியையும் குடும்பப் பொறுப்பையும் கையாளும் விதத்தில்',
+'கற்றலைத் தொடரவும் இளையவர்களை வழிநடத்தவும் எடுக்கும் முடிவுகளில்',
+'வேலைச்சுமை அல்லது போட்டியைச் சமாளிக்கும் வழியில்',
+'துணைவருடனோ நெருங்கியவருடனோ முடிவைப் பகிரும் போது',
+'திடீரென வந்த மாற்றத்திற்கு மாற்று வழி தேடும் போது',
+'பெரியோர் அறிவுரையைத் தன் அனுபவத்துடன் பொருத்தும் போது',
+'தொழில் பணிகளைத் தேர்ந்தெடுத்து நிறைவேற்றும் முறையில்',
+'வருமான வாய்ப்பையும் நட்பின் பொறுப்பையும் அளவிடும்போது',
+'செலவுக்கும் தனிப்பட்ட ஓய்வுக்கும் எல்லை அமைக்கும் போது'
+];
+const FOCUS_EN=[
+'in personal decision-making',
+'in conversations about household finances',
+'when learning and applying a skill',
+'when balancing comfort against family duties',
+'when deciding how to study or mentor younger people',
+'when handling workload or competition',
+'when making shared decisions in a close relationship',
+'when finding an alternative after sudden change',
+'when weighing guidance against experience',
+'when choosing and completing professional tasks',
+'when judging income options and obligations to friends',
+'when setting boundaries for spending and rest'
+];
+// Bodily associations are traditional lifestyle themes, never a disease diagnosis.
+const BODY_TA=[
+'உடலின் இயக்கம், தலைப்பகுதி, முகத்தின் வெளிப்பாடு போன்றவற்றில் சோர்வைக் கவனிக்காமல் கடமையைத் தொடர வேண்டாம்.',
+'உணவு நேரம், வாய், பற்கள் மற்றும் குரலுக்கான அன்றாடப் பராமரிப்பில் ஒழுங்கு உதவும்.',
+'கைகள், தோள்கள், காதுகள் சார்ந்த வேலைகளில் ஒரே அசைவை நீண்ட நேரம் தொடர்ந்தால் இடைவெளி எடுப்பது நல்லது.',
+'நெஞ்சுப் பகுதி, மூச்சுவிடும் வசதி, வீட்டில் ஓய்வெடுக்கக்கூடிய சூழல் ஆகியவற்றை அன்றாடப் பழக்கத்தில் கவனிக்கலாம்.',
+'நீண்ட நேரம் படிக்கும்போது உணவு, வயிற்றுப் பகுதியின் வசதி, ஓய்வு ஆகியவற்றுக்கும் நேரம் ஒதுக்க வேண்டும்.',
+'வேலை இடைவெளி, உணவு ஒழுங்கு, செரிமான வசதி ஆகியவற்றில் நடைமுறைக்கு ஏற்ற வழக்கத்தைப் பேணுவது உதவும்.',
+'நெருக்கமான உறவில் தனிப்பட்ட உடல் வசதி, பரஸ்பர எல்லைகள், மன அமைதி ஆகியவற்றுக்கு உரிய இடம் தர வேண்டும்.',
+'நீண்டகால மனஅழுத்தம் ஏற்பட்டால் ஓய்வையும் தனிப்பட்ட உடல்நலத் தேவைகளுக்கான உரிய பராமரிப்பையும் தள்ளிப் போட வேண்டாம்.',
+'பயணங்களிலும் நீண்ட நேரம் அமர்ந்து படிக்கும் சூழலிலும் இடுப்பு, தொடை மற்றும் நடை இயக்கத்திற்குத் தேவையான இடைவெளி உதவும்.',
+'நீண்ட நேரம் பணிபுரியும் போது முழங்கால், உடல் இயக்கம், பணிக்கிடையேயான ஓய்வு ஆகியவற்றில் கவனம் தேவை.',
+'பயணமும் சந்திப்பும் அதிகமான நாட்களில் கால்கள், கணுக்கால்கள் மற்றும் நடையின் வேகத்திற்கு ஏற்ப ஓய்வு எடுத்துக்கொள்ள வேண்டும்.',
+'தூக்க நேரம், பாதங்களின் ஓய்வு, தனிமையில் மனதைத் தெளிவாக்கும் நேரம் ஆகியவற்றை இயல்பான வழக்கமாக வைத்துக்கொள்ளலாம்.'
+];
+const BODY_EN=[
+'Pay attention to fatigue, general movement and the head rather than working through every sign of tiredness.',
+'Regular food, dental and voice-care habits can support everyday comfort.',
+'Hands, shoulders and ears are traditional associations here; repetitive work deserves proper pauses.',
+'Comfortable breathing, chest ease and a restful environment at home merit attention.',
+'Study routines should allow time for meals, abdominal comfort and rest.',
+'Daily workloads are easier to sustain with breaks, regular meals and suitable digestive routines.',
+'Partners benefit when physical comfort, personal boundaries and emotional ease are respected.',
+'Long-term stress should not push private health needs or necessary care out of sight.',
+'Travel and lengthy sitting call for pauses to move the hips and thighs comfortably.',
+'Long workdays call for consideration of knees, movement and rest.',
+'Busy travel and social schedules warrant rest for feet, calves and ankles.',
+'A consistent sleep routine, rest for the feet and time for quiet recovery may help.'
+];
+const LINK_OUTCOME_TA=[
+'இதனால் தன்னம்பிக்கை உருவாகும் முறையும் பிறரை அணுகும் விதமும் மாறக்கூடும்.',
+'இதனால் வீட்டில் பேசும் நயமும் செலவுகளைப் பகிரும் முடிவும் பாதிக்கப்படலாம்.',
+'இதனால் முயற்சி தொடங்கும் நேரமும் அதைத் தொடர்ந்து செய்வதற்கான ஒழுங்கும் மாறக்கூடும்.',
+'இதனால் மனநிம்மதி, வீட்டுக்கான செலவு, குடும்பத்துடன் செலவிடும் நேரம் ஆகியவற்றில் முன்னுரிமை மாறலாம்.',
+'இதனால் எதைத் தொடர்ந்து கற்க வேண்டும், யாருக்கு நேரம் ஒதுக்க வேண்டும் என்ற தீர்மானம் உருவாகலாம்.',
+'இதனால் வேலையைப் பகிரும் முறையும் கடனுக்கான எச்சரிக்கையும் முக்கியத்துவம் பெறலாம்.',
+'இதனால் நெருக்கமானவர்களுடன் பேசும் முறையும் பரஸ்பர எதிர்பார்ப்பும் தெளிவடைய வேண்டியிருக்கும்.',
+'இதனால் ஒரு மாற்றத்தை ஏற்கும் வேகமும் உதவி கேட்கும் முறையும் மாறக்கூடும்.',
+'இதனால் வழிகாட்டுதலை ஏற்கும் விதமும் எதிர்காலத்திற்கான நம்பிக்கையும் வலுப்பெறலாம்.',
+'இதனால் வேலையில் ஏற்கும் பொறுப்பும் அதை நிறைவேற்றும் நடைமுறையும் மாறக்கூடும்.',
+'இதனால் நண்பருக்கு உதவுவது, ஆதாயத்தைச் சேமிப்பது ஆகிய இரண்டுக்கும் எல்லை அமைக்க வேண்டியிருக்கும்.',
+'இதனால் செலவுத் திட்டத்தோடு ஓய்வுக்கும் தனிப்பட்ட இடத்துக்கும் மதிப்பு கொடுக்க வேண்டியிருக்கும்.'
+];
+
+
+const BODY_CONTEXT_TA=[
+'தன் உடல் சோர்வைப் பிறர் கவனிக்கும்வரை காத்திருக்காமல் ஓய்வெடுக்க வேண்டும்.',
+'உணவு நேரமும் குடும்பச் செலவுகளும் ஒரே நேரத்தில் குழம்பாதபடி ஒழுங்கு அமைக்கலாம்.',
+'அடிக்கடி பயிற்சி செய்வோர் கைகள் மற்றும் தோள்களுக்கான இடைவெளியை மறக்க வேண்டாம்.',
+'வீட்டுச் சூழலில் மனம் அமைதியாகும் நேரத்தைப் பாதுகாக்கலாம்.',
+'நீண்ட படிப்பு அல்லது சிந்தனை நேரங்களுக்கிடையில் உடலை அசைக்கும் இடைவெளி தேவை.',
+'தினசரி வேலை நேரம் நீளும்போது உணவும் ஓய்வும் தவறாத பழக்கம் பயனளிக்கும்.',
+'உறவுகளில் பிறருக்காக நேரம் ஒதுக்கும்போதும் தன் தூக்கம் மற்றும் ஓய்வை மறக்கக் கூடாது.',
+'மாற்றங்களைச் சமாளிக்கும்போது கவலையைத் தனியாகச் சுமக்காமல் நம்பகமான உதவி நாடலாம்.',
+'பயணத் திட்டங்களில் உடலின் வசதிக்கான இடைநிறுத்தங்களை முன்கூட்டியே சேர்க்கலாம்.',
+'பணி பொறுப்புகள் கூடினாலும் ஓய்வு நேரத்தை நிரந்தரமாக ஒத்திவைக்க வேண்டாம்.',
+'சந்திப்புகளும் வெளிநடவடிக்கைகளும் அதிகமானால் அன்றாட நடை மற்றும் தூக்கத்தைச் சீர்படுத்தலாம்.',
+'இரவு நேரத் தூக்கத்தைத் தள்ளிப்போடும் பழக்கத்தைக் கவனமாகக் கட்டுப்படுத்தலாம்.'
+];
+const BODY_CONTEXT_EN=[
+'Pause when fatigue begins rather than waiting for it to become obvious to others.',
+'Give meals their own place in a busy household schedule.',
+'Frequent practice calls for breaks for hands and shoulders.',
+'Protect a quiet interval at home for emotional recovery.',
+'Long hours of study are easier with movement breaks.',
+'Lengthy workdays still need dependable meals and rest.',
+'Caring for another person should not mean losing one’s own sleep.',
+'When adapting to disruption, reliable help can ease sustained strain.',
+'Include physical breaks when planning long journeys.',
+'Professional responsibilities should not indefinitely postpone rest.',
+'Busy meetings and travel call for attention to movement and sleep.',
+'Notice habits that regularly delay sleep at night.'
+];
+const SECOND_LINK_TA=[
+'ஒரு முடிவை எடுப்பதற்கு முன் பிறரின் கருத்தைக் கேட்பதும் தன் பொறுப்பைத் தெளிவாக்குவதும் உதவும்.',
+'வரவுக்கும் குடும்பத் தேவைக்கும் தனித்த கணக்கு வைத்தால் பேச்சில் குழப்பம் குறையலாம்.',
+'மற்றவரின் உதவியைப் பெற்றாலும் தொடங்கிய முயற்சியைத் தானே தொடர்ந்து கவனிக்க வேண்டியிருக்கும்.',
+'வீட்டின் அமைதிக்குத் தேவையான நேரத்தை வெளியிலுள்ள பொறுப்புகளுடன் சேர்த்துத் திட்டமிடலாம்.',
+'கற்றதைப் பகிரும் போது மற்றவர் புரிந்துகொள்ளும் வேகத்தையும் மதிக்க வேண்டும்.',
+'வேலைப் பிரச்சினைகளை வீட்டுக்குக் கொண்டுவராமல் எல்லையை அமைத்துக்கொள்ள முயலலாம்.',
+'உறவில் பேசப்படாத எதிர்பார்ப்பைக் குறைக்க இருவரின் நடைமுறைத் தேவைகளையும் கேட்டறியலாம்.',
+'எல்லாச் சவாலையும் தனியே சுமக்க வேண்டியதில்லை; நம்பகமான உதவியைத் தேர்ந்தெடுக்கலாம்.',
+'அறிவுரை பயனாக இருக்கிறதா என்பதை அனுபவத்துடன் ஒப்பிட்டுப் பார்க்க வேண்டும்.',
+'பணியின் தரத்துக்கும் பிறருடன் ஒத்துழைக்கும் முறைக்கும் ஒரே அளவு கவனம் கொடுக்கலாம்.',
+'ஆதாயம் வந்தவுடன் அனைத்தையும் செலவிடாமல் அடுத்த தேவையை நினைத்துப் பார்க்க வேண்டும்.',
+'ஓய்வெடுக்கும் இடத்தையும் நேரத்தையும் பணிச்சுமைக்கு முன்பே திட்டமிடுவது உதவும்.'
+];
+const SECOND_LINK_EN=[
+'Hearing another point of view can make personal accountability clearer.',
+'Separate records for income and family needs may reduce confusion.',
+'Accepting help need not mean abandoning responsibility for follow-through.',
+'Home life benefits from time protected against outside obligations.',
+'Sharing knowledge works better when another learner’s pace is respected.',
+'Work troubles are less intrusive when practical boundaries are maintained.',
+'Checking each person’s needs can prevent unspoken expectations growing.',
+'Choosing reliable support can be better than carrying every difficulty alone.',
+'Advice becomes more useful when tested against lived experience.',
+'Attention to both work quality and cooperation can support progress.',
+'New gains may deserve reserves before additional commitments.',
+'Planned rest is more reliable than waiting until duties are finished.'
+];
+const LINK_OUTCOME_EN=[
+'This may shape confidence and how they respond to other people.',
+'This may affect the tone of family discussions and choices about shared expenses.',
+'This may change how an effort is launched and sustained.',
+'This may alter priorities around comfort, property and family time.',
+'This may influence what to study next and whom to support.',
+'This may change the way work is shared and debts are evaluated.',
+'This may require clearer communication and expectations in close relationships.',
+'This may affect how quickly change is accepted or help is sought.',
+'This may reshape the way guidance is received and future plans are formed.',
+'This may change the duties accepted and how they are fulfilled.',
+'This may require clearer boundaries between generosity and financial reserves.',
+'This may make planned rest and personal space as important as spending limits.'
+];
+
+function humanIntro(x,lang) {
+ if(lang==='ta') return x.replace(/^[^\s]+ லக்னத்தில் பிறந்துள்ளதால்\s*/,'').trim();
+ return x.replace(/^Aries rising may bring a wish to act first and work out obstacles through direct effort\./,'They may prefer to act early and work through obstacles with direct effort.')
+ .replace(/^[A-Z][a-z]+ rising may /,'They may ');
 }
-return Object.freeze({render:build,version:'287-two-pass-life-only'});
+function tone(score){return score==='support'?'support':score==='pressure'?'pressure':'mixed';}
+function textJoin(...pieces){return pieces.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();}
+function addV(out,seen,txt,house,evidence){const p=textJoin(txt);if(!p||seen.has(p))return;seen.add(p);out.push({house,text:p,evidence});}
+function topInfluences(h){const weighted=[...h.occupants.map(key=>({key,weight:3,kind:'occupant'})),...h.aspects.map(key=>({key,weight:2,kind:'aspect'})),{key:h.lord,weight:1,kind:'lord'}];const uniq=new Map();for(const x of weighted)if(!uniq.has(x.key))uniq.set(x.key,x);return [...uniq.values()].sort((a,b)=>b.weight-a.weight||KEY_ORDER.indexOf(a.key)-KEY_ORDER.indexOf(b.key));}
+// Editorial grouping keeps one lived idea per paragraph instead of one tiny
+// paragraph per fixed data fragment. All underlying evidence remains attached.
+function groupParagraphs(para,personality){
+ const pack=(arr)=>({house:arr[0].house,text:arr.map(x=>x.text).join(' '),evidence:{source:'narrative-synthesis',parts:arr.map(x=>x.evidence)}});
+ const lead=[],middle=[],end=[],body=[];
+ for(const p of para){
+  const src=p.evidence?.source;
+  if(src==='body-meaning')body.push(p);
+  else if(src==='outcome-synthesis')end.push(p);
+  else if(src==='life-meaning'||src==='ruler-placement'||src==='ruler-home')lead.push(p);
+  else middle.push(p);
+ }
+ const out=[];
+ if(personality){
+   const core=middle.filter(x=>x.evidence?.pass===1&&['rising-and-ruler','ruler-context'].includes(x.evidence?.source));
+   for(const c of core)out.push(c);
+   const contacts=middle.filter(x=>!core.includes(x));
+   if(contacts.length)out.push(pack(contacts));
+ } else {
+   if(lead.length)out.push(pack(lead));
+   if(middle.length)out.push(pack(middle));
+ }
+ if(personality&&lead.length)out.push(pack(lead));
+ if(out.length<2&&end.length&&body.length){out.push(pack(end));out.push(pack(body));}
+ else if(end.length||body.length)out.push(pack([...end,...body]));
+ return out;
+}
+function compileV288(d,lang='ta',options={}) {
+ const ta=lang!=='en',impact=ta?IMPACT_TA:IMPACT_EN,ctx=ta?CONTEXT_TA:CONTEXT_EN,focus=ta?FOCUS_TA:FOCUS_EN,bodyText=ta?BODY_TA:BODY_EN;
+ const rising=ta?RISING_TA:RISING_EN,signStyles=ta?SIGN_STYLE_TA:SIGN_STYLE_EN,planetTraits=ta?PLANET_TA:PLANET_EN,results=ta?RESULTS_TA:RESULTS_EN;
+ const topics=[],allHouses=Array.from({length:12},(_,i)=>i+1);
+ const selected=(key,i)=>impact[i][KEY_ORDER.indexOf(key)];
+ for(let i=0;i<12;i++){
+  const h=d.houses[i],lord=d.planets[h.lord],strength=state(d,i+1,options),infl=topInfluences(h),seen=new Set(),para=[];
+  const meta={lagna:d.lagna,houseLord:h.lord,lordSign:lord.sign,lordHouse:lord.house,occupants:[...h.occupants],aspects:[...h.aspects],score:strength,ownerDignity:options.planetDignity?options.planetDignity(d,lord):null,ownerFunctional:options.functional?options.functional(d,h.lord):null};
+  if(i===0){
+    // First pass: the native's rising character + real ruler's house/sign,
+    // conjunctions and contacts. The reader sees neither sign labels nor formulas.
+    const [a,b]=rising[d.lagna];
+    addV(para,seen,textJoin(humanIntro(a,ta?'ta':'en'),ta
+      ?`அந்த இயல்புடன் ${signStyles[lord.sign]} கலப்பதால் ${selected(h.lord,i)}`
+      :`Alongside that tendency, ${signStyles[lord.sign]} may become apparent. ${selected(h.lord,i)}`),1,{pass:1,source:'rising-and-ruler',ruler:h.lord,sign:lord.sign});
+    addV(para,seen,textJoin(b,ta
+      ?`குறிப்பாக ${ctx[lord.house-1]} வழியாக இந்த இயல்பு நடைமுறையில் சோதிக்கப்படும் வாய்ப்புகள் இருக்கலாம்.`
+      :`These traits may be tested through ${ctx[lord.house-1]}.`),1,{pass:1,source:'ruler-context',rulerHouse:lord.house});
+    const conjunct=Object.values(d.planets).filter(p=>p.key!==h.lord&&p.house===lord.house).sort((a,b)=>KEY_ORDER.indexOf(a.key)-KEY_ORDER.indexOf(b.key));
+    const firstPassShown=new Set([h.lord]);
+    for(const p of conjunct.slice(0,2)){firstPassShown.add(p.key);addV(para,seen,textJoin(ta
+      ?`${selected(p.key,0)} அந்த இயல்புடன் இவர் ஏற்கும் பொறுப்பும் கலந்து செயல்படுவதால் ஒரு கருத்தை உடனே முடிவாக்காமல் விளைவுகளை ஒப்பிட்டுப் பார்ப்பது உதவும்.`
+      :`${selected(p.key,0)} The wish to act responsibly may interact with that impulse, so allowing time to compare consequences can help.`),1,{pass:1,source:'lord-conjunction',planet:p.key});}
+    for(const p of infl.filter(x=>!firstPassShown.has(x.key)).slice(0,2))addV(para,seen,textJoin(selected(p.key,0),ta
+       ?`இது ${ctx[p.kind==='occupant'?1-1:lord.house-1]} தொடர்பான முடிவுகளில் வெளிப்படலாம்; அதனால் ஒரே நேரத்தில் வேகமாகவும் நிதானமாகவும் செயல்பட வேண்டிய சூழல் வரலாம்.`
+       :`It may be especially visible in everyday choices; acting quickly need not exclude considered judgement.`),1,{pass:1,source:p.kind==='occupant'?'rising-occupant':'rising-aspect',planet:p.key});
+  } else {
+    const chosen=infl[0]||{key:h.lord,kind:'lord'};
+    const sourceHouse=d.planets[chosen.key].house-1;
+    const sourceContext=ta
+      ?(chosen.kind==='occupant'?`இந்த நடைமுறை ${ctx[i]} தொடர்பான முடிவுகளில் நேரடியாகத் தெரியக்கூடும்.`:chosen.kind==='aspect'?`${ctx[sourceHouse]} பெற்ற அனுபவங்களும் இத்தேர்வில் கலந்து வரலாம்.`:`குறிப்பாக ${ctx[sourceHouse]} இதை வளர்க்கும் வாய்ப்பைத் தரலாம்.`)
+      :(chosen.kind==='occupant'?`This may show directly in choices involving ${ctx[i]}.`:chosen.kind==='aspect'?`Experience of ${ctx[sourceHouse]} may also shape this choice.`:`It may be developed through ${ctx[sourceHouse]}.`);
+    addV(para,seen,textJoin((ta?DOMAIN_TA:DOMAIN_EN)[i][0],selected(chosen.key,i),sourceContext),i+1,{pass:2,source:'life-meaning',planet:chosen.key,kind:chosen.kind,sourceHouse:sourceHouse+1});
+  }
+  // The ruler's actual location connects each focus to a real different life area.
+  const placement=lord.house-1;
+  if(placement!==i){
+    addV(para,seen,ta
+      ?`${focus[i]} ${ctx[placement]} முக்கியப் பங்கு வகிக்கலாம். ${LINK_OUTCOME_TA[i]}`
+      :`Experience with ${ctx[placement]} may matter ${focus[i]}. ${LINK_OUTCOME_EN[i]}`,i+1,{pass:2,source:'ruler-placement',lord:h.lord,rulerHouse:lord.house});
+  } else if(i!==0){
+    addV(para,seen,ta
+      ?`${focus[i]} பிறரின் அழுத்தத்தைவிடத் தன் நியாயத்தை முன்னிலைப்படுத்த முயல்வார். ${LINK_OUTCOME_TA[i]}`
+      :`They may prefer relying on their own judgement ${focus[i]}. ${LINK_OUTCOME_EN[i]}`,i+1,{pass:2,source:'ruler-home',lord:h.lord});
+  }
+  // Occupants and actual aspects: topic-specific effects, not repeated generic karaka paragraphs.
+  const extras=infl.filter(x=>x.key!==h.lord&&x.kind!=='lord').slice(0,i===0?0:2);
+  for(const [extraIndex,p] of extras.entries()){
+    const ptext=selected(p.key,i),pressure=planetTraits[p.key][1];
+    addV(para,seen,textJoin(ptext,extraIndex>0?'':ta
+      ?(strength==='pressure'?`எதிர்பார்ப்பு அதிகமானால் ${pressure}; அதனால் அவசரமின்றி பேசுவதும் உதவி கேட்பதும் முக்கியம்.`:`இந்தத் தன்மை ஒரே நேரத்தில் ${ctx[placement]} தரும் அனுபவத்துடனும் கலந்து வெளிப்படலாம்.`)
+      :(strength==='pressure'?`Under pressure, ${pressure.charAt(0).toLowerCase()+pressure.slice(1)}; taking time to review decisions may help.`:`It may combine with lessons drawn from ${ctx[placement]}.`)),i+1,{pass:2,source:p.kind,planet:p.key});
+  }
+  // A second cross-house link is used only when an actual natal relationship exists.
+  if(typeof options.links==='function'&&i!==0){
+    const connections=allHouses.filter(x=>x!==i+1&&x!==lord.house).map(x=>({house:x,links:options.links(d,i+1,x)}))
+      .filter(x=>x.links.some(code=>['related-lord-in-focus','lords-conjunct','mutual-exchange','focus-lord-aspects-related','related-lord-aspects-focus'].includes(code)))
+      .sort((a,b)=>b.links.length-a.links.length||a.house-b.house);
+    if(connections.length){const one=connections[0];addV(para,seen,ta
+      ?`${focus[i]} ${ctx[one.house-1]} உடனும் தொடர்பு ஏற்படும். ${SECOND_LINK_TA[i]}`
+      :`There may also be a link with ${ctx[one.house-1]} ${focus[i]}. ${SECOND_LINK_EN[i]}`,i+1,{pass:2,source:'cross-house-link',relatedHouse:one.house,relation:one.links});}
+  }
+  // The life result is inferred from natal condition and adapted to the house.
+  addV(para,seen,textJoin(results[i][strength==='support'?0:strength==='pressure'?1:2],ta
+    ?`இந்த முடிவுகளைச் செயல்படுத்தும் போது ${signStyles[lord.sign]} உதவலாம்; ஆனால் அதே அணுகுமுறை எல்லா மனிதர்களுக்கும் பொருந்தும் என்று கருத வேண்டாம்.`
+    :`${signStyles[lord.sign]} may be useful here, provided it is adapted to the people and circumstances involved.`),i+1,{pass:2,source:'outcome-synthesis',strength,ruler:h.lord,rulerSign:lord.sign});
+  // Physical care: concrete body significations, without fatalistic diagnoses.
+  addV(para,seen,textJoin(bodyText[i],(ta?BODY_CONTEXT_TA:BODY_CONTEXT_EN)[lord.house-1],ta
+    ?(strength==='pressure'?`வேலை அல்லது குடும்ப அழுத்தம் அதிகமாகும் போது இந்தப் பழக்கங்களைப் புறக்கணிக்க வேண்டாம்.`:strength==='support'?`சீரான அன்றாட ஒழுங்கைத் தொடர்வது உடல் வசதிக்கும் செயல்திறனுக்கும் உதவும்.`:`சூழலுக்கேற்ற ஓய்வு இடைவெளிகளை அமைத்துக் கொள்ளலாம்.`)
+    :(strength==='pressure'?`These routines deserve more care during stressful periods.`:strength==='support'?`Keeping routines consistent may support comfort and capacity.`:`Adjust breaks and routines to real conditions.`)),i+1,{pass:2,source:'body-meaning',strength});
+  topics.push({number:i+1,title:(ta?TITLES_TA:TITLES_EN)[i],paragraphs:groupParagraphs(para,i===0),analyzedHouses:12,evidence:meta});
+ }
+ return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'two-pass consequence-led narrative',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
+}
+
+return Object.freeze({render:compileV288,version:'288-contextual-d1-narrative'});
 });

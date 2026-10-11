@@ -64,7 +64,7 @@
      ||((typeof module==='object'&&module.exports)?require('./d1-human-narrative.js'):null);
    if(!n||typeof n.render!=='function')throw Error('D1 human narrative script is missing: d1-human-narrative.js');
    const d=toD1(chart);
-   const report=n.render(d,lang,{houseScore,planetDignity:REL.dignity,functional:KARA.functional});
+   const report=n.render(d,lang,{houseScore,links,planetDignity:REL.dignity,functional:KARA.functional});
    // Technical evidence is retained as hidden metadata, never printed to readers.
    const ctx=sanitizeContext(context);
    for(const topic of report.topics){const note=situation(topic.number,ctx,lang!=='en');
@@ -77,5 +77,5 @@
   const content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');
   return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions'}</h2>${content}</section>`;
  }
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'287-two-pass-narrative'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'288-contextual-narrative'});
 });
