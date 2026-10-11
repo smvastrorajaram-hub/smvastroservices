@@ -32,34 +32,7 @@
  ['வருமானம், ஆதாயங்கள், நண்பர்கள் மற்றும் இலக்குகள்','Income, friends and aims'],
  ['செலவுகள், ஓய்வு, தனிமை மற்றும் உள்மன வாழ்க்கை','Expenses, rest and private life']];
  // Each topic has its own lived consequence. Conditional use depends on measured D1 contacts.
- const DOMAINS_TA=[
- ['பிறர் சொல்வதைக் கேட்ட பிறகே முடிவு செய்யும் பொறுமை; ஆனால் தனக்குச் சரியாகத் தோன்றிய கருத்தை உறுதியாக விளக்கும் பண்பு','சுயமரியாதைக்கு இடையூறு ஏற்பட்டால் உள்ளுக்குள் சுமந்துகொண்டு பிறகு நேரடியாக எதிர்ப்புத் தெரிவிக்கும் போக்கு'],
- ['குடும்பத்தில் பணம் பற்றிய உரையாடலைத் தெளிவாக நடத்தி சேமிப்பிற்குச் சில விதிகளை உருவாக்கும் பழக்கம்','அன்புடன் கூறும் அறிவுரையே வார்த்தைக் கடுமையால் குறையாகப் புரிந்துகொள்ளப்படும் சூழல்'],
- ['மற்றவர் தொடங்குவதற்காகக் காத்திருக்காமல் தானே முயன்று பயிற்சி மூலம் திறமையை வளர்க்கும் இயல்பு','விரைவாக முடிக்க நினைப்பதால் சகோதரர் அல்லது உடன் பணிபுரிபவரின் வேகத்தை ஏற்றுக்கொள்ளச் சிரமம்'],
- ['வீட்டாரின் தேவைகளைக் கவனித்தபடியே தனக்கென அமைதியான இடம் வைத்துக்கொள்ள விரும்பும் வாழ்க்கை முறை','வேலைச்சுமையை வீட்டுக்குக் கொண்டுவருவதால் ஓய்வு குறைந்து குடும்ப உரையாடல் சுருங்கும் நிலை'],
- ['ஏன் இப்படி நடக்கிறது என்ற கேள்வியால் அறிவை ஆழமாக வளர்த்து பிறருக்கும் தெளிவுபடுத்தும் ஆர்வம்','ஒரே முடிவைப் பலமுறை ஆராய்ந்து படிப்பு அல்லது குழந்தைகள் சார்ந்த தீர்மானங்களைத் தாமதப்படுத்தும் இயல்பு'],
- ['சிக்கலைப் பிரித்து அதன் காரணத்தை அறிந்து அன்றாட வேலையை ஒழுங்குபடுத்தும் திறன்','எல்லாவற்றையும் தானே சரிசெய்யும் எண்ணத்தால் கடமையும் மனச்சுமையும் பெருகும் நிலை'],
- ['உறவில் இருவரும் தங்கள் கருத்தை விளக்கிப் பேச வேண்டும் என்ற எதிர்பார்ப்பும் இணைந்து முடிவு செய்யும் விருப்பமும்','உதவியாகச் சொல்லும் சொற்கள் கட்டுப்படுத்துவதாகத் தோன்றினால் நெருங்கிய உறவில் இடைவெளி'],
- ['திடீர் மாற்றத்தின் காரணத்தைத் தேடி பாதுகாப்பான மாற்று வழியைத் திட்டமிடும் திறன்','ஒருமுறை ஏற்பட்ட நம்பிக்கை இழப்பை அடுத்த சூழ்நிலையிலும் நினைத்து தேவைக்கு மேல் எச்சரிக்கையாக இருப்பது'],
- ['வழிகாட்டுதலுக்கு மதிப்பு கொடுத்தாலும் காரணம் புரிந்தபின் மட்டுமே ஒரு கொள்கையை ஏற்றுக்கொள்ளும் இயல்பு','தன் நம்பிக்கையைத் தெளிவுபடுத்தும் முயற்சி பெரியவர்களுடன் தேவையற்ற விவாதமாக மாறுவது'],
- ['திறமையை வேலையில் வெளிப்படுத்தி பொறுப்பை ஒழுங்காக முடிக்க வேண்டும் என்ற உந்துதல்','வேலை சரியாக நடக்க வேண்டும் என்ற எண்ணத்தால் பிறருக்கான பொறுப்பையும் தானே ஏற்றுச் சோர்வது'],
- ['நம்பகமான தொடர்புகளை வளர்த்து நீண்டகால இலக்கிற்கு பயன்படும் ஒத்துழைப்பைத் தேடும் முறை','உதவியின் மதிப்பை மற்றவர் உணரவில்லை என்றால் வெளியில் சொல்லாமல் நட்பிலிருந்து விலகுவது'],
- ['தனியாகச் சிந்திக்கும் நேரத்தைச் செலவிட்டு பிறகு தெளிவாகச் செயல்பட விரும்புவது','முடிக்காத பணியை மனதில் தொடர்ந்து சுமந்து தூக்கம் மற்றும் தனிப்பட்ட ஓய்வைத் தள்ளிவைப்பது']
- ];
- const DOMAINS_EN=[
- ['listening before deciding while standing by a carefully considered view','carrying wounded pride internally before answering too sharply'],
- ['discussing family spending openly and building savings rules','helpful advice sounding like criticism when phrased forcefully'],
- ['learning by initiative and practice rather than waiting to be instructed','impatience when siblings or colleagues work at a different pace'],
- ['caring for family needs while wanting a quiet private space','bringing work pressure home and losing time for family conversation'],
- ['examining why things work and explaining complex ideas clearly','overthinking a learning or child-related decision until it stalls'],
- ['breaking a problem into manageable steps and maintaining daily order','taking on every duty personally and becoming overburdened'],
- ['preferring a partnership where both sides explain their views','well-meant guidance sounding controlling to a close partner'],
- ['examining unexpected changes and making a safety plan','letting a past disappointment create distrust in new situations'],
- ['respecting mentors while asking for the reasons behind their guidance','turning an honest question into a dispute with elders'],
- ['demonstrating competence through dependable responsibility at work','taking over others’ duties in the name of high standards'],
- ['building dependable friendships for long-term goals','withdrawing from friends when help is taken for granted'],
- ['using quiet private time to think before acting','continuing to worry about incomplete tasks when rest is needed']
- ];
+ // V286 removes stock DOMAINS phrases that caused identical outputs.
  const ROUTES_TA=[
   [
   'இவர் இயல்பாக எப்படி நடந்துகொள்வார் என்பதை வெளியில் காணும் தோற்றத்தை வைத்து மட்டும் முடிவு செய்ய முடியாது; சூழ்நிலைக்குத் தகுந்து அணுகுமுறையை மாற்றிக்கொள்ளும் தன்மை இருக்கலாம்.',
@@ -248,8 +221,6 @@
 
  const CROSS_TA=['சொந்த முடிவுகள்','குடும்பப் பேச்சும் சேமிப்பும்','முயற்சியும் உடன்பிறப்புகளும்','வீட்டுச் சூழலும் தாயார் சார்ந்த பொறுப்பும்','கற்றலும் குழந்தைகள் தொடர்பான சிந்தனையும்','வேலைப்பளுவும் போட்டியும்','துணைவர் அல்லது கூட்டாளியுடன் ஒத்துழைப்பும்','திடீர் மாற்றத்திற்கான முன்னெச்சரிக்கையும்','பெரியோரின் ஆலோசனையும் கொள்கையும்','தொழில் பொறுப்பும் மதிப்பும்','நண்பர்கள் மற்றும் வருமான இலக்குகளும்','தனிப்பட்ட நேரமும் செலவும்'];
  const CROSS_EN=['personal decisions','family speech and savings','initiative and siblings','home and parental duties','learning and guidance for children','workload and competition','partnership and collaboration','preparing for sudden change','mentors and values','work responsibility and reputation','friendships and income plans','time alone and expenditure'];
- const TRAITS_TA={Sun:['முன்னின்று பொறுப்பேற்கும் ஆற்றல்','தன்னுடைய கருத்திற்கு அதிக முக்கியத்துவம் கொடுக்கும் பிடிவாதம்'],Moon:['மற்றவர் மனநிலையை உணரும் நுணுக்கம்','சுற்றியுள்ளவர்களின் உணர்ச்சிகளால் கவனம் திசைதிரும்புதல்'],Mars:['வேகமாகச் செயல்படும் துணிவு','அவசர எதிர்வினையும் நேரடியான வார்த்தையும்'],Mercury:['விவரங்களை இணைத்து விளக்கும் அறிவு','அனைத்தையும் ஆராய்ந்து முடிவைத் தள்ளிப்போடுதல்'],Jupiter:['ஆலோசனை செய்து நியாயத்தைத் தேடும் பாங்கு','தன்னுடைய கருத்தே சரி என்று நீண்ட விளக்கம் தருதல்'],Venus:['உறவைச் சுமுகமாக வைத்திருக்கும் திறன்','மற்றவர் விருப்பத்திற்கு அளவுக்கு மேல் இணங்குதல்'],Saturn:['ஒழுங்குடன் நீண்டகாலப் பொறுப்பு ஏற்பது','கடமையை மனதில் சுமந்து மெதுவாகவே மாற்றம் ஏற்றுக்கொள்ளுதல்'],Rahu:['புதிய முறையை ஆராயும் துணிச்சல்','ஒரே நேரத்தில் பல புதுப் பாதைகளைத் தேடுதல்'],Ketu:['தேவையற்றதை விலக்கி ஆழமாக ஆராய்தல்','சொல்லாமல் விலகுவதால் தவறாகப் புரிந்துகொள்ளப்படுதல்']};
- const TRAITS_EN={Sun:['readiness to take responsibility','excessive insistence on one’s own view'],Moon:['sensitivity to others’ emotions','distraction by surrounding emotions'],Mars:['bold initiative','rash reactions and blunt speech'],Mercury:['connecting details and communicating clearly','analysis that delays decisions'],Jupiter:['reasoned advice and fairness','explaining a personal view too insistently'],Venus:['keeping relationships cooperative','over-accommodating others'],Saturn:['long-term discipline','carrying responsibilities too heavily'],Rahu:['exploring unfamiliar approaches','pursuing too many new directions'],Ketu:['deep scrutiny and detachment','silently withdrawing and being misunderstood']};
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function signIndex(v){if(Number.isInteger(v)&&v>=0&&v<12)return v;if(typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<360)return Math.floor(v/30);const s=String(v??'').trim();const ta=SIGNS_TA.indexOf(s),en=SIGNS_EN.findIndex(x=>x.toLowerCase()===s.toLowerCase());return ta>=0?ta:en;}
  function planetName(v){return ALIASES[String(v??'').trim()]||ALIASES[String(v??'').trim().toLowerCase()]||null;}
@@ -266,52 +237,156 @@
  function situation(topic,ctx,ta){if(!ctx)return '';const t=String(ctx.currentWork||'').toLowerCase(),m=String(ctx.maritalStatus||'').toLowerCase();if(topic===10&&t){const student=/student|studying|படிப்பு|மாணவ|கல்வி/.test(t),retired=/retired|pension|ஓய்வு/.test(t),business=/business|self.employed|வியாபாரம்|தொழில்முனை/.test(t);return ta?(student?'நீங்கள் தற்போது படிப்பில் இருப்பதாகத் தெரிவித்துள்ளதால் இதை வேலை உயர்வாக அல்ல, கற்றல் மற்றும் பயிற்சித் திறனாகப் பார்க்க வேண்டும்.':retired?'நீங்கள் ஓய்வுபெற்றிருப்பதாகத் தெரிவித்துள்ளதால் புதிய பதவியை அல்ல, அனுபவப் பகிர்வையும் அன்றாட ஒழுங்கையும் மையமாக்க வேண்டும்.':business?'நீங்கள் சொந்தத் தொழில் செய்வதாகத் தெரிவித்துள்ளதால் இத்தொடர்பு வாடிக்கையாளர், முடிவு மற்றும் பொறுப்புப் பகிர்வில் பார்க்கப்படுகிறது.':'நீங்கள் தெரிவித்த தற்போதைய பணிச்சூழலுடன் இந்த இயல்பை ஒப்பிட்டுப் பார்ப்பது பொருத்தமானது.'):(student?'As you report studying, read this as learning and training, not a job promotion.':retired?'As you report retirement, apply this to mentoring and daily routines rather than new posts.':business?'As you report self-employment, apply this to clients, decisions and shared duties.':'Relate this tendency to the current work situation you described.');}
   if(topic===7&&m){const single=/unmarried|single|திருமணமாகவில்லை|மணமாகாத/.test(m);const married=/married|திருமணமான|திருமணம் ஆன/.test(m);if(single)return ta?'நீங்கள் திருமணமாகவில்லை என்று தெரிவித்துள்ளதால் இப்பலனை இப்போதுள்ள நெருங்கிய உறவுகளிலும் எதிர்காலத் துணைத் தேர்விலும் பொருத்திப் பார்க்கலாம்.':'As you report being unmarried, consider close relationships and future partner preferences, not an existing spouse.';if(married)return ta?'நீங்கள் திருமணமானவர் என்று தெரிவித்துள்ளதால் இப்பலன் நடைமுறையில் பொறுப்புகளைப் பகிர்வதிலும் கருத்துப் பரிமாற்றத்திலும் பார்க்கப்படுகிறது.':'As you report being married, interpret this through current communication and shared responsibilities.';}
   if(topic===4&&ctx.currentResidence&&ctx.birthPlace&&ctx.currentResidence.trim().toLowerCase()!==ctx.birthPlace.trim().toLowerCase())return ta?'தற்போதைய வசிப்பிடம் பிறப்பிடத்திலிருந்து வேறுபடுவதாக நீங்கள் தெரிவித்துள்ளீர்கள்; குடும்பத் தொடர்பு, பயணம் மற்றும் தனிப்பட்ட நேரத்தை அதன் நடைமுறைச் சூழலுடன் இணைத்துப் பார்க்கலாம்.':'You report living somewhere other than your birthplace; interpret home ties and travel within that practical setting.';return '';}
+ // V286: an identical stock personality paragraph was rendered for completely
+ // different charts whenever houseScore fell in the neutral band.  No stock
+ // personality statement may be the first or sole evidence of a D1 forecast.
+ // All statements below are conditional on the actual natal ruler/house/aspects.
+ const LIFE_LAGNA_TA=[
+  'மேஷ லக்னத்தின் சர நெருப்புத் தன்மை காரணமாக முயற்சியைத் தொடங்கும் வேகம் முக்கியமாகிறது',
+  'ரிஷப லக்னத்தின் நிலப் பாங்கு காரணமாகப் பாதுகாப்பையும் நிலைத்த முடிவையும் நாடும் இயல்பு முன்னிலையாகிறது',
+  'மிதுன லக்னத்தின் உபய காற்றுத் தன்மையில் உரையாடலும் மாற்று வழிகளை ஆராய்வதும் முக்கியமாகிறது',
+  'கடக லக்னத்தின் நீர்த் தன்மையில் குடும்பப் பாதுகாப்பும் மன உணர்வுகளும் முடிவை வழிநடத்தலாம்',
+  'சிம்ம லக்னத்தின் நிலையான நெருப்புத் தன்மையில் தன்னம்பிக்கையும் பொறுப்பிற்கான அங்கீகாரமும் முக்கியமாகலாம்',
+  'கன்னி லக்னத்தின் உபய நிலத் தன்மையில் விவரங்களைச் சரிபார்த்துப் பணியை ஒழுங்குபடுத்தும் விருப்பம் இருக்கும்',
+  'துலா லக்னத்தின் சர காற்றுத் தன்மையில் பிறருடன் பேசிச் சமநிலையை அடைய வேண்டிய தேவை முதன்மையாகும்',
+  'விருச்சிக லக்னத்தின் நிலையான நீர்த் தன்மையில் ஆழமாகக் கவனித்து நம்பிக்கை ஏற்பட்டபின் செயல்படும் போக்கு இருக்கலாம்',
+  'தனுசு லக்னத்தின் உபய நெருப்புத் தன்மையில் அறிவு, சுதந்திரம், கொள்கை ஆகியவற்றை ஆராயும் முனைப்பு இருக்கும்',
+  'மகர லக்னத்தின் சர நிலத் தன்மையில் கடமை, திட்டம், பொறுமை ஆகியவற்றால் செயலை வடிவமைக்க விரும்பலாம்',
+  'கும்ப லக்னத்தின் நிலையான காற்றுத் தன்மையில் தனிப்பட்ட சிந்தனையையும் சமூக இலக்கையும் ஒன்றாகக் காணலாம்',
+  'மீன லக்னத்தின் உபய நீர்த் தன்மையில் பரிவு, கற்பனை, உள்ளுணர்வு ஆகியவை செயல்முறையை மாற்றலாம்'
+ ];
+ const LIFE_LAGNA_EN=[
+  'Aries rising foregrounds initiative and a readiness to begin', 'Taurus rising foregrounds steadiness and security',
+  'Gemini rising foregrounds exchange of information and adaptability', 'Cancer rising foregrounds emotional and family security',
+  'Leo rising foregrounds dignity and responsibility', 'Virgo rising foregrounds precision and practical order',
+  'Libra rising foregrounds negotiation and balance', 'Scorpio rising foregrounds careful scrutiny and trust',
+  'Sagittarius rising foregrounds inquiry, freedom and principles', 'Capricorn rising foregrounds duty and structure',
+  'Aquarius rising foregrounds independent thought and community aims', 'Pisces rising foregrounds empathy and imagination'
+ ];
+ const LIFE_PLANET_TA={
+  Sun:'பொறுப்பில் தன் கருத்து மதிக்கப்பட வேண்டும் என்ற உந்துதல்',
+  Moon:'சூழலின் உணர்வையும் குடும்பத் தேவையையும் கவனித்துச் செயல்படும் அணுகுமுறை',
+  Mars:'முன்னின்று முயன்று தடையை உடனடியாக எதிர்கொள்ளும் செயல்வேகம்',
+  Mercury:'பேச்சு, எண்ணிக்கை, ஆவணம் போன்ற விவரங்களை இணைத்து முடிவெடுக்கும் பாங்கு',
+  Jupiter:'காரணத்தை அறிந்து ஆலோசனை மற்றும் கல்வி வழியே செயல்பட விரும்பும் பாங்கு',
+  Venus:'உறவு, சமரசம், வசதி ஆகியவற்றை முடிவில் சேர்த்து எண்ணும் அணுகுமுறை',
+  Saturn:'நீண்டகாலக் கடமையையும் நடைமுறை வரம்பையும் கருத்தில் கொள்ளும் பொறுமை',
+  Rahu:'வழக்கத்திற்கு மாறான வாய்ப்புகளைச் சோதிக்க நினைக்கும் ஆவல்',
+  Ketu:'தேவையற்றதை விலக்கி ஒரு விஷயத்தின் ஆழத்தை ஆராயும் விருப்பம்'
+ };
+ const LIFE_PLANET_EN={
+  Sun:'the need for personal responsibility and acknowledgement', Moon:'sensitivity to context and family needs',
+  Mars:'initiative and a direct response to obstacles', Mercury:'detail checking, speech and accounts',
+  Jupiter:'learning, mentoring and reasoned judgement', Venus:'relationship awareness and negotiation',
+  Saturn:'discipline and sustained obligations', Rahu:'experimental and unconventional approaches',
+  Ketu:'scrutiny and selective detachment'
+ };
+ const LIFE_DESTINATION_TA=[
+  'சுயத் தீர்மானங்கள் மற்றும் உடல்சார்ந்த பழக்கங்கள்',
+  'குடும்ப உரையாடல், சேமிப்பு மற்றும் பண நிர்வாகம்',
+  'சொந்த முயற்சி, திறன் பயிற்சி, உடன்பிறந்தோருடனான தொடர்பு',
+  'வீட்டு முடிவுகள், பெற்றோர் தொடர்பு மற்றும் சொத்து ஏற்பாடு',
+  'கற்றல், குழந்தைகள் சார்ந்த எதிர்பார்ப்பு மற்றும் சிந்தனை',
+  'அன்றாட வேலை, போட்டி, கடன் ஒழுங்கு',
+  'திருமண உறவு, கூட்டாளிகள் மற்றும் உடன்படிக்கைகள்',
+  'எதிர்பாராத மாற்றங்கள், நம்பிக்கை மற்றும் மறுசீரமைப்பு',
+  'ஆசிரியர், தந்தை சார்ந்த வழிகாட்டுதல் மற்றும் நம்பிக்கைகள்',
+  'தொழில், அதிகாரப் பொறுப்பு மற்றும் சமூக அங்கீகாரம்',
+  'ஆதாயம், நண்பர்கள் மற்றும் நீண்டகால இலக்கு',
+  'செலவு, ஓய்வு, வெளிநாட்டுத் தொடர்பு அல்லது தனிப்பட்ட நேரம்'
+ ];
+ const LIFE_DESTINATION_EN=[
+  'personal choices and physical routines','family communication and savings',
+  'self-initiated work and skill-building','home, parents and property planning',
+  'learning, children and intellectual expectations','daily duties, competition and debt management',
+  'partnership and agreements','change, trust and rebuilding','mentors, father figures and principles',
+  'career responsibilities and public roles','income, friendships and long-term aims',
+  'expenses, rest, foreign links and private time'
+ ];
+ const LIFE_FOCUS_TA=[
+  'உடலின் செயல்வேகமும் தனிப்பட்ட முடிவும் சூழலுக்கும் பிறரின் ஆலோசனைக்கும் எப்படிப் பொருந்துகின்றன',
+  'வருமானம் கிடைப்பதற்கும் அதைச் சேமிப்பதற்கும் உள்ள வேறுபாடு',
+  'ஒரு முயற்சியைத் தொடங்குவதற்கும் தொடர்ந்து கற்றுத் திறனாக்குவதற்கும் உள்ள இடைவெளி',
+  'வீட்டில் பொறுப்பை ஏற்றுக்கொள்வதற்கும் மனநிம்மதியைக் காப்பதற்கும் உள்ள சமநிலை',
+  'கற்றறிந்ததைப் பயன்படுத்துவதற்கும் பிறருக்குப் புரியவைப்பதற்கும் உள்ள முறை',
+  'சிக்கலைத் தீர்ப்பதற்கும் அளவுக்கு மீறிய வேலைப்பளுவைத் தவிர்ப்பதற்கும் உள்ள சமநிலை',
+  'இணைந்து செயல்படுவதற்கும் தனிப்பட்ட கருத்தை மதிப்பதற்கும் உள்ள சமரசம்',
+  'மாற்றங்களை எதிர்கொள்வதற்கும் தேவையில்லாத அபாயத்தைத் தவிர்ப்பதற்கும் உள்ள தேர்வு',
+  'மூத்தோர் ஆலோசனை, கல்வி மற்றும் சொந்தக் கொள்கைக்கிடையிலான ஒத்திசைவு',
+  'திறமையைக் காட்டுவதற்கும் அதிகாரம் மற்றும் வேலைப்பளுவைப் பகிர்வதற்கும் உள்ள முறை',
+  'நண்பர் வழி வாய்ப்புகளைப் பயன்படுத்துவதற்கும் கணக்குடன் ஆதாயத்தை நிலைப்படுத்துவதற்கும் உள்ள வேறுபாடு',
+  'கடமைக்கு நேரம் கொடுப்பதற்கும் உடலுக்குத் தேவையான ஓய்வை ஒதுக்குவதற்கும் உள்ள ஒழுங்கு'
+ ];
+ const LIFE_FOCUS_EN=[
+  'personal decisions and advice','earning income and preserving savings',
+  'starting an effort and refining a skill','household responsibilities and emotional ease',
+  'learning and explaining knowledge','solving problems without chronic overwork',
+  'cooperation and independence','adjusting to change without needless risk',
+  'mentoring and personal conviction','professional ability and delegation',
+  'network opportunities and sustainable income','duties and adequate rest'
+ ];
+ const LIFE_DIGNITY_TA={
+  exalted:'உச்ச நிலையில் இருப்பதால் அந்தக் கிரகத்தின் முயற்சி வலிமையாக வெளிப்படலாம்; அந்த வலிமை எந்தப் பொறுப்புக்குப் பயன்படுத்தப்படுகிறது என்பதே முக்கியம்',
+  own:'ஆட்சி நிலையில் இருப்பதால் தன் காரகத்துவத்தை நிலைநிறுத்தும் வாய்ப்பு உள்ளது; அதனால் எல்லாச் சூழல்களும் தடையின்றி அமையும் என்று பொருளல்ல',
+  debilitated:'நீச நிலையில் இருப்பதால் விருப்பத்துக்கும் செயலாக்கத்துக்கும் இடையே இடைவெளி வரலாம்; தொடர்புடைய நல்ல பார்வை, நீசபங்கம் போன்றவற்றை விடாமல் ஆராய வேண்டும்',
+  neutral:'இந்த ராசி நிலையைத் தனியாகச் சாதகம் அல்லது பாதகம் என்று தீர்மானிக்காமல் உண்மையான பார்வை, சேர்க்கை, மற்ற ஆதிபத்தியத்துடன் இணைத்தே பார்க்க வேண்டும்'
+ };
+ const LIFE_DIGNITY_EN={
+  exalted:'Exaltation strengthens expression but does not promise uniformly favourable outcomes',
+  own:'Own-sign status supports autonomy but does not remove every obstacle',
+  debilitated:'Debilitation can call for support and gradual improvement; cancellation rules still require checking',
+  neutral:'This sign alone is insufficient for a favourable or adverse conclusion'
+ };
+ function chartGroundedReading(d,focus,ta){
+  const h=d.houses[focus-1],p=d.planets[h.lord];
+  const signs=ta?SIGNS_TA:SIGNS_EN,planet=ta?TA[h.lord]:h.lord;
+  const role=(ta?LIFE_DESTINATION_TA:LIFE_DESTINATION_EN)[p.house-1];
+  const conduct=(ta?LIFE_PLANET_TA:LIFE_PLANET_EN)[h.lord];
+  const issue=(ta?LIFE_FOCUS_TA:LIFE_FOCUS_EN)[focus-1];
+  const occupants=h.occupants.filter(n=>n!==h.lord),aspects=h.aspects;
+  const evidence=ta?`${planet} ${signs[p.sign]} ராசியில் ${p.house}-ஆம் பாவத்தில் இருக்கிறார்`:
+    `${planet} occupies ${signs[p.sign]}, house ${p.house}`;
+  const character=focus===1?(ta?`${LIFE_LAGNA_TA[d.lagna]}. `:`${LIFE_LAGNA_EN[d.lagna]}. `):'';
+  const channel=ta?(p.house===focus?'இந்தக் காரகத்துவத்தின் அதிபதி அதே பாவத்தில் இருப்பதால் செயல் தொடர்ச்சிக்கு ஆதரவான தொடர்பு உள்ளது.':
+    [6,8,12].includes(p.house)?'ஆறாம், எட்டாம் அல்லது பன்னிரண்டாம் பாவத் தொடர்பு இருப்பதால் சவாலை நிர்வகிக்கும் விதமும் இந்தப் பலனின் ஒரு பகுதியாகும்.':
+    [1,5,9].includes(p.house)?'திரிகோணத் தொடர்பால் முயற்சியை வளர்க்கும் வாய்ப்பும், மற்ற ஆதிபத்தியத்தின் பொறுப்பும் சேர்ந்து ஆராயப்பட வேண்டும்.':
+    [4,7,10].includes(p.house)?'கேந்திரத் தொடர்பு இருப்பதால் இது வீட்டுப் பொறுப்பு, கூட்டுறவு அல்லது வெளியுலகச் செயலில் வெளிப்படலாம்.':
+    [2,11].includes(p.house)?'பொருளாதாரம், ஆதாயம், குடும்பப் பேச்சு போன்ற நடைமுறைகளின் வழியாக இந்தப் பலன் வெளிப்படலாம்.':
+    'இந்தத் தொடர்பின் பலன் சொந்த முயற்சி மற்றும் பயிற்சியைப் பொறுத்து வெளிப்படலாம்.'):
+    (p.house===focus?'Its ruler is in the same house.':
+    [6,8,12].includes(p.house)?'The challenging-house link calls for assessing obstacles and competing obligations.':
+    [1,5,9].includes(p.house)?'The trine link may connect effort to learning and initiative.':
+    [4,7,10].includes(p.house)?'The angular link points to visible duties at home, in partnership or at work.':
+    [2,11].includes(p.house)?'Finance and family networks are relevant to its expression.':'Personal initiative and practice matter.');
+  const first=ta?
+    `${evidence}. ${character}${LIFE_DESTINATION_TA[focus-1]} தொடர்பான செயல்களில் ${role} சார்ந்த பொறுப்புகள் அல்லது அனுபவங்கள் கலந்து வரலாம். அதில் ${conduct} என்ற பண்பு வெளிப்படும் வாய்ப்பு இருக்கிறது. ${issue} என்பதில் இந்த இணைப்பு எவ்வாறு செயல்படுகிறது என்பதைப் பொருத்தே விளக்கம் மாறும். ${channel}`:
+    `${evidence}. ${character}House ${focus} concerns ${LIFE_DESTINATION_EN[focus-1]}, which may connect with ${role}. The ${h.lord} signature involves ${conduct}; the practical distinction here is ${issue}. ${channel}`;
+  // The second paragraph requires actual chart-specific modifying evidence;
+  // never print the same default personality essay for a neutral score.
+  const factors=[...new Set([...h.occupants,...aspects])].filter(k=>k!==h.lord);
+  const main=factors.slice(0,2).map(k=>{
+    const q=d.planets[k];const cause=h.occupants.includes(k)?(ta?'இப்பாவத்தில் அமர்ந்துள்ளார்':'occupies this house'):(ta?'இப்பாவத்தைப் பார்க்கிறார்':'aspects this house');
+    return ta?`${TA[k]} ${signs[q.sign]} ராசியின் ${q.house}-ஆம் பாவத்திலிருந்து ${cause}; ${LIFE_PLANET_TA[k]}`:
+      `${k} in ${signs[q.sign]} (house ${q.house}) ${cause}; ${LIFE_PLANET_EN[k]}`;
+  });
+  const second=ta?
+    `${main.length?`${main.join(' . ')} ஆகிய தொடர்புகளும் செயல்படுகின்றன. `:`இந்தப் பாவத்தில் நேரடிக் கிரகச் சேர்க்கையோ பிற கிரகத்தின் பார்வையோ இல்லாதபோது பாவாதிபதியின் இருப்பிடம் முதன்மையான ஆதாரம். `}${LIFE_DIGNITY_TA[p.dignity]||LIFE_DIGNITY_TA.neutral}. ${focus}-ஆம் பாவத்தின் மற்ற முடிவுகள் இந்த ஆதாரத்தின் அடிப்படையில்தான் மாறுபட வேண்டும்.`:
+    `${main.length?`Additional connections: ${main.join('; ')}. `:'No additional occupant or aspect is present; prioritise the ruler. '}${LIFE_DIGNITY_EN[p.dignity]||LIFE_DIGNITY_EN.neutral}.`;
+  return [{house:focus,text:first,evidence:{source:'v286-evidence-first',lord:h.lord,lordHouse:p.house,lordSign:p.sign,lagna:d.lagna}},
+    {house:focus,text:second,evidence:{source:'v286-chart-modifiers',occupants:h.occupants,aspects:h.aspects,dignity:p.dignity}}];
+ }
  // V271: narrative assembly is based on the most relevant *distinct* natal
  // connections. D1 facts never become an unsupported factual diagnosis.
  function render(chart,lang='ta',context={}){
   const ta=lang!=='en',d=toD1(chart),ctx=sanitizeContext(context),topics=[];
-  const traitSet=ta?TRAITS_TA:TRAITS_EN,verbs=ta?DOMAINS_TA:DOMAINS_EN;
   for(let i=0;i<12;i++){
-   const focus=i+1,house=d.houses[i],lord=d.planets[house.lord],score=houseScore(d,house);
+   const focus=i+1,house=d.houses[i],lord=d.planets[house.lord];
    const analyzed=Array.from({length:12},(_,j)=>lens(d,focus,j+1));
-   const candidates=[...new Set([house.lord,...house.occupants,...house.aspects])]
-    .sort((a,b)=>Math.abs(scorePlanet(d,d.planets[b]))-Math.abs(scorePlanet(d,d.planets[a]))||a.localeCompare(b));
-   const main=candidates[0]||house.lord,secondary=candidates.find(p=>p!==main)||house.lord;
-   const lead=score>=2?verbs[i][0]:score<=-2?verbs[i][1]:ta?`${verbs[i][0]}; ஆனால் சூழ்நிலை அழுத்தமாகும்போது ${verbs[i][1]}`:`${verbs[i][0]}; under pressure, ${verbs[i][1]}`;
-   const signName=(ta?SIGNS_TA:SIGNS_EN)[lord.sign],first=traitSet[main][scorePlanet(d,d.planets[main])<0?1:0],second=traitSet[secondary][scorePlanet(d,d.planets[secondary])<0?1:0];
-   // V272 FACT INTEGRITY: the strongest influencing planet is NOT always
-   // the lord of this house. The old wording incorrectly assigned the
-   // house LORD's sign/position to the dominant influencing planet.
-   const dominantPlanet=d.planets[main],dominantSign=(ta?SIGNS_TA:SIGNS_EN)[dominantPlanet.sign];
-   const dominantEvidence=main!==house.lord?(ta?
-      ` மேலும் ${TA[main]} ${dominantSign} ராசியில் ${dominantPlanet.house}-ஆம் பாவத்தில் இருந்து இந்தப் பாவத்தை ${house.aspects.includes(main)?'பார்க்கிறார்':house.occupants.includes(main)?'தனது இருப்பிடத்தால் பாதிக்கிறார்':'மற்ற கிரகத் தொடர்புகள் வழியே பாதிக்கிறார்'}.`:
-      ` ${main} in ${dominantSign}, house ${dominantPlanet.house}, adds its ${house.aspects.includes(main)?'aspect':'natal influence'}.`):'';
-   const cause=ta?
-      `இதன் பாவாதிபதி ${TA[house.lord]} ${signName} ராசியில் ${lord.house}-ஆம் பாவத்தில் இருக்கிறார். ${house.occupants.length?`${house.occupants.map(p=>TA[p]).join('–')} ஆகியோர் இப்பாவத்தில் உள்ளனர்.`:'இந்தப் பாவத்தில் நேரடிக் கிரக இருப்பு இல்லை.'}${dominantEvidence}`:
-      `The ruler ${house.lord} is in ${signName}, house ${lord.house}. ${house.occupants.length?house.occupants.join(' and ')+' occupy this house':'This house has no planet physically present'}.${dominantEvidence}`;
-   const mainText=ta?
-    `${lead}${lead.trim().endsWith('போக்கு')?' காணப்படலாம்.':' என்ற இயல்பு இருக்கலாம்.'} இதில் ${first} என்ற செயல் முறையும் ${second} என்ற அணுகுமுறையும் இணைந்து வெளிப்படலாம். ${cause}`:
-    `A possible pattern is ${lead}; it combines ${first} with ${second}. ${cause}`;
-   // V285: Human-reading order: actual D1 house evidence -> lived implication
-   // -> most relevant REAL linked house -> independent natural significator.
-   // Keep the 12x12 matrix for auditing; stop printing generic 12x12 permutations.
-   const occupants=house.occupants.map(k=>ta?TA[k]:k);
-   const aspects=house.aspects.map(k=>ta?TA[k]:k);
-   const ownerOther=d.houses.map((x,ix)=>x.lord===house.lord?ix+1:null).filter(x=>x&&x!==focus);
-   const dignity=lord.dignity;
-   const pattern=dignity==='exalted'||dignity==='own'?(ta?'சுயமாக முயற்சி செய்து நிலைநிறுத்தும் திறன் முன்னிலையாகலாம்':'the capacity to sustain an initiative is emphasised'):
-      dignity==='debilitated'?(ta?'செய்வதற்கும் நிலைநிறுத்துவதற்கும் இடையில் கூடுதல் பயிற்சியும் நிதானமும் தேவைப்படலாம்':'more care may be needed to sustain an initiative'):
-      score<0?(ta?'முடிவுகளைச் சரிபார்த்து செயல்படுவதால் தேவையற்ற அழுத்தத்தைத் தவிர்க்கலாம்':'reviewing decisions may reduce avoidable pressure'):
-      (ta?'முயற்சிக்கும் சூழ்நிலைக்குமான சமநிலையைக் கவனிப்பது பயனுள்ளதாக இருக்கும்':'effort and circumstances need balancing');
-   const ownerEffect=ownerOther.length?(ta?` இவரே ${ownerOther.map(x=>x+'-ஆம்').join(', ')} பாவத்திற்கும் அதிபதி என்பதால், அந்தத் துறையின் பொறுப்பும் இங்கே கலந்து வரலாம்.`:` The same ruler also governs house ${ownerOther.join(', ')}, which should be read as a separate responsibility.`):'';
-   const root=ta?
-     `${lead}; ${pattern}. ${TA[house.lord]} ${signName} ராசியில் ${lord.house}-ஆம் பாவத்தில் உள்ளதால் ${focus}-ஆம் பாவத்தின் அனுபவம் ${lord.house}-ஆம் பாவ வாழ்க்கைச் சூழலுடன் இணைகிறது.${ownerEffect}`:
-     `${lead}; ${pattern}. Ruler ${house.lord} in ${signName}, house ${lord.house}, links house ${focus} to that setting.${ownerEffect}`;
-   const force=ta?
-     `${occupants.length?`இந்தப் பாவத்தில் ${occupants.join(', ')} இருப்பதால் அவர்களின் தனித்த காரகத்துவங்களும் வெளிப்படலாம்.`:'இந்தப் பாவத்தில் கிரகம் இல்லாததால் பாவாதிபதியின் நிலையே முதன்மையானது.'} ${aspects.length?`${aspects.join(', ')} பார்வை சேர்வதால் அவற்றின் ஆதரவு அல்லது கட்டுப்பாடு சூழ்நிலையை மாற்றலாம்.`:''} ${first} என்ற செயல்பாடும் ${second} என்ற மறுபக்கமும் இந்தத் தலைப்பில் ஒன்றாகக் கவனிக்கப்பட வேண்டும்.`:
-     `${occupants.length?occupants.join(', ')+' occupy this house.':'No planet occupies this house; give priority to its ruler.'} ${aspects.length?'Aspects from '+aspects.join(', ')+ ' modify the result.':''} ${first} interacts with ${second}.`;
-   const rows=[{house:focus,text:root,evidence:{focusHouse:focus,score,dominant:main,rulerHouse:lord.house,source:'d1-primary-v285'}},
-     {house:focus,text:force,evidence:{focusHouse:focus,occupants:house.occupants,aspects:house.aspects,source:'d1-aspects-v285'}}];
+   // The old first paragraph selected the same pair of stock phrases
+   // for practically every neutral-scoring chart. That is the reported bug.
+   // A chart-grounded reading takes its place, with the ruler's actual sign,
+   // house, function, aspect and dignity used BEFORE any lived inference.
+   const rows=chartGroundedReading(d,focus,ta);
    const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.links.length&&x.relevance>=4)
      .sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,2);
    for(const x of notable){
@@ -348,6 +423,6 @@
   }
   return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
  }
- function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?'இந்தப் பகுதி D1 ஜாதகத்தின் வாழ்நாள் இயல்பு மற்றும் சாத்தியமான வாழ்க்கை அணுகுமுறைகளைப் பற்றியது; பிறந்த குழந்தையில் இவை இப்போதே வெளிப்படும் என்ற பொருள் இல்லை. வயதிற்கேற்ற கால விளக்கங்கள் II, III பகுதிகளில் வழங்கப்படுகின்றன.':'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'285-focused-human-natal'});
+ function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?`இது ${SIGNS_TA[rep.lagnaSign]} லக்னத்தின் உண்மையான பாவாதிபதி, கிரக இருப்பிடம், பார்வைகளை ஒப்பிடும் D1 ஆய்வு; வயதிற்கேற்ற காலப் பலன்கள் II, III பகுதிகளில் உள்ளன.`:'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'286-chart-grounded-natal'});
 });
