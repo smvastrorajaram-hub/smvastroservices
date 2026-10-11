@@ -19,7 +19,7 @@
  const OWNS={Sun:[4],Moon:[3],Mars:[0,7],Mercury:[2,5],Jupiter:[8,11],Venus:[1,6],Saturn:[9,10]};
  const DRISHTI={Sun:[7],Moon:[7],Mars:[4,7,8],Mercury:[7],Jupiter:[5,7,9],Venus:[7],Saturn:[3,7,10]};
  const THEMES=[
- ['ஜாதகரின் முழு வாழ்க்கை முறைகள்','Personality and overall way of life'],
+ ['ஜாதகரின் குணநலன்கள்','Character and personality'],
  ['குடும்பம், பேச்சு, சேமிப்பு மற்றும் பொருளாதார அணுகுமுறை','Family, speech and financial habits'],
  ['முயற்சி, துணிவு, திறமை மற்றும் சகோதர உறவுகள்','Initiative, skills and siblings'],
  ['வீடு, தாயார், மனநிம்மதி மற்றும் சொத்து','Home, mother, peace and property'],
@@ -33,194 +33,7 @@
  ['செலவுகள், ஓய்வு, தனிமை மற்றும் உள்மன வாழ்க்கை','Expenses, rest and private life']];
  // Each topic has its own lived consequence. Conditional use depends on measured D1 contacts.
  // V286 removes stock DOMAINS phrases that caused identical outputs.
- const ROUTES_TA=[
-  [
-  'இவர் இயல்பாக எப்படி நடந்துகொள்வார் என்பதை வெளியில் காணும் தோற்றத்தை வைத்து மட்டும் முடிவு செய்ய முடியாது; சூழ்நிலைக்குத் தகுந்து அணுகுமுறையை மாற்றிக்கொள்ளும் தன்மை இருக்கலாம்.',
-  'தனக்கு முக்கியமான கருத்தைப் பேசும்போது விரிவாக விளக்க வேண்டும் என்ற விருப்பம் இருக்கும்; குடும்பத்தில் அந்த விளக்கம் அறிவுரையாகவும் சில நேரம் பிடிவாதமாகவும் புரிந்துகொள்ளப்படலாம்.',
-  'ஒரு வேலை நின்றுபோனால் வேறு யாராவது தொடங்குவார்கள் என்று காத்திருக்காமல் தானே முயன்றுபார்க்கும் மனநிலை வெளிப்படலாம்.',
-  'குடும்பத்தாரிடம் பாசம் இருந்தாலும் தன் எண்ணத்தைத் தனியாகச் சிந்திக்க இடமும் நேரமும் வேண்டுமென்று விரும்பலாம்.',
-  'புதிய விஷயங்களை அறிந்துகொள்ளும் ஆர்வமும், அறிந்ததை மற்றவர்களுக்கு எடுத்துச் சொல்லும் விருப்பமும் இவரது பழக்கத்தில் தெரியும்.',
-  'பிறர் கவனிக்காத குறையைச் சரிசெய்ய முயல்வார்; இதனால் உதவும் குணமும் தேவைக்கு அதிகப் பொறுப்பை ஏற்றுக்கொள்ளும் பழக்கமும் ஒன்றாக வரலாம்.',
-  'நெருங்கிய உறவுகளில் வார்த்தையை விட பரஸ்பரப் புரிதலுக்கே அதிக மதிப்பு தரலாம்; கருத்து வேறுபாடு வந்தால் காரணம் கேட்கும் குணம் வெளிப்படும்.',
-  'எதிர்பாராத ஏமாற்றம் இவரை உடனே சோர்வடையச் செய்யாமல் ஏன் நடந்தது என்று உள்ளுக்குள் ஆராய வைக்கலாம்.',
-  'பெரியவர்களை மதித்தாலும் ஒரு விஷயத்திற்கான காரணத்தை அறியாமல் ஏற்றுக்கொள்ளத் தயங்கலாம்.',
-  'தன்னுடைய பணியில் திறமை வெளிப்பட வேண்டும் என்று நினைப்பார்; தேவையான இடத்தில் பொறுப்பைத் தானாக ஏற்றுக்கொள்வார்.',
-  'நண்பர்களைத் தேர்ந்தெடுப்பதில் நம்பகத்தன்மையைப் பார்க்கலாம்; நீண்ட நாள் பழகியவர்களுக்கு உதவ முன்வருவார்.',
-  'வெளியில் அனைவருடனும் பழகினாலும் தனிப்பட்ட நேரத்தில் அமைதியாகச் சிந்திக்க வேண்டிய தேவையும் இவருக்கு இருக்கலாம்.'
-  ],
-  [
-  'சுயமரியாதையைப் பாதுகாத்தபடி பொருளாதார முடிவெடுப்பார்; பிறரிடம் உதவி கேட்பதற்கு முன் தன்னுடைய வழியைத் தேடலாம்.',
-  'குடும்பத்தில் பேசும் வார்த்தைகளும் பணம் பற்றிய முடிவுகளும் நீண்டகால உறவுகளைப் பாதிக்கக்கூடியவை என்பதால் இவ்விரண்டையும் இணைத்துப் பார்ப்பார்.',
-  'சொந்த முயற்சியில் கற்ற திறன்களை வருமானத்திற்குப் பயன்படுத்தும் வாய்ப்பைத் தேடக்கூடும்; அவசர முடிவெடுப்பதையும் கவனிக்க வேண்டும்.',
-  'வீட்டின் தேவைகள், பெற்றோர் வசதி, சொத்து பாதுகாப்பு போன்றவற்றுக்கான செலவுகளில் முன்னுரிமை மாறக்கூடும்.',
-  'கல்வி மற்றும் குழந்தைகளுக்காகச் செலவிடுவதில் வெறும் செலவுக் கணக்கு மட்டுமல்ல எதிர்காலப் பயனையும் மதிப்பிடுவார்.',
-  'கடன் அல்லது தவணைப் பொறுப்பு வந்தால் அதைத் தள்ளிப்போடாமல் திட்டமிட்டு முடிக்க முயல்வார்; உழைப்புக்கும் செலவுக்கும் சமநிலை தேவை.',
-  'வாழ்க்கைத்துணையுடன் பணம் பற்றிய திறந்த உரையாடல் இருந்தால் உறவு மேம்படும்; கருத்தைத் தெளிவுபடுத்தாமல் கணக்கு வைத்திருப்பது தொந்தரவாகலாம்.',
-  'எதிர்பாராத செலவுகள் வரக்கூடும் என்ற எண்ணத்தால் பாதுகாப்புச் சேமிப்பை விரும்பலாம்; அச்சத்தால் எல்லா வாய்ப்புகளையும் மறுக்க வேண்டியதில்லை.',
-  'குடும்ப மரபு, பெரியோரின் ஆலோசனை, தனித்த நம்பிக்கை ஆகியவற்றில் எந்த வழி நடைமுறைக்கு உதவும் என்று ஆராய்வார்.',
-  'தொழிலில் வருமானம் அதிகரிப்பதைவிட அதனை நிலையாகப் பாதுகாப்பதும் முக்கியம் என்ற எண்ணம் உருவாகலாம்.',
-  'நண்பர்கள் அல்லது அறிமுகங்கள் வழியாக வரும் நிதி வாய்ப்பில் நம்பிக்கையை விட ஒப்பந்தத்தின் தெளிவுக்கே மதிப்பு தருவது நல்லது.',
-  'தனிப்பட்ட வசதி, பயணம், ஓய்வு போன்றவற்றுக்குச் செலவிடும்போதும் சேமிப்பின் பாதுகாப்பை மனதில் வைத்திருப்பார்.'
-  ],
-  [
-  'ஒரு புதிய முயற்சியில் தன்னால் செய்யமுடியும் என்ற நம்பிக்கையே முதலில் செயல்பட வைக்கும்; அதைச் செயலாக மாற்றும் ஒழுங்கு மிக முக்கியம்.',
-  'பேச்சு, விற்பனை அல்லது தகவல் பகிர்வு வழியாகத் தன் திறனை மற்றவர்களிடம் காட்டக்கூடும்; நேரடியான சொற்கள் எல்லோருக்கும் ஒரே மாதிரி ஏற்றதாக இருக்காது.',
-  'சிறிய முயற்சிகளைத் திரும்பத் திரும்பச் செய்து கற்றுக்கொள்வார்; சகோதரர் அல்லது சக பணியாளரின் வேகம் தன்னுடன் பொருந்தாவிட்டால் உரசல் ஏற்படலாம்.',
-  'வீட்டில் கிடைக்கும் ஆதரவு அல்லது இடையூறு முயற்சிக்கான மனநிலையை மாற்றலாம்; சுதந்திரமாகச் செயல்படும் இடம் தேவைப்படலாம்.',
-  'படித்து அறிந்ததைச் செயலில் முயற்சி செய்து பார்க்கும் ஆவல் இருக்கும்; கற்றதை விளக்கிக் காட்டும் வாய்ப்பையும் தேடலாம்.',
-  'போட்டி அல்லது எதிர்ப்பு வந்தால் ஆரம்பத்தில் சிரமம் உணர்ந்தாலும் பிரச்சினைக்குள் இறங்கிச் சரிசெய்ய முயல்வார்.',
-  'கூட்டாகச் செய்யும் வேலையில் முடிவை ஒருவரே எடுப்பதா, இருவரும் பகிர்வதா என்பது முன்பே தெளிவாக இருக்க வேண்டும்.',
-  'திடீர் தடைகள் ஆரம்பத் திட்டத்தை மாற்றக்கூடும்; மாறுபட்ட வழியை உடனே யோசிக்கும் பழக்கம் உதவலாம்.',
-  'ஆசிரியர் அல்லது வழிகாட்டியிடம் கற்ற கருத்தை அப்படியே பின்பற்றாமல் நடைமுறையில் சோதித்துப் பார்க்க விரும்புவார்.',
-  'தன் முயற்சி தொழில் திறனாகத் தெரிய வேண்டும் என்று விரும்புவர்; புதிய பொறுப்பை ஏற்கும்போது கால அளவை மதிப்பிட வேண்டும்.',
-  'திறமையான நண்பர்களுடன் சேரும்போது முயற்சிக்கு ஊக்கம் கிடைக்கும்; ஒப்பீடும் போட்டியுணர்வும் அளவாக இருக்க வேண்டும்.',
-  'பல வேலைகளை ஒரே சமயம் தொடங்கினால் ஓய்வு குறையலாம்; இடைவெளி விட்டு முடிப்பது முயற்சியின் தரத்தை உயர்த்தும்.'
-  ],
-  [
-  'தனக்குச் சொந்தமான இடம், அதில் எடுக்கும் முடிவுகள் ஆகியவற்றில் உரிமை உணர்வு அதிகமாக இருக்கலாம்.',
-  'குடும்பத்தினர் பேசும் விதம் வீட்டு அமைதியை நேரடியாகப் பாதிக்கும்; தேவையான விஷயத்தைத் தெளிவாகச் சொல்லிப் புரியவைக்க முயல்வார்.',
-  'வீட்டைப் பராமரிக்கத் தானே முன்வந்து சிறு வேலைகளைச் செய்யும் ஆர்வம் இருக்கும்; பிறர் உதவி குறைவாக இருந்தால் மனக்கசப்பு வரலாம்.',
-  'வீட்டில் மனநிம்மதி கிடைப்பதே பல முடிவுகளின் அடிப்படையாக அமையலாம்; தனக்கு விருப்பமான ஒழுங்கை வைத்திருக்க விரும்புவார்.',
-  'கற்றல், புத்தகங்கள், குழந்தைகளின் முன்னேற்றம் போன்றவை வீட்டுச் சூழலில் முக்கியப் பேச்சாக வரலாம்.',
-  'அன்றாட வேலைச்சுமை வீட்டின் அமைதியைப் பாதிக்காமல் பார்த்துக்கொள்ள வேண்டும்; முடியாத வேலையை மனதில் சுமந்துவரும் போக்கு இருக்கலாம்.',
-  'வாழ்க்கைத்துணையுடன் வீடு மற்றும் குடும்பப் பொறுப்புகளை முன்பே பகிர்ந்தால் நெருக்கம் அதிகரிக்கலாம்.',
-  'சொத்து அல்லது குடும்பத் தீர்மானங்களில் எதிர்பாராத மாற்றம் வந்தால் ஆவணங்களையும் விவரங்களையும் மீண்டும் சரிபார்க்கத் தோன்றும்.',
-  'தாயார் மற்றும் பெரியோரின் ஆலோசனையை மதித்தாலும் தன் குடும்ப வாழ்க்கைக்கான முடிவைத் தானே எடுக்க விரும்பலாம்.',
-  'வேலைக்காக வீடு மற்றும் தொழில் இடையே சமநிலையைப் பேண வேண்டிய சூழல்கள் உருவாகலாம்.',
-  'குடும்பத் தேவைகளுக்கான நீண்டகாலச் சேமிப்பை நண்பர்கள் ஆலோசனைக்குப் பதிலாகத் தனியாகத் திட்டமிடலாம்.',
-  'தனிமையும் நிம்மதியும் தரும் ஒரு இடத்திற்குத் திரும்பும் தேவை இருக்கும்; ஓய்வைத் தவிர்ப்பது மனச்சுமையை அதிகரிக்கலாம்.'
-  ],
-  [
-  'கற்றுக்கொள்வதில் தனக்குப் பொருத்தமான முறையைத் தேடுவார்; ஒரே விளக்கத்தில் திருப்தியடையாமல் காரணம் கேட்கலாம்.',
-  'பேச்சிலும் நினைவிலும் புதிய தகவல்களை இணைத்துச் சொல்லும் ஆற்றல் வளரலாம்; சிறு விஷயத்தையும் தேவைக்கு மேல் விவாதிக்கலாம்.',
-  'பயிற்சியால் அறிவைச் செயல்முறையாக மாற்ற விரும்புவார்; நேரடியாக முயற்சி செய்தால் புரிதல் அதிகரிக்கும்.',
-  'வீட்டில் படிக்கவும் சிந்திக்கவும் அமைதியான இடம் கிடைப்பது கவனத்தை அதிகரிக்கக்கூடும்.',
-  'புதிய கருத்துகளை உருவாக்குவதிலும் குழந்தைகளிடம் விளக்கிப் பேசுவதிலும் ஆர்வம் இருக்கும்; தன் எண்ணத்தை எல்லோருக்கும் திணிக்காமல் இருக்க வேண்டும்.',
-  'பணிச் சிக்கல்கள் அல்லது போட்டி ஏற்படும்போது ஆழமாகச் சிந்தித்து வழி கண்டுபிடிப்பார்; அதே சிந்தனை அழுத்தமாக மாறலாம்.',
-  'நெருங்கியவருடன் சிந்தனைகளைப் பகிரும்போது புதிய பார்வை கிடைக்கும்; கருத்து வேறுபாட்டை தனிப்பட்ட எதிர்ப்பாகக் கொள்ள வேண்டாம்.',
-  'தோல்வி ஏற்பட்ட பாடங்களை நினைவில் வைத்துக் கொண்டு அடுத்த முயற்சியை மாற்றலாம்; கடந்த தவறில் மட்டும் நிலைத்திருக்கக்கூடாது.',
-  'ஆசிரியர்களிடம் காரணத்துடன் விளக்கப்படும்போது வேகமாகக் கற்றுக்கொள்வார்; தனிப்பட்ட நம்பிக்கையையும் அறிவையும் ஒப்பிடுவார்.',
-  'ஆழமாக அறிந்த அறிவைத் தொழிலில் பயன்படுத்தும் வாய்ப்பைத் தேடலாம்; குறிப்பிட்ட துறையில் திறமையை வளர்க்கும் நோக்கம் இருக்கும்.',
-  'நண்பர்களுடன் கருத்துப் பகிர்வு புதிய வாய்ப்புக்குக் காரணமாகலாம்; மற்றவர் கருத்தைச் சோதிக்காமல் ஏற்கமாட்டார்.',
-  'தனியாகப் படிக்கும் அல்லது ஆராயும் நேரம் இவருக்கு உதவும்; மன ஓய்வுக்கான எல்லையையும் வைத்திருக்க வேண்டும்.'
-  ],
-  [
-  'தன்னுடைய திறமையை நிரூபிக்கச் சவால்களை எதிர்கொள்ள முற்படலாம்; எல்லா சிக்கலும் தனக்கான பொறுப்பு அல்ல என்பதை உணர வேண்டும்.',
-  'பணியில் சிறிய தவறைச் சரிசெய்யும்போது சொற்களின் தொனி முக்கியமாகும்; நேரடிப் பேச்சு உதவியாகவும் விமர்சனமாகவும் புரியலாம்.',
-  'ஒரு பிரச்சினை வந்தால் தானே களத்தில் இறங்கிப் பார்க்க விரும்புவார்; ஓய்வின்றி முயல்வதைத் தவிர்க்க வேண்டும்.',
-  'வீட்டுப் பொறுப்புகளுக்கும் பணிச்சுமைக்கும் இடையே தெளிவான நேர ஒதுக்கீடு தேவைப்படலாம்.',
-  'சிக்கலான வேலைகளைப் பிரித்து ஆராய்ந்து தீர்வு காண விரும்புவார்; திட்டமிடுவதில் அதிக நேரம் செலவிடக்கூடும்.',
-  'அன்றாட வேலை ஒழுங்கு, கடன் பற்றிய கவனம், போட்டியை எதிர்கொள்வது ஆகியவற்றில் கட்டுப்பாடு வைத்திருக்க முயல்வார்.',
-  'கூட்டுப் பணியில் பொறுப்பைத் தெளிவாகப் பிரிக்காவிட்டால் ஒருவருடைய சுமை மற்றொருவருக்கு மாறக்கூடும்.',
-  'திடீர் வேலைமாற்றமோ எதிர்பாராத பிரச்சினையோ வந்தால் மாற்றுத் திட்டம் வைத்திருப்பது உதவும்.',
-  'வழிகாட்டுதலை ஏற்றுக்கொண்டாலும் தானே பரிசோதித்துப் பார்க்கும் மனநிலை இருக்கும்; விதிகளின் காரணத்தைக் கேட்பார்.',
-  'தொழிலில் சவாலான பணியைக் கையாண்டு திறமையைக் காட்டலாம்; எல்லா பொறுப்பையும் தனியாக ஏற்க வேண்டியதில்லை.',
-  'பணியிலான போட்டி சில நண்பர்களுடனான தொடர்பை மாற்றலாம்; தொழில் மற்றும் நட்புக்கான எல்லை தேவை.',
-  'அதிகப் பணிச்சுமை ஓய்வைக் குறைக்கக் கூடும்; திட்டமிட்ட இடைவேளை செயல் திறனைத் தக்க வைக்கும்.'
-  ],
-  [
-  'நெருங்கிய உறவிலும் தனக்கென ஒரு அடையாளமும் சுதந்திரமும் இருக்க வேண்டும் என்று நினைக்கலாம்.',
-  'உறவுகளில் சொல்லப்படாத எதிர்பார்ப்புகளே சிக்கலை உண்டாக்கலாம்; செலவுகள் மற்றும் குடும்பக் கடமைகளை வெளிப்படையாகப் பேசுவது உதவும்.',
-  'துணையுடன் சேர்ந்து செயல்படும் போது வேகத்திலும் முடிவெடுக்கும் முறையிலும் வேறுபாடு தெரிந்தால் அதனைப் புரிந்துகொள்ள முயற்சி தேவை.',
-  'வீடு மற்றும் இரு குடும்பங்கள் பற்றிய முடிவுகளில் இருவரின் மனநிம்மதிக்கும் இடமளிப்பது முக்கியமாகும்.',
-  'குழந்தைகள், கல்வி, விருப்பங்கள் குறித்து இருவரும் விவாதித்துத் திட்டமிடும் பழக்கம் உறவை வளர்க்கலாம்.',
-  'வேலைச்சுமையை வீட்டுக்கு எடுத்துவராமல் பேசித் தீர்ப்பது நல்லது; குறைசொல்லும் மொழியை கவனிக்க வேண்டும்.',
-  'உறவில் கருத்துகளுக்கான மதிப்பு முக்கியமாக இருக்கும்; கேட்பதற்கும் விளக்குவதற்கும் சமமான இடம் வழங்க வேண்டும்.',
-  'எதிர்பாராத நம்பிக்கைச் சிக்கலில் உடனடி முடிவெடுப்பதைவிட உண்மையைத் தெளிவுபடுத்திக் கொள்வது உதவும்.',
-  'பெரியோரின் ஆலோசனையைப் பெற்றாலும் இரண்டு பேருடைய ஒப்புதலே முக்கியம் என்பதைத் தெளிவுபடுத்த வேண்டும்.',
-  'தொழில் இலக்குகளைத் துணையுடன் பகிர்ந்தால் பொறுப்புகளில் ஒத்துழைப்பு அதிகரிக்கும்.',
-  'உறவினர், நண்பர் தலையீடு வந்தால் எல்லைகளை மென்மையாகக் குறிப்பிடுவது புரிதலைப் பாதுகாக்கும்.',
-  'இருவருக்கும் தனித்த ஓய்வு நேரம் தேவைப்படலாம்; அமைதியை அலட்சியமாகப் புரிந்துகொள்ளாமல் இருப்பது நல்லது.'
-  ],
-  [
-  'வாழ்க்கையில் திடீரென மாறும் சூழ்நிலையைச் சந்திக்கும்போது முதலில் தன்னுடைய நிலையைப் பாதுகாக்க முயல்வார்.',
-  'குடும்பத்தில் மறைக்கப்பட்ட விவரங்கள் பின்னர் குழப்பம் தரக்கூடும்; பணம் மற்றும் முக்கிய முடிவுகளில் தெளிவு தேவை.',
-  'முன்னைய முயற்சி தோல்வியடைந்தால் வேறுவழியில் முயன்று பார்க்கும் துணிவு இருக்கலாம்; ஆவலில் ஆபத்தை ஏற்க வேண்டாம்.',
-  'வீடு அல்லது சொத்துக்கு தொடர்பான மாற்றத்தில் விவரங்களையும் ஆவணங்களையும் ஆராய்வதற்கு முக்கியத்துவம் தரலாம்.',
-  'சிக்கல்களை ஆழமாகப் புரிந்துகொள்ளும் ஆர்வம் ஆராய்ச்சிக்குத் துணை நிற்கலாம்; எல்லாவற்றிலும் சந்தேகம் கொள்ளத் தேவையில்லை.',
-  'தடை வந்ததும் அதற்கான காரணத்தைத் தேடுவார்; உடல் மற்றும் மன ஓய்வு தேவைப்படும் எல்லையையும் உணர வேண்டும்.',
-  'உறவில் ஏற்பட்ட சந்தேகத்தை மனதில் சேர்த்துவைக்காமல் நேரடியாகக் கேட்டுத் தெளிவுபடுத்துவது நல்லது.',
-  'எதிர்பாராத மாற்றங்களுக்கு மாற்றுத் திட்டம் வைத்திருப்பார்; பயத்தால் புதிய முடிவுகளை முழுமையாகத் தவிர்க்க வேண்டாம்.',
-  'நம்பிக்கை, வாழ்க்கை பற்றிய கேள்விகள் முக்கிய அனுபவங்களுக்குப் பின் மாறக்கூடும்; கற்றதை அமைதியாகப் பரிசீலிப்பார்.',
-  'தொழிலில் மறைமுக இடையூறு வந்தால் ஆதாரங்களைத் திரட்டிப் பிரச்சினையைத் தீர்க்க முயல்வார்.',
-  'ஆதாயம் தாமதமானால் காரணத்தை ஆராய்ந்துதான் அடுத்த முயற்சியைத் தொடர்வார்; அவசரமான பரிந்துரைகளை எச்சரிக்கையுடன் பார்ப்பார்.',
-  'தனிப்பட்ட கவலைகளை வெளியில் சொல்லாமல் மனதில் வைத்துக்கொள்ளலாம்; நம்பகமான ஒருவருடன் பேசுவது உதவும்.'
-  ],
-  [
-  'தன்னுடைய வாழ்க்கைக்கான கொள்கைகளைத் தேர்ந்தெடுக்கும்போது அவை தன் அனுபவத்துக்கு பொருந்துகின்றனவா என்பதைப் பார்க்கலாம்.',
-  'குடும்ப மரபை மதித்தாலும் எல்லா வழக்கங்களின் பொருளையும் கேட்டுத் தெரிந்துகொள்ள விரும்பலாம்.',
-  'ஆசிரியரிடம் கேட்ட அறிவை முயற்சியில் பயன்படுத்திப் பார்த்த பின்னரே முழுமையாக நம்பும் இயல்பு இருக்கலாம்.',
-  'தந்தை அல்லது மூத்தோரின் விருப்பத்துக்கும் தனிப்பட்ட முடிவுக்கும் வேறுபாடு வந்தால் விளக்கிக் கூறி சமாளிக்க முயல்வார்.',
-  'படிப்பும் தத்துவச் சிந்தனையும் ஒன்றையொன்று ஊக்குவிக்கலாம்; புதிய கருத்தை விரிவாக ஆராய விருப்பம் இருக்கும்.',
-  'தனது கொள்கைகளை நடைமுறையில் பயன்படுத்தும்போது சிக்கல் வந்தால் சூழ்நிலைக்கேற்ப சரிசெய்வதைக் கற்றுக்கொள்ளலாம்.',
-  'உறவுகளில் ஒரே நம்பிக்கையை எல்லோரிடமும் எதிர்பார்க்காமல் பரஸ்பர மதிப்பைப் பேணுவது உதவும்.',
-  'முக்கிய ஏமாற்றங்களுக்குப் பின் மனிதர்களையும் சூழல்களையும் பற்றிய கண்ணோட்டம் மாறக்கூடும்.',
-  'வழிகாட்டி மற்றும் மரபு மீது மதிப்பு இருக்கும்; காரணமில்லாத கட்டளையைப் பின்பற்றத் தயக்கம் உண்டாகலாம்.',
-  'தொழிலில் நேர்மை பற்றிய கொள்கைக்கும் நடைமுறை முடிவுகளுக்கும் சமநிலையைத் தேடுவார்.',
-  'நண்பர்களையும் சமூகத் தொடர்புகளையும் தேர்வுசெய்யும்போது அவர்களுடைய நம்பகத்தன்மையையும் மதிப்பார்.',
-  'தனிமையில் படிப்பு, சிந்தனை அல்லது வழிபாட்டில் மனநிறைவு காணலாம்; இவை தனிப்பட்ட விருப்பங்களைப் பொறுத்தது.'
-  ],
-  [
-  'தன் திறமையை வெளியில் காட்ட வேண்டும் என்ற எண்ணம் செயல்பாட்டைத் தூண்டலாம்; தன்னம்பிக்கையும் பொறுப்பும் இணைந்து செயல்பட வேண்டியது முக்கியம்.',
-  'தொழில் குறித்த பேச்சிலும் வருமான ஒப்பந்தங்களிலும் நுணுக்கமான விவரங்களைத் தெளிவுபடுத்த விரும்புவார்.',
-  'புதிய திறனைக் கற்றபின் அதை நேரடியாகப் பணியில் பயன்படுத்த முயல்வார்; முயற்சியை திட்டமாக மாற்றினால் பயன் அதிகம்.',
-  'வேலை நேரம் குடும்பத்துடன் செலவிடும் நேரத்தைக் குறைக்காமல் திட்டமிட வேண்டிய அவசியம் வரலாம்.',
-  'ஆராய்ந்து கற்ற அறிவை வேலைப்பாட்டில் புதிய முறையாக மாற்றும் ஆர்வம் இருக்கும்; தன் கருத்தை எடுத்துரைக்க விரும்புவார்.',
-  'சிக்கலான பணிகளைத் தீர்த்து நிர்வாகத்தின் நம்பிக்கையைப் பெறலாம்; வேலைச்சுமையைச் சரியாகப் பகிர்வது அவசியம்.',
-  'கூட்டாளி அல்லது வாடிக்கையாளரின் எதிர்பார்ப்பைச் சரியாகப் புரிந்துகொள்ளாவிட்டால் திறமை இருந்தும் கருத்து வேறுபாடு ஏற்படலாம்.',
-  'திடீர் வேலைமாற்றம் அல்லது திட்டமாற்றம் வந்தால் காரணத்தை ஆராய்ந்து மாற்று வழி தேடுவார்.',
-  'ஆசிரியர், மூத்தோர் அல்லது வழிகாட்டியின் உதவியால் தொழில் முடிவை மாற்றிப் பார்க்கும் சூழல் உருவாகலாம்.',
-  'வேலையில் பொறுப்பை ஏற்றுக்கொள்ளும் மனநிலை இருக்கும்; முடிவின் தரம் தனக்குரிய பெயராக இருக்க வேண்டும் என்று நினைப்பார்.',
-  'பழகியவர்கள் மூலம் தொழில் வாய்ப்பு வரலாம்; நம்பிக்கைக்குப் பின் செயல்முறை விவரங்களையும் பார்க்க வேண்டும்.',
-  'வேலைக்காக அதிக நேரம் செலவிடும்போது தனிப்பட்ட ஓய்வு பாதிக்காமல் எல்லை நிர்ணயிப்பது அவசியம்.'
-  ],
-  [
-  'தனது முயற்சியின் பலனைத் தெளிவாகக் காண விரும்புவார்; வெற்றியைப் பிறருடன் ஒப்பிடாமல் தன் முன்னேற்றத்தைக் கணக்கிடுவது உதவும்.',
-  'குடும்பத் தேவைகளுக்கான வருமானமும் நீண்டகாலச் சேமிப்பும் ஒரே திட்டத்தில் இணைக்கப்படலாம்.',
-  'சிறு முயற்சிகளைத் தொடர்ந்து செய்தால் வாய்ப்புகள் திறக்கும்; நண்பர்களுடன் போட்டியிடுவதைவிட ஒத்துழைப்பை விரும்பலாம்.',
-  'வீடு, சொத்து மற்றும் நீண்டகாலப் பாதுகாப்புக்காக ஆதாயத்தைப் பயன்படுத்தும் எண்ணம் இருக்கும்.',
-  'கற்ற திறனையும் புதிய சிந்தனையையும் வருமான வாய்ப்பாக மாற்ற விரும்புவர்; எல்லா யோசனையும் உடனடிப் பலன் தராது.',
-  'கடன் அல்லது வேலைப் பொறுப்பு அதிகமானால் ஆதாயம் இருந்தும் நிம்மதி குறையலாம்; முதலில் ஒழுங்கை வலுப்படுத்த வேண்டும்.',
-  'வாழ்க்கைத்துணையின் ஆலோசனையோ கூட்டாளியின் பங்களிப்போ சில இலக்குகளில் உதவலாம்; ஒப்பந்தம் தெளிவாக இருக்க வேண்டும்.',
-  'எதிர்பாராத செலவு அல்லது திட்டமாற்றம் ஆதாயத்தை மாற்றலாம்; பாதுகாப்புத் திட்டம் மனநிம்மதி தரும்.',
-  'கற்ற ஆசிரியர் அல்லது மூத்தோரின் வழிகாட்டுதல் புதிய வாய்ப்புக்குக் காரணமாகலாம்; தனக்குப் பொருத்தமானதைத் தேர்ந்தெடுப்பார்.',
-  'தொழில் முன்னேற்றத்தின் அடிப்படையில் ஆதாயம் உயர வேண்டும் என்ற விருப்பம் இருக்கும்; திறமை மேம்பாடு தொடர வேண்டும்.',
-  'நண்பர்களின் வட்டத்தை எண்ணிக்கையால் அல்ல நம்பிக்கையால் தேர்வுசெய்யலாம்; தொடர்ந்து உதவும் உறவுகளையே மதிப்பார்.',
-  'அதிக வருமானத்துக்காக ஓய்வையும் குடும்ப நேரத்தையும் முழுவதுமாக விட்டுவிடாமல் பார்த்துக்கொள்வது நல்லது.'
-  ],
-  [
-  'உள்ளுக்குள் ஓடும் எண்ணங்களுக்கு இடையில் தனக்கென்று நேரம் ஒதுக்க விரும்பலாம்; ஓய்வும் தனிப்பட்ட சுதந்திரமும் தேவையாக இருக்கும்.',
-  'செலவுகள் குறித்து குடும்பத்துடன் பேசும்போது தேவைக்கும் விருப்பத்திற்கும் வேறுபாடு காட்டத் தெரிந்திருப்பது உதவும்.',
-  'அதிகம் முயற்சி செய்த நாட்களில் சிந்தனையை நிறுத்தி ஓய்வெடுக்கச் சிரமம் வரலாம்; சிறிய இடைவேளைகள் உதவும்.',
-  'வீட்டில் அமைதியாக இருக்கக்கூடிய இடம் கிடைத்தால் மனம் தெளிவடையக்கூடும்; தனிமையை உறவிலிருந்து விலகலாகக் கருத வேண்டாம்.',
-  'தனியாகப் படிப்பதோ புதிய விஷயங்களை ஆராய்வதோ ஓய்வாக இருக்கலாம்; ஓய்வு நேரத்தையும் வேலையாக மாற்றத் தேவையில்லை.',
-  'முடிக்காத பொறுப்புகளை மனதில் சுமந்து கொண்டிருந்தால் உறக்க ஒழுங்கு பாதிக்கப்படலாம்; பணிகளை முடிக்கத் திட்டமிடுவது உதவும்.',
-  'நெருங்கியவரிடம் தனிமை தேவை என்பதை முன்பே கூறினால் தவறான புரிதல் குறையும்.',
-  'முந்தைய ஏமாற்றங்களைத் தனியாக நினைத்துக்கொண்டிருந்தால் நம்பகமானவருடன் பகிர்வது மனச்சுமையைத் தளர்த்தலாம்.',
-  'நம்பிக்கை அல்லது ஆன்மிக வழக்கங்கள் சில நேரங்களில் மன அமைதி தரலாம்; அவை தனிப்பட்ட விருப்பத்திற்கு ஏற்ப இருக்க வேண்டும்.',
-  'வேலை முடிந்து ஓய்வுக்குத் திரும்பும் எல்லை தெளிவாக இல்லாவிட்டால் மனம் தொடர்ந்து பணியையே நினைக்கலாம்.',
-  'நண்பர்கள் சுற்றம் இருந்தாலும் அனைவருடனும் எப்போதும் இருக்க வேண்டிய அவசியம் இல்லை; தனிப்பட்ட நேரமும் முக்கியம்.',
-  'செலவுகள், தூக்கம், ஓய்வு ஆகியவற்றுக்கு ஒழுங்கை வைத்திருப்பது சிந்தனையைத் தெளிவாக வைத்திருக்க உதவும்.'
-  ]
- ];
- // English text offers the same twelve linked topics, never a copy of translated Tamil DOM.
- const ROUTES_EN=[
- ['Their everyday character can show different sides depending on the situation.','Speech and family expectations can make their certainty seem like advice or stubbornness.','They may prefer trying a stalled task personally rather than waiting for someone else.','They can value family closeness while needing room to think independently.','Curiosity and the wish to explain what they know can shape conversations.','They may volunteer to fix an overlooked problem, sometimes taking on too much.','In close relationships, being understood matters more than reassuring words alone.','Unexpected disappointment may prompt investigation rather than immediate retreat.','They may respect elders while still asking why a practice should be followed.','They want their abilities to show through the quality of their work.','They may prefer a small dependable circle and remain loyal to old friends.','They can enjoy company but still require undisturbed private time.'],
- ['Financial decisions can be tied to independence and self-respect.','Family words and financial promises may have a lasting effect on trust.','A personally acquired skill may become a source of income if developed patiently.','Household needs and property security can reshape the spending plan.','Education and children may be seen as investments in the future.','Debt or recurring obligations call for an orderly repayment plan.','Open conversations about shared expenses can protect partnerships.','An emergency reserve may feel more important than quick gains.','Family tradition and practical financial advice may sometimes compete.','Stable income can matter as much as increasing income.','Offers made through friends still benefit from written clarity.','Personal comforts and rest can be funded without ignoring future security.'],
- ['Self-belief can initiate a new effort, but discipline determines what follows.','Communication skills may help them demonstrate what they can do.','Practice and repeated attempts may teach more than instruction alone.','The atmosphere at home can help or frustrate sustained effort.','Trying out a new idea can consolidate what they learned.','Resistance may push them to investigate the problem more deeply.','Working jointly requires clear decisions about roles and pace.','A sudden obstacle may require an alternate approach.','They may prefer testing a teacher’s advice in real conditions.','Practical initiative may become a professional strength.','Capable friends can help if rivalry is kept under control.','Beginning too many tasks may crowd out necessary rest.'],
- ['Personal space and household decisions may be closely connected.','The tone of family discussions can support or unsettle peace at home.','They may take practical household tasks into their own hands.','A predictable home rhythm may be important to their sense of comfort.','Learning and children may influence how the home is organized.','Carrying work worries home can consume family time.','Sharing home duties explicitly can reduce resentment.','Unexpected changes in property matters call for documentation.','They may respect parents while choosing their own domestic habits.','Work ambitions can require careful balance with home needs.','Long-term housing plans need practical saving habits.','A quiet place to recover can be more valuable than constant activity.'],
- ['They may want to understand the reason behind what they are taught.','The ability to connect ideas can help, while over-explanation may distract.','Hands-on practice can make abstract knowledge useful.','A calm home environment may support concentration.','They may enjoy creating ideas and explaining them to younger people.','Troubleshooting can be a learning strength but also a source of pressure.','Discussion with a partner may deepen thinking if disagreement is tolerated.','Past mistakes may become useful lessons rather than lasting regrets.','They may respect a teacher most when the lesson is explained clearly.','Specialist knowledge can become useful in a chosen profession.','Debate with friends can introduce fresh viewpoints.','Private reading time may help, provided it does not replace rest.'],
- ['Their urge to prove competence may draw them into difficult tasks.','Direct feedback can resolve errors but may sound harsher than intended.','They may prefer solving a practical problem themselves.','Work and household duties need realistic time boundaries.','Breaking an issue into parts may reveal a workable solution.','Daily routines and debt obligations require consistency.','Shared responsibility is easier when roles are written down.','Disruptions are easier to face with a backup plan.','They may ask why workplace rules exist before following them.','Difficult assignments can reveal ability if workload stays manageable.','Competition at work should not dominate friendships.','Excess work needs to be balanced with recovery.'],
- ['A close relationship may need both togetherness and individuality.','Unspoken family and money expectations can become friction.','Differences in working pace call for conscious cooperation.','Home decisions work better when both people feel heard.','Joint discussions on children, study and interests can create closeness.','Work frustrations should not become criticism at home.','Listening and explaining deserve equal space in a relationship.','A trust concern is better investigated calmly than judged immediately.','Elders can advise, but both partners must agree on key decisions.','Sharing career plans can make family responsibilities easier to coordinate.','Boundaries with friends and relatives may protect privacy.','Each person may need individual downtime without it being rejection.'],
- ['They may first focus on preserving stability during abrupt change.','Clear information about money and family commitments avoids surprises.','An unsuccessful effort may prompt a different method.','Property changes call for careful document checks.','Research can be a strength if questioning does not turn into suspicion.','Facing setbacks requires attention to recovery and boundaries.','Sensitive doubts in a relationship benefit from direct discussion.','A backup plan can help without making fear the main decision-maker.','Difficult experiences may reshape personal beliefs.','Unexpected work problems are best handled using evidence.','Delayed gains can invite investigation before further investment.','Keeping every worry private can increase emotional strain.'],
- ['They may shape beliefs around personal experience and observation.','Respect for tradition can coexist with questions about its meaning.','They may trust a teacher’s idea more after testing it.','Differences with parents may be discussed rather than simply obeyed.','Study may encourage deeper questions about ethics and meaning.','Practical complications can refine a cherished principle.','Different beliefs in relationships deserve mutual respect.','Major disappointments may change their worldview.','Guidance is most convincing when its reasons are clear.','At work they may try balancing integrity with practical needs.','Trustworthiness may influence their choice of friends.','Private study or spiritual practice may be a personal source of calm.'],
- ['They may want their competence and identity to be visible at work.','Clear speech and sound financial agreements strengthen work relationships.','Newly learned skills can be tested in a real role.','Career demands need not erase time at home.','Knowledge and research can lead to better working methods.','Solving complex work problems can build trust if tasks are delegated.','Client and partner expectations need to be confirmed rather than assumed.','Unexpected work changes may require a revised plan.','Mentorship can help them reassess a professional decision.','Responsibility and reliable work can become central to reputation.','Contacts may open doors, but details still require verification.','Strong work involvement makes scheduled rest important.'],
- ['They may prefer to measure progress against their own goals.','Income and household security benefit from a joined plan.','Small consistent efforts may gradually open opportunities.','Gains can be directed toward a safer home or property goal.','Creative skills might become useful earning opportunities.','Debt pressure can undermine the satisfaction of improved income.','A partner’s contribution may help when arrangements are clear.','Unexpected spending makes reserves important.','Experienced mentors may introduce practical opportunities.','Career growth can shape financial gains through increased skill.','Long-standing dependable friendships may be valued over a large circle.','Pursuing income should not consume all family and recovery time.'],
- ['They may need private time to regain clarity after a busy day.','Discussing needs and wishes may ease family spending tension.','Heavy effort can make switching off difficult.','A quiet place at home may support emotional rest.','Reading and research can be relaxing if not treated as more work.','Unfinished tasks may keep the mind busy before sleep.','Explaining the need for solitude can prevent misunderstandings.','Talking about old disappointments may reduce silent strain.','Belief or reflection may be a personal way to settle the mind.','A clear end to working hours can help with recovery.','Even socially engaged people can need uninterrupted alone time.','Regular spending, sleep and rest routines can support balance.']
- ];
-
- const CROSS_TA=['சொந்த முடிவுகள்','குடும்பப் பேச்சும் சேமிப்பும்','முயற்சியும் உடன்பிறப்புகளும்','வீட்டுச் சூழலும் தாயார் சார்ந்த பொறுப்பும்','கற்றலும் குழந்தைகள் தொடர்பான சிந்தனையும்','வேலைப்பளுவும் போட்டியும்','துணைவர் அல்லது கூட்டாளியுடன் ஒத்துழைப்பும்','திடீர் மாற்றத்திற்கான முன்னெச்சரிக்கையும்','பெரியோரின் ஆலோசனையும் கொள்கையும்','தொழில் பொறுப்பும் மதிப்பும்','நண்பர்கள் மற்றும் வருமான இலக்குகளும்','தனிப்பட்ட நேரமும் செலவும்'];
- const CROSS_EN=['personal decisions','family speech and savings','initiative and siblings','home and parental duties','learning and guidance for children','workload and competition','partnership and collaboration','preparing for sudden change','mentors and values','work responsibility and reputation','friendships and income plans','time alone and expenditure'];
+ // V287: removed static cross-house prose matrix; two-pass rendering does not use it.
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function signIndex(v){if(Number.isInteger(v)&&v>=0&&v<12)return v;if(typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<360)return Math.floor(v/30);const s=String(v??'').trim();const ta=SIGNS_TA.indexOf(s),en=SIGNS_EN.findIndex(x=>x.toLowerCase()===s.toLowerCase());return ta>=0?ta:en;}
  function planetName(v){return ALIASES[String(v??'').trim()]||ALIASES[String(v??'').trim().toLowerCase()]||null;}
@@ -241,188 +54,28 @@
  // different charts whenever houseScore fell in the neutral band.  No stock
  // personality statement may be the first or sole evidence of a D1 forecast.
  // All statements below are conditional on the actual natal ruler/house/aspects.
- const LIFE_LAGNA_TA=[
-  'மேஷ லக்னத்தின் சர நெருப்புத் தன்மை காரணமாக முயற்சியைத் தொடங்கும் வேகம் முக்கியமாகிறது',
-  'ரிஷப லக்னத்தின் நிலப் பாங்கு காரணமாகப் பாதுகாப்பையும் நிலைத்த முடிவையும் நாடும் இயல்பு முன்னிலையாகிறது',
-  'மிதுன லக்னத்தின் உபய காற்றுத் தன்மையில் உரையாடலும் மாற்று வழிகளை ஆராய்வதும் முக்கியமாகிறது',
-  'கடக லக்னத்தின் நீர்த் தன்மையில் குடும்பப் பாதுகாப்பும் மன உணர்வுகளும் முடிவை வழிநடத்தலாம்',
-  'சிம்ம லக்னத்தின் நிலையான நெருப்புத் தன்மையில் தன்னம்பிக்கையும் பொறுப்பிற்கான அங்கீகாரமும் முக்கியமாகலாம்',
-  'கன்னி லக்னத்தின் உபய நிலத் தன்மையில் விவரங்களைச் சரிபார்த்துப் பணியை ஒழுங்குபடுத்தும் விருப்பம் இருக்கும்',
-  'துலா லக்னத்தின் சர காற்றுத் தன்மையில் பிறருடன் பேசிச் சமநிலையை அடைய வேண்டிய தேவை முதன்மையாகும்',
-  'விருச்சிக லக்னத்தின் நிலையான நீர்த் தன்மையில் ஆழமாகக் கவனித்து நம்பிக்கை ஏற்பட்டபின் செயல்படும் போக்கு இருக்கலாம்',
-  'தனுசு லக்னத்தின் உபய நெருப்புத் தன்மையில் அறிவு, சுதந்திரம், கொள்கை ஆகியவற்றை ஆராயும் முனைப்பு இருக்கும்',
-  'மகர லக்னத்தின் சர நிலத் தன்மையில் கடமை, திட்டம், பொறுமை ஆகியவற்றால் செயலை வடிவமைக்க விரும்பலாம்',
-  'கும்ப லக்னத்தின் நிலையான காற்றுத் தன்மையில் தனிப்பட்ட சிந்தனையையும் சமூக இலக்கையும் ஒன்றாகக் காணலாம்',
-  'மீன லக்னத்தின் உபய நீர்த் தன்மையில் பரிவு, கற்பனை, உள்ளுணர்வு ஆகியவை செயல்முறையை மாற்றலாம்'
- ];
- const LIFE_LAGNA_EN=[
-  'Aries rising foregrounds initiative and a readiness to begin', 'Taurus rising foregrounds steadiness and security',
-  'Gemini rising foregrounds exchange of information and adaptability', 'Cancer rising foregrounds emotional and family security',
-  'Leo rising foregrounds dignity and responsibility', 'Virgo rising foregrounds precision and practical order',
-  'Libra rising foregrounds negotiation and balance', 'Scorpio rising foregrounds careful scrutiny and trust',
-  'Sagittarius rising foregrounds inquiry, freedom and principles', 'Capricorn rising foregrounds duty and structure',
-  'Aquarius rising foregrounds independent thought and community aims', 'Pisces rising foregrounds empathy and imagination'
- ];
- const LIFE_PLANET_TA={
-  Sun:'பொறுப்பில் தன் கருத்து மதிக்கப்பட வேண்டும் என்ற உந்துதல்',
-  Moon:'சூழலின் உணர்வையும் குடும்பத் தேவையையும் கவனித்துச் செயல்படும் அணுகுமுறை',
-  Mars:'முன்னின்று முயன்று தடையை உடனடியாக எதிர்கொள்ளும் செயல்வேகம்',
-  Mercury:'பேச்சு, எண்ணிக்கை, ஆவணம் போன்ற விவரங்களை இணைத்து முடிவெடுக்கும் பாங்கு',
-  Jupiter:'காரணத்தை அறிந்து ஆலோசனை மற்றும் கல்வி வழியே செயல்பட விரும்பும் பாங்கு',
-  Venus:'உறவு, சமரசம், வசதி ஆகியவற்றை முடிவில் சேர்த்து எண்ணும் அணுகுமுறை',
-  Saturn:'நீண்டகாலக் கடமையையும் நடைமுறை வரம்பையும் கருத்தில் கொள்ளும் பொறுமை',
-  Rahu:'வழக்கத்திற்கு மாறான வாய்ப்புகளைச் சோதிக்க நினைக்கும் ஆவல்',
-  Ketu:'தேவையற்றதை விலக்கி ஒரு விஷயத்தின் ஆழத்தை ஆராயும் விருப்பம்'
- };
- const LIFE_PLANET_EN={
-  Sun:'the need for personal responsibility and acknowledgement', Moon:'sensitivity to context and family needs',
-  Mars:'initiative and a direct response to obstacles', Mercury:'detail checking, speech and accounts',
-  Jupiter:'learning, mentoring and reasoned judgement', Venus:'relationship awareness and negotiation',
-  Saturn:'discipline and sustained obligations', Rahu:'experimental and unconventional approaches',
-  Ketu:'scrutiny and selective detachment'
- };
- const LIFE_DESTINATION_TA=[
-  'சுயத் தீர்மானங்கள் மற்றும் உடல்சார்ந்த பழக்கங்கள்',
-  'குடும்ப உரையாடல், சேமிப்பு மற்றும் பண நிர்வாகம்',
-  'சொந்த முயற்சி, திறன் பயிற்சி, உடன்பிறந்தோருடனான தொடர்பு',
-  'வீட்டு முடிவுகள், பெற்றோர் தொடர்பு மற்றும் சொத்து ஏற்பாடு',
-  'கற்றல், குழந்தைகள் சார்ந்த எதிர்பார்ப்பு மற்றும் சிந்தனை',
-  'அன்றாட வேலை, போட்டி, கடன் ஒழுங்கு',
-  'திருமண உறவு, கூட்டாளிகள் மற்றும் உடன்படிக்கைகள்',
-  'எதிர்பாராத மாற்றங்கள், நம்பிக்கை மற்றும் மறுசீரமைப்பு',
-  'ஆசிரியர், தந்தை சார்ந்த வழிகாட்டுதல் மற்றும் நம்பிக்கைகள்',
-  'தொழில், அதிகாரப் பொறுப்பு மற்றும் சமூக அங்கீகாரம்',
-  'ஆதாயம், நண்பர்கள் மற்றும் நீண்டகால இலக்கு',
-  'செலவு, ஓய்வு, வெளிநாட்டுத் தொடர்பு அல்லது தனிப்பட்ட நேரம்'
- ];
- const LIFE_DESTINATION_EN=[
-  'personal choices and physical routines','family communication and savings',
-  'self-initiated work and skill-building','home, parents and property planning',
-  'learning, children and intellectual expectations','daily duties, competition and debt management',
-  'partnership and agreements','change, trust and rebuilding','mentors, father figures and principles',
-  'career responsibilities and public roles','income, friendships and long-term aims',
-  'expenses, rest, foreign links and private time'
- ];
- const LIFE_FOCUS_TA=[
-  'உடலின் செயல்வேகமும் தனிப்பட்ட முடிவும் சூழலுக்கும் பிறரின் ஆலோசனைக்கும் எப்படிப் பொருந்துகின்றன',
-  'வருமானம் கிடைப்பதற்கும் அதைச் சேமிப்பதற்கும் உள்ள வேறுபாடு',
-  'ஒரு முயற்சியைத் தொடங்குவதற்கும் தொடர்ந்து கற்றுத் திறனாக்குவதற்கும் உள்ள இடைவெளி',
-  'வீட்டில் பொறுப்பை ஏற்றுக்கொள்வதற்கும் மனநிம்மதியைக் காப்பதற்கும் உள்ள சமநிலை',
-  'கற்றறிந்ததைப் பயன்படுத்துவதற்கும் பிறருக்குப் புரியவைப்பதற்கும் உள்ள முறை',
-  'சிக்கலைத் தீர்ப்பதற்கும் அளவுக்கு மீறிய வேலைப்பளுவைத் தவிர்ப்பதற்கும் உள்ள சமநிலை',
-  'இணைந்து செயல்படுவதற்கும் தனிப்பட்ட கருத்தை மதிப்பதற்கும் உள்ள சமரசம்',
-  'மாற்றங்களை எதிர்கொள்வதற்கும் தேவையில்லாத அபாயத்தைத் தவிர்ப்பதற்கும் உள்ள தேர்வு',
-  'மூத்தோர் ஆலோசனை, கல்வி மற்றும் சொந்தக் கொள்கைக்கிடையிலான ஒத்திசைவு',
-  'திறமையைக் காட்டுவதற்கும் அதிகாரம் மற்றும் வேலைப்பளுவைப் பகிர்வதற்கும் உள்ள முறை',
-  'நண்பர் வழி வாய்ப்புகளைப் பயன்படுத்துவதற்கும் கணக்குடன் ஆதாயத்தை நிலைப்படுத்துவதற்கும் உள்ள வேறுபாடு',
-  'கடமைக்கு நேரம் கொடுப்பதற்கும் உடலுக்குத் தேவையான ஓய்வை ஒதுக்குவதற்கும் உள்ள ஒழுங்கு'
- ];
- const LIFE_FOCUS_EN=[
-  'personal decisions and advice','earning income and preserving savings',
-  'starting an effort and refining a skill','household responsibilities and emotional ease',
-  'learning and explaining knowledge','solving problems without chronic overwork',
-  'cooperation and independence','adjusting to change without needless risk',
-  'mentoring and personal conviction','professional ability and delegation',
-  'network opportunities and sustainable income','duties and adequate rest'
- ];
- const LIFE_DIGNITY_TA={
-  exalted:'உச்ச நிலையில் இருப்பதால் அந்தக் கிரகத்தின் முயற்சி வலிமையாக வெளிப்படலாம்; அந்த வலிமை எந்தப் பொறுப்புக்குப் பயன்படுத்தப்படுகிறது என்பதே முக்கியம்',
-  own:'ஆட்சி நிலையில் இருப்பதால் தன் காரகத்துவத்தை நிலைநிறுத்தும் வாய்ப்பு உள்ளது; அதனால் எல்லாச் சூழல்களும் தடையின்றி அமையும் என்று பொருளல்ல',
-  debilitated:'நீச நிலையில் இருப்பதால் விருப்பத்துக்கும் செயலாக்கத்துக்கும் இடையே இடைவெளி வரலாம்; தொடர்புடைய நல்ல பார்வை, நீசபங்கம் போன்றவற்றை விடாமல் ஆராய வேண்டும்',
-  neutral:'இந்த ராசி நிலையைத் தனியாகச் சாதகம் அல்லது பாதகம் என்று தீர்மானிக்காமல் உண்மையான பார்வை, சேர்க்கை, மற்ற ஆதிபத்தியத்துடன் இணைத்தே பார்க்க வேண்டும்'
- };
- const LIFE_DIGNITY_EN={
-  exalted:'Exaltation strengthens expression but does not promise uniformly favourable outcomes',
-  own:'Own-sign status supports autonomy but does not remove every obstacle',
-  debilitated:'Debilitation can call for support and gradual improvement; cancellation rules still require checking',
-  neutral:'This sign alone is insufficient for a favourable or adverse conclusion'
- };
- function chartGroundedReading(d,focus,ta){
-  const h=d.houses[focus-1],p=d.planets[h.lord];
-  const signs=ta?SIGNS_TA:SIGNS_EN,planet=ta?TA[h.lord]:h.lord;
-  const role=(ta?LIFE_DESTINATION_TA:LIFE_DESTINATION_EN)[p.house-1];
-  const conduct=(ta?LIFE_PLANET_TA:LIFE_PLANET_EN)[h.lord];
-  const issue=(ta?LIFE_FOCUS_TA:LIFE_FOCUS_EN)[focus-1];
-  const occupants=h.occupants.filter(n=>n!==h.lord),aspects=h.aspects;
-  const evidence=ta?`${planet} ${signs[p.sign]} ராசியில் ${p.house}-ஆம் பாவத்தில் இருக்கிறார்`:
-    `${planet} occupies ${signs[p.sign]}, house ${p.house}`;
-  const character=focus===1?(ta?`${LIFE_LAGNA_TA[d.lagna]}. `:`${LIFE_LAGNA_EN[d.lagna]}. `):'';
-  const channel=ta?(p.house===focus?'இந்தக் காரகத்துவத்தின் அதிபதி அதே பாவத்தில் இருப்பதால் செயல் தொடர்ச்சிக்கு ஆதரவான தொடர்பு உள்ளது.':
-    [6,8,12].includes(p.house)?'ஆறாம், எட்டாம் அல்லது பன்னிரண்டாம் பாவத் தொடர்பு இருப்பதால் சவாலை நிர்வகிக்கும் விதமும் இந்தப் பலனின் ஒரு பகுதியாகும்.':
-    [1,5,9].includes(p.house)?'திரிகோணத் தொடர்பால் முயற்சியை வளர்க்கும் வாய்ப்பும், மற்ற ஆதிபத்தியத்தின் பொறுப்பும் சேர்ந்து ஆராயப்பட வேண்டும்.':
-    [4,7,10].includes(p.house)?'கேந்திரத் தொடர்பு இருப்பதால் இது வீட்டுப் பொறுப்பு, கூட்டுறவு அல்லது வெளியுலகச் செயலில் வெளிப்படலாம்.':
-    [2,11].includes(p.house)?'பொருளாதாரம், ஆதாயம், குடும்பப் பேச்சு போன்ற நடைமுறைகளின் வழியாக இந்தப் பலன் வெளிப்படலாம்.':
-    'இந்தத் தொடர்பின் பலன் சொந்த முயற்சி மற்றும் பயிற்சியைப் பொறுத்து வெளிப்படலாம்.'):
-    (p.house===focus?'Its ruler is in the same house.':
-    [6,8,12].includes(p.house)?'The challenging-house link calls for assessing obstacles and competing obligations.':
-    [1,5,9].includes(p.house)?'The trine link may connect effort to learning and initiative.':
-    [4,7,10].includes(p.house)?'The angular link points to visible duties at home, in partnership or at work.':
-    [2,11].includes(p.house)?'Finance and family networks are relevant to its expression.':'Personal initiative and practice matter.');
-  const first=ta?
-    `${evidence}. ${character}${LIFE_DESTINATION_TA[focus-1]} தொடர்பான செயல்களில் ${role} சார்ந்த பொறுப்புகள் அல்லது அனுபவங்கள் கலந்து வரலாம். அதில் ${conduct} என்ற பண்பு வெளிப்படும் வாய்ப்பு இருக்கிறது. ${issue} என்பதில் இந்த இணைப்பு எவ்வாறு செயல்படுகிறது என்பதைப் பொருத்தே விளக்கம் மாறும். ${channel}`:
-    `${evidence}. ${character}House ${focus} concerns ${LIFE_DESTINATION_EN[focus-1]}, which may connect with ${role}. The ${h.lord} signature involves ${conduct}; the practical distinction here is ${issue}. ${channel}`;
-  // The second paragraph requires actual chart-specific modifying evidence;
-  // never print the same default personality essay for a neutral score.
-  const factors=[...new Set([...h.occupants,...aspects])].filter(k=>k!==h.lord);
-  const main=factors.slice(0,2).map(k=>{
-    const q=d.planets[k];const cause=h.occupants.includes(k)?(ta?'இப்பாவத்தில் அமர்ந்துள்ளார்':'occupies this house'):(ta?'இப்பாவத்தைப் பார்க்கிறார்':'aspects this house');
-    return ta?`${TA[k]} ${signs[q.sign]} ராசியின் ${q.house}-ஆம் பாவத்திலிருந்து ${cause}; ${LIFE_PLANET_TA[k]}`:
-      `${k} in ${signs[q.sign]} (house ${q.house}) ${cause}; ${LIFE_PLANET_EN[k]}`;
-  });
-  const second=ta?
-    `${main.length?`${main.join(' . ')} ஆகிய தொடர்புகளும் செயல்படுகின்றன. `:`இந்தப் பாவத்தில் நேரடிக் கிரகச் சேர்க்கையோ பிற கிரகத்தின் பார்வையோ இல்லாதபோது பாவாதிபதியின் இருப்பிடம் முதன்மையான ஆதாரம். `}${LIFE_DIGNITY_TA[p.dignity]||LIFE_DIGNITY_TA.neutral}. ${focus}-ஆம் பாவத்தின் மற்ற முடிவுகள் இந்த ஆதாரத்தின் அடிப்படையில்தான் மாறுபட வேண்டும்.`:
-    `${main.length?`Additional connections: ${main.join('; ')}. `:'No additional occupant or aspect is present; prioritise the ruler. '}${LIFE_DIGNITY_EN[p.dignity]||LIFE_DIGNITY_EN.neutral}.`;
-  return [{house:focus,text:first,evidence:{source:'v286-evidence-first',lord:h.lord,lordHouse:p.house,lordSign:p.sign,lagna:d.lagna}},
-    {house:focus,text:second,evidence:{source:'v286-chart-modifiers',occupants:h.occupants,aspects:h.aspects,dignity:p.dignity}}];
- }
+ // V287: removed unused generic planet/house prose; the compiler now emits lived outcomes.
  // V271: narrative assembly is based on the most relevant *distinct* natal
  // connections. D1 facts never become an unsupported factual diagnosis.
+ // Narrative V287: retain the trusted natal normalizer, but render prose from a
+ // two-pass compiler rather than the 144 stock cross-house sentences.
  function render(chart,lang='ta',context={}){
-  const ta=lang!=='en',d=toD1(chart),ctx=sanitizeContext(context),topics=[];
-  for(let i=0;i<12;i++){
-   const focus=i+1,house=d.houses[i],lord=d.planets[house.lord];
-   const analyzed=Array.from({length:12},(_,j)=>lens(d,focus,j+1));
-   // The old first paragraph selected the same pair of stock phrases
-   // for practically every neutral-scoring chart. That is the reported bug.
-   // A chart-grounded reading takes its place, with the ruler's actual sign,
-   // house, function, aspect and dignity used BEFORE any lived inference.
-   const rows=chartGroundedReading(d,focus,ta);
-   const notable=analyzed.filter(x=>x.relatedHouse!==focus&&x.links.length&&x.relevance>=4)
-     .sort((a,b)=>b.relevance-a.relevance||Math.abs(b.score)-Math.abs(a.score)||a.relatedHouse-b.relatedHouse).slice(0,2);
-   for(const x of notable){
-     const relevant=d.houses[x.relatedHouse-1],relatedLord=d.planets[relevant.lord],bridge=(ta?ROUTES_TA:ROUTES_EN)[i][x.relatedHouse-1].replace(/[.]$/,'');
-     const tie=x.links.includes('mutual-exchange')?(ta?'பரிவர்த்தனை':'mutual exchange'):
-       x.links.includes('lords-conjunct')?(ta?'இரு அதிபதிகள் சேர்க்கை':'rulers conjunct'):
-       x.links.includes('focus-lord-in-related')?(ta?'இந்தப் பாவத்தின் அதிபதி அடுத்த பாவத்தில் இருப்பது':'the focus ruler occupies the related house'):
-       x.links.includes('related-lord-in-focus')?(ta?'தொடர்புடைய அதிபதி இந்தப் பாவத்தில் இருப்பது':'the related ruler occupies this house'):(ta?'பாவாதிபதி / பார்வைத் தொடர்பு':'ruler or aspect connection');
-     rows.push({house:x.relatedHouse,text:ta?
-       `${focus}-ஆம் பாவத்துக்கும் ${x.relatedHouse}-ஆம் பாவத்துக்கும் ${tie} உள்ளது. ${bridge}. ${TA[relevant.lord]} ${relatedLord.house}-ஆம் பாவத்தில் இருப்பதால் இரு துறைகளுக்கான முடிவுகளைத் தனித்தனியாக அல்லாமல் ஒன்றாகத் திட்டமிடும் சூழல் அமையலாம்.`:
-       `Houses ${focus} and ${x.relatedHouse} connect through ${tie}. ${bridge}; ${relevant.lord} in house ${relatedLord.house} joins the practical decisions in these areas.`,
-       evidence:{...x,source:'d1-direct-natal-link-v285'}});
+   const n=(typeof globalThis!=='undefined'&&globalThis.SMVD1HumanNarrative)
+     ||((typeof module==='object'&&module.exports)?require('./d1-human-narrative.js'):null);
+   if(!n||typeof n.render!=='function')throw Error('D1 human narrative script is missing: d1-human-narrative.js');
+   const d=toD1(chart);
+   const report=n.render(d,lang,{houseScore,planetDignity:REL.dignity,functional:KARA.functional});
+   // Technical evidence is retained as hidden metadata, never printed to readers.
+   const ctx=sanitizeContext(context);
+   for(const topic of report.topics){const note=situation(topic.number,ctx,lang!=='en');
+     if(note)topic.paragraphs.push({house:topic.number,text:note,evidence:{source:'user-declared-context'}});
    }
-   // A genuine natural significator is evidence, not an extra repetitive
-   // fortune claim. Explicitly separate its position from the house ruler.
-   const k=KARA.karaka(d,focus);
-   if(k.planet!==house.lord && (k.planetHouse===focus||k.referencedHouse===focus||k.planetHouse===lord.house)){
-     rows.push({house:focus,text:ta?
-       `${TA[k.planet]} இந்தத் தலைப்பின் இயற்கைக் காரகன்; அவர் ${k.planetHouse}-ஆம் பாவத்தில் உள்ளார். பாவாதிபதியின் நிலைக்கு இது தனியான துணை ஆதாரம்; ஒரே ஆதாரத்தை இருமுறை நன்மையாகவோ தீமையாகவோ எண்ணவில்லை.`:
-       `${k.planet} is the natural significator and occupies house ${k.planetHouse}; this is a distinct reference and must not be double-counted.`,
-       evidence:{source:'d1-independent-karaka-v285',...k}});
-   }
-   // Preserve the exceptional Aries/Mars insight once, not in every house.
-   if(d.lagna===0&&d.planets.Mars?.sign===9&&[1,4,5,10].includes(focus)){
-     const rel=REL.narration(d,focus,lang,{brief:true});
-     if(rel.text)rows.push({house:focus,text:rel.text,evidence:{source:'d1-mars-exception-v285'}});
-   }
-   // Matter-specific derived work remains available for audit and compatibility,
-   // but its boilerplate is not repeated in each topic of the human report.
-   const derivedEvidence=DERIVED.forFocus(d,focus,lang);
-   const practical=situation(focus,ctx,ta);
-   if(practical)rows.push({house:focus,text:practical,evidence:{source:'user-declared-situation'}});
-   topics.push({number:focus,title:THEMES[i][ta?0:1],analyzedHouses:12,paragraphs:rows,evidenceMatrix:analyzed});
-  }
-  return {lang:ta?'ta':'en',lagnaSign:d.lagna,topics,source:'D1-only',method:'12-house natal links and differentiated consequences',planetarySigns:Object.fromEntries(Object.values(d.planets).map(p=>[p.key,p.sign]))};
+   return report;
  }
- function html(chart,lang='ta',context={}){const rep=render(chart,lang,context),ta=rep.lang==='ta',content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions of the Native'}</h2><p class="smv-d1-life-method">${ta?`இது ${SIGNS_TA[rep.lagnaSign]} லக்னத்தின் உண்மையான பாவாதிபதி, கிரக இருப்பிடம், பார்வைகளை ஒப்பிடும் D1 ஆய்வு; வயதிற்கேற்ற காலப் பலன்கள் II, III பகுதிகளில் உள்ளன.`:'This D1 section discusses potential lifetime tendencies, not behaviours already present in a newborn. Age-specific period readings appear in Sections II and III.'}</p>${content}</section>`;}
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'286-chart-grounded-natal'});
+ function html(chart,lang='ta',context={}){
+  const rep=render(chart,lang,context),ta=rep.lang==='ta';
+  const content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');
+  return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions'}</h2>${content}</section>`;
+ }
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'287-two-pass-narrative'});
 });
