@@ -61,8 +61,8 @@
  // two-pass compiler rather than the 144 stock cross-house sentences.
  function render(chart,lang='ta',context={}){
    const n=(typeof globalThis!=='undefined'&&globalThis.SMVD1HumanNarrative)
-     ||((typeof module==='object'&&module.exports)?require('./d1-human-narrative.js'):null);
-   if(!n||typeof n.render!=='function')throw Error('D1 human narrative script is missing: d1-human-narrative.js');
+     ||((typeof module==='object'&&module.exports)?require('./d1-dominance-narrative.js'):null);
+   if(!n||typeof n.render!=='function')throw Error('D1 dominance narrative script is missing: d1-dominance-narrative.js');
    const d=toD1(chart);
    const report=n.render(d,lang,{houseScore,links,planetDignity:REL.dignity,functional:KARA.functional});
    // Technical evidence is retained as hidden metadata, never printed to readers.
@@ -75,7 +75,9 @@
  function html(chart,lang='ta',context={}){
   const rep=render(chart,lang,context),ta=rep.lang==='ta';
   const content=rep.topics.map(t=>`<section class="smv-d1-life-topic" data-d1-topic="${t.number}"><h3>${t.number}. ${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph" data-d1-related-house="${p.house}">${esc(p.text)}</p>`).join('')}</section>`).join('');
-  return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions'}</h2>${content}</section>`;
+  const body=(rep.physicalTopics||[]).map(t=>`<section class="smv-d1-life-topic smv-d1-body-topic" data-d1-body-topic="${t.number}"><h3>${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph">${esc(p.text)}</p>`).join('')}</section>`).join('');
+  const medical=(rep.medicalTopics||[]).map(t=>`<section class="smv-d1-life-topic smv-d1-medical-topic" data-d1-medical-topic="${t.id}"><h3>${esc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph">${esc(p.text)}</p>`).join('')}</section>`).join('');
+  return `<section class="smv-d1-life-reading" data-smv-d1-life="1" lang="${rep.lang}"><h2>${ta?'I. ஜாதகரின் முழு வாழ்க்கை பலன்கள்':'I. Complete Life Predictions'}</h2>${content}<section class="smv-d1-body-reading"><h2>${ta?'உடல் காரகத்துவ அமைப்பின் பாரம்பரியப் பலன்கள்':'Traditional Physical Significations'}</h2>${body}</section><section class="smv-d1-medical-reading"><h2>${ta?'பாரம்பரிய மருத்துவ ஜோதிடக் காரகத்துவங்கள்':'Traditional Medical Astrology Associations'}</h2><p class="smv-d1-life-paragraph">${ta?'இவை உடல் உறுப்புகள் நன்றாக இயங்குகின்றனவா அல்லது எந்த நோய் வருமா என்று கண்டறியும் மருத்துவச் சோதனை அல்ல; ஜாதக மரபின் குறியீட்டு விளக்கங்கள்.':'These are symbolic traditional associations, not clinical findings, predictions of illness, or an assessment of organ function.'}</p>${medical}</section></section>`;
  }
- return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'288-contextual-narrative'});
+ return Object.freeze({render,html,toD1,houseScore,scorePlanet,links,lens,sanitizeContext,THEMES,DRISHTI,version:'292-lived-results-reader'});
 });
