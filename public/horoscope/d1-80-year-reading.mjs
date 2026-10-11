@@ -1,4 +1,4 @@
-/* SMV ASTRO V280 — report-date to 80th-birthday age-boundary-safe D1 timeline.
+/* SMV ASTRO V293 — report-date to 80th-birthday age-boundary-safe D1 timeline.
    Triggered ONLY after authorized Full Horoscope; no Firebase/API/network calls.
    Real Vimshottari MD/AD boundaries come from full.chart.dashas.periods.
    Jupiter/Saturn/Rahu/Ketu future positions come from local Swiss WASM.
@@ -132,48 +132,78 @@ const BHAVA_MATTER_EN=[
  ['work, career decisions and duty','committing to more work than time allows'],
  ['gains, friends and social circles','mistaking prospective gains for income'],
  ['spending, sleep and personal time','leaving no room for rest or savings']];
+// V293: outcomes refer to the activated house, life stage, and operating period.
+// The technical MD/AD facts remain in evidence, not duplicated in each paragraph.
+const PERIOD_LIVED_TA=[
+ ['தன்னம்பிக்கையுடன் புதிய பொறுப்பை ஏற்கும் அணுகுமுறை உருவாகும்.','அவசர முடிவுகளால் முயற்சியை மீண்டும் திருத்த நேரிடும்.'],
+ ['குடும்பத் தேவைகளையும் சேமிப்பையும் பிரித்துத் திட்டமிடுவது முன்னிலை பெறும்.','வாக்குறுதி கொடுப்பதற்கும் பணம் ஒதுக்குவதற்கும் இடையே வேறுபாடு கவனிக்கப்பட வேண்டும்.'],
+ ['கற்ற ஒரு திறனை நடைமுறையில் சோதித்து மேம்படுத்தும் முயற்சி அதிகரிக்கும்.','ஒரே நேரத்தில் பல வேலைகளைத் தொடங்கினால் முடிக்க வேண்டிய பணிகள் தேங்கும்.'],
+ ['வீட்டுப் பொறுப்பு, வசதி, குடும்பத்தினரின் தேவைகள் பற்றிய முடிவுகள் முன்னிலை பெறும்.','வீட்டில் அனைவரின் கருத்தையும் கேட்காமல் செலவுகளை முடிவு செய்வதால் முரண்பாடு ஏற்படும்.'],
+ ['ஆழமாகப் படித்ததைப் பயிற்சியில் பயன்படுத்தும் நேரம் உருவாகும்.','முழுமையாகத் தெரிந்த பிறகே தொடங்க வேண்டும் என்ற பிடிப்பு கற்றல் வேகத்தைக் குறைக்கும்.'],
+ ['சிக்கலான பணிகளைப் பிரித்து முடிப்பதன் மூலம் அன்றாட ஒழுங்கு வலுப்படும்.','பொறுப்புகளைப் பகிராமல் அனைத்தையும் தானே செய்தால் ஓய்வு நேரம் குறையும்.'],
+ ['நெருக்கமான உறவுகளிலும் கூட்டாக மேற்கொள்ளும் செயல்களிலும் எதிர்பார்ப்புகளைத் தெளிவுபடுத்துவீர்கள்.','ஒருதரப்பு முடிவு சேர்ந்து செயல்படும் உறவுகளில் மனவருத்தத்தை உருவாக்கும்.'],
+ ['எதிர்பாராத மாற்றத்திற்காக மாற்று ஏற்பாடுகளைத் திட்டமிடும் நடை உருவாகும்.','முழுத் தகவலின்றி மாற்றம் செய்தால் முன்பு முடித்த வேலையை மீண்டும் செய்ய நேரிடும்.'],
+ ['ஆசிரியர், பெரியவர் அல்லது அனுபவமுள்ளவரின் வழிகாட்டலை நடைமுறை அனுபவத்துடன் இணைப்பீர்கள்.','பழைய நம்பிக்கையை மட்டும் அடிப்படையாகக் கொண்டால் புதிய உதவியைத் தாமதமாக ஏற்றுக்கொள்வீர்கள்.'],
+ ['பொறுப்பேற்ற பணியின் தரத்தை உயர்த்திப் பிறரிடம் நம்பிக்கையை உருவாக்குவீர்கள்.','முடிக்கக்கூடிய அளவை மீறிப் புதிய பணியை ஒப்புக்கொண்டால் முந்தைய பொறுப்பு பின்தங்கும்.'],
+ ['நம்பகமான ஆதாயத்தையும் உறுதியாகாத வாய்ப்பையும் தனித்தனியாகக் கையாளும் ஒழுங்கு உருவாகும்.','வரவாகாத பணத்தை முன்கூட்டியே செலவுக்குக் கணக்கிட்டால் சேமிப்பு குறையும்.'],
+ ['தனிப்பட்ட நேரம், ஓய்வு, செலவு ஆகியவற்றுக்குத் தனித்த இடம் அளிப்பீர்கள்.','முடிக்காத வேலையை நினைத்து உறங்கும் நேரத்தைத் தள்ளிவைத்தால் மறுநாள் செயல்திறன் குறையும்.']
+];
+const PERIOD_MINOR_TA=[
+ ['விளையாட்டிலும் வகுப்புப் பணியிலும் தானே முயற்சி செய்து கற்கும் ஆர்வம் வளரும்.','போட்டியில் உடனே வெல்ல வேண்டும் என்ற அவசரம் பயிற்சியைத் தடுக்கும்.'],
+ ['குடும்பத்துடன் பேசும் முறையிலும் சிறிய செலவுகளைப் புரிந்துகொள்வதிலும் புதிய பழக்கம் உருவாகும்.','வீட்டில் ஏற்பட்ட கருத்து வேறுபாட்டை நீண்ட நேரம் மனதில் வைத்துக்கொள்ளும் பழக்கம் குறைய வேண்டும்.'],
+ ['பயிற்சி, விளையாட்டு அல்லது கைகளால் செய்யும் திறமையில் முயற்சி அதிகரிக்கும்.','செய்து பார்க்காமல் முடிவு கூறுவதால் பாடத்தை மீண்டும் கற்க நேரிடும்.'],
+ ['பாட நேரத்துக்கும் விளையாட்டு நேரத்துக்கும் வீட்டில் ஒழுங்கு அமைக்கப்படும்.','வீட்டுக் கட்டுப்பாடு அதிகமாக உணரப்பட்டால் பெற்றோருடன் கருத்து வேறுபாடு உருவாகும்.'],
+ ['பாடம், நினைவாற்றல், படைப்புத் திறன் போன்றவற்றில் விருப்பமான பகுதியைத் தேர்ந்து பயிற்சி தொடரும்.','மதிப்பெண்ணைப் பற்றிய அதிக எதிர்பார்ப்பு கற்றலில் தேவையற்ற அழுத்தத்தை உருவாக்கும்.'],
+ ['பள்ளிக் கடமைகளையும் அன்றாட உடற்பயிற்சியையும் ஒழுங்குபடுத்தும் பழக்கம் முக்கியமாகும்.','படிப்பை முடிக்க முயன்று விளையாட்டு மற்றும் ஓய்வைக் குறைப்பது சமநிலையைக் குலைக்கும்.'],
+ ['நண்பர்கள், வகுப்புத் தோழர்கள், பெற்றோருடன் சேர்ந்து முடிவு செய்வதைப் பழகுவீர்கள்.','விளையாட்டில் தன் கருத்து மட்டுமே சரி என்ற பிடிப்பு நட்பில் மனவருத்தம் தரும்.'],
+ ['புதிய சூழலுக்கும் பள்ளி மாற்றத்திற்கும் தயாராகும் திறன் மேம்படும்.','புதிய சூழலை முன்னமே அஞ்சுவதால் கற்றல் முயற்சி தாமதமாகும்.'],
+ ['ஆசிரியர், பெற்றோர் வழிகாட்டுதலைச் செயலில் பயன்படுத்தி ஒரு திறனை மேம்படுத்துவீர்கள்.','கேட்ட அறிவுரையைப் புரிந்துகொள்ளாமல் உடனே நிராகரிப்பது வளர்ச்சியைத் தாமதப்படுத்தும்.'],
+ ['சிறிய பொறுப்புகளைச் சரியான நேரத்தில் முடிக்கும் ஒழுக்கம் கற்றுக்கொள்ளப்படும்.','வயதுக்கு மீறிய குடும்பக் கடமையைச் சுமத்தினால் படிப்பு மற்றும் ஓய்வு பாதிக்கப்படும்.'],
+ ['நண்பர்களுடன் இணைந்து சிறு திட்டத்தில் பங்கெடுப்பது கற்றலுக்குப் பயன் தரும்.','மற்றவரின் திறமையுடன் தொடர்ந்து ஒப்பிடுவது தன்னம்பிக்கையைக் குறைக்கும்.'],
+ ['உறக்கம், படிப்பு, விளையாட்டு நேரத்துக்கான ஒழுங்கு உருவாகும்.','இரவு நேரத் திரைப் பயன்பாடு அதிகரித்தால் பள்ளி நாள் சோர்வாக அமையும்.']
+];
+const PERIOD_SENIOR_TA=[
+ ['தனக்கேற்ற அன்றாடச் செயல்களைத் தேர்ந்தெடுத்து அனுபவத்தின் அடிப்படையில் முடிவெடுப்பீர்கள்.','பொறுப்புகளை மற்றவரிடம் பகிராமல் சுமப்பது ஓய்வு நேரத்தைச் சுருக்கும்.'],
+ ['குடும்பச் சேமிப்பையும் அடுத்த தலைமுறைக்கான உதவியையும் தெளிவாகத் திட்டமிடுவீர்கள்.','பழைய நிதி ஏற்பாட்டை மறுபரிசீலனை செய்ய மறுப்பது தேவையற்ற சுமையாக மாறும்.'],
+ ['கற்ற அனுபவத்தை இளையோரிடம் பகிர்ந்து அவர்களுடன் செயல்படுவீர்கள்.','புதிய முறைகளை ஏற்கத் தயங்குவது நடைமுறை உதவியைப் பெறத் தாமதப்படுத்தும்.'],
+ ['குடும்பத்துடன் அமைதியாக நேரம் செலவிடவும் வீட்டுப் பராமரிப்பை ஒழுங்குபடுத்தவும் முன்வருவீர்கள்.','எல்லா வீட்டுப் பொறுப்பையும் தானே செய்ய முயல்வது ஓய்வைக் குறைக்கும்.'],
+ ['கற்ற அனுபவத்தை இளைய தலைமுறையுடன் பகிர்ந்து வழிகாட்டும் காலமாக அமையும்.','இளையோரின் முடிவுகளைத் தன் முறைக்கேற்ப மாற்ற வற்புறுத்துவது இடைவெளியை ஏற்படுத்தும்.'],
+ ['அன்றாடச் செயல்களில் முன்னுரிமை, ஓய்வு, பகிர்ந்த பொறுப்பு ஆகியவை முக்கியமாகும்.','தன் பழைய வேலையளவையே தொடர்ந்து எதிர்பார்ப்பது ஓய்வு ஒழுங்கைக் குறைக்கும்.'],
+ ['ஏற்கெனவே உள்ள உறவுகளில் கருத்துப் பரிமாற்றமும் துணையும் முதன்மை பெறும்.','முன்பிருந்த குறைகளை மீண்டும் பேசுவது குடும்ப அமைதியைக் குறைக்கும்.'],
+ ['நீண்ட அனுபவத்திலிருந்து பெற்ற பாடங்களைப் பயன்படுத்தி மாற்றங்களை அமைதியாக எதிர்கொள்வீர்கள்.','புதிய ஏற்பாட்டைப் பற்றி அளவுக்கு மீறிக் கவலைப்படுவது முடிவைத் தாமதப்படுத்தும்.'],
+ ['வழிகாட்டிய அனுபவத்தையும் குடும்ப மரபையும் இளையோரிடம் எடுத்துரைப்பீர்கள்.','புதிய கருத்துகளைக் கேட்காமல் மறுப்பதால் உரையாடல் கடினமாகும்.'],
+ ['அனுபவத்தால் பிறருக்குப் பயன் தரும் ஆலோசனைகளை அளிப்பீர்கள்.','புதிய பதவி அல்லது கடும் உழைப்பைத் தானாக எதிர்பார்ப்பது பொருத்தமற்ற சுமையாக மாறும்.'],
+ ['குடும்ப ஆதரவையும் நீண்டகாலச் செலவுத் திட்டத்தையும் தெளிவாக ஒழுங்குபடுத்துவீர்கள்.','உறுதியாகாத வரவுக்காகப் புதிய பெரிய பொறுப்பை ஏற்க வேண்டாம்.'],
+ ['அமைதியான நேரம், குடும்பத் தொடர்பு, தொடர்ச்சியான ஓய்வு ஆகியவற்றுக்கு முன்னுரிமை அளிப்பீர்கள்.','முடிக்காத குடும்பப் பொறுப்புகளை எண்ணி ஓய்வைத் தள்ளுவது அன்றாட ஒழுங்கைச் சீர்குலைக்கும்.']
+];
+const PERIOD_EN=[
+ ['You take initiative in decisions that directly affect your routines.','Acting before clarifying a plan can require a second round of work.'],
+ ['You make separate plans for household needs and savings.','Promising funds before confirming them creates avoidable pressure.'],
+ ['You practice a chosen skill with more direct involvement.','Starting several competing projects leaves early work incomplete.'],
+ ['You organise home upkeep and consult household members.','Making unilateral home decisions creates friction.'],
+ ['You apply a particular area of learning in practice.','Perfectionism can delay the start of a useful project.'],
+ ['You develop a clearer routine for work and duties.','Taking every responsibility alone reduces time for rest.'],
+ ['You clarify expectations in established close relationships.','Unilateral decisions strain cooperation.'],
+ ['You plan alternatives for changes beyond your control.','Switching paths without reliable information wastes effort.'],
+ ['You apply practical lessons from mentors and experience.','Ignoring new evidence limits useful guidance.'],
+ ['You develop trust through completed responsibilities.','New commitments can displace unfinished work.'],
+ ['You separate reliable income from speculative opportunities.','Spending unconfirmed gains reduces reserves.'],
+ ['You set clearer limits for private time and rest.','Late unfinished work displaces sleep.']
+];
 function periodTopicProse(full,period,topic,trigger,lang){
- const ta=lang!=='en',d=(globalThis.SMVLifePredictionD1||{}).toD1?.(full?.chart||full);
- const focus=topic.number,mdKey=ENKEY(period.md),adKey=ENKEY(period.ad),major=d?.planets?.[mdKey],sub=d?.planets?.[adKey];
- const matter=(ta?(period.age<18?MINOR_BHAVA_TA:BHAVA_MATTER_TA):BHAVA_MATTER_EN)[focus-1];
- const mi=trigger.mdMarks,ai=trigger.adMarks;
- const direct=(ta? 'பாவாதிபதி':'house-rulership');
- const root=(a,x)=>a.includes('rules')?(ta?'அதிபதியாக':'as ruler'):
-     a.includes('occupies')?(ta?'நேரடியாக அமர்ந்து':'by occupation'):
-     a.includes('aspects')?(ta?'பார்வையால்':'by aspect'):
-     a.includes('conjuncts-lord')?(ta?'பாவ அதிபதியுடன் சேர்ந்து':'by conjunction with the lord'):
-     (ta?'பாவத் தொடர்பால்':'through a house link');
- const mdHow=root(mi,period.md),adHow=root(ai,period.ad);
- const same=mdKey===adKey;
- const delta=major&&sub?((sub.house-major.house+12)%12+1):0;
- const sixEight=delta===6||delta===8;
- const ageYoung=period.age<18;
- const otherOwners=a=>d?.houses?.map((h,j)=>h.lord===a?j+1:null).filter(Boolean).join(', ')||'?';
- const role=(key,position,how)=>{
-   const owns=otherOwners(key),name=ta?PNA(key):key;
-   const ownNumbers=owns==='?'?[]:owns.split(', ').map(x=>x+'-ஆம்');
-   const ownPhrase=ownNumbers.length===1?ownNumbers[0]+' பாவத்தின் அதிபதியாக':ownNumbers.join(', ')+' பாவங்களின் அதிபதியாக';
-   if(ta)return `${name} ${owns==='?'?'நிழற்கிரகத் தொடர்புடன்':ownPhrase} பிறப்பு ${position.house}-ஆம் பாவத்தில் இருந்து ${how}`;
-   return `${name} ${owns==='?'?'as a lunar node':'ruling natal house(s) '+owns} from house ${position.house} (${how})`;
- };
- const driver=major&&sub?(same?
-    (ta?`${role(mdKey,major,mdHow)} செயல்படுகிறார்; இந்தப் புக்தியிலும் அதே கிரகம் தொடர்கிறது.`:`${role(mdKey,major,mdHow)}; the same planet governs this subperiod.`):
-    (ta?`${role(mdKey,major,mdHow)} செயல்படுகிறார்; புக்திநாதர் ${role(adKey,sub,adHow)} இணைகிறார்.`:
-       `${role(mdKey,major,mdHow)}; subperiod ruler ${role(adKey,sub,adHow)} also operates.`)):'';
- const outlook=ta?`இந்தக் காலத்தில் ${matter[0]} குறித்து ஏற்கெனவே எடுத்த முடிவுகளை மாற்றவோ உறுதிப்படுத்தவோ வேண்டிய சூழல் முன்னிலையாகலாம்.`:
-   `This period highlights reviewing or sustaining decisions about ${matter[0]}.`;
- const exception=sixEight?(ta?`${PNA(mdKey)}–${PNA(adKey)} காலத்தின் பிறப்புநிலை ${delta}/8 சஷ்டாஷ்டக உறவில் உள்ளதால் ${matter[1]} தொடர்பான அழுத்தத்தைத் தனியாகச் சரிபார்க்க வேண்டும்; இதனால் பாதிப்பு உறுதி என்று பொருளல்ல.`:
-   `The natal period lords stand ${delta} houses apart, a 6/8-type strain; check ${matter[1]} without treating this as an inevitable event.`):
-   (ta?`${PNA(mdKey)} ${major?.house||'?'}-ஆம் பாவத்திலும் ${PNA(adKey)} ${sub?.house||'?'}-ஆம் பாவத்திலும் இருப்பதால் ${matter[1]} என்ற சவாலை இக்காலத்தின் செயல்பாட்டு பொறுப்புகளுடன் ஒப்பிட்டு ஒழுங்குபடுத்தலாம்.`:
-   `Consider the countervailing concern of ${matter[1]} according to actual circumstances.`);
- const age=ageYoung?(ta?(period.age<4?'பிஞ்சு வயதில் பெற்றோர் மற்றும் பராமரிப்பாளரின் ஒழுங்கே இந்தப் பலனின் பொருள்.':period.age<13?'பள்ளி வயதில் கற்றல், உடற்பயிற்சி மற்றும் பெற்றோர் வழிகாட்டலுடன் இந்தக் குறிப்பை வாசிக்க வேண்டும்.':'பதின்ம வயதில் கல்வித் தேர்வும் நண்பர் தொடர்புகளும் முக்கியம்; தனிப்பட்ட தொழில் அல்லது திருமண நிகழ்வாக இதைப் படிக்கக்கூடாது.'):
-  'Apply this through caregiver/education routines at the actual age; do not predict adult events for children.'):
-  period.age>=70?(ta?'மூத்த வயதில் பொறுப்பைப் பகிர்ந்து ஓய்வு மற்றும் அனுபவப் பரிமாற்றத்துடன் பொருத்த வேண்டும்.':'In later life, consider shared duties, rest and mentoring.'):
-  period.age>=60?(ta?'முதிர் பருவத்தில் குடும்பம், பொருளாதாரப் பாதுகாப்பு மற்றும் உடல்நலச் செயல்முறைகளுக்கான ஒழுங்கு முக்கியமானது.':'At this stage, balance family responsibilities, planning and health routines.'):
-  period.age<25?(ta?'இளமைப் பருவத்தில் கற்றல், தொழில் தொடக்கம் மற்றும் உறவுகளில் சொந்த முடிவுகளை நிதானமாக மதிப்பிட வேண்டும்.':'For young adults, evaluate education, career entry and relationships without making fixed forecasts.') :'';
- return {positive:[driver,outlook,age].filter(Boolean).join(' '),negative:exception};
+ const n=topic.number,ta=lang!=='en',minor=period.age<18,senior=period.age>=70;
+ const pos=(ta?(minor?PERIOD_MINOR_TA:senior?PERIOD_SENIOR_TA:PERIOD_LIVED_TA):PERIOD_EN)[n-1];
+ const md=ENKEY(period.md),ad=ENKEY(period.ad);
+ const mdDirect=trigger.mdMarks.length>0,adDirect=trigger.adMarks.length>0;
+ // A sign of weaker support is a *traditional interpretation*, not certainty.
+ const focus=''; // The age-specific topic itself carries the context; no recycled stage preface.
+ const positive=focus+pos[0];
+ // Distinguish the transition between operating planets with actual activated contacts.
+ const negative=(mdDirect&&adDirect&&md!==ad)?pos[1]:'';
+ return {positive,negative};
 }
-const DASHA_TOPIC_CAP=4;
+
+const DASHA_TOPIC_CAP=3;
 function periodTrigger(t){
  const source=t.paragraphs?.[0]?.evidence||{},md=source.md||{},ad=source.ad||{};
  const mdMarks=Array.isArray(md.marks)?md.marks:[],adMarks=Array.isArray(ad.marks)?ad.marks:[];
@@ -197,7 +227,7 @@ function dashaNarrative(full,periods,language){
   // If a period's operating lords have no usable D1 house links, do not
   // invent life events for all twelve houses. Explain the evidence gap.
   const topics=chosen.map(({t,trigger})=>({
-   number:t.number,title:t.title,activation:trigger.power,
+   number:t.number,title:language!=='en'?(p.age<18?MINOR_BHAVA_TA[t.number-1][0]:p.age>=70&&t.number===7?'ஏற்கெனவே உள்ள உறவுகள் மற்றும் ஒத்துழைப்பு':p.age>=70&&t.number===10?'அனுபவப் பகிர்வு மற்றும் அன்றாடப் பொறுப்புகள்':BHAVA_MATTER_TA[t.number-1][0]):BHAVA_MATTER_EN[t.number-1][0],activation:trigger.power,
    mdMarks:trigger.mdMarks,adMarks:trigger.adMarks,
    ...(()=>{const narrative=periodTopicProse(full,p,t,trigger,language);if(previous&&previous.md===p.md&&previous.ad===p.ad)narrative.negative="";return narrative;})(),
    // Static secondary natal facts belong in the D1 section and must not
@@ -266,18 +296,31 @@ function transitNarrative(full,timeline,language){
    }
    candidates.sort((a,b)=>b.strength-a.strength||a.focus-b.focus);
    let used=0;
-   for(const c of candidates){if(used>=2)break;
+   for(const c of candidates){if(used>=1||notes.length>=3)break;
     const k=[planet,y.pos[planet].sign,c.focus,c.evidence.marks.slice().sort().join(',')].join('/');
     if(seen.has(k))continue;seen.add(k);used++;
-    const theme=(ta?(y.age<18?MINOR_BHAVA_TA:BHAVA_MATTER_TA):BHAVA_MATTER_EN)[c.focus-1],state=(ta?ZTA:ZEN)[y.pos[planet].sign];
-    const mode=c.evidence.marks.includes('transit-through')?(ta?'நேரடியாக கடந்து செல்கிறார்':'passes directly through'):
-      c.evidence.marks.includes('transit-aspect')?(ta?'பார்வையால் தொடுகிறார்':'aspects'):(ta?'பிறப்பு பாவாதிபதி நிலையைத் தொடுகிறார்':'contacts the natal house ruler');
-    const age=y.age<18?(ta?'குழந்தை/பதின்ம வயதில் இந்தத் தலைப்பு பெற்றோரின் முடிவுகள், பள்ளிப் பயிற்சி அல்லது பாதுகாப்புடன் தொடர்புடையது.':'For a minor this is a caregiver, education or safety theme.'):
-      y.age>=70?(ta?'மூத்த வயதுக்கேற்ற ஓய்வு மற்றும் பகிர்ந்த பொறுப்பின் வரம்பை கருத்தில் கொள்ள வேண்டும்.':'Account for later-life rest and shared responsibilities.') :'';
+    const minor=y.age<18,senior=y.age>=70;
+    const theme=(ta?(minor?MINOR_BHAVA_TA:BHAVA_MATTER_TA):BHAVA_MATTER_EN)[c.focus-1];
+    const state=(ta?ZTA:ZEN)[y.pos[planet].sign];
+    const mode=c.evidence.marks.includes('transit-through')?'through':c.evidence.marks.includes('transit-aspect')?'aspect':'lord';
+    // Never reuse the natal report-date child title in an age-79 forecast.
+    const ageTitle=ta?`${c.focus}. ${theme[0]}`:`${c.focus}. ${theme[0]}`;
+    const activity=ta?
+      (planet==='Jupiter'?`அறிவு அல்லது குடும்ப வழிகாட்டுதலைச் செயலில் பயன்படுத்தி ${theme[0]} தொடர்பில் புதிய ஒழுங்கை உருவாக்கும் காலம்.`:
+       planet==='Saturn'?`${theme[0]} தொடர்பான பொறுப்புகளை வரிசைப்படுத்தித் தாமதமான வேலையை முடிப்பதற்கான காலம்.`:
+       planet==='Rahu'?`${theme[0]} குறித்து வழக்கமற்ற அணுகுமுறையைச் சோதிக்கும் ஆர்வம் அதிகரிக்கும் காலம்.`:
+       `${theme[0]} தொடர்பில் தேவையற்ற சுமைகளைத் தேர்ந்தெடுத்து குறைக்கும் காலம்.`):
+      (planet==='Jupiter'?`A period of using learning and guidance in ${theme[0]}.`:
+       planet==='Saturn'?`A period for reorganising duties connected with ${theme[0]}.`:
+       planet==='Rahu'?`A period for reviewing new approaches to ${theme[0]}.`:
+       `A period for simplifying commitments connected with ${theme[0]}.`);
+    const limit=ta?`அதே நேரத்தில் ${theme[1]} தொடர்பான சவால் கவனத்தில் இருக்கிறது.`:`The balancing consideration is ${theme[1]}.`;
+    const ageText=ta?(minor?'இது பள்ளி, பெற்றோர் ஆதரவு மற்றும் வயதுக்குரிய பழக்கங்கள் பற்றிய வாசிப்பு.':senior?'இது மூத்த வயதுக்குரிய அனுபவப் பகிர்வு, குடும்ப ஆதரவு மற்றும் ஓய்வு பற்றிய வாசிப்பு.':''):
+      minor?'Read this through schooling and parental support, not adult milestones.':senior?'Read this through mentoring, established relationships and later-life routines.':'';
     const impact=ta?
-      `${KTA[planet]} ${state} ராசியில் பெயர்ச்சியாகி ${c.focus}-ஆம் பாவத்தின் ${theme[0]} தொடர்பை ${mode}. ${c.evidence.marks.includes('transit-through')?'அந்தத் துறையின் திட்டங்களைக் கவனமாக மறுஆய்வு செய்யலாம்; ':''}${theme[1]} என்ற சவாலைத் தவிர்க்க தற்போதுள்ள சூழலுடன் ஒப்பிட்டே முடிவு எடுக்க வேண்டும். ${age}`:
-      `${planet} transits ${state} and ${mode} house ${c.focus}, linked with ${theme[0]}. Avoid ${theme[1]} by checking present circumstances. ${age}`;
-    notes.push({...c,text:impact.trim(),natalLord:c.evidence.natalLord,sign:y.pos[planet].sign});
+      `${KTA[planet]} ${state} ராசியில் ${mode==='through'?c.focus+'-ஆம் பாவம் வழியாகப் பெயர்கிறார்':mode==='aspect'?c.focus+'-ஆம் பாவத்தைப் பார்ப்பார்':'பாவாதிபதியின் நிலையைத் தொடுகிறார்'}. ${activity} ${limit} ${ageText}`:
+      `${planet} in ${state} ${mode==='through'?'crosses':'connects with'} house ${c.focus}. ${activity} ${limit} ${ageText}`;
+    notes.push({...c,title:ageTitle,text:impact.trim(),natalLord:c.evidence.natalLord,sign:y.pos[planet].sign});
    }
   }
   years.push({...y,topics:[],notes});
@@ -322,12 +365,12 @@ function dashaHTML(entries,lang='ta'){
    const reason=reasons.join(' · ');
    return `<section class="smv-80-topic" data-activation="${t.activation}" data-period-topic="${t.number}"><h4>${t.number}. ${safe(t.title)}</h4><div class="smv-80-evidence">${safe(reason)}</div>${t.positive?`<p>${safe(t.positive)}</p>`:""}${t.negative?`<p>${safe(t.negative)}</p>`:""}</section>`;
   }).join('');
-  const inactive=x.inactiveTopicNumbers.length?(ta?
+  const inactive=false&&x.inactiveTopicNumbers.length?(ta?
     `மற்ற ${x.inactiveTopicNumbers.length} தலைப்புகள் (பாவங்கள் ${x.inactiveTopicNumbers.join(', ')}) இந்தப் புக்தியில் நேரடி புதிய தசாநாதர்/புக்திநாதர் தொடர்பைப் பெறவில்லை. அவற்றின் நிலையான D1 ஆதாரங்களை முதல் பகுதியில் வாசிக்கவும்; கால நிகழ்வுகளை ஊகித்துச் சேர்க்கவில்லை.`:
     `The other ${x.inactiveTopicNumbers.length} topics (houses ${x.inactiveTopicNumbers.join(', ')}) have no newly active direct D1 period link. See section I for natal baseline; no period event has been invented.`):'';
   return `<details class="smv-80-window" ${i===0?'open':''}><summary>${label} — ${x.from} – ${x.to} (${ta?'வயது':'age'} ${x.age}; ${stage})</summary><div class="smv-80-change">${changed} · ${ta?'நேரடித் தொடர்புள்ளவை':'directly activated'}: ${x.topics.length}/12</div>${topicRows}${inactive?`<div class="smv-80-unlinked">${safe(inactive)}</div>`:''}</details>`;
  });
- return `<div class="smv-80-content" data-long-dasha="1" data-narrative="evidence-change-v285"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை — தசா–புக்திகள்':'Dasha and Bhukti — report date until age 80'}</h3>
+ return `<div class="smv-80-content" data-long-dasha="1" data-narrative="evidence-change-v293"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை — தசா–புக்திகள்':'Dasha and Bhukti — report date until age 80'}</h3>
  <p>${ta?'ஜாதகம் உருவாக்கிய நாளிலிருந்து 80-வது பிறந்த நாள் வரை மட்டுமே. இது ஆயுள் அளவைக் குறிக்கவில்லை. ஒவ்வொரு புக்தியிலும் நேரடியாகச் செயல்படும் கிரக–பாவ ஆதாரத்திற்கே முன்னுரிமை; நிலையான பிறப்பு ஜாதகக் காரணங்களை எல்லாக் காலங்களிலும் திரும்ப அச்சிடவில்லை.':'From report date until the 80th birthday only; NOT an estimate of lifespan. Period-linked D1 evidence is prioritized instead of repeating immutable natal descriptions.'}</p>
  ${!entries.length?`<p>${ta?'80 வயதிற்கு மேல் புதிய காலப்பலன்கள் இல்லை.':'No further forecast after age 80.'}</p>`:''}${summary.join('')}</div>`;
 }
@@ -343,6 +386,7 @@ function transitHTML(timeline,years,events=[],lang='ta'){
  ${y.events.length?`<p><strong>${ta?'இந்த ஆண்டில் கண்டறியப்பட்ட பெயர்ச்சி ராசி மாற்றங்கள்':'Detected sign changes during this year'}:</strong> ${y.events.map(e=>`${e.date}: ${ta?KTA[e.planet]:e.planet} ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}`).join('; ')}</p>`:''}
  ${y.notes.map(n=>`<section class="smv-80-topic" data-transit-planet="${n.planet}" data-focus-house="${n.focus}"><h4>${n.focus}. ${safe(n.title)}</h4><p>${safe(n.text)}</p></section>`).join('')}${!y.notes.length?'':''}
  ${events.filter(e=>e.date>=y.from&&e.date<y.to&&e.topics.length).map(e=>`<section class="smv-80-event"><h4>${e.date} · ${ta?KTA[e.planet]:e.planet}: ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}</h4>${e.topics.map(t=>`<p><strong>${t.number}. ${safe(t.title)}:</strong> ${t.paragraphs.map(safe).join(' ')}</p>`).join('')}</section>`).join('')}</details>`).join('')}
+ <p class="smv-80-complete-marker" data-smv-full-timeline-complete="1">${ta?'80 வயது வரையிலான கோச்சார அறிக்கை முழுமை அடைந்தது.':'Transit report through age 80 is complete.'}</p>
  </div>`;
 }
 export function translate80Year(full,base,lang='ta'){
