@@ -2,6 +2,7 @@
 (()=>{
  const $=id=>document.getElementById(id);
  const labels={
+  'Enter your birth date, time and exact birth place. Age-appropriate readings use your birth date and calculated horoscope; Rasi and Nakshatra are calculated automatically.':'பிறந்த தேதி, நேரம், சரியான பிறந்த இடம் ஆகியவற்றை உள்ளிடவும். வயதுக்கேற்ற பலன்கள் பிறந்த தேதியிலிருந்தும், ராசி மற்றும் நட்சத்திரம் ஜாதகக் கணக்கீட்டிலிருந்தும் தானாக உருவாகும்.',
  'Current Work Status (Optional)':'தற்போதைய வேலை நிலை (விருப்பம்)',
  'Marital Status (Optional)':'திருமண நிலை (விருப்பம்)',
  'Current Residence (Optional)':'தற்போது வசிக்கும் இடம் (விருப்பம்)',
@@ -72,8 +73,6 @@
    }
   }
   document.querySelectorAll('#english-horoscope input[placeholder]').forEach(n=>{if(!n.dataset.englishPlaceholder)n.dataset.englishPlaceholder=n.placeholder;n.placeholder=lang==='ta'?(labels[n.dataset.englishPlaceholder]||n.dataset.englishPlaceholder):n.dataset.englishPlaceholder;});
-  const signs=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
-  [...$('englishRasi').options].forEach((o,i)=>{if(!o.dataset.en){o.dataset.en=o.textContent;o.value=o.textContent;}o.textContent=lang==='ta'?signs[i]:o.dataset.en;});
  }
  window.__smvLocalizeTamilResult=(root,lang)=>{
   if(lang!=='ta'){
