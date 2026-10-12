@@ -1851,6 +1851,36 @@ try{
           if(!timeHtml.includes('data-d1-time="dasha"') || !timeHtml.includes('data-d1-time="transit"'))
             throw new Error('Time-based renderer did not produce both II and III sections');
           lifeSlot.insertAdjacentHTML('beforeend',timeHtml);
+          // V301: interpret the *already calculated* current natal/period/transit
+          // together, without touching the Swiss engine, listeners, or auth gates.
+          try{
+          const v301=window.SMVD1V301Evidence;
+          if(v301?.periodInsight&&window.SMVLifePredictionD1?.toD1){
+            const natal=window.SMVLifePredictionD1.toD1(fullChart);
+            const periods=(fullChart?.dashas?.periods||[]);
+            const md=periods.find(x=>x.start<=dailyDate&&dailyDate<x.end);
+            const ad=md?.antardashas?.find(x=>x.start<=dailyDate&&dailyDate<x.end);
+            if(md&&ad){
+              const period={md:md.lord,ad:ad.lord,from:ad.start,to:ad.end};
+              const reading=v301.periodInsight(natal,period,lang);
+              const dashaTarget=lifeSlot.querySelector('[data-d1-time="dasha"]');
+              if(reading&&dashaTarget){
+                const section=document.createElement('section');section.className='smv-v301-current-dasha';
+                const heading=document.createElement('h3');heading.textContent=lang==='ta'?'தற்போதைய தசை–புக்தி: நட்சத்திரம் மற்றும் பாவத் தொடர்பு':'Current Dasha–Bhukti: Nakshatra and house convergence';
+                section.append(heading);for(const str of reading.paragraphs){const el=document.createElement('p');el.textContent=str;section.appendChild(el);}dashaTarget.appendChild(section);
+              }
+              const currentTransit=full?.transit||tr||null;
+              const snap=v301.snapshotFromTransit?.(currentTransit,dailyDate);
+              const transitReading=snap&&v301.transitInsight(natal,period,snap,lang);
+              const transitTarget=lifeSlot.querySelector('[data-d1-time="transit"]');
+              if(transitReading&&transitTarget){
+                const section=document.createElement('section');section.className='smv-v301-current-transit';
+                const heading=document.createElement('h3');heading.textContent=lang==='ta'?'தசை–புக்தியுடன் இன்றைய கோச்சார இணைவு':'Current transit alongside the operating Dasha–Bhukti';
+                section.append(heading);for(const str of transitReading.paragraphs){const el=document.createElement('p');el.textContent=str;section.appendChild(el);}transitTarget.appendChild(section);
+              }
+            }
+          }
+          }catch(v301Err){console.warn('[SMV V301 additional reading]',v301Err);}
         }catch(timeErr){
           console.error('[SMV Predictions II/III]',timeErr);
           lifeSlot.insertAdjacentHTML('beforeend',
@@ -1901,7 +1931,7 @@ try{
           const c=full?.chart||full;
           const longKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
           const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
-          const longJobReady=import('./d1-80-year-reading.mjs?v=299-planet-house-period-reading').then(async mod=>{
+          const longJobReady=import('./d1-80-year-reading.mjs?v=301-star-period-transit-convergence').then(async mod=>{
             let job=longCache.get(longKey);
             if(!job){
               job=mod.build80Year(full,payload,{lang,onProgress:p=>{

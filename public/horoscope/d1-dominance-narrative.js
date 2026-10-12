@@ -330,8 +330,10 @@ function render(d,lang='ta',options={}){
  if(!livedApi||typeof livedApi.create!=='function')throw Error('V293 lived-result module not loaded');
  const physicalApi=(typeof globalThis!=='undefined'&&globalThis.SMVD1PhysicalMedical)||((typeof module==='object'&&module.exports)?require('./d1-physical-medical.js'):null);
  if(!physicalApi||typeof physicalApi.physical!=='function'||typeof physicalApi.medical!=='function')throw Error('V291 physical/medical reader not loaded');
+ const natalTopics=Array.from({length:12},(_,i)=>livedApi.create(d,i+1,locale,{influence},options));
+ const v301=(typeof globalThis!=='undefined'&&globalThis.SMVD1V301Evidence)||null;
  return {lang:locale,lagnaSign:d.lagna,
- topics:Array.from({length:12},(_,i)=>livedApi.create(d,i+1,locale,{influence},options)),
+ topics:v301?.enhanceLife?v301.enhanceLife(d,natalTopics,locale):natalTopics,
  physicalTopics:Array.from({length:12},(_,i)=>physicalApi.physical(d,i+1,locale,{influence},options)),
  medicalTopics:physicalApi.medical(d,locale,{influence},options),
  lunarEvidence:lunar(d),source:'D1-only',method:'V295 contextual house outcomes + V293 physical/medical'};
