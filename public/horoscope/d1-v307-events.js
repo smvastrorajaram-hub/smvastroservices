@@ -124,7 +124,7 @@ function specialEvents(d,s,n,a,ta){const h=d.houses[n-1],out=[],ks=h.occupants,q
  if(h.aspects.includes('Moon')&&!h.occupants.includes('Moon')){const p=s.phase(d),others=d.houses[d.planets.Moon.house-1].occupants;const withJ=others.includes('Jupiter');const light=p?.light;
   say(`சந்திரனின் ஏழாம் பார்வை இப்பாவத்தைத் தொடுகிறது. பிறப்புச் சந்திரனின் ஒளியளவு ${Number.isFinite(light)?(light*100).toFixed(0)+'%':'கிடைக்கவில்லை'}; ${light<.45?'ஒளிப்பலம் குறைந்த நிலையில் இருப்பதால் உணர்ச்சிவசப்பட்ட முடிவுகளை மெதுவாக எடுப்பது':'ஒளிப்பலம் ஒப்பீட்டளவில் உதவுவதால் குடும்ப ஒத்துழைப்பை வளர்ப்பது'} ${domain(n,true,a)[1]} என்ற சூழலில் பொருத்தமானது.${withJ?' சந்திரனுடன் குரு இருப்பதால் அதன் ஆதரவையும் சேர்த்துப் பார்க்க வேண்டும்.':''}`,`Moon aspects this house. Its approximate birth illumination is ${Number.isFinite(light)?(light*100).toFixed(0)+'%':'unknown'}; ${light<.45?'a dimmer Moon favours cautious responses':'brighter lunar strength may support emotional cooperation'} when ${domain(n,false,a)[1]}.${withJ?' Jupiter shares Moon’s natal house and also needs weighing.':''}`);}
  if(n===5||n===7||n===2){const matter=s.matter(d,n===5?'children':n===7?'marriage':'wealth');if(matter){let x=n===5?['புத்திரப் பாக்கியம் குறித்த முடிவுக்கு ஐந்தாம் பாவம், அதன் அதிபதி, குரு ஆகிய மூன்றும் தேவையானவை. குழந்தை பிறக்காது அல்லது ஆண்/பெண் குழந்தை உறுதி என இந்தக் கிரகத் தொடர்பை வைத்து தீர்ப்பளிப்பதில்லை.','For matters of children, house five, its ruler and Jupiter must all be weighed; a single Saturn aspect cannot deny children or determine a child’s sex.']:n===7?['திருமண உறவைக் கணிக்க ஏழாம் வீடு, ஏழாம் அதிபதி, சுக்கிரன் ஆகியோரின் ஒருங்கிணைந்த நிலை தேவை. தனிக் கிரகத் தொடர்பு கொண்டு திருமண முறிவு என்ற தீர்ப்பு இல்லை.','Marriage themes require the seventh house, seventh ruler and Venus together; a single adverse contact is not a verdict of separation.']:['குடும்பச் செல்வத்தை ஆராய இரண்டாம் பாவம், இரண்டாம் அதிபதி, குரு ஆகியவற்றுடன் பதினொன்றாம் வரவு மற்றும் பன்னிரண்டாம் செலவையும் கவனிக்க வேண்டும்.','For family wealth, house two, its ruler and Jupiter require context from gains and expenditures.'];
- if(!kid||n!==7)say(x[0],x[1]);}
+ if(!kid)say(x[0],x[1]);}
  }
  if(n===5&&d.houses[4].lord===d.houses[5].lord){/* not an exchange; leave alone */}
  // 5-6 exchange: check computed lords, NEVER copied Pisces example.
@@ -182,9 +182,112 @@ return out;}
 
 function birthOf(chart,timeline){const src=chart?.chart||chart;return timeline?.birth||src?.birthDate||src?.birth?.date||null;}
 function validateTimeline(t){return !!(t&&t.meta?.forecastHorizonYears===15&&t.meta?.fromReportDate===t.referenceDate&&t.meta?.throughDate===t.end&&Array.isArray(t.dasha)&&t.dasha.length>0&&Array.isArray(t.transitYears)&&t.transitYears.length>0&&Number(t.meta?.samplesChecked)>0);}
+// V308 final: lived-outcome synthesis — place a plausible life consequence ahead of the astrological proof.
+// This replaces the earlier "X என்ற அனுபவம் ... வழியாக" sentence pattern; it does not change D1/dasha calculations.
+const HUMAN_TA=[
+ ['தனக்குப் பொருத்தமான வழியைத் தேர்ந்தெடுப்பதில் உறுதி கூடும்','பிறருடைய எதிர்பார்ப்பிற்காகத் தன் முடிவுகளை மாற்ற வேண்டிய அழுத்தம் வரலாம்','தன் விருப்பத்தைத் தெளிவாகச் சொல்லி, பொறுப்புகளை அளவோடு ஏற்கும்போது தனித்தன்மை வெளிப்படும்'],
+ ['வீட்டில் பேசப்படும் பண முடிவுகளிலும் சேமிப்பிலும் தெளிவு வரலாம்','உறவினரின் தேவையையும் தன் வசதியையும் சமப்படுத்துவது சிரமமாகலாம்','வரவு, நிலையான செலவு, உதவிக்கான தொகை என்று பிரித்துப் பேசுவது குடும்ப நம்பிக்கையைப் பாதுகாக்கும்'],
+ ['தொடர்ச்சியான பயிற்சியால் கைவரும் திறனுக்குப் பிறரிடம் மதிப்பு உருவாகலாம்','ஆரம்ப வேகத்திற்குப் பிறகு முயற்சியைத் தொடர்வதில் இடைஞ்சல் வரலாம்','உடன்பிறந்தவர் அல்லது நெருங்கியவருடன் பேசும் முறையையும் தன் முயற்சியையும் ஒரே நேரத்தில் கவனிக்க வேண்டும்'],
+ ['வீட்டின் பொறுப்புகளைத் திட்டமிட்டால் மனநிம்மதி நிலைபெற வாய்ப்புள்ளது','வசிப்பிடம், தாயார் தேவைகள் அல்லது சொத்து சார்ந்த முடிவுகள் தாமதமாகலாம்','குடும்ப உறுப்பினர்களுடன் முன்னரே பேசி வீட்டு வசதி மற்றும் செலவினத்தை ஒழுங்குபடுத்துவது உதவும்'],
+ ['கற்றதை செயல்படுத்தும் திறனும் இளையோருக்கு வழிகாட்டும் வாய்ப்பும் வளரலாம்','படிப்பு அல்லது பிள்ளைகளின் முன்னேற்றத்தில் எதிர்பார்ப்புக்கும் நடைமுறைக்கும் இடைவெளி வரலாம்','ஒப்பீட்டைத் தவிர்த்து தனிப்பட்ட கற்றல் முறை, பொறுமை மற்றும் சரியான ஆதரவைத் தேர்வு செய்வது பலன் தரலாம்'],
+ ['சிக்கலை அடையாளம் கண்டு ஒவ்வொரு படியாகச் சரிசெய்யும் திறன் வளரும்','வேலைப்பளு, போட்டி அல்லது அன்றாட உடல் ஒழுங்கின்மை ஒரே நேரத்தில் அழுத்தம் தரலாம்','நேரம், கடன், உணவு மற்றும் ஓய்விற்கு தனித்தனி ஒழுங்கு வைத்தால் சிரமத்தை நிர்வகிக்க முடியும்'],
+ ['புரிந்துகொண்டு செயல்படும் கூட்டுறவு உறவிலும் ஒப்பந்தத்திலும் பயன் தரலாம்','இருவரின் எதிர்பார்ப்புகள் வெளிப்படையாகப் பேசப்படாவிட்டால் மனக்கசப்பு சேரலாம்','பொறுப்பை ஒருவர்மீது முழுவதும் வைக்காமல் இருவரும் சேர்ந்து முடிவு எடுப்பது உறவைப் பாதுகாக்கும்'],
+ ['மாற்றம் வந்தபோது காரணத்தை ஆராய்ந்து அமைதியாகத் தீர்வு காணும் திறன் பயன்படலாம்','மறைந்த செலவு அல்லது தெளிவற்ற தகவலைச் சரிபார்க்காமல் முடிவெடுப்பது சிரமம் தரலாம்','ஆவணங்கள், காப்பீடு மற்றும் குடும்பத்தில் அவசியம் பகிர வேண்டிய தகவல்களை ஒழுங்காக வைத்திருப்பது நல்லது'],
+ ['நல்ல ஆசிரியர் அல்லது அனுபவமிக்கவரின் ஆலோசனையால் புதிய பார்வை கிடைக்கலாம்','உயர்கல்வி, தூரப் பயணம் அல்லது குடும்ப நம்பிக்கைகள் தொடர்பில் கருத்து வேறுபாடு எழலாம்','பெற்றோர் கருத்தைக் கேட்டு சொந்த அனுபவத்தையும் இணைத்துக் கொள்வது முக்கியம்'],
+ ['செய்த வேலையின் தரம் அறியப்பட்டு கூடுதல் பொறுப்பு அல்லது அங்கீகாரம் வரலாம்','ஒரே நேரத்தில் பல பொறுப்புகளை ஏற்றதால் முடிவில் தாமதம் ஏற்படலாம்','தனக்குத் திறமையான பணியை முதலில் முடித்து பிறகு புதிய பொறுப்பை ஏற்றால் வளர்ச்சி நிலைக்கும்'],
+ ['முன்னர் செய்த முயற்சிக்கும் தொடர்புகளுக்கும் பலன் கிடைக்க வாய்ப்புள்ளது','வருமான வாய்ப்புகள் மாறுபடும்போது திட்டமில்லாத செலவு ஆதாயத்தைக் குறைக்கலாம்','நம்பகமான நண்பர்களுடன் இணைந்து முன்னேறும் போதும் வரவு–செலவுக் கணக்கைத் தனியாக வைத்திருக்க வேண்டும்'],
+ ['அமைதியான சூழலில் திட்டமிடும் வேளையில் பயனுள்ள முடிவுகள் உருவாகலாம்','வெளியூர், தனிநேரம், உறக்கம் அல்லது திடீர் செலவின் காரணமாக அன்றாட ஒழுங்கு மாறலாம்','செலவின் தேவையைத் தேர்வு செய்து ஓய்வுக்கும் குடும்பத்திற்கும் நிரந்தர நேரம் வைப்பது உதவும்']
+];
+const HUMAN_MINOR_TA={
+ 1:['தன் திறனைத் தெரிந்துகொள்ளும் ஆர்வமும் தன்னம்பிக்கையும் படிப்படியாக வளரும்','சக மாணவர்களுடன் ஒப்பிடப்படும்போது தயக்கம் உருவாகலாம்','குழந்தையின் சொந்த முயற்சியைப் பாராட்டிக் கவனமான ஓய்வையும் விளையாட்டையும் தொடர வேண்டும்'],
+ 2:['பேச்சுத் திறனும் எண்ணறிவும் வீட்டின் உதவியால் வளர வாய்ப்புள்ளது','குடும்பப் பேச்சால் குழந்தை தேவையில்லாத கவலை எடுத்துக்கொள்ளலாம்','கற்றல் முயற்சியைப் பாராட்டி பணம் பற்றிய பொறுப்பை வயதுக்கேற்ற அளவில் மட்டும் சொல்ல வேண்டும்'],
+ 5:['பாடத்தைப் புரிந்துகொள்ளும் முறையிலும் படைப்புப் பயிற்சியிலும் ஆர்வம் வளரலாம்','தேர்வு மதிப்பெண் மற்றும் பிறருடன் ஒப்பீடு காரணமாக ஆர்வம் குறையலாம்','வயதுக்கேற்ற வாசிப்பு, கணிதம் அல்லது கலைப் பயிற்சிக்கு நேரம் ஒதுக்கினால் திறமை மேம்படும்'],
+ 6:['தினசரி பள்ளி ஒழுங்கும் தொடர்ச்சியான பயிற்சியும் பழக்கமாகலாம்','பள்ளிப் போட்டி அல்லது அதிகப் பாடச்சுமையால் சோர்வு வரலாம்','உணவு, உறக்கம், விளையாட்டு மற்றும் படிப்பு நேரத்தைச் சமமாக வைத்திருக்க வேண்டும்'],
+ 7:['நண்பர்களுடன் பகிர்ந்து செயல்படும் திறன் உருவாகலாம்','சொல்லாமல் வைத்த எதிர்பார்ப்பால் குழுவில் சிறு மனக்கசப்பு வரலாம்','நட்பில் எல்லைகளை மதித்து தெளிவாகப் பேசுவது நல்ல பழக்கமாகும்'],
+ 10:['பள்ளியில் தரப்படும் சிறிய பொறுப்புகளைச் செய்து ஆசிரியரின் நம்பிக்கையைப் பெறலாம்','ஒரே நேரத்தில் அதிகப் பாடப் பணிகளை ஏற்றுக்கொண்டால் குழப்பம் ஏற்படலாம்','முடித்த பயிற்சியை மதிப்பிட்டு அடுத்த பணியை வரிசையாகச் செய்வது உதவும்']
+};
+const HUMAN_MINOR_EN={
+ 1:['confidence and self-direction can develop through practice','comparison with classmates may cause hesitation','recognise effort while leaving enough time for rest and play'],
+ 2:['speech and early numeracy may improve with family support','household discussions may create worry beyond a child’s age','encourage learning and keep financial responsibility age-appropriate'],
+ 5:['curiosity and creative study habits can improve','comparison and exam scores may erode motivation','make time for reading, problem-solving or the arts at a suitable pace'],
+ 6:['steady school routines may become easier','heavy schoolwork or competition may cause fatigue','balance meals, sleep, play and study'],
+ 7:['cooperation with friends may grow','unspoken expectations can cause friction within a group','practise fair boundaries and direct communication'],
+ 10:['small school responsibilities can bring a teacher’s trust','too many simultaneous tasks can be confusing','complete and review one assignment before taking another']
+};
+const HUMAN_EN=[
+ ['independent judgment can become more consistent','outside expectations can dilute personal priorities','state a decision clearly while carrying obligations at a sustainable pace'],
+ ['family financial decisions and savings may grow clearer','family needs can compete with available resources','separate regular costs, savings and what you can afford to contribute'],
+ ['practice can turn a skill into visible competence','initial enthusiasm may fade before results emerge','combine sustained effort with careful communication with siblings and peers'],
+ ['thoughtful household planning can build a steadier home life','housing, property or parental needs may introduce delays','agree on home arrangements and maintenance costs in advance'],
+ ['applied learning and mentoring can develop','expectations about study or younger family members may outrun practical progress','support each learner individually rather than making comparisons'],
+ ['persistent effort can improve how practical problems are handled','competition and a demanding routine can combine into strain','plan time, debts, meals and rest separately'],
+ ['a cooperative relationship or partnership may bring mutual gains','unspoken expectations can cause resentment','agree on responsibilities together rather than leaving them to one person'],
+ ['careful investigation can help during unforeseen change','uncertain documents or costs can complicate decisions','keep records and essential family information in order'],
+ ['a mentor can widen educational and ethical perspective','study, travel or family beliefs may generate differences','weigh experienced guidance against the facts of the situation'],
+ ['reliable work can attract responsibility and recognition','taking on too many duties at once can delay completion','finish core tasks before accepting additional responsibilities'],
+ ['past work and relationships may create useful opportunities','variable income can make spending hard to control','keep a separate record of income and expenditure'],
+ ['quiet reflection can lead to useful plans','travel, sleep or unplanned costs may unsettle routines','set aside predictable time for rest and family']
+];
+// Meaning of the destination house depends on the life matter being considered.
+const PAIR_TA={
+ 1:{10:'சுயமரியாதையை வேலைப்பொறுப்பிலேயே அதிகம் காணும் இயல்பு உண்டு. செய்த பணியை மற்றவர் மதிக்காதபோது உள்ளுக்குள் ஏமாற்றம் வரலாம்; அதற்காக எல்லாவற்றையும் தனியாகச் சுமக்க வேண்டியதில்லை.',6:'ஒருவரின் சுயமதிப்பும் அன்றாடப் பணியும் ஒன்றுடன் ஒன்று கலக்கலாம். போட்டி இருக்கும்போது தன் நலனையும் ஓய்வையும் கடைசியில் வைக்காமல் பார்க்க வேண்டும்.',9:'பெரியவர்கள் வழங்கும் அறிவுரை வாழ்க்கைப் பாதையை மாற்றக்கூடும்; ஆனால் அது நடைமுறையில் பொருந்துகிறதா என்று சுயமாகப் பரிசோதிக்கும் மனமும் தேவை.'},
+ 2:{2:'குடும்ப வரவையும் சேமிப்பையும் நிதானமாகச் சேர்க்கும் வாய்ப்பு வலுவாக இருக்கும்; பணம் பற்றிய சொற்கள் வீட்டாரின் நம்பிக்கையை நேரடியாகப் பாதிக்கும்.',11:'வருமானம் உயர்ந்தாலும் சேரும் தொகை எவ்வளவு என்பதை சேமிப்புப் பழக்கமே தீர்மானிக்கும்.',8:'கூட்டுப் பணம், வாரிசு அல்லது எதிர்பாராத செலவுகளைத் தெளிவாகப் பிரித்துப் பார்ப்பது அவசியமாகலாம்.'},
+ 3:{10:'திறமை வேலை இடத்தில் தெரிய வரும்; எழுதுதல், பேசுதல் அல்லது தொழில்நுட்ப முயற்சியைத் தொடர்ந்து செய்தால் அதற்கான பொறுப்பும் உருவாகலாம்.',6:'முயற்சி போட்டி மற்றும் கடினப் பயிற்சியோடு இணையும். ஒரே தோல்வியைத் திறமைக் குறைவாக எண்ணாமல் முறையைத் திருத்திக்கொள்ள வேண்டும்.'},
+ 4:{2:'வீடு சார்ந்த அமைதி குடும்ப வரவு–செலவுடன் இணைந்திருக்கும்; வீட்டு வசதிக்குச் செலவிடும் தொகையை உறவினருடன் திட்டமிட்டுப் பேச வேண்டும்.',10:'தொழில் காரணமாக வீடு அல்லது வசிப்பிட ஒழுங்கை மாற்ற வேண்டிய சூழல் வரலாம்; வேலையின் முன்னேற்றம் குடும்ப நேரத்தைக் குறைக்காதபடி கவனம் தேவை.',12:'வசிப்பிடம் மாறுதல், வெளியூர்த் தொடர்பு அல்லது தனிநேரத்தின் தேவை குடும்ப நிம்மதியில் தாக்கம் செலுத்தலாம்.'},
+ 5:{6:'கல்வியில் போட்டி, வேலைநேரம் அல்லது பிள்ளைகளின் அன்றாடப் பழக்கம் முக்கியமாகலாம். அதிக அழுத்தத்தைத் தவிர்த்தால் சிரமமான பாடத்திலும் படிப்படியான முன்னேற்றம் உண்டு.',8:'ஆழ்ந்து ஆராயும் திறன் கூடலாம்; ஆனால் பாடத்தேர்வு மற்றும் பிள்ளைகள் தொடர்பான முடிவுகளில் உறுதி செய்யாத தகவலால் அச்சமடைய வேண்டாம்.',1:'சொந்த அறிவை நம்பி செயல்படும் இயல்பு உண்டு; குழந்தைகளின் கற்றலிலும் தனிப்பட்ட எதிர்பார்ப்பை அளவோடு வைத்தல் நல்லது.'},
+ 6:{10:'பணிச்சூழலில் தொடர்ச்சியான போட்டியும் பயிற்சியும் இருக்கும்; திட்டமிட்ட ஒழுங்கே செயல்திறனை நிலைநிறுத்தும்.',2:'கடன், அன்றாடச் செலவு மற்றும் குடும்பப் பொருளாதாரம் தொடர்புபடலாம்; பணம் கொடுத்தல்–வாங்கலில் தெளிவு முக்கியம்.'},
+ 7:{2:'திருமணத்திற்குப் பிறகோ கூட்டுத் தொழிலிலோ இரு குடும்பங்களின் பேச்சும் பணமுறையும் முக்கியமாகலாம்; நெருக்கத்தைப் பாதுகாப்பது வெளிப்படையான கணக்கே.',5:'உறவில் சிந்தனைப் பொருத்தம், கல்வி அல்லது பிள்ளைகள் குறித்த உரையாடல் அதிக இடம் பெறலாம்; எதிர்பார்ப்புகளைச் சொல்லாமலே புரிந்துவிடுவார் என்று நினைக்க வேண்டாம்.',12:'துணையுடன் செலவுகள், வெளியூரில் இருப்பது அல்லது தனிநேரம் பற்றிய சமநிலை முக்கியமாகலாம்; தூரம் இருந்தாலும் தொடர்பைத் திட்டமிடலாம்.',10:'தொழிலும் உறவும் ஒன்றையொன்று பாதிக்கலாம்; ஒருவரின் முன்னேற்றத்திற்கு மற்றவர் இடமளிக்க வேண்டும்.'},
+ 8:{8:'சிக்கலான விஷயங்களை ஆழ்ந்து புரிந்துகொள்ளும் திறன் உண்டு; ஆனால் எதிர்பாராத சூழலைத் தன்னுடைய தவறாக எண்ணிக் கொள்ள வேண்டாம்.',12:'திடீர் செலவுகள் அல்லது வெளியூர்ச் சூழல் காரணமாகப் பாதுகாப்புத் திட்டம் தேவைப்படலாம்.',2:'கூட்டுப் பணம் மற்றும் குடும்பச் சேமிப்பின் எல்லையைத் தெளிவாக வைத்திருப்பது மனஅழுத்தத்தைத் தவிர்க்க உதவும்.'},
+ 9:{1:'ஆசிரியர் அல்லது தந்தை கூறிய வழியைத் தனக்குப் பொருத்தமாக மாற்றிச் செயல்படுத்தும் திறன் உருவாகலாம்.',6:'உயர்கல்வி, வழிகாட்டுதல் மற்றும் உழைப்பின் ஒழுங்கு இணையும்; பொறுமையுடன் பயிற்சி செய்தால் பின்பு அதன் பயன் தெரியும்.',12:'வெளியூர் கல்வி, தொலைதூரப் பயணம் அல்லது ஆன்மிகத் தேடலுக்கான செலவு வரலாம்; நோக்கத்தை முன்பே தெளிவாக்க வேண்டும்.'},
+ 10:{10:'பொறுப்பையும் தொழில்நுட்பத் திறனையும் தானே நிரூபிக்க வேண்டிய நிலை அதிகம். வேலை தரம் உயரும்போது பிறர் நம்பிக்கை வளரும்; அதிகச் சுமையால் தரம் குறையாமல் பார்த்துக்கொள்ள வேண்டும்.',6:'சேவை, போட்டி, கடினமான தினசரிப் பணி ஆகியவை தொழிலின் மையமாகலாம்; நிரந்தரப் பயிற்சியே முன்னேற்றத்திற்கு அடித்தளம்.',2:'குடும்ப வருமானத்திற்கான பொறுப்பு தொழில்முடிவில் முக்கியமான இடம் பெறலாம்; சம்பாதிப்பதையும் சேமிப்பதையும் தனித்தனி இலக்குகளாக வைத்தல் நல்லது.',9:'உயர்கல்வி, பயணம் அல்லது அனுபவமிக்கவரின் ஆலோசனை தொழிலின் திசையை மாற்ற உதவலாம்.'},
+ 11:{2:'வருமானம் குடும்பச் சேமிப்பாக மாறுவதற்கு வரவு–செலவுக் கட்டுப்பாடு முக்கியம்.',10:'தொழிலில் செய்யப்பட்ட நல்ல வேலைக்கான பலன் காலப்போக்கில் வருமானமாகவும் புதிய அறிமுகமாகவும் திரும்பலாம்.',12:'ஆதாயம் கிடைத்த உடனே செலவாகிவிடும் வாய்ப்பு உள்ளது; எவ்வளவு மீதமாகிறது என்பதைப் பார்ப்பதே முக்கியம்.'},
+ 12:{7:'தனிநேரம், உறவுப் பொறுப்பு மற்றும் செலவு ஆகியவற்றில் சமநிலை தேவைப்படலாம்; உணர்வைப் பகிர்வது தூரத்தைச் சுருக்கும்.',9:'வெளியூர் கல்வி, ஆன்மிகம் அல்லது நீண்ட பயணத்திற்குச் செலவிடும் நிலை இருக்கலாம்.',10:'வேலைக்காகப் பயணம் அல்லது தனிநேரத்தை விட்டுக் கொடுக்கும் சூழல் வரலாம்; ஓய்வைத் திட்டமிட வேண்டும்.'}
+};
+const CHILD_LINK_TA=[
+ 'தன் உடல்நல ஒழுங்கும் தன்னம்பிக்கையும் வளர்வது',
+ 'வீட்டில் பேசப்படும் விதமும் படிப்பிற்கான உதவியும் கிடைப்பது',
+ 'தனியாகப் பயிற்சி செய்வதும் உடன்பிறந்தவர்களுடன் பழகுவதும்',
+ 'வீட்டின் அமைதியும் பெற்றோரின் ஆதரவும் கிடைப்பது',
+ 'பாடப் புரிதல், விளையாட்டு மற்றும் கலை ஆர்வம் வளர்வது',
+ 'தினசரி பள்ளிப் பயிற்சி, நேர ஒழுங்கு மற்றும் சீரான ஓய்வு',
+ 'சக மாணவர்களுடன் ஒத்துழைத்துக் குழுவாகச் செயல்படுவது',
+ 'வகுப்பு அல்லது வீட்டுச் சூழல் மாறும்போது பாதுகாப்பாகப் பழகுவது',
+ 'ஆசிரியர் மற்றும் மூத்தோரின் வழிகாட்டுதலைப் பெறுவது',
+ 'பள்ளியில் சிறிய பொறுப்பை முடித்து அங்கீகாரம் பெறுவது',
+ 'நண்பர்கள், விளையாட்டு குழு மற்றும் சாதிக்கக்கூடிய இலக்குகளை அமைப்பது',
+ 'படிப்பு, பயணம், உறக்கம் மற்றும் ஓய்வு நேரத்தைச் சமப்படுத்துவது'
+];
+const CHILD_LINK_EN=[
+ 'confidence and healthy personal habits','the way family speaks and supports schoolwork',
+ 'practice and sibling or peer interaction','home stability and caregiver support',
+ 'learning, play and creative interests','school routines and sufficient rest',
+ 'cooperation with classmates','safe adjustment to changes at school or home',
+ 'guidance from teachers and elders','earning trust through manageable school tasks',
+ 'friendships and attainable learning goals','balancing study, outings, sleep and rest'
+];
+function humanNarrative(d,s,n,a,ta){
+ const h=d.houses[n-1],p=d.planets[h.lord],q=s.assess(d,h.lord),bal=supports(s,d,n),young=a!==null&&a<18;
+ const [good,bad,practice]=((a!==null&&a<18&&(ta?HUMAN_MINOR_TA:HUMAN_MINOR_EN)[n])||(ta?HUMAN_TA:HUMAN_EN)[n-1]);
+ const owned=own(d,h.lord),partners=d.houses[p.house-1].occupants.filter(k=>k!==h.lord);
+ const pName=pl(h.lord,ta),field=lived(n,a,ta);
+ const strong=q?.score>=.64,weak=q?.score<=.35;
+ let first,second;
+ if(ta){
+  first=`${field} என்ற வாழ்க்கைப் பகுதியில் ${bal.major==='supportive'?good:bal.major==='challenging'?bad:`${good}; அதே நேரத்தில் ${bad}`}. ${practice}.`;
+  const linked=(PAIR_TA[n]||{})[p.house];
+  const connection=young?`${field} தொடர்பான பலனைப் பார்க்கும்போது ${CHILD_LINK_TA[p.house-1]} இதற்கு முக்கியப் பின்னணியாகிறது. வீட்டிலும் பள்ளியிலும் கிடைக்கும் உதவியோடு இதைப் பொருத்திப் பார்க்க வேண்டும்.`:(linked||`${n}-ஆம் பாவம் தொடர்பான முடிவுகளை எடுக்கும்போது ${path(p.house,true)} சார்ந்த சூழலும் முன்னிலைக்கு வரும். இதைத் தனியாகப் பார்க்காமல் இரண்டையும் இணைத்து முடிவெடுப்பது பொருத்தம்.`);
+  const ownerLink=owned.length>1?` ${pName} ${owned.join(', ')}-ஆம் பாவங்களை ஆள்வதால் இரண்டு பாவங்களின் பொறுப்புகளும் இணைகின்றன.`:'';
+  const companions=partners.length?` ${pName} உடன் ${partners.map(k=>pl(k,true)).join(', ')} இருப்பதால் ${partners.map(k=>PLANET_TA[k][0]).join(', ')} சார்ந்த சூழலும் இந்தப் பலனை மாற்றலாம்.`:'';
+  second=`இதற்கான ஜாதகக் காரணம்: ${n}-ஆம் பாவ அதிபதி ${pName} ${p.house}-ஆம் பாவத்தில் ${friendWord(q?.dignity,true)} நிலையில் இருக்கிறார்.${ownerLink} ${connection}${companions} ${strong?'இந்த அதிபதியின் ஆதரவு பலத்தைப் பயன்படுத்துவதற்கு சாதகமாக இருக்கிறது.':weak?'இந்த அதிபதியின் பலம் குறைவாக இருப்பதால் முடிவுகளை அவசரப்படுத்தாமல் ஆதாரத்தோடு எடுக்க வேண்டும்.':'உதவும் தொடர்புகளும் தடையும் இருப்பதால் சூழலைப் பொறுத்தே பலன் வெளிப்படும்.'}`;
+ }else{
+  first=`In the area of ${field}, ${bal.major==='supportive'?good:bal.major==='challenging'?bad:`${good}, although ${bad}`}. A practical response is to ${practice}.`;
+  second=`The natal reason is specific: ${h.lord} rules house ${n} and sits in house ${p.house} (${friendWord(q?.dignity,false)}). This links ${field} with ${young?CHILD_LINK_EN[p.house-1]:path(p.house,false)}.${owned.length>1?' The same planet also rules house '+owned.filter(x=>x!==n).join(', ')+'.':''}${partners.length?' Its conjunction with '+partners.join(', ')+' adds their separate natural and functional indications.':''} ${strong?'The ruler has meaningful support.':weak?'The ruler has limited support and decisions deserve more evidence.':'Support and strain both need weighing.'}`;
+ }
+ return [first,second];
+}
 function build(chart,lang='ta',context={},timeline=null){const r=globalThis.SMVLifePredictionD1,s=globalThis.SMVD1StrengthV303;if(!r?.toD1||!s?.assess||!s?.nodes||!s?.matter)throw Error('V307 requires existing D1 reader and strength module');const d=r.toD1(chart),ta=lang!=='en',birth=birthOf(chart,timeline),referenceDate=timeline?.referenceDate||new Date().toISOString().slice(0,10),nowAge=age(birth,referenceDate);d.birthDate=birth;d.referenceDate=referenceDate;
- const topics=[];for(let n=1;n<=12;n++){const text=[...ascendantStory(d,s,n,nowAge,ta),...specialEvents(d,s,n,nowAge,ta),...strengthInteractions(d,s,n,nowAge,ta),bodyText(d,s,n,nowAge,ta)];if(text.length<4){const h=d.houses[n-1],support=supports(s,d,n);text.push(ta?`இந்தப் பாவத்தில் கிரகம் இல்லாதது அதன் வாழ்க்கைப் பலன் இல்லை என்று பொருள் அல்ல. ${pl(h.lord,true)}-ன் இருப்பிடமும் ${h.aspects.length?h.aspects.map(k=>pl(k,true)).join(', ')+' பார்வையும்':'அந்த ராசி அதிபதியின் வலிமையும்'} சேர்ந்து ${domain(n,true,nowAge)[2]} என்ற வழியைத் திறக்கலாம். ${support.major==='challenging'?domain(n,true,nowAge)[3]:domain(n,true,nowAge)[1]} என்பதைக் கணக்கில் கொண்டு முடிவு செய்வது பொருத்தமானது.`:`An empty natal house does not mean its life area is absent. ${h.lord}'s placement and ${h.aspects.length?'aspects from '+h.aspects.join(', '):'the sign ruler’s dignity'} condition ${domain(n,false,nowAge)[2]}, while ${support.major==='challenging'?domain(n,false,nowAge)[3]:domain(n,false,nowAge)[1]} remains relevant.`);}if(n===7&&globalThis.SMVD9V308)text.push(...globalThis.SMVD9V308.narrative(chart,lang,nowAge));if(timeline){for(const x of periodCandidates(d,timeline,n)){for(const split of timeSegments(birth,x.p.from,x.p.to)){text.push(periodNarrative(d,s,n,split.age,birth,{...x,p:{...x.p,from:split.from,to:split.to}},ta));}}text.push(...transitNarrative(d,s,n,timeline,birth,ta));}const seen=new Set(),paragraphs=text.filter(t=>{if(!t||seen.has(t))return false;seen.add(t);return true;});topics.push({number:n,title:(ta?names:enames)[n-1],paragraphs});}
+ const topics=[];for(let n=1;n<=12;n++){const text=[...humanNarrative(d,s,n,nowAge,ta),...specialEvents(d,s,n,nowAge,ta),...strengthInteractions(d,s,n,nowAge,ta),bodyText(d,s,n,nowAge,ta)];if(text.length<4){const h=d.houses[n-1],support=supports(s,d,n);text.push(ta?`இந்தப் பாவத்தில் கிரகம் இல்லாதது அதன் வாழ்க்கைப் பலன் இல்லை என்று பொருள் அல்ல. ${pl(h.lord,true)}-ன் இருப்பிடமும் ${h.aspects.length?h.aspects.map(k=>pl(k,true)).join(', ')+' பார்வையும்':'அந்த ராசி அதிபதியின் வலிமையும்'} சேர்ந்து ${domain(n,true,nowAge)[2]} என்ற வழியைத் திறக்கலாம். ${support.major==='challenging'?domain(n,true,nowAge)[3]:domain(n,true,nowAge)[1]} என்பதைக் கணக்கில் கொண்டு முடிவு செய்வது பொருத்தமானது.`:`An empty natal house does not mean its life area is absent. ${h.lord}'s placement and ${h.aspects.length?'aspects from '+h.aspects.join(', '):'the sign ruler’s dignity'} condition ${domain(n,false,nowAge)[2]}, while ${support.major==='challenging'?domain(n,false,nowAge)[3]:domain(n,false,nowAge)[1]} remains relevant.`);}if(n===7&&(nowAge===null||nowAge>=18)&&globalThis.SMVD9V308)text.push(...globalThis.SMVD9V308.narrative(chart,lang,nowAge));if(timeline){for(const x of periodCandidates(d,timeline,n)){for(const split of timeSegments(birth,x.p.from,x.p.to)){text.push(periodNarrative(d,s,n,split.age,birth,{...x,p:{...x.p,from:split.from,to:split.to}},ta));}}text.push(...transitNarrative(d,s,n,timeline,birth,ta));}const seen=new Set(),paragraphs=text.filter(t=>{if(!t||seen.has(t))return false;seen.add(t);return true;});topics.push({number:n,title:(ta?names:enames)[n-1],paragraphs});}
  return {topics,lang:ta?'ta':'en',birth,ageAtReport:nowAge,timeline:timeline?{from:timeline.referenceDate,to:timeline.end,years:15,complete:validateTimeline(timeline)}:null};}
 function html(rep){const ta=rep.lang!=='en',interval=rep.timeline?rep.timeline.from+' – '+rep.timeline.to:(ta?'பிறப்பு ஜாதக அமைப்பு':'Natal chart');return `<section class="smv-d1-life-reading smv-v303-integrated smv-v307-events" data-smv-d1-life="1" data-smv-integrated="12" data-smv-15-year-ready="${rep.timeline?.complete?'1':'0'}" lang="${rep.lang}"><h2>${ta?'முழு வாழ்க்கைப் பலன்கள்':'Complete Life Predictions'}</h2><p class="smv-v303-intro">${ta?'பிறப்புப் பாவம், அதிபதி, இயற்கைக் காரகன், நட்சத்திரம், சேர்க்கை, பார்வை, வயது, தசை–புக்தி மற்றும் கணிக்கப்பட்ட பெயர்ச்சி தொடர்புகளிலிருந்து தேர்ந்தெடுக்கப்பட்ட வாழ்க்கைப் பலன்கள்.':'Life events selected from natal houses, rulers, natural significators, aspects, stars, age, computed periods and transits.'} ${enc(interval)}.</p>${rep.topics.map(t=>`<section class="smv-d1-life-topic smv-v303-house" data-d1-topic="${t.number}"><h3>${t.number}. ${enc(t.title)}</h3>${t.paragraphs.map(p=>`<p class="smv-d1-life-paragraph">${enc(p)}</p>`).join('')}</section>`).join('')}<p class="smv-v306-medical-note">${ta?'உடல் தொடர்புகள் பாரம்பரிய ஜோதிடக் குறியீடுகள்; நோயறிதல் அல்ல.':'Bodily links are traditional symbolic associations, not diagnoses.'}</p></section>`;}
-return Object.freeze({build,html,age,phase,timeSegments,periodCandidates,version:'308-d1-d9-evidence-events-age-period-transit'});
+return Object.freeze({build,html,age,phase,timeSegments,periodCandidates,version:'308-final-lived-evidence-age-d9-timing'});
 });
