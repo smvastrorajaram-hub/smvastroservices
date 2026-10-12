@@ -1833,156 +1833,58 @@ try{
           throw new Error('D1 life reading engine is missing. Check d1-life-reading.js deployment.');
         const lifeSlot=root.querySelector('.smv-advanced-part.life-predictions .smv-advanced-part-content');
         if(!lifeSlot) throw new Error('Predictions section X is missing. Check the Advanced report deployment.');
-        lifeSlot.innerHTML=window.SMVLifePredictionD1.html(fullChart,lang,{currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace});
-        // V267: use the SAME full chart, Vimshottari periods and daily transit
-        // snapshot already produced in this calculation. No new engine call,
-        // network access, date guessing or independent client-side recalc.
-        // V268: II and III were previously appended AFTER all 144 paragraphs of I.
-        // On a phone, this meant the new topics could appear to be missing.
-        // Keep the three report sections and preserve the print/save path, adding a small,
-        // source-level jump index at the top of X so all three sections are findable.
-        // A missing time engine or runtime problem must be visible, not silently
-        // mistaken for a successful prediction (no fabricated reading).
-        const unavailable=(kind, title)=>`<section class="smv-d1-life-reading smv-d1-time-reading smv-predictions-unavailable" data-d1-time="${kind}"><h2>${title}</h2><p>${lang==='ta'?'இந்தப் பலன் தற்போது உருவாகவில்லை. D1 காலப்பலன் module / கணக்கீட்டுத் தரவைச் சரிபார்க்கவும்.':'This prediction did not generate. Check the D1 time module and calculation data.'}</p></section>`;
-        try{
-          if (!window.SMVTimePredictionD1 || typeof window.SMVTimePredictionD1.html!=='function')
-            throw new Error('Missing d1-time-reading.js: SMVTimePredictionD1.html is unavailable');
-          const timeHtml=window.SMVTimePredictionD1.html(full,dailyDate,lang,{currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace});
-          if(!timeHtml.includes('data-d1-time="dasha"') || !timeHtml.includes('data-d1-time="transit"'))
-            throw new Error('Time-based renderer did not produce both II and III sections');
-          lifeSlot.insertAdjacentHTML('beforeend',timeHtml);
-          // V301: interpret the *already calculated* current natal/period/transit
-          // together, without touching the Swiss engine, listeners, or auth gates.
-          try{
-          const v301=window.SMVD1V301Evidence;
-          if(v301?.periodInsight&&window.SMVLifePredictionD1?.toD1){
-            const natal=window.SMVLifePredictionD1.toD1(fullChart);
-            const periods=(fullChart?.dashas?.periods||[]);
-            const md=periods.find(x=>x.start<=dailyDate&&dailyDate<x.end);
-            const ad=md?.antardashas?.find(x=>x.start<=dailyDate&&dailyDate<x.end);
-            if(md&&ad){
-              const period={md:md.lord,ad:ad.lord,from:ad.start,to:ad.end};
-              const reading=v301.periodInsight(natal,period,lang);
-              const dashaTarget=lifeSlot.querySelector('[data-d1-time="dasha"]');
-              if(reading&&dashaTarget){
-                const section=document.createElement('section');section.className='smv-v301-current-dasha';
-                const heading=document.createElement('h3');heading.textContent=lang==='ta'?'தற்போதைய தசை–புக்தி: நட்சத்திரம் மற்றும் பாவத் தொடர்பு':'Current Dasha–Bhukti: Nakshatra and house convergence';
-                section.append(heading);for(const str of reading.paragraphs){const el=document.createElement('p');el.textContent=str;section.appendChild(el);}dashaTarget.appendChild(section);
-              }
-              const currentTransit=full?.transit||tr||null;
-              const snap=v301.snapshotFromTransit?.(currentTransit,dailyDate);
-              const transitReading=snap&&v301.transitInsight(natal,period,snap,lang);
-              const transitTarget=lifeSlot.querySelector('[data-d1-time="transit"]');
-              if(transitReading&&transitTarget){
-                const section=document.createElement('section');section.className='smv-v301-current-transit';
-                const heading=document.createElement('h3');heading.textContent=lang==='ta'?'தசை–புக்தியுடன் இன்றைய கோச்சார இணைவு':'Current transit alongside the operating Dasha–Bhukti';
-                section.append(heading);for(const str of transitReading.paragraphs){const el=document.createElement('p');el.textContent=str;section.appendChild(el);}transitTarget.appendChild(section);
-              }
-            }
+        // V302: The twelve houses are the ONLY prediction headings.
+        // Merge stable D1, bodily associations and real 15-year Swiss/Dasha
+        // observations IN each house; do not append legacy separate II/III/80y.
+        const v302=window.SMVD1IntegratedV303;
+        if(!v302?.build||!v302?.html)throw new Error('Missing d1-v303-integrated.js and strength dependency');
+        const context={currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace};
+        const natalOnly=v302.build(fullChart,lang,context,null);
+        lifeSlot.innerHTML=v302.html(natalOnly);
+        const c=full?.chart||full;
+        const fifteenKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
+        const fifteenCache=window.__smvIntegrated15Cache||(window.__smvIntegrated15Cache=new Map());
+        root.dataset.smvLongPending='1';
+        const requestKey=fifteenKey+'|'+lang;root.__smvV302RequestKey=requestKey;
+        const stillCurrent=()=>root.__smvV302RequestKey===requestKey&&lifeSlot.isConnected;
+        const job=import('./d1-15-year-reading.mjs?v=302-integrated-15years').then(async mod=>{
+          let entry=fifteenCache.get(fifteenKey);
+          if(!entry){
+            entry=mod.build15Year(full,{...payload,referenceDate:dailyDate},{lang:'ta'});
+            fifteenCache.set(fifteenKey,entry);
           }
-          }catch(v301Err){console.warn('[SMV V301 additional reading]',v301Err);}
-        }catch(timeErr){
-          console.error('[SMV Predictions II/III]',timeErr);
-          lifeSlot.insertAdjacentHTML('beforeend',
-            unavailable('dasha',lang==='ta'?'II. D1, தசா–புக்தி மற்றும் வயது வாழ்க்கைப் பலன்கள்':'II. D1, Dasha–Bhukti and Age Predictions')+
-            unavailable('transit',lang==='ta'?'III. D1, பெயர்ச்சி மற்றும் வயது வாழ்க்கைப் பலன்கள்':'III. D1, Transit and Age Predictions'));
-        }
-        const sections=[
-          lifeSlot.querySelector('[data-smv-d1-life="1"]'),
-          lifeSlot.querySelector('[data-d1-time="dasha"]'),
-          lifeSlot.querySelector('[data-d1-time="transit"]')
-        ];
-        if(sections.every(Boolean)){
-          const suffix=rootId==='tamilAdvancedAstrology'?'ta':'en';
-          sections.forEach((section,i)=>{section.id=`smv-predictions-${suffix}-${i+1}`;});
-          const jump=document.createElement('div');
-          jump.className='smv-predictions-jump';
-          jump.setAttribute('role','navigation');
-          jump.setAttribute('aria-label',lang==='ta'?'பலன் துணைப்பகுதிகளுக்குச் செல்ல':'Jump to prediction subsections');
-          const labels=lang==='ta'
-            ?['I. முழு வாழ்க்கை பலன்கள் (D1)','II. தசா–புக்தி + வயது','III. பெயர்ச்சி + வயது']
-            :['I. Complete life (D1)','II. Dasha–Bhukti + Age','III. Transit + Age'];
-          labels.forEach((label,i)=>{
-            // Use keyboard-accessible navigation items instead of the globally styled
-            // nav/button/anchor tags, whose theme made text invisible on red.
-            const link=document.createElement('div');
-            link.className='smv-predictions-jump-item';
-            link.dataset.smvJumpPrediction=String(i+1);
-            link.setAttribute('role','link');
-            link.setAttribute('tabindex','0');
-            link.textContent=label;
-            link.setAttribute('aria-controls',sections[i].id);
-            const visit=()=>sections[i].scrollIntoView({behavior:'auto',block:'start'});
-            link.addEventListener('click',visit);
-            link.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();visit();}});
-            jump.appendChild(link);
-          });
-          lifeSlot.prepend(jump);
-        }
-        // V280: report-date through 80th birthday Mahadasha/Bhukti + calculated
-        // four-planet transit timeline without altering access, Firebase or payments.
-        // Do not run for Basic/Public: this code executes only inside Full renderer.
-        const longDasha=lifeSlot.querySelector('[data-d1-time="dasha"]');
-        const longTransit=lifeSlot.querySelector('[data-d1-time="transit"]');
-        if(longDasha&&longTransit&&!longDasha.classList.contains('smv-predictions-unavailable')){
-          const longStatus=document.createElement('p');longStatus.className='smv-80-status';
-          longStatus.textContent=lang==='ta'?'80 வயது வரையிலான காலவரிசை கணக்கிடப்படுகிறது…':'Building the forecast through age 80…';
-          longDasha.querySelector('p.smv-d1-life-method')?.insertAdjacentElement('afterend',longStatus);
-          const c=full?.chart||full;
-          const longKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
-          const longCache=window.__smvLongTimelineCache||(window.__smvLongTimelineCache=new Map());
-          const longJobReady=import('./d1-80-year-reading.mjs?v=301-star-period-transit-convergence').then(async mod=>{
-            let job=longCache.get(longKey);
-            if(!job){
-              job=mod.build80Year(full,payload,{lang,onProgress:p=>{
-                if(!longStatus.isConnected||p.stage!=='transit')return;
-                const percent=Math.min(100,Math.round(100*p.done/Math.max(1,p.total)));
-                longStatus.textContent=(lang==='ta'?'80 வயது வரையிலான பெயர்ச்சிக் கணக்கீடு: ':'Transits to age 80: ')+percent+'%';
-              }});
-              longCache.set(longKey,job);
-            }
-            let base;try{base=await job;}catch(e){if(longCache.get(longKey)===job)longCache.delete(longKey);throw e;}
-            if(!lifeSlot.isConnected||!longStatus.isConnected)return;
-            const report=base.language===lang?base:mod.translate80Year(full,base,lang);
-            const out=mod.render80Year(report,lang);
-            function panel(kind,markup){
-              const details=document.createElement('details');details.className='smv-80-container';details.dataset.smvLongRange=kind;
-              const summary=document.createElement('summary');
-              summary.textContent=(lang==='ta'?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை: ':'From report date until age 80: ')+(kind==='dasha'?(lang==='ta'?'தசா–புக்திகள் அனைத்தும்':'all Dasha–Bhukti windows'):(lang==='ta'?'குரு–சனி–ராகு–கேது':'Jupiter–Saturn–Rahu–Ketu'));
-              details.appendChild(summary);
-              const body=document.createElement('div');body.innerHTML=markup;details.appendChild(body);
-              return details;
-            }
-            const md=longDasha.querySelector('p.smv-d1-life-method'),tr=longTransit.querySelector('p.smv-d1-life-method');
-            md?.insertAdjacentElement('afterend',panel('dasha',out.dashaHTML));
-            tr?.insertAdjacentElement('afterend',panel('transit',out.transitHTML));
-            longStatus.textContent=report.meta.ageLimitReached
-              ? (lang==='ta'?'ஜாதகர் 80 வயதை அடைந்துவிட்டதால் புதிய காலப்பலன்கள் உருவாக்கப்படவில்லை.':'Age 80 already reached; no future periods are calculated.')
-              : (lang==='ta'?'80 வயது வரையிலான காலவரிசை தயார் (':'Timeline to age 80 ready (')+report.meta.forecastYears+(lang==='ta'?' கணிப்பு ஆண்டுகள்): ': ' forecast years): ')+report.meta.dashaPeriods+(lang==='ta'?' தசா–புக்திகள், ':' Dasha–Bhukti periods, ')+report.meta.transitSignChanges+(lang==='ta'?' கோச்சார ராசி மாற்றங்கள்.':' transit sign changes.');
-            window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
-          }).catch(e=>{if(longStatus.isConnected)longStatus.textContent=(lang==='ta'?'80 வயது வரையிலான காலவரிசை உருவாக்க முடியவில்லை: ':'Could not generate the timeline to age 80: ')+String(e?.message||e);});
-          root.__smvLongTimelineReady=longJobReady;
-          root.dataset.smvLongPending='1';
-          longJobReady.finally(()=>{root.dataset.smvLongPending='0';});
-          // A Save/Print tap while the local up-to-age-80 forecast is running
-          // must not snapshot a partial report; preserve the existing handlers.
-          if(!root.__smvLongSaveGateBound){
-            root.__smvLongSaveGateBound=true;
-            root.addEventListener('click',async event=>{
-              const button=event.target?.closest?.('[data-save],[data-print]');
-              if(!button||!root.contains(button)||root.dataset.smvLongPending!=='1')return;
-              event.preventDefault();event.stopImmediatePropagation();
-              button.disabled=true;
-              await root.__smvLongTimelineReady;
+          let base;try{base=await entry;}catch(error){if(fifteenCache.get(fifteenKey)===entry)fifteenCache.delete(fifteenKey);throw error;}
+          if(!stillCurrent())return;
+          const report=base.language===lang?base:mod.translate15Year(full,base,lang);
+          // No recalculation on Tamil/English toggle: cached Swiss dates and
+          // same original natal chart are reused; only narrative translation runs.
+          const next=v302.build(fullChart,lang,context,report);
+          lifeSlot.innerHTML=v302.html(next);
+          window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
+        }).catch(error=>{
+          if(!stillCurrent())return;
+          const intro=lifeSlot.querySelector('.smv-v303-intro');
+          if(intro){const p=document.createElement('p');p.className='smv-v302-unavailable';
+            p.textContent=(lang==='ta'?'அடுத்த 15 ஆண்டுகளுக்கான உண்மையான தசை–பெயர்ச்சிக் கணக்கீடு கிடைக்கவில்லை. கணிக்கப்படாத காலப்பலன்கள் ஊகித்துச் சேர்க்கப்படவில்லை. காரணம்: ':'The computed 15-year period/transit results could not be loaded; no uncomputed dates were invented. Cause: ')+String(error?.message||error);
+            intro.after(p);
+          }
+          console.error('[SMV V303 integrated]',error);
+        }).finally(()=>{if(stillCurrent())root.dataset.smvLongPending='0';});
+        root.__smvLongTimelineReady=job;
+        // Preserve Save/Print waiting until all 12 topics include calculated
+        // 15-year detail; no change to auth, quotas, payment or print engines.
+        if(!root.__smvLongSaveGateBound){
+          root.__smvLongSaveGateBound=true;
+          root.addEventListener('click',async event=>{
+            const button=event.target?.closest?.('[data-save],[data-print]');
+            if(!button||!root.contains(button)||root.dataset.smvLongPending!=='1')return;
+            event.preventDefault();event.stopImmediatePropagation();button.disabled=true;
+            try{await root.__smvLongTimelineReady;}finally{
               if(button.isConnected){button.disabled=false;button.click();}
-            },true);
-          }
-          if(!window.__smvLongPrintHandlers){
-            window.__smvLongPrintHandlers=true;
-            window.addEventListener('beforeprint',()=>{document.querySelectorAll('details.smv-80-container,details.smv-80-window').forEach(el=>{el.dataset.smvPrintWasOpen=el.open?'1':'0';el.open=true;});});
-            window.addEventListener('afterprint',()=>{document.querySelectorAll('details.smv-80-container,details.smv-80-window').forEach(el=>{if(el.dataset.smvPrintWasOpen==='0')el.open=false;delete el.dataset.smvPrintWasOpen;});});
-          }
+            }
+          },true);
         }
+
         window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready',{detail:{full,payload,lang,rootId}}));
         // SINGLE RELEASE: all new features become visible in the same tick.
         root.classList.remove('hidden');
