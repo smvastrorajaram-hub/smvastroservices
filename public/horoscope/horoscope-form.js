@@ -127,7 +127,7 @@ if(lat===''||lon===''){
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
             if(completedFull){
               await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
-              // Wait for Section X's complete report-date-to-age-80 reading on language
+              // Wait for Section X's integrated 15-year evidence on language
               // switches before the next snapshot can be announced as ready.
               await ensureLongPredictionComplete(target.querySelector('#englishAdvancedAstrology'));
             }
@@ -165,22 +165,23 @@ if(lat===''||lon===''){
             throw new Error('Full report section(s) missing: '+namesMissing+(missing.includes('IX. Deities')?' (horoscope-details.js must load successfully)':''));
           }
         };
-        // The Section X long-range engine is asynchronous. The full horoscope
-        // must NOT be declared ready, printed or saved while its Dasha/Bhukti
-        // and transit windows are still being generated. This is a readiness
-        // check only; it does not issue Firestore reads, repeat natal calculation
-        // or modify payment/access rules.
+        // V304: Section X now contains exactly twelve integrated house readings.
+        // Validate the completed 15-year timeline, NOT removed age-80 DOM sections.
+        // Wait on the existing local computation Promise; do not issue any new
+        // API, Firebase, Swiss or rendering request. Keep Save/Print guarded.
         const ensureLongPredictionComplete=async advancedRoot=>{
           if(!advancedRoot)return;
           const x=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
-          if(!x)return; // In a genuine Basic-only flow Section X is absent.
+          if(!x)return; // Genuine Basic-only flow intentionally has no Section X.
           const pending=advancedRoot.__smvLongTimelineReady;
           if(pending)await pending;
-          const dasha=x.querySelector('[data-smv-long-range="dasha"]');
-          const transit=x.querySelector('[data-smv-long-range="transit"]');
-          if(!dasha||!transit||!transit.querySelector('[data-smv-full-timeline-complete="1"]')){
-            const error=x.querySelector('.smv-80-status')?.textContent||'';
-            throw new Error('Section X forecast through age 80 is incomplete. '+error.slice(0,200));
+          const integrated=x.querySelector('.smv-v303-integrated[data-smv-integrated="12"]');
+          const topics=integrated?.querySelectorAll('.smv-v303-house[data-d1-topic]')||[];
+          const failure=x.querySelector('.smv-v302-unavailable')?.textContent?.trim()||'';
+          const ids=new Set(Array.from(topics,t=>Number(t.getAttribute('data-d1-topic'))));
+          const twelve=topics.length===12&&Array.from({length:12},(_,i)=>i+1).every(i=>ids.has(i));
+          if(!integrated||!twelve||integrated.getAttribute('data-smv-15-year-ready')!=='1'||failure){
+            throw new Error('Section X integrated 15-year reading is incomplete. '+(failure||'12 house chapters or 15-year Swiss/Dasha result missing.').slice(0,210));
           }
         };
         // Core + Advanced Analysis are calculated locally in the browser.
@@ -192,9 +193,8 @@ if(lat===''||lon===''){
             englishAdvancedRoot.innerHTML='';
             phase='full-advanced-calculation';
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
-            // V283: do not publish a partial PDF when Section X's separate
-            // asynchronous 80th-birthday timeline has not yet been added.
-            phase='full-age80-timeline';
+            // V304: do not publish any partial 12-house/15-year report.
+            phase='full-integrated-15-year-predictions';
             await ensureLongPredictionComplete(englishAdvancedRoot);
             // Validate ALL sections BEFORE signalling report-ready / Save / Print.
             // The old flow notified report-store first and rejected missing IX later.
