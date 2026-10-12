@@ -26,7 +26,7 @@ const HEALTH={
 const validHouse=h=>Number.isInteger(h)&&h>=1&&h<=12;
 const planet=(d,k)=>d?.planets?.[k]||null;
 const owners=(d,k)=>Array.isArray(d?.houses)?d.houses.filter(h=>h.lord===k&&validHouse(h.no)).map(h=>h.no):[];
-function starOf(d,k){const p=planet(d,k),v=Number(p?.longitude);if(!Number.isFinite(v))return null;const i=Math.floor((((v%360)+360)%360)/(360/27));return {index:i,lord:ORDER[i%9]};}
+function starOf(d,k){const p=planet(d,k);if(!p||p.longitude===null||p.longitude===undefined||p.longitude==='')return null;const v=Number(p.longitude);if(!Number.isFinite(v))return null;const i=Math.floor((((v%360)+360)%360)/(360/27));return {index:i,lord:ORDER[i%9]};}
 function points(d,md,ad){const score=new Map(),reasons=new Map();const put=(h,w,why)=>{if(!validHouse(h))return;score.set(h,(score.get(h)||0)+w);(reasons.get(h)||[]).push(why);};
  const root=(k,w,label)=>{const p=planet(d,k);if(!p)return;put(p.house,w*1.5,label+'-placement');for(const h of owners(d,k))put(h,w,label+'-lord');};
  root(md,2.2,'MD');root(ad,3.0,'AD');
