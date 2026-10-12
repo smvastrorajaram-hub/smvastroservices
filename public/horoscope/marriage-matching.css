@@ -75,3 +75,8 @@
 #smvMarriageMatching .mm-v281-dosha-one .mm-v281-dosha-person{padding:8px 12px;border-left:3px solid #d6be90;background:#fefdfb;margin:8px 0}
 @media(max-width:680px){#smvMarriageMatching .mm-v281-people{grid-template-columns:1fr;gap:8px}#smvMarriageMatching .mm-v281-people>section{padding:10px}#smvMarriageMatching .mm-v281-results .mm-v281-topic-book,#smvMarriageMatching .mm-v281-results .mm-v281-character,#smvMarriageMatching .mm-v281-results .mm-v281-doshas{padding:13px;margin:13px 0}#smvMarriageMatching .mm-v281-verdict{padding:9px}#smvMarriageMatching .mm-v281-remedy-list{padding-left:1.25rem}}
 @media print{#smvMarriageMatching .mm-v281-people{grid-template-columns:1fr}#smvMarriageMatching .mm-v281-results .mm-v281-topic-book,#smvMarriageMatching .mm-v281-results .mm-v281-character,#smvMarriageMatching .mm-v281-results .mm-v281-doshas{box-shadow:none}}
+
+/* V308 long-form sections must flow across print pages. */
+#smvMarriageMatching .mm-v308-year p,#smvMarriageMatching .mm-v308-d9 p,#smvMarriageMatching .mm-v308-sandhi p{line-height:1.75;overflow-wrap:anywhere;margin:.65em 0}
+#smvMarriageMatching .mm-v308-year h4{color:#713a29;margin:1.3em 0 .45em}
+@media print{.mm-v308-results,.mm-v308-15years,.mm-v308-year,.mm-v308-d9,.mm-v308-sandhi{display:block!important;break-inside:auto!important;page-break-inside:auto!important}.mm-v308-results p{orphans:3;widows:3}.mm-v308-results h2,.mm-v308-results h3,.mm-v308-results h4{break-after:avoid-page;page-break-after:avoid}.mm-v308-year details{display:block}.mm-v308-year details>*{display:block!important}}
