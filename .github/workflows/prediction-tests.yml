@@ -1,0 +1,27 @@
+name: Prediction regression
+
+on:
+  push:
+    paths:
+      - 'public/horoscope/d1-v311-*.js'
+      - 'tests/prediction-*.test.cjs'
+      - '.github/workflows/prediction-tests.yml'
+  pull_request:
+    paths:
+      - 'public/horoscope/d1-v311-*.js'
+      - 'tests/prediction-*.test.cjs'
+      - '.github/workflows/prediction-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  prediction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Test prediction timing and Tamil narratives
+        run: node --test tests/prediction-*.test.cjs
