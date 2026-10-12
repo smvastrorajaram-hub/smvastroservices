@@ -31,8 +31,23 @@ function timeline(d,claims,t,birth){const all=periods(t,birth),perHouse=Object.f
  const years=(t?.transitYears||[]).filter(y=>valid(y.from)&&valid(y.to)).map(y=>{const ranked=claims.flatMap(c=>transitYear(t,y,c.house).slice(0,1).map(n=>({claim:c,n}))).sort((a,b)=>b.n.score-a.n.score);
  const period=all.find(p=>p.from<=y.date&&p.to>y.date)||all.find(p=>inPeriod(y,p))||null;
  const linked=period?ranked.find(x=>activation(d,x.claim,period).weight>=2.4):null;
- const selected=linked||ranked[0]||null;return {from:y.from,to:y.to,date:y.date,age:ageAt(birth,y.date),year:y.forecastYear,period,house:selected?.claim.house||null,claim:selected?.claim||null,transit:selected?.n||null,confirmedConvergence:!!linked,notesAvailable:(y.notes||[]).length};});
+ const selected=linked||null;return {from:y.from,to:y.to,date:y.date,age:ageAt(birth,y.date),year:y.forecastYear,period,house:selected?.claim.house||null,claim:selected?.claim||null,transit:selected?.n||null,confirmedConvergence:!!linked,notesAvailable:(y.notes||[]).length,pass:!!linked,sourceSignature:linked?`${linked.claim.house}/${linked.n.planet}/${period?.md}/${period?.ad}`:null};});
  return {all,perHouse,chronology,years,meta:{actualPeriods:all.length,computedTransitYears:years.filter(x=>x.notesAvailable>0).length,convergedYears:years.filter(x=>x.confirmedConvergence).length,pdAvailable:all.some(x=>x.pd!==null),forecastHorizonYears:t?.meta?.forecastHorizonYears||null,samplesChecked:t?.meta?.samplesChecked||0,periodEnd:all.length?all[all.length-1].to:null}};
 }
-return Object.freeze({timeline,ageAt,periods,activation,transitYear});
+/* Consecutive annual snapshots are NOT fifteen different events. Keep only
+ * independently linked natal+dasha+transit windows, merge same signatures.
+ * A change in a period ruler or focused house begins a new window.
+ */
+function groupYears(years){const out=[],seen=new Map();
+ for(const y of years){if(!y.pass||!y.claim||!y.transit||!y.period){const last=out[out.length-1];if(last&&last.kind==='insufficient'&&last.to===y.from){last.to=y.to;last.years++;}else out.push({kind:'insufficient',from:y.from,to:y.to,years:1});continue;}
+ const semanticKey=`${y.claim.house}:${y.claim.conclusion}:${Math.sign(y.transit.signal)}`;
+ const recurring=seen.get(semanticKey);
+ if(recurring){recurring.recurrences.push({from:y.from,to:y.to,date:y.date,md:y.period.md,ad:y.period.ad,transit:y.transit.planet});recurring.years++;continue;}
+ const key=y.sourceSignature,last=out[out.length-1];
+ if(last&&last.kind==='event'&&last.signature===key&&last.to===y.from){last.to=y.to;last.years++;last.samples.push(y.date);last.observations.push(y.transit.signal);}
+ else {const row={kind:'event',signature:key,from:y.from,to:y.to,years:1,focusHouse:y.house,claim:y.claim,period:y.period,transit:y.transit,samples:[y.date],observations:[y.transit.signal],age:y.age,recurrences:[]};out.push(row);seen.set(semanticKey,row);}
+ }
+ return out;
+}
+return Object.freeze({timeline,ageAt,periods,activation,transitYear,groupYears});
 });

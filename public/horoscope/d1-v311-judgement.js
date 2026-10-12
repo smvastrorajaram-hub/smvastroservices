@@ -62,11 +62,48 @@ function read(d,full,n,age){const h=d.houses[n-1],k=h?.lord;if(!h||!d.planets[k]
  const main=age!==null&&age<18&&[2,5,7,10,11].includes(n)?({2:'குடும்பப் பேச்சு மற்றும் கற்றலுக்கான பொருட்கள்',5:'பள்ளிப் படிப்பும் விளையாட்டும்',7:'நண்பர்களுடன் இணைந்து பழகும் விதம்',10:'பள்ளிப் பொறுப்பும் பயிற்சியும்',11:'நண்பர் வட்டமும் குழு நடவடிக்கையும்'})[n]:T[n-1][support==='strain'?2:1];
  return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + relevant validated varga only',ruleMethod:'relative priority heuristic; no factual event certainty'});
 }
+/* Verified chart evidence is resolved into a life-scene BEFORE writing prose. */
+const SCENE_TA=[
+ ['ஒரு முக்கியமான முடிவில் தனியாக முன்னின்று செயல்படுதல்','மற்றவர்களின் எதிர்பார்ப்புகளைச் சுமந்தபடி தன் விருப்பத்தை நிலைநிறுத்துதல்'],
+ ['குடும்பப் பணத்தைச் சேமிப்பாக மாற்ற முயற்சித்தல்','குடும்பச் செலவுகளும் பணவாக்குறுதிகளும் சேமிப்பைக் குறைத்தல்'],
+ ['தொடர்ச்சியான பயிற்சியால் தனித்திறன் உருவாகுதல்','ஒரே முயற்சியைப் பலமுறை மாற்றிச் செய்ய வேண்டியிருத்தல்'],
+ ['வீடு, நிலம் அல்லது வசிப்பிடத்தை நிலைப்படுத்தும் முயற்சி','வீட்டுச் செலவோ குடும்பப் பராமரிப்போ சொத்து முயற்சியைத் தாமதப்படுத்துதல்'],
+ ['படிப்பில் ஆழம் அல்லது படைப்பாற்றலால் முன்னேற்றம்','திறமை இருந்தும் கவனம் சிதறுவதால் பயிற்சி நீளுதல்'],
+ ['சிக்கலான பணியில் அனுபவம் பெற்று நம்பிக்கை பெறுதல்','வேலைப் போட்டி, கடன் அல்லது பணிச்சுமையால் ஓய்வு குறைதல்'],
+ ['துணைவர் அல்லது கூட்டாளியுடன் ஒப்பந்தம் நிலைபெறுதல்','பொறுப்புகளைப் பகிர்வதில் கருத்துவேறுபாடு வருதல்'],
+ ['பழைய ஏற்பாட்டை மாற்றி நிதிப் பாதுகாப்பை வளர்த்தல்','கூட்டுப்பணம் அல்லது ஆவணத்தில் திடீர் மாற்றத் தேவை எழுதல்'],
+ ['மேற்படிப்பு, வழிகாட்டல் அல்லது தொலைதூர முயற்சிக்கு வாய்ப்பு','பெரியோர் கருத்துக்கும் சொந்தத் திட்டத்துக்கும் இடைவெளி உருவாதல்'],
+ ['தொழிலில் கூடுதல் பொறுப்பும் தனிப்பட்ட பெயரும் உருவாதல்','செய்த உழைப்பிற்கு அங்கீகாரம் தாமதித்தல்'],
+ ['பயனுள்ள தொடர்புகளால் வரவு வழிகள் விரிவடைதல்','எதிர்பார்த்த வருமானம் தாமதமாக வருதல்'],
+ ['செலவைக் கட்டுப்படுத்தி ஓய்வுக்கான இடம் உருவாக்குதல்','தொலைதூரப் பணி அல்லது குடும்பத் தேவையால் செலவுகள் உயர்தல்']
+];
+const SCENE_EN=[
+ ['taking ownership of a major decision','individual decisions becoming harder under obligations'],
+ ['turning earnings into family savings','household commitments reducing savings'],
+ ['developing a practical skill through repeated effort','reworking an initiative several times'],
+ ['stabilizing housing or family support','property plans slowing under care or costs'],
+ ['deepening learning or creative work','training taking longer when concentration is divided'],
+ ['earning trust by resolving difficult work','workload and debt leaving less time for rest'],
+ ['forming a workable partnership','conflict around shared duties'],
+ ['securing an existing shared arrangement','unexpected changes in shared records or liabilities'],
+ ['progressing through study or mentoring','a disagreement between advice and plans'],
+ ['assuming visible professional responsibility','recognition trailing effort'],
+ ['expanding income through reliable contacts','anticipated receipts arriving late'],
+ ['bringing expenses and rest under control','care or travel disrupting savings']
+];
+function resolve(c){const age=c.ageUnder18, up=c.conclusion==='support',down=c.conclusion==='strain';
+ const linked=[c.location,...c.otherLordships].filter(n=>n!==c.house);
+ const essential=age?(({7:3,10:5,11:3,2:4})[c.house]||c.house):c.house;
+ const event=(up?0:1), protect=c.positive[0]||null,risk=c.negative[0]||null;
+ const status=(up?'supported':down?'restricted':'mixed');
+ const sourceKeys=[`H${c.house}:L${c.lord}:IN${c.location}`,...c.all.map(v=>`${v.relation}:${v.planet}:${Number(v.delta).toFixed(2)}`)];
+ return Object.freeze({sceneTA:SCENE_TA[essential-1][event],sceneEN:SCENE_EN[essential-1][event],status,primary:c.dominant,protection:protect,risk,linkedHouses:linked,ageBand:age?'minor':'adult',evidenceKeys:sourceKeys,validity:c.all.length>0?'natal-derived':'unsupported'});
+}
 function synthesize(claims,timing,age){const major=age!==null&&age<18?[5,1,4,3,9]:[10,1,2,4,7,11,5,9];const weighted=claims.filter(c=>major.includes(c.house)).map(c=>({claim:c,impact:Math.abs(c.relativeScore)+0.4,activation:(timing?.perHouse?.[c.house]||[]).length}));
  const selected=[...weighted].sort((a,b)=>b.impact+.25*b.activation-a.impact-.25*a.activation).slice(0,3).map(x=>x.claim);
  const main=selected[0],counter=selected.find(c=>c.conclusion!==main.conclusion)||selected[1]||main;
  const simultaneous=claims.filter(c=>c.house!==main.house&&c.lord===main.lord).map(c=>c.house);
  const current=timing?.chronology?.[0]||null;
  return {mainHouse:main.house,main,counterHouse:counter.house,counter,sameRulerHouses:simultaneous,asofMajor:current?.period?.md||null,asofSub:current?.period?.ad||null,asofPeriodFocus:current?.mainHouse||null,ageBand:age!==null&&age<18?'child':age!==null&&age>=65?'senior':'adult',source:'ranked D1 evidence with timing; no demographic assumption',notAProvenEvent:true};}
-return Object.freeze({read,synthesize,norm,varga,PLAN,NTA,T,E,DEST_TA,DEST_EN,KAR});
+return Object.freeze({read,resolve,synthesize,norm,varga,PLAN,NTA,T,E,DEST_TA,DEST_EN,KAR});
 });
