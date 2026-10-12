@@ -96,7 +96,10 @@ function actor(k,ta){return ta?(J().NTA[k]||k):k;}
 function riskAndSupport(c,ta){const top=c.positive[0],risk=c.negative[0];if(!top&&!risk)return '';
  if(top&&risk){return ta?`${actor(top.planet,true)} தரும் ஆதரவுக்கு எதிராக ${actor(risk.planet,true)} தொடர்பும் இருப்பதால் ${COUNTER_TA[c.house-1]}.`:`A supportive ${top.planet} contact is offset by restrictive ${risk.planet} evidence; the result depends on how the competing circumstances are handled.`;}
  if(risk)return ta?`${actor(risk.planet,true)} தொடர்பின் அழுத்தம் இருப்பதால் முயற்சியின் வேகத்தைவிட ஏற்பாட்டின் நிலைத்தன்மை முக்கியமாகிறது.`:`A restrictive ${risk.planet} contact makes stability of the arrangements more important than speed.`;
- return ta?`${actor(top.planet,true)} தொடர்பின் துணை இருப்பதால் இந்த முயற்சியைத் தொடர்வதற்கான ஜாதக ஆதாரம் உள்ளது.`:`A supportive ${top.planet} link adds a second natal indicator for continued effort.`;}
+ // A positive contact is already reflected in J.resolve(c).status and the
+ // concrete life-scene above. Restating "chart evidence exists" is filler,
+ // not a life prediction; omit this sentence entirely in BOTH languages.
+ return ''; }
 function natal(c,lang){const ta=lang!=='en',d=J().resolve(c),idx=c.house-1;
  const domain=ta?AREA_TA[idx]:AREA_EN[idx],channel=ta?CHANNEL_TA[c.location-1]:CHANNEL_EN[c.location-1];
  const minor=c.ageUnder18;const focus=(minor&&[7,10,11].includes(c.house))?(ta?'நட்பிலும் குழுச் செயலிலும் பொறுப்பைப் பகிர்வது':'learning to cooperate with peers'):(ta?FIRST_TA[idx][d.status==='supported'?0:1]:FIRST_EN[idx][d.status==='supported'?0:1]);
