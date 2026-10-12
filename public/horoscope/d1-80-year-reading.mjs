@@ -119,6 +119,20 @@ const MINOR_BHAVA_TA=[
  ['கல்விப் பயிற்சி, திறன் வளர்ப்பு மற்றும் பொறுப்புணர்வு','வயதுக்கு மீறிய கடமைகள்'],
  ['நண்பர்கள், குழுவிளையாட்டு மற்றும் ஆதரவு','சக மாணவருடன் ஒப்பிட்டுப் பதற்றம்'],
  ['உறக்கம், ஓய்வு, தனிப்பட்ட இடம் மற்றும் பாதுகாப்பு','உறக்கமும் பராமரிப்பும் குறைதல்']];
+const MINOR_BHAVA_EN=[
+ ['personal development and habits','rushing into new habits'],
+ ['family communication and practical needs','taking on adult financial concerns'],
+ ['age-appropriate skill practice and siblings','pressure to compete'],
+ ['home safety and caregiver routines','disruption to rest and study'],
+ ['learning, play and creative interests','excessive expectations around school'],
+ ['school routines, rest and everyday care','losing play or sleep to academic pressure'],
+ ['cooperation with peers and caregivers','friction with friends'],
+ ['adapting to change with family support','unpreparedness for a new setting'],
+ ['learning from teachers and trusted adults','rejecting useful advice too quickly'],
+ ['training, skills and small responsibilities','age-inappropriate duties'],
+ ['friends, group activities and belonging','unhelpful peer comparisons'],
+ ['sleep, rest and familiar routines','late-night screen habits']
+];
 const BHAVA_MATTER_EN=[
  ['personal decisions and initiative','taking on more than can be sustained'],
  ['savings and family communication','confusing earnings with available savings'],
@@ -190,16 +204,55 @@ const PERIOD_EN=[
  ['You separate reliable income from speculative opportunities.','Spending unconfirmed gains reduces reserves.'],
  ['You set clearer limits for private time and rest.','Late unfinished work displaces sleep.']
 ];
+/* V299: The operating planetary pair changes the interpretation, not just the heading.
+   These are traditional themes, never diagnoses or assured real-world events. */
+const DASHA_STYLE_TA={
+ Sun:['பொறுப்பைத் தானாக ஏற்று முடிவை வெளிப்படையாகச் சொல்வது','அங்கீகாரத்தை எதிர்பார்த்து பிறர் கருத்தை அவசரமாக நிராகரிப்பது'],
+ Moon:['குடும்பத் தேவைகளையும் மனநிறைவையும் முடிவில் சேர்ப்பது','உணர்ச்சிவசப்பட்ட நாளில் ஏற்கெனவே எடுத்த முடிவை மாற்றுவது'],
+ Mars:['தாமதமான வேலையை உடனடியாகச் செயல்படுத்துவது','முழு விவரத்தை அறியுமுன் அவசரமாக முடிவெடுப்பது'],
+ Mercury:['விவரங்களை ஒப்பிட்டு பேசிச் சமரசம் செய்வது','அதிகம் ஆராய்ந்து எளிய முடிவையும் தள்ளிப்போடுவது'],
+ Jupiter:['கற்ற அறிவையும் மூத்தோர் ஆலோசனையையும் பயன்படுத்துவது','ஆலோசனையை மட்டுமே நம்பி நடைமுறைச் செயலைத் தள்ளுவது'],
+ Venus:['உறவுகளின் ஒத்துழைப்பையும் விருப்பத் தேர்வையும் மதிப்பது','இணக்கத்திற்காகத் தேவையான எல்லையையும் விட்டுக்கொடுப்பது'],
+ Saturn:['பொறுப்புகளை வரிசைப்படுத்தி நீண்டகாலம் நிலைத்துச் செய்வது','எல்லாப் பொறுப்பையும் தனியே சுமந்து வேலை நீளச் செய்வது'],
+ Rahu:['வழக்கத்துக்கு மாறான மாற்று வழிகளையும் புதிய தொடர்புகளையும் ஆராய்வது','உறுதிப்படுத்தாத வாய்ப்பிற்காக பழைய ஏற்பாட்டை உடைப்பது'],
+ Ketu:['தேவையற்ற சுமையை விலக்கி முக்கிய செயலுக்குத் திரும்புவது','உதவி தேவைப்படும் இடத்திலும் தனியாக விலகி நிற்பது']
+};
+const DASHA_STYLE_EN={
+ Sun:['taking ownership of visible decisions','rejecting useful input while seeking recognition'],
+ Moon:['bringing family needs into decisions','revising plans in a moment of heightened feeling'],
+ Mars:['acting on delayed work','moving before essential details are checked'],
+ Mercury:['comparing details and negotiating','delaying simple decisions through overanalysis'],
+ Jupiter:['applying learning and considered guidance','replacing practical steps with advice alone'],
+ Venus:['valuing cooperation and personal choice','giving up necessary boundaries for harmony'],
+ Saturn:['sequencing duties and sustaining effort','carrying every duty alone and extending delays'],
+ Rahu:['examining unconventional options and new networks','abandoning a sound arrangement for an unverified prospect'],
+ Ketu:['reducing distractions and concentrating on essentials','withdrawing when practical help would be useful']
+};
 function periodTopicProse(full,period,topic,trigger,lang){
  const n=topic.number,ta=lang!=='en',minor=period.age<18,senior=period.age>=70;
- const pos=(ta?(minor?PERIOD_MINOR_TA:senior?PERIOD_SENIOR_TA:PERIOD_LIVED_TA):PERIOD_EN)[n-1];
- const md=ENKEY(period.md),ad=ENKEY(period.ad);
+ const baseline=(ta?(minor?PERIOD_MINOR_TA:senior?PERIOD_SENIOR_TA:PERIOD_LIVED_TA):PERIOD_EN)[n-1];
+ const md=ENKEY(period.md),ad=ENKEY(period.ad),styles=ta?DASHA_STYLE_TA:DASHA_STYLE_EN;
+ const m=styles[md]||styles.Saturn,a=styles[ad]||styles.Jupiter;
  const mdDirect=trigger.mdMarks.length>0,adDirect=trigger.adMarks.length>0;
- // A sign of weaker support is a *traditional interpretation*, not certainty.
- const focus=''; // The age-specific topic itself carries the context; no recycled stage preface.
- const positive=focus+pos[0];
- // Distinguish the transition between operating planets with actual activated contacts.
- const negative=(mdDirect&&adDirect&&md!==ad)?pos[1]:'';
+ const topicName=(ta?(minor?MINOR_BHAVA_TA:BHAVA_MATTER_TA):BHAVA_MATTER_EN)[n-1][0];
+ const source=trigger.source||{};
+ const known=(x)=>Number.isInteger(x?.house)&&x.house>=1&&x.house<=12;
+ // Keep the provenance explicit: unlike a canned positive/negative prediction,
+ // this sentence changes for the real two operating lords and their natal links.
+ let positive,negative='';
+ if(ta){
+  const primary=mdDirect?`${PNA(md)} மகாதசை — ${m[0]}`:`${PNA(md)} மகாதசையின் பின்னணி`;
+  const secondary=adDirect?`${PNA(ad)} புக்தி — ${a[0]}`:`${PNA(ad)} புக்திக்கு இப்பாவத்தில் நேரடிப் புதிய தொடர்பில்லை`;
+  positive=`${topicName} தொடர்பில் ${baseline[0]} ${primary}; ${secondary}.`;
+  if(md!==ad&&(mdDirect&&adDirect||Number(source.signal)<0))negative=`கலப்பின் மறுபக்கம்: ${m[1]}; ${a[1]}. குறிப்பாக ${baseline[1]}`;
+ }else{
+  const primary=mdDirect?`${md} major period emphasizes ${m[0]}`:`${md} is background rather than a direct house link`;
+  const secondary=adDirect?`${ad} sub-period brings ${a[0]}`:`${ad} has no new direct link to this house`;
+  positive=`For ${topicName}, ${baseline[0]} ${primary}; ${secondary}.`;
+  if(md!==ad&&(mdDirect&&adDirect||Number(source.signal)<0))negative=`Counterweight: ${m[1]}; ${a[1]}. In particular, ${baseline[1]}`;
+ }
+ // Natal house placements are recorded in the evidence row, not presented
+ // as a fresh event in every future window.
  return {positive,negative};
 }
 
@@ -271,6 +324,20 @@ async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
  }
  return {birth:dates.birth,referenceDate:dates.referenceDate,end:dates.end,years:samples,events,stepDays:7,precision:'sign-change date refined to a daily boundary after seven-day sampling; very short reversals between samples cannot be ruled out',samplesChecked:store.size};
 }
+/* V299 transit reading: house-specific actions vary by planet and by age.
+   Only a newly changed/activated link is narrated; the full ingress log remains factual. */
+const TRANSIT_EFFECTS_TA={
+ Jupiter:['சுயமுடிவில் ஆசிரியர் அல்லது அனுபவமுள்ளவரின் கருத்தைச் சேர்ப்பது','குடும்பத் தொகை ஒதுக்கீட்டில் நீண்டகால தேவையை மதிப்பிடுவது','தனக்குத் தேவையான பயிற்சியை ஆழமாகக் கற்றுச் செயல்படுத்துவது','வீட்டின் வசதி மற்றும் கல்வி தொடர்பான ஏற்பாட்டைச் சீர்செய்வது','படிப்பு அல்லது படைப்புத் திறனில் புதிய முறையைத் தேர்வது','அன்றாடப் பணிப் பயிற்சியைத் திட்டமிட்டுப் பகிர்வது','கூட்டு முடிவில் ஒருவருக்கொருவர் எதிர்பார்ப்பை வெளிப்படுத்துவது','எதிர்பாராத மாற்றத்திற்கு முன்கூட்டியே தகவல் சேர்ப்பது','அனுபவமுள்ள வழிகாட்டியிடம் கேட்டதைச் செயலில் சோதிப்பது','பணியில் கற்ற திறனைப் பயன்படுத்தி பொறுப்பை விரிவாக்குவது','நண்பர்கள் மற்றும் தொடர்புகளின் உதவியுடன் வாய்ப்பைக் கண்டறிவது','கற்றதைத் தனிநேரத்தில் ஒழுங்காகப் பயிற்சி செய்வது'],
+ Saturn:['தினசரிப் பொறுப்புகளை வரிசைப்படுத்திச் செயல்முறையை நிலைநாட்டுவது','வருமானம் வருவதற்கும் செலவு செய்வதற்கும் தனித்த கணக்கு வைப்பது','முடிக்காமல் விட்ட பயிற்சியைத் தொடர்ச்சியாக முடிப்பது','வீட்டுப் பராமரிப்பில் தள்ளிவைத்த சிறிய வேலைகளைத் திட்டமிடுவது','பாடம் அல்லது படைப்புத் திட்டத்தில் நீண்டகாலப் பயிற்சியைத் தொடர்வது','வேலைப் பகிர்வையும் ஓய்வு நேரத்தையும் திட்டத்தில் இணைப்பது','கூட்டு உறவில் பொறுப்புகளுக்கான தெளிவான எல்லையை அமைப்பது','மாற்றக் காலத்திற்கான பாதுகாப்பு ஏற்பாட்டை எழுதி வைப்பது','ஆலோசனையை அன்றாட ஒழுக்கமாக மாற்றுவது','செய்த வேலையின் தரத்தை உயர்த்தி நிலையான பொறுப்பை ஏற்குவது','வராத ஆதாயத்தைச் செலவுக் கணக்கில் சேர்க்காமல் இருப்பது','உறக்கம், செலவு, தனிநேரத்திற்கு நடைமுறை எல்லை அமைப்பது'],
+ Rahu:['புதிய துறையொன்றில் ஆர்வம் வந்தால் ஆதாரத்தைச் சரிபார்த்துத் தொடங்குவது','புதிய வருமான யோசனையின் ஆபத்தையும் செலவையும் வேறுபடுத்துவது','தொழில்நுட்பம் சார்ந்த புதிய திறனைச் சோதிப்பது','வீடு மாற்றம் அல்லது வசதி மாற்றத்துக்கான தகவலை ஒப்பிடுவது','புதிய பாடம், கலை அல்லது செயல்முறையில் பரிசோதனை செய்வது','பணிப் பழக்கத்தை மாற்றுமுன் அதன் விளைவைக் கணக்கிடுவது','புதிய கூட்டுறவில் ஒப்பந்தத்தின் விவரங்களைத் தெளிவுபடுத்துவது','எதிர்பாராத மாற்றத்திற்கான மாற்று வழியைத் தேர்வது','மாறுபட்ட கருத்தை ஏற்குமுன் அதன் உண்மையை ஆராய்வது','புதிய பணிமுறை அல்லது தொடர்பு வழியைச் சோதிப்பது','புதிய நண்பர்கள், சமூக வட்டத்தில் நம்பகத்தன்மையை ஆராய்வது','புதிய செலவு அல்லது பயணத் திட்டத்தின் தேவையைச் சோதிப்பது'],
+ Ketu:['தன் முயற்சிகளில் பயன் இல்லாதவற்றை விலக்குவது','அத்தியாவசியமற்ற செலவுகளை ஒதுக்குவது','கவனத்தைச் சிதைக்கும் செயல்களை நீக்கிப் பயிற்சியைத் தொடர்வது','வீட்டில் அத்தியாவசியமற்ற மாற்றங்களைத் தவிர்ப்பது','தேவையற்ற கற்றல் சுமையைக் குறைத்துப் பிரதான பாடத்தில் கவனம் தருவது','அன்றாட வேலையில் தேவையற்ற சிக்கலைக் குறைப்பது','உறவுகளில் சொல்லாத எதிர்பார்ப்பைத் தெளிவுபடுத்துவது','மாற்றத்தில் முதலில் பாதுகாக்க வேண்டியதைத் தேர்வது','பழைய கருத்தில் பயனுள்ளதை மட்டும் எடுத்துக்கொள்வது','பதவி பெயரைவிட வேலையின் பயனில் கவனம் தருவது','பயனற்ற சமூக ஒப்பீட்டை விலக்குவது','அவசியமற்ற செலவையும் ஓய்வைக் குலைக்கும் பழக்கத்தையும் விலக்குவது']
+};
+const TRANSIT_EFFECTS_EN={
+ Jupiter:['using trusted advice in personal decisions','budgeting for longer-term family needs','deepening one practical skill','improving household or study arrangements','trying a more effective learning method','sharing practical training and workload','clarifying expectations in agreements','gathering evidence before a major change','testing advice in practice','applying newly learned skills to duties','finding useful opportunities through reliable contacts','setting regular time for learning and rest'],
+ Saturn:['putting daily duties into a sustainable sequence','separating received income from planned expenditure','finishing an unfinished training task','scheduling deferred household maintenance','sustaining structured learning or creative work','balancing assigned work with actual rest','agreeing on clear boundaries in a partnership','writing a practical contingency plan','turning guidance into a consistent routine','improving work quality before taking on more','not spending gains that have yet to arrive','setting limits for expenses and rest'],
+ Rahu:['checking evidence before trying a novel approach','checking costs and risks of a new financial idea','testing a technology-based skill','comparing plans for changing the home environment','experimenting with a new subject or creative method','testing how a changed routine affects work','reading the details of a new agreement','planning alternatives for unfamiliar changes','verifying unconventional advice','trialling a new professional workflow','checking the reliability of a new network','checking the value of a novel expense or trip'],
+ Ketu:['removing low-value commitments','cutting nonessential expenses','reducing distraction while practising a skill','avoiding unnecessary changes to the home','concentrating on the key area of learning','simplifying an overcomplicated work routine','speaking clearly about unspoken expectations','prioritising what needs protection during change','keeping useful parts of established guidance','valuing useful work over titles','stepping away from unhelpful comparisons','removing unnecessary expenses and sleep-disrupting habits']
+};
 function transitNarrative(full,timeline,language){
  // A new sign or aspect activation has meaning; the same natal D1 fact
  // repeated on every one of 35 calendar snapshots does not. We store
@@ -300,26 +367,32 @@ function transitNarrative(full,timeline,language){
     const k=[planet,y.pos[planet].sign,c.focus,c.evidence.marks.slice().sort().join(',')].join('/');
     if(seen.has(k))continue;seen.add(k);used++;
     const minor=y.age<18,senior=y.age>=70;
-    const theme=(ta?(minor?MINOR_BHAVA_TA:BHAVA_MATTER_TA):BHAVA_MATTER_EN)[c.focus-1];
+    const theme=(ta?(minor?MINOR_BHAVA_TA:BHAVA_MATTER_TA):(minor?MINOR_BHAVA_EN:BHAVA_MATTER_EN))[c.focus-1];
     const state=(ta?ZTA:ZEN)[y.pos[planet].sign];
     const mode=c.evidence.marks.includes('transit-through')?'through':c.evidence.marks.includes('transit-aspect')?'aspect':'lord';
     // Never reuse the natal report-date child title in an age-79 forecast.
-    const ageTitle=ta?`${c.focus}. ${theme[0]}`:`${c.focus}. ${theme[0]}`;
-    const activity=ta?
-      (planet==='Jupiter'?`அறிவு அல்லது குடும்ப வழிகாட்டுதலைச் செயலில் பயன்படுத்தி ${theme[0]} தொடர்பில் புதிய ஒழுங்கை உருவாக்கும் காலம்.`:
-       planet==='Saturn'?`${theme[0]} தொடர்பான பொறுப்புகளை வரிசைப்படுத்தித் தாமதமான வேலையை முடிப்பதற்கான காலம்.`:
-       planet==='Rahu'?`${theme[0]} குறித்து வழக்கமற்ற அணுகுமுறையைச் சோதிக்கும் ஆர்வம் அதிகரிக்கும் காலம்.`:
-       `${theme[0]} தொடர்பில் தேவையற்ற சுமைகளைத் தேர்ந்தெடுத்து குறைக்கும் காலம்.`):
-      (planet==='Jupiter'?`A period of using learning and guidance in ${theme[0]}.`:
-       planet==='Saturn'?`A period for reorganising duties connected with ${theme[0]}.`:
-       planet==='Rahu'?`A period for reviewing new approaches to ${theme[0]}.`:
-       `A period for simplifying commitments connected with ${theme[0]}.`);
-    const limit=ta?`அதே நேரத்தில் ${theme[1]} தொடர்பான சவால் கவனத்தில் இருக்கிறது.`:`The balancing consideration is ${theme[1]}.`;
-    const ageText=ta?(minor?'இது பள்ளி, பெற்றோர் ஆதரவு மற்றும் வயதுக்குரிய பழக்கங்கள் பற்றிய வாசிப்பு.':senior?'இது மூத்த வயதுக்குரிய அனுபவப் பகிர்வு, குடும்ப ஆதரவு மற்றும் ஓய்வு பற்றிய வாசிப்பு.':''):
-      minor?'Read this through schooling and parental support, not adult milestones.':senior?'Read this through mentoring, established relationships and later-life routines.':'';
+    const stageTitle=senior&&c.focus===10?(ta?'அனுபவப் பகிர்வும் விருப்பமான செயல்களும்':'mentoring and chosen activities'):senior&&c.focus===7?(ta?'நீண்டகால உறவுகளும் ஒத்துழைப்பும்':'longstanding relationships and cooperation'):theme[0];
+    const ageTitle=`${c.focus}. ${stageTitle}`;
+    let message=(ta?TRANSIT_EFFECTS_TA:TRANSIT_EFFECTS_EN)[planet][c.focus-1];
+    // A forecast at 14 is about study/peers, not contracts or marriage; at 79
+    // it must not promise a job/promotion or an existing spouse.
+    if(minor){
+      const young=ta?PERIOD_MINOR_TA[c.focus-1][0]:MINOR_BHAVA_EN[c.focus-1][0];
+      const method=ta?({Jupiter:'பெற்றோர் அல்லது ஆசிரியர் வழிகாட்டுதலுடன்',Saturn:'தினசரி பழக்கத்தைத் தொடர்ந்து',Rahu:'புதிய முறையைப் பெரியோர் ஆதரவுடன் சோதித்து',Ketu:'தேவையற்ற அழுத்தத்தைக் குறைத்து'}[planet]):({Jupiter:'with teacher guidance',Saturn:'through steady practice',Rahu:'by carefully testing a new approach',Ketu:'by reducing distraction'}[planet]);
+      message=ta?`${method} ${young} தொடர்பான பழக்கத்தை வளர்ப்பது`:`${method}, ${young}`;
+    }
+    if(senior&&[7,10].includes(c.focus)){
+      const older=ta?PERIOD_SENIOR_TA[c.focus-1][0]:('Saturn'===planet?'maintaining chosen responsibilities':c.focus===10?'sharing skills in chosen activities':'keeping valued relationships active');
+      const method=ta?({Jupiter:'அனுபவமுள்ளவர்களுடன் உரையாடி',Saturn:'உழைப்பின் அளவைத் தானே தேர்ந்தெடுத்து',Rahu:'புதிய உதவி முறையைச் சோதித்து',Ketu:'தேவையற்ற சுமையைக் குறைத்து'}[planet]):({Jupiter:'through valued guidance',Saturn:'with self-chosen limits',Rahu:'by testing accessible alternatives',Ketu:'by simplifying obligations'}[planet]);
+      message=ta?`${method} ${older}`:`${method}, ${older}`;
+    }
+    const place=mode==='through'?(ta?'அந்தப் பாவத்தில் நேரடியாகச் செல்கிறார்':'crosses that house'):
+      mode==='aspect'?(ta?'அந்தப் பாவத்தைப் பார்க்கிறார்':'aspects that house'):(ta?'அதன் அதிபதியுடன் தொடர்பு பெறுகிறார்':'links with its ruler');
+    // Midpoint position and house link establish a *dated thematic reading*,
+    // not a claim that the same placement applies throughout the whole year.
     const impact=ta?
-      `${KTA[planet]} ${state} ராசியில் ${mode==='through'?c.focus+'-ஆம் பாவம் வழியாகப் பெயர்கிறார்':mode==='aspect'?c.focus+'-ஆம் பாவத்தைப் பார்ப்பார்':'பாவாதிபதியின் நிலையைத் தொடுகிறார்'}. ${activity} ${limit} ${ageText}`:
-      `${planet} in ${state} ${mode==='through'?'crosses':'connects with'} house ${c.focus}. ${activity} ${limit} ${ageText}`;
+      `${KTA[planet]} ${state} ராசியில் இருந்து ${c.focus}-ஆம் பாவத்துடன் தொடர்பு பெறுகிறார் (${place}). ${theme[0]} சார்ந்து ${message}. இதில் ${theme[1]} என்பதையும் கணக்கில் கொள்ளுங்கள்.`:
+      `${planet} in ${state} ${place} (house ${c.focus}). For ${theme[0]}, ${message}; balance this against ${theme[1]}.`;
     notes.push({...c,title:ageTitle,text:impact.trim(),natalLord:c.evidence.natalLord,sign:y.pos[planet].sign});
    }
   }
@@ -370,7 +443,7 @@ function dashaHTML(entries,lang='ta'){
     `The other ${x.inactiveTopicNumbers.length} topics (houses ${x.inactiveTopicNumbers.join(', ')}) have no newly active direct D1 period link. See section I for natal baseline; no period event has been invented.`):'';
   return `<details class="smv-80-window" ${i===0?'open':''}><summary>${label} — ${x.from} – ${x.to} (${ta?'வயது':'age'} ${x.age}; ${stage})</summary><div class="smv-80-change">${changed} · ${ta?'நேரடித் தொடர்புள்ளவை':'directly activated'}: ${x.topics.length}/12</div>${topicRows}${inactive?`<div class="smv-80-unlinked">${safe(inactive)}</div>`:''}</details>`;
  });
- return `<div class="smv-80-content" data-long-dasha="1" data-narrative="evidence-change-v293"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை — தசா–புக்திகள்':'Dasha and Bhukti — report date until age 80'}</h3>
+ return `<div class="smv-80-content" data-long-dasha="1" data-narrative="house-planet-pair-v299"><h3>${ta?'அறிக்கைத் தேதியிலிருந்து 80 வயது வரை — தசா–புக்திகள்':'Dasha and Bhukti — report date until age 80'}</h3>
  <p>${ta?'ஜாதகம் உருவாக்கிய நாளிலிருந்து 80-வது பிறந்த நாள் வரை மட்டுமே. இது ஆயுள் அளவைக் குறிக்கவில்லை. ஒவ்வொரு புக்தியிலும் நேரடியாகச் செயல்படும் கிரக–பாவ ஆதாரத்திற்கே முன்னுரிமை; நிலையான பிறப்பு ஜாதகக் காரணங்களை எல்லாக் காலங்களிலும் திரும்ப அச்சிடவில்லை.':'From report date until the 80th birthday only; NOT an estimate of lifespan. Period-linked D1 evidence is prioritized instead of repeating immutable natal descriptions.'}</p>
  ${!entries.length?`<p>${ta?'80 வயதிற்கு மேல் புதிய காலப்பலன்கள் இல்லை.':'No further forecast after age 80.'}</p>`:''}${summary.join('')}</div>`;
 }
@@ -384,6 +457,7 @@ function transitHTML(timeline,years,events=[],lang='ta'){
  ${years.map((y,i)=>`<details class="smv-80-window" ${i===0?'open':''}><summary>${ta?'கணிப்பு ஆண்டு':'Forecast year'} ${y.forecastYear} · ${ta?'வயது':'age'} ${y.age}–${y.age+1} · ${y.from} – ${y.to}</summary>
  <p>${ta?'கணக்கிட்ட நடுத்தேதி':'Calculated reference date'}: ${y.date} · ${KEY.map(p=>`${ta?KTA[p]:p} ${(ta?ZTA:ZEN)[y.pos[p].sign]}`).join(' · ')}</p>
  ${y.events.length?`<p><strong>${ta?'இந்த ஆண்டில் கண்டறியப்பட்ட பெயர்ச்சி ராசி மாற்றங்கள்':'Detected sign changes during this year'}:</strong> ${y.events.map(e=>`${e.date}: ${ta?KTA[e.planet]:e.planet} ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}`).join('; ')}</p>`:''}
+ ${(y.age<18||y.age>=70)&&y.notes.length?`<p class="smv-80-stage">${ta?(y.age<18?'இந்த வயதில் கல்வி, குடும்ப ஆதரவு மற்றும் வளர்ச்சிப் பழக்கங்களுக்கே இவ்வாசிப்பு பொருந்தும்.':y.age>=70?'இந்த வயதில் அனுபவப் பகிர்வு, விரும்பிய செயல்கள் மற்றும் ஓய்வுக்கே இந்த வாசிப்பு பொருந்தும்.':''):(y.age<18?'At this age the reading concerns learning, family support and age-appropriate development.':y.age>=70?'At this age the reading concerns chosen activities, established relationships and rest.':'')}</p>`:''}
  ${y.notes.map(n=>`<section class="smv-80-topic" data-transit-planet="${n.planet}" data-focus-house="${n.focus}"><h4>${n.focus}. ${safe(n.title)}</h4><p>${safe(n.text)}</p></section>`).join('')}${!y.notes.length?'':''}
  ${events.filter(e=>e.date>=y.from&&e.date<y.to&&e.topics.length).map(e=>`<section class="smv-80-event"><h4>${e.date} · ${ta?KTA[e.planet]:e.planet}: ${(ta?ZTA:ZEN)[e.from]} → ${(ta?ZTA:ZEN)[e.to]}</h4>${e.topics.map(t=>`<p><strong>${t.number}. ${safe(t.title)}:</strong> ${t.paragraphs.map(safe).join(' ')}</p>`).join('')}</section>`).join('')}</details>`).join('')}
  <p class="smv-80-complete-marker" data-smv-full-timeline-complete="1">${ta?'80 வயது வரையிலான கோச்சார அறிக்கை முழுமை அடைந்தது.':'Transit report through age 80 is complete.'}</p>

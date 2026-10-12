@@ -279,7 +279,7 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
 })();
 
 
-/* SMV-LIFE-CONTEXT-V298 — voluntary, local, chart-anchored reading.
+/* SMV-LIFE-CONTEXT-V299 — voluntary, local, chart-anchored reading.
  * No extra calculation, Firestore, payment, network, MutationObserver, storage or print injection.
  * Natal/dasha/transit evidence is READ ONLY from the completed, access-authorized report.
  * Accessibility/wellbeing selection is never inferred or saved. */
@@ -333,7 +333,12 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
    return {key:kind+':'+value,houses,title:age!==null&&age<18&&kind==='work'&&value!=='student'?(ta?'வயதுக்கேற்ற கல்வி மற்றும் பாதுகாப்பான திறன் வளர்ச்சி':'Age-appropriate study and skills'):result[ta?'ta':'en'][0],body};
  }
  function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
- function excerpt(value,limit=550){const s=clean(value);if(s.length<=limit)return s;const cutoff=s.lastIndexOf(' ',limit);return s.slice(0,cutoff>=limit-95?cutoff:limit).trim()+'…';}
+ function excerpt(value,limit=550){
+  const s=clean(value);if(s.length<=limit)return s;
+  const cut=s.slice(0,limit),ends=[...cut.matchAll(/[.!?।]\s/g)].map(m=>m.index+1),last=ends[ends.length-1];
+  if(last&&last>=Math.floor(limit*.45))return s.slice(0,last).trim();
+  const space=cut.lastIndexOf(' ');return s.slice(0,space>=limit-80?space:limit).trim()+'…';
+ }
  function plainPlace(value){return clean(value).toLowerCase().replace(/[.,\-]/g,' ').replace(/\s+/g,' ');}
  function selection({work='',marital='',residence='',birthPlace='',need='',consent=false,age=null,lang='ta'}={}){
    const ta=lang!=='en',out=[];
@@ -345,17 +350,18 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
  }
  function p(body,cls=''){const el=document.createElement('p');if(cls)el.className=cls;el.textContent=body;return el;}
  function oneTopic(root,houses,used=new Set()){
-   for(const n of [...houses.filter(h=>!used.has(h)),...houses.filter(h=>used.has(h))]){const topic=root.querySelector('[data-d1-topic="'+n+'"]');
+   for(const n of houses.filter(h=>!used.has(h))){const topic=root.querySelector('[data-d1-topic="'+n+'"]');
     if(!topic)continue;
-    const para=[...topic.querySelectorAll('.smv-d1-life-paragraph')].find(x=>clean(x.textContent));
-    if(para)return {house:n,title:clean(topic.querySelector('h3,h4')?.textContent||''),text:clean(para.textContent)};
+    const paragraphs=[...topic.querySelectorAll('.smv-d1-life-paragraph')].map(x=>clean(x.textContent)).filter(Boolean);
+    const distinct=[...new Set(paragraphs)].slice(0,2); // An outcome and its counterweight, when present.
+    if(distinct.length)return {house:n,title:clean(topic.querySelector('h3,h4')?.textContent||''),text:distinct.join(' ')};
    }return null;
  }
  function oneWindow(root,attr,houses,used=new Set()){
    const base=root.querySelector('['+attr+'="1"]');if(!base)return null;
    const first=base.querySelector('.smv-80-window');if(!first)return null;
    const sections=first.querySelectorAll('.smv-80-topic');
-   for(const h of [...houses.filter(x=>!used.has(x)),...houses.filter(x=>used.has(x))]){for(const section of sections){
+   for(const h of houses.filter(x=>!used.has(x))){for(const section of sections){
     const n=Number(section.getAttribute(attr==='data-long-dasha'?'data-period-topic':'data-focus-house'));
     if(n!==h)continue;
     const par=[...section.querySelectorAll('p')].find(x=>clean(x.textContent));
@@ -390,6 +396,15 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
   [...sel.options].forEach((o,i)=>o.textContent=opts[i]);parent.lang=ta?'ta':'en';
  }
  const stale={english:false,tamil:false};
+ const appliedContext={english:null,tamil:null};
+ const liveContext=prefix=>({work:$(prefix+'CurrentWork')?.value||'',marital:$(prefix+'MaritalStatus')?.value||'',residence:plainPlace($(prefix+'CurrentResidence')?.value||'')});
+ const contextChanged=prefix=>{const was=appliedContext[prefix];if(!was)return false;const now=liveContext(prefix);return Object.keys(now).some(k=>now[k]!==was[k]);};
+ // Capture optional fields on an explicit Generate click, not on every keystroke.
+ document.addEventListener('click',ev=>{
+  const id=ev.target?.closest?.('button')?.id||ev.target?.id||'';
+  const prefix=id==='generateEnglishHoroscope'?'english':id==='generateTamilHoroscope'?'tamil':null;
+  if(prefix)appliedContext[prefix]=liveContext(prefix);
+ },true);
  function buildPanel(prefix,lang){
    const box=$(prefix+'LifeContextPreview'),result=$(prefix+'HoroscopeResult');if(!box||!result)return;
    const complete=!stale[prefix]&&result.querySelector('[data-smv-d1-life="1"]')&&!result.classList.contains('hidden')&&result.dataset.smvReportIncomplete!=='1';
@@ -399,6 +414,9 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
    if(!segments.length){box.replaceChildren();box.hidden=true;return;}
    box.replaceChildren();box.hidden=false;box.classList.add('smv-context-v298');
    const heading=document.createElement('h3');heading.textContent=lang==='ta'?'வாழ்க்கைச் சூழலுடன் இணைந்த ஜாதக வாசிப்பு':'Horoscope reading in your current life context';box.append(heading);
+   if(contextChanged(prefix)){
+    box.append(p(lang==='ta'?'தேர்ந்தெடுத்த தொழில் / திருமண / வசிப்பிட விவரங்கள் இந்த ஜாதகம் உருவானபோது இருந்தவற்றிலிருந்து மாறியுள்ளன. கீழே திரைக்கான சூழல் வாசிப்பு மட்டும் புதுப்பிக்கப்பட்டுள்ளது; முழு D1/தசா/கோச்சார அறிக்கையில் இம்மாற்றம் பிரதிபலிக்க மீண்டும் «ஜாதகம் உருவாக்குக» அழுத்தவும்.':'Work, relationship or residence details have changed since this chart was generated. Only the on-screen contextual reading below has updated; press Create Horoscope again to apply these choices to the full report.','smv-context-rebuild-note'));
+   }
    const used={natal:new Set(),dasha:new Set(),transit:new Set()};for(const row of segments)renderArea(box,row,result,lang,used);
    box.append(p(lang==='ta'?'D1, தசா–புக்தி, கோச்சாரத்தில் ஏற்கெனவே கணிக்கப்பட்ட தொடர்புடைய பகுதிகளிலிருந்து இந்தத் திரை வாசிப்பு உருவாகிறது. புதிய கிரகக் கணக்கீடு செய்யவில்லை; காலப்பலன் குறிப்பிடப்படாவிட்டால் அந்தப் பகுதியில் நேரடித் தொடர்புள்ள வாசிப்பு கிடைக்கவில்லை. ஆதரவுத் தேவை ஜாதகத்திலிருந்து கண்டறியப்படவில்லை. இந்தத் தனித் திரைப் பகுதி PDF/சேமிப்பில் சேராது.':'This on-screen reading uses already calculated D1 and available period/transit sections. It performs no new astrology calculation or diagnosis. Missing period notes are not invented; support needs are never inferred. This separate panel is not included in PDF/saved reports.','small smv-context-note'));
  }
@@ -422,7 +440,7 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
   window.addEventListener('smv:report-ready',()=>{stale.english=false;stale.tamil=false;queueMicrotask(refresh);});
   document.addEventListener('click',ev=>{if(['clearEnglishHoroscope','clearTamilHoroscope'].includes(ev.target?.id)){
     const prefix=ev.target.id==='clearEnglishHoroscope'?'english':'tamil';const need=$(prefix+'LifeContextNeed'),consent=$(prefix+'LifeContextConsent');
-    if(need)need.value='';if(consent)consent.checked=false;
+    if(need)need.value='';if(consent)consent.checked=false;appliedContext[prefix]=null;
     const panel=$(prefix+'LifeContextPreview');if(panel){panel.hidden=true;panel.replaceChildren();}
   }});
   // Do not let another person's disclosed support category survive birth-record edits.
@@ -432,7 +450,7 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
   window.addEventListener('smv:report-ready',()=>queueMicrotask(mark));
   document.addEventListener('input',ev=>{
     const m=/^(english|tamil)(AstroName|Dob|Tob|BirthPlace|Lat|Lon)$/.exec(ev.target?.id||'');if(!m)return;
-    const prefix=m[1];stale[prefix]=true;
+    const prefix=m[1];stale[prefix]=true;appliedContext[prefix]=null;
     // Clear cached adaptations on any change of natal identity; no stale forecasts.
     const panel=$(prefix+'LifeContextPreview');if(panel){panel.hidden=true;panel.replaceChildren();}
     if(used[prefix]||($(prefix+'LifeContextConsent')?.checked)){
@@ -441,6 +459,7 @@ document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.add
   });
   queueMicrotask(localize);
  }
- root.SMVLifeContextV298=Object.freeze({guidance,computeAge,choice,selection,refresh,version:'298-four-context-read-only'});
- root.SMVLifeContextV294=root.SMVLifeContextV298; // keep older integration tests/callers harmlessly compatible
+ root.SMVLifeContextV299=Object.freeze({guidance,computeAge,choice,selection,refresh,version:'299-four-context-consistent'});
+ root.SMVLifeContextV298=root.SMVLifeContextV299;
+ root.SMVLifeContextV294=root.SMVLifeContextV299; // keep older integration tests/callers harmlessly compatible
 })(typeof window!=='undefined'?window:globalThis);
