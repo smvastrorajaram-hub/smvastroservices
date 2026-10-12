@@ -41,7 +41,38 @@ const EX={Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6};
 const SIGNS=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const ALIAS=Object.fromEntries(Object.entries(NTA).map(([a,b])=>[b,a]));
 function norm(x){return PLAN.includes(x)?x:ALIAS[x]||null;}
-function varga(full,d,k){let v=full?.advanced?.vargas||full?.vargas;const div=d===9?'D-9':d===7?'D-7':'D-10';const row=Array.isArray(v)?v.find(x=>x.division===div):null;const star=row?.planets?.find(x=>norm(x.planet)===k);if(!star)return null;const s=SIGNS.indexOf(star.rasi);if(s<0)return null;const good=(OWN[k]||[]).includes(s)||EX[k]===s,weak=EX[k]!==undefined&&(EX[k]+6)%12===s;return {division:div,planet:k,sign:s,dignity:good?'strong':weak?'weak':'neutral',source:'advanced.vargas'};}
+/* Use only source-supplied varga placements. Never compute a division from the
+ * D1 sign or silently interpret an unavailable varga as neutral evidence. */
+function varga(full,d,k){const v=full?.advanced?.vargas||full?.vargas;
+ const div=d===9?'D-9':d===7?'D-7':'D-10';const row=Array.isArray(v)?v.find(x=>x.division===div):null;
+ const star=row?.planets?.find(x=>norm(x.planet)===k);if(!star)return null;
+ const s=SIGNS.indexOf(star.rasi);if(s<0)return null;
+ const good=(OWN[k]||[]).includes(s)||EX[k]===s,weak=EX[k]!==undefined&&(EX[k]+6)%12===s;
+ return {division:div,planet:k,sign:s,dignity:good?'strong':weak?'weak':'neutral',reason:(OWN[k]||[]).includes(s)?'own':EX[k]===s?'exalted':weak?'debilitated':'other',source:'advanced.vargas'};}
+/* Relationship tests are performed with the already normalised D1 chart.
+ * These are conditional interpretive supports, NOT certified Sanskrit sutras. */
+function isRelated(d,a,b){if(!a||!b||a===b)return false;
+ const x=d.planets[a],y=d.planets[b];if(!x||!y)return false;
+ return x.house===y.house||d.houses[y.house-1].aspects.includes(a)||d.houses[x.house-1].aspects.includes(b);}
+function classicalLinks(d,n){const h=d.houses[n-1],lord=h.lord,lp=d.planets[lord],results=[],src=(key,kind,planets,detail)=>results.push({key,kind,planets,detail,source:'observed D1 relationship'});
+ // A kendra/trikona association is tested with distinct rulers only.
+ const kendras=new Set([1,4,7,10]),trikonas=new Set([1,5,9]);
+ for(const k of new Set(d.houses.filter(h=>kendras.has(h.no)).map(h=>h.lord))){
+  for(const t of new Set(d.houses.filter(h=>trikonas.has(h.no)).map(h=>h.lord))){
+   if(k===t||!isRelated(d,k,t))continue;
+   if((k===lord||t===lord)&&!results.some(x=>x.key==='KENDRA_TRIKONA_LINK'))src('KENDRA_TRIKONA_LINK','support',[k,t],'angular and trinal rulers are related');
+  }
+ }
+ const money=d.houses[1].lord,gain=d.houses[10].lord;
+ if([2,10,11].includes(n)&&isRelated(d,money,gain))src('DHANA_2_11_LINK','support',[money,gain],'second and eleventh rulers linked');
+ const lordIn=lp.house,mutual=d.houses[lordIn-1]?.lord;
+ if(mutual&&mutual!==lord&&d.planets[mutual]?.house===n)src('PARIVARTANA','mixed',[lord,mutual],'actual two-way exchange of sign-house rulers');
+ // Dusthana occupation alone does not establish full Vipareeta Raja Yoga;
+ // present this as a condition requiring separate assessment.
+ if([6,8,12].includes(n)&&[6,8,12].includes(lordIn))src('DUSTHANA_LORD_LINK','mixed',[lord],'dusthana owner in a dusthana, not a certified vipareeta yoga');
+ if(h.aspects.includes('Jupiter')&&h.aspects.some(x=>['Mars','Saturn'].includes(x)))src('GURU_COUNTER_ASPECT','mitigation',['Jupiter'],'Jupiter aspect coexists with restrictive aspect');
+ return results;}
+
 function assess(d,k){try{const r=g.SMVD1StrengthV303?.assess?.(d,k);if(Number.isFinite(r?.score))return {value:Math.max(0,Math.min(1,r.score)),dignity:r.dignity||d.planets[k]?.dignity,combust:!!r.combust?.combust};}catch(_){}return {value:.5,dignity:d.planets[k]?.dignity||'unknown',combust:!!d.planets[k]?.combust};}
 function candidate(d,k,relation,house){const p=d.planets[k],s=assess(d,k),owned=d.houses.filter(h=>h.lord===k).map(h=>h.no);let delta=(s.value-.5)*3;
  if(['own','exalted'].includes(s.dignity))delta+=.75; if(s.dignity==='debilitated')delta-=.9;
@@ -56,11 +87,15 @@ function read(d,full,n,age){const h=d.houses[n-1],k=h?.lord;if(!h||!d.planets[k]
  const plus=a.filter(x=>x.delta>=.16).sort((x,y)=>y.delta-x.delta);const minus=a.filter(x=>x.delta<=-.16).sort((x,y)=>x.delta-y.delta);
  const sum=a.reduce((s,x)=>s+x.delta,0),support=sum>.8?'support':sum<-.8?'strain':'qualified';
  const relevant=n===7?9:n===5?7:n===10?10:null;const division=relevant?varga(full,relevant,k):null;
+ const karaka=relevant?(n===5?'Jupiter':n===7?'Venus':'Saturn'):null;
+ const divisionKaraka=karaka?varga(full,relevant,karaka):null;
+ const divisionEvidence=[division,divisionKaraka].filter(Boolean);
+ const classical=classicalLinks(d,n);
  const related=d.houses.filter(x=>x.lord===k&&x.no!==n).map(x=>x.no);
  // Weighted rule evidence selects a conclusion BEFORE narrative. Opposing evidence cannot disappear.
  const dominant=support==='support'?plus[0]:support==='strain'?minus[0]:Math.abs(plus[0]?.delta||0)>=Math.abs(minus[0]?.delta||0)?plus[0]:minus[0];
  const main=age!==null&&age<18&&[2,5,7,10,11].includes(n)?({2:'குடும்பப் பேச்சு மற்றும் கற்றலுக்கான பொருட்கள்',5:'பள்ளிப் படிப்பும் விளையாட்டும்',7:'நண்பர்களுடன் இணைந்து பழகும் விதம்',10:'பள்ளிப் பொறுப்பும் பயிற்சியும்',11:'நண்பர் வட்டமும் குழு நடவடிக்கையும்'})[n]:T[n-1][support==='strain'?2:1];
- return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + relevant validated varga only',ruleMethod:'relative priority heuristic; no factual event certainty'});
+ return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,divisionEvidence,classical,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + relevant validated varga only',ruleMethod:'relative priority heuristic; no factual event certainty'});
 }
 /* Verified chart evidence is resolved into a life-scene BEFORE writing prose. */
 const SCENE_TA=[
@@ -105,5 +140,98 @@ function synthesize(claims,timing,age){const major=age!==null&&age<18?[5,1,4,3,9
  const simultaneous=claims.filter(c=>c.house!==main.house&&c.lord===main.lord).map(c=>c.house);
  const current=timing?.chronology?.[0]||null;
  return {mainHouse:main.house,main,counterHouse:counter.house,counter,sameRulerHouses:simultaneous,asofMajor:current?.period?.md||null,asofSub:current?.period?.ad||null,asofPeriodFocus:current?.mainHouse||null,ageBand:age!==null&&age<18?'child':age!==null&&age>=65?'senior':'adult',source:'ranked D1 evidence with timing; no demographic assumption',notAProvenEvent:true};}
-return Object.freeze({read,resolve,synthesize,norm,varga,PLAN,NTA,T,E,DEST_TA,DEST_EN,KAR});
+/* Chart-specific event decision: this structured object, not the prose layer,
+ * selects what can be said. The combinations are traditional interpretive
+ * heuristics and NOT predictive probabilities or a guarantee of life events.
+ * Without natal evidence there is no invented positive/negative outcome.
+ */
+const LIFE_TA=[
+ ['முக்கிய முடிவில் முன்னின்று பொறுப்பேற்பது','பிறர் எதிர்பார்ப்புகளால் தனிப்பட்ட முடிவு தாமதமாவது','தனிப்பட்ட முடிவையும் குடும்பக் கடமையையும் இணைப்பது'],
+ ['குடும்ப வருமானத்தைச் சேமிப்பாக மாற்றுவது','குடும்பக் கடமைகள் சேமிப்பைச் சுருக்குவது','வரவு மற்றும் குடும்பத்திற்கான செலவுகளைச் சமன்படுத்துவது'],
+ ['பயிற்சியை வருமானம் அல்லது பயனுள்ள திறனாக வளர்ப்பது','முயற்சியை இடையில் மாற்றி மீண்டும் கற்றுக்கொள்ள வேண்டியிருப்பது','திறமை வளர்ச்சியுடன் உறவினரின் தேவைகளைச் சமாளிப்பது'],
+ ['வசிப்பிடத்திற்கான நீண்டகாலத் திட்டத்தை நிறைவேற்றுவது','வீட்டுப் பராமரிப்போ பெற்றோரின் தேவையோ சொத்து முடிவைத் தள்ளிப்போடுவது','வீட்டு வசதியையும் செலவுக் கட்டுப்பாட்டையும் இணைப்பது'],
+ ['கல்வியில் ஆழ்ந்து ஒரு திறனை உருவாக்குவது','கல்வி அல்லது படைப்புத்திட்டத்தில் இடையூறு நீடிப்பது','ஆர்வத்திற்கும் தொடர்ச்சியான பயிற்சிக்கும் சமநிலை அமைப்பது'],
+ ['சிக்கலான பணியில் நம்பகத்தன்மை பெறுவது','பணிச் சுமை அல்லது போட்டியால் வேலையை மறுசீரமைப்பது','பொறுப்பையும் உடல்நல ஓய்வையும் சமன்படுத்துவது'],
+ ['இருவர் இணைந்த முடிவை நிலையான உடன்பாடாக மாற்றுவது','துணைவர் அல்லது கூட்டாளியுடனான எதிர்பார்ப்பு வேறுபாடு வெளிப்படுவது','பணமும் பொறுப்பும் பற்றிய தெளிவான உடன்பாடு அமைப்பது'],
+ ['பகிர்ந்த நிதி அல்லது பழைய ஏற்பாட்டைப் பாதுகாப்பாக மாற்றுவது','கூட்டுச் சொத்து அல்லது ஆவணங்களில் திடீர் திருத்தம் தேவைப்படுவது','மாற்றத்திற்கான செலவையும் பாதுகாப்பையும் மதிப்பிடுவது'],
+ ['மேற்படிப்பு அல்லது வழிகாட்டலால் வாழ்க்கைப் பாதையை விரிவாக்குவது','தொலைதூரக் கல்வி அல்லது பயணத் திட்டம் தாமதிப்பது','பெரியோரின் ஆலோசனையையும் சொந்த முயற்சியையும் இணைப்பது'],
+ ['தொழிலில் பொறுப்பு உயர்ந்து தனிப்பட்ட நம்பிக்கை கிடைப்பது','உழைப்புக்கான அங்கீகாரம் தாமதமோ பணிமாற்றத் தேவையோ ஏற்படுவது','வேலைப் பொறுப்புக்கும் அதற்கான அங்கீகாரத்திற்கும் இடைவெளி இருப்பது'],
+ ['பயனுள்ள தொடர்பு வழியாக வருமான வாய்ப்பு விரிவடைவது','எதிர்பார்த்த வரவு தாமதமடைந்து திட்டம் மாறுவது','கிடைக்கும் வரவையும் உண்மையான சேமிப்பையும் பிரித்துக் கையாள்வது'],
+ ['ஓய்வையும் செலவையும் ஒழுங்குபடுத்தி மன அமைதி பெறுவது','வெளியூர், தனிமை அல்லது குடும்பத் தேவையால் செலவு உயர்வது','தூரப் பொறுப்புகளையும் தூக்க/ஓய்வு நேரத்தையும் ஒழுங்கமைப்பது']
+];
+const LIFE_EN=[
+ ['taking ownership of an important personal decision','personal decisions slowing under others’ expectations','balancing independent decisions with family duties'],
+ ['building a cushion from family earnings','family commitments shrinking possible savings','balancing cash inflow against household obligations'],
+ ['building a practical skill through repetition','revisiting a plan after setbacks','balancing skills with sibling or peer obligations'],
+ ['improving the security of housing arrangements','care costs delaying a housing choice','balancing a home plan against running costs'],
+ ['developing depth in learning or creativity','interruption to steady practice','balancing exploration against sustained learning'],
+ ['earning trust by handling complex duties','having to reorganise workload or competition','balancing work obligations with recovery'],
+ ['building a workable shared agreement','differences in partners’ expectations','agreeing how responsibility and money will be shared'],
+ ['restructuring shared assets more securely','reviewing shared records after unexpected change','weighing costs against protection'],
+ ['expanding options through education or mentorship','a delay involving training or travel','combining guidance with independent judgement'],
+ ['growing responsibility and credibility at work','recognition lagging behind effort or changing work practices','balancing workload with recognition'],
+ ['growing income through dependable connections','a planned receipt arriving late','distinguishing cash received from expected gains'],
+ ['making room for rest while managing expenses','travel or care commitments raising spending','balancing long-distance duties with recovery']
+];
+// Distinct completed judgements, not an adjective substituted into a common sentence.
+// The selected column depends on the natal judgement; stronger chart-specific
+// rules in decide() take priority over these domain outcomes.
+const SENTENCE_TA=[
+ ['முக்கிய முடிவுகளைத் தானாக எடுத்து அதற்குரிய பொறுப்பையும் சுமக்கும் வாய்ப்பு உள்ளது.','குடும்பத்தினரின் எதிர்பார்ப்புகள் காரணமாகச் சொந்த முடிவை மாற்றவோ தள்ளிப்போடவோ நேரலாம்.','சொந்த விருப்பத்தையும் குடும்பக் கடமைகளையும் சமமாகக் கவனிக்கும் நிலை உள்ளது.'],
+ ['வருமானத்தில் ஒரு பகுதியைத் தொடர்ந்து சேமிப்புக்காக ஒதுக்கும் நிலை வளரக்கூடும்.','வீட்டு அல்லது குடும்பச் செலவுகள் அதிகரிப்பதால் வரவு இருந்தும் சேமிப்பு குறையலாம்.','குடும்பத்திற்குத் தேவையான செலவையும் எதிர்காலச் சேமிப்பையும் பிரித்துத் திட்டமிடும் சூழல் அமையலாம்.'],
+ ['தொடர்ந்த பயிற்சி நடைமுறைத் திறனாக மாறி மற்றவர்களின் நம்பிக்கையைப் பெற உதவலாம்.','ஒரு முயற்சியைத் தொடங்கிய பிறகு தடைகளால் வழிமுறையை மாற்றி மீண்டும் முயல வேண்டியிருக்கலாம்.','சொந்தத் திறனை வளர்ப்பதற்கும் உடன்பிறந்தோர் தேவைகளைக் கவனிப்பதற்கும் நேரத்தைப் பகிர வேண்டியிருக்கலாம்.'],
+ ['வசிப்பிடத்தைச் சீரமைப்பது அல்லது குடும்பத்திற்கான நீண்டகால ஏற்பாடு செய்வது முன்னேறலாம்.','வீட்டுப் பராமரிப்பு அல்லது பெற்றோரின் தேவைக்காகச் சொத்து சார்ந்த திட்டம் தள்ளிப்போகலாம்.','வீட்டு வசதியை மேம்படுத்தும் எண்ணத்துடன் அதற்கான செலவுக் கணக்கும் முக்கியமாகும்.'],
+ ['கல்வி அல்லது படைப்புத் திறனில் தொடர்ந்து பயிற்சி செய்து தனிப்பட்ட முன்னேற்றம் பெறக்கூடும்.','படிப்பு அல்லது படைப்புப் பணியில் இடையூறு வந்து திட்டத்தை மாற்ற வேண்டியிருக்கலாம்.','ஆர்வமுள்ள துறையைத் தேர்ந்தெடுத்து அதில் தொடர்ச்சியான பயிற்சி செய்வது முக்கியமாகலாம்.'],
+ ['சிக்கலான பணிகளுக்கு உதவி தேவைப்படும் இடங்களில் செயலாற்றி நம்பிக்கையைப் பெறக்கூடும்.','பணிச்சுமை அல்லது போட்டி காரணமாக வேலை செய்யும் முறையை மாற்ற வேண்டியிருக்கலாம்.','வேலைப் பொறுப்புகளுடன் ஓய்வையும் உடல்நல ஒழுங்கையும் சமமாகக் கவனிக்க வேண்டியிருக்கலாம்.'],
+ ['இணைந்து செயல்படுபவருடன் பொறுப்புகளைத் தெளிவாகப் பகிர்ந்து உறவை நிலைப்படுத்தும் வாய்ப்பு உள்ளது.','துணைவர் அல்லது கூட்டாளியின் எதிர்பார்ப்புகள் வேறுபடுவதால் ஒப்பந்தத்தில் திருத்தம் தேவைப்படலாம்.','உறவில் அல்லது கூட்டுப் பணியில் பணம், நேரம், பொறுப்பு ஆகியவற்றை முன்கூட்டியே பகிர்ந்து கொள்ள வேண்டியிருக்கலாம்.'],
+ ['கூட்டுச் சொத்து அல்லது பழைய ஆவணங்களைச் சீராக்கி நீண்டகாலப் பாதுகாப்பை மேம்படுத்தும் சூழல் வரலாம்.','பகிர்ந்த நிதி அல்லது பழைய ஏற்பாட்டில் எதிர்பாராத மாற்றம் ஏற்பட்டு ஆவணங்களைத் திருத்த வேண்டியிருக்கலாம்.','கூட்டுச் சொத்தைக் கையாளும்போது பாதுகாப்புக்கும் புதிய செலவுக்கும் இடையில் முடிவெடுக்க வேண்டியிருக்கலாம்.'],
+ ['உயர்கல்வி அல்லது அனுபவமிக்கவரின் வழிகாட்டல் புதிய வாழ்க்கைப் பாதையைத் திறக்கக்கூடும்.','பயணம் அல்லது மேல்படிப்புக்கான திட்டம் எதிர்பார்த்த நேரத்தில் நிறைவேறாமல் மாற்றம் தேவைப்படலாம்.','பெரியோரின் அறிவுரையையும் சொந்த அனுபவத்தையும் இணைத்து ஒரு முக்கிய முடிவு எடுக்க நேரலாம்.'],
+ ['தொழிலில் கூடுதல் பொறுப்பைப் பெற்று படிப்படியாக நம்பிக்கையும் அங்கீகாரமும் வளரக்கூடும்.','செய்த உழைப்புக்கான அங்கீகாரம் தாமதித்து வேலையின் முறையையோ பொறுப்பையோ மாற்ற வேண்டியிருக்கலாம்.','வேலைப் பொறுப்புகள் அதிகரிக்கும் வேகத்துக்கு ஏற்ப அங்கீகாரம் வராமல் இடைவெளி உருவாகலாம்.'],
+ ['நம்பகமான தொழில் தொடர்புகள் மூலம் புதிய வருமான வழிகளை வளர்க்க வாய்ப்பு உள்ளது.','எதிர்பார்த்த வரவு தாமதமாக வருவதால் திட்டமிட்ட செலவுகளை மாற்ற வேண்டியிருக்கலாம்.','வரக்கூடும் என்று எதிர்பார்க்கும் தொகையையும் கையில் கிடைத்த பணத்தையும் வேறுபடுத்திக் கையாள வேண்டியிருக்கலாம்.'],
+ ['செலவைக் கட்டுப்படுத்தி ஓய்வுக்கும் தனிப்பட்ட வாழ்வுக்கும் கூடுதல் நேரம் ஒதுக்க முடியும்.','வெளியூர் அல்லது குடும்பப் பொறுப்புகளால் எதிர்பாராத செலவுகள் ஏற்படலாம்.','தூரத்திலுள்ள கடமைகளையும் உறக்கம், ஓய்வு ஆகியவற்றையும் திட்டமிட வேண்டியிருக்கலாம்.']
+];
+const CHILD_SENTENCE_TA={2:'குடும்பத்தாருடன் தேவையான கல்விச் செலவுகளைப் பற்றிப் பேசும் பழக்கம் உருவாகலாம்.',5:'படிப்பு, விளையாட்டு, படைப்புப் பயிற்சி ஆகியவற்றில் ஆர்வத்தை ஒருங்கிணைக்க உதவி கிடைக்கலாம்.',7:'நண்பர்களுடனும் ஆசிரியர்களுடனும் ஒத்துழைத்துச் செயல்படும் திறன் வளரக்கூடும்.',10:'பள்ளியில் ஒப்படைக்கப்படும் பொறுப்புகளை முடித்து நம்பிக்கையை வளர்த்துக்கொள்ளும் சூழல் அமையலாம்.',11:'குழு நடவடிக்கைகளிலும் நண்பர் வட்டத்திலும் தன் பங்களிப்பைச் செய்ய வாய்ப்பு கிடைக்கலாம்.'};
+const SPECIAL_SENTENCE_TA={
+ '10:6':'தொழிலில் போட்டியை எதிர்கொள்வதும் பிறருடைய சிக்கல்களுக்குத் தீர்வு காண்பதும் பணிப் பொறுப்பின் ஒரு பகுதியாக அமையலாம்.',
+ '10:2:11':'தொழிலில் ஏற்கும் பொறுப்பும் அதன் மூலம் உருவாகும் வருமானமும் குடும்பச் சேமிப்பு முடிவுகளுடன் நேரடியாக இணைந்து அமையலாம்.',
+ '10:2:9':'தொழில் வருமானத்தைப் பெருக்கும் முடிவுகளில் கற்ற அனுபவமும் பெரியோர் வழிகாட்டலும் குடும்பக் கடமைகளும் ஒன்றாகப் பங்கு பெறலாம்.',
+ '7:12':'துணைவர் அல்லது கூட்டாளியுடனான உறவில் தூரம், செலவு, தனிநேரம் ஆகியவற்றை முன்கூட்டியே ஒழுங்குபடுத்த வேண்டியிருக்கலாம்.',
+ '4:4':'வீடு மற்றும் குடும்ப ஆதரவை நிலைநிறுத்துவதில் ஜாதகரின் சொந்த முடிவுகளுக்கு அதிகப் பங்கு இருக்கலாம்.',
+ '5:8':'கல்வி அல்லது படைப்புத் திட்டம் எதிர்பாராத விதமாக மாறும்போது புதிய திறனைக் கற்றுக்கொண்டு தொடர வேண்டியிருக்கலாம்.',
+ '2:3':'பேச்சு, எழுத்து அல்லது தனித்திறனைப் பயன்படுத்திக் குடும்ப வருமானத்துக்குப் பங்களிக்கும் வாய்ப்பு இருக்கலாம்.',
+ '11:11':'நட்பு வட்டம் மற்றும் தொழில் தொடர்புகளைக் கொண்டு வருமான வழிகளை விரிவுபடுத்த வாய்ப்பு இருக்கலாம்.'
+};
+const CHILD_TA={2:'குடும்பத்தாருடன் கல்விச் செலவும் தேவைகளும் பற்றிப் பேசும் பழக்கம்',5:'கல்வி, படைப்புப் பயிற்சி மற்றும் விளையாட்டு வழியாகத் திறன் வளர்ச்சி',7:'நண்பர்கள், ஆசிரியர்களுடன் இணைந்து செயல்படும் பழக்கம்',10:'பள்ளியில் பொறுப்பை ஏற்று முடிக்கும் பயிற்சி',11:'குழு நடவடிக்கைகளிலும் நண்பர் வட்டத்திலும் ஒத்துழைப்பு'};
+const CHILD_EN={2:'understanding educational needs in the family',5:'building skills through learning and play',7:'cooperating with peers and teachers',10:'finishing school and group responsibilities',11:'choosing a constructive peer network'};
+const LINK_TA=['தனிப்பட்ட முடிவு அல்லது உடலுழைப்பு','குடும்பப் பணம் மற்றும் பேச்சு','பயிற்சி, எழுத்து அல்லது உடன்பிறந்தோர்','வீடு, தாய் மற்றும் பராமரிப்பு','கல்வி, குழந்தைகள் அல்லது படைப்பாற்றல்','சேவை, போட்டி மற்றும் கடன்','துணைவர், ஒப்பந்தம் அல்லது கூட்டாளி','பகிர்ந்த நிதி, காப்பீடு மற்றும் மாற்றம்','ஆசிரியர், உயர் கல்வி மற்றும் பயணம்','பணியிடம், பதவி மற்றும் பொறுப்பு','வரவு, நட்பு மற்றும் வாடிக்கையாளர் தொடர்பு','செலவு, வெளியூர் மற்றும் ஓய்வு'];
+const LINK_EN=['individual initiative','family finances and speech','skills and sibling ties','housing and care duties','study, children and creativity','service, competition and borrowing','contracts and partnership','shared assets and restructuring','education, mentors and travel','work and professional standing','income and useful networks','spending, distance and rest'];
+function decide(c){
+ if(!c?.all?.length || !Number.isInteger(c.location) || !c.lord)return null;
+ const x=resolve(c),stage=c.conclusion==='support'?0:c.conclusion==='strain'?1:2;
+ const relevant=c.ageUnder18&&CHILD_TA[c.house];
+ const specialTA = !c.ageUnder18 && (
+ c.house===10&&c.location===6 ? 'தொழிலில் போட்டி, பணிச்சுமை, பிறர் சிக்கல்களைத் தீர்க்கும் பொறுப்பு ஆகியவற்றின் வழியாக அனுபவமும் அங்கீகாரமும் வளர்வது' :
+ c.house===10&&c.location===2&&c.otherLordships.includes(11) ? 'தொழிலில் ஏற்கும் கூடுதல் பொறுப்பு நேரடியாகக் குடும்ப வருமானம், சேமிப்பு மற்றும் ஆதாயத்துடன் இணைவது' :
+ c.house===10&&c.location===2&&c.otherLordships.includes(9) ? 'தொழிலால் கிடைக்கும் வருவாயில் பெரியோர் வழிகாட்டல், கற்ற அனுபவம் மற்றும் குடும்பப் பொறுப்பு ஒன்றாகத் தாக்கம் செலுத்துவது' :
+ c.house===7&&c.location===12 ? 'துணைவர் அல்லது கூட்டாளியுடனான ஏற்பாட்டில் தூரம், செலவு, தனிநேரம் ஆகியவற்றை முதலில் ஒழுங்குபடுத்த வேண்டியிருப்பது' :
+ c.house===4&&c.location===4 ? 'வீடு மற்றும் குடும்ப ஆதரவை நிலைநிறுத்தும் முயற்சியில் சொந்த முடிவுகளின் பங்கு அதிகரிப்பது' :
+ c.house===5&&c.location===8 ? 'கல்வி அல்லது படைப்புத் திட்டத்தில் திடீர் மாற்றம் வந்தபோதும் புதிய திறனுக்கு மாற வேண்டியிருப்பது' :
+ c.house===2&&c.location===3 ? 'பேச்சு, எழுதுதல் அல்லது தனித்திறன் மூலமாகக் குடும்ப வருமானத்துக்குப் பங்களிக்கும் வாய்ப்பு உருவாவது' :
+ c.house===11&&c.location===11 ? 'நண்பர் வட்டம் மற்றும் தொழில்தொடர்புகளைப் பயன்படுத்தி வருமானப் பாதையை வளர்ப்பது' : null);
+ const specialEN=!c.ageUnder18 && (
+ c.house===10&&c.location===6?'career responsibilities developing through competition, service and resolving others’ problems':
+ c.house===10&&c.location===2&&c.otherLordships.includes(11)?'professional responsibility becoming closely tied to household earnings and savings':
+ c.house===10&&c.location===2&&c.otherLordships.includes(9)?'professional income intersecting with education, mentorship and household duties':
+ c.house===7&&c.location===12?'distance, spending and private time requiring negotiation within partnership':
+ c.house===4&&c.location===4?'taking direct responsibility for stability of home and family':
+ c.house===5&&c.location===8?'redirecting study or creative work after an unexpected change':null);
+ const leadTA=relevant||specialTA||LIFE_TA[c.house-1][stage],leadEN=(c.ageUnder18&&CHILD_EN[c.house])||specialEN||LIFE_EN[c.house-1][stage];
+ const keyedSpecial=c.house===10&&c.location===2&&c.otherLordships.includes(11)?'10:2:11':c.house===10&&c.location===2&&c.otherLordships.includes(9)?'10:2:9':`${c.house}:${c.location}`;
+ const completedTA=(c.ageUnder18&&CHILD_SENTENCE_TA[c.house])||SPECIAL_SENTENCE_TA[keyedSpecial]||SENTENCE_TA[c.house-1][stage];
+ const positive=c.positive.filter(x=>['lord','occupies','aspects'].includes(x.relation)).slice(0,2);
+ const negative=c.negative.filter(x=>['lord','occupies','aspects'].includes(x.relation)).slice(0,2);
+ const primary=c.dominant,other=c.otherLordships||[];
+ return Object.freeze({house:c.house,lord:c.lord,location:c.location,leadTA,leadEN,completedTA,linkTA:LINK_TA[c.location-1],linkEN:LINK_EN[c.location-1],stage:c.conclusion,ageUnder18:c.ageUnder18,positive,negative,primary,otherLordships:other,division:c.division,divisionEvidence:c.divisionEvidence||[],classical:c.classical||[],sourceKeys:x.evidenceKeys.concat((c.classical||[]).map(v=>v.key)),reference:'natal lord and location, relevant occupants/aspects, existing V303 planet strength',key:[c.house,c.lord,c.location,c.conclusion,...positive.map(x=>x.planet),...negative.map(x=>x.planet)].join(':'),hasContradiction:positive.length>0&&negative.length>0});
+}
+return Object.freeze({read,resolve,decide,synthesize,norm,varga,classicalLinks,PLAN,NTA,T,E,DEST_TA,DEST_EN,KAR});
 });

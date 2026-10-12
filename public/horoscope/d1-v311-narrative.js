@@ -22,230 +22,160 @@ const CHANNEL_TA=[
  'நண்பர் வட்டம், வாடிக்கையாளர் தொடர்பு அல்லது கிடைக்கும் ஆதாயம் இதற்குத் துணையாகும்',
  'வெளியூர், தனிமையான உழைப்பு, ஓய்வு அல்லது கூடுதல் செலவின் வழியாக இதன் தாக்கம் தெரியும்'
 ];
-const CHANNEL_EN=[
- 'the native must take personal responsibility for the decision',
- 'available funds and family discussions become part of the decision',
- 'skills, repeated efforts and sibling contacts influence its course',
- 'housing and parental needs cannot be separated from the decision',
- 'education, children or creative work influence the route forward',
- 'workload, competition or liabilities affect the pace of progress',
- 'a partner or collaborator must agree on responsibilities',
- 'shared money, restructuring or unexpected commitments matter',
- 'mentors, advanced education or long-distance plans shape the outcome',
- 'professional standing and organisational responsibility shape the outcome',
- 'contacts, customers and earned gains influence the outcome',
- 'distance, solitude, recovery or additional costs affect the plan'
+// House-specific implications of a ruler governing more than one life domain.
+// The underlying co-lordship is verified in the judgement object.
+const CROSS_TA={
+ 1:'சொந்த முடிவுகளிலும் உடலுழைப்பிலும் அதன் விளைவு தெரியலாம்',
+ 2:'குடும்ப வரவும் சேமிப்புக்கான முடிவுகளும் அதோடு இணையும்',
+ 3:'உடன்பிறந்தோர் தொடர்பு, பயிற்சி அல்லது சொந்த முயற்சி அதன் வழியாக வெளிப்படும்',
+ 4:'வீட்டுப் பொறுப்பு, பெற்றோர் தேவைகள் மற்றும் வசிப்பிட ஏற்பாட்டிலும் அது பிரதிபலிக்கும்',
+ 5:'கல்வி, குழந்தைகள் அல்லது படைப்புப் பயிற்சிக்கான நேர ஒதுக்கீட்டிலும் அதன் பங்கு இருக்கும்',
+ 6:'வேலைப்பளு, போட்டி அல்லது கடன் ஒழுங்கைச் சீர்படுத்தும் தேவையும் அதோடு வரும்',
+ 7:'துணைவர் அல்லது தொழில் கூட்டாளியுடன் பொறுப்பைப் பகிர்வதிலும் அதன் விளைவு தெரியும்',
+ 8:'கூட்டுச் சொத்து, ஆவணம் அல்லது எதிர்பாராத செலவு சார்ந்த முடிவிலும் அதன் பங்கு இருக்கும்',
+ 9:'மேற்படிப்பு, பெரியோர் ஆலோசனை அல்லது தொலைதூர முயற்சிக்கு அது வழிகாட்டலாம்',
+ 10:'தொழில் முடிவு, பதவி மற்றும் பணிப் பொறுப்பில் அது தெளிவாக வெளிப்படும்',
+ 11:'நண்பர், வாடிக்கையாளர் தொடர்பு அல்லது வருமான வாய்ப்புக்கும் அது பரவக்கூடும்',
+ 12:'தூரத்திலுள்ள கடமை, செலவு மற்றும் ஓய்வுக்கான நேரத்திலும் அது தாக்கம் செலுத்தலாம்'
+};
+/* Distinct observed-life translations for natal condition versus MD/AD versus
+ * sampled transit. A single house judgement must not be pasted three times. */
+const PERIOD_TA=[
+ ['தன் முடிவை நடைமுறையாக்கும் பொறுப்பு உயரலாம்','முடிவு எடுப்பதற்கு முன் பிறர் கோரிக்கைகளைச் சீர்செய்ய நேரலாம்','சொந்த திட்டமும் குடும்பத் தேவையும் ஒரே நேரத்தில் கவனம் பெறலாம்'],
+ ['வருமானத்தைச் சேமிப்பாக ஒதுக்கும் முடிவுகள் முன்னேறலாம்','குடும்பச் செலவும் முன் ஒப்புக்கொண்ட தொகையும் சேமிப்பில் அழுத்தம் தரலாம்','பேச்சு மற்றும் செலவுப் பொறுப்புகளைச் சரிபார்க்க வேண்டியிருக்கும்'],
+ ['ஒரு திறனைத் தொடர்ந்து பயன்படுத்தும் வாய்ப்பு கிடைக்கலாம்','செய்யத் தொடங்கிய வேலையின் முறையை மாற்ற நேரலாம்','பயிற்சி மற்றும் உடன்பிறப்புகளுக்கான நேரத்தைப் பகிர நேரலாம்'],
+ ['வீடு அல்லது குடும்பப் பராமரிப்பிற்கான ஏற்பாடு வளரலாம்','வீட்டுச் செலவோ பெற்றோர் தேவையோ திட்டத்தைத் தாமதப்படுத்தலாம்','வசிப்பிட முடிவு மற்றும் அன்றாட பொறுப்புகளை இணைக்க நேரலாம்'],
+ ['கற்றல் அல்லது படைப்புப் பயிற்சியில் முன்னேற்றம் அமையலாம்','படிப்பில் இடைவெளி ஏற்பட்டால் பழைய திட்டத்தைத் திருத்த நேரலாம்','கல்வியும் குழந்தைகள் சார்ந்த கடமையும் சமநிலைப்படுத்தப்படலாம்'],
+ ['பணிச்சிக்கலைத் தீர்க்கும் திறன் மதிக்கப்படலாம்','போட்டியும் வேலைப்பளுவும் அன்றாட ஒழுங்கை மாற்றலாம்','உழைப்பிற்கும் ஓய்விற்கும் தனித்த எல்லை அமைக்க வேண்டியிருக்கும்'],
+ ['கூட்டாளியுடன் உடன்பாட்டை உறுதிசெய்ய வாய்ப்பு அமையலாம்','கருத்து வேறுபாடு ஏற்பட்டு பொறுப்பைப் புதிதாகப் பகிர நேரலாம்','உறவில் நேரம், செலவு, கடமையைத் தெளிவாக்க வேண்டியிருக்கும்'],
+ ['பழைய ஆவணங்களையும் பகிர்ந்த சொத்தையும் சீர்செய்ய வாய்ப்பு கிடைக்கலாம்','மறுசீரமைப்பு அல்லது கூடுதல் பொறுப்பு காரணமாகத் திட்டம் மாறலாம்','பாதுகாப்புக்கும் புதிய முயற்சிக்கும் இடையில் முடிவு செய்ய நேரலாம்'],
+ ['கற்றவரின் ஆலோசனை நடைமுறை வாய்ப்பாக மாறலாம்','மேற்படிப்பு அல்லது தூர முயற்சிக்கான காலத் திட்டம் மாறலாம்','ஆலோசனையைச் சொந்த அனுபவத்துடன் ஒப்பிட வேண்டியிருக்கும்'],
+ ['பணியில் செய்த பங்களிப்புக்குப் பொறுப்பும் அங்கீகாரமும் கூடலாம்','வேலைப் பாதை அல்லது பொறுப்பில் மாற்றம் அவசியமாகலாம்','வேலையின் அளவும் அதன் பலனும் ஒப்பிட்டுப் பார்க்கப்படும்'],
+ ['தொடர்புகளின் மூலம் ஆதாய வாய்ப்புகள் உருவாகலாம்','எதிர்பார்த்த பண வரவு தாமதமாகலாம்','முடிவடைந்த வரவுக்கும் உறுதிப்படாத வரவுக்கும் வேறுபாடு தேவைப்படும்'],
+ ['செலவு திட்டமிட்டதாகவும் ஓய்வு ஒழுங்கானதாகவும் மாறலாம்','வெளியூர் அல்லது குடும்பத் தேவையால் புதிய செலவுகள் சேரலாம்','தூரக் கடமைகளும் உறக்க நேரமும் மறுசீரமைக்கப்படலாம்']
 ];
-const FIRST_TA=[
- ['மற்றவர்கள் முடிவெடுப்பதற்காகக் காத்திருப்பதைவிட தானே முன்னிலை வகிக்கும் சூழல் அதிகமாகலாம்','முடிவெடுப்பதில் தன்னம்பிக்கை இருந்தாலும் அதற்குரிய பொறுப்பைச் சுமக்க வேண்டியிருக்கும்'],
- ['வீட்டுக்குள் பணம் வருவது மட்டும் போதாமல், எவ்வளவு சேமிக்க முடிகிறது என்பதே நிம்மதியை நிர்ணயிக்கும்','குடும்பத் தேவைக்காகச் செய்யும் செலவையும் பிறருக்குக் கொடுக்கும் வாக்குறுதியையும் பிரிக்க வேண்டியிருக்கும்'],
- ['குறுகிய கால முயற்சியை விட தொடர்ந்து ஒரே திறனில் வேலை செய்வதால் முன்னேற்றம் காணலாம்','ஒரு முயற்சியைத் தொடங்கிய உடனே முடிவு கிடைக்காமல் இடையில் முறையை மாற்றும் சூழல் வரலாம்'],
- ['வசிப்பிடம் அல்லது குடும்பப் பராமரிப்பு முடிவுகள் வாழ்க்கையின் பிற முன்னுரிமைகளையும் மாற்றக்கூடும்','வீடு சார்ந்த செலவோ உறவினர் பொறுப்போ தனிப்பட்ட திட்டங்களைத் தாமதப்படுத்தலாம்'],
- ['பயிற்சியை நடைமுறையில் பயன்படுத்தும்போதுதான் கற்றலின் முழுப் பயன் வெளிப்படும்','ஆர்வம் பல திசைகளுக்குச் சென்றால் ஒன்றில் ஆழ்ந்த திறன் பெற நேரம் பிடிக்கலாம்'],
- ['சிக்கலான பணியைப் பொறுப்பாக எடுத்துச் செய்வதால் அனுபவமும் நம்பிக்கையும் வளரக்கூடும்','வேலைப்பளுவையும் கடமைகளையும் ஒழுங்குபடுத்தாவிட்டால் தனிநேரம் குறையலாம்'],
- ['ஒற்றுமையாகச் செயல்படுவதற்கு இருவருக்கும் எது முக்கியம் என்பதைத் தெளிவாகப் பேச வேண்டியிருக்கும்','உறவு அல்லது தொழில் கூட்டு முயற்சியில் எதிர்பார்ப்பு வேறுபாடு தாமதத்தை உருவாக்கலாம்'],
- ['ஏற்கெனவே உள்ள ஏற்பாட்டில் தேவையான மாற்றத்தைச் செய்து பாதுகாப்பை வளர்க்கும் வாய்ப்பு உள்ளது','ஆவணங்கள் அல்லது பகிர்ந்த நிதி தொடர்பான விஷயங்கள் திடீரென கவனம் கேட்கலாம்'],
- ['வழிகாட்டல் அல்லது மேல்படிப்பிலிருந்து வரும் புதிய புரிதல் வாழ்க்கைத் தேர்வை மாற்றக்கூடும்','பெரியோர் கருத்துக்கும் தனிப்பட்ட விருப்பத்திற்கும் இடையே சமநிலை தேவைப்படும்'],
- ['முக்கியமான வேலையை நம்பிக்கையுடன் ஒப்படைக்கும் நிலை படிப்படியாக உருவாகலாம்','தொழிலில் செய்த முயற்சிக்கும் கிடைக்கும் அங்கீகாரத்திற்கும் இடையில் கால இடைவெளி வரலாம்'],
- ['சம்பாதிக்கும் திறனைப் போலவே சரியான தொடர்புகளைத் தேர்ந்தெடுப்பதும் பலனளிக்கும்','எதிர்பார்த்த வரவு தாமதமானால் புதிய நிதி முடிவை ஒத்திவைக்க வேண்டியிருக்கும்'],
- ['தனிநேரத்தையும் செலவையும் ஒரே திட்டத்தில் வைத்தால் மன ஓய்வு அதிகரிக்கலாம்','வெளியூர் அல்லது குடும்பத் தேவைகள் காரணமாக ஒதுக்கிய பணமும் நேரமும் மாறக்கூடும்']
+const PERIOD_EN=[
+ ['personal initiative may carry greater responsibility','other people’s expectations may delay a personal choice','personal aims and family needs may need balancing'],
+ ['a regular saving decision may become possible','household commitments may press against available savings','cash flow and spending promises may require review'],
+ ['practical skills may find repeated use','an initiative may need restructuring','practice and sibling obligations may compete for time'],
+ ['a home arrangement may become easier to sustain','care and housing costs may defer a planned move','home arrangements may need adjusting to daily duties'],
+ ['education or creative practice may advance','a study plan may have to change after disruption','learning and younger-family responsibilities may need balancing'],
+ ['difficult duties may build professional trust','competition may force a change in working routines','work and recovery may require firmer boundaries'],
+ ['a shared agreement may become more stable','a partner may request a different distribution of responsibilities','terms of time and spending may need clarification'],
+ ['joint records and long-standing agreements may be improved','unexpected restructuring may change agreed priorities','security and change may need balancing'],
+ ['mentorship may support an important choice','travel or advanced study could be delayed','advice may have to be reconciled with personal experience'],
+ ['sustained work may bring responsibility and recognition','a role or working practice could require revision','workload may need to be compared with its actual reward'],
+ ['useful networks may open an income route','an expected payment may arrive later','received income should be distinguished from projections'],
+ ['planned expenses may leave more room for rest','distance and care obligations may increase costs','private time and long-distance demands may need readjusting']
 ];
-const FIRST_EN=[
- ['Taking the initiative may become more important than waiting for others to decide','Independent decisions can bring responsibilities alongside confidence'],
- ['The amount retained as savings matters as much as the income coming in','Family commitments and financial promises may compete for available money'],
- ['Steady practice can matter more than a short burst of effort','An initiative may need to be revised before it is useful'],
- ['Housing and care decisions can reshape other priorities','Home costs and family duties can delay personal plans'],
- ['Learning becomes useful when practice turns it into a working skill','Many interests may delay depth in a particular field'],
- ['Trust can grow from accepting difficult responsibilities','Workload may crowd out recovery when duties are not shared'],
- ['Shared life or business decisions require explicit expectations','Unspoken assumptions can slow partnership decisions'],
- ['Restructuring an existing arrangement can improve security','Shared documents or liabilities may require closer attention'],
- ['Mentors or advanced study can change a major decision','Advice from elders and independent plans may not always agree'],
- ['Trust and wider responsibilities may accumulate gradually at work','Recognition may lag behind work completed'],
- ['Carefully chosen contacts can help convert skill into earnings','Forecast receipts need not arrive when first expected'],
- ['Separating unavoidable costs from optional spending can protect rest','Travel or family care can interrupt an established budget']
-];
-const CAUSE_TA=[
- 'அந்த அமைப்பு வாழ்வில் எந்தப் பொறுப்பைத் தானாக ஏற்கிறார் என்பதோடு சேர்ந்து செயல்படுகிறது',
- 'வருமானத்தை எவ்வாறு பயன்படுத்துகிறார், எதை குடும்பத்துடன் பகிர்கிறார் என்ற இரண்டிலும் அதன் தாக்கம் தெரிகிறது',
- 'முயற்சி திடீரெனப் பலனளிப்பதைவிட பயிற்சி செய்து உறுதி பெறும் வழியே முக்கியமாகிறது',
- 'வீட்டில் செய்யப்படும் ஒரு முடிவு வேலையையும் அன்றாட அமைதியையும் மாற்றும் சூழல் அமைகிறது',
- 'கற்றதை எங்கே பயன்படுத்துகிறார் என்பதில்தான் படிப்பின் பலன் தெளிவாகிறது',
- 'தினசரி வேலை, கடமைகள், போட்டி மூன்றின் சமநிலை அதன் விளைவை மாற்றுகிறது',
- 'நெருங்கியவர் உடன் எவ்வளவு பொறுப்பை ஏற்றுக்கொள்கிறார் என்பது முடிவை நிர்ணயிக்கிறது',
- 'பாதுகாக்க வேண்டிய நிதியையும் மாற்ற வேண்டிய ஏற்பாட்டையும் பிரித்துக் கையாள வேண்டியிருக்கிறது',
- 'கிடைக்கும் அறிவுரையை நடைமுறை முயற்சியாக மாற்றும்போது அதன் பயன் தெரியும்',
- 'செய்த வேலையின் அளவை விட பொறுப்பின் தரமும் பொது நம்பிக்கையும் தொழிலின் போக்கை மாற்றுகின்றன',
- 'அறிமுகத்தின் எண்ணிக்கையை விட யாருடன் செயல்படுகிறார் என்பதே ஆதாயத்தை நிர்ணயிக்கிறது',
- 'செலவு, தூரப் பணி, ஓய்வு ஆகியவற்றில் ஒன்றை மாற்றினால் மற்ற இரண்டும் மாறும் நிலை ஏற்படுகிறது'
-];
-const COUNTER_TA=[
- 'முடிவை எடுக்கத் தேவையான துணிவு இருக்கும்போதும் நேரம் எடுத்துச் செய்வதே நன்மை தரும்',
- 'வரவு இருக்கிறதென்பதற்காகச் சேமிப்பும் அதிகரிக்கும் என்று உறுதியாகச் சொல்ல முடியாது',
- 'தனித்திறன் உயரும்போது உறவினரின் எதிர்பார்ப்புகளையும் சமாளிக்க வேண்டியிருக்கும்',
- 'வீட்டிற்கு வரும் வசதியுடன் புதிய பராமரிப்புச் செலவும் வர வாய்ப்பு உண்டு',
- 'கல்வித் திறனை வளர்க்கும் வாய்ப்பும் கவனம் சிதறச் செய்யும் பொறுப்பும் ஒன்றாக வருகின்றன',
- 'வேலை வாய்ப்பு இருக்கும்போது ஓய்வு மற்றும் கடன் பற்றிய பொறுப்பையும் புறக்கணிக்க இயலாது',
- 'ஒத்துழைப்பு கிடைக்கும் போதிலும் உடன்படிக்கையின் சிறு விவரங்களால் கருத்து வேறுபாடு வரலாம்',
- 'ஒரு மாற்றம் பயன் தரும்போது அதற்கான ஆவணச் சுமையும் அதிகரிக்கலாம்',
- 'ஆசிரியர் வழிகாட்டல் உதவும்; இறுதி முடிவில் தன் அனுபவமும் முக்கியமாகும்',
- 'தொழிலில் கூடுதல் பொறுப்பு வரும்போது அங்கீகாரம் கிடைக்கும் வேகம் வேறுபடலாம்',
- 'ஆதாய வாய்ப்பும் பணம் கைக்கு வரும் காலமும் ஒரே நேரமாக அமைய வேண்டியதில்லை',
- 'வெளியூர் வாய்ப்போ ஓய்வு தேவையோ இருந்தாலும் செலவுக் கட்டுப்பாடு அவசியமாகும்'
-];
+function classicSentence(c,d,ta,seen){
+ // Only a demonstrated relationship may add a classical-style inference.
+ // Mention the two actual planets and the current life topic, not a yoga label
+ // that the simple association cannot conclusively establish.
+ const rules=d.classical||[],first=(keys)=>keys.map(k=>rules.find(r=>r.key===k)).find(Boolean);
+ const r=first(['PARIVARTANA','DHANA_2_11_LINK','GURU_COUNTER_ASPECT','KENDRA_TRIKONA_LINK','DUSTHANA_LORD_LINK']);
+ if(!r||seen?.has(r.key))return [];
+ if(seen)seen.add(r.key);
+ const names=r.planets.map(k=>actor(k,ta)).join(ta?'–':' and ');
+ const subject=ta?`இந்த ${c.house}-ஆம் பாவத்தின் ${c.topicTA[0]} விஷயத்தில்`:`For house ${c.house} (${c.topicEN[0]})`;
+ const note={
+ PARIVARTANA:[`${names} இடையே உண்மையான அதிபதி–பாவ இடமாற்றம் இருப்பதால், இரு துறைகளின் பரஸ்பர பொறுப்பை ஒப்பிட்டு முடிவெடுக்க வேண்டும்.`,`${names} mutually exchange house rulership positions. Both connected life areas need to be considered together.`],
+ DHANA_2_11_LINK:[`${names} அதிபதிகளின் நேரடித் தொடர்பு வருமானம் கிடைப்பதற்கும் அதைச் சேமிப்பதற்கும் உள்ள வேறுபாட்டைக் காட்டுகிறது.`,`${names} link income sources to savings decisions, rather than proving wealth.`],
+ GURU_COUNTER_ASPECT:[`குருவின் பார்வையுடன் கட்டுப்படுத்தும் பார்வையும் சேர்ந்திருப்பதால் சாதக–பாதகக் காரணங்களைத் தனித்தனியாக அளவிட வேண்டியுள்ளது.`,`A Jupiter aspect coincides with a restrictive aspect; neither automatically cancels the other.`],
+ KENDRA_TRIKONA_LINK:[`${names} அதிபதிகள் இணைந்திருப்பது வாய்ப்பு உருவாகும் தொடர்பாகும்; இந்தத் தொடர்பை மட்டும் முழு ராஜயோகம் என நிர்ணயிக்கவில்லை.`,`The observed connection between ${names}, angular and trinal rulers, is supportive, not proof of an unqualified royal yoga.`],
+ DUSTHANA_LORD_LINK:[`ஆறு/எட்டு/பன்னிரண்டு இடங்களில் அதிபதித் தொடர்பு இருப்பினும், தனியே விபரீத ராஜயோகம் என உறுதிப்படுத்த முடியாது.`,`The difficult-house ruler's placement does not, by itself, confirm Viparita Raja Yoga.`]
+ }[r.key];
+ if(!note)return [];
+ return [ta?`${subject}, ${note[0]}`:`${subject}, ${note[1]}`];
+}
+function divisionSentence(c,d,ta){const div=d.divisionEvidence||[],lord=div.find(v=>v.planet===c.lord),karaka=div.find(v=>v.planet!==c.lord);if(!lord&&!karaka)return '';
+ const label=(x)=>`${x.division} ${actor(x.planet,ta)}`;
+ if(lord&&karaka&&lord.dignity!==karaka.dignity&&lord.dignity!=='neutral'&&karaka.dignity!=='neutral')return ta?`${label(lord)} வலிமை ${lord.dignity==='strong'?'உயர்ந்தாலும்':'குறைந்தாலும்'}, ${label(karaka)} அதற்கு மாறான நிலை கொண்டிருப்பதால், இத்துறையில் ஒரே பக்கத் தீர்ப்பு வழங்கப்படவில்லை.`:`${label(lord)} and ${label(karaka)} have opposing dignities; the division does not justify a one-sided conclusion.`;
+ return div.filter(x=>x.dignity!=='neutral').map(x=>ta?`${label(x)} ${x.reason==='own'?'சொந்த ராசியில்':x.reason==='exalted'?'உச்ச ராசியில்':'நீச ராசியில்'} இருப்பது பிறப்புப் பாவத்தின் மதிப்பீட்டிற்குத் துணை ஆதாரம்; தனியாக நிகழ்வு உறுதி அல்ல.`:`${label(x)} is ${x.reason} in the supplied divisional chart, providing secondary context rather than an event guarantee.`).join(' ');
+}
 function actor(k,ta){return ta?(J().NTA[k]||k):k;}
-function riskAndSupport(c,ta){const top=c.positive[0],risk=c.negative[0];if(!top&&!risk)return '';
- if(top&&risk){return ta?`${actor(top.planet,true)} தரும் ஆதரவுக்கு எதிராக ${actor(risk.planet,true)} தொடர்பும் இருப்பதால் ${COUNTER_TA[c.house-1]}.`:`A supportive ${top.planet} contact is offset by restrictive ${risk.planet} evidence; the result depends on how the competing circumstances are handled.`;}
- if(risk)return ta?`${actor(risk.planet,true)} தொடர்பின் அழுத்தம் இருப்பதால் முயற்சியின் வேகத்தைவிட ஏற்பாட்டின் நிலைத்தன்மை முக்கியமாகிறது.`:`A restrictive ${risk.planet} contact makes stability of the arrangements more important than speed.`;
- // A positive contact is already reflected in J.resolve(c).status and the
- // concrete life-scene above. Restating "chart evidence exists" is filler,
- // not a life prediction; omit this sentence entirely in BOTH languages.
- return ''; }
-
-/* Tamil life explanations reuse the resolved chart; no additional calculation. */
-const NATAL_MIXED_TA = [
- "தனிப்பட்ட முடிவுகளில் உங்கள் விருப்பத்தையும் பிறர் எதிர்பார்ப்பையும் எவ்வாறு சமநிலைப்படுத்துகிறீர்கள் என்பது முக்கியமாகிறது",
- "குடும்பப் பணவிஷயங்களில் வரவு, செலவு, சேமிப்பு ஆகியவற்றை ஒன்றாகப் புரிந்துகொள்ள வேண்டிய அமைப்பு உள்ளது",
- "முயற்சியின் பலனைப் புரிந்துகொள்ள பயிற்சியையும் தொடர்புகளையும் சேர்த்துப் பார்க்க வேண்டும்",
- "வீட்டுச் சூழலும் குடும்பத்தாரின் தேவைகளும் உங்கள் மற்ற முன்னுரிமைகளுடன் தொடர்புபடும் அமைப்பு உள்ளது",
- "கல்வியிலும் படைப்புப் பணியிலும் ஆர்வத்தை எவ்வாறு நடைமுறையில் பயன்படுத்துகிறீர்கள் என்பது முக்கியமாகிறது",
- "பணி ஒழுங்கு, போட்டி, ஓய்வு ஆகியவற்றை ஒன்றாகக் கவனிக்க வேண்டிய அமைப்பு உள்ளது",
- "துணைவர் அல்லது கூட்டாளியுடன் எதிர்பார்ப்பையும் பொறுப்பையும் தெளிவுபடுத்துவது முக்கியமாகிறது",
- "பகிர்ந்த நிதி அல்லது நீண்டகால ஏற்பாட்டைப் புரிந்துகொள்ள அதன் விவரங்களைச் சேர்த்துப் பார்க்க வேண்டும்",
- "கிடைக்கும் வழிகாட்டலையும் உங்கள் சொந்தத் திட்டத்தையும் எவ்வாறு இணைக்கிறீர்கள் என்பது முக்கியமாகிறது",
- "தொழிலில் ஏற்கும் பொறுப்பையும் அதற்குக் கிடைக்கும் பலனையும் சேர்த்துப் பார்க்க வேண்டிய அமைப்பு உள்ளது",
- "வருமான வழிகளையும் தொடர்புகளையும் ஒன்றாகப் புரிந்துகொள்வது முக்கியமாகிறது",
- "செலவு, தனிநேரம், ஓய்வு ஆகியவை ஒன்றையொன்று பாதிக்கும் அமைப்பு உள்ளது"
-];
-const NATAL_DETAIL_TA = [
- "ஒரு முடிவில் முன்னிலை வகிப்பது மட்டும் போதாமல், அதைத் தொடர்ந்து செயல்படுத்தும் பொறுப்பும் முக்கியமாகிறது. உங்கள் விருப்பத்தைத் தெளிவாகச் சொல்வதுடன், அதன் நடைமுறை விளைவையும் கவனிப்பது இந்த அமைப்புக்குப் பொருத்தமான அணுகுமுறையாகும்.",
- "வருமானம் கிடைப்பதும் அந்தப் பணம் சேமிப்பாகத் தங்குவதும் தனித்தனி விஷயங்கள். குடும்பத் தேவைகள், ஏற்றுக்கொள்ளும் பணப் பொறுப்புகள், கையில் வைத்திருக்க வேண்டிய தொகை ஆகியவற்றைத் தெளிவுபடுத்துவது இந்தத் துறையைப் புரிந்துகொள்ள உதவும்.",
- "ஒரு முயற்சியின் மதிப்பு உடனடிப் பலனில் மட்டும் தெரியாது; தொடர்ந்து செய்த பயிற்சியும் அதிலிருந்து கற்ற அனுபவமும் முக்கியம். உடன்பிறந்தோர் அல்லது நெருக்கமானவர்களுடன் தொடர்பு கொள்ளும்போது எதிர்பார்ப்பைத் தெளிவாகப் பேசுவது உதவும்.",
- "வீடு சார்ந்த முடிவில் வசதியையும் குடும்பத்தாரின் தேவையையும் தனித்தனியாகப் பார்க்க முடியாது. வசிப்பிடம் அல்லது பராமரிப்பு குறித்து தேர்வு செய்யும்போது, அது உங்கள் நேரத்தையும் அன்றாட அமைதியையும் எவ்வாறு பாதிக்கிறது என்பதையும் கவனிக்கலாம்.",
- "படிப்பிலும் படைப்புப் பணியிலும் ஆர்வத்தைத் தொடர்ந்து பயிற்சியாக மாற்றுவது முக்கியமாகிறது. எதைக் கற்கிறீர்கள் என்பதுடன், கற்றதை எங்கே பயன்படுத்த முடியும் என்பதையும் பார்க்கும்போது இந்தத் துறையின் நடைமுறை பொருள் தெளிவாகும்.",
- "கடினமான பணியை முடிப்பதுடன், அதைத் தொடர்ந்து செய்யக்கூடிய அன்றாட ஒழுங்கும் முக்கியம். போட்டி அல்லது கடன் தொடர்பான பொறுப்பு இருந்தால், அதைச் சமாளிக்கும் திட்டத்துடன் ஓய்வுக்கான நேரத்தையும் சேர்த்துப் பார்க்கலாம்.",
- "இணைந்து செயல்படும் உறவில் இருவருக்கும் எது முக்கியம் என்பதைப் புரிந்துகொள்வதே அடிப்படையாகிறது. பணம், நேரம், பொறுப்பு ஆகியவற்றில் யார் எதை ஏற்கிறார்கள் என்பதைத் தெளிவுபடுத்துவது இந்த அமைப்பின் நடைமுறை பொருளாகும்.",
- "பகிர்ந்து கையாளும் பணம் அல்லது ஆவணங்கள் இருந்தால், அவற்றில் உங்கள் பொறுப்பு என்ன என்பதைத் தெரிந்துகொள்வது முக்கியம். மாற்றம் தேவைப்படும் சூழலில் எதைப் பாதுகாக்க வேண்டும், எதைத் திருத்தலாம் என்பதைப் பிரித்துப் பார்ப்பது உதவும்.",
- "ஆசிரியர் அல்லது பெரியோரின் ஆலோசனை கிடைக்கும்போது, அதை உங்கள் சூழலுக்கு ஏற்ற நடைமுறைத் திட்டமாக மாற்றுவது முக்கியம். மேற்படிப்பு அல்லது தொலைதூர முயற்சி குறித்து தேர்வு செய்யும்போது அதன் பயனையும் அதற்குத் தேவையான ஏற்பாட்டையும் சேர்த்துப் பார்க்கலாம்.",
- "வேலை அல்லது தொழில் சார்ந்த முடிவில் பொறுப்பின் அளவும் அதற்குக் கிடைக்கும் பலனும் முக்கியமாகின்றன. புதிய பொறுப்பை ஏற்கும் சூழல் வந்தால், அதை நிறைவேற்றத் தேவையான நேரம், திறன், ஒத்துழைப்பு ஆகியவற்றைத் தெளிவுபடுத்துவது உதவும்.",
- "தொடர்புகளின் எண்ணிக்கையை விட அவற்றின் நம்பகத்தன்மையும் பயனும் முக்கியமாகின்றன. வருமானம் தொடர்பான திட்டம் அமைக்கும்போது, எதிர்பார்க்கும் வரவையும் உண்மையில் கிடைத்த தொகையையும் தனித்தனியாகப் பார்ப்பது இந்தத் துறையைத் தெளிவுபடுத்தும்.",
- "செலவைக் குறைப்பது மட்டும் போதாமல், தவிர்க்க முடியாத தேவைகளுக்கும் ஓய்வுக்கும் இடம் கொடுப்பதும் முக்கியம். வெளியூர் தொடர்பான திட்டம் இருந்தால், அதற்கான பணச் செலவுடன் நேரமும் குடும்ப ஏற்பாடும் எவ்வாறு மாறும் என்பதையும் பார்க்கலாம்."
-];
-const NATAL_YOUTH_AREA_TA = [
- "தன்னம்பிக்கையும் சிறிய முடிவுகளும்",
- "குடும்பத்துடன் தேவைகளைப் பகிர்தல்",
- "திறன் பயிற்சியும் நெருக்கமானவர்களுடன் பழகுதலும்",
- "வீட்டுச் சூழலும் குடும்ப ஆதரவும்",
- "கற்றலும் படைப்பாற்றலும்",
- "அன்றாட ஒழுங்கும் பயிற்சியும்",
- "நண்பர்களுடன் ஒத்துழைத்தல்",
- "பொருள் பொறுப்பும் மாற்றங்களை எதிர்கொள்ளுதலும்",
- "பெற்றோர் அல்லது ஆசிரியர் வழிகாட்டலும்",
- "வயதுக்கேற்ற பொறுப்பும் திறன் வளர்ப்பும்",
- "நண்பர் வட்டமும் குழுச் செயல்களும்",
- "உறக்கமும் ஓய்வும்"
-];
-const NATAL_YOUTH_CHANNEL_TA = [
- "தனியாகச் செய்யக்கூடிய சிறிய செயல்களுக்கு இடம் கொடுப்பது உதவும்",
- "கல்விக்கும் அன்றாடத் தேவைகளுக்கும் குடும்பத்தின் உதவி முக்கியமாகிறது",
- "தொடர் பயிற்சியும் நெருக்கமானவர்களுடன் உரையாடுவதும் இதனுடன் இணைகின்றன",
- "வீட்டில் கிடைக்கும் ஆதரவும் அமைதியான சூழலும் முக்கியமாகின்றன",
- "வயதுக்கேற்ற கற்றலும் விளையாட்டும் படைப்புச் செயல்களும் இதற்கான வழிகளாக அமைகின்றன",
- "பயிற்சி நேரத்தையும் ஓய்வையும் பொருத்தமாக அமைப்பது உதவும்",
- "நண்பர்களுடன் பொறுப்பைப் பகிர்ந்து பழகுவது முக்கியமாகிறது",
- "பொருள்களைப் பாதுகாப்பதும் புதிய சூழலுக்குப் பழகுவதும் இதனுடன் இணைகின்றன",
- "பெற்றோர் அல்லது ஆசிரியரின் வழிகாட்டலைப் பயன்படுத்துவது உதவும்",
- "வயதுக்கேற்ற ஒரு பொறுப்பை எடுத்துச் செய்து பழகுவது முக்கியமாகிறது",
- "நண்பர் வட்டமும் குழுவாகச் செய்யும் செயல்களும் இதனுடன் இணைகின்றன",
- "உறக்கத்திற்கும் இடைவெளிக்கும் போதிய நேரம் கொடுப்பது உதவும்"
-];
-const NATAL_YOUTH_DETAIL_TA = [
- "எளிய தேர்வுகளுக்கு காரணம் சொல்லிப் பழகுவதும், உதவி தேவைப்படும் போது பெரியவர்களிடம் கேட்பதும் தன்னம்பிக்கையை வளர்க்க உதவும்.",
- "தேவையான பொருள் எது, அதை எதற்குப் பயன்படுத்தப் போகிறீர்கள் என்பதை குடும்பத்தாரிடம் விளக்கிப் பழகுவது உதவும்.",
- "ஆர்வமான ஒரு திறனைச் சிறிது சிறிதாகப் பயிற்சி செய்வதும், மற்றவர் பேசும்போது கேட்பதும் இந்தத் துறைக்குப் பொருத்தமான பழக்கங்களாகும்.",
- "கற்றலுக்கான இடத்தையும் குடும்பத்துடன் உரையாடும் நேரத்தையும் பொருத்தமாக அமைப்பது இந்தத் துறையை நடைமுறையில் அணுக உதவும்.",
- "வயதுக்கேற்ற படிப்பு, இசை, ஓவியம் அல்லது விளையாட்டில் ஆர்வத்தை வெளிப்படுத்த இடம் கொடுப்பது உதவும்.",
- "எளிதாகத் தொடரக்கூடிய அன்றாடப் பழக்கத்தை அமைத்து, சோர்வு ஏற்பட்டால் இடைவெளி கொடுப்பது உதவும்.",
- "மாறிமாறிப் பொறுப்பை ஏற்கவும், தன் தேவையைச் சொல்லவும், மற்றவரின் கருத்தைக் கேட்கவும் பழகுவது உதவும்.",
- "பொருள்களைப் பாதுகாப்பாக வைத்திருப்பதும், புதிய சூழல் புரியாதபோது பெற்றோர் அல்லது பராமரிப்பவரிடம் கேட்பதும் உதவும்.",
- "தெரியாததை கேள்வியாகக் கேட்டு, கிடைக்கும் விளக்கத்தை ஒரு சிறிய செயலாக முயன்று பார்ப்பது உதவும்.",
- "வயதுக்கேற்ற சிறிய பொறுப்பை எடுத்துச் செய்து முடிப்பதன் மூலம் அதன் நடைமுறை பொருளைப் புரிந்துகொள்ளலாம்.",
- "குழுச் செயல்களில் ஒவ்வொருவரின் பங்கையும் புரிந்துகொண்டு, நம்பகமான நண்பர்களுடன் பழகுவதற்கு இடம் கொடுப்பது உதவும்.",
- "உறக்கத்தையும் விளையாட்டு அல்லது கற்றல் இடைவெளியையும் குடும்பத்துடன் சேர்ந்து அமைத்துக் கொள்வது உதவும்."
-];
-function natalEvidenceTA(e){
- const name=actor(e.planet,true);
- const relation={lord:'இந்தத் துறையின் அதிபதியாக இருப்பது',occupies:'இந்தத் துறைக்குரிய வீட்டில் இருப்பது',aspects:'இந்தத் துறைக்குரிய வீட்டைப் பார்ப்பது',karaka:'இந்தத் துறைக்குரிய காரகமாக எடுத்துக் கொள்ளப்படுவது'}[e.relation]||'இந்தத் துறையுடன் தொடர்பு பெறுவது';
- return `${name} ${relation}`;
+/* A result is selected by Judgement.decide() BEFORE any text is rendered.
+ * Natural language here is deterministic. No random template choice, no
+ * fabricated dates, no vacant phrases presented as chart evidence.
+ */
+function evidenceName(v,ta){return actor(v.planet,ta);}
+function relationTA(v,c){const n=evidenceName(v,true);
+ return v.relation==='lord'?`${n} ${c.house}-ஆம் பாவத்திற்கு அதிபதியாக இருப்பது`:
+ v.relation==='occupies'?`${n} இந்தப் பாவத்தில் அமர்ந்திருப்பது`:
+ v.relation==='aspects'?`${n} இந்தப் பாவத்தைப் பார்ப்பது`:`${n} காரகத் தொடர்பு பெறுவது`;
 }
-function natalTamil(c){
- const d=J().resolve(c),idx=c.house-1,minor=c.ageUnder18;
- const areas=minor?NATAL_YOUTH_AREA_TA:AREA_TA;
- const focus=minor?`இந்த வயதில் ${areas[idx]} சார்ந்த பழக்கங்களை வளர்ப்பதே இந்தத் துறையின் பொருத்தமான வெளிப்பாடாகும்`:
-  d.status==='supported'?FIRST_TA[idx][0]:d.status==='restricted'?FIRST_TA[idx][1]:NATAL_MIXED_TA[idx];
- const channel=minor?NATAL_YOUTH_CHANNEL_TA[c.location-1]:CHANNEL_TA[c.location-1];
- const first=`${focus}. ${channel}.`;
- const name=actor(c.lord,true),other=(c.otherLordships||[]).filter(n=>n!==c.house);
- const placement=c.location===c.house?'அவர் அதே வீட்டில் அமர்ந்துள்ளார்':`அவர் ${areas[c.location-1]} தொடர்பான வீட்டில் அமர்ந்துள்ளார்`;
- const structural=`உங்கள் ஜாதகத்தில் ${areas[idx]} சார்ந்த வீட்டின் அதிபதி ${name}. ${placement}. இதனால் இந்தத் துறையின் விளக்கத்தில் அவரது இருப்பிடமும் முக்கியமாகிறது.`;
- const related=other.length?` ${other.map(n=>areas[n-1]).join(' மற்றும் ')} சார்ந்த ${other.length===1?'வீட்டிற்கும்':'வீடுகளுக்கும்'} ${name} அதிபதியாக இருப்பதால், அந்தப் ${other.length===1?'பகுதியையும்':'பகுதிகளையும்'} சேர்த்துப் புரிந்துகொள்ள வேண்டும்.`:'';
- const detail=minor?`${NATAL_YOUTH_CHANNEL_TA[idx]}. ${NATAL_YOUTH_DETAIL_TA[idx]}`:NATAL_DETAIL_TA[idx];
- const out=[first,structural+related,detail];
- const top=c.positive?.[0],risk=c.negative?.[0];
- if(top&&risk)out.push(`${natalEvidenceTA(top)} இந்தத் துறையில் முன்னேற்றத்திற்கு ஆதரவான தொடர்பாக உள்ளது. அதே நேரத்தில் ${natalEvidenceTA(risk)} இந்தப் பகுதியில் கூடுதல் கவனமும் தெளிவான ஏற்பாடும் தேவைப்படுவதைக் குறிக்கிறது. எனவே இந்தத் துறையைப் புரிந்துகொள்ள வாய்ப்பையும் அதைச் சமாளிக்க வேண்டிய சூழலையும் ஒன்றாகப் பார்க்க வேண்டும்.`);
- else if(top)out.push(`${natalEvidenceTA(top)} இந்தத் துறையின் சாதகமான பக்கத்தை வலுப்படுத்துகிறது. மேலே கூறிய நடைமுறை வாய்ப்புகளைப் புரிந்துகொள்ள இந்தத் தொடர்பு ஒரு ஆதரவான சுட்டாக எடுத்துக் கொள்ளப்படுகிறது.`);
- else if(risk)out.push(`${natalEvidenceTA(risk)} இந்தப் பகுதியில் கூடுதல் கவனம் தேவைப்படுவதைக் குறிக்கிறது. எனவே இந்தத் துறைக்கான முடிவுகளில் வேகத்தை விட ஏற்பாட்டின் தெளிவுக்கு முக்கியத்துவம் அளிப்பது உதவும்.`);
- if(c.division&&c.division.dignity!=='neutral'){
-  const v=c.division;
-  out.push(`${v.division} வர்க்கத்திலும் ${actor(v.planet,true)} ${v.dignity==='strong'?'ஆட்சி அல்லது உச்ச':'நீச'} நிலையில் இருப்பதாகக் கிடைத்துள்ளது. இது ${v.dignity==='strong'?'இந்த விளக்கத்திற்கு கூடுதல் ஆதரவாக':'சிரமமான பக்கத்திற்கு கூடுதல் சூழலாக'} எடுத்துக் கொள்ளப்படுகிறது.`);
- }
- return out;
+function relationEN(v,c){const n=v.planet;
+ return v.relation==='lord'?`${n} rules the ${c.house} house`:
+ v.relation==='occupies'?`${n} occupies this house`:
+ v.relation==='aspects'?`${n} aspects this house`:`${n} is a relevant significator`;
 }
-function natal(c,lang){if(lang!=='en')return natalTamil(c);const ta=lang!=='en',d=J().resolve(c),idx=c.house-1;
- const domain=ta?AREA_TA[idx]:AREA_EN[idx],channel=ta?CHANNEL_TA[c.location-1]:CHANNEL_EN[c.location-1];
- const minor=c.ageUnder18;const focus=(minor&&[7,10,11].includes(c.house))?(ta?'நட்பிலும் குழுச் செயலிலும் பொறுப்பைப் பகிர்வது':'learning to cooperate with peers'):(ta?FIRST_TA[idx][d.status==='supported'?0:1]:FIRST_EN[idx][d.status==='supported'?0:1]);
- const first=ta?`${focus}. ${channel[0].toUpperCase()+channel.slice(1)}.`:`${focus}. In practice, ${channel}.`;
- const other=c.otherLordships?.filter(n=>n!==c.house)||[];
- const structural=ta?`${actor(c.lord,true)} ${c.house}-ஆம் பாவத்தின் அதிபதியாக ${c.location}-ஆம் இடத்தில் அமர்ந்துள்ளார். ${CAUSE_TA[c.house-1]}.`:`${c.lord} owns house ${c.house} and occupies house ${c.location}; this links ${domain} with ${AREA_EN[c.location-1]}.`;
- const related=other.length&&[1,2,4,5,7,10,11].includes(c.house)?(ta?`மேலும் ${other.map(n=>AREA_TA[n-1]).join(' மற்றும் ')} ஆகியவற்றுக்கும் ${actor(c.lord,true)} அதிபதியாக இருப்பதால் இந்த முடிவு அங்கேயும் தாக்கம் செலுத்தலாம்.`:`The same ruler also governs ${other.map(n=>AREA_EN[n-1]).join(' and ')}, joining decisions across these areas.`):'';
- const second=[structural,related,riskAndSupport(c,ta)].filter(Boolean).join(' ');
- const out=[first,second];
- if(c.division&&c.division.dignity!=='neutral'){const v=c.division;out.push(ta?`${v.division} வர்க்கத்தில் ${actor(v.planet,true)} ${v.dignity==='strong'?'ஆட்சி அல்லது உச்ச நிலையில் இருப்பது இந்த முடிவுக்கு கூடுதல் துணையாகிறது':'நீச நிலையில் இருப்பது முடிவின் சிரமமான பக்கத்தை வலுப்படுத்துகிறது'}.`:`In ${v.division}, ${v.planet} has ${v.dignity==='strong'?'own-sign or exalted':'debilitated'} dignity and is considered as supporting context rather than a separate guaranteed event.`);}
- return out;}
-function period(win,claim,lang){const ta=lang!=='en',p=win.period,st=J().resolve(claim),md=actor(p.md,ta),ad=actor(p.ad,ta),age=p.age;
- const minor=age!==null&&age<18;
- const objective=minor?(ta?'பள்ளிப் படிப்பு, பயிற்சி அல்லது குடும்பப் பழக்கத்தின் வளர்ச்சி':'learning, developing habits and family support'):(ta?st.sceneTA:st.sceneEN);
- const area=ta?AREA_TA[claim.house-1]:AREA_EN[claim.house-1];
- const location=ta?AREA_TA[claim.location-1]:AREA_EN[claim.location-1];
- const main=ta?`${p.from} முதல் ${p.to} வரை ${md} மகாதசை–${ad} புக்தி தொடர்பில் ${objective} என்ற வாழ்க்கைச் சூழல் முன்னிலை பெறுகிறது.`:`For ${p.from}–${p.to}, the ${md} major period with ${ad} sub-period highlights ${objective}.`;
- const rationale=ta?`${claim.lord===p.md||claim.lord===p.ad?'அந்தக் கால அதிபதிகளில் ஒருவர்':'இந்தக் காலத்தின் கிரகங்கள்'} ${actor(claim.lord,true)} ஆளும் ${claim.house}-ஆம் பாவத்துடன் பிறப்பிலேயே தொடர்பு பெறுவதால் ${location} வழியாக ${area} பற்றிய முடிவு முக்கியமாகலாம்.`:`The period planets have computed natal ties to house ${claim.house}; the effect is channelled through ${location}.`;
- const limit=st.status==='restricted'?(ta?'வேகம் குறைந்தாலும் பணியைச் சீரமைக்க முடியும்; திடீர் உயர்வு என்று மட்டும் கூற முடியாது.':'Delay or reorganisation is more plausible than an automatic rapid advance.') :st.status==='supported'?(ta?'எடுத்த பொறுப்பை முடித்துக் காட்டினால் கிடைக்கும் வாய்ப்பைத் தக்கவைத்துக்கொள்ள முடியும்.':'Completion of existing obligations can help retain the opening.'):(ta?'இணைந்திருக்கும் சாதகமும் தடையும் காரணமாக பலன் ஒரே சீரில் அமையாமல் சில முறை மாறக்கூடும்.':'Positive and restraining indications coexist, so the result may develop unevenly.');
- const transit=win.transit?(ta?`கணிக்கப்பட்ட ${actor(win.transit.planet,true)} கோச்சாரம் ${win.transit.observedOn} அன்று அதே பாவத்தைத் தொடர்புகொண்டுள்ளது; இது கூடுதல் காலச்சுட்டு மட்டுமே.`:`A computed ${win.transit.planet} transit on ${win.transit.observedOn} provides a secondary timing indicator.`):'';
- return [main,rationale,limit,transit].filter(Boolean).join(' ');
+function roleOf(p,c,ta){const owner=(p===c.lord),occ=c.houseOccupants.includes(p),asp=c.houseAspects.includes(p);
+ if(ta)return owner?'அதிபதித் தொடர்பு':occ?'நேரடி இருப்பிடம்':asp?'பார்வைத் தொடர்பு':'தொடர்புடைய பிறப்பு நிலை';
+ return owner?'rulership':occ?'occupation':asp?'aspect':'natal association';}
+function natal(c,lang,seenClassical){const ta=lang!=='en',d=J().decide(c);if(!d)return [];
+ const primary=ta?d.leadTA:d.leadEN,link=ta?d.linkTA:d.linkEN,lord=actor(d.lord,ta);
+ const ownership=ta?`${c.house}-ஆம் பாவத்தை ஆளும் ${lord}, பிறப்பில் ${c.location}-ஆம் பாவத்தில் அமர்ந்திருக்கிறார்.`:
+  `${lord} rules house ${c.house} and occupies natal house ${c.location}.`;
+ const scene=ta?`${d.completedTA} ${ownership}`:
+  `The central theme is ${primary}. ${ownership} It is therefore linked with ${link}.`;
+ const other=d.otherLordships.filter(x=>x!==c.house);
+ const cross=other.length?(ta?`${lord} ${other.map(x=>x+'-ஆம்').join(', ')} பாவத்திற்கும் அதிபதியாக இருப்பதால், ${other.map(x=>CROSS_TA[x]).filter(Boolean).join('; ')}.`:
+  `The same ruler also governs ${other.map(x=>AREA_EN[x-1]).join(' and ')}, so these life themes are connected.`):'';
+ const pos=d.positive.find(x=>x.delta>=.16),neg=d.negative.find(x=>x.delta<=-.16);
+ let balance='';
+ if(pos&&neg)balance=ta?`${relationTA(pos,c)} சாதகமாக உள்ளது; அதே நேரத்தில் ${relationTA(neg,c)} காரணமாக இம்முயற்சி தடையின்றி நிறைவேறும் என்று சொல்ல இயலாது.`:
+ `${relationEN(pos,c)} provides supporting evidence, while ${relationEN(neg,c)} provides an opposing factor. Neither one alone establishes a certain outcome.`;
+ else if(neg)balance=ta?`${relationTA(neg,c)} இந்த முயற்சியில் தாமதம் அல்லது கூடுதல் பொறுப்பைக் காட்டுகிறது. அதைக் குறைக்கும் தனி சாதகத் தொடர்பு கணிக்கப்பட்ட இந்தப் பாவ விவரங்களில் இல்லை.`:
+ `${relationEN(neg,c)} is a restrictive indicator, so this theme may involve delay or revision. There is no separate counter-indicator in the available inputs.`;
+ else if(pos)balance=ta?`${relationTA(pos,c)} இவ்விஷயத்தில் சாதகமாக இருக்கிறது; குறிப்பாக ${link} தொடர்புடைய வாழ்க்கைச் சூழல் அதன் பயனை வெளிப்படுத்தக்கூடும்.`:
+ `${relationEN(pos,c)} reinforces the reading through ${link}; it does not establish that an event has already occurred.`;
+ const division=divisionSentence(c,d,ta);const ruleText=classicSentence(c,d,ta,seenClassical).join(' ');
+ return [scene,[cross,balance,division,ruleText].filter(Boolean).join(' ')].filter(Boolean);
 }
-function year(group,lang){const ta=lang!=='en';if(group.kind==='insufficient')return '';
- const c=group.claim,dec=J().resolve(c);const house=ta?AREA_TA[c.house-1]:AREA_EN[c.house-1],dest=ta?AREA_TA[c.location-1]:AREA_EN[c.location-1];
- const transit=actor(group.transit.planet,ta),md=actor(group.period.md,ta),ad=actor(group.period.ad,ta);
- const o=group.observations||[],down=o.reduce((a,b)=>a+b,0)<0;
- const scene=ta?FIRST_TA[c.house-1][down?1:0]:FIRST_EN[c.house-1][down?1:0];
- const when=ta?`${group.from} – ${group.to}`:`${group.from} – ${group.to}`;
- const age=group.age;
- if(age!==null&&age<18){
-  const youthTA={1:'தனியாகப் படிப்பதற்கான பொறுப்பை ஏற்றுக்கொள்ளும் அணுகுமுறை',2:'குடும்பத்துடன் கல்விச் செலவும் தேவையும் பற்றிப் பேசும் பழக்கம்',3:'திறன் பயிற்சி, பேச்சாற்றல் மற்றும் நண்பர்களுடன் இணைந்து செயல்படுதல்',4:'வீட்டுச் சூழல் படிப்பு நேரத்திற்குத் தரும் ஆதரவு',5:'பாடங்களில் ஆர்வமும் படைப்புச் செயல்களும்',6:'ஒழுங்கான பயிற்சிக்கும் ஓய்வுக்கும் இடம் அமைத்தல்',7:'நண்பர்களுடன் கருத்து வேறுபாட்டைத் தீர்க்கும் பழக்கம்',8:'பாதுகாப்பான இணையப் பழக்கமும் பொருள் பொறுப்பும்',9:'ஆசிரியர் வழிகாட்டலுடன் மேற்படிப்புக்கான ஆர்வம்',10:'விளையாட்டு அல்லது பள்ளிப் பொறுப்பை முடிக்கும் திறன்',11:'பயனுள்ள நண்பர் வட்டம் மற்றும் குழுக் கற்றல்',12:'உறக்கமும் படிப்பு இடைவெளியும் பொருத்தமாக அமைதல்'};
-  const youthEN={1:'responsibility for independent study',2:'discussions of educational needs at home',3:'skills and communication with peers',4:'a supportive study environment at home',5:'school interests and creativity',6:'balance between training and rest',7:'handling disagreements among peers',8:'safer habits and shared responsibilities',9:'mentoring and aspirations for study',10:'school duties and team activity',11:'peer networks and group learning',12:'sleep and study breaks'};
-  const y=ta?youthTA[c.house]:youthEN[c.house];const b=age>=15?(ta?'மேல்நிலைப் பாடத் தேர்வுகளில் முன்னுரிமைகளைத் தெளிவாக வைத்தால்':'As academic decisions become more important, clear priorities can help'):age>=11?(ta?'பள்ளிப் பழக்கத்தை அமைக்கும் வயதில்':'At school-going age'):(ta?'சிறுவயதில்':'In childhood');
-  const recurrence=group.recurrences?.length?(ta?` இதே அமைப்புக்கான பிற கணிக்கப்பட்ட காலங்கள்: ${group.recurrences.map(x=>x.from+'–'+x.to).join(', ')}.`:` Similar computed windows: ${group.recurrences.map(x=>x.from+'–'+x.to).join(', ')}.`):'';
-  return ta?`${when}: ${y} முக்கியம் பெறும் காலமாகும். ${b} குடும்பத்தாரின் வழிகாட்டல் உதவும். ${md}–${ad} தசா–புக்தியுடன் ${transit} கோச்சாரமும் ${c.house}-ஆம் பாவத்தைத் தொடர்புகொள்கிறது.${recurrence}`:`${when}: The chart highlights ${y}. ${b}; the computed ${md}/${ad} period and ${transit} transit both link to house ${c.house}.${recurrence}`;
- }
- const lead=ta?`${when}: ${scene}.`:`${when}: ${scene}.`;
- const detail=ta?`${house} பற்றிய இந்தச் சுட்டுக்கு ${md}–${ad} தசா–புக்தியும் ${transit} பெயர்ச்சியும் ஒரே காலத்தில் தொடர்பு தருகின்றன. பிறப்பில் ${actor(c.lord,true)} அமர்ந்துள்ள ${c.location}-ஆம் இடம் காரணமாக ${dest} சார்ந்த சூழலும் சேரலாம்.`:`During ${md}/${ad}, the computed ${transit} contact also activates ${house}. Its ruler ${c.lord} occupies natal house ${c.location}, linking the timing to ${dest}.`;
- const restraint=dec.risk&&dec.protection?(ta?'சாதகமான வாய்ப்புடன் எதிர் ஆதாரமும் இருப்பதால் இதை உறுதியான நிகழ்வுத் தேதியாக எடுத்துக்கொள்ள முடியாது.':'The natal chart has counter-evidence, so this is not an exact event-date forecast.') :'';
- const recurrence=group.recurrences?.length?(ta?` இதே சுட்டு மறுபடியும் காணப்படும் காலங்கள்: ${group.recurrences.map(x=>x.from+'–'+x.to).join(', ')}.`:` Other sampled windows with the same theme: ${group.recurrences.map(x=>x.from+'–'+x.to).join(', ')}.`):'';
- return [lead,detail,restraint].filter(Boolean).join(' ')+recurrence;
+function period(win,c,lang){const ta=lang!=='en',p=win.period,d=J().decide(c);if(!p||!p.md||!p.ad||!d)return '';
+ if((win.links||[]).length===0 || win.weight<2.4)return ''; // no weak fallback prediction
+ const age=p.age,child=age!==null&&age<18;
+ const theme=child?(ta?({7:'நண்பர்களுடன் பழகும் முறையில் பொறுப்பு உருவாவது',10:'பள்ளி மற்றும் பயிற்சியில் ஒப்படைக்கப்படும் பொறுப்பை முடிப்பது',11:'குழுவாகக் கற்கவும் செயல்படவும் வாய்ப்பு உருவாவது'})[c.house]||d.leadTA:
+ ({7:'learning cooperation with peers',10:'finishing assigned study and training',11:'group learning and peer support'})[c.house]||d.leadEN):ta?d.leadTA:d.leadEN;
+ const md=actor(p.md,ta),ad=actor(p.ad,ta),pd=p.pd?actor(p.pd,ta):null;
+ const direct=[p.md,p.ad,p.pd].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).filter(k=>k===c.lord||c.houseOccupants.includes(k)||c.houseAspects.includes(k));
+ const ties=direct.map(k=>`${actor(k,ta)} (${roleOf(k,c,ta)})`).join(', ');
+ const stage=d.stage==='support'?0:d.stage==='strain'?1:2;
+ const isSenior=age!==null&&age>=65;
+ const effect=(isSenior&&c.house===10)?(ta?'பணி அனுபவத்தைப் பகிர்வதும் பொறுப்பை மறுஒதுக்குவதும் முன்னிலைப்படலாம்':'mentoring and reassessing work commitments may take priority'):
+  (child&&[7,10,11].includes(c.house))?(ta?({7:'நண்பர்கள் மற்றும் ஆசிரியர்களுடன் பொறுப்பைப் பகிர்ந்துகொள்ளும் பழக்கம் வளரலாம்',10:'பள்ளிப் பயிற்சியில் ஒப்படைக்கப்பட்ட பணியை முடிக்கும் திறன் வளரலாம்',11:'குழுக் கற்றலிலும் நண்பர்கள் உறவிலும் புதிய அனுபவம் பெறலாம்'})[c.house]:({7:'cooperation with classmates and teachers may improve',10:'completing study commitments may become easier',11:'group learning and peer skills may develop'})[c.house]):(ta?PERIOD_TA:PERIOD_EN)[c.house-1][stage];
+ const started=ta?`${p.from} முதல் ${p.to} வரையிலான ${md}–${ad} காலத்தில் ${effect}`:
+  `During ${p.from}–${p.to} (${md}/${ad}), ${effect}.`;
+ const why=ta?`இதற்கான பிறப்புத் தொடர்பு: ${ties||'கால அதிபதிகளின் நேரடித் தொடர்பு'}; ${c.house}-ஆம் பாவாதிபதி ${actor(c.lord,true)} ${c.location}-ஆம் பாவத்தில் இருப்பதும் முடிவை மாற்றுகிறது${pd?'; '+pd+' அந்தரத் தரவும் வழங்கப்பட்டுள்ளது':''}.`:
+  `The ${md} major period and ${ad} sub-period${pd?' / '+pd+' sub-sub-period':''} have natal links with this house: ${ties||'computed natal links'}.`;
+ const overlap=win.transit?(ta?`${actor(win.transit.planet,true)} பெயர்ச்சியின் ${win.transit.observedOn} மாதிரிக் கணிப்பும் இந்தப் புக்தியுடன் தொடர்பு பெறுகிறது.`:
+  `The ${win.transit.planet} transit sampled on ${win.transit.observedOn} also falls within this sub-period.`):'';
+ return [started,why,overlap].filter(Boolean).join(' ');
 }
-function summary(s,lang){const ta=lang!=='en',a=s.main,b=s.counter,ar=J().resolve(a);const main=ta?AREA_TA[a.house-1]:AREA_EN[a.house-1],channel=ta?AREA_TA[a.location-1]:AREA_EN[a.location-1];
- const first=ta?`${main} வாழ்க்கையில் கூடுதல் முக்கியத்துவம் பெறும் அமைப்பு காணப்படுகிறது. ${actor(a.lord,true)} ${a.house}-ஆம் இடத்திற்கு அதிபதியாகி ${a.location}-ஆம் இடத்தில் இருப்பதால் ${channel} தொடர்பான தீர்மானங்கள் இதனை மாற்றும்.`:`The dominant pattern concerns ${main}. ${a.lord} rules house ${a.house} and occupies house ${a.location}, bringing in ${channel}.`;
- const second=b.house!==a.house?(ta?`${AREA_TA[b.house-1]} பற்றி ${actor(b.lord,true)} தரும் ${b.conclusion==='strain'?'எதிர் ஆதாரம்':'மற்றொரு ஆதாரம்'} காரணமாக ஒரே நேரத்தில் எல்லா முயற்சிகளும் ஒரே வகையில் அமையாது.`:`A separate indicator involving ${AREA_EN[b.house-1]} provides ${b.conclusion==='strain'?'counterweight':'additional context'} to this reading.`):'';
- return [first,second].filter(Boolean);
+function year(group,lang){if(!group||group.kind==='insufficient'||!group.claim||!group.period||!group.transit)return '';
+ const ta=lang!=='en',c=group.claim,d=J().decide(c);if(!d)return '';
+ const p=group.period,age=group.age,child=age!==null&&age<18;
+ const subject=child?(ta?({5:'பாடங்களில் ஆழ்ந்து திறனை மேம்படுத்துதல்',7:'நண்பர்களுடன் இணைந்து செயல்படுதல்',10:'பள்ளிப் பொறுப்பை முடித்தல்',11:'குழுவினருடன் பயிற்சி பெறுதல்'})[c.house]||d.leadTA:
+  ({5:'developing a learning skill',7:'working with peers',10:'carrying out school responsibilities',11:'learning with peers'})[c.house]||d.leadEN):ta?d.leadTA:d.leadEN;
+ const md=actor(p.md,ta),ad=actor(p.ad,ta),planet=actor(group.transit.planet,ta);
+ const matches=[p.md,p.ad].filter((k,i,a)=>a.indexOf(k)===i).filter(k=>k===c.lord||c.houseOccupants.includes(k)||c.houseAspects.includes(k));
+ const link=ta?'':`The natal ruler of house ${c.house} occupies house ${c.location}.`;
+ const fact=ta?`${md} தசை–${ad} புக்தியில் ${matches.map(x=>actor(x,true)).join(' மற்றும் ')||actor(c.lord,true)} இந்தப் பாவத்துடன் பிறப்புத் தொடர்பில் உள்ளது. ${planet} பெயர்ச்சியின் ${group.transit.observedOn} கணிக்கப்பட்ட நிலையுடன் இவை இணைகின்றன.`:
+  `In the ${md}/${ad} sub-period, ${matches.join(' and ')||c.lord} has a natal link to this area; the sampled ${planet} transit falls on ${group.transit.observedOn}.`;
+ const continuity=group.recurrences?.length?(ta?`அதே கருப்பொருளுடன் தொடர்புடைய பிற கணிக்கப்பட்ட காலங்கள்: ${group.recurrences.map(x=>x.from+'–'+x.to).join('; ')}.`:
+  `Other sampled windows for the same theme: ${group.recurrences.map(x=>x.from+'–'+x.to).join('; ')}.`):'';
+ const stage=d.stage==='support'?0:d.stage==='strain'?1:2;
+ const effect=(child&&[7,10,11].includes(c.house))?subject:(ta?PERIOD_TA:PERIOD_EN)[c.house-1][stage];
+ return (ta?`${group.from} – ${group.to}: ${effect}. ${fact}`:
+  `${group.from} – ${group.to}: ${effect}. ${link} ${fact}`)+(continuity?' '+continuity:'');
+}
+function summary(s,lang){if(!s?.main)return [];
+ const ta=lang!=='en',main=J().decide(s.main),counter=J().decide(s.counter);if(!main)return [];
+ const first=ta?`ஜாதகத்தில் முன்னிலைப்படும் வாழ்க்கைத் துறையில் ${main.completedTA} ${actor(main.lord,true)} ${main.house}-ஆம் பாவத்தை ஆண்டு, ${main.location}-ஆம் இடத்தில் அமர்ந்திருப்பதால் ${main.linkTA} தொடர்பான முடிவுகளும் உடன் வருகின்றன.`:
+  `The chart's leading life theme is ${main.leadEN}. ${main.lord}, ruling house ${main.house}, occupies house ${main.location} and links it with ${main.linkEN}.`;
+ const other=counter&&counter.house!==main.house?(ta?`${AREA_TA[counter.house-1]} சார்ந்த விஷயத்தில் ${counter.completedTA} இதற்கு ${actor(counter.lord,true)} ${counter.location}-ஆம் பாவத்தில் இருக்கும் அமைப்பும் தொடர்புடையதாகும்.`:
+  `Another indicator concerns ${counter.leadEN} in ${AREA_EN[counter.house-1]}; the two areas have different evidence.`):'';
+ return [first,other].filter(Boolean);
 }
 return Object.freeze({natal,period,year,summary});
 });
