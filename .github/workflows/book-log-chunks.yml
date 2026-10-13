@@ -1,0 +1,53 @@
+name: Book log access chunks
+on:
+  push:
+    branches:
+      - codex/book-page-source-audit
+    paths:
+      - 'scripts/book-audit/emit_chunks.py'
+      - '.github/workflows/book-log-chunks.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.chunks.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: pages-jothida-lakshmi
+          path: audit-input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38318003698
+      - id: chunks
+        name: Verify source page sequence and plan chunks
+        run: python scripts/book-audit/emit_chunks.py --input audit-input
+  pages:
+    needs: index
+    name: Lakshmi chunk ${{ matrix.index }} pages ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.index.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: pages-jothida-lakshmi
+          path: audit-input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38318003698
+      - name: Emit bounded page records
+        env:
+          CHUNK_INDEX: ${{ matrix.index }}
+        run: python scripts/book-audit/emit_chunks.py --input audit-input --index "$CHUNK_INDEX"
