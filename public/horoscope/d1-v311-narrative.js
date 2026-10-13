@@ -307,5 +307,37 @@ function summary(s,lang){if(!s?.main)return [];
   `Another indicator concerns ${counter.leadEN} in ${AREA_EN[counter.house-1]}; the two areas have different evidence.`):'';
  return [first,other].filter(Boolean);
 }
-return Object.freeze({natal,period,year,summary});
+
+/* V311 hotfix: PD periods already computed by the verified/qualified timing
+ * module must have a renderer. Do not let an absent renderer abort ALL life
+ * predictions. This reads only natal evidence already checked by timing;
+ * it never creates a new planet position, period date, or transit event.
+ */
+function pratyantar(win,lang){
+ const p=win?.period,c=win?.claim,ta=lang!=='en';
+ if(!p?.from||!p?.to||!p?.md||!p?.ad||!p?.pd||!c||!Array.isArray(win.thirdRulerWitness))return '';
+ const witness=win.thirdRulerWitness.find(v=>v.planet===p.pd&&['lord','occupies','aspects'].includes(v.relation)&&Number.isFinite(Number(v.delta))&&Math.abs(Number(v.delta))>=.16);
+ if(!witness)return '';  // no independent, nontrivial PD evidence
+ const d=J()?.decide?.(c);if(!d)return '';
+ const age=p.age,child=age!==null&&age!==undefined&&age<18;
+ const house=c.house;
+ const area=ta?(child?CHILD_AREA_TA[house-1]:AREA_TA[house-1]):(child?CHILD_AREA_EN[house-1]:AREA_EN[house-1]);
+ if(!area)return '';
+ const stance=Number(witness.delta)>0?'support':'strain';
+ const role=ta?(child?AD_ROLE_CHILD_TA:AD_ROLE_TA)[p.pd]:(child?AD_ROLE_CHILD_EN:AD_ROLE_EN)[p.pd];
+ const linked=(c.otherLordships||[]).filter(h=>Number.isInteger(h)&&h!==house).slice(0,1);
+ const other=linked.length?(ta?`இதனுடன் ${AREA_TA[linked[0]-1]} சார்ந்த பொறுப்பையும் இணைத்துக் கவனிக்க வேண்டும்.`:`This may also interact with ${AREA_EN[linked[0]-1]}.`):'';
+ const pd=actor(p.pd,ta),md=actor(p.md,ta),ad=actor(p.ad,ta);
+ const stage=d.stage==='strain'?'strain':d.stage==='support'?'support':'mixed';
+ const observed=ta?(stance==='support'?'இந்த முயற்சிக்குத் துணை நிற்கும் அமைப்பு உள்ளது':'முடிவை உறுதிசெய்வதற்கு முன் தடைகளையும் செலவையும் ஆராய வேண்டும்'):
+  (stance==='support'?'There is a supporting natal connection':'Natal constraints require checking the practical implications first');
+ const context=ta?(stage==='strain'?'பொறுப்புகளைக் குறைத்து மதிப்பிடாமல் செயல்படுவது பொருத்தமாகும்.':stage==='support'?'கிடைக்கும் ஆதரவைத் திட்டமிட்டுப் பயன்படுத்தலாம்.':'சாதகமும் பாதகமும் ஒன்றாக இருப்பதால் எதிர்பார்ப்பைச் சரியாக நிர்ணயிக்க வேண்டும்.'):
+  (stage==='strain'?'Plan with practical limits in mind.':stage==='support'?'Available support may be used with preparation.':'Weigh support against constraints before committing.');
+ // Distinct PD planet, life domain, and natal witness determine the text;
+ // do not repeat the long MD/AD report or pretend a sampled date is certain.
+ return ta?
+  `${p.from} முதல் ${p.to} வரை ${md} தசை, ${ad} புக்தியில் ${pd} அந்தரம் செயல்படும் போது ${area} சார்ந்த விஷயங்களில் ${role}. ${observed}; ${pd} பிறப்பு ஜாதகத்தில் ${roleOf(p.pd,c,true)} கொண்டுள்ளதையும் ${d.completedTA||''} என்ற மொத்தத் தீர்ப்பையும் சேர்த்து மதிப்பிட வேண்டும். ${context} ${other}`.trim():
+  `Between ${p.from} and ${p.to}, the ${pd} pratyantara within ${md}/${ad} draws attention to ${area}: ${role}. ${observed}. The ${pd} natal connection is through ${roleOf(p.pd,c,false)}, within a ${stage} overall reading. ${context} ${other}`.trim();
+}
+return Object.freeze({natal,period,pratyantar,year,summary});
 });
