@@ -52,11 +52,25 @@ function inPeriod(y,p){return y.from<p.to&&y.to>p.from;}
 function linkedTransits(t,p,house){return (t?.transitYears||[]).filter(y=>valid(y.from)&&valid(y.to)&&inPeriod(y,p)&&valid(y.date)&&y.date>=p.from&&y.date<p.to).flatMap(y=>transitYear(t,y,house)).sort((a,b)=>b.score-a.score);}
 function scoreWindow(d,c,p,t){const base=activation(d,c,p),note=linkedTransits(t,p,c.house)[0]||null;return {...base,period:p,periodPlanetHouses:{md:d.planets[p.md]?.house||null,ad:d.planets[p.ad]?.house||null,pd:p.pd?d.planets[p.pd]?.house||null:null},transit:note,coincidence:!!(note&&base.weight>=3),priority:base.weight+(note?Math.min(1.6,note.score/8):0)};}
 function timeline(d,claims,t,birth){const all=periods(t,birth),perHouse=Object.fromEntries(claims.map(c=>[c.house,[]])),chronology=[];
- const calculatedPD=computePD(all,t),pdChronology=[];
- for(const p of calculatedPD.segments){
+ const calculatedPD=computePD(all,t),pdChronology=[],pdRejected={sameRuler:0,noDistinctEvidence:0};
+ // Use upstream-supplied PD dates FIRST; do not turn an independently dated
+ // PD into a proportional guess. Derived periods fill only complete ADs
+ // where an actual PD is not present.
+ const actualPD=all.filter(p=>p.pd&&valid(p.from)&&valid(p.to)).map(p=>({...p,source:'upstream dated PD',approximateDayBoundaries:false}));
+ const pdInputs=[...actualPD,...calculatedPD.segments].sort((a,b)=>a.from.localeCompare(b.from)||a.to.localeCompare(b.to));
+ for(const p of pdInputs){
+   // MD/AD alone already explains this same planet's natal connection;
+   // without a third independent trigger, printing another lengthy paragraph
+   // would only pad the report with a relabelled repetition.
+   if(p.pd===p.md||p.pd===p.ad){pdRejected.sameRuler++;continue;}
    const ranked=claims.map(c=>({claim:c,...scoreWindow(d,c,p,t)})).sort((a,b)=>b.priority-a.priority||a.claim.house-b.claim.house);
-   const x=ranked.find(w=>w.weight>=3.0&&w.links.some(y=>y.startsWith(p.pd+':')));
-   if(x)pdChronology.push({period:p,claim:x.claim,house:x.claim.house,weight:x.weight,links:x.links,transit:x.transit,periodPlanetHouses:x.periodPlanetHouses});
+   const x=ranked.find(w=>{
+     if(w.weight<3||!w.links.some(y=>y.startsWith(p.pd+':')))return false;
+     const direct=(w.claim.all||[]).some(e=>e.planet===p.pd&&['lord','occupies','aspects'].includes(e.relation)&&Math.abs(e.delta)>=.16);
+     return direct;
+   });
+   if(!x){pdRejected.noDistinctEvidence++;continue;}
+   pdChronology.push({period:p,claim:x.claim,house:x.claim.house,weight:x.weight,links:x.links,transit:x.transit,periodPlanetHouses:x.periodPlanetHouses,thirdRulerWitness:(x.claim.all||[]).filter(e=>e.planet===p.pd)});
  }
 
  for(const p of all){const ranked=claims.map(c=>({...scoreWindow(d,c,p,t),claim:c})).sort((a,b)=>b.priority-a.priority||a.claim.house-b.claim.house);
@@ -70,7 +84,7 @@ function timeline(d,claims,t,birth){const all=periods(t,birth),perHouse=Object.f
  const period=valid(y.date)?all.find(p=>p.from<=y.date&&p.to>y.date)||null:null; // never combine a transit sample with an unrelated earlier/later subperiod
  const linked=period?ranked.find(x=>activation(d,x.claim,period).weight>=2.4):null;
  const selected=linked||null;return {from:y.from,to:y.to,date:y.date,age:ageAt(birth,y.date),year:y.forecastYear,period,house:selected?.claim.house||null,claim:selected?.claim||null,transit:selected?.n||null,confirmedConvergence:!!linked,notesAvailable:(y.notes||[]).length,pass:!!linked,sourceSignature:linked?`${linked.claim.house}/${linked.n.planet}/${period?.md}/${period?.ad}`:null};});
- return {all,perHouse,chronology,years,pdChronology,calculatedPD,meta:{calculatedPDRanges:calculatedPD.segments.length,qualifiedPDWindows:pdChronology.length,skippedPDEdges:calculatedPD.skipped.length,actualPeriods:all.length,computedTransitYears:years.filter(x=>x.notesAvailable>0).length,convergedYears:years.filter(x=>x.confirmedConvergence).length,pdAvailable:all.some(x=>x.pd!==null),forecastHorizonYears:t?.meta?.forecastHorizonYears||null,samplesChecked:t?.meta?.samplesChecked||0,periodEnd:all.length?all[all.length-1].to:null}};
+ return {all,perHouse,chronology,years,pdChronology,calculatedPD,meta:{calculatedPDRanges:calculatedPD.segments.length,actualPDWindows:actualPD.length,qualifiedPDWindows:pdChronology.length,skippedPDEdges:calculatedPD.skipped.length,pdFilteredAsRepetitive:pdRejected.sameRuler,pdFilteredNoIndependentEvidence:pdRejected.noDistinctEvidence,actualPeriods:all.length,computedTransitYears:years.filter(x=>x.notesAvailable>0).length,convergedYears:years.filter(x=>x.confirmedConvergence).length,pdAvailable:all.some(x=>x.pd!==null),forecastHorizonYears:t?.meta?.forecastHorizonYears||null,samplesChecked:t?.meta?.samplesChecked||0,periodEnd:all.length?all[all.length-1].to:null}};
 }
 /* Consecutive annual snapshots are NOT fifteen different events. Keep only
  * independently linked natal+dasha+transit windows, merge same signatures.
