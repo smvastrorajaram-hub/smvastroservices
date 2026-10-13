@@ -44,7 +44,7 @@ function norm(x){return PLAN.includes(x)?x:ALIAS[x]||null;}
 /* Use only source-supplied varga placements. Never compute a division from the
  * D1 sign or silently interpret an unavailable varga as neutral evidence. */
 function varga(full,d,k){const v=full?.advanced?.vargas||full?.vargas;
- const div=d===9?'D-9':d===7?'D-7':'D-10';const row=Array.isArray(v)?v.find(x=>x.division===div):null;
+ const div='D-'+d;const row=Array.isArray(v)?v.find(x=>x.division===div):null;
  const star=row?.planets?.find(x=>norm(x.planet)===k);if(!star)return null;
  const s=SIGNS.indexOf(star.rasi);if(s<0)return null;
  const good=(OWN[k]||[]).includes(s)||EX[k]===s,weak=EX[k]!==undefined&&(EX[k]+6)%12===s;
@@ -73,29 +73,33 @@ function classicalLinks(d,n){const h=d.houses[n-1],lord=h.lord,lp=d.planets[lord
  if(h.aspects.includes('Jupiter')&&h.aspects.some(x=>['Mars','Saturn'].includes(x)))src('GURU_COUNTER_ASPECT','mitigation',['Jupiter'],'Jupiter aspect coexists with restrictive aspect');
  return results;}
 
-function assess(d,k){try{const r=g.SMVD1StrengthV303?.assess?.(d,k);if(Number.isFinite(r?.score))return {value:Math.max(0,Math.min(1,r.score)),dignity:r.dignity||d.planets[k]?.dignity,combust:!!r.combust?.combust};}catch(_){}return {value:.5,dignity:d.planets[k]?.dignity||'unknown',combust:!!d.planets[k]?.combust};}
+function signDignity(d,k){const s=d.planets[k]?.sign;if(!Number.isInteger(s)||!(k in EX))return null;return (OWN[k]||[]).includes(s)?'own':EX[k]===s?'exalted':(EX[k]+6)%12===s?'debilitated':null;}
+function assess(d,k){try{const r=g.SMVD1StrengthV303?.assess?.(d,k);if(Number.isFinite(r?.score))return {value:Math.max(0,Math.min(1,r.score)),dignity:signDignity(d,k)||r.dignity||d.planets[k]?.dignity,combust:!!r.combust?.combust};}catch(_){}return {value:.5,dignity:signDignity(d,k)||d.planets[k]?.dignity||'unknown',combust:!!d.planets[k]?.combust};}
 function candidate(d,k,relation,house){const p=d.planets[k],s=assess(d,k),owned=d.houses.filter(h=>h.lord===k).map(h=>h.no);let delta=(s.value-.5)*3;
  if(['own','exalted'].includes(s.dignity))delta+=.75; if(s.dignity==='debilitated')delta-=.9;
  if(s.combust)delta-=.35; if(owned.includes(1)||owned.includes(5)||owned.includes(9))delta+=.25;
  if(owned.includes(6)||owned.includes(8)||owned.includes(12))delta-=.23;
  if(['Mars','Saturn','Rahu','Ketu'].includes(k)&&!owned.includes(1)&&!owned.includes(5)&&!owned.includes(9))delta-=.2;
  const strength=relation==='lord'?1.65:relation==='occupies'?1.05:relation==='aspects'?.68:.35;
- return {planet:k,relation,planetHouse:p.house,owned,delta:delta*strength,dignity:s.dignity,combust:s.combust,weight:strength,natal:true};}
+ return {planet:k,relation,planetHouse:p.house,owned,delta:delta*strength,dignity:s.dignity,sign:p.sign,retrograde:!!p.retrograde,combust:s.combust,weight:strength,natal:true};}
 function read(d,full,n,age){const h=d.houses[n-1],k=h?.lord;if(!h||!d.planets[k])return null;const loc=d.planets[k].house;
  if(!Number.isInteger(loc)||loc<1||loc>12)return null;
  const a=[candidate(d,k,'lord',n)];for(const p of new Set(h.occupants||[]))if(d.planets[p])a.push(candidate(d,p,'occupies',n));for(const p of new Set(h.aspects||[]))if(d.planets[p])a.push(candidate(d,p,'aspects',n));for(const p of KAR[n-1])if(d.planets[p])a.push(candidate(d,p,'karaka',n));
  const plus=a.filter(x=>x.delta>=.16).sort((x,y)=>y.delta-x.delta);const minus=a.filter(x=>x.delta<=-.16).sort((x,y)=>x.delta-y.delta);
  const sum=a.reduce((s,x)=>s+x.delta,0),support=sum>.8?'support':sum<-.8?'strain':'qualified';
- const relevant=n===7?9:n===5?7:n===10?10:null;const division=relevant?varga(full,relevant,k):null;
- const karaka=relevant?(n===5?'Jupiter':n===7?'Venus':'Saturn'):null;
- const divisionKaraka=karaka?varga(full,relevant,karaka):null;
- const divisionEvidence=[division,divisionKaraka].filter(Boolean);
+ /* Classical chart-topic correspondence (PVR, Vedic Astrology, PDF pp.72-74).
+  * No chart is calculated here: only supplier-computed divisions are accepted.
+  * D7+ D24 address distinct children/education readings, not the same event. */
+ const relevant=({1:[9],2:[2],3:[3],4:[4,12],5:[7,24],6:[30],7:[9],8:[30],9:[24],10:[10],11:[2],12:[16]})[n]||[];
+ const karakas=KAR[n-1].filter(x=>x!==k).slice(0,1);
+ const divisionEvidence=relevant.flatMap(div=>[k,...karakas].map(x=>varga(full,div,x)).filter(Boolean));
+ const division=divisionEvidence.find(x=>x.planet===k)||null;
  const classical=classicalLinks(d,n);
  const related=d.houses.filter(x=>x.lord===k&&x.no!==n).map(x=>x.no);
  // Weighted rule evidence selects a conclusion BEFORE narrative. Opposing evidence cannot disappear.
  const dominant=support==='support'?plus[0]:support==='strain'?minus[0]:Math.abs(plus[0]?.delta||0)>=Math.abs(minus[0]?.delta||0)?plus[0]:minus[0];
  const main=age!==null&&age<18&&[2,5,7,10,11].includes(n)?({2:'குடும்பப் பேச்சு மற்றும் கற்றலுக்கான பொருட்கள்',5:'பள்ளிப் படிப்பும் விளையாட்டும்',7:'நண்பர்களுடன் இணைந்து பழகும் விதம்',10:'பள்ளிப் பொறுப்பும் பயிற்சியும்',11:'நண்பர் வட்டமும் குழு நடவடிக்கையும்'})[n]:T[n-1][support==='strain'?2:1];
- return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,divisionEvidence,classical,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + relevant validated varga only',ruleMethod:'relative priority heuristic; no factual event certainty'});
+ return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,divisionEvidence,classical,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + matching supplied D2/D3/D4/D7/D9/D10/D12/D16/D24/D30 varga where relevant',ruleMethod:'relative priority heuristic; no factual event certainty'});
 }
 /* Verified chart evidence is resolved into a life-scene BEFORE writing prose. */
 const SCENE_TA=[
