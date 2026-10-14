@@ -44,7 +44,7 @@ function norm(x){return PLAN.includes(x)?x:ALIAS[x]||null;}
 /* Use only source-supplied varga placements. Never compute a division from the
  * D1 sign or silently interpret an unavailable varga as neutral evidence. */
 function varga(full,d,k){const v=full?.advanced?.vargas||full?.vargas;
- const div=d===9?'D-9':d===7?'D-7':'D-10';const row=Array.isArray(v)?v.find(x=>x.division===div):null;
+ const div='D-'+d;const row=Array.isArray(v)?v.find(x=>x.division===div):null;
  const star=row?.planets?.find(x=>norm(x.planet)===k);if(!star)return null;
  const s=SIGNS.indexOf(star.rasi);if(s<0)return null;
  const good=(OWN[k]||[]).includes(s)||EX[k]===s,weak=EX[k]!==undefined&&(EX[k]+6)%12===s;
@@ -65,37 +65,98 @@ function classicalLinks(d,n){const h=d.houses[n-1],lord=h.lord,lp=d.planets[lord
  }
  const money=d.houses[1].lord,gain=d.houses[10].lord;
  if([2,10,11].includes(n)&&isRelated(d,money,gain))src('DHANA_2_11_LINK','support',[money,gain],'second and eleventh rulers linked');
- const lordIn=lp.house,mutual=d.houses[lordIn-1]?.lord;
- if(mutual&&mutual!==lord&&d.planets[mutual]?.house===n)src('PARIVARTANA','mixed',[lord,mutual],'actual two-way exchange of sign-house rulers');
+ // Parivartana is an exchange of SIGNS. Bhava/house occupancy may differ at
+ // a cusp and must never by itself fabricate a sign-exchange yoga.
+ const lordIn=lp.house,occupiedSign=lp.sign;
+ const mutual=d.houses.find(z=>z.sign===occupiedSign)?.lord;
+ const ownSign=h.sign;
+ if(mutual&&mutual!==lord&&Number.isInteger(ownSign)&&d.planets[mutual]?.sign===ownSign)
+   src('PARIVARTANA','mixed',[lord,mutual],'mutual sign lord exchange verified in D1 rasi, not inferred from bhava');
  // Dusthana occupation alone does not establish full Vipareeta Raja Yoga;
  // present this as a condition requiring separate assessment.
  if([6,8,12].includes(n)&&[6,8,12].includes(lordIn))src('DUSTHANA_LORD_LINK','mixed',[lord],'dusthana owner in a dusthana, not a certified vipareeta yoga');
  if(h.aspects.includes('Jupiter')&&h.aspects.some(x=>['Mars','Saturn'].includes(x)))src('GURU_COUNTER_ASPECT','mitigation',['Jupiter'],'Jupiter aspect coexists with restrictive aspect');
+ // Raman I (house/lord/karaka test); 'yogakaraka' here records capacity,
+ // not a promised Rajayoga or an unconditional beneficial outcome.
+ const lordHouses=d.houses.filter(z=>z.lord===lord).map(z=>z.no);
+ if(lordHouses.some(x=>[1,4,7,10].includes(x))&&lordHouses.some(x=>[1,5,9].includes(x)))
+   src('KENDRA_TRIKONA_CO_LORD','support',[lord],'kendra and trikona share a ruler; dignity and dasha still required');
+ const sign=lp?.sign;const isDebilitated=Number.isInteger(sign)&&EX[lord]!==undefined&&(EX[lord]+6)%12===sign;
+ if(isDebilitated){
+   const dispositor=d.houses.find(z=>z.sign===sign)?.lord;
+   // Candidate only: kendra from LAGNA SIGN or MOON SIGN, never from
+   // placidus/sripat bhava number. Cancellation needs full classical review.
+   const lagnaSign=d.houses.find(z=>z.no===1)?.sign;
+   const moonSign=d.planets.Moon?.sign;
+   const inKendra=(a,b)=>Number.isInteger(a)&&Number.isInteger(b)&&[0,3,6,9].includes((a-b+12)%12);
+   const candidate=dispositor&&d.planets[dispositor]&&(inKendra(d.planets[dispositor].sign,lagnaSign)||inKendra(d.planets[dispositor].sign,moonSign));
+   src(candidate?'NEECHA_BHANGA_REVIEW':'DEBILITATED_LORD_REVIEW',candidate?'mitigation':'strain',[lord,...(candidate?[dispositor]:[])],
+     candidate?'debilitated planet and sign lord in an angle relative to lagna or Moon; only a bhanga candidate, not certified Raja Yoga':'debilitation demands comparison with full cancellation conditions');
+ }
  return results;}
 
-function assess(d,k){try{const r=g.SMVD1StrengthV303?.assess?.(d,k);if(Number.isFinite(r?.score))return {value:Math.max(0,Math.min(1,r.score)),dignity:r.dignity||d.planets[k]?.dignity,combust:!!r.combust?.combust};}catch(_){}return {value:.5,dignity:d.planets[k]?.dignity||'unknown',combust:!!d.planets[k]?.combust};}
-function candidate(d,k,relation,house){const p=d.planets[k],s=assess(d,k),owned=d.houses.filter(h=>h.lord===k).map(h=>h.no);let delta=(s.value-.5)*3;
- if(['own','exalted'].includes(s.dignity))delta+=.75; if(s.dignity==='debilitated')delta-=.9;
- if(s.combust)delta-=.35; if(owned.includes(1)||owned.includes(5)||owned.includes(9))delta+=.25;
- if(owned.includes(6)||owned.includes(8)||owned.includes(12))delta-=.23;
- if(['Mars','Saturn','Rahu','Ketu'].includes(k)&&!owned.includes(1)&&!owned.includes(5)&&!owned.includes(9))delta-=.2;
+function signDignity(d,k){const s=d.planets[k]?.sign;if(!Number.isInteger(s)||!(k in EX))return null;return (OWN[k]||[]).includes(s)?'own':EX[k]===s?'exalted':(EX[k]+6)%12===s?'debilitated':null;}
+function assess(d,k){try{const r=g.SMVD1StrengthV303?.assess?.(d,k);if(Number.isFinite(r?.score))return {value:Math.max(0,Math.min(1,r.score)),dignity:signDignity(d,k)||r.dignity||d.planets[k]?.dignity,combust:!!r.combust?.combust};}catch(_){}return {value:.5,dignity:signDignity(d,k)||d.planets[k]?.dignity||'unknown',combust:!!d.planets[k]?.combust};}
+/* Power != auspiciousness.  The Art and Science of Vedic Astrology II,
+ * PDF 106–107: higher Shadbala can strengthen good OR adverse indications.
+ * Distinguish planetary ability to act (V303 score) from conditional lordship,
+ * dignity, occupancy and karaka nature. Scores are qualitative heuristics,
+ * not exact Ishta/Kashta or a certified Parashara mathematical formula.
+ */
+function disposition(d,k,owned,dignity){
+ const nat={Sun:-.06,Moon:.26,Mars:-.20,Mercury:.16,Jupiter:.30,Venus:.24,Saturn:-.25,Rahu:-.35,Ketu:-.30};
+ let sign=nat[k]||0;
+ const kendra=owned.some(h=>[1,4,7,10].includes(h)),trine=owned.some(h=>[1,5,9].includes(h));
+ if(owned.includes(1))sign+=.36;
+ if(owned.includes(5))sign+=.58;
+ if(owned.includes(9))sign+=.64;
+ if(owned.includes(10))sign+=.24;
+ if(owned.includes(4))sign+=.15;
+ if(owned.includes(7))sign+=.07;
+ if(owned.includes(11))sign+=.06;
+ if(owned.includes(2))sign+=.05;
+ if(owned.includes(3))sign-=.12;
+ if(owned.includes(6))sign-=.46;
+ if(owned.includes(8))sign-=.61;
+ if(owned.includes(12))sign-=.27;
+ if(kendra&&trine)sign+=.48; // conditional Yogakaraka-capacity, not Raja Yoga proof
+ if(kendra&&!trine&&['Mercury','Jupiter','Venus'].includes(k))sign-=.14; // candidate Kendradhipatya caveat
+ if(dignity==='own')sign+=.42;
+ if(dignity==='exalted')sign+=.51;
+ if(dignity==='debilitated')sign-=.76;
+ const placed=d.planets[k]?.house;
+ if([6,8,12].includes(placed)&&!owned.every(h=>[6,8,12].includes(h)))sign-=placed===8?.48:.27;
+ // The angular house of an otherwise restrictive ruler does not automatically
+ // reverse its sign. A separate Bhanga/Yoga audit is required.
+ return Math.min(1.8,Math.max(-1.8,sign));
+}
+function candidate(d,k,relation,house){const p=d.planets[k],s=assess(d,k),owned=d.houses.filter(h=>h.lord===k).map(h=>h.no);
+ const dispositionScore=disposition(d,k,owned,s.dignity);
+ const ability=.70+Math.max(0,Math.min(1,s.value))*.9;
+ let delta=dispositionScore*ability;
+ if(s.combust)delta-=.22*ability;
+ // Ordinary association needs its own context, not blind cancellation or yoga.
  const strength=relation==='lord'?1.65:relation==='occupies'?1.05:relation==='aspects'?.68:.35;
- return {planet:k,relation,planetHouse:p.house,owned,delta:delta*strength,dignity:s.dignity,combust:s.combust,weight:strength,natal:true};}
+ return {planet:k,relation,planetHouse:p.house,owned,delta:delta*strength,dignity:s.dignity,sign:p.sign,retrograde:!!p.retrograde,combust:s.combust,weight:strength,natal:true,ability:s.value,disposition:dispositionScore,method:'planet ability scales signed functional/positional judgement; higher bala need not be benefic'};
+}
 function read(d,full,n,age){const h=d.houses[n-1],k=h?.lord;if(!h||!d.planets[k])return null;const loc=d.planets[k].house;
  if(!Number.isInteger(loc)||loc<1||loc>12)return null;
  const a=[candidate(d,k,'lord',n)];for(const p of new Set(h.occupants||[]))if(d.planets[p])a.push(candidate(d,p,'occupies',n));for(const p of new Set(h.aspects||[]))if(d.planets[p])a.push(candidate(d,p,'aspects',n));for(const p of KAR[n-1])if(d.planets[p])a.push(candidate(d,p,'karaka',n));
  const plus=a.filter(x=>x.delta>=.16).sort((x,y)=>y.delta-x.delta);const minus=a.filter(x=>x.delta<=-.16).sort((x,y)=>x.delta-y.delta);
  const sum=a.reduce((s,x)=>s+x.delta,0),support=sum>.8?'support':sum<-.8?'strain':'qualified';
- const relevant=n===7?9:n===5?7:n===10?10:null;const division=relevant?varga(full,relevant,k):null;
- const karaka=relevant?(n===5?'Jupiter':n===7?'Venus':'Saturn'):null;
- const divisionKaraka=karaka?varga(full,relevant,karaka):null;
- const divisionEvidence=[division,divisionKaraka].filter(Boolean);
+ /* Classical chart-topic correspondence (PVR, Vedic Astrology, PDF pp.72-74).
+  * No chart is calculated here: only supplier-computed divisions are accepted.
+  * D7+ D24 address distinct children/education readings, not the same event. */
+ const relevant=({1:[9],2:[2],3:[3],4:[4,12],5:[7,24],6:[30],7:[9],8:[30],9:[24],10:[10],11:[2],12:[16]})[n]||[];
+ const karakas=KAR[n-1].filter(x=>x!==k).slice(0,1);
+ const divisionEvidence=relevant.flatMap(div=>[k,...karakas].map(x=>varga(full,div,x)).filter(Boolean));
+ const division=divisionEvidence.find(x=>x.planet===k)||null;
  const classical=classicalLinks(d,n);
  const related=d.houses.filter(x=>x.lord===k&&x.no!==n).map(x=>x.no);
  // Weighted rule evidence selects a conclusion BEFORE narrative. Opposing evidence cannot disappear.
  const dominant=support==='support'?plus[0]:support==='strain'?minus[0]:Math.abs(plus[0]?.delta||0)>=Math.abs(minus[0]?.delta||0)?plus[0]:minus[0];
  const main=age!==null&&age<18&&[2,5,7,10,11].includes(n)?({2:'குடும்பப் பேச்சு மற்றும் கற்றலுக்கான பொருட்கள்',5:'பள்ளிப் படிப்பும் விளையாட்டும்',7:'நண்பர்களுடன் இணைந்து பழகும் விதம்',10:'பள்ளிப் பொறுப்பும் பயிற்சியும்',11:'நண்பர் வட்டமும் குழு நடவடிக்கையும்'})[n]:T[n-1][support==='strain'?2:1];
- return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,divisionEvidence,classical,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + relevant validated varga only',ruleMethod:'relative priority heuristic; no factual event certainty'});
+ return Object.freeze({house:n,lord:k,location:loc,houseOccupants:[...new Set(h.occupants||[])],houseAspects:[...new Set(h.aspects||[])],otherLordships:related,main,eventKind:support==='strain'?'obstacle':support==='support'?'opportunity':'negotiation',conclusion:support,relativeScore:Math.round(sum*100)/100,dominant,positive:plus,negative:minus,all:a,division,divisionEvidence,classical,ageUnder18:age!==null&&age<18,topicTA:T[n-1],topicEN:E[n-1],destinationTA:DEST_TA[loc-1],destinationEN:DEST_EN[loc-1],source:'natal D1 + V303 strength + matching supplied D2/D3/D4/D7/D9/D10/D12/D16/D24/D30 varga where relevant',ruleMethod:'relative priority heuristic; no factual event certainty'});
 }
 /* Verified chart evidence is resolved into a life-scene BEFORE writing prose. */
 const SCENE_TA=[
