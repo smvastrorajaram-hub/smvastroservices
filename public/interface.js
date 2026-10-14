@@ -31,3 +31,86 @@
  window.__smvSyncWorkspace=sync;
  sync();
 })();
+
+/* V315: Admin shortcuts are a permanent UI control, not a child of the
+   asynchronously rendered data/summary area. The legacy runtime may rebuild
+   or re-anchor its own links around the Auto Approval card; those are hidden
+   ONLY inside Admin, while this stable, pre-built row stays in place.
+   Deliberately NO MutationObserver, timer, API call or Firebase read. */
+(function stableAdminShortcuts(){
+ const admin=document.getElementById('admin');
+ const summary=document.getElementById('adminSummary')?.closest('.card');
+ if(!admin||!summary||!admin.contains(summary))return;
+ if(document.getElementById('smvAdminFixedQuickLinks'))return;
+ const title=summary.querySelector('.admin-dashboard-title');
+ if(!title)return;
+ const shortcuts=[
+  ['adminPendingQuestions','Public Questions','parent'],
+  ['adminAnswers','Answers','parent'],
+  ['adminPrivatePending','Private Questions','parent'],
+  ['adminRefunds','Refunds','parent'],
+  ['adminHoroscopePriceSet','Horoscope Settings','self'],
+  ['adminOffersPromotions','Offers','self'],
+  ['adminWithdrawals','Withdrawals','parent'],
+  ['adminCommissionSettings','Commission','self']
+ ];
+ // Isolate the CSS to the eight shortcuts only; do not change the other cards.
+ const style=document.createElement('style');
+ style.id='smvAdminFixedQuickLinksStyle';
+ style.textContent=`
+ #admin #smvAdminQuickLinks{display:none!important}
+ #admin #smvAdminFixedQuickLinks{
+   display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+   gap:8px 12px!important;justify-content:center!important;justify-items:stretch!important;
+   align-items:center!important;width:min(100%,760px)!important;max-width:760px!important;
+   box-sizing:border-box!important;margin:18px auto 22px!important;padding:0 8px!important;
+ }
+ html body #admin #smvAdminFixedQuickLinks > button{
+   display:flex!important;align-items:center!important;justify-content:center!important;
+   width:100%!important;min-width:0!important;max-width:none!important;
+   min-height:44px!important;height:auto!important;margin:0!important;padding:8px 4px!important;
+   box-sizing:border-box!important;background:transparent!important;box-shadow:none!important;
+   border:0!important;border-bottom:2px solid #e0c489!important;border-radius:0!important;
+   font:700 clamp(11px,1.1vw,13px)/1.3 Arial,Helvetica,sans-serif!important;
+   color:#9e141f!important;-webkit-text-fill-color:#9e141f!important;
+   text-align:center!important;text-wrap:balance;cursor:pointer!important;
+ }
+ html body #admin #smvAdminFixedQuickLinks > button:focus-visible{
+   outline:2px solid #9e141f!important;outline-offset:2px!important;
+ }
+ @media(max-width:700px){
+  #admin #smvAdminFixedQuickLinks{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    width:min(100%,520px)!important;max-width:520px!important;
+    gap:8px 10px!important;margin:12px auto 20px!important;padding:0 10px!important;
+  }
+  html body #admin #smvAdminFixedQuickLinks > button{
+    min-height:48px!important;padding:8px 3px!important;
+    font-size:clamp(11px,2.65vw,14px)!important;
+  }
+ }`;
+ document.head.appendChild(style);
+ const nav=document.createElement('div');
+ nav.id='smvAdminFixedQuickLinks';
+ nav.setAttribute('role','navigation');
+ nav.setAttribute('aria-label','Admin dashboard shortcuts');
+ for(const [id,label,mode] of shortcuts){
+  const button=document.createElement('button');
+  button.type='button';
+  button.textContent=label;
+  button.dataset.adminShortcut=id;
+  button.dataset.adminTargetMode=mode;
+  nav.appendChild(button);
+ }
+ nav.addEventListener('click',event=>{
+  const btn=event.target.closest?.('button[data-admin-shortcut]');
+  if(!btn||!nav.contains(btn))return;
+  const el=document.getElementById(btn.dataset.adminShortcut);
+  const target=btn.dataset.adminTargetMode==='parent'?el?.parentElement:el;
+  target?.scrollIntoView?.({behavior:'smooth',block:'start'});
+ });
+ // After the title/subtitle, before the dynamic loading/status area.
+ const titleBlock=title.parentElement?.parentElement;
+ if(titleBlock?.parentElement===summary)titleBlock.insertAdjacentElement('afterend',nav);
+ else summary.insertBefore(nav,document.getElementById('adminDataLoadMsg')||summary.firstChild);
+})();
