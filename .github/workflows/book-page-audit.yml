@@ -5,8 +5,7 @@ on:
     branches:
       - codex/book-page-source-audit
     paths:
-      - 'scripts/book-audit/**'
-      - '.github/workflows/book-page-audit.yml'
+      - 'scripts/book-audit/extract_pages.py'
   workflow_dispatch:
 
 permissions:
