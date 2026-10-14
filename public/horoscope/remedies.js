@@ -1,6 +1,6 @@
 /* V311 remedies evidence expansion — D1 risk + lord/occupant/aspect + date.
-   Legacy practical actions are heuristic; verified book citations are selected
-   by SMVBookRemediesV312. Legacy sign-element traditions are unverified,
+   Reference for classification: Encyclopedia of Astrological Remedies (2020),
+   PDF pp 11–13; sign-element traditions are optional cultural practices,
    NOT established medical/financial outcomes. No automatic gemstone sale.
    No readings, network calls, DOM changes, timers or random choices. */
 (function(g,f){'use strict';const api=f(g);g.SMVD311Remedies=api;if(typeof module==='object'&&module.exports)module.exports=api;})(typeof window!=='undefined'?window:globalThis,function(g){'use strict';
@@ -66,7 +66,7 @@ const PRACTICE={
  Rahu:['புதிய முதலீடு மற்றும் ஆன்லைன் தகவலில் மூலத்தைப் பரிசோதிக்கவும்','Verify sources behind investment pitches and online claims','துர்க்கை வழிபாடு, சமூகத் தொண்டு','Durga devotion, community service'],
  Ketu:['தனிமையில் முடிவெடுப்பதை விடத் தொடர்புடையவர்களின் கருத்தையும் கேட்கவும்','Seek relevant feedback before making isolated decisions','விநாயகர் வழிபாடு, தன்னார்வ கல்விச் சேவை','Vinayagar devotion, volunteering in learning support']
 };
-// Unverified legacy sign-element choices; excluded by the book-integrated report.
+// Sign-based traditional categories are drawn from Remedies book PDF p.13.
 // They are alternatives for personal preference, NOT automatic instructions.
 const TRADITION=[
  ['விருப்பமிருந்தால் சுருக்கமான பிரார்த்தனை அல்லது வழிபாட்டு விரதம் பற்றிப் பாரம்பரிய வழிகாட்டலுடன் ஆலோசிக்கலாம். உடல் நலத்தால் பாதிக்கப்படும் விரதத்தை மேற்கொள்ள வேண்டாம்.','If desired, discuss optional prayer or a fast with a knowledgeable guide; avoid fasting that conflicts with health needs.'],
@@ -146,7 +146,7 @@ function select(c,lang,used,windows=[],starContext=null){const ta=lang!=='en';
  if(secondaryHouse&&!c.ageUnder18&&Math.abs(risk.delta)>=0.6){out.push(action('co-ownership-precaution',ta?
   `${lordTa} ${secondaryHouse}-ஆம் பாவத்திற்கும் அதிபதியாக இருப்பதால், ${c.house}-ஆம் பாவத்தின் முடிவை எடுக்கும் போது ${secondaryHouse}-ஆம் பாவத்துக்குரிய பொறுப்பையும் தனியே சரிபார்த்து இரண்டிற்கும் நடைமுறையில் இடமளிக்கவும்.`:
   `${risk.planet} also rules house ${secondaryHouse}; evaluate that second area independently before changing arrangements for house ${c.house}.`));}
- if(mitigation)out.push(action('balancing-factor',ta?`${c.house}-ஆம் பாவத்தில் ${lordTa} குறித்த எதிர் ஆதாரத்துடன் குருவின் பார்வையோ தொடர்புடைய வர்க்க வலிமையோ இருப்பதால், ${["சொந்த முடிவுகள்","குடும்பப் பணமும் பேச்சும்","முயற்சியும் பயிற்சியும்","வீடும் குடும்ப ஆதரவும்","கல்வியும் படைப்பாற்றலும்","வேலைப் பழக்கமும் போட்டியும்","கூட்டு உடன்பாடுகள்","பகிர்ந்த சொத்தும் பாதுகாப்பும்","பெரியோர் வழிகாட்டலும் மேற்படிப்பும்","தொழிலும் பொறுப்புகளும்","வருமானமும் நட்பு வட்டமும்","செலவுகளும் ஓய்வும்"][c.house-1]} சார்ந்த தடையை உறுதியானதாகக் கருதாமல் முன்னேற்பாடாகப் பயன்படுத்தவும்.`:`The ${c.house} house includes a counterweight to ${risk.planet} through Jupiter aspect or verified divisional dignity; this is preparation, not a certain adverse event.`));
+ if(mitigation)out.push(action('balancing-factor',ta?`${c.house}-ஆம் பாவத்தில் ${lordTa} குறித்த எதிர் ஆதாரத்துடன் குருவின் பார்வையோ தொடர்புடைய வர்க்க வலிமையோ இருப்பதால், இந்தத் துறையின் தடையை உறுதியானதாகக் கருதாமல் முன்னேற்பாடாகப் பயன்படுத்தவும்.`:`The ${c.house} house includes a counterweight to ${risk.planet} through Jupiter aspect or verified divisional dignity; this is preparation, not a certain adverse event.`));
  // Avoid repeatedly printing the same prayer for this planet across houses.
  if(p&&!c.ageUnder18&&!used.has('ritual:'+risk.planet)){
    used.add('ritual:'+risk.planet);
