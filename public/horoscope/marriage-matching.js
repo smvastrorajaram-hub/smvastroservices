@@ -423,6 +423,27 @@ const GOCHAR_GOOD={Jupiter:[2,5,7,9,11],Venus:[1,2,3,4,5,8,9,11,12],Moon:[1,3,6,
 function transitPlanet(t,name){return (t?.planets||[]).find(x=>String(x.name)===name||({Jupiter:'குரு',Venus:'சுக்கிரன்',Moon:'சந்திரன்'}[name]===x.name));}
 function gocharOne(chart,tr,name){const natal=planet(chart,P.Moon),tp=transitPlanet(tr,name);if(!natal||!tp)return null;const h=((si(tp.longitude)-si(natal.longitude)+12)%12)+1;const good=GOCHAR_GOOD[name].includes(h);return {name,house:h,good,sign:sign(si(tp.longitude))};}
 let matchingSnapshot=null,matchingTransit=null,matchingRenderMode='none';
+// V317: Public manual sign/star comparison is a Nakshatra-only reading.
+// It neither fabricates a full birth chart nor calls the offline horoscope engine.
+let mmManualSnapshot=null,mmPublicChoice='dob',mmManualSelection={mmBride:{},mmGroom:{}};
+let mmFullAccess=false;
+const MM_STARS_EN=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
+const mmManualValid=(rasi,star)=>{if(rasi===''||star===''||rasi==null||star==null)return false;const r=Number(rasi),n=Number(star);if(!Number.isInteger(r)||r<0||r>11||!Number.isInteger(n)||n<0||n>26)return false;return Math.min((r+1)*30,(n+1)*360/27)-Math.max(r*30,n*360/27)>1e-7;};
+function mmMoonOnly(rasi,star){
+ if(!mmManualValid(rasi,star))throw Error(T('Selected Rasi and Nakshatra cannot occur together.','தேர்ந்தெடுத்த ராசி மற்றும் நட்சத்திரம் ஒன்றாக வர இயலாது.'));
+ const lo=Math.max(Number(rasi)*30,Number(star)*360/27),hi=Math.min((Number(rasi)+1)*30,(Number(star)+1)*360/27);
+ // Representative midpoint is used ONLY to reuse the existing Moon-sign/Nakshatra
+ // Porutham table. It is not a calculated lunar longitude or birth chart.
+ return {planets:[{name:P.Moon,longitude:(lo+hi)/2,nakshatra:STARS[Number(star)]}]};
+}
+function mmManualOptions(){const signs=SIGNS_EN.map((en,i)=>`<option value="${i}">${esc(T(en,SIGNS_TA[i]))}</option>`).join('');return ['mmBride','mmGroom'].map((p,i)=>`<fieldset><legend>${T(i?'Groom':'Bride',i?'ஆண்':'பெண்')}</legend><label>${T('Moon sign / Rasi','ராசி')}<select id="${p}Rasi"><option value="">${T('Select Rasi','ராசியைத் தேர்ந்தெடுக்கவும்')}</option>${signs}</select></label><label>${T('Nakshatra','நட்சத்திரம்')}<select id="${p}Star"><option value="">${T('Select Rasi first','முதலில் ராசியைத் தேர்ந்தெடுக்கவும்')}</option></select></label></fieldset>`).join('');}
+function mmUpdateStarOptions(p,preferred=''){
+ const r=document.getElementById(p+'Rasi'),star=document.getElementById(p+'Star');if(!r||!star)return;
+ const value=preferred!==''?String(preferred):star.value;
+ star.innerHTML=`<option value="">${T('Select Nakshatra','நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்')}</option>`+MM_STARS_EN.map((en,i)=>mmManualValid(r.value,i)?`<option value="${i}">${esc(T(en,STARS[i]))}</option>`:'').join('');
+ star.value=mmManualValid(r.value,value)?value:'';
+}
+
 async function gocharPanel(b,g,cached=null){await window.SMVEngineReady;const date=cached?.reviewDate||document.getElementById('mmGocharDate')?.value||new Date().toISOString().slice(0,10),time='12:00';const lat=Number(document.getElementById('mmBrideLat')?.value||9.9252),lon=Number(document.getElementById('mmBrideLon')?.value||78.1198);const body={date,time,lat,lon,latitude:lat,longitude:lon,language:lang(),utcOffsetMinutes:330};let tr=cached;if(!tr){await window.SMVOffline.calculateSwiss(body);tr=window.SMVOffline.transit(body);if(!tr?.planets)throw new Error(T('Transit calculation failed','கோச்சார கணக்கீடு தோல்வியடைந்தது'));tr.reviewDate=date;matchingTransit=tr;}const person=(title,c)=>{const rows=['Jupiter','Venus','Moon','Rahu','Ketu'].map(n=>gocharOne(c,tr,n)).filter(Boolean).map(x=>{const taName={Jupiter:'குரு',Venus:'சுக்கிரன்',Moon:'சந்திரன்',Rahu:'ராகு',Ketu:'கேது'}[x.name];const proxy=x.name==='Rahu'?T('Saturn-pattern house test','சனி முறை பாவச் சோதனை'):x.name==='Ketu'?T('Mars-pattern house test','செவ்வாய் முறை பாவச் சோதனை'):'';return `<div><b>${T(x.name,taName)}</b><span>${T('House','பாவம்')} ${x.house} · ${esc(x.sign)} · ${x.good?T('Favourable','சாதக பலம் உள்ளது'):T('Not in classical favourable house','பாரம்பரிய சாதக பாவத்தில் இல்லை')}${proxy?' · '+proxy:''}</span></div>`;}).join('');return `<div><h4>${esc(title)}</h4><div class="mm-facts">${rows}</div></div>`};return `<section class="mm-person-result"><h3>${T('Selected-Date Gochara Bala','தேர்ந்தெடுத்த தேதிக்கான கோச்சார பலம்')} · ${esc(date)}</h3>${person(T('Bride','பெண்'),b)}${person(T('Groom','ஆண்'),g)}<p class="mm-note">${T('Counted from each natal Moon sign. Classical favourable houses used here: Jupiter 2,5,7,9,11; Venus 1,2,3,4,5,8,9,11,12; Moon 1,3,6,7,10,11. Rahu is tested with the Saturn-pattern 3,6,11 rule and Ketu with the Mars-pattern 3,6,11 rule as the configured practitioner convention. This timing layer does not change the natal MATCH / NO MATCH verdict.','ஒவ்வொருவரின் ஜன்ம சந்திர ராசியிலிருந்து கணக்கிடப்படுகிறது. சாதக பாவங்கள்: குரு 2,5,7,9,11; சுக்கிரன் 1,2,3,4,5,8,9,11,12; சந்திரன் 1,3,6,7,10,11. இந்த அறிக்கையில் பயன்படுத்தப்படும் நடைமுறை விதியாக ராகு சனி முறையில் 3,6,11 பாவங்களிலும், கேது செவ்வாய் முறையில் 3,6,11 பாவங்களிலும் சோதிக்கப்படுகிறது. இந்த கால கோச்சார ஆய்வு பிறப்பு ஜாதக MATCH / NO MATCH முடிவை மாற்றாது.')}</p></section>`;}
 function chartFacts(c){const lag=Number(c?.lagna?.longitude),s7=seventh(c);return {lagna:sign(si(lag)),s7,venus:strength(c,P.Venus),jupiter:strength(c,P.Jupiter),moon:moonStrength(c),kuja:kuja(c),dasha:dashaRows(c)};}
 function renderPerson(title,f){const k=f.kuja;return `<section class="mm-person-result"><h3>${esc(title)}</h3><div class="mm-facts"><div><b>${T('Lagna','லக்னம்')}</b><span>${esc(f.lagna)}</span></div><div><b>${T('7th house / lord','7-ஆம் பாவம் / அதிபதி')}</b><span>${esc(f.s7.sign)} · ${esc(f.s7.lord)} · ${T('lord in house','அதிபதி பாவம்')} ${esc(f.s7.house||'—')} · ${esc(f.s7.str)}</span></div><div><b>${T('Venus strength','சுக்கிர பலம்')}</b><span>${esc(f.venus.label)} · ${esc(f.venus.detail)}</span></div><div><b>${T('Jupiter strength','குரு பலம்')}</b><span>${esc(f.jupiter.label)} · ${esc(f.jupiter.detail)}</span></div><div><b>${T('Moon strength','சந்திர பலம்')}</b><span>${esc(f.moon)}</span></div><div><b>${T('Mars / Kuja Dosha','செவ்வாய் / குஜ தோஷம்')}</b><span>${k?.hits?.length?T('Mars occupies traditional Kuja-dosha houses from: ','செவ்வாய் தோஷ பாவம் வரும் அடிப்படை: ')+k.hits.map(x=>`${x[0]} (${x[1]})`).join(', '):T('No Kuja-dosha house hit from Lagna, Moon or Venus in this basic check.','லக்னம், சந்திரன், சுக்கிரன் அடிப்படையிலான இந்த முதற்கட்ட கணக்கில் குஜ தோஷ பாவம் இல்லை.')}</span></div></div><h4>${T('Relevant Vimshottari periods','தொடர்புடைய விம்சோத்தரி தசா காலங்கள்')}</h4><p class="mm-periods">${f.dasha.map(esc).join('<br>')||'—'}</p></section>`}
@@ -1506,35 +1527,126 @@ function mount(){
   '<h3>Nakshatra Matching Benefits</h3><ul><li>Starts with a human-readable Nakshatra compatibility summary before technical details.</li><li>Highlights Rajju, Vedha, Nadi, Yoni and Moon-sign relationship for review.</li><li>Full matching adds D1/D9 married-life reading, near-term and 15-year Dasha timing, dosha clarity and chart-based guidance.</li></ul>',
   '<h3>நட்சத்திரப் பொருத்தத்தின் பயன்கள்</h3><ul><li>தொழில்நுட்ப விவரங்களுக்கு முன் மனிதர்களுக்கு புரியும் நட்சத்திர பொருத்த வாசிப்பை முதலில் காட்டும்.</li><li>ரஜ்ஜு, வேதை, நாடி, யோனி மற்றும் சந்திர ராசி உறவை ஆய்வுக்காக தெளிவாகக் காட்டும்.</li><li>முழு பொருத்தத்தில் D1/D9 திருமண வாழ்க்கை வாசிப்பு, வெகு விரைவான மற்றும் 15 ஆண்டு தசை காலம், தோஷ தெளிவு மற்றும் ஜாதக அடிப்படையிலான வழிகாட்டல் சேர்க்கப்படும்.</li></ul>'
  );
- host.innerHTML=`<h2>${T('Full Horoscope Marriage Matching','முழு ஜாதக திருமணப் பொருத்தம்')}</h2><p class="mm-note">${T('Uses the sidereal Lahiri horoscope calculation and reviews Lagna, 7th house/lord, Venus, Jupiter, Mars/Kuja dosha, Moon strength and Vimshottari Dasha periods. This is a traditional astrological analysis, not a scientific predictor of relationship outcomes.','நிராயண லஹிரி ஜாதக கணக்கீட்டை பயன்படுத்தி லக்னம், 7-ஆம் பாவம்/அதிபதி, சுக்கிரன், குரு, செவ்வாய்/குஜ தோஷம், சந்திர பலம் மற்றும் விம்சோத்தரி தசா காலங்கள் ஆய்வு செய்யப்படுகின்றன. இது பாரம்பரிய ஜோதிட ஆய்வு; உறவின் முடிவை அறிவியல் முறையில் கணிக்கும் கருவி அல்ல.')}</p><div id="mmNakshatraGate"><section class="mm-person-result mm-benefits">${benefits}</section></div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid">${fields('mmBride',T('Bride','பெண்'))}${fields('mmGroom',T('Groom','ஆண்'))}</div><div class="mm-gochar-date"><label>${T('Gochara / marriage review date','கோச்சார / திருமண ஆய்வு தேதி')}<input type="date" id="mmGocharDate" value="${new Date().toISOString().slice(0,10)}"></label></div><button type="button" id="mmCheck">${T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக')}</button></div><div id="mmResult"></div>`;
+ host.innerHTML=`<h2>${T('Full Horoscope Marriage Matching','முழு ஜாதக திருமணப் பொருத்தம்')}</h2><p class="mm-note">${T('Uses the sidereal Lahiri horoscope calculation and reviews Lagna, 7th house/lord, Venus, Jupiter, Mars/Kuja dosha, Moon strength and Vimshottari Dasha periods. This is a traditional astrological analysis, not a scientific predictor of relationship outcomes.','நிராயண லஹிரி ஜாதக கணக்கீட்டை பயன்படுத்தி லக்னம், 7-ஆம் பாவம்/அதிபதி, சுக்கிரன், குரு, செவ்வாய்/குஜ தோஷம், சந்திர பலம் மற்றும் விம்சோத்தரி தசா காலங்கள் ஆய்வு செய்யப்படுகின்றன. இது பாரம்பரிய ஜோதிட ஆய்வு; உறவின் முடிவை அறிவியல் முறையில் கணிக்கும் கருவி அல்ல.')}</p><div id="mmNakshatraGate"><section class="mm-person-result mm-benefits">${benefits}</section></div><style id="mmV317InputModeStyles">
+#smvMarriageMatching #mmPublicChoice[hidden],#smvMarriageMatching #mmManualEntry[hidden],#smvMarriageMatching #mmFullEntry[hidden],#smvMarriageMatching #mmPaidFeatureIndex[hidden],#smvMarriageMatching #mmCheck[hidden]{display:none!important}
+#smvMarriageMatching #mmPublicChoice{margin:14px auto;padding:12px;max-width:680px;border:1px solid #dccaa9;border-radius:10px;text-align:center}
+#smvMarriageMatching #mmPublicChoice .mm-choice-row{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin-top:10px}
+#smvMarriageMatching #mmPublicChoice label{display:inline-flex;align-items:center;gap:6px;border:1px solid #b99a6c;border-radius:9px;padding:9px 12px;cursor:pointer;background:#fffaf1;font-weight:650}
+#smvMarriageMatching #mmPublicChoice input{accent-color:#8d1534}
+#smvMarriageMatching #mmManualEntry{margin:15px auto;max-width:950px}
+#smvMarriageMatching #mmManualEntry select{display:block;width:100%;max-width:100%;padding:10px 8px;min-height:40px;margin-top:5px}
+#smvMarriageMatching #mmManualCheck{display:block;margin:16px auto}
+#smvMarriageMatching #mmPaidFeatureIndex.mm-bottom-payment{margin:14px auto;text-align:center;max-width:760px}
+#smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>h3,#smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>p:not([data-smv-lock-msg]),#smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>ul{display:none!important}
+#smvMarriageMatching #mmPaidFeatureIndex button[data-smv-unlock]{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;white-space:normal;min-height:42px;margin:6px auto;padding:10px 16px}
+#smvMarriageMatching #mmPaidFeaturePreview button{display:none!important}
+</style><div id="mmPublicChoice" hidden role="group" aria-label="${T('Select matching input method','பொருத்தம் பார்க்கும் உள்ளீட்டைத் தேர்ந்தெடுக்கவும்')}"><b>${T('How would you like to check basic Nakshatra Porutham?','அடிப்படை நட்சத்திரப் பொருத்தத்தை எவ்வாறு பார்க்க விரும்புகிறீர்கள்?')}</b><div class="mm-choice-row"><label><input type="radio" name="mmPublicInputMode" value="dob" checked>${T('Birth date, time and place','பிறந்த தேதி, நேரம், இடம்')}</label><label><input type="radio" name="mmPublicInputMode" value="rasi">${T('Rasi and Nakshatra only','ராசி மற்றும் நட்சத்திரம் மட்டும்')}</label></div></div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid">${fields('mmBride',T('Bride','பெண்'))}${fields('mmGroom',T('Groom','ஆண்'))}</div><div class="mm-gochar-date"><label>${T('Gochara / marriage review date','கோச்சார / திருமண ஆய்வு தேதி')}<input type="date" id="mmGocharDate" value="${new Date().toISOString().slice(0,10)}"></label></div><button type="button" id="mmCheck">${T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக')}</button><div id="mmPaidFeatureIndex" class="mm-bottom-payment" hidden></div></div><div id="mmManualEntry" hidden><div class="mm-grid mm-birth-grid">${mmManualOptions()}</div><button type="button" id="mmManualCheck">${T('Check Basic Nakshatra Porutham','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க')}</button></div><div id="mmResult"></div>`;
  ['mmBride','mmGroom'].forEach(p=>{const el=document.getElementById(p+'Place');let t;el?.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>searchPlace(p),250)});});
+ const chooser=document.getElementById('mmPublicChoice');
+ const dobEntry=document.getElementById('mmFullEntry'),manualEntry=document.getElementById('mmManualEntry');
+ const applyChoice=()=>{
+  const manual=!chooser.hidden&&mmPublicChoice==='rasi';
+  if(dobEntry)dobEntry.hidden=manual;
+  if(manualEntry)manualEntry.hidden=!manual;
+ };
+ chooser.querySelectorAll('input[name="mmPublicInputMode"]').forEach(r=>{
+  r.checked=r.value===mmPublicChoice;
+  r.addEventListener('change',()=>{if(!r.checked)return;mmPublicChoice=r.value;matchingSnapshot=null;mmManualSnapshot=null;matchingRenderMode='none';applyChoice();document.getElementById('mmResult')?.replaceChildren();});
+ });
+ ['mmBride','mmGroom'].forEach(p=>{
+  const r=document.getElementById(p+'Rasi'),n=document.getElementById(p+'Star');
+  r.value=mmManualSelection[p]?.rasi??'';mmUpdateStarOptions(p,mmManualSelection[p]?.star??'');
+  r.addEventListener('change',()=>{mmManualSelection[p]={rasi:r.value,star:''};mmUpdateStarOptions(p);});
+  n.addEventListener('change',()=>{mmManualSelection[p]={rasi:r.value,star:n.value};});
+ });
+ const runManualPorutham=()=>withMatchingRun('manual',async out=>{
+  try{const selected=p=>{const r=document.getElementById(p+'Rasi').value,n=document.getElementById(p+'Star').value;if(r===''||n==='')throw Error(T('Choose Rasi and Nakshatra for both people.','ஆண், பெண் இருவருக்கும் ராசி மற்றும் நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்.'));return mmMoonOnly(r,n);};
+   const b=selected('mmBride'),g=selected('mmGroom');
+   mmManualSnapshot={br:Number(document.getElementById('mmBrideRasi').value),bi:Number(document.getElementById('mmBrideStar').value),gr:Number(document.getElementById('mmGroomRasi').value),gi:Number(document.getElementById('mmGroomStar').value)};
+   matchingSnapshot=null;matchingRenderMode='manual';matchingTransit=null;renderPublicPorutham(b,g,out);
+  }catch(e){mmManualSnapshot=null;matchingRenderMode='none';out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}
+ });
+ document.getElementById('mmManualCheck').onclick=async()=>{await runManualPorutham();document.getElementById('mmResult')?.scrollIntoView({behavior:'auto',block:'start'});};
  const prepareContext=async()=>{const {offsetMinutesAt}=await import('./offline/places/timezone.mjs');const birth=p=>{const date=document.getElementById(p+'Date').value,time=document.getElementById(p+'Time').value,lat=document.getElementById(p+'Lat').value,lon=document.getElementById(p+'Lon').value;if(!date||!time||lat===''||lon==='')throw Error(T('Please enter complete birth details for both persons.','இருவரின் முழு பிறப்பு விவரங்களையும் உள்ளிடவும்.'));return {date,time,lat,lon,utcOffsetMinutes:offsetMinutesAt(document.getElementById(p+'Timezone').value||'Asia/Kolkata',date,time)};};const ctx={bride:birth('mmBride'),groom:birth('mmGroom')};window.__smvSetReportContext?.('marriage_matching',ctx);return ctx;};
  let matchingRun=null;
- const withMatchingRun=(kind,work)=>{if(matchingRun)return matchingRun;const out=document.getElementById('mmResult'),btn=document.getElementById('mmCheck');matchingRun=(async()=>{window.__smvMatchingCalculationBusy=true;if(out)out.setAttribute('aria-busy','true');if(btn)btn.disabled=true;try{return await work(out);}finally{if(out)out.setAttribute('aria-busy','false');if(btn)btn.disabled=false;window.__smvMatchingCalculationBusy=false;matchingRun=null;}})();return matchingRun;};
+ const withMatchingRun=(kind,work)=>{if(matchingRun)return matchingRun;const out=document.getElementById('mmResult'),btn=document.getElementById('mmCheck'),manualBtn=document.getElementById('mmManualCheck');matchingRun=(async()=>{window.__smvMatchingCalculationBusy=true;if(out)out.setAttribute('aria-busy','true');if(btn)btn.disabled=true;if(manualBtn)manualBtn.disabled=true;try{return await work(out);}finally{if(out)out.setAttribute('aria-busy','false');if(btn)btn.disabled=false;if(manualBtn)manualBtn.disabled=false;window.__smvMatchingCalculationBusy=false;matchingRun=null;}})();return matchingRun;};
  const runPublicPorutham=()=>withMatchingRun('public',async out=>{out.innerHTML=`<p>${T('Calculating Nakshatra Porutham…','நட்சத்திரப் பொருத்தம் கணக்கிடப்படுகிறது…')}</p>`;try{await prepareContext();const b=await getChart('mmBride',true);const g=await getChart('mmGroom',true);matchingSnapshot={b,g};matchingTransit=null;matchingRenderMode='public';renderPublicPorutham(b,g,out);}catch(e){out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}});
- const runFull=()=>withMatchingRun('full',async out=>{out.innerHTML=`<p>${T('Calculating both horoscopes…','இரு ஜாதகங்களும் கணக்கிடப்படுகின்றன…')}</p>`;try{await prepareContext();const b=await getChart('mmBride');const g=await getChart('mmGroom');matchingSnapshot={b,g};matchingTransit=null;matchingRenderMode='full';await renderMatching(b,g,out);}catch(e){out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}});
+ const runFull=()=>withMatchingRun('full',async out=>{if(!mmFullAccess){out.textContent=T('Full-report access is not available.','முழு அறிக்கை அனுமதி கிடைக்கவில்லை.');return;}out.innerHTML=`<p>${T('Calculating both horoscopes…','இரு ஜாதகங்களும் கணக்கிடப்படுகின்றன…')}</p>`;try{await prepareContext();const b=await getChart('mmBride');const g=await getChart('mmGroom');matchingSnapshot={b,g};matchingTransit=null;matchingRenderMode='full';await renderMatching(b,g,out);}catch(e){out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}});
  document.getElementById('mmCheck').onclick=async()=>{const publicOnly=document.getElementById('mmCheck')?.dataset.publicPoruthamOnly==='1';const result=await (publicOnly?runPublicPorutham():runFull());requestAnimationFrame(()=>document.getElementById('mmResult')?.scrollIntoView({behavior:'auto',block:'start'}));return result;};
  const applyFeatureMode=async()=>{
   try{await window.__smvEnsureHoroscopeAuthReady?.();}catch{}
   const state=await window.__smvFeatureState?.('marriage_matching')||{loggedIn:false,enabled:false,price:0,entitled:false};
-  const cfg={enabled:state.enabled,price:Number(state.price??0)},entry=document.getElementById('mmFullEntry'),btn=document.getElementById('mmCheck'),gate=document.getElementById('mmNakshatraGate');
-  if(!cfg.enabled){host.hidden=true;return;}
-  host.hidden=false;if(entry)entry.hidden=false;if(btn)btn.hidden=false;
-  // Admin ON + ₹0: full matching is free, including public use.
-  // Admin ON + ₹1+: Nakshatra stays free and the full INDEX/payment lock is always visible.
-  const fullAllowed=Number(cfg.price)<=0||(state.loggedIn&&state.entitled);
-  if(fullAllowed){
-   document.getElementById('mmPaidFeatureIndex')?.remove();
-   if(btn){btn.dataset.publicPoruthamOnly='0';btn.textContent=T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக');}
+  const cfg={enabled:!!state.enabled,price:Number(state.price??0)},btn=document.getElementById('mmCheck'),gate=document.getElementById('mmNakshatraGate'),paidRoot=document.getElementById('mmPaidFeatureIndex');
+  const visitor=!state.loggedIn;
+  mmFullAccess=cfg.enabled&&!visitor&&(cfg.price<=0||state.entitled);
+  // Visitors always have Nakshatra-only access, even when the Admin feature is OFF.
+  // No new read, payment, birth-chart computation, or editor is required for manual input.
+  if(!cfg.enabled&&!visitor){host.hidden=true;document.getElementById('mmResult').replaceChildren();matchingSnapshot=null;matchingRenderMode='none';return;}
+  host.hidden=false;chooser.hidden=!visitor;
+  if(visitor){
+   // Never replay a prior logged-in full report after logout/remount.
+   if(matchingRenderMode==='full'){matchingSnapshot=null;matchingTransit=null;matchingRenderMode='none';}
+   if(btn){btn.hidden=false;btn.dataset.publicPoruthamOnly='1';btn.textContent=T('Check Nakshatra Porutham','நட்சத்திரப் பொருத்தம் பார்க்க');}
+   if(paidRoot){paidRoot.replaceChildren();paidRoot.hidden=true;}
+   document.getElementById('mmPaidFeaturePreview')?.remove();
+   applyChoice();
+   // Keep the existing paid-feature INDEX visible when Admin is ON and price > 0;
+   // no public visitor payment action is opened from this basic-entry choice.
+   if(cfg.enabled&&cfg.price>0&&gate&&typeof window.__smvRenderFeatureLock==='function'){
+    const preview=document.createElement('div');preview.id='mmPaidFeaturePreview';gate.appendChild(preview);
+    window.__smvRenderFeatureLock('marriage_matching',preview,cfg,()=>{},()=>{});
+    preview.querySelector('[data-smv-unlock]')?.remove();
+    preview.querySelector('[data-smv-lock-msg]')?.remove();
+   }
    return;
   }
-  if(btn){btn.dataset.publicPoruthamOnly='1';btn.textContent=T('Check Nakshatra Porutham','நட்சத்திரப் பொருத்தம் பார்க்க');}
-  if(Number(cfg.price)>0&&gate){
-   let lock=document.getElementById('mmPaidFeatureIndex');if(!lock){lock=document.createElement('div');lock.id='mmPaidFeatureIndex';gate.append(lock);}
-   window.__smvRenderFeatureLock?.('marriage_matching',lock,cfg,async()=>{if(btn){btn.dataset.publicPoruthamOnly='0';btn.textContent=T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக');}await runFull();},prepareContext);
+  if(dobEntry)dobEntry.hidden=false;
+  if(manualEntry)manualEntry.hidden=true;
+  document.getElementById('mmPaidFeaturePreview')?.remove();
+  if(mmFullAccess){
+   if(paidRoot){paidRoot.replaceChildren();paidRoot.hidden=true;}
+   if(btn){btn.hidden=false;btn.dataset.publicPoruthamOnly='0';btn.textContent=T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக');}
+   return;
+  }
+  // Logged-in, paid and not yet entitled: replace the basic DOB button with the
+  // real authenticated payment button BELOW BOTH birth forms. The upstream
+  // payment/verification code is untouched. A read-only INDEX remains above.
+  if(btn)btn.hidden=true;
+  if(paidRoot&&gate&&typeof window.__smvRenderFeatureLock==='function'){
+   paidRoot.hidden=false;paidRoot.replaceChildren();
+   window.__smvRenderFeatureLock('marriage_matching',paidRoot,cfg,async()=>{
+    mmFullAccess=true;paidRoot.hidden=true;
+    document.getElementById('mmPaidFeaturePreview')?.remove();
+    if(btn){btn.hidden=false;btn.dataset.publicPoruthamOnly='0';btn.textContent=T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக');}
+    await runFull();
+   },prepareContext);
+   const preview=document.createElement('div');preview.id='mmPaidFeaturePreview';
+   const gateSection=paidRoot.querySelector('.smv-horoscope-pay-gate');
+   if(gateSection){
+    preview.className='smv-horoscope-pay-gate';
+    for(const child of [...gateSection.children])if(child.tagName!=='BUTTON'&&!child.hasAttribute('data-smv-lock-msg'))preview.appendChild(child.cloneNode(true));
+    gate.appendChild(preview);
+   }
   }
  };
- applyFeatureMode().catch(e=>console.error('Marriage feature mode',e));
+ const modeReady=applyFeatureMode().catch(e=>console.error('Marriage feature mode',e));
  const pdf=document.getElementById('mmDownloadPdf');if(pdf)pdf.remove();
+ return modeReady;
 }
-const remount=()=>{const values={};document.querySelectorAll('#smvMarriageMatching input').forEach(e=>values[e.id]=e.value);mount();for(const [id,value]of Object.entries(values)){const el=document.getElementById(id);if(el)el.value=value;}if(matchingSnapshot){const out=document.getElementById('mmResult');if(matchingRenderMode==='public')renderPublicPorutham(matchingSnapshot.b,matchingSnapshot.g,out);else if(matchingRenderMode==='full')renderMatching(matchingSnapshot.b,matchingSnapshot.g,out,true).catch(console.error);}window.dispatchEvent(new CustomEvent('smv:marriage-mounted'));};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',remount):remount();window.addEventListener('smv-language',()=>{if(!window.__smvSnapshotBusy&&!window.__smvMatchingCalculationBusy)remount();});window.addEventListener('smv:horoscope-local-auth',()=>{if(!window.__smvSnapshotBusy&&!window.__smvMatchingCalculationBusy)remount();});})();
+const remount=()=>{
+ const values={};document.querySelectorAll('#smvMarriageMatching input[id]').forEach(e=>values[e.id]=e.value);
+ const active=document.querySelector('#smvMarriageMatching input[name="mmPublicInputMode"]:checked');if(active)mmPublicChoice=active.value;
+ for(const p of ['mmBride','mmGroom']){
+  const r=document.getElementById(p+'Rasi'),n=document.getElementById(p+'Star');if(r&&n)mmManualSelection[p]={rasi:r.value,star:n.value};
+ }
+ const ready=mount();
+ for(const [id,value]of Object.entries(values)){const el=document.getElementById(id);if(el)el.value=value;}
+ Promise.resolve(ready).then(()=>{const out=document.getElementById('mmResult');if(!out||!document.getElementById('smvMarriageMatching')||document.getElementById('smvMarriageMatching').hidden)return;
+  if(matchingRenderMode==='manual'&&mmManualSnapshot&&mmPublicChoice==='rasi'&&!document.getElementById('mmPublicChoice').hidden){const x=mmManualSnapshot;renderPublicPorutham(mmMoonOnly(x.br,x.bi),mmMoonOnly(x.gr,x.gi),out);}
+  else if(matchingSnapshot){
+   if(matchingRenderMode==='public')renderPublicPorutham(matchingSnapshot.b,matchingSnapshot.g,out);
+   else if(matchingRenderMode==='full'&&mmFullAccess)renderMatching(matchingSnapshot.b,matchingSnapshot.g,out,true).catch(console.error);
+  }
+ }).catch(console.error);
+ window.dispatchEvent(new CustomEvent('smv:marriage-mounted'));
+};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',remount):remount();window.addEventListener('smv-language',()=>{if(!window.__smvSnapshotBusy&&!window.__smvMatchingCalculationBusy)remount();});window.addEventListener('smv:horoscope-local-auth',()=>{if(!window.__smvSnapshotBusy&&!window.__smvMatchingCalculationBusy)remount();});})();
