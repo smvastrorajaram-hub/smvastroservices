@@ -2,7 +2,16 @@
  * Never generates fictitious dates/PD; uses upstream offline Swiss forecast once per chart.
  */
 (function(g,f){const v=f(g);g.SMVD311Timing=v;if(typeof module==='object'&&module.exports)module.exports=v;})(typeof window==='object'?window:globalThis,function(g){'use strict';
-const j=()=>g.SMVD311Judgement;const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||'');
+const j=()=>g.SMVD311Judgement;
+function valid(x){
+ if(typeof x!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(x))return false;
+ const [year,month,date]=x.split('-').map(Number);
+ const leap=year%4===0&&(year%100!==0||year%400===0);
+ const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+ return year>=1&&month>=1&&month<=12&&date>=1&&date<=days[month-1];
+}
+const validWindow=y=>valid(y?.from)&&valid(y?.to)&&y.from<y.to;
+const validObservation=y=>validWindow(y)&&valid(y?.date)&&y.from<=y.date&&y.date<y.to;
 /* P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, PDF p224:
  * distribute each COMPLETE Antardasha among nine Pratyantaras according to
  * Vimshottari planetary years. Calendar dates are rounded at day precision.
@@ -34,8 +43,8 @@ function computePD(periods,forecast){
  return {segments,skipped,algorithm:'PVR Vimshottari AD -> nine proportional PD; exact day boundary depends on calendar convention'};
 }
 
-function ageAt(b,d){if(!valid(b)||!valid(d))return null;return +d.slice(0,4)-+b.slice(0,4)-(d.slice(5)<b.slice(5)?1:0);}
-function periods(t,sourceBirth){const input=Array.isArray(t?.dasha)?t.dasha:[];const rows=input.filter(p=>valid(p.from)&&valid(p.to)&&p.to>p.from).map(p=>{const md=j().norm(p.md),ad=j().norm(p.ad),pd=j().norm(p.pd||p.pratyantar||p.antaram);return {from:p.from,to:p.to,md,ad,pd,age:ageAt(sourceBirth,p.from),source:'verified dasha intervals',derivedContinuation:!!p.derivedContinuation};}).filter(x=>x.md&&x.ad).sort((a,b)=>a.from.localeCompare(b.from));const distinct=[];
+function ageAt(b,d){if(!valid(b)||!valid(d)||d<b)return null;return +d.slice(0,4)-+b.slice(0,4)-(d.slice(5)<b.slice(5)?1:0);}
+function periods(t,sourceBirth){const input=Array.isArray(t?.dasha)?t.dasha:[];const rows=input.filter(validWindow).map(p=>{const md=j().norm(p.md),ad=j().norm(p.ad),pd=j().norm(p.pd||p.pratyantar||p.antaram);return {from:p.from,to:p.to,md,ad,pd,age:ageAt(sourceBirth,p.from),source:'verified dasha intervals',derivedContinuation:!!p.derivedContinuation};}).filter(x=>x.md&&x.ad).sort((a,b)=>a.from.localeCompare(b.from));const distinct=[];
  for(const p of rows){const last=distinct[distinct.length-1];if(last&&last.to===p.from&&last.md===p.md&&last.ad===p.ad&&last.pd===p.pd){last.to=p.to;last.ageSwitch=last.ageSwitch||last.age!==p.age;last.joinedCount=(last.joinedCount||1)+1;}else distinct.push({...p});}
  return distinct;}
 function activation(d,c,p){let value=0,links=[];function one(k,scale){if(!k||!d.planets[k])return;const x=d.planets[k];const owns=d.houses.filter(h=>h.lord===k).map(h=>h.no);let n=0;
@@ -47,9 +56,9 @@ function activation(d,c,p){let value=0,links=[];function one(k,scale){if(!k||!d.
  if(x.house===c.location&&k!==c.lord){n+=1.1;links.push(k+':with-ruler-house');}
  value+=n*scale;
  }one(p.md,1);if(p.ad!==p.md)one(p.ad,.88);else value*=1.14;if(p.pd&&p.pd!==p.ad)one(p.pd,.30);return {weight:Math.round(value*100)/100,links};}
-function transitYear(t,y,house){const notes=(y?.notes||[]).filter(x=>Number(x.focus)===house&&['Jupiter','Saturn','Rahu','Ketu'].includes(j().norm(x.planet))&&x.evidence?.marks?.length);return notes.map(n=>({planet:j().norm(n.planet),focus:house,marks:n.evidence.marks,signal:Number(n.evidence.signal)||0,yearFrom:y.from,yearTo:y.to,observedOn:y.date,score:((n.strength||0)*2)+Math.abs(Number(n.evidence.signal)||0),source:'upstream Swiss transit reading',textEvidence:n.text})).sort((a,b)=>b.score-a.score);}
+function transitYear(t,y,house){const notes=(y?.notes||[]).filter(x=>x&&Number(x.focus)===house&&['Jupiter','Saturn','Rahu','Ketu'].includes(j().norm(x.planet))&&x.evidence?.marks?.length);return notes.map(n=>({planet:j().norm(n.planet),focus:house,marks:n.evidence.marks,signal:Number(n.evidence.signal)||0,yearFrom:y.from,yearTo:y.to,observedOn:y.date,score:((n.strength||0)*2)+Math.abs(Number(n.evidence.signal)||0),source:'upstream Swiss transit reading',textEvidence:n.text})).sort((a,b)=>b.score-a.score);}
 function inPeriod(y,p){return y.from<p.to&&y.to>p.from;}
-function linkedTransits(t,p,house){return (t?.transitYears||[]).filter(y=>valid(y.from)&&valid(y.to)&&inPeriod(y,p)&&valid(y.date)&&y.date>=p.from&&y.date<p.to).flatMap(y=>transitYear(t,y,house)).sort((a,b)=>b.score-a.score);}
+function linkedTransits(t,p,house){return (t?.transitYears||[]).filter(y=>validObservation(y)&&inPeriod(y,p)&&y.date>=p.from&&y.date<p.to).flatMap(y=>transitYear(t,y,house)).sort((a,b)=>b.score-a.score);}
 function scoreWindow(d,c,p,t){const base=activation(d,c,p),note=linkedTransits(t,p,c.house)[0]||null;return {...base,period:p,periodPlanetHouses:{md:d.planets[p.md]?.house||null,ad:d.planets[p.ad]?.house||null,pd:p.pd?d.planets[p.pd]?.house||null:null},transit:note,coincidence:!!(note&&base.weight>=3),priority:base.weight+(note?Math.min(1.6,note.score/8):0)};}
 function timeline(d,claims,t,birth){const all=periods(t,birth),perHouse=Object.fromEntries(claims.map(c=>[c.house,[]])),chronology=[];
  const calculatedPD=computePD(all,t),pdChronology=[],pdRejected={sameRuler:0,noDistinctEvidence:0};
@@ -80,8 +89,8 @@ function timeline(d,claims,t,birth){const all=periods(t,birth),perHouse=Object.f
  }
  for(const [key,rows] of Object.entries(perHouse))perHouse[key]=rows.sort((a,b)=>b.priority-a.priority||a.period.from.localeCompare(b.period.from)).slice(0,3).sort((a,b)=>a.period.from.localeCompare(b.period.from));
  // Every supplied forecast year is kept, but only computed transit notes qualify for judgement.
- const years=(t?.transitYears||[]).filter(y=>valid(y.from)&&valid(y.to)).map(y=>{const ranked=claims.flatMap(c=>transitYear(t,y,c.house).slice(0,1).map(n=>({claim:c,n}))).sort((a,b)=>b.n.score-a.n.score);
- const period=valid(y.date)?all.find(p=>p.from<=y.date&&p.to>y.date)||null:null; // never combine a transit sample with an unrelated earlier/later subperiod
+ const years=(t?.transitYears||[]).filter(validWindow).map(y=>{const ranked=claims.flatMap(c=>transitYear(t,y,c.house).slice(0,1).map(n=>({claim:c,n}))).sort((a,b)=>b.n.score-a.n.score);
+ const period=validObservation(y)?all.find(p=>p.from<=y.date&&p.to>y.date)||null:null; // never combine a transit sample with an unrelated earlier/later subperiod
  const linked=period?ranked.find(x=>activation(d,x.claim,period).weight>=2.4):null;
  const selected=linked||null;return {from:y.from,to:y.to,date:y.date,age:ageAt(birth,y.date),year:y.forecastYear,period,house:selected?.claim.house||null,claim:selected?.claim||null,transit:selected?.n||null,confirmedConvergence:!!linked,notesAvailable:(y.notes||[]).length,pass:!!linked,sourceSignature:linked?`${linked.claim.house}/${linked.n.planet}/${period?.md}/${period?.ad}`:null};});
  return {all,perHouse,chronology,years,pdChronology,calculatedPD,meta:{calculatedPDRanges:calculatedPD.segments.length,actualPDWindows:actualPD.length,qualifiedPDWindows:pdChronology.length,skippedPDEdges:calculatedPD.skipped.length,pdFilteredAsRepetitive:pdRejected.sameRuler,pdFilteredNoIndependentEvidence:pdRejected.noDistinctEvidence,actualPeriods:all.length,computedTransitYears:years.filter(x=>x.notesAvailable>0).length,convergedYears:years.filter(x=>x.confirmedConvergence).length,pdAvailable:all.some(x=>x.pd!==null),forecastHorizonYears:t?.meta?.forecastHorizonYears||null,samplesChecked:t?.meta?.samplesChecked||0,periodEnd:all.length?all[all.length-1].to:null}};

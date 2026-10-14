@@ -3,12 +3,22 @@ name: Prediction regression
 on:
   push:
     paths:
-      - 'public/horoscope/d1-v311-*.js'
+      - 'public/horoscope/d1-v31*.js'
+      - 'public/horoscope/integrated.js'
+      - 'public/horoscope/timing.js'
+      - 'public/horoscope/narrative.js'
+      - 'public/horoscope/remedies.js'
+      - 'public/horoscope/index.html'
       - 'tests/prediction-*.test.cjs'
       - '.github/workflows/prediction-tests.yml'
   pull_request:
     paths:
-      - 'public/horoscope/d1-v311-*.js'
+      - 'public/horoscope/d1-v31*.js'
+      - 'public/horoscope/integrated.js'
+      - 'public/horoscope/timing.js'
+      - 'public/horoscope/narrative.js'
+      - 'public/horoscope/remedies.js'
+      - 'public/horoscope/index.html'
       - 'tests/prediction-*.test.cjs'
       - '.github/workflows/prediction-tests.yml'
 
