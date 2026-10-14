@@ -1534,7 +1534,7 @@ function mount(){
 #smvMarriageMatching #mmPublicChoice .mm-choice-row{display:grid;grid-template-columns:repeat(2,minmax(0,150px));justify-content:center;gap:8px;margin-top:10px}
 #smvMarriageMatching #mmPublicChoice label{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;max-width:150px;min-height:44px;margin:0;padding:5px 7px;border:1px solid #b99a6c;border-radius:8px;cursor:pointer;background:#fffaf1;color:#8d1534;font-size:clamp(11px,2.8vw,13px);line-height:1.2;text-align:center;font-weight:650;overflow-wrap:break-word}
 #smvMarriageMatching #mmPublicChoice input[type=radio]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
-#smvMarriageMatching #mmPublicChoice label:has(input:checked){background:#8d1534;color:#fff;border-color:#8d1534}
+#smvMarriageMatching #mmPublicChoice .mm-choice-row>label:has(input[type=radio]:checked){background:#8d1534!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#8d1534!important;text-shadow:none!important}
 #smvMarriageMatching #mmPublicChoice label:has(input:focus-visible){outline:3px solid #dfba65;outline-offset:2px}
 @media(max-width:350px){#smvMarriageMatching #mmPublicChoice .mm-choice-row{grid-template-columns:repeat(2,minmax(0,138px))}}
 
