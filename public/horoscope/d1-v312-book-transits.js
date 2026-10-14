@@ -34,7 +34,7 @@
     var out={matched:[],insufficient:[]};
     function lack(reason,planet,observedOn){
       out.insufficient.push({reason:reason,planet:planet||null,observedOn:observedOn||null,text:{
-        ta:"சந்திர ராசி, கோச்சார நிலை, தேதி மற்றும் நடக்கும் தசை–புத்தி தெளிவாக உறுதியாகாததால் நூல் விதிப்படி பலன் கூற இயலவில்லை.",
+        ta:"சந்திர ராசி, கோச்சார நிலை, தேதி மற்றும் நடக்கும் தசை–புக்தி தெளிவாக உறுதியாகாததால் நூல் விதிப்படி பலன் கூற இயலவில்லை.",
         en:"The natal Moon, observed transit, dates and active major/sub-period must be unambiguous before this rule can be applied."
       }});
     }
@@ -74,9 +74,9 @@
       var h=(c.sign-moon+12)%12+1,good=favorable[c.planet].indexOf(h)!==-1,p=c.period;
       var period={md:p.md,ad:p.ad};
       if(typeof p.pd==="string"&&p.pd.trim()) period.pd=p.pd;
-      var ta=c.date+" அன்று சந்திரனிலிருந்து "+h+"-ஆம் வீட்டில் "+names[c.planet]+" செல்கிறார். "+
-        (names[p.md]||p.md)+" மகாதசை–"+(names[p.ad]||p.ad)+" புத்தியில் "+
-        (good?"முயற்சிகளை முன்னெடுக்கச் சாதகமான வாய்ப்புகள் அமையலாம்; பலன் முழு ஜாதகத்தையும் நடக்கும் தசை–புத்தியையும் சார்ந்தது.":"இது சாதக வீடுகள் பட்டியலில் இல்லை; இதனால் தீய பலன் உறுதியாகாது. வாய்ப்புகளை முழு ஜாதகத்துடனும் தசை–புத்தியுடனும் சேர்த்துப் பார்க்க வேண்டும்.");
+      var ta=c.date+" அன்று பிறப்பு சந்திர ராசியிலிருந்து "+h+"-ஆம் வீட்டில் "+names[c.planet]+" செல்கிறார். "+
+        (names[p.md]||p.md)+" மகாதசை–"+(names[p.ad]||p.ad)+" புக்தியில் "+
+        (good?"முயற்சிகளை முன்னெடுக்கச் சாதகமான வாய்ப்புகள் அமையலாம்; பலன் முழு ஜாதகத்தையும் நடக்கும் தசை–புக்தியையும் சார்ந்தது.":"இது சாதக வீடுகள் பட்டியலில் இல்லை; இதனால் தீய பலன் உறுதியாகாது. வாய்ப்புகளை முழு ஜாதகத்துடனும் தசை–புக்தியுடனும் சேர்த்துப் பார்க்க வேண்டும்.");
       out.matched.push({planet:c.planet,observedOn:c.date,moonRelativeHouse:h,favorable:good,period:period,
         from:[from,c.sample.from,p.from].sort().pop(),to:[to,c.sample.to,p.to].sort()[0],
         text:{ta:ta,en:c.date+": "+c.planet+" is in house "+h+" from the natal Moon during "+p.md+"–"+p.ad+". "+
