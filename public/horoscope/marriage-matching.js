@@ -1620,6 +1620,25 @@ function mount(){
   if(manualEntry)manualEntry.hidden=true;
   if(btn)btn.dataset.loginToContinue='0';
   document.getElementById('mmPaidFeaturePreview')?.remove();
+  // V322 — Admin OFF + Rs.0 is BASIC-ONLY before AND after customer login.
+  // The V260 policy intentionally reports this as enabled:true, price:1,
+  // mode:'off_zero_basic' (synthetic price, NOT a payment). Treating this as a
+  // paid plan would hide #mmCheck and render no payment button, because the
+  // policy correctly refuses to open a Razorpay gate for an Admin-OFF feature.
+  // Unavailable online policy is also restricted to basic, never paid/full.
+  const basicAfterLogin=['off_zero_basic','off_public_basic','online_unavailable'].includes(state.mode);
+  if(basicAfterLogin){
+   if(matchingRenderMode==='full'){
+    matchingSnapshot=null;matchingTransit=null;matchingRenderMode='none';
+   }
+   if(paidRoot){paidRoot.replaceChildren();paidRoot.hidden=true;}
+   if(btn){
+    btn.hidden=false;
+    btn.dataset.publicPoruthamOnly='1';
+    btn.textContent=T('Check Nakshatra Porutham','நட்சத்திரப் பொருத்தம் பார்க்க');
+   }
+   return;
+  }
   if(mmFullAccess){
    if(paidRoot){paidRoot.replaceChildren();paidRoot.hidden=true;}
    if(btn){btn.hidden=false;btn.dataset.publicPoruthamOnly='0';btn.textContent=T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக');}
