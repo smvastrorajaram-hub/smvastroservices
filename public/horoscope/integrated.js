@@ -9,7 +9,7 @@ const get=()=>[g.SMVD311Judgement,g.SMVD311Timing,g.SMVD311Narrative,g.SMVD311Re
 const encode=t=>String(t??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const HEAD_TA=['தனித்தன்மை, குணநலன்கள் மற்றும் உடல் வளர்ச்சி','குடும்பம், பேச்சு மற்றும் செல்வப் பாதுகாப்பு','முயற்சி, திறமை மற்றும் உடன்பிறப்புகள்','தாய், வீடு, நிலம் மற்றும் மனநிம்மதி','அறிவு, கல்வி, படைப்பாற்றல் மற்றும் புத்திரம்','போட்டி, பணிப்பழக்கம் மற்றும் உடல்நல ஒழுங்கு','திருமணம், உடன்பாடு மற்றும் இணைந்து செயல்படுதல்','பாதுகாப்பு, எதிர்பாராத மாற்றம் மற்றும் ஆராய்ச்சி','தந்தை, குரு, உயர் கல்வி மற்றும் பாக்கியம்','தொழில், கடமை மற்றும் சமூகப் பொறுப்பு','வருமானம், நண்பர்கள் மற்றும் இலக்கு நிறைவேற்றம்','செலவு, உறக்கம், அந்நியத் தொடர்பு மற்றும் ஓய்வு'];
 const HEAD_EN=['Identity and personal character','Family finances and communication','Initiative, skills and siblings','Home and family support','Learning, creativity and children','Work routines and competition','Partnership and cooperation','Security and restructuring','Mentors and higher learning','Career and responsibilities','Income and networks','Expenses, distance and recovery'];
-function build(chart,lang='ta',context={},timeline=null){const [J,T,N,R]=get();const ta=lang!=='en';if(!J?.read||!T?.timeline||!N?.natal||!R?.select||!g.SMVLifePredictionD1?.toD1)throw new Error('V311 four prediction modules and D1 normalizer required');
+function build(chart,lang='ta',context={},timeline=null,options=null){const [J,T,N,R]=get();const ta=lang!=='en';if(!J?.read||!T?.timeline||!N?.natal||!R?.select||!g.SMVLifePredictionD1?.toD1)throw new Error('V311 four prediction modules and D1 normalizer required');
  const source=chart?.chart||chart,dates=timeline||chart?.timeline||null,birth=dates?.birth||source?.birthDate||source?.birth?.date||chart?.birth||'',asof=dates?.referenceDate||source?.calculatedAt?.slice(0,10)||null;
  const d=g.SMVLifePredictionD1.toD1(chart),age=asof?T.ageAt(birth,asof):null;const full=chart?.advanced||chart?.vargas?chart:{...chart,advanced:source?.advanced};
  const starContext=J.starEvidence?J.starEvidence(d,chart):null;
@@ -36,7 +36,7 @@ function build(chart,lang='ta',context={},timeline=null){const [J,T,N,R]=get();c
  // measured stellar links, supplied MD/AD/PD and sampled transit; never recalc.
  const E=g.SMVPredictionRules;
  const base=originalReport;
- const result=E?.applyToReport?E.applyToReport(base,chart,d,starContext,dates):base;
+ const result=options?.rawPredictionReport===true?base:(E?.applyToReport?E.applyToReport(base,chart,d,starContext,dates):base);
  return result;
 }
 function html(r){if(r?.v311?.status!=='ready')return old?.html?.(r)||'';

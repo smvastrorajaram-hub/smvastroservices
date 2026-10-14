@@ -176,9 +176,9 @@
  function getOverride(chartId,sectionId){return getOverrides()?.[chartId]?.[sectionId]||null;}
  function applyText(paragraphs,o,lang){const text=lang==='en'?o?.en:o?.ta;if(!text)return [...paragraphs];return o.mode==='replace'?[text]:[...paragraphs,text];}
  function anchor(prefix,x){return prefix+'-'+digest([x?.from||'',x?.to||'',x?.md||'',x?.ad||'',x?.pd||'',x?.house||''].join('|'));}
- function applyToReport(r,source,d,star,timing){
+ function applyToReport(r,source,d,star,timing,previewRules=null){
   if(!r||!Array.isArray(r.topics))return r;
-  const lang=r.lang||'ta',rules=getPublishedRules();
+  const lang=r.lang||'ta',rules=Array.isArray(previewRules)?normalizeRules(previewRules):getPublishedRules();
   const result={...r,topics:r.topics.map(t=>({...t,paragraphs:[...(t.paragraphs||[])],periods:(t.periods||[]).map(x=>({...x})),remedies:[...(t.remedies||[])]})),chronology:(r.chronology||[]).map(x=>({...x})),pdChronology:(r.pdChronology||[]).map(x=>({...x})),annual:(r.annual||[]).map(x=>({...x})),overview:[...(r.overview||[])]};
   const seen=new Set();
   // Calculate the static natal/varga/aspect facts once per single-load report.
