@@ -6,13 +6,13 @@ Audit date: 2026-10-02
 
 **PASS — source/runtime audit.** 100/100 horoscope calculations and 100/100 marriage-pair calculations completed without calculation/runtime errors in the bundled offline engine.
 
-> Scope note: this automated audit executes the same bundled browser/offline calculation modules and Swiss Ephemeris WASM/data from the assembled V130 source. It is not a remote Android-device Flight Mode automation. The user has separately confirmed V130 is now working in the deployed browser.
+> Scope note: this automated audit executes the same bundled browser/offline calculation modules and Swiss Ephemeris WASM/data from the assembled source. It is not a remote Android-device Flight Mode automation. The user has separately confirmed SMV ASTRO is now working in the deployed browser.
 
 ## Effective source tested
 
 - Full source: `SMV ASTRO 02102026-1840.zip`
 - Strict offline runtime overlay retained
-- Latest V130 overlay: `index.html`, `marriage-matching.js`, `sw.js`, `pwa.js`
+- Latest overlay: `index.html`, `marriage-matching.js`, `sw.js`, `pwa.js`
 
 ## Architecture/source audit
 
@@ -167,12 +167,12 @@ Audit date: 2026-10-02
 - maskable 512 icon: present and non-empty.
 - desktop/mobile hero assets: present and non-empty.
 - Swiss WASM/data: present and non-empty.
-- `sw.js` precaches `marriage-matching.js` and the Horoscope runtime; V130 changes the SW URL/version so stale V129 JS is not intentionally reused.
+
 
 ## Final classification
 
-**SMV ASTRO V130 automated source + bundled offline runtime audit: PASS.**
+**SMV ASTRO automated source + bundled offline runtime audit: PASS.**
 
-No calculation/runtime error occurred in the 100 horoscope + 100 pair batch. The earlier `NUM_LET is not defined` regression is not reproduced in this assembled V130 runtime audit.
+No calculation/runtime error occurred in the 100 horoscope + 100 pair batch. The earlier `NUM_LET is not defined` regression is not reproduced in this assembled runtime audit.
 
 Physical-device Flight Mode remains a device-level acceptance test rather than something this container can press/toggle on the user’s Android phone. Because the user has confirmed V130 is now working in the deployed browser, this report records the automated source/runtime portion as PASS without pretending to have controlled the phone’s radio state.
