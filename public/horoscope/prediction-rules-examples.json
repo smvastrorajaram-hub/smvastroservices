@@ -1,7 +1,7 @@
 {
   "format": "SMV-PREDICTION-RULES",
   "schemaVersion": 1,
-  "note": "OPTIONAL EXAMPLES ONLY — not deployed, import in A editor to inspect and customize. Must verify chart evidence, not validated life outcomes.",
+  "note": "OPTIONAL BROAD EXAMPLES covering nine planets and all twelve houses; NOT published automatically. Traditional interpretive samples only. Verify actual birth evidence and personalize in Admin A/B; no smoking/alcohol/meat habit diagnosis.",
   "rules": [
     {
       "id": "speech_mercury_supported",
@@ -251,6 +251,167 @@
       "effect": {
         "ta": "பெண் ஜாதகத்தில் நவாம்ச சுக்கிரன் துலா நிலையில் உறுதியாக இருந்தால், உறவில் பரஸ்பர ஒப்புதலுக்கான விருப்பம் முக்கியமாகலாம். இருவரின் மற்ற ஏழாம் பாவ ஆதாரங்களும் இணங்கும்போது மட்டுமே இதை ஆதரவாகக் கொள்ள வேண்டும்.",
         "en": "When the bride's calculated D9 Venus is in Libra, mutual agreement may receive emphasis in the traditional reading; it is not by itself a matching verdict."
+      }
+    },
+    {
+      "id": "moon_home_fourth",
+      "title": "வீடு மற்றும் மனநிம்மதி",
+      "enabled": true,
+      "channel": "natal",
+      "house": 4,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_4_life",
+      "conditions": [
+        {
+          "field": "planet.Moon.house",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "சந்திரன் நான்காம் பாவத்தில் அமைந்துள்ள இந்த ஜாதகத்தில், வீட்டுச் சூழல் மாறும் போது மனநிம்மதிக்கான தேவை முன்னிலை பெறலாம். வீட்டாருடன் நேரம் செலவிடும் முறை சொத்து அல்லது வசிப்பிடம் பற்றிய முடிவுகளைத் தீர்மானிப்பதில் பங்கு வகிக்கலாம்.",
+        "en": "With the natal Moon actually in the fourth house, maintaining a supportive home routine may matter especially when residential or family arrangements change."
+      }
+    },
+    {
+      "id": "jupiter_studies_fifth",
+      "title": "கல்வி மற்றும் வழிகாட்டல்",
+      "enabled": true,
+      "channel": "natal",
+      "house": 5,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_5_life",
+      "conditions": [
+        {
+          "field": "planet.Jupiter.house",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "ஐந்தாம் பாவத்திலுள்ள குரு தொடர்பால், கற்றதைக் கருத்தாக மட்டும் வைத்துக்கொள்ளாமல் மற்றவர்களுக்கு விளக்கிக் கொடுக்கும் திறன் ஒரு சாதகமான வழியாக வெளிப்படலாம். திறன் வளர்ச்சிக்கான நேரத்தையும் குடும்பச் செலவையும் இணைத்துத் திட்டமிடுதல் பயனுள்ளதாக இருக்கலாம்.",
+        "en": "Natal Jupiter in the fifth house may direct interest toward sustained learning and mentoring; time and expenses for skill development may need deliberate planning."
+      }
+    },
+    {
+      "id": "mars_service_sixth",
+      "title": "பணி மற்றும் போட்டி",
+      "enabled": true,
+      "channel": "natal",
+      "house": 6,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_6_life",
+      "conditions": [
+        {
+          "field": "planet.Mars.house",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "ஆறாம் பாவத்திலுள்ள செவ்வாய், வேலைகளின் வேகத்தையும் போட்டிச் சூழலையும் நேரடியாக எதிர்கொள்ளும் போக்கைக் குறிக்கலாம். ஆனால் ஒரே நேரத்தில் பல பொறுப்புகளை ஏற்றுக்கொள்ளும்போது முக்கியமான வேலையை முன்னுரிமைப்படுத்தும் ஒழுங்கு தேவைப்படலாம்.",
+        "en": "Natal Mars in the sixth may describe an energetic response to competition and practical tasks, with better results when workload is prioritized rather than rushed."
+      }
+    },
+    {
+      "id": "saturn_changes_eighth",
+      "title": "மாற்றங்கள் மற்றும் பொறுப்பு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 8,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_8_life",
+      "conditions": [
+        {
+          "field": "planet.Saturn.house",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "எட்டாம் பாவத்தில் சனி அமைந்திருந்தால், கூட்டுப் பொறுப்பு அல்லது நீண்டகால ஒப்பந்தங்களில் பொறுமையாக விவரங்களைப் பரிசீலிக்கும் வழக்கம் முக்கியமாகலாம். திடீர் மாற்றங்களுக்கு உடனடியாக எதிர்வினையாற்றாமல் செலவு, ஆவணம், காலவரம்பு ஆகியவற்றைத் தெளிவுபடுத்துவதில் கவனம் தேவைப்படலாம்.",
+        "en": "Saturn in the eighth can be read as a traditional emphasis on patience with shared obligations and changes, especially careful documentation and realistic deadlines."
+      }
+    },
+    {
+      "id": "sun_values_ninth",
+      "title": "வழிகாட்டல் மற்றும் கொள்கை",
+      "enabled": true,
+      "channel": "natal",
+      "house": 9,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_9_life",
+      "conditions": [
+        {
+          "field": "planet.Sun.house",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "ஒன்பதாம் பாவத்தில் சூரியன் அமைந்திருப்பதால் வழிகாட்டுபவர் அல்லது பெரியோரின் கருத்தை மதித்தாலும், அவற்றைத் தன் வாழ்க்கை இலக்குடன் ஒப்பிட்டுப் பார்த்து முடிவெடுக்கும் வழி முன்னிலை பெறலாம். அறிவை நடைமுறை முயற்சியாக மாற்றுவது வளர்ச்சிக்கு உதவலாம்.",
+        "en": "With natal Sun in the ninth, balancing respect for mentors with independent long-term goals may become a recurring theme in education and decisions."
+      }
+    },
+    {
+      "id": "rahu_networks_eleventh",
+      "title": "புதிய தொடர்புகள் மற்றும் ஆதாயம்",
+      "enabled": true,
+      "channel": "natal",
+      "house": 11,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_11_life",
+      "conditions": [
+        {
+          "field": "planet.Rahu.house",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "பதினொன்றாம் பாவத்தில் ராகு இருந்தால் புதிய மனிதர்கள், வழக்கத்திற்கு மாறான தொழில்தொடர்புகள் அல்லது அறிமுகம் இல்லாத முயற்சிகளின் மூலம் வாய்ப்புகளை ஆராயும் போக்கு காணப்படலாம். உடனடியாகப் பெரிய இலாபம் உறுதி என்ற நம்பிக்கைக்குப் பதிலாக ஒப்பந்தத்தையும் வரவு-செலவையும் சரிபார்ப்பது பொருத்தமாகலாம்.",
+        "en": "Rahu in the eleventh is traditionally associated with unconventional networks; claims about quick gains should still be weighed against verifiable agreements and expenses."
+      }
+    },
+    {
+      "id": "ketu_twelfth_focus",
+      "title": "ஒதுங்கிய நேரம் மற்றும் செலவு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 12,
+      "sourceSection": "I",
+      "priority": 5,
+      "conflictGroup": "",
+      "intent": "house_12_life",
+      "conditions": [
+        {
+          "field": "planet.Ketu.house",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "effect": {
+        "mode": "append",
+        "ta": "பன்னிரண்டாம் பாவத்தில் கேது இருந்தால், கவனச்சிதறல் குறைவாகத் தனியாகச் செயல்படும் நேரத்தைத் தேடும் போக்கும் தேவையற்ற செலவுகளை வெட்டிச் சுருக்கும் விருப்பமும் மாறி மாறி வரலாம். புதிய பொறுப்புகளை ஏற்கும் முன் தேவையான ஓய்வு மற்றும் பொருளாதார வரம்பை ஒப்பிட்டுப் பார்க்க வேண்டும்.",
+        "en": "Ketu in the twelfth can be traditionally interpreted as a preference for quiet focus or selective withdrawal; rest and spending limits remain practical decisions."
       }
     }
   ]

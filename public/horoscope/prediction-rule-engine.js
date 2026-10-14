@@ -1,7 +1,7 @@
 /* SMV ASTRO — deterministic, read-only interpretation rule engine.
  * Uses existing calculated Section I–IX evidence. NEVER recalculates the chart,
  * calls a remote API, modifies ephemerides, or treats reference tables as measurements.
- * Locally authored rules affect only this browser until an owner deploys a published file.
+ * Public reports use ONLY the administrator-published global rules. Browser drafts never change customer predictions.
  */
 (function(root,factory){'use strict';const api=factory(root);root.SMVPredictionRules=api;if(typeof module==='object'&&module.exports)module.exports=api;})(typeof window==='object'?window:globalThis,function(g){'use strict';
  const RULES_KEY='smv-prediction-rules-local-v1',OVERRIDE_KEY='smv-prediction-overrides-local-v1',AUTHOR_KEY='smv-prediction-author-mode-v1';
@@ -118,6 +118,12 @@
   if(Number.isInteger(porutham?.score))f['matching.porutham.score']=porutham.score;
   if(['match','no','consult'].includes(verdict?.k))f['matching.verdict']=verdict.k;
   f['section.I.available']=Boolean(brideD?.houses?.length===12&&groomD?.houses?.length===12);
+  // Pair-based source sections are available only when BOTH calculations have
+  // actually provided them; do not fabricate a missing varga/dasha/transit.
+  const br=fields(brideD,brideStar,brideChart,null),gr=fields(groomD,groomStar,groomChart,null);
+  for(const roman of ['II','III','IV','V','VI'])
+   if(br['section.'+roman+'.available']===true&&gr['section.'+roman+'.available']===true)
+    f['section.'+roman+'.available']=true;
   return f;
  }
  function cleanRule(rule){if(!rule||typeof rule!=='object')return null;const id=String(rule.id||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,64);if(!id||!VALID_CHANNELS.has(rule.channel))return null;
@@ -142,8 +148,11 @@
  }
  function ruleMatches(rule,facts,channel,house){const gate=rule.sourceSection;if(/^(I|II|III|IV|V|VI)$/.test(gate)&&facts['section.'+gate+'.available']!==true)return false;return rule.enabled&&rule.channel===channel&&(rule.house==='all'||rule.house===house)&&rule.conditions.every(c=>evalOne(c,facts));}
  function getLocalRules(){return normalizeRules(storage.read(RULES_KEY,[]));}
- function getPublishedRules(){return normalizeRules(g.SMVPUBLISHED_PREDICTION_RULES||[]);}
- function getRules(){const published=getPublishedRules();const local=storage.read(AUTHOR_KEY,false)?getLocalRules():[];const map=new Map(published.map(r=>[r.id,r]));for(const rule of local)map.set(rule.id,rule);return [...map.values()].sort((a,b)=>b.priority-a.priority||a.id.localeCompare(b.id));}
+ let activePublishedRules=null;
+ function setPublishedRules(input){const array=normalizeRules(input);activePublishedRules=array;return array;}
+ function getPublishedRules(){return activePublishedRules!==null?activePublishedRules:normalizeRules(g.SMVPUBLISHED_PREDICTION_RULES||[]);}
+ function getRules(){return getPublishedRules();} // Customer results never use local drafts or per-chart overrides.
+
  const compiledRules=new WeakMap();
  function run(rules,facts,channel,house,lang,seen=new Set()){const out=[];const conflicts=new Set();let ready=Array.isArray(rules)?compiledRules.get(rules):null;if(!ready){ready=normalizeRules(rules);if(Array.isArray(rules))compiledRules.set(rules,ready);}for(const rule of ready){if(!ruleMatches(rule,facts,channel,house)||seen.has(rule.id)||rule.conflictGroup&&conflicts.has(rule.conflictGroup))continue;const s=lang==='en'?rule.effect.en:rule.effect.ta;if(!s)continue;out.push({ruleId:rule.id,source:rule.sourceSection,text:s,intent:rule.intent,mode:rule.effect.mode});seen.add(rule.id);if(rule.conflictGroup)conflicts.add(rule.conflictGroup);}return out;}
  function getOverrides(){const obj=storage.read(OVERRIDE_KEY,{});return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:{};}
@@ -167,21 +176,60 @@
  function getOverride(chartId,sectionId){return getOverrides()?.[chartId]?.[sectionId]||null;}
  function applyText(paragraphs,o,lang){const text=lang==='en'?o?.en:o?.ta;if(!text)return [...paragraphs];return o.mode==='replace'?[text]:[...paragraphs,text];}
  function anchor(prefix,x){return prefix+'-'+digest([x?.from||'',x?.to||'',x?.md||'',x?.ad||'',x?.pd||'',x?.house||''].join('|'));}
- function applyToReport(r,source,d,star,timing){if(!r||!Array.isArray(r.topics))return r;const id=identity(source,d),lang=r.lang||'ta',overrides=getOverrides()[id]||{},rules=getRules();
-  const result={...r,topics:r.topics.map(t=>({...t,paragraphs:[...(t.paragraphs||[])],periods:(t.periods||[]).map(x=>({...x})),remedies:[...(t.remedies||[])]})),chronology:(r.chronology||[]).map(x=>({...x})),pdChronology:(r.pdChronology||[]).map(x=>({...x})),annual:(r.annual||[]).map(x=>({...x})),overview:[...(r.overview||[])],manualEditor:{chartId:id,appliedRules:[],localRuleMode:storage.read(AUTHOR_KEY,false)}};
-  const facts=fields(d,star,source,timing,null,r.v311?.judgements),seen=new Set();
-  const insert=(where,arr,channel,house,windowData)=>{const bundle=fields(d,star,source,timing,windowData,r.v311?.judgements);const eligible=['natal','remedy'].includes(channel)&&house!==1?rules.filter(rule=>rule.house!=='all'):rules;const found=run(eligible,bundle,channel,house,lang,new Set());for(const x of found){const scope=channel+':'+(windowData?.period?.from||windowData?.from||'natal')+':'+house+':'+x.ruleId;if(seen.has(scope))continue;if(x.mode==='replace'&&channel!=='matching')arr.splice(0,arr.length,x.text);else arr.push(x.text);result.manualEditor.appliedRules.push({...x,channel,house,scope});seen.add(scope);}};
-  for(const t of result.topics){insert('house',t.paragraphs,'natal',t.number);insert('remedy',t.remedies,'remedy',t.number);t.paragraphs=applyText(t.paragraphs,overrides['house-'+t.number],lang);}
-  result.overview=applyText(result.overview,overrides.overview,lang);
-  for(const group of [['chronology','period','mdad'],['pdChronology','pd','pd'],['annual','annual','transit']]){
-   const [part,prefix,channel]=group;
-   for(const x of result[part]){const b={period:x.period||x,transit:x.transit};const extra=[];insert(part,extra,channel,x.house||x.focusHouse||'all',b);let lines=applyText([x.text,...extra],overrides[anchor(prefix,x)],lang);x.text=lines.join('\n\n');}
+ function applyToReport(r,source,d,star,timing){
+  if(!r||!Array.isArray(r.topics))return r;
+  const lang=r.lang||'ta',rules=getPublishedRules();
+  const result={...r,topics:r.topics.map(t=>({...t,paragraphs:[...(t.paragraphs||[])],periods:(t.periods||[]).map(x=>({...x})),remedies:[...(t.remedies||[])]})),chronology:(r.chronology||[]).map(x=>({...x})),pdChronology:(r.pdChronology||[]).map(x=>({...x})),annual:(r.annual||[]).map(x=>({...x})),overview:[...(r.overview||[])]};
+  const seen=new Set();
+  // Calculate the static natal/varga/aspect facts once per single-load report.
+  // MD/AD/PD and sampled transit only add evidence for their current window.
+  // Avoid recalculating 9x9 aspect geometry for every yearly/period paragraph.
+  const natalFacts=fields(d,star,source,timing,null,r.v311?.judgements);
+  const windowFacts=windowData=>{
+   if(!windowData)return natalFacts;
+   const facts={...natalFacts},period=windowData.period||windowData;
+   for(const k of ['md','ad','pd','from','to'])if(period?.[k]!==undefined&&period[k]!==null&&period[k]!=='')facts['dasha.'+k]=period[k];
+   const tr=windowData.transit;
+   if(tr){const transit=typeof tr==='string'?{planet:tr}:tr;
+    if(transit?.planet)facts['transit.planet']=transit.planet;
+    if(Number.isFinite(Number(transit?.signal)))facts['transit.signal']=Number(transit.signal);
+    if(transit?.observedOn||transit?.date)facts['transit.date']=transit.observedOn||transit.date;
+   }
+   if(period?.md)facts['section.II.available']=true;
+   if(tr?.planet||typeof tr==='string')facts['section.IV.available']=true;
+   return facts;
+  };
+  const insert=(arr,channel,house,windowData)=>{
+   const facts=windowFacts(windowData);
+   // For natal/remedy, house='all' belongs to ONE universal chapter, not
+   // twelve repeated copies of the same planet's outcome.
+   const relevant=['natal','remedy'].includes(channel)?rules.filter(x=>x.house===house):rules;
+   const selected=run(relevant,facts,channel,house,lang,new Set()).filter(item=>{
+    const scope=channel+':'+(windowData?.period?.from||windowData?.from||'natal')+':'+house+':'+item.ruleId;
+    if(seen.has(scope))return false;seen.add(scope);return true;
+   });
+   // Highest-priority replace wins; any further replacements cannot silently
+   // overwrite it. Additional evidence-gated append rules are still retained.
+   const chosen=selected.find(x=>x.mode==='replace');
+   if(chosen)arr.splice(0,arr.length,chosen.text);
+   for(const item of selected)if(item.mode==='append')arr.push(item.text);
+  };
+  insert(result.overview,'natal','all');
+  for(const t of result.topics){insert(t.paragraphs,'natal',t.number);insert(t.remedies,'remedy',t.number);}
+  if(result.topics.length)insert(result.topics[0].remedies,'remedy','all');
+  for(const [part,channel] of [['chronology','mdad'],['pdChronology','pd'],['annual','transit']]){
+   for(const item of result[part]){
+    const lines=[item.text].filter(Boolean);
+    insert(lines,channel,item.house||item.focusHouse||'all',{period:item.period||item,transit:typeof item.transit==='string'?{planet:item.transit}:item.transit});
+    item.text=lines.join('\n\n');
+   }
   }
   return result;
  }
+
  function setLocalRules(input){const arr=normalizeRules(input);return storage.write(RULES_KEY,arr);}
  const authorEnabled=()=>storage.read(AUTHOR_KEY,false)===true;
  const setAuthorEnabled=on=>storage.write(AUTHOR_KEY,!!on);
  function publicBundle(rules){return {format:'SMV-PREDICTION-RULES',schemaVersion:1,generatedAt:new Date().toISOString(),rules:normalizeRules(rules)};}
- return Object.freeze({PLAN,KARA,fields,matchingFacts,identity,circular,allowedField,normalizeRules,evalOne,ruleMatches,run,getRules,getLocalRules,getPublishedRules,setLocalRules,authorEnabled,setAuthorEnabled,getOverrides,setOverride,getOverride,removeOverride,importOverrides,applyToReport,anchor,publicBundle,config:{RULES_KEY,OVERRIDE_KEY,AUTHOR_KEY}});
+ return Object.freeze({PLAN,KARA,fields,matchingFacts,identity,circular,allowedField,normalizeRules,evalOne,ruleMatches,run,getRules,getLocalRules,getPublishedRules,setPublishedRules,setLocalRules,authorEnabled,setAuthorEnabled,getOverrides,setOverride,getOverride,removeOverride,importOverrides,applyToReport,anchor,publicBundle,config:{RULES_KEY,OVERRIDE_KEY,AUTHOR_KEY}});
 });

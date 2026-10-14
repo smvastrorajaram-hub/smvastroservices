@@ -34,24 +34,14 @@ function build(chart,lang='ta',context={},timeline=null){const [J,T,N,R]=get();c
  v311:{status:'ready',architecture:'natal classical links + varga corroboration + verified MD/AD and sampled transit + natal-linked remedies',chartFacts:{lagna:d.lagna,lords:claims.map(x=>[x.house,x.lord,x.location])},judgements:claims,synthesis,starContext,meta:timing.meta,hasSwissTransitNotes:annual.some(x=>!!x.transit),annualEvidenceWindows:annual.length,uncoveredWindows,hasActualPD:timing.meta.pdAvailable,hasCalculatedPD:timing.meta.calculatedPDRanges>0,scope:'existing Swiss chart and cached upstream Swiss 15-year transit; interpreted using traditional heuristic rules; not a certainty or empirical forecast'}};
  // Sections I–IX facts are READ ONLY. Rule conditions use calculated D1,
  // measured stellar links, supplied MD/AD/PD and sampled transit; never recalc.
- const E=g.SMVPredictionRules,chartId=E?.identity?.(chart,d)||null;
- const base={...originalReport,manualEditor:{chartId}};
+ const E=g.SMVPredictionRules;
+ const base=originalReport;
  const result=E?.applyToReport?E.applyToReport(base,chart,d,starContext,dates):base;
- if(chartId&&g.SMVPredictionEditorUI?.setLive){
-  const refresh=()=>{
-   const updated=E.applyToReport(base,chart,d,starContext,dates);
-   const roots=[...document.querySelectorAll('.smv-d1-life-reading[data-smv-chart-id="'+chartId+'"]')];
-   const target=roots.find(x=>x.getAttribute('lang')===updated.lang)||roots[0];
-   if(target)target.outerHTML=html(updated); // section X DOM only; no calculation or network
-  };
-  g.SMVPredictionEditorUI.setLive({base,refresh});
- }
  return result;
 }
 function html(r){if(r?.v311?.status!=='ready')return old?.html?.(r)||'';
  const ta=r.lang==='ta';
- const author=!!g.SMVPredictionRules?.authorEnabled?.();
- const editorButton=key=>author?`<button type="button" class="smv-pred-edit-control" data-smv-edit-id="${encode(key)}">✎ ${ta?'திருத்து':'Edit prediction'}</button>`:'';
+ const editorButton=()=>''; // No per-report editor controls; results remain prediction-only.
  // Keep substantial new outcomes and dates; print a recurring explanatory
  // sentence once across the entire report, never dozens of times in every PD.
  // Only identical sentences are removed; no paragraph count or time window is
@@ -87,6 +77,6 @@ const pdBlock=r.pdChronology?.length?`<section class="smv-v311-pd" data-smv-pd-p
 resetProse();
 const annual=r.annual.length?`<section class="smv-v311-years"><h2>${ta?'அடுத்த 15 ஆண்டுகளில் ஒருங்கிணைந்த ஆதாரம் கிடைத்த காலங்கள்':'Evidence-backed windows in the next 15 years'}</h2>${r.annual.map(y=>{const e=editorButton(g.SMVPredictionRules?.anchor?.('annual',y)||'');const t=freshProse(y.text);return t?e+`<p class="smv-d1-life-paragraph" data-year="${y.year}">${encode(t)}</p>`:'';}).join('')}</section>`:'';
 const missing=(r.v311?.uncoveredWindows||[]);const noEvidence=missing.length?`<p class="smv-v311-no-event-filler">${ta?'போதுமான தசை–கோச்சார ஒத்த ஆதாரம் இல்லாத காலங்கள்: ':'Windows without independent dasha–transit corroboration: '}${missing.map(x=>encode(x.from)+' – '+encode(x.to)).join(', ')}. ${ta?'இந்த இடைவெளிகளுக்காகக் கற்பனையான ஆண்டு நிகழ்வுகள் எழுதப்படவில்லை.':'No distinct annual event has been invented for these intervals.'}</p>`:'';
-return `<section class="smv-d1-life-reading smv-v303-integrated smv-v307-events smv-v311-judgement" data-smv-d1-life="1" data-smv-chart-id="${encode(r.manualEditor?.chartId||'')}" data-smv-integrated="12" data-smv-15-year-ready="${r.timeline?.complete?'1':'0'}" lang="${encode(r.lang)}"><h2>${ta?'முழு வாழ்க்கைப் பலன்கள்':'Complete Life Predictions'}</h2><p class="smv-v303-intro">${ta?'பொதுக் குணங்களுக்குப் பிறகு ஒவ்வொரு வாழ்க்கைத் துறையிலும் தனிப்பட்ட பழக்கங்கள், குடும்பச் சூழல், பொறுப்புகள் மற்றும் மாறும் காலநிலைகள் விரிவாக விளக்கப்படுகின்றன.':'The report first reconciles supportive and challenging natal factors, then combines available divisional, period and computed transit readings. Sample dates are not guaranteed event dates.'}</p>${r.overview?.length?`<section class="smv-v311-overview"><h2>${ta?'ஜாதகத்தின் மைய வாழ்க்கைப் போக்கு':'Integrated life reading'}</h2>${editorButton('overview')}${r.overview.map(uniqueParagraph).join('')}</section>`:''}${lines}${chron}${pdBlock}${annual}${noEvidence}</section>`;}
+return `<section class="smv-d1-life-reading smv-v303-integrated smv-v307-events smv-v311-judgement" data-smv-d1-life="1" data-smv-integrated="12" data-smv-15-year-ready="${r.timeline?.complete?'1':'0'}" lang="${encode(r.lang)}"><h2>${ta?'முழு வாழ்க்கைப் பலன்கள்':'Complete Life Predictions'}</h2><p class="smv-v303-intro">${ta?'பொதுக் குணங்களுக்குப் பிறகு ஒவ்வொரு வாழ்க்கைத் துறையிலும் தனிப்பட்ட பழக்கங்கள், குடும்பச் சூழல், பொறுப்புகள் மற்றும் மாறும் காலநிலைகள் விரிவாக விளக்கப்படுகின்றன.':'The report first reconciles supportive and challenging natal factors, then combines available divisional, period and computed transit readings. Sample dates are not guaranteed event dates.'}</p>${r.overview?.length?`<section class="smv-v311-overview"><h2>${ta?'ஜாதகத்தின் மைய வாழ்க்கைப் போக்கு':'Integrated life reading'}</h2>${editorButton('overview')}${r.overview.map(uniqueParagraph).join('')}</section>`:''}${lines}${chron}${pdBlock}${annual}${noEvidence}</section>`;}
 return Object.freeze({build,html,version:'312-evidence-lived-personalization',previous:old});
 });
