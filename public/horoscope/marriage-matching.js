@@ -1327,9 +1327,52 @@ function mm281Status(a,b){
  return {id:'different',name:T('Different priorities — discuss','மாறுபட்ட அணுகுமுறை — பேசி உறுதிப்படுத்த வேண்டும்')};
 }
 function mm281AgeNote(b,g){const today=mmIsoDate(mmAnalysisDate()),ageB=mmV250AgeAt(b.birthDate,today),ageG=mmV250AgeAt(g.birthDate,today);const young=[ageB,ageG].some(x=>x!=null&&x<18);return {ageB,ageG,young,html:young?`<section class="mm-person-result mm-v281-age-warning"><h3>${T('Age suitability — future hypothetical reading only','வயதுப் பொருத்தம் — எதிர்காலக் கற்பனைக் கள ஆய்வு மட்டுமே')}</h3><p>${T('At least one person is under 18 on the review date. The calculations may be displayed for study but are NOT a present-day marriage recommendation or an evaluation of consent; no match/not-match decision should be made for a child.','ஆய்வுத் தேதியில் இருவரில் ஒருவர் 18 வயதிற்குக் குறைவானவர். கணக்கீட்டுத் தரவைப் பயிற்சிக்காகப் பார்க்கலாம்; இது தற்போதைய திருமணப் பரிந்துரையோ சம்மத மதிப்பீடோ அல்ல. சிறுவருக்குத் திருமணத் தீர்ப்பு வழங்கப்படாது.')}</p></section>`:''};}
+// Lived couple comparison from independently calculated D1 scores, not from
+// prewritten generic pair tags. Does not replace the strict final verdict.
+const MM_COUPLE_CONTEXT_TA=[
+ 'வேகம் மற்றும் தனிப்பட்ட முடிவுகளைப் பகிர்ந்து பேசுதல்',
+ 'வீட்டுச் செலவு, குடும்ப உதவி மற்றும் சேமிப்பின் வரம்பு',
+ 'செய்தியை வெளிப்படுத்தும் விதமும் நெருக்கமான உறவினர் பங்கும்',
+ 'வீட்டுத் திட்டமும் பெற்றோர் பராமரிப்புக்கான நேரமும்',
+ 'கற்றல், படைப்பாற்றல் மற்றும் இளையோருக்கான பொறுப்பு',
+ 'பணிச்சுமை, கடன் ஒழுங்கு மற்றும் ஓய்வு நேரப் பகிர்வு',
+ 'துணைவரின் எல்லைகள், பரஸ்பர ஒப்புதல் மற்றும் கூட்டுச் செயல்பாடு',
+ 'கூட்டுச் சொத்து, ஆவணங்கள் மற்றும் எதிர்பாராத செலவின் பொறுப்பு',
+ 'வழிகாட்டல், நம்பிக்கை மற்றும் தொலைதூரத் திட்டம்',
+ 'தொழில் நேரம், அங்கீகாரம் மற்றும் வீட்டில் பகிரப்படும் கடமை',
+ 'வருமான இலக்கும் நண்பர்களுக்கு வழங்கும் உதவியின் வரம்பும்',
+ 'தனிப்பட்ட செலவு, உறக்க நேரம் மற்றும் தனியிடம்'
+];
+const MM_COUPLE_CONTEXT_EN=[
+ 'the pace of decisions and personal independence',
+ 'household expenses, family support and savings limits',
+ 'communication and the role of close relatives',
+ 'housing arrangements and time for parental care',
+ 'study, creativity and responsibilities toward younger family members',
+ 'workload, repayments and a realistic share of rest',
+ 'personal boundaries, consent and joint decisions',
+ 'shared property, documentation and unexpected costs',
+ 'mentoring, beliefs and long-range plans',
+ 'work hours, recognition and duties at home',
+ 'income plans and boundaries with friends',
+ 'private expenses, sleep schedules and individual space'
+];
+function mm281PairOutcome(B,G,entry,young){if(!B||!G||young)return '';
+ const ta=lang()==='ta',subject=ta?MM_COUPLE_CONTEXT_TA[entry.n-1]:MM_COUPLE_CONTEXT_EN[entry.n-1];
+ const group=r=>r.supportive&&!r.challenging?'support':r.challenging&&!r.supportive?'strain':'mixed';
+ const bride=group(B),groom=group(G);
+ const same=bride===groom;
+ const label=x=>x==='support'?(ta?'ஒழுங்குபடுத்த உதவும்':'a potentially supportive theme'):x==='strain'?(ta?'மறுபரிசீலனை கேட்கும்':'a theme needing review'):(ta?'ஆதரவும் தடையும் கலந்த':'a mixed indication');
+ const comparison=same?(ta?`இருவருக்கும் ${label(bride)} பிறப்பு ஆதாரங்கள் உள்ளதால், ${subject} தொடர்பான ஒப்பந்தத்தை ஒரே நேரத்தில் உருவாக்கிக் கொள்ள முடியும்.`:`Both charts show ${label(bride)} natal indications, so their agreement on ${subject} can be developed deliberately.`):
+ (ta?`பெண்ணின் ஜாதகத்தில் ${label(bride)} அமைப்பும் ஆணின் ஜாதகத்தில் ${label(groom)} அமைப்பும் இருப்பதால், ${subject} குறித்து இருவரும் ஒரே வேகத்தில் முடிவு எடுப்பார்கள் என்று கருதக்கூடாது.`:
+ `The bride has ${label(bride)} natal indications and the groom has ${label(groom)} ones, so a shared decision on ${subject} need not develop at the same pace.`);
+ const actual=!Number.isInteger(B.pos)||!Number.isInteger(G.pos)?'':B.pos!==G.pos?(ta?`இருவரின் பாவாதிபதிகள் வேறு வாழ்க்கைத் துறைகளில் இருப்பதால் இந்தத் தேர்வில் இருவரின் கடமைகளும் வேறுபடலாம்.`:'Their house rulers activate different life areas, so duties may need separate consideration.'):
+ (ta?`இருவரின் பாவாதிபதித் தொடர்பு ஒரே வாழ்க்கைத் துறையில் இருப்பதால் அந்தத் துறையின் பொறுப்பு இருவருக்கும் முக்கியமாகலாம்.`:'Both house-ruler positions connect the subject to the same life area.');
+ return comparison+' '+actual;
+}
 function mm281TopicBook(b,g){let html=`<section class="mm-person-result mm-v281-topic-book"><h2>${T('Twelve D1 life-area readings and direct couple comparison','D1 அடிப்படையில் 12 வாழ்க்கைப் பலன்கள் — இருவர் ஒற்றுமை ஆய்வு')}</h2><p class="mm-note">${T('Each result uses the respective D1 house, its lord, position, natural significator, occupancy and Graha aspects. This is a traditional reading, not a determination of personality.','ஒவ்வொரு தலைப்பும் அதற்குரிய D1 பாவம், பாவாதிபதி, இருப்பிடம், இயற்கைக் காரகன், ஆக்கிரமிப்பு மற்றும் கிரகப் பார்வைகளின் அடிப்படையில் தனித்தனியாக ஆராயப்படுகிறது.')}</p>`;
  const age=mm281AgeNote(b,g);
- for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
+ for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))} ${esc(mm281PairOutcome(B,G,item,age.young))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
  return html+'</section>';
 }
 const MM281_PERSONALITY=[

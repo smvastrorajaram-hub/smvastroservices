@@ -15,7 +15,7 @@
  const storage={read(key,fallback){try{let s=g.localStorage?.getItem(key);return s?JSON.parse(s):fallback;}catch{return fallback;}},write(key,value){try{g.localStorage?.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
  const digest=text=>{let h=2166136261;const str=String(text||'');for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');};
  function identity(raw,d){const source=raw?.chart?.lagna?raw.chart:raw||{},ls=source?.lagna?.longitude??null;const p=(source?.planets||[]).map(x=>[x.name??x.planet,NUM(x.longitude)]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));return 'chart-'+digest(JSON.stringify({date:source.birthDate||source.birth?.date||raw?.birthDate||'',time:source.birthTime||source.birth?.time||raw?.birthTime||'',lat:source.lat??raw?.lat??null,lon:source.lon??raw?.lon??null,asc:NUM(ls),planets:p,lagna:d?.lagna}));}
- function fields(d,star,chart,timeline,windowPeriod=null){
+ function fields(d,star,chart,timeline,windowPeriod=null,verifiedJudgements=null){
   const facts={};const put=(name,value)=>{if(value!==null&&value!==undefined&&value!==''&&!(typeof value==='number'&&!Number.isFinite(value)))facts[name]=value;};
   put('lagna.sign',d?.lagna);put('lagna.nakshatra',star?.lagna?.star?.en);put('lagna.pada',star?.lagna?.star?.pada);put('lagna.starLord',star?.lagna?.starRuler);put('lagna.lord',star?.lagna?.lord);
   put('moon.sign',d?.planets?.Moon?.sign);put('moon.nakshatra',star?.planets?.Moon?.star?.en);put('moon.pada',star?.planets?.Moon?.star?.pada);put('moon.starLord',star?.planets?.Moon?.starRuler);
@@ -23,15 +23,26 @@
    put(k+'sign',p.sign);put(k+'house',p.house);put(k+'longitude',p.longitude);put(k+'retrograde',p.retrograde);put(k+'combust',p.combust);put(k+'dignity',p.dignity);
    put(k+'nakshatra',e?.star?.en);put(k+'pada',e?.star?.pada);put(k+'starLord',e?.starRuler);put(k+'starLordHouse',e?.rulerHouse);put(k+'starLordDignity',e?.rulerDignity);put(k+'starLordRetrograde',e?.rulerRetrograde);
    put(k+'rahuOrb',n!=='Rahu'?circular(p.longitude,d.planets?.Rahu?.longitude):null);
-   for(const a of e?.rulerAspects||[])if(a?.from&&a?.to){put('aspect.'+a.from+'.'+a.to+'.active',true);put('aspect.'+a.from+'.'+a.to+'.orb',a.orb);put('aspect.'+a.from+'.'+a.to+'.combust',a.combust);put('aspect.'+a.from+'.'+a.to+'.closeRahu',a.closeRahu);}
+   for(const a of e?.rulerAspects||[])if(a?.from&&a?.to){put('aspect.'+a.from+'.'+a.to+'.active',true);put('aspect.'+a.from+'.'+a.to+'.orb',a.orb);put('aspect.'+a.from+'.'+a.to+'.combust',a.combust);put('aspect.'+a.from+'.'+a.to+'.closeRahu',a.closeRahu);put('aspect.'+a.from+'.'+a.to+'.qualified',a.qualified);}
   }
   for(const h of d?.houses||[]){const key='house.'+h.no+'.';put(key+'sign',h.sign);put(key+'lord',h.lord);put(key+'occupants',h.occupants);put(key+'aspects',h.aspects);put(key+'lordHouse',d.planets?.[h.lord]?.house);put(key+'karakas',KARA[h.no]);}
+  // Existing I–IX judgement results. Reuse calculated evidence from the
+  // integrated report; standalone preview may evaluate interpretation only.
+  const judgements=Array.isArray(verifiedJudgements)&&verifiedJudgements.length===12?verifiedJudgements:
+   (typeof g.SMVD311Judgement?.read==='function'&&Array.isArray(d?.houses)&&d.houses.length===12?
+    Array.from({length:12},(_,i)=>{try{return g.SMVD311Judgement.read(d,chart,i+1,null)}catch{return null}}):[]);
+  for(const c of judgements){if(!c||!Number.isInteger(c.house)||c.house<1||c.house>12)continue;
+   const k='house.'+c.house+'.';put(k+'conclusion',c.conclusion);put(k+'relativeScore',c.relativeScore);
+   put(k+'otherLordships',c.otherLordships);put(k+'positiveCount',c.positive?.length);put(k+'negativeCount',c.negative?.length);
+   if(c.division?.division){const division=String(c.division.division).replace(/[^0-9]/g,'');put('varga.D'+division+'.lordEvidence',c.division.dignity);}
+  }
+
   // Extend the EXISTING judgement's Parashari aspect witness to all actual pairs;
   // sign-only/aspect geometry stays in judgement.js, not duplicated here.
   const aspect=g.SMVD311Judgement?.aspectWitness;
   if(typeof aspect==='function')for(const from of PLAN)for(const to of PLAN){if(from===to)continue;
     const a=aspect(d,from,to);if(!a)continue;
-    const key='aspect.'+from+'.'+to+'.';put(key+'active',true);put(key+'orb',a.orb);put(key+'combust',a.combust);put(key+'closeRahu',a.closeRahu);
+    const key='aspect.'+from+'.'+to+'.';put(key+'active',true);put(key+'orb',a.orb);put(key+'combust',a.combust);put(key+'closeRahu',a.closeRahu);put(key+'qualified',a.qualified);
   }
   for(const from of PLAN)for(const to of PLAN){if(from===to)continue;
    const a=d?.planets?.[from],b=d?.planets?.[to];if(!a||!b||a.sign!==b.sign)continue;
@@ -81,10 +92,10 @@
  }
  const allowedField=field=>/^(lagna|moon)\.(sign|nakshatra|pada|starLord|lord)$/.test(field)||
   /^planet\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(sign|house|longitude|retrograde|combust|dignity|nakshatra|pada|starLord|starLordHouse|starLordDignity|starLordRetrograde|rahuOrb)$/.test(field)||
-  /^aspect\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|Lagna)\.(active|orb|combust|closeRahu)$/.test(field)||
+  /^aspect\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|Lagna)\.(active|orb|combust|closeRahu|qualified)$/.test(field)||
   /^conjunction\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(active|orb)$/.test(field)||
-  /^house\.(?:[1-9]|1[0-2])\.(?:sign|lord|lordHouse|occupants|aspects|karakas)$/.test(field)||
-  /^varga\.(?:D2|D7|D9|D10|D12|D24|D30)\.available$/.test(field)||
+  /^house\.(?:[1-9]|1[0-2])\.(?:sign|lord|lordHouse|occupants|aspects|karakas|conclusion|relativeScore|otherLordships|positiveCount|negativeCount)$/.test(field)||
+  /^varga\.(?:D2|D7|D9|D10|D12|D24|D30)\.(?:available|lordEvidence)$/.test(field)||
   /^varga\.(?:D2|D7|D9|D10|D12|D24|D30)\.(?:Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(?:sign|pada|nakshatra)$/.test(field)||
   /^ashtakavarga\.(?:sign\.(?:[0-9]|1[01])|house\.(?:[1-9]|1[0-2]))\.bindus$/.test(field)||
   /^tajaka\.(yearLord|munthaHouse)$/.test(field)||
@@ -95,6 +106,7 @@
   /^transit\.(planet|signal|date)$/.test(field)||
   /^matching\.(?:porutham\.score|verdict)$/.test(field)||
   /^(?:bride|groom)\.varga\.(?:D2|D7|D9|D10|D12|D24|D30)\.(?:Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(?:sign|pada|nakshatra)$/.test(field)||
+  /^(?:bride|groom)\.house\.(?:[1-9]|1[0-2])\.(?:conclusion|relativeScore|positiveCount|negativeCount)$/.test(field)||
   /^(?:bride|groom)\.(?:(?:lagna|moon)\.(?:sign|nakshatra|pada|starLord|lord)|planet\.(?:Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\.(?:sign|house|longitude|retrograde|combust|dignity|nakshatra|pada|starLord|starLordHouse|starLordDignity|starLordRetrograde|rahuOrb)|house\.(?:[1-9]|1[0-2])\.(?:sign|lord|lordHouse|occupants|aspects|karakas))$/.test(field);
  // Partner facts are only used after the full matching entitlement gate;
  // public Nakshatra-only never evaluates manual or published matching rules.
@@ -115,7 +127,7 @@
   if(rule.channel==='pd'&&!conditions.some(c=>c.field==='dasha.pd'))return null;
   if(rule.channel==='transit'&&!conditions.some(c=>/^transit\.(planet|signal|date)$/.test(c.field)))return null;
   if(rule.channel==='matching'&&!conditions.some(c=>/^(?:matching\.|bride\.|groom\.)/.test(c.field)))return null;
-  const effect={ta:String(rule.effect?.ta||'').slice(0,12000).trim(),en:String(rule.effect?.en||'').slice(0,12000).trim()};if(!effect.ta&&!effect.en)return null;
+  const effect={ta:String(rule.effect?.ta||'').slice(0,12000).trim(),en:String(rule.effect?.en||'').slice(0,12000).trim(),mode:rule.effect?.mode==='replace'?'replace':'append'};if(!effect.ta&&!effect.en)return null;
   const house=rule.house==='all'?'all':Number(rule.house);if(house!=='all'&&(!Number.isInteger(house)||house<1||house>12))return null;
   const section=String(rule.sourceSection||'I');if(!/^(I|II|III|IV|V|VI|VII|VIII|IX)$/.test(section))return null;
   return {id,title:String(rule.title||id).slice(0,130),enabled:rule.enabled!==false,channel:rule.channel,house,priority:Math.max(-100,Math.min(100,Number(rule.priority)||0)),conditions,effect,sourceSection:section,intent:String(rule.intent||'').slice(0,120),conflictGroup:String(rule.conflictGroup||'').slice(0,50)};
@@ -133,7 +145,7 @@
  function getPublishedRules(){return normalizeRules(g.SMVPUBLISHED_PREDICTION_RULES||[]);}
  function getRules(){const published=getPublishedRules();const local=storage.read(AUTHOR_KEY,false)?getLocalRules():[];const map=new Map(published.map(r=>[r.id,r]));for(const rule of local)map.set(rule.id,rule);return [...map.values()].sort((a,b)=>b.priority-a.priority||a.id.localeCompare(b.id));}
  const compiledRules=new WeakMap();
- function run(rules,facts,channel,house,lang,seen=new Set()){const out=[];const conflicts=new Set();let ready=Array.isArray(rules)?compiledRules.get(rules):null;if(!ready){ready=normalizeRules(rules);if(Array.isArray(rules))compiledRules.set(rules,ready);}for(const rule of ready){if(!ruleMatches(rule,facts,channel,house)||seen.has(rule.id)||rule.conflictGroup&&conflicts.has(rule.conflictGroup))continue;const s=lang==='en'?rule.effect.en:rule.effect.ta;if(!s)continue;out.push({ruleId:rule.id,source:rule.sourceSection,text:s,intent:rule.intent});seen.add(rule.id);if(rule.conflictGroup)conflicts.add(rule.conflictGroup);}return out;}
+ function run(rules,facts,channel,house,lang,seen=new Set()){const out=[];const conflicts=new Set();let ready=Array.isArray(rules)?compiledRules.get(rules):null;if(!ready){ready=normalizeRules(rules);if(Array.isArray(rules))compiledRules.set(rules,ready);}for(const rule of ready){if(!ruleMatches(rule,facts,channel,house)||seen.has(rule.id)||rule.conflictGroup&&conflicts.has(rule.conflictGroup))continue;const s=lang==='en'?rule.effect.en:rule.effect.ta;if(!s)continue;out.push({ruleId:rule.id,source:rule.sourceSection,text:s,intent:rule.intent,mode:rule.effect.mode});seen.add(rule.id);if(rule.conflictGroup)conflicts.add(rule.conflictGroup);}return out;}
  function getOverrides(){const obj=storage.read(OVERRIDE_KEY,{});return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:{};}
  function setOverride(chartId,sectionId,data){if(!/^chart-[0-9a-f]{8}$/.test(chartId)||!/^((house-(?:[1-9]|1[0-2]))|(period-[0-9a-f]{8})|(pd-[0-9a-f]{8})|(annual-[0-9a-f]{8})|overview)$/.test(sectionId))return false;
   const mode=data?.mode==='replace'?'replace':'append',textTa=String(data?.ta||'').slice(0,18000).trim(),textEn=String(data?.en||'').slice(0,18000).trim();if(!textTa&&!textEn)return false;
@@ -157,8 +169,8 @@
  function anchor(prefix,x){return prefix+'-'+digest([x?.from||'',x?.to||'',x?.md||'',x?.ad||'',x?.pd||'',x?.house||''].join('|'));}
  function applyToReport(r,source,d,star,timing){if(!r||!Array.isArray(r.topics))return r;const id=identity(source,d),lang=r.lang||'ta',overrides=getOverrides()[id]||{},rules=getRules();
   const result={...r,topics:r.topics.map(t=>({...t,paragraphs:[...(t.paragraphs||[])],periods:(t.periods||[]).map(x=>({...x})),remedies:[...(t.remedies||[])]})),chronology:(r.chronology||[]).map(x=>({...x})),pdChronology:(r.pdChronology||[]).map(x=>({...x})),annual:(r.annual||[]).map(x=>({...x})),overview:[...(r.overview||[])],manualEditor:{chartId:id,appliedRules:[],localRuleMode:storage.read(AUTHOR_KEY,false)}};
-  const facts=fields(d,star,source,timing),seen=new Set();
-  const insert=(where,arr,channel,house,windowData)=>{const bundle=fields(d,star,source,timing,windowData);const eligible=['natal','remedy'].includes(channel)&&house!==1?rules.filter(rule=>rule.house!=='all'):rules;const found=run(eligible,bundle,channel,house,lang,new Set());for(const x of found){const scope=channel+':'+(windowData?.period?.from||windowData?.from||'natal')+':'+house+':'+x.ruleId;if(seen.has(scope))continue;arr.push(x.text);result.manualEditor.appliedRules.push({...x,channel,house,scope});seen.add(scope);}};
+  const facts=fields(d,star,source,timing,null,r.v311?.judgements),seen=new Set();
+  const insert=(where,arr,channel,house,windowData)=>{const bundle=fields(d,star,source,timing,windowData,r.v311?.judgements);const eligible=['natal','remedy'].includes(channel)&&house!==1?rules.filter(rule=>rule.house!=='all'):rules;const found=run(eligible,bundle,channel,house,lang,new Set());for(const x of found){const scope=channel+':'+(windowData?.period?.from||windowData?.from||'natal')+':'+house+':'+x.ruleId;if(seen.has(scope))continue;if(x.mode==='replace'&&channel!=='matching')arr.splice(0,arr.length,x.text);else arr.push(x.text);result.manualEditor.appliedRules.push({...x,channel,house,scope});seen.add(scope);}};
   for(const t of result.topics){insert('house',t.paragraphs,'natal',t.number);insert('remedy',t.remedies,'remedy',t.number);t.paragraphs=applyText(t.paragraphs,overrides['house-'+t.number],lang);}
   result.overview=applyText(result.overview,overrides.overview,lang);
   for(const group of [['chronology','period','mdad'],['pdChronology','pd','pd'],['annual','annual','transit']]){
