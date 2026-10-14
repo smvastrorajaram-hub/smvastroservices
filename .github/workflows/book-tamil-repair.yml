@@ -1,0 +1,68 @@
+name: Recover missing Tamil book text
+on:
+  push:
+    branches:
+      - codex/book-page-source-audit
+    paths:
+      - 'scripts/book-audit/force_tamil_ocr.py'
+      - '.github/workflows/book-tamil-repair.yml'
+permissions:
+  contents: read
+jobs:
+  repair:
+    name: Tamil OCR ${{ matrix.pages.from }}-${{ matrix.pages.to }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        pages:
+          - from: 1
+            to: 35
+          - from: 36
+            to: 70
+          - from: 71
+            to: 105
+          - from: 106
+            to: 140
+          - from: 141
+            to: 175
+          - from: 176
+            to: 210
+          - from: 211
+            to: 245
+          - from: 246
+            to: 280
+          - from: 281
+            to: 315
+          - from: 316
+            to: 350
+          - from: 351
+            to: 385
+          - from: 386
+            to: 420
+          - from: 421
+            to: 437
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install source reading tools
+        run: |
+          python -m pip install --disable-pip-version-check 'PyMuPDF==1.24.14'
+          sudo apt-get update -qq
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-tam
+      - name: Recover actual Tamil page text
+        env:
+          FIRST_PAGE: ${{ matrix.pages.from }}
+          LAST_PAGE: ${{ matrix.pages.to }}
+        run: python scripts/book-audit/force_tamil_ocr.py --from-page "$FIRST_PAGE" --to-page "$LAST_PAGE" --output "book-audit-output/tamil-$FIRST_PAGE-$LAST_PAGE.jsonl"
+      - name: Retain corrected source records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corrected-tamil-${{ matrix.pages.from }}-${{ matrix.pages.to }}
+          path: book-audit-output/
+          retention-days: 7
