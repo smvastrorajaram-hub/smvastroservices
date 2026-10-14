@@ -384,7 +384,7 @@ const MATTER_TA=[
  ['Moon','உணவுப் பழக்கம்','உடலுக்கு ஏற்ற நேரத்தையும் அளவையும் கவனித்துச் சாப்பிடும் ஒழுங்கு நீண்டகால நலனுக்குத் துணையாகலாம்.','வேலைப்பளு அல்லது மனச் சோர்விற்கு ஏற்ப உணவு நேரம் மாறும்போது பழக்கத்தைத் திரும்ப ஒழுங்குபடுத்த வேண்டியிருக்கும்.'],
  ['Venus','திருமணத்திற்குப் பின் குடும்பம்','இரு குடும்பங்களின் தேவைகளைக் கேட்டறிந்து செலவையும் பொறுப்பையும் பகிர்வதில் புதிய உடன்பாடு உருவாக்கும் திறன் இருக்கலாம்.','திருமணத்திற்கு முன் பழகிய குடும்பச் செலவு முறையும் பின்னர் உருவாகும் தேவைகளும் மாறுபட்டால் உரையாடலின் மூலம் ஒழுங்கமைக்க வேண்டியிருக்கும்.'],
  ['Sun','முகம், வாய், பற்கள்','தனிப்பட்ட தோற்றத்தையும் வாய்ச் சுகாதார ஒழுங்கையும் பராமரிப்பதில் கவனம் செலுத்துவது அன்றாட நம்பிக்கைக்கு உதவலாம்.','பணி நேரம் சீரற்றபோது உணவு, பற்கள் பராமரிப்பு போன்ற அடிப்படைப் பழக்கங்கள் பின்தங்காமல் பார்த்துக்கொள்ள வேண்டியிருக்கும்.'],
- ['Mars','உணவு, புகை, மது பற்றிய முடிவுகள்','உணவுச் சுவை மற்றும் தனிப்பட்ட பழக்கங்களைச் சுயமாகத் தேர்வுசெய்ய விரும்பும் சூழல் இருக்கலாம்; உடல் நலத்திற்கு ஏற்ற முடிவைத் தானே பரிசீலிப்பது முக்கியம்.','ஒரு கிரக அமைப்பை மட்டும் வைத்து மாமிச உணவு, புகை அல்லது மதுப் பழக்கம் இருப்பதாக முடிவு செய்ய முடியாது; பழக்கம் இருந்தால் அதன் நடைமுறை விளைவையே கருத்தில் கொள்ள வேண்டும்.']
+ ['Mars','உணவு விருப்பமும் அன்றாடப் பழக்க ஒழுங்கும்','பசியின் நேரம், உணவுச் சுவை, விருப்பமான உணவு வகை ஆகியவற்றை அன்றாட வேலை மற்றும் குடும்பச் சூழலுடன் பொருத்திச் செயல்படும் முறை அமையலாம்.','வேலை அழுத்தம் அல்லது பயண நேரம் மாறும்போது உணவு நேரத்தைப் பாதுகாக்கவும், விருப்பங்களுக்கு இடையே அளவைப் பேணவும் தனிப்பட்ட ஒழுங்கு தேவைப்படலாம்.']
  ],
  [
  ['Mars','தனித்த முயற்சி','சிறிய பணியைத் தொடர்ந்து பயிற்சி செய்து பிறர் உதவியில்லாமல் முடிக்கும் திறன் வளரலாம்.','அடிக்கடி திட்டத்தை மாற்றுவதால் முடிக்கப்பட்ட வேலைகளை விடத் தொடங்கிய வேலைகள் அதிகமாகிவிடலாம்.'],
@@ -660,16 +660,24 @@ const GRAHA_MIND_EN={
  Ketu:'the inclination to withdraw from distractions'
 };
 function aspectLife(a,ta,domain){
- if(!a)return '';
- const qualifier=a.combust||a.closeRahu;
- const near=a.orb!==null&&a.orb<=5;
+ // A sign-based Parashari aspect must be present before this is called.
+ // Never conflate independent combustion and <=8-degree Rahu proximity flags.
+ if(!a?.from||!Number.isInteger(a.aspectHouse))return '';
+ const near=Number.isFinite(a.orb)&&a.orb<=5;
+ const details=[];
  if(ta){
-  const implication=GRAHA_MIND_TA[a.from]||'';
-  const base=qualifier?`${actor(a.from,true)} தொடர்பு இருந்தாலும் அந்தக் கிரகத்தின் அஸ்தமனம் அல்லது ராகு நெருக்கம் காரணமாக அதன் தாக்கத்தை முழு வலிமையுடன் எடுத்துக்கொள்ள இயலாது. ${implication}`:
-  `${actor(a.from,true)} வழங்கும் தொடர்பின் வழியாக ${implication}`;
-  return near&&!qualifier?`${base}. பாகை நெருக்கமும் அதிகம் என்பதால் இந்தத் தன்மை குறிப்பாகக் கணக்கில் எடுத்துக்கொள்ளப்படுகிறது.`:`${base}.`;
+  if(a.combust)details.push('அஸ்தமனம் பெற்றதால் அந்த கிரகத்தின் பலனளிக்கும் திறனைத் தனியாக மதிப்பிட வேண்டும்');
+  if(a.closeRahu)details.push('ராகுவுக்கு உண்மையாக எட்டு பாகைக்குள் இருப்பதால் அந்த நெருக்கத்தின் தாக்கத்தையும் தனியாக மதிப்பிட வேண்டும்');
+  const mind=GRAHA_MIND_TA[a.from]||'';
+  const contact=`${actor(a.from,true)} உண்மையில் பார்வை தரும் தொடர்பால் ${mind}`;
+  const effect=details.length?` இந்தப் பார்வை முற்றிலும் நீங்குவதில்லை; ${details.join('; ')}.`:'';
+  return contact+'.'+(near?` பார்வையின் பாகை நெருக்கம் ${a.orb.toFixed(1)}° என்பதால் அந்தத் தொடர்பு அதிக நேரடியாக எடுத்துக்கொள்ளப்படுகிறது.`:'')+effect;
  }
- return `${GRAHA_LIFE_EN[a.from]||a.from} color ${domain}${qualifier?' but the source planet is combust or closely associated with Rahu, so this influence is qualified':''}${near&&!qualifier?'; the verified angular proximity makes it a closer witness':''}.`;
+ if(a.combust)details.push('the aspecting planet is combust');
+ if(a.closeRahu)details.push('the aspecting planet is within 8° of natal Rahu');
+ return `${GRAHA_LIFE_EN[a.from]||a.from} influence ${domain} through a verified classical aspect.`+
+  (near?` Its calculated angular deviation is ${a.orb.toFixed(1)}°.`:'')+
+  (details.length?` This aspect still exists, but ${details.join(' and ')}; strength is therefore assessed separately.`:'');
 }
 function ascendantStarReading(star,ta){const l=star?.lagna,who=l?.star;if(!who)return [];
  const planet=ta?actor(l.starRuler,true):l.starRuler;
@@ -699,10 +707,10 @@ function lagnaBodyMindReading(star,lang){const l=star?.lagna;if(!l?.lord)return 
  if(ta){
    const theme={Sun:'தன்னம்பிக்கையை வெளிக்காட்டும் விதமும் மற்றவர் அளிக்கும் மதிப்பும்',Moon:'மனதின் ஏற்றத்தாழ்வையும் நெருங்கியோரின் தேவைகளையும் சமாளிக்கும் பாங்கும்',Mars:'விரைவாகச் செயல்படும் வேகத்திற்கும் பொறுமைக்கும் உள்ள சமநிலையும்',Mercury:'தகவலைக் கேட்டறிந்து முடிவெடுக்கும் நுணுக்கமும்',Jupiter:'நியாயம், நம்பிக்கை மற்றும் அறிவைப் பகிரும் மனப்பான்மையும்',Venus:'உறவுகளோடு இசைந்து தன் விருப்பத்தைப் பாதுகாக்கும் குணமும்',Saturn:'கடமைக்கு முன்னுரிமை தரும் அமைதியான உறுதியும்'}[p]||'சுய முடிவுகளும்';
    all.push(`லக்னாதிபதியின் பிறப்பு நிலையால் ${theme} வாழ்க்கைத் தேர்வுகளில் பிரதிபலிக்கலாம். ${scene?scene+' வழியாக அனுபவம் சேரும்போது இந்தப் பழக்கம் வெளியில் தெரியலாம்.':''}`);
-   if(occupants.length)all.push(`லக்னத்தில் நேரடியாகக் கிரகங்கள் இருப்பதால் தனிப்பட்ட செயல்பாட்டில் ${occupants.map(x=>GRAHA_MIND_TA[x]).filter(Boolean).join('; ')}. இந்தத் தன்மைகளைப் பிறப்பு லக்னம் மட்டுமே தரும் பொதுப் பலனுடன் கலக்காமல் தனியாகக் கவனிக்க வேண்டும்.`);
+   if(occupants.length)all.push(`லக்னத்தில் நேரடியாகக் கிரகங்கள் இருப்பதால் தனிப்பட்ட செயல்பாட்டில் ${occupants.map(x=>GRAHA_MIND_TA[x]).filter(Boolean).join('; ')}. இந்த இயல்புகள் தனிப்பட்ட செயல்பாட்டிலும் பிறரிடம் எதிர்பார்க்கும் ஒத்துழைப்பிலும் வெளிப்படலாம்.`);
    if(l.aspects?.length)all.push(`லக்னத்தின் மீது உள்ள பார்வைத் தொடர்பு காரணமாக ${l.aspects.map(x=>aspectLife(x,true,'self')).join(' ')} இது குணநலன் மட்டும் அல்லாமல் முடிவு எடுக்கும் வேகம், செயலில் காட்டும் பொறுமை, பிறரிடம் பேசும் முறையிலும் வெளிப்படலாம்.`);
    if(conj.length)all.push(`லக்னாதிபதியோடு அதே ராசியில் அமைந்துள்ள ${conj.map(x=>actor(x.planet,true)).join(', ')}-ன் இயல்புகளும் இணைவதால் ${conj.map(x=>GRAHA_MIND_TA[x.planet]).filter(Boolean).join('; ')}. இதனால் ஒரே சூழலில் அறிவும் உணர்ச்சியும் ஒரே வேகத்தில் செயல்பட வேண்டியதில்லை.`);
-   if(aspects.length)all.push(`லக்னாதிபதியைப் பார்க்கும் கிரகங்களின் வழியாக ${aspects.map(x=>aspectLife(x,true,'the self')).join(' ')} இவ்வாறு கிடைக்கும் பார்வைகள் எதுவும் தனியாக ஒரு முடிவை உறுதி செய்யாது; அவற்றின் சாதக–பாதக நிலைகளைச் சேர்த்தே உடல் மற்றும் மனச் செயல்பாட்டைப் புரிந்துகொள்ள வேண்டும்.`);
+   if(aspects.length)all.push(`லக்னாதிபதியைப் பார்க்கும் கிரகங்களின் வழியாக ${aspects.map(x=>aspectLife(x,true,'the self')).join(' ')} அழுத்தமான சூழல்களில் எந்த முடிவை உடனே செயல்படுத்துவது, எதற்கு காலம் கொடுப்பது என்ற வேறுபாடும் இந்தத் தொடர்புகளால் வெளிப்படலாம்.`);
  }else{
    all.push(`The ascendant ruler ${planet} is linked to ${l.lordHouse?EN_DEST[l.lordHouse-1]:'the natal chart'}. Its natural themes enter the way the native acts and adjusts to responsibility.`);
    if(l.aspects?.length)all.push(l.aspects.map(x=>aspectLife(x,false,'self-directed decisions')).join(' '));
@@ -792,30 +800,53 @@ function starLordLife(c,star,lang){const d=star?.houses?.[c.house],s=d?.lordStar
  if(ta)return `${domain} பற்றிய முக்கிய முடிவுகளைச் செயல்படுத்தும்போது ${core} சார்ந்த சூழல் துணைப் பாதையாக அமையலாம். ${stable?'நிலையான ஆதரவு இருந்தால் இரு பொறுப்புகளையும் ஒரே திட்டத்தில் இணைக்க முடியும்.':retro?'முன்பு முயன்ற ஏற்பாட்டை மீண்டும் திருத்திப் பயனுள்ள வழியாக மாற்றும் எண்ணம் எழலாம்.':'ஒரு துறையில் முன்னேற்றம் வரும்போது மற்றத் துறையின் நேரம் அல்லது பணத் தேவையை ஒப்பிட்டுப் பார்க்க வேண்டியிருக்கும்.'}`;
  return `Progress in ${EN_DEST[c.house-1]} intersects with ${EN_DEST[s.rulerHouse-1]}; ${stable?'steady effort may join the two':'the two commitments may need renewed planning'}.`;
 }
-function wealthFamilySpeechReading(c,star,lang){if(c.house!==2)return [];
- const h=star?.houses?.[2],ta=lang!=='en';if(!h)return [];
- const lord=c.lord,karJ=h.karakas?.find(x=>x.planet==='Jupiter'),karM=h.karakas?.find(x=>x.planet==='Mercury');
- const lordP=h.lordStar,loc=c.location,lordDrive=TA_DEST[(loc||2)-1],income=karJ?.rulerHouse?TA_DEST[karJ.rulerHouse-1]:null,speech=karM?.rulerHouse?TA_DEST[karM.rulerHouse-1]:null;
- const lordStrong=c.positive?.some(x=>x.planet===lord&&x.delta>.2),lordWeak=c.negative?.some(x=>x.planet===lord&&x.delta<-.2);
- const jWeak=c.negative?.some(x=>x.planet==='Jupiter'&&x.delta<-.2),mWeak=c.negative?.some(x=>x.planet==='Mercury'&&x.delta<-.2);
- const mj=lordP?.starRuler, jj=karJ?.starRuler, mm=karM?.starRuler;
+function wealthFamilySpeechReading(c,star,lang){
+ if(c?.house!==2||!star?.houses?.[2])return [];
+ const ta=lang!=='en',planet=k=>c.all?.filter(x=>x.planet===k&&x.relation==='karaka')?.[0],J=planet('Jupiter'),M=planet('Mercury');
+ const strong=k=>(k?.delta??0)>.2,weak=k=>(k?.delta??0)<-.2;
+ const loc=c.location,oc=new Set(c.houseOccupants||[]),as=new Set(c.houseAspects||[]);
+ const influence=k=>oc.has(k)||as.has(k),speechIncome=[10,11,2].includes(loc)||c.otherLordships?.some(n=>n===10||n===11);
+ const mixed=c.positive?.length>0&&c.negative?.length>0,activeMars=influence('Mars'),activeSaturn=influence('Saturn');
+ const r=[];
  if(ta){
-  const r=[];
-  r.push(`சம்பாத்தியத்தின் இயல்பைப் பார்க்கும்போது இரண்டாம் பாவத்தின் வாழ்வாதாரத் திறனுடன் அதன் அதிபதியின் ${lordDrive} சார்ந்த செயற்பாடும் இணைகிறது. ${lordStrong?'சொந்த உழைப்பின் பலனைப் பாதுகாத்துச் சேமிப்பாக்கும் முயற்சி வளரலாம்.':lordWeak?'வருவாய் கிடைத்தாலும் அன்றாடப் பொறுப்புகளால் சேமிப்பு சீராக வளராத காலங்களை அனுபவிக்கலாம்.':'சம்பாதிக்கும் வழியும் கையில் பணம் தங்கும் முறையும் ஒரே மாதிரியாக இருக்காமல் மாறக்கூடும்.'} ${income&&income!==lordDrive?income+' தொடர்பு இதற்குத் துணையான தனி வழியாக செயல்படலாம்.':''}`);
-  if(mj&&jj)r.push(`குடும்பச் செல்வத்தை வளர்ப்பதில் வேகமான முடிவை விடத் திட்டமிட்ட ஒப்பந்தம் பயனுள்ளதாக அமையலாம். குடும்பத்திற்கான செலவு, பெரியோரின் தேவை, தொழில் முதலீடு ஆகியவற்றில் ஒன்றை முன்னிலைப்படுத்தும்போது மற்றதற்கான பாதுகாப்பை விட்டுக்கொடுக்கக் கூடாது. ${jWeak?'குடும்ப வளத்தைக் குறிக்கும் குருவின் பாதக ஆதாரம் காரணமாக உதவிக்கான எல்லையை நிதானமாக நிர்ணயிப்பது முக்கியமாகலாம்.':'குடும்பத்தினரின் நீண்டகால ஒத்துழைப்பை ஒழுங்கமைப்பதால் சேமிப்பைத் தொடர்ந்து பாதுகாக்கும் நடைமுறை உருவாகலாம்.'}`);
-  r.push(`வாக்கு வழியாகப் பயன்படும் திறன் தனம் சேர்க்கும் வழியோடு தொடர்புபடுமா என்பதைத் தனியே பார்க்க வேண்டும். ${speech?speech+' குறித்த அனுபவத்தைச் சொற்களாக எடுத்துரைப்பது வாடிக்கையாளர் தொடர்பு, கற்பித்தல், கணக்கு அல்லது விளக்கப் பணிகளில் மதிப்பைப் பெற உதவலாம்.':'பேச்சுத் திறன் எந்தத் தொழிலில் வருமானமாக மாறுகிறது என்பதைத் தனிப்பட்ட தொழில் ஆதாரங்களுடன் ஒப்பிட வேண்டும்.'} ${mWeak?'புதனின் கட்டுப்படுத்தும் தொடர்பினால் கடிதம், கணக்கு, வாய்மொழி உறுதி ஆகியவற்றை மறுபடியும் சரிபார்ப்பது தேவைப்படலாம்.':'சொன்ன கருத்தை எதிராளி புரிந்துகொண்டாரா என்று உறுதிப்படுத்துவது வேலை உறவை வலுப்படுத்தலாம்.'}`);
-  r.push(`குடும்பத்தை வழிநடத்துவதில் பணத்தை மட்டுமே அளவுகோலாக்காமல், உறுப்பினர்கள் ஏற்கும் பொறுப்பு மற்றும் உரையாடும் விதத்தை இணைப்பது முக்கியமாகலாம். ${lordWeak?'தனியாகச் செலவுச் சுமையை ஏற்றுக்கொள்ளும் எண்ணத்தைக் குறைத்து குடும்பக் கூட்டுத் திட்டம் அமைப்பது உதவலாம்.':'நேரம் தவறாமல் தேவைகளை அறிந்து உதவுவதால் குடும்பத்தின் நம்பிக்கையைப் பெறலாம்.'}`);
-  // Habit, alcohol, smoking, meat and taste cannot be diagnosed from a natal chart. Do not claim factual use.
-  r.push(`உணவின் சுவை, வகை மற்றும் நேரத்தைப் பற்றிய விருப்பங்கள் ஒரே மாதிரி இல்லாமல் வேலைப்பளு, வீட்டுப் பழக்கம், உடலின் தேவையுடன் மாறலாம். புகை, மது, மாமிச உணவு அல்லது குறிப்பிட்ட நோயின் இருப்பை கிரகநிலை மட்டும் கொண்டு உறுதியாகச் சொல்ல இயலாது; நடைமுறைப் பழக்கத்திற்கான ஆதாரம் இருந்தால்தான் தனிப்பட்ட முடிவு தர வேண்டும்.`);
+  // Money, speech and family are NOT collapsed into a single judgement.
+  if(strong(J)&&c.conclusion==='support')r.push('குடும்பத்தின் அடிப்படைச் செலவுகளை நிறைவேற்றிய பின்னரும் ஒரு பகுதியைச் சேமிப்பாக வைத்துக்கொள்ளும் வாய்ப்பைத் திட்டமிட்ட உழைப்பால் வளர்க்கலாம். வருமானம் வரும் பாதையில் தொடர்ந்து ஒரே முறையைப் பின்பற்றுவதை விடத் தகுந்த சந்தர்ப்பத்தில் மேம்படுத்தும் திறனும் பொருளாதார முன்னேற்றத்திற்கு உதவலாம்.');
+  else if(weak(J)||c.conclusion==='strain')r.push('சம்பாதிப்பு இருப்பினும் கையில் பணம் தங்கும் வேகம் செலவு மற்றும் குடும்பப் பொறுப்புகளால் மாறக்கூடும். புதிய வருமானத்திற்கு முன்பே செலவு ஏற்பாடு செய்வதைத் தவிர்ப்பதும், சேமிப்புக்கு தனி வரம்பு அமைப்பதும் நிதி நிலைத்தன்மையை வளர்க்கும் வழியாக இருக்கலாம்.');
+  else r.push('வருமானத்தைப் பெறும் முயற்சிக்கும் அதைச் சேமித்து வைத்திருக்கும் நடைமுறைக்கும் இடையில் வேறுபாடு இருக்கலாம். குடும்பத்தின் நீண்டகாலத் தேவைகளைக் கணக்கிட்டு ஒதுக்கும் தொகை, தொழில் சார்ந்த புதிய முயற்சிக்கு வேண்டிய தொகை எனப் பிரித்துச் செயல்படுவது பொருத்தமாகலாம்.');
+  if(activeMars)r.push('குடும்பத்துக்கான பண முடிவுகளில் செயல்படும் வேகமும் உறவினர் எதிர்பார்ப்பும் ஒரே நேரத்தில் எழலாம். ஒப்புக்கொண்ட செலவை உடனே நிறைவேற்ற விரும்பினாலும், பிறரின் கருத்தைச் சரிபார்க்காமல் பணப் பொறுப்பை ஏற்கும்போது கருத்து வேறுபாடு உருவாகும் வாய்ப்புள்ளது.');
+  else if(activeSaturn)r.push('குடும்பச் செலவுகள் குறித்து நீண்டகாலக் கட்டுப்பாட்டை விரும்பும் இயல்பு வலுப்பெறலாம். உதவிகளைச் செய்யும்போதும் வருமானத்திற்கான ஒழுங்கையும் எதிர்காலப் பாதுகாப்பையும் முதலில் உறுதிப்படுத்தும் பாங்கு இருக்கும்.');
+  else if(influence('Venus')||influence('Moon'))r.push('வீட்டாரின் வசதி, உணர்ச்சி நெருக்கம் மற்றும் அன்றாடத் தேவைகளைப் பணத்தை விட முன்னிலைப்படுத்தும் சூழல்கள் வரலாம். ஒருவருக்குச் செய்த உதவி மற்றவருக்கும் நியாயமானதாகத் தோன்றுகிறதா என்பதைத் தெளிவுபடுத்தும் பேச்சு குடும்ப ஒற்றுமைக்கு உதவும்.');
+  else r.push('குடும்பத்தில் முடிவெடுக்கும் பொறுப்பும் செலவுகளை ஏற்கும் பொறுப்பும் ஒரே நபரிடம் சேராமல் பகிரப்பட்டால் உறவுகளின் நம்பிக்கை வளரலாம். முன்கூட்டியே கொடுத்த வாக்குறுதிகளின் அளவு உண்மையான வருமானத்துடன் பொருந்துகிறதா என்பதைப் பார்த்தே புதிய கடமைகளை ஏற்கும் போக்கு இருக்கலாம்.');
+  if(strong(M)&&!activeMars)r.push(speechIncome?'சொற்களைத் தெளிவாகத் தேர்ந்தெடுத்து விளக்கும் திறன், தகவல் பகிர்வு, வாடிக்கையாளர் தொடர்பு, கணக்கு அல்லது கற்பித்தல் சார்ந்த பணிகளில் மதிப்பைப் பெற உதவலாம். அந்தத் திறனைச் சம்பாத்தியமாக மாற்றும் வாய்ப்பு தொழில் மற்றும் இலாபப் பாவ ஆதரவைப் பொறுத்து அதிகரிக்கலாம்.':'தன்னுடைய கருத்தை முழுமையாகப் புரிந்துகொண்ட பிறகே வெளிப்படுத்தும் நடை இருக்கலாம். உறவினர்களிடமும் நண்பர்களிடமும் தகவலை ஒழுங்காகச் சொல்வதால் குழப்பங்களைத் தவிர்க்கும் திறன் மேலோங்கலாம்.');
+  else if(activeMars&&weak(M))r.push('வாக்குவாதத்தில் கருத்தை விரைவாகச் சொல்லும் உந்துதலும் அதே நேரத்தில் சொல்லப்பட்ட வார்த்தையின் பொருள் சரியாகப் புரியாத சிக்கலும் உருவாகலாம். குறிப்பாக பணம் அல்லது குடும்ப உரிமை தொடர்பான உரையாடலில் அவசரப் பதிலை விடச் சுருக்கமான தெளிவான விளக்கம் அதிகப் பயன் தரும்.');
+  else if(activeMars)r.push('பேச்சில் நேரடித்தன்மையும் செயலுக்கு அழைக்கும் வேகமும் காணப்படலாம். உறுதியான கருத்து மற்றவருக்கு கடுமையாகக் கேட்கும் சூழலில் தேவையைத் தெளிவுபடுத்தி உரையாடும் விதத்தை மாற்றுவது நம்பிக்கையைப் பாதுகாக்க உதவும்.');
+  else if(weak(M))r.push('வாய்மொழியில் கூறிய விவரங்களுக்கும் எழுதப்பட்ட ஒப்பந்தங்களுக்கும் இடையே வேறுபாடு வராமல் பார்த்துக்கொள்வது முக்கியமாகலாம். பேச்சுக்காக மட்டும் பொறுப்பு ஏற்காமல் உறுதி செய்யப்பட்ட தகவலுடன் முடிவு எடுக்கும் பாங்கு வளரலாம்.');
+  else r.push('பேச்சில் ஒருசில நேரங்களில் நிதானமும் மற்ற நேரங்களில் உடனடி பதிலும் மாறி வரலாம். குடும்பத்தில் யாரிடம் என்ன கூற வேண்டும் என்ற புரிதலை வளர்த்துக்கொள்வது நல்லுறவைப் பேண உதவும்.');
+  // Tastes are only traditional chart-conditioned inclinations; neither meat,
+  // tobacco nor alcohol consumption can be reliably diagnosed from a natal chart.
+  if(activeMars)r.push('உணவில் வலுவான சுவை அல்லது காரமான உணவுகளுக்கான விருப்பம் சூழலுக்கேற்ப வெளிப்படக்கூடியதாகப் பாரம்பரியமாகக் கருதப்படுகிறது. உணவின் அளவு, நேரம் ஆகியவற்றிலும் செயலின் அவசரத்தைப் போலவே மாற்றங்கள் வரலாம்.');
+  else if(influence('Venus'))r.push('உணவின் மணம், சுவை, பரிமாறும் முறை மற்றும் வீட்டாருடன் சேர்ந்து உண்பது போன்ற அனுபவங்களுக்குக் கூடுதல் முக்கியத்துவம் இருக்கலாம். வசதி இருந்தாலும் உணவுச் செலவின் அளவைப் பற்றி தனி விருப்பங்கள் தோன்றக்கூடும்.');
+  else if(influence('Moon'))r.push('வீட்டில் பழகிய உணவு மற்றும் மனநிலைக்கேற்ப உணவின் தேர்வு மாறுபடலாம். நெருங்கியோர் விரும்பும் உணவுக்கு ஏற்ப தன் விருப்பத்தையும் மாற்றிக்கொள்ளும் போக்கு இருக்கலாம்.');
+  else if(activeSaturn)r.push('உணவில் எளிமையையும் பழகிய நேரத்தையும் பாதுகாக்கும் விருப்பம் வெளிப்படலாம். வேலைப்பளு நீண்டாலும் உணவு நேரத்தைத் தவறவிடாமல் வைத்திருப்பதிலேயே அன்றாட ஒழுங்கு மேம்படலாம்.');
+  if(mixed)r.push('குடும்பத்தின் பொருளாதார ஒத்துழைப்பும் பேச்சில் உருவாகும் மனவருத்தமும் ஒரே காலத்தில் நிகழலாம். ஒன்றில் ஏற்பட்ட முன்னேற்றத்தை மற்றொன்றின் தீர்வாகக் கருதாமல் இரண்டிற்கும் தனித் திட்டம் அமைக்கும் பழக்கம் உதவும்.');
   return r;
  }
- return [
-   `Earnings and family wealth should be distinguished: the second-house ruler ${lord} directs attention to ${EN_DEST[(loc||2)-1]}, while Jupiter contributes a separate family-and-resources judgement${income?' through '+EN_DEST[karJ.rulerHouse-1]:''}.`,
-   `Speech deserves its own assessment. Mercury's natal and stellar links${speech?' with '+EN_DEST[karM.rulerHouse-1]:''} may become important in communication-heavy work; any gain from speaking must be corroborated by career and income indicators.`,
-   `Financial support to relatives, household obligations, and plans after partnership are distinct questions. Strong communication is not the same as reliable savings, and neither alone proves prosperity.`,
-   `A natal chart cannot establish whether someone actually consumes alcohol, smokes, eats meat, or has a specific health condition. Those habits require real-world information.`
- ];
+ if(strong(J)&&c.conclusion==='support')r.push('The income-and-family evidence offers a traditional basis for building savings after meeting ordinary responsibilities, rather than treating all earnings as immediately spendable.');
+ else if(weak(J)||c.conclusion==='strain')r.push('Income and retained savings may diverge when household obligations consume funds; long-term provision needs a separate plan from day-to-day earning.');
+ else r.push('Financial resources, household commitments and the portion retained as savings may develop at different rates; how they are balanced deserves a separate judgement.');
+ if(activeMars)r.push('Speed of reaction can affect money discussions with relatives; a quick promise may create a responsibility larger than initially intended.');
+ else if(activeSaturn)r.push('A practical approach to family spending may favor predictable obligations and a reserve for later needs.');
+ else r.push('Shared understanding of financial expectations matters more than assigning every expense to the same family member.');
+ if(strong(M)&&!activeMars)r.push(speechIncome?'Careful explanations and clear communication may be useful in customer work, accounts or teaching, if professional and income factors also support that connection.':'Speech may favor detail, explanation and checking whether others have understood a point.');
+ else if(activeMars)r.push('Direct or rapid speech can convey conviction, but may require additional care when discussing sensitive family spending.');
+ else r.push('In practical conversations, the native may need to distinguish a spoken assurance from a fully confirmed agreement.');
+ if(activeMars)r.push('Traditional symbolism can point to a preference for stronger food flavors when circumstances allow; this is not evidence of actual diet.');
+ else if(influence('Venus'))r.push('Presentation and enjoyment of food may carry personal importance in the traditional reading.');
+ else if(activeSaturn)r.push('A preference for simple or familiar eating routines may be symbolically emphasized.');
+ if(mixed)r.push('Supportive family intentions and disagreement over how to use money can coexist; improved earnings alone do not settle both questions.');
+ return r;
 }
+
 const STAR_LORD_DOMAIN_TA=[
  'தன்னுடைய கருத்தைப் பிறரிடம் கொண்டு செல்லும் வேகத்தையும் பொறுப்பையும் புதிய சூழலுக்கேற்ப மாற்றலாம்',
  'வரவு, குடும்பச் செலவு, பேச்சால் கிடைக்கும் தொழில் வாய்ப்பு ஆகியவற்றில் எது நிலைத்த பயன் தருகிறது என்பதைப் பிரித்தறியலாம்',
@@ -848,7 +879,7 @@ function detailedStarRulerReading(c,star,lang,seen){const row=star?.houses?.[c.h
  const s=row.lordStar,house=c.house,ta=lang!=='en';if(!s?.star||!s?.starRuler)return [];
  const domain=ta?TA_DEST[house-1]:EN_DEST[house-1],station=s.rulerHouse?ta?TA_DEST[s.rulerHouse-1]:EN_DEST[s.rulerHouse-1]:null;
  const isOwn=['own','exalted'].includes(s.rulerDignity),isWeak=s.rulerDignity==='debilitated';
- const first=ta?`${STAR_LORD_DOMAIN_TA[house-1]} ${station&&station!==domain?`இந்த வாய்ப்பு அல்லது பொறுப்பு ${station} சார்ந்த வாழ்க்கைத் தேவையையும் இணைக்கலாம். `:''}${isOwn?'நீண்டகாலத் திட்டத்தை முடிக்கும் பொறுமைக்கு நட்சத்திரநாதனின் வலிமை துணையாகலாம்.':isWeak?'திட்டத்தின் ஒரு பகுதியை மீண்டும் அமைக்க நேர்ந்தால் உடனடி முடிவை விட உறுதியான உதவியுடன் நிறைவேற்றுவது பயனாகலாம்.':'எந்த முடிவிலும் மற்றொரு முக்கியத் தேவைக்கான இடத்தை விட்டுவிடாமல் செயல்படுவது பொருத்தமாகலாம்.'}`:
+ const first=ta?`${STAR_LORD_DOMAIN_TA[house-1]} ${station&&station!==domain?`${domain} சார்ந்த முடிவுகளில் ${station} அடிப்படையான தேர்வை மாற்றுகிறது. `:''}${isOwn?`நட்சத்திரநாதன் உறுதியான ராசி நிலையில் இருப்பதால் ${domain} குறித்த முயற்சிகளில் தொடர்ச்சியைப் பேணும் போக்கு வெளிப்படலாம்.`:isWeak?`${domain} சார்ந்த முடிவுகளில் முதல் முயற்சிக்குப் பதிலாக மாற்று வழிகளைத் தேர்ந்தெடுக்கும் நிலை அதிகமாக இருக்கலாம்.`:`${domain} சார்ந்த பலன் ஆதரவும் எதிர்ப்பும் சேர்ந்த பிறப்புத் தொடர்புகளின் அளவுக்கேற்ப மாறக்கூடும்.`}`:
  `The stellar ruler of the natal house lord ties ${domain} to ${station||'a second life theme'}; ${isOwn?'the stronger ruler may support persistence':isWeak?'the weaker ruler may require another practical route':'the relative pressure should be assessed rather than assumed'}.`;
  const aspects=(s.rulerAspects||[]).slice(0,2);const aspectKey='nakshatra-ruler-aspects:'+s.starRuler+':'+aspects.map(x=>x.from+'/'+x.aspectHouse+'/'+x.qualified).join('|');const allowAspect=aspects.length&&(!seen||!seen.has(aspectKey));if(allowAspect)seen?.add(aspectKey);const extra=allowAspect?(ta?`அந்த நட்சத்திரநாதனுக்குக் கிடைக்கும் கிரகத் தொடர்புகளால் ${aspects.map(x=>aspectLife(x,true,'a life-domain')).join(' ')}`:aspects.map(x=>aspectLife(x,false,'its stellar ruler')).join(' ')):'';
  return [first,extra].filter(Boolean);

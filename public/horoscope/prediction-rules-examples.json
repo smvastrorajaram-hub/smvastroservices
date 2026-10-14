@@ -1,0 +1,257 @@
+{
+  "format": "SMV-PREDICTION-RULES",
+  "schemaVersion": 1,
+  "note": "OPTIONAL EXAMPLES ONLY — not deployed, import in A editor to inspect and customize. Must verify chart evidence, not validated life outcomes.",
+  "rules": [
+    {
+      "id": "speech_mercury_supported",
+      "title": "பேச்சு மற்றும் வருவாய்த் தொடர்பு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 2,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "speech_mercury_supported",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "planet.Mercury.sign",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "field": "planet.Mercury.combust",
+          "op": "eq",
+          "value": false
+        },
+        {
+          "field": "planet.Mercury.rahuOrb",
+          "op": "gte",
+          "value": 8
+        }
+      ],
+      "effect": {
+        "ta": "கணக்கிடப்பட்ட புதன் நிலைக்கு ஏற்ப எழுத்து, தகவல், கணக்கு மற்றும் விவரங்களை உறுதி செய்து பேசும் சூழல்களில் நம்பிக்கையை வளர்த்துக்கொள்ளும் வாய்ப்பு இருக்கலாம்; குடும்பத் தொகையைப் பற்றிய பேச்சிலும் காரணத்தை விளக்கி முடிவெடுக்கும் நடை வலுப்பெறலாம்.",
+        "en": "The calculated Mercury conditions may support detailed communication, writing, records and reasoning about family money."
+      }
+    },
+    {
+      "id": "speech_mercury_combust",
+      "title": "அஸ்தமன புதனின் பேச்சுப் பலன்",
+      "enabled": true,
+      "channel": "natal",
+      "house": 2,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "speech_mercury_combust",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "planet.Mercury.combust",
+          "op": "eq",
+          "value": true
+        }
+      ],
+      "effect": {
+        "ta": "புதனின் அஸ்தமனம் உறுதியாக இருக்கும் இந்த அமைப்பில், உடனடி முடிவை மற்றவர்கள் சரியாகப் புரிந்துகொள்ளும் வரை கூடுதல் விளக்கம் அளிக்க வேண்டிய சூழல் வரலாம்; சிறப்பாகத் தகவலை எழுத்தில் உறுதி செய்து பின்னர் முடிவெடுப்பது பொருத்தமாகலாம்.",
+        "en": "With calculated Mercury combustion, information may require extra clarity and explicit verification in speech and records."
+      }
+    },
+    {
+      "id": "speech_mercury_rahu_near",
+      "title": "புதன்–ராகு உண்மையான பாகை நெருக்கம்",
+      "enabled": true,
+      "channel": "natal",
+      "house": 2,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "speech_mercury_rahu_near",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "planet.Mercury.rahuOrb",
+          "op": "lt",
+          "value": 8
+        }
+      ],
+      "effect": {
+        "ta": "புதனுக்கும் ராகுவுக்கும் உண்மையான எட்டு பாகைக்குக் குறைவான நெருக்கம் இருப்பதால், புதிய தகவலை விரைந்து ஏற்கும் ஆர்வத்தோடு ஆதாரத்தை இருமுறை சரிபார்க்கும் தேவை உருவாகலாம். இது உண்மையான கிரகணமெனப் பொருளல்ல.",
+        "en": "Actual Mercury–Rahu proximity under 8° is a traditional interpretive modifier, not evidence of an eclipse."
+      }
+    },
+    {
+      "id": "asc_saturn_retro_own",
+      "title": "ஆட்சியில் வக்ர சனியால் லக்ன இயல்பு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 1,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "asc_saturn_retro_own",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "lagna.starLord",
+          "op": "eq",
+          "value": "Saturn"
+        },
+        {
+          "field": "planet.Saturn.retrograde",
+          "op": "eq",
+          "value": true
+        },
+        {
+          "field": "planet.Saturn.dignity",
+          "op": "eq",
+          "value": "own"
+        }
+      ],
+      "effect": {
+        "ta": "லக்னப்புள்ளியின் நட்சத்திரநாதனாக ஆட்சி பெற்ற வக்ர சனி அமைந்துள்ளதால், எடுத்த பணியைத் தொடர்ந்து செய்து முடிப்பதற்கான உறுதியுடன், முன்னர் செய்த முடிவுகளையும் மறுபரிசீலனை செய்யும் மனப்பான்மை வெளிப்படலாம்; முக்கியத் தேர்வுகளில் கால அவகாசத்தைத் தாமே நிர்ணயிக்க விரும்பலாம்.",
+        "en": "An own-sign retrograde Saturn ruling the ascendant star can symbolically combine sustained effort with revisiting earlier plans."
+      }
+    },
+    {
+      "id": "income_second_lord_to_eleventh",
+      "title": "சேமிப்பு–வருமான இணைப்பு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 2,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "income_second_lord_to_eleventh",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "house.2.lordHouse",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "effect": {
+        "ta": "குடும்பச் சேமிப்பிற்குரிய இரண்டாம் பாவாதிபதி பதினோராம் பாவத்துடன் தொடர்புபடுவதால், சமூகத் தொடர்புகள் அல்லது மேற்கொண்ட முயற்சிகளின் மூலம் வந்த வரவை வீட்டு தேவைக்கும் நீண்டகாலச் சேமிப்பிற்கும் இடையே பகிர்வது முக்கியமான வாழ்க்கைத் தேர்வாகலாம்.",
+        "en": "The second-house ruler in the eleventh connects earning networks with savings and family obligations."
+      }
+    },
+    {
+      "id": "d9_venus_support",
+      "title": "D9 சுக்கிரன் உறவு ஆய்வு",
+      "enabled": true,
+      "channel": "natal",
+      "house": 7,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "d9_venus_support",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "varga.D9.Venus.sign",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "effect": {
+        "ta": "D9-ல் சுக்கிரன் துலா தொடர்பை உண்மையாகக் கொண்டிருக்கும் பட்சத்தில், உறவின் சமநிலை மற்றும் உடன்பாட்டைக் கவனிக்கும் வழி முன்னிலை பெறலாம்; பிறப்பு D1 ஏழாம் பாவ ஆதாரம் இதை மாற்றலாம்.",
+        "en": "A verified Libra Venus in D9 can support a traditional emphasis on balance and consent, qualified by D1."
+      }
+    },
+    {
+      "id": "period_saturn_mercury",
+      "title": "சனி தசை–புதன் புக்தி",
+      "enabled": true,
+      "channel": "mdad",
+      "house": 10,
+      "sourceSection": "II",
+      "priority": 10,
+      "intent": "period_saturn_mercury",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "dasha.md",
+          "op": "eq",
+          "value": "Saturn"
+        },
+        {
+          "field": "dasha.ad",
+          "op": "eq",
+          "value": "Mercury"
+        }
+      ],
+      "effect": {
+        "ta": "சனி மகாதசையில் முன்னர் ஏற்ற பொறுப்புகளை தொடர்ந்து முன்னெடுக்கும் சூழலில், புதன் புக்தி தகவல், கணக்கு, கற்றல் அல்லது ஒப்பந்தங்களைத் துல்லியப்படுத்தும் தனித்த வேலைநிலையை முன்னிலைப்படுத்தலாம்; பிறப்பு கிரகத் தொடர்புகளுடன் பொருந்தினாலேயே தொழில் முடிவாக வாசிக்க வேண்டும்.",
+        "en": "Saturn/Mercury timing can shift attention from endurance toward documented decisions and skills, conditional on natal links."
+      }
+    },
+    {
+      "id": "period_mars_pd",
+      "title": "செவ்வாய் அந்தரக் காலச் செயல்பாடு",
+      "enabled": true,
+      "channel": "pd",
+      "house": 3,
+      "sourceSection": "II",
+      "priority": 10,
+      "intent": "period_mars_pd",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "dasha.pd",
+          "op": "eq",
+          "value": "Mars"
+        }
+      ],
+      "effect": {
+        "ta": "கணிக்கப்பட்ட செவ்வாய் அந்தரம் செயல்படும் இடைவெளியில், நீண்ட நாள் யோசித்திருந்த முயற்சியை நடைமுறைப்படுத்தும் வேகம் உருவாகலாம்; அவசர முடிவால் ஒப்பந்தம் அல்லது உறவுத் தொடர்பைச் சிக்கலாக்காமல் திட்டமிட்ட தொடக்கத்தைப் பயன்படுத்தலாம்.",
+        "en": "A computed Mars PD can bring the pace of practical initiatives into focus, limited by actual natal activation."
+      }
+    },
+    {
+      "id": "jupiter_transit_support",
+      "title": "குரு கோச்சார ஆதரவு",
+      "enabled": true,
+      "channel": "transit",
+      "house": 10,
+      "sourceSection": "IV",
+      "priority": 10,
+      "intent": "jupiter_transit_support",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "transit.planet",
+          "op": "eq",
+          "value": "Jupiter"
+        },
+        {
+          "field": "transit.signal",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "effect": {
+        "ta": "கணிக்கப்பட்ட கால இடைவெளியில் குரு பெயர்ச்சியின் துணை ஆதாரம் இருக்கும்போது, தொழில் முயற்சியை அனுபவமுள்ளவர்களின் வழிகாட்டலுடன் விரிவுபடுத்தும் வாய்ப்பைப் பரிசீலிக்கலாம்; இதை நிகழ்வு நடந்துவிட்டதாகக் கூற முடியாது.",
+        "en": "A dated supporting Jupiter transit may be read as a traditional opportunity to consolidate professional guidance."
+      }
+    },
+    {
+      "id": "matching_bride_venus_d9",
+      "title": "பெண் D9 சுக்கிரன் — திருமண உறவு ஆய்வு",
+      "enabled": true,
+      "channel": "matching",
+      "house": 7,
+      "sourceSection": "I",
+      "priority": 10,
+      "intent": "matching_venus_d9",
+      "conflictGroup": "",
+      "conditions": [
+        {
+          "field": "bride.varga.D9.Venus.sign",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "effect": {
+        "ta": "பெண் ஜாதகத்தில் நவாம்ச சுக்கிரன் துலா நிலையில் உறுதியாக இருந்தால், உறவில் பரஸ்பர ஒப்புதலுக்கான விருப்பம் முக்கியமாகலாம். இருவரின் மற்ற ஏழாம் பாவ ஆதாரங்களும் இணங்கும்போது மட்டுமே இதை ஆதரவாகக் கொள்ள வேண்டும்.",
+        "en": "When the bride's calculated D9 Venus is in Libra, mutual agreement may receive emphasis in the traditional reading; it is not by itself a matching verdict."
+      }
+    }
+  ]
+}

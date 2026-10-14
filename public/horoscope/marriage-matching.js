@@ -1309,16 +1309,21 @@ function mm281Narrative(r){if(!r)return T('Cannot give an unsupported reading.',
  const reason=r.supporters.length&&r.hard.length?T('Both helpful and difficult influences are present; one aspect does not cancel every other indication.','சுபப் பார்வையும் கடினப் பார்வையும் இணைந்திருப்பதால் ஒரே கிரக ஆதாரத்தை மட்டும் வைத்துத் தீர்ப்பளிக்க முடியாது.'):r.lp&&DEBIL[r.lord]===si(r.lp.longitude)?T('The lord is debilitated; relief rules must be checked before concluding.','பாவாதிபதி நீச நிலையில் இருப்பதால் நீசபங்கம் மற்றும் பிற ஆதரவுகளையும் பார்க்க வேண்டும்.'):r.lp&&[6,8,12].includes(r.pos)?T('The lord activates a dusthana; workload and secondary rulership need context.','பாவாதிபதி துஷ்டானத் தொடர்பு பெறுவதால் அதன் மற்ற ஆதிபத்தியமும் ஆய்வில் சேர வேண்டும்.'):'';
  const loc=r.pos;
  const nuance=loc===r.entry.n?T('Its lord occupies the same natal house, so the stated concern is concentrated there.','அதே பாவத்தில் அதன் அதிபதியும் இருப்பதால் இந்த வாழ்க்கைத் துறை ஜாதகத்தில் நேரடியாக முன்னிலை பெறுகிறது.'):loc===7?T('The lord also activates the partnership house; independent and shared choices may intersect.','அதிபதி ஏழாம் இடத்துடன் தொடர்பு பெறுவதால் தனிப்பட்ட முடிவுகளுடன் கூட்டு முடிவுகளையும் ஒப்பிட வேண்டும்.'):loc===10?T('The lord connects this theme to professional duties and reputation.','இந்தப் பாவத்தின் அதிபதி பத்தாம் இடத்துடன் இணைவதால் தொழில் பொறுப்புகள் இதிலும் வெளிப்படலாம்.'):loc===4?T('Home and family responsibilities are linked through the lord’s position.','அதிபதியின் இருப்பிடம் வீடு மற்றும் குடும்பப் பொறுப்புகளை இந்த விஷயத்துடன் இணைக்கிறது.'):loc===11?T('Gains, networks and the people around the native also become relevant.','லாபம், நண்பர்கள் மற்றும் உறவினர் வட்டம் இந்தத் தலைப்புடன் தொடர்புபெறுகிறது.'):loc===8?T('Changes in shared duties may be especially relevant in this sector.','எட்டாம் இடத் தொடர்பால் எதிர்பாராத மாற்றம் மற்றும் பொறுப்புப் பங்கீட்டைத் தெளிவுபடுத்த வேண்டும்.'):loc===12?T('Expenditure, rest or distance is one of the connected themes.','பன்னிரண்டாம் இடத் தொடர்பால் செலவு, ஓய்வு அல்லது தொலைவு சார்ந்த அம்சங்களும் சேர்ந்துள்ளன.'):loc===6?T('Daily work, repayment or resolving disagreements can become part of this topic.','ஆறாம் இடத் தொடர்பால் அன்றாடப் பணி, கடன் அல்லது மோதலைத் தீர்ப்பது இதில் பங்கு பெறலாம்.'):loc===9?T('Mentors, beliefs or long-term principles qualify this reading.','ஒன்பதாம் இடத் தொடர்பால் வழிகாட்டிகள், நம்பிக்கை மற்றும் நீண்டகாலக் கொள்கைகள் பலனை மாற்றலாம்.'):loc===5?T('Learning, plans and future-family questions qualify this sector.','ஐந்தாம் இடத் தொடர்பால் கல்வி, திட்டமிடல், எதிர்காலக் குடும்பத் தேர்வுகள் இதனைப் பாதிக்கலாம்.') : loc===3?T('Personal effort and direct communication qualify the outcome.','மூன்றாம் இடத் தொடர்பால் முயற்சியும் நேரடி உரையாடலும் முக்கியத்துவம் பெறுகின்றன.'):loc===2?T('Savings and the use of speech connect to this matter.','இரண்டாம் இடத் தொடர்பால் சேமிப்பும் பேச்சும் இந்தக் காரியத்தில் இணைகின்றன.'):'';
- const graha=r.attackers.length?`${T('The direct aspect comes from','நேரடிப் பார்வை தருபவர்கள்')} ${r.attackers.slice(0,3).map(mmPlanetText).join(', ')}; ${T('their house ownership and dignity should also qualify this traditional sign','அந்தக் கிரகங்களின் பிற ஆதிபத்தியமும் ராசிபலமும் சேர்த்தே ஆய்வு செய்யப்பட வேண்டும்')}.`:'';
- const kar=r.kp&&r.karPos!==r.entry.n?T(`The natural significator also acts from natal house ${r.karPos}; it is a second reference, not another identical event.`,`இயற்கைக் காரகன் ${r.karPos}-ஆம் பாவத்தில் இருப்பதால் அதைத் தனி துணை ஆதாரமாக எடுத்துக்கொள்ள வேண்டும்; ஒரே நிகழ்வாக இருமுறை எண்ணக்கூடாது.`):'';
- return [T(main[1],main[0]),nuance,graha,kar,reason].filter(Boolean).join(' ');
+ // Actual graha contacts qualify the life consequence, not a repeated instruction
+ // to the astrologer to check some other calculation.
+ const grahaMeaningsTA={சூரியன்:'குடும்ப அதிகாரம் மற்றும் அங்கீகாரம்',சந்திரன்:'நெருக்கத்தின் உணர்ச்சி வேகம்',செவ்வாய்:'உடனடி எதிர்வினையும் செயல்வேகமும்',புதன்:'பேச்சு மற்றும் தகவலைப் பகிரும் பாங்கு',குரு:'வழிகாட்டலை ஏற்கும் மனப்பான்மை',சுக்கிரன்:'ஒப்புதல் மற்றும் பரஸ்பர விருப்பம்',சனி:'பொறுப்பை ஏற்கும் நேரமும் ஒழுங்கும்',ராகு:'மாற்றம் மற்றும் வழக்கமற்ற தேர்வு',கேது:'தனித்த இடம் மற்றும் பற்றுக் குறைவு'};
+ const impactTA=r.attackers.map(x=>grahaMeaningsTA[mmPlanetText(x)]).filter(Boolean);
+ const graha=r.attackers.length?T(`The actual aspecting planets modify the way responsibilities are negotiated in this specific life area.`,`இந்தத் துறையில் ${impactTA.join(', ')} போன்ற செயல்பாடுகள் இருவரும் கடமைகளை ஒப்புக்கொள்ளும் முறையில் வேறுபாட்டை ஏற்படுத்தலாம்.`):'';
+ const sectorTA=['சொந்த முடிவுகள்','குடும்பப் பணப் பயன்பாடு','தகவல் பரிமாற்றம்','வசிப்பிடத் திட்டம்','குழந்தைகள் மற்றும் கல்விக்கான திட்டம்','அன்றாட வேலை','துணைவரின் எதிர்பார்ப்பு','கூட்டுப் பொறுப்பு','வழிகாட்டல் மற்றும் பயணம்','தொழில் நேரம்','கூட்டு வருமான இலக்கு','ஓய்வு மற்றும் தனிச்செலவு'];
+ const kar=r.kp&&r.karPos!==r.entry.n?T(`The significator's additional natal connection to house ${r.karPos} brings a distinct source of daily priorities for this subject.`,`இயற்கைக் காரகனுக்கான ${r.karPos}-ஆம் பாவத் தொடர்பும் ${sectorTA[r.entry.n-1]} பற்றிய முடிவுகளில் வேறொரு குடும்பத் தேவையை முன்னிறுத்தலாம்.`):'';
+ return [T(main[1],main[0]),nuance,graha,kar].filter(Boolean).join(' ');
 }
 function mm281Status(a,b){
  if(!a||!b)return {id:'unknown',name:T('Not enough chart data','ஜாதகத் தரவு குறைவு')};
  const dif=Math.abs(a.score-b.score);const ha=(a.entry.n===1||a.entry.n===7||a.entry.n===4)?2:1;
  const same=(a.supportive===b.supportive&&a.challenging===b.challenging);
  if(same&&dif<2.2*ha)return {id:'aligned',name:T('Similar traditional tendencies','ஜோதிட அடிப்படையில் ஒற்றுமை உள்ளது')};
- if(dif<3.2*ha)return {id:'mixed',name:T('Partial alignment','பகுதி ஒற்றுமை — அணுகுமுறை மாறலாம்')};
+ if(dif<3.2*ha)return {id:'mixed',name:T('Partial alignment','பகுதி ஒற்றுமை')};
  return {id:'different',name:T('Different priorities — discuss','மாறுபட்ட அணுகுமுறை — பேசி உறுதிப்படுத்த வேண்டும்')};
 }
 function mm281AgeNote(b,g){const today=mmIsoDate(mmAnalysisDate()),ageB=mmV250AgeAt(b.birthDate,today),ageG=mmV250AgeAt(g.birthDate,today);const young=[ageB,ageG].some(x=>x!=null&&x<18);return {ageB,ageG,young,html:young?`<section class="mm-person-result mm-v281-age-warning"><h3>${T('Age suitability — future hypothetical reading only','வயதுப் பொருத்தம் — எதிர்காலக் கற்பனைக் கள ஆய்வு மட்டுமே')}</h3><p>${T('At least one person is under 18 on the review date. The calculations may be displayed for study but are NOT a present-day marriage recommendation or an evaluation of consent; no match/not-match decision should be made for a child.','ஆய்வுத் தேதியில் இருவரில் ஒருவர் 18 வயதிற்குக் குறைவானவர். கணக்கீட்டுத் தரவைப் பயிற்சிக்காகப் பார்க்கலாம்; இது தற்போதைய திருமணப் பரிந்துரையோ சம்மத மதிப்பீடோ அல்ல. சிறுவருக்குத் திருமணத் தீர்ப்பு வழங்கப்படாது.')}</p></section>`:''};}
@@ -1418,9 +1423,28 @@ function mmVerdictPanel(verdict,age){
   T('After the available exception review no major unresolved conflict was isolated; this is a traditional reading, not a guarantee of real-life compatibility.','கிடைத்த விலக்கு ஆய்வுக்குப் பிறகு தீராத முக்கிய முரண்பாடு தனியாகக் கண்டறியப்படவில்லை. இது பாரம்பரிய விளக்கம்; நடைமுறை ஒற்றுமைக்கான உறுதி அல்ல.');
  return `<section class="mm-person-result mm-overall-verdict" data-mm-overall-verdict="${state}"><h2>${T('Overall Marriage Matching Result','முழு திருமணப் பொருத்தத்தின் இறுதி முடிவு')}</h2><p><strong>${esc(verdict.label)}</strong></p><p>${esc(intro)}</p></section>`;
 }
+function mmPublishedInterpretations(bride,groom,porutham,verdict){
+ const E=globalThis.SMVPredictionRules,J=globalThis.SMVD311Judgement,D=globalThis.SMVLifePredictionD1;
+ if(!E?.run||!E?.matchingFacts||!J?.starEvidence||!D?.toD1)return '';
+ const rules=E.getRules().filter(x=>x.channel==='matching');if(!rules.length)return '';
+ try{
+  const bd=D.toD1(bride),gd=D.toD1(groom),bs=J.starEvidence(bd,bride),gs=J.starEvidence(gd,groom);
+  const facts=E.matchingFacts(bd,bs,bride,gd,gs,groom,porutham,verdict),seen=new Set(),rows=[];
+  if(!facts['section.I.available'])return '';
+  for(const house of ['all',...Array.from({length:12},(_,i)=>i+1)]){
+   const applicable=rules.filter(x=>x.house===house);
+   for(const item of E.run(applicable,facts,'matching',house,lang(),seen)){
+    const heading=house==='all'?T('Joint chart judgement','இரு ஜாதகங்களின் ஒருங்கிணைந்த முடிவு'):
+       house+T('th-house comparison','-ஆம் பாவ ஒப்பீடு');
+    rows.push(`<p><strong>${esc(heading)}</strong> — ${esc(item.text)}</p>`);
+   }
+  }
+  return rows.length?`<section class="mm-person-result mm-manual-judgements"><h2>${T('Owner-authored calculated matching interpretations','ஜோதிடர் சேர்த்த கணக்கீட்டு ஆதாரம் கொண்ட பொருத்தப் பலன்கள்')}</h2>${rows.join('')}</section>`:'';
+ }catch(error){console.warn('SMV matching author rule could not be evaluated',error);return ''}
+}
 function mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing='',verdict=null){const age=mm281AgeNote(b,g);
  const simple=`<section class="mm-person-result mm-v281-technical"><h3>${T('Supporting calculations','துணைக் கணக்கீடுகள்')}</h3>${marriageStrengthMatrixPanel(b,g)}${papasamyamPanel(b,g)}${numerologyPanel(b,g)}${gochar}</section>`;
- return `<div class="mm-full-results mm-v281-results mm-v308-results">${age.html}${mmVerdictPanel(verdict,age)}${mmFrontPoruthamPanel(pr,false)}${matchingIdentityPanel(b,g)}${mm308D9Panel(b,g)}${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}${timing}${simple}</div>`;
+ return `<div class="mm-full-results mm-v281-results mm-v308-results">${age.html}${mmVerdictPanel(verdict,age)}${mmFrontPoruthamPanel(pr,false)}${matchingIdentityPanel(b,g)}${mm308D9Panel(b,g)}${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}${mmPublishedInterpretations(b,g,pr,verdict)}${timing}${simple}</div>`;
 }
 const mm308Cache=new WeakMap();
 async function mm308Timing(b,g,out){const ref=mmIsoDate(mmAnalysisDate());let rows=mm308Cache.get(b);if(!rows){rows=new WeakMap();mm308Cache.set(b,rows);}let entry=rows.get(g);const mod=await import('./matching-v308-timeline.mjs?v=308');if(!entry||entry.ref!==ref){entry={ref,promise:null};entry.promise=mod.prepare(b,g,ref,progress=>{if(out&&!out.querySelector('.mm-v308-results'))out.textContent=T('Calculating the 15-year marriage timeline…','15 வருட திருமண வாழ்க்கைக் காலப் பலன்கள் கணக்கிடப்படுகின்றன…');}).catch(e=>{if(rows.get(g)===entry)rows.delete(g);throw e;});rows.set(g,entry);}return mod.render(b,g,await entry.promise,lang());}
