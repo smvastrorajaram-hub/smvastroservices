@@ -475,12 +475,165 @@ const TA_DEST=['தனிப்பட்ட தேர்வுகள்','கு
 const EN_DEST=['personal initiative','household finances','written communication','home responsibilities','learning and children','work pressure','agreements','shared records','study and distance','career duties','income and contacts','spending and rest'];
 function matterSupport(c,karaka){const a=(c.all||[]).find(x=>x.relation==='karaka'&&x.planet===karaka)||(c.all||[]).find(x=>x.planet===karaka);
 const measured=a?Number(a.delta):0;return c.conclusion==='support'&&measured>=-.15?'support':c.conclusion==='strain'||measured<-.30?'strain':'mixed';}
-function paragraphNoCalc(c,entry,idx,lang,star){const ta=lang!=='en',typ=matterSupport(c,entry[0]),chosen=typ==='support'?entry[2]:typ==='strain'?entry[3]:idx%2?entry[3]:entry[2];
- if(ta)return chosen;
- const domain=MATTER_EN[c.house-1][idx]||'this matter';const move=typ==='support'?'can be developed with practical support':typ==='strain'?'may require deliberate safeguards':'can change according to responsibilities and available support';
- const cross=star?.houses?.[c.house]?.lordStar?.rulerHouse;
- return `In ${domain}, the chart's traditional reading suggests a pattern that ${move}${cross&&cross!==c.house?`, especially where ${EN_DEST[cross-1]} intersect with it`:''}. The concrete outcome depends on choices and circumstances rather than a fixed event.`;
+// Each karakatwa has its OWN possible lived outcome and counter-condition.
+// No generic 'this area is important' text, arbitrary odd/even selection or
+// disclosure of house calculations in the user-facing prediction.
+const MATTER_EN_LIVED=[
+ [
+ ['Personal initiative can show through the way a commitment is accepted and completed.','Taking charge of every request may gradually crowd out physical recovery.'],
+ ['Reading another person’s mood can make difficult conversations more considerate.','Carrying everyone’s concern as a personal obligation can distort priorities.'],
+ ['Measured expressions can make a firm decision look approachable.','An urgent inner response can make an otherwise reasonable statement seem harsh.'],
+ ['Reliability can become the quality others first notice in daily dealings.','Excessive self-restraint can turn recreation into another duty.'],
+ ['Fast action can be an asset when a practical obstacle must be resolved.','A quick response may be interpreted as hostility before the intended help is understood.']
+ ],
+ [
+ ['Separate savings from household spending so income can mature into reserves.','Rising family commitments may use available earnings before a planned reserve grows.'],
+ ['Listening to differing family needs can strengthen trust across generations.','Accepting a relative’s obligations without limits can burden a close relationship.'],
+ ['Negotiation, accounts and accurate explanations may contribute to earning opportunities.','Unrecorded promises or ambiguous terms can put payment for completed work at risk.'],
+ ['Selecting words carefully can help explain a difficult position without humiliation.','A sharp comment made under pressure can linger longer than intended.'],
+ ['A consistent eating rhythm can support the demands of work and home.','Skipping meals during stressful periods can disrupt personal routines.'],
+ ['Partners may develop a shared way of dividing family costs and decisions.','Different inherited spending habits may require explicit agreements after marriage.'],
+ ['Attention to personal presentation can reinforce confidence in public dealings.','Irregular routines can push oral care and preventive habits aside.'],
+ ['Personal decisions about diet and stimulants deserve conscious attention.','No birth chart establishes whether someone consumes meat, tobacco or alcohol; the actual habit must be known.']
+ ],
+ [
+ ['Repeated practice may turn an individual skill into something useful to others.','Changing the objective too frequently can leave several promising efforts unfinished.'],
+ ['Clear notes or messages can become a practical strength in collaboration.','Incomplete information can cause a capable person’s meaning to be lost.'],
+ ['Sharing a task can create a more cooperative bond with siblings or peers.','Disagreement about who carries family duties can cause friction.'],
+ ['A timely statement of conviction can create room for an independent decision.','An early promise may prove difficult once the resources are counted.'],
+ ['Working with hands or movement may reward sustained, measured practice.','Hurrying physical work can ignore fatigue and the need for safe technique.']
+ ],
+ [
+ ['Making room for listening can improve trust within the home.','Absorbing another family member’s distress may leave little personal rest.'],
+ ['A practical layout and careful upkeep can improve everyday comfort.','Decoration and essential maintenance may compete for the same budget.'],
+ ['Reviewing property documents early can prevent avoidable later confusion.','Unclear ownership records or family shares can delay a housing decision.'],
+ ['A settled household rhythm can protect concentration elsewhere in life.','Home concerns carried into every working hour may divide attention.'],
+ ['Regular revision in a familiar setting can support foundational learning.','Competing responsibilities can interrupt the continuity of study.']
+ ],
+ [
+ ['Deep study can help turn an interest into a skill worth explaining to others.','Repeatedly changing a field may postpone the benefit of sustained learning.'],
+ ['Practical examples and notes can strengthen recall over time.','Information overload may make it difficult to choose what to retain.'],
+ ['Mentoring younger people may bring satisfaction through their progress.','Expecting a child to follow one predetermined path can create tension.'],
+ ['Creative practice can offer a constructive outlet for private ideas.','Judging unfinished work too quickly can interrupt improvement.'],
+ ['Testing a small plan before scaling it may bring sounder choices.','Unverified expectations of quick profit can undermine preparation.']
+ ],
+ [
+ ['Handling a complicated duty in stages can build confidence at work.','Taking responsibility for others’ unfinished work may become exhausting.'],
+ ['Consistent execution may make a person dependable to colleagues.','A schedule that excludes rest can eventually reduce the quality of work.'],
+ ['Tracking repayment dates can keep borrowing from dominating decisions.','An urgent loan with unclear terms may constrain family choices.'],
+ ['Careful written records can make a workplace disagreement easier to resolve.','A misunderstood statement may prolong a dispute unnecessarily.'],
+ ['Stable sleep and meals can support the stamina needed for responsibilities.','Physical symptoms need real assessment rather than an astrological diagnosis.']
+ ],
+ [
+ ['Explaining wishes openly can deepen mutual understanding in partnership.','Unspoken assumptions about duty can gradually weaken cooperation.'],
+ ['Respecting both families can make shared celebrations and decisions easier.','Different household expectations may require a new agreement.'],
+ ['Written roles can strengthen a business or professional partnership.','Vague responsibilities may turn a minor disagreement into a financial dispute.'],
+ ['Protecting time for attention and affection can make a bond more durable.','Overwork may leave closeness to be maintained only through promises.'],
+ ['Fair listening can improve decisions made with the public or clients.','Trying to please everyone can blur an essential personal boundary.']
+ ],
+ [
+ ['A careful review may help replace an outdated arrangement safely.','Abrupt changes can expose gaps in a plan that once seemed settled.'],
+ ['Clear records can protect shared money and inherited obligations.','Unexamined liabilities may surface when a joint decision is due.'],
+ ['Methodical investigation can reveal a useful overlooked detail.','Suspicion without verification can consume time and confidence.'],
+ ['Recognising a setback as temporary can support gradual recovery.','Keeping concerns private for too long may isolate the person from help.'],
+ ['Sensible preventive routines can support long-term wellbeing.','No astrological pattern alone identifies a specific disease or lifespan.']
+ ],
+ [
+ ['Thoughtful guidance can help frame a longer educational or personal plan.','Conflicting advice from respected elders may make a choice difficult.'],
+ ['Specialist study can broaden opportunities beyond a familiar role.','A course or qualification may need more sustained time than first expected.'],
+ ['Consistent values can guide choices made under public pressure.','Rigid certainty may make constructive disagreement harder to hear.'],
+ ['Travel or remote collaboration can open new forms of learning.','Distance and documents may complicate an otherwise promising opportunity.'],
+ ['Service informed by personal belief can strengthen a sense of purpose.','Promising more time than one can offer may undermine the intended help.']
+ ],
+ [
+ ['Applying a learned skill steadily can increase trust in professional work.','Frequent interruptions may delay the visibility of real ability.'],
+ ['Taking responsibility for a team may develop sound judgement.','Too many obligations at once can leave little space for delegation.'],
+ ['A sustainable routine may turn consistent effort into longer employment.','Unplanned changes in workload can make career choices more difficult.'],
+ ['Closing one project before starting another may improve execution.','Rushing into a new commitment can fragment professional attention.'],
+ ['Reliable conduct can build standing even without immediate recognition.','Recognition may lag behind effort and should not be confused with a lack of skill.']
+ ],
+ [
+ ['Turning reliable contacts into paid work may strengthen income.','Promised receipts may arrive later than the expenses they must cover.'],
+ ['Clear terms with clients can support repeat work and trust.','Ambiguous expectations may cause delays or disputed payments.'],
+ ['A cooperative relationship with older siblings may widen useful support.','Unbalanced expectations around family assistance can become burdensome.'],
+ ['A small, dependable circle may contribute more than broad acquaintances.','Following every invitation may dilute time needed for firm commitments.'],
+ ['Long-term goals can become manageable when divided into stages.','Changing targets before each milestone may conceal real progress.']
+ ],
+ [
+ ['Planned discretionary spending can make room for genuine priorities.','Small uncontrolled expenses can gradually weaken a useful reserve.'],
+ ['Protecting regular sleep can improve the day’s decisions.','Late work and worry may reduce the rest needed for recovery.'],
+ ['Clear arrangements can make travel or overseas connections productive.','Distance, fees and unclear expectations can complicate remote work.'],
+ ['Private time can restore attention after demanding interactions.','Avoiding necessary conversation can turn quietness into disconnection.'],
+ ['Giving service within realistic limits can be meaningful.','Taking on every request can drain the resources intended for others.']
+ ]
+];
+const NATAL_CHANNEL_TA=[
+ 'சுயமாக முடிவு எடுக்கும் சூழல்','குடும்பத்தின் வரவு–செலவு முடிவுகள்','கையெழுத்து, தகவல், திறன் பயிற்சி','வசிப்பிடம் மற்றும் வீட்டாரின் தேவை',
+ 'படிப்பு, படைப்பாற்றல் அல்லது குழந்தைகளின் வழிகாட்டல்','பணிச்சுமை, போட்டி, கடன் ஒழுங்கு','துணைவருடனான ஒப்புதல் அல்லது கூட்டு ஒப்பந்தம்',
+ 'பகிர்ந்த சொத்து, ஆவணம் மற்றும் திடீர் மாற்றங்கள்','உயர்கல்வி, பெரியோர் வழிகாட்டல், தொலைதூரத் திட்டம்',
+ 'தொழிலின் பொறுப்பு மற்றும் நற்பெயர்','வாடிக்கையாளர் தொடர்பும் வருமான இலக்கும்','தனிச் செலவு, ஓய்வு மற்றும் வெளியூர்த் தேவைகள்'
+];
+const NATAL_CHANNEL_EN=[
+ 'independent choices','family budgets','writing and trained skills','home and domestic needs','learning and younger people','work pressure and borrowing',
+ 'partnership agreements','joint assets and older records','mentors and distant opportunities','professional duties','income and dependable contacts','rest, expenses and distance'
+];
+const KARAKA_TOUCH_TA={
+ Sun:'பொறுப்பேற்ற முடிவில் தன்மானத்தையும் மற்றவர் தரும் அங்கீகாரத்தையும் காப்பது',
+ Moon:'குடும்பத்தவரின் உணர்வுகளைக் கேட்ட பிறகு தன் மனநிலைக்கும் இடம் ஒதுக்குவது',
+ Mars:'வேகமான செயலைத் தகுந்த நேரத்தில் முடிப்பதோடு அவசரத்தைத் தவிர்ப்பது',
+ Mercury:'பேச்சு, கணக்கு அல்லது ஆவணங்களில் புரிதல் பிழை வராமல் செய்தியைத் தெளிவாக்குவது',
+ Jupiter:'உடனடி லாபத்தைவிட நீண்டகால நம்பிக்கையும் அறிவார்ந்த தேர்வும் முக்கியமென்று கருதுவது',
+ Venus:'உறவின் ஒப்புதலையும் வசதிக்கான செலவையும் ஒரே முடிவில் சமப்படுத்துவது',
+ Saturn:'நெடுநாள் பொறுப்பைச் சிறிய கட்டங்களாக நிறைவேற்றி நம்பகத்தன்மை உருவாக்குவது',
+ Rahu:'புதிய வழியில் கிடைக்கும் தகவலையும் அதன் நம்பகத்தன்மையையும் ஒப்பிட்டுப் பார்ப்பது',
+ Ketu:'அத்தியாவசியமற்ற செலவுகளைக் குறைத்து முடியாத பணியை நிறைவேற்றுவது'
+};
+const KARAKA_TOUCH_EN={
+ Sun:'recognition and accountability',Moon:'emotional understanding and family needs',Mars:'initiative versus haste',
+ Mercury:'clear speech and precise records',Jupiter:'long-term judgement and trusted counsel',Venus:'consent and shared resources',
+ Saturn:'steady execution of obligations',Rahu:'unfamiliar offers and independent verification',Ketu:'simplifying unfinished arrangements'
+};
+function matterSupport(c,karaka){
+ const kar=(c.all||[]).find(x=>x.relation==='karaka'&&x.planet===karaka)||(c.all||[]).find(x=>x.planet===karaka);
+ const ruler=(c.all||[]).find(x=>x.relation==='lord');
+ const k=Number(kar?.delta)||0,l=Number(ruler?.delta)||0;
+ if(c.positive?.length&&c.negative?.length)return 'mixed';
+ if(k>=.2&&l>=-.2)return 'support';
+ if(k<=-.2||l<=-.45)return 'strain';
+ return c.conclusion==='support'?'support':c.conclusion==='strain'?'strain':'mixed';
 }
+function matterEvidenceClause(c,entry,star,lang){
+ const ta=lang!=='en',planet=entry[0],focus=entry[1],kar=(c.all||[]).find(x=>x.relation==='karaka'&&x.planet===planet),lordHouse=c.location;
+ const karStatus=Number(kar?.delta)>=.2?'support':Number(kar?.delta)<=-.2?'pressure':'mixed';
+ const starRuler=star?.planets?.[planet],channel=starRuler?.rulerHouse||null;
+ const uniqueChannel=Number.isInteger(channel)&&channel!==c.house&&channel!==lordHouse?channel:null;
+ const lch=Number.isInteger(lordHouse)&&lordHouse!==c.house?lordHouse:null;
+ if(ta){
+  const domain=lch?NATAL_CHANNEL_TA[lch-1]:null,via=uniqueChannel?NATAL_CHANNEL_TA[uniqueChannel-1]:null;
+  const karMeaning=KARAKA_TOUCH_TA[planet];
+  if(karStatus==='support'&&domain)return `${focus} குறித்து உருவாகும் வாய்ப்புகள் ${domain} சார்ந்த அனுபவத்தோடு சேர்ந்தால் ${karMeaning} பயனாக வெளிப்படலாம்.`;
+  if(karStatus==='pressure'&&domain)return `${domain} பற்றிய கவலை அதிகரிக்கும் நேரத்தில் ${focus} சார்ந்த முடிவுகளை அவசரமாகச் செய்யாமல் ${karMeaning} தேவையாகலாம்.`;
+  if(via)return `${focus} சார்ந்த பழக்கம் ${via} தொடர்பான வாழ்க்கைத் தேவையைச் சந்திக்கும்போது ${karMeaning} என்ற தன்மை வெளிப்படலாம்.`;
+  return '';
+ }
+ const domain=lch?NATAL_CHANNEL_EN[lch-1]:null,via=uniqueChannel?NATAL_CHANNEL_EN[uniqueChannel-1]:null;
+ if(karStatus==='support'&&domain)return `When ${focus} intersects with ${domain}, ${KARAKA_TOUCH_EN[planet]} may become a usable strength.`;
+ if(karStatus==='pressure'&&domain)return `Pressure involving ${domain} makes ${KARAKA_TOUCH_EN[planet]} an important consideration for ${focus}.`;
+ return via?`A second influence through ${via} may change how ${focus} is handled, particularly around ${KARAKA_TOUCH_EN[planet]}.`:'';
+}
+function paragraphNoCalc(c,entry,idx,lang,star){
+ const ta=lang!=='en',state=matterSupport(c,entry[0]);
+ const alternatives=ta?[entry[2],entry[3]]:(MATTER_EN_LIVED[c.house-1]||[])[idx];
+ if(!alternatives)return '';
+ const hasDual=!!(c.positive?.length&&c.negative?.length);
+ // Two contradictory indicators warrant TWO different lived consequences,
+ // never one positive claim arbitrarily selected by paragraph index.
+ const scenario=state==='support'?alternatives[0]:state==='strain'?alternatives[1]:
+  hasDual?`${alternatives[0]} ${alternatives[1]}`:(c.relativeScore>=0?alternatives[0]:alternatives[1]);
+ const evidence=matterEvidenceClause(c,entry,star,lang);
+ return [scenario,evidence].filter(Boolean).join(' ');
+}
+
 const GRAHA_MIND_TA={
  Sun:'தன்னுடைய முடிவு வெளியில் எவ்வாறு மதிக்கப்படும் என்ற விழிப்புணர்வும் தன்மானமும் பொறுப்புணர்வோடு கலக்கலாம்',
  Moon:'தனக்கான அமைதியையும் பிறருடைய மனநிலையையும் ஒரே நேரத்தில் கவனிக்க வேண்டியிருக்கும்',
@@ -713,49 +866,165 @@ function lifeNatal(c,lang,star,seen){if(!c)return [];const ta=lang!=='en',rows=[
  rows.push(...wealthFamilySpeechReading(c,star,lang),...detailedStarRulerReading(c,star,lang,seen));
  return rows.filter(t=>{const k='paragraph:'+t.replace(/\s+/g,' ').trim();if(seen?.has(k))return false;seen?.add(k);return true;});
 }
+// Interpret each ACTUAL MD/AD/PD window with natal house significations and
+// an independently identified operative planet. No invented dates or transit.
 const PERIOD_TA_LIVED={
- Sun:'பொறுப்பு ஏற்று மற்றவர்களின் நம்பிக்கையைப் பெறுவது',Moon:'குடும்பத்தினரின் தேவையையும் மனநிம்மதியையும் ஒருங்கிணைப்பது',Mars:'தொடங்கிய பணியைச் செயலில் நிறைவேற்றுவது',Mercury:'தகவலையும் பேச்சுவார்த்தையையும் நடைமுறை முடிவாக்குவது',Jupiter:'கற்ற அறிவையும் பெரியோர் அனுபவத்தையும் பயன்படுத்துவது',Venus:'உறவின் ஒப்புதலையும் வசதிகளுக்கான செலவையும் சமப்படுத்துவது',Saturn:'நீடிக்கும் கடமையைப் படிப்படியாக முடிப்பது',Rahu:'புதிய முறையின் பலனையும் அதன் நம்பகத்தன்மையையும் ஆராய்வது',Ketu:'முடிவடைய வேண்டிய பழைய ஏற்பாட்டைத் தெளிவுபடுத்துவது'
+ Sun:'அதிகாரத்திடம் பதில் சொல்லும் அல்லது தலைமை ஏற்கும் முடிவு',
+ Moon:'நெருங்கியோரின் தேவையும் மனநிம்மதியும்',
+ Mars:'முயற்சியின் வேகமும் நடைமுறைத் துணிவும்',
+ Mercury:'பேச்சு, ஆவணம், கணக்கு அல்லது கற்றல் சார்ந்த தேர்வு',
+ Jupiter:'நீண்டகால நன்மை, பெரியோர் ஆலோசனை அல்லது கல்வி',
+ Venus:'ஒப்புதல், உறவு, வசதி அல்லது பணப் பகிர்வு',
+ Saturn:'நெடுநாள் உழைப்பு, ஒழுங்கு, தாமதமான பலன்',
+ Rahu:'புதிய தொடர்பு, வழக்கமில்லாத வாய்ப்பு அல்லது செய்தி',
+ Ketu:'முடிவடைய வேண்டிய பழைய ஏற்பாடு அல்லது தனித்த ஆர்வம்'
 };
-const TRANSIT_LIVED={Jupiter:'கற்றல், ஒப்பந்த விரிவாக்கம் மற்றும் வழிகாட்டுதலுக்கான வாய்ப்புகள்',Saturn:'நீடித்த பொறுப்பின் சுமை மற்றும் அதைப் பராமரிக்கும் ஒழுங்கு',Rahu:'பழக்கமில்லாத வாய்ப்பு அல்லது தகவலைச் சோதிக்கும் தேவை',Ketu:'பழைய செயல்முறையைச் சுருக்கி அத்தியாவசியத்தைப் பாதுகாக்கும் விருப்பம்'};
-function lifePeriod(win,c,lang,star){const p=win?.period;if(!p?.from||!p?.to||!p?.md||!p?.ad||!c||!win?.links?.length)return '';
- const ta=lang!=='en',focus=TA_DEST[c.house-1],md=PERIOD_TA_LIVED[p.md],ad=PERIOD_TA_LIVED[p.ad],mdS=star?.planets?.[p.md],adS=star?.planets?.[p.ad],src=mdS?.rulerHouse?TA_DEST[mdS.rulerHouse-1]:null,dst=adS?.rulerHouse?TA_DEST[adS.rulerHouse-1]:null;
- const caution=c.conclusion==='strain'?'திடீரென பெரிய பொறுப்பை ஏற்காமல் ஏற்கெனவே உள்ள திட்டத்தின் நிலைத்தன்மையை முதலில் உறுதிப்படுத்த வேண்டியிருக்கும்.':c.conclusion==='support'?'முன்னேற்றம் கிடைக்கும் இடத்தில் பொறுப்பையும் அதற்கான நேரத்தையும் முன்கூட்டியே ஒழுங்கமைத்தால் பயன் அதிகமாகலாம்.':'சாதகமும் கட்டுப்பாடும் கலந்திருப்பதால் இரண்டுக்கும் இடையே பொருத்தமான வழியைத் தேர்வு செய்ய வேண்டியிருக்கும்.';
- if(ta){
- const mdStar=mdS?.star?.ta,adStar=adS?.star?.ta;
- const starDetail=mdStar&&adStar?`${actor(p.md,true)} செயல்படும் வழி ${src||'பிறப்பில் காட்டப்பட்ட நிலை'} சார்ந்த முயற்சிகளில் தொடங்கலாம்; ${actor(p.ad,true)} புக்தியின் நட்சத்திரநாதன் தொடர்புபடும் ${dst||'வாழ்க்கைப் பொறுப்பில்'} அது வேறுவிதமாக வெளிப்படலாம்.`:'';
- const operative=({Sun:'தலைமைப் பொறுப்பு அல்லது மேலதிகாரியிடம் தரும் பதில் மாறலாம்',Moon:'வீட்டாரின் உணர்ச்சி தேவையும் திட்டமிட்ட நேரமும் சமப்படுத்தப்படும்',Mars:'செயலுக்குத் தேவையான நேரம், போட்டி, உழைப்பு அதிக கவனம் பெறலாம்',Mercury:'எழுத்துப் பதிவு, கணக்கு, தகவல் சரிபார்ப்பு முக்கியமாகலாம்',Jupiter:'கல்வி, ஆலோசனை, ஒழுக்கம் சார்ந்த முடிவு முன்னிலை பெறலாம்',Venus:'உறவுகள், ஒப்புதல் அல்லது வசதி செலவுகள் தேர்வில் இடம் பெறலாம்',Saturn:'நீடித்த கடமை, வேலை நேரம், பொறுமை ஆகியவை சோதிக்கப்படலாம்',Rahu:'புதிய வாய்ப்பு அல்லது வெளி தொடர்பைச் சரிபார்ப்பது முக்கியமாகலாம்',Ketu:'பழைய ஏற்பாட்டை முடித்து அத்தியாவசியத்தைச் சீரமைக்க வேண்டியிருக்கலாம்'})[p.ad]||'';
- return `${p.from} முதல் ${p.to} வரை ${focus} தொடர்பில் ${md||'நீண்டகால முயற்சி'} முக்கியமாகலாம். ${operative}. ${starDetail} ${src&&dst&&src!==dst?`${src} மற்றும் ${dst} ஒரே நேரத்தில் கவனம் பெறும்போது முன்னுரிமைகளைப் பிரித்து நிர்ணயிக்க வேண்டியிருக்கலாம். `:dst&&dst!==focus?`${dst} வழியாகத் துணைப் பொறுப்பு வந்தால் அதன் பயனைத் தனியே மதிப்பிடலாம். `:''}${caution}`;
+const PERIOD_EN_LIVED={Sun:'taking public responsibility',Moon:'home life and emotional needs',Mars:'active effort and its pace',Mercury:'communication, learning or financial records',Jupiter:'study, counsel and longer-term judgement',Venus:'consent, relationships and shared expenditure',Saturn:'sustained work and durable duties',Rahu:'an unfamiliar offer or route',Ketu:'simplifying an earlier commitment'};
+const TRANSIT_LIVED={Jupiter:'வாய்ப்பை விரிவாக்கவும் அனுபவமுள்ளவரின் உதவியைப் பயன்படுத்தவும்',Saturn:'பொறுப்பின் நீடிப்பையும் நேர ஒழுங்கையும் மறுஆய்வு செய்யவும்',Rahu:'புதிய செய்தியின் உண்மைத்தன்மையையும் ஆவண நிபந்தனைகளையும் சோதிக்கவும்',Ketu:'பழைய ஏற்பாட்டின் தேவையற்ற பகுதியை விலக்கவும்'};
+const TRANSIT_EN={Jupiter:'an opening that may benefit from mentorship',Saturn:'a test of continuity and realistic obligations',Rahu:'an unusual route whose reliability needs checking',Ketu:'a chance to simplify a commitment that has lost its purpose'};
+const PERIOD_HOUSE_SCENE_TA=[
+ ['தன்னம்பிக்கையை வெளிப்படுத்தும் பொறுப்பை ஏற்கும்போது பிறர் நம்பிக்கை வளரலாம்','தன் நலனுக்கான நேரம் குறையுமளவு பிறர் கடமைகளை ஏற்கும் அழுத்தம் கூடலாம்'],
+ ['வருமானத்தை வீட்டுத் தேவைகளுக்கு ஒதுக்கி மீதியைச் சேமிக்கும் வழி உருவாகலாம்','வரவு வந்தவுடன் உறவினர் தேவையோ நிலுவைச் செலவோ அதைப் பயன்படுத்த வேண்டியிருக்கலாம்'],
+ ['தனித்திறனைப் பயனுள்ள பணியாக மாற்றுவதற்கான முயற்சி உருவாகலாம்','ஒரு முயற்சியை முடிப்பதற்குள் அதற்கான நடைமுறை மாற்றம் தேவைப்படலாம்'],
+ ['வசிப்பிடம் மற்றும் குடும்பப் பராமரிப்பு சார்ந்த ஒரு முடிவை உறுதிப்படுத்தலாம்','வீட்டாரின் தேவைக்காக முன்கூட்டிய சொத்து அல்லது பராமரிப்புத் திட்டத்தை மாற்ற வேண்டியிருக்கலாம்'],
+ ['ஆர்வமான கல்வி அல்லது படைப்புப் பயிற்சியில் முன்னேற்றம் தென்படலாம்','படிப்புக்கோ இளையோருக்கோ ஒதுக்கிய நேரத்தை மறுசீரமைக்க நேரலாம்'],
+ ['சிக்கலான வேலையைச் சரி செய்த அனுபவத்தால் நம்பிக்கை கிடைக்கலாம்','வேலைப் போட்டியோ கடன் பொறுப்போ காரணமாக ஓய்வுக்கான நேரத்தை மீண்டும் வகுக்க நேரலாம்'],
+ ['ஒரு கூட்டு முடிவுக்கான நிபந்தனைகளில் தெளிவு உருவாகலாம்','பொறுப்புகளை யார் ஏற்க வேண்டும் என்ற வேறுபாட்டை உடனே பேசித் தீர்க்க வேண்டியிருக்கலாம்'],
+ ['பகிர்ந்த நிதி அல்லது பழைய ஆவணத்தில் பாதுகாப்பான மாற்றம் செய்யலாம்','எதிர்பாராத தகவல் காரணமாக ஏற்கெனவே செய்த ஒப்பந்தத்தை மீண்டும் பரிசீலிக்க நேரலாம்'],
+ ['பெரியோர் வழிகாட்டலை புதிய பயிற்சி அல்லது பயணத் திட்டமாகப் பயன்படுத்தலாம்','படிப்பு மற்றும் தொலைதூர முயற்சியின் செலவு அல்லது கால வரம்பு மாற்றம் கேட்கலாம்'],
+ ['பணியில் ஒரு புதிய பொறுப்பைச் செய்து காட்டும் வாய்ப்பு உருவாகலாம்','உழைப்பிற்கு உடனடி அங்கீகாரம் கிடைக்காமல் பணிமுறையை மாற்ற வேண்டியிருக்கலாம்'],
+ ['பயனுள்ள தொடர்பை நிலையான வருமானத்திற்கான வழியாக வளர்க்கலாம்','கிடைக்கும் என்று எண்ணிய வரவு தாமதமானால் மாற்று பணத் திட்டம் தேவைப்படலாம்'],
+ ['செலவையும் பயணத்தையும் திட்டமிட்டு தனக்கான ஓய்வை ஒதுக்கலாம்','வெளியூர் அல்லது குடும்பத் தேவை காரணமாக ஓய்வுக்கான திட்டம் மாறக்கூடும்']
+];
+const PERIOD_HOUSE_SCENE_EN=[
+ ['taking independent responsibility may build trust','other demands may crowd out recovery'],
+ ['income may be divided into household support and real savings','pending family costs can absorb an expected receipt'],
+ ['practical skills may lead to independent work','a plan may need revision before it is complete'],
+ ['a housing or care decision may become clearer','family needs may delay a property arrangement'],
+ ['a line of study may become more rewarding','education or mentoring may need renewed time'],
+ ['solving a hard work problem may bring credibility','workload or borrowing may constrain rest'],
+ ['shared agreements may become clearer','an unequal division of duties may require discussion'],
+ ['a joint financial arrangement may be made more secure','older agreements may need checking after a change'],
+ ['mentoring may help put a longer plan into practice','the cost or timing of learning or travel may change'],
+ ['a responsibility may become visible at work','recognition can lag behind the effort invested'],
+ ['dependable contacts may turn into real income','promised money may arrive after it is needed'],
+ ['rest and discretionary costs may become easier to plan','distance or care commitments may change those plans']
+];
+const PERIOD_ACTION_BY_HOUSE_TA=[
+ 'சொந்த முடிவை ஏற்ற பிறகு அதன் விளைவைத் திருத்திக் கொள்வது',
+ 'வருவாயையும் கையில் மிஞ்சும் தொகையையும் தனித்தனியாகக் கணக்கிடுவது',
+ 'கற்ற திறனுக்குச் செய்யக்கூடிய பணியைத் தேர்ந்தெடுப்பது',
+ 'வீட்டில் யாருக்கென்ன உதவி தேவை என்பதைப் பகிர்ந்து செய்வது',
+ 'கல்வி அல்லது படைப்புப் பயிற்சியில் தொடர்ச்சியைப் பாதுகாப்பது',
+ 'வேலை மற்றும் கடன் கட்டணங்களுக்கான முன்னுரிமையை அமைப்பது',
+ 'இருவரும் சம்மதிக்கும் பொறுப்புப் பங்கீட்டை உருவாக்குவது',
+ 'சொந்தப் பணத்தையும் கூட்டு ஆவணங்களையும் தெளிவாக வைத்திருப்பது',
+ 'வழிகாட்டலை ஏற்கும் முன் அது வாழ்க்கைத் திட்டத்திற்கு ஏற்றதா என்று பார்ப்பது',
+ 'செய்த பணிக்குரிய பொறுப்பையும் கிடைக்கும் அங்கீகாரத்தையும் வேறுபடுத்துவது',
+ 'வாடிக்கையாளரின் வாக்குறுதியையும் உறுதியான வரவையும் பிரித்தறிவது',
+ 'ஓய்வு, பயணம், சேவைச் செலவுகளை மற்ற தேவைகளோடு இணைப்பது'
+];
+const AGE_TOPIC_TA={2:'பள்ளி வழக்கத்திற்கு ஏற்ற குடும்ப உதவியும் செலவுக் கட்டுப்பாடும்',5:'பாடங்கள், விளையாட்டு, படைப்புப் பயிற்சிகளின் தொடர்ச்சி',7:'வகுப்புத் தோழர்களுடனான ஒத்துழைப்பு மற்றும் வரம்புகள்',10:'பள்ளித் திட்டங்கள், ஆசிரியர் அளிக்கும் கடமை மற்றும் எதிர்காலத் திறன்',11:'குழு கற்றல், நட்பில் நம்பிக்கை மற்றும் பெரியோர் உதவி'};
+const AGE_TOPIC_EN={2:'family support and everyday spending',5:'learning, play and creative practice',7:'cooperation with classmates and peers',10:'assigned study tasks and emerging skills',11:'group learning, friendships and help from adults'};
+function chosenMatter(c,op){const slots=MATTER_TA[c.house-1]||[];return slots.find(x=>x[0]===op)||slots.find(x=>x[0]===c.lord)||slots[0]||null;}
+function nakshatraChannel(star,planet,lang){const s=star?.planets?.[planet],ta=lang!=='en';if(!s?.starRuler)return '';
+ const place=s.rulerHouse||null,domain=place?(ta?NATAL_CHANNEL_TA[place-1]:NATAL_CHANNEL_EN[place-1]):null;
+ const ruler=s.starRuler,glow=s.rulerDignity;
+ if(ta){const name=actor(ruler,true);const result=domain?`${domain} சார்ந்த அனுபவமும் இந்த முடிவோடு இணையலாம்`:'நட்சத்திரநாதன் வழியாக இன்னொரு வாழ்க்கைத் தேவை இந்த முடிவில் கலந்து வரலாம்';
+  if(glow==='debilitated'||s.rulerCombust)return `${name} வழி வரும் ${result.replace('இணையலாம்','இணையும் போதும்')} உடனடி உறுதியைவிடச் சரிபார்க்கப்பட்ட வழிமுறை உதவலாம்.`;
+  if(glow==='own'||glow==='exalted')return `${name} தொடர்பான ${result}; அந்த வழியில் தொடர்ச்சியாக முயல்வதற்கான ஆதரவும் இருக்கலாம்.`;
+  return `${name} மூலம் ${result}.`;
  }
- return `${p.from} to ${p.to}: decisions in ${EN_DEST[c.house-1]} interact with the ${p.md} major and ${p.ad} sub-period life themes. ${src&&dst&&src!==dst?'Their star-ruler paths connect different personal responsibilities. ':'The result depends on the operative natal conditions.'}`;
+ return `${ruler}'s natal stellar link${domain?' also brings '+domain+' into this decision':''}${glow==='debilitated'||s.rulerCombust?', but its condition requires measured expectations':glow==='own'||glow==='exalted'?', with a supportive sign position':''}.`;
+}
+function lifePeriod(win,c,lang,star){const p=win?.period;if(!p?.from||!p?.to||!p?.md||!p?.ad||!c||!win?.links?.length)return '';
+ const ta=lang!=='en',child=p.age!=null&&p.age<18,focus=child?(ta?(AGE_TOPIC_TA[c.house]||NATAL_CHANNEL_TA[c.house-1]):(AGE_TOPIC_EN[c.house]||NATAL_CHANNEL_EN[c.house-1])):null;
+ const area=focus||(ta?NATAL_CHANNEL_TA[c.house-1]:NATAL_CHANNEL_EN[c.house-1]);
+ const state=c.conclusion==='support'?0:c.conclusion==='strain'?1:(win?.transit?.signal>0?0:1);
+ const scene=(ta?PERIOD_HOUSE_SCENE_TA:PERIOD_HOUSE_SCENE_EN)[c.house-1][state];
+ const md=(ta?PERIOD_TA_LIVED:PERIOD_EN_LIVED)[p.md],ad=(ta?PERIOD_TA_LIVED:PERIOD_EN_LIVED)[p.ad];
+ const matter=chosenMatter(c,p.ad);
+ const nodeAd=star?.planets?.[p.ad],nodeMd=star?.planets?.[p.md];
+ const adHouse=nodeAd?.rulerHouse||null,mdHouse=nodeMd?.rulerHouse||null;
+ const direct=win?.links?.some(x=>String(x).startsWith(p.ad+':'));
+ const caseResult=matter?(ta?(state===0?matter[2]:matter[3]):
+   (MATTER_EN_LIVED[c.house-1]||[])[(MATTER_TA[c.house-1]||[]).indexOf(matter)]?.[state]):'';
+ const mdInfo=nakshatraChannel(star,p.md,lang),adInfo=p.md!==p.ad?nakshatraChannel(star,p.ad,lang):'';
+ const coherent=adHouse&&mdHouse&&adHouse!==mdHouse?(ta?`${NATAL_CHANNEL_TA[mdHouse-1]} வழியாகத் தொடங்கும் நீண்டகால நோக்கமும் ${NATAL_CHANNEL_TA[adHouse-1]} சார்ந்த அன்றாடத் தேர்வும் ஒரே நேரத்தில் முன்னிலை பெறலாம்.`:
+ `The longer aim concerns ${NATAL_CHANNEL_EN[mdHouse-1]}, while daily choices involve ${NATAL_CHANNEL_EN[adHouse-1]}.`):'';
+ const evidence=win?.transit?(ta?`${actor(win.transit.planet,true)} கோச்சாரமும் இக்காலத்துடன் சேர்ந்திருந்தால், ${PERIOD_ACTION_BY_HOUSE_TA[c.house-1]} குறித்த முடிவுக்கு ஆதரவு அல்லது மறுஆய்வு தேவை வரலாம்.`:
+ `A sampled ${win.transit.planet} transit adds a separate reason to review ${area}.`):'';
+ if(ta)return [
+   `${p.from} முதல் ${p.to} வரை ${area} தொடர்பாக ${scene}.`,
+   `${actor(p.md,true)} மகாதசைச் சூழலில் ${md}; ${actor(p.ad,true)} புக்தி செயல்படும் போது ${ad}. `,
+   caseResult&&!(child&&[2,5,7,10,11].includes(c.house))?caseResult:'',
+   coherent,mdInfo,adInfo,evidence
+  ].filter(Boolean).join(' ');
+ return [
+   `${p.from}–${p.to}: ${scene} in ${area}.`,
+   `The ${p.md} major period emphasizes ${md}; the ${p.ad} sub-period shifts the immediate choice toward ${ad}.`,
+   child?`At this age the focus is on ${focus} rather than adult events.`:(caseResult||''),coherent,mdInfo,adInfo,evidence
+ ].filter(Boolean).join(' ');
 }
 function lifePD(win,lang,star){const p=win?.period,c=win?.claim;if(!p?.pd||!p?.from||!p?.to||!c)return '';
- const starP=star?.planets?.[p.pd],rulerH=starP?.rulerHouse,kar=TA_DEST[rulerH-1];const ta=lang!=='en',md=PERIOD_TA_LIVED[p.md]||'',ad=PERIOD_TA_LIVED[p.ad]||'',third=PERIOD_TA_LIVED[p.pd]||'';
- if(ta){
- const starName=starP?.star?.ta||null,owner=starP?.starRuler||null;
- const distinct=owner?`இந்த அந்தரநாதரின் நட்சத்திரநாதனான ${actor(owner,true)} பிறப்பில் தொடர்பு கொண்டிருக்கும் ${kar||'பாவப் பொறுப்பு'} சார்ந்த வேறு செயலையும் கவனிக்கச் செய்யலாம்.`:'';
- const target={1:'சுய முடிவுக்கான நேர ஒதுக்கீடு',2:'குடும்பத்தின் பணத் தேவையைத் தனியே கணக்கிடுதல்',3:'கற்ற திறனைச் செயல்முறையாக மாற்றுதல்',4:'வீட்டு வசதி, குடும்பச் செலவைக் கட்டுப்படுத்துதல்',5:'கல்வி அல்லது குழந்தைகள் தொடர்பான பயிற்சி',6:'வேலைச் சுமையையும் ஓய்வையும் ஒழுங்குபடுத்துதல்',7:'பொறுப்புகளைத் துணைவரோடு அல்லது கூட்டாளியோடு பகிர்தல்',8:'முன்னர் செய்யப்பட்ட ஒப்பந்தம் அல்லது ஆவணத்தை உறுதிப்படுத்துதல்',9:'மேற்படிப்பு அல்லது வழிகாட்டலை நடைமுறைப்படுத்துதல்',10:'செய்த பணியின் தரத்திற்கும் பொறுப்பிற்கும் ஒழுங்கு அமைத்தல்',11:'உறுதியான வரவையும் எதிர்பார்த்த வரவையும் பிரித்தறிதல்',12:'செலவும் ஓய்வும் தனியாகத் திட்டமிடுதல்'}[c.house];
- return `${p.from} – ${p.to} காலத்தில் ${TA_DEST[c.house-1]} சார்ந்த ${target} முக்கியமாகலாம். ${actor(p.pd,true)} அந்தரத்தில் ${third} எனும் உந்துதல் ${actor(p.ad,true)} புக்தியின் நடவடிக்கையுடன் சந்திக்கலாம். ${distinct} ${c.conclusion==='strain'?'ஆரம்பித்த வேலையை அவசரமாக முடிப்பதைவிடத் தேவையான உறுதிப்பாட்டைப் பெறுவது உதவலாம்.':c.conclusion==='support'?'கிடைக்கும் ஒத்துழைப்பைப் பயன்படுத்தி ஒரு குறிப்பிட்ட முயற்சியை நிறைவு செய்யலாம்.':'சாதகமும் எதிர்ப்பும் கலந்திருந்தால் இரு பொறுப்புகளையும் ஒரே நாளில் நிறைவேற்ற முயலாமல் நேரம் ஒதுக்கலாம்.'}`;
- }
- return `${p.from}–${p.to}: the ${p.pd} third-level period may bring an additional practical decision in ${EN_DEST[c.house-1]} beyond the ${p.md}/${p.ad} themes${rulerH?' through '+EN_DEST[rulerH-1]:''}.`;
+ const ta=lang!=='en',age=p.age,child=age!=null&&age<18;
+ const src=star?.planets?.[p.pd],pdHouse=src?.rulerHouse||null;
+ const target=chosenMatter(c,p.pd),both=(c.positive||[]).length>0&&(c.negative||[]).length>0;
+ const base=ta?(child?(AGE_TOPIC_TA[c.house]||NATAL_CHANNEL_TA[c.house-1]):NATAL_CHANNEL_TA[c.house-1]):
+  (child?(AGE_TOPIC_EN[c.house]||NATAL_CHANNEL_EN[c.house-1]):NATAL_CHANNEL_EN[c.house-1]);
+ const path=nakshatraChannel(star,p.pd,lang),third=ta?PERIOD_TA_LIVED[p.pd]:PERIOD_EN_LIVED[p.pd];
+ const md=ta?PERIOD_TA_LIVED[p.md]:PERIOD_EN_LIVED[p.md],ad=ta?PERIOD_TA_LIVED[p.ad]:PERIOD_EN_LIVED[p.ad];
+ const witnesses=win.thirdRulerWitness||[];
+ const pressure=witnesses.some(x=>Number(x.delta)<-.2),support=witnesses.some(x=>Number(x.delta)>.2);
+ const resolved=pressure&&!support?'strain':support&&!pressure?'support':both?'mixed':c.conclusion;
+ const idx=(MATTER_TA[c.house-1]||[]).indexOf(target);
+ const material=child&&[2,5,7,10,11].includes(c.house)?'':
+  target?(ta?(resolved==='strain'?target[3]:resolved==='support'?target[2]:`${target[2]} ${target[3]}`):
+   (MATTER_EN_LIVED[c.house-1]||[])[idx]?.[resolved==='strain'?1:0]||''):'';
+ const domain=pdHouse?(ta?NATAL_CHANNEL_TA[pdHouse-1]:NATAL_CHANNEL_EN[pdHouse-1]):null;
+ if(ta)return [
+   `${p.from} – ${p.to} அந்தரக் காலத்தில் ${base} சார்ந்த முடிவு புதிய முன்னுரிமையாகலாம்.`,
+   `${actor(p.md,true)} மகாதசையின் ${md} என்ற நோக்கத்திற்கும் ${actor(p.ad,true)} புக்தியின் ${ad} என்ற நடைமுறைக்கும் இடையில், ${actor(p.pd,true)} அந்தரம் ${third} தொடர்பான குறிப்பிட்ட செயலை முன்னிலைப்படுத்தலாம்.`,
+   material,domain&&pdHouse!==c.house?`${domain} பற்றிய நிகழ்வும் இந்தத் தீர்மானத்தை மாற்றக்கூடும்.`:'',path
+ ].filter(Boolean).join(' ');
+ return [
+  `${p.from}–${p.to}: a distinct ${p.pd} third-level period is linked to ${base}.`,
+  `The longer ${p.md} theme concerns ${md}; ${p.ad} brings ${ad}, while ${p.pd} modifies the practical choice through ${third}.`,
+  material,domain&&pdHouse!==c.house?`Natal links to ${domain} may also alter the decision.`:'',path
+ ].filter(Boolean).join(' ');
 }
 function lifeYear(group,lang,star){if(!group?.claim||!group.period||!group.transit||!group.from||!group.to)return '';
- const c=group.claim,ta=lang!=='en',tr=group.transit.planet,txt=TRANSIT_LIVED[tr]||'',s=star?.planets?.[group.period.ad],detail=s?.rulerHouse?TA_DEST[s.rulerHouse-1]:null;
- const support=Number(group.transit.signal)>0?(ta?'முன்னேற்றத்திற்கு உதவும் சூழலாக இருக்கலாம்':'can support deliberate progress'):Number(group.transit.signal)<0?(ta?'முன்னர் உருவாக்கிய திட்டத்தைத் திருத்த வேண்டிய சூழலாக இருக்கலாம்':'may require adjustment to existing plans'):(ta?'கலந்த ஆதாரங்களைக் கொண்ட காலச்சூழலாக இருக்கலாம்':'shows mixed traditional indicators');
- if(ta){
- const md=star?.planets?.[group.period.md],ad=star?.planets?.[group.period.ad];
- const mdChannel=md?.rulerHouse?TA_DEST[md.rulerHouse-1]:null;
- const adChannel=ad?.rulerHouse?TA_DEST[ad.rulerHouse-1]:null;
- const starInteraction=mdChannel&&adChannel&&mdChannel!==adChannel?`${mdChannel} சார்ந்த நீண்டகால நோக்கம் ${adChannel} சார்ந்த அன்றாடத் தேர்வோடு சந்திக்கும்போது இவ்விரண்டுக்கும் தனித்தனி நேரம் ஒதுக்க வேண்டியிருக்கும்.`:adChannel&&adChannel!==TA_DEST[c.house-1]?`${adChannel} வழியாக உருவாகும் நடைமுறையும் இந்தத் துறையில் உள்ள முடிவும் ஒன்றோடொன்று தொடர்புபடலாம்.`:'';
- return `${group.from} – ${group.to} காலத்தில் ${TRANSIT_DOMAIN_CHANGE_TA[c.house-1]} ${txt} ${support}. ${starInteraction} ${detail&&detail!==TA_DEST[c.house-1]?`${detail} பற்றிய முன்பிருந்த ஏற்பாட்டையும் இதனுடன் இணைத்துப் பார்க்கலாம்.`:''}`;
- }
- return `${group.from}–${group.to}: ${TRANSIT_LIVED[tr]||tr} interact with ${EN_DEST[c.house-1]} under the measured ${group.period.md}/${group.period.ad} and transit sample. This is a conditional period reading, not a fixed event.`;
+ const c=group.claim,ta=lang!=='en',p=group.period,t=group.transit;
+ const child=group.age!=null&&group.age<18;
+ const area=child?(ta?AGE_TOPIC_TA[c.house]:AGE_TOPIC_EN[c.house]):null;
+ const field=area||(ta?NATAL_CHANNEL_TA[c.house-1]:NATAL_CHANNEL_EN[c.house-1]);
+ const supportive=Number(t.signal)>0,restrictive=Number(t.signal)<0;
+ const theme=ta?TRANSIT_LIVED[t.planet]:TRANSIT_EN[t.planet];
+ const scene=(ta?PERIOD_HOUSE_SCENE_TA:PERIOD_HOUSE_SCENE_EN)[c.house-1][supportive?0:1];
+ const ad=star?.planets?.[p.ad],another=ad?.rulerHouse&&ad.rulerHouse!==c.house?(ta?NATAL_CHANNEL_TA[ad.rulerHouse-1]:NATAL_CHANNEL_EN[ad.rulerHouse-1]):null;
+ const observed=Array.isArray(group.samples)&&group.samples.length?group.samples[0]:t.observedOn;
+ const retest=ta?(supportive?'முன்னேற்றத்திற்கு ஏற்ற அடிப்படை இருக்கலாம்':restrictive?'புதிய உறுதி அளிப்பதற்கு முன் நிபந்தனைகளை மீண்டும் பார்க்க வேண்டியிருக்கலாம்':'ஆதரவும் தடையும் கலந்து இருக்கும் சூழல்'):
+  (supportive?'a supporting context':restrictive?'a reason to revise existing plans':'a mixed context');
+ if(ta)return [
+  `${group.from} – ${group.to} கால இடைவெளியில் ${field} தொடர்பாக ${scene}.`,
+  `${actor(t.planet,true)} பெயர்ச்சியின் ${observed||'கணிக்கப்பட்ட'} நிலையுடன் ${actor(p.md,true)} மகாதசையும் ${actor(p.ad,true)} புக்தியும் சேர்ந்துள்ளதால், ${theme||'வாழ்க்கைத் திட்டத்தை ஆராயவும்'} என்ற தேவை ${retest}.`,
+  another?`${another} பற்றிய முன்பிருந்த ஏற்பாடு முடிவெடுக்கும் வேகத்தை மாற்றக்கூடும்.`:'',
+  nakshatraChannel(star,p.ad,lang)
+ ].filter(Boolean).join(' ');
+ return [
+  `${group.from}–${group.to}: ${scene} in ${field}.`,
+  `The sampled ${t.planet} movement (${observed||'dated'}), considered alongside ${p.md}/${p.ad}, represents ${retest} and ${theme||'a fresh review of plans'}.`,
+  another?`Existing commitments involving ${another} can change the pace of a choice.`:'',
+  nakshatraChannel(star,p.ad,lang)
+ ].filter(Boolean).join(' ');
 }
 function lifeOverview(s,star,lang){if(!s?.main)return [];
- const lead=TA_DEST[s.main.house-1],counter=s.counter&&s.counter.house!==s.main.house?TA_DEST[s.counter.house-1]:null;
+ const lead=lang!=='en'?NATAL_CHANNEL_TA[s.main.house-1]:NATAL_CHANNEL_EN[s.main.house-1];
+ const counter=s.counter&&s.counter.house!==s.main.house?(lang!=='en'?NATAL_CHANNEL_TA[s.counter.house-1]:NATAL_CHANNEL_EN[s.counter.house-1]):null;
  return lang!=='en'?[
-  `வாழ்க்கையின் ஒரு முக்கியமான முன்னுரிமையாக ${lead} முன்வரலாம்; அதன் விளைவுகள் அன்றாடத் தேர்வுகள், பொறுப்புகள், உறவுகள் வழியே மெல்ல வெளிப்படும்.`,
-  ...(counter?[`${counter} சார்ந்த தேவைகளையும் இதனுடன் சமப்படுத்தும்போது வாழ்க்கையின் திட்டங்கள் தெளிவாகும்; இரு துறைகளும் எப்போதும் ஒரே வேகத்தில் முன்னேற வேண்டியதில்லை.`]:[])
- ]:[`A leading life theme concerns ${EN_DEST[s.main.house-1]}; decisions in this area interact with real responsibilities rather than guaranteeing a predetermined event.`];
+  `${lead} பற்றிய தீர்மானங்கள் ஜாதகரின் வாழ்வில் தொடர்ச்சியாக இடம் பெறலாம்; அவற்றின் சாதகமான பகுதியைத் தேர்ந்தெடுக்க முன் ஏற்பட்ட அனுபவம் உதவக்கூடும்.`,
+  ...(counter?[`${counter} சார்ந்த கடமையும் உடன் வந்தால் இரண்டிற்கும் தேவைப்படும் நேரம் வேறுபடக்கூடும்; இந்த வேறுபாட்டைப் புரிந்து செயல் திட்டத்தை அமைக்கும் வழக்கம் வளரலாம்.`]:[])
+ ]:[`Decisions about ${lead} may occupy an important place in the person's life.`,...(counter?[`The additional demands of ${counter} may have to be weighed separately rather than treated as one outcome.`]:[])];
 }
 
 return Object.freeze({natal,period,year,summary,lifeNatal,lifePeriod,lifePD,lifeYear,lifeOverview,introTraits});
