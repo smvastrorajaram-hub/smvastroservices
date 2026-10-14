@@ -8,10 +8,13 @@
 const access=document.getElementById('smvAdminRulesAccess');
 const host=document.getElementById('smvAdminRulesPanel');
 const E=window.SMVPredictionRules;
-// Admin entrance is opt-in on this exact Horoscope page; never appear in public navigation.
+// Login entry is visible on the normal Horoscope page; the A/B editor is NOT.
+// Role verification and Firestore write rules protect the editor and Publish.
+// Legacy ?admin=1 / #admin-rules deep links continue to work.
 const adminEntry=new URLSearchParams(location.search).get('admin')==='1' || location.hash==='#admin-rules';
-if(access&&host&&E&&adminEntry){
+if(access&&host&&E){
  access.hidden=false;
+ access.setAttribute('aria-expanded','false');
  const CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:'auth.smvastroservices.in',projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
  const $=id=>host.querySelector('#'+id);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -42,7 +45,7 @@ if(access&&host&&E&&adminEntry){
   @media(max-width:700px){#smvAdminRulesPanel .cols,#smvAdminRulesPanel .cols3,#smvAdminRulesPanel .condition{grid-template-columns:1fr}}
   @media print{#smvAdminRulesPanel{display:none!important}}
  </style><div class="row" style="align-items:center;justify-content:space-between"><h2>SMV HOROSCOPE · Admin Prediction Rules</h2><button id="smvAdminClose" type="button" class="secondary">மூடு</button></div><div id="smvAdminMessage" role="status"></div><div id="smvAdminAuthArea"></div><div id="smvAdminEditorArea" hidden></div>`;
-  $('smvAdminClose').onclick=()=>{host.hidden=true;};
+  $('smvAdminClose').onclick=()=>{host.hidden=true;access.setAttribute('aria-expanded','false');access.focus({preventScroll:true});};
  }
  async function initFirebase(){if(firebase)return firebase;
   const [appM,authM,fsM]=await Promise.all([
@@ -66,7 +69,7 @@ if(access&&host&&E&&adminEntry){
  function loginForm(){verified=false;access.textContent='Admin Login';$('smvAdminEditorArea').hidden=true;
   $('smvAdminAuthArea').innerHTML=`<div class="box"><h3>Admin Login மட்டும்</h3><p class="hint">Customer/Astrologer accounts இங்கு Editor திறக்க முடியாது. இது SMV ASTRO Firebase Admin கணக்கு மட்டுமே. உங்களுடைய Horoscope Customer Login பாதிக்கப்படாது.</p><form id="smvAdminLoginForm"><label>Admin Email</label><input type="email" id="smvAdminEmail" required autocomplete="username"><label>Password</label><input type="password" id="smvAdminPass" required autocomplete="current-password"><div class="row"><button type="submit" id="smvAdminSignIn">Admin Login</button></div></form></div>`;
   $('smvAdminLoginForm').onsubmit=async ev=>{ev.preventDefault();const btn=$('smvAdminSignIn');btn.disabled=true;status('Admin அனுமதி சரிபார்க்கப்படுகிறது…');
-   try{await firebase.authM.signInWithEmailAndPassword(auth,$('smvAdminEmail').value.trim(),$('smvAdminPass').value);
+   try{await initFirebase();await firebase.authM.signInWithEmailAndPassword(auth,$('smvAdminEmail').value.trim(),$('smvAdminPass').value);
     if(!await verifyAdmin()){await firebase.authM.signOut(auth);throw Error('இந்தக் கணக்கிற்கு Admin அனுமதி இல்லை.');}
     await window.SMVPredictionRulesSync?.ensureReady?.();
     verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது. Draft-ஐ Publish செய்த பிறகே அனைவருக்கும் பலன் மாறும்.');
@@ -184,11 +187,21 @@ if(access&&host&&E&&adminEntry){
   out.textContent=JSON.stringify({matchedRules:results,knownFacts:Object.keys(facts).length},null,2);
  }catch(e){out.textContent='Preview: '+(e.message||e);}}
  async function open(){if(opening)return opening;opening=(async()=>{
-  if(!host.hidden){host.hidden=true;return;}
-  shell();status('Admin login சரிபார்க்கப்படுகிறது...');try{await initFirebase();if(auth.currentUser){if(await verifyAdmin()){await window.SMVPredictionRulesSync?.ensureReady?.();verified=true;editor();status('Admin login சரிபார்க்கப்பட்டது.');return;}
-   await firebase.authM.signOut(auth);
-  }loginForm();status('Admin credentials உள்ளிடவும்.');}
-  catch(e){loginForm();status('Firebase இணைப்பு: '+(e.code||e.message||e),true);}
+  if(!host.hidden){host.hidden=true;access.setAttribute('aria-expanded','false');return;}
+  // Show the form immediately; do not keep it hidden while Firebase modules load.
+  shell();loginForm();access.setAttribute('aria-expanded','true');
+  status('Admin Login தயாராகிறது…');
+  // Panel is before the hero, not after all Horoscope and Matching results.
+  // Without this scroll, a click on the header looked as if nothing opened.
+  try{host.scrollIntoView({behavior:'smooth',block:'start'});}catch{}
+  try{await initFirebase();if(auth.currentUser){
+    if(await verifyAdmin()){await window.SMVPredictionRulesSync?.ensureReady?.();verified=true;editor();status('Admin login சரிபார்க்கப்பட்டது.');return;}
+    await firebase.authM.signOut(auth);
+   }
+   status('Admin Email மற்றும் Password உள்ளிடவும்.');
+  }catch(e){status('Firebase இணைப்பு: '+(e.code||e.message||e),true);}
  })();try{await opening;}finally{opening=null;}}
  access.addEventListener('click',open);
+ // The query/hash is an optional shortcut, never a prerequisite for login.
+ if(adminEntry)queueMicrotask(()=>{if(host.hidden)open();});
 }
