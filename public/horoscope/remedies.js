@@ -142,10 +142,10 @@ function select(c,lang,used,windows=[],starContext=null){const ta=lang!=='en';
  if(strongDiv){out.push(action('counter-evidence',ta?
   `${strongDiv.division} வர்க்கத்தில் ${lordTa} பெற்றுள்ள ${strongDiv.reason==='own'?'ஆட்சி':'உச்ச'} வலிமையையும் எதிர் ஆதாரமாகக் கணக்கில் கொண்டு, பாதக பலனை உறுதியானதாக எடுத்துக்கொள்ளாமல் நடைமுறைத் திட்டத்தை அளவோடு அமைக்கலாம்.`:
   `In supplied ${strongDiv.division}, ${risk.planet} gains dignity; treat the adverse D1 indicator as qualified, not inevitable.`));}
- const link=(c.otherLordships||[]).find(n=>n!==c.house);
- if(link&&!c.ageUnder18&&Math.abs(risk.delta)>=0.6){out.push(action('co-ownership-precaution',ta?
-  `${lordTa} ${link}-ஆம் பாவத்திற்கும் அதிபதியாக இருப்பதால், ${c.house}-ஆம் பாவத்தின் முடிவை எடுக்கும் போது ${link}-ஆம் பாவத்துக்குரிய பொறுப்பையும் தனியே சரிபார்த்து இரண்டிற்கும் நடைமுறையில் இடமளிக்கவும்.`:
-  `${risk.planet} also rules house ${link}; evaluate that second area independently before changing arrangements for house ${c.house}.`));}
+ const secondaryHouse=(c.otherLordships||[]).find(n=>n!==c.house);
+ if(secondaryHouse&&!c.ageUnder18&&Math.abs(risk.delta)>=0.6){out.push(action('co-ownership-precaution',ta?
+  `${lordTa} ${secondaryHouse}-ஆம் பாவத்திற்கும் அதிபதியாக இருப்பதால், ${c.house}-ஆம் பாவத்தின் முடிவை எடுக்கும் போது ${secondaryHouse}-ஆம் பாவத்துக்குரிய பொறுப்பையும் தனியே சரிபார்த்து இரண்டிற்கும் நடைமுறையில் இடமளிக்கவும்.`:
+  `${risk.planet} also rules house ${secondaryHouse}; evaluate that second area independently before changing arrangements for house ${c.house}.`));}
  if(mitigation)out.push(action('balancing-factor',ta?`${c.house}-ஆம் பாவத்தில் ${lordTa} குறித்த எதிர் ஆதாரத்துடன் குருவின் பார்வையோ தொடர்புடைய வர்க்க வலிமையோ இருப்பதால், இந்தத் துறையின் தடையை உறுதியானதாகக் கருதாமல் முன்னேற்பாடாகப் பயன்படுத்தவும்.`:`The ${c.house} house includes a counterweight to ${risk.planet} through Jupiter aspect or verified divisional dignity; this is preparation, not a certain adverse event.`));
  // Avoid repeatedly printing the same prayer for this planet across houses.
  if(p&&!c.ageUnder18&&!used.has('ritual:'+risk.planet)){
