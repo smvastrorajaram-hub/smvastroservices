@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-14.1",
+  "version": "2026-10-14.2",
   "scope": "All ten user-provided PDFs",
   "totalPdfPages": 3889,
   "extractionRun": 38318003698,
@@ -171,13 +171,58 @@
       "gitBlob": "defb3394df1abe0b00906015aac0e7236d6b18ea",
       "sourceCommit": "fe90ba4935f1f3cd30dc3494631206ac047bb69d",
       "extractionRecordSequenceComplete": true,
-      "availableExtractedTextReviewed": false,
+      "availableExtractedTextReviewed": true,
       "visualReviewComplete": false,
       "unreadableExtractionPages": [
         5
       ],
-      "reviewNotes": "Native text omits Tamil on 213 pages. Forced image OCR and corrected-text review pending. Existing OCR islands reviewed; original-text completeness is not claimed.",
-      "fullOriginalPageStudyComplete": false
+      "reviewNotes": "Forced raster OCR supersedes the defective 213-page Tamil native layer. All 437 available page records reviewed contiguously across recorded ranges; PDF5 has no readable text. Charts, table geometry, formulas and damaged mantra glyphs remain visually unverified. Source contradictions retained rather than silently reconciled.",
+      "fullOriginalPageStudyComplete": false,
+      "correctedRasterOcrReviewed": true,
+      "reviewedAvailableTextPageRanges": [
+        [
+          1,
+          135
+        ],
+        [
+          136,
+          140
+        ],
+        [
+          141,
+          199
+        ],
+        [
+          200,
+          240
+        ],
+        [
+          241,
+          260
+        ],
+        [
+          261,
+          280
+        ],
+        [
+          281,
+          330
+        ],
+        [
+          331,
+          350
+        ],
+        [
+          351,
+          376
+        ],
+        [
+          377,
+          437
+        ]
+      ]
     }
-  ]
+  ],
+  "correctedTamilRun": 38562428010,
+  "availableTextReviewComplete": true
 }
