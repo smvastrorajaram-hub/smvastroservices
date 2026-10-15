@@ -23,23 +23,6 @@
   const add=(label,value)=>{const row=document.createElement('div');row.className='smv-cover-detail';const b=document.createElement('b');b.textContent=label;const i=document.createElement('i');i.textContent=':';const v=document.createElement('span');v.textContent=value||'—';row.append(b,i,v);card.append(row)};
   add(tamil?'பிறந்த தேதி':'Date of Birth',date||'—');add(tamil?'நேரம்':'Time',time||'—');add(tamil?'பிறந்த இடம்':'Place of Birth',place||'—');grid.append(card);
  }
-
- // V328: Native browser Print / Save as PDF uses document.title as its suggested filename.
- // Preserve the entered names (including Tamil, dots and spaces); replace only
- // characters forbidden by common device filesystems. No transliteration.
- function safePrintName(value,fallback){
-  const original=String(value??'').trim()||fallback;
-  return original.replace(/[\\/:*?"<>|\u0000-\u001F\u007F]/g,'-');
- }
- function reportPrintTitle(report){
-  if(report?.feature==='marriage_matching'){
-   const b=report.calculation?.bride||{},g=report.calculation?.groom||{};
-   const bride=b.birthName||report.cover?.bride?.name||b.nativeName||String(report.name||'').split(' / ')[0]||'Female';
-   const groom=g.birthName||report.cover?.groom?.name||g.nativeName||String(report.name||'').split(' / ')[1]||'Male';
-   return 'SMVMM-'+safePrintName(groom,'Male')+'-'+safePrintName(bride,'Female');
-  }
-  return 'SMVHS-'+safePrintName(report?.name||report?.cover?.person?.name,'Name');
- }
  function populatePremiumCover(report,root,tamil){
   const grid=document.getElementById('smvCoverBirthGrid'),title=document.getElementById('smvCoverReportTitle'),primary=document.getElementById('smvCoverPrimaryName'),sub=document.getElementById('smvCoverSubtitle');if(!grid||!title||!primary||!sub)return;
   grid.replaceChildren();
@@ -70,11 +53,16 @@
   const tamil=selection.language==='ta',lang=tamil?'ta':'en',mode=new URLSearchParams(location.search).get('mode')||selection.mode||'view';
   const html=report.views?.[lang]||(report.language===lang?report.html:'');
   if(typeof html!=='string'||!html.trim())throw Error(tamil?'இந்த மொழியில் சேமித்த அறிக்கை இல்லை.':'The saved report is not available in this language.');
-  document.title=reportPrintTitle(report);
   document.documentElement.lang=lang;
   back.textContent=tamil?'திரும்புக':'Back';
   button.textContent=tamil?'அச்சிட / PDF சேமிக்க':'Print / Save as PDF';
   const root=document.getElementById('printReport');root.innerHTML=html;
+  // V343: on saved V342 charts, reapply the chosen layout without new calculations.
+  // Print-page CSP disallows inline coordinates, external rules in chart-style CSS position them.
+  if(report.feature==='advanced_analysis')window.SMVChartPresentationV342?.preparePrint?.(root);
+  // V343: repaint saved North/East charts as self-contained print-safe SVG.
+  // For Bhava use only previously calculated bhava/planet data; no recalculation.
+  if(report.feature==='advanced_analysis')window.SMVChartPresentationV342?.preparePrint?.(root,report.calculation||null);
   // Legacy V263-and-earlier saved Horoscope snapshots can still contain retired Section X.
   // Omit Section X on view/print without rewriting a customer's existing saved record.
   if(report.feature==='advanced_analysis')root.querySelectorAll('.integrated-predictions,.smv-advanced-quick-card[data-smv-target="integrated-predictions"]').forEach(e=>e.remove());
