@@ -7,6 +7,8 @@
 
   const BASE='./horoscope/offline/places/';
   let manifest=null,manifestFlight=null;
+  let formatterFlight=null;
+  const formatter=()=>formatterFlight||(formatterFlight=import(new URL(BASE+'place-display.mjs',document.baseURI).href));
   const shardCache=new Map();
   const shardFlights=new Map();
   const aliasCache=new WeakMap();
@@ -57,7 +59,8 @@
     const n=norm(q);
     if(n.length<2) return [];
     const max=Math.max(1,Math.min(50,Number(limit)||8));
-    const cacheKey=n+'|'+max;
+    const language=/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en';
+    const cacheKey=n+'|'+max+'|'+language;
     if(resultCache.has(cacheKey)) return resultCache.get(cacheKey);
     const key=keyFor(n),rows=await getShard(key);
     const prior=searchState.get(key);
@@ -75,13 +78,11 @@
     }
     searchState.set(key,{query:n,rows:out.map(v=>v.x)});
     out.sort((a,b)=>a.score-b.score||(Number(b.x[7])||0)-(Number(a.x[7])||0)||String(a.x[1]||'').localeCompare(String(b.x[1]||'')));
-    const result=out.slice(0,max).map(({x})=>{
-      const district=x[3]||'', state=x[2]||'';
-      return {
-        place:[x[1],district,state,'India'].filter((v,i,a)=>v&&a.indexOf(v)===i).join(', '),
-        lat:x[4], lon:x[5], timezone:x[6]||'Asia/Kolkata'
-      };
-    });
+    const {formatOfflineIndiaPlace}=await formatter();
+    const result=out.slice(0,max).map(({x})=>({
+      place:formatOfflineIndiaPlace(x,language).place,
+      lat:x[4], lon:x[5], timezone:x[6]||'Asia/Kolkata'
+    }));
     resultCache.set(cacheKey,result);
     if(resultCache.size>80) resultCache.delete(resultCache.keys().next().value);
     return result;
