@@ -287,14 +287,14 @@ function lagnaDoshas(c){
 function grahaAspectProtects(c,planetName,targetHouse){const lag=Number(c?.lagna?.longitude),p=planet(c,planetName);if(!p||!Number.isFinite(lag))return false;const ph=house(p.longitude,lag),d=((targetHouse-ph+12)%12)+1;return planetName===P.Jupiter?[5,7,9].includes(d):d===7;}
 function structuredLagnaDoshas(c){
  const raw=lagnaDoshas(c),lag=Number(c?.lagna?.longitude),H=n=>{const p=planet(c,n);return p&&Number.isFinite(lag)?house(p.longitude,lag):null};
- const rah=H(P.Rahu),ket=H(P.Ketu),s7=seventh(c),r=planet(c,P.Rahu),v=planet(c,P.Venus),j=planet(c,P.Jupiter),sat=planet(c,P.Saturn),mars=planet(c,P.Mars),fifthSign=(si(lag)+4)%12,fifthLord=LORD[fifthSign],fl=planet(c,fifthLord),d7=d7Available(c);
+ const rah=H(P.Rahu),ket=H(P.Ketu),s7=seventh(c),r=planet(c,P.Rahu),v=planet(c,P.Venus),j=planet(c,P.Jupiter),sat=planet(c,P.Saturn),mars=planet(c,P.Mars),fifthSign=(si(lag)+4)%12,fifthLord=LORD[fifthSign],fl=planet(c,fifthLord);
  const axis=([1,7].includes(rah)&&[1,7].includes(ket))?{active:true,label:T('Rahu–Ketu 1/7 marriage axis','ராகு–கேது 1/7 திருமண அச்சு')}:{active:false,label:T('No 1/7 nodal marriage axis','1/7 ராகு–கேது திருமண அச்சு இல்லை')};
  const conjNote=(a,b,en,ta)=>{const q=conjunctionProfile(a,b);return q.sameSign&&q.separation<=8?`${T(en,ta)} · Δ${q.separation.toFixed(1)}° · ${q.grade}`:''};
  const protect=(key,target)=>{const x=raw[key]||{level:0,hits:[]},reasons=[],pressure=[];if(!x.level)return {...x,state:'none',finalLevel:0,reasons,pressure,label:T('Not Present','இல்லை')};
    if(target&&grahaAspectProtects(c,P.Jupiter,target))reasons.push(T('Jupiter benefic aspect/protection on the affected bhava','குரு பாதிக்கப்பட்ட பாவத்தில் சுப பார்வை/பாதுகாப்பு'));
    if(key==='kalathra'&&s7?.str&&/Own|Exalted|சொந்த|உச்ச/.test(String(s7.str)))reasons.push(T('7th lord has strong dignity','7-ஆம் அதிபதிக்கு வலுவான ராசி பலம்'));
    if(key==='sukra'){const st=strength(c,P.Venus);if(/Own|Exalted|சொந்த|உச்ச/.test(st.label))reasons.push(T('Venus has strong dignity','சுக்கிரனுக்கு வலுவான ராசி பலம்'));const rv=conjNote(r,v,'Rahu closely conjunct Venus','ராகு சுக்கிரனுடன் நெருக்கமான இணைவு');if(rv)pressure.push(rv);}
-   if(key==='putra'){const st=strength(c,P.Jupiter);if(/Own|Exalted|சொந்த|உச்ச/.test(st.label))reasons.push(T('Jupiter has strong dignity','குருவுக்கு வலுவான ராசி பலம்'));if(fl&&/Own|Exalted|சொந்த|உச்ச/.test(dignity(fifthLord,fl.longitude)))reasons.push(T('5th lord has strong dignity','5-ஆம் அதிபதிக்கு வலுவான ராசி பலம்'));if(d7)reasons.push(T('D7/Saptamsa data is available for progeny confirmation','புத்திர ஆய்வை உறுதிப்படுத்த D7/சப்தாம்ச தரவு கிடைக்கிறது'));const rj=conjNote(r,j,'Rahu closely conjunct Jupiter','ராகு குருவுடன் நெருக்கமான இணைவு');if(rj)pressure.push(rj);if(sat&&H(P.Saturn)===5)pressure.push(T('Saturn occupies the 5th bhava','சனி 5-ஆம் பாவத்தில் உள்ளது'));if(mars&&H(P.Mars)===5)pressure.push(T('Mars occupies the 5th bhava','செவ்வாய் 5-ஆம் பாவத்தில் உள்ளது'));}
+   if(key==='putra'){const st=strength(c,P.Jupiter);if(/Own|Exalted|சொந்த|உச்ச/.test(st.label))reasons.push(T('Jupiter has strong dignity','குருவுக்கு வலுவான ராசி பலம்'));if(fl&&/Own|Exalted|சொந்த|உச்ச/.test(dignity(fifthLord,fl.longitude)))reasons.push(T('5th lord has strong dignity','5-ஆம் அதிபதிக்கு வலுவான ராசி பலம்'));/* V341: D7 availability is NOT itself a dosha cancellation. Actual D7 placements are analysed separately in the evidence panel. */const rj=conjNote(r,j,'Rahu closely conjunct Jupiter','ராகு குருவுடன் நெருக்கமான இணைவு');if(rj)pressure.push(rj);if(sat&&H(P.Saturn)===5)pressure.push(T('Saturn occupies the 5th bhava','சனி 5-ஆம் பாவத்தில் உள்ளது'));if(mars&&H(P.Mars)===5)pressure.push(T('Mars occupies the 5th bhava','செவ்வாய் 5-ஆம் பாவத்தில் உள்ளது'));}
    if(key==='mangalya'||key==='kalathra'){const rv=conjNote(r,v,'Rahu closely conjunct Venus','ராகு சுக்கிரனுடன் நெருக்கமான இணைவு');if(rv)pressure.push(rv);const rj=conjNote(r,j,'Rahu closely conjunct Jupiter','ராகு குருவுடன் நெருக்கமான இணைவு');if(rj)pressure.push(rj);}
    let finalLevel=Math.max(0,x.level-(reasons.length?1:0));if(pressure.length&&finalLevel>0)finalLevel=Math.max(1,finalLevel);
    return {...x,reasons,pressure,finalLevel,state:finalLevel===0?'mitigated':finalLevel>=2?'strong':'active',label:finalLevel===0?T('Balanced / Vilakku factors present','சமநிலை / தோஷ விலக்கு காரணிகள் உள்ளன'):finalLevel>=2?T('Strong residual Mars influence','வலுவான செவ்வாய் மீதத் தாக்கம்'):T('Active after Vilakku review','விலக்கு ஆய்வுக்குப் பின் செயலில் உள்ளது')};};
@@ -422,6 +422,9 @@ function fullVerdict(pr,ks,ds,bf,gf,sync,b,g){
        major=[rj.state==='consult',nadi.state==='active',vedha,!ks.balanced&&!!ks.severe].filter(Boolean).length,
        supports=[m.B.balance>=1,m.G.balance>=1,ks.balanced,papBalanced,rj.state==='none',nadi.state!=='active',!vedha].filter(Boolean).length,
        both7Hard=[6,8,12].includes(bf.s7.house)&&[6,8,12].includes(gf.s7.house);
+ // V341: disclose material Papa-samyam differences in the evidence narrative.
+ // Preserve the existing verdict threshold here; an additional point alone could
+ // turn an otherwise conditional match into a rejection without corroboration.
  // No single star/dosha label alone is allowed to veto a pair. When several
  // unmitigated major conflicts *converge*, or neither D1 marriage-strength
  // assessment supports the pair under heavy pressure, do not auto-promote it.
@@ -606,10 +609,19 @@ function mmMarriageStrength(c){
  if(ratios.length){const avg=ratios.reduce((a,b)=>a+b,0)/ratios.length;if(avg>=1)support+=2;else pressure+=1;evidence.push(`${T('Marriage significator Shadbala context','திருமண காரக ஷட்பல சூழல்')}: ${avg.toFixed(2)}×`);}
  if(Number.isFinite(sav7)){if(sav7>=30)support+=2;else if(sav7<25)pressure+=2;else if(sav7>=28)support++;evidence.push(`${T('7th-house SAV','7-ஆம் பாவ SAV')}: ${sav7}`);}
  const fam=[sav2,sav4,sav8,sav11].filter(Number.isFinite);if(fam.length){const avg=fam.reduce((a,b)=>a+b,0)/fam.length;if(avg>=29)support++;else if(avg<25)pressure++;evidence.push(`${T('Family/home/longevity/fulfilment SAV context','குடும்பம்/வீடு/நிலைத்தன்மை/நிறைவு SAV சூழல்')}: ${avg.toFixed(1)}`);}
- if(d9.available&&d9.deep&&Number.isInteger(d9.lordHouse)&&d9.lordHouse>=1&&d9.lordHouse<=12){support++;if([1,4,5,7,9,10,11].includes(d9.lordHouse))support++;if([6,8,12].includes(d9.lordHouse))pressure++;evidence.push(`${T('D9 7th lord','D9 7-ஆம் அதிபதி')}: ${d9.lord} · ${T('house','பாவம்')} ${d9.lordHouse} · ${d9.lordDignity||'—'}`);}else if(d9.available){evidence.push(T('D9 is incomplete for seventh-lord scoring; no strength point assigned','D9 ஏழாம் அதிபதியின் நிலை முழுமையாகக் கிடைக்கவில்லை; கூடுதல் பலம் சேர்க்கப்படவில்லை'));}
+ if(d9.available&&d9.deep&&Number.isInteger(d9.lordHouse)&&d9.lordHouse>=1&&d9.lordHouse<=12){
+  // V341: Having D9 data is neutral. A kendra/trikona house does not cancel debilitation.
+  const d9Strength=String(d9.strength||'').toLowerCase();
+  if(['exalted','own'].includes(d9Strength))support+=2;
+  else if(d9Strength==='debilitated')pressure+=2;
+  if([1,4,5,7,9,10,11].includes(d9.lordHouse))support++;
+  if([6,8,12].includes(d9.lordHouse))pressure++;
+  evidence.push(`${T('D9 7th lord','D9 7-ஆம் அதிபதி')}: ${d9.lord} · ${T('house','பாவம்')} ${d9.lordHouse} · ${d9.lordDignity||'—'}`);
+  if(d9Strength==='debilitated')evidence.push(T('D9 seventh lord is debilitated: the favourable house alone does not cancel this counter-evidence','D9 ஏழாம் அதிபதி நீசம்: சாதகப் பாவம் மட்டும் இதன் எதிர் ஆதாரத்தை நீக்காது'));
+}else if(d9.available){evidence.push(T('D9 is incomplete for seventh-lord scoring; no strength point assigned','D9 ஏழாம் அதிபதியின் நிலை முழுமையாகக் கிடைக்கவில்லை; கூடுதல் பலம் சேர்க்கப்படவில்லை'));}
  const gd=mmCountInfluenceRows(c,'grahaDrishti',sv.sign),rd=mmCountInfluenceRows(c,'rasiDrishti',sv.sign),ar=mmCountInfluenceRows(c,'argala',sv.sign);if(gd||rd||ar)evidence.push(`${T('Advanced influence links to 7th-sign context','7-ஆம் ராசி சூழலுக்கான Advanced தாக்க இணைப்புகள்')}: ${T('Graha','கிரக')} ${gd}, ${T('Rasi','ராசி')} ${rd}, ${T('Argala','அர்கலா')} ${ar}`);
  if(upapada!=null)evidence.push(`${T('Upapada/A12 available','உபபத/A12 கிடைக்கிறது')}: ${typeof upapada==='number'?sign(upapada):String(upapada)}`);
- return {support,pressure,balance:support-pressure,evidence,sav7,d9,upapada};
+ return {support,pressure,balance:support-pressure,evidence,sav7,d9,upapada,d1SeventhDignity:lordP?dignity(lord,lordP.longitude):null};
 }
 function marriageStrengthMatrix(b,g){const B=mmMarriageStrength(b),G=mmMarriageStrength(g);const label=x=>x.balance>=3?T('Strong support','வலுவான ஆதரவு'):x.balance>=1?T('Supportive','ஆதரவானது'):x.balance<=-3?T('High adjustment','அதிக ஒத்திசைவு தேவை'):x.balance<0?T('Needs adjustment','ஒத்திசைவு தேவை'):T('Mixed support and pressure','ஆதரவும் சவாலும் கலந்த நிலை');return {B,G,bride:label(B),groom:label(G),couple:(B.balance+G.balance)>=4?T('Both charts provide meaningful marriage support after strength weighting.','கணிக்கப்பட்ட தனிப்பட்ட திருமண பலத்தில் இருவருக்கும் ஆதரவு உள்ளது. தோஷ விலக்கு மற்றும் மீதமுள்ள முரண்பாடுகளின் ஒருங்கிணைந்த முடிவு இந்த அறிக்கையிலேயே வழங்கப்படுகிறது.'):(B.balance+G.balance)<=-2?T('The combined strength matrix shows more areas needing conscious adjustment; cancellation and partner-balance factors remain important.','ஒருங்கிணைந்த திருமண பல ஆய்வு கூடுதல் கவனம் தேவைப்படும் அம்சங்களைக் காட்டுகிறது; விலக்கு மற்றும் இருவர் சமநிலை காரணிகள் முக்கியம்.') : T('The combined strength matrix is mixed; strong and weak factors must be read together rather than by a single dosha or planet.','ஒருங்கிணைந்த திருமண பல ஆதாரங்கள் கலந்த நிலையில் உள்ளன; ஒரு தனி தோஷம் அல்லது கிரகத்தை வைத்து அல்லாமல் வலுவான/பலவீன காரணிகளை ஒன்றாகப் படிக்க வேண்டும்.')};}
 function marriageStrengthMatrixPanel(b,g,verdict=null){const m=marriageStrengthMatrix(b,g);const row=(who,label,x)=>`<div><b>${esc(who)}</b><span>${esc(label)}${x.evidence.length?'<br>'+x.evidence.map(esc).join('<br>'):''}</span></div>`;return `<section class="mm-person-result mm-strength-matrix"><h3>${T('Marriage Strength Matrix','திருமண பலம் ஒருங்கிணைந்த ஆய்வு')}</h3><div class="mm-facts">${row(T('Bride','பெண்'),m.bride,m.B)}${row(T('Groom','ஆண்'),m.groom,m.G)}<div><b>${T('Couple synthesis','இருவர் ஒருங்கிணைவு')}</b><span>${esc(m.couple)}</span></div></div><p class="mm-note">${T('This is a qualitative evidence matrix, not a compatibility percentage. It reuses available calculated evidence such as 7th-lord dignity, Shadbala, SAV/Ashtakavarga, D9, Graha/Rasi Drishti, Argala and Upapada when those calculated objects are present. Missing advanced objects are not invented and do not count as negative evidence.','இது பொருத்தத்தின் சதவீத மதிப்பெண் அல்ல. ஏழாம் அதிபதி, கிரக பலம், அஷ்டகவர்க்கம், நவாம்சம், பார்வைகள் மற்றும் உபபதம் போன்ற கணிக்கப்பட்ட விவரங்களை இணைக்கும் துணை ஆய்வு. கிடைக்காத விவரங்களைப் பாதகமாகவோ சாதகமாகவோ கணக்கிடவில்லை.')}</p></section>`;}
@@ -1519,7 +1531,7 @@ function mm335PersonEvidence(r,who){
   if(EXALT[r.lord]===z||(OWN[r.lord]||[]).includes(z))factors.push(T('Own/exalted dignity gives this lord a stronger foundation for coordinated decisions.','சொந்த அல்லது உச்ச ராசிப் பலம் இந்தப் பொறுப்பைத் திட்டமிட்டு நிறைவேற்ற உதவும் சுப ஆதாரமாகும்.'));
   if(DEBIL[r.lord]===z)factors.push(T('Debilitation makes the desired outcome less automatic; cancellation and other support still matter.','நீச நிலை இருப்பதால் விரும்பிய பலன் எளிதாக அமையும் என்று கொள்ள முடியாது; நீசபங்கம் மற்றும் பிற பாதுகாப்பையும் சேர்த்தே பார்க்க வேண்டும்.'));
   if(Number(r.lp.speed)<0)factors.push(T('Retrograde motion adds a theme of reconsidering decisions.','வக்கிர நிலை இருந்தால் இந்த முடிவுகள் மறுபரிசீலனைக்குப் பிறகு அமையலாம்.'));
-  if(r.lp?.strength?.combustion)factors.push(T('Combustion limits straightforward expression of the lord: compare opposing strengths before predicting the outcome.','அஸ்தமனத் தொடர்பு இருந்தால் அதிபதியின் பலன் வெளிப்படுவதில் தடை சேரலாம்; பிற ஆதரவு பலங்களை இணைத்தே முடிவு கொள்ள வேண்டும்.'));
+  if(r.lp?.strength?.combustion===true||r.lp?.strength?.combust===true)factors.push(T('Calculated combustion of this lord is an opposing factor; compare other strengths before prediction.','இந்தப் பாவாதிபதி அஸ்தமன நிலையில் இருப்பதாகக் கணக்கிடப்பட்டுள்ளது; அதன் எதிர் ஆதாரத்தை மற்ற பலங்களுடன் இணைத்து மதிப்பிட வேண்டும்.'));
  }
  if(r.supporters.length)factors.push(ta?`குரு/சுக்கிரன் சார்ந்த சுபப் பார்வை (${r.supporters.map(mmPlanetText).join(', ')}) சமரசத்திற்கு ஆதரவாகலாம்.`:`Supporting aspect(s) from ${r.supporters.map(mmPlanetText).join(', ')} can ease coordination.`);
  if(r.hard.length)factors.push(ta?`${r.hard.map(mmPlanetText).join(', ')} பார்வை காரணமாக அழுத்தம் அல்லது அவசர முடிவுகளில் கூடுதல் நிதானம் தேவைப்படலாம்.`:`Challenging aspect(s) from ${r.hard.map(mmPlanetText).join(', ')} can make rushed decisions more difficult.`);
@@ -1773,6 +1785,10 @@ function mm334FinalReason(v){
  if(x.m.B.balance>=1&&x.m.G.balance>=1)reasons.push(T('both D1 marriage-strength assessments show support','இருவரின் திருமண பல ஆய்விலும் ஆதரவு உள்ளது'));
  if(x.sh.present)reasons.push(x.sh.mitigated?T('the 6/8 Moon-sign connection is moderated by friendly sign lords','சந்திர ராசி 6/8 தொடர்பு, ராசி அதிபதி நட்பால் மிதமாகிறது'):T('the 6/8 Moon-sign connection remains an adjustment factor','சந்திர ராசி 6/8 தொடர்பு ஒத்திசைவு தேவைப்படும் காரணியாக உள்ளது'));
  if(x.papBalanced)reasons.push(T('the two Papa-samyam totals are balanced','பாபசாம்யம் இருவருக்கும் சமநிலையில் உள்ளது'));
+ else if(Number.isFinite(x.papGap)&&x.papGap>1.5)reasons.push(T(`a material Papa-samyam gap of ${x.papGap.toFixed(2)} remains for counselling`,`பாபசாம்யத்தில் ${x.papGap.toFixed(2)} குறிப்பிடத்தக்க சமமின்மை கவனத்திற்குரியது`));
+ for(const [who,mat] of [[T('Bride','பெண்'),x.m.B],[T('Groom','ஆண்'),x.m.G]]){
+  if(/Debil|நீச/i.test(String(mat.d1SeventhDignity||''))&&mat.d9?.strength==='debilitated')reasons.push(T(`${who}: both D1 and D9 seventh lords are debilitated; compensating evidence needs review`,`${who}: D1 மற்றும் D9 ஏழாம் அதிபதிகள் இருவரும் நீசம்; பிற ஆதாரங்கள் எவ்வளவு சமப்படுத்துகின்றன என்பது கவனத்திற்குரியது`));
+ }
  if(x.d9Pressure)reasons.push(T('one or both D9 seventh lords occupy a demanding house','நவாம்ச ஏழாம் அதிபதியின் பாவத்தில் கவனம் தேவைப்படுகிறது'));
  if(x.ld.rows.some(y=>Math.max(y.bride,y.groom)>0))reasons.push(T('a residual planet/relationship factor is still present','ஒரு சில திருமணக் காரக மீதத் தாக்கங்கள் தொடர்கின்றன'));
  if(x.against)return T('After considering the exception and protection checks, the major adverse factors still dominate the assessed support.','விலக்கு மற்றும் பாதுகாப்பு ஆய்வுகளுக்குப் பிறகும் முக்கிய எதிர் ஆதாரங்களின் கூட்டுத் தாக்கம் ஆதரவைக் காட்டிலும் மேலோங்குகிறது.')+' '+reasons.join('; ')+'.';
@@ -1782,8 +1798,8 @@ function mm332VerdictEvidence(b,g,pr,ks,ds,sync,v){
  if(!v?.postReview)return '';
  const x=v.postReview,support=[],challenges=[],windows=[];
  const add=(a,t)=>{if(t&&!a.includes(t))a.push(t)};
- add(support,`${T('Traditional Nakshatra factors','நட்சத்திரப் பொருத்தம்')}: ${pr.score}/10`);
- if(x.m.B.balance>=1)add(support,T('The bride’s seventh-house/planet-strength evidence is supportive.','பெண்ணின் ஏழாம் பாவம் மற்றும் கிரக பலத்தில் ஆதரவு உள்ளது.'));
+ add(pr.score>=6?support:challenges,`${T('Traditional Nakshatra factors','நட்சத்திரப் பொருத்தம்')}: ${pr.score}/10${pr.score<6?' · '+T('additional chart support is essential','கூடுதல் ஜாதக ஆதாரம் அவசியம்'):''}`);
+ if(x.m.B.balance>=1)add(support,/Debil|நீச/i.test(String(x.m.B.d1SeventhDignity||''))?T('Bride: other Shadbala/Ashtakavarga factors offer net support, but the D1 seventh-lord debility remains.','பெண்: சட்பலம்/அஷ்டகவர்க்கம் உள்ளிட்ட பிற ஆதாரங்கள் ஆதரவளிக்கின்றன; D1 ஏழாம் அதிபதி நீசம் தனி எதிர் ஆதாரமாகவே தொடர்கிறது.'):T('The bride’s seventh-house/planet-strength evidence is supportive.','பெண்ணின் ஏழாம் பாவம் மற்றும் கிரக பலத்தில் ஆதரவு உள்ளது.'));
  if(x.m.G.balance>=1)add(support,T('The groom’s seventh-house/planet-strength evidence is supportive.','ஆணின் ஏழாம் பாவம் மற்றும் கிரக பலத்தில் ஆதரவு உள்ளது.'));
  if(x.rj.state==='none')add(support,T('Rajju is not an unresolved barrier.','ரஜ்ஜு குறை மீதமில்லை.'));
  else add(challenges,T('A Rajju concern remains after exception review.','விலக்கு ஆய்விற்குப் பிறகும் ரஜ்ஜு குறை உள்ளது.'));
@@ -1794,12 +1810,19 @@ function mm332VerdictEvidence(b,g,pr,ks,ds,sync,v){
  if(ks.balanced)add(support,T('Mars influences are broadly balanced between both partners, not automatically erased.','இருவரின் செவ்வாய் தாக்கங்கள் ஒப்பிடத்தக்கவை; இது முழுமையான தோஷ விலக்கு அல்ல.'));
  else add(challenges,T('The partners carry unequal Mars pressures.','இருவரின் செவ்வாய் தாக்கத்தில் சமமின்மை உள்ளது.'));
  if(x.papBalanced)add(support,T(`Papa-samyam difference ${x.papGap.toFixed(2)} supports balance.`,`பாபசாம்ய வித்தியாசம் ${x.papGap.toFixed(2)}; இருவர் சமநிலைக்கு ஆதாரம் உள்ளது.`));
+ else if(Number.isFinite(x.papGap)&&x.papGap>1.5)add(challenges,T(`Papasamyam gap ${x.papGap.toFixed(2)} is a material imbalance requiring closer review; it is not a stand-alone rejection.`,`பாபசாம்ய வித்தியாசம் ${x.papGap.toFixed(2)} — குறிப்பிடத்தக்க சமமின்மை; தனி திருமண மறுப்பாக அல்லாமல் கூட்டு ஆய்வில் கவனிக்கப்படுகிறது.`));
  if(x.sh.present)add(x.sh.mitigated?support:challenges,x.sh.mitigated?T('Moon-sign 6/8 is moderated by friendship of the sign lords; it is not an additional veto.','சந்திர ராசி 6/8 தொடர்பு, ராசி அதிபதிகளின் நட்பால் மிதமாக்கப்படுகிறது; தனியாகத் திருமண மறுப்பாகக் கணக்கிடப்படவில்லை.'):T('The Moon-sign 6/8 relation is still a caution for habits, finances and emotional pacing.','சந்திர ராசி 6/8 தொடர்பு அன்றாட பழக்கம், செலவு மற்றும் உணர்ச்சி ஒத்திசைவில் கவனம் தேவைப்படுத்துகிறது.'));
+ for(const [who,mat] of [[T('Bride','பெண்'),x.m.B],[T('Groom','ஆண்'),x.m.G]]){
+  if(/Debil|நீச/i.test(String(mat.d1SeventhDignity||'')))add(challenges,T(`${who}: D1 seventh lord is debilitated; strength from other factors must be distinguished.`,`${who}: D1 ஏழாம் அதிபதி நீசம்; மற்ற கிரகபல ஆதாரங்களை இதற்குப் பதிலாகக் கருதாமல் தனியாக ஆய்வு செய்ய வேண்டும்.`));
+ }
  const d9=x.d9b&&x.d9g;
  if(d9){
   if(x.d9b.deep&&[6,8,12].includes(x.d9b.lordHouse))add(challenges,`${T('Bride D9 seventh lord','பெண் D9 ஏழாம் அதிபதி')} ${mmPlanetText(x.d9b.lord)} — ${x.d9b.lordHouse}${T('th house','-ஆம் பாவம்')}; ${T('distance, expenses or private time may matter more','தனிநேரம், செலவு அல்லது இடைவெளி சார்ந்த எதிர்பார்ப்புகளில் கவனம் தேவை')}.`);
   if(x.d9g.deep&&[6,8,12].includes(x.d9g.lordHouse))add(challenges,`${T('Groom D9 seventh lord','ஆண் D9 ஏழாம் அதிபதி')} ${mmPlanetText(x.d9g.lord)} — ${x.d9g.lordHouse}${T('th house','-ஆம் பாவம்')}; ${T('house-related adjustments may matter','அந்தப் பாவப் பொறுப்புகளை ஒத்திசைக்க வேண்டியிருக்கலாம்')}.`);
-  for(const [who,f] of [[T('Bride','பெண்'),x.d9b],[T('Groom','ஆண்'),x.d9g]])if(f.deep&&[1,4,5,7,9,10,11].includes(f.lordHouse))add(support,`${who}: D9 ${T('seventh lord','ஏழாம் அதிபதி')} ${mmPlanetText(f.lord)} ${f.lordHouse}${T('th house','-ஆம் பாவத்தில் ஆதரவான நிலையில்')}.`);
+  for(const [who,f] of [[T('Bride','பெண்'),x.d9b],[T('Groom','ஆண்'),x.d9g]])if(f.deep){
+   if(f.strength==='debilitated')add(challenges,T(`${who}: D9 seventh lord ${mmPlanetText(f.lord)} is debilitated in house ${f.lordHouse}; house placement must be weighed separately.`,`${who}: D9 ஏழாம் அதிபதி ${mmPlanetText(f.lord)} ${f.lordHouse}-ஆம் பாவத்தில் நீசம்; பாவ ஆதரவு இதைத் தானாக நீக்காது.`));
+   else if([1,4,5,7,9,10,11].includes(f.lordHouse))add(support,T(`${who}: D9 seventh lord ${mmPlanetText(f.lord)} in house ${f.lordHouse} provides house-level support, subject to dignity.`,`${who}: D9 ஏழாம் அதிபதி ${mmPlanetText(f.lord)} ${f.lordHouse}-ஆம் பாவத்தில் பாவ அமைப்பு சார்ந்த ஆதரவு; கிரகபலமும் தனியாக மதிப்பிடப்படும்.`));
+  }
  }
  for(const [who,naga] of [[T('Bride','பெண்'),x.nagaB],[T('Groom','ஆண்'),x.nagaG]]){
   if(['active','strong'].includes(naga?.state))add(challenges,`${who}: ${T('the Naga/Sarpa tradition-based concern continues','நாக/சர்ப்ப மரபு சார்ந்த எச்சரிக்கை தொடர்கிறது')} — ${naga.label}. ${T('This does not independently disqualify marriage.','இது தனியாகத் திருமண மறுப்பை நிர்ணயிக்காது.')}`);
@@ -1845,7 +1868,9 @@ function mm332RefineTimeline(markup,data){
  const genericUsed=new Set(),genericPhrases=[
   'துணைவர் தொடர்பான முடிவு நேரடியாக முன்னிலைக்கு வரலாம்; திருமணமானவர்களுக்கு ஒருவரின் தேவை மற்றவரின் திட்டத்தில் இடம் பெற வேண்டிய காலம்.',
   'கூட்டு முடிவை முன்னெடுக்க பேசுவதற்கான இடம் உள்ளது; D1–D9 ஆதரவும் பிற தோஷ ஆய்வும் இணங்கினால் குடும்பத் திட்டங்களை நடைமுறைப்படுத்த பரிசீலிக்கலாம்.',
-  'The partner-related decision may move directly into focus; married partners should include each other’s needs in their plans.'
+  'The partner-related decision may move directly into focus; married partners should include each other’s needs in their plans.',
+  'ஒரு பக்கச் சிரமத்தால் முழுக் காலத்தையும் எதிர்மறையாகக் கருத வேண்டாம்.',
+  'One challenging division should not be treated as evidence that the whole period is negative.'
  ];
  for(let i=0;i<nodes.length;i++){
   const year=nodes[i],curr=years[i],prev=years[i-1],heads=[...year.querySelectorAll('h4')];
