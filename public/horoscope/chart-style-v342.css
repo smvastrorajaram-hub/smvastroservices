@@ -1,0 +1,49 @@
+/* V342: chart-style is display-only. Source planetary data and house numbers are not recalculated. */
+.smv-chart-style-choice{min-width:0}
+.smv-chart-style-choice select{display:block;width:100%;max-width:340px;min-height:42px;border:1px solid #c2b088;border-radius:8px;padding:8px;background:#fff;color:#21201a;font:inherit}
+.smv-chart-style-choice label{display:block;margin-bottom:5px;color:inherit}
+.south-indian-chart.smv-v342-north,.south-indian-chart.smv-v342-east{
+ position:relative!important;display:block!important;grid-template-columns:none!important;
+ grid-template-rows:none!important;aspect-ratio:1/1!important;width:min(100%,520px)!important;
+ max-width:100%!important;height:auto!important;min-height:0!important;
+ padding:0!important;margin:12px auto 20px!important;border:0!important;
+ background:#fffdf7!important;overflow:hidden!important;box-sizing:border-box!important;
+}
+.smv-v342-geometry{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none!important;display:block;pointer-events:none}
+.smv-v342-geometry rect,.smv-v342-geometry path{stroke:#4c473e;stroke-width:.65;fill:none;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.smv-v342-cell{position:absolute!important;transform:translate(-50%,-50%)!important;box-sizing:border-box!important;
+ width:21.5%;max-height:22%;min-width:0;overflow:hidden;display:flex;flex-direction:column;
+ justify-content:center;align-items:center;gap:0!important;font-family:inherit;text-align:center;
+ font-size:clamp(8px,1.85vw,12px)!important;line-height:1.08!important;color:#251e18!important;z-index:1;}
+.smv-v342-sign-number{color:#853323;font-weight:800;font-size:.91em;line-height:1}
+.smv-v342-house-number{font-size:.75em;color:#555;line-height:1}
+.smv-v342-asc{font-size:.95em;font-weight:900;color:#933b20;line-height:1}
+.smv-v342-planets{display:flex!important;flex-wrap:wrap;column-gap:3px;row-gap:1px;justify-content:center;align-items:center;max-width:100%;overflow:hidden;line-height:1.12}
+.smv-v342-planets .planet-line{display:inline-block!important;width:auto!important;min-width:0!important;padding:0!important;margin:0!important;line-height:1.12!important;font-size:inherit!important;white-space:nowrap}
+.smv-v342-planets .planet-glyph{font-size:inherit!important;white-space:nowrap!important}
+.smv-v342-planets .rasi-degree{margin-left:1px;font-size:.7em!important}
+.smv-v342-empty{opacity:.45}
+.smv-v342-east-center{position:absolute;left:33.4%;top:33.4%;width:33.2%;height:33.2%;
+ display:flex;align-items:center;justify-content:center;color:#801d28;font-weight:700;
+ font-size:clamp(13px,2.5vw,20px);background:rgba(255,246,217,.8);pointer-events:none}
+.south-indian-chart.smv-v342-east .smv-v342-cell{width:21.5%;max-height:21%}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="1"],
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="4"],
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="7"],
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="10"]{width:27%}
+@media(max-width:570px){
+ .south-indian-chart.smv-v342-north,.south-indian-chart.smv-v342-east{width:min(100%,94vw)!important}
+ .smv-v342-cell{font-size:clamp(7px,2.0vw,10px)!important}
+ .smv-v342-cell .planet-glyph{font-size:inherit!important}
+}
+@media print{
+ #printReport .south-indian-chart.smv-v342-north,#printReport .south-indian-chart.smv-v342-east{
+  width:128mm!important;min-width:128mm!important;max-width:128mm!important;height:128mm!important;
+  min-height:128mm!important;break-inside:avoid!important;page-break-inside:avoid!important;
+  border:0!important;overflow:hidden!important;margin:4mm auto 6mm!important;
+  print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;
+ }
+ #printReport .smv-v342-cell{font-size:8pt!important;line-height:1.08!important}
+ #printReport .smv-v342-cell .planet-line{font-size:inherit!important}
+ #printReport .smv-v342-east-center{font-size:15pt!important}
+}

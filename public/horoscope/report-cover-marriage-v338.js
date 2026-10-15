@@ -18,8 +18,8 @@
   emblem.setAttribute('width', '760');
   emblem.setAttribute('height', '760');
   // V331's -1.8 mm shift is specific to the old Vinayagar artwork.
-  // The new square wedding artwork stays exactly centered in the same 116 × 108 mm slot.
-  emblem.style.setProperty('transform', 'none', 'important');
+  // V342: move the existing wedding artwork 2.6mm left for optical centering.
+  emblem.style.setProperty('transform', 'translateX(-2.6mm)', 'important');
   observer.disconnect();
  };
  const observer = new MutationObserver(useWeddingOnlyForMatching);

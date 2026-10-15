@@ -1,0 +1,25 @@
+/* V342 print-only full-bleed A4 cover, plus a small artistic centre correction.
+ * All customer text, birth cards, borders, and photo assets remain intact.
+ * Some Android hardware/print providers impose their own non-printable margins.
+ */
+#smvPrintCover.smv-vector-cover .smv-cover-emblem img{
+ transform:translateX(-3mm)!important;
+ transform-origin:center top!important;
+}
+@media print{
+ @page:first{size:A4;margin:0}
+ #smvPrintCover.smv-print-cover.smv-vector-cover{
+  display:block!important;position:relative!important;width:210mm!important;
+  min-width:210mm!important;max-width:210mm!important;height:297mm!important;
+  margin:0!important;padding:0!important;border:0!important;overflow:hidden!important;
+  break-after:page!important;page-break-after:always!important;
+  -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+ }
+ #smvPrintCover.smv-print-cover.smv-vector-cover .smv-cover-frame{
+  width:210mm!important;min-width:210mm!important;max-width:210mm!important;
+  height:297mm!important;min-height:297mm!important;
+  margin:0!important;box-sizing:border-box!important;overflow:hidden!important;
+  box-shadow:none!important;
+ }
+ #smvPrintCover.smv-vector-cover .smv-cover-emblem img{transform:translateX(-3mm)!important}
+}
