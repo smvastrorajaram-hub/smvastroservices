@@ -1,3 +1,4 @@
+import {formatOfflineIndiaPlace,offlinePlaceLanguage} from './place-display.mjs';
 let manifest=null,manifestFlight=null;
 const cache=new Map();
 const shardFlights=new Map();
@@ -13,7 +14,8 @@ async function shard(k){if(cache.has(k))return cache.get(k);if(shardFlights.has(
 export async function searchPlaces(q,limit=12){
  const n=norm(q);if(n.length<2)return[];
  const max=Math.max(1,Math.min(50,Number(limit)||12));
- const cacheKey=n+'|'+max;
+ const language=offlinePlaceLanguage();
+ const cacheKey=n+'|'+max+'|'+language;
  if(resultCache.has(cacheKey))return resultCache.get(cacheKey);
  const shardKey=keyFor(n), rows=await shard(shardKey), out=[];
  const prev=prefixCandidates.get(shardKey);
@@ -33,9 +35,8 @@ export async function searchPlaces(q,limit=12){
  prefixCandidates.set(shardKey,{q:n,rows:matched});
  out.sort((a,b)=>a.score-b.score||b.x[7]-a.x[7]||String(a.x[1]).localeCompare(String(b.x[1])));
  const result=out.slice(0,max).map(({x})=>{
-   const district=x[3]||'', state=x[2]||'';
-   const place=[x[1],district,state,'India'].filter((v,i,a)=>v&&a.indexOf(v)===i).join(', ');
-   return {place,name:x[1],admin2:district,admin1:state,country:'India',latitude:x[4],longitude:x[5],timezone:x[6]||'Asia/Kolkata',population:x[7],geonameId:x[0]};
+   const display=formatOfflineIndiaPlace(x,language);
+   return {...display,latitude:x[4],longitude:x[5],timezone:x[6]||'Asia/Kolkata',population:x[7],geonameId:x[0]};
  });
  resultCache.set(cacheKey,result);
  if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
