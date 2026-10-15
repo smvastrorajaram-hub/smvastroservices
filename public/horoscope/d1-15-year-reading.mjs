@@ -277,6 +277,11 @@ function dashaNarrative(full,periods,language){
  const core=globalThis.SMVTimePredictionD1;
  if(!core||typeof core.renderDasha!=='function')throw Error('Current Dasha reading engine unavailable');
  const entries=[];
+ // V332: a continuous MD/AD with the same life-stage and D1 activation
+ // must not reprint an identical prediction when the reporting year splits it.
+ // Dates/evidence are retained and a changed age-stage or changed activation
+ // starts a new narrative. This affects wording, not the dasha boundaries.
+ const seenTopicKeys=new Set();
  let previous=null;
  for(const p of periods){
   const reading=core.renderDasha(full,p.from,language);
@@ -285,7 +290,17 @@ function dashaNarrative(full,periods,language){
   const ranked=reading.topics.map(t=>({t,trigger:periodTrigger(t)}))
     .filter(x=>x.trigger.hasDirect)
     .sort((a,b)=>b.trigger.power-a.trigger.power||a.t.number-b.t.number);
-  const chosen=ranked.slice(0,DASHA_TOPIC_CAP);
+  const chosen=ranked.filter(({t,trigger})=>{
+    const key=[p.md,p.ad,reading.ageStage,t.number,
+      [...trigger.mdMarks].sort().join(','),[...trigger.adMarks].sort().join(',')].join('|');
+    if(seenTopicKeys.has(key))return false;
+    return true;
+  }).slice(0,DASHA_TOPIC_CAP);
+  for(const {t,trigger} of chosen){
+    const key=[p.md,p.ad,reading.ageStage,t.number,
+      [...trigger.mdMarks].sort().join(','),[...trigger.adMarks].sort().join(',')].join('|');
+    seenTopicKeys.add(key);
+  }
   // If a period's operating lords have no usable D1 house links, do not
   // invent life events for all twelve houses. Explain the evidence gap.
   const topics=chosen.map(({t,trigger})=>({
