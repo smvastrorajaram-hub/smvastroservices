@@ -47,7 +47,7 @@ function getD9Sign(v){
 function strength(c,name){const p=planet(c,name);if(!p)return {label:'—',detail:'—'};const s3=p.strength3||{};const total=Number(s3.total??s3.totalRupas),req=Number(s3.required??s3.requiredRupas);let label=dignity(name,p.longitude);if(Number.isFinite(total)&&Number.isFinite(req))label+=` · ${total.toFixed(2)}/${req.toFixed(2)} ${T('Shadbala','ஷட்பலம்')}`;const flags=[];if(p?.strength?.combustion)flags.push(T('Combust','அஸ்தங்கம்'));if(Number(p.speed)<0)flags.push(T('Retrograde','வக்கிரம்'));const d9=getD9Sign(p.navamsa??p.d9??p.navamsha);if(d9)flags.push(`${T('D9','D9')}: ${d9}`);return {label,detail:`${sign(si(p.longitude))} · ${p.degree||''}${flags.length?' · '+flags.join(' · '):''}`};}
 function seventh(c){const lag=Number(c?.lagna?.longitude);const s7=(si(lag)+6)%12,lord=LORD[s7],p=planet(c,lord);return {sign:sign(s7),lord:T(lord==='குரு'?'Jupiter':lord==='சுக்கிரன்'?'Venus':lord==='செவ்வாய்'?'Mars':lord==='புதன்'?'Mercury':lord==='சந்திரன்'?'Moon':lord==='சூரியன்'?'Sun':'Saturn',lord),house:p?house(p.longitude,lag):null,str:p?dignity(lord,p.longitude):'—'};}
 function kuja(c){const m=planet(c,P.Mars),moon=planet(c,P.Moon),v=planet(c,P.Venus),lag=Number(c?.lagna?.longitude);if(!m)return null;const refs=[[T('Lagna','லக்னம்'),lag],[T('Moon','சந்திரன்'),moon?.longitude],[T('Venus','சுக்கிரன்'),v?.longitude]].filter(x=>Number.isFinite(Number(x[1])));const hits=refs.map(([n,r])=>[n,house(m.longitude,r)]).filter(x=>KUJA.has(x[1]));return {hits,all:refs.map(([n,r])=>[n,house(m.longitude,r)])};}
-function moonStrength(c){const moon=planet(c,P.Moon),sun=planet(c,P.Sun);if(!moon||!sun)return '—';const elong=norm(moon.longitude-sun.longitude);const waxing=elong>0&&elong<180;const dg=dignity(P.Moon,moon.longitude);return `${waxing?T('Waxing Moon','வளர்பிறை சந்திரன்'):T('Waning Moon','தேய்பிறை சந்திரன்')} · ${dg} · ${sign(si(moon.longitude))}`;}
+function moonStrength(c){const moon=planet(c,P.Moon),sun=planet(c,P.Sun);if(!moon||!sun)return '—';const elong=norm(moon.longitude-sun.longitude);const waxing=elong<180,bright=elong>=48&&elong<=240,light=Math.round((1-Math.cos(elong*Math.PI/180))*50),dg=dignity(P.Moon,moon.longitude);return `${waxing?T('Waxing Moon','வளர்பிறை சந்திரன்'):T('Waning Moon','தேய்பிறை சந்திரன்')} · ${bright?T('strong-light interval','ஒளிப்பலம் உதவும் காலம்'):T('weak-light interval','ஒளிப்பலம் குறைந்த காலம்')} (${light}%) · ${dg} · ${sign(si(moon.longitude))}`;}
 function dashaRows(c){const ps=c?.dashas?.periods||c?.dashas?.mahadashas||[];return ps.slice(0,3).map(x=>`${x.lord||x.name}: ${x.start} → ${x.end}`);}
 function overlap(a,b){const A=dashaPeriods(a),B=dashaPeriods(b),out=[];for(const x of A)for(const y of B){const s=x.start>y.start?x.start:y.start,e=x.end<y.end?x.end:y.end;if(s&&e&&s<e)out.push(`${x.lord||x.name} / ${y.lord||y.name}: ${s} → ${e}`)}return out.slice(0,6)}
 function angleDiff(a,b){const d=Math.abs(norm(Number(a)-Number(b)));return Math.min(d,360-d);}
@@ -1617,7 +1617,7 @@ function mm281FuturePeriods(c,planetName){const start=mmAnalysisDate(),end=mmYea
 function mm281DoshaChapter(b,g,ks,sync,pr){const rows=mmV279DoshaMap(b,g,ks,sync);const nadi=nadiVilakku(pr,b,g),rj=rajjuVilakku(pr),sh=mmShashtashtaka(pr),bk=mmKendraAdhipatya(b),gk=mmKendraAdhipatya(g);
  const parts=[],practiceSeen=new Set(),periodSeen=new Set(),evidenceSeen=new Set();
  for(const r of rows){const sb=r.bs,sg=r.gs,readState=x=>String(x||'').replace(/மீதத் தாக்கம்/g,'தோஷத் தாக்க நிலை').replace(/residual indication/gi,'indication after exception review'),has=(sb.v>0||sg.v>0||r.B?.state==='mitigated'||r.G?.state==='mitigated');
- const details=(x,chart,who)=>{const arr=(field)=>Array.isArray(x?.[field])?x[field]:[],hits=[...arr('hits'),...arr('aggravators')].slice(0,5),ex=[...arr('reasons'),...arr('partialReasons'),...arr('context')].slice(0,4);const pl=planet(chart,r.planetName),lag=Number(chart?.lagna?.longitude),place=pl&&Number.isFinite(lag)?`${mmPlanetText(r.planetName)} ${sign(si(pl.longitude))}, ${house(pl.longitude,lag)}${T('th house','-ஆம் பாவம்')} (${dignity(r.planetName,pl.longitude)})`:T('Position not available','இருப்பிடத் தரவு இல்லை');
+ const details=(x,chart,who)=>{const arr=(field)=>Array.isArray(x?.[field])?x[field]:[],clean=v=>String(typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v)).replace(/\s+/g,' ').trim(),unique=xs=>{const seen=new Set();return xs.filter(v=>{const key=clean(v);if(!key||seen.has(key))return false;seen.add(key);return true;});},hits=unique([...arr('hits'),...arr('aggravators')]).slice(0,5),ex=unique([...arr('reasons'),...arr('partialReasons'),...arr('context')]).slice(0,4);const pl=planet(chart,r.planetName),lag=Number(chart?.lagna?.longitude),place=pl&&Number.isFinite(lag)?`${mmPlanetText(r.planetName)} ${sign(si(pl.longitude))}, ${house(pl.longitude,lag)}${T('th house','-ஆம் பாவம்')} (${dignity(r.planetName,pl.longitude)})`:T('Position not available','இருப்பிடத் தரவு இல்லை');
  const reason=v=>mm281TranslateHit(typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v));
  const actualCauses=mm281CausePlanets(x,chart,r.planetName);const causeLine=`${T('Inferred directly involved planet(s)','கணக்கில் நேரடியாகச் சம்பந்தப்பட்ட கிரகம்')}: ${actualCauses.map(mmPlanetText).join(', ')}`;const srcKey=`${who}|${place}|${hits.map(reason).join('; ')}`,exKey=`${who}|${ex.map(reason).join('; ')}`;
  const showSrc=!evidenceSeen.has('source|'+srcKey);evidenceSeen.add('source|'+srcKey);
@@ -1818,11 +1818,16 @@ function mm332VerdictEvidence(b,g,pr,ks,ds,sync,v){
  if(x.sy.caution)add(windows,T('Only the already-existing Mars/Rahu pressure is revisited in overlapping or near Dasha periods; timing itself creates no new dosha.','ஒரே நேரத்தில் அல்லது அருகருகே வரும் தசைகளில் ஏற்கெனவே மீதமுள்ள செவ்வாய்/ராகு தாக்கம் மட்டுமே கவனிக்கப்படுகிறது; தசை தனியாக புதிய தோஷத்தை உருவாக்காது.'));
  if(ds.some(r=>r.days<=180))add(windows,T('Close Mahadasha changes are shown in the 15-year table.','நெருக்கமான மகாதசை மாற்றங்கள் 15 வருடக் காலப் பட்டியலில் தரப்பட்டுள்ளன.'));
  if(!windows.length)add(windows,T('No extra severe timing veto was confirmed by these checks.','இந்தச் சோதனைகளால் தனியான கடுமையான காலத் தடை உறுதிப்படுத்தப்படவில்லை.'));
+ // V339: disclose the actual rule inputs behind the SINGLE already-computed verdict.
+ // These are evidence counts, NOT percentages or a second outcome calculation.
+ const criteriaLine=T(
+  `Decision trace: unresolved high-priority conditions ${x.severe}; other caution indicators ${x.caution}; supportive checks ${x.supports}; converging major factors ${x.major}. ${x.against?'The existing rule finds combined unmitigated counter-evidence stronger.':'The existing rule does not find a decisive unresolved combination.'}`,
+  `தீர்ப்புக் கணக்கீட்டுப் பாதை: தீராத முக்கிய எதிர் ஆதாரங்கள் ${x.severe}; கூடுதல் கவனக் குறிகள் ${x.caution}; சாதகச் சோதனைகள் ${x.supports}; ஒன்றிணையும் முக்கிய முரண்பாடுகள் ${x.major}. ${x.against?'மீதமுள்ள எதிர் ஆதாரங்கள் ஒன்றாகச் சேர்ந்து இறுதித் தீர்ப்பில் மேலோங்குகின்றன.':'முடிவை மாற்றும் அளவிலான தீராத முரண்பாடுகள் ஒருங்கிணைந்து இல்லை.'}`);
  const focus=x.sh.present||x.ld.rows.some(r=>r.key==='sukra'&&Math.max(r.bride,r.groom)>0)||x.d9Pressure?
   T('In everyday married life, discuss expenses, time together, communication and family boundaries early; do not interpret these astrological themes as an assured event.','நடைமுறை திருமண வாழ்க்கையில் செலவுத் திட்டம், இணைந்து செலவிடும் நேரம், பேச்சுமுறை மற்றும் குடும்ப எல்லைகள் ஆகியவற்றை முன்கூட்டியே ஒப்புக்கொள்வது முக்கியம். இவை உறுதியான சம்பவக் கணிப்புகள் அல்ல.'):
   T('Share daily responsibilities and discuss expectations openly.','அன்றாடப் பொறுப்புகளைப் பகிர்ந்து எதிர்பார்ப்புகளை வெளிப்படையாகப் பேசுவது உதவும்.');
  const part=(title,rows)=>`<div><b>${esc(title)}</b><span>${esc(rows.length?rows.join(' • '):T('No significant additional indication','குறிப்பிடத்தக்க கூடுதல் குறி இல்லை'))}</span></div>`;
- return `<div class="mm-final-verdict-evidence mm-v334-final-evidence"><h3>${T('Reasons for the final judgement','இறுதித் தீர்ப்பை நிர்ணயித்த ஜாதக ஆதாரங்கள்')}</h3><div class="mm-facts">${part(T('Supporting evidence','சாதகமான ஆதாரங்கள்'),support)}${part(T('Residual counter-evidence','மீதமுள்ள எதிர் ஆதாரங்கள்'),challenges)}${part(T('Operating periods','செயல்படும் காலங்கள்'),windows)}${part(T('Practical couple themes','திருமண வாழ்க்கையில் கவனிக்க வேண்டியவை'),[focus])}</div></div>`;
+ return `<div class="mm-final-verdict-evidence mm-v334-final-evidence"><h3>${T('Reasons for the final judgement','இறுதித் தீர்ப்பை நிர்ணயித்த ஜாதக ஆதாரங்கள்')}</h3><div class="mm-facts">${part(T('Supporting evidence','சாதகமான ஆதாரங்கள்'),support)}${part(T('Residual counter-evidence','மீதமுள்ள எதிர் ஆதாரங்கள்'),challenges)}${part(T('Operating periods','செயல்படும் காலங்கள்'),windows)}${part(T('Decision trace (same verdict)','அதே இறுதித் தீர்ப்பின் கணக்கீட்டுச் சுருக்கம்'),[criteriaLine])}${part(T('Practical couple themes','திருமண வாழ்க்கையில் கவனிக்க வேண்டியவை'),[focus])}</div></div>`;
 }
 // De-duplicate repeated wording ONLY where the actual transit sign is unchanged.
 // Exact positions, sign-change events, date windows and MD/AD periods survive.
@@ -1833,6 +1838,14 @@ function mm332RefineTimeline(markup,data){
  const tmp=document.createElement('template');tmp.innerHTML=markup;
  const nodes=[...tmp.content.querySelectorAll('.mm-v308-year')],planetKey={'குரு':'Jupiter','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','Jupiter':'Jupiter','Saturn':'Saturn','Rahu':'Rahu','Ketu':'Ketu'};
  let warningSeen=false;
+ // Reused human-language templates are not separate predictions. Keep every
+ // dated MD/AD window and its natal evidence; suppress only an identical
+ // generic explanatory sentence after its first occurrence for each side.
+ const genericUsed=new Set(),genericPhrases=[
+  'துணைவர் தொடர்பான முடிவு நேரடியாக முன்னிலைக்கு வரலாம்; திருமணமானவர்களுக்கு ஒருவரின் தேவை மற்றவரின் திட்டத்தில் இடம் பெற வேண்டிய காலம்.',
+  'கூட்டு முடிவை முன்னெடுக்க பேசுவதற்கான இடம் உள்ளது; D1–D9 ஆதரவும் பிற தோஷ ஆய்வும் இணங்கினால் குடும்பத் திட்டங்களை நடைமுறைப்படுத்த பரிசீலிக்கலாம்.',
+  'The partner-related decision may move directly into focus; married partners should include each other’s needs in their plans.'
+ ];
  for(let i=0;i<nodes.length;i++){
   const year=nodes[i],curr=years[i],prev=years[i-1],heads=[...year.querySelectorAll('h4')];
   for(const h of heads){
@@ -1850,6 +1863,12 @@ function mm332RefineTimeline(markup,data){
   }
   for(const p of year.querySelectorAll('p')){
    let t=p.textContent||'';
+   const who=(()=>{let q=p.previousElementSibling;while(q&&q.tagName!=='H4')q=q.previousElementSibling;return q?.textContent||'period';})();
+   for(const phrase of genericPhrases){if(!t.includes(phrase))continue;
+     const key=who+'|'+phrase;
+     if(genericUsed.has(key))t=t.replace(phrase,'').replace(/\s{2,}/g,' ').trim();
+     else genericUsed.add(key);
+   }
    // Rahu/Ketu do not own conventional houses. Empty ownership lists must not leak into the PDF.
    t=t.replace(/,\s+பாவங்களுக்கு அதிபதி\./g,'. ராகு/கேதுவிற்கு வழக்கமான தனிப் பாவாதிபத்தியம் இல்லாததால் இருப்பிடமும் ராசிநாதர் தொடர்பும் அடிப்படையாகும்.').replace(/, ruling houses\s*\./gi,'. The lunar nodes have no conventional house ownership; their sign-lord and placements provide context.');
    const warn='இருவருக்கும் ஒரே நேரத்தில் குரு கோச்சார ஆதரவு உறுதியாகவில்லை; தசைப் பலனின் நல்ல அம்சங்களை மட்டும் வைத்து நிகழ்வு உறுதி செய்ய வேண்டாம்.';

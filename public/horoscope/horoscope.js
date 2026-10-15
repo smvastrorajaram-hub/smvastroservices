@@ -46,6 +46,7 @@
     'இல்லை':'No',
     'உச்சம்':'Exaltation',
     'நீசம்':'Debilitation',
+    'ஆட்சி':'Own Sign',
     'உச்ச ராசி':'Exalted Sign',
     'நீச ராசி':'Debilitated Sign',
     'சுய ராசி':'Own Sign',
@@ -493,6 +494,23 @@
     return mounted;
   }
 
+  // V339: show sign dignity before friendly/enemy relationship. This is a
+  // display-layer reconciliation; no longitude, Shadbala or house is altered.
+  function smvV339Dignity(p){
+    const names={'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn'};
+    const name=names[p?.name], s=p?.strength||{},lon=Number(p?.longitude);
+    const exalt={Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6};
+    const owns={Sun:[4],Moon:[3],Mars:[0,7],Mercury:[2,5],Jupiter:[8,11],Venus:[1,6],Saturn:[9,10]};
+    const mula={Sun:[4,0,20],Moon:[1,4,30],Mars:[0,0,12],Mercury:[5,15,20],Jupiter:[8,0,10],Venus:[6,0,15],Saturn:[10,0,20]};
+    if(name&&Number.isFinite(lon)){
+      const sign=Math.floor(((lon%360)+360)%360/30),degree=((lon%30)+30)%30,m=mula[name];
+      if(m&&sign===m[0]&&degree>=m[1]&&degree<m[2])return 'மூலத்திரிகோணம்';
+      if(sign===exalt[name])return 'உச்சம்';
+      if(sign===(exalt[name]+6)%12)return 'நீசம்';
+      if(owns[name]?.includes(sign))return 'ஆட்சி';
+    }
+    return s.exalted?'உச்சம்':s.debilitated?'நீசம்':s.moolatrikona?'மூலத்திரிகோணம்':s.ownSign?'ஆட்சி':s.relationship||'—';
+  }
   function render(d){
     const result=$('tamilHoroscopeResult');
     const name=($('tamilAstroName')?.value||'அன்பார்ந்தவர்').trim()||'அன்பார்ந்தவர்';
@@ -529,7 +547,7 @@
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>கிரகம்</th><th>ராசி</th><th>பாகை</th><th>நட்சத்திரம்</th><th>பாதம்</th></tr></thead><tbody>${rows(d.planets,d.lagna,d.upagrahas?.maandi)}</tbody></table></div>
       <h3 class="base-planet-strength" style="margin-top:22px">💪 கிரக வலிமை & நிலை</h3>
       <p class="small">வக்கிரம், அஸ்தமனம் (Combustion), உச்சம்/நீசம், சுய ராசி மற்றும் மூலத்திரிகோணம் ஆகிய அடிப்படை நிலைகள்.</p>
-      <div class="data-table-wrap"><table class="data-table strength-table"><thead><tr><th>கிரகம்</th><th>வக்கிரம்</th><th>அஸ்தமனம்</th><th>சூரிய தூரம்</th><th>ராசி நிலை</th></tr></thead><tbody>${(d.planets||[]).map(p=>{const s=p.strength||{};return `<tr><td><b>${esc(p.name)}</b></td><td>${s.retrograde?'ஆம்':'இல்லை'}</td><td>${s.combustion?'ஆம்':'இல்லை'}</td><td>${Number(s.sunDistance||0).toFixed(2)}°</td><td>${esc(s.relationship||'—')}</td></tr>`}).join('')}</tbody></table></div>
+      <div class="data-table-wrap"><table class="data-table strength-table"><thead><tr><th>கிரகம்</th><th>வக்கிரம்</th><th>அஸ்தமனம்</th><th>சூரிய தூரம்</th><th>ராசி நிலை</th></tr></thead><tbody>${(d.planets||[]).map(p=>{const s=p.strength||{};return `<tr><td><b>${esc(p.name)}</b></td><td>${s.retrograde?'ஆம்':'இல்லை'}</td><td>${s.combustion?'ஆம்':'இல்லை'}</td><td>${Number(s.sunDistance||0).toFixed(2)}°</td><td>${esc(smvV339Dignity(p))}</td></tr>`}).join('')}</tbody></table></div>
       <h3 class="base-shadbala" style="margin-top:22px">💪 Classical Parashari Shadbala</h3>
       <p class="small"><b>சூரியன் முதல் சனி வரை 7 கிரகங்களுக்கு</b> Classical-style Shadbala கணக்கீடு. 1 Rupa = 60 Virupa. Rahu/Ketu இந்த classical Shadbala total-ல் சேர்க்கப்படவில்லை.</p>
       <div class="data-table-wrap"><table class="data-table phase3-shadbala-table"><thead><tr><th>கிரகம்</th><th>ஸ்தான பலம்</th><th>திக் பலம்</th><th>கால பலம்</th><th>சேஷ்டா பலம்</th><th>நைசர்கிக பலம்</th><th>த்ரிக் பலம்</th><th>மொத்தம் / தேவையானது</th></tr></thead><tbody>${(d.planets||[]).filter(p=>p.strength3?.available).map(p=>{const s=p.strength3||{},c=s.components||{},k=c.kala||{},st=c.sthana||{};const total=Number(s.totalVirupa||0),req=Number(s.requiredVirupa||0),ratio=Number(s.ratio||0);return `<tr><td><b>${esc(p.name)}</b></td><td>${Number(st.total||0).toFixed(1)}<br><span class="small">உச்ச ${Number(st.uccha||0).toFixed(1)} · வர்க ${Number(st.saptavargaja||0).toFixed(1)}</span></td><td>${Number(c.dig||0).toFixed(1)}</td><td>${Number(k.total||0).toFixed(1)}<br><span class="small">நாதோ ${Number(k.natonnatha||0).toFixed(1)} · பக்ஷ ${Number(k.paksha||0).toFixed(1)} · அயன ${Number(k.ayana||0).toFixed(1)}</span></td><td>${Number(c.cheshta||0).toFixed(1)}</td><td>${Number(c.naisargika||0).toFixed(1)}</td><td>${Number(c.drik||0).toFixed(1)}</td><td><b>${total.toFixed(1)}</b> / ${req.toFixed(0)}<br><span class="small">${ratio>=1?'வலிமை':'தேவையான அளவுக்கு குறைவு'} · ${ratio.toFixed(2)}×</span></td></tr>`}).join('')}</tbody></table></div>

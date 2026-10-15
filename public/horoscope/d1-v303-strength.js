@@ -24,7 +24,9 @@
  const band=d=>d===null?'unknown':d<=3?'within-3':d<=8?'within-8':d<=15?'within-15':'beyond-15';
  const weight=d=>d===null?0.40:d<=3?1:d<=8?0.76:d<=15?0.44:0.09;
  function phase(d){const sun=lon(d?.planets?.Sun),moon=lon(d?.planets?.Moon);if(sun===null||moon===null)return null;
-  const separation=mod(moon-sun),light=clamp((1-Math.cos(separation*Math.PI/180))/2);return {separation,light,brightFifthWindow:separation>=48&&separation<=240,waxing:separation<180};}
+  const separation=mod(moon-sun),light=clamp((1-Math.cos(separation*Math.PI/180))/2);return {separation,light,brightFifthWindow:separation>=48&&separation<=240,waxing:separation<180,
+   phaseClass:separation>=48&&separation<=240?'strong-window':'weak-window',
+   tithiIndex:Math.min(30,Math.floor(separation/12)+1)};}
  function navamsaSign(p){const L=lon(p);if(L===null)return null;const sign=Math.floor(L/30),degree=L%30,part=Math.min(8,Math.floor(degree/(30/9)));
   const kind=sign%3,start=kind===0?sign:kind===1?(sign+8)%12:(sign+4)%12;return (start+part)%12;}
  function vargottama(p){return p&&navamsaSign(p)===p.sign&&navamsaSign(p)!==null;}
