@@ -17,6 +17,22 @@
   const re=new RegExp(escRe(labels.date)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.time)+'\\s*:\\s*(.*?)\\s*[·•]\\s*'+escRe(labels.place)+'\\s*:\\s*(.*)$','i'),m=raw.match(re);
   return m?{date:m[1],time:m[2],place:m[3]}:{raw};
  }
+ // A saved horoscope already contains the chosen birth-place name in its report
+ // identity/cover data. Reuse that exact Unicode label (Tamil included), rather
+ // than trying to geocode or translate coordinates while printing.
+ function usefulCoverValue(...values){
+  for(const value of values){
+   if(value==null)continue;
+   const text=String(value).trim();
+   if(text&&!/^(?:—|–|-|undefined|null)$/i.test(text))return text;
+  }
+  return '';
+ }
+ function horoscopePrintPlace(report,compact){
+  return usefulCoverValue(report?.cover?.person?.place,report?.identity?.birthPlace,
+   report?.identity?.place,report?.identity?.birth?.place,
+   report?.calculation?.birthPlace,report?.calculation?.birth?.place,compact?.place);
+ }
  function addCoverPerson(grid,title,name,date,time,place,tamil){
   const card=document.createElement('article');card.className='smv-cover-person';
   const h=document.createElement('h2');h.textContent=(title?title+' · ':'')+(name||'—');card.append(h);
@@ -36,7 +52,7 @@
   }else{
    title.textContent='Sri Maduraveerayah Horoscope';sub.textContent=tamil?'முழு வேத ஜோதிட வாழ்க்கைப் பலன்':'Complete Vedic life-prediction report';grid.classList.add('is-single');
    const compact=compactBirthFromReport(root,tamil),id=report.identity||{};
-   addCoverPerson(grid,'',report.name||'Horoscope',compact?.date||coverDate(id.date,tamil),compact?.time||id.time||'—',compact?.place||'—',tamil);primary.textContent=report.name||'SMV HOROSCOPE';
+   addCoverPerson(grid,'',report.name||'Horoscope',compact?.date||coverDate(id.date,tamil),compact?.time||id.time||'—',horoscopePrintPlace(report,compact)||'—',tamil);primary.textContent=report.name||'SMV HOROSCOPE';
   }
  }
  const status=document.getElementById('printStatus'),button=document.getElementById('printNow'),back=document.getElementById('printBack');
@@ -130,7 +146,7 @@
     const n=document.createElement('h2');n.className='print-birth-name';n.textContent=nameNode.textContent.trim();identity.append(n);
     if(m){
      const grid=document.createElement('div');grid.className='print-birth-details';
-     [[labels.date,m[1]],[labels.time,m[2]],[labels.place,m[3]]].forEach(([label,value])=>{
+     [[labels.date,m[1]],[labels.time,m[2]],[labels.place,horoscopePrintPlace(report,{place:m[3]})||'—']].forEach(([label,value])=>{
       const a=document.createElement('span');a.className='label';a.textContent=label;
       const c=document.createElement('span');c.className='colon';c.textContent=':';
       const v=document.createElement('span');v.className='value';v.textContent=value;

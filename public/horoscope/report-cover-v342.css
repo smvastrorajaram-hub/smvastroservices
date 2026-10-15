@@ -3,8 +3,8 @@
  * Some Android hardware/print providers impose their own non-printable margins.
  */
 #smvPrintCover.smv-vector-cover .smv-cover-emblem img{
- transform:translateX(-3mm)!important;
- transform-origin:center top!important;
+ transform:none!important;
+ transform-origin:center center!important;
 }
 @media print{
  @page:first{size:A4;margin:0}
@@ -21,5 +21,44 @@
   margin:0!important;box-sizing:border-box!important;overflow:hidden!important;
   box-shadow:none!important;
  }
- #smvPrintCover.smv-vector-cover .smv-cover-emblem img{transform:translateX(-3mm)!important}
+ #smvPrintCover.smv-vector-cover .smv-cover-emblem img{transform:none!important}
+}
+
+/* V344: A4 edge-to-edge sheet for the devotional cover ONLY. Do not remove
+ * comfortable body pages' page margins or change the rest of the report. */
+@page smvCover { size:A4; margin:0 }
+@media print {
+ #smvPrintCover.smv-print-cover.smv-vector-cover {
+   page: smvCover!important;
+   box-sizing:border-box!important;
+   width:210mm!important;height:297mm!important;
+   min-width:210mm!important;max-width:210mm!important;
+   margin:0!important;padding:0!important;
+   break-after:page!important;
+   -webkit-print-color-adjust:exact!important;
+   print-color-adjust:exact!important;
+ }
+ #smvPrintCover.smv-print-cover.smv-vector-cover .smv-cover-frame {
+   box-sizing:border-box!important;
+   width:210mm!important;height:297mm!important;
+   min-width:210mm!important;max-width:210mm!important;
+   min-height:297mm!important;max-height:297mm!important;
+   margin:0!important;
+ }
+}
+/* The two images already sit in a centred flex container. The inherited
+ * old -1.8mm and -3mm shifts make them optically off centre on mobile. */
+#smvPrintCover.smv-vector-cover .smv-cover-emblem img {
+ transform:none!important;
+ transform-origin:center center!important;
+}
+/* Browser reading view: prevent brand wrapping and lateral cover overflow. */
+@media screen and (max-width:720px) {
+ #smvPrintCover.smv-vector-cover {max-width:100%!important;width:100%!important;margin-inline:auto!important}
+ #smvPrintCover.smv-vector-cover .smv-cover-frame{box-sizing:border-box!important;max-width:100%!important;margin-inline:auto!important}
+ #smvPrintCover.smv-vector-cover .smv-cover-brand h1{
+   font-size:clamp(21px,5.1vw,35px)!important;line-height:1.12!important;
+   letter-spacing:0!important;white-space:nowrap!important;
+ }
+ #smvPrintCover.smv-vector-cover .smv-cover-emblem img{transform:none!important}
 }
