@@ -1354,7 +1354,7 @@ function mm281Narrative(r){if(!r)return T('Cannot give an unsupported reading.',
  const impactTA=r.attackers.map(x=>grahaMeaningsTA[mmPlanetText(x)]).filter(Boolean);
  const graha=r.attackers.length?T(`The actual aspecting planets modify the way responsibilities are negotiated in this specific life area.`,`இந்தத் துறையில் ${impactTA.join(', ')} போன்ற செயல்பாடுகள் இருவரும் கடமைகளை ஒப்புக்கொள்ளும் முறையில் வேறுபாட்டை ஏற்படுத்தலாம்.`):'';
  const sectorTA=['சொந்த முடிவுகள்','குடும்பப் பணப் பயன்பாடு','தகவல் பரிமாற்றம்','வசிப்பிடத் திட்டம்','குழந்தைகள் மற்றும் கல்விக்கான திட்டம்','அன்றாட வேலை','துணைவரின் எதிர்பார்ப்பு','கூட்டுப் பொறுப்பு','வழிகாட்டல் மற்றும் பயணம்','தொழில் நேரம்','கூட்டு வருமான இலக்கு','ஓய்வு மற்றும் தனிச்செலவு'];
- const kar=r.kp&&r.karPos!==r.entry.n?T(`The significator's additional natal connection to house ${r.karPos} brings a distinct source of daily priorities for this subject.`,`இயற்கைக் காரகனுக்கான ${r.karPos}-ஆம் பாவத் தொடர்பும் ${sectorTA[r.entry.n-1]} பற்றிய முடிவுகளில் வேறொரு குடும்பத் தேவையை முன்னிறுத்தலாம்.`):'';
+ const kar=r.kp&&r.karPos!==r.entry.n&&r.karPos>=1&&r.karPos<=12?T(`The natural significator relates ${sectorTA[r.entry.n-1]} to ${MM335_HOUSE_LINKS[r.karPos-1][1]}, which may alter the everyday choices.`,`இயற்கைக் காரகன் ${mmPlanetText(r.entry.k)} ${r.karPos}-ஆம் பாவத் தொடர்பால் ${sectorTA[r.entry.n-1]} பற்றிய முடிவை ${MM335_HOUSE_LINKS[r.karPos-1][0]} சார்ந்த சூழலுடன் இணைக்கிறது.`):'';
  return [T(main[1],main[0]),nuance,graha,kar].filter(Boolean).join(' ');
 }
 function mm281Status(a,b){
@@ -1396,22 +1396,144 @@ const MM_COUPLE_CONTEXT_EN=[
  'income plans and boundaries with friends',
  'private expenses, sleep schedules and individual space'
 ];
-function mm281PairOutcome(B,G,entry,young){if(!B||!G||young)return '';
- const ta=lang()==='ta',subject=ta?MM_COUPLE_CONTEXT_TA[entry.n-1]:MM_COUPLE_CONTEXT_EN[entry.n-1];
- const group=r=>r.supportive&&!r.challenging?'support':r.challenging&&!r.supportive?'strain':'mixed';
- const bride=group(B),groom=group(G);
- const same=bride===groom;
- const label=x=>x==='support'?(ta?'ஒழுங்குபடுத்த உதவும்':'a potentially supportive theme'):x==='strain'?(ta?'மறுபரிசீலனை கேட்கும்':'a theme needing review'):(ta?'ஆதரவும் தடையும் கலந்த':'a mixed indication');
- const comparison=same?(ta?`இருவருக்கும் ${label(bride)} பிறப்பு ஆதாரங்கள் உள்ளதால், ${subject} தொடர்பான ஒப்பந்தத்தை ஒரே நேரத்தில் உருவாக்கிக் கொள்ள முடியும்.`:`Both charts show ${label(bride)} natal indications, so their agreement on ${subject} can be developed deliberately.`):
- (ta?`பெண்ணின் ஜாதகத்தில் ${label(bride)} அமைப்பும் ஆணின் ஜாதகத்தில் ${label(groom)} அமைப்பும் இருப்பதால், ${subject} குறித்து இருவரும் ஒரே வேகத்தில் முடிவு எடுப்பார்கள் என்று கருதக்கூடாது.`:
- `The bride has ${label(bride)} natal indications and the groom has ${label(groom)} ones, so a shared decision on ${subject} need not develop at the same pace.`);
- const actual=!Number.isInteger(B.pos)||!Number.isInteger(G.pos)?'':B.pos!==G.pos?(ta?`இருவரின் பாவாதிபதிகள் வேறு வாழ்க்கைத் துறைகளில் இருப்பதால் இந்தத் தேர்வில் இருவரின் கடமைகளும் வேறுபடலாம்.`:'Their house rulers activate different life areas, so duties may need separate consideration.'):
- (ta?`இருவரின் பாவாதிபதித் தொடர்பு ஒரே வாழ்க்கைத் துறையில் இருப்பதால் அந்தத் துறையின் பொறுப்பு இருவருக்கும் முக்கியமாகலாம்.`:'Both house-ruler positions connect the subject to the same life area.');
- return comparison+' '+actual;
+/* V335 — Compare the lived consequences of the two actual D1 house lords.
+   No automatic match decision, change to D1 astronomy, or fabricated timing.
+   Every conclusion uses natal lord positions, their dignity, and the actual
+   calculated drishti/house contact already gathered by mm281Row(). */
+const MM335_HOUSE_LINKS=[
+ ['தன் உடல் ஆற்றல், தனிப்பட்ட விருப்பம் மற்றும் நேரடித் தீர்மானம்','personal autonomy and initiative'],
+ ['குடும்பப் பேச்சு, சேமிப்பின் அளவு மற்றும் பணப் பயன்பாடு','family speech, savings and spending'],
+ ['தொடர்பு, சொந்த முயற்சி, உடன்பிறந்தோர் உதவி','communication, initiative and sibling support'],
+ ['வீட்டு வசதி, பெற்றோர் பராமரிப்பு, மனநிம்மதி','housing, parental care and domestic peace'],
+ ['கல்வி, குழந்தைகளுக்கான எதிர்காலத் திட்டம், படைப்புத்திறன்','learning, children’s plans and creativity'],
+ ['வேலைப்பளு, கடன், உடல்நல வழக்கங்கள் மற்றும் கடமைப் பகிர்வு','workload, debt, health routines and daily duties'],
+ ['துணைவரின் விருப்பம், ஒப்புதல் மற்றும் கூட்டுத் தீர்மானம்','partner consent and joint decisions'],
+ ['பகிரப்பட்ட பணம், திடீர் மாற்றம் மற்றும் பரஸ்பர நம்பிக்கை','shared assets, unexpected change and trust'],
+ ['நம்பிக்கை, உயர்கல்வி, பெரியவர் வழிகாட்டல், பயணம்','beliefs, further study, guidance and travel'],
+ ['தொழில், பதவி, பொதுப் பொறுப்பு மற்றும் நேர ஒதுக்கீடு','career, recognition, public duties and scheduling'],
+ ['வருமானம், நண்பர்கள், மூத்த உறவினர் மற்றும் கூட்டு இலக்கு','income, social circles and shared goals'],
+ ['தனிச்செலவு, உறக்கம், தனியிடம் மற்றும் தொலைவு','personal expenses, rest, privacy and distance']
+];
+const MM335_TOPIC_EFFECT=[
+ ['தனிப்பட்ட வேகம் அல்லது ஓய்வுக்கான நேரம்','daily pace and individual rest'],
+ ['சேமிப்பா, உடனடிக் குடும்பத் தேவையா என்ற முன்னுரிமை','saving versus immediate family needs'],
+ ['செய்தி சொல்லும் நேரம், வாதத்தைத் தீர்க்கும் நடை, உறவினர் பங்கு','how and when to communicate and involve relatives'],
+ ['வசிப்பிடம், சொத்து வாங்குதல், பெற்றோருக்கான நேரம்','residence, property plans and time for parents'],
+ ['படிப்புக்கான செலவு, குழந்தைகள் பற்றிய விருப்பம், அவர்களுக்கான பொறுப்பு','education costs, parenting intentions and responsibilities'],
+ ['வேலை நேரம், கடன் தவணை, ஓய்வுக்கான நேரப் பங்கு','work schedules, repayments and rest'],
+ ['நெருக்கம், தனியிடம், சம்மதம் மற்றும் குடும்பத் தீர்மானம்','affection, space, consent and joint decisions'],
+ ['பணத் தகவல், அவசரநிலைக் கடமை, சொத்து ஆவணங்கள்','money transparency, emergencies and shared documents'],
+ ['குடும்ப மரபு, வழிபாடு, பயணம், பெரியவர் ஆலோசனை','beliefs, travel, tradition and elders’ advice'],
+ ['வேலை மாற்றம், பணியில் முன்னேற்றம், வீட்டிற்கான நேரம்','career change, advancement and family time'],
+ ['உறவினர் உதவி, வருமானப் பகிர்வு, நண்பர்கள் எல்லை','financial help to relatives, income and boundaries with friends'],
+ ['தனிச்செலவு, தூக்கம், தனிமைக்கான நேரம்','personal spending, sleep and private time']
+];
+// Each D1 topic ends in a different practical marital-life consequence.
+const MM335_PRACTICAL=[
+ ['ஒருவர் விரைந்து செயல்பட விரும்பும்போது மற்றவருக்கு ஓய்வு தேவைப்பட்டால் அன்றாட நேர அட்டவணையில் மோதல் வரலாம்; சுப ஆதாரம் இருந்தால் முயற்சிக்கும் ஓய்வுக்கும் இருவரும் இடம் கொடுக்க முடியும்.','Different activity and rest rhythms may require a shared daily schedule.'],
+ ['ஒருவர் நீண்டகாலச் சேமிப்புக்கு முன்னுரிமை கொடுக்க, மற்றவர் உறவினர் உதவி அல்லது உடனடிச் செலவை முன்னிலைப்படுத்தினால் குடும்பப் பணத்திற்கான வரம்பு தேவைப்படும்.','Family financial goals can pull against immediate spending or requests for help.'],
+ ['ஒருவர் உடனே பதில் எதிர்பார்த்து மற்றவர் விவரமாகப் பேச விரும்பினால் செய்திகள் தவறாகப் புரிந்துகொள்ளப்படலாம்; உறவினர் தலையீட்டிற்கும் தெளிவான எல்லை வேண்டும்.','Different communication tempos and relatives’ involvement can create misunderstandings.'],
+ ['வீடு வாங்குவது அல்லது எங்கு வசிப்பது என்பதில் ஒருவர் குடும்பத் தொடர்பை முன்னிலைப்படுத்தும்போது மற்றவர் வேலை வசதியை முன்னிலைப்படுத்தலாம்; பெற்றோர் பராமரிப்பும் திட்டத்தில் சேர வேண்டும்.','Residence and property decisions may compete with work location and caring for parents.'],
+ ['குழந்தைகள் பற்றிய விருப்பமும் கல்விக்கான செலவுத் திட்டமும் வேறுபடலாம்; இருவரின் உண்மையான சம்மதத்தையும் வாழ்க்கைச் சூழலையும் கேட்டறிய வேண்டும். ஜாதகத்தால் கருத்தரிப்பை உறுதி செய்ய முடியாது.','Parenting intentions and education budgets require real-world agreement; charts cannot determine fertility.'],
+ ['பணிச்சுமை அதிகரிக்கும் போது வீட்டு வேலையும் கடன் தவணையும் ஒருவர்மீது குவிந்தால் மன அழுத்தம் உயரலாம்; பொறுப்பை நடைமுறையில் பகிர்வதே முக்கியம்.','Workload and debt repayment can strain the partnership if daily duties are one-sided.'],
+ ['நெருக்கம், தனியிடம், குடும்ப முடிவுகளில் முன்னுரிமை மாறினால் அன்புக் குறை என்று ஊகிக்காமல் இருவரின் ஒப்புதலையும் மரியாதையையும் அடிப்படையாகக் கொள்ள வேண்டும்.','Closeness and independence require consent, respect and direct discussion.'],
+ ['எதிர்பாராத குடும்பச் செலவு அல்லது சொத்து ஆவணத் தீர்மானத்தில் யார் தகவலைப் பகிர்கிறார், யார் செலவை ஏற்கிறார் என்பது முன்கூட்டியே தெளிவாக வேண்டும்.','Emergencies and shared property require transparency and defined roles.'],
+ ['கோயில் தரிசனம், பெரியவர் ஆலோசனை, பயணம் அல்லது குடும்ப மரபில் ஒருவர் விருப்பத்தை முன்னிலைப்படுத்தும்போது மற்றவர் நேரம், செலவு, வேலை வசதியைப் பார்க்கலாம்.','Beliefs and family travel choices may compete with work, money and time.'],
+ ['ஒருவருக்குப் பயிற்சி, பதவி உயர்வு அல்லது இடமாற்றம் தேவைப்படும் வேளையில் மற்றவரின் பணி நேரம் வீட்டிற்கான நேரத்தைத் தடுக்கலாம்; இருவரின் முன்னேற்றத்தையும் சேர்த்துத் திட்டமிட வேண்டும்.','Career training, advancement or relocation may conflict with the other partner’s workload.'],
+ ['உறவினருக்கு நிதி உதவி அல்லது நண்பர்களுக்கான நேரம் அதிகரித்தால் கூட்டு வருமான இலக்கும் குடும்பச் சேமிப்பும் பாதிக்கப்படலாம்; அளவான வரம்பு உதவும்.','Help for relatives and time with friends may compete with joint savings and goals.'],
+ ['ஒருவரின் ஓய்வு நேரமும் மற்றவரின் தனியிடத் தேவையும் மாறினால் சிறிய செலவு அல்லது தூக்கப் பழக்கமே வாதமாகலாம்; தனிச்செலவுக்கும் அமைதிக்கும் இடமளிக்க வேண்டும்.','Sleep, privacy and personal spending need workable boundaries.']
+];
+// V335: reuse the 15-year Gochara positions already calculated by the
+// existing offline matching timeline. Do NOT re-run transit astronomy here.
+const mm335TransitCache=new WeakMap();
+function mm335TransitLink(b,g,topic){
+ const years=mm335TransitCache.get(b)?.get(g)?.transit?.years;
+ if(!Array.isArray(years)||!years.length)return '';
+ const scope=(c,y)=>{
+  const lag=Number(c?.lagna?.longitude);
+  if(!Number.isFinite(lag))return [];
+  const hits=[];
+  for(const [k,aspects] of [['Jupiter',[1,5,7,9]],['Saturn',[1,3,7,10]]]){
+   const sn=y?.pos?.[k]?.sign;
+   if(!Number.isInteger(sn)||sn<0||sn>11)continue;
+   const from=((sn-si(lag)+12)%12)+1;
+   const distance=((topic-from+12)%12)+1;
+   if(aspects.includes(distance)){
+    const via=distance===1?T('position','இருப்பு'):T('aspect','பார்வை');
+    hits.push(T(`${k} ${via} (transit house ${from} from the ascendant)`,`${k==='Jupiter'?'குரு':'சனி'} ${via} (லக்னத்திலிருந்து கோச்சார ${from}-ஆம் பாவம்)`));
+   }
+  }
+  return hits;
+ };
+ const candidates=[];
+ for(const y of years){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(y?.date||'')))continue;
+  const a=scope(b,y),z=scope(g,y);
+  if(a.length||z.length)candidates.push({date:y.date,a,z});
+ }
+ if(!candidates.length)return '';
+ // Prefer a real calendar point when BOTH charts have a transit contact,
+ // otherwise the earliest available snapshot. An annual midpoint is not
+ // misrepresented as an exact ingress or promise of an event.
+ const chosen=candidates.find(x=>x.a.length&&x.z.length)||candidates[0];
+ const who=[chosen.a.length?`${T('Bride','பெண்')}: ${chosen.a.join(', ')}`:'',chosen.z.length?`${T('Groom','ஆண்')}: ${chosen.z.join(', ')}`:''].filter(Boolean).join('; ');
+ return T(`On the calculated transit snapshot ${chosen.date}, house ${topic} is contacted by ${who}. This is an aspect/placement observation; combine with the actual Dasha and natal promise before interpreting life events.`,
+ `கணிக்கப்பட்ட கோச்சார இடைத் தேதி ${chosen.date} அன்று ${topic}-ஆம் பாவத்துடன் தொடர்பு: ${who}. இது இருப்பிடம்/பார்வை சார்ந்த காலச் சுட்டி மட்டுமே; பிறப்பு ஜாதக ஆதாரமும் தசை–புக்தியும் இணங்காமல் நிகழ்வு உறுதி செய்யப்படாது.`);
+}
+function mm335PersonEvidence(r,who){
+ const ta=lang()==='ta',life=MM335_HOUSE_LINKS[r.pos-1],domain=MM335_TOPIC_EFFECT[r.entry.n-1];
+ if(!life)return '';
+ const intro=ta?`${who} ஜாதகத்தில் ${mmPlanetText(r.lord)} ${r.pos}-ஆம் பாவத்தில் உள்ளதால், ${domain[0]} பற்றிய செயல்பாடு ${life[0]} வழியாக முன்னிலையாகலாம்.`:
+ `${who}: ${mmPlanetText(r.lord)} in house ${r.pos} links ${domain[1]} with ${life[1]}.`;
+ let factors=[];
+ const natalAsc=si(r.lag),rulerHouses=LORD.map((n,i)=>n===r.lord?((i-natalAsc+12)%12)+1:null).filter(Boolean);
+ if(rulerHouses.some(h=>[5,9].includes(h)))factors.push(T('The lord also owns a trinal natal house, adding supportive functional context when strong.','இந்த அதிபதி திரிகோண பாவத்துக்கும் உரியவராக இருப்பதால் நல்ல பலம் பெற்றால் ஆதரவான செயல்பாட்டு அம்சமும் சேர்கிறது.'));
+ if(rulerHouses.some(h=>[6,8,12].includes(h)))factors.push(T('A 6/8/12 secondary lordship adds work, adjustment or expense themes; it is not an automatic negative verdict.','இந்த அதிபதிக்கு 6/8/12 தொடர்பும் இருப்பதால் பணிச்சுமை, மாற்றம் அல்லது செலவு போன்ற எதிர் சூழலும் கவனிக்கப்படும்; இது தானாகப் பாதகத் தீர்ப்பு அல்ல.'));
+ if(r.lp){const z=si(r.lp.longitude);
+  if(EXALT[r.lord]===z||(OWN[r.lord]||[]).includes(z))factors.push(T('Own/exalted dignity gives this lord a stronger foundation for coordinated decisions.','சொந்த அல்லது உச்ச ராசிப் பலம் இந்தப் பொறுப்பைத் திட்டமிட்டு நிறைவேற்ற உதவும் சுப ஆதாரமாகும்.'));
+  if(DEBIL[r.lord]===z)factors.push(T('Debilitation makes the desired outcome less automatic; cancellation and other support still matter.','நீச நிலை இருப்பதால் விரும்பிய பலன் எளிதாக அமையும் என்று கொள்ள முடியாது; நீசபங்கம் மற்றும் பிற பாதுகாப்பையும் சேர்த்தே பார்க்க வேண்டும்.'));
+  if(Number(r.lp.speed)<0)factors.push(T('Retrograde motion adds a theme of reconsidering decisions.','வக்கிர நிலை இருந்தால் இந்த முடிவுகள் மறுபரிசீலனைக்குப் பிறகு அமையலாம்.'));
+  if(r.lp?.strength?.combustion)factors.push(T('Combustion limits straightforward expression of the lord: compare opposing strengths before predicting the outcome.','அஸ்தமனத் தொடர்பு இருந்தால் அதிபதியின் பலன் வெளிப்படுவதில் தடை சேரலாம்; பிற ஆதரவு பலங்களை இணைத்தே முடிவு கொள்ள வேண்டும்.'));
+ }
+ if(r.supporters.length)factors.push(ta?`குரு/சுக்கிரன் சார்ந்த சுபப் பார்வை (${r.supporters.map(mmPlanetText).join(', ')}) சமரசத்திற்கு ஆதரவாகலாம்.`:`Supporting aspect(s) from ${r.supporters.map(mmPlanetText).join(', ')} can ease coordination.`);
+ if(r.hard.length)factors.push(ta?`${r.hard.map(mmPlanetText).join(', ')} பார்வை காரணமாக அழுத்தம் அல்லது அவசர முடிவுகளில் கூடுதல் நிதானம் தேவைப்படலாம்.`:`Challenging aspect(s) from ${r.hard.map(mmPlanetText).join(', ')} can make rushed decisions more difficult.`);
+ return [intro,...factors].join(' ');
+}
+function mm335HousePeriod(c,lord){
+ // Only calculated AD windows beginning/overlapping the NEXT 15 years;
+ // no made-up periods, or assuming the same lord always gives the same event.
+ try{
+  const begin=mmAnalysisDate(),end=mmYearsAfter(begin,15),p=mmDashaTimeline(c,begin,end)
+    .filter(x=>x.level==='AD'&&mmCanonPlanet(x.lord)===lord)
+    .map(x=>{const [a,b]=mmWindowDates(x);return {a:new Date(Math.max(+begin,+a)),b:new Date(Math.min(+end,+b)),label:x.label};})
+    .filter(x=>Number.isFinite(+x.a)&&Number.isFinite(+x.b)&&x.a<=x.b).sort((x,y)=>x.a-y.a)[0];
+  return p?`${p.label} ${mmIsoDate(p.a)} → ${mmIsoDate(p.b)}`:'';
+ }catch{return '';}
+}
+function mm281PairOutcome(B,G,entry,young,b,g){if(!B||!G||young)return '';
+ if(!Number.isInteger(B.pos)||!Number.isInteger(G.pos))return T('A house-lord position is missing in one chart; no comparative life event or dasha claim is assigned.','ஒருவரின் பாவாதிபதி இருப்பிடம் கிடைக்கவில்லை; இதற்கு தனிப்பட்ட வாழ்க்கை நிகழ்வோ தசைக் காலமோ ஊகிக்கப்படவில்லை.');
+ const ta=lang()==='ta',focus=MM335_TOPIC_EFFECT[entry.n-1],bride=T('Bride','பெண்'),groom=T('Groom','ஆண்');
+ const first=mm335PersonEvidence(B,bride),second=mm335PersonEvidence(G,groom);
+ const samePos=B.pos===G.pos,meanA=MM335_HOUSE_LINKS[B.pos-1],meanG=MM335_HOUSE_LINKS[G.pos-1];
+ const bridge=ta?
+ (samePos?`இருவருக்கும் ${focus[0]} சம்பந்தமான முடிவுகள் ${meanA[0]} வழியாக முன்னிலையாகின்றன. ஒரே பாவத் தொடர்பு இருப்பதால் இயல்பாகவே ஒரே குணம் என்று கருதக்கூடாது; இருவரின் கிரகபலமும் பார்வைகளும் எந்த விதமாக உள்ளன என்பதே ஒற்றுமையின் அளவை மாற்றும்.`:
+ `திருமண வாழ்வில் ${focus[0]} குறித்து பெண்ணின் கவனம் ${meanA[0]} சார்ந்து உருவாகலாம்; ஆணின் கவனம் ${meanG[0]} சார்ந்து உருவாகலாம். அதனால் ஒரே விஷயத்தில் விருப்பத்தின் காரணமும் முடிவெடுக்கும் முன்னுரிமையும் வேறுபடலாம்.`):
+ (samePos?`Both partners connect ${focus[1]} to ${meanA[1]}. Identical houses do not prove identical temperaments; dignity and aspects qualify the outcome.`:`For ${focus[1]}, the bride may prioritise ${meanA[1]}, while the groom may prioritise ${meanG[1]}. The resulting practical decision can differ even where the couple shares the same goal.`);
+ const strongBoth=B.supportive&&G.supportive&&!B.challenging&&!G.challenging;
+ const hardBoth=B.challenging&&G.challenging;
+ const balanced=strongBoth?T(`The available natal evidence supports collaboration around ${focus[1]}; use both partners' real preferences to decide.`,`இருவருக்கும் கிடைத்த சுப ஆதாரம் ${focus[0]} தொடர்பாகக் கூட்டாகச் செயல்பட உதவலாம். முடிவை இருவரின் உண்மையான விருப்பத்தோடு உறுதிப்படுத்துவது அவசியம்.`):
+ hardBoth?T(`Both charts include challenging evidence about ${focus[1]}; pressure or delay may matter more than the house difference itself.`,`இரு ஜாதகங்களிலும் எதிர் ஆதாரங்கள் இருப்பதால் ${focus[0]} குறித்த முடிவில் காலதாமதம் அல்லது அழுத்தம் அதிகமாக உணரப்படலாம்; பாவ வேறுபாட்டை மட்டும் காரணமாகக் கூற முடியாது.`):
+ T(`Support and difficulty are mixed; a stronger factor on one side does not automatically cancel the other partner's limitations.`,`ஒருவரின் சுப ஆதாரம் மற்றவரின் சவாலைத் தானாக விலக்காது. ${focus[0]} தொடர்பான ஒத்துழைப்பு கிடைக்கும் ஆதாரங்களையும் மீதமுள்ள அழுத்தங்களையும் இணைத்தே மதிப்பிடப்படுகிறது.`);
+ const scene=T(MM335_PRACTICAL[entry.n-1][1],MM335_PRACTICAL[entry.n-1][0]);
+ const transit=mm335TransitLink(b,g,entry.n);
+ const bw=mm335HousePeriod(b,B.lord),gw=mm335HousePeriod(g,G.lord);
+ const timing=bw||gw?(ta?`அடுத்த 15 ஆண்டுகளில் இந்தப் பாவாதிபதி செயல்படும் கணிக்கப்பட்ட புக்திக் காலங்கள்: ${[bw?`பெண் — ${bw}`:'',gw?`ஆண் — ${gw}`:''].filter(Boolean).join('; ')}. இது பாவத் தொடர்பு வலுப்பெறக்கூடிய காலச் சுட்டி மட்டுமே; குறிப்பிட்ட நிகழ்வுக்கான உறுதி அல்ல.`:
+ `Calculated Bhukti windows within the next 15 years: ${[bw?`Bride — ${bw}`:'',gw?`Groom — ${gw}`:''].filter(Boolean).join('; ')}. These indicate activation of the topics, not a guaranteed event.`):'';
+ return [first,second,bridge,scene,balanced,timing,transit].filter(Boolean).join(' ');
 }
 function mm281TopicBook(b,g){let html=`<section class="mm-person-result mm-v281-topic-book"><h2>${T('Twelve D1 life-area readings and direct couple comparison','D1 அடிப்படையில் 12 வாழ்க்கைப் பலன்கள் — இருவர் ஒற்றுமை ஆய்வு')}</h2><p class="mm-note">${T('Each result uses the respective D1 house, its lord, position, natural significator, occupancy and Graha aspects. This is a traditional reading, not a determination of personality.','ஒவ்வொரு தலைப்பும் அதற்குரிய D1 பாவம், பாவாதிபதி, இருப்பிடம், இயற்கைக் காரகன், ஆக்கிரமிப்பு மற்றும் கிரகப் பார்வைகளின் அடிப்படையில் தனித்தனியாக ஆராயப்படுகிறது.')}</p>`;
  const age=mm281AgeNote(b,g);
- for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))} ${esc(mm281PairOutcome(B,G,item,age.young))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
+ for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))} ${esc(mm281PairOutcome(B,G,item,age.young,b,g))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
  return html+'</section>';
 }
 const MM281_PERSONALITY=[
@@ -1595,6 +1717,12 @@ function mm332VargaRow(c,label,n){
   hard(ev.lordPlacement)?T('The D9 seventh lord is in a house calling for adjustment; read this alongside the natal seventh house and the partner’s chart.','D9 ஏழாம் அதிபதி ஒத்திசைவு தேவைப்படும் பாவத்தில் உள்ளது; D1 ஏழாம் பாவம் மற்றும் இணையரின் ஜாதகத்துடன் சேர்த்து இதை வாசிக்க வேண்டும்.'):
   T('The seventh-lord position is one element of marriage resilience, not by itself a final match decision.','ஏழாம் அதிபதியின் நிலை திருமண உறவின் ஒரு ஆதாரம் மட்டுமே; இதைத் தனியாக இறுதிப் பொருத்தத் தீர்ப்பாக்க முடியாது.');
  }
+ const sector=ev.lordPlacement?.house?MM335_HOUSE_LINKS[ev.lordPlacement.house-1]:null;
+ if(sector){
+  const life=n===7?T(`D7 fifth lord connects discussions of children and learning with ${sector[1]}; read this as a parenting/family-planning theme, not a fertility finding.`,`D7 ஐந்தாம் அதிபதி ${ev.lordPlacement.house}-ஆம் பாவத்தில் இருப்பதால் குழந்தைகள், கல்வி மற்றும் பராமரிப்புத் திட்டங்கள் ${sector[0]} சார்ந்த சூழலில் முன்னிலையாகலாம்; இதை குழந்தைப்பேறு உறுதி அல்லது மறுப்பு என்று கூற முடியாது.`):
+    T(`D9 seventh lord connects married-life adjustment with ${sector[1]}. Judge this beside D1 and both partners’ available protective factors.`,`D9 ஏழாம் அதிபதி ${ev.lordPlacement.house}-ஆம் பாவத்தில் இருப்பதால் திருமண உறவின் நடைமுறை முடிவுகள் ${sector[0]} சார்ந்து வெளிப்படலாம்; D1 ஆதரவும் இருவரின் சுபப் பாதுகாப்பும் இந்தப் பலனை மாற்றும்.`);
+  conclusion+=' '+life;
+ }
  const k=n===7?T('fifth','ஐந்தாம்'):T('seventh','ஏழாம்');
  const jupiter=ev.jupiter?`${T('Jupiter','குரு')} ${houseText(ev.jupiter)}`:T('Jupiter placement unavailable','குரு இருப்பிடம் இல்லை');
  const ven=ev.venus?`${T('Venus','சுக்கிரன்')} ${houseText(ev.venus)}`:T('Venus placement unavailable','சுக்கிரன் இருப்பிடம் இல்லை');
@@ -1717,7 +1845,7 @@ function mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing='',verdict=null){cons
  return `<div class="mm-full-results mm-v281-results mm-v308-results">${age.html}${mmVerdictPanel(verdict,age)}${age.young?'':mm332Guard(()=>mm332VerdictEvidence(b,g,pr,ks,ds,sync,verdict))}${mmFrontPoruthamPanel(pr,false)}${matchingIdentityPanel(b,g)}${mm308D9Panel(b,g)}${mm332Guard(()=>mm332DivisionalPanel(b,g))}${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}${mmPublishedInterpretations(b,g,pr,verdict)}${timing}${simple}</div>`;
 }
 const mm308Cache=new WeakMap();
-async function mm308Timing(b,g,out){const ref=mmIsoDate(mmAnalysisDate());let rows=mm308Cache.get(b);if(!rows){rows=new WeakMap();mm308Cache.set(b,rows);}let entry=rows.get(g);const mod=await import('./matching-v308-timeline.mjs?v=308');if(!entry||entry.ref!==ref){entry={ref,promise:null};entry.promise=mod.prepare(b,g,ref,progress=>{if(out&&!out.querySelector('.mm-v308-results'))out.textContent=T('Calculating the 15-year marriage timeline…','15 வருட திருமண வாழ்க்கைக் காலப் பலன்கள் கணக்கிடப்படுகின்றன…');}).catch(e=>{if(rows.get(g)===entry)rows.delete(g);throw e;});rows.set(g,entry);}const calculated=await entry.promise;const original=mod.render(b,g,calculated,lang());return mm332Guard(()=>mm332RefineTimeline(original,calculated))||original;}
+async function mm308Timing(b,g,out){const ref=mmIsoDate(mmAnalysisDate());let rows=mm308Cache.get(b);if(!rows){rows=new WeakMap();mm308Cache.set(b,rows);}let entry=rows.get(g);const mod=await import('./matching-v308-timeline.mjs?v=308');if(!entry||entry.ref!==ref){mm335TransitCache.get(b)?.delete(g);entry={ref,promise:null};entry.promise=mod.prepare(b,g,ref,progress=>{if(out&&!out.querySelector('.mm-v308-results'))out.textContent=T('Calculating the 15-year marriage timeline…','15 வருட திருமண வாழ்க்கைக் காலப் பலன்கள் கணக்கிடப்படுகின்றன…');}).catch(e=>{if(rows.get(g)===entry)rows.delete(g);throw e;});rows.set(g,entry);}const calculated=await entry.promise;let peers=mm335TransitCache.get(b);if(!peers){peers=new WeakMap();mm335TransitCache.set(b,peers);}peers.set(g,calculated);const original=mod.render(b,g,calculated,lang());return mm332Guard(()=>mm332RefineTimeline(original,calculated))||original;}
 
 async function renderMatching(b,g,out,quiet=false){
  await import('./d9-v308-reading.js?v=308');
