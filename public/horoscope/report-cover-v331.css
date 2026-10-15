@@ -1,0 +1,28 @@
+/* V329 — accepted preview: Ganesha devotional art only; existing cover text, fields,
+   PDF content, calculation, payment, and HTML print pipeline are unchanged. */
+.smv-cover-v19 .smv-cover-frame{display:flex!important;flex-direction:column!important;align-items:center!important}
+.smv-cover-v19 .smv-cover-brand{order:1!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-rule{order:2!important;flex:0 0 auto;margin:3mm auto 1mm!important}
+.smv-cover-v19 .smv-cover-emblem{order:3!important;width:116mm!important;height:108mm!important;max-width:100%!important;margin:1mm auto 1.5mm!important;flex:0 0 auto!important;filter:none!important;z-index:2!important}
+.smv-cover-v19 .smv-cover-emblem img{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:108mm!important;object-fit:contain!important;border:0!important;background:transparent!important;border-radius:0!important;filter:none!important}
+.smv-cover-v19 .smv-cover-birth{order:4!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-seal-note{order:5!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-contact{order:6!important}
+@media print{
+  .smv-cover-v19 .smv-cover-emblem{width:116mm!important;height:108mm!important;margin:1mm auto 1.5mm!important}
+  .smv-cover-v19 .smv-cover-emblem img{max-height:108mm!important}
+}
+@media screen and (max-width:720px){
+  .smv-cover-v19 .smv-cover-emblem{width:min(100%,390px)!important;height:auto!important;max-height:none!important}
+  .smv-cover-v19 .smv-cover-emblem img{height:auto!important;max-height:none!important}
+}
+
+
+/* V331 — fine-tune Ganesha art slightly right from V330 for more exact center alignment under the diamond marker. */
+.smv-cover-v19 .smv-cover-emblem img{transform:translateX(-1.8mm)!important;transform-origin:center top!important}
+@media print{
+  .smv-cover-v19 .smv-cover-emblem img{transform:translateX(-1.8mm)!important}
+}
+@media screen and (max-width:720px){
+  .smv-cover-v19 .smv-cover-emblem img{transform:translateX(-6px)!important}
+}
