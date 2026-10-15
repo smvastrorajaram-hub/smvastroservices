@@ -274,3 +274,37 @@ body{position:relative}
 .smv-matching-welcome.is-compact .smv-welcome-invocation{margin:1.6mm 0 .6mm!important;padding:1.2mm 6mm!important;font-size:9.5pt!important}
 .smv-matching-welcome.is-compact .smv-welcome-pair{margin:.5mm 0 0!important;font-size:7.5pt!important}
 @media print{.smv-matching-welcome.is-compact{width:100%!important;max-width:184mm!important;height:auto!important;margin:0 auto 4mm!important;display:block!important;break-after:auto!important;page-break-after:auto!important;overflow:visible!important}.smv-matching-welcome.is-compact .smv-welcome-frame{width:100%!important;height:auto!important;min-height:0!important;padding:4mm 6mm 3.5mm!important}}
+
+/* V332 — PDF-only readability corrections. No changes to calculations, source input,
+   application UI, permissions, language data or the approved V329 cover. */
+#printReport :is(.smv-part-tap,.smv-part-chevron,.smv-quick-chevron),
+#printReport .smv-quick-title>small,
+#printReport :is(.smv-print-tip,.smv-tap-hint,[data-print-hide="true"]){
+  display:none!important;
+}
+@media print{
+  /* Do not leave a Tamil-shaped heading's last glyphs on the previous page. */
+  #printReport :is(h1,h2,h3,h4,h5,h6,summary,
+      .smv-advanced-part-title,.smv-part-heading,.smv-quick-title,
+      .mm-person-result>h3,.smv-pred-period>b){
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+    break-after:avoid!important;
+    page-break-after:avoid!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    white-space:normal!important;
+  }
+  #printReport :is(.smv-part-medallion,.smv-quick-medallion){
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  #printReport :is(.mm-facts>div,.smv-v20-rich-block,
+      .smv-advanced-part-title,.smv-prayer-title){
+    orphans:3;
+    widows:3;
+  }
+  #printReport :is(p,li){orphans:3;widows:3;}
+}
