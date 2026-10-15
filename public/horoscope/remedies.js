@@ -118,7 +118,7 @@ function select(c,lang,used,windows=[],starContext=null){const ta=lang!=='en';
  const period=(windows||[]).find(w=>(w?.period?.md===risk.planet||w?.period?.ad===risk.planet)&&w?.weight>=2.4&&w?.links?.length);
  const timing=period?`${period.period.from}–${period.period.to}`:null;
  const transit=period?.coincidence&&period?.transit?.planet?period.transit:null;
- const windowFrom=transit&&timing?[period.period.from,transit.yearFrom].filter(Boolean).sort().at(-1):null;
+ const windowFrom=transit&&timing?[period.period.from,transit.yearFrom].filter(Boolean).sort().slice(-1)[0]:null;
  const windowTo=transit&&timing?[period.period.to,transit.yearTo].filter(Boolean).sort()[0]:null;
  const convergence=Boolean(windowFrom&&windowTo&&windowFrom<windowTo);
  const details=(c.ageUnder18&&CHILD_ACTIONS[c.house]?CHILD_ACTIONS[c.house]:HOUSE_ACTIONS[c.house-1])?.[ta?0:1]||[];
