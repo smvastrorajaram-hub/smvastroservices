@@ -22,8 +22,132 @@ const z=ta?ZTA:ZEN,n=name(f.lord,ta),d1lag=signOf(c.lagna),p=(c.planets||[]).fin
 parts.push(ta?`நவாம்சத்தில் ${z[f.lag]} லக்னம்; ஏழாம் அதிபதி ${n}, ${z[f.lordSign]} ராசியில் ${f.lordHouse}-ஆம் பாவத்தில் அமைந்துள்ளார். ${LIFE_TA[f.lordHouse-1]}.`:`D9 has ${z[f.lag]} rising, with seventh lord ${n} in ${z[f.lordSign]}, house ${f.lordHouse}. ${LIFE_EN[f.lordHouse-1]}.`);
 const strong=['own','exalted'].includes(f.strength),weak=f.strength==='debilitated';parts.push(ta?(strong?`${n} ${f.strength==='own'?'சொந்த ராசி':'உச்ச'} பலம் பெறுவதால், கருத்து வேறுபாடு வந்தாலும் மீண்டும் இணைந்து செயல்படும் ஆதரவு உள்ளது. இந்த பலத்தை பயன்படுத்த இருவரும் எடுத்த முடிவில் நிலைத்திருப்பது அவசியம்.`:weak?`${n} நீச நிலையில் இருப்பதால், உறவில் எதிர்பார்ப்பை நிறைவேற்றுவதற்கு கூடுதல் பொறுமை தேவைப்படலாம். இது மட்டும் திருமண மறுப்புக்கான காரணமல்ல; D1 ஆதரவும் பிற கிரகத் தொடர்புகளும் இணைந்தே முடிவைத் தீர்மானிக்கின்றன.`:`${n} சொந்தம் அல்லது உச்சம் பெறாத நிலையில் இருப்பதால், இந்த அமைப்பை மிக வலுவான பாதுகாப்பாக மட்டும் எடுத்துக்கொள்ள முடியாது. பரஸ்பர ஒத்துழைப்பும் D1-ல் உள்ள ஆதரவும் முக்கியப் பங்கு வகிக்கின்றன.`):(strong?`${n} has ${f.strength==='own'?'own-sign':'exalted'} dignity, supporting the ability to return to cooperation after differences. Consistency in shared decisions helps express that support.`:weak?`${n} is debilitated, suggesting more patience around unmet expectations. This alone does not deny marriage; natal support and other influences remain relevant.`:`${n} has neither own-sign nor exalted dignity here. This placement needs to be weighed with natal support and the couple’s capacity to cooperate.`));
 if(h1){const difficult=h=>[6,8,12].includes(h);parts.push(ta?`D1-ல் ஏழாம் அதிபதி ${h1}-ஆம் பாவத்தில் இருப்பதையும் D9-ல் ${f.lordHouse}-ஆம் பாவத்தில் இருப்பதையும் சேர்த்துப் பார்க்கும்போது, ${difficult(h1)&&difficult(f.lordHouse)?'பொறுப்பு, நம்பிக்கை அல்லது நேரப் பகிர்வு சார்ந்த சவால் இரு நிலைகளிலும் தொடர்கிறது. முடிவுகளை அவசரப்படுத்தாமல் நடைமுறை ஏற்பாடுகளை முதலில் உறுதிப்படுத்துவது பொருத்தமானது':difficult(h1)!==difficult(f.lordHouse)?'ஒரு நிலையில் காணும் சிரமத்தை மற்றொரு நிலையின் ஆதரவு ஓரளவு சமப்படுத்தலாம். அதனால் முழுவதும் நல்லது அல்லது முழுவதும் பாதிப்பு என்று ஒரே முடிவாகக் கூற முடியாது':'உறவை வளர்க்கும் முயற்சிக்கு இரு நிலைகளிலும் இடம் உள்ளது. பிற தோஷங்களும் தசைக் காலமும் ஒத்திருக்கும்போது அந்த ஆதரவு நடைமுறை முன்னேற்றமாக வெளிப்படலாம்'}.`:`The D1 seventh lord is in house ${h1}, compared with D9 house ${f.lordHouse}. ${difficult(h1)&&difficult(f.lordHouse)?'Both levels repeat an adjustment theme; practical agreements about duties, trust and time deserve care':difficult(h1)!==difficult(f.lordHouse)?'One level offers a counterweight to the other’s difficulties, so the evidence is mixed':'Both levels leave room for constructive relationship development, subject to other natal conditions and timing'}.`);}
-if(f.venusHouse)parts.push(ta?`அன்பையும் நெருக்கத்தையும் குறிக்கும் சுக்கிரன் D9-ல் ${f.venusHouse}-ஆம் பாவத்தில் உள்ளார். ${LIFE_TA[f.venusHouse-1]}.`:`D9 Venus is in house ${f.venusHouse}. In expressing affection, ${LIFE_EN[f.venusHouse-1].charAt(0).toLowerCase()+LIFE_EN[f.venusHouse-1].slice(1)}.`);
+if(f.venusHouse){const v=(c.planets||[]).find(p=>key(p.name??p.planet)==='Venus'),vh=d1lag!==null&&valid(v?.longitude)?house(sign(v.longitude),d1lag):null;
+parts.push(ta?`அன்பையும் நெருக்கத்தையும் குறிக்கும் சுக்கிரன் D9-ல் ${z[f.planets.Venus]} ராசியில் ${f.venusHouse}-ஆம் பாவத்தில் உள்ளார்.${vh?` D1-ல் ${vh}-ஆம் பாவத்தில் இருப்பதையும் இணைத்து மதிப்பிட வேண்டும்.`:''} ${LIFE_TA[f.venusHouse-1]}.`:`D9 Venus is in ${z[f.planets.Venus]}, house ${f.venusHouse}.${vh?` Natal D1 Venus occupies house ${vh} and adds its separate context.`:''} In expressing affection, ${LIFE_EN[f.venusHouse-1].charAt(0).toLowerCase()+LIFE_EN[f.venusHouse-1].slice(1)}.`);}
 if(f.jupiterHouse)parts.push(ta?`குரு D9-ல் ${f.jupiterHouse}-ஆம் பாவத்தில் இருப்பதால், ${[6,8,12].includes(f.jupiterHouse)?'குடும்ப ஆலோசனை நடைமுறைக்கு பொருந்துகிறதா என்பதைச் சோதித்து ஏற்றுக்கொள்ள வேண்டும்; ஆலோசனை கிடைப்பதே சவால் நீங்கியதாகாது':'அனுபவமுள்ளவர்களின் வழிகாட்டலை இருவரும் ஏற்றுக்கொள்ளும்போது பொதுவான முடிவை எட்ட உதவலாம்'}.`:`Jupiter is in D9 house ${f.jupiterHouse}. ${[6,8,12].includes(f.jupiterHouse)?'Advice needs to fit the couple’s practical circumstances; its availability alone does not remove difficulties':'Guidance that both partners accept may help them reach a shared decision'}.`);
 if(age!==null&&age<18)parts.unshift(ta?'இது எதிர்கால வயதிற்குரிய உறவு இயல்பின் வாசிப்பு; தற்போதைய திருமண நிகழ்வு அல்லது திருமண நேரமாகப் பொருள் கொள்ளக்கூடாது.':'This describes possible relationship patterns in adulthood, not a present marriage event or marriage window.');return parts;}
 root.SMVD9V308=Object.freeze({facts,narrative,key,name,signOf,house,version:308});
 })(globalThis);
+
+
+/* V337 integrated evidence API, loaded once alongside the existing D9 reader. */
+/* SMV ASTRO V337 — deterministic classical evidence, no network/AI/DB.
+ * Reference: user-provided EXAMPLE.zip excerpts (Vedic Astrology: An Integrated
+ * Approach): divisions, graha-reference houses, functional lordship, avasthas.
+ * Interpretations are explicitly traditional, not empirical predictions.
+ * This module reads already-calculated sidereal natal longitudes. It DOES NOT
+ * alter Swiss ephemeris output or access policy. Missing facts remain missing.
+ */
+(function(root,factory){'use strict';const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SMVClassicalEvidenceV337=api;})(typeof globalThis!=='undefined'?globalThis:window,function(){'use strict';
+const P=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const PT=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு','கேது'];
+const EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
+const LORD=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
+const OWN={Sun:[4],Moon:[3],Mars:[0,7],Mercury:[2,5],Jupiter:[8,11],Venus:[1,6],Saturn:[9,10]};
+const EX={Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6};
+const MULA={Sun:[4,0,20],Moon:[1,4,30],Mars:[0,0,12],Mercury:[5,15,20],Jupiter:[8,0,10],Venus:[6,0,15],Saturn:[10,0,20]};
+const CARAKA={children:'Jupiter',marriage:'Venus',profession:'Sun'};
+const FOCUS={children:{d1:5,varga:7,h:5,karaka:'Jupiter'},marriage:{d1:7,varga:9,h:7,karaka:'Venus'},profession:{d1:10,varga:10,h:10,karaka:'Saturn'}};
+const PHRASE={1:['தனிப்பட்ட முயற்சி, உடல் ஆற்றல்','identity and initiative'],2:['குடும்ப வரவு, சேமிப்பு, பேச்சு','family finances and speech'],3:['முயற்சி, தொடர்பு, பயணம்','initiative and communication'],4:['வீடு, பெற்றோர், மனஅமைதி','home, parents and comfort'],5:['கல்வி, திட்டமிடல், குழந்தை சார்ந்த பொறுப்பு','learning and family planning'],6:['வேலைப்பளு, கடன், போட்டி, அன்றாட ஒழுங்கு','service, workload and daily routine'],7:['துணைவர் ஒப்பந்தம், கூட்டுப் பொறுப்பு','partnership and mutual agreements'],8:['நம்பிக்கை, மாற்றம், கூட்டு வளம்','change, trust and shared resources'],9:['வழிகாட்டல், மதிப்பீடு, உயர்கல்வி','guidance, beliefs and higher learning'],10:['தொழில் பொறுப்பு, அங்கீகாரம்','career, responsibility and recognition'],11:['வருவாய், நண்பர் ஆதரவு, நீண்டகால இலக்கு','income, networks and goals'],12:['செலவு, தனிநேரம், தொலைவு','expenditure, privacy and distance']};
+function n(v){return typeof v==='number'&&Number.isFinite(v)?v:typeof v==='string'&&v.trim()!==''&&Number.isFinite(+v)?+v:null;}
+function mod(v,k){return ((v%k)+k)%k;}
+function sg(lon){return Math.floor(mod(lon,360)/30);}
+function between(a,b){return mod(b-a,12)+1;}
+function enPlanet(name){const x=P.indexOf(String(name||''));if(x>=0)return P[x];const y=PT.indexOf(String(name||''));if(y>=0)return P[y];return null;}
+function translatePlanet(p,ta){return ta?PT[P.indexOf(p)]||p:p;}
+function signName(s,ta){return s===null?'—':(ta?TA:EN)[s]||'—';}
+function isValidSign(s){return Number.isInteger(s)&&s>=0&&s<=11;}
+function vargaSign(lon,d){if(n(lon)===null)return null;const r=sg(lon),degree=mod(lon,30);if(d===1)return r;if(d===7){return mod(r+(r%2===0?0:6)+Math.min(6,Math.floor(degree/(30/7))),12);}if(d===9){let start=r%3===0?r:r%3===1?r+8:r+4;return mod(start+Math.min(8,Math.floor(degree/(30/9))),12);}if(d===10){return mod(r+(r%2===0?0:8)+Math.min(9,Math.floor(degree/3)),12);}return null;}
+function dign(p,s,degrees){if(!isValidSign(s)||!P.includes(p))return 'unknown';if(!EX.hasOwnProperty(p))return 'unknown';let x=MULA[p];if(x&&s===x[0]&&n(degrees)!==null&&degrees>=x[1]&&degrees<x[2])return 'moolatrikona';if(s===EX[p])return 'exalted';if(s===mod(EX[p]+6,12))return 'debilitated';if((OWN[p]||[]).includes(s))return 'own';return 'ordinary';}
+function rawChart(full){return full?.chart?.planets?full.chart:full||{};}
+function originalLongitude(p){return n(p?.longitude??p?.siderealLongitude??p?.lon);}
+function natal(full){const c=rawChart(full),rows=Array.isArray(c.planets)?c.planets:[],ps={};for(const p of rows){const key=enPlanet(p?.name??p?.planet);const lon=originalLongitude(p);if(key&&lon!==null)ps[key]=lon;}
+ const lag=originalLongitude(c.lagna??c.ascendant);return {lag,ps,birth:c.birth||full?.birth||null};}
+function vargaDegree(lon,d){
+ const x=mod(lon,30);if(d===1)return x;
+ if(![7,9,10].includes(d))return null;
+ const width=30/d,index=Math.min(d-1,Math.floor(x/width));
+ return (x-index*width)*d;
+}
+function evPlanet(ps,planet,lagSign,d){const lon=ps[planet];if(n(lon)===null||!isValidSign(lagSign))return null;const sign=vargaSign(lon,d);if(!isValidSign(sign))return null;return {planet,sign,house:between(lagSign,sign),dignity:dign(planet,sign,vargaDegree(lon,d)),source:'natal-sidereal-longitude'};}
+function drishtiTo(ps,lagSign,d,houseNumber){if(!isValidSign(lagSign))return {benefic:[],difficult:[],all:[]};const target=mod(lagSign+houseNumber-1,12),all=[],benefic=[],difficult=[];for(const key of Object.keys(ps)){
+ const src=vargaSign(ps[key],d);if(src===null)continue;const pos=between(src,target);const steps=key==='Mars'?[4,7,8]:key==='Jupiter'?[5,7,9]:key==='Saturn'?[3,7,10]:['Rahu','Ketu'].includes(key)?[]:[7];if(!steps.includes(pos))continue;
+ all.push(key);if(key==='Jupiter'||key==='Venus')benefic.push(key);else if(key==='Mars'||key==='Saturn'||key==='Sun')difficult.push(key);
+ }return {all,benefic,difficult,method:'whole-sign Parashari drishti; no orb assertion'};}
+function analyzeDivision(full,d){const raw=natal(full),lag=raw.lag===null?null:vargaSign(raw.lag,d);if(!isValidSign(lag))return {d,available:false,lag:null,planets:{},houses:{},missing:['natal ascendant longitude']};const planets={};for(const p of P){const e=evPlanet(raw.ps,p,lag,d);if(e)planets[p]=e;}
+ const houses={};for(let h=1;h<=12;h++){const sign=mod(lag+h-1,12),lord=LORD[sign],holders=Object.values(planets).filter(p=>p.house===h).map(p=>p.planet);
+ const lp=planets[lord]||null;const aspects=drishtiTo(raw.ps,lag,d,h);const flags=[];
+ if(lp&&['own','exalted','moolatrikona'].includes(lp.dignity))flags.push('lord-dignity-support');
+ if(lp&&lp.dignity==='debilitated')flags.push('lord-debility-counter');
+ if(lp&&[6,8,12].includes(lp.house))flags.push('lord-in-dusthana');
+ if(aspects.benefic.length)flags.push('whole-sign-benefic-aspect');
+ if(aspects.difficult.length)flags.push('whole-sign-difficult-aspect');
+ houses[h]={h,sign,lord,lordPlacement:lp,occupants:holders,aspects,flags};}
+ return {d,available:true,lag,planets,houses,source:'Derived by same Parashari varga sign method from natal sidereal longitude',missing:P.filter(p=>!planets[p])};}
+function referenceHouse(division,planet,h){const p=division?.planets?.[planet];if(!p)return null;const sign=mod(p.sign+h-1,12),holder=division.planets[LORD[sign]]||null;return {reference:planet,h,sign,lord:LORD[sign],lordPlacement:holder};}
+function functionalLordship(d1,p){if(!d1.available)return null;const owns=Object.keys(d1.houses).map(Number).filter(k=>d1.houses[k].lord===p);return {planet:p,houses:owns,flags:[...(owns.some(x=>[5,9].includes(x))?['trikona']:[]),...(owns.some(x=>[4,7,10].includes(x))?['kendra']:[]),...(owns.some(x=>[6,8,12].includes(x))?['dusthana']:[]),...(owns.includes(1)?['lagna']:[])],source:'whole sign house lords'};}
+function houseBalance(e){if(!e)return {supports:[],counter:[],status:'missing'};const sup=[],con=[];const p=e.lordPlacement;
+ if(p){if(['own','exalted','moolatrikona'].includes(p.dignity))sup.push('strong-lord-dignity');if(p.dignity==='debilitated')con.push('debilitated-lord');if([6,8,12].includes(p.house))con.push('lord-in-6-8-12');if([1,4,5,7,9,10,11].includes(p.house))sup.push('lord-in-supportive-sector');}
+ if(e.aspects.benefic.length)sup.push('benefic-aspects');if(e.aspects.difficult.length)con.push('difficult-aspects');
+ return {supports:sup,counter:con,status:!p?'missing-lord':sup.length&&con.length?'mixed':sup.length?'supportive':con.length?'challenged':'undetermined'};}
+// Even-sign age avasthas run 30->0; this audit function does not overwrite
+// existing advanced calculations or imply effectiveness as prediction.
+function balaAvastha(lon){if(n(lon)===null)return null;const d=mod(lon,30),sign=sg(lon),segment=Math.min(4,Math.floor(d/6)),index=sign%2===0?segment:4-segment;return {label:['Bala','Kumara','Yuva','Vriddha','Mrita'][index],index,sign,degree:d,method:'odd signs ascending, even signs descending; per excerpt Table 35'};}
+function vargaDignitySummary(full,planet){const natalLon=natal(full).ps[planet];if(n(natalLon)===null)return null;const divisions=[1,7,9,10].map(d=>{const sign=vargaSign(natalLon,d);return {d,sign,dignity:dign(planet,sign,vargaDegree(natalLon,d))};});return {planet,divisions,counts:{strong:divisions.filter(x=>['own','exalted','moolatrikona'].includes(x.dignity)).length,weak:divisions.filter(x=>x.dignity==='debilitated').length},note:'Unweighted 4-division sign-dignity tally, not classical Shadbala or complete weighted Amsabala'};}
+function focusEvidence(analyses,kind){const spec=FOCUS[kind],d1=analyses[1],v=analyses[spec.varga];const d1h=d1?.houses?.[spec.d1],vh=v?.houses?.[spec.h],karakaV=v?.planets?.[spec.karaka],karakaD1=d1?.planets?.[spec.karaka];return {kind,d1:d1h||null,varga:vh||null,karakaV,karakaD1,karakaReference:d1?.available?referenceHouse(d1,CARAKA[kind],spec.d1===10?10:spec.d1):null,d1Extra:kind==='profession'&&d1?.available?{sixth:d1.houses[6],seventh:d1.houses[7]}:null,primary:houseBalance(d1h),support:houseBalance(vh)};}
+function analyse(chart){const divisions={};for(const d of [1,7,9,10])divisions[d]=analyzeDivision(chart,d);const objects={divisions,children:null,marriage:null,profession:null,avasthas:{},dignity:{},functional:{},version:337};for(const k of Object.keys(FOCUS))objects[k]=focusEvidence(divisions,k);for(const p of P){const lon=natal(chart).ps[p];if(n(lon)!==null){objects.avasthas[p]=balaAvastha(lon);objects.dignity[p]=vargaDignitySummary(chart,p);objects.functional[p]=functionalLordship(divisions[1],p);}}return objects;}
+function dignityLabel(state,ta){const x={own:'ஆட்சி',exalted:'உச்சம்',moolatrikona:'மூலத்திரிகோணம்',debilitated:'நீசம்',ordinary:'சாதாரண ராசிநிலை',unknown:'பலம் கணிக்கப்படவில்லை'};return ta?(x[state]||state):state;}
+function describeFocus(f,ta,whose){
+ const cfg=FOCUS[f.kind],primary=f.d1,secondary=f.varga;
+ const ordinal=v=>`${v}${(v%100>=11&&v%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[v%10]||'th')}`;
+ if(!primary||!secondary)return ta?`${whose}: தொடர்புடைய D1/D${cfg.varga} ஆதாரங்கள் முழுமையாகக் கிடைக்கவில்லை; இல்லாத நிலையை பாதக ஆதாரமாகக் கணக்கிடவில்லை.`:`${whose}: D1/D${cfg.varga} evidence is incomplete; absence is not adverse.`;
+ const pl=x=>`${translatePlanet(x.lord,ta)} ${x.lordPlacement?`${signName(x.lordPlacement.sign,ta)}${ta?' ராசி':''}, ${ta?`${x.lordPlacement.house}-ஆம் பாவம்`:`${ordinal(x.lordPlacement.house)} house`} (${dignityLabel(x.lordPlacement.dignity,ta)})`:(ta?'இருப்பிடம் கிடைக்கவில்லை':'position unavailable')}`;
+ const sector=(e)=>e.lordPlacement?PHRASE[e.lordPlacement.house][ta?0:1]:null;
+ const desc=(e,division)=>{
+  const p=e.lordPlacement,notes=[];
+  if(p){
+   if([6,8,12].includes(p.house))notes.push(ta?`இந்த D${division} அமைப்பில் ${sector(e)} சார்ந்த பொறுப்புகள் சவாலாக வெளிப்படலாம்`:`D${division} ties this theme to ${sector(e)} with possible pressure`);
+   else notes.push(ta?`இந்த D${division} அமைப்பில் ${sector(e)} சார்ந்த வாய்ப்புகளும் பொறுப்புகளும் முன்னிலையாகலாம்`:`D${division} connects the subject to ${sector(e)}`);
+   if(p.dignity==='debilitated')notes.push(ta?'அதிபதியின் நீசம் இதற்கு எதிர் ஆதாரமாகும்':'the lord is debilitated');
+   if(['own','exalted','moolatrikona'].includes(p.dignity))notes.push(ta?'அதிபதியின் சொந்த/உச்ச/மூலத்திரிகோண ராசிபலம் சவாலிலிருந்து வேறுபட்ட சாதக ஆதாரமாகும்':'the lord has independently supportive sign dignity');
+  }
+  if(e.aspects.benefic.length)notes.push(ta?`${e.aspects.benefic.map(x=>translatePlanet(x,ta)).join(', ')} பாரம்பரிய முழுராசிப் பார்வையால் இப்பாவத்திற்கு ஆதரவு ${e.aspects.benefic.length===1?'அளிக்கிறார்':'அளிக்கின்றனர்'}`:`benefic whole-sign aspect: ${e.aspects.benefic.join(', ')}`);
+  if(e.aspects.difficult.length)notes.push(ta?`${e.aspects.difficult.map(x=>translatePlanet(x,ta)).join(', ')} முழுராசிப் பார்வையால் கூடுதல் கடினத் தொடர்பு ${e.aspects.difficult.length===1?'தருகிறார்':'தருகின்றனர்'}`:`difficult whole-sign aspect: ${e.aspects.difficult.join(', ')}`);
+  if(e.occupants.length)notes.push(ta?`இந்தப் பாவத்தில் ${e.occupants.map(x=>translatePlanet(x,ta)).join(', ')} ${e.occupants.length===1?'இருக்கிறார்':'இருக்கின்றனர்'}`:`occupants: ${e.occupants.join(', ')}`);
+  return notes.join('; ');
+ };
+ let body=ta?`${whose}: D1 ${cfg.d1}-ஆம் பாவாதிபதி ${pl(primary)}; D${cfg.varga} ${cfg.h}-ஆம் பாவாதிபதி ${pl(secondary)}.`:`${whose}: D1 ${ordinal(cfg.d1)} lord ${pl(primary)}; D${cfg.varga} ${ordinal(cfg.h)} lord ${pl(secondary)}.`;
+ const notes=[desc(primary,1),desc(secondary,cfg.varga)].filter(Boolean);if(notes.length)body+=' '+notes.join('. ')+'.';
+ const k=f.karakaV;
+ if(k)body+=ta?` D${cfg.varga}-இல் ${translatePlanet(k.planet,ta)} ${signName(k.sign,ta)} ராசியில் ${k.house}-ஆம் பாவத்தில் (${dignityLabel(k.dignity,ta)}) உள்ளார்.`:` D${cfg.varga} ${k.planet} occupies ${signName(k.sign,false)}, house ${k.house} (${dignityLabel(k.dignity,false)}).`;
+ const ref=f.karakaReference;
+ if(ref)body+=ta?` D1-இல் ${translatePlanet(ref.reference,ta)} கிரகத்திலிருந்து ${ref.h}-ஆம் பாவம் ${signName(ref.sign,ta)}; அதன் அதிபதி ${translatePlanet(ref.lord,ta)}. இது கிரகப் பார்வை அல்ல; துணை பாவக் கணக்கீடு.`:` D1 ${ordinal(ref.h)} from ${ref.reference} is ${signName(ref.sign,false)}, ruled by ${ref.lord}; this is a reference house, not a planetary aspect.`;
+ if(f.kind==='profession'&&f.d1Extra){const sixth=f.d1Extra.sixth,seventh=f.d1Extra.seventh;
+  if(sixth&&seventh)body+=ta?` D1 ஆறாம் பாவாதிபதி ${translatePlanet(sixth.lord,ta)}, ஏழாம் பாவாதிபதி ${translatePlanet(seventh.lord,ta)} ஆகியோரின் தொடர்புகளும் நிறுவனப் பணி, கூட்டுத் தொழில் அல்லது தொழில் நிர்வாகம் குறித்த ஆய்வில் சேர்க்கப்பட்டுள்ளன.`:` D1 sixth lord ${sixth.lord} and seventh lord ${seventh.lord} are supporting context for employment and business partnerships.`;}
+ const a=primary.lordPlacement,b=secondary.lordPlacement;
+ if(a&&b&&([a,b].some(p=>['own','exalted','moolatrikona'].includes(p.dignity)))&&[a,b].some(p=>[6,8,12].includes(p.house)))body+=ta?' ராசிபலமும் கடினமான பாவத் தொடர்பும் ஒரே ஜாதகத்தில் இணைந்திருப்பதால் எதையும் மறைக்காமல் தனித்தனி ஆதாரங்களாகக் கணக்கில் எடுக்க வேண்டும்.':' Sign dignity and challenging house placement coexist; neither is erased.';
+ return body;
+}
+function pairInterpretation(B,G,kind,ta){
+ const bh=B.varga,gh=G.varga,bl=bh?.lordPlacement,gl=gh?.lordPlacement;
+ if(!bh||!gh||!bl||!gl)return ta?'இரு பிரிவுச் சக்கரங்களில் அதிபதி நிலை முழுமையற்றதால் இருவர் ஒருங்கிணைந்த நிகழ்வை ஊகிக்கவில்லை.':'Divisional ruler placements are incomplete for the pair.';
+ const supportive=p=>['own','exalted','moolatrikona'].includes(p.dignity),stress=p=>[6,8,12].includes(p.house)||p.dignity==='debilitated';
+ const name=p=>ta?translatePlanet(p.planet,ta):p.planet;
+ const clause=(p,who)=>ta?`${who} ${name(p)} ${signName(p.sign,ta)} ராசியில் ${p.house}-ஆம் பாவத்தில் ${supportive(p)?'(ஆட்சி/உச்சம்/மூலத்திரிகோண பலம்)':p.dignity==='debilitated'?'(நீசம்)':'(சாதாரண ராசிநிலை)'}`:`${who} ${name(p)} occupies house ${p.house} in ${signName(p.sign,false)} (${p.dignity})`;
+ const joined=clause(bl,ta?'பெண்ணின்':'Bride’s')+'; '+clause(gl,ta?'ஆணின்':'groom’s')+'. ';
+ if(kind==='children'){
+  if(ta)return joined+`${supportive(bl)?'பெண்ணின் புத்திர பாவாதிபதிக்கு ராசிபலம் ஆதரவாக உள்ளது; ':''}${supportive(gl)?'ஆணின் புத்திர பாவாதிபதிக்கும் ராசிபல ஆதரவு உள்ளது; ':''}${stress(bl)||stress(gl)?'அதேவேளை '+[stress(bl)?'பெண்':'',stress(gl)?'ஆண்':''].filter(Boolean).join(' மற்றும் ')+' ஜாதகத்தில் ஆறாம்/எட்டாம்/பன்னிரண்டாம் பாவத் தொடர்போ நீசமோ குடும்பத் திட்டங்களில் நடைமுறைத் தடைகள், கால ஒதுக்கீடு மற்றும் கூடுதல் பொறுப்புகளை முன்னிலைப்படுத்தலாம். ':''}குருவின் D7 நிலையும் இருவரின் D1 ஐந்தாம் பாவங்களும் இணைக்கப்பட்டுள்ளன; இந்தத் தொடர்பு குழந்தைப்பேறு இல்லை என்றோ பிறக்கும் குழந்தையின் எண்ணிக்கை/பாலினம் என்றோ முடிவு வழங்கவில்லை.`;
+  return joined+`${supportive(bl)||supportive(gl)?'At least one fifth lord has sign-dignity support. ':''}${stress(bl)||stress(gl)?'A difficult house link also describes possible planning, responsibility or delay themes. ':''}D1 fifth houses and D7 Jupiter are compared; this does not establish fertility, number or sex of children.`;
+ }
+ if(kind==='marriage')return joined+(ta?`ஏழாம் அதிபதியின் சொந்த/உச்ச ஆதரவும் 6/8/12 பாவத் தொடர்புகளும் தனித்தனியாக மதிப்பிடப்பட்டுள்ளன. ${stress(bl)||stress(gl)?'துணைவருடன் அன்றாடப் பொறுப்பு, செலவு மற்றும் தனிநேர ஒழுங்கில் ஒப்புதல் முக்கியமாகலாம். ':'உறவின் பொறுப்புகளை இருவரும் ஒருங்கிணைப்பதற்கு பாரம்பரிய ஆதரவு உள்ளது. '}இது முழு பொருத்த இறுதித் தீர்ப்பை மீண்டும் கணக்கிடும் பகுதி அல்ல.`:`D9 seventh-lord strengths and house pressures are weighed independently. ${stress(bl)||stress(gl)?'Shared workload and private time deserve clear agreement.':'The symbolism is broadly supportive for cooperation.'} This does not duplicate the final match verdict.`);
+ return joined+(ta?`இருவரின் D10 பத்தாம் அதிபதிகளும் தொழில் நேரம், வேலை செய்யும் முறை, குடும்பத்துக்குக் கிடைக்கும் நேரம் ஆகியவற்றில் வெவ்வேறு பாவத் தொடர்புகளை ஏற்படுத்தலாம். ${stress(bl)||stress(gl)?'வேலைச் சுமையால் குடும்ப நேரம் பாதிக்கும் காலங்களைத் திட்டமிடுவது பொருத்தமானது.':'தொழிலில் உருவாகும் ஆதரவுகளை இணைத்துக் குடும்ப இலக்குகளை அமைக்கலாம்.'} தனியார் வேலை, அரசு வேலை, சொந்தத் தொழில் ஆகியவற்றில் ஒன்றை ஜாதகம் மட்டும் உறுதி செய்யாது.`:`The D10 lords link careers to different duties and schedules. ${stress(bl)||stress(gl)?'Work pressure and family time may need balancing.':'Career support may help shared planning.'} A definite occupation type cannot be certified from these placements.`);
+}
+function describePair(b,g,kind,ta){const B=analyse(b)[kind],G=analyse(g)[kind],fb=describeFocus(B,ta,ta?'பெண்':'Bride'),fg=describeFocus(G,ta,ta?'ஆண்':'Groom');return {kind,bride:fb,groom:fg,synthesis:pairInterpretation(B,G,kind,ta),source:{bride:B,groom:G}};}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderMatching(bride,groom,language='ta'){const ta=language!=='en',names={children:["D1 + D7 — குழந்தைகள், குடும்பத் திட்டம்","D1 + D7 — family planning"],marriage:["D1 + D9 — உறவின் வலிமை, எதிர் ஆதாரம்","D1 + D9 — marriage evidence"],profession:["D1 + D10 — தொழில் மற்றும் குடும்ப நேர ஒத்திசைவு","D1 + D10 — work and family time"]};let result=`<section class="mm-person-result mm-v337-classical" data-smv-v337="1"><h2>${ta?'D1–D7–D9–D10: இரு ஜாதகங்களின் வாழ்க்கை ஆதாரங்கள்':'D1–D7–D9–D10: couple life evidence'}</h2>`;
+ for(const kind of ['children','marriage','profession']){const x=describePair(bride,groom,kind,ta);result+=`<article class="smv-v337-area"><h3>${escapeHtml(names[kind][ta?0:1])}</h3><p>${escapeHtml(x.bride)}</p><p>${escapeHtml(x.groom)}</p><p>${escapeHtml(x.synthesis)}</p></article>`;}
+ result+=`<p class="mm-note">${ta?'இந்தக் கணிதப்பகுதி கிரக, பாவ, ராசி ஆதாரங்களை ஒப்பிடுகிறது. இது குழந்தைப்பேறு மருத்துவ முடிவோ, பாலினம்/எண்ணிக்கை கணிப்போ, வேலை உறுதியோ, இரண்டாவது திருமணப் பொருத்தத் தீர்ப்போ அல்ல.':'Traditional chart evidence only; not a fertility diagnosis, sex/number-of-children prediction, job guarantee or second match verdict.'}</p></section>`;return result;}
+function renderHoroscope(chart,language='ta'){const ta=language!=='en',a=analyse(chart);let result=`<section class="smv-v337-horoscope" data-smv-v337="1"><h2>${ta?'D1, D7, D9, D10 — ஒருங்கிணைந்த வாழ்வியல் ஆய்வு':'D1/D7/D9/D10 life-area study'}</h2>`;for(const kind of ['children','marriage','profession'])result+=`<p>${escapeHtml(describeFocus(a[kind],ta,ta?'ஜாதகர்':'Native'))}</p>`;return result+'</section>';}
+return Object.freeze({version:337,natal,vargaSign,vargaDegree,dign,balaAvastha,analyzeDivision,referenceHouse,functionalLordship,houseBalance,analyse,focusEvidence,describeFocus,describePair,renderMatching,renderHoroscope,vargaDignitySummary});
+});
