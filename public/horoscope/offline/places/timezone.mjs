@@ -18,6 +18,11 @@ const STATUTORY_2026_ZONES=new Map([
  ['America/Rainy_River',-300]                                // 2026e current assumption
 ]);
 const STATUTORY_MOROCCO_ZONES=new Set(['Africa/Casablanca','Africa/El_Aaiun']);
+// IANA 2026d: POSIX compatibility IDs have fixed standard UTC offsets
+// before modern civil standardization. These are not geographic city IDs.
+const POSIX_LEGACY_BASE=new Map([
+ ['EST5EDT',-300],['CST6CDT',-360],['MST7MDT',-420],['PST8PDT',-480]
+]);
 
 function civilParts(date, time) {
  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date));
@@ -42,6 +47,8 @@ export function offsetMinutesAt(timeZone,date,time){
  // For zones changed by 2026e, stale device ICU data otherwise silently
  // produces an hour error. Data is statutory and independent of DST labels.
  const localClock=String(date)+'T'+String(time).padStart(5,'0');
+ if(POSIX_LEGACY_BASE.has(zone)&&String(date)<'1883-11-18')
+  return POSIX_LEGACY_BASE.get(zone);
  if(STATUTORY_2026_ZONES.has(zone)&&localClock>='2026-11-01T02:00')
   return STATUTORY_2026_ZONES.get(zone);
  if(STATUTORY_MOROCCO_ZONES.has(zone)&&localClock>='2026-09-20T02:00')
