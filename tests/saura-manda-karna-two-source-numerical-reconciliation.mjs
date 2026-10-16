@@ -160,9 +160,102 @@ for(const [date,time] of births){
  natal.push({date,time,grahas});
 }
 ensure(natalCount===25,'five natal years x five classical research planets');
+/*
+ * Mars source reconciliation — research only.
+ * JAA (2025) 46:9, Table 6/7 p.16 (April 9) and Table 9 p.19
+ * (April 13); 10.1007/s12036-024-10018-8.
+ * Table 6 actually prints a signed half-Sighra correction on Apr09.
+ * Apr13 only prints the stage LONGITUDE: the comparable half correction
+ * must be INFERRED from the first stage under the publication's own
+ * mean + twice-half-correction pattern; it is not separately printed.
+ *
+ * A negative result is valuable: these regression assertions prevent an
+ * unsubstantiated historical certification, not falsely grant one.
+ */
+const signedAngularDifference=(actual,published)=>(((actual-published)%360)+540)%360-180;
+const marsPaperRows=Object.freeze([
+ {label:'2024-04-09',mean:295.0651,mandocca:130.0471,sheeghrocha:353.2261,
+  // Table 6 directly printed corrections and Table 7 printed positions
+  printedCorrections:[11.6844,-0.4649,-4.2191,29.0543],
+  printedStageLongitudes:[318.4339,305.8197,290.8460,319.9003],
+  firstHalfSource:'direct Table 6'},
+ {label:'2024-04-13',mean:297.5377,mandocca:130.0471,sheeghrocha:357.8763,
+  printedCorrections:null,
+  printedStageLongitudes:[321.6845,309.4884,293.9943,323.7391],
+  firstHalfSource:'inferred from Table 9; not independently printed'}
+]);
+const marsFourStageEvidence=[];
+for(const row of marsPaperRows){
+ const inputs={planet:'Mars',meanLongitude:row.mean,mandocca:row.mandocca,
+   sheeghrocha:row.sheeghrocha,mandaKarṇaConvention:'absolute-koti-minus'};
+ const fromJya=tabular(inputs),fromTrig=geometric(inputs);
+ const js=fromJya.stages,gs=fromTrig.stages;
+ const stageNames=['halfSighra','halfManda','fullManda','fullSighra'];
+ const calculatedCorrections=[js.halfSighraDegrees,js.halfMandaDegrees,
+   js.fullMandaDegrees,js.fullSighraDegrees];
+ const trigCorrections=[gs.halfSighraDegrees,gs.halfMandaDegrees,
+   gs.fullMandaDegrees,gs.fullSighraDegrees];
+ const calculatedLongitudes=[js.afterHalfSighra,js.afterHalfManda,
+   js.afterFullManda,fromJya.trueLongitude];
+ const paperHalfS=row.printedCorrections
+   ?row.printedCorrections[0]
+   :signedAngularDifference(row.printedStageLongitudes[0],row.mean)/2;
+ const correctionError=calculatedCorrections[0]-paperHalfS;
+ // Check two genuinely different numeric methods (printed Jya versus trig)
+ // before comparing one chosen historical model against external paper.
+ for(let i=0;i<4;i++)ensure(Math.abs(calculatedCorrections[i]-trigCorrections[i])<.025,
+   row.label+' '+stageNames[i]+' Jya versus continuous geometry independent numeric route');
+ ensure(correctionError<-.5&&correctionError>-.6,
+   row.label+' first mismatch is already the initial half-Sighra correction');
+ ensure(dist(calculatedLongitudes[0],row.printedStageLongitudes[0])>12,
+   row.label+' published first-stage LONGITUDE not model first half-step');
+ ensure(dist(fromJya.trueLongitude,row.printedStageLongitudes[3])>3,
+   row.label+' no false Mars true-longitude paper agreement');
+ ensure(!fromJya.historicallyCertified&&!fromTrig.historicallyCertified,
+   row.label+' four-stage diagnostic cannot certify a historical orbit');
+ if(row.printedCorrections){
+   const [hs,hm,fm,fs]=row.printedCorrections;
+   // Directly check the published Table 6 and Table 7 algebra.
+   near(dist(row.printedStageLongitudes[0],row.mean+2*hs),0,.00011,
+     'Apr09 Table 7 stage one is mean PLUS TWICE Table 6 half-Sighra');
+   near(dist(row.printedStageLongitudes[1],row.mean+hs+2*hm),0,.00011,
+     'Apr09 Table 7 stage two is mean + printed half S + TWO half M');
+   near(dist(row.printedStageLongitudes[2],row.mean+fm),0,.00011,
+     'Apr09 Table 7 full Manda reconstructs mean plus full Manda');
+   near(dist(row.printedStageLongitudes[3],row.mean+fm+fs),0,.00011,
+     'Apr09 Table 7 final reconstructs from its own printed values');
+   ensure(dist(row.printedStageLongitudes[0],row.mean+hs)>11.6,
+     'Apr09 published half-Sighra first-stage label NOT the half-corrected mean');
+ }
+ const traces=stageNames.map((stage,i)=>({
+   stage, publishedStageLongitude:row.printedStageLongitudes[i],
+   tabularStageLongitude:+calculatedLongitudes[i].toFixed(6),
+   signedStageErrorDeg:+signedAngularDifference(calculatedLongitudes[i],
+     row.printedStageLongitudes[i]).toFixed(6),
+   tabularCorrectionDegrees:+calculatedCorrections[i].toFixed(6),
+   geometricCorrectionDegrees:+trigCorrections[i].toFixed(6),
+   publishedCorrectionDegrees:row.printedCorrections?.[i]??null,
+   correctionErrorDegrees:row.printedCorrections
+     ?+(calculatedCorrections[i]-row.printedCorrections[i]).toFixed(6):null
+ }));
+ marsFourStageEvidence.push({
+   date:row.label,firstHalfSource:row.firstHalfSource,
+   paperHalfSighraComparable:+paperHalfS.toFixed(6),
+   engineHalfSighra:+calculatedCorrections[0].toFixed(6),
+   initialCorrectionDifferenceDegrees:+correctionError.toFixed(6),
+   firstDivergence:'Half-Sighra (stage 1)',
+   stages:traces,
+   publishedPaperTrueLongitude:row.printedStageLongitudes[3],
+   engineTrueLongitude:+fromJya.trueLongitude.toFixed(6),
+   fullTraditionalCertificate:false
+ });
+}
+ensure(marsFourStageEvidence.length===2,
+  'both exact 2024 academic dates have all four separately enumerated stages');
 console.log(JSON.stringify({
   pass:true,assertions:count,
   sourceMathForensicPASS:true,
+  marsFourStageEvidence,
   siteFourCommonOneAlternateConfirmed:true,
   oneUniversalAbsoluteKotiMatchesFivePublishedGrahas:true,
   mandakarnaConventionConflictNotSilentlyFitted:true,
