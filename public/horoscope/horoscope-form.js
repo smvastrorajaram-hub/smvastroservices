@@ -17,6 +17,7 @@
       place.value=selected;lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);
       place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);
       place.dataset.timezone='';place.dataset.timezoneSource='unverified';if(tzInput)tzInput.value='';
+      window.__smvUpdateBirthOffset?.(prefix);
       clear();statusText(text('Verifying timezone with GeoNames…','GeoNames மூலம் நேர மண்டலம் சரிபார்க்கப்படுகிறது…'));
       try{
         const resolved=await window.__smvResolvePlaceTimezone(x);
@@ -24,6 +25,7 @@
         if(tzInput)tzInput.value=resolved.timezone;
         place.dataset.timezone=resolved.timezone;
         place.dataset.timezoneSource=resolved.timezoneSource||'verified';
+        window.__smvUpdateBirthOffset?.(prefix);
         statusText('');
       }catch(e){
         if(place.value!==selected)return;
@@ -51,7 +53,8 @@
     try{await window.SMVEngineReady;}catch{alert(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));return;}
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'',currentWork='',maritalStatus='',currentResidence=''; // Age-only reading: no voluntary life-context supplied;
     if(Number(date.slice(0,4))<1800||Number(date.slice(0,4))>2399){alert(text('Supported birth years: 1800–2399.','ஆதரிக்கப்படும் பிறந்த ஆண்டுகள்: 1800–2399.'));return;}
-    const off=$('birthUtcOffset');if(!off.value||!Number.isFinite(Number(off.value))||Number(off.value)<-12||Number(off.value)>14){alert(text('Enter a valid UTC offset from −12 to +14 hours.','−12 முதல் +14 மணி வரை சரியான நேர வேறுபாட்டை உள்ளிடவும்.'));return;}
+    // UTC offset is derived from the selected IANA zone and birth date/time below.
+    // Never reject a new birth form because an old/default offset is still blank.
     if(!date||!time){alert(text('Enter the date and time of birth.','பிறந்த தேதி மற்றும் நேரத்தை உள்ளிடவும்.'));return;}
     if(!place||place.length<2){
   alert(text('Enter your Place of Birth.','பிறந்த இடத்தை உள்ளிடவும்.'));
