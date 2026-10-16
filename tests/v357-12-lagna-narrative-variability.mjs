@@ -33,6 +33,8 @@ for(const language of ['ta','en']){
   for(const d of charts){
    const out=render(d,language);
    eq(out.topics.length,12,language+' '+lagna+' all 12 houses');
+   ok(!fingerprint(out).includes('எல்லா மனிதர்களுக்கும் பொருந்தும் என்று கருத வேண்டாம்'),language+' '+lagna+' no generic Tamil disclaimer repeated in 12 houses');
+   ok(!fingerprint(out).includes('provided it is adapted to the people and circumstances'),language+' '+lagna+' no generic English repeated filler');
    eq(out.topics.map(x=>x.evidence.houseLord),d.houses.map(x=>x.lord),language+' '+lagna+' correct sign ownership');
    for(const [j,topic] of out.topics.entries()){
     eq(topic.number,j+1,language+' '+lagna+' numbering');
