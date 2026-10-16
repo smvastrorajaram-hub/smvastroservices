@@ -1,6 +1,7 @@
 /* Full V10.7 browser port generated from authoritative SOURCE-swiss_vedic.js.
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
+import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
 let swe=null;
 const C={SE_SUN:WC.SUN,SE_MOON:WC.MOON,SE_MERCURY:WC.MERCURY,SE_VENUS:WC.VENUS,SE_MARS:WC.MARS,SE_JUPITER:WC.JUPITER,SE_SATURN:WC.SATURN,SE_MEAN_NODE:WC.MEAN_NODE,SE_GREG_CAL:1,SE_SIDM_LAHIRI:1,SEFLG_SWIEPH:2,SEFLG_MOSEPH:4,SEFLG_SPEED:256,SEFLG_EQUATORIAL:2048,SEFLG_SIDEREAL:65536};
 async function ensureSwe(){
@@ -428,16 +429,37 @@ function sputaDrishti(angle, aspector){
   }
   return Math.max(0,Math.min(60,s));
 }
-function drikBalaClassical(planet, planets){
+/**
+ * UK Chapter II printed p.44: Moon's waxing phase and Mercury's conjunction
+ * determine whether their Drishti contributes as benefic or malefic.
+ * This classifier does NOT change natal Moon's separate strength policy.
+ */
+export function drigAspectorBenefic(aspector,planets){
+  if(['குரு','சுக்கிரன்'].includes(aspector))return true;
+  const sun=planets.find(p=>p.name==='சூரியன்');
+  const moon=planets.find(p=>p.name==='சந்திரன்');
+  const elongation=sun&&moon?norm360(moon.longitude-sun.longitude):null;
+  const waxing=elongation!==null&&elongation>0&&elongation<=180;
+  if(aspector==='சந்திரன்')return waxing;
+  if(aspector!=='புதன்')return false;
+  const mercury=planets.find(p=>p.name==='புதன்');
+  if(!mercury)return false;
+  const sign=Math.floor(norm360(mercury.longitude)/30);
+  const joinedMalefic=planets.some(p=>p.name!=='புதன்' &&
+    (['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'].includes(p.name) ||
+     (p.name==='சந்திரன்'&&!waxing)) &&
+    Math.floor(norm360(p.longitude)/30)===sign);
+  return !joinedMalefic;
+}
+export function drikBalaClassical(planet, planets){
+  const receiver=planets.find(x=>x.name===planet);
+  if(!receiver)return 0;
   let pinda=0;
   for(const q of planets){
     if(q.name===planet || !SHADBALA_REQUIRED[q.name]) continue;
-    const d=norm360(q.longitude);
-    const t=norm360(planets.find(x=>x.name===planet).longitude);
-    const angle=norm360(t-d);
+    const angle=norm360(receiver.longitude-q.longitude);
     const aspect=sputaDrishti(angle,q.name);
-    const benefic=['குரு','சுக்கிரன்'].includes(q.name) || (q.name==='புதன்' && !q.strength?.combustion);
-    pinda += benefic?aspect:-aspect;
+    pinda+=drigAspectorBenefic(q.name,planets)?aspect:-aspect;
   }
   return pinda/4;
 }
@@ -454,7 +476,7 @@ export function motionClassical(planet, speed, state){
   if(ratio<1.6) return 45;
   return 30;
 }
-function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags, solarContext=null){
+function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags, solarContext=null,grahaYuddha=null){
   const p=chartPlanets.find(x=>x.name===planet); if(!p) return null;
   const state=p.strength||{};
   const sth=sthanaClassical(planet,p.longitude,p.bhava,rasiPositions);
@@ -472,14 +494,15 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const masa=masaLord===planet?30:0;
   const abda=solarContext?.abdaLord===planet?15:0;
   const ayana=ayanaBala(declinations[planet],planet);
-  const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha:0};
+  const yuddha=grahaYuddha?.virupaByPlanet?.[planet]??0;
+  const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
   const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
   const naisargika=SHADBALA_NATURAL[planet];
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','Yuddha Bala not calculated','Remaining Drig and five-planet Cheshta require numeric textbook verification'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','UK p.45 one-Rupa Yuddha applied only with chart latitude/house evidence; p.41 disc-quotient variant unresolved','Five-planet Cheshta mean/sheeghra and complete Drig textbook numeric verification pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
@@ -493,7 +516,8 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  const grahaYuddha=uttaraKalamritaGrahaYuddha(withHour);
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
@@ -681,7 +705,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const moshierFlags=C.SEFLG_MOSEPH|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
   const planets=[];
   let calculationMode=useSwissFiles?'SWIEPH':'MOSEPH';
-  for(const [ta,id] of PLANETS){ const calc=calcPlanetSafe(jdEt,id,flags,moshierFlags,ta,useSwissFiles); const r=calc.result; calculationMode=calc.mode==='MOSEPH'?'MOSEPH':calculationMode; const sid=norm360(r.data[0]); const z=zodiac(sid), nk=nakshatra(sid); planets.push({name:ta,longitude:Number(sid.toFixed(8)),degree:degText(sid),rasi:z.sign,nakshatra:nk.name,pada:nk.pada,lord:nk.lord,speed:Number((r.data[3]||0).toFixed(8)),navamsa:navamsa(sid)}); }
+  for(const [ta,id] of PLANETS){ const calc=calcPlanetSafe(jdEt,id,flags,moshierFlags,ta,useSwissFiles); const r=calc.result; calculationMode=calc.mode==='MOSEPH'?'MOSEPH':calculationMode; const sid=norm360(r.data[0]); const z=zodiac(sid), nk=nakshatra(sid); planets.push({name:ta,longitude:Number(sid.toFixed(8)),degree:degText(sid),rasi:z.sign,nakshatra:nk.name,pada:nk.pada,lord:nk.lord,speed:Number((r.data[3]||0).toFixed(8)),eclipticLatitude:Number.isFinite(r.data[1])?Number(r.data[1].toFixed(8)):null,navamsa:navamsa(sid)}); }
   const nodeCalc=calcPlanetSafe(jdEt,nodeId,flags,moshierFlags,'ராகு',useSwissFiles); calculationMode=nodeCalc.mode==='MOSEPH'?'MOSEPH':calculationMode; const rn=nodeCalc.result; const rahu=norm360(rn.data[0]), ketu=norm360(rahu+180);
   for(const [name,sid] of [['ராகு',rahu],['கேது',ketu]]){ const z=zodiac(sid), nk=nakshatra(sid); planets.push({name,longitude:Number(sid.toFixed(8)),degree:degText(sid),rasi:z.sign,nakshatra:nk.name,pada:nk.pada,lord:nk.lord,speed:0,navamsa:navamsa(sid)}); }
   // Numeric Lahiri ayanamsa for the UI. sweph returns {flag,error,data}.
