@@ -49,14 +49,18 @@ export function sauraInverseJyaArcMinutes(jya){
   const degrees=STEP*(lo+(abs-v[lo])/(v[lo+1]-v[lo]));
   return jya<0?-degrees:degrees;
 }
-function correction(mean,ucca,paridhiPair){
+function correction(mean,ucca,paridhiPair,kind='sighra'){
   const k=norm(ucca-mean),sin=sauraJyaSignedDegrees(k)/RADIUS,
         cos=sauraJyaSignedDegrees(k+90)/RADIUS;
   const correctedParidhi=paridhiPair[0]-
     (paridhiPair[0]-paridhiPair[1])*Math.abs(sin);
   // Arcminutes radius: paridhi degrees × 60 / (2π × trijya 3438).
   const relativeRadius=correctedParidhi*60/(2*Math.PI*RADIUS);
-  const side=relativeRadius*sin,axis=1+relativeRadius*cos;
+  // Separate Manda R−koti from Sighra R+koti geometry;
+  // prior shared '+' incorrectly produced Saturn 231.71362°
+  // instead of the independently printed 232.00407°.
+  const side=relativeRadius*sin,
+        axis=1+(kind==='manda'?-1:1)*relativeRadius*cos;
   const hypotenuse=Math.hypot(axis,side);
   if(hypotenuse<=0)throw new RangeError('invalid mandakarna / sighrakarna');
   const signedSine=Math.max(-RADIUS,Math.min(RADIUS,RADIUS*side/hypotenuse));
@@ -84,9 +88,9 @@ export function sauraTabularFourPassTrueLongitude({planet,meanLongitude,mandocca
     throw new TypeError('three finite classical orbital longitudes required');
   const m=norm(meanLongitude),a=norm(mandocca),s=norm(sheeghrocha),size=SAURA_EPICYCLE_SIZES[p];
   const sh1=correction(m,s,size.sighra),afterHalfSighra=norm(m+sh1.correctionDegrees/2);
-  const ma1=correction(afterHalfSighra,a,size.manda);
+  const ma1=correction(afterHalfSighra,a,size.manda,'manda');
   const afterHalfManda=norm(afterHalfSighra+ma1.correctionDegrees/2);
-  const ma2=correction(afterHalfManda,a,size.manda),afterFullManda=norm(m+ma2.correctionDegrees);
+  const ma2=correction(afterHalfManda,a,size.manda,'manda'),afterFullManda=norm(m+ma2.correctionDegrees);
   const sh2=correction(afterFullManda,s,size.sighra);
   return Object.freeze({
     planet:p,meanLongitude:m,mandocca:a,sheeghrocha:s,
