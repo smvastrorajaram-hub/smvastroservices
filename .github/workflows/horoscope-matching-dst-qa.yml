@@ -26,6 +26,8 @@ jobs:
           done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
+      - name: Five-book structural calculation audit (five natal charts)
+        run: node tests/five-book-structural-audit.mjs
       - name: Two-person factual matching report + UTC + print/save regression
         run: node tests/marriage-basic-report-regression.mjs
       - name: Report, print, timezone input regression
