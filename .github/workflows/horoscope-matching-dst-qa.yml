@@ -12,12 +12,6 @@ on:
       - 'public/horoscope/**'
       - 'tests/**'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'public/horoscope/**'
-      - 'tests/**'
-      - '.github/workflows/horoscope-matching-dst-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
