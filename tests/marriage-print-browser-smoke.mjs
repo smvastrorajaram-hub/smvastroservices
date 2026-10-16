@@ -118,8 +118,9 @@ try{
       imageTranslate:getComputedStyle(img).translate
     };
   });
+  console.log('COVER_GEOMETRY',JSON.stringify(m));
   assert.equal(m.loaded,true,'Actual cover image must load');
-  assert.ok(Math.abs(m.imageCenter-m.emblemCenter)<1.5,'Cover image centered within its container');
+  if(matching)assert.ok(Math.abs(m.imageCenter-m.emblemCenter)<1.5,'Matching cover image centered within its container');
   assert.ok(Math.abs(m.emblemCenter-m.frameCenter)<1.5,'Emblem centered on the A4 cover frame');
   if(matching)assert.equal(m.imageTransform,'none','Matching cover photo must not have horizontal V331 offset');
   else assert.notEqual(m.imageTransform,'none','Horoscope cover keeps previous V331 offset');
