@@ -18,6 +18,21 @@ const occupied=[0,1,3,9];
 same(ekadhipatyaShodhana(exampleTrikona,occupied).values,
  [1,2,0,0,0,0,0,2,0,2,0,1],
  'Ch.68 six Ekadhipatya reduction rules/example');
+
+/* Editorial trace: the printed diagram places JUP in sign 3 (Gemini),
+ * while the following prose describes Gemini and Virgo as unoccupied.
+ * Those two readings cannot both produce the printed zero/zero outcome.
+ * Keep a separate explicit failure-to-reconcile check. THIS IS NOT A PASS
+ * on exact book-illustration occupancy or a reason to silently change
+ * the classical engine.
+ */
+const diagramOccupied=[0,1,2,3,9]; // MN Aries, MRS/SAT Taurus, JUP Gemini, RH Cancer, SN/MCY/VEN Capricorn.
+const diagramComputed=ekadhipatyaShodhana(exampleTrikona,diagramOccupied).values;
+same(diagramComputed[2],4,'Ch.68 Gemini occupied by Jupiter => keeps 4 under listed occupied-sign rule');
+same(diagramComputed[5],0,'Ch.68 unoccupied Virgo reduces to zero by equal 4 bindus');
+yes(JSON.stringify(diagramComputed)!==JSON.stringify([1,2,0,0,0,0,0,2,0,2,0,1]),
+  'Ch.68 diagram occupancy and printed reduced-row conflict recorded, not silently certified');
+
 // Ch.69 worked Sun's example: Rasi Pinda 100 + Graha Pinda 48 = 148.
 const grahaSigns={
  'சூரியன்':9,'சந்திரன்':2,'செவ்வாய்':1,'புதன்':10,
