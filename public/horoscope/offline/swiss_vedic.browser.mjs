@@ -327,7 +327,9 @@ function horaLord(solarHour, weekday){
 export function traditionalAharganaLords(date){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date));
   if(!m)throw new RangeError('Ahargana requires YYYY-MM-DD');
-  const y=+m[1],mo=+m[2],d=+m[3],ms=Date.UTC(y,mo-1,d);
+  const y=+m[1],mo=+m[2],d=+m[3];
+  const gregorian=new Date(0); gregorian.setUTCFullYear(y,mo-1,d);
+  const ms=gregorian.getTime();
   if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==date)
     throw new RangeError('Invalid Ahargana calendar date');
   const ahargana=65142+Math.round((ms-Date.UTC(1983,11,31))/86400000);
@@ -477,7 +479,7 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,method:'Partial Parashari Shadbala Phase 3; Hora/Abda/Masa/Yuddha need certification',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','Yuddha Bala not calculated','Remaining Drig and five-planet Cheshta require numeric textbook verification'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
