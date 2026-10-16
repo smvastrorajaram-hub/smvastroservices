@@ -185,7 +185,13 @@ const SHADBALA_REQUIRED = {
   'சூரியன்':390, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
   'குரு':390, 'சுக்கிரன்':330, 'சனி':300
 };
-const SHADBALA_NATURAL = NATURAL_BALA;
+// BPHS I Ch27 v14: exact 60*n/7 Virupas; DO NOT reuse the 2-decimal
+// NATURAL_BALA display map from Phase2. Exact fractions matter when summing
+// all six Shadbala components, even though UI later rounds to 3 decimals.
+export const SHADBALA_NATURAL = Object.freeze({
+  'சூரியன்':60,'சந்திரன்':6*60/7,'செவ்வாய்':2*60/7,
+  'புதன்':3*60/7,'குரு':4*60/7,'சுக்கிரன்':5*60/7,'சனி':60/7
+});
 const PLANET_GENDER = {
   'சூரியன்':'male','செவ்வாய்':'male','குரு':'male',
   'புதன்':'neutral','சனி':'neutral','சந்திரன்':'female','சுக்கிரன்':'female'
