@@ -12,7 +12,7 @@
 const STATUTORY_2026_ZONES=new Map([
  ['America/Vancouver',-420],['Canada/Pacific',-420],            // British Columbia: 2026b
  ['America/Edmonton',-360],['Canada/Mountain',-360],            // Alberta: 2026c
- ['America/Yellowknife',-360],['America/Cambridge_Bay',-360],  // NWT via Edmonton
+ ['America/Yellowknife',-360],                                 // NWT via Edmonton
  ['America/Inuvik',-360],                                    // Northwest Territories: 2026d
  ['America/Winnipeg',-300],['Canada/Central',-300],            // Manitoba: 2026e
  ['America/Rainy_River',-300]                                // 2026e current assumption
