@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>SMV CALENDAR</title>
 <link rel="canonical" href="https://calendar.smvastroservices.in/">
-<script id="smv-v350-host-nav">if(location.hostname==='smvastroservices.pages.dev'){const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a)a.href='/';if(b)b.href='/horoscope/';});}</script>
+<script id="smv-v350-host-nav">if(location.hostname==='smvastroservices.pages.dev'){const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a){a.href='/';a.removeAttribute('target');}if(b){b.href='/horoscope/';b.removeAttribute('target');}});}</script>
 <script>
 (()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://calendar.smvastroservices.in/'+location.search+location.hash);}})();
 </script>
@@ -40,5 +40,42 @@
 <script src="../horoscope.js?v=222-calendar-render"></script>
 <script type="module" src="calendar-pwa.mjs?v=222"></script>
 <script type="module" src="../daily-calendar.mjs?v=228-today-color"></script>
+<script id="smv-v351-pages-calendar-install-bridge">
+(()=>{
+ if(location.hostname!=='smvastroservices.pages.dev')return;
+ const ready=()=>{
+  const area=document.getElementById('smvCalendarInstallArea');
+  const button=document.getElementById('calInstall');
+  const status=document.getElementById('calInstallStatus');
+  if(!area||!button)return;
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const source=new URLSearchParams(location.search).get('source')||'';
+  const launchedThisPwa=standalone&&source.startsWith('calendar-pwa');
+  if(launchedThisPwa)return; // Do not change installed SMV CALENDAR sessions.
+  if(standalone){
+   // The parent ASTRO standalone app is not an installed Calendar app.
+   try{localStorage.removeItem('smv-calendar-pwa-installed-v217')}catch(_){ }
+  }
+  area.hidden=false;
+  const link=document.querySelector('.cal-app-link');if(link)link.hidden=false;
+  const direct='https://smvastroservices.pages.dev/horoscope/calendar/';
+  const ta=()=>document.documentElement.lang==='ta';
+  const instructions=()=>ta()
+   ?'தனியாக நிறுவ: Chrome browser address bar-இல் '+direct+' திறந்து ⋮ → Install app தேர்வு செய்யவும்.'
+   :'To install separately, open '+direct+' directly in Chrome, then choose ⋮ → Install app.';
+  if(standalone&&status)status.textContent=instructions();
+  button.addEventListener('click',event=>{
+   if(!standalone)return; // Existing browser-native Calendar installer remains.
+   event.preventDefault();event.stopImmediatePropagation();
+   area.hidden=false;
+   if(status)status.textContent=instructions();
+  },true);
+  window.addEventListener('smv-language',()=>{if(standalone&&status)status.textContent=instructions();});
+ };
+ // Calendar modules are deferred and run before DOMContentLoaded.
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});
+ else ready();
+})();
+</script>
 </body>
 </html>
