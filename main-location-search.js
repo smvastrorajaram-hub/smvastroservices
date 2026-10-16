@@ -55,7 +55,7 @@
     aliasCache.set(row,cached);
     return cached;
   }
-  async function searchPlaces(q,limit){
+  async function offlineSearchPlaces(q,limit){
     const n=norm(q);
     if(n.length<2) return [];
     const max=Math.max(1,Math.min(50,Number(limit)||8));
@@ -88,6 +88,36 @@
     return result;
   }
 
+
+  // GeoNames worldwide search through the existing Render proxy. India records
+  // stay available as a fallback when offline or the provider is unavailable.
+  async function searchWorldwide(q,limit){
+    if(navigator.onLine===false)return [];
+    if(typeof window.__smvSearchPlacesOnlineOffline==='function'){
+      try{
+        const rows=await window.__smvSearchPlacesOnlineOffline(q,limit);
+        return rows.map(x=>({...x,lat:x.latitude??x.lat,lon:x.longitude??x.lon}));
+      }catch(e){if(e?.name==='AbortError')throw e;}
+    }
+    try{
+      const url=new URL('https://smvastroservices.onrender.com/api/locations/search');
+      url.searchParams.set('q',q);
+      url.searchParams.set('limit',String(Math.max(1,Math.min(70,Number(limit)||70))));
+      url.searchParams.set('lang',/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en');
+      const response=await fetch(url.toString(),{headers:{Accept:'application/json'}});
+      if(!response.ok)return [];
+      const body=await response.json();
+      if(body?.ok!==true||!Array.isArray(body.rows))return [];
+      return body.rows.filter(x=>Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude)))
+        .map(x=>({...x,lat:Number(x.latitude),lon:Number(x.longitude)}));
+    }catch{return [];}
+  }
+  async function searchPlaces(q,limit){
+    if(String(q||'').trim().length<2)return [];
+    const online=await searchWorldwide(q,limit);
+    return online.length?online:offlineSearchPlaces(q,limit);
+  }
+  
   function bind(inputId){
     const input=document.getElementById(inputId);
     if(!input||input.dataset.smvPlaceSearch==='1') return;
@@ -114,7 +144,23 @@
           input.value=x.place||query;
           input.dataset.latitude=String(x.lat??'');
           input.dataset.longitude=String(x.lon??'');
-          input.dataset.timezone=String(x.timezone||'Asia/Kolkata');
+          input.dataset.timezone=String(x.timezone||'');
+          input.dataset.timezoneSource=String(x.timezoneSource||(x.timezone?'offline-india':'unverified'));
+          if(!x.timezone&&Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lon))){
+            const chosen=input.value;
+            const url=new URL('https://smvastroservices.onrender.com/api/locations/timezone');
+            url.searchParams.set('lat',String(x.lat));
+            url.searchParams.set('lng',String(x.lon));
+            fetch(url.toString(),{headers:{Accept:'application/json'}})
+              .then(r=>r.ok?r.json():null)
+              .then(data=>{
+                if(input.value!==chosen||!data?.ok||!data.timezoneId)return;
+                try{new Intl.DateTimeFormat('en',{timeZone:data.timezoneId});}catch{return;}
+                input.dataset.timezone=String(data.timezoneId);
+                input.dataset.timezoneSource='geonames-timezoneJSON';
+                input.dispatchEvent(new Event('change',{bubbles:true}));
+              }).catch(()=>{});
+          }
           close();
           input.dispatchEvent(new Event('change',{bubbles:true}));
         });
