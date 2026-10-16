@@ -58,8 +58,10 @@ jobs:
         run: node tests/v357-bphs-varga-regression.mjs
       - name: V357 D60 deity name reverse order and sign-lord regression
         run: node tests/v357-d60-deity-designation-regression.mjs
-      # Chapter 68 edition diagram/prose mismatch is unresolved.
-      # User explicitly requested SKIP — do not execute Shodhana tests here.
+      # V357 resumed by user request: test Chapter 68 literal prose and
+      # separately ASSERT conflicting illustration stays recorded.
+      - name: BPHS II Chapters 67–69 Shodhana numeric & editorial tests
+        run: node tests/v357-bphs-shodhana-regression.mjs
       - name: V357 BPHS positional Shadbala independent calculation oracle
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
