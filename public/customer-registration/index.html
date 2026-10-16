@@ -21,5 +21,22 @@
 <section><h2>Related SMV ASTRO Services</h2><nav class="related-links" aria-label="Related astrology services"><a href="/astrology-services/">Astrology Services</a><a href="/tamil-horoscope/">Tamil Horoscope</a><a href="/marriage-matching/">Marriage Matching</a><a href="/astrologer-registration/">Astrologer Registration</a></nav></section>
 <footer><a href="/">SMV ASTRO SERVICES Home</a> · <a href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a></footer>
 </main>
+<script id="smv-v350-pages-only-links">
+(()=>{
+ if(location.hostname!=='smvastroservices.pages.dev')return;
+ const adjust=()=>{
+  for(const a of document.querySelectorAll('a[href]')){
+   const raw=a.getAttribute('href');
+   if(!raw)continue;
+   const h='https://horoscope.smvastroservices.in/';
+   const c='https://calendar.smvastroservices.in/';
+   if(raw.startsWith(h))a.setAttribute('href','/horoscope/'+raw.slice(h.length));
+   else if(raw.startsWith(c))a.setAttribute('href','/horoscope/calendar/'+raw.slice(c.length));
+  }
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',adjust,{once:true});
+ else adjust();
+})();
+</script>
 </body>
 </html>
