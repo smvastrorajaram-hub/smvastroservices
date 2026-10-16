@@ -11,7 +11,7 @@ const seven='SN MN MRS MCY JUP VEN ASC';
 const book={
  'புதன்':[
  'ASC SAT MRS VEN MCY', 'ASC MRS MN VEN SAT','VEN MCY',
- 'ASC MN SAT VEN MRS','MCY SAT VEN','JUP MCY SN MN ASC',
+ 'ASC MN SAT VEN MRS',/* Book prose names SAT for house 5; its printed Rekhas table marks SN instead. */'SN MCY VEN','JUP MCY SN MN ASC',
  'MRS SAT','MRS SAT ASC MN VEN JUP','SAT MRS SN MCY VEN',
  'ASC SAT MRS MCY MN',ALL,'JUP MCY SN'
  ],
