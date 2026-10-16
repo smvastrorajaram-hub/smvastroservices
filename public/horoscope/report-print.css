@@ -477,3 +477,39 @@ body{position:relative}
 /* Print snapshots: exclude ONLY today's Panchang and Day/Night Hora cards.
    Birth-time Panchang and transit positions must remain visible. */
 #printReport [data-smv-screen-only^="daily-"],#printReport .panchang-card,#printReport .hora-card{display:none!important}
+
+
+/* Matching-only symmetric cover alignment — preserve Horoscope V331 image shift.
+   Applies to the standalone Saved Report and the browser/PDF print cover.
+   Exactly center the image's layout bounds in the matching emblem without
+   resizing, repositioning, or changing the original image asset. */
+#smvPrintCover.smv-cover-matching.smv-vector-cover .smv-cover-emblem{
+  position:relative!important;
+  left:auto!important;right:auto!important;
+  margin-left:auto!important;margin-right:auto!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  align-self:center!important;
+  transform:none!important;
+}
+#smvPrintCover.smv-cover-matching.smv-vector-cover .smv-cover-emblem img{
+  display:block!important;
+  position:static!important;
+  left:auto!important;right:auto!important;
+  margin-left:auto!important;margin-right:auto!important;
+  object-fit:contain!important;object-position:50% 50%!important;
+  transform:none!important;translate:none!important;
+}
+@media print{
+  #smvPrintCover.smv-cover-matching.smv-vector-cover .smv-cover-emblem{
+    margin-inline:auto!important;
+    transform:none!important;translate:none!important;
+  }
+  #smvPrintCover.smv-cover-matching.smv-vector-cover .smv-cover-emblem img{
+    margin-inline:auto!important;transform:none!important;translate:none!important;
+  }
+}
+@media screen and (max-width:720px){
+  #smvPrintCover.smv-cover-matching.smv-vector-cover .smv-cover-emblem img{
+    margin-inline:auto!important;transform:none!important;translate:none!important;
+  }
+}
