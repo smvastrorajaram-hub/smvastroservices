@@ -26,11 +26,15 @@ const ANCHOR_2024=Object.freeze({Mercury:220.4772,Venus:79.8785,Mars:130.0471,Ju
 const ANCHOR_JD=2460409.5,MAHAYUGA_DAYS=1577917828;
 const bodyOf=x=>{const b=TAMIL[x]||x;if(!Object.prototype.hasOwnProperty.call(EPICYCLES,b))throw new RangeError('Five visible planets only');return b;};
 export const SAURA_EPICYCLE_SIZES=EPICYCLES;
-function equation(mean,ucca,sizes){
+function equation(mean,ucca,sizes,kind='sighra'){
   const k=normalize(ucca-mean),rad=k*R,[even,odd]=sizes;
   const paridhi=even-(even-odd)*Math.abs(Math.sin(rad));
   const radius=paridhi/360;
-  const num=radius*Math.sin(rad),den=1+radius*Math.cos(rad);
+  // Geometry distinction confirmed by the printed Caitanya/Saturn
+  // full and half Manda numerical worked example: Manda uses R-koti,
+  // while Sighra uses R+koti under ucca-minus-mean anomaly convention.
+  // Applying Sighra's '+' to Manda was the 0.290446° Saturn defect.
+  const num=radius*Math.sin(rad),den=1+(kind==='manda'?-1:1)*radius*Math.cos(rad);
   if(den<=0||!Number.isFinite(den))throw new RangeError('Invalid circular epicycle geometry');
   return Object.freeze({degrees:Math.atan2(num,den)/R,paridhiDegrees:paridhi,kendraDegrees:k});
 }
@@ -41,9 +45,9 @@ export function sauraFourPassTrueLongitude({planet,meanLongitude,mandocca,sheegh
   const m=normalize(meanLongitude),a=normalize(mandocca),s=normalize(sheeghrocha),p=EPICYCLES[body];
   const first=equation(m,s,p.sighra);
   const afterHalfSighra=normalize(m+first.degrees/2);
-  const second=equation(afterHalfSighra,a,p.manda);
+  const second=equation(afterHalfSighra,a,p.manda,'manda');
   const afterHalfManda=normalize(afterHalfSighra+second.degrees/2);
-  const third=equation(afterHalfManda,a,p.manda);
+  const third=equation(afterHalfManda,a,p.manda,'manda');
   const afterFullManda=normalize(m+third.degrees);
   const fourth=equation(afterFullManda,s,p.sighra);
   return Object.freeze({
