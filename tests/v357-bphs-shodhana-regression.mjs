@@ -30,7 +30,7 @@ same(p.signProducts.reduce((s,x)=>s+x,0),100,'Rasi multipliers from the BPHS tab
 // The source input cannot be mutated by reductions.
 same(sunRaw,[4,3,4,6,5,2,3,6,5,5,3,2],'No raw BAV mutation');
 same(trikonaShodhana([0,1,4,4,4,5,0,7,1,2,4,7]).values.slice(0,12),
- [0,1,0,0,4,5,0,3,1,2,4,3],'Trine having zero stays unchanged; other groups subtract min');
+ [0,0,4,0,4,4,0,3,1,1,4,3],'Trine having zero stays unchanged; other groups subtract min');
 // Numeric safeguards.
 for(const f of [
  ()=>trikonaShodhana(Array(11).fill(1)),
