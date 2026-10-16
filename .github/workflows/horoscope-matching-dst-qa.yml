@@ -56,6 +56,8 @@ jobs:
         run: node tests/v358-unified-result-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
         run: node tests/v357-bphs-varga-regression.mjs
+      - name: V357 D60 deity name reverse order and sign-lord regression
+        run: node tests/v357-d60-deity-designation-regression.mjs
       # Chapter 68 edition diagram/prose mismatch is unresolved.
       # User explicitly requested SKIP — do not execute Shodhana tests here.
       - name: V357 BPHS positional Shadbala independent calculation oracle
