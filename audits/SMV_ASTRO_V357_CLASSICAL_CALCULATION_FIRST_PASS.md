@@ -161,3 +161,30 @@ CI GitHub Actions run **38950453829**: latest complete source + layout + GeoName
 - Exact 15-year Jupiter/Saturn/Rahu/Ketu slow transit timeline and 15-year dasha-bhukti-to-life-event correctness.
 - Marriage Matching detailed D1/D7/D9 evidence, pair-specific timing, consistent final verdict, remedy conditions and factual independent comparison.
 - Live print/PDF acceptance and actual user-device layout cannot be proven by synthetic browser fixture tests alone.
+
+
+## Eighth pass — Kakshya / D60 deity names / Mercury Paksha / D1 readability
+
+References directly consulted: BPHS I, R. Santhanam, Chapter 6 printed pp. 83–86; Chapter 27 printed pp. 269–270; BPHS II Chapter 66 Prastara tables.
+
+### Source corrections (DRAFT ONLY)
+- **Kakshya Rekha**: Existing Kakshya lord order Saturn/Jupiter/Mars/Sun/Venus/Mercury/Moon/Lagna is DIFFERENT from Prastara columns Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Lagna. Previously hasRekha selected Prastara column by Kakshya numeric index; corrected to contributor-by-name column lookup in browser AND Node advanced engines. 288 independent assertions PASS on five calculated charts, 12 degree boundary samples and SAV per-sign aggregation/337 total. Transit prediction using SAV not certified.
+- **Aries lord**: Node astro_advanced.js had Sun for Aries in SIGN_LORDS whereas browser used the correct Mars. Node source now has Mars. No production main edit.
+- **D60 names and quality**: Both advanced engines now provide 60 book designation names, reverse name sequence only for even signs, and maintain forward D60 sign-ruler counting. D60 evidence exposed as shashtiamsa metadata. Capricorn 13°25′ is Pisces/Jupiter ruler, with reversed name #34 Ghora. The table's #27 Kalinasa is flagged DISPUTED because the book also gives an alternative malefic classification. 13,015 regression assertions PASS, covering 12 signs, 60 subdivisions, selected boundary degrees, server/browser parity, five Perambalur charts. Not a certification of life events for D60.
+- **Mercury Paksha Bala**: BPHS I Chapter 27 requires Mercury to receive malefic Paksha Bala when conjunct a natural malefic. Previous Phase 3 always gave Mercury benefic Paksha Bala. Browser and Node seven-planet strength sources now check conjunction by sign with Sun/Mars/Saturn/Rahu/Ketu; the nodes themselves remain excluded from the seven-graha Shadbala sum. 20 assertions PASS incl. five actual charts. This does not certify all Paksha and Kala Bala.
+- **D1 report repetition**: Removed the same generic caveat appended to the topic-specific conclusion in each of the 12 houses (TA/EN) from d1-human-narrative.js. House score, context, physical significance and natal evidence remain. 12-Lagna × 2 variants × 2 languages regression updated. This is an editorial improvement, NOT a new textbook prediction rule.
+
+### Definitive remaining FAIL/PENDING status
+| Subsystem | Specific finding | Status |
+|---|---|---|
+| Full Shadbala Kala Bala | swiss_vedic.browser.mjs and swiss_vedic.js still calculate Hora with fixed 06:00 sunrise; Tribhaga uses fixed 06–18; Abda is hardcoded Sun; Masa derives from Sun's sign rather than classical Ahargana; Yuddha always zero. Sunrise and reference numeric examples required. | FAIL full numeric certification; do not release as exact |
+| Chesta / Drig / Varsha | Retrograde, planetary war, exact special angular strengths and annual/time computations remain approximate or incomplete. | PENDING |
+| Seven BAVs / SAV / Kakshya | All 7 BAV contributor tables individually compared; Kakshya index corrected, SAV summation checked. Book-based favourable transit inference from SAV is not fully checked. | PARTIAL |
+| D60 | Name, parity and sign ruler checked, Kalinasa dispute explicit. Prediction/remedy implications not individually validated. | PARTIAL |
+| 12 Lagna human prediction | 48 readings and no-common-boilerplate regression do not establish full astrologer-style causal or medical reliability. | PARTIAL |
+| Next 15 years Gochara | d1-15-year-reading.mjs uses seven-day sampling and bisection, with possible skipped very short sign reversals. Five-chart date-window tests validate only MD/AD continuity, not individual transit dates or narrative life effects. | PENDING |
+| Marriage Matching | 25 pair calculation regressions exist. Pair-specific D1/D7/D9 evidence coherence, consistent final verdict, no repeated year paragraphs and Dasha–Gochara cross-check remain. | PENDING |
+| Remedies | bookRemedies(chart,lang) returns an effectively static 9-planet gemstone/practice matrix and empty guidance object regardless of horoscope. Not individually book-certified or safe to present as a personalized gemstone prescription. | FAIL personalization |
+| Chapter 68 Shodhana | User expressly requested SKIP. No tests executed; experimental module remains disconnected. | SKIPPED (not PASS) |
+
+Nothing in this audit authorizes declaring the remaining Five-Book engine FULL PASS. Classical changes stay only in draft PR #6, not merged into main. Retain V359 UI and all PWA/GeoNames/DST/Chart/Print/Save/Admin/Login/Payment behaviour. Before any merge, reconcile PR #6 with the newer main branch and perform real report/PDF/device acceptance.
