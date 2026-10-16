@@ -64,6 +64,8 @@ jobs:
         run: node tests/v357-bphs-bav-prastara-regression.mjs
       - name: V357 book independent remaining four BAV contributor audit
         run: node tests/v357-bphs-bav-remaining-four-regression.mjs
+      - name: V357 Kakshya owner mapping and SAV independent aggregation
+        run: node tests/v357-kakshya-sav-independent-regression.mjs
       - name: V357 12-Lagna independent D1 narrative variability regression
         run: node tests/v357-12-lagna-narrative-variability.mjs
       - name: V357 five actual birth charts next-fifteen-year MD AD timeline
