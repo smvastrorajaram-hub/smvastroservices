@@ -6,6 +6,12 @@ on:
       - 'public/horoscope/**'
       - 'tests/**'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/**'
+      - 'tests/**'
+      - '.github/workflows/horoscope-matching-dst-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +32,8 @@ jobs:
           done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
+      - name: BPHS V357 independent varga-boundary oracle
+        run: node tests/v357-bphs-varga-regression.mjs
       - name: Five-book structural calculation audit (five natal charts)
         run: node tests/five-book-structural-audit.mjs
       - name: Two-person factual matching report + UTC + print/save regression
