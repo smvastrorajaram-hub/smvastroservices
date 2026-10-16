@@ -107,7 +107,7 @@ const transitStart=transitMarked.indexOf('கோச்சாரக் கட்�
 ok(transitStart>=0&&transitMarked.slice(transitStart).includes('சூரியன் (வ,அ)'),'Transit table uses actual transit-specific flags, adjacent to planet name');
 ok(transitMarked.includes('<sup class="mm-base-flag">'),'Transit chart includes calculated retrograde/combustion flags');
 
-ok(custom.includes('மாந்தி')&&custom.includes('அஸ்தமனம்'),'Maandi and combust labels appear in natal positions');
+ok(custom.includes('மாந்தி')&&custom.includes('சூரியன் (வ,அ)'),'Maandi and the combust flag remain visible beside planets');
 
 
 const chartBodies=[...ta.matchAll(/<div class="mm-base-chart mm-base-[a-z]+"[^>]*>([\s\S]*?)<\/div><\/div>/g)].map(x=>x[1]);
