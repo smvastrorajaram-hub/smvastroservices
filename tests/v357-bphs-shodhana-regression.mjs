@@ -10,14 +10,27 @@ const yes=(a,msg)=>{assert.ok(a,msg);assertions++};
 const sunRaw=[4,3,4,6,5,2,3,6,5,5,3,2];
 const sunTrikona=[0,1,1,4,1,0,0,4,1,3,0,0];
 same(trikonaShodhana(sunRaw).values,sunTrikona,'Ch.67 Sun minimum subtraction');
-// Ch.68 worked imaginary example (Aries1 occupied, Scorpio3 empty;
-// Taurus2 occupied, Libra1 empty; Gemini4/Virgo4 both empty;
-// Capricorn2 occupied/Aquarius2 empty; Sag1/Pisces2 both empty).
+// Ch68 literal prose differs from its printed illustration for unoccupied sign pairs.
+// Jupiter is also present in Gemini in the diagram but omitted in the prose.
 const exampleTrikona=[1,2,4,0,0,4,1,3,1,2,2,2];
 const occupied=[0,1,3,9];
 same(ekadhipatyaShodhana(exampleTrikona,occupied).values,
- [1,2,0,0,0,0,0,2,0,2,0,1],
- 'Ch.68 six Ekadhipatya reduction rules/example');
+ [1,2,0,0,0,0,0,2,1,2,0,1],
+ 'Ch68 literal prose: both unoccupied unequal become equal to smaller');
+const chapter68Printed=[1,2,0,0,0,0,0,2,0,2,0,1];
+yes(JSON.stringify(chapter68Printed)!==JSON.stringify(ekadhipatyaShodhana(exampleTrikona,occupied).values),
+    'Printed Chapter 68 illustration conflicts with prose, not certified as agreement');
+function shodhanaPair(x,y,occupation){
+ const v=Array(12).fill(0);v[1]=x;v[6]=y;
+ const o=ekadhipatyaShodhana(v,occupation).values;
+ return [o[1],o[6]];
+}
+same(shodhanaPair(2,1,[]),[1,1],'Both empty with unequal bindus: rule (1)');
+same(shodhanaPair(4,4,[]),[0,0],'Both empty with equal bindus: rule (5)');
+same(shodhanaPair(2,1,[1]),[2,0],'Occupied > empty: keep occupied, zero empty');
+same(shodhanaPair(1,3,[1]),[1,2],'Occupied < empty: subtract occupied from empty');
+same(shodhanaPair(2,1,[1,6]),[2,1],'Both occupied unchanged');
+same(shodhanaPair(2,0,[]),[2,0],'Existing zero bypasses reduction');
 
 /* Editorial trace: the printed diagram places JUP in sign 3 (Gemini),
  * while the following prose describes Gemini and Virgo as unoccupied.
