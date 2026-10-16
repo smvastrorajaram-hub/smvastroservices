@@ -1,11 +1,11 @@
-/* SMV ASTRO V347 — A4 full-sheet cover and separate optical alignment.
+/* SMV ASTRO V348 — V331 exact photo alignment for BOTH covers, A4 layout kept.
  * Keeps the approved Vinayakar / Shiva-Parvati image files unchanged.
  * Loaded AFTER report-cover-v331.css and report-print.css.
  */
 @page { size: A4; margin: 14mm 10mm 14mm; }
 @page:first { size: A4; margin: 0; }
 
-/* Clear earlier V331 and V345 image shifts, then apply independent offsets. */
+/* Restore the EXACT accepted V331 optical shift on both original cover images. */
 #smvPrintCover.smv-vector-cover .smv-cover-emblem {
   display:flex!important;
   justify-content:center!important;
@@ -26,13 +26,10 @@
   object-fit:contain!important;
   object-position:center center!important;
   margin:0 auto!important;
-  transform:translateX(-3.2mm)!important;
+  transform:translateX(-1.8mm)!important;
   transform-origin:center center!important;
 }
-/* Applied by report-cover-marriage-v338.js only for bride + groom. */
-#smvPrintCover.smv-vector-cover.smv-cover-matching .smv-cover-emblem img {
-  transform:translateX(-1.8mm)!important;
-}
+/* Matching and Horoscope now share the SAME V331 image offset. */
 
 @media print {
   html,body{margin:0!important;padding:0!important;overflow:visible!important}
@@ -134,10 +131,7 @@
   #smvPrintCover.smv-vector-cover .smv-cover-emblem img {
     height:auto!important;
     max-height:none!important;
-    transform:translateX(-9px)!important;
-  }
-  #smvPrintCover.smv-vector-cover.smv-cover-matching .smv-cover-emblem img {
-    transform:translateX(-5px)!important;
+    transform:translateX(-6px)!important;
   }
   #smvPrintCover.smv-vector-cover .smv-cover-brand h1 {
     font-size:clamp(21px,5.1vw,35px)!important;
