@@ -106,6 +106,8 @@ jobs:
         run: node tests/classical-five-graha-date-to-cheshta-engine.mjs
       - name: Surya Siddhanta 24 printed Jya versus geometric four-pass and five natal checks
         run: node tests/saura-24-jya-true-natal-precision-regression.mjs
+      - name: Saturn Manda Karna sign conflict and academic Mars two-date source reconciliation
+        run: node tests/saura-manda-karna-two-source-numerical-reconciliation.mjs
       - name: BPHS Ch26 independent Sputa Drig + 35 live seven-graha chart numeric QA
         run: node tests/bphs-ch26-sputa-drig-live-five-charts.mjs
       - name: BPHS exact Naisargika and seven-graha sixfold mathematical reconciliation
