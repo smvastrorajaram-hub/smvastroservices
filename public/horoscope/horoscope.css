@@ -2915,3 +2915,6 @@ details>*{display:block!important}
 #smvSavedReports .smv-saved-row small{font-size:.63rem!important}
 #smvSavedReports .smv-saved-row button{min-width:42px!important;min-height:29px!important;padding:5px 6px!important;font-size:.67rem!important}
 #smvSavedReports .smv-saved-row .smv-delete-report{min-width:46px!important}}
+
+/* Direct Print/Save PDF: the live result retains today's Panchang/Hora. */
+@media print{#tamilHoroscopeResult .panchang-card,#tamilHoroscopeResult .hora-card,#englishHoroscopeResult .panchang-card,#englishHoroscopeResult .hora-card,[data-smv-screen-only^="daily-"]{display:none!important}}

@@ -48,7 +48,7 @@
    const male=cg.name||g.birthName||g.nativeName||parts[1]?.trim();
    return 'SMVMM-'+safePdfFilenamePart(male,'Male')+'-'+safePdfFilenamePart(female,'Female');
   }
-  return 'SMVHS - '+safePdfFilenamePart(report?.name||report?.cover?.person?.name,'Horoscope');
+  return 'SMVHS-'+safePdfFilenamePart(report?.name||report?.cover?.person?.name,'Horoscope');
  }
  function addCoverPerson(grid,title,name,date,time,place,tamil){
   const card=document.createElement('article');card.className='smv-cover-person';
@@ -103,13 +103,19 @@
   const root=document.getElementById('printReport');root.innerHTML=html;
   // V343: on saved V342 charts, reapply the chosen layout without new calculations.
   // Print-page CSP disallows inline coordinates, external rules in chart-style CSS position them.
-  if(report.feature==='advanced_analysis')window.SMVChartPresentationV342?.preparePrint?.(root);
   // V343: repaint saved North/East charts as self-contained print-safe SVG.
   // For Bhava use only previously calculated bhava/planet data; no recalculation.
   if(report.feature==='advanced_analysis')window.SMVChartPresentationV342?.preparePrint?.(root,report.calculation||null);
   // Legacy V263-and-earlier saved Horoscope snapshots can still contain retired Section X.
   // Omit Section X on view/print without rewriting a customer's existing saved record.
   if(report.feature==='advanced_analysis')root.querySelectorAll('.integrated-predictions,.smv-advanced-quick-card[data-smv-target="integrated-predictions"]').forEach(e=>e.remove());
+  // Daily Panchang and Day/Night Hora are screen-only; Birth Panchang and
+  // Transit chart/table remain in saved Horoscope PDF and print reports.
+  // This changes only the disposable print DOM, never the saved report HTML.
+  if(report.feature==='advanced_analysis'){
+    root.querySelectorAll('[data-smv-screen-only^="daily-"],.panchang-card,.hora-card').forEach(e=>e.remove());
+    root.querySelectorAll('.transit-panchang-grid').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.transit-card'))e.remove();});
+  }
   populatePremiumCover(report,root,tamil);
   document.title=reportPdfTitle(report);
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());

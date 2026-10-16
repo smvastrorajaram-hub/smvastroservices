@@ -473,3 +473,7 @@ body{position:relative}
     white-space:nowrap!important;
   }
 }
+
+/* Print snapshots: exclude ONLY today's Panchang and Day/Night Hora cards.
+   Birth-time Panchang and transit positions must remain visible. */
+#printReport [data-smv-screen-only^="daily-"],#printReport .panchang-card,#printReport .hora-card{display:none!important}
