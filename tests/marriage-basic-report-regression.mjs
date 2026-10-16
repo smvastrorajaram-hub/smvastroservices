@@ -52,5 +52,10 @@ for(const suffix of ['UtcOffset','ChartStyle']){
 for(const path of ['public/horoscope/index.html','public/horoscope/report-print.html'])ok(read(path).includes('marriage-basic-report.css'),'Matching CSS included in '+path);
 ok(read('public/horoscope/report-store.mjs').includes('cleanHtml(detail.root)'),'Saved snapshot captures entire result');
 ok(matching.includes('prepareViews:()=>matchingViews(b,g,out)'),'Both languages snapshot from same charts');
+ok(matching.includes("const detached=document.createElement('div')"),'Bilingual snapshots never overwrite live Save Print controls');
+const store=read('public/horoscope/report-store.mjs');
+ok(store.includes("if(detail.feature==='marriage_matching'&&typeof detail.prepareViews==='function')"),'Save executes matching bilingual snapshot generator');
+ok(store.includes("views[l]=cleanHtml(holder)"),'Save persists TA and EN language snapshots');
+
 ok(matching.includes("if(!mmFullAccess)"),'Access gate retained');
 console.log(JSON.stringify({pass:true,assertions:count,persons:2,styles:['south','north','east'],languages:['ta','en'],matchingBirthOffsets:true,reportSnapshot:true,transit:true}));
