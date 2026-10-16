@@ -65,7 +65,7 @@
   const emblem=cover?.querySelector('.smv-cover-emblem img');
   cover?.classList.toggle('smv-cover-matching',matching);
   if(emblem){
-   emblem.src=matching?'assets/smv-marriage-shiva-parvati-v338.webp':'assets/smv-ganesha-approved-v329.webp';
+   emblem.src=matching?'assets/smv-marriage-shiva-parvati.webp':'assets/smv-ganesha-approved.webp';
    emblem.alt=matching?'Lord Shiva and Goddess Parvati with divine wedding blessings':'Sri Vinayagar';
    emblem.width=matching?760:966;emblem.height=matching?760:874;
    emblem.style.removeProperty('transform');

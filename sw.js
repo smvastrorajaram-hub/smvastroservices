@@ -2,17 +2,17 @@
    Firebase, API, dashboard, payment and application-data requests are never intercepted. */
 const CACHE_NAME='smv-astro-static-master-20261004-v213-admin-center';
 const PLACE_BOOT=[
-  './main-location-search-v187.js?v=208-reopt',
-  './main-ui-v187.css?v=187',
-  './smv-ui-v207.css?v=207',
-  './horoscope/offline/places/india-manifest.json?v=187'
+  './main-location-search.js',
+  './smvastro.css',
+  './smv-ui.css',
+  './horoscope/offline/places/india-manifest.json'
 ];
 
 function isPlaceAsset(url){
   if(url.origin!==self.location.origin) return false;
   const p=url.pathname.toLowerCase();
-  return p.endsWith('/main-location-search-v187.js') ||
-    p.endsWith('/main-ui-v187.css') ||
+  return p.endsWith('/main-location-search.js') ||
+    p.endsWith('/smvastro.css') ||
     p.includes('/horoscope/offline/places/');
 }
 function isStaticPresentationAsset(url){

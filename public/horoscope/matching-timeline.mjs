@@ -1,4 +1,4 @@
-import './d9-v308-reading.js?v=308';
+import './d9-reading.js';
 import {transit as calculateTransit} from './offline/transit_panchang.browser.mjs';
 import {clipPeriods,computeTransitTimeline,yearAfter} from './d1-15-year-reading.mjs';
 const D=globalThis.SMVD9V308,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

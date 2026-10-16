@@ -1,4 +1,4 @@
-import {calculateVedicChart,findTajakaAnnualChart} from './server-v107-wrapper.browser.mjs';
+import {calculateVedicChart,findTajakaAnnualChart} from './server-wrapper.browser.mjs';
 import {advanced} from './astro_advanced.browser.mjs';
 import {phase4Dasa} from './dasa_engine.browser.mjs';
 import {panchang,transit} from './transit_panchang.browser.mjs';

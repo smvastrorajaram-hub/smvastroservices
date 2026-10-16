@@ -1855,7 +1855,7 @@ try{
         // Merge stable D1, bodily associations and real 15-year Swiss/Dasha
         // observations IN each house; do not append legacy separate II/III/80y.
         const v302=window.SMVD1IntegratedV303;
-        if(!v302?.build||!v302?.html)throw new Error('Missing d1-v303-integrated.js and strength dependency');
+        if(!v302?.build||!v302?.html)throw new Error('Missing d1-integrated-reading.js and strength dependency');
         const context={currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace};
         const natalOnly=v302.build(fullChart,lang,context,null);
         lifeSlot.innerHTML=v302.html(natalOnly);
@@ -1865,7 +1865,7 @@ try{
         root.dataset.smvLongPending='1';
         const requestKey=fifteenKey+'|'+lang;root.__smvV302RequestKey=requestKey;
         const stillCurrent=()=>root.__smvV302RequestKey===requestKey&&lifeSlot.isConnected;
-        const job=import('./d1-15-year-reading.mjs?v=302-integrated-15years').then(async mod=>{
+        const job=import('./d1-15-year-reading.mjs').then(async mod=>{
           let entry=fifteenCache.get(fifteenKey);
           if(!entry){
             entry=mod.build15Year(full,{...payload,referenceDate:dailyDate},{lang:'ta'});

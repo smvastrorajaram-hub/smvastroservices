@@ -30,7 +30,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
  function language(lang){
   document.documentElement.lang=lang;
   try{localStorage.setItem('smv-calendar-language',lang)}catch(_){ }
-  if(manifest)manifest.href=`manifest-${lang}.webmanifest?v=217`;
+  if(manifest)manifest.href=`manifest-${lang}.webmanifest`;
   const span=button?.querySelector('span');
   if(span)span.textContent=lang==='ta'?'SMV CALENDAR நிறுவுக':'Install SMV CALENDAR';
   window.dispatchEvent(new CustomEvent('smv-language',{detail:lang}));
@@ -58,7 +58,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
   flag(true);hide();statusText('','');
  });
  if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=217',{scope:'./',updateViaCache:'none'})
+  navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
    .then(reg=>reg.update().catch(()=>{})).catch(()=>{
     statusText('Offline files could not be saved. Reopen while online.','இணையமில்லா சேமிப்பு முடியவில்லை; இணையத்துடன் மீண்டும் திறக்கவும்.');
    });
@@ -99,7 +99,7 @@ function markInstalled(value){setStored(installedKey,value);}
 function language(lang){
  document.documentElement.lang=lang;
  try{localStorage.setItem('smv-calendar-language',lang)}catch{}
- if(manifest)manifest.href=`manifest-${lang}.webmanifest?v=217`;
+ if(manifest)manifest.href=`manifest-${lang}.webmanifest`;
  const span=installButton?.querySelector('span');if(span)span.textContent=lang==='ta'?'SMV CALENDAR நிறுவுக':'Install SMV CALENDAR';
  window.dispatchEvent(new CustomEvent('smv-language',{detail:lang}));
 }
@@ -149,7 +149,7 @@ if('serviceWorker'in navigator){
   try{if(sessionStorage.getItem(reloadKey)==='1')return;sessionStorage.setItem(reloadKey,'1')}catch{}
   reloading=true;location.reload();
  });
- swReady=navigator.serviceWorker.register('./sw.js?v=217',{scope:'./',updateViaCache:'none'}).then(async reg=>{
+ swReady=navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(async reg=>{
   try{await reg.update()}catch{}
   await navigator.serviceWorker.ready;
   return reg;

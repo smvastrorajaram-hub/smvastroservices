@@ -133,7 +133,7 @@ async function calculate(){if(!canUse()||busy)return;busy=true;const button=wb.q
   if(!canUse())throw Error('Admin session ended');
   if(!full?.ok||!full?.meta?.complete||!Array.isArray(full.chart?.planets))throw Error('Full offline chart incomplete; no predictions shown');
   message('15 வருட உண்மையான தசா / கோச்சாரக் காலங்கள் கணிக்கப்படுகின்றன…');
-  const engine=await import(new URL('d1-15-year-reading.mjs?v=302-integrated-15years',rootPath));
+  const engine=await import(new URL('d1-15-year-reading.mjs',rootPath));
   const timeline=await engine.build15Year(full,{...input,referenceDate:today()},{lang:'ta'});
   if(!canUse())throw Error('Admin session ended');
   if(JSON.stringify(collect())!==JSON.stringify(input))throw Error('Birth details changed while calculation was running. Calculate again.');

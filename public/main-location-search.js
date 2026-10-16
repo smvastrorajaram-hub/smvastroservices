@@ -16,7 +16,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function getJson(url){const r=await fetch(url,{cache:'default'});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
-  async function getManifest(){if(manifest)return manifest;manifest=await getJson(BASE+'india-manifest.json?v=187');return manifest;}
+  async function getManifest(){if(manifest)return manifest;manifest=await getJson(BASE+'india-manifest.json');return manifest;}
   function keyFor(n){const c=n[0]||'';if(c>='a'&&c<='z')return c;if(/[\u0B80-\u0BFF]/u.test(c))return'ta';return'other';}
   async function getShard(k){if(shardCache.has(k))return shardCache.get(k);const m=await getManifest(),meta=m?.shards?.[k];if(!meta)return[];const rows=await getJson(BASE+'india/'+encodeURIComponent(meta.file)+'?v=187');shardCache.set(k,rows);return rows;}
   function aliasesFor(row){let cached=aliasCache.get(row);if(cached)return cached;cached=(row[8]||[]).map(norm).filter(Boolean);aliasCache.set(row,cached);return cached;}

@@ -25,7 +25,7 @@
   async function getManifest(){
     if(manifest) return manifest;
     if(manifestFlight) return manifestFlight;
-    manifestFlight=getJson(BASE+'india-manifest.json?v=187').then(x=>(manifest=x));
+    manifestFlight=getJson(BASE+'india-manifest.json').then(x=>(manifest=x));
     try{return await manifestFlight;}finally{manifestFlight=null;}
   }
   function keyFor(n){

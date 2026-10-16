@@ -11,7 +11,7 @@ async function loadFactory(){
   if(factoryPromise)return factoryPromise;
   factoryPromise=(async()=>{
     let mod;
-    const vendorUrl=new URL('./vendor/smv-swisseph-local.mjs?v=186',import.meta.url).href;
+    const vendorUrl=new URL('./vendor/smv-swisseph-local.mjs',import.meta.url).href;
     try{mod=await import(vendorUrl);}
     catch(firstError){
       try{mod=await import('./vendor/smv-swisseph-local.mjs');}

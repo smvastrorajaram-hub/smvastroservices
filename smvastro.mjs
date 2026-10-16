@@ -8,7 +8,7 @@
   if(document.querySelector('link[data-smv-dashboard-typography]')) return;
   const link=document.createElement('link');
   link.rel='stylesheet';
-  link.href='dashboard-typography.css?v=76';
+  link.href='dashboard-typography.css';
   link.dataset.smvDashboardTypography='true';
   document.head.appendChild(link);
 })();
@@ -786,7 +786,7 @@ function openAuth(mode="login"){
   hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
   closeModal(); const isLogin=mode==="login";
   openModal(`<div class="auth-shell" data-auth-mode="${isLogin?'login':'register'}">
-    <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo-v17.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
+    <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
     <div id="authMsg" class="small"></div>
     ${!isLogin?`<label class="auth-field-label">Full Name</label><input class="auth-field" id="name" placeholder="Your full name" autocomplete="name"><label class="auth-field-label">Mobile Number</label><input class="auth-field" id="phone" placeholder="Your mobile number" autocomplete="tel">`:""}
     <label class="auth-field-label"><strong>${isLogin?"Email / Customer ID / Astrologer ID":"Email"}</strong></label><input class="auth-field" id="email" type="${isLogin?'text':'email'}" placeholder="${isLogin?'Email / Customer ID / Astrologer ID':'Email'}" autocomplete="${isLogin?'username':'email'}"${isLogin?' autocapitalize="none" spellcheck="false"':''}>

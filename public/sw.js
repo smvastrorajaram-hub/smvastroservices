@@ -7,7 +7,7 @@ const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
 function isOfflinePlaceAsset(url){
   if(url.origin!==self.location.origin)return false;
   const p=url.pathname.toLowerCase();
-  return p.endsWith('/main-location-search-v187.js')||p.includes('/horoscope/offline/places/');
+  return p.endsWith('/main-location-search.js')||p.includes('/horoscope/offline/places/');
 }
 
 self.addEventListener('install',event=>{

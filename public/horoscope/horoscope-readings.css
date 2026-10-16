@@ -1,3 +1,48 @@
+/* SMV HOROSCOPE: ordered D1 life reading and marriage matching styles. */
+/* V265 — D1 full-life reading; one clean flow, no cards or decorative page breaks. */
+.smv-d1-life-reading { margin: 28px 0 36px; padding: 0 4px; color: inherit; }
+.smv-d1-life-reading > h2 { text-align: center; margin: 18px 0 12px; font-size: clamp(1.3rem, 2.3vw, 1.75rem); font-weight: 750; color: #76231c; }
+.smv-d1-life-method { text-align: center; margin: 0 auto 24px; font-size: .88rem; line-height: 1.6; max-width: 76ch; }
+.smv-d1-life-topic { margin: 0 0 26px; }
+.smv-d1-life-topic > h3 { margin: 28px 0 15px; padding: 0 0 9px; border-bottom: 1px solid #dfcfc0; font-size: clamp(1.08rem, 1.95vw, 1.32rem); line-height: 1.6; font-weight: 700; color: #572c23; }
+.smv-d1-life-paragraph { margin: 0 0 13px; text-align: left; font-size: 15px; font-weight: 400; line-height: 1.84; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .smv-d1-life-reading { padding: 0; } .smv-d1-life-paragraph { font-size: 14.5px; line-height: 1.9; } }
+@media print { .smv-d1-life-reading { padding: 0; margin: 12px 0; } .smv-d1-life-topic > h3 { break-after: avoid; } .smv-d1-life-paragraph { break-inside: avoid; } }
+
+/* V267 — same single-layer typography for sections II and III. */
+.smv-d1-time-reading { margin-top: 35px; }
+.smv-d1-age-guidance { margin: 4px 0 17px; font-size: .94rem; line-height: 1.75; font-weight: 550; }
+@media print { .smv-d1-age-guidance { break-after: avoid; } }
+
+.smv-d1-topic-opening {margin: 2px 0 17px; font-size: .97rem; line-height: 1.8; font-weight: 500;}
+
+/* V270: prediction navigation is a semantic div+role group to avoid the
+   website's global <nav> and <button>/<a> theme affecting report colours. */
+.smv-predictions-jump { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:8px 0 22px; padding:8px 0 18px; border-bottom:1px solid #d7c9be; background:transparent; }
+.smv-predictions-jump-item { display:block; width:100%; min-width:0; box-sizing:border-box; padding:12px 14px; background:#fff7ed; border:1px solid #bba68f; border-radius:7px; color:#702b24; font-size:clamp(14px,2vw,16px); line-height:1.5; text-align:left; font-weight:700; white-space:normal; overflow-wrap:anywhere; cursor:pointer; }
+.smv-predictions-jump-item:focus-visible { outline:3px solid #215c90; outline-offset:2px; }
+.smv-predictions-jump-item:hover { border-color:#702b24; text-decoration:underline; }
+.smv-d1-life-reading[id],.smv-d1-time-reading[id] { scroll-margin-top:72px; }
+@media print { .smv-predictions-jump { display:none; } }
+/* V271 long-range reading: obey the global single-column mobile layout. */
+.smv-d1-life-reading .smv-80-container,
+.smv-d1-life-reading .smv-80-window{display:block;box-sizing:border-box;width:100%;max-width:100%;margin:12px 0;border:1px solid #e2d5c7;border-radius:6px;background:#fffcf8;color:#252525;overflow-wrap:anywhere;}
+.smv-d1-life-reading .smv-80-container>summary,
+.smv-d1-life-reading .smv-80-window>summary{display:list-item;cursor:pointer;padding:12px 15px;color:#4c2721!important;background:#fff2e8!important;font-size:1rem!important;font-weight:700!important;line-height:1.5!important;white-space:normal;overflow-wrap:anywhere;}
+.smv-d1-life-reading .smv-80-container>div{padding:9px 12px;}
+.smv-d1-life-reading .smv-80-window>section,
+.smv-d1-life-reading .smv-80-content>p{padding:0 9px;}
+.smv-d1-life-reading .smv-80-topic{border-bottom:1px solid #f0e5dc;margin:8px 0;padding:7px 2px;break-inside:avoid;page-break-inside:avoid;}
+.smv-d1-life-reading .smv-80-topic h4{margin:8px 0;font-size:1.05rem;color:#ab164f!important;line-height:1.4;}
+.smv-d1-life-reading .smv-80-topic p{margin:7px 0;line-height:1.65;font-size:1rem;color:#262626;}
+.smv-d1-life-reading .smv-80-status{padding:9px 13px;line-height:1.5;background:#f8f4ec;color:#343434;}
+@media print{
+ .smv-d1-life-reading .smv-80-container,.smv-d1-life-reading .smv-80-window{overflow:visible;page-break-inside:auto;border:0;}
+ .smv-d1-life-reading .smv-80-topic{break-inside:avoid;}
+}
+
+
+/* Marriage matching report styles */
 #smvMarriageMatching{max-width:980px;margin:28px auto;padding:22px;border:1px solid #eadfca;border-radius:18px;background:#fff}#smvMarriageMatching h2{margin:0 0 8px;color:#8b1f5d}.mm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}.mm-grid label{font-weight:700;font-size:14px}.mm-grid select{width:100%;margin-top:6px;padding:11px;border:1px solid #d7c9b4;border-radius:10px;background:#fff}.mm-note{font-size:13px;line-height:1.55;color:#555}#mmCheck{padding:11px 18px;border:0;border-radius:10px;background:#8b1f5d;color:#fff;font-weight:800}.mm-results{margin-top:12px}.mm-results>div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #eee}.mm-results .ok{color:#14833b}.mm-results .no{color:#b3261e}@media(max-width:620px){.mm-grid{grid-template-columns:1fr}.mm-results>div{align-items:flex-start;flex-direction:column;gap:3px}}
 .mm-birth-grid fieldset{border:0;border-radius:0;padding:0;min-width:0}.mm-birth-grid legend{font-weight:800;padding:0 7px}.mm-birth-grid label{display:grid;gap:5px;margin:9px 0;font-size:.92rem;font-weight:650}.mm-birth-grid input{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid #d7d7d7;border-radius:9px;background:#fff;font:inherit}.mm-full-results{display:grid;gap:16px;margin-top:18px}.mm-person-result{border-top:1px solid #eadfc9;padding-top:12px}.mm-facts{display:grid;gap:0}.mm-facts>div{display:grid;grid-template-columns:minmax(130px,32%) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid #eee}.mm-facts span,.mm-periods{line-height:1.55}.mm-error{font-weight:700;color:#b00020}@media(max-width:640px){.mm-facts>div{grid-template-columns:1fr;gap:3px}}
 .mm-place-results{display:grid;gap:5px;margin:5px 0 0;padding:0;background:transparent;border:0;box-shadow:none;max-height:240px;overflow-y:auto}
@@ -80,3 +125,4 @@
 #smvMarriageMatching .mm-v308-year p,#smvMarriageMatching .mm-v308-d9 p,#smvMarriageMatching .mm-v308-sandhi p{line-height:1.75;overflow-wrap:anywhere;margin:.65em 0}
 #smvMarriageMatching .mm-v308-year h4{color:#713a29;margin:1.3em 0 .45em}
 @media print{.mm-v308-results,.mm-v308-15years,.mm-v308-year,.mm-v308-d9,.mm-v308-sandhi{display:block!important;break-inside:auto!important;page-break-inside:auto!important}.mm-v308-results p{orphans:3;widows:3}.mm-v308-results h2,.mm-v308-results h3,.mm-v308-results h4{break-after:avoid-page;page-break-after:avoid}.mm-v308-year details{display:block}.mm-v308-year details>*{display:block!important}}
+
