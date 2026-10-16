@@ -100,10 +100,15 @@ pass_by_kind=collections.Counter()
 fail_by_kind=collections.Counter()
 fail_by_zone=collections.Counter()
 unsupported=collections.Counter()
+non_location_placeholders=collections.Counter()
 failure_examples=[]
 for triplet,kind,want,got in zip(records,kinds,expected,actual):
     if isinstance(got,dict) and 'Invalid time zone specified' in got.get('error',''):
-        unsupported[triplet[0]]+=1
+        if triplet[0]=='Factory':
+            # IANA tzdb includes this test-data placeholder, not a real civil timezone.
+            non_location_placeholders[triplet[0]]+=1
+        else:
+            unsupported[triplet[0]]+=1
         continue
     valid=(isinstance(got,(int,float)) and want is not None and abs(got-want)<1e-8)
     valid=valid or (isinstance(got,dict) and want is None and 'did not exist' in got.get('error',''))
@@ -119,12 +124,14 @@ failed=sum(fail_by_kind.values())
 report={
  'reference':'IANA tzdb '+tzdata.IANA_VERSION+' (Python tzdata '+getattr(tzdata,'__version__','n/a')+')',
  'productionNode':out['node'],'productionICU':out['icu'],'productionTZDB':out['tz'],
- 'zone_ids_in_reference':len(zones),'zones_checked':len(zones)-len(unsupported),
+ 'zone_ids_in_reference':len(zones),'zone_ids_nonlocation_placeholders':len(non_location_placeholders),
+ 'zones_checked':len(zones)-len(unsupported)-len(non_location_placeholders),
  'detected_2026_transitions':transitions,'test_inputs':len(records),
  'passed':passed,'failed':failed,'unsupported_case_count':sum(unsupported.values()),
+ 'non_location_placeholder_cases':sum(non_location_placeholders.values()),
  'pass_by_category':dict(pass_by_kind),'fail_by_category':dict(fail_by_kind),
  'zones_with_disagreement':dict(fail_by_zone.most_common()),
- 'unsupported':dict(unsupported),'failure_examples':failure_examples,
+ 'unsupported':dict(unsupported),'excluded_placeholders':dict(non_location_placeholders),'failure_examples':failure_examples,
  'certified':failed==0 and not unsupported,
  'scope':'2026 monthly and transition samples; Jan/Jul 1800–2399 sample years, not every instant.',
  'limitations':'Tests Node runtime, not all users’ Android/Chrome ICU data, future government changes, or every city-to-IANA mapping.'
@@ -136,10 +143,10 @@ lines=[
  f'**Result: {"PASS" if report["certified"] else "NOT CERTIFIED — differences detected"}**',
  f'**Reference:** IANA tzdb {tzdata.IANA_VERSION}',
  f'**Candidate runtime:** Node {out["node"]} / ICU {out["icu"]} / embedded tzdb {out["tz"]}',
- f'**Zone IDs in reference:** {len(zones)}',
+ f'**Zone IDs in reference:** {len(zones)} ({report["zones_checked"]} usable timezones checked; {len(non_location_placeholders)} non-timezone placeholder excluded)',
  f'**2026 detected clock transitions:** {transitions}',
  f'**Total test cases:** {len(records)}',
- f'**PASS:** {passed}; **FAIL:** {failed}; **Unsupported cases:** {sum(unsupported.values())}',
+ f'**PASS:** {passed}; **FAIL:** {failed}; **Unsupported cases:** {sum(unsupported.values())}; **Non-location placeholder cases:** {sum(non_location_placeholders.values())}',
  '',
  '## Differences by category',
 ]
@@ -152,5 +159,5 @@ lines += ['', '## Method and limits',
 'Independent Python zoneinfo reference using pinned 2026e IANA data vs the checked-in JavaScript offsetMinutesAt engine; monthly noon samples, DST transition/gap/fold windows, and selected historical years.',
 'The result does not certify all future legislation, all pre-1970 local historical evidence, all browser tzdb versions, city-to-zone identification, or every possible birth instant.']
 (ART/'audit.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
-print(json.dumps({k:report[k] for k in ('reference','productionNode','productionTZDB','zone_ids_in_reference','detected_2026_transitions','test_inputs','passed','failed','unsupported_case_count','fail_by_category','zones_with_disagreement')},ensure_ascii=False))
+print(json.dumps({k:report[k] for k in ('reference','productionNode','productionTZDB','zone_ids_in_reference','detected_2026_transitions','test_inputs','passed','failed','unsupported_case_count','fail_by_category','zones_with_disagreement','excluded_placeholders')},ensure_ascii=False))
 if failed or unsupported:sys.exit(1)
