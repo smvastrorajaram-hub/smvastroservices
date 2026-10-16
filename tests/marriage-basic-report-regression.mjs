@@ -58,15 +58,25 @@ ok(store.includes("if(detail.feature==='marriage_matching'&&typeof detail.prepar
 ok(store.includes("views[l]=cleanHtml(holder)"),'Save persists TA and EN language snapshots');
 
 ok(matching.includes("if(!mmFullAccess)"),'Access gate retained');
-ok(matching.includes('mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing,v)'),'Original full relationship report is restored');
-ok(matching.includes("out.insertAdjacentHTML('beforeend',basicHtml)"),'Factual appendix is additive, not a full-report replacement');
+ok(matching.includes('mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing,v,basicHtml)'),'Original full relationship report is retained with additive technical charts');
+ok(matching.includes('${mmFrontPoruthamPanel(pr,false)}${basicHtml}${mmVerdictPanel('),'Ten Porutham and human matching note precede technical charts, before main predictions');
+ok(!matching.includes('${matchingIdentityPanel(b,g)}${basicHtml}'),'Duplicate combined birth-details chapter is removed');
 ok(matching.includes('mm308Timing(b,g,out)'),'Original 15-year human prediction is retained');
+ok(matching.includes('${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}'),'Old life, character, dosha and remedies chapters are retained');
 ok(matching.includes('fullVerdict(pr,ks,ds,bf,gf,sync,b,g)'),'Original match verdict is retained');
 ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham explanation is available');
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
 ok(ta.includes('mm-base-shad-components')&&ta.includes('mm-base-shad-total'),'Shadbala split into readable components and totals');
+ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');
+const basicModule=read('public/horoscope/marriage-basic-report.mjs');
+ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');
+ok(basicModule.includes("bhava?housesBySign[i].join('/')"),'East Bhava number supports multiple Bhavas in the same Rasi');
+ok(basicModule.includes("natalMaandi(c)"),'Maandi uses natal calculated upagraha');
+ok(basicModule.includes('chartPlanetStatus('),'Planetary positions include retrograde and combustion status');
+ok(basicModule.includes('mm-base-flag'),'Retrograde and combustion signs render in both languages');
+
 const chartBodies=[...ta.matchAll(/<div class="mm-base-chart mm-base-[a-z]+"[^>]*>([\s\S]*?)<\/div><\/div>/g)].map(x=>x[1]);
 ok(ta.includes('mm-base-planet')&&ta.includes('mm-base-geometry'),'Charts use compact planet codes and full SVG geometry');
 
