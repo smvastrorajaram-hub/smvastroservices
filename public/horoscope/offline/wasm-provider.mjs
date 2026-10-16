@@ -1,6 +1,6 @@
 /* Phase 3B local-only Swiss Ephemeris provider boundary.
    Vendor files MUST be stored under ./vendor/. No CDN/network fallback exists. */
-export const C={SUN:0,MOON:1,MERCURY:2,VENUS:3,MARS:4,JUPITER:5,SATURN:6,MEAN_NODE:10};
+export const C={SUN:0,MOON:1,MERCURY:2,VENUS:3,MARS:4,JUPITER:5,SATURN:6,MEAN_NODE:10,EARTH:14};
 export let ephemerisMode='LOCAL-WASM';
 let instance=null;
 let instancePromise=null;
