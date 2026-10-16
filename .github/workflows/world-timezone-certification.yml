@@ -1,5 +1,12 @@
 name: World Timezone Certification Audit (2026e)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/offline/places/timezone.mjs'
+      - 'tests/global-timezone-audit.py'
+      - 'tests/global-timezone-probe.mjs'
+      - '.github/workflows/world-timezone-certification.yml'
   workflow_dispatch:
 permissions:
   contents: read
