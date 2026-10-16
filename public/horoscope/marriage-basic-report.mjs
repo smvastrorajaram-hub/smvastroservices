@@ -16,7 +16,7 @@ const esc=x=>String(x??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const signIndex=v=>Math.floor((((Number(v)%360)+360)%360)/30);
 const safeStyle=s=>['south','north','east'].includes(s)?s:'south';
-const name=(s,ta)=>{const j=P_TA.findIndex((p,i)=>p===s||P_EN[i].toLowerCase()===String(s||'').toLowerCase());return j<0?String(s||'—'):(ta?P_TA:P_EN)[j]};
+const name=(s,ta)=>{if(['மாந்தி','Maandi','Mandi'].includes(String(s||'')))return ta?'மாந்தி':'Maandi';const j=P_TA.findIndex((p,i)=>p===s||P_EN[i].toLowerCase()===String(s||'').toLowerCase());return j<0?String(s||'—'):(ta?P_TA:P_EN)[j]};
 const sign=(i,ta)=>(ta?SIGNS_TA:SIGNS_EN)[(i+12)%12];
 const localizedSign=(value,ta)=>{
  const idx=SIGNS_EN.findIndex((x,i)=>x.toLowerCase()===String(value||'').toLowerCase()||SIGNS_TA[i]===value);
@@ -245,6 +245,7 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
    '<p class="mm-base-unavailable">'+esc(transitError||title('Transit data unavailable','கோச்சாரத் தரவு கிடைக்கவில்லை',language))+'</p>';
   const panels=[
    charts,
+   '<p class="mm-base-legend">'+esc(ta?'வ — வக்ரம் · அ — அஸ்தமனம் · மா — மாந்தி':'R — Retrograde · C — Combust · Md — Maandi')+'</p>',
    heading('Natal planetary positions with Nakshatra/Pada','பிறப்புக் கிரக நிலைகள் — நட்சத்திரம், பாதம்',language)+dataBlock(c,ta),
    heading('Bhava / House Table','பாவ அட்டவணை',language)+houseTable(c,ta),
    ...[[2,'Hora','ஹோரா'],[7,'Saptamsa','சப்தாம்சம்'],[9,'Navamsa','நவாம்சம்'],[10,'Dasamsa','தசாம்சம்']].map(([d,en,tm])=>heading('D'+d+' — '+en+' · Nakshatra/Pada','D'+d+' — '+tm+' · நட்சத்திரம்/பாதம்',language)+vargaTable(c,d,ta)),
