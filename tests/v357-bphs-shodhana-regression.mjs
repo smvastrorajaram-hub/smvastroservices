@@ -89,4 +89,4 @@ for(const [date,time] of cases){
  same(rows.length,7,date+' seven classical BAV rows checked');
  summary.push({date,rows});
 }
-console.log(JSON.stringify({pass:true,assertions,sampleCharts:5,scope:'BPHS II 67-69 structural reductions + two numerical worked examples; NOT interpretive certification',published:false,summary}));
+console.log(JSON.stringify({pass:true,assertions,sampleCharts:5,scope:'Ch67 and Ch69 numeric book examples + Ch68 literal text rules; contradictory Ch68 illustration is explicitly NOT certified',published:false,summary}));
