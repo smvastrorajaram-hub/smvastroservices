@@ -17,6 +17,31 @@ export function bindBirthOffsetUI(root){
   const status=get('smvBirthOffsetStatus');
   const local=(en,ta)=>/^ta(?:-|$)/i.test(root.documentElement?.lang||'')?ta:en;
   let activePrefix='english';
+  let statusKind='missing',statusError='';
+  function renderStatus(){
+    if(!status)return;
+    if(statusKind==='ready'){
+      status.textContent=local(
+        'Calculated for the selected birth date and time (including historical DST).',
+        'தேர்ந்தெடுத்த பிறந்த தேதி, நேரத்திற்கு ஏற்ற வரலாற்று DST விதிகளுடன் கணக்கிடப்பட்டது.'
+      );
+    }else if(statusKind==='error'){
+      const taError=/did not exist/i.test(statusError)
+        ? 'DST நேர மாற்றத்தால் இந்த உள்ளூர் நேரம் நிகழவில்லை. பிறந்த நேரத்தைச் சரிபார்க்கவும்.'
+        : /invalid time zone|timeZone/i.test(statusError)
+          ? 'சரியான IANA நேர மண்டலத்தை உள்ளிடவும்.'
+          : 'பிறந்த தேதி, நேரம் அல்லது நேர மண்டலத்தைச் சரிபார்க்கவும். '+statusError;
+      status.textContent=local(
+        'Cannot calculate this local time: '+statusError,
+        taError
+      );
+    }else{
+      status.textContent=local(
+        'Select a birth place, date and time to calculate the historical UTC offset.',
+        'பிறந்த இடம், தேதி, நேரம் தேர்வு செய்தவுடன் அன்றைய UTC நேர வேறுபாடு கணக்கிடப்படும்.'
+      );
+    }
+  }
   function refresh(prefix=activePrefix){
     if(prefix!=='english'&&prefix!=='tamil')return null;
     activePrefix=prefix;
@@ -26,10 +51,7 @@ export function bindBirthOffsetUI(root){
     field.value='';
     field.dataset.offsetVerified='0';
     if(!date||!time||!zone){
-      if(status)status.textContent=local(
-        'Select a birth place, date and time to calculate the historical UTC offset.',
-        'பிறந்த இடம், தேதி, நேரம் தேர்வு செய்தவுடன் அன்றைய UTC நேர வேறுபாடு கணக்கிடப்படும்.'
-      );
+      statusKind='missing';statusError='';renderStatus();
       return null;
     }
     try{
@@ -37,16 +59,10 @@ export function bindBirthOffsetUI(root){
       if(hours===null)return null;
       field.value=String(hours);
       field.dataset.offsetVerified='1';
-      if(status)status.textContent=local(
-        'Calculated for the selected birth date and time (including historical DST).',
-        'தேர்ந்தெடுத்த பிறந்த தேதி, நேரத்திற்கு ஏற்ற பழைய DST விதிகளுடன் கணக்கிடப்பட்டது.'
-      );
+      statusKind='ready';statusError='';renderStatus();
       return hours;
     }catch(error){
-      if(status)status.textContent=local(
-        'Cannot calculate this local time: '+String(error.message||error),
-        'இந்த உள்ளூர் நேரத்திற்குக் கணக்கிட இயலவில்லை: '+String(error.message||error)
-      );
+      statusKind='error';statusError=String(error.message||error);renderStatus();
       return null;
     }
   }
@@ -59,7 +75,11 @@ export function bindBirthOffsetUI(root){
     const clear=get(prefix==='english'?'clearEnglishHoroscope':'clearTamilHoroscope');
     clear?.addEventListener('click',()=>refresh(prefix));
   }
-  if(typeof window!=='undefined')window.__smvUpdateBirthOffset=refresh;
+  if(typeof window!=='undefined'){
+    window.__smvUpdateBirthOffset=refresh;
+    // Language selection changes text only; never recalculate or alter the saved offset.
+    window.addEventListener?.('smv-language',renderStatus);
+  }
   refresh('english');
   return {refresh};
 }
