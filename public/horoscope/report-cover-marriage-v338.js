@@ -17,9 +17,9 @@
   emblem.setAttribute('alt', 'Lord Shiva and Goddess Parvati with divine wedding blessings');
   emblem.setAttribute('width', '760');
   emblem.setAttribute('height', '760');
-  // V331's -1.8 mm shift is specific to the old Vinayagar artwork.
-  // V342: move the existing wedding artwork 2.6mm left for optical centering.
-  emblem.style.setProperty('transform', 'translateX(-2.6mm)', 'important');
+  // V345: no per-photo offsets. CSS centres both original cover assets.
+  // Inline !important shifts defeat the page-centre CSS, so clear old ones.
+  emblem.style.removeProperty('transform');
   observer.disconnect();
  };
  const observer = new MutationObserver(useWeddingOnlyForMatching);

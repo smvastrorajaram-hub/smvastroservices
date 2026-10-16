@@ -115,13 +115,20 @@ function select(c,lang,used,windows=[],starContext=null){const ta=lang!=='en';
  const base=ta?`${c.house}-ஆம் பாவத்தின் தொடர்பில் ${lordTa} ${relTA[risk.relation]} காணப்படும் சிரமச் சுட்டுக்காக`:
  `For the observed ${risk.planet} ${risk.relation} challenge to house ${c.house}`;
  const mitigation=(c.classical||[]).some(x=>x.key==='GURU_COUNTER_ASPECT')||(c.divisionEvidence||[]).some(x=>x.planet===c.lord&&x.dignity==='strong');
- const period=(windows||[]).find(w=>(w?.period?.md===risk.planet||w?.period?.ad===risk.planet)&&w?.weight>=2.4);
+ const period=(windows||[]).find(w=>(w?.period?.md===risk.planet||w?.period?.ad===risk.planet)&&w?.weight>=2.4&&w?.links?.length);
  const timing=period?`${period.period.from}–${period.period.to}`:null;
+ const transit=period?.coincidence&&period?.transit?.planet?period.transit:null;
+ const windowFrom=transit&&timing?[period.period.from,transit.yearFrom].filter(Boolean).sort().slice(-1)[0]:null;
+ const windowTo=transit&&timing?[period.period.to,transit.yearTo].filter(Boolean).sort()[0]:null;
+ const convergence=Boolean(windowFrom&&windowTo&&windowFrom<windowTo);
  const details=(c.ageUnder18&&CHILD_ACTIONS[c.house]?CHILD_ACTIONS[c.house]:HOUSE_ACTIONS[c.house-1])?.[ta?0:1]||[];
- const evidence={planet:risk.planet,house:c.house,reason:risk.relation,score:risk.delta,mitigation,period:timing,sourceKey:key};
+ const evidence={planet:risk.planet,house:c.house,reason:risk.relation,score:risk.delta,mitigation,period:timing,sourceKey:key,transitPlanet:convergence?transit.planet:null,dashaTransitConvergence:convergence};
  const action=(kind,text)=>({...evidence,kind,text});const out=[];
  out.push(action('risk-linked-plan',ta?`${base}, நடைமுறையில் ${c.ageUnder18?'பெற்றோர் அல்லது ஆசிரியர் துணையுடன் ':''}${details[0]}`:`${base}, ${c.ageUnder18?'with a parent or teacher, ':''}${details[0]}.`));
  out.push(action('workable-checkpoint',ta?`${details[1]}`:`${details[1]}.`));
+ if(convergence)out.push(action('verified-period-transit-focus',ta?
+  `${windowFrom} முதல் ${windowTo} வரையிலான தசா–கோச்சாரத் தொடர்பில் ${c.house}-ஆம் பாவத்தின் ஏற்பாடுகளை முன்கூட்டியே சரிபார்க்கவும். ${g.SMVD311Judgement?.NTA?.[transit.planet]||transit.planet} கோச்சாரத் தொடர்பும் இந்தக் காலத் தேர்வில் கணக்கில் கொள்ளப்பட்டுள்ளது.`:
+  `Review the house ${c.house} arrangements during the linked ${windowFrom}–${windowTo} dasha/transit interval. The ${transit.planet} transit supports selecting this period, not a certain outcome.`));
  const link=starContext?.houses?.[c.house]?.lordStar;
  if(link?.starRuler&&link.rulerHouse&&STAR_REMEDY_TA[c.house-1]){
   const ownerTa=g.SMVD311Judgement?.NTA?.[link.starRuler]||link.starRuler;
@@ -136,11 +143,11 @@ function select(c,lang,used,windows=[],starContext=null){const ta=lang!=='en';
   * Each added action carries the same observed adverse planet & house sourceKey. */
  const weakDiv=(c.divisionEvidence||[]).find(x=>x.planet===risk.planet&&x.dignity==='weak');
  if(weakDiv&&!c.ageUnder18){out.push(action('division-linked-check',ta?
-  `${weakDiv.division} வர்க்கத்தில் ${lordTa} நீசநிலையில் இருப்பது ${c.house}-ஆம் பாவத் தீர்ப்பை மறுபரிசீலிக்க வேண்டிய துணை ஆதாரம். ${c.house}-ஆம் பாவத்துக்குரிய செலவு அல்லது ஒப்பந்தத்திற்கு முன் தகுந்த சான்றுகளைத் தனியாகச் சரிபார்க்கவும்.`:
-  `The supplied ${weakDiv.division} places ${risk.planet} in debility, qualifying the ${c.house} house; check evidence before a related expense or commitment.`));}
+  `${weakDiv.division} வர்க்கத்தில் ${lordTa} பலம் குறைவாக இருப்பது ${c.house}-ஆம் பாவத் தீர்ப்பை மறுபரிசீலிக்க வேண்டிய துணை ஆதாரம். ${c.house}-ஆம் பாவத்துக்குரிய செலவு அல்லது ஒப்பந்தத்திற்கு முன் தகுந்த சான்றுகளைத் தனியாகச் சரிபார்க்கவும்.`:
+  `The supplied ${weakDiv.division} indicates weaker dignity for ${risk.planet}, qualifying the ${c.house} house; check evidence before a related expense or commitment.`));}
  const strongDiv=(c.divisionEvidence||[]).find(x=>x.planet===risk.planet&&x.dignity==='strong');
  if(strongDiv){out.push(action('counter-evidence',ta?
-  `${strongDiv.division} வர்க்கத்தில் ${lordTa} பெற்றுள்ள ${strongDiv.reason==='own'?'ஆட்சி':'உச்ச'} வலிமையையும் எதிர் ஆதாரமாகக் கணக்கில் கொண்டு, பாதக பலனை உறுதியானதாக எடுத்துக்கொள்ளாமல் நடைமுறைத் திட்டத்தை அளவோடு அமைக்கலாம்.`:
+  `${strongDiv.division} வர்க்கத்தில் ${lordTa} பெற்றுள்ள ${strongDiv.reason==='own'?'ஆட்சி':strongDiv.reason==='exalted'?'உச்ச':'கூடுதல்'} வலிமையையும் எதிர் ஆதாரமாகக் கணக்கில் கொண்டு, பாதக பலனை உறுதியானதாக எடுத்துக்கொள்ளாமல் நடைமுறைத் திட்டத்தை அளவோடு அமைக்கலாம்.`:
   `In supplied ${strongDiv.division}, ${risk.planet} gains dignity; treat the adverse D1 indicator as qualified, not inevitable.`));}
  const secondaryHouse=(c.otherLordships||[]).find(n=>n!==c.house);
  if(secondaryHouse&&!c.ageUnder18&&Math.abs(risk.delta)>=0.6){out.push(action('co-ownership-precaution',ta?
