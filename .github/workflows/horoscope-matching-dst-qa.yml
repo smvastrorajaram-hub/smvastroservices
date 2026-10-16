@@ -1,0 +1,42 @@
+name: Horoscope Matching DST Source QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/**'
+      - 'tests/**'
+      - '.github/workflows/horoscope-matching-dst-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript source syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            node --check "$path"
+          done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
+      - name: Horoscope and Marriage Matching calculation regression
+        run: node tests/calculation-regression.mjs
+      - name: Report, print, timezone input regression
+        run: node tests/print-dst-location-regression.mjs
+      - name: DST seasonal and 30-minute region regression
+        run: node tests/dst-seasonal-regression.mjs
+      - name: Audit known coordinate-zone boundary precision issues
+        run: |
+          node tests/timezone-boundary-audit.mjs | tee timezone-precision-audit.json
+          echo 'Note: source-level tests do not certify Cloudflare live deployments, browser print, or location provider policy compliance.'
+      - name: Preserve timezone precision audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-TIMEZONE-PRECISION-AUDIT
+          path: timezone-precision-audit.json
+          retention-days: 14
