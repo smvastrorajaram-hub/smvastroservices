@@ -1,45 +1,94 @@
-/* SMV ASTRO marriage calculation tables and print-safe South/North/East charts. */
-.mm-basic-report{max-width:100%;overflow:visible}
-.mm-basic-report>h2{text-align:center;margin:1.2em auto .5em;color:#702331}
-.mm-basic-report .mm-base-note{text-align:center;line-height:1.6;margin:0 0 1em}
-.mm-basic-report .mm-base-person{margin:16px auto 22px;padding:12px;break-inside:auto;page-break-inside:auto;border:1px solid #d9c9a9;border-radius:10px;background:#fffdf8}
-.mm-basic-report .mm-base-person>h3{text-align:center;color:#782432;margin:5px 0 12px}
-.mm-basic-report .mm-base-person>h4{font-size:1.05rem;color:#63283a;margin:20px 0 9px;break-after:avoid}
-.mm-basic-report .mm-base-person>h4:first-child{margin-top:6px}
-.mm-basic-report .mm-base-identity{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin:0 0 10px;font-size:.9rem}
-.mm-basic-report .mm-base-identity span{min-width:110px;overflow-wrap:anywhere}
-.mm-basic-report .mm-base-scroll{overflow-x:auto;max-width:100%;margin:6px 0 16px}
-.mm-basic-report .mm-base-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:.79rem;line-height:1.42;background:#fff}
-.mm-basic-report .mm-base-table th,.mm-basic-report .mm-base-table td{border:1px solid #c8bca8;padding:6px 7px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:anywhere}
-.mm-basic-report .mm-base-table th{background:#f6ecdb;font-weight:700}
-.mm-basic-report .mm-base-table tr{break-inside:avoid;page-break-inside:avoid}
-.mm-basic-report .mm-base-av{font-size:.68rem}
-.mm-basic-report .mm-base-av th,.mm-basic-report .mm-base-av td{padding:4px 3px}
-.mm-basic-report .mm-base-chart-row{display:flex;align-items:flex-start;justify-content:space-evenly;flex-wrap:wrap;gap:14px;margin:12px 0 18px}
-.mm-basic-report .mm-base-chart-wrap{width:min(100%,286px);flex:0 1 270px;margin:0 auto}
-.mm-basic-report .mm-base-chart-wrap h4{text-align:center;margin:0 0 6px;color:#692b30}
-.mm-basic-report .mm-base-chart{position:relative;box-sizing:border-box;width:100%;aspect-ratio:1/1;max-width:270px;margin:0 auto;border:2px solid #755137;background:#fff;overflow:hidden}
-.mm-basic-report .mm-base-cell{box-sizing:border-box;min-width:0;min-height:0;padding:3px;text-align:center;font-size:10px;line-height:1.22;overflow-wrap:anywhere}
-.mm-basic-report .mm-base-cell b{display:block;font-size:10px;font-weight:700;line-height:1.1}
-.mm-basic-report .mm-base-cell span{display:block;font-size:10px;margin-top:2px}
-.mm-basic-report .mm-base-south{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
-.mm-basic-report .mm-base-south>.mm-base-cell,.mm-basic-report .mm-base-south>.mm-base-center{border:1px solid #9a8574}
-.mm-basic-report .mm-base-south>.mm-base-center{background:#faf1df}
-.mm-basic-report .mm-base-geometry{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.mm-basic-report .mm-base-geometry rect,.mm-basic-report .mm-base-geometry path{fill:none;stroke:#8b7057;stroke-width:.7}
-.mm-basic-report .mm-base-north>.mm-base-cell,.mm-basic-report .mm-base-east>.mm-base-cell{position:absolute;z-index:1;width:23%;height:21%;transform:translate(-50%,-50%);display:flex;align-items:center;flex-direction:column;justify-content:center}
-.mm-basic-report .mm-base-north>.mm-base-pos-0{left:50%;top:22%}
+/* Marriage Matching v357 — a compact, print-safe and mobile-safe factual appendix.
+ * Sign names are intentionally absent in the 12-house CHARTS; tables retain full
+ * longitude/rasi/nakshatra evidence for auditing. No planetary calculation changes.
+ */
+.mm-basic-report{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:visible}
+.mm-basic-report>h2{text-align:center;font-size:1.2rem;margin:20px auto 8px;color:#842026}
+.mm-basic-report .mm-base-note{text-align:center;font-size:.86rem;line-height:1.6;margin:0 0 12px}
+.mm-basic-report .mm-base-person{
+ box-sizing:border-box;display:block;min-width:0;max-width:100%;
+ margin:12px 0 20px;padding:10px 8px;border:1px solid #dfcdae;border-radius:8px;
+ background:#fffdfb;break-inside:auto;page-break-inside:auto;overflow:visible;
+}
+.mm-basic-report .mm-base-person>h3{font-size:1.12rem;color:#842026;text-align:center;margin:5px 0 12px}
+.mm-basic-report .mm-base-person>h4{font-size:.99rem;color:#82242d;margin:20px 0 8px;break-after:avoid;page-break-after:avoid}
+.mm-basic-report .mm-base-identity{display:flex;justify-content:center;flex-wrap:wrap;gap:7px 14px;margin:8px auto 14px;font-size:.86rem;line-height:1.5}
+.mm-basic-report .mm-base-identity>span{min-width:0;overflow-wrap:anywhere}
+.mm-basic-report .mm-base-unavailable{padding:8px;color:#7b2e2e}
+.mm-basic-report .mm-base-chart-row{
+ display:flex;justify-content:space-evenly;align-items:flex-start;flex-wrap:wrap;gap:14px;
+ max-width:100%;margin:14px auto 18px;
+}
+.mm-basic-report .mm-base-chart-wrap{
+ box-sizing:border-box;width:min(100%,310px);max-width:310px;min-width:0;
+ margin:0 auto;flex:0 1 310px;break-inside:avoid;page-break-inside:avoid;
+}
+.mm-basic-report .mm-base-chart-wrap h4{font-size:.97rem;color:#842026;text-align:center;margin:3px auto 7px;break-after:avoid}
+.mm-basic-report .mm-base-chart{
+ position:relative;display:block!important;box-sizing:border-box;
+ width:100%;max-width:310px;aspect-ratio:1/1;height:auto;
+ margin:auto;background:white;border:0!important;overflow:hidden;
+}
+.mm-basic-report .mm-base-geometry{
+ box-sizing:border-box;position:absolute;top:0;left:0;width:100%;height:100%;
+ display:block;pointer-events:none;z-index:0;
+}
+.mm-basic-report .mm-base-geometry rect,
+.mm-basic-report .mm-base-geometry path{fill:none;stroke:#796552;stroke-width:.8}
+.mm-basic-report .mm-base-cell{
+ position:absolute;box-sizing:border-box;min-width:0;min-height:0;z-index:1;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;
+ text-align:center;padding:2px;overflow:hidden;
+ background:transparent!important;border:0!important;
+}
+.mm-basic-report .mm-base-index{
+ position:absolute;top:1px;left:3px;font:600 9px/1.1 system-ui,sans-serif;
+ opacity:.8;white-space:nowrap;pointer-events:none;
+}
+.mm-basic-report .mm-base-planets{
+ display:flex!important;align-items:center;justify-content:center;
+ flex-direction:row;flex-wrap:wrap;align-content:center;gap:2px 5px;
+ margin:0;min-width:0;max-width:100%;line-height:1.15;
+}
+.mm-basic-report .mm-base-planet{
+ display:inline-block!important;flex:0 0 auto;font-weight:650;
+ font-size:clamp(12px,3.5vw,15px)!important;line-height:1.15!important;
+ white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;
+ letter-spacing:0!important;
+}
+/* South: 12 sign-fixed positions around a single, blank 2x2 central square.
+   Explicit absolute coordinates are independent of generic site grid rules. */
+.mm-basic-report .mm-base-south>.mm-base-cell{width:25%;height:25%;transform:none}
+.mm-basic-report .mm-base-south>.mm-base-pos-11{top:0;left:0}
+.mm-basic-report .mm-base-south>.mm-base-pos-0{top:0;left:25%}
+.mm-basic-report .mm-base-south>.mm-base-pos-1{top:0;left:50%}
+.mm-basic-report .mm-base-south>.mm-base-pos-2{top:0;left:75%}
+.mm-basic-report .mm-base-south>.mm-base-pos-10{top:25%;left:0}
+.mm-basic-report .mm-base-south>.mm-base-pos-3{top:25%;left:75%}
+.mm-basic-report .mm-base-south>.mm-base-pos-9{top:50%;left:0}
+.mm-basic-report .mm-base-south>.mm-base-pos-4{top:50%;left:75%}
+.mm-basic-report .mm-base-south>.mm-base-pos-8{top:75%;left:0}
+.mm-basic-report .mm-base-south>.mm-base-pos-7{top:75%;left:25%}
+.mm-basic-report .mm-base-south>.mm-base-pos-6{top:75%;left:50%}
+.mm-basic-report .mm-base-south>.mm-base-pos-5{top:75%;left:75%}
+/* North: the standard diamond geometry has fixed houses, sign numbers only. */
+.mm-basic-report .mm-base-north>.mm-base-cell,
+.mm-basic-report .mm-base-east>.mm-base-cell{
+ width:24%;height:21%;transform:translate(-50%,-50%);
+}
+.mm-basic-report .mm-base-north>.mm-base-pos-0{left:50%;top:23%}
 .mm-basic-report .mm-base-north>.mm-base-pos-1{left:28%;top:11%}
 .mm-basic-report .mm-base-north>.mm-base-pos-2{left:11%;top:28%}
-.mm-basic-report .mm-base-north>.mm-base-pos-3{left:22%;top:50%}
+.mm-basic-report .mm-base-north>.mm-base-pos-3{left:23%;top:50%}
 .mm-basic-report .mm-base-north>.mm-base-pos-4{left:11%;top:72%}
 .mm-basic-report .mm-base-north>.mm-base-pos-5{left:28%;top:89%}
-.mm-basic-report .mm-base-north>.mm-base-pos-6{left:50%;top:78%}
+.mm-basic-report .mm-base-north>.mm-base-pos-6{left:50%;top:77%}
 .mm-basic-report .mm-base-north>.mm-base-pos-7{left:72%;top:89%}
 .mm-basic-report .mm-base-north>.mm-base-pos-8{left:89%;top:72%}
-.mm-basic-report .mm-base-north>.mm-base-pos-9{left:78%;top:50%}
+.mm-basic-report .mm-base-north>.mm-base-pos-9{left:77%;top:50%}
 .mm-basic-report .mm-base-north>.mm-base-pos-10{left:89%;top:28%}
 .mm-basic-report .mm-base-north>.mm-base-pos-11{left:72%;top:11%}
+/* East/Bengali: fixed-sign chart. Same geometry and coordinates in print. */
 .mm-basic-report .mm-base-east>.mm-base-pos-0{left:50%;top:16%}
 .mm-basic-report .mm-base-east>.mm-base-pos-1{left:24%;top:11%}
 .mm-basic-report .mm-base-east>.mm-base-pos-2{left:9%;top:24%}
@@ -52,24 +101,70 @@
 .mm-basic-report .mm-base-east>.mm-base-pos-9{left:84%;top:50%}
 .mm-basic-report .mm-base-east>.mm-base-pos-10{left:91%;top:24%}
 .mm-basic-report .mm-base-east>.mm-base-pos-11{left:76%;top:11%}
-.mm-basic-report .mm-base-unavailable{font-size:.88rem;padding:10px;color:#8b332f}
-#smvMarriageMatching .mm-calculated-offset{background:#fffaf1;color:#3f3028;font-weight:600}
-#smvMarriageMatching .mm-offset-message{display:block;font-size:.8rem;line-height:1.55;margin-top:3px;color:#735c45}
-@media(max-width:620px){
-.mm-basic-report .mm-base-person{padding:7px}
-.mm-basic-report .mm-base-table{font-size:.74rem}
-.mm-basic-report .mm-base-chart-wrap{max-width:285px}
-.mm-basic-report .mm-base-av{font-size:.62rem}
+/* Horizontal scrolling is essential on small phones. Never break Tamil
+   numeric/planet column labels into individual glyphs. */
+.mm-basic-report .mm-base-scroll{
+ display:block;box-sizing:border-box;max-width:100%;width:100%;
+ overflow-x:auto!important;overflow-y:hidden!important;
+ -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+ margin:6px 0 16px;border:0;
+}
+.mm-basic-report table.mm-base-table{
+ box-sizing:border-box;border-collapse:collapse!important;table-layout:auto!important;
+ width:max-content!important;min-width:100%!important;max-width:none!important;
+ font-size:.78rem;line-height:1.35;margin:0;background:#fff;
+}
+.mm-basic-report table.mm-base-table th,
+.mm-basic-report table.mm-base-table td{
+ border:1px solid #c8bca8!important;padding:6px 8px!important;
+ min-width:45px!important;max-width:none!important;
+ white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;
+ text-align:center;vertical-align:middle;font-size:inherit;line-height:1.35;
+}
+.mm-basic-report table.mm-base-table th{
+ font-weight:700!important;background:#f4ead8!important;color:#4b251b!important;
+}
+.mm-basic-report table.mm-base-table tr{break-inside:avoid;page-break-inside:avoid}
+.mm-basic-report table.mm-base-av th,
+.mm-basic-report table.mm-base-av td{min-width:34px!important;padding:5px 6px!important}
+#smvMarriageMatching .mm-calculated-offset{background:#fff9ed;color:#382c22;font-weight:600}
+#smvMarriageMatching .mm-offset-message{display:block;font-size:.78rem;line-height:1.5;margin-top:3px;color:#694e36}
+@media(max-width:640px){
+ .mm-basic-report .mm-base-person{padding:9px 6px}
+ .mm-basic-report .mm-base-chart-wrap{max-width:310px}
+ .mm-basic-report .mm-base-chart{max-width:310px}
 }
 @media print{
- .mm-basic-report .mm-base-person{border:0;border-radius:0;background:#fff;box-shadow:none;margin:4mm auto 6mm}
- .mm-basic-report .mm-base-scroll{overflow:visible!important}
- .mm-basic-report .mm-base-table{font-size:8.5pt;max-width:100%;width:100%}
- .mm-basic-report .mm-base-av{font-size:6pt}
- .mm-basic-report .mm-base-av th,.mm-basic-report .mm-base-av td{padding:2pt 1pt}
- .mm-basic-report .mm-base-chart-wrap{width:62mm;max-width:62mm;flex:0 0 62mm}
- .mm-basic-report .mm-base-chart{width:60mm;max-width:60mm;height:60mm}
- .mm-basic-report .mm-base-cell b,.mm-basic-report .mm-base-cell span{font-size:7pt}
- .mm-basic-report .mm-base-chart-row{break-inside:avoid;page-break-inside:avoid}
- .mm-basic-report .mm-base-table thead{display:table-header-group}
+ .mm-basic-report,.mm-basic-report *{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .mm-basic-report .mm-base-person{
+   width:100%;max-width:100%;margin:4mm auto 6mm;border:0;background:#fff;box-shadow:none;
+   padding:0;break-inside:auto;page-break-inside:auto;
+ }
+ .mm-basic-report .mm-base-scroll{
+   overflow:visible!important;width:100%;max-width:100%;margin:2mm auto 4mm;
+   break-inside:avoid;page-break-inside:avoid;
+ }
+ .mm-basic-report table.mm-base-table{
+   box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%!important;
+   table-layout:fixed!important;font-size:8.2pt!important;
+ }
+ .mm-basic-report table.mm-base-table th,
+ .mm-basic-report table.mm-base-table td{
+   box-sizing:border-box;padding:2pt 2pt!important;min-width:0!important;
+   font-size:inherit!important;white-space:normal!important;overflow-wrap:normal!important;
+   word-break:keep-all!important;line-height:1.3!important;
+ }
+ .mm-basic-report table.mm-base-av{font-size:7.3pt!important}
+ .mm-basic-report table.mm-base-av th,
+ .mm-basic-report table.mm-base-av td{padding:1.5pt!important}
+ .mm-basic-report .mm-base-chart-row{break-inside:avoid;page-break-inside:avoid;gap:4mm}
+ .mm-basic-report .mm-base-chart-wrap{flex:0 0 64mm;width:64mm;max-width:64mm;margin:0 auto}
+ .mm-basic-report .mm-base-chart{
+   display:block!important;width:62mm;max-width:62mm;height:62mm;aspect-ratio:1/1;margin:0 auto;
+ }
+ .mm-basic-report .mm-base-planet{font-size:9pt!important;line-height:1.15!important}
+ .mm-basic-report .mm-base-index{font-size:6.5pt}
+ .mm-basic-report .mm-base-planets{gap:1mm 1.2mm}
+ .mm-basic-report table.mm-base-table thead{display:table-header-group}
+ .mm-basic-report .mm-base-person>h4{break-after:avoid;page-break-after:avoid}
 }
