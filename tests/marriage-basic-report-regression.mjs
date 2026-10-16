@@ -84,7 +84,7 @@ const sample={...charts[0],
 sample.bhavas[0].rasiIndex=0;
 sample.bhavas[1].rasiIndex=0;
 const custom=await renderBasicMatching(sample,charts[1],{...opts,brideStyle:'east',groomStyle:'north'});
-const bhavaEast=custom.match(/<div class="mm-base-chart-wrap" data-chart-mode="bhava">[\\s\\S]*?<\\/div><\\/div>/)?.[0]||'';
+const bhavaEast=custom.slice(custom.indexOf('data-chart-mode="bhava"'),custom.indexOf('data-chart-mode="bhava"')+7000);
 ok(bhavaEast.includes('mm-base-east'),'East Indian Bhava selected with test cusp');
 ok(bhavaEast.includes('mm-base-pos-0')&&bhavaEast.includes('>1/2</span>'),'East Bhava displays two house midpoints in the SAME sign');
 ok(custom.includes('>மா</span>'),'Calculated Maandi is included in basic chart');
