@@ -76,7 +76,19 @@ const secondary=[];
 for(const [planet,[meanLongitude,mandocca,sheeghrocha,published]] of Object.entries(secondPublished)){
  const actual=tabular({planet,meanLongitude,mandocca,sheeghrocha});
  const discrepancy=angle(actual.trueLongitude,published);
- check(discrepancy<.35,planet+' independent second published worked example within 0.35°');
+ // Explicit strict printed-value gate, rather than claiming all five pass
+ // at a loose 0.35-degree exploratory bound. Source A's first four
+ // full-longitude values reproduce the 24-Jya scheme to printed precision.
+ if(planet==='Saturn'){
+   check(discrepancy>.28&&discrepancy<.31,'Saturn full true 0.29-degree source disagreement explicitly remains');
+   near(actual.stages.fullSighraDegrees,6.3743,.001,'Saturn published full Sighra agrees');
+   check(Math.abs(actual.stages.halfMandaDegrees-.71105)>.16,
+      'Saturn source half-Manda differs; do not paper over');
+   check(Math.abs(actual.stages.fullMandaDegrees-1.3131)>.28,
+      'Saturn source full-Manda differs; no certificate');
+ }else{
+   check(discrepancy<.0001,planet+' independent worked-example 24-Jya true value matches <=0.0001°');
+ }
  secondary.push({planet,published,tableTrue:+actual.trueLongitude.toFixed(6),
   differenceDegrees:+discrepancy.toFixed(6)});
 }
@@ -111,6 +123,8 @@ console.log(JSON.stringify({
  twoMathematicalOraclesReconciled:true,
  publishedTable7StageArithmeticReconstructed:5,
  independentAcademicFinePassCount:rows.filter(r=>r.independent2024PrecisionPass).length,
+ independentSecondPublishedFinePassCount:secondary.filter(r=>r.planet!=='Saturn'&&r.differenceDegrees<.0001).length,
+ printedSaturnMandaDifferenceStillUnresolved:true,
  allFiveAcademicTrueLongitudeCERTIFIED:false,
  natalHistoricallyCertified:false,completeShadbalaCertified:false,
  publishedRows:rows,secondReferenceRows:secondary,natalCandidates:deviations
