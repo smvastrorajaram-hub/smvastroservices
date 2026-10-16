@@ -178,7 +178,7 @@ function enrichPhase2(planets,jdUt){
 // The six Bala framework follows the classical seven-graha model (Sun-Saturn).
 // Rahu/Ketu are intentionally excluded from the Shadbala total.
 const SHADBALA_REQUIRED = {
-  'சூரியன்':300, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
+  'சூரியன்':390, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
   'குரு':390, 'சுக்கிரன்':330, 'சனி':300
 };
 const SHADBALA_NATURAL = NATURAL_BALA;
@@ -334,13 +334,16 @@ function solarIngressLord(jdEt, targetSign, flags, useSwissFiles){
   const date=new Date((prev-2440587.5)*86400000);
   return date.getUTCDay();
 }
-function ayanaBala(decl, planet){
-  if(!Number.isFinite(decl)) return 30;
-  let v;
-  if(['சந்திரன்','சனி'].includes(planet)) v=(24-decl)*60/48;
-  else if(planet==='புதன்') v=(24+Math.abs(decl))*60/48;
-  else v=(24+decl)*60/48;
-  return Math.max(0,Math.min(60,v));
+export function ayanaBala(decl, planet){
+  // BPHS I Ch 27 v15-17: declination (Kranti) against 23°27'.
+  // The Sun's Ayana Bala is twice the other planets' formula.
+  // Do not substitute constant 24 degrees or cap the Sun at 60.
+  if(!Number.isFinite(decl)) return null;
+  const obliquity=23+27/60;
+  const signed=planet==='புதன்'?Math.abs(decl):
+    ['சந்திரன்','சனி'].includes(planet)?-decl:decl;
+  const virupa=(obliquity+signed)*60/(2*obliquity);
+  return Math.max(0,Math.min(planet==='சூரியன்'?120:60,virupa*(planet==='சூரியன்'?2:1)));
 }
 function sputaDrishti(angle, aspector){
   const a=norm360(angle);
@@ -396,7 +399,7 @@ function drikBalaClassical(planet, planets){
   }
   return pinda/4;
 }
-function motionClassical(planet, speed, state){
+export function motionClassical(planet, speed, state){
   if(planet==='சூரியன்'||planet==='சந்திரன்') return 0;
   const v=Math.abs(Number(speed)||0);
   if(state?.retrograde) return 60;
@@ -429,12 +432,12 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const ayana=ayanaBala(declinations[planet],planet);
   const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha:0};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
-  const cheshta=motionClassical(planet,p.speed,state);
+  const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
   const naisargika=SHADBALA_NATURAL[planet];
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,method:'Parashari Shadbala Phase 3',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,method:'Partial Parashari Shadbala Phase 3; Hora/Abda/Masa/Yuddha need certification',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
