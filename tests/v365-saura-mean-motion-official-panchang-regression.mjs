@@ -77,6 +77,59 @@ for(const [date,time] of charts){
  }
  exampleResults.push(record);
 }
+
+// Independently project the published 2026 00:00 UTC uncorrected mean
+// ORBITS backwards to actual 1971/1974/1992/1994/2015 birth UTC instants.
+// This deliberately never reads the engine's Kali epoch, longitude-meridian,
+// anchor output, or orbit calculation: the only shared intrinsic constant is
+// Suryasiddhanta's canonical integer revolutions / Mahayuga days. The
+// independent NUMBER is the official six-body IMD 2026 printed mean snapshot.
+// This is a test of same-model historical MEAN MOTION, not independent
+// historical TRUE geocentric longitude/Bija/Mandocca evidence.
+const birthExpectedFromOfficial2026=[];
+const circleSigned=(x,y)=>(((x-y)%360)+540)%360-180;
+const canonicalDays=1577917828;
+function independentFromPublished2026(jdUt,planet){
+ const publishedMean=dms(official[planet]);
+ const elapsed=jdUt-jd;
+ const integerOrbitArc=360*rev[planet];
+ // Independent baseline + elapsed turns (not engine's Kali-epoch formula);
+ // reduce cycles before adding the published longitude.
+ const elapsedDegrees=((elapsed*rev[planet])%canonicalDays)/canonicalDays*360;
+ return wrap(publishedMean+elapsedDegrees);
+}
+for(const [date,time] of charts){
+ const [y,mo,da]=date.split('-').map(Number);
+ const [hh,mm]=time.split(':').map(Number);
+ const jdBirth=(Date.UTC(y,mo-1,da,hh,mm)-330*60000)/86400000+2440587.5;
+ const row={date,time,utcOffsetMinutes:330,jdUt:jdBirth,
+   source:'IMD printed 2026-03-22 uncorrected Saura orbit + canonical independent backward propagation',
+   planetOrbits:{}};
+ for(const planet of names){
+  const projected=independentFromPublished2026(jdBirth,planet),
+        live=orbit(jdBirth,planet),
+        errorArcseconds=circleSigned(live,projected)*3600;
+  close(live,projected,1.75/3600,
+    date+' '+planet+' official-origin independent 1971-2015 mean check within 1.75 arcseconds');
+  row.planetOrbits[planet]={officialProjectedDegrees:+projected.toFixed(6),
+    engineDegrees:+live.toFixed(6),signedErrorArcseconds:+errorArcseconds.toFixed(6)};
+ }
+ for(const planet of ['Mercury','Venus','Mars','Jupiter','Saturn']){
+  const natal=inputs(jdBirth,planet),inner=planet==='Mercury'||planet==='Venus';
+  const expectedMean=independentFromPublished2026(jdBirth,inner?'Sun':planet);
+  const expectedSighrocca=independentFromPublished2026(jdBirth,inner?planet:'Sun');
+  close(natal.meanLongitude,expectedMean,1.75/3600,
+    date+' '+planet+' independent published-frame natal mean longitude selector');
+  close(natal.sheeghrocha,expectedSighrocca,1.75/3600,
+    date+' '+planet+' independent published-frame natal sighrocca selector');
+  check(natal.fullShadbalaNumericallyCertified===false&&!natal.liveCheshtaEligible,
+    date+' '+planet+' 2026 anchored mean does not certify a natal true longitude');
+ }
+ birthExpectedFromOfficial2026.push(row);
+}
+check(birthExpectedFromOfficial2026.length===5 &&
+  birthExpectedFromOfficial2026.every(x=>Object.keys(x.planetOrbits).length===6),
+  'five real birth UTC instants x six official-anchored mean orbit values');
 close(orbit(model.epochJdUt-model.referenceMeridianDegrees/360,'Sun'),0,1e-8,'epoch sun zero');
 for(const bad of [NaN,Infinity,-10,2000000000,undefined]){
  assert.throws(()=>inputs(bad,'Mars'),RangeError);count++;
