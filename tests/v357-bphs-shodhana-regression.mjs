@@ -15,8 +15,8 @@ same(trikonaShodhana(sunRaw).values,sunTrikona,'Ch.67 Sun minimum subtraction');
 const exampleTrikona=[1,2,4,0,0,4,1,3,1,2,2,2];
 const occupied=[0,1,3,9];
 same(ekadhipatyaShodhana(exampleTrikona,occupied).values,
- [1,2,0,0,0,0,0,2,1,2,0,1],
- 'Ch68 literal prose: both unoccupied unequal become equal to smaller');
+ [1,2,0,0,0,0,0,1,1,2,0,1],
+ 'Ch68 + PVR rule3b: empty Scorpio3 follows occupied Aries1 -> Scorpio1');
 const chapter68Printed=[1,2,0,0,0,0,0,2,0,2,0,1];
 yes(JSON.stringify(chapter68Printed)!==JSON.stringify(ekadhipatyaShodhana(exampleTrikona,occupied).values),
     'Printed Chapter 68 illustration conflicts with prose, not certified as agreement');
