@@ -65,8 +65,15 @@ function correction(mean,ucca,paridhiPair,kind='sighra',mandaKarṇaConvention='
   const signedKoti=relativeRadius*cos;
   // Research-only universal rule inferred from *all five* independently
   // printed Caitanya Manda numerical examples: R−|koṭiphala|.
-  const side=relativeRadius*sin,
-        axis=mandaAbs?1-Math.abs(signedKoti):1+sign*signedKoti;
+  const side=relativeRadius*sin;
+  // Sūrya Siddhānta II.39 direct Manda bhujajya arc, without
+  // the variable Karṇa divisor reserved for Śīghra (II.40–42).
+  // Research-only selectable convention; no production activation.
+  if(kind==='manda'&&mandaKarṇaConvention==='verse39-direct-jya')
+    return Object.freeze({correctionDegrees:sauraInverseJyaArcMinutes(side*RADIUS),
+      kendraDegrees:k,correctedParidhi,relativeRadius,
+      karnaRatio:null,signedSineArcMinutes:side*RADIUS});
+  const axis=mandaAbs?1-Math.abs(signedKoti):1+sign*signedKoti;
   const hypotenuse=Math.hypot(axis,side);
   if(hypotenuse<=0)throw new RangeError('invalid mandakarna / sighrakarna');
   const signedSine=Math.max(-RADIUS,Math.min(RADIUS,RADIUS*side/hypotenuse));
@@ -90,7 +97,7 @@ export function sauraTabularFourPassTrueLongitude({planet,meanLongitude,mandocca
   const p=tamil[planet]||planet;
   if(!Object.prototype.hasOwnProperty.call(SAURA_EPICYCLE_SIZES,p))
     throw new RangeError('Only five visible grahas allowed');
-  if(!['common-plus','alternate-minus','absolute-koti-minus'].includes(mandaKarṇaConvention))
+  if(!['common-plus','alternate-minus','absolute-koti-minus','verse39-direct-jya'].includes(mandaKarṇaConvention))
     throw new RangeError('Unknown Manda karna convention');
   if(![meanLongitude,mandocca,sheeghrocha].every(Number.isFinite))
     throw new TypeError('three finite classical orbital longitudes required');
