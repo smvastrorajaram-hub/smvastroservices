@@ -13,25 +13,27 @@ function civilParts(date, time) {
   throw new RangeError('Invalid birth date or time');
  return {utc,y,mo,d,h,mi};
 }
-function zonedMinutes(formatter,milliseconds) {
+function zonedSeconds(formatter,milliseconds) {
  const p=Object.fromEntries(formatter.formatToParts(new Date(milliseconds)).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
- return Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,0);
+ return Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,p.second);
 }
 export function offsetMinutesAt(timeZone,date,time){
  const zone=String(timeZone||'').trim();
  if(!zone)throw new RangeError('Select a valid birth-place timezone');
  const c=civilParts(date,time);
- const fmt=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+ const fmt=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
  const offsets=new Set();
+ // Include second-precision pre-standardisation local mean times (e.g. 19th century)
+ // rather than rounding historical offsets to whole minutes.
  // Collect both sides of any DST transition; most zones need only one.
  for(const hours of [-36,-24,-12,0,12,24,36]){
   const probe=c.utc+hours*3600000;
-  offsets.add(Math.round((zonedMinutes(fmt,probe)-probe)/60000));
+  offsets.add(zonedSeconds(fmt,probe)-probe);
  }
  const valid=[];
- for(const offset of offsets){
-  const instant=c.utc-offset*60000;
-  if(zonedMinutes(fmt,instant)===c.utc)valid.push({instant,offset});
+ for(const offsetMs of offsets){
+  const instant=c.utc-offsetMs;
+  if(zonedSeconds(fmt,instant)===c.utc)valid.push({instant,offset:offsetMs/60000});
  }
  if(!valid.length)throw new RangeError('This local birth time did not exist due to a DST clock change; verify the time.');
  // On clock rollback, two real instants can share one local clock reading.
