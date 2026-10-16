@@ -1,0 +1,27 @@
+name: World Timezone Certification Audit (2026e)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-tzdb-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install independent reference IANA tzdb 2026e
+        run: python -m pip install --disable-pip-version-check tzdata==2026.5
+      - name: Cross-check all IANA zones, 2026 transitions and historical offsets
+        run: python tests/global-timezone-audit.py
+      - name: Preserve reproducible certification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-WORLD-TIMEZONE-AUDIT
+          path: timezone-audit-output/
+          retention-days: 30
