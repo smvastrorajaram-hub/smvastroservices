@@ -96,7 +96,7 @@ jobs:
         run: node tests/v364-swiss-orbital-cheshta-evidence-regression.mjs
       - name: V365 independent IMD Surya Siddhanta mean-longitude and five Sheeghrocha oracle
         run: node tests/v365-saura-mean-motion-official-panchang-regression.mjs
-      - name: V366 published IMD and academic five-graha BPHS Cheshta numerical certificate
+      - name: Official IMD seven-day five-graha BPHS Cheshta numerical reconciliation
         run: node tests/v366-bphs-published-cheshta-numerical-regression.mjs
       - name: V367 true-longitude dual-source 5-natal Shadbala certification gate
         run: node tests/v367-saura-true-natal-certification-gate.mjs
