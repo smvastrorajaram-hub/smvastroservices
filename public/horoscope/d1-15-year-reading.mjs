@@ -1,4 +1,4 @@
-/* SMV ASTRO V293 — report-date to 80th-birthday age-boundary-safe D1 timeline.
+/* SMV ASTRO — report-date to next-15-year D1 timeline.
    Triggered ONLY after authorized Full Horoscope; no Firebase/API/network calls.
    Real Vimshottari MD/AD boundaries come from full.chart.dashas.periods.
    Jupiter/Saturn/Rahu/Ketu future positions come from local Swiss WASM.
@@ -20,7 +20,9 @@ const stamp=t=>new Date(t).toISOString().slice(0,10);
 const yearAfter=(birth,n)=>{const d=new Date(day(birth));const y=d.getUTCFullYear()+n,month=d.getUTCMonth(),date=d.getUTCDate();d.setUTCFullYear(y);if(d.getUTCMonth()!==month) d.setUTCDate(0);return stamp(d.getTime());};
 function sourceInput(full,payload){
  const c=full?.chart||full,v=c?.swissValidation||{},s=c?.birth||{};
- const lat=Number(payload?.lat??payload?.latitude??v.latitude??s.lat),lon=Number(payload?.lon??payload?.longitude??v.longitude??s.lon);
+ const rawLat=payload?.lat??payload?.latitude??v.latitude??s.lat,rawLon=payload?.lon??payload?.longitude??v.longitude??s.lon;
+ if(rawLat===null||rawLat===undefined||rawLat===''||rawLon===null||rawLon===undefined||rawLon==='')throw Error('Birth coordinates are missing for the 15-year transit forecast.');
+ const lat=Number(rawLat),lon=Number(rawLon);
  const utcOffsetMinutes=Number(payload?.utcOffsetMinutes??v.utcOffsetMinutes??330);
  if(!Number.isFinite(lat)||!Number.isFinite(lon)||!Number.isFinite(utcOffsetMinutes)||lat< -90||lat>90||lon< -180||lon>180)throw Error('Birth coordinates are missing for the forecast across the coming 15 years.');
  return {lat,lon,utcOffsetMinutes,language:'ta',time:'12:00'};
@@ -65,8 +67,7 @@ function clipPeriods(full,referenceDate){
  const begin=requested<born?born:requested; // no forecast before birth
  // Unlike V279, do not forecast past the person's 15-year forecast end.
  const end=yearAfter(begin,15),start=day(begin),limit=day(end),chart=full?.chart||full;
- // For age 80+, return a clear completed-window result rather than calculating
- // unrequested ages 80–160 or failing the entire horoscope report.
+ // Guard invalid/degenerate date intervals; age itself is not a forecast cutoff.
  if(start>=limit)return {birth:born,referenceDate:begin,end,periods:[],continuationCount:0,ageLimitReached:true};
  const majors=chart?.dashas?.periods;if(!Array.isArray(majors)||!majors.length)throw Error('Mahadasha sequence missing');
  const available=extendDashaSequence(majors,limit),out=[];
@@ -340,7 +341,7 @@ async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
  }
  // The yearly focus uses an exact (calculated) midway snapshot, not invented long-range transit positions.
  // Generate only the remaining full/partial reporting years. E.g. age 34
- // gets 45 full years plus a final partial year ending exactly at age 80.
+ // covers exactly the requested next 15 years from the report date.
  for(let y=0;;y++){
   const from=yearAfter(dates.referenceDate,y);
   if(day(from)>=end)break;
