@@ -64,6 +64,8 @@ jobs:
         run: node tests/v357-bphs-shodhana-regression.mjs
       - name: V357 BPHS positional Shadbala independent calculation oracle
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
+      - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
+        run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
         run: node tests/v357-bphs-mercury-paksha-regression.mjs
       - name: V357 independent BPHS II Sun Moon Mars BAV Prastara audit
