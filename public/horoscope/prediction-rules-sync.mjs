@@ -6,7 +6,7 @@
  * Static approved JS and last-fetched cache remain available offline.
  */
 const E=window.SMVPredictionRules;
-const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:'auth.smvastroservices.in',projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
+const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
 const COLLECTION='smv_content',DOC_ID='prediction_rules_v1',CACHE='smv-global-prediction-rules-cache-v1';
 let settled=false,initial=null;
 const cached=()=>{try{const c=JSON.parse(localStorage.getItem(CACHE)||'null');if(c?.published===true&&c?.schemaVersion===1&&Array.isArray(c.rules)){const parsed=E?.normalizeRules(c.rules);if(parsed?.length===c.rules.length)E.setPublishedRules(parsed);}}catch{}};

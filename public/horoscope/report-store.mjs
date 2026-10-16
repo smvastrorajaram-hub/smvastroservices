@@ -6,7 +6,7 @@ const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;
 const CLOUD_COLLECTION='smv_horoscope_reports';
 const CLOUD_INDEX_KIND='saved_index_v1',CLOUD_PAYLOAD_KIND='saved_payload_v1',CLOUD_CHUNK_KIND='saved_chunk_v1';
 const CLOUD_SCHEMA=1,CHUNK_CHARS=480000,MAX_CHUNKS=48,BATCH_CHUNKS=16;
-const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:'auth.smvastroservices.in',projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
+const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
 const ta=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cloud={uid:'',loaded:false,reports:{},loadPromise:null,migratePromise:null,ctxPromise:null,status:'',error:''};
