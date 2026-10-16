@@ -48,11 +48,14 @@ export function computeClassicalFiveNatalCheshta(birth){
   const planets=BODIES.map(([tamil,planet])=>{
     const args=sauraFivePlanetCheshtaInputs(jdUt,planet);
     const mandoccaModel=sauraMandoccaResearch(jdUt,planet);
+    // Apply one systematic, five-planet arithmetic convention; remains
+    // research-only until the independent 2024 Mars and historical gates pass.
+    const mandaKarṇaConvention='absolute-koti-minus';
     const trueModel=sauraFourPassTrueLongitude({
       planet,
       meanLongitude:args.meanLongitude,
       mandocca:mandoccaModel.mandocca,
-      sheeghrocha:args.sheeghrocha
+      sheeghrocha:args.sheeghrocha,mandaKarṇaConvention
     });
     // Independent classical 24-Jya book lookup cross-check.
     // This is NOT a second historical astronomical ephemeris: both
@@ -60,7 +63,8 @@ export function computeClassicalFiveNatalCheshta(birth){
     // precision effect of tabulated Jya vs continuous trigonometry.
     const tabular=sauraTabularFourPassTrueLongitude({
       planet,meanLongitude:args.meanLongitude,
-      mandocca:mandoccaModel.mandocca,sheeghrocha:args.sheeghrocha
+      mandocca:mandoccaModel.mandocca,sheeghrocha:args.sheeghrocha,
+      mandaKarṇaConvention
     });
     const delta=Math.abs(((tabular.trueLongitude-trueModel.trueLongitude+540)%360)-180);
     const strength=bphsFivePlanetCheshtaFromClassicalMeans(
@@ -71,7 +75,7 @@ export function computeClassicalFiveNatalCheshta(birth){
        !Number.isFinite(strength.virupa)||strength.virupa<0||strength.virupa>60)
       throw new Error('BPHS input mismatch or Cheshta out of classical 0–60 Virupa range: '+planet);
     return Object.freeze({
-      planet,tamil,meanLongitude:args.meanLongitude,
+      planet,tamil,meanLongitude:args.meanLongitude,mandaKarṇaConvention,
       sheeghrocha:args.sheeghrocha,mandocca:mandoccaModel.mandocca,
       trueLongitude:trueModel.trueLongitude,
       // Two self-consistent calculations; not independently observed truth.
