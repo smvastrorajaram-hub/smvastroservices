@@ -90,5 +90,59 @@ try{
   results.push({style:testName,pdfBytes:size,mobile,print});
   await page.emulateMediaType('screen');
  }
- console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true}));
+ // Verify the real Saved/Print cover CSS, not just a calculation-only PDF.
+ // The matching emblem must have zero shifted X offset while Horoscope keeps
+ // its previously approved V331 layout. Both use the same Print-page stylesheet.
+ const coverFile=new URL('__matching_cover_print_smoke_temp.html',root);
+ const coverHtml=matching=>'<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="report-print.css"></head><body><section id="smvPrintCover" class="smv-print-cover smv-vector-cover smv-cover-v19'+(matching?' smv-cover-matching':'')+'"><div class="smv-cover-frame"><div class="smv-cover-emblem"><img src="'+(matching?'assets/smv-marriage-shiva-parvati.webp':'assets/smv-ganesha-approved.webp')+'"></div></div></section></body></html>';
+ const coverMeasurements=[];
+ for(const matching of [true,false]){
+  await writeFile(coverFile,coverHtml(matching));
+  await page.setViewport({width:390,height:830,deviceScaleFactor:1});
+  await page.goto(coverFile.href,{waitUntil:'load'});
+  await page.emulateMediaType('print');
+  const m=await page.evaluate(()=>{
+    const cover=document.querySelector('#smvPrintCover'),
+      frame=cover.querySelector('.smv-cover-frame'),
+      emblem=cover.querySelector('.smv-cover-emblem'),
+      img=emblem.querySelector('img');
+    const box=e=>e.getBoundingClientRect();
+    const b=box(emblem),i=box(img),p=box(frame);
+    return {
+      loaded:img.complete&&img.naturalWidth>0,
+      coverMatching:cover.classList.contains('smv-cover-matching'),
+      frameCenter:p.left+p.width/2,
+      emblemCenter:b.left+b.width/2,
+      imageCenter:i.left+i.width/2,
+      imageTransform:getComputedStyle(img).transform,
+      imageTranslate:getComputedStyle(img).translate
+    };
+  });
+  assert.equal(m.loaded,true,'Actual cover image must load');
+  assert.ok(Math.abs(m.imageCenter-m.emblemCenter)<1.5,'Cover image centered within its container');
+  assert.ok(Math.abs(m.emblemCenter-m.frameCenter)<1.5,'Emblem centered on the A4 cover frame');
+  if(matching)assert.equal(m.imageTransform,'none','Matching cover photo must not have horizontal V331 offset');
+  else assert.notEqual(m.imageTransform,'none','Horoscope cover keeps previous V331 offset');
+  if(matching){
+   const coverPdf=new URL('matching-cover-centered.pdf',output);
+   await page.pdf({path:fileURLToPath(coverPdf),format:'A4',printBackground:true,preferCSSPageSize:true});
+   assert.ok((await stat(coverPdf)).size>10000,'Matching cover PDF created');
+   await page.screenshot({path:fileURLToPath(new URL('matching-cover-centered.png',output)),fullPage:false});
+  }
+  coverMeasurements.push(m);
+ }
+ // Both Nakshatra form modes and both user fieldsets share one layer.
+ const inputFile=new URL('__matching_input_layer_smoke_temp.html',root);
+ const inputHtml='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="smv-ui.css"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><div id="mmPublicChoice">Mode</div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Date<input type="date"></label></fieldset><fieldset><legend>Groom</legend><label>Date<input type="date"></label></fieldset></div></div><div id="mmManualEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Rasi<select><option>Aries</option></select></label></fieldset><fieldset><legend>Groom</legend><label>Rasi<select><option>Taurus</option></select></label></fieldset></div></div></div></body></html>';
+ await writeFile(inputFile,inputHtml);
+ await page.goto(inputFile.href,{waitUntil:'load'});
+ await page.emulateMediaType('screen');
+ const form=await page.evaluate(()=>[...document.querySelectorAll('#mmFullEntry fieldset,#mmManualEntry fieldset')].map(x=>{
+    const c=getComputedStyle(x);
+    return {border:c.borderTopWidth,shadow:c.boxShadow,background:c.backgroundColor};
+ }));
+ assert.equal(form.length,4,'Two DOB and two Rasi/Nakshatra fieldsets present');
+ assert.ok(form.every(x=>x.border==='0px'&&x.shadow==='none'),'No nested fieldset cards in either Nakshatra mode');
+ console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length}));
+
 }finally{await browser.close();}
