@@ -22,9 +22,10 @@ const expected=(r,d,x)=>{
  if(d===27)return wrap([0,3,6,9][r%4]+part);
  if(d===40)return wrap((odd?0:6)+part);
  if(d===45)return wrap([0,4,8][r%3]+part);
+ if(d===60)return wrap(r+part); // BPHS I Ch.6 numeric sign-lord formula, distinct from reversed deity name order.
  throw Error('Unsupported oracle divisor '+d);
 };
-const divs=[2,3,4,7,9,10,12,16,20,24,27,30,40,45];
+const divs=[2,3,4,7,9,10,12,16,20,24,27,30,40,45,60];
 let assertions=0;
 const check=(actual,reference,label)=>{assert.equal(actual,reference,label);assertions++};
 for(let sign=0;sign<12;sign++){
@@ -47,6 +48,12 @@ for(let sign=0;sign<12;sign++){
   }
  }
 }
+// BPHS Volume I Ch. 6 PDF page 82: Venus at Capricorn 13°25' gives
+// remainder 26÷12 = 2, i.e. third sign counted from Capricorn = Pisces.
+const capricornExample=9*30+13+25/60;
+check(vargaSign(capricornExample,60),11,'BPHS Capricorn 13°25 has Pisces Shashtiamsa lord Jupiter');
+check(Math.floor(vargaLongitude(capricornExample,60)/30),11,'D60 longitude follows Pisces sign');
+// D60 deity name is reversed in even signs, NOT the D60 sign mapping.
 // Published D30 segments must match D30 source varga sign and scaled longitude
 // in BOTH odd and even natal signs, especially final 5-degree sections.
 for(const sign of [0,1,2,3,10,11]){
