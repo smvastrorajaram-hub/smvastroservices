@@ -74,8 +74,12 @@ const basicModule=read('public/horoscope/marriage-basic-report.mjs');
 ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');
 ok(basicModule.includes("bhava?housesBySign[i].join('/')"),'East Bhava number supports multiple Bhavas in the same Rasi');
 ok(basicModule.includes("natalMaandi(c)"),'Maandi uses natal calculated upagraha');
-ok(basicModule.includes('chartPlanetStatus('),'Planetary positions include retrograde and combustion status');
-ok(basicModule.includes('mm-base-flag'),'Retrograde and combustion signs render in both languages');
+ok(basicModule.includes('function markedPlanetName('),'Planet states are attached in exactly the three designated position tables');
+ok(!basicModule.includes('mm-base-flag'),'Chart glyphs NEVER contain retro/combustion flags');
+ok(!ta.includes('<sup class="mm-base-flag">'),'Chart markup contains planet short names only');
+ok(css.includes('A single continuous result surface for the FULL marriage report'),'Full matching uses one flat result layer on screen and PDF');
+ok(!ta.includes('mm-full-results mm-basic-report'),'Basic report does not nest another full report');
+ok(!ta.includes('mm-base-person mm-person-result'),'Basic sections avoid nested result-card surfaces');
 
 const sample={...charts[0],
  planets:charts[0].planets.map((p,i)=>i? p:{...p,strength:{...(p.strength||{}),retrograde:true,combustion:true}}),
@@ -88,7 +92,21 @@ const bhavaEast=custom.slice(custom.indexOf('data-chart-mode="bhava"'),custom.in
 ok(bhavaEast.includes('mm-base-east'),'East Indian Bhava selected with test cusp');
 ok(bhavaEast.includes('mm-base-pos-0')&&bhavaEast.includes('>1/2</span>'),'East Bhava displays two house midpoints in the SAME sign');
 ok(custom.includes('>மா</span>'),'Calculated Maandi is included in basic chart');
-ok(custom.includes('>வ</sup>')&&custom.includes('>அ</sup>'),'Retrograde and combustion markers use natal state');
+ok(custom.includes('சூரியன் (வ,அ)'),'Natal planet name receives compact retrograde/combustion tags');
+ok(!custom.includes('<sup class="mm-base-flag">'),'Retrograde/combustion never rendered within chart cells');
+const houseStart=custom.indexOf('பாவ அட்டவணை');
+ok(houseStart>=0,'Bhava table exists');
+ok(custom.slice(houseStart,houseStart+4400).includes('சூரியன் (வ,அ)'),'Bhava table receives the same natal state tags');
+const transitMarked=await renderBasicMatching(sample,charts[1],{
+ ...opts,transitFn:input=>{
+   const result=transit(input);
+   return {...result,planets:result.planets.map((p,i)=>i===0?{...p,retrograde:true,combustion:true}:p)};
+ }
+});
+const transitStart=transitMarked.indexOf('கோச்சாரக் கட்டம் மற்றும் கிரக நிலைகள்');
+ok(transitStart>=0&&transitMarked.slice(transitStart).includes('சூரியன் (வ,அ)'),'Transit table uses actual transit-specific flags, adjacent to planet name');
+ok(!transitMarked.includes('<sup class="mm-base-flag">'),'Transit chart stays without retro/combustion markings');
+
 ok(custom.includes('மாந்தி')&&custom.includes('அஸ்தமனம்'),'Maandi and combust labels appear in natal positions');
 
 
