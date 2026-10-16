@@ -1,3 +1,84 @@
+/* V354: Separate Pages-domain Calendar install visibility from legacy hosts. */
+if(location.hostname==='smvastroservices.pages.dev'){
+ const params=new URLSearchParams(location.search);
+ const area=document.getElementById('smvCalendarInstallArea');
+ const button=document.getElementById('calInstall');
+ const status=document.getElementById('calInstallStatus');
+ const manifest=document.getElementById('calendarManifest');
+ let offer=window.__smvCalendarInstallPrompt||null;
+ const ta=()=>document.documentElement.lang==='ta';
+ const standalone=()=>['standalone','minimal-ui','fullscreen'].some(mode=>matchMedia(`(display-mode: ${mode})`).matches)||navigator.standalone===true;
+ const flag=value=>{try{value?localStorage.setItem('smv-calendar-pwa-installed-v217','1'):localStorage.removeItem('smv-calendar-pwa-installed-v217')}catch(_){}};
+ const statusText=(en,tamil)=>{if(status)status.textContent=ta()?tamil:en;};
+ // The calendar module rebuilds .cal-app-link when the language changes. Use a
+ // CSS state on html so a newly inserted link cannot reappear after install.
+ const style=document.createElement('style');
+ style.id='smv-v354-pages-calendar-install-style';
+ style.textContent='html:not(.smv-v354-calendar-install-offered) #smvCalendarInstallArea,html:not(.smv-v354-calendar-install-offered) .cal-app-link{display:none!important}';
+ document.head.appendChild(style);
+ const hide=()=>{
+  document.documentElement.classList.remove('smv-v354-calendar-install-offered');
+  if(area)area.hidden=true;
+  const link=document.querySelector('.cal-app-link');if(link)link.hidden=true;
+ };
+ const show=()=>{
+  if(standalone()){hide();return;}
+  document.documentElement.classList.add('smv-v354-calendar-install-offered');
+  if(area)area.hidden=false;
+  const link=document.querySelector('.cal-app-link');if(link)link.hidden=false;
+ };
+ function language(lang){
+  document.documentElement.lang=lang;
+  try{localStorage.setItem('smv-calendar-language',lang)}catch(_){ }
+  if(manifest)manifest.href=`manifest-${lang}.webmanifest?v=217`;
+  const span=button?.querySelector('span');
+  if(span)span.textContent=lang==='ta'?'SMV CALENDAR நிறுவுக':'Install SMV CALENDAR';
+  window.dispatchEvent(new CustomEvent('smv-language',{detail:lang}));
+ }
+ document.getElementById('calTamil')?.addEventListener('click',()=>language('ta'));
+ document.getElementById('calEnglish')?.addEventListener('click',()=>language('en'));
+ let storedLanguage;try{storedLanguage=localStorage.getItem('smv-calendar-language')}catch(_){ }
+ const requested=params.get('lang');
+ language(['ta','en'].includes(requested)?requested:(storedLanguage==='ta'?'ta':'en'));
+ // No stored flag or display-mode can establish installation of the child app
+ // on a shared origin. Only appinstalled or a fresh beforeinstallprompt matters.
+ function installable(e){
+  if(e){e.preventDefault?.();offer=e;window.__smvCalendarInstallPrompt=e;}
+  if(standalone()){hide();return;}
+  flag(false);statusText('','');show();
+ }
+ hide();
+ if(offer)installable(offer);
+ addEventListener('beforeinstallprompt',installable);
+ addEventListener('smv:calendar-installable',()=>{
+  if(window.__smvCalendarInstallPrompt)installable(window.__smvCalendarInstallPrompt);
+ });
+ addEventListener('appinstalled',()=>{
+  offer=null;window.__smvCalendarInstallPrompt=null;
+  flag(true);hide();statusText('','');
+ });
+ if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=217',{scope:'./',updateViaCache:'none'})
+   .then(reg=>reg.update().catch(()=>{})).catch(()=>{
+    statusText('Offline files could not be saved. Reopen while online.','இணையமில்லா சேமிப்பு முடியவில்லை; இணையத்துடன் மீண்டும் திறக்கவும்.');
+   });
+ }
+ async function runInstall(){
+  if(standalone()){hide();return;}
+  const p=offer||window.__smvCalendarInstallPrompt;
+  if(!p){hide();return;}
+  // Do not await serviceWorker.ready or a timeout before consuming user gesture.
+  offer=null;window.__smvCalendarInstallPrompt=null;hide();
+  try{
+   await p.prompt();
+   const choice=await p.userChoice;
+   if(choice?.outcome!=='accepted')flag(false);
+   // A Chrome accepted choice is NOT appinstalled; don't record a false positive.
+  }catch(_){flag(false);}
+ }
+ button?.addEventListener('click',runInstall);
+ addEventListener('smv-calendar-install-request',runInstall);
+}else{
 let installPrompt=window.__smvCalendarInstallPrompt||null;
 const params=new URLSearchParams(location.search);
 const installArea=document.getElementById('smvCalendarInstallArea');
@@ -107,3 +188,4 @@ async function runInstall(){
 installButton?.addEventListener('click',runInstall);
 addEventListener('smv-calendar-install-request',runInstall);
 setTimeout(()=>{if(window.__smvCalendarInstallPrompt)installable(window.__smvCalendarInstallPrompt);},1200);
+}

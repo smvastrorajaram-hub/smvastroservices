@@ -22,16 +22,6 @@
 html.smv-v352-pages-standalone #smvCalendarInstallArea,
 html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </style>
-<script id="smv-v353-pages-browser-calendar-install-recovery">
-(()=>{
-  if(location.hostname!=='smvastroservices.pages.dev')return;
-  const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
-  if(standalone)return;
-  // A Pages root-PWA visit can leave an incorrect Calendar installed flag.
-  // The native browser still decides if the separate Calendar PWA can be installed.
-  try{localStorage.removeItem('smv-calendar-pwa-installed-v217');}catch(_){ }
-})();
-</script>
 <script id="smv-v350-host-nav">if(location.hostname==='smvastroservices.pages.dev'){const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a){a.href='/';a.removeAttribute('target');}if(b){b.href='/horoscope/';b.removeAttribute('target');}});}</script>
 <script>
 (()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://calendar.smvastroservices.in/'+location.search+location.hash);}})();
@@ -60,17 +50,14 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </footer>
 <script src="../location-search-online-offline.js?v=222"></script>
 <script src="../horoscope.js?v=222-calendar-render"></script>
-<script type="module" src="calendar-pwa.mjs?v=222"></script>
+<script type="module" src="calendar-pwa.mjs?v=354"></script>
 <script type="module" src="../daily-calendar.mjs?v=228-today-color"></script>
 <script id="smv-v352-pages-calendar-install-guard">
 (()=>{
   if(location.hostname!=='smvastroservices.pages.dev')return;
   if(!document.documentElement.classList.contains('smv-v352-pages-standalone'))return;
-  const ownKey='smv-pages-own-calendar-session-v352';
-  try{
-    if((new URLSearchParams(location.search).get('source')||'').startsWith('calendar-pwa'))sessionStorage.setItem(ownKey,'1');
-    if(sessionStorage.getItem(ownKey)!=='1')localStorage.removeItem('smv-calendar-pwa-installed-v217');
-  }catch(_){}
+  // A standalone window may belong to the parent ASTRO PWA; NEVER infer that
+  // the nested Calendar PWA is installed, or change its shared-origin flag.
   const area=document.getElementById('smvCalendarInstallArea');
   if(area)area.hidden=true;
   const link=document.querySelector('.cal-app-link');
