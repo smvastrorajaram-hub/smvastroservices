@@ -3,6 +3,7 @@
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
+import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
 import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
 let swe=null;
 const C={SE_SUN:WC.SUN,SE_MOON:WC.MOON,SE_MERCURY:WC.MERCURY,SE_VENUS:WC.VENUS,SE_MARS:WC.MARS,SE_JUPITER:WC.JUPITER,SE_SATURN:WC.SATURN,SE_MEAN_NODE:WC.MEAN_NODE,SE_GREG_CAL:1,SE_SIDM_LAHIRI:1,SEFLG_SWIEPH:2,SEFLG_MOSEPH:4,SEFLG_SPEED:256,SEFLG_EQUATORIAL:2048,SEFLG_SIDEREAL:65536};
@@ -390,47 +391,10 @@ export function ayanaBala(decl, planet){
   const virupa=(obliquity+signed)*60/(2*obliquity);
   return Math.max(0,Math.min(planet==='சூரியன்'?120:60,virupa*(planet==='சூரியன்'?2:1)));
 }
-function sputaDrishti(angle, aspector){
-  const a=norm360(angle);
-  let s=0;
-  if(a<30||a>330) s=0;
-  else if(aspector==='சனி'){
-    if(a<60) s=(a-30)*2;
-    else if(a<90) s=120-a;
-    else if(a<120) s=90-a/2;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<240) s=150-a/2;
-    else if(a<270) s=a-210;
-    else if(a<300) s=600-2*a;
-  } else if(aspector==='செவ்வாய்'){
-    if(a<60) s=a/2-15;
-    else if(a<90) s=1.5*a-75;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<210) s=150-a/2;
-    else if(a<240) s=270-a;
-    else if(a<300) s=150-a/2;
-  } else if(aspector==='குரு'){
-    if(a<60) s=a/2-15;
-    else if(a<90) s=a-45;
-    else if(a<120) s=a/2;
-    else if(a<150) s=180-a;
-    else if(a<180) s=2*a-300;
-    else if(a<210) s=150-a/2;
-    else if(a<240) s=a-150;
-    else if(a<270) s=300-a;
-    else if(a<300) s=150-a/2;
-  } else {
-    if(a<60) s=(a-30)/2;
-    else if(a<90) s=a-45;
-    else if(a<120) s=30+(120-a)/2;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<300) s=(300-a)/2;
-  }
-  return Math.max(0,Math.min(60,s));
-}
+// BPHS Ch26 exact-degree Drishti is centralized in the book-oracled module.
+// No speed-bin or generic special-aspect heuristic is used here.
+const sputaDrishti=bphsSputaDrishtiVirupa;
+
 /**
  * UK Chapter II printed p.44: Moon's waxing phase and Mercury's conjunction
  * determine whether their Drishti contributes as benefic or malefic.
