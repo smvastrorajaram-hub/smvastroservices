@@ -8,11 +8,12 @@
  * Graha Pinda. Occupancy for Ekadhipatya may include Rahu/Ketu, while Pinda
  * must exclude those nodes (BPHS II Ch.69 example).
  *
- * Ch.68 English prose rule (1) has ambiguous wording; the worked
- * illustration shows results inconsistent with rule (1) for empty sign pairs.
- * This implementation deliberately follows the LITERAL BPHS Chapter 68
- * prose rule, and exposes the printed-illustration mismatch in tests.
- * No attempt is made to assert those mutually incompatible data as PASS.
+ * Co-owned reductions use the independently explained cases in P.V.R.
+ * Narasimha Rao, Vedic Astrology: An Integrated Approach, §12.7.2.
+ * Santhanam BPHS II Ch. 68 has an internally inconsistent worked diagram;
+ * its unresolvable illustration does NOT override the source rule and is
+ * recorded separately in tests. Unspecified equal-value/one-occupied
+ * convention is retained but not claimed book-certified.
  */
 export const RASI_MULTIPLIERS=Object.freeze([7,10,8,4,10,6,7,8,9,5,11,12]);
 export const GRAHA_MULTIPLIERS=Object.freeze({
@@ -70,8 +71,14 @@ export function ekadhipatyaShodhana(trikonaRow,occupiedSigns){
     else {out[a]=least;out[b]=least;rule='both-empty-book-prose-minimum';}
    }else{
     const inhabited=occA?a:b,empty=occA?b:a;
-    out[empty]=out[empty]>out[inhabited]?out[empty]-out[inhabited]:0;
-    rule='one-occupied-reduce-empty';
+    // P. V. R. Narasimha Rao, Vedic Astrology: An Integrated Approach,
+    // §12.7.2 rule (3a/3b), PDF pp. 170–171:
+    // when the empty sign has more rekhas, REPLACE with the number in
+    // the occupied sign. Never subtract (e.g., empty 5, occupied 2 => 2).
+    // The book does not explicitly specify the equal-value one-occupied
+    // case; retain the historical zero convention pending source evidence.
+    out[empty]=out[empty]>out[inhabited]?out[inhabited]:0;
+    rule='one-occupied-replace-empty';
    }
   }
   trace.push({signs:[a,b],before,occupancy:[occA,occB],after:[out[a],out[b]],rule});
@@ -98,6 +105,6 @@ export function classicalShodhana(binduRow,occupiedSigns,grahaSigns){
  const trikona=trikonaShodhana(binduRow);
  const ekadhipatya=ekadhipatyaShodhana(trikona.values,occupiedSigns);
  return {trikona,ekadhipatya,pinda:pindaSadhana(ekadhipatya.values,grahaSigns),
-  certified:false,ruleConvention:'Santhanam BPHS II Chapter 68 literal prose (not contradictory illustration)',
-  note:'Numeric reduction follows explicit Ch.68 prose. Printed illustration and its planetary occupancy conflict with it; not connected to reports or fully certified'};
+  certified:false,ruleConvention:'BPHS II Ch68 literal prose, cross-checked with PVR §12.7.2 examples',
+  note:'Trikona/Ekadhipatya/Pinda book-numbered rules cross-checked, including occupied higher empty replacement. BPHS Ch68 printed illustration remains contradictory and the equal one-occupied case unspecified; not wired to reports'};
 }
