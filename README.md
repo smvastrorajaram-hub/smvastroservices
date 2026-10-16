@@ -84,6 +84,8 @@ The source includes Swiss Ephemeris resources and browser WebAssembly integratio
 
 Third-party notices and license files must remain with the deployed source where required. See `SWISSEPH_LICENSE_NOTICE.md` (including its consolidated third-party notices) and the Horoscope license directory.
 
+International birth-place coordinate-to-timezone selection uses a compact, CC0-1.0 dataset derived from [PhotoStructure's timezone lookup](https://github.com/photostructure/tz-lookup) (`public/horoscope/offline/places/tz-boundary-lookup.mjs`). Geographic boundaries are approximate; verify the IANA zone near borders. Historical DST offsets are computed from IANA rules at the **date and local time of birth**, not from a fixed summer/winter month table. The phone/browser timezone database should be kept updated.
+
 ## 5. Language behavior
 
 SMV HOROSCOPE and SMV CALENDAR support Tamil and English presentation. The intended design is to reuse already calculated data when only the display language changes. A language toggle must not be turned into a second astrology calculation, Firestore read loop or AI-generation request.

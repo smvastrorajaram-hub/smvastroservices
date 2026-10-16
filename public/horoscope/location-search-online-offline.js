@@ -6,6 +6,9 @@
   if(window.__smvSearchPlacesOnlineOffline)return;
   const scriptBase=new URL('.',document.currentScript?.src||new URL('./',location.href));
   const offlineUrl=new URL('offline/places/place-search.mjs',scriptBase).href;
+  const timezoneLookupUrl=new URL('offline/places/tz-boundary-lookup.mjs',scriptBase).href;
+  let timezoneLookupPromise;
+  const coordinateTimezone=()=>timezoneLookupPromise||(timezoneLookupPromise=import(timezoneLookupUrl).then(x=>x.timezoneFromCoordinates));
   const singleZone={in:'Asia/Kolkata',lk:'Asia/Colombo',np:'Asia/Kathmandu',bd:'Asia/Dhaka',sg:'Asia/Singapore',jp:'Asia/Tokyo',kr:'Asia/Seoul',th:'Asia/Bangkok',vn:'Asia/Ho_Chi_Minh',de:'Europe/Berlin',fr:'Europe/Paris',gb:'Europe/London',ie:'Europe/Dublin',it:'Europe/Rome',nl:'Europe/Amsterdam',be:'Europe/Brussels',ch:'Europe/Zurich',ae:'Asia/Dubai'};
   let nominatimNext=0; let nominatimQueue=Promise.resolve();
   async function requestOnline(url,signal){
@@ -33,7 +36,17 @@
         const r=await requestOnline(u,signal);
         if(r.ok){
           const rows=await r.json();
-          const out=rows.map(x=>({place:x.display_name||'',name:x.name||'',admin2:x.address?.state_district||x.address?.county||'',admin1:x.address?.state||'',country:x.address?.country||'India',latitude:Number(x.lat),longitude:Number(x.lon),timezone:singleZone[String(x.address?.country_code||'').toLowerCase()]||'',countryCode:String(x.address?.country_code||'').toUpperCase()})).filter(x=>x.place&&Number.isFinite(x.latitude)&&Number.isFinite(x.longitude));
+          // Resolve each selected city's IANA region by coordinates, not by its
+          // country's current offset. A country can have many zones / DST rules.
+          let tzlookup=null;
+          try{tzlookup=await coordinateTimezone();}catch(_e){/* user can provide a timezone */ }
+          const out=rows.map(x=>{
+            const latitude=Number(x.lat),longitude=Number(x.lon),code=String(x.address?.country_code||'').toLowerCase();
+            let zone='';
+            try{if(tzlookup&&Number.isFinite(latitude)&&Number.isFinite(longitude))zone=tzlookup(latitude,longitude);}catch(_e){}
+            if(code==='in')zone='Asia/Kolkata';
+            return {place:x.display_name||'',name:x.name||'',admin2:x.address?.state_district||x.address?.county||'',admin1:x.address?.state||'',country:x.address?.country||'',latitude,longitude,timezone:zone||singleZone[code]||'',countryCode:code.toUpperCase(),timezoneSource:zone?'coordinate-estimate':'country-default'};
+          }).filter(x=>x.place&&Number.isFinite(x.latitude)&&Number.isFinite(x.longitude));
           if(out.length){
             let combined=out;
             if(max>out.length){try{const mod=await offline();const local=await mod.searchPlaces(q,max);const seen=new Set(out.map(x=>String(x.place).toLowerCase()));combined=[...out,...local.filter(x=>{const key=String(x.place||'').toLowerCase();if(seen.has(key))return false;seen.add(key);return true;})].slice(0,max);}catch(_e){/* keep worldwide results without India offline data */}}

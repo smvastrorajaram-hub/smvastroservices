@@ -80,9 +80,11 @@ if(lat===''||lon===''){
       };
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime)throw new Error('Enter a valid birth time, for example 22:05 (10:05 PM).');
-      const birthZone=String($('englishBirthTimezone')?.value||'').trim();
-      if(!birthZone)throw new Error('Enter the IANA birth timezone (Area/City), especially for countries with several zones.');
-      const {offsetMinutesAt}=await import('./offline/places/timezone.mjs');
+      let birthZone=String($('englishBirthTimezone')?.value||'').trim();
+      const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
+      // If place was manually entered with coordinates, infer IANA zone,
+      // rather than applying the old Asia/Kolkata default worldwide.
+      if(!birthZone){birthZone=await approximateTimezoneAt(lat,lon);if($('englishBirthTimezone'))$('englishBirthTimezone').value=birthZone;}
       const historicalOffset=offsetMinutesAt(birthZone,date,normalizedTime);
       $('birthUtcOffset').value=String(historicalOffset/60);
       if(typeof window.__smvGenerateHoroscopeEngine!=='function')throw new Error('Horoscope engine is not ready. Please refresh the page.');

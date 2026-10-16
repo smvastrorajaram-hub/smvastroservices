@@ -40,3 +40,16 @@ export function offsetMinutesAt(timeZone,date,time){
  valid.sort((a,b)=>a.instant-b.instant);
  return valid[0].offset;
 }
+
+/** Coordinate-derived fallback for manual locations.
+ * This is an approximate geographic boundary lookup, not a DST calculation.
+ * Historical DST correction still happens in offsetMinutesAt(). */
+export async function approximateTimezoneAt(latitude,longitude){
+  if(latitude===null||latitude===undefined||String(latitude).trim()===''||longitude===null||longitude===undefined||String(longitude).trim()==='')
+    throw new RangeError('Latitude and longitude are required to find the time zone');
+  const lat=Number(latitude),lon=Number(longitude);
+  if(!Number.isFinite(lat)||lat < -90||lat > 90||!Number.isFinite(lon)||lon < -180||lon > 180)
+    throw new RangeError('Latitude or longitude outside supported range');
+  const {timezoneFromCoordinates}=await import('./tz-boundary-lookup.mjs');
+  return timezoneFromCoordinates(lat,lon);
+}
