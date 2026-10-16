@@ -41,14 +41,21 @@ function equation(mean,ucca,sizes,kind='sighra',mandaKarṇaConvention='common-p
   // Whole Manda absolute-koti subtraction is a SINGLE universal rule;
   // it matches ALL FIVE independent Caitanya worked-example outputs,
   // without fitting coefficients or choosing a rule planet by planet.
-  const num=radius*Math.sin(rad),
-        den=mandaAbs?1-Math.abs(signedKoti):1+sign*signedKoti;
+  const num=radius*Math.sin(rad);
+  // Sūrya Siddhānta II.39: the Manda arc is taken directly from
+  // (corrected epicycle / 360) * bhujajya; no Sighra-style Karṇa
+  // denominator belongs to this textual branch. Kept research-only;
+  // the historic natal/Bīja provenance is not thereby certified.
+  if(kind==='manda'&&mandaKarṇaConvention==='verse39-direct-jya')
+    return Object.freeze({degrees:Math.asin(Math.max(-1,Math.min(1,num)))/R,
+      paridhiDegrees:paridhi,kendraDegrees:k});
+  const den=mandaAbs?1-Math.abs(signedKoti):1+sign*signedKoti;
   if(den<=0||!Number.isFinite(den))throw new RangeError('Invalid circular epicycle geometry');
   return Object.freeze({degrees:Math.atan2(num,den)/R,paridhiDegrees:paridhi,kendraDegrees:k});
 }
 export function sauraFourPassTrueLongitude({planet,meanLongitude,mandocca,sheeghrocha,mandaKarṇaConvention='common-plus'}={}){
   const body=bodyOf(planet);
-  if(!['common-plus','alternate-minus','absolute-koti-minus'].includes(mandaKarṇaConvention))
+  if(!['common-plus','alternate-minus','absolute-koti-minus','verse39-direct-jya'].includes(mandaKarṇaConvention))
     throw new RangeError('Unknown Manda geometric denominator convention');
   if(![meanLongitude,mandocca,sheeghrocha].every(Number.isFinite))
     throw new TypeError('Three finite classical ecliptic longitudes required');
