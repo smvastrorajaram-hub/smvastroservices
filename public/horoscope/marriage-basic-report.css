@@ -199,3 +199,59 @@
  .mm-basic-report .mm-base-east>.mm-base-centerlabel{font-size:8pt!important}
  .mm-basic-report .mm-base-flag{font-size:5.5pt!important}
 }
+
+
+/* A single continuous result surface for the FULL marriage report.
+   Keep only semantic headings, table rules and true chart lines; no card-in-card
+   surfaces, shadows, outlines or separate colored blocks on screen or PDF. */
+.mm-v281-results{
+ background:#fff!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;outline:0!important;padding:0!important;
+}
+.mm-v281-results :is(
+ .mm-basic-report,.mm-base-person,.mm-person-result,.mm-facts,
+ .mm-facts>div,.mm-front-porutham,.mm-front-porutham-row,
+ .mm-front-dosha-summary,.mm-front-dosha-card,.mm-front-dosha-status,
+ .mm-base-identity,.mm-base-note,.mm-base-legend
+){
+ background:transparent!important;background-image:none!important;
+ border:0!important;border-radius:0!important;
+ box-shadow:none!important;outline:none!important;
+ max-width:100%;min-width:0;
+}
+.mm-v281-results :is(.mm-person-result,.mm-base-person){
+ display:block;box-sizing:border-box;padding:0!important;margin:12px 0 16px!important;
+}
+.mm-v281-results .mm-basic-report{
+ display:block;box-sizing:border-box;padding:0!important;margin:0!important;
+}
+.mm-v281-results .mm-front-dosha-card{
+ padding:5px 0!important;margin:5px 0!important;
+ break-inside:auto!important;
+}
+.mm-v281-results .mm-front-porutham-row{padding:5px 0!important}
+.mm-v281-results .mm-facts>div{padding:5px 0!important}
+.mm-v281-results .mm-base-scroll{
+ background:transparent!important;border:0!important;
+ box-shadow:none!important;
+}
+.mm-v281-results .mm-base-identity{
+ display:flex!important;gap:7px 14px!important;
+ padding:2px 0!important;margin:4px 0 10px!important;
+}
+@media print{
+ .mm-v281-results :is(
+  .mm-basic-report,.mm-base-person,.mm-person-result,
+  .mm-front-dosha-card,.mm-front-dosha-status,.mm-front-porutham,
+  .mm-front-porutham-row,.mm-facts,.mm-facts>div
+ ){
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  background:transparent!important;background-image:none!important;
+  outline:0!important;
+ }
+ .mm-v281-results :is(.mm-base-person,.mm-person-result){
+  padding:0!important;margin:2.5mm 0 4mm!important;
+  break-inside:auto!important;page-break-inside:auto!important;
+ }
+ .mm-v281-results .mm-basic-report{margin:0!important;padding:0!important}
+}
