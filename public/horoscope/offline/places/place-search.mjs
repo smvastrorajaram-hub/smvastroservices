@@ -7,13 +7,15 @@ const resultCache=new Map();
 // to the previous candidate set. This avoids rescanning multi-MB first-letter shards
 // on every keystroke without changing the first search or returned ranking.
 const prefixCandidates=new Map();
+const aliasCache=new WeakMap();
+function aliases(row){let a=aliasCache.get(row);if(!a){a=(row[8]||[]).map(norm).filter(Boolean);aliasCache.set(row,a);}return a;}
 const norm=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 async function mf(){if(manifest)return manifest;if(manifestFlight)return manifestFlight;manifestFlight=(async()=>{const r=await fetch(new URL('./india-manifest.json',import.meta.url));if(!r.ok)throw new Error('Offline India place database unavailable');return manifest=await r.json();})();try{return await manifestFlight;}finally{manifestFlight=null;}}
 function keyFor(n){const c=n[0]||'';if(c>='a'&&c<='z')return c;if(/[\u0B80-\u0BFF]/u.test(c))return'ta';return'other';}
 async function shard(k){if(cache.has(k))return cache.get(k);if(shardFlights.has(k))return shardFlights.get(k);const flight=(async()=>{const m=await mf(),x=m.shards[k];if(!x)return[];const r=await fetch(new URL('./india/'+x.file,import.meta.url));if(!r.ok)throw new Error('Offline India place shard unavailable');const rows=await r.json();cache.set(k,rows);return rows;})();shardFlights.set(k,flight);try{return await flight;}finally{shardFlights.delete(k);}}
 export async function searchPlaces(q,limit=12){
  const n=norm(q);if(n.length<2)return[];
- const max=Math.max(1,Math.min(50,Number(limit)||12));
+ const max=Math.max(1,Math.min(70,Number(limit)||12));
  const language=offlinePlaceLanguage();
  const cacheKey=n+'|'+max+'|'+language;
  if(resultCache.has(cacheKey))return resultCache.get(cacheKey);
@@ -23,8 +25,7 @@ export async function searchPlaces(q,limit=12){
  const matched=[];
  for(const x of source){
    let best=99;
-   for(const raw of x[8]||[]){
-     const a=norm(raw);
+   for(const a of aliases(x)){
      if(a===n){best=0;break}
      if(a.startsWith(n))best=Math.min(best,1);
      else if(a.includes(' '+n))best=Math.min(best,2);

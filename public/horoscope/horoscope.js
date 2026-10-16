@@ -2690,6 +2690,11 @@ if(lat===''||lon===''){
       }
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
+      const zone=String($('tamilBirthTimezone')?.value||$('tamilBirthPlace')?.dataset.timezone||'').trim();
+      if(!zone)throw new Error('பிறந்த இடத்தின் IANA நேர மண்டலத்தை குறிப்பிடவும்.');
+      const {offsetMinutesAt}=await import('./offline/places/timezone.mjs');
+      const historicalOffset=offsetMinutesAt(zone,date,normalizedTime);
+      if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang()});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
       // are calculated once later, after access/gating is resolved.

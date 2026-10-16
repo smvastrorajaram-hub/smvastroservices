@@ -12,14 +12,15 @@
     let timer=null,controller=null,lastQuery='';
     function clear(){list.innerHTML='';list.classList.remove('show');}
     function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
-    function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);if($('birthUtcOffset'))$('birthUtcOffset').value='5.5';place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText('');}
+    function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);place.dataset.timezone=x.timezone||'';if($(prefix+'BirthTimezone'))$(prefix+'BirthTimezone').value=x.timezone||'';place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText(x.timezone?'':text('Select the IANA time zone for this location before calculating.','கணக்கிடுவதற்கு முன் இந்த இடத்தின் IANA நேர மண்டலத்தைத் தேர்ந்தெடுக்கவும்.'),x.timezone?'':'err');}
     function render(items){clear();if(!items.length){statusText(text('No matching location found. Please type a little more.','பொருத்தமான இடம் கிடைக்கவில்லை. மேலும் சில எழுத்துகளை உள்ளிடவும்.'),'err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText(text('Select your exact place from the list.','பட்டியலிலிருந்து சரியான இடத்தைத் தேர்ந்தெடுக்கவும்.'),'');}
-    async function search(q){if(q.length<2){controller?.abort();controller=null;clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;controller?.abort();controller=new AbortController();statusText(text('Searching location…','இடம் தேடப்படுகிறது…'),'');try{if(typeof window.__smvSearchPlacesOnlineOffline!=='function')throw new Error('Location search module is not ready.');const rows=await window.__smvSearchPlacesOnlineOffline(q,50,controller.signal);render(rows);}catch(e){if(e?.name==='AbortError')return;clear();statusText(text('Location search is unavailable. Enter coordinates manually.','இடத் தேடல் கிடைக்கவில்லை. அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'),'err');}}
-    place.addEventListener('input',()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
+    async function search(q){if(q.length<2){controller?.abort();controller=null;clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;controller?.abort();controller=new AbortController();statusText(text('Searching location…','இடம் தேடப்படுகிறது…'),'');try{if(typeof window.__smvSearchPlacesOnlineOffline!=='function')throw new Error('Location search module is not ready.');const rows=await window.__smvSearchPlacesOnlineOffline(q,70,controller.signal);render(rows);}catch(e){if(e?.name==='AbortError')return;clear();statusText(text('Location search is unavailable. Enter coordinates manually.','இடத் தேடல் கிடைக்கவில்லை. அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'),'err');}}
+    place.addEventListener('input',()=>{place.dataset.locationSelected='0';place.dataset.timezone='';if($(prefix+'BirthTimezone'))$(prefix+'BirthTimezone').value='';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
     place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
     document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
   }
   setupLocation('english');
+  setupLocation('tamil');
   const text=(en,ta)=>document.documentElement.lang==='ta'?ta:en;
   let busy=false;
   window.__smvHoroscopeIsBusy=()=>busy||window.__smvSnapshotBusy;
@@ -48,7 +49,7 @@ if(lat===''||lon===''){
     // Its output is then translated into English; no second astronomical engine is introduced.
     const copy=(a,b)=>{if($(a)&&$(b))$(b).value=$(a).value;};
     copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');
-    const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;
+    const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;tplace.dataset.timezone=$('englishBirthTimezone')?.value||'';if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=tplace.dataset.timezone;
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
     busy=true;document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
     const englishResult=$('englishHoroscopeResult');
@@ -79,6 +80,11 @@ if(lat===''||lon===''){
       };
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime)throw new Error('Enter a valid birth time, for example 22:05 (10:05 PM).');
+      const birthZone=String($('englishBirthTimezone')?.value||'').trim();
+      if(!birthZone)throw new Error('Enter the IANA birth timezone (Area/City), especially for countries with several zones.');
+      const {offsetMinutesAt}=await import('./offline/places/timezone.mjs');
+      const historicalOffset=offsetMinutesAt(birthZone,date,normalizedTime);
+      $('birthUtcOffset').value=String(historicalOffset/60);
       if(typeof window.__smvGenerateHoroscopeEngine!=='function')throw new Error('Horoscope engine is not ready. Please refresh the page.');
       // ENGLISH FLOW REPAIR:
       // Do NOT start a second Advanced request against the Tamil DOM and do NOT copy

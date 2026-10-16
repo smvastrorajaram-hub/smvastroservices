@@ -61,7 +61,8 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
 <div><label class="small"><b>Latitude</b></label><input id="englishLat" max="90" min="-90" placeholder="e.g. 11.230000" step="0.000001" type="number"></div>
 <div><label class="small"><b>Longitude</b></label><input id="englishLon" max="180" min="-180" placeholder="e.g. 78.879997" step="0.000001" type="number"></div>
 <div class="smv-chart-style-choice"><label class="small" for="englishChartStyle"><b>Chart Style</b></label><select id="englishChartStyle" aria-label="Horoscope chart style"><option value="south">South Indian Chart</option><option value="north">North Indian Chart</option><option value="east">East Indian Chart</option></select></div>
-<div><label class="small"><b>Birth Time Zone (UTC Offset)</b></label><input id="birthUtcOffset" type="number" min="-12" max="14" step="0.25" value="5.5"><span class="small">Use the UTC offset that was in effect at the birth place on the birth date, including daylight saving when relevant.</span></div>
+<div><label class="small"><b>Birth Time Zone (IANA)</b></label><input id="englishBirthTimezone" type="text" value="Asia/Kolkata" placeholder="e.g. America/New_York" autocomplete="off"><span class="small">Automatically calculates historical DST from your birth date and local birth time. For multi-zone countries, verify the IANA zone.</span></div>
+<div><label class="small"><b>Calculated UTC Offset (hours)</b></label><input id="birthUtcOffset" type="number" min="-12" max="14" step="any" value="5.5"><span class="small">Calculated automatically for a valid IANA zone. During a repeated DST hour, verify the recorded offset.</span></div>
 </div>
 <div class="action-row">
 <button class="btn" id="generateEnglishHoroscope" type="button">Create Horoscope</button>
@@ -83,6 +84,7 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
 <div><label class="small"><b>அட்சரேகை (Latitude)</b></label><input id="tamilLat" max="90" min="-90" placeholder="எ.கா. 11.230000" step="0.000001" type="number"></div>
 <div class="smv-chart-style-choice"><label class="small" for="tamilChartStyle"><b>ஜாதகக் கட்ட அமைப்பு</b></label><select id="tamilChartStyle" aria-label="ஜாதகக் கட்ட அமைப்பு"><option value="south">தென் இந்தியக் கட்டம்</option><option value="north">வட இந்தியக் கட்டம்</option><option value="east">கிழக்கு இந்தியக் கட்டம்</option></select></div>
 <div><label class="small"><b>தீர்க்கரேகை (Longitude)</b></label><input id="tamilLon" max="180" min="-180" placeholder="எ.கா. 78.879997" step="0.000001" type="number"></div>
+<div><label class="small"><b>பிறந்த இட நேர மண்டலம் (IANA)</b></label><input id="tamilBirthTimezone" type="text" value="Asia/Kolkata" placeholder="எ.கா. Europe/London"><span class="small">பிறந்த தேதி, நேரத்திற்கு ஏற்ப DST தானாக கணக்கிடப்படும்.</span></div>
 </div>
 <div class="action-row">
 <button class="btn" id="generateTamilHoroscope" type="button">தமிழில் ஜாதகம் உருவாக்குக</button>
