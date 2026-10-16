@@ -1138,16 +1138,21 @@ else initFAQ();
 <script id="smv-v350-pages-only-links">
 (()=>{
  if(location.hostname!=='smvastroservices.pages.dev')return;
- const adjust=()=>{
-  for(const a of document.querySelectorAll('a[href]')){
+ const adjustLink=a=>{
    const raw=a.getAttribute('href');
-   if(!raw)continue;
+   if(!raw)return;
    const h='https://horoscope.smvastroservices.in/';
    const c='https://calendar.smvastroservices.in/';
-   if(raw.startsWith(h))a.setAttribute('href','/horoscope/'+raw.slice(h.length));
-   else if(raw.startsWith(c))a.setAttribute('href','/horoscope/calendar/'+raw.slice(c.length));
-  }
+   if(raw.startsWith(h)){
+    a.setAttribute('href','/horoscope/'+raw.slice(h.length));
+    a.removeAttribute('target'); // Keep within the installed SMV ASTRO Pages app.
+   }else if(raw.startsWith(c)){
+    a.setAttribute('href','/horoscope/calendar/'+raw.slice(c.length));
+    a.removeAttribute('target');
+   }
  };
+ const adjust=()=>document.querySelectorAll('a[href]').forEach(adjustLink);
+ document.addEventListener('click',e=>{const a=e.target.closest?.('a[href]');if(a)adjustLink(a);},true);
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',adjust,{once:true});
  else adjust();
 })();
