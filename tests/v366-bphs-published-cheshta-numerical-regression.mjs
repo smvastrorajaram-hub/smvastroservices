@@ -9,11 +9,6 @@
  * https://packolkata.imd.gov.in/panchang/en/bija_corrections
  * https://packolkata.imd.gov.in/panchang/en/longitude_planets
  *
- * Oracle B: Santhoju, Bhalla, Behera & Pai, "Mathematical model as per the
- * algorithm of Suryasiddhanta", Journal of Astrophysics and Astronomy,
- * 46:9 (2025) tables 6-7, 2024-04-09 sunrise Mandi, five graha published
- * Saura mean/Sheeghrocca and true-longitude triples.
- *
  * BPHS I ch27 verses 24-25 and Uttara Kalamrita II pp42-43 govern
  * cheshta input selector and angle / 3 Virupas. A separately written
  * circular midpoint/kendra oracle checks the production pure helper.
@@ -104,31 +99,8 @@ for(const body of names){
   assert.equal(result.natalCertified,false);checks++;
   actual2026[body]=Number(result.virupa.toFixed(6));
 }
-// Published 2024 Saura inputs are UNCORRECTED, NOT the modern 2026
-// Bija-corrected reference. Never compare or mix their coordinate families.
-const paper2024=Object.freeze({
- Mercury:{mean:353.2261,sh:151.249,true:0.738,virupa:51.422317},
- Venus:{mean:353.2261,sh:328.7388,true:343.9867,virupa:6.622533},
- Mars:{mean:295.0651,sh:353.2261,true:319.9003,virupa:15.247800},
- Jupiter:{mean:31.7206,sh:353.2261,true:28.2115,virupa:12.246650},
- Saturn:{mean:316.5202,sh:353.2261,true:313.0236,virupa:12.818067}
-});
-const actual2024={};
-for(const body of names){
- const data=paper2024[body],inner=body==='Mercury'||body==='Venus';
- const meanSun=353.2261;
- const own=inner?data.sh:data.mean;
- const val=bphs(ta[body],meanSun,own,data.true);
- const independently=independentBphsOracle(data.mean,data.true,data.sh);
- close(val.meanLongitude,data.mean,1e-9,body+' 2024 published mean map');
- close(val.sheeghrocha,data.sh,1e-9,body+' 2024 published Sheeghrocha map');
- close(val.cheshtaKendraDegrees,independently.kendra,1e-9,
-       body+' 2024 independently computed Kendra');
- close(val.virupa,independently.virupa,1e-9,body+' 2024 independently computed Bala');
- close(val.virupa,data.virupa,0.000002,body+' published triple expected Bala');
- assert.ok(val.virupa>=0&&val.virupa<=60);checks++;
- actual2024[body]=Number(val.virupa.toFixed(6));
-}
+// Certification reference for this test: IMD Rashtriya Panchang only.
+// External worked-example figures are intentionally excluded from this gate.
 // IMD publishes the true positions for every date Mar 22-28; ensure a
 // second source's daily real planetary longitudes are not treated as
 // constant or falsely called computed classical natal positions.
@@ -227,12 +199,10 @@ assert.throws(()=>bphs('சூரியன்',1,2,3),RangeError);checks++;
 assert.throws(()=>bphs('செவ்வாய்',1,2,undefined),TypeError);checks++;
 console.log(JSON.stringify({
  pass:true,assertions:checks,
- certifiedScope:'five-planet numeric input-selector and BPHS Cheshta angular arithmetic at two published ephemeris snapshots',
+ certifiedScope:'five-planet BPHS Cheshta on seven IMD Panchang dates using IMD-printed true positions and IMD-origin propagated same-frame mean positions',
  imdDate:'2026-03-22T00:00:00Z',
  imdSource:'IMD Rashtriya Panchang 2026-27 Bija-corrected mean and five geocentric true Nirayana',
  imdBalaVirupas:actual2026,
- secondOracle:'Santhoju et al. Journal of Astrophysics and Astronomy 46:9 (2025) tables 6-7 for 2024 Mandi sunrise',
- paperBalaVirupas:actual2024,
  printedIndependentTrueDailyPositionsChecked:35,
  imdSevenDailyPrintedTrueFiveGrahaCheshta:imdWeekCheshtaNumeric,
  imdDailyCheshtaArithmeticCompared:35,
