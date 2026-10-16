@@ -36,12 +36,13 @@ ok(!ta.includes('<script')&&!ta.includes('onclick=')&&!ta.includes('<style'),'Sn
 eq(values.length,2,'Transit independently calculated for both people');
 eq(values[0].utcOffsetMinutes,330,'India review-date offset 330');
 eq(values[1].utcOffsetMinutes,60,'London October-16 DST offset 60');
-eq(values[0].language,'ta','Tamil transit calculation');
+eq(values[0].language,'en','One language-neutral transit calculation per person');
 const en=await renderBasicMatching(charts[0],charts[1],{...opts,language:'en',brideStyle:'east',groomStyle:'north'});
 ok(en.includes('Marriage Matching — Basic Calculation Report'),'English title');
 ok(en.includes('mm-base-east')&&en.includes('mm-base-north'),'East and North combinations');
 ok(en.includes('Shadbala')&&en.includes('Sarvashtakavarga')&&en.includes('Nakshatra')&&en.includes('Bhukti'),'English labels');
 ok(!en.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'No Tamil title in English');
+eq(values.length,2,'TA and EN views reuse both earlier transit results without recomputation');
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const matching=read('public/horoscope/marriage-matching.js');
 for(const suffix of ['UtcOffset','ChartStyle']){
