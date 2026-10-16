@@ -48,14 +48,9 @@ function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[],natalPlanets=[]
   return i<0?String(raw||'').slice(0,3):(ta?['சூ','சந்','செ','பு','கு','சு','ச','ரா','கே']:['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'])[i];
  };
  const validAsc=Number.isInteger(lagnaSign)&&lagnaSign>=0&&lagnaSign<12;
- const natalStates=new Map((natalPlanets||[]).map(p=>[String(p?.name||p?.planet||''),p?.strength||{}]));
- const token=p=>{
-  const key=String(p?.name||p?.planet||'');
-  const st=p?.strength||natalStates.get(key)||{};
-  const retro=st.retrograde===true||(st.retrograde==null&&finite(p.speed)&&Number(p.speed)<-1e-7);
-  const combustion=st.combustion===true;
-  return {label:short(key),retro,combustion};
- };
+ // Charts only show compact planet names. Motion/combustion evidence is
+ // intentionally confined to natal, transit, and Bhava TABLE labels.
+ const token=p=>({label:short(String(p?.name||p?.planet||''))});
  const hSign=h=>{
   const d=bhavas?.[h-1];
   // Trust calculated Sripati Bhava-Madhya; never assume one Bhava per Rasi.
@@ -91,7 +86,7 @@ function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[],natalPlanets=[]
  }
  const cell=(position,tokens,identifier='')=>'<div class="mm-base-cell mm-base-pos-'+position+'">'+
   (identifier?'<span class="mm-base-index">'+esc(identifier)+'</span>':'')+
-  '<span class="mm-base-planets">'+tokens.map(v=>'<span class="mm-base-planet">'+esc(v.label)+(v.retro?'<sup class="mm-base-flag">'+(ta?'வ':'R')+'</sup>':'')+(v.combustion?'<sup class="mm-base-flag">'+(ta?'அ':'C')+'</sup>':'')+'</span>').join('')+'</span></div>';
+  '<span class="mm-base-planets">'+tokens.map(v=>'<span class="mm-base-planet">'+esc(v.label)+'</span>').join('')+'</span></div>';
  const kindCells=kind==='north'
   ?Array.from({length:12},(_,i)=>{
     const h=i+1,s=validAsc?(lagnaSign+i)%12:i;
@@ -131,25 +126,49 @@ function chartPlanetStatus(p,ta){
  return [retro===true?(ta?'வக்ரம்':'Retrograde'):retro===false?(ta?'நேர்கதி':'Direct'):'—',
   comb===true?(ta?'அஸ்தமனம்':'Combust'):comb===false?(ta?'இல்லை':'No'):'—'];
 }
+// The only places showing motion / combustion flags are the three
+// calculated position tables: natal Graha, selected-date transit and Bhava.
+function markedPlanetName(p,ta){
+ const base=name(p?.name??p?.planet,ta);
+ const status=p?.strength||p||{};
+ const retro=status.retrograde===true;
+ const combust=status.combustion===true;
+ const suffix=[retro?(ta?'வ':'R'):null,combust?(ta?'அ':'C'):null].filter(Boolean);
+ return suffix.length?base+' ('+suffix.join(',')+')':base;
+}
 function tablePlanetRows(ps,ta,lagna){
- let out=[];
- if(finite(lagna))out.push(tr([ta?'லக்னம்':'Ascendant',sign(signIndex(lagna),ta),val((lagna%30+30)%30,4),nak({longitude:lagna},ta),pada({longitude:lagna}),1,'—','—']));
- for(const p of ps||[])out.push(tr([name(p.name??p.planet,ta),finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),p.degree||val(((Number(p.longitude)||0)%30),4),nak(p,ta),pada(p),p.bhava??'—',...chartPlanetStatus(p,ta)]));
+ const out=[];
+ if(finite(lagna))out.push(tr([ta?'லக்னம்':'Ascendant',sign(signIndex(lagna),ta),val((lagna%30+30)%30,4),nak({longitude:lagna},ta),pada({longitude:lagna}),1]));
+ for(const p of ps||[]){
+  out.push(tr([markedPlanetName(p,ta),
+    finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),
+    p.degree||(finite(p.longitude)?val((Number(p.longitude)%30+30)%30,4):'—'),
+    nak(p,ta),pada(p),p.bhava??'—']));
+ }
  return out;
 }
-function dataBlock(chartResult,ta){
- const c=chartResult;
- const h=ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்','பாவம்','வக்ரம்','அஸ்தமனம்']:['Planet','Sign','Degree','Nakshatra','Pada','House','Motion','Combust'];
- const maandi=natalMaandi(c);
- return table(h,tablePlanetRows([...c.planets,...(maandi?[maandi]:[])],ta,c.lagna?.longitude));
+function dataBlock(c,ta,natal){
+ const columns=ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்','பாவம்']:['Planet','Sign','Degree','Nakshatra','Pada','House'];
+ return table(columns,tablePlanetRows(natal,ta,c.lagna?.longitude));
 }
-function houseTable(c,ta){
+function houseTable(c,ta,natal){
  const source=Array.isArray(c.bhavas)?c.bhavas:Array.isArray(c.bhavaDetails)?c.bhavaDetails:[];
- const byHouse=Array.from({length:12},(_,i)=>{
-  const h=i+1,detail=source[i]||{},occupants=(c.planets||[]).filter(p=>p.bhava===h).map(p=>name(p.name,ta)).join(', ');
-  return tr([h,detail.rasi?localizedSign(detail.rasi,ta):sign((signIndex(c.lagna?.longitude)+i)%12,ta),detail.arambha||detail.degree||'—',detail.madhya||'—',detail.antyaDegree||detail.antya||'—',occupants||'—']);
- });
- return table(ta?['பாவம்','ராசி','ஆரம்பம்','மத்திமம்','முடிவு','கிரகங்கள்']:['House','Sign','Start','Midpoint','End','Planets'],byHouse);
+ // Index people by calculated house ONCE. Do not recompute the mapping twelve times.
+ const byHouse=Array.from({length:12},()=>[]);
+ for(const p of natal||[]){
+  const h=Number(p?.bhava);
+  if(Number.isInteger(h)&&h>=1&&h<=12)byHouse[h-1].push(markedPlanetName(p,ta));
+ }
+ const rows=source.length===12?source:Array.from({length:12},(_,i)=>source[i]||{});
+ return table(ta?['பாவம்','ராசி','ஆரம்பம்','மத்திமம்','முடிவு','கிரகங்கள்']:['House','Sign','Start','Midpoint','End','Planets'],
+   rows.map((detail,i)=>tr([
+    i+1,
+    detail.rasi?localizedSign(detail.rasi,ta):finite(detail.madhyaLongitude)
+       ?sign(signIndex(detail.madhyaLongitude),ta)
+       :finite(c.lagna?.longitude)?sign((signIndex(c.lagna.longitude)+i)%12,ta):'—',
+    detail.arambha||detail.degree||'—',detail.madhya||'—',
+    detail.antyaDegree||detail.antya||'—',byHouse[i].join(', ')||'—'
+   ])));
 }
 function vargaFor(c,d){return (c?.advanced?.vargas||[]).find(x=>x.division==='D-'+d)||null;}
 function vargaTable(c,d,ta){
@@ -241,25 +260,25 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
    chart(ta?'பாவக் கட்டம்':'Bhava Chart',natal,ri,style,ta,'bhava',c.bhavas||c.bhavaDetails||[],native)+'</div>';
   const transitSection=trData?
    '<div class="mm-base-chart-row">'+chart((ta?'கோச்சாரக் கட்டம்':'Transit Chart')+' · '+ref,trData.planets,ri,style,ta,'transit')+'</div>'+
-   table(ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்']:['Planet','Sign','Degree','Nakshatra','Pada'],(trData.planets||[]).map(p=>tr([name(p.name,ta),finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),p.degree||'—',nak(p,ta),pada(p)]))):
+   table(ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்']:['Planet','Sign','Degree','Nakshatra','Pada'],(trData.planets||[]).map(p=>tr([markedPlanetName(p,ta),finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),p.degree||'—',nak(p,ta),pada(p)]))):
    '<p class="mm-base-unavailable">'+esc(transitError||title('Transit data unavailable','கோச்சாரத் தரவு கிடைக்கவில்லை',language))+'</p>';
   const panels=[
    charts,
-   '<p class="mm-base-legend">'+esc(ta?'வ — வக்ரம் · அ — அஸ்தமனம் · மா — மாந்தி':'R — Retrograde · C — Combust · Md — Maandi')+'</p>',
-   heading('Natal planetary positions with Nakshatra/Pada','பிறப்புக் கிரக நிலைகள் — நட்சத்திரம், பாதம்',language)+dataBlock(c,ta),
-   heading('Bhava / House Table','பாவ அட்டவணை',language)+houseTable(c,ta),
+   '<p class="mm-base-legend">'+esc(ta?'கிரக நிலை, கோச்சாரம், பாவ அட்டவணைகளில் மட்டும்: வ — வக்ரம் · அ — அஸ்தமனம்':'Position, transit and house tables only: R — Retrograde · C — Combust')+'</p>',
+   heading('Natal planetary positions with Nakshatra/Pada','பிறப்புக் கிரக நிலைகள் — நட்சத்திரம், பாதம்',language)+dataBlock(c,ta,natal),
+   heading('Bhava / House Table','பாவ அட்டவணை',language)+houseTable(c,ta,natal),
    ...[[2,'Hora','ஹோரா'],[7,'Saptamsa','சப்தாம்சம்'],[9,'Navamsa','நவாம்சம்'],[10,'Dasamsa','தசாம்சம்']].map(([d,en,tm])=>heading('D'+d+' — '+en+' · Nakshatra/Pada','D'+d+' — '+tm+' · நட்சத்திரம்/பாதம்',language)+vargaTable(c,d,ta)),
    heading('Bhinna and Sarvashtakavarga','பின்னாஷ்டகவர்க்கம் மற்றும் சர்வாஷ்டகவர்க்கம்',language)+ashtakavarga(c,ta),
    heading('Shadbala (seven classical planets)','ஷட்பலம் (ஏழு கிரகங்கள்)',language)+shadbala(c,ta),
    heading('Vimshottari Dasha / Bhukti — Next 15 Years','விம்சோத்தரி தசா / புக்தி — அடுத்த 15 ஆண்டுகள்',language)+dasha(c,ta,new Date().toISOString().slice(0,10)),
    heading('Gochara chart and positions','கோச்சாரக் கட்டம் மற்றும் கிரக நிலைகள்',language)+transitSection
   ];
-  sections.push('<section class="mm-base-person mm-person-result">'+miniPerson(c,who,ta)+panels.join('')+'</section>');
+  sections.push('<section class="mm-base-person">'+miniPerson(c,who,ta)+panels.join('')+'</section>');
  }
  const porutham=Array.isArray(poruthamRows)&&poruthamRows.length?
-  '<section class="mm-base-person mm-person-result">'+heading('Ten Nakshatra Porutham calculations','பத்து நட்சத்திரப் பொருத்தக் கணக்கீடுகள்',language)+
+  '<section class="mm-base-person">'+heading('Ten Nakshatra Porutham calculations','பத்து நட்சத்திரப் பொருத்தக் கணக்கீடுகள்',language)+
    table(ta?['பொருத்தம்','முடிவு','ஆதாரம்']:['Porutham','Result','Evidence'],poruthamRows.map(x=>tr([x[0],x[1]?title('Matches','பொருந்துகிறது',language):title('Does not match','பொருந்தவில்லை',language),x[2]||'—'])))+'</section>':'';
- return '<div class="mm-full-results mm-basic-report" data-report="calculation-only">'+
+ return '<div class="mm-basic-report" data-report="calculation-only">'+
  '<h2>'+esc(title('Marriage Matching — Basic Calculation Report','திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை',language))+'</h2>'+
  '<p class="mm-base-note">'+esc(title('Calculation data for both horoscopes; the two selected birthplaces use independent historical UTC offsets and the review-date transits use each location’s IANA timezone.','இருவரின் தனித்தனி பிறந்த இட நேர வேறுபாடுகளுடன் கணக்கிடப்பட்ட ஜாதகத் தரவுகள். தேர்ந்தெடுத்த கோச்சாரத் தேதிக்கும் அந்தந்த IANA நேர மண்டலம் பயன்படுத்தப்படுகிறது.',language))+'</p>'+
  sections.join('')+porutham+'</div>';
