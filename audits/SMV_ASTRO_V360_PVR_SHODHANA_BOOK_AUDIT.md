@@ -28,6 +28,10 @@
 - Example 43, Mercury's SoAV: Rasi Pinda **77** and Graha Pinda **75**, total **Sodhya Pinda 152**. All arithmetic is asserted from the PDF's numbered example.
 - New `tests/v360-pvr-shodhana-textbook-regression.mjs` also enumerates all 5 co-owned pairs, all positive bindu levels 1..8 and both/none/one occupied cases where the book states a rule; tests nonmutation and full end-to-end composition. Existing `tests/v357-bphs-shodhana-regression.mjs` previously enforced subtracting the occupied value (1,3 -> 1,2); corrected to replacement (1,3 -> 1,1).
 
+## Input BAV school — PVR §12.8 pp. 161–162
+
+The author contrasts Parasara's and Varahamihira's Moon/Venus contributor points. This matters directly because all subsequent reductions consume raw BAV. A companion oracle in the V360 numerical regression now checks the Parasara convention in five Perambalur natal charts: Moon from Moon's 9th **1**, Moon from Mars's 9th **0**, Moon from Jupiter's 2nd **1**, Moon from Jupiter's 12th **0**; Venus from Mars's 4th **1**, Venus from Mars's 5th **0**. Do not switch to Varahamihira rows without a user-approved change of calculation school.
+
 ## Explicit limitations
 - BPHS II (Santhanam) Chapter 68 printed diagram/prose conflict remains recorded. The PVR §12.7.2 prose gives an independent, clear algorithm consistent with the implemented literal co-owned-pair rule; it **does not retroactively reconcile** the other book's inconsistent diagram.
 - PVR §12.8 warns of three differences between Parasara and Varahamihira in Moon and Venus BAV tables, which can affect resulting Shodhya Pindas. This audit tests the **Parasara** book convention; no other school silently substituted.
