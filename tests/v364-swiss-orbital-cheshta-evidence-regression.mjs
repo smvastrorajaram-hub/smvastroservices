@@ -102,5 +102,5 @@ for(const p of exploreOut.planets){
  eq(p.natalCertified,false,'Research trial '+p.planet+' not a verified book mean');
  eq(p.sourceFrames.trueLongitude,'Swiss geocentric Lahiri sidereal','Research trial '+p.planet+' true longitude frame');
 }
-assert.throws(()=>explore({date:'invalid',time:'22:05',utcOffsetMinutes:330}),RangeError);n++;
+await assert.rejects(explore({date:'invalid',time:'22:05',utcOffsetMinutes:330}),RangeError);n++;
 console.log(JSON.stringify({pass:true,assertions:n,method:'read-only modern Swiss orbital elements verified against independent Moshier five Perambalur births; book five-planet BPHS+UK input selection',comparison:summaries,shadbalaClassicalCertified:false,liveCheshtaSource:'unchanged speed-based provisional',notes:['Modern orbital elements not classical mean/Sheeghrocha','PyJHora uses a different Ujjain-1900 mean-motion model under AGPL-3.0 and is NOT copied','BPHS true full numerical certification requires independently validated classical sidereal mean positions']}));
