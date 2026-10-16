@@ -86,6 +86,8 @@ jobs:
         run: node tests/v360-pvr-shodhana-textbook-regression.mjs
       - name: V357 BPHS positional Shadbala independent calculation oracle
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
+      - name: V361 Uttara Kalamrita seven-planet Shadbala p45, Yuddha and Drig QA
+        run: node tests/v361-uttara-kalamrita-shadbala-regression.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
         run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
