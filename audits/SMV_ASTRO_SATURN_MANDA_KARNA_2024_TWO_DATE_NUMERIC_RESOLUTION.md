@@ -53,3 +53,42 @@ The Mars mismatch persists well above 3° for both separate dates under *all thr
 **PASS condition only for 5/5 external Caitanya worked example reproduction under the expressly selected universal Manda convention.** This is **not** sufficient to certify the true positions for all natal dates, nor all six Shadbala components. Full 25 historically independent traditional same-frame planetary oracles and source-consistent historical Bija/Mandocca parameters are unavailable. The academic paper's two Mars numerical mismatches remain. No release to live Shadbala and no `classicalCertified:true` until these gates are cleared. PR #14 remains DRAFT.
 
 The audit's accuracy claims are backed by the executable regression assertions and GitHub Actions results; do not describe a green test as a complete classical Shadbala certificate.
+
+
+## Independent inverse-Śīghra proof — specific first divergence
+
+**2025 journal article, based on received/accepted 2024 research:** Santhoju, Bhalla, Behera, Pai, *Journal of Astrophysics and Astronomy* **46:9**, Eq. (10),(11),(14)–(19), Table 5, Tables 6–7 p.16 and Table 9 p.19, DOI https://doi.org/10.1007/s12036-024-10018-8 . Public readable transcription: https://www.scribd.com/document/977832014/suryasiddhant .
+
+Reconstruction uses ONLY its published Mars means/śīghroccas and published epicycle limits 235° and 232°; it does not use the SMV Jya table, ephemerides or mandocca. For the two **positive** śīghra kendras (58–60°), the plus-karṇa branch of Sūrya Siddhānta II.40 and the paper's own equations imply, with k in degrees:
+
+\`\`\`text
+k = normalized(sheeghrocca - mean)
+P = 235 - (235 - 232) * |sin(k)|             [paper Eq. 11]
+q = P/360                                     [r/R, Eq. 14-15]
+B = q sin(k), K = q cos(k)                    [Eq. 16-17]
+D = sqrt((1+K)^2 + B^2)                       [Eq. 18]
+half-Sighra = asin(B/D)/2, degrees            [Eq. 19 + stage 1]
+\`\`\`
+
+| Printed 2024 example | 9 April | 13 April |
+|---|---:|---:|
+| Mean ° | 295.0651 | 297.5377 |
+| Śīghrocca ° | 353.2261 | 357.8763 |
+| Kendra ° | 58.1610 | 60.3386 |
+| Paper Eq. 11 P ° | 232.451398574 | 232.393104681 |
+| Dimensionless Bhuj B | 0.548542561 | 0.560948608 |
+| Dimensionless Koti K | 0.340627937 | 0.319458769 |
+| Dimensionless Karṇa D | 1.448510340 | 1.433748508 |
+| **Independent Eq. 19 half-Sighra °** | **11.126412978** | **11.516030896** |
+| Published/inferred half-Sighra ° | **11.684400** | **12.073400** |
+| Max possible half-Sighra if P = 235° | 11.208205301 | 11.603373786 |
+| **Inverse-implied P required for printed half °** | **250.250373195** | **249.398458075** |
+| Required P EXCEEDS the 235° published cap by ° | **15.250373195** | **14.398458075** |
+
+The required P is **calculated, not fitted** by inverting Eq. (19): for printed half h, let t=tan(2h). Then \`P=360t/(sin(k)−t cos(k))\`. Both values exceed the paper's maximum epicycle paridhi of 235°, so the displayed first-stage correction cannot be obtained from **all the paper's printed inputs and equations simultaneously**. Perturbing either printed four-decimal longitude by any ±0.00005° changes the computed half correction by <0.00004°, nowhere near the ≈0.55° gap. The independent continuous Eq. (19) result agrees with the SMV geometric model at ~machine precision and differs from printed 24-Jya interpolation by only 0.004352° / 0.009479°. This specifically excludes ordinary tabular interpolation and displayed-input rounding as root causes.
+
+**A second separately evidenced printed-stage issue:** on 9 April Table 7 Mars 318.4339° = 295.0651° + **2 × 11.6844°** even though Table 6 calls 11.6844° the **half** correction. On 13 April Table 9 only prints a first-stage longitude of 321.6845°, so the comparable 12.0734° half correction is **inferred** using the same double-half relationship, not independently reported as a half correction.
+
+**Decision:** The source's first correction trace is internally irreconcilable under its displayed equations/parameters. This is not proof of a specific publication implementation mistake, nor a proof of exact historical classical orbital positions for arbitrary dates. Do **not** change production formula to target the unreproducible printed values. Research-only diagnostics assert this impossibility and keep full-certification flags false. Existing five Perambalur DOB→25-planet research regression and BPHS seven-graha 35 arithmetic regression continue as separate gates; they are not same-frame external historical certification.
+
+**Executable source:** \`tests/saura-manda-karna-two-source-numerical-reconciliation.mjs\`; [source commit](https://github.com/smvastrorajaram-hub/smvastroservices/commit/8624e8f84d69da59a481accd06ac23225d41ff57), [GitHub QA run](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38980890434).
