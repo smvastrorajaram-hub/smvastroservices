@@ -3,6 +3,7 @@
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
+import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
 let swe=null;
 const C={SE_SUN:WC.SUN,SE_MOON:WC.MOON,SE_MERCURY:WC.MERCURY,SE_VENUS:WC.VENUS,SE_MARS:WC.MARS,SE_JUPITER:WC.JUPITER,SE_SATURN:WC.SATURN,SE_MEAN_NODE:WC.MEAN_NODE,SE_GREG_CAL:1,SE_SIDM_LAHIRI:1,SEFLG_SWIEPH:2,SEFLG_MOSEPH:4,SEFLG_SPEED:256,SEFLG_EQUATORIAL:2048,SEFLG_SIDEREAL:65536};
 async function ensureSwe(){
@@ -506,11 +507,46 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,limitations:[solarContext?.ephemerisBased?'Solar rise from Swiss solar-altitude model; weather, elevation and exact atmospheric refraction unavailable':'Fallback geometric sunrise approximation','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',solarTimeMethod:solarContext?.solarTimeMethod??'fallback approximate sunrise',birthApparentSolarHour:Number(sh.toFixed(7)),components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+}
+/**
+ * For the natal Shadbala temporal divisions, obtain Swiss Sun geocentric
+ * equatorial coordinates at the requested UTC instant. The public WASM
+ * provider exposes swe_calc(EQUATORIAL), but not swe_rise_trans; the separate
+ * BPHS solar module solves the apparent solar-altitude horizon numerically.
+ */
+function swissSunEquatorialAtUtcMs(utcMs){
+  const d=new Date(utcMs);
+  const r=swe.utc_to_jd(d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate(),
+    d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds()+d.getUTCMilliseconds()/1000,
+    C.SE_GREG_CAL);
+  fail(r,'V363 Sun UT to Julian date');
+  const q=swe.calc(r.data[0],C.SE_SUN,C.SEFLG_SWIEPH|C.SEFLG_EQUATORIAL);
+  fail(q,'V363 Sun equatorial position');
+  if(!Number.isFinite(q.data[1]))throw new RangeError('Swiss Sun declination missing');
+  return {jdUt:r.data[1],rightAscensionDegrees:q.data[0],declinationDegrees:q.data[1]};
+}
+function swissBirthKalaContext(birthInput){
+  if(!birthInput)return null;
+  const b=bphsSwissKalaContext({
+    date:birthInput.date,time:birthInput.time,latitude:birthInput.lat,
+    longitude:birthInput.lon,utcOffsetMinutes:birthInput.utcOffsetMinutes
+  },swissSunEquatorialAtUtcMs,traditionalAharganaLords);
+  if(!b)return null; // Polar no-event: do not invent Swiss solar events.
+  const horaLord=HORA_ORDER[(HORA_ORDER.indexOf(b.dinaLord)+b.horaStep)%7];
+  const tribhagaLord=(b.day?['புதன்','சூரியன்','சனி']:
+    ['சந்திரன்','சுக்கிரன்','செவ்வாய்'])[b.tribhagaIndex];
+  return {...b,weekday:VARA_LORDS.indexOf(b.dinaLord),horaLord,tribhagaLord};
 }
 function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
-  const temporal=birthInput?kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes):null;
+  let temporal=null;
+  if(birthInput){
+    // Preserve the older geometric approximation only if the Swiss-based
+    // altitude roots cannot be obtained; mark that fallback as provisional.
+    try{temporal=swissBirthKalaContext(birthInput);}catch{/* legacy fallback below */}
+    if(!temporal)temporal=kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes);
+  }
   const weekday=temporal?.weekday??((Math.floor(jdUt+1.5)%7)+7)%7;
   const declinations={};
   const eqFlags=(flags & ~(C.SEFLG_SIDEREAL||0)) | (C.SEFLG_EQUATORIAL||0);
@@ -518,7 +554,12 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
     if(!SHADBALA_REQUIRED[p.name]) continue;
     try{ const r=swe.calc(jdEt,PLANETS.find(x=>x[0]===p.name)?.[1]??C.SE_SUN,eqFlags); declinations[p.name]=Array.isArray(r?.data)&&Number.isFinite(Number(r.data[1]))?Number(r.data[1]):null; }catch{ declinations[p.name]=null; }
   }
-  const solarHour=localSolarHour(jdUt,longitude);
+  let solarHour=localSolarHour(jdUt,longitude);
+  try{
+    const q=swe.calc(jdEt,C.SE_SUN,eqFlags);
+    if(Array.isArray(q?.data)&&Number.isFinite(q.data[0]))
+      solarHour=bphsApparentSolarHour(jdUt,q.data[0],longitude);
+  }catch{/* legacy local mean-solar approximation if Swiss equatorial is unavailable */}
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
   const warEligibility=uttaraKalamritaGrahaYuddha(withHour);
   // First pass: all seven complete, pre-war BPHS Balas. The book explicitly
