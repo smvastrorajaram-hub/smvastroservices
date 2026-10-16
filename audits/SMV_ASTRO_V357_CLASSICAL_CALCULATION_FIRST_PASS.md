@@ -71,3 +71,21 @@ on actual five birth charts, the source corrections can be merged separately.
 - V358 compact UI/layout correction is now merged into main separately; V357 retains it by an explicit two-parent reconciliation commit on its **draft** branch only. This does NOT approve Classical calculations for production.
 
 **V357 completion state:** Classical source errors D16/D27/D30/D45 corrected in draft; independent Shodhana candidate added in draft; certification of numerical Shadbala, the 16 Vargas and five books in full, conditional remedies, 15-year output and matching narratives remains PENDING.
+
+
+## Verified CI acceptance — V357 draft head 35516b6 (2026-10-16)
+Source QA GitHub Actions run **38944587383**: COMPLETED / SUCCESS. See
+https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38944587383 .
+
+| Gate | Recorded result | Classical certification meaning |
+|---|---|---|
+| Source JS syntax | PASS | Parser acceptance only |
+| 799 Calculation regressions, 5 natal / 25 matching pairs | PASS | Historical behavior/invariants, not literary interpretations |
+| 403 structural assertions, five Perambalur births | PASS | Structure and BAV/SAV totals, not exhaustive reference cases |
+| BPHS I Varga boundary oracle | **19,026 assertions PASS** | D2/D3/D4/D7/D9/D10/D12/D16/D20/D24/D27/D30/D40/D45 sign-mapping boundaries; **not D60 nor all dignity logic** |
+| BPHS II Shodhana/Pinda | **161 assertions PASS**, five births × seven BAV rows | Confirms included Chapter 67/68/69 numeric worked examples including Pinda 100+48=148; exact editorial interpretations and live integration still pending |
+| V358 mobile/desktop Chromium shell geometry | PASS | No reported UI layout regressions in test fixture |
+| GeoNames/DST/UTC/print-source regression | PASS | Limited source tests, not global production scenario certification |
+
+**Do not merge this V357 draft solely on the basis of these checks.**
+Unverified areas: full exact Shadbala including hora/abda/yuddha, all D60 and other boundary variants, Raman's 12-Lagna functional-lordship interpretation and 12-house evidence, individualized 15-year Dasha/Gochara narrative, duplicate sentence elimination, detailed Marriage Matching verdict alignment and remedy source applicability. Live horoscope output and PDF page-by-page acceptance remain outstanding.
