@@ -308,3 +308,168 @@ body{position:relative}
   }
   #printReport :is(p,li){orphans:3;widows:3;}
 }
+
+
+/* V349 canonical cover styles: V331 approved layout + V348 A4/alignment.
+   Retain legacy version URLs on disk for cached PWA/browser compatibility. */
+/* V329 — accepted preview: Ganesha devotional art only; existing cover text, fields,
+   PDF content, calculation, payment, and HTML print pipeline are unchanged. */
+.smv-cover-v19 .smv-cover-frame{display:flex!important;flex-direction:column!important;align-items:center!important}
+.smv-cover-v19 .smv-cover-brand{order:1!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-rule{order:2!important;flex:0 0 auto;margin:3mm auto 1mm!important}
+.smv-cover-v19 .smv-cover-emblem{order:3!important;width:116mm!important;height:108mm!important;max-width:100%!important;margin:1mm auto 1.5mm!important;flex:0 0 auto!important;filter:none!important;z-index:2!important}
+.smv-cover-v19 .smv-cover-emblem img{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:108mm!important;object-fit:contain!important;border:0!important;background:transparent!important;border-radius:0!important;filter:none!important}
+.smv-cover-v19 .smv-cover-birth{order:4!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-seal-note{order:5!important;flex:0 0 auto}
+.smv-cover-v19 .smv-cover-contact{order:6!important}
+@media print{
+  .smv-cover-v19 .smv-cover-emblem{width:116mm!important;height:108mm!important;margin:1mm auto 1.5mm!important}
+  .smv-cover-v19 .smv-cover-emblem img{max-height:108mm!important}
+}
+@media screen and (max-width:720px){
+  .smv-cover-v19 .smv-cover-emblem{width:min(100%,390px)!important;height:auto!important;max-height:none!important}
+  .smv-cover-v19 .smv-cover-emblem img{height:auto!important;max-height:none!important}
+}
+
+/* SMV ASTRO V348 — V331 exact photo alignment for BOTH covers, A4 layout kept.
+ * Keeps the approved Vinayakar / Shiva-Parvati image files unchanged.
+ * Loaded AFTER report-cover-v331.css and report-print.css.
+ */
+@page { size: A4; margin: 14mm 10mm 14mm; }
+@page:first { size: A4; margin: 0; }
+
+/* Restore the EXACT accepted V331 optical shift on both original cover images. */
+#smvPrintCover.smv-vector-cover .smv-cover-emblem {
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  align-self:center!important;
+  left:auto!important;
+  right:auto!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  transform:none!important;
+}
+#smvPrintCover.smv-vector-cover .smv-cover-emblem img {
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  margin:0 auto!important;
+  transform:translateX(-1.8mm)!important;
+  transform-origin:center center!important;
+}
+/* Matching and Horoscope now share the SAME V331 image offset. */
+
+@media print {
+  html,body{margin:0!important;padding:0!important;overflow:visible!important}
+  .print-tools{display:none!important}
+  #smvPrintCover.smv-print-cover.smv-vector-cover {
+    page:auto!important;
+    position:relative!important;
+    display:block!important;
+    box-sizing:border-box!important;
+    width:210mm!important;
+    min-width:210mm!important;
+    max-width:210mm!important;
+    height:297mm!important;
+    min-height:297mm!important;
+    max-height:297mm!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+    break-inside:avoid!important;
+    break-after:page!important;
+    page-break-after:always!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #smvPrintCover.smv-print-cover.smv-vector-cover .smv-cover-frame {
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:100%!important;
+    padding:11mm 12mm 31mm!important;
+    margin:0!important;
+    overflow:hidden!important;
+    box-shadow:none!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-brand,
+  #smvPrintCover.smv-vector-cover .smv-cover-rule,
+  #smvPrintCover.smv-vector-cover .smv-cover-birth,
+  #smvPrintCover.smv-vector-cover .smv-cover-seal-note {
+    flex:0 0 auto!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-rule {margin:0 auto!important}
+  #smvPrintCover.smv-vector-cover .smv-cover-emblem {
+    box-sizing:border-box!important;
+    width:133mm!important;
+    height:122mm!important;
+    flex:0 0 122mm!important;
+    margin:0 auto!important;
+    filter:none!important;
+  }
+  #smvPrintCover.smv-vector-cover.smv-cover-matching .smv-cover-emblem {
+    width:122mm!important;
+    height:119mm!important;
+    flex-basis:119mm!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-seal-note {
+    margin:0 auto!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-contact {
+    position:absolute!important;
+    left:12mm!important;
+    right:12mm!important;
+    bottom:9mm!important;
+    width:auto!important;
+    margin:0!important;
+  }
+  /* The cover's break-after gives the only page break. */
+  #printReport {
+    page:auto!important;
+    width:100%!important;
+    max-width:184mm!important;
+    margin:0 auto!important;
+    break-before:auto!important;
+    page-break-before:auto!important;
+  }
+}
+@media screen and (max-width:720px) {
+  #smvPrintCover.smv-vector-cover,
+  #smvPrintCover.smv-vector-cover .smv-cover-frame {
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-emblem {
+    box-sizing:border-box!important;
+    width:min(100%,390px)!important;
+    height:auto!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-emblem img {
+    height:auto!important;
+    max-height:none!important;
+    transform:translateX(-6px)!important;
+  }
+  #smvPrintCover.smv-vector-cover .smv-cover-brand h1 {
+    font-size:clamp(21px,5.1vw,35px)!important;
+    line-height:1.12!important;
+    letter-spacing:0!important;
+    white-space:nowrap!important;
+  }
+}

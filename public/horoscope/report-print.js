@@ -33,6 +33,23 @@
    report?.identity?.place,report?.identity?.birth?.place,
    report?.calculation?.birthPlace,report?.calculation?.birth?.place,compact?.place);
  }
+ function safePdfFilenamePart(value,fallback){
+  const text=String(value??'').normalize('NFC')
+   .replace(/[\\/<>:"|?*\u0000-\u001f\u007f]/g,' ')
+   .replace(/\s+/g,' ').replace(/[. ]+$/g,'').trim().slice(0,85);
+  return text||fallback;
+ }
+ function reportPdfTitle(report){
+  if(report?.feature==='marriage_matching'){
+   const cb=report.cover?.bride||{},cg=report.cover?.groom||{};
+   const b=report.calculation?.bride||{},g=report.calculation?.groom||{};
+   const parts=String(report.name||'').split('/');
+   const female=cb.name||b.birthName||b.nativeName||parts[0]?.trim();
+   const male=cg.name||g.birthName||g.nativeName||parts[1]?.trim();
+   return 'SMVMM-'+safePdfFilenamePart(male,'Male')+'-'+safePdfFilenamePart(female,'Female');
+  }
+  return 'SMVHS - '+safePdfFilenamePart(report?.name||report?.cover?.person?.name,'Horoscope');
+ }
  function addCoverPerson(grid,title,name,date,time,place,tamil){
   const card=document.createElement('article');card.className='smv-cover-person';
   const h=document.createElement('h2');h.textContent=(title?title+' · ':'')+(name||'—');card.append(h);
@@ -42,6 +59,17 @@
  function populatePremiumCover(report,root,tamil){
   const grid=document.getElementById('smvCoverBirthGrid'),title=document.getElementById('smvCoverReportTitle'),primary=document.getElementById('smvCoverPrimaryName'),sub=document.getElementById('smvCoverSubtitle');if(!grid||!title||!primary||!sub)return;
   grid.replaceChildren();
+  const matching=report.feature==='marriage_matching';
+  grid.classList.toggle('is-single',!matching);
+  const cover=document.getElementById('smvPrintCover');
+  const emblem=cover?.querySelector('.smv-cover-emblem img');
+  cover?.classList.toggle('smv-cover-matching',matching);
+  if(emblem){
+   emblem.src=matching?'assets/smv-marriage-shiva-parvati-v338.webp':'assets/smv-ganesha-approved-v329.webp';
+   emblem.alt=matching?'Lord Shiva and Goddess Parvati with divine wedding blessings':'Sri Vinayagar';
+   emblem.width=matching?760:966;emblem.height=matching?760:874;
+   emblem.style.removeProperty('transform');
+  }
   if(report.feature==='marriage_matching'){
    title.textContent=tamil?'திருமணப் பொருத்த அறிக்கை':'Marriage Matching Report';sub.textContent=tamil?'இரு ஜாதக வேத ஜோதிட பொருத்த ஆய்வு':'Two-chart Vedic compatibility analysis';
    const cb=report.cover?.bride||{},cg=report.cover?.groom||{},b=report.calculation?.bride||{},g=report.calculation?.groom||{};
@@ -50,7 +78,7 @@
    addCoverPerson(grid,tamil?'ஆண்':'Groom',gn,coverDate(cg.date||g.birth?.date||g.birthDate,tamil),cg.time||g.birth?.time||g.birthTime||'—',cg.place||g.birthPlace||g.birth?.place||'—',tamil);
    primary.textContent=`${bn}  ×  ${gn}`;
   }else{
-   title.textContent='Sri Maduraveerayah Horoscope';sub.textContent=tamil?'முழு வேத ஜோதிட வாழ்க்கைப் பலன்':'Complete Vedic life-prediction report';grid.classList.add('is-single');
+   title.textContent='Sri Maduraveerayah Horoscope';sub.textContent=tamil?'முழு வேத ஜோதிட வாழ்க்கைப் பலன்':'Complete Vedic life-prediction report';
    const compact=compactBirthFromReport(root,tamil),id=report.identity||{};
    addCoverPerson(grid,'',report.name||'Horoscope',compact?.date||coverDate(id.date,tamil),compact?.time||id.time||'—',horoscopePrintPlace(report,compact)||'—',tamil);primary.textContent=report.name||'SMV HOROSCOPE';
   }
@@ -83,6 +111,7 @@
   // Omit Section X on view/print without rewriting a customer's existing saved record.
   if(report.feature==='advanced_analysis')root.querySelectorAll('.integrated-predictions,.smv-advanced-quick-card[data-smv-target="integrated-predictions"]').forEach(e=>e.remove());
   populatePremiumCover(report,root,tamil);
+  document.title=reportPdfTitle(report);
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());
   root.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['href','xlink:href','srcset','action','formaction','contenteditable'].includes(a.name))e.removeAttribute(a.name);});
   // Human-reading-first print/PDF: optional technical evidence stays available on screen but is not expanded into the printed report.
@@ -160,7 +189,9 @@
   root.querySelectorAll('div,section,p').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.south-indian-chart')){if(!e.children.length)e.remove();}});
   await document.fonts.ready;
   await Promise.all([...document.images].map(i=>i.decode?.().catch(()=>{})));
-  button.disabled=false;button.onclick=()=>window.print();
+  button.disabled=false;
+  window.addEventListener('beforeprint',()=>{document.title=reportPdfTitle(report);});
+  button.onclick=()=>{document.title=reportPdfTitle(report);window.print();};
   status.textContent=tamil?'இந்த அறிக்கை browser-லேயே தயாராக உள்ளது. PDF ஆக சேமிக்க “அச்சிட / PDF சேமிக்க” என்பதை பயன்படுத்தவும்.':'This report is ready locally. Use Print / Save as PDF to create the PDF on this device.';
   // Download/Print buttons intentionally use the browser's native PDF path. No server, Cloudinary, or PDF upload.
   if(mode==='download'||mode==='print')setTimeout(()=>window.print(),250);
