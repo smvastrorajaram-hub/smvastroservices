@@ -3,7 +3,7 @@
  * and the selected-date offline transit calculation. No invented values.
  * Output is static HTML suitable for the existing Save/Print snapshot pipeline.
  */
-import {vargaSign} from './offline/astro_advanced.browser.mjs';
+import {vargaSign,vargaLongitude} from './offline/astro_advanced.browser.mjs';
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
 const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
@@ -38,26 +38,39 @@ const title=(en,ta,lang)=>lang==='ta'?ta:en;
 const tr=(a)=>'<tr>'+a.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>';
 const table=(head,rows,extra='')=>'<div class="mm-base-scroll"><table class="mm-base-table '+extra+'"><thead><tr>'+head.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
 const heading=(en,ta,lang)=>'<h4>'+esc(title(en,ta,lang))+'</h4>';
-function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[]){
+function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[],natalPlanets=[]){
  const kind=safeStyle(style),bhava=mode==='bhava';
  const bySign=Array.from({length:12},()=>[]),byHouse=Array.from({length:12},()=>[]);
  const housesBySign=Array.from({length:12},()=>[]);
  const short=raw=>{
   const i=P_TA.findIndex((t,n)=>t===raw||P_EN[n].toLowerCase()===String(raw||'').toLowerCase());
-  return i<0?String(raw||'').slice(0,3):(ta?['சூ','சந்','செ','பு','கு','சுக்','சனி','ரா','கே']:['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'])[i];
+  if(['மாந்தி','Maandi','Mandi'].includes(raw))return ta?'மா':'Md';
+  return i<0?String(raw||'').slice(0,3):(ta?['சூ','சந்','செ','பு','கு','சு','ச','ரா','கே']:['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'])[i];
  };
  const validAsc=Number.isInteger(lagnaSign)&&lagnaSign>=0&&lagnaSign<12;
+ const natalStates=new Map((natalPlanets||[]).map(p=>[String(p?.name||p?.planet||''),p?.strength||{}]));
+ const token=p=>{
+  const key=String(p?.name||p?.planet||'');
+  const st=p?.strength||natalStates.get(key)||{};
+  const retro=st.retrograde===true||(st.retrograde==null&&finite(p.speed)&&Number(p.speed)<-1e-7);
+  const combustion=st.combustion===true;
+  return {label:short(key),retro,combustion};
+ };
  const hSign=h=>{
   const d=bhavas?.[h-1];
+  // Trust calculated Sripati Bhava-Madhya; never assume one Bhava per Rasi.
+  if(Number.isInteger(d?.rasiIndex)&&d.rasiIndex>=0&&d.rasiIndex<12)return d.rasiIndex;
   if(finite(d?.madhyaLongitude))return signIndex(d.madhyaLongitude);
+  const fromLabel=SIGNS_TA.findIndex((n,i)=>n===d?.rasi||SIGNS_EN[i].toLowerCase()===String(d?.rasi||'').toLowerCase());
+  if(fromLabel>=0)return fromLabel;
   return validAsc?(lagnaSign+h-1)%12:h-1;
  };
  if(bhava){
   for(let h=1;h<=12;h++)housesBySign[hSign(h)].push(h);
  }
  for(const p of planets||[]){
-  const code=short(p?.name??p?.planet);
-  if(!code)continue;
+  const code=token(p);
+  if(!code.label)continue;
   if(bhava){
    const h=Number(p?.bhava);
    if(Number.isInteger(h)&&h>=1&&h<=12){
@@ -70,22 +83,22 @@ function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[]){
  }
  if(validAsc){
   if(bhava){
-   byHouse[0].unshift(ta?'லக்':'As');
-   bySign[hSign(1)].unshift(ta?'லக்':'As');
+   byHouse[0].unshift({label:ta?'ல':'As'});
+   bySign[hSign(1)].unshift({label:ta?'ல':'As'});
   }else if(mode!=='transit'){
-   bySign[lagnaSign].unshift(ta?'லக்':'As');
+   bySign[lagnaSign].unshift({label:ta?'ல':'As'});
   }
  }
  const cell=(position,tokens,identifier='')=>'<div class="mm-base-cell mm-base-pos-'+position+'">'+
   (identifier?'<span class="mm-base-index">'+esc(identifier)+'</span>':'')+
-  '<span class="mm-base-planets">'+tokens.map(v=>'<span class="mm-base-planet">'+esc(v)+'</span>').join('')+'</span></div>';
+  '<span class="mm-base-planets">'+tokens.map(v=>'<span class="mm-base-planet">'+esc(v.label)+(v.retro?'<sup class="mm-base-flag">'+(ta?'வ':'R')+'</sup>':'')+(v.combustion?'<sup class="mm-base-flag">'+(ta?'அ':'C')+'</sup>':'')+'</span>').join('')+'</span></div>';
  const kindCells=kind==='north'
   ?Array.from({length:12},(_,i)=>{
     const h=i+1,s=validAsc?(lagnaSign+i)%12:i;
-    return cell(i,bhava?byHouse[i]:bySign[s],String(s+1));
+    return cell(i,bhava?byHouse[i]:bySign[s],String(bhava?h:s+1));
    }).join('')
   :Array.from({length:12},(_,i)=>{
-    const houseLabels=bhava?housesBySign[i].join(','):'';
+    const houseLabels=bhava?housesBySign[i].join('/'):(kind==='east'?String(i+1):'');
     return cell(i,bySign[i],houseLabels);
    }).join('');
  const southLines='M25 0V100 M75 0V100 M0 25H100 M0 75H100 M0 50H25 M75 50H100 M50 0V25 M50 75V100';
@@ -93,7 +106,8 @@ function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[]){
  const eastLines='M33.333 0V100 M66.667 0V100 M0 33.333H100 M0 66.667H100 M0 0L33.333 33.333 M66.667 33.333L100 0 M0 100L33.333 66.667 M66.667 66.667L100 100';
  const lines=kind==='south'?southLines:kind==='north'?northLines:eastLines;
  const svg='<svg class="mm-base-geometry" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x=".5" y=".5" width="99" height="99"/><path d="'+lines+'"/></svg>';
- return '<div class="mm-base-chart-wrap" data-chart-mode="'+esc(mode)+'"><h4>'+esc(caption)+'</h4><div class="mm-base-chart mm-base-'+kind+'" data-chart-style="'+kind+'">'+svg+kindCells+'</div></div>';
+ const middle=kind==='north'?'':'<div class="mm-base-centerlabel">'+esc(mode==='rasi'?(ta?'ராசி':'Rasi'):mode==='navamsa'?(ta?'நவாம்சம்':'Navamsa'):mode==='bhava'?(ta?'பாவம்':'Bhava'):(ta?'கோச்சாரம்':'Transit'))+'</div>';
+ return '<div class="mm-base-chart-wrap" data-chart-mode="'+esc(mode)+'"><h4>'+esc(caption)+'</h4><div class="mm-base-chart mm-base-'+kind+'" data-chart-style="'+kind+'">'+svg+kindCells+middle+'</div></div>';
 }
 function tablePlanetRows(ps,ta,lagna){
  let out=[];
