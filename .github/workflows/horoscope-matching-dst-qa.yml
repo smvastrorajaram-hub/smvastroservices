@@ -102,6 +102,8 @@ jobs:
         run: node tests/v367-saura-true-natal-certification-gate.mjs
       - name: V368 paper step forensic and 25 historical candidate versus Swiss, 35 Shadbala totals
         run: node tests/v368-published-stage-historical-shadbala-audit.mjs
+      - name: Classical five-graha DOB to True Longitude to Cheshta numeric engine
+        run: node tests/classical-five-graha-date-to-cheshta-engine.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
         run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
