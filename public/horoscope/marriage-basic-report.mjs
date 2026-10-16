@@ -114,13 +114,21 @@ function dasha(c,ta,ref){
  }
  return rows.length?table(ta?['தசா','கால வகை','புக்தி','தொடக்கம்','முடிவு']:['Dasha','Period','Bhukti','Start','End'],rows):'<p class="mm-base-unavailable">'+(ta?'இந்தக் கால எல்லையில் தசைத் தரவு கிடைக்கவில்லை':'No calculated Dasha periods in the selected window')+'</p>';
 }
+const TRANSIT_CACHE=new WeakMap();
 async function reviewTransit(c,ref,ta,engine){
  const zone=String(c.birthTimezone||'').trim();
  const lat=Number(c.birthLat),lon=Number(c.birthLon);
  if(!zone||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
  const offset=offsetMinutesAt(zone,ref,'12:00');
- const data=await engine({date:ref,time:'12:00',lat,lon,latitude:lat,longitude:lon,utcOffsetMinutes:offset,language:ta?'ta':'en'});
- return data?.planets?data:null;
+ const key=ref+'|'+zone+'|'+lat+'|'+lon+'|'+offset;
+ const cached=TRANSIT_CACHE.get(c);
+ if(cached?.key===key)return cached.data;
+ // Compute once per actual chart and review date. Bilingual views translate
+ // the unchanged numeric longitudes without a second Swiss calculation.
+ const data=await engine({date:ref,time:'12:00',lat,lon,latitude:lat,longitude:lon,utcOffsetMinutes:offset,language:'en'});
+ const verified=data?.planets?data:null;
+ if(verified)TRANSIT_CACHE.set(c,{key,data:verified});
+ return verified;
 }
 function miniPerson(c,person,ta){
  const info=(label,v)=>'<span><b>'+esc(label)+'</b> '+esc(v)+'</span>';
