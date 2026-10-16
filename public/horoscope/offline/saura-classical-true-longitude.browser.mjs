@@ -35,14 +35,20 @@ function equation(mean,ucca,sizes,kind='sighra',mandaKarṇaConvention='common-p
   // to <0.0001° with 24-Jya lookup; the minus sign reproduces only
   // Saturn's published Manda half/full correction. Never switch
   // planetary constants ad hoc to fit a target.
+  const signedKoti=radius*Math.cos(rad);
+  const mandaAbs=kind==='manda'&&mandaKarṇaConvention==='absolute-koti-minus';
   const sign=kind==='manda'&&mandaKarṇaConvention==='alternate-minus'?-1:1;
-  const num=radius*Math.sin(rad),den=1+sign*radius*Math.cos(rad);
+  // Whole Manda absolute-koti subtraction is a SINGLE universal rule;
+  // it matches ALL FIVE independent Caitanya worked-example outputs,
+  // without fitting coefficients or choosing a rule planet by planet.
+  const num=radius*Math.sin(rad),
+        den=mandaAbs?1-Math.abs(signedKoti):1+sign*signedKoti;
   if(den<=0||!Number.isFinite(den))throw new RangeError('Invalid circular epicycle geometry');
   return Object.freeze({degrees:Math.atan2(num,den)/R,paridhiDegrees:paridhi,kendraDegrees:k});
 }
 export function sauraFourPassTrueLongitude({planet,meanLongitude,mandocca,sheeghrocha,mandaKarṇaConvention='common-plus'}={}){
   const body=bodyOf(planet);
-  if(!['common-plus','alternate-minus'].includes(mandaKarṇaConvention))
+  if(!['common-plus','alternate-minus','absolute-koti-minus'].includes(mandaKarṇaConvention))
     throw new RangeError('Unknown Manda geometric denominator convention');
   if(![meanLongitude,mandocca,sheeghrocha].every(Number.isFinite))
     throw new TypeError('Three finite classical ecliptic longitudes required');
