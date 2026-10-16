@@ -127,6 +127,56 @@ for(const [date,time] of charts){
  }
  birthExpectedFromOfficial2026.push(row);
 }
+
+// The 2024 JAA paper prints TWO completely different event epochs:
+// sunrise of Apr 9 and start of Mesha Sankranti on Apr 13 (near midnight).
+// Its Table 6/9 SUN MEAN, used solely as a clock *locator*, permits a
+// non-solar cross-check of five independently published orbital mean values.
+// Do not pretend the event time was supplied as an independent timestamp.
+const published2024MeanOrbits=Object.freeze([
+ {date:'2024-04-09',event:'Mandi sunrise (Sun-mean inferred event clock)',
+  sunMean:353.2261,
+  other:{Mercury:151.2490,Venus:328.7388,Mars:295.0651,
+         Jupiter:31.7206,Saturn:316.5202}},
+ {date:'2024-04-13',event:'Mesha Sankranti (Sun-mean inferred event clock)',
+  sunMean:357.8763,
+  other:{Mercury:170.5581,Venus:336.2979,Mars:297.5377,
+         Jupiter:32.1126,Saturn:316.6780}}
+]);
+const published2024EpochReconstructions=[];
+for(const event of published2024MeanOrbits){
+ const base=Date.parse(event.date+'T00:00:00Z')/86400000+2440587.5;
+ const officialAtMidnight=independentFromPublished2026(base,'Sun');
+ const elapsedSun=circleSigned(event.sunMean,officialAtMidnight);
+ const inferredElapsedDays=elapsedSun/(rev.Sun*360/canonicalDays);
+ const inferredJd=base+inferredElapsedDays;
+ // April 9 sunrise about 01:03 UTC; April 13 Sankranti ~18:17 UTC.
+ // Both within their named IST date but the event clocks are *not equal*.
+ const inferredIstClockHours=inferredElapsedDays*24+5.5;
+ const row={date:event.date,event:event.event,
+  inferredUtcHoursAfterMidnight:+(inferredElapsedDays*24).toFixed(6),
+  inferredIstClockHours:+inferredIstClockHours.toFixed(6),
+  fiveNonSolarPublishedMeans:{}};
+ check(inferredIstClockHours>=0&&inferredIstClockHours<24,
+   event.date+' clock reconstructed from independent 2026 mean Sun on named IST date');
+ for(const [body,published] of Object.entries(event.other)){
+  const fromOfficial=independentFromPublished2026(inferredJd,body);
+  const signedErr=circleSigned(fromOfficial,published);
+  close(fromOfficial,published,.001,
+    event.date+' '+body+' published 2024 mean versus IMD 2026 independently-anchored mean');
+  row.fiveNonSolarPublishedMeans[body]={
+    paperMeanDegrees:published,official2026ProjectedDegrees:+fromOfficial.toFixed(6),
+    signedErrorDegrees:+signedErr.toFixed(6)
+  };
+ }
+ published2024EpochReconstructions.push(row);
+}
+check(published2024EpochReconstructions.length===2 &&
+  published2024EpochReconstructions.every(x=>Object.keys(x.fiveNonSolarPublishedMeans).length===5),
+ 'two external-paper epochs each include five independent non-solar printed orbital means');
+check(published2024EpochReconstructions[0].inferredIstClockHours<7 &&
+  published2024EpochReconstructions[1].inferredIstClockHours>23,
+ '2024 samples encode morning sunrise versus near-midnight Sankranti, not common 00:00 input');
 check(birthExpectedFromOfficial2026.length===5 &&
   birthExpectedFromOfficial2026.every(x=>Object.keys(x.planetOrbits).length===6),
   'five real birth UTC instants x six official-anchored mean orbit values');
