@@ -432,9 +432,10 @@ function compileV288(d,lang='ta',options={}) {
       :`There may also be a link with ${ctx[one.house-1]} ${focus[i]}. ${SECOND_LINK_EN[i]}`,i+1,{pass:2,source:'cross-house-link',relatedHouse:one.house,relation:one.links});}
   }
   // The life result is inferred from natal condition and adapted to the house.
-  addV(para,seen,textJoin(results[i][strength==='support'?0:strength==='pressure'?1:2],ta
-    ?`இந்த முடிவுகளைச் செயல்படுத்தும் போது ${signStyles[lord.sign]} உதவலாம்; ஆனால் அதே அணுகுமுறை எல்லா மனிதர்களுக்கும் பொருந்தும் என்று கருத வேண்டாம்.`
-    :`${signStyles[lord.sign]} may be useful here, provided it is adapted to the people and circumstances involved.`),i+1,{pass:2,source:'outcome-synthesis',strength,ruler:h.lord,rulerSign:lord.sign});
+  // Topic-specific result already reflects natal house score and planetary
+  // contacts. Do not append an identical generic qualification to all 12
+  // houses or repeat the rising-sign style in every house's conclusion.
+  addV(para,seen,results[i][strength==='support'?0:strength==='pressure'?1:2],i+1,{pass:2,source:'outcome-synthesis',strength,ruler:h.lord,rulerSign:lord.sign});
   // Physical care: concrete body significations, without fatalistic diagnoses.
   addV(para,seen,textJoin(bodyText[i],(ta?BODY_CONTEXT_TA:BODY_CONTEXT_EN)[lord.house-1],ta
     ?(strength==='pressure'?`வேலை அல்லது குடும்ப அழுத்தம் அதிகமாகும் போது இந்தப் பழக்கங்களைப் புறக்கணிக்க வேண்டாம்.`:strength==='support'?`சீரான அன்றாட ஒழுங்கைத் தொடர்வது உடல் வசதிக்கும் செயல்திறனுக்கும் உதவும்.`:`சூழலுக்கேற்ற ஓய்வு இடைவெளிகளை அமைத்துக் கொள்ளலாம்.`)

@@ -178,7 +178,7 @@ function enrichPhase2(planets,jdUt){
 // The six Bala framework follows the classical seven-graha model (Sun-Saturn).
 // Rahu/Ketu are intentionally excluded from the Shadbala total.
 const SHADBALA_REQUIRED = {
-  'சூரியன்':300, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
+  'சூரியன்':390, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
   'குரு':390, 'சுக்கிரன்':330, 'சனி':300
 };
 const SHADBALA_NATURAL = NATURAL_BALA;
@@ -242,13 +242,13 @@ function compoundRelation(p, other, rasiPositions){
   if(n==='enemy' && t==='enemy') return 'greatEnemy';
   return 'neutral';
 }
-function vargaDignityPoints(planet, sign, rasiPositions){
+export function vargaDignityPoints(planet, sign, rasiPositions){
   const lord=SIGN_LORDS[sign];
   const mt=MOOLOTRIKONA[planet];
   if(mt && mt.rasi===sign) return 45;
   if((OWN_SIGNS[planet]||[]).includes(sign)) return 30;
   const rel=compoundRelation(planet,lord,rasiPositions);
-  return {greatFriend:22.5,friend:15,neutral:7.5,enemy:3.75,greatEnemy:1.875}[rel] ?? 7.5;
+  return {greatFriend:20,friend:15,neutral:10,enemy:4,greatEnemy:2}[rel] ?? 10;
 }
 function ucchaBala(planet, lon){
   const deb=DEBILITATION[planet];
@@ -257,16 +257,16 @@ function ucchaBala(planet, lon){
   let d=norm360(lon-debLon); if(d>180) d=360-d;
   return Math.max(0,Math.min(60,d/3));
 }
-function sthanaClassical(planet, lon, house, rasiPositions){
+export function sthanaClassical(planet, lon, house, rasiPositions){
   const vargas=[1,2,3,7,9,12,30];
   const points={};
   points.uccha=ucchaBala(planet,lon);
   points.saptavargaja=vargas.reduce((sum,v)=>sum+vargaDignityPoints(planet,vargaSign(lon,v),rasiPositions),0);
   const d1=vargaSign(lon,1), d9=vargaSign(lon,9), g=PLANET_GENDER[planet];
-  points.ojayugma=((g==='female')?(d1%2===1?0:15):(d1%2===0?0:15)) + ((g==='female')?(d9%2===1?0:15):(d9%2===0?0:15));
+  points.ojayugma=((g==='female')?(d1%2===1?15:0):(d1%2===0?15:0)) + ((g==='female')?(d9%2===1?15:0):(d9%2===0?15:0));
   const h=Number(house); points.kendradi=[1,4,7,10].includes(h)?60:([2,5,8,11].includes(h)?30:15);
   const dec=Math.min(2,Math.floor((lon%30)/10));
-  points.drekkana=(g==='male'&&dec===0)||(g==='female'&&dec===2)||(g==='neutral'&&dec===1)?15:0;
+  points.drekkana=(g==='male'&&dec===0)||(g==='female'&&dec===1)||(g==='neutral'&&dec===2)?15:0;
   points.total=Object.values(points).reduce((a,b)=>a+b,0);
   return Object.fromEntries(Object.entries(points).map(([k,v])=>[k,Number(v.toFixed(3))]));
 }
@@ -290,11 +290,21 @@ function natonnatha(planet, solarHour){
   const dayStrength=60*(1-x);
   return diurnal?dayStrength:60-dayStrength;
 }
-function pakshaBala(planet, sunLon, moonLon){
+export function pakshaBala(planet, sunLon, moonLon, planets=[]){
   let d=norm360(moonLon-sunLon); if(d>180) d=360-d;
   const base=Math.min(60,d/3);
   if(planet==='சந்திரன்') return Math.min(120,base*2);
-  const benefic=['குரு','சுக்கிரன்','புதன்'].includes(planet);
+  // BPHS I Ch 27 Paksha Bala: Mercury is malefic when joined to a
+  // natural malefic. Keep the conjunction test sign-based, not an
+  // invented combustion orb. Nodes may influence conjunction despite
+  // being excluded from the seven-graha Shadbala totals.
+  const mercury=planets.find(p=>p.name==='புதன்');
+  const mercurySign=mercury?Math.floor(norm360(mercury.longitude)/30):null;
+  const joinedMalefic=planet==='புதன்' && mercurySign!==null && planets.some(p=>(
+    p.name!=='புதன்' && ['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'].includes(p.name)
+    && Math.floor(norm360(p.longitude)/30)===mercurySign
+  ));
+  const benefic=['குரு','சுக்கிரன்'].includes(planet)||(planet==='புதன்'&&!joinedMalefic);
   return benefic?base:60-base;
 }
 function tribhagaBala(planet, solarHour){
@@ -311,6 +321,48 @@ function horaLord(solarHour, weekday){
   let n=Math.floor(((solarHour-6+24)%24));
   return HORA_ORDER[(HORA_ORDER.indexOf(day)+n)%7];
 }
+// BPHS I (Santhanam) Ch27 pp.270-272: abbreviated Ahargana.
+ // Verified anchor: Jan 0 1984 = 65142 and June 1 1984 = 65295.
+ // The ruled day uses previous date before local sunrise.
+export function traditionalAharganaLords(date){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date));
+  if(!m)throw new RangeError('Ahargana requires YYYY-MM-DD');
+  const y=+m[1],mo=+m[2],d=+m[3];
+  const gregorian=new Date(0); gregorian.setUTCFullYear(y,mo-1,d);
+  const ms=gregorian.getTime();
+  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==date)
+    throw new RangeError('Invalid Ahargana calendar date');
+  const ahargana=65142+Math.round((ms-Date.UTC(1983,11,31))/86400000);
+  const ix=x=>((x%7)+7)%7;
+  // Book uses remainder 1=Sunday, 2=Monday, ... 6=Friday, 0=Saturday.
+  const lordFromBook=x=>VARA_LORDS[ix(x-1)];
+  return {ahargana,
+    abdaLord:lordFromBook(Math.floor(ahargana/360)*3+1),
+    masaLord:lordFromBook(Math.floor(ahargana/30)*2+1),
+    dinaLord:lordFromBook(ahargana)};
+}
+export function kalaDayFromSunrise(date,time,latitude,longitude,offsetMinutes){
+  const m=/^(\d{1,2}):(\d{2})$/.exec(String(time));
+  if(!m)throw new RangeError('Invalid birth hour for Kala Bala');
+  const minute=+m[1]*60+(+m[2]),rise=upgSolarRiseSet(date,latitude,longitude,offsetMinutes);
+  const previous=minute<rise.sunrise;
+  const baseDate=new Date(date+'T00:00:00Z');
+  if(previous)baseDate.setUTCDate(baseDate.getUTCDate()-1);
+  const owners=traditionalAharganaLords(baseDate.toISOString().slice(0,10));
+  const fromRise=((minute-rise.sunrise+1440)%1440);
+  const day=minute>=rise.sunrise&&minute<rise.sunset;
+  const daylight=Math.max(1,rise.sunset-rise.sunrise);
+  const nightlength=Math.max(1,1440-daylight);
+  const elapsed=day?minute-rise.sunrise:(minute>=rise.sunset?minute-rise.sunset:minute+1440-rise.sunset);
+  const sector=Math.min(2,Math.floor(3*elapsed/(day?daylight:nightlength)));
+  const tribhagaLord=(day?['புதன்','சூரியன்','சனி']:['சந்திரன்','சுக்கிரன்','செவ்வாய்'])[sector];
+  const horaStep=Math.min(23,Math.floor(fromRise/60));
+  const horaLord=HORA_ORDER[(HORA_ORDER.indexOf(owners.dinaLord)+horaStep)%7];
+  return {...owners,weekday:VARA_LORDS.indexOf(owners.dinaLord),horaLord,tribhagaLord,
+    sunriseMinutes:rise.sunrise,sunsetMinutes:rise.sunset,sunriseApprox:true,
+    solarCalendarDay:baseDate.toISOString().slice(0,10)};
+}
+
 function solarIngressLord(jdEt, targetSign, flags, useSwissFiles){
   // Find the most recent sidereal Sun ingress into targetSign, then use its weekday.
   let prev=null, curJd=jdEt;
@@ -324,13 +376,16 @@ function solarIngressLord(jdEt, targetSign, flags, useSwissFiles){
   const date=new Date((prev-2440587.5)*86400000);
   return date.getUTCDay();
 }
-function ayanaBala(decl, planet){
-  if(!Number.isFinite(decl)) return 30;
-  let v;
-  if(['சந்திரன்','சனி'].includes(planet)) v=(24-decl)*60/48;
-  else if(planet==='புதன்') v=(24+Math.abs(decl))*60/48;
-  else v=(24+decl)*60/48;
-  return Math.max(0,Math.min(60,v));
+export function ayanaBala(decl, planet){
+  // BPHS I Ch 27 v15-17: declination (Kranti) against 23°27'.
+  // The Sun's Ayana Bala is twice the other planets' formula.
+  // Do not substitute constant 24 degrees or cap the Sun at 60.
+  if(!Number.isFinite(decl)) return null;
+  const obliquity=23+27/60;
+  const signed=planet==='புதன்'?Math.abs(decl):
+    ['சந்திரன்','சனி'].includes(planet)?-decl:decl;
+  const virupa=(obliquity+signed)*60/(2*obliquity);
+  return Math.max(0,Math.min(planet==='சூரியன்'?120:60,virupa*(planet==='சூரியன்'?2:1)));
 }
 function sputaDrishti(angle, aspector){
   const a=norm360(angle);
@@ -386,7 +441,7 @@ function drikBalaClassical(planet, planets){
   }
   return pinda/4;
 }
-function motionClassical(planet, speed, state){
+export function motionClassical(planet, speed, state){
   if(planet==='சூரியன்'||planet==='சந்திரன்') return 0;
   const v=Math.abs(Number(speed)||0);
   if(state?.retrograde) return 60;
@@ -399,7 +454,7 @@ function motionClassical(planet, speed, state){
   if(ratio<1.6) return 45;
   return 30;
 }
-function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags){
+function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags, solarContext=null){
   const p=chartPlanets.find(x=>x.name===planet); if(!p) return null;
   const state=p.strength||{};
   const sth=sthanaClassical(planet,p.longitude,p.bhava,rasiPositions);
@@ -408,27 +463,28 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const sun=chartPlanets.find(x=>x.name==='சூரியன்'), moon=chartPlanets.find(x=>x.name==='சந்திரன்');
   const sh=Number(p._solarHour??solarHour);
   const nat=natonnatha(planet,sh);
-  const pak=pakshaBala(planet,sun.longitude,moon.longitude);
-  const tri=tribhagaBala(planet,sh);
-  const hLord=horaLord(sh,weekday);
+  const pak=pakshaBala(planet,sun.longitude,moon.longitude,chartPlanets);
+  const tri=solarContext?(solarContext.tribhagaLord===planet||planet==='குரு'?60:0):tribhagaBala(planet,sh);
+  const hLord=solarContext?.horaLord??horaLord(sh,weekday);
   const hora=hLord===planet?60:0;
   const vara=VARA_LORDS[weekday]===planet?45:0;
-  const masaLord=SIGN_LORDS[Math.floor(sun.longitude/30)];
+  const masaLord=solarContext?.masaLord??SIGN_LORDS[Math.floor(sun.longitude/30)];
   const masa=masaLord===planet?30:0;
-  const abda=planet==='சூரியன்'?15:0;
+  const abda=solarContext?.abdaLord===planet?15:0;
   const ayana=ayanaBala(declinations[planet],planet);
   const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha:0};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
-  const cheshta=motionClassical(planet,p.speed,state);
+  const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
   const naisargika=SHADBALA_NATURAL[planet];
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,method:'Parashari Shadbala Phase 3',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','Yuddha Bala not calculated','Remaining Drig and five-planet Cheshta require numeric textbook verification'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
-function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags){
+function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
-  const weekday=((Math.floor(jdUt+1.5)%7)+7)%7;
+  const temporal=birthInput?kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes):null;
+  const weekday=temporal?.weekday??((Math.floor(jdUt+1.5)%7)+7)%7;
   const declinations={};
   const eqFlags=(flags & ~(C.SEFLG_SIDEREAL||0)) | (C.SEFLG_EQUATORIAL||0);
   for(const p of planets){
@@ -437,7 +493,7 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags){
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
@@ -676,7 +732,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
   const enriched2=enrichPhase2(enriched0,jdUt);
-  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags);
+  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes});
   const d9Lagna=navamsa(ascLon);
   const moon=enriched.find(p=>p.name==='சந்திரன்');
   return {
