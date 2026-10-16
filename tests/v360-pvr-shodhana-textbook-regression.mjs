@@ -73,4 +73,29 @@ same(full.trikona.values,mercurySoAV,'PVR full chain Trikona');
 same(full.ekadhipatya.values,mercurySoAV,'PVR full chain Ekadhipatya');
 same(full.pinda.yogaPinda,152,'PVR full chain Sodhya Pinda');
 ok(full.certified===false,'Book numerical tests do not certify horoscope predictive correctness');
+// PVR §12.8 book pp. 161–162: Parasara vs Varahamihira differ
+// on THREE explicit Moon/Venus BAV reference cells. Confirm the
+// BAV feeding Shodhana uses the Parasara school selected by this book.
+const {full:computeNatal}=await import('../public/horoscope/offline/offline-engine.mjs');
+const baseDates=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
+const sourceRefs=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','லக்கினம்'];
+const modulo=x=>(x%12+12)%12;
+for(const [date,time] of baseDates){
+ const data=await computeNatal({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-16',name:'V360 Parasara school'});
+ assert.ok(data.ok&&data.advanced?.ashtakavarga?.bhinna);n++;
+ const positions=Object.fromEntries(data.chart.planets.map(p=>[p.name,Math.floor(modulo(p.longitude/30))]));
+ const moon=data.advanced.ashtakavarga.bhinna.find(p=>p.planet==='சந்திரன்');
+ const venus=data.advanced.ashtakavarga.bhinna.find(p=>p.planet==='சுக்கிரன்');
+ function rekha(row,ref,house) {
+   const sign=modulo(positions[ref]+house-1);
+   return row.prastara[sign][sourceRefs.indexOf(ref)];
+ }
+ same(rekha(moon,'சந்திரன்',9),1,'PVR §12.8 Parasara Moon BAV from Moon 9th');
+ same(rekha(moon,'செவ்வாய்',9),0,'PVR §12.8 Parasara Moon BAV from Mars 9th');
+ same(rekha(moon,'குரு',2),1,'PVR §12.8 Parasara Moon BAV from Jupiter 2nd');
+ same(rekha(moon,'குரு',12),0,'PVR §12.8 Parasara Moon BAV from Jupiter 12th');
+ same(rekha(venus,'செவ்வாய்',4),1,'PVR §12.8 Parasara Venus BAV from Mars 4th');
+ same(rekha(venus,'செவ்வாய்',5),0,'PVR §12.8 Parasara Venus BAV from Mars 5th');
+}
+
 console.log(JSON.stringify({pass:true,assertions:n,book:'P.V.R. Narasimha Rao Vedic Astrology: An Integrated Approach §12.7 pp157-160',workedExamples:[40,41,'42a','42b','42c','42d','42e',43],exactSodhyaPinda:152,testedPairs:5,independentPropertyCases:true,notCertified:['BPHS disputed diagram','one-occupied equal-value unspecified','full predictive interpretation']}));
