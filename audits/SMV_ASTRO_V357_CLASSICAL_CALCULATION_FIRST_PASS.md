@@ -1,4 +1,7 @@
 # SMV ASTRO V357 — Five-book classical calculation audit (first corrective pass)
+
+**LATEST STATUS — after user's renewed Chapter 68 request:** Chapter 68 Shodhana is NOW actively tested using the literal BPHS Chapter 68 English prose convention. The contradictory printed illustration is logged as unresolved. Improved Abda, Masa, Hora, Tribhaga, Ayana and Sun/Moon Cheshta have passed targeted tests, but FULL Shadbala certification is still blocked by non-Swiss-accurate sunrise, five-planet Cheshta, Drig and planetary Yuddha. Earlier "SKIPPED" statements below describe a superseded phase.
+
 Date: 2026-10-16
 Reference main commit: b4dbde7b793dc94cc7968c45cd9251001f5dd04e
 Status: **PARTIAL SOURCE CORRECTION — FULL CERTIFICATION NOT GRANTED**
@@ -188,3 +191,30 @@ References directly consulted: BPHS I, R. Santhanam, Chapter 6 printed pp. 83–
 | Chapter 68 Shodhana | User expressly requested SKIP. No tests executed; experimental module remains disconnected. | SKIPPED (not PASS) |
 
 Nothing in this audit authorizes declaring the remaining Five-Book engine FULL PASS. Classical changes stay only in draft PR #6, not merged into main. Retain V359 UI and all PWA/GeoNames/DST/Chart/Print/Save/Admin/Login/Payment behaviour. Before any merge, reconcile PR #6 with the newer main branch and perform real report/PDF/device acceptance.
+
+## Ninth pass — Chapter 68 resumed; Shadbala temporal and Cheshta audit
+
+### BPHS references (uploaded volumes)
+- Santhanam BPHS I Chapter 27, pp. 264–272 (Saptavargaja, Dig, Kala, Ahargana); p. 277 Ayana; pp. 284–285 Sun/Moon Cheshta, five-planet Cheshta and planetary war.
+- Santhanam BPHS II Chapters 67–69, pp. 867–880 (Trikona, Ekadhipatya, Rasi Pinda, Graha Pinda).
+
+### Chapter 68: explicit textual policy, printed contradiction
+Both unoccupied and unequal: formal printed RULE (1) says assign the smaller count to BOTH signs (2/1 -> 1/1). Equal empty dual-owned signs reduce both to zero. One-/both-occupied rules separately implemented. The book's imaginary diagram instead says Taurus2/Libra1 -> 2/0 and Sagittarius1/Pisces2 -> 0/1; it also places Jupiter in Gemini whereas following prose describes Gemini and Virgo as empty. These cannot be certified simultaneously. The module chooses the literal textual rule and returns certified:false, keeping the illustration conflict fully explicit.
+Shodhana tests are RESUMED on current V357 CI: 171 assertions covering 6 Chapter68 rule cases, Chapter67 and Chapter69 (Rasi 100 / Graha 48 / Yoga 148) numeric examples, nonmutation and seven BAVs on all five Perambalur charts. Source module remains disconnected from report pages; neither the contradictory illustration nor its interpretation is PASS.
+
+### Shadbala corrected in browser and Node Swiss engines
+- Sun required Shadbala **390 Virupas**, not 300 (book p. 286).
+- Ayana uses declination against **23°27′**, with Sun double-value up to 120 Virupas (p. 277).
+- Sun Cheshta = Sun Ayana; Moon Cheshta = Moon Paksha (p. 284).
+- Abda and Masa now use classic abbreviated Ahargana. Book June 1 1984: Ahargana 65295, Abda Jupiter, Masa Venus, Dina Venus. Sunrise-to-sunrise civil day, Hora and three day/night parts now depend on calculated local rise/set rather than a fixed 06:00 assumption.
+- Solar rise/set currently uses a geometric approximation, NOT a Swiss Ephemeris-grade exact sunrise computation. Report strength3 outputs explicitly label classicalCertified:false, provisional:true and list missing verifications. Implemented historical year 0001–0099 UTC parsing safely.
+- Targeted Abda/Masa/Sun/Moon tests: 254 checks PASS; previous Sthana 1635 and Mercury Paksha 20 checks remain passing.
+
+### Remaining blockers — FULL classical Shadbala FAIL / NOT CERTIFIED
+- Sunrise/sunset accuracy not independently checked against historical Swiss rise/transit, with high latitudes and historical offsets.
+- Mars/Mercury/Jupiter/Venus/Saturn Cheshta Kendra still uses approximate speed buckets, not independently verified true/mean longitude and Seeghrocha.
+- Drig Bala classical aspect magnitudes and benefic classification not fully book-verified across combinations.
+- Planetary-war victor, corrected score and comparison still absent (`yuddha` remains zero even where close planets could conflict).
+- Ahargana source is anchored to the printed abbreviated table, not an exhaustive cross-calendar source.
+
+**Merge policy:** The user's merge authorization applies to CI-tested incremental corrections. Never claim full Shadbala / full Shodhana printed-example reconciliation or five-book prediction certification. Preserve V359 responsive UI, GeoNames, DST, PWA, PDF, Admin/Login/Payment. Merge only after latest current-main PR CI is green and compatibility checked.
