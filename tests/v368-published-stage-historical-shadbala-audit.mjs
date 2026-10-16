@@ -32,6 +32,17 @@ const paper={
 const english=['Mercury','Venus','Mars','Jupiter','Saturn'];
 const tam={Mercury:'புதன்',Venus:'சுக்கிரன்',Mars:'செவ்வாய்',Jupiter:'குரு',Saturn:'சனி'};
 const swissBody={Mercury:C.MERCURY,Venus:C.VENUS,Mars:C.MARS,Jupiter:C.JUPITER,Saturn:C.SATURN};
+// Independently generated outside this JavaScript repository using
+// pyswisseph 2.10.03 (Moshier geocentric + Lahiri sidereal at TT).
+// Each sample instant is specified IST = UTC+05:30; 3 decimal deg resolution.
+// These validate the SWISS comparison independently, NOT the classical model.
+const modernIndependentMoshier=Object.freeze({
+ '1994-06-15':{Mars:22.797,Mercury:74.383,Jupiter:191.407,Venus:96.225,Saturn:318.569},
+ '2015-09-06':{Mars:113.991,Mercury:166.130,Jupiter:131.501,Venus:110.313,Saturn:215.176},
+ '1992-07-31':{Mars:39.561,Mercury:108.663,Jupiter:141.320,Venus:118.150,Saturn:291.879},
+ '1971-05-04':{Mars:276.597,Mercury:359.703,Jupiter:220.491,Venus:348.975,Saturn:30.734},
+ '1974-01-11':{Mars:13.111,Mercury:268.628,Jupiter:293.238,Venus:286.472,Saturn:66.230}
+});
 const inner=new Set(['Mercury','Venus']);
 let assertions=0;
 const published=[];
@@ -83,6 +94,8 @@ for(const [date,time] of births){
   const b=bphs(tam[planet],meanSun,own,c.trueLongitude);
   const modern=swe.calc(jd.et,swissBody[planet],swe.siderealSpeedFlags());
   const error=distance(c.trueLongitude,modern.longitude);
+  close(distance(modern.longitude,modernIndependentMoshier[date][planet]),0,0.10,
+        date+' '+planet+' Swiss-WASM versus independent pyswisseph/Moshier 2.10.03');
   A(Number.isFinite(modern.longitude)&&modern.longitude>=0&&modern.longitude<360,
     date+' '+planet+' independent Swiss true within circle');
   A(Number.isFinite(c.trueLongitude)&&b.virupa>=0&&b.virupa<=60,
