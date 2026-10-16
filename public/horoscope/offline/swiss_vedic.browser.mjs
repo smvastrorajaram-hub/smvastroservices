@@ -290,11 +290,21 @@ function natonnatha(planet, solarHour){
   const dayStrength=60*(1-x);
   return diurnal?dayStrength:60-dayStrength;
 }
-function pakshaBala(planet, sunLon, moonLon){
+export function pakshaBala(planet, sunLon, moonLon, planets=[]){
   let d=norm360(moonLon-sunLon); if(d>180) d=360-d;
   const base=Math.min(60,d/3);
   if(planet==='சந்திரன்') return Math.min(120,base*2);
-  const benefic=['குரு','சுக்கிரன்','புதன்'].includes(planet);
+  // BPHS I Ch 27 Paksha Bala: Mercury is malefic when joined to a
+  // natural malefic. Keep the conjunction test sign-based, not an
+  // invented combustion orb. Nodes may influence conjunction despite
+  // being excluded from the seven-graha Shadbala totals.
+  const mercury=planets.find(p=>p.name==='புதன்');
+  const mercurySign=mercury?Math.floor(norm360(mercury.longitude)/30):null;
+  const joinedMalefic=planet==='புதன்' && mercurySign!==null && planets.some(p=>(
+    p.name!=='புதன்' && ['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'].includes(p.name)
+    && Math.floor(norm360(p.longitude)/30)===mercurySign
+  ));
+  const benefic=['குரு','சுக்கிரன்'].includes(planet)||(planet==='புதன்'&&!joinedMalefic);
   return benefic?base:60-base;
 }
 function tribhagaBala(planet, solarHour){
@@ -408,7 +418,7 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const sun=chartPlanets.find(x=>x.name==='சூரியன்'), moon=chartPlanets.find(x=>x.name==='சந்திரன்');
   const sh=Number(p._solarHour??solarHour);
   const nat=natonnatha(planet,sh);
-  const pak=pakshaBala(planet,sun.longitude,moon.longitude);
+  const pak=pakshaBala(planet,sun.longitude,moon.longitude,chartPlanets);
   const tri=tribhagaBala(planet,sh);
   const hLord=horaLord(sh,weekday);
   const hora=hLord===planet?60:0;
