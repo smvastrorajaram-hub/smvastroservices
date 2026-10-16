@@ -82,6 +82,8 @@ jobs:
       # separately ASSERT conflicting illustration stays recorded.
       - name: BPHS II Chapters 67–69 Shodhana numeric & editorial tests
         run: node tests/v357-bphs-shodhana-regression.mjs
+      - name: V360 PVR textbook independent Shodhana numerical examples 40-43
+        run: node tests/v360-pvr-shodhana-textbook-regression.mjs
       - name: V357 BPHS positional Shadbala independent calculation oracle
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta

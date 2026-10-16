@@ -15,8 +15,8 @@ same(trikonaShodhana(sunRaw).values,sunTrikona,'Ch.67 Sun minimum subtraction');
 const exampleTrikona=[1,2,4,0,0,4,1,3,1,2,2,2];
 const occupied=[0,1,3,9];
 same(ekadhipatyaShodhana(exampleTrikona,occupied).values,
- [1,2,0,0,0,0,0,2,1,2,0,1],
- 'Ch68 literal prose: both unoccupied unequal become equal to smaller');
+ [1,2,0,0,0,0,0,1,1,2,0,1],
+ 'Ch68 + PVR rule3b: empty Scorpio3 follows occupied Aries1 -> Scorpio1');
 const chapter68Printed=[1,2,0,0,0,0,0,2,0,2,0,1];
 yes(JSON.stringify(chapter68Printed)!==JSON.stringify(ekadhipatyaShodhana(exampleTrikona,occupied).values),
     'Printed Chapter 68 illustration conflicts with prose, not certified as agreement');
@@ -28,7 +28,7 @@ function shodhanaPair(x,y,occupation){
 same(shodhanaPair(2,1,[]),[1,1],'Both empty with unequal bindus: rule (1)');
 same(shodhanaPair(4,4,[]),[0,0],'Both empty with equal bindus: rule (5)');
 same(shodhanaPair(2,1,[1]),[2,0],'Occupied > empty: keep occupied, zero empty');
-same(shodhanaPair(1,3,[1]),[1,2],'Occupied < empty: subtract occupied from empty');
+same(shodhanaPair(1,3,[1]),[1,1],'Occupied < empty: REPLACE empty with occupied (PVR §12.7.2 rule 3b)');
 same(shodhanaPair(2,1,[1,6]),[2,1],'Both occupied unchanged');
 same(shodhanaPair(2,0,[]),[2,0],'Existing zero bypasses reduction');
 
