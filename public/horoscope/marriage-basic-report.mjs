@@ -38,28 +38,62 @@ const title=(en,ta,lang)=>lang==='ta'?ta:en;
 const tr=(a)=>'<tr>'+a.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>';
 const table=(head,rows,extra='')=>'<div class="mm-base-scroll"><table class="mm-base-table '+extra+'"><thead><tr>'+head.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
 const heading=(en,ta,lang)=>'<h4>'+esc(title(en,ta,lang))+'</h4>';
-function chart(caption,planets,lagnaSign,style,ta,mode){
- const cells=Array.from({length:12},()=>[]);
+function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[]){
+ const kind=safeStyle(style),bhava=mode==='bhava';
+ const bySign=Array.from({length:12},()=>[]),byHouse=Array.from({length:12},()=>[]);
+ const housesBySign=Array.from({length:12},()=>[]);
+ const short=raw=>{
+  const i=P_TA.findIndex((t,n)=>t===raw||P_EN[n].toLowerCase()===String(raw||'').toLowerCase());
+  return i<0?String(raw||'').slice(0,3):(ta?['சூ','சந்','செ','பு','கு','சுக்','சனி','ரா','கே']:['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'])[i];
+ };
+ const validAsc=Number.isInteger(lagnaSign)&&lagnaSign>=0&&lagnaSign<12;
+ const hSign=h=>{
+  const d=bhavas?.[h-1];
+  if(finite(d?.madhyaLongitude))return signIndex(d.madhyaLongitude);
+  return validAsc?(lagnaSign+h-1)%12:h-1;
+ };
+ if(bhava){
+  for(let h=1;h<=12;h++)housesBySign[hSign(h)].push(h);
+ }
  for(const p of planets||[]){
-  if(!finite(p?.longitude)&&!finite(p?.bhava))continue;
-  const s=mode==='bhava'?Number(p.bhava)-1:signIndex(p.longitude);
-  if(s>=0&&s<12)cells[s].push(name(p.name??p.planet,ta));
+  const code=short(p?.name??p?.planet);
+  if(!code)continue;
+  if(bhava){
+   const h=Number(p?.bhava);
+   if(Number.isInteger(h)&&h>=1&&h<=12){
+    byHouse[h-1].push(code);
+    bySign[hSign(h)].push(code);
+   }
+  }else if(finite(p?.longitude)){
+   bySign[signIndex(p.longitude)].push(code);
+  }
  }
- if(mode!=='bhava'&&lagnaSign>=0&&lagnaSign<12)cells[lagnaSign].unshift(ta?'ல':'As');
- const cell=i=>'<div class="mm-base-cell mm-base-pos-'+i+'"><b>'+esc(mode==='bhava'?String(i+1):sign(i,ta))+'</b><span>'+esc(cells[i].join(' · ')||'—')+'</span></div>';
- const kind=safeStyle(style);
- let inner='';
- if(kind==='south'){
-  // The South chart always fixes the signs to their standard 4x4 positions.
-  inner=SOUTH.map(i=>i==null?'<div class="mm-base-center"></div>':cell(mode==='bhava'?((i-lagnaSign+12)%12):i)).join('');
- }else{
-  const slots=kind==='north'
-   ?Array.from({length:12},(_,h)=>mode==='bhava'?h:(h+Math.max(0,lagnaSign))%12)
-   :Array.from({length:12},(_,i)=>mode==='bhava'?((i-lagnaSign+12)%12):i);
-  inner=slots.map((s,i)=>cell(s).replace('mm-base-pos-'+s,'mm-base-pos-'+i)).join('');
+ if(validAsc){
+  if(bhava){
+   byHouse[0].unshift(ta?'லக்':'As');
+   bySign[hSign(1)].unshift(ta?'லக்':'As');
+  }else if(mode!=='transit'){
+   bySign[lagnaSign].unshift(ta?'லக்':'As');
+  }
  }
- const geometry=kind==='north'?'<svg class="mm-base-geometry" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x=".5" y=".5" width="99" height="99"/><path d="M0 0L100 100M100 0L0 100M50 0L100 50L50 100L0 50Z"/></svg>':kind==='east'?'<svg class="mm-base-geometry" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x=".5" y=".5" width="99" height="99"/><path d="M33.33 0V100M66.67 0V100M0 33.33H100M0 66.67H100M0 0L33.33 33.33M100 0L66.67 33.33M0 100L33.33 66.67M100 100L66.67 66.67"/></svg>':'';
- return '<div class="mm-base-chart-wrap"><h4>'+esc(caption)+'</h4><div class="mm-base-chart mm-base-'+kind+'">'+geometry+inner+'</div></div>';
+ const cell=(position,tokens,identifier='')=>'<div class="mm-base-cell mm-base-pos-'+position+'">'+
+  (identifier?'<span class="mm-base-index">'+esc(identifier)+'</span>':'')+
+  '<span class="mm-base-planets">'+tokens.map(v=>'<span class="mm-base-planet">'+esc(v)+'</span>').join('')+'</span></div>';
+ const kindCells=kind==='north'
+  ?Array.from({length:12},(_,i)=>{
+    const h=i+1,s=validAsc?(lagnaSign+i)%12:i;
+    return cell(i,bhava?byHouse[i]:bySign[s],String(s+1));
+   }).join('')
+  :Array.from({length:12},(_,i)=>{
+    const houseLabels=bhava?housesBySign[i].join(','):'';
+    return cell(i,bySign[i],houseLabels);
+   }).join('');
+ const southLines='M25 0V100 M75 0V100 M0 25H100 M0 75H100 M0 50H25 M75 50H100 M50 0V25 M50 75V100';
+ const northLines='M0 0L100 100 M100 0L0 100 M50 0L100 50L50 100L0 50Z';
+ const eastLines='M33.333 0V100 M66.667 0V100 M0 33.333H100 M0 66.667H100 M0 0L33.333 33.333 M66.667 33.333L100 0 M0 100L33.333 66.667 M66.667 66.667L100 100';
+ const lines=kind==='south'?southLines:kind==='north'?northLines:eastLines;
+ const svg='<svg class="mm-base-geometry" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x=".5" y=".5" width="99" height="99"/><path d="'+lines+'"/></svg>';
+ return '<div class="mm-base-chart-wrap" data-chart-mode="'+esc(mode)+'"><h4>'+esc(caption)+'</h4><div class="mm-base-chart mm-base-'+kind+'" data-chart-style="'+kind+'">'+svg+kindCells+'</div></div>';
 }
 function tablePlanetRows(ps,ta,lagna){
  let out=[];
@@ -153,9 +187,9 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
   const charts='<div class="mm-base-chart-row">'+
    chart(ta?'ராசிக் கட்டம் D1':'Rasi Chart D1',c.planets,ri,style,ta,'rasi')+
    (d9?chart(ta?'நவாம்சக் கட்டம் D9':'Navamsa Chart D9',d9.planets,d9ri,style,ta,'navamsa'):'')+
-   chart(ta?'பாவக் கட்டம்':'Bhava Chart',c.planets,ri,style,ta,'bhava')+'</div>';
+   chart(ta?'பாவக் கட்டம்':'Bhava Chart',c.planets,ri,style,ta,'bhava',c.bhavas||c.bhavaDetails||[])+'</div>';
   const transitSection=trData?
-   '<div class="mm-base-chart-row">'+chart((ta?'கோச்சாரக் கட்டம்':'Transit Chart')+' · '+ref,trData.planets,-1,style,ta,'transit')+'</div>'+
+   '<div class="mm-base-chart-row">'+chart((ta?'கோச்சாரக் கட்டம்':'Transit Chart')+' · '+ref,trData.planets,ri,style,ta,'transit')+'</div>'+
    table(ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்']:['Planet','Sign','Degree','Nakshatra','Pada'],(trData.planets||[]).map(p=>tr([name(p.name,ta),finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),p.degree||'—',nak(p,ta),pada(p)]))):
    '<p class="mm-base-unavailable">'+esc(transitError||title('Transit data unavailable','கோச்சாரத் தரவு கிடைக்கவில்லை',language))+'</p>';
   const panels=[
