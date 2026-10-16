@@ -242,13 +242,13 @@ function compoundRelation(p, other, rasiPositions){
   if(n==='enemy' && t==='enemy') return 'greatEnemy';
   return 'neutral';
 }
-function vargaDignityPoints(planet, sign, rasiPositions){
+export function vargaDignityPoints(planet, sign, rasiPositions){
   const lord=SIGN_LORDS[sign];
   const mt=MOOLOTRIKONA[planet];
   if(mt && mt.rasi===sign) return 45;
   if((OWN_SIGNS[planet]||[]).includes(sign)) return 30;
   const rel=compoundRelation(planet,lord,rasiPositions);
-  return {greatFriend:22.5,friend:15,neutral:7.5,enemy:3.75,greatEnemy:1.875}[rel] ?? 7.5;
+  return {greatFriend:20,friend:15,neutral:10,enemy:4,greatEnemy:2}[rel] ?? 10;
 }
 function ucchaBala(planet, lon){
   const deb=DEBILITATION[planet];
@@ -257,16 +257,16 @@ function ucchaBala(planet, lon){
   let d=norm360(lon-debLon); if(d>180) d=360-d;
   return Math.max(0,Math.min(60,d/3));
 }
-function sthanaClassical(planet, lon, house, rasiPositions){
+export function sthanaClassical(planet, lon, house, rasiPositions){
   const vargas=[1,2,3,7,9,12,30];
   const points={};
   points.uccha=ucchaBala(planet,lon);
   points.saptavargaja=vargas.reduce((sum,v)=>sum+vargaDignityPoints(planet,vargaSign(lon,v),rasiPositions),0);
   const d1=vargaSign(lon,1), d9=vargaSign(lon,9), g=PLANET_GENDER[planet];
-  points.ojayugma=((g==='female')?(d1%2===1?0:15):(d1%2===0?0:15)) + ((g==='female')?(d9%2===1?0:15):(d9%2===0?0:15));
+  points.ojayugma=((g==='female')?(d1%2===1?15:0):(d1%2===0?15:0)) + ((g==='female')?(d9%2===1?15:0):(d9%2===0?15:0));
   const h=Number(house); points.kendradi=[1,4,7,10].includes(h)?60:([2,5,8,11].includes(h)?30:15);
   const dec=Math.min(2,Math.floor((lon%30)/10));
-  points.drekkana=(g==='male'&&dec===0)||(g==='female'&&dec===2)||(g==='neutral'&&dec===1)?15:0;
+  points.drekkana=(g==='male'&&dec===0)||(g==='female'&&dec===1)||(g==='neutral'&&dec===2)?15:0;
   points.total=Object.values(points).reduce((a,b)=>a+b,0);
   return Object.fromEntries(Object.entries(points).map(([k,v])=>[k,Number(v.toFixed(3))]));
 }
