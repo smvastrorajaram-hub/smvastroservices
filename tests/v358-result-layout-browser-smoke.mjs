@@ -31,7 +31,7 @@ const html=[
 '<section class="mm-v281-topic-book"><h3>இரு ஜாதகங்களின் வாழ்க்கை ஆய்வு</h3>',
 '<div class="mm-v281-people"><section>பெண் ஜாதகம்</section><section>ஆண் ஜாதகம்</section></div></section>',
 '<div class="mm-basic-report"><div class="mm-base-scroll" style="max-width:100%;overflow-x:auto">',
-'<table class="mm-base-table" style="width:900px;min-width:900px"><tbody><tr>',
+'<table class="mm-base-table" style="width:900px!important;min-width:900px!important"><tbody><tr>',
 '<th>ராசி</th><td>சந்திரன்</td><td>செவ்வாய்</td><td>புதன்</td><td>சுக்கிரன்</td>',
 '</tr></tbody></table></div></div></div></div></section>',
 '</main></body></html>'
@@ -63,6 +63,7 @@ try{
    };
   });
   rows.push(r);
+  console.log('V358 geometry',JSON.stringify(r));
   assert.ok(r.documentWidth<=width+2,'Unexpected horizontal page overflow at '+width+': '+JSON.stringify(r));
   assert.ok(r.matching.x>=0&&r.matching.right<=width+1,'Both matching sides visible at '+width);
   assert.ok(r.matching.width>width*.82 || width>1000,'Matching is nearly full-width at '+width);
