@@ -129,8 +129,18 @@ function ashtakavarga(c,ta){
 function shadbala(c,ta){
  const ps=(c?.planets||[]).filter(p=>p?.strength3?.available);
  if(!ps.length)return '<p class="mm-base-unavailable">'+(ta?'கணக்கீட்டுத் தரவு கிடைக்கவில்லை':'Calculated data unavailable')+'</p>';
- const h=ta?['கிரகம்','ஸ்தான','திக்','கால','சேஷ்டா','நைசர்கிக','திருக்','மொத்த விரூபம்','ரூபம்','தேவை','விகிதம்']:['Planet','Sthana','Dig','Kala','Cheshta','Naisargika','Drik','Total Virupa','Rupa','Required','Ratio'];
- return table(h,ps.map(p=>{const x=p.strength3,a=x.components||{};return tr([name(p.name,ta),val(a.sthana?.total),val(a.dig),val(a.kala?.total),val(a.cheshta),val(a.naisargika),val(a.drik),val(x.totalVirupa),val(x.totalRupa,3),val(x.requiredVirupa),val(x.ratio,3)]);}));
+ const h1=ta?['கிரகம்','ஸ்தான','திக்','கால','சேஷ்டா','நைசர்கிக','திருக்']:['Planet','Sthana','Dig','Kala','Cheshta','Naisargika','Drik'];
+ const h2=ta?['கிரகம்','மொத்த விரூபம்','ரூபம்','தேவை','விகிதம்']:['Planet','Total Virupa','Rupa','Required','Ratio'];
+ const part1=ps.map(p=>{
+  const x=p.strength3,a=x.components||{};
+  return tr([name(p.name,ta),val(a.sthana?.total),val(a.dig),val(a.kala?.total),val(a.cheshta),val(a.naisargika),val(a.drik)]);
+ });
+ const part2=ps.map(p=>{
+  const x=p.strength3;
+  return tr([name(p.name,ta),val(x.totalVirupa),val(x.totalRupa,3),val(x.requiredVirupa),val(x.ratio,3)]);
+ });
+ // Two complete, aligned tables prevent single Tamil letters in 11 narrow columns.
+ return table(h1,part1,'mm-base-shad-components')+table(h2,part2,'mm-base-shad-total');
 }
 function dasha(c,ta,ref){
  const from=String(ref||new Date().toISOString().slice(0,10));
