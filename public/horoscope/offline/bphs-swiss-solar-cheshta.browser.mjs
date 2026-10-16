@@ -146,3 +146,33 @@ export function bphsCheshtaFromOrbitalElements(meanLongitude,trueLongitude,sheeg
     exactArithmeticGivenInputs:true,
     natalCertified:false,note:'Mean longitude and Sheeghrocha MUST come from independent, documented classical ephemerides'};
 }
+
+/**
+ * Uttara Kalamrita Chapter II, printed pp.42-43, explains the input
+ * SELECTION for BPHS I Ch27 vv24-25 five-graha Cheshta:
+ *   Mars/Jupiter/Saturn: own mean longitude, Sun mean as Sheeghrocha.
+ *   Mercury/Venus: Sun mean longitude, own mean as Sheeghrocha.
+ *
+ * The mean positions MUST already be computed using a validated classical
+ * sidereal mean-motion ephemeris. Do not feed Swiss heliocentric
+ * swe_get_orbital_elements() osculating means to this function.
+ * This function is independent of PyJHora's AGPL-3 code and uses the
+ * printed classical book rule only.
+ */
+export function bphsFivePlanetCheshtaFromClassicalMeans(planet,meanSun,meanPlanet,truePlanet){
+  const outer=['செவ்வாய்','குரு','சனி'];
+  const inner=['புதன்','சுக்கிரன்'];
+  if(!outer.includes(planet)&&!inner.includes(planet))
+    throw new RangeError('BPHS separate five-planet Cheshta excludes Sun, Moon, lunar nodes');
+  if(![meanSun,meanPlanet,truePlanet].every(finite))
+    throw new TypeError('Three finite longitudes in SAME classical sidereal frame required');
+  const outerPlanet=outer.includes(planet);
+  const meanLongitude=norm360(outerPlanet?meanPlanet:meanSun);
+  const sheeghrocha=norm360(outerPlanet?meanSun:meanPlanet);
+  const trueLongitude=norm360(truePlanet);
+  return {planet,meanLongitude,trueLongitude,sheeghrocha,
+    ...bphsCheshtaFromOrbitalElements(meanLongitude,trueLongitude,sheeghrocha),
+    inputSource:'validated classical sidereal mean-longitude inputs REQUIRED',
+    method:'BPHS Ch27 24-25; five-planet mean vs Sheeghrocha selection from Uttara Kalamrita II 42-43',
+    natalCertified:false};
+}
