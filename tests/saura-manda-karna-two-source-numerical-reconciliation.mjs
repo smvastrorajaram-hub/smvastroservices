@@ -184,6 +184,92 @@ const marsPaperRows=Object.freeze([
   printedStageLongitudes:[321.6845,309.4884,293.9943,323.7391],
   firstHalfSource:'inferred from Table 9; not independently printed'}
 ]);
+/*
+ * 2025 JAA printed-source equations, evaluated WITHOUT any production
+ * implementation, Jya table, interpolation or fixed historical ephemeris.
+ *
+ * Eq (10): k = sighrocca - mean
+ * Eq (11): P = 235 - (235 - 232) * |sin(k)| for Mars Sighra
+ * Eq (14-19): R=360/(2pi), r=P/(2pi),
+ *             B=r sin(k), K=r cos(k), D=hypot(R+K,B),
+ *             half = asin(B/D)/2.
+ * Dimensionless R=1 is exactly equivalent (r/R=P/360).
+ *
+ * The source's 13-Apr first half is INFERRED by its Table 7-style
+ * 'mean + twice printed half' convention; Table 9 does NOT publish a
+ * separate half correction. Only 9-Apr Table 6 directly prints it.
+ */
+const marsPublishedEquationEvidence=[];
+const toRadians=Math.PI/180, toDegrees=180/Math.PI;
+function independentPaperHalfSighra(mean,sheeghrocha,paridhiOverride){
+ const k=((sheeghrocha-mean)%360+360)%360;
+ const sine=Math.sin(k*toRadians),cosine=Math.cos(k*toRadians);
+ const paridhi=paridhiOverride??235-3*Math.abs(sine);
+ const radiusRatio=paridhi/360; // (P/2pi) / (360/2pi)
+ const bhuj=radiusRatio*sine,koti=radiusRatio*cosine;
+ const karna=Math.hypot(1+koti,bhuj); // k=~58/60 degrees: plus per SS II.40
+ const fullCorrection=Math.asin(bhuj/karna)*toDegrees;
+ return {k,paridhi,bhuj,koti,karna,
+   halfCorrection:fullCorrection/2,fullCorrection};
+}
+for(const r of marsPaperRows){
+ const paperHalf=r.printedCorrections?.[0] ??
+   signedAngularDifference(r.printedStageLongitudes[0],r.mean)/2;
+ const eq=independentPaperHalfSighra(r.mean,r.sheeghrocha);
+ const maximum=independentPaperHalfSighra(r.mean,r.sheeghrocha,235).halfCorrection;
+ const minimum=independentPaperHalfSighra(r.mean,r.sheeghrocha,232).halfCorrection;
+ // Invert the printed correction geometrically. From
+ // tan(2h) = (q*sin(k))/(1+q*cos(k)), q=P/360.
+ // P = 360*tan(2h)/(sin(k)-tan(2h)*cos(k)).
+ const tan=Math.tan(2*paperHalf*toRadians);
+ const requiredParidhi=360*tan/(Math.sin(eq.k*toRadians)-tan*Math.cos(eq.k*toRadians));
+ const jya=tabular({planet:'Mars',meanLongitude:r.mean,
+    mandocca:r.mandocca,sheeghrocha:r.sheeghrocha}).stages.halfSighraDegrees;
+ const continuous=geometric({planet:'Mars',meanLongitude:r.mean,
+    mandocca:r.mandocca,sheeghrocha:r.sheeghrocha}).stages.halfSighraDegrees;
+ near(eq.halfCorrection,continuous,1e-10,
+   r.label+' independently computed Eqs 10,11,14-19 agree with production continuous geometry');
+ ensure(Math.abs(eq.halfCorrection-jya)<.012,
+   r.label+' 24 printed Jya table has expected interpolation error not 0.55 degrees');
+ ensure(eq.paridhi>=232&&eq.paridhi<=235&&minimum<eq.halfCorrection&&eq.halfCorrection<maximum,
+   r.label+' Eq 11 paridhi falls within fixed published 232-235 bounds');
+ ensure(paperHalf>maximum+.45,
+   r.label+' published half-Sighra EXCEEDS MAX possible under its own paridhi + equations');
+ ensure(requiredParidhi>249&&requiredParidhi>235+14,
+   r.label+' inverse published half correction requires out-of-range Sighra paridhi');
+ // Every printed 4-decimal longitude has at most +/- 0.00005 rounding.
+ // Analyze all four corner cases of that input interval.
+ const cornerValues=[];
+ for(const dm of [-.00005,.00005])
+  for(const ds of [-.00005,.00005])
+   cornerValues.push(independentPaperHalfSighra(r.mean+dm,r.sheeghrocha+ds).halfCorrection);
+ const roundedMin=Math.min(...cornerValues),roundedMax=Math.max(...cornerValues);
+ ensure(paperHalf-roundedMax>.45,
+   r.label+' longitude table rounding cannot bridge first-correction disagreement');
+ ensure(roundedMax-roundedMin<.0001,
+   r.label+' 4-decimal input rounding changes half-correction by less than 0.0001 degree');
+ marsPublishedEquationEvidence.push({
+   date:r.label,paperHalfSource:r.firstHalfSource,
+   sighraKendraDeg:+eq.k.toFixed(6),
+   sphutaSighraParidhiDeg:+eq.paridhi.toFixed(9),
+   dimensionlessBhuj:+eq.bhuj.toFixed(9),
+   dimensionlessKoti:+eq.koti.toFixed(9),
+   dimensionlessKarna:+eq.karna.toFixed(9),
+   independentEquationHalfDeg:+eq.halfCorrection.toFixed(9),
+   tabular24JyaHalfDeg:+jya.toFixed(9),
+   publishedOrInferredHalfDeg:+paperHalf.toFixed(6),
+   maxHalfUsingPublishedParidhi235Deg:+maximum.toFixed(9),
+   requiredParidhiForPaperHalfDeg:+requiredParidhi.toFixed(9),
+   excessAbovePublishedMaximumParidhiDeg:+(requiredParidhi-235).toFixed(9),
+   inputRoundingHalfMinDeg:+roundedMin.toFixed(9),
+   inputRoundingHalfMaxDeg:+roundedMax.toFixed(9),
+   publishedHalfReproducedFromStatedEquations:false,
+   attributionToSpecificPublicationCodingErrorProven:false,
+   productionEngineChanged:false
+ });
+}
+ensure(marsPublishedEquationEvidence.length===2,
+ 'two dates explicitly invert the academic four-pass Sighra step against source equations');
 const marsFourStageEvidence=[];
 for(const row of marsPaperRows){
  const inputs={planet:'Mars',meanLongitude:row.mean,mandocca:row.mandocca,
@@ -256,6 +342,7 @@ console.log(JSON.stringify({
   pass:true,assertions:count,
   sourceMathForensicPASS:true,
   marsFourStageEvidence,
+  marsPublishedEquationEvidence,
   siteFourCommonOneAlternateConfirmed:true,
   oneUniversalAbsoluteKotiMatchesFivePublishedGrahas:true,
   mandakarnaConventionConflictNotSilentlyFitted:true,
