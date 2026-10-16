@@ -1,18 +1,7 @@
 
 (function(){
-  /* V349: restore missing homepage payment timing diagnostics in active module. */
-  if(typeof window.__smvRecordTiming!=='function'){
-   const timingSamples=[];
-   window.__smvRecordTiming=(stage,ms,ok=true)=>{
-    timingSamples.push({stage:String(stage).split('?')[0],milliseconds:Math.round(ms),
-     ok:!!ok,at:new Date().toISOString()});
-    if(timingSamples.length>60)timingSamples.shift();
-   };
-   window.SMVPaymentTiming={report:()=>timingSamples.map(x=>({...x})),
-    clear:()=>{timingSamples.length=0;}};
-  }
   const BACKEND="https://smvastroservices.onrender.com";
-  const FBCONFIG={apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:"auth.smvastroservices.in",projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
+  const FBCONFIG={apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
   let db=null,auth=null;
   const show=id=>document.getElementById(id)?.classList.remove('hidden');
   const closeModal=()=>document.getElementById('modal')?.classList.add('hidden');

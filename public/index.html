@@ -7,7 +7,12 @@
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<link href="https://smvastroservices.in/" rel="canonical"/>
+<link href="https://smvastroservices.in/" rel="canonical"/><script id="smv-v350-host-seo">
+if(location.hostname==='smvastroservices.pages.dev'){
+ const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/';
+ const m=document.querySelector('meta[property="og:url"]');if(m)m.content=location.origin+'/';
+}
+</script>
 <meta content="website" property="og:type"/>
 <meta content="SMV ASTRO SERVICES" property="og:site_name"/>
 <meta content="SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope" property="og:title"/>
@@ -27,7 +32,7 @@
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
 <link as="image" href="./assets/smv-desktop-hero-rooted-final.jpg" media="(min-width: 900px)" rel="preload"/><link as="image" href="./assets/smv-mobile-premium-header-v185.webp" media="(max-width: 899px)" rel="preload"/>
-<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=235-admin-shortcuts-grid" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" media="(max-width: 899px)" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><link href="./smv-ui-v207.css?v=207" rel="stylesheet"/>
+<link as="image" href="./assets/smv-mobile-premium-hero-v185.webp" media="(max-width: 899px)" rel="preload"/><link href="./smvastro.css?v=235-admin-shortcuts-grid" rel="stylesheet"/><link href="./mobile-home-v185.css?v=185" media="(max-width: 899px)" rel="stylesheet"/><link href="./main-ui-v187.css?v=187" rel="stylesheet"/><link href="./smv-ui-v207.css?v=207" rel="stylesheet"/><script src="./payment-timing.js?v=65"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -1130,5 +1135,22 @@ else initFAQ();
 </script>
 <script defer="" src="./interface.js?v=20260929-v77"></script>
 <script src="./public-navigation.js?v=20261004-v204-phase2"></script>
+<script id="smv-v350-pages-only-links">
+(()=>{
+ if(location.hostname!=='smvastroservices.pages.dev')return;
+ const adjust=()=>{
+  for(const a of document.querySelectorAll('a[href]')){
+   const raw=a.getAttribute('href');
+   if(!raw)continue;
+   const h='https://horoscope.smvastroservices.in/';
+   const c='https://calendar.smvastroservices.in/';
+   if(raw.startsWith(h))a.setAttribute('href','/horoscope/'+raw.slice(h.length));
+   else if(raw.startsWith(c))a.setAttribute('href','/horoscope/calendar/'+raw.slice(c.length));
+  }
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',adjust,{once:true});
+ else adjust();
+})();
+</script>
 </body>
 </html>

@@ -70,5 +70,22 @@
 </nav>
 </section>
 </main>
+<script id="smv-v350-pages-only-links">
+(()=>{
+ if(location.hostname!=='smvastroservices.pages.dev')return;
+ const adjust=()=>{
+  for(const a of document.querySelectorAll('a[href]')){
+   const raw=a.getAttribute('href');
+   if(!raw)continue;
+   const h='https://horoscope.smvastroservices.in/';
+   const c='https://calendar.smvastroservices.in/';
+   if(raw.startsWith(h))a.setAttribute('href','/horoscope/'+raw.slice(h.length));
+   else if(raw.startsWith(c))a.setAttribute('href','/horoscope/calendar/'+raw.slice(c.length));
+  }
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',adjust,{once:true});
+ else adjust();
+})();
+</script>
 </body>
 </html>
