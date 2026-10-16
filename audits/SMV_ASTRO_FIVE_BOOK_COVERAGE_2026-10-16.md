@@ -43,3 +43,27 @@ Scope: Existing Horoscope, Marriage Matching, offline Swiss/Varga/Dasha/Ashtakav
 - No book interpretation changes are introduced during this UI/source optimization.
 
 **Bottom line:** Existing engines demonstrably contain multiple classical data structures. Complete implementation of all five texts has NOT been proved by this audit. Keep pending items explicit and do not claim a completed 2,116-page validation until the remaining evidence comparisons run.
+
+
+## Second pass — 2026-10-16: executed five-chart structural checks
+
+CI audit: \`node tests/five-book-structural-audit.mjs\`.
+
+- **403 assertions PASS**, covering five independently calculated Perambalur natal charts (15 Jun 1994; 06 Sep 2015; 31 Jul 1992; 04 May 1971; 11 Jan 1974).
+- All five contain 9 validated natal grahas, 12 Sripati Bhavas with midpoint-Rasi consistency, and all 16 configured Varga divisors; each divisional chart has nine numeric planetary positions.
+- All five have the seven classical Bhinna-Ashtakavarga distributions with independently checked 48/49/39/54/56/52/39 point totals and an aggregate Sarvashtakavarga of 337, together with nine Vimshottari Mahadasha records.
+- Independently inspected the twelve-sign owner lookup in \`offline/astro_advanced.browser.mjs\`. A REAL source mismatch was found: the Aries lord entry was **Sun** when it must be **Mars**. Fixed \`SIGN_LORDS[0]\` to \`செவ்வாய்\`, preserving all eleven other entries. This influences auxiliary assessments using this lookup, such as \`phase1LordForSign\`, Indu Lagna, Paaka Lagna and certain planet-friendship checks; it does **not** imply all natal charts had incorrect ephemeris longitudes.
+- Matching renderer: 81 dedicated source assertions PASS; source's natal/Transit/Bhava table flags are kept and compact chart flags restored. The standalone explanatory legend is omitted. Four A4 browser PDF chart-style outputs and matching-cover centering were also confirmed by Chromium.
+
+### What these results **do not** certify
+
+The PASS verifies numerical ranges, division availability, case structure, code-owner consistency and conventional Ashtakavarga totals. It does not independently prove classical Varga boundary algorithms, every BAV Prastara rule, the full 6-component Shadbala values, Trikona/Ekadhipatya Shodhana, every Raman house outcome and counter-evidence principle, all Vimshottari **event interpretations**, or the remedies book's conditions. These remain in the five-volume content audit queue. The currently empty published manual-rule array is still explicitly tracked.
+
+### Next source-vs-page priorities
+
+1. Santhanam BPHS I: verify each D2/D7/D9/D10 division mapping with sign/degree boundary samples and planetary status conditions.
+2. Santhanam BPHS II: validate individual BAV tables and separately implement/test reduction rules if requested; do not conflate BAV/SAV base points with Shodhana.
+3. Raman Vol I/II: compare 12-Lagna functional benefic/malefic combinations, house ownership/aspects, counter-evidence and the seventh-house narrative against actual reference passages, then validate on five birth charts and ten pairs.
+4. Remedies encyclopedia: trace each conditional remedy to graha/Bhava/Dasha and separate lifestyle advice from purely devotional traditions.
+
+**Approval state: structural calculation checks PASS; five-book rule-by-rule classical prediction certification remains PENDING.**
