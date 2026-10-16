@@ -1,0 +1,160 @@
+/* SMV ASTRO V358 — browser-only unified result geometry.
+ * No print/save, chart grid, payment, auth, timezone or PWA changes.
+ * Same outer-layer proportions as the Horoscope input; inner results are
+ * continuous content with genuine data tables and chart borders untouched.
+ */
+@media screen{
+  body.smv-v12-theme main > #smvMarriageMatching{
+    box-sizing:border-box!important;
+    width:min(calc(100% - 12px),1180px)!important;
+    max-width:1180px!important;
+    min-width:0!important;
+    margin:12px auto 18px!important;
+    padding:clamp(8px,1.3vw,16px)!important;
+    border:1px solid var(--smv207-line,#e4d7bf)!important;
+    border-radius:12px!important;
+    background:#fff!important;
+    box-shadow:0 4px 14px rgba(69,38,22,.06)!important;
+  }
+  /* Only the matching screen's section host has a frame. Keep the smaller
+     Nakshatra benefits in its existing main surface, never a nested box. */
+  body.smv-v12-theme #smvMarriageMatching #mmNakshatraGate,
+  body.smv-v12-theme #smvMarriageMatching #mmNakshatraGate>.mm-person-result.mm-benefits{
+    display:block!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:4px 0 8px!important;
+    padding:2px 0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    outline:0!important;
+    background:transparent!important;
+    background-image:none!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching #mmNakshatraGate .mm-benefits>h3{
+    margin:5px 0 4px!important;
+    padding:0!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching #mmNakshatraGate .mm-benefits>ul{
+    margin:4px 0 6px!important;
+    padding-inline-start:clamp(17px,4.8vw,23px)!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching #mmNakshatraGate .mm-benefits>ul>li{
+    margin:3px 0!important;
+    padding:0!important;
+  }
+  /* Both Horoscope results and Advanced Report use all available inner
+     width without creating successive rounded layers around modules.
+     Exclude tables, scroll regions and the three chart styles deliberately. */
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult){
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin-inline:0!important;
+    padding-inline:0!important;
+  }
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult)
+  :is(.card,.adv-section,.phase1-module,.v5-module,.numerology-module,
+      .birth-time-panchang,.hora-section,.avastha154-section,
+      .panchang-card,.transit-card,.transit-table-card,
+      .smv-advanced-shell,.smv-advanced-wrapper,.advanced-analysis,
+      .smv-advanced-part,.smv-advanced-part-content,.smv-fixed-text-section,
+      .smv-v303-house,.smv-v254-subtopic){
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin-inline:0!important;
+    margin-block:6px!important;
+    padding:6px 2px!important;
+    border:0!important;
+    border-radius:0!important;
+    outline:0!important;
+    box-shadow:none!important;
+    background:transparent!important;
+    background-image:none!important;
+  }
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult)
+  :is(.smv-advanced-part-content,.smv-advanced-shell,.smv-advanced-wrapper,
+      .advanced-analysis,.smv-fixed-text-section){
+    margin-block:0!important;
+    padding-inline:0!important;
+  }
+  /* Matching main results: keep readable headings, divider rows, chart lines
+     and table borders but eliminate unwanted nested panel footprints. */
+  body.smv-v12-theme #smvMarriageMatching
+  :is(.mm-results,.mm-full-results,.mm-v281-results,.mm-basic-report,
+      .mm-person-result,.mm-front-porutham,.mm-front-dosha-summary,
+      .mm-front-dosha-card,.mm-v281-topic-book,.mm-v281-character,
+      .mm-v281-doshas,.mm-v281-people>section,
+      .mm-v281-character-final,.mm-v281-dosha-person,.mm-v281-house-note,
+      .mm-v281-verdict,.mm-front-summary-note){
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin-inline:0!important;
+    margin-block:7px!important;
+    padding:5px 1px!important;
+    border:0!important;
+    border-radius:0!important;
+    outline:0!important;
+    box-shadow:none!important;
+    background:transparent!important;
+    background-image:none!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching
+  :is(.mm-results,.mm-full-results,.mm-v281-results){
+    padding:0!important;
+    margin:6px 0!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching
+  :is(.mm-front-porutham-row,.mm-v281-topic,.mm-v281-personality-item,
+      .mm-v281-dosha-one){
+    min-width:0!important;
+    max-width:100%!important;
+    padding-block:7px!important;
+    margin-block:5px!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching
+  :is(.mm-front-porutham-grid,.mm-front-dosha-list,.mm-v281-people){
+    min-width:0!important;
+    max-width:100%!important;
+    column-gap:clamp(8px,2vw,16px)!important;
+    row-gap:6px!important;
+  }
+  /* Real report charts and tables retain their original strokes.
+     Scroll wrappers still scroll horizontally for wide Ashtakavarga tables. */
+  body.smv-v12-theme #smvMarriageMatching :is(.mm-base-scroll,.mm-base-chart-row,.mm-facts){
+    box-sizing:border-box!important;
+    min-width:0!important;
+    max-width:100%!important;
+  }
+}
+@media screen and (max-width:640px){
+  body.smv-v12-theme main > #smvMarriageMatching{
+    width:calc(100% - 12px)!important;
+    max-width:calc(100% - 12px)!important;
+    margin:9px 6px 16px!important;
+    padding:8px 6px!important;
+    border-radius:10px!important;
+  }
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult)
+  :is(.card,.adv-section,.phase1-module,.v5-module,.numerology-module,
+      .birth-time-panchang,.hora-section,.avastha154-section,.panchang-card,
+      .transit-card,.transit-table-card,.smv-advanced-part,
+      .smv-advanced-part-content,.smv-v303-house){
+    padding:5px 1px!important;
+    margin-block:5px!important;
+  }
+  body.smv-v12-theme #smvMarriageMatching
+  :is(.mm-front-porutham,.mm-front-dosha-summary,.mm-v281-topic-book,
+      .mm-v281-character,.mm-v281-doshas,.mm-person-result,.mm-benefits){
+    padding:4px 0!important;
+    margin-block:5px!important;
+  }
+}
