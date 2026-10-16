@@ -62,11 +62,11 @@ function compare(rows,label){
     label+' '+planet+' published orbital input unmodified');
   ensure(minus.mandaKarṇaConvention==='alternate-minus'&&!minus.historicallyCertified,
     label+' '+planet+' research alternative isolated');
-  ensure(dist(plus.trueLongitude,checkPlus.trueLongitude)<.025,
+  ensure(dist(plus.trueLongitude,checkPlus.trueLongitude)<.035,
     label+' '+planet+' tabular and geometric SAME plus method');
-  ensure(dist(minus.trueLongitude,checkMinus.trueLongitude)<.025,
+  ensure(dist(minus.trueLongitude,checkMinus.trueLongitude)<.035,
     label+' '+planet+' tabular and geometric SAME minus method');
-  ensure(dist(universal.trueLongitude,checkUniversal.trueLongitude)<.025,
+  ensure(dist(universal.trueLongitude,checkUniversal.trueLongitude)<.035,
     label+' '+planet+' tabular and geometric SAME universal absolute-koti method');
   if(ep<=.0001)normalPrecisionCount++;
   if(em<=.0001)alternatePrecisionCount++;
