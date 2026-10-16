@@ -28,7 +28,7 @@ function shodhanaPair(x,y,occupation){
 same(shodhanaPair(2,1,[]),[1,1],'Both empty with unequal bindus: rule (1)');
 same(shodhanaPair(4,4,[]),[0,0],'Both empty with equal bindus: rule (5)');
 same(shodhanaPair(2,1,[1]),[2,0],'Occupied > empty: keep occupied, zero empty');
-same(shodhanaPair(1,3,[1]),[1,2],'Occupied < empty: subtract occupied from empty');
+same(shodhanaPair(1,3,[1]),[1,1],'Occupied < empty: REPLACE empty with occupied (PVR §12.7.2 rule 3b)');
 same(shodhanaPair(2,1,[1,6]),[2,1],'Both occupied unchanged');
 same(shodhanaPair(2,0,[]),[2,0],'Existing zero bypasses reduction');
 
