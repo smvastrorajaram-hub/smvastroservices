@@ -97,7 +97,7 @@ ok(!custom.includes('<sup class="mm-base-flag">'),'Retrograde/combustion never r
 const houseStart=custom.indexOf('பாவ அட்டவணை');
 ok(houseStart>=0,'Bhava table exists');
 ok(custom.slice(houseStart,houseStart+4400).includes('சூரியன் (வ,அ)'),'Bhava table receives the same natal state tags');
-const transitMarked=await renderBasicMatching(sample,charts[1],{
+const transitMarked=await renderBasicMatching({...sample},charts[1],{
  ...opts,transitFn:input=>{
    const result=transit(input);
    return {...result,planets:result.planets.map((p,i)=>i===0?{...p,retrograde:true,combustion:true}:p)};
