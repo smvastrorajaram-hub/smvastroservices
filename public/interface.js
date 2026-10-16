@@ -114,3 +114,51 @@
  if(titleBlock?.parentElement===summary)titleBlock.insertAdjacentElement('afterend',nav);
  else summary.insertBefore(nav,document.getElementById('adminDataLoadMsg')||summary.firstChild);
 })();
+
+/* V354: Pages-only SMV ASTRO install banner, driven by Chrome's native offer.
+   The root's legacy inline handler remains intact for custom domains. */
+(function pagesNativeInstallState(){
+ if(location.hostname!=='smvastroservices.pages.dev')return;
+ const section=document.getElementById('smvInstallAppSection');
+ const button=document.getElementById('smvInstallAppBtn');
+ const help=document.getElementById('smvInstallAppHelp');
+ if(!section||!button)return;
+ const STYLE_ID='smv-v354-pages-install-style';
+ const style=document.createElement('style');
+ style.id=STYLE_ID;
+ style.textContent='html.smv-v354-no-root-install-offer #smvInstallAppSection{display:none!important}';
+ document.head.appendChild(style);
+ let offer=null;
+ const standalone=()=>['standalone','minimal-ui','fullscreen'].some(mode=>matchMedia(`(display-mode: ${mode})`).matches)||navigator.standalone===true;
+ const show=()=>{
+  if(standalone())return hide();
+  section.hidden=false;
+  section.style.removeProperty('display');
+  document.documentElement.classList.remove('smv-v354-no-root-install-offer');
+  if(help)help.textContent='Tap INSTALL APP to install SMV ASTRO.';
+ };
+ const hide=()=>{
+  document.documentElement.classList.add('smv-v354-no-root-install-offer');
+  section.hidden=true;
+ };
+ hide();
+ // Existing inline listener may already have run; this listener provides the
+ // Pages-only visibility policy without changing the legacy installation flow.
+ addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();offer=e;show();
+ });
+ addEventListener('appinstalled',()=>{offer=null;hide();});
+ button.addEventListener('click',async e=>{
+  // Capture first so the legacy onclick cannot consume the same prompt twice.
+  e.preventDefault();e.stopImmediatePropagation();
+  if(standalone()){hide();return;}
+  const p=offer;
+  if(!p){hide();return;}
+  offer=null;hide();
+  try{
+   await p.prompt();
+   await p.userChoice;
+   // 'accepted' is not proof of installation. appinstalled is the signal.
+  }catch(_){/* Chrome can offer a fresh prompt later. */}
+ },true);
+})();
