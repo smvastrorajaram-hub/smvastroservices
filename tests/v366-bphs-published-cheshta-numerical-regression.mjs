@@ -153,6 +153,76 @@ for(const body of names){
     body+' IMD published daily geocentric true longitude physically continuous day '+day);checks++;
  }
 }
+/*
+ * Official IMD Chaitra 1-7 (2026 Mar22-28): all 35 true geocentric
+ * Nirayana planet positions are PRINTED, not code-generated. The IMD
+ * publishes mean/Bija parameters at Mar22 only; advance those *printed*
+ * Bija-corrected mean/sighrocca orbits by canonical Saura daily velocities
+ * (not by production pureMean) for each of the other six dates.
+ *
+ * Reconcile each of the 35 printed true-longitude -> BPHS Ch27 Cheshta
+ * Virupa calculations with a separately coded vector-angle oracle.
+ * This certifies arithmetic on externally printed *snapshot inputs*,
+ * NOT historical 1971-2015 natal classical true longitudes/Bija or full
+ * Shadbala. The 6 daily updated means are propagated, not independently
+ * printed; do not portray them as distinct official mean observations.
+ */
+const imdWeekCheshtaNumeric=[];
+const sourceMahayugaCivilDays=1577917828;
+const sourceRevolutions=Object.freeze({
+ Sun:4320000,Mercury:17937060,Venus:7022376,
+ Mars:2296832,Jupiter:364220,Saturn:146568
+});
+const norm360=x=>((x%360)+360)%360;
+function imdOriginDailyMean(body,offsetDays){
+ return norm360(deg(imdCorrectedMean[body])+
+   offsetDays*sourceRevolutions[body]*360/sourceMahayugaCivilDays);
+}
+const independentMar28Virupas=Object.freeze({
+ Mercury:41.884296,Venus:12.896869,Mars:7.253576,
+ Jupiter:34.269468,Saturn:0.875211
+});
+for(let day=0;day<7;day++){
+ const printedBase=imdOriginDailyMean('Sun',day);
+ const out={date:'2026-03-'+String(22+day).padStart(2,'0'),
+  utc:'00:00Z',printedTrueGrahas:{}};
+ close(arc(printedBase,pureMean(JD+day,'Sun')+imdBijaDegrees.Sun)*3600,
+   0,1.75,'IMD-projected Sun consistent with ancient orbit day '+day);
+ for(const planet of names){
+  const own=imdOriginDailyMean(planet,day);
+  const isInner=planet==='Venus'||planet==='Mercury';
+  const mean=isInner?printedBase:own,sighrocca=isInner?own:printedBase;
+  const trueFromImd=deg(chaitraSeven[planet][day]);
+  const calculated=bphs(ta[planet],printedBase,own,trueFromImd);
+  const oracle=independentBphsOracle(mean,trueFromImd,sighrocca);
+  close(calculated.meanLongitude,mean,1e-9,
+    out.date+' '+planet+' same-frame independent printed-origin mean mapping');
+  close(calculated.sheeghrocha,sighrocca,1e-9,
+    out.date+' '+planet+' same-frame independent printed-origin sighrocca mapping');
+  close(calculated.cheshtaKendraDegrees,oracle.kendra,1e-9,
+    out.date+' '+planet+' independently computed circular Cheshta kendra');
+  close(calculated.virupa,oracle.virupa,1e-9,
+    out.date+' '+planet+' independent IMD snapshot Cheshta Virupa');
+  if(day===0)close(calculated.virupa,expected2026[planet],.000002,
+    planet+' Chaitra 1 seven-day proof preserves first-day published snapshot');
+  if(day===6)close(calculated.virupa,independentMar28Virupas[planet],.000002,
+    planet+' Chaitra 7 independent hand-vector fixture of printed inputs');
+  assert.ok(calculated.virupa>=0&&calculated.virupa<=60&&
+    calculated.natalCertified===false,planet+' '+out.date+' still not natal certified');
+  checks++;
+  out.printedTrueGrahas[planet]={
+    imdPrintedTrueDegrees:+trueFromImd.toFixed(6),
+    imdOriginPropagatedMeanDegrees:+mean.toFixed(6),
+    imdOriginPropagatedSighroccaDegrees:+sighrocca.toFixed(6),
+    independentCheshtaVirupa:+oracle.virupa.toFixed(6),
+    bphsCalculatedCheshtaVirupa:+calculated.virupa.toFixed(6),
+    fullShadbalaCertified:false
+  };
+ }
+ imdWeekCheshtaNumeric.push(out);
+}
+assert.equal(imdWeekCheshtaNumeric.length,7);checks++;
+assert.ok(imdWeekCheshtaNumeric.every(x=>Object.keys(x.printedTrueGrahas).length===5));checks++;
 assert.throws(()=>bphs('சூரியன்',1,2,3),RangeError);checks++;
 assert.throws(()=>bphs('செவ்வாய்',1,2,undefined),TypeError);checks++;
 console.log(JSON.stringify({
@@ -164,6 +234,9 @@ console.log(JSON.stringify({
  secondOracle:'Santhoju et al. Journal of Astrophysics and Astronomy 46:9 (2025) tables 6-7 for 2024 Mandi sunrise',
  paperBalaVirupas:actual2024,
  printedIndependentTrueDailyPositionsChecked:35,
+ imdSevenDailyPrintedTrueFiveGrahaCheshta:imdWeekCheshtaNumeric,
+ imdDailyCheshtaArithmeticCompared:35,
+ historicalNatalSameFrameTrueOraclesCertified:0,
  natalHistoricalTrueLongitudeEngineCertified:false,
  liveProductionCheshtaChanged:false,
  fullFivePlanetShadbalaCertified:false
