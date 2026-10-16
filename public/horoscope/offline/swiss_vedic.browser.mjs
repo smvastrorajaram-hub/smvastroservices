@@ -321,6 +321,46 @@ function horaLord(solarHour, weekday){
   let n=Math.floor(((solarHour-6+24)%24));
   return HORA_ORDER[(HORA_ORDER.indexOf(day)+n)%7];
 }
+// BPHS I (Santhanam) Ch27 pp.270-272: abbreviated Ahargana.
+ // Verified anchor: Jan 0 1984 = 65142 and June 1 1984 = 65295.
+ // The ruled day uses previous date before local sunrise.
+export function traditionalAharganaLords(date){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date));
+  if(!m)throw new RangeError('Ahargana requires YYYY-MM-DD');
+  const y=+m[1],mo=+m[2],d=+m[3],ms=Date.UTC(y,mo-1,d);
+  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==date)
+    throw new RangeError('Invalid Ahargana calendar date');
+  const ahargana=65142+Math.round((ms-Date.UTC(1983,11,31))/86400000);
+  const ix=x=>((x%7)+7)%7;
+  // Book uses remainder 1=Sunday, 2=Monday, ... 6=Friday, 0=Saturday.
+  const lordFromBook=x=>VARA_LORDS[ix(x-1)];
+  return {ahargana,
+    abdaLord:lordFromBook(Math.floor(ahargana/360)*3+1),
+    masaLord:lordFromBook(Math.floor(ahargana/30)*2+1),
+    dinaLord:lordFromBook(ahargana)};
+}
+export function kalaDayFromSunrise(date,time,latitude,longitude,offsetMinutes){
+  const m=/^(\d{1,2}):(\d{2})$/.exec(String(time));
+  if(!m)throw new RangeError('Invalid birth hour for Kala Bala');
+  const minute=+m[1]*60+(+m[2]),rise=upgSolarRiseSet(date,latitude,longitude,offsetMinutes);
+  const previous=minute<rise.sunrise;
+  const baseDate=new Date(date+'T00:00:00Z');
+  if(previous)baseDate.setUTCDate(baseDate.getUTCDate()-1);
+  const owners=traditionalAharganaLords(baseDate.toISOString().slice(0,10));
+  const fromRise=((minute-rise.sunrise+1440)%1440);
+  const day=minute>=rise.sunrise&&minute<rise.sunset;
+  const daylight=Math.max(1,rise.sunset-rise.sunrise);
+  const nightlength=Math.max(1,1440-daylight);
+  const elapsed=day?minute-rise.sunrise:(minute>=rise.sunset?minute-rise.sunset:minute+1440-rise.sunset);
+  const sector=Math.min(2,Math.floor(3*elapsed/(day?daylight:nightlength)));
+  const tribhagaLord=(day?['புதன்','சூரியன்','சனி']:['சந்திரன்','சுக்கிரன்','செவ்வாய்'])[sector];
+  const horaStep=Math.min(23,Math.floor(fromRise/60));
+  const horaLord=HORA_ORDER[(HORA_ORDER.indexOf(owners.dinaLord)+horaStep)%7];
+  return {...owners,weekday:VARA_LORDS.indexOf(owners.dinaLord),horaLord,tribhagaLord,
+    sunriseMinutes:rise.sunrise,sunsetMinutes:rise.sunset,sunriseApprox:true,
+    solarCalendarDay:baseDate.toISOString().slice(0,10)};
+}
+
 function solarIngressLord(jdEt, targetSign, flags, useSwissFiles){
   // Find the most recent sidereal Sun ingress into targetSign, then use its weekday.
   let prev=null, curJd=jdEt;
@@ -412,7 +452,7 @@ export function motionClassical(planet, speed, state){
   if(ratio<1.6) return 45;
   return 30;
 }
-function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags){
+function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags, solarContext=null){
   const p=chartPlanets.find(x=>x.name===planet); if(!p) return null;
   const state=p.strength||{};
   const sth=sthanaClassical(planet,p.longitude,p.bhava,rasiPositions);
@@ -422,13 +462,13 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const sh=Number(p._solarHour??solarHour);
   const nat=natonnatha(planet,sh);
   const pak=pakshaBala(planet,sun.longitude,moon.longitude,chartPlanets);
-  const tri=tribhagaBala(planet,sh);
-  const hLord=horaLord(sh,weekday);
+  const tri=solarContext?(solarContext.tribhagaLord===planet||planet==='குரு'?60:0):tribhagaBala(planet,sh);
+  const hLord=solarContext?.horaLord??horaLord(sh,weekday);
   const hora=hLord===planet?60:0;
   const vara=VARA_LORDS[weekday]===planet?45:0;
-  const masaLord=SIGN_LORDS[Math.floor(sun.longitude/30)];
+  const masaLord=solarContext?.masaLord??SIGN_LORDS[Math.floor(sun.longitude/30)];
   const masa=masaLord===planet?30:0;
-  const abda=planet==='சூரியன்'?15:0;
+  const abda=solarContext?.abdaLord===planet?15:0;
   const ayana=ayanaBala(declinations[planet],planet);
   const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha:0};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
@@ -439,9 +479,10 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const req=SHADBALA_REQUIRED[planet];
   return {available:true,classicalCertified:false,provisional:true,method:'Partial Parashari Shadbala Phase 3; Hora/Abda/Masa/Yuddha need certification',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
-function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags){
+function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
-  const weekday=((Math.floor(jdUt+1.5)%7)+7)%7;
+  const temporal=birthInput?kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes):null;
+  const weekday=temporal?.weekday??((Math.floor(jdUt+1.5)%7)+7)%7;
   const declinations={};
   const eqFlags=(flags & ~(C.SEFLG_SIDEREAL||0)) | (C.SEFLG_EQUATORIAL||0);
   for(const p of planets){
@@ -450,7 +491,7 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags){
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
@@ -689,7 +730,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
   const enriched2=enrichPhase2(enriched0,jdUt);
-  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags);
+  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes});
   const d9Lagna=navamsa(ascLon);
   const moon=enriched.find(p=>p.name==='சந்திரன்');
   return {
