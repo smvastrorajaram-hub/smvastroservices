@@ -168,3 +168,34 @@
  .mm-basic-report table.mm-base-table thead{display:table-header-group}
  .mm-basic-report .mm-base-person>h4{break-after:avoid;page-break-after:avoid}
 }
+/* Keep each house/sign number inside its polygon, not clipped by chart edges. */
+.mm-basic-report .mm-base-index{
+ top:1px!important;left:50%!important;right:auto!important;
+ transform:translateX(-50%)!important;
+ width:max-content;max-width:85%;padding:0 2px;
+ text-align:center;line-height:1.05!important;font-size:10px!important;
+ background:rgba(255,255,255,.88);border-radius:3px;z-index:3;
+}
+.mm-basic-report .mm-base-cell{overflow:visible!important}
+.mm-basic-report .mm-base-centerlabel{
+ position:absolute;display:flex;align-items:center;justify-content:center;
+ text-align:center;z-index:2;overflow-wrap:normal;word-break:keep-all;
+ font-size:clamp(12px,3.4vw,17px)!important;font-weight:700;line-height:1.4;
+ padding:3px;background:#faf2e4;color:#6b2b26;
+}
+.mm-basic-report .mm-base-south>.mm-base-centerlabel{
+ top:25%;left:25%;width:50%;height:50%;
+}
+.mm-basic-report .mm-base-east>.mm-base-centerlabel{
+ top:33.333%;left:33.333%;width:33.334%;height:33.334%;font-size:clamp(10px,2.9vw,14px)!important;
+}
+.mm-basic-report .mm-base-flag{
+ font-size:8px!important;font-weight:700;line-height:1;position:relative;top:-.1em;margin-left:1px;
+}
+.mm-basic-report .mm-base-legend{font-size:.72rem;text-align:center;line-height:1.55;margin:2px auto 6px}
+@media print{
+ .mm-basic-report .mm-base-index{font-size:7pt!important}
+ .mm-basic-report .mm-base-centerlabel{font-size:10pt!important}
+ .mm-basic-report .mm-base-east>.mm-base-centerlabel{font-size:8pt!important}
+ .mm-basic-report .mm-base-flag{font-size:5.5pt!important}
+}
