@@ -13,6 +13,8 @@ import {sauraMeanOrbitalLongitude,sauraFivePlanetCheshtaInputs}
   from './saura-classical-mean-motion.browser.mjs';
 import {sauraFourPassTrueLongitude,sauraMandoccaResearch}
   from './saura-classical-true-longitude.browser.mjs';
+import {sauraTabularFourPassTrueLongitude}
+  from './saura-classical-tabular-jya.browser.mjs';
 import {bphsFivePlanetCheshtaFromClassicalMeans}
   from './bphs-swiss-solar-cheshta.browser.mjs';
 
@@ -52,6 +54,15 @@ export function computeClassicalFiveNatalCheshta(birth){
       mandocca:mandoccaModel.mandocca,
       sheeghrocha:args.sheeghrocha
     });
+    // Independent classical 24-Jya book lookup cross-check.
+    // This is NOT a second historical astronomical ephemeris: both
+    // paths share ancient mean / Mandocca parameters. It only tests the
+    // precision effect of tabulated Jya vs continuous trigonometry.
+    const tabular=sauraTabularFourPassTrueLongitude({
+      planet,meanLongitude:args.meanLongitude,
+      mandocca:mandoccaModel.mandocca,sheeghrocha:args.sheeghrocha
+    });
+    const delta=Math.abs(((tabular.trueLongitude-trueModel.trueLongitude+540)%360)-180);
     const strength=bphsFivePlanetCheshtaFromClassicalMeans(
       tamil,meanSun,args.ownMeanOrbitLongitude,trueModel.trueLongitude
     );
@@ -63,6 +74,10 @@ export function computeClassicalFiveNatalCheshta(birth){
       planet,tamil,meanLongitude:args.meanLongitude,
       sheeghrocha:args.sheeghrocha,mandocca:mandoccaModel.mandocca,
       trueLongitude:trueModel.trueLongitude,
+      // Two self-consistent calculations; not independently observed truth.
+      tabularClassicalTrueLongitude:tabular.trueLongitude,
+      continuousVs24JyaErrorDegrees:delta,
+      mathematicalCrossCheckPass:delta<=0.05,
       cheshtaKendra:strength.cheshtaKendraDegrees,
       cheshtaVirupa:strength.virupa,
       trueModelStages:trueModel.stages,
