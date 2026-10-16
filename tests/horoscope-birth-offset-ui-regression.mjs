@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {calculatedOffsetHours,bindBirthOffsetUI} from '../public/horoscope/birth-offset-live.mjs';
 
+const languageListeners=new Map();
+globalThis.window={addEventListener(type,listener){languageListeners.set(type,listener)}};
 let assertions=0;
 function eq(actual,expected,note){assert.equal(actual,expected,note);assertions++;}
 function contains(value,fragment,note){assert.ok(String(value).includes(fragment),note);assertions++;}
@@ -31,6 +33,14 @@ function fill(prefix,date,time,zone){
 fill('english','2026-01-15','12:00','Europe/London');
 eq(out.value,'0','London January uses GMT +0, not India +5.5');
 eq(out.dataset.offsetVerified,'1','London offset verified');
+root.documentElement.lang='ta';
+languageListeners.get('smv-language')();
+eq(out.value,'0','Switch to Tamil keeps the computed London UTC offset');
+contains(nodes.smvBirthOffsetStatus.textContent,'வரலாற்று DST','Tamil status updates without another calculation');
+root.documentElement.lang='en';
+languageListeners.get('smv-language')();
+eq(out.value,'0','Switch back to English preserves UTC offset');
+contains(nodes.smvBirthOffsetStatus.textContent,'historical DST','English status restores on language change');
 nodes.englishDob.value='2026-07-15';nodes.englishDob.emit('change');
 eq(out.value,'1','London summer British Summer Time +1');
 nodes.englishTob.value='10:05';nodes.englishTob.emit('input');
@@ -81,4 +91,13 @@ contains(form,'window.__smvUpdateBirthOffset?.(prefix)','Location selection reca
 contains(form,'const historicalOffset=offsetMinutesAt(birthZone,date,normalizedTime)','Birth-time calculation recomputes exact offset');
 const tamil=file('public/horoscope/horoscope.js');
 contains(tamil,'const historicalOffset=offsetMinutesAt(zone,date,normalizedTime)','Tamil birth-time calculation recomputes exact offset');
-console.log(JSON.stringify({pass:true,assertions,liveInput:true,seasonalDST:true}));
+const translations=file('public/horoscope/horoscope-language.js');
+for(const key of [
+  'Birth Time Zone (IANA)',
+  'Calculated UTC Offset (hours)',
+  'Automatically calculates historical DST from your birth date and local birth time.',
+  'Calculated automatically for a valid IANA zone.'
+])contains(translations,key,'New UTC/DST label is translated: '+key);
+contains(translations,'கணக்கிடப்பட்ட UTC நேர வேறுபாடு (மணி)','Tamil UTC offset label exists');
+contains(html,'.smv-utc-help{display:block','DST helper and status have separated lines');
+console.log(JSON.stringify({pass:true,assertions,liveInput:true,seasonalDST:true,bilingualTimezoneLabels:true}));
