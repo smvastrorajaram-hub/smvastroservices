@@ -235,6 +235,23 @@ function vargaLongitude(lon,d){
   return normLon(vargaSign(q,d)*30+local);
 }
 
+// BPHS Volume I, R. Santhanam, Chapter 6 (printed pp. 83–86):
+// the 60 designation names are in forward order for odd signs and
+// REVERSE order for even signs. The sign-lord mapping is independent.
+// #27 Kalinasa is marked beneficial in the printed table but the
+// commentary mentions a malefic alternative: do not certify its quality.
+const D60_DESIGNATIONS=["Ghora","Rakshasa","Deva","Kubera","Yaksha","Kinnara","Bhrashta","Kulaghna","Garala","Vahni","Maya","Purishaka","Apampathi","Marutwan","Kala","Sarpa","Amrita","Indu","Mridu","Komala","Heramba","Brahma","Vishnu","Maheswara","Deva","Ardra","Kalinasa","Kshiteesa","Kamalakara","Gulika","Mrithyu","Kaala","Davagni","Ghora","Yama","Kantaka","Sudha","Amrita","Poornachandra","Vishadagdha","Kulanasa","Vamsakshaya","Utpata","Kaala","Saumya","Komala","Seetala","Karala Damshtra","Chandramukhi","Praveena","Kalapavaka","Dandayudha","Nirmala","Saumya","Kroora","Atiseetala","Amrita","Payodhi","Bhramana","Chandrarekha"];
+const D60_BENEFIC_NUMBERS=new Set([3,4,5,6,13,14,17,18,19,20,21,22,23,24,25,26,28,29,37,38,39,45,46,47,49,50,53,54,56,57,58,60]);
+function shashtiamsaDesignation(lon){
+  const r=rasi(lon),part=Math.min(59,Math.floor(degIn(lon)/0.5));
+  const nameIndex=(r%2===0)?part:59-part;
+  const ordinal=nameIndex+1;
+  const quality=ordinal===27?'disputed':D60_BENEFIC_NUMBERS.has(ordinal)?'benefic':'malefic';
+  const lordSign=vargaSign(lon,60);
+  return {sequence:ordinal,part:part+1,name:D60_DESIGNATIONS[nameIndex],quality,
+    signIndex:lordSign,signLord:SIGN_LORDS[lordSign],book:'BPHS I Chapter 6',verifiedBy:'table-name-and-sign-rule'};
+}
+
 function buildVargas(chart,lang){
   const ds=[1,2,3,4,7,9,10,12,16,20,24,27,30,40,45,60];
   const names={1:'Rasi',2:'Hora',3:'Drekkana',4:'Chaturthamsa',7:'Saptamsa',9:'Navamsa',10:'Dasamsa',12:'Dwadasamsa',16:'Shodasamsa',20:'Vimsamsa',24:'Chaturvimsamsa',27:'Bhamsa',30:'Trimsamsa',40:'Khavedamsa',45:'Akshavedamsa',60:'Shashtiamsa'};
@@ -254,7 +271,8 @@ function buildVargas(chart,lang){
         natalLongitude:p.longitude,
         natalDegree:p.degree,
         natalNakshatra:p.nakshatra,
-        natalPada:p.pada
+        natalPada:p.pada,
+        ...(d===60?{shashtiamsa:shashtiamsaDesignation(p.longitude)}:{})
       };
     })
   }));
@@ -896,4 +914,4 @@ function bookRemedies(chart,lang='ta'){
 }
 
 function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; return {ashtakavarga:ashtakavarga(chart,lang),vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
-export {advanced,vargaSign,vargaLongitude};
+export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation};
