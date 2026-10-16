@@ -1,5 +1,16 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="canonical" href="https://horoscope.smvastroservices.in/">
+<script id="smv-v352-pages-standalone-detection">
+(()=>{
+  if(location.hostname!=='smvastroservices.pages.dev')return;
+  if((window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true){
+    document.documentElement.classList.add('smv-v352-pages-standalone');
+  }
+})();
+</script>
+<style id="smv-v352-pages-standalone-install-hidden">
+html.smv-v352-pages-standalone #smvHoroscopeInstallArea{display:none!important;}
+</style>
 <script id="smv-v350-host-nav">if(location.hostname==='smvastroservices.pages.dev'){const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/horoscope/';const m=document.querySelector('meta[property="og:url"]');if(m)m.content=location.origin+'/horoscope/';document.addEventListener('DOMContentLoaded',()=>{const a=document.getElementById('smvCalendarNav');if(a){a.href='/horoscope/calendar/';a.removeAttribute('target');}});}</script>
 <script>
 (()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://horoscope.smvastroservices.in/'+location.search+location.hash);}})();
@@ -88,46 +99,21 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
  if(target&&'IntersectionObserver'in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();load();}},{rootMargin:'700px'});io.observe(target);}else if(target)load();
  window.addEventListener('hashchange',()=>{if(location.hash==='#smvMarriageMatching')load();},{passive:true});
 })();
-</script><script id="smv-v351-pages-horoscope-install-bridge">
+</script><script id="smv-v352-pages-horoscope-install-guard">
 (()=>{
- if(location.hostname!=='smvastroservices.pages.dev')return;
- const ready=()=>{
+  if(location.hostname!=='smvastroservices.pages.dev')return;
+  if(!document.documentElement.classList.contains('smv-v352-pages-standalone'))return;
+  // Preserve a separately launched Horoscope app across navigation in its own window.
+  const ownKey='smv-pages-own-horoscope-session-v352';
+  try{
+    if(new URLSearchParams(location.search).get('source')==='horoscope-pwa')sessionStorage.setItem(ownKey,'1');
+    if(sessionStorage.getItem(ownKey)!=='1')localStorage.removeItem('smv-horoscope-pwa-installed-v1');
+  }catch(_){}
   const area=document.getElementById('smvHoroscopeInstallArea');
-  const button=document.getElementById('installApp');
-  const status=document.getElementById('installStatus');
-  if(!area||!button)return;
-  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-  const launchedThisPwa=standalone&&new URLSearchParams(location.search).get('source')==='horoscope-pwa';
-  if(launchedThisPwa)return; // Keep the existing separate Horoscope app install state.
-  if(standalone){
-   // A parent SMV ASTRO app is NOT evidence that SMV HOROSCOPE was installed.
-   try{localStorage.removeItem('smv-horoscope-pwa-installed-v1')}catch(_){ }
-   // Original pwa.js exits early in any standalone window; ensure this child
-   // gets its own service worker when accessed inside the Pages root PWA.
-   if('serviceWorker'in navigator){
-    navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
-     .catch(e=>console.warn('Pages Horoscope SW registration:',e));
-   }
+  if(area)area.hidden=true;
+  // The original pwa.js exits early when any parent Pages PWA is standalone.
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(()=>{});
   }
-  area.hidden=false;
-  const direct='https://smvastroservices.pages.dev/horoscope/';
-  const ta=()=>document.documentElement.lang==='ta';
-  const instructions=()=>ta()
-   ?'தனியாக நிறுவ: Chrome browser address bar-இல் '+direct+' திறந்து ⋮ → Install app தேர்வு செய்யவும்.'
-   :'To install separately, open '+direct+' directly in Chrome, then choose ⋮ → Install app.';
-  if(standalone&&status)status.textContent=instructions();
-  button.addEventListener('click',event=>{
-   // Let the existing native installer run inside a normal Chrome browser.
-   if(!standalone&&window.__smvHoroscopeInstallPrompt)return;
-   // Chrome cannot be forced to launch a new PWA install prompt from the
-   // already installed parent standalone app. Do not silently hide the CTA.
-   event.preventDefault();event.stopImmediatePropagation();
-   area.hidden=false;
-   if(status)status.textContent=instructions();
-  },true);
-  window.addEventListener('smv-language',()=>{if(standalone&&status)status.textContent=instructions();});
- };
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});
- else ready();
 })();
 </script></body></html>
