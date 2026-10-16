@@ -1,4 +1,4 @@
-// Headless Chrome browser-native PDF smoke for the two-person calculation report.
+// Browser and A4 Print QA: all 3 styles, real two-person Swiss/Varga/BAV data.
 import assert from 'node:assert/strict';
 import {mkdir,writeFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -10,43 +10,82 @@ import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs
 const root=new URL('../public/horoscope/',import.meta.url),output=new URL('../marriage-print-smoke-output/',import.meta.url);
 await mkdir(output,{recursive:true});
 const people=[];
-for(const [name,date,time,lat,lon,zone,utc,style] of [
- ['Bride audit','1992-07-31','22:05',11.232,78.88,'Asia/Kolkata',330,'south'],
- ['Groom audit','1994-06-15','13:03',51.5074,-.1278,'Europe/London',60,'north']]){
+for(const [name,date,time,lat,lon,zone,utc] of [
+ ['Bride audit','1992-07-31','22:05',11.232,78.88,'Asia/Kolkata',330],
+ ['Groom audit','1994-06-15','13:03',51.5074,-.1278,'Europe/London',60]]){
  const r=await full({name,date,time,lat,lon,utcOffsetMinutes:utc,language:'ta'});
- assert.ok(r.ok&&r.advanced,'natal/advanced complete');
- Object.assign(r.chart,{advanced:r.advanced,birthName:name,birthDate:date,birthTime:time,birthPlace:name,birthLat:lat,birthLon:lon,birthTimezone:zone,birthOffsetMinutes:utc,birthChartStyle:style});
+ assert.ok(r.ok&&r.advanced,'complete Swiss natal and classical calculations');
+ Object.assign(r.chart,{advanced:r.advanced,birthName:name,birthDate:date,birthTime:time,birthPlace:name,birthLat:lat,birthLon:lon,birthTimezone:zone,birthOffsetMinutes:utc});
  people.push(r.chart);
 }
-const content=await renderBasicMatching(people[0],people[1],{
- language:'ta',brideStyle:'south',groomStyle:'north',reviewDate:'2026-10-16',
- transitFn:input=>transit(input),poruthamRows:[['தினம்',true,''],['ரஜ்ஜு',false,'']]
-});
-const template='<html lang="ta"><head><meta charset="utf-8"><link rel="stylesheet" href="marriage-basic-report.css"></head><body><main id="printReport">'+content+'</main></body></html>';
-const fixture=new URL('__matching_print_smoke_temp.html',root);
-await writeFile(fixture,template);
 const browser=await puppeteer.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:true});
+const results=[];
 try{
  const page=await browser.newPage();
- await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
- await page.goto(fixture.href,{waitUntil:'load'});
- const computed=await page.evaluate(()=>{
-  const cells=[...document.querySelectorAll('.mm-base-chart')];
-  const tables=[...document.querySelectorAll('.mm-base-table')];
-  return {charts:cells.length,tables:tables.length,
-   width:cells[0]?.getBoundingClientRect().width,
-   cssDisplay:cells[0]&&getComputedStyle(cells[0]).display,
-   firstText:document.body.textContent.slice(0,140),
-   svg:document.querySelectorAll('.mm-base-geometry').length,
-   missingImages:document.querySelectorAll('img:not([src])').length};
- });
- assert.ok(computed.charts>=8,'Both person Rasi/D9/Bhava and transit charts are rendered');
- assert.ok(computed.tables>=15,'Calculation tables present for both people');
- assert.ok(computed.width>100&&computed.cssDisplay==='grid','Layout CSS applied to South chart');
- assert.ok(computed.svg>=2,'North Indian diamond drawing exists');
- await page.screenshot({path:fileURLToPath(new URL('matching-report-screen.png',output)),fullPage:false});
- await page.pdf({path:fileURLToPath(new URL('matching-report.pdf',output)),format:'A4',printBackground:true,preferCSSPageSize:true});
- const {size}=await stat(new URL('matching-report.pdf',output));
- assert.ok(size>25000,'PDF contains meaningful content');
- console.log(JSON.stringify({pass:true,pdfBytes:size,...computed}));
+ for(const style of ['south','north','east']){
+  const html=await renderBasicMatching(people[0],people[1],{
+   language:'ta',brideStyle:style,groomStyle:style,reviewDate:'2026-10-16',
+   transitFn:input=>transit(input),poruthamRows:[['தினம்',true,''],['ரஜ்ஜு',false,'']]
+  });
+  const fixture=new URL('__matching_print_smoke_temp.html',root);
+  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"></head><body><main id="printReport">'+html+'</main></body></html>';
+  await writeFile(fixture,document);
+  await page.setViewport({width:360,height:800,deviceScaleFactor:1});
+  await page.goto(fixture.href,{waitUntil:'load'});
+  const mobile=await page.evaluate(()=>{
+   const charts=[...document.querySelectorAll('.mm-base-chart')];
+   const tables=[...document.querySelectorAll('.mm-base-table')];
+   const first=charts[0],rectangle=first?.getBoundingClientRect();
+   const cell0=first?.querySelector('.mm-base-pos-0')?.getBoundingClientRect();
+   const cell11=first?.querySelector('.mm-base-pos-11')?.getBoundingClientRect();
+   const wrap=document.querySelector('.mm-base-shad-components')?.closest('.mm-base-scroll');
+   const td=document.querySelector('.mm-base-shad-components td');
+   const extra=charts.map(c=>c.innerText).join(' ');
+   const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
+   return {
+    charts:charts.length,tables:tables.length,firstStyle:first?.dataset.chartStyle,
+    rectWidth:rectangle?.width||0,
+    firstCell:{left:cell0?.left-rectangle?.left,top:cell0?.top-rectangle?.top},
+    lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
+    whiteSpace:td&&getComputedStyle(td).whiteSpace,
+    scrollWidth:wrap?.scrollWidth,clientWidth:wrap?.clientWidth,
+    lineCount:allPlanets.length,
+    splitNames:/மேஷம்|ரிஷபம்|மிதுனம்|கடகம்|சிம்மம்|கன்னி|துலாம்|விருச்சிகம்|தனுசு|மகரம்|கும்பம்|மீனம்/.test(extra),
+    longPlanet:allPlanets.some(x=>x.length>5),
+    svgPath:first?.querySelector('.mm-base-geometry path')?.getAttribute('d')||''
+   };
+  });
+  assert.equal(mobile.firstStyle,style,'Incorrect selected style: '+style);
+  assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
+  assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
+  assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
+  assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
+  assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
+  assert.ok(!mobile.splitNames&&!mobile.longPlanet,'Charts must contain only short planet codes without sign names: '+style);
+  assert.ok(mobile.lineCount>25,'All planet codes present: '+style);
+  if(style==='south'){
+   assert.ok(mobile.lastCell.left<5&&mobile.lastCell.top<5,'Pisces sign remains top-left in South chart');
+   assert.ok(mobile.firstCell.top<5&&mobile.firstCell.left>mobile.rectWidth*.2,'Aries is at top second cell');
+   assert.ok(mobile.svgPath.includes('M0 50H25'),'True blank central South box exists');
+  }else if(style==='north'){
+   assert.ok(mobile.svgPath.includes('M0 0L100 100'),'North diamond chart geometry');
+  }else{
+   assert.ok(mobile.svgPath.includes('M33.333 0V100'),'East Bengal style geometry');
+  }
+  await page.screenshot({path:fileURLToPath(new URL('matching-mobile-'+style+'.png',output)),fullPage:true});
+  await page.emulateMediaType('print');
+  const pdfPath=new URL('matching-print-'+style+'.pdf',output);
+  await page.pdf({path:fileURLToPath(pdfPath),format:'A4',printBackground:true,preferCSSPageSize:true});
+  const {size}=await stat(pdfPath);
+  assert.ok(size>25000,'PDF is not empty: '+style);
+  const print=await page.evaluate(()=>{
+   const first=document.querySelector('.mm-base-chart'),css=getComputedStyle(first),rect=first.getBoundingClientRect();
+   return {style:first.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length};
+  });
+  assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
+  assert.equal(print.style,style,'Print selected style changed unexpectedly');
+  results.push({style,pdfBytes:size,mobile,print});
+  await page.emulateMediaType('screen');
+ }
+ console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true}));
 }finally{await browser.close();}
