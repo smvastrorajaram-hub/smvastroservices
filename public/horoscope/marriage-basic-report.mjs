@@ -87,9 +87,9 @@ function vargaTable(c,d,ta){
 }
 function ashtakavarga(c,ta){
  const av=c?.advanced?.ashtakavarga;if(!av?.bhinna||!Array.isArray(av.sarva))return '<p class="mm-base-unavailable">'+(ta?'கணக்கீட்டுத் தரவு கிடைக்கவில்லை':'Calculated data unavailable')+'</p>';
- const head=[ta?'கிரகம்':'Planet',...(ta?SIGNS_TA:SIGNS_EN),ta?'மொத்தம்':'Total'];
- const rows=av.bhinna.map(p=>tr([name(p.planet,ta),...(p.bindus||[]),p.total??'—']));
- rows.push(tr([ta?'சர்வாஷ்டகவர்க்கம்':'Sarvashtakavarga',...av.sarva,av.sarvaTotal??'—']));
+ const head=[ta?'ராசி':'Sign',...av.bhinna.map(p=>name(p.planet,ta)),ta?'சர்வாஷ்டகவர்க்கம்':'SAV'];
+ const rows=Array.from({length:12},(_,i)=>tr([sign(i,ta),...av.bhinna.map(p=>p.bindus?.[i]??'—'),av.sarva[i]]));
+ rows.push(tr([ta?'மொத்தம்':'Total',...av.bhinna.map(p=>p.total??'—'),av.sarvaTotal??'—']));
  return table(head,rows,'mm-base-av');
 }
 function shadbala(c,ta){
