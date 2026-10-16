@@ -98,6 +98,6 @@ export function classicalShodhana(binduRow,occupiedSigns,grahaSigns){
  const trikona=trikonaShodhana(binduRow);
  const ekadhipatya=ekadhipatyaShodhana(trikona.values,occupiedSigns);
  return {trikona,ekadhipatya,pinda:pindaSadhana(ekadhipatya.values,grahaSigns),
-  certified:false,
-  note:'Experimental source-to-book numerical channel; not connected to reports; Ch.68 prose/example ambiguity requires editorial review'};
+  certified:false,ruleConvention:'Santhanam BPHS II Chapter 68 literal prose (not contradictory illustration)',
+  note:'Numeric reduction follows explicit Ch.68 prose. Printed illustration and its planetary occupancy conflict with it; not connected to reports or fully certified'};
 }
