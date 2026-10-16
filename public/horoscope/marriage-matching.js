@@ -591,7 +591,21 @@ function renderPublicPorutham(b,g,out){
  window.__smvLocalizeTamilResult?.(out,lang());
  out.dataset.resultLanguage=lang();
 }
-async function matchingViews(b,g,out){const original=lang(),views={[original]:out.innerHTML},other=original==='ta'?'en':'ta';window.__smvSnapshotBusy=true;try{document.documentElement.lang=other;await renderMatching(b,g,out,true);views[other]=out.innerHTML;}finally{document.documentElement.lang=original;await renderMatching(b,g,out,true);window.__smvSnapshotBusy=false;}return views;}
+async function matchingViews(b,g,out){
+ const original=lang(),views={[original]:out.innerHTML},other=original==='ta'?'en':'ta';
+ // Never overwrite the real result during Save: it contains the live Save/Print controls.
+ const detached=document.createElement('div');
+ window.__smvSnapshotBusy=true;
+ try{
+  document.documentElement.lang=other;
+  await renderMatching(b,g,detached,true);
+  views[other]=detached.innerHTML;
+ }finally{
+  document.documentElement.lang=original;
+  window.__smvSnapshotBusy=false;
+ }
+ return views;
+}
 
 function mmTimingConfirmation(b,g,tr){
  const rows=[];
