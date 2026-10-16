@@ -27,6 +27,22 @@ Research-only test `tests/v368-published-stage-historical-shadbala-audit.mjs`:
 4. Independently run the established offline Horoscope engine on all 5 births and inspect the **35 provisional seven-planet Shadbala totals**. Assert all numerical outputs are finite, all phase 3 `classicalCertified:false` and `provisional:true`.
 5. Assert the published 2024 Table 6/7 five doubled initial corrections and correct Table 6 final arithmetic; assert 4/5 published 2024 V367 exact precision gate still unsatisfied.
 
+## Independent modern historical numerical oracle (25 values)
+
+The V368 regression includes 25 fixed geocentric modern Lahiri sidereal true longitude readings produced **separately** using `pyswisseph 2.10.03 / FLG_MOSEPH` at five actual Perambalur UTC birth instants; independently compares local Swiss-WASM `SWIEPH` against the readings with a 0.10° declared bound. This supplies a separate *modern* numeric check and is NOT a same-frame Surya Siddhanta historical oracle.
+
+V367 **unmodified Saura research** True Longitude minus **modern Lahiri Moshier** absolute angular distance, degrees, in order Mars/Mercury/Jupiter/Venus/Saturn:
+
+| Natal date | Mars | Mercury | Jupiter | Venus | Saturn |
+|---|---:|---:|---:|---:|---:|
+| 1971-05-04 | 4.509 | 1.688 | 6.155 | 3.019 | 5.800 |
+| 1974-01-11 | 1.341 | 3.210 | 3.764 | 23.195 | 5.255 |
+| 1992-07-31 | 1.810 | 7.841 | 3.355 | 3.216 | 7.995 |
+| 1994-06-15 | 0.898 | 2.857 | 5.202 | 2.493 | 7.286 |
+| 2015-09-06 | 1.191 | 0.780 | 3.514 | 10.681 | 6.447 |
+
+**Interpretation:** These are DIFFERENT-MODEL gaps, not proof of traditional calculation error. No classical ephemeris dynamically corrected with historical Bija was established at these five birth timestamps.
+
 ## Genuine certificate
 
 - **V365:** Classical Saura mean motion independent official 2026 uncorrected numbers, bounded PASS.
