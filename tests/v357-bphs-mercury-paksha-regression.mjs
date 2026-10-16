@@ -18,7 +18,7 @@ eq(pakshaBala(SAT,0,120,b),20,'Saturn unchanged malefic Paksha');
 eq(pakshaBala(MC,0,120,[...b,P(MA,102)]),20,'Mars in Mercury sign makes Mercury malefic');
 eq(pakshaBala(MC,0,120,[...b,P(SAT,110)]),20,'Saturn in Mercury sign makes Mercury malefic');
 eq(pakshaBala(MC,0,120,[...b,P(RA,119)]),20,'Rahu in Mercury sign makes Mercury malefic');
-eq(pakshaBala(MC,0,120,[...b,P(MA,90)]),40,'Mars in previous sign does not conj Mercury');
+eq(pakshaBala(MC,0,120,[...b,P(MA,89)]),40,'Mars in previous sign does not conj Mercury');
 eq(pakshaBala(MC,0,120,[P(SN,100),P(MN,220),P(MC,110)]),20,'Mercury in Sun sign makes Mercury malefic');
 eq(pakshaBala(MC,0,120,[P(SN,200),P(MN,320),P(MC,100)]),40,'Mercury far from Sun remains benefic');
 const births=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
