@@ -77,6 +77,21 @@ ok(basicModule.includes("natalMaandi(c)"),'Maandi uses natal calculated upagraha
 ok(basicModule.includes('chartPlanetStatus('),'Planetary positions include retrograde and combustion status');
 ok(basicModule.includes('mm-base-flag'),'Retrograde and combustion signs render in both languages');
 
+const sample={...charts[0],
+ planets:charts[0].planets.map((p,i)=>i? p:{...p,strength:{...(p.strength||{}),retrograde:true,combustion:true}}),
+ bhavas:charts[0].bhavas.map(x=>({...x})),
+ upagrahas:{...(charts[0].upagrahas||{}),maandi:{longitude:143.25,rasi:'சிம்மம்',nakshatra:'பூரம்',pada:1,degree:'23°15'}}};
+sample.bhavas[0].rasiIndex=0;
+sample.bhavas[1].rasiIndex=0;
+const custom=await renderBasicMatching(sample,charts[1],{...opts,brideStyle:'east',groomStyle:'north'});
+const bhavaEast=custom.match(/<div class="mm-base-chart-wrap" data-chart-mode="bhava">[\\s\\S]*?<\\/div><\\/div>/)?.[0]||'';
+ok(bhavaEast.includes('mm-base-east'),'East Indian Bhava selected with test cusp');
+ok(bhavaEast.includes('mm-base-pos-0')&&bhavaEast.includes('>1/2</span>'),'East Bhava displays two house midpoints in the SAME sign');
+ok(custom.includes('>மா</span>'),'Calculated Maandi is included in basic chart');
+ok(custom.includes('>வ</sup>')&&custom.includes('>அ</sup>'),'Retrograde and combustion markers use natal state');
+ok(custom.includes('மாந்தி')&&custom.includes('அஸ்தமனம்'),'Maandi and combust labels appear in natal positions');
+
+
 const chartBodies=[...ta.matchAll(/<div class="mm-base-chart mm-base-[a-z]+"[^>]*>([\s\S]*?)<\/div><\/div>/g)].map(x=>x[1]);
 ok(ta.includes('mm-base-planet')&&ta.includes('mm-base-geometry'),'Charts use compact planet codes and full SVG geometry');
 
