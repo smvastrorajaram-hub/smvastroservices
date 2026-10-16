@@ -82,7 +82,7 @@ The source includes Swiss Ephemeris resources and browser WebAssembly integratio
 - Horoscope prediction and marriage-matching modules;
 - Calendar worker/data modules.
 
-Third-party notices and license files must remain with the deployed source where required. See `THIRD_PARTY_LICENSES.md`, `SWISSEPH_LICENSE_NOTICE.md` and the Horoscope license directory.
+Third-party notices and license files must remain with the deployed source where required. See `SWISSEPH_LICENSE_NOTICE.md` (including its consolidated third-party notices) and the Horoscope license directory.
 
 ## 5. Language behavior
 
