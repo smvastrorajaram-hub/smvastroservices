@@ -92,3 +92,42 @@ The required P is **calculated, not fitted** by inverting Eq. (19): for printed 
 **Decision:** The source's first correction trace is internally irreconcilable under its displayed equations/parameters. This is not proof of a specific publication implementation mistake, nor a proof of exact historical classical orbital positions for arbitrary dates. Do **not** change production formula to target the unreproducible printed values. Research-only diagnostics assert this impossibility and keep full-certification flags false. Existing five Perambalur DOB→25-planet research regression and BPHS seven-graha 35 arithmetic regression continue as separate gates; they are not same-frame external historical certification.
 
 **Executable source:** \`tests/saura-manda-karna-two-source-numerical-reconciliation.mjs\`; [source commit](https://github.com/smvastrorajaram-hub/smvastroservices/commit/8624e8f84d69da59a481accd06ac23225d41ff57), [GitHub QA run](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38980890434).
+
+
+## Original Sūrya Siddhānta II.39 direct-Manda source correction
+
+**Direct textual source, not a fitted ephemeris:** Sūrya Siddhānta Chapter II, verse 39 (Burgess 1860, [text/English translation](https://www.swaveda.com/texts/surya-siddhanta/2/)) explicitly takes the **arc of bhujajyāphala**, where bhujajyāphala = corrected manda epicycle × sin(kendra) / 360. The separate variable hypotēnuse (cala-Karṇa) appears in II.40–42 for the Śīghra correction; it is **not included in the II.39 Manda expression**.
+
+\`\`\`text
+k = normalize360(mandocca - temporary_manda_input_longitude)
+P = even_manda_paridhi - (even_manda_paridhi - odd_manda_paridhi) * abs(sin(k))
+Manda(II.39) = asin((P/360) * sin(k))     [full in degrees]
+half-Manda = Manda(II.39) / 2
+\`\`\`
+
+The previous code ONLY provided geometric manda denominators \`1+koti\`, \`1-koti\`, and \`1-|koti|\`, which combine a **Śīghra-style Karṇa** with the II.39 Manda equation. This is a genuine textual/methodology gap in the *research* engines. A standalone non-default research convention \`verse39-direct-jya\` has now been implemented in BOTH separate continuous-trigonometric and printed-24-Jya four-pass paths. It leaves the three previously defined conventions and natal calculation default untouched, does not enable live production, and leaves all certification gates false.
+
+An independently coded scalar \`asin((P/360)*sin(k))\` oracle verifies BOTH half/full Manda intermediate corrections. The test examines 15 published five-body outputs across two independent references (Caitanya worked example plus Santhoju et al. on two April 2024 dates) and 25 actual Perambalur research natal values. **A book-text-equivalent algorithm is not itself a numerical certificate that independently printed historical positions agree.**
+
+### Comparison against published reference data
+
+Continuous-trig preliminary independent values, in degrees of signed **model − published true longitude**, retaining the paper's provided mean/mandocca/śīghrocca inputs:
+
+| External worked reference | Body | Old common-plus Manda error ° | Textual II.39 direct Manda error ° |
+|---|---|---:|---:|
+| Santhoju 2024-04-09 | Mercury | −0.52368 | −0.23856 |
+| Santhoju 2024-04-09 | Venus | −0.00393 | −0.00395 |
+| Santhoju 2024-04-09 | Mars | −3.31427 | −3.14879 |
+| Santhoju 2024-04-09 | Jupiter | +0.39961 | +0.18889 |
+| Santhoju 2024-04-09 | Saturn | +0.31827 | +0.07897 |
+| Caitanya worked example | Mercury | −0.01407 | +0.09945 |
+| Caitanya worked example | Venus | −0.00126 | −0.00439 |
+| Caitanya worked example | Mars | −0.02571 | +0.87730 |
+| Caitanya worked example | Jupiter | −0.00131 | −0.01564 |
+| Caitanya worked example | Saturn | −0.28682 | −0.15921 |
+
+**Technical interpretation:** The direct verse-39 route is textually grounded, but it does *not* by itself reconcile both publications; changing the formula in live horoscope to this result without testing additional epicycle/epoch/Bīja conventions would be unsupported. Academic first Half-Śīghra mismatch occurs *before* either Manda convention can change it, and remains unresolved as previously proven.
+
+**GitHub:** [continuous branch source commit 997f468](https://github.com/smvastrorajaram-hub/smvastroservices/commit/997f468c8e04e797163a0966510ba3ef12d4005b), [24-Jya branch source commit 722f285](https://github.com/smvastrorajaram-hub/smvastroservices/commit/722f285e7574919b3ebef20bf4565215a9aeb11a), [independent two-book + 25 birth regression commit 98a4e2a](https://github.com/smvastrorajaram-hub/smvastroservices/commit/98a4e2a61f3a5538503be44b4c1b87ce50dff6ce); [CI workflow](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38983269865).
+
+**Certification:** historical True Longitude ❌; historically independent Bīja/Mandocca ❌; complete seven-graha six-component BPHS Shadbala ❌. Draft PR must remain unmerged.
