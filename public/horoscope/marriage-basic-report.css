@@ -1,0 +1,75 @@
+/* SMV ASTRO marriage calculation tables and print-safe South/North/East charts. */
+.mm-basic-report{max-width:100%;overflow:visible}
+.mm-basic-report>h2{text-align:center;margin:1.2em auto .5em;color:#702331}
+.mm-basic-report .mm-base-note{text-align:center;line-height:1.6;margin:0 0 1em}
+.mm-basic-report .mm-base-person{margin:16px auto 22px;padding:12px;break-inside:auto;page-break-inside:auto;border:1px solid #d9c9a9;border-radius:10px;background:#fffdf8}
+.mm-basic-report .mm-base-person>h3{text-align:center;color:#782432;margin:5px 0 12px}
+.mm-basic-report .mm-base-person>h4{font-size:1.05rem;color:#63283a;margin:20px 0 9px;break-after:avoid}
+.mm-basic-report .mm-base-person>h4:first-child{margin-top:6px}
+.mm-basic-report .mm-base-identity{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin:0 0 10px;font-size:.9rem}
+.mm-basic-report .mm-base-identity span{min-width:110px;overflow-wrap:anywhere}
+.mm-basic-report .mm-base-scroll{overflow-x:auto;max-width:100%;margin:6px 0 16px}
+.mm-basic-report .mm-base-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:.79rem;line-height:1.42;background:#fff}
+.mm-basic-report .mm-base-table th,.mm-basic-report .mm-base-table td{border:1px solid #c8bca8;padding:6px 7px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:anywhere}
+.mm-basic-report .mm-base-table th{background:#f6ecdb;font-weight:700}
+.mm-basic-report .mm-base-table tr{break-inside:avoid;page-break-inside:avoid}
+.mm-basic-report .mm-base-av{font-size:.68rem}
+.mm-basic-report .mm-base-av th,.mm-basic-report .mm-base-av td{padding:4px 3px}
+.mm-basic-report .mm-base-chart-row{display:flex;align-items:flex-start;justify-content:space-evenly;flex-wrap:wrap;gap:14px;margin:12px 0 18px}
+.mm-basic-report .mm-base-chart-wrap{width:min(100%,286px);flex:0 1 270px;margin:0 auto}
+.mm-basic-report .mm-base-chart-wrap h4{text-align:center;margin:0 0 6px;color:#692b30}
+.mm-basic-report .mm-base-chart{position:relative;box-sizing:border-box;width:100%;aspect-ratio:1/1;max-width:270px;margin:0 auto;border:2px solid #755137;background:#fff;overflow:hidden}
+.mm-basic-report .mm-base-cell{box-sizing:border-box;min-width:0;min-height:0;padding:3px;text-align:center;font-size:10px;line-height:1.22;overflow-wrap:anywhere}
+.mm-basic-report .mm-base-cell b{display:block;font-size:10px;font-weight:700;line-height:1.1}
+.mm-basic-report .mm-base-cell span{display:block;font-size:10px;margin-top:2px}
+.mm-basic-report .mm-base-south{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
+.mm-basic-report .mm-base-south>.mm-base-cell,.mm-basic-report .mm-base-south>.mm-base-center{border:1px solid #9a8574}
+.mm-basic-report .mm-base-south>.mm-base-center{background:#faf1df}
+.mm-basic-report .mm-base-geometry{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.mm-basic-report .mm-base-geometry rect,.mm-basic-report .mm-base-geometry path{fill:none;stroke:#8b7057;stroke-width:.7}
+.mm-basic-report .mm-base-north>.mm-base-cell,.mm-basic-report .mm-base-east>.mm-base-cell{position:absolute;z-index:1;width:23%;height:21%;transform:translate(-50%,-50%);display:flex;align-items:center;flex-direction:column;justify-content:center}
+.mm-basic-report .mm-base-north>.mm-base-pos-0{left:50%;top:22%}
+.mm-basic-report .mm-base-north>.mm-base-pos-1{left:28%;top:11%}
+.mm-basic-report .mm-base-north>.mm-base-pos-2{left:11%;top:28%}
+.mm-basic-report .mm-base-north>.mm-base-pos-3{left:22%;top:50%}
+.mm-basic-report .mm-base-north>.mm-base-pos-4{left:11%;top:72%}
+.mm-basic-report .mm-base-north>.mm-base-pos-5{left:28%;top:89%}
+.mm-basic-report .mm-base-north>.mm-base-pos-6{left:50%;top:78%}
+.mm-basic-report .mm-base-north>.mm-base-pos-7{left:72%;top:89%}
+.mm-basic-report .mm-base-north>.mm-base-pos-8{left:89%;top:72%}
+.mm-basic-report .mm-base-north>.mm-base-pos-9{left:78%;top:50%}
+.mm-basic-report .mm-base-north>.mm-base-pos-10{left:89%;top:28%}
+.mm-basic-report .mm-base-north>.mm-base-pos-11{left:72%;top:11%}
+.mm-basic-report .mm-base-east>.mm-base-pos-0{left:50%;top:16%}
+.mm-basic-report .mm-base-east>.mm-base-pos-1{left:24%;top:11%}
+.mm-basic-report .mm-base-east>.mm-base-pos-2{left:9%;top:24%}
+.mm-basic-report .mm-base-east>.mm-base-pos-3{left:16%;top:50%}
+.mm-basic-report .mm-base-east>.mm-base-pos-4{left:9%;top:76%}
+.mm-basic-report .mm-base-east>.mm-base-pos-5{left:24%;top:89%}
+.mm-basic-report .mm-base-east>.mm-base-pos-6{left:50%;top:84%}
+.mm-basic-report .mm-base-east>.mm-base-pos-7{left:76%;top:89%}
+.mm-basic-report .mm-base-east>.mm-base-pos-8{left:91%;top:76%}
+.mm-basic-report .mm-base-east>.mm-base-pos-9{left:84%;top:50%}
+.mm-basic-report .mm-base-east>.mm-base-pos-10{left:91%;top:24%}
+.mm-basic-report .mm-base-east>.mm-base-pos-11{left:76%;top:11%}
+.mm-basic-report .mm-base-unavailable{font-size:.88rem;padding:10px;color:#8b332f}
+#smvMarriageMatching .mm-calculated-offset{background:#fffaf1;color:#3f3028;font-weight:600}
+#smvMarriageMatching .mm-offset-message{display:block;font-size:.8rem;line-height:1.55;margin-top:3px;color:#735c45}
+@media(max-width:620px){
+.mm-basic-report .mm-base-person{padding:7px}
+.mm-basic-report .mm-base-table{font-size:.74rem}
+.mm-basic-report .mm-base-chart-wrap{max-width:285px}
+.mm-basic-report .mm-base-av{font-size:.62rem}
+}
+@media print{
+ .mm-basic-report .mm-base-person{border:0;border-radius:0;background:#fff;box-shadow:none;margin:4mm auto 6mm}
+ .mm-basic-report .mm-base-scroll{overflow:visible!important}
+ .mm-basic-report .mm-base-table{font-size:8.5pt;max-width:100%;width:100%}
+ .mm-basic-report .mm-base-av{font-size:6pt}
+ .mm-basic-report .mm-base-av th,.mm-basic-report .mm-base-av td{padding:2pt 1pt}
+ .mm-basic-report .mm-base-chart-wrap{width:62mm;max-width:62mm;flex:0 0 62mm}
+ .mm-basic-report .mm-base-chart{width:60mm;max-width:60mm;height:60mm}
+ .mm-basic-report .mm-base-cell b,.mm-basic-report .mm-base-cell span{font-size:7pt}
+ .mm-basic-report .mm-base-chart-row{break-inside:avoid;page-break-inside:avoid}
+ .mm-basic-report .mm-base-table thead{display:table-header-group}
+}
