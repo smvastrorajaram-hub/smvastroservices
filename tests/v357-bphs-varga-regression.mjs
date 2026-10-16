@@ -32,6 +32,10 @@ for(let sign=0;sign<12;sign++){
   const boundaries=d===30?(sign%2===0?[0,5,10,18,25,30]:[0,5,12,20,25,30]):Array.from({length:d+1},(_,k)=>k*30/d);
   const points=new Set([0,0.00001,29.99999]);
   for(const b of boundaries)for(const delta of [-0.00001,0,0.00001]){
+   // Fractions like 30/7 cannot be represented exactly as IEEE-754 doubles.
+   // At the nominal mathematical boundary, sign*30+x may round one ULP below it.
+   // Test both sides; test exact boundaries only when integer-representable.
+   if(delta===0&&!Number.isInteger(b))continue;
    const x=b+delta;if(x>=0&&x<30) points.add(x);
   }
   for(const x of points){
