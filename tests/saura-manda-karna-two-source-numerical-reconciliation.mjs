@@ -338,11 +338,99 @@ for(const row of marsPaperRows){
 }
 ensure(marsFourStageEvidence.length===2,
   'both exact 2024 academic dates have all four separately enumerated stages');
+/*
+ * Sūrya Siddhānta II.39, in Burgess (1860): Manda-phala is the arc of
+ * (paridhi/360) * bhujajya, with NO variable Karṇa denominator.
+ * II.40–42 explicitly introduces the Karṇa divisor for Śīghra.
+ *
+ * Compare that literal original-text computation against BOTH existing
+ * Manda-Karṇa research conventions, with independent trigonometry and
+ * independently interpolated 24-point Jya. No fitted orbital constants.
+ * Direct-Jya textual correctness does NOT prove historical Bīja,
+ * apogee epoch, arbitrary-date geocentric truth or BPHS Shadbala.
+ */
+const verse39DirectJyaComparisons=[];
+const degreeRad=Math.PI/180,radDegree=180/Math.PI;
+const independentMandaEpicycles=Object.freeze({
+ Mercury:[30,28],Venus:[12,11],Mars:[75,72],
+ Jupiter:[33,32],Saturn:[49,48]
+});
+function independentVerse39MandaArc(inputLongitude,apsis,planet){
+ const k=((apsis-inputLongitude)%360+360)%360;
+ const sine=Math.sin(k*degreeRad);
+ const [even,odd]=independentMandaEpicycles[planet];
+ const paridhi=even-(even-odd)*Math.abs(sine);
+ return Math.asin(paridhi/360*sine)*radDegree;
+}
+for(const [source,rows] of [
+ ['Caitanya worked table',site],
+ ['JAA 2024-04-09',academic2024April09],
+ ['JAA 2024-04-13',academic2024April13]
+]){
+ for(const [planet,v] of Object.entries(rows)){
+  const args={...parameters(v,planet),mandaKarṇaConvention:'verse39-direct-jya'};
+  const exact=geometric(args),printedJya=tabular(args),old=geometric({...args,mandaKarṇaConvention:'common-plus'});
+  const firstManda=independentVerse39MandaArc(exact.stages.afterHalfSighra,v[1],planet);
+  const secondManda=independentVerse39MandaArc(exact.stages.afterHalfManda,v[1],planet);
+  near(exact.stages.halfMandaDegrees,firstManda/2,1e-10,
+    source+' '+planet+' literal II.39 half-Manda direct sine, no Karṇa');
+  near(exact.stages.fullMandaDegrees,secondManda,1e-10,
+    source+' '+planet+' literal II.39 full-Manda direct sine, no Karṇa');
+  ensure(dist(printedJya.trueLongitude,exact.trueLongitude)<.04,
+    source+' '+planet+' II.39 24-Jya and continuous arc agreement');
+  ensure(!exact.historicallyCertified&&!printedJya.historicallyCertified&&
+    !exact.liveCheshtaEligible&&!printedJya.useAsProductionCheshta,
+    source+' '+planet+' strict no false historical certification');
+  verse39DirectJyaComparisons.push({
+    source,planet,publishedTrueLongitude:v[3],
+    directVerse39True:+exact.trueLongitude.toFixed(6),
+    directPrintedJyaTrue:+printedJya.trueLongitude.toFixed(6),
+    directPublishedErrorDeg:+dist(exact.trueLongitude,v[3]).toFixed(6),
+    previousCommonMandaTrue:+old.trueLongitude.toFixed(6),
+    oldVersusDirectModelDiffDeg:+dist(exact.trueLongitude,old.trueLongitude).toFixed(6),
+    certified:false
+  });
+ }
+}
+ensure(verse39DirectJyaComparisons.length===15,
+ 'two historical publications 15 direct-Jya five-body examples');
+const verse39NatalFive=[];
+for(const b of births){
+ const [year,month,day]=b[0].split('-').map(Number);
+ const [hr,min]=b[1].split(':').map(Number);
+ const jdUt=(Date.UTC(year,month-1,day,hr,min)-330*60000)/86400000+2440587.5;
+ const rows={date:b[0],time:b[1],grahas:{}};
+ for(const planet of Object.keys(site)){
+  const mean=sauraFivePlanetCheshtaInputs(jdUt,planet),
+        apogee=sauraMandoccaResearch(jdUt,planet);
+  const arg={planet,meanLongitude:mean.meanLongitude,
+    mandocca:apogee.mandocca,sheeghrocha:mean.sheeghrocha,
+    mandaKarṇaConvention:'verse39-direct-jya'};
+  const exact=geometric(arg),table=tabular(arg);
+  const strength=cheshta(tamil[planet],mean.meanSunLongitude,
+    mean.ownMeanOrbitLongitude,exact.trueLongitude);
+  ensure(dist(exact.trueLongitude,table.trueLongitude)<.04,
+    b[0]+' '+planet+' natal II.39 tabular/continuous numeric check');
+  ensure(!exact.historicallyCertified&&!strength.natalCertified&&
+     !apogee.historicalNumericalCertified,
+    b[0]+' '+planet+' uncertified historical apogee prevents full Shadbala');
+  rows.grahas[planet]={verse39True:+exact.trueLongitude.toFixed(6),
+    verse39CheshtaVirupa:+strength.virupa.toFixed(6),certified:false};
+ }
+ verse39NatalFive.push(rows);
+}
+ensure(verse39NatalFive.length===5&&
+  verse39NatalFive.every(x=>Object.keys(x.grahas).length===5),
+  'all 25 actual birth planet II.39 research calculations');
+assert.throws(()=>tabular({...parameters(site.Mars,'Mars'),mandaKarṇaConvention:'verse39-direct-jya-automatic-certified'}),RangeError);count++;
 console.log(JSON.stringify({
   pass:true,assertions:count,
   sourceMathForensicPASS:true,
   marsFourStageEvidence,
   marsPublishedEquationEvidence,
+  verse39DirectJyaComparisons,verse39NatalFive,
+  verse39TextArithmeticVerified:true,
+  historicalTrueLongitudeFromVerse39Certified:false,
   siteFourCommonOneAlternateConfirmed:true,
   oneUniversalAbsoluteKotiMatchesFivePublishedGrahas:true,
   mandakarnaConventionConflictNotSilentlyFitted:true,
