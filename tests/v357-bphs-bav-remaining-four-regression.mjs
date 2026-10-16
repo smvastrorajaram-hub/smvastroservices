@@ -16,8 +16,10 @@ const book={
  'ASC SAT MRS MCY MN',ALL,'JUP MCY SN'
  ],
  'குரு':[
- 'ASC MRS SN MCY','JUP ASC MRS SN MCY MN VEN','SAT JUP SN',
- 'ASC MRS SN MCY','VEN MN ASC MCY SAT','VEN ASC MCY SAT',
+ // The Jupiter printed Prastara TABLE shows JUP in houses 1 and 4,
+ // even though the English prose omits JUP there. Book internal discrepancy.
+ 'ASC MRS SN MCY JUP','JUP ASC MRS SN MCY MN VEN','SAT JUP SN',
+ 'ASC MRS SN MCY JUP','VEN MN ASC MCY SAT','VEN ASC MCY SAT',
  'ASC MRS JUP SN MN','JUP SN MRS','VEN SN ASC MN MCY',
  'JUP MCY MRS SN VEN ASC',seven,'SAT'
  ],
