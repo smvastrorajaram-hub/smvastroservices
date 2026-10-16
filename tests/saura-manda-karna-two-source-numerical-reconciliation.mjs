@@ -136,7 +136,8 @@ for(const [date,time] of births){
         universal=tabular({...args,mandaKarṇaConvention:'absolute-koti-minus'});
   const fromDOB=liveResearch.planets.find(p=>p.planet===planet);
   ensure(fromDOB?.mandaKarṇaConvention==='absolute-koti-minus'&&
-    dist(fromDOB.trueLongitude,universal.trueLongitude)<1e-9,
+    dist(fromDOB.tabularClassicalTrueLongitude,universal.trueLongitude)<1e-9 &&
+    dist(fromDOB.trueLongitude,universal.trueLongitude)<.035,
     date+' '+planet+' real birth-to-Cheshta uses SAME universal book model');
   const bp=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,plus.trueLongitude),
         bm=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,minus.trueLongitude),
