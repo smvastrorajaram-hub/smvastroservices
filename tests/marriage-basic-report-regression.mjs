@@ -114,7 +114,6 @@ const chartBodies=[...ta.matchAll(/<div class="mm-base-chart mm-base-[a-z]+"[^>]
 ok(ta.includes('mm-base-planet')&&ta.includes('mm-base-geometry'),'Charts use compact planet codes and full SVG geometry');
 ok(!en.includes('Position, transit and house tables only: R — Retrograde · C — Combust'),'Standalone English legend is removed');
 ok(!custom.includes('mm-base-legend'),'No chart legend remains in generated HTML');
-const flagCharts=[...custom.matchAll(/<div class="mm-base-chart-wrap" data-chart-mode="(rasi|navamsa|bhava)">([\\s\\S]*?)<\\/div><\\/div>/g)];
 ok(custom.includes('mm-base-flag'),'Chart states remain visible in all styles');
 const printCss=read('public/horoscope/report-print.css');
 ok(printCss.includes('Matching-only symmetric cover alignment'),'Matching Saved and PDF cover have dedicated centered-image CSS');
