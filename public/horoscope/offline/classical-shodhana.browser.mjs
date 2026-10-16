@@ -8,11 +8,10 @@
  * Graha Pinda. Occupancy for Ekadhipatya may include Rahu/Ketu, while Pinda
  * must exclude those nodes (BPHS II Ch.69 example).
  *
- * The English prose Ch.68 rule (1) is inconsistent with its worked example:
- * the prose says both unoccupied signs take the smaller value, while
- * the illustration takes the smaller one to ZERO and leaves larger unchanged.
- * This module explicitly follows that WORKED EXAMPLE, not an implied PASS of
- * every textual variant. Document/resolve the discrepancy before release.
+ * Ch.68 English prose rule (1) has ambiguous wording; the worked
+ * illustration clearly shows subtracting the smaller count from BOTH empty
+ * owned signs (e.g., Sagittarius 1/Pisces 2 -> 0/1). The test follows the
+ * worked numeric example rather than assuming an unverified alternate text.
  */
 export const RASI_MULTIPLIERS=Object.freeze([7,10,8,4,10,6,7,8,9,5,11,12]);
 export const GRAHA_MULTIPLIERS=Object.freeze({
@@ -28,7 +27,7 @@ function row(value,where){
  return [...value];
 }
 function signs(value){
- const inputs=Array.isArray(value)?value:[...value??[]];
+ const inputs=Array.isArray(value)?value:Array.from(value??[]);
  const set=new Set(inputs.map(x=>Number(x)));
  if(set.size!==inputs.length||[...set].some(x=>!Number.isInteger(x)||x<0||x>11)){
   throw new RangeError('occupiedSigns must have unique indices in 0..11');
@@ -60,9 +59,9 @@ export function ekadhipatyaShodhana(trikonaRow,occupiedSigns){
   // Leave either-zero cases and both-occupied cases unchanged.
   if(out[a]>0&&out[b]>0&&! (occA&&occB)){
    if(!occA&&!occB){
-    if(out[a]===out[b]){out[a]=0;out[b]=0;rule='both-empty-equal-zero';}
-    else if(out[a]>out[b]){out[b]=0;rule='both-empty-smaller-zero';}
-    else{out[a]=0;rule='both-empty-smaller-zero';}
+    const least=Math.min(out[a],out[b]);
+    out[a]-=least;out[b]-=least;
+    rule='both-empty-subtract-smaller';
    }else{
     const inhabited=occA?a:b,empty=occA?b:a;
     out[empty]=out[empty]>out[inhabited]?out[empty]-out[inhabited]:0;
