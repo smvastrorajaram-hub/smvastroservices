@@ -46,7 +46,16 @@ if(host){
  if(calendarAppPage){const pagesHost=location.hostname==='smvastroservices.pages.dev';let appInstalled=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;if(!pagesHost){try{appInstalled=appInstalled||(localStorage.getItem('smv-calendar-pwa-installed-v216')==='1'||localStorage.getItem('smv-calendar-pwa-installed-v1')==='1')}catch{}}const appLink=$('.cal-app-link');if(appLink){appLink.hidden=appInstalled;appLink.onclick=e=>{e.preventDefault();document.getElementById('calInstall')?.click();};}}
  bindPlaceSearch();
  $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);$('#calDate').value=selected;loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;
- $('#calLocation').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);cfg={...cfg,place:f.get('place'),lat:+f.get('lat'),lon:+f.get('lon'),offset:+f.get('offset')*60,timezone:$('#calPlace')?.dataset.timezone||''};if(!Number.isFinite(cfg.offset))throw new Error('Select a valid UTC offset');storage.set(cfg);month=null;monthCache.clear();shell();load()};
+ $('#calLocation').onsubmit=e=>{
+  e.preventDefault();const f=new FormData(e.target);
+  const raw=String(f.get('offset')??'').trim(),latitude=String(f.get('lat')??'').trim(),longitude=String(f.get('lon')??'').trim();
+  if(!raw||!Number.isFinite(Number(raw))||Number(raw)<-12||Number(raw)>14||!latitude||!longitude||!Number.isFinite(Number(latitude))||!Number.isFinite(Number(longitude))){
+   const message=L('Confirm coordinates and a valid UTC offset before using Calendar.','Calendar பயன்படுத்தும் முன் இடக் கோடுகளையும் சரியான UTC நேர வேறுபாட்டையும் உறுதிப்படுத்தவும்.');
+   status(message,true);return;
+  }
+  cfg={...cfg,place:f.get('place'),lat:Number(latitude),lon:Number(longitude),offset:Number(raw)*60,timezone:$('#calPlace')?.dataset.timezone||''};
+  storage.set(cfg);month=null;monthCache.clear();shell();load();
+ };
  $('#calGeo').onclick=()=>{if(!navigator.geolocation)return;$('#calStatus').textContent=L('Finding your location…','உங்கள் இருப்பிடம் தேடப்படுகிறது…');navigator.geolocation.getCurrentPosition(pos=>{cfg={...cfg,lat:+pos.coords.latitude.toFixed(5),lon:+pos.coords.longitude.toFixed(5),offset:-new Date().getTimezoneOffset(),place:L('Current location','தற்போதைய இடம்')};storage.set(cfg);month=null;monthCache.clear();shell();load()},()=>{$('#calStatus').textContent=L('Location permission unavailable. Enter coordinates above.','இருப்பிடம் கிடைக்கவில்லை. மேலே விவரங்களை உள்ளிடவும்.')},{timeout:10000});};
  }
  const holidays=date=>date.startsWith('2026-')?(holidays2026[date.slice(5)]||[]):[];
