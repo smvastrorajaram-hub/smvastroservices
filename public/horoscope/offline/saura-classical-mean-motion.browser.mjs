@@ -39,9 +39,12 @@ function knownBody(body) {
   return key;
 }
 function validJulian(jdUt){
-  // Limiting to well-resolved positive Julian dates prevents loss of
-  // precision in enormous (unrepresentable) epoch separations.
-  if(!Number.isFinite(jdUt)||jdUt<0||jdUt>5000000)
+  // The mathematical mahayuga-cycle regression intentionally evaluates one
+  // FULL canonical cycle after a modern date (JD > 1.5 billion); the old
+  // 5-million limit rejected this legitimate cycle test. Allow at most one
+  // mahayuga plus a 5-million-day margin, not unbounded Number inputs.
+  if(!Number.isFinite(jdUt)||jdUt<0||
+     jdUt>KALI_EPOCH_JD_UT+YUGA_CIVIL_DAYS+5000000)
     throw new RangeError('Finite UTC Julian day in supported civil-date range required');
 }
 /** Traditional angular mean daily velocity, degrees per civil day. */
