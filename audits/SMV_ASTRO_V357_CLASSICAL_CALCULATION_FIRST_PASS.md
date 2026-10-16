@@ -99,3 +99,21 @@ Under the stated one-occupied/one-empty rule, if Gemini contains Jupiter, its 4 
 **Controlled change:** The isolated experimental Shodhana regression now explicitly checks both readings, recording the mismatch instead of falsely claiming complete book/example agreement. Neither live Horoscope results nor the Shodhana source algorithm have been changed. The book's editorial conflict must be resolved against an independently authoritative Sanskrit commentary or a declared calculation school before exact Ekadhipatya certification. The test may pass at detecting this **known discrepancy**; the underlying book example remains **UNRESOLVED / NOT CERTIFIED**.
 
 V359 equal-gutter UI changes were merged to main separately as `45264d220517d798ae9935b79ec685fbfb77ddfa`; all classical changes in this draft are still not deployed. No extrapolation from numeric test checks to predictions/remedies is valid.
+
+## Fifth pass — user-approved Shodhana skip; BPHS I Chapter 27 positional Shadbala
+
+**Shodhana — SKIPPED BY USER REQUEST**. No further Chapter 68 Shodhana tests are executed in this CI workflow, and the experimental Shodhana module remains offline and unconnected. Its book-example discrepancy is unchanged and NOT certified.
+
+On resuming at Shadbala, cross-referenced the source with **BPHS Volume 1, Santhanam, Chapter 27, PDF pages 264–266**, and identified three definite positional miscalculations mirrored across `public/horoscope/offline/swiss_vedic.browser.mjs` and `swiss_vedic.js`:
+
+| Rule | Incorrect baseline | Printed BPHS I rule | Action |
+| --- | --- | --- | --- |
+| Saptavargaja Bala friend ladder | 22.5/15/7.5/3.75/1.875 for great friend/friend/neutral/enemy/great enemy | **20/15/10/4/2 Virupas**; 45 moolatrikona and 30 own | Changed in BOTH Swiss engines on draft |
+| Ojhayugmarasiamsa Bala | Awarded 15 in *opposite* parity sign/navamsa for male/neutral and female grahas | Venus/Moon even sign & Navamsa; other five odd, **15 Virupas each** | Corrected both sign and D9 parity in BOTH engines |
+| Drekkana Bala | Female received 15 in third 10°, neutral in second 10° | Male first; **female second; neutral third** decan | Corrected BOTH engines |
+
+Added `tests/v357-bphs-shadbala-positional-regression.mjs`: independent 7-Virupa ladder, explicit relationship cases, 7 planets × 12 signs × 9 longitude degrees and all five Perambalur natal charts. **Do not claim PASS until current branch's CI run completes.** Existing functional/structural/regression tests retained.
+
+**Remaining Shadbala certification blockers:** Hora Bala uses a fixed 06:00 solar-hour convention rather than historical sunrise-to-sunrise horas; Abda is hard-coded to Sun; Yuddha Bala always zero; Paksha Moon-phase benefic/malefic differentiation and Mercury malefic conjunction need independent audit; Saptavargaja moolatrikona degree application and fuller Chesta/Drig calculation require independent reference cases. Therefore **full classical Shadbala = FAIL / NOT CERTIFIED** despite three corrected subcomponents.
+
+**Scope discipline:** The changes are on the V357 *draft* branch only. No changes to UI/PWA/location/DST/chart/PDF/print/save/admin/login/payment; do not merge until remaining regression and book verification succeeds.
