@@ -88,6 +88,8 @@ jobs:
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
       - name: V361 Uttara Kalamrita seven-planet Shadbala p45, Yuddha and Drig QA
         run: node tests/v361-uttara-kalamrita-shadbala-regression.mjs
+      - name: V362 BPHS Chapter 27 Drig Bala and planetary-war pre-war difference
+        run: node tests/v362-bphs-primary-shadbala-regression.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
         run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
