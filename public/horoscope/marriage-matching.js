@@ -1954,9 +1954,9 @@ function mm332RefineTimeline(markup,data){
 }
 
 function mm332Guard(action){try{return action()}catch(error){console.warn('V332 optional report evidence unavailable',error);return '';}}
-function mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing='',verdict=null){const age=mm281AgeNote(b,g);
+function mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing='',verdict=null,basicHtml=''){const age=mm281AgeNote(b,g);
  const simple=`<section class="mm-person-result mm-v281-technical"><h3>${T('Supporting calculations','துணைக் கணக்கீடுகள்')}</h3>${marriageStrengthMatrixPanel(b,g,verdict)}${papasamyamPanel(b,g)}${numerologyPanel(b,g)}${gochar}</section>`;
- return `<div class="mm-full-results mm-v281-results mm-v308-results">${age.html}${mmVerdictPanel(verdict,age,age.young?'':mm332Guard(()=>mm332VerdictEvidence(b,g,pr,ks,ds,sync,verdict)))}${mmFrontPoruthamPanel(pr,false)}${matchingIdentityPanel(b,g)}${mm308D9Panel(b,g)}${age.young?'':mm332Guard(()=>globalThis.SMVClassicalEvidenceV337?.renderMatching(b,g,lang())||mm332DivisionalPanel(b,g))}${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}${mmPublishedInterpretations(b,g,pr,verdict)}${timing}${simple}</div>`;
+ return `<div class="mm-full-results mm-v281-results mm-v308-results">${age.html}${mmVerdictPanel(verdict,age,age.young?'':mm332Guard(()=>mm332VerdictEvidence(b,g,pr,ks,ds,sync,verdict)))}${mmFrontPoruthamPanel(pr,false)}${matchingIdentityPanel(b,g)}${basicHtml}${mm308D9Panel(b,g)}${age.young?'':mm332Guard(()=>globalThis.SMVClassicalEvidenceV337?.renderMatching(b,g,lang())||mm332DivisionalPanel(b,g))}${mm281TopicBook(b,g)}${mm281Personality(b,g)}${mm281DoshaChapter(b,g,ks,sync,pr)}${mmPublishedInterpretations(b,g,pr,verdict)}${timing}${simple}</div>`;
 }
 const mm308Cache=new WeakMap();
 async function mm308Timing(b,g,out){const ref=mmIsoDate(mmAnalysisDate());let rows=mm308Cache.get(b);if(!rows){rows=new WeakMap();mm308Cache.set(b,rows);}let entry=rows.get(g);const mod=await import('./matching-timeline.mjs');if(!entry||entry.ref!==ref){mm335TransitCache.get(b)?.delete(g);entry={ref,promise:null};entry.promise=mod.prepare(b,g,ref,progress=>{if(out&&!out.querySelector('.mm-v308-results'))out.textContent=T('Calculating the 15-year marriage timeline…','15 வருட திருமண வாழ்க்கைக் காலப் பலன்கள் கணக்கிடப்படுகின்றன…');}).catch(e=>{if(rows.get(g)===entry)rows.delete(g);throw e;});rows.set(g,entry);}const calculated=await entry.promise;let peers=mm335TransitCache.get(b);if(!peers){peers=new WeakMap();mm335TransitCache.set(b,peers);}peers.set(g,calculated);const original=mod.render(b,g,calculated,lang());return mm332Guard(()=>mm332RefineTimeline(original,calculated))||original;}
@@ -1966,8 +1966,7 @@ async function renderMatching(b,g,out,quiet=false){
  let timing;try{timing=await mm308Timing(b,g,out);}catch(e){console.error('V308 matching timeline',e);timing=`<section class="mm-person-result mm-v308-timing-incomplete"><h3>${T('15-year timing is incomplete','15 வருட காலப் பலன் முழுமையடையவில்லை')}</h3><p>${T('The required period or offline transit data could not be calculated. Natal results remain available; run the full report again to retry.','தேவையான தசை அல்லது offline கோச்சாரத் தரவை கணிக்க முடியவில்லை. பிறப்பு ஜாதகப் பலன்கள் கீழே உள்ளன; முழு அறிக்கையை மீண்டும் கணித்து முயற்சிக்கவும்.')}</p></section>`;}
 
  const bf=chartFacts(b),gf=chartFacts(g),pr=porutham(b,g),ks=kujaSamyam(b,g),ds=dashaSandhi(b,g),sync=dashaDoshaSync(b,g),v=fullVerdict(pr,ks,ds,bf,gf,sync,b,g),gochar=await gocharPanel(b,g,matchingTransit),por=mmFrontPoruthamPanel(pr),doshaFront=mmFrontDoshaSummaryPanel(b,g,pr,ks,sync,ds);const ku=`<section class="mm-person-result"><h3>${T('Dosha balance / cancellation review','தோஷ சமநிலை / விலக்கு ஆய்வு')}</h3><div class="mm-facts"><div><b>${T('Bride Kuja','பெண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.B.text)}</span></div><div><b>${T('Groom Kuja','ஆண் செவ்வாய் தோஷம்')}</b><span>${esc(ks.G.text)}</span></div></div></section>`,sand=`<section class="mm-person-result"><h3>${T('Dasha Sandhi','தசா சந்தி')}</h3><p>${ds.length?ds.map(x=>`${esc(x.a.lord)} → ${esc(x.a.end)} / ${esc(x.b.lord)} → ${esc(x.b.end)} · ${x.days} ${T('days apart','நாட்கள் இடைவெளி')}`).join('<br>'):T('No Mahadasha endings within one year of each other in the available range.','கிடைத்த காலவரம்பில் இருவரின் மகாதசை முடிவுகள் ஒரு வருடத்திற்குள் அருகில் இல்லை.')}</p></section>`;
- const legacyHtml=mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing,v);
- out.innerHTML=legacyHtml;
+ // Prepare the additive technical appendix first; then render the full report in its final reading order.
  // Keep the complete established full matching verdict and human-readable
  // prediction report. The new factual chart/table appendix is additive only.
  const basicMod=await import('./marriage-basic-report.mjs');
@@ -1976,7 +1975,7 @@ async function renderMatching(b,g,out,quiet=false){
   language:lang(),brideStyle:b.birthChartStyle||'south',groomStyle:g.birthChartStyle||'south',
   reviewDate,poruthamRows:[],transitFn:input=>window.SMVOffline.transit(input)
  });
- out.insertAdjacentHTML('beforeend',basicHtml);
+ out.innerHTML=mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing,v,basicHtml);
  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);window.__smvLocalizeTamilResult?.(out,lang());localizeMatchingResult(out);out.dataset.resultLanguage=lang();if(!quiet)window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'marriage_matching',root:out,prepareViews:()=>matchingViews(b,g,out),birthIdentity:window.__smvGetReportContext('marriage_matching'),name:(b.birthName||b.nativeName||'')+' / '+(g.birthName||g.nativeName||''),calculation:{bride:b,groom:g,transit:matchingTransit}}}));
 }
 function mount(){
