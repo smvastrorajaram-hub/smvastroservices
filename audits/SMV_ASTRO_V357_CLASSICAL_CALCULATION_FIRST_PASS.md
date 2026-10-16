@@ -127,3 +127,37 @@ Added `tests/v357-bphs-shadbala-positional-regression.mjs`: independent 7-Virupa
 Recorded CI `38948738702` source job: `799 calculation`, `24,428 Varga (15 divisions incl. D60)`, `1,635 positional Shadbala`, `200 BAV`, `403 structural` assertions/checks PASS. These are distinct overlapping scopes, not one 27,000-independent-conclusions certification. **Chapter 68 Shodhana remains SKIPPED by user's instruction**, removed from the CI job steps; its unconnected code is unchanged.
 
 No alterations to Horoscope/Matching narrative logic, UI, PWA, GeoNames, DST, chart style, print/save, Admin, Login or Payment. All classical changes remain on draft PR #6; **do not merge** without book-level D60 deity and remaining Shadbala/BAV checks plus five live report acceptance. Also reconcile this branch with newer main V359 CI workflow steps before any eventual merge.
+
+
+## Seventh pass — 7/7 BAV, 12 Lagna variability and 15-year MD/AD continuity
+
+User-requested order: **Shodhana skipped**, audit moves to remaining seven-planet strength, BAV, D60, 12 ascendants, next 15 years and matching.
+
+### Chapter 66: 7/7 BAV numerical Prastara confirmed at this scope
+The previously added Sun/Moon/Mars (three classical rows) independent 200-check audit is now supplemented by:
+- \`tests/v357-bphs-bav-remaining-four-regression.mjs\` — **Mercury 54, Jupiter 56, Venus 52, Saturn 39**, an independently transcribed twelve-house, eight-contributor book oracle from Santhanam BPHS Volume II, Chapter 66, **printed pp. 858–862 (PDF pp. 368–372)**, checked against five actual Perambalur charts.
+- **341 assertions PASS**, including exact source Prastara entry matching and per-sign BAV counts. Existing 200 checks for Sun/Moon/Mars still PASS. The derived SAV 337 is an invariant, but BAV agreement does not separately certify Kakshya/SAV forecast use or Shodhana.
+- **Two internal print conflicts**: (1) Jupiter's 1st and 4th house English prose omits Jupiter, whereas the printed Prastara table includes Jupiter, consistent with total 56. (2) Mercury's 5th house prose names Saturn, whereas the printed table marks **Sun** with Mercury and Venus, consistent with the total 54. The test explicitly documents and follows the book's **printed numerical Prastara tables** for those cells, not the inconsistent prose. Source engine already matched the numerical tables and was NOT changed. These editorial differences remain recorded, NOT a reason to resume Chapter 68 Shodhana.
+
+### D1 / 12 Lagna structural coverage
+- \`tests/v357-12-lagna-narrative-variability.mjs\`: 12 natal ascendant sign choices × 2 deliberately different graha placement variants × both Tamil and English: **48 synthetic readings**; **1,898 assertions PASS**.
+- Every reading covers twelve houses with its sign-linked house owner and non-empty paragraphs, varying with actual input planetary placements. Opening Lagna paragraphs are distinct across all twelve Lagna choices. This establishes structural chart variability, **NOT proof that each sentence's traditional causal inference is valid or human-like**.
+- Existing public published manual rule bundle is still empty; do not mislabel unreviewed rules as classical.
+
+### Next 15 years / Vimshottari structural coverage
+- \`tests/v357-five-chart-fifteen-year-dasha-window.mjs\`: uses five **real calculated Perambalur charts**, checks no pre-report-date windows, all MD/AD intervals contiguous, no gap/overlap and explicit report cutoff.
+- **220 assertions PASS** for date range **2026-10-16 through 2041-10-16**, with 16 / 12 / 15 / 11 / 10 dasha/bhukti time segments respectively.
+- This is a *date/timeline structural check*. It does **not** certify the source ephemerides, 15-year Gochara sign-change resolution (current seven-day sampling acknowledges potential skipped excursions), MD/AD interpretation, per-house medical/life narrative quality, or Marriage Matching verdicts. Remedial and lifestyle page-by-page sourcing remains pending.
+
+### CI and deployment separation
+CI GitHub Actions run **38950453829**: latest complete source + layout + GeoNames/HTTP jobs all PASS, including the 341, 1,898 and 220 above; subsequent report-only commit should run again. Historical 799 calc and 403 structural tests continue to pass.
+**All new Classical code and added test/audit artifacts remain on draft PR #6; NOT MERGED to production main.** V359 UI had already merged to main independently. Do not reactivate Chapter 68 Shodhana test; it is deliberately **SKIPPED** per explicit user instruction.
+
+### Remain FAIL/PENDING
+- Full 6-way Shadbala numeric reference certification (sunrise-based Hora, planetary-war Yuddha, Abda, Chesta and Drig).
+- Kakshya correctness against authoritatively transcribed eight-sector reference; full sign-sensitive SAV transit reading.
+- D60 deity classification and Navamsa/shashtiamsa finer interpretations.
+- Unrepeated *meaningful* 12-house physical/life conclusions and individual age-appropriate reasoning beyond structural differences.
+- Exact 15-year Jupiter/Saturn/Rahu/Ketu slow transit timeline and 15-year dasha-bhukti-to-life-event correctness.
+- Marriage Matching detailed D1/D7/D9 evidence, pair-specific timing, consistent final verdict, remedy conditions and factual independent comparison.
+- Live print/PDF acceptance and actual user-device layout cannot be proven by synthetic browser fixture tests alone.
