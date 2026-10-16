@@ -54,7 +54,7 @@ function chart(caption,planets,lagnaSign,style,ta,mode){
   inner=SOUTH.map(i=>i==null?'<div class="mm-base-center"></div>':cell(mode==='bhava'?((i-lagnaSign+12)%12):i)).join('');
  }else{
   const slots=kind==='north'
-   ?Array.from({length:12},(_,h)=>mode==='bhava'?h:(h+lagnaSign)%12)
+   ?Array.from({length:12},(_,h)=>mode==='bhava'?h:(h+Math.max(0,lagnaSign))%12)
    :Array.from({length:12},(_,i)=>mode==='bhava'?((i-lagnaSign+12)%12):i);
   inner=slots.map((s,i)=>cell(s).replace('mm-base-pos-'+s,'mm-base-pos-'+i)).join('');
  }
