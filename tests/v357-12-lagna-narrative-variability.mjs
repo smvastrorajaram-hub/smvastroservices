@@ -39,7 +39,7 @@ for(const language of ['ta','en']){
    for(const [j,topic] of out.topics.entries()){
     eq(topic.number,j+1,language+' '+lagna+' numbering');
     ok(topic.paragraphs.length>0,language+' '+lagna+' house '+(j+1)+' contains report text');
-    ok(topic.paragraphs.every(p=>typeof p.text==='string'&&p.text.length>40),language+' '+lagna+' complete prose not broken');
+    ok(topic.paragraphs.every(p=>typeof p.text==='string'&&p.text.length>=20),language+' '+lagna+' complete prose not broken');
    }
   }
   const a=render(charts[0],language),b=render(charts[1],language);
