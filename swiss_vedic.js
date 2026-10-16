@@ -605,8 +605,13 @@ function calculateSwiss({date,time,lat,lon,height=0,houseSystem,timezone='Asia/K
   const ds=String(date||''); const ts=String(time||'');
   const m=ts.match(/^(\d{1,2}):(\d{2})$/); if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m) throw new Error('பிறந்த தேதி / நேரம் சரியாக உள்ளிடவும்.');
   const hh=Number(m[1]), mm=Number(m[2]); if(hh>23||mm>59) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும்.');
-  const latitude=Number(lat), longitude=Number(lon); if(!Number.isFinite(latitude)||latitude<-90||latitude>90||!Number.isFinite(longitude)||longitude<-180||longitude>180) throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
+  const rawLatitude=lat, rawLongitude=lon;
+  if(rawLatitude===null||rawLatitude===undefined||String(rawLatitude).trim()===''||rawLongitude===null||rawLongitude===undefined||String(rawLongitude).trim()==='') throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
+  const latitude=Number(rawLatitude), longitude=Number(rawLongitude); if(!Number.isFinite(latitude)||latitude<-90||latitude>90||!Number.isFinite(longitude)||longitude<-180||longitude>180) throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
   const [y,mo,d]=ds.split('-').map(Number);
+  // Reject rollover dates (e.g. 2025-02-29 must not silently become March 1).
+  const civilDate=new Date(0); civilDate.setUTCFullYear(y,mo-1,d);
+  if(y<1||y>9999||!Number.isFinite(+civilDate)||civilDate.getUTCFullYear()!==y||civilDate.getUTCMonth()!==mo-1||civilDate.getUTCDate()!==d) throw new Error('பிறந்த தேதி சரியாக உள்ளிடவும்.');
   const offsetMinutes=Number(utcOffsetMinutes);
   if(!Number.isFinite(offsetMinutes) || offsetMinutes < -720 || offsetMinutes > 840) throw new Error('UTC offset சரியாக உள்ளிடவும்.');
   const localTotal=hh*60+mm;
