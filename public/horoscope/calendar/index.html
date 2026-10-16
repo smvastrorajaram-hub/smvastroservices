@@ -19,8 +19,19 @@
 })();
 </script>
 <style id="smv-v352-pages-standalone-install-hidden">
-html.smv-v352-pages-standalone #smvCalendarInstallArea,.cal-app-link{display:none!important;}
+html.smv-v352-pages-standalone #smvCalendarInstallArea,
+html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </style>
+<script id="smv-v353-pages-browser-calendar-install-recovery">
+(()=>{
+  if(location.hostname!=='smvastroservices.pages.dev')return;
+  const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  if(standalone)return;
+  // A Pages root-PWA visit can leave an incorrect Calendar installed flag.
+  // The native browser still decides if the separate Calendar PWA can be installed.
+  try{localStorage.removeItem('smv-calendar-pwa-installed-v217');}catch(_){ }
+})();
+</script>
 <script id="smv-v350-host-nav">if(location.hostname==='smvastroservices.pages.dev'){const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a){a.href='/';a.removeAttribute('target');}if(b){b.href='/horoscope/';b.removeAttribute('target');}});}</script>
 <script>
 (()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://calendar.smvastroservices.in/'+location.search+location.hash);}})();
