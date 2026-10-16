@@ -63,7 +63,7 @@ function extendDashaSequence(source,limit){
 }
 function clipPeriods(full,referenceDate){
  const born=birthDate(full);if(!born)throw Error('Birth date missing');
- const requested=referenceDate||stamp(Date.now());day(requested);
+ const n=new Date(),requested=referenceDate||[n.getFullYear(),String(n.getMonth()+1).padStart(2,'0'),String(n.getDate()).padStart(2,'0')].join('-');day(requested);
  const begin=requested<born?born:requested; // no forecast before birth
  // Unlike V279, do not forecast past the person's 15-year forecast end.
  const end=yearAfter(begin,15),start=day(begin),limit=day(end),chart=full?.chart||full;
