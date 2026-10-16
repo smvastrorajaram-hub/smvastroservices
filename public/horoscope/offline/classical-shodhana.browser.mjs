@@ -9,9 +9,10 @@
  * must exclude those nodes (BPHS II Ch.69 example).
  *
  * Ch.68 English prose rule (1) has ambiguous wording; the worked
- * illustration clearly shows subtracting the smaller count from BOTH empty
- * owned signs (e.g., Sagittarius 1/Pisces 2 -> 0/1). The test follows the
- * worked numeric example rather than assuming an unverified alternate text.
+ * illustration shows results inconsistent with rule (1) for empty sign pairs.
+ * This implementation deliberately follows the LITERAL BPHS Chapter 68
+ * prose rule, and exposes the printed-illustration mismatch in tests.
+ * No attempt is made to assert those mutually incompatible data as PASS.
  */
 export const RASI_MULTIPLIERS=Object.freeze([7,10,8,4,10,6,7,8,9,5,11,12]);
 export const GRAHA_MULTIPLIERS=Object.freeze({
@@ -59,9 +60,14 @@ export function ekadhipatyaShodhana(trikonaRow,occupiedSigns){
   // Leave either-zero cases and both-occupied cases unchanged.
   if(out[a]>0&&out[b]>0&&! (occA&&occB)){
    if(!occA&&!occB){
+    // Santhanam BPHS II Chapter 68, rule (1), LITERAL PROSE:
+    // unequal non-zero unoccupied signs BOTH receive the lesser count.
+    // Equal numbers are both zeroed (rule 5).
+    // The printed example contradicts this rule for Taurus/Libra and
+    // Sagittarius/Pisces. Never silently present it as reconciled.
     const least=Math.min(out[a],out[b]);
-    out[a]-=least;out[b]-=least;
-    rule='both-empty-subtract-smaller';
+    if(out[a]===out[b]){out[a]=0;out[b]=0;rule='both-empty-equal-zero';}
+    else {out[a]=least;out[b]=least;rule='both-empty-book-prose-minimum';}
    }else{
     const inhabited=occA?a:b,empty=occA?b:a;
     out[empty]=out[empty]>out[inhabited]?out[empty]-out[inhabited]:0;
