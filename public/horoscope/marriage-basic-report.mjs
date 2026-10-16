@@ -53,7 +53,7 @@ function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[],natalPlanets=[]
   const k=name(p?.name??p?.planet,false),st=p?.strength||natalState.get(k)||p||{};
   const retro=st.retrograde===true||(st.retrograde==null&&finite(p?.speed)&&Number(p.speed)<-1e-7);
   const combustion=st.combustion===true;
-  return {label:short(String(p?.name??p?.planet||'')),retro,combustion};
+  return {label:short(String((p?.name??p?.planet)??'')),retro,combustion};
  };
  const hSign=h=>{
   const d=bhavas?.[h-1];
