@@ -13,6 +13,7 @@ import {bphsFivePlanetCheshtaFromClassicalMeans as classic,
   bphsCheshtaFromOrbitalElements as formula
 } from '../public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
+import {compareSwissOsculatingWithClassicalCheshta as explore} from '../public/horoscope/offline/bphs-cheshta-swiss-orbital-research.browser.mjs';
 const norm=x=>((x%360)+360)%360;
 let n=0;
 function ok(x,desc){assert.ok(x,desc);n++}
@@ -89,4 +90,17 @@ assert.throws(()=>classic('செவ்வாய்',20,undefined,100),TypeError
 assert.throws(()=>wes.orbitalElements(2451545,C.SUN),RangeError);n++;
 assert.throws(()=>wes.orbitalElements(NaN,C.MARS),RangeError);n++;
 assert.throws(()=>wes.orbitalElements(2451545,C.MARS,65536),RangeError);n++;
+// Exercise the isolated research-only comparison in addition to the lower
+// level Swiss getter: 1 real birth, 5 grahas, and hard no-production gates.
+const exploreOut=await explore({date:'1992-07-31',time:'22:05',utcOffsetMinutes:330});
+eq(exploreOut.planets.length,5,'Research comparator computes five book-eligible planets');
+eq(exploreOut.classicalCheshtaCertified,false,'Research trial cannot certify classical Cheshta');
+eq(exploreOut.productionShadbalaChanged,false,'Research trial does not mutate live Shadbala');
+for(const p of exploreOut.planets){
+ ok(p.withinArithmeticRange,'Research trial '+p.planet+' gives 0-60 only as arithmetic range');
+ eq(p.canReplaceCurrentStrength3,false,'Research trial '+p.planet+' cannot replace current strength');
+ eq(p.natalCertified,false,'Research trial '+p.planet+' not a verified book mean');
+ eq(p.sourceFrames.trueLongitude,'Swiss geocentric Lahiri sidereal','Research trial '+p.planet+' true longitude frame');
+}
+assert.throws(()=>explore({date:'invalid',time:'22:05',utcOffsetMinutes:330}),RangeError);n++;
 console.log(JSON.stringify({pass:true,assertions:n,method:'read-only modern Swiss orbital elements verified against independent Moshier five Perambalur births; book five-planet BPHS+UK input selection',comparison:summaries,shadbalaClassicalCertified:false,liveCheshtaSource:'unchanged speed-based provisional',notes:['Modern orbital elements not classical mean/Sheeghrocha','PyJHora uses a different Ujjain-1900 mean-motion model under AGPL-3.0 and is NOT copied','BPHS true full numerical certification requires independently validated classical sidereal mean positions']}));
