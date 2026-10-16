@@ -57,3 +57,17 @@ not merged into \`main\`; Cloudflare live deployments, UI,
 PWA, login, payment, print and save are intentionally untouched.
 After every regression is green and the changed Varga output is reviewed
 on actual five birth charts, the source corrections can be merged separately.
+
+
+## Third pass — BPHS II Ashtakavarga reduction candidate
+- Reviewed BPHS II Santhanam PDF pp. 381–390, Chapters 67–69, including the Trikona and Ekadhipatya examples and published Shodhya Pinda example.
+- Added \`public/horoscope/offline/classical-shodhana.browser.mjs\` as an isolated, **NOT LIVE** numerical implementation. It separately records:
+  1. Trikona Shodhana: groups (Aries/Leo/Sagittarius), (Taurus/Virgo/Capricorn), (Gemini/Libra/Aquarius), (Cancer/Scorpio/Pisces); subtract minimum only when all three are nonzero.
+  2. Ekadhipatya Shodhana: five dual-sign owners, with planet-occupancy cases and an explicit audit trace for each reduction; follows the book's worked numeric examples where literal English prose is ambiguous.
+  3. Pinda Sadhana: **the reduced BAV**, not the unmodified Sarvashtakavarga, is multiplied by Rasi/Graha multipliers. Rahu/Ketu omitted from Graha Pinda.
+- Added \`tests/v357-bphs-shodhana-regression.mjs\`: the Sun's Chapter 67 sample trine reductions; the Chapter 68 imaginary example of different occupied/unoccupied sign cases; Chapter 69 published **Rasi Pinda 100 + Graha Pinda 48 = Yoga Pinda 148**; input validation; and five Perambalur charts × seven BAV rows.
+- Proposed numeric tests must be read from the CI result before being classified PASS. A unit test is not a source-to-book numerical certification unless its expected numbers originate independently from the printed example.
+- **Unresolved blocker:** the live \`sodhyaPinda()\` helper still multiplies raw SAV by sign index and is not a complete BPHS II Ch. 69 implementation. Do not present that helper as certified classical Shodhya Pinda or automatically replace existing predictions. First audit differences on five charts and match the desired display fields.
+- V358 compact UI/layout correction is now merged into main separately; V357 retains it by an explicit two-parent reconciliation commit on its **draft** branch only. This does NOT approve Classical calculations for production.
+
+**V357 completion state:** Classical source errors D16/D27/D30/D45 corrected in draft; independent Shodhana candidate added in draft; certification of numerical Shadbala, the 16 Vargas and five books in full, conditional remedies, 15-year output and matching narratives remains PENDING.
