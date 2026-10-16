@@ -11,7 +11,6 @@ const P_EN=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ket
 const P_TA=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு','கேது'];
 const NAK_EN=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
 const NAK_TA=['அசுவினி','பரணி','கார்த்திகை','ரோகிணி','மிருகசீரிடம்','திருவாதிரை','புனர்பூசம்','பூசம்','ஆயில்யம்','மகம்','பூரம்','உத்திரம்','ஹஸ்தம்','சித்திரை','சுவாதி','விசாகம்','அனுஷம்','கேட்டை','மூலம்','பூராடம்','உத்திராடம்','திருவோணம்','அவிட்டம்','சதயம்','பூரட்டாதி','உத்திரட்டாதி','ரேவதி'];
-const SOUTH=[11,0,1,2,10,null,null,3,9,null,null,4,8,7,6,5];
 const esc=x=>String(x??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const signIndex=v=>Math.floor((((Number(v)%360)+360)%360)/30);
@@ -33,12 +32,11 @@ const nak=(p,ta)=>{
 };
 const pada=p=>finite(p?.longitude)?Math.min(4,Math.floor(((((Number(p.longitude)%360)+360)%360)%(360/27))/(360/108))+1):(p?.pada||'—');
 const val=(n,d=2)=>finite(n)?Number(n).toFixed(d):'—';
-const numLabel=(n,ta)=>ta?String(n):String(n);
 const title=(en,ta,lang)=>lang==='ta'?ta:en;
 const tr=(a)=>'<tr>'+a.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>';
 const table=(head,rows,extra='')=>'<div class="mm-base-scroll"><table class="mm-base-table '+extra+'"><thead><tr>'+head.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
 const heading=(en,ta,lang)=>'<h4>'+esc(title(en,ta,lang))+'</h4>';
-function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[],natalPlanets=[]){
+function chart(caption,planets,lagnaSign,style,ta,mode,bhavas=[]){
  const kind=safeStyle(style),bhava=mode==='bhava';
  const bySign=Array.from({length:12},()=>[]),byHouse=Array.from({length:12},()=>[]);
  const housesBySign=Array.from({length:12},()=>[]);
@@ -215,7 +213,7 @@ function dasha(c,ta,ref){
  return rows.length?table(ta?['தசா','கால வகை','புக்தி','தொடக்கம்','முடிவு']:['Dasha','Period','Bhukti','Start','End'],rows):'<p class="mm-base-unavailable">'+(ta?'இந்தக் கால எல்லையில் தசைத் தரவு கிடைக்கவில்லை':'No calculated Dasha periods in the selected window')+'</p>';
 }
 const TRANSIT_CACHE=new WeakMap();
-async function reviewTransit(c,ref,ta,engine){
+async function reviewTransit(c,ref,engine){
  const zone=String(c.birthTimezone||'').trim();
  const lat=Number(c.birthLat),lon=Number(c.birthLon);
  if(!zone||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
@@ -249,15 +247,15 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
   const d9=vargaFor(c,9);
   const d9ri=ri<0?-1:vargaSign(Number(c.lagna.longitude),9);
   let trData=null,transitError='';
-  try{trData=await reviewTransit(c,ref,ta,transitFn);}catch(e){transitError=String(e.message||e);}
+  try{trData=await reviewTransit(c,ref,transitFn);}catch(e){transitError=String(e.message||e);}
   const maandi=natalMaandi(c);
   const native=c.planets||[],natal=[...native,...(maandi?[maandi]:[])];
   const vargaMaandi=maandi?{...maandi,longitude:vargaLongitude(Number(maandi.longitude),9)}:null;
   const d9Planets=d9?[...d9.planets,...(vargaMaandi?[vargaMaandi]:[])]:[];
   const charts='<div class="mm-base-chart-row">'+
-   chart(ta?'ராசிக் கட்டம் D1':'Rasi Chart D1',natal,ri,style,ta,'rasi',[],native)+
-   (d9?chart(ta?'நவாம்சக் கட்டம் D9':'Navamsa Chart D9',d9Planets,d9ri,style,ta,'navamsa',[],native):'')+
-   chart(ta?'பாவக் கட்டம்':'Bhava Chart',natal,ri,style,ta,'bhava',c.bhavas||c.bhavaDetails||[],native)+'</div>';
+   chart(ta?'ராசிக் கட்டம் D1':'Rasi Chart D1',natal,ri,style,ta,'rasi')+
+   (d9?chart(ta?'நவாம்சக் கட்டம் D9':'Navamsa Chart D9',d9Planets,d9ri,style,ta,'navamsa'):'')+
+   chart(ta?'பாவக் கட்டம்':'Bhava Chart',natal,ri,style,ta,'bhava',c.bhavas||c.bhavaDetails||[])+'</div>';
   const transitSection=trData?
    '<div class="mm-base-chart-row">'+chart((ta?'கோச்சாரக் கட்டம்':'Transit Chart')+' · '+ref,trData.planets,ri,style,ta,'transit')+'</div>'+
    table(ta?['கிரகம்','ராசி','பாகை','நட்சத்திரம்','பாதம்']:['Planet','Sign','Degree','Nakshatra','Pada'],(trData.planets||[]).map(p=>tr([markedPlanetName(p,ta),finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),p.degree||'—',nak(p,ta),pada(p)]))):
