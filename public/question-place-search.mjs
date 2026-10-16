@@ -1,5 +1,5 @@
 /* SMV shared online/offline place search for question forms.
-   Online: OpenStreetMap Nominatim geocode search.
+   Online: existing Render GeoNames world-wide search proxy.
    Offline/failure: bundled India place-search database.
    This module performs no Firestore reads. */
 let offlineSearchPromise=null;
@@ -10,13 +10,15 @@ async function offlineSearch(q,limit){
   return fn(q,limit);
 }
 async function onlineSearch(q,limit,signal){
-  const u=new URL('https://nominatim.openstreetmap.org/search');
-  u.searchParams.set('q',q);u.searchParams.set('format','jsonv2');u.searchParams.set('addressdetails','1');
-  u.searchParams.set('limit',String(limit));u.searchParams.set('countrycodes','in');
-  const r=await fetch(u,{headers:{'Accept':'application/json','Accept-Language':document.documentElement.lang==='ta'?'ta,en':'en,ta'},signal,cache:'no-store'});
-  if(!r.ok)throw new Error('Online geocode unavailable');
-  const rows=await r.json();
-  return rows.map(x=>({place:x.display_name||'',name:x.name||'',admin2:x.address?.state_district||x.address?.county||'',admin1:x.address?.state||'',country:x.address?.country||'India',latitude:Number(x.lat),longitude:Number(x.lon),timezone:'Asia/Kolkata'})).filter(x=>x.place&&Number.isFinite(x.latitude)&&Number.isFinite(x.longitude));
+  const u=new URL('https://smvastroservices.onrender.com/api/locations/search');
+  u.searchParams.set('q',q);
+  u.searchParams.set('limit',String(Math.max(1,Math.min(70,Number(limit)||50))));
+  u.searchParams.set('lang',/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en');
+  const r=await fetch(u.toString(),{headers:{Accept:'application/json'},signal});
+  if(!r.ok)throw new Error('Worldwide location search unavailable');
+  const body=await r.json();
+  if(body?.ok!==true||!Array.isArray(body.rows))throw new Error('GeoNames location search unavailable');
+  return body.rows.filter(x=>x.place&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude)));
 }
 async function search(q,limit=50,signal){
   q=String(q||'').trim();if(q.length<2)return[];
@@ -37,10 +39,23 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
   const close=()=>{list.style.display='none';list.innerHTML='';};
   const choose=x=>{
     input.value=x.place;input.dataset.latitude=String(x.latitude);input.dataset.longitude=String(x.longitude);
-    input.dataset.timezone=x.timezone||'Asia/Kolkata';input.dataset.locationSelected='1';
+    input.dataset.timezone=x.timezone||'';input.dataset.timezoneSource=x.timezoneSource||(x.timezone?'offline-india':'unverified');input.dataset.locationSelected='1';
     if(latId&&document.getElementById(latId))document.getElementById(latId).value=String(x.latitude);
     if(lonId&&document.getElementById(lonId))document.getElementById(lonId).value=String(x.longitude);
     close();if(typeof onSelect==='function')onSelect(x);
+    if(!x.timezone&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))){
+      const chosen=input.value;
+      const url=new URL('https://smvastroservices.onrender.com/api/locations/timezone');
+      url.searchParams.set('lat',String(x.latitude));url.searchParams.set('lng',String(x.longitude));
+      fetch(url.toString(),{headers:{Accept:'application/json'}})
+       .then(r=>r.ok?r.json():null).then(data=>{
+        if(input.value!==chosen||!data?.ok||!data.timezoneId)return;
+        try{new Intl.DateTimeFormat('en',{timeZone:data.timezoneId});}catch{return;}
+        input.dataset.timezone=data.timezoneId;input.dataset.timezoneSource='geonames-timezoneJSON';
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+        if(typeof onSelect==='function')onSelect({...x,timezone:data.timezoneId,timezoneSource:'geonames-timezoneJSON'});
+       }).catch(()=>{});
+    }
   };
   const render=rows=>{
     list.innerHTML='';
@@ -48,7 +63,7 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
     list.style.display=rows.length?'block':'none';
   };
   input.addEventListener('input',()=>{
-    input.dataset.locationSelected='0';delete input.dataset.latitude;delete input.dataset.longitude;
+    input.dataset.locationSelected='0';delete input.dataset.latitude;delete input.dataset.longitude;delete input.dataset.timezone;delete input.dataset.timezoneSource;
     clearTimeout(timer);ctl?.abort();const q=input.value.trim();if(q.length<2){close();return;}
     timer=setTimeout(async()=>{ctl=new AbortController();try{render(await search(q,50,ctl.signal));}catch(e){if(e?.name!=='AbortError')close();}},350);
   });
@@ -56,5 +71,5 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
 }
 export function questionPlaceData(inputOrId){
  const el=typeof inputOrId==='string'?document.getElementById(inputOrId):inputOrId;
- return {place:String(el?.value||'').trim(),latitude:Number(el?.dataset.latitude),longitude:Number(el?.dataset.longitude),timezone:el?.dataset.timezone||'Asia/Kolkata',selected:el?.dataset.locationSelected==='1'};
+ return {place:String(el?.value||'').trim(),latitude:Number(el?.dataset.latitude),longitude:Number(el?.dataset.longitude),timezone:el?.dataset.timezone||'',selected:el?.dataset.locationSelected==='1'};
 }
