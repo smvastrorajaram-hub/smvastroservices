@@ -51,7 +51,7 @@ for(const [planet,gender] of Object.entries(genders)){
 // Exact printed point ladder from BPHS ch.27 pp.264-265:
 // 45 for MT, 30 own, 20 great friend, 15 friend, 10 neutral, 4 enemy, 2 great enemy.
 const required=[45,30,20,15,10,4,2];
-eq(dignities.map(x=>x[3]),required,'Book Saptavargaja Virupa ladder');
+assert.deepEqual(dignities.map(x=>x[3]),required,'Book Saptavargaja Virupa ladder'); assertions++;
 const births=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
 const summaries=[];
 for(const [date,time] of births){
