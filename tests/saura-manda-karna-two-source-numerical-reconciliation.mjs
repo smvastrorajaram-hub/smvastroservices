@@ -47,14 +47,17 @@ const academic2024April13={
 };
 const parameters=([meanLongitude,mandocca,sheeghrocha],planet)=>({planet,meanLongitude,mandocca,sheeghrocha});
 function compare(rows,label){
- const out={};let normalPrecisionCount=0,alternatePrecisionCount=0;
+ const out={};let normalPrecisionCount=0,alternatePrecisionCount=0,universalPrecisionCount=0;
  for(const [planet,v] of Object.entries(rows)){
   const p=parameters(v,planet);
   const plus=tabular(p);
   const minus=tabular({...p,mandaKarṇaConvention:'alternate-minus'});
+  const universal=tabular({...p,mandaKarṇaConvention:'absolute-koti-minus'});
   const checkPlus=geometric(p);
   const checkMinus=geometric({...p,mandaKarṇaConvention:'alternate-minus'});
-  const ep=dist(plus.trueLongitude,v[3]),em=dist(minus.trueLongitude,v[3]);
+  const checkUniversal=geometric({...p,mandaKarṇaConvention:'absolute-koti-minus'});
+  const ep=dist(plus.trueLongitude,v[3]),em=dist(minus.trueLongitude,v[3]),
+        eu=dist(universal.trueLongitude,v[3]);
   ensure(plus.mandaKarṇaConvention==='common-plus'&&!plus.historicallyCertified,
     label+' '+planet+' published orbital input unmodified');
   ensure(minus.mandaKarṇaConvention==='alternate-minus'&&!minus.historicallyCertified,
@@ -63,36 +66,46 @@ function compare(rows,label){
     label+' '+planet+' tabular and geometric SAME plus method');
   ensure(dist(minus.trueLongitude,checkMinus.trueLongitude)<.025,
     label+' '+planet+' tabular and geometric SAME minus method');
+  ensure(dist(universal.trueLongitude,checkUniversal.trueLongitude)<.025,
+    label+' '+planet+' tabular and geometric SAME universal absolute-koti method');
   if(ep<=.0001)normalPrecisionCount++;
   if(em<=.0001)alternatePrecisionCount++;
+  if(eu<=.0001)universalPrecisionCount++;
   out[planet]={
     externalPublished:v[3],commonPlus:+plus.trueLongitude.toFixed(6),
     alternateMinus:+minus.trueLongitude.toFixed(6),
+    universalAbsMinus:+universal.trueLongitude.toFixed(6),
     commonErrorDeg:+ep.toFixed(6),alternateErrorDeg:+em.toFixed(6),
+    universalErrorDeg:+eu.toFixed(6),
     diffBetweenConventionsDeg:+dist(plus.trueLongitude,minus.trueLongitude).toFixed(6),
     halfMandaPlus:+plus.stages.halfMandaDegrees.toFixed(6),
     halfMandaMinus:+minus.stages.halfMandaDegrees.toFixed(6),
     fullMandaPlus:+plus.stages.fullMandaDegrees.toFixed(6),
-    fullMandaMinus:+minus.stages.fullMandaDegrees.toFixed(6)
+    fullMandaMinus:+minus.stages.fullMandaDegrees.toFixed(6),
+    halfMandaUniversal:+universal.stages.halfMandaDegrees.toFixed(6),
+    fullMandaUniversal:+universal.stages.fullMandaDegrees.toFixed(6)
   };
  }
- return {label,normalPrecisionCount,alternatePrecisionCount,rows:out};
+ return {label,normalPrecisionCount,alternatePrecisionCount,universalPrecisionCount,rows:out};
 }
 const siteProof=compare(site,'Caitanya');
 ensure(siteProof.normalPrecisionCount===4,'normal convention four of five externally exact; do not regress');
 ensure(siteProof.alternatePrecisionCount===1,'alternate convention only Saturn externally exact');
+ensure(siteProof.universalPrecisionCount===5,'ONE universal absolute-koti formula reproduces all five published planets');
 const satPlus=siteProof.rows.Saturn;
 near(satPlus.commonErrorDeg,.290446,.000003,'published Saturn old mismatch');
 near(satPlus.alternateErrorDeg,0,.00001,'Saturn alternate final matches published');
 near(satPlus.halfMandaMinus,.71105,.00002,'Saturn published half-Manda');
 near(satPlus.fullMandaMinus,1.31310,.00002,'Saturn published full-Manda');
+near(satPlus.halfMandaUniversal,.71105,.00002,'Saturn universal half Manda');
+near(satPlus.fullMandaUniversal,1.31310,.00002,'Saturn universal full Manda');
 ensure(siteProof.rows.Mars.alternateErrorDeg>1.60&&
   siteProof.rows.Mercury.alternateErrorDeg>.24,
   'cannot adopt alternate minus for all planets');
 const p9=compare(academic2024April09,'JAA Apr09');
 const p13=compare(academic2024April13,'JAA Apr13');
 for(const [name,p] of [['Apr09',p9],['Apr13',p13]]){
- ensure(p.rows.Mars.commonErrorDeg>3 && p.rows.Mars.alternateErrorDeg>3,
+ ensure(p.rows.Mars.commonErrorDeg>3 && p.rows.Mars.alternateErrorDeg>3 && p.rows.Mars.universalErrorDeg>3,
   name+' printed Mars cannot be recovered by only Manda denominator sign');
  ensure(p.normalPrecisionCount<5&&p.alternatePrecisionCount<5,
   name+' no full five-graha academic precision certificate');
@@ -117,18 +130,22 @@ for(const [date,time] of births){
         mandocca=sauraMandoccaResearch(jdUt,planet).mandocca,
         args={planet,meanLongitude:params.meanLongitude,
           mandocca,sheeghrocha:params.sheeghrocha};
-  const plus=tabular(args),minus=tabular({...args,mandaKarṇaConvention:'alternate-minus'});
+  const plus=tabular(args),minus=tabular({...args,mandaKarṇaConvention:'alternate-minus'}),
+        universal=tabular({...args,mandaKarṇaConvention:'absolute-koti-minus'});
   const bp=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,plus.trueLongitude),
-        bm=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,minus.trueLongitude);
-  ensure(bp.virupa>=0&&bp.virupa<=60&&bm.virupa>=0&&bm.virupa<=60,
+        bm=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,minus.trueLongitude),
+        bu=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,universal.trueLongitude);
+  ensure(bp.virupa>=0&&bp.virupa<=60&&bm.virupa>=0&&bm.virupa<=60&&bu.virupa>=0&&bu.virupa<=60,
       date+' '+planet+' both BPHS Virupa finite and bounded');
-  ensure(!bp.natalCertified&&!bm.natalCertified,date+' '+planet+' historical certification blocked');
+  ensure(!bp.natalCertified&&!bm.natalCertified&&!bu.natalCertified,date+' '+planet+' historical certification blocked');
   grahas[planet]={
    commonTrue:+plus.trueLongitude.toFixed(6),
    alternateTrue:+minus.trueLongitude.toFixed(6),
+   universalTrue:+universal.trueLongitude.toFixed(6),
    longitudeDeltaDegrees:+dist(plus.trueLongitude,minus.trueLongitude).toFixed(6),
    commonCheshtaVirupa:+bp.virupa.toFixed(6),
    alternateCheshtaVirupa:+bm.virupa.toFixed(6),
+   universalCheshtaVirupa:+bu.virupa.toFixed(6),
    numericallyCertified:false
   };
   natalCount++;
@@ -140,6 +157,7 @@ console.log(JSON.stringify({
   pass:true,assertions:count,
   sourceMathForensicPASS:true,
   siteFourCommonOneAlternateConfirmed:true,
+  oneUniversalAbsoluteKotiMatchesFivePublishedGrahas:true,
   mandakarnaConventionConflictNotSilentlyFitted:true,
   academic2024MarsAcrossTwoDatesUNRESOLVED:true,
   historicalTrueCertified:false,natalCheshtaCertified:false,
