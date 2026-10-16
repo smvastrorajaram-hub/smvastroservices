@@ -1,0 +1,33 @@
+name: Marriage Matching Native Print Smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'public/horoscope/marriage-basic-report.css'
+      - 'tests/marriage-print-browser-smoke.mjs'
+      - '.github/workflows/marriage-print-browser-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing repository dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Render both charts and save A4 PDF with Chromium
+        run: node tests/marriage-print-browser-smoke.mjs
+      - name: Preserve printable report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-MARRIAGE-BASIC-PRINT-SMOKE
+          path: marriage-print-smoke-output/
+          if-no-files-found: warn
+          retention-days: 14
