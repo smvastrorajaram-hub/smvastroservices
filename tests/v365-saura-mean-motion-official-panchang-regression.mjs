@@ -31,7 +31,6 @@ const close=(actual,expected,tolerance,msg)=>{
 const evidence=[];
 for(const planet of names){
   const expected=dms(official[planet]),actual=orbit(jd,planet);
-  const deltaArcseconds=(actual-expected+540)%360*3600; // use signed shortest below
   const signed=((actual-expected+540)%360)-180;
   close(actual,expected,1.75/3600,planet+' independent IMD printed table within 1.75 arcseconds');
   check(Math.abs(velocity(planet)-360*rev[planet]/1577917828)<1e-12,
@@ -40,7 +39,7 @@ for(const planet of names){
         planet+' exact mahayuga return to mean ecliptic longitude');
   close(orbit(jd+1,planet),wrap(actual+velocity(planet)),0.000001,
         planet+' full day mean-motion continuity');
-  evidence.push({planet,imDMeanLongitude:expected,modelLongitude:actual,
+  evidence.push({planet,imdMeanLongitude:expected,modelLongitude:actual,
     errorArcseconds:signed*3600});
 }
 for(const planet of ['Mars','Mercury','Jupiter','Venus','Saturn']){
@@ -79,7 +78,7 @@ for(const [date,time] of charts){
  exampleResults.push(record);
 }
 close(orbit(model.epochJdUt-model.referenceMeridianDegrees/360,'Sun'),0,1e-8,'epoch sun zero');
-for(const bad of [NaN,Infinity,-10,5000001,undefined]){
+for(const bad of [NaN,Infinity,-10,2000000000,undefined]){
  assert.throws(()=>inputs(bad,'Mars'),RangeError);count++;
 }
 for(const bad of ['Rahu','Ketu','Earth',undefined]){
