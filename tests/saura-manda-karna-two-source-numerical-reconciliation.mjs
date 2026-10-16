@@ -16,6 +16,8 @@ import {sauraFourPassTrueLongitude as geometric,sauraMandoccaResearch}
   from '../public/horoscope/offline/saura-classical-true-longitude.browser.mjs';
 import {sauraFivePlanetCheshtaInputs}
   from '../public/horoscope/offline/saura-classical-mean-motion.browser.mjs';
+import {computeClassicalFiveNatalCheshta as natalEngine}
+  from '../public/horoscope/offline/saura-natal-five-cheshta.browser.mjs';
 import {bphsFivePlanetCheshtaFromClassicalMeans as cheshta}
   from '../public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs';
 const dist=(x,y)=>Math.abs((((x-y)%360)+540)%360-180);
@@ -124,7 +126,7 @@ for(const [date,time] of births){
  const [y,m,d]=date.split('-').map(Number),[h,minute]=time.split(':').map(Number);
  const jdUt=(Date.UTC(y,m-1,d,h,minute)-330*60000)/86400000+2440587.5;
  const meanSun=sauraFivePlanetCheshtaInputs(jdUt,'Mars').meanSunLongitude;
- const grahas={};
+ const grahas={},liveResearch=natalEngine({date,time,utcOffsetMinutes:330});
  for(const planet of Object.keys(site)){
   const params=sauraFivePlanetCheshtaInputs(jdUt,planet),
         mandocca=sauraMandoccaResearch(jdUt,planet).mandocca,
@@ -132,6 +134,10 @@ for(const [date,time] of births){
           mandocca,sheeghrocha:params.sheeghrocha};
   const plus=tabular(args),minus=tabular({...args,mandaKarṇaConvention:'alternate-minus'}),
         universal=tabular({...args,mandaKarṇaConvention:'absolute-koti-minus'});
+  const fromDOB=liveResearch.planets.find(p=>p.planet===planet);
+  ensure(fromDOB?.mandaKarṇaConvention==='absolute-koti-minus'&&
+    dist(fromDOB.trueLongitude,universal.trueLongitude)<1e-9,
+    date+' '+planet+' real birth-to-Cheshta uses SAME universal book model');
   const bp=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,plus.trueLongitude),
         bm=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,minus.trueLongitude),
         bu=cheshta(tamil[planet],meanSun,params.ownMeanOrbitLongitude,universal.trueLongitude);
