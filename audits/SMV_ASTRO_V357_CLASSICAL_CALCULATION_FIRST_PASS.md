@@ -89,3 +89,13 @@ https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38944587383
 
 **Do not merge this V357 draft solely on the basis of these checks.**
 Unverified areas: full exact Shadbala including hora/abda/yuddha, all D60 and other boundary variants, Raman's 12-Lagna functional-lordship interpretation and 12-house evidence, individualized 15-year Dasha/Gochara narrative, duplicate sentence elimination, detailed Marriage Matching verdict alignment and remedy source applicability. Live horoscope output and PDF page-by-page acceptance remain outstanding.
+
+## Fourth pass — Chapter 68 diagram/prose/number mismatch (review required)
+
+Direct visual reading of Santhanam, *BPHS II*, Chapter 68, printed pp. 875–877 (PDF pp. 385–387), revealed an editorial conflict. The printed imaginary illustration's planetary-position diagram places **Jupiter in Gemini (sign 3)** while the following prose says **both Gemini and Virgo contain no planet**, and the displayed Ekadhipatya reductions turn both 4-point signs into 0.
+
+Under the stated one-occupied/one-empty rule, if Gemini contains Jupiter, its 4 points are kept and only Virgo's 4 are reduced to 0. The current candidate test formerly used the prose interpretation (Gemini unoccupied) to reproduce the printed 0/0 outcome. That does *not* independently establish that the original printed diagram's planetary placements agree with those output values.
+
+**Controlled change:** The isolated experimental Shodhana regression now explicitly checks both readings, recording the mismatch instead of falsely claiming complete book/example agreement. Neither live Horoscope results nor the Shodhana source algorithm have been changed. The book's editorial conflict must be resolved against an independently authoritative Sanskrit commentary or a declared calculation school before exact Ekadhipatya certification. The test may pass at detecting this **known discrepancy**; the underlying book example remains **UNRESOLVED / NOT CERTIFIED**.
+
+V359 equal-gutter UI changes were merged to main separately as `45264d220517d798ae9935b79ec685fbfb77ddfa`; all classical changes in this draft are still not deployed. No extrapolation from numeric test checks to predictions/remedies is valid.
