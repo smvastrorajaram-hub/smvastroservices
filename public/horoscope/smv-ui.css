@@ -85,3 +85,54 @@ body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .horosc
   #smvSavedReports.smv-saved-reports{padding-inline:3px!important}#smvSavedReports .smv-saved-row{gap:3px!important}#smvSavedReports .smv-saved-row button{min-width:38px!important;padding-inline:5px!important}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Nakshatra matching: both date-of-birth and Rasi/star entry use one form layer.
+   Keep each person's legend/labels and all actual input borders readable. */
+#smvMarriageMatching :is(#mmPublicChoice,#mmFullEntry,#mmManualEntry,
+  #mmFullEntry .mm-birth-grid,#mmManualEntry .mm-birth-grid,
+  #mmFullEntry .mm-gochar-date,#mmFullEntry .mm-bottom-payment){
+  box-sizing:border-box!important;
+  max-width:100%!important;
+  min-width:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  background-image:none!important;
+  outline:0!important;
+}
+#smvMarriageMatching #mmPublicChoice{
+  max-width:680px!important;
+  padding:0!important;
+  margin:12px auto!important;
+}
+/* Two person sections remain labelled but never sit in nested cards. */
+#smvMarriageMatching :is(#mmFullEntry,#mmManualEntry) .mm-birth-grid fieldset{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:3px 0 10px!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  background-image:none!important;
+  outline:0!important;
+}
+#smvMarriageMatching :is(#mmFullEntry,#mmManualEntry) .mm-birth-grid legend{
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;box-shadow:none!important;
+  padding:0 0 3px!important;
+}
+#smvMarriageMatching :is(#mmFullEntry,#mmManualEntry) .mm-birth-grid{
+  margin:10px 0!important;
+  gap:clamp(12px,2vw,24px)!important;
+}
+@media(max-width:620px){
+  #smvMarriageMatching :is(#mmFullEntry,#mmManualEntry) .mm-birth-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:12px!important;
+  }
+}
