@@ -104,6 +104,8 @@ jobs:
         run: node tests/v368-published-stage-historical-shadbala-audit.mjs
       - name: Classical five-graha DOB to True Longitude to Cheshta numeric engine
         run: node tests/classical-five-graha-date-to-cheshta-engine.mjs
+      - name: BPHS Ch26 independent Sputa Drig + 35 live seven-graha chart numeric QA
+        run: node tests/bphs-ch26-sputa-drig-live-five-charts.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
         run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
       - name: V357 Mercury conjunction Paksha Bala classical audit
