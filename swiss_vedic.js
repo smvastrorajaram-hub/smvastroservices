@@ -113,6 +113,15 @@ function circularHouseDistance(h1,h2){
   const a=((Number(h1)-1+12)%12), b=((Number(h2)-1+12)%12);
   const d=Math.abs(a-b); return Math.min(d,12-d);
 }
+// V345: count houses forward from aspecting graha; do not change Dig Bala.
+function directedHouseNumber(fromHouse,toHouse){
+  const from=Number(fromHouse),to=Number(toHouse);
+  if(!Number.isInteger(from)||!Number.isInteger(to)||from<1||from>12||to<1||to>12)return null;
+  return ((to-from+12)%12)+1;
+}
+const PHASE2_FULL_ASPECTS=Object.freeze({
+  'செவ்வாய்':[4,7,8], 'குரு':[5,7,9], 'சனி':[3,7,10]
+});
 function phase2Strength(name, lon, house, speed, state, planets, jdUt){
   if(name==='ராகு'||name==='கேது') return {available:false,reason:'Nodes excluded from the seven-planet strength score'};
   const ideal=DIG_IDEAL_HOUSE[name]||1;
@@ -138,14 +147,14 @@ function phase2Strength(name, lon, house, speed, state, planets, jdUt){
   for(const q of (planets||[])){
     if(q.name===name||q.name==='ராகு'||q.name==='கேது') continue;
     const qHouse=Number(q.bhava)||0;
-    const deltaHouse=circularHouseDistance(qHouse,house);
-    let aspects=[];
-    // 7th aspect for all planets; special Parashari aspects.
-    if(deltaHouse===6) aspects.push(1);
-    if(q.name==='செவ்வாய்'&&(deltaHouse===3||deltaHouse===7)) aspects.push(1);
-    if(q.name==='குரு'&&(deltaHouse===4||deltaHouse===8)) aspects.push(1);
-    if(q.name==='சனி'&&(deltaHouse===2||deltaHouse===9)) aspects.push(1);
-    if(aspects.length){ const w=BENEFICS.has(q.name)?4:-4; drik+=w*aspects.length; }
+    const aspectNumber=directedHouseNumber(qHouse,house);
+    // Seventh aspect for seven grahas, plus special Parashari aspects.
+    // Rahu/Ketu retain their existing exclusion from Phase 2.
+    const fullAspects=PHASE2_FULL_ASPECTS[q.name]||[7];
+    if(aspectNumber!==null&&fullAspects.includes(aspectNumber)){
+      const w=BENEFICS.has(q.name)?4:-4;
+      drik+=w; // only one contribution per graha / recipient house
+    }
   }
   drik=Math.max(0,Math.min(60,drik));
   const components={sthana:Number(sthana.toFixed(2)),dig:Number(dig.toFixed(2)),kala:Number(kala.toFixed(2)),cheshta:Number(cheshta.toFixed(2)),naisargika:Number(NATURAL_BALA[name].toFixed(2)),drik:Number(drik.toFixed(2))};
