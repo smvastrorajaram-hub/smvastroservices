@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install existing repository dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Render both charts and save A4 PDF with Chromium
         run: node tests/marriage-print-browser-smoke.mjs
       - name: Preserve printable report artifacts
