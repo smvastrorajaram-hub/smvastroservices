@@ -21,7 +21,22 @@ if(host){
   const place=$('#calPlace'),lat=$('#calLat'),lon=$('#calLon'),offset=$('#calOffset'),box=$('#calPlaceResults');if(!place||!lat||!lon||!offset||!box)return;
   place.autocomplete='off';
   const status=(msg,error=false)=>{box.replaceChildren();if(!msg){box.classList.remove('is-open');return;}const d=document.createElement('div');d.className='cal-place-note'+(error?' is-error':'');d.textContent=msg;box.append(d);box.classList.add('is-open');};
-  const render=rows=>{box.replaceChildren();if(!rows.length){status(L('No matching place found. Type a little more.','பொருத்தமான இடம் கிடைக்கவில்லை. மேலும் சில எழுத்துகளை உள்ளிடவும்.'),true);return;}const frag=document.createDocumentFragment();rows.slice(0,70).forEach(x=>{const b=document.createElement('button');b.type='button';b.className='cal-place-option';b.setAttribute('role','option');b.textContent=x.place||x.name||'';b.onclick=()=>{place.value=x.place||x.name||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);offset.value=x.timezone?String(offsetMinutesAt(x.timezone,selected,'12:00')/60):'';place.dataset.timezone=x.timezone||'';place.dataset.locationSelected='1';closePlaceResults();};frag.append(b)});box.append(frag);box.classList.add('is-open');};
+  const render=rows=>{box.replaceChildren();if(!rows.length){status(L('No matching place found. Type a little more.','பொருத்தமான இடம் கிடைக்கவில்லை. மேலும் சில எழுத்துகளை உள்ளிடவும்.'),true);return;}const frag=document.createDocumentFragment();rows.slice(0,70).forEach(x=>{const b=document.createElement('button');b.type='button';b.className='cal-place-option';b.setAttribute('role','option');b.textContent=x.place||x.name||'';b.onclick=async()=>{
+  const name=x.place||x.name||'';place.value=name;
+  lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);
+  place.dataset.locationSelected='1';place.dataset.timezoneSource='unverified';
+  place.dataset.timezone='';offset.value='';
+  status(L('Verifying timezone with GeoNames…','GeoNames நேர மண்டலம் சரிபார்க்கப்படுகிறது…'));
+  try{
+   const item=await window.__smvResolvePlaceTimezone(x);
+   if(place.value!==name||place.dataset.locationSelected!=='1')return;
+   const corrected=offsetMinutesAt(item.timezone,selected,'12:00');
+   place.dataset.timezone=item.timezone;place.dataset.timezoneSource=item.timezoneSource;
+   offset.value=String(corrected/60);closePlaceResults();
+  }catch(_e){
+   if(place.value===name)status(L('GeoNames timezone unavailable; select a verified UTC offset.','GeoNames நேர மண்டலம் கிடைக்கவில்லை; சரியான UTC நேர வேறுபாட்டைத் தேர்வு செய்யவும்.'),true);
+  }
+ };frag.append(b)});box.append(frag);box.classList.add('is-open');};
   place.oninput=()=>{place.dataset.locationSelected='0';lat.value='';lon.value='';clearTimeout(locationSearchTimer);locationSearchAbort?.abort();const q=place.value.trim();if(q.length<2){closePlaceResults();return;}locationSearchTimer=setTimeout(async()=>{locationSearchAbort=new AbortController();status(L('Searching location…','இடம் தேடப்படுகிறது…'));try{if(typeof window.__smvSearchPlacesOnlineOffline!=='function')throw Error('Location search module is not ready');const rows=await window.__smvSearchPlacesOnlineOffline(q,70,locationSearchAbort.signal);render(rows)}catch(e){if(e?.name==='AbortError')return;status(L('Location search is unavailable. Enter coordinates manually.','இடத் தேடல் கிடைக்கவில்லை. அட்சரேகை, தீர்க்கரேகையை கைமுறையாக உள்ளிடவும்.'),true)}},350);};
   place.onfocus=()=>{if(box.children.length)box.classList.add('is-open')};
   place.onkeydown=e=>{if(e.key==='Escape')closePlaceResults()};

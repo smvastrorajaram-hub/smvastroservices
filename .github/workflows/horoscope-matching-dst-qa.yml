@@ -28,6 +28,8 @@ jobs:
         run: node tests/calculation-regression.mjs
       - name: Report, print, timezone input regression
         run: node tests/print-dst-location-regression.mjs
+      - name: GeoNames search and authoritative timezoneId regression
+        run: node tests/geonames-location-regression.cjs
       - name: DST seasonal and 30-minute region regression
         run: node tests/dst-seasonal-regression.mjs
       - name: Audit known coordinate-zone boundary precision issues

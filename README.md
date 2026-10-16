@@ -426,3 +426,16 @@ No calculation/runtime error occurred in the 100 horoscope + 100 pair batch. The
 
 Physical-device Flight Mode remains a device-level acceptance test rather than something this container can press/toggle on the user’s Android phone. Because the user has confirmed V130 is now working in the deployed browser, this report records the automated source/runtime portion as PASS without pretending to have controlled the phone’s radio state.
 
+
+
+## GeoNames worldwide location + birth-time DST setup
+
+SMV ASTRO's browser uses the existing Render backend for worldwide GeoNames search, followed by a **single GeoNames `timezoneJSON` lookup when a city is selected**. The backend returns `timezoneId`, never a current `dstOffset` for a historical birth. The browser's IANA database calculates the UTC offset for the person's actual birth date and local clock time.
+
+**Required production configuration:** Create and activate your own GeoNames Web Service account at https://www.geonames.org/login. In the **Render backend** service for `smvastroservices.onrender.com`, add the environment variable `GEONAMES_USERNAME` with your active GeoNames username, then deploy/restart the backend. The `demo` account is intentionally rejected. Never put a GeoNames username or other backend settings into Horoscope HTML, Firebase rules, or a client-side token.
+
+Check the backend status at `https://smvastroservices.onrender.com/api/locations/status`: `configured:true` means the backend sees a username. A real city search and timezone request must still be tested to verify account authorization, upstream availability, and quota. Search endpoint: `/api/locations/search?q=London&limit=70`; selected-place timezone: `/api/locations/timezone?lat=51.5074&lng=-0.1278`.
+
+When GeoNames is unavailable, bundled offline India place searches continue. Non-India autocomplete does **not** fall back to the public Nominatim service (its autocomplete policy prohibits this use). The Horoscope, Marriage Matching and Calendar fields retain manual IANA-zone entry/override. Inaccurate coordinate-based estimates must never be labeled as GeoNames-verified; high-risk historical and border locations should be checked against archival civil-time records.
+
+Automated mock regression: `node tests/geonames-location-regression.cjs`. It does not prove the Render environment is configured or that live GeoNames quota is available.

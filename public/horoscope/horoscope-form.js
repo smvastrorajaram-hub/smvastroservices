@@ -12,10 +12,27 @@
     let timer=null,controller=null,lastQuery='';
     function clear(){list.innerHTML='';list.classList.remove('show');}
     function statusText(t,c){status.textContent=t||'';status.className='smv-location-status'+(c?' '+c:'');}
-    function choose(x){place.value=x.place||'';lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);place.dataset.timezone=x.timezone||'';if($(prefix+'BirthTimezone'))$(prefix+'BirthTimezone').value=x.timezone||'';place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);clear();statusText(x.timezone?'':text('Select the IANA time zone for this location before calculating.','கணக்கிடுவதற்கு முன் இந்த இடத்தின் IANA நேர மண்டலத்தைத் தேர்ந்தெடுக்கவும்.'),x.timezone?'':'err');}
+    async function choose(x){
+      const selected=x.place||'',tzInput=$(prefix+'BirthTimezone');
+      place.value=selected;lat.value=Number(x.latitude).toFixed(6);lon.value=Number(x.longitude).toFixed(6);
+      place.dataset.locationSelected='1';place.dataset.latitude=String(x.latitude);place.dataset.longitude=String(x.longitude);
+      place.dataset.timezone='';place.dataset.timezoneSource='unverified';if(tzInput)tzInput.value='';
+      clear();statusText(text('Verifying timezone with GeoNames…','GeoNames மூலம் நேர மண்டலம் சரிபார்க்கப்படுகிறது…'));
+      try{
+        const resolved=await window.__smvResolvePlaceTimezone(x);
+        if(place.value!==selected||place.dataset.locationSelected!=='1')return;
+        if(tzInput)tzInput.value=resolved.timezone;
+        place.dataset.timezone=resolved.timezone;
+        place.dataset.timezoneSource=resolved.timezoneSource||'verified';
+        statusText('');
+      }catch(e){
+        if(place.value!==selected)return;
+        statusText(text('GeoNames timezone unavailable. Enter the correct IANA timezone manually before calculation.','GeoNames நேர மண்டலம் கிடைக்கவில்லை. கணக்கிடும் முன் சரியான IANA நேர மண்டலத்தை உள்ளிடவும்.'),'err');
+      }
+    }
     function render(items){clear();if(!items.length){statusText(text('No matching location found. Please type a little more.','பொருத்தமான இடம் கிடைக்கவில்லை. மேலும் சில எழுத்துகளை உள்ளிடவும்.'),'err');return;}items.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='smv-location-suggestion';b.setAttribute('role','option');b.textContent=x.place;b.addEventListener('click',()=>choose(x));list.appendChild(b);});list.classList.add('show');statusText(text('Select your exact place from the list.','பட்டியலிலிருந்து சரியான இடத்தைத் தேர்ந்தெடுக்கவும்.'),'');}
     async function search(q){if(q.length<2){controller?.abort();controller=null;clear();statusText('','');return;}if(q===lastQuery)return;lastQuery=q;controller?.abort();controller=new AbortController();statusText(text('Searching location…','இடம் தேடப்படுகிறது…'),'');try{if(typeof window.__smvSearchPlacesOnlineOffline!=='function')throw new Error('Location search module is not ready.');const rows=await window.__smvSearchPlacesOnlineOffline(q,70,controller.signal);render(rows);}catch(e){if(e?.name==='AbortError')return;clear();statusText(text('Location search is unavailable. Enter coordinates manually.','இடத் தேடல் கிடைக்கவில்லை. அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'),'err');}}
-    place.addEventListener('input',()=>{place.dataset.locationSelected='0';place.dataset.timezone='';if($(prefix+'BirthTimezone'))$(prefix+'BirthTimezone').value='';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
+    place.addEventListener('input',()=>{place.dataset.locationSelected='0';place.dataset.timezone='';place.dataset.timezoneSource='';if($(prefix+'BirthTimezone'))$(prefix+'BirthTimezone').value='';lat.value='';lon.value='';lastQuery='';clearTimeout(timer);timer=setTimeout(()=>search(place.value.trim()),500);});
     place.addEventListener('focus',()=>{if(place.value.trim().length>=2&&list.children.length)list.classList.add('show');});
     document.addEventListener('click',e=>{if(!parent.contains(e.target))clear();});
   }
@@ -80,6 +97,7 @@ if(lat===''||lon===''){
       };
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime)throw new Error('Enter a valid birth time, for example 22:05 (10:05 PM).');
+      if($('englishBirthPlace')?.dataset.timezoneSource==='unverified'&&!String($('englishBirthTimezone')?.value||'').trim())throw new Error('Selected place timezone was not verified by GeoNames. Enter the correct IANA timezone before calculating.');
       let birthZone=String($('englishBirthTimezone')?.value||'').trim();
       const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
       // If place was manually entered with coordinates, infer IANA zone,

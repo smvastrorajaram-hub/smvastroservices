@@ -1,4 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
+const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -3668,6 +3669,9 @@ function smvPredictionRoute(kind){
 }
 app.post("/api/prediction/horoscope",smvPredictionRoute("horoscope"));
 app.post("/api/prediction/matching",smvPredictionRoute("matching"));
+
+// GeoNames place search + selected-place timezoneId (username kept server-side).
+registerGeoNamesRoutes(app);
 
 // Final 404 must remain AFTER every functional route, including Horoscope payment routes.
 app.use((req, res) => {

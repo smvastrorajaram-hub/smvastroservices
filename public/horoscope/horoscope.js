@@ -2691,6 +2691,7 @@ if(lat===''||lon===''){
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
       let zone=String($('tamilBirthTimezone')?.value||$('tamilBirthPlace')?.dataset.timezone||'').trim();
+      if(!zone&&$('tamilBirthPlace')?.dataset.timezoneSource==='unverified')throw new Error('GeoNames நேர மண்டலம் உறுதியாகவில்லை. சரியான IANA timezone-ஐ உள்ளிடவும்.');
       const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
       if(!zone){zone=await approximateTimezoneAt(lat,lon);if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=zone;}
       const historicalOffset=offsetMinutesAt(zone,date,normalizedTime);
