@@ -2,6 +2,7 @@
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
+import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
 let swe=null;
 const C={SE_SUN:WC.SUN,SE_MOON:WC.MOON,SE_MERCURY:WC.MERCURY,SE_VENUS:WC.VENUS,SE_MARS:WC.MARS,SE_JUPITER:WC.JUPITER,SE_SATURN:WC.SATURN,SE_MEAN_NODE:WC.MEAN_NODE,SE_GREG_CAL:1,SE_SIDM_LAHIRI:1,SEFLG_SWIEPH:2,SEFLG_MOSEPH:4,SEFLG_SPEED:256,SEFLG_EQUATORIAL:2048,SEFLG_SIDEREAL:65536};
 async function ensureSwe(){
@@ -454,14 +455,17 @@ export function drigAspectorBenefic(aspector,planets){
 export function drikBalaClassical(planet, planets){
   const receiver=planets.find(x=>x.name===planet);
   if(!receiver)return 0;
-  let pinda=0;
+  // BPHS Ch27 v19, not Uttara Kalamrita: signed quarter-Drishti Pinda
+  // PLUS the full measured aspect of Mercury and Jupiter.
+  // The geometric aspect function remains separately subject to oracle tests.
+  const aspects=[];
   for(const q of planets){
     if(q.name===planet || !SHADBALA_REQUIRED[q.name]) continue;
     const angle=norm360(receiver.longitude-q.longitude);
-    const aspect=sputaDrishti(angle,q.name);
-    pinda+=drigAspectorBenefic(q.name,planets)?aspect:-aspect;
+    aspects.push({name:q.name,virupa:sputaDrishti(angle,q.name),
+      benefic:drigAspectorBenefic(q.name,planets)});
   }
-  return pinda/4;
+  return bphsDrigBalaFromAspects(aspects).virupa;
 }
 export function motionClassical(planet, speed, state){
   if(planet==='சூரியன்'||planet==='சந்திரன்') return 0;
@@ -502,7 +506,7 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','UK p.45 one-Rupa Yuddha applied only with chart latitude/house evidence; p.41 disc-quotient variant unresolved','Five-planet Cheshta mean/sheeghra and complete Drig textbook numeric verification pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
@@ -516,7 +520,16 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
-  const grahaYuddha=uttaraKalamritaGrahaYuddha(withHour);
+  const warEligibility=uttaraKalamritaGrahaYuddha(withHour);
+  // First pass: all seven complete, pre-war BPHS Balas. The book explicitly
+  // requires the DIFFERENCE of these two Shadbalas, not the fixed +/-60
+  // Uttara Kalamrita alternative applied in the previous V361 build.
+  const baselines=Object.fromEntries(withHour.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[
+    p.name,phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal).totalVirupa
+  ]));
+  const grahaYuddha=bphsGrahaYuddhaFromBaselines(warEligibility.encounters,baselines);
+  // Second pass: BPHS v20 correction only; candidate detection still uses
+  // Uttara p41's north latitude test where BPHS does not name the winner.
   return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
 }
 
