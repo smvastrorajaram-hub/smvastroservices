@@ -315,8 +315,8 @@ export function cgRajanShadbalaForPlanet({
         ['Five-planet Rajan Cheshta formula/input not independently reconciled']:[]),
       ...(!finite(sourceDrigVirupa)?
         ['Rajan Drig aspect-generation formula not fully reconciled to printed p.30 matrix']:[]),
-      ['Mars Dvadasamsa Saptavargaja p.39/41 mismatch: calculated 38 vs printed 50'],
-      ['Printed p.50 Dig has Venus/Saturn one-point rounding differences']
+      'Mars Dvadasamsa Saptavargaja p.39/41 mismatch: calculated 38 vs printed 50',
+      'Printed p.50 Dig has Venus/Saturn one-point rounding differences'
     ]),
     method:'C.G. Rajan source-specific partial Shadbala; not a final total certificate'
   });
