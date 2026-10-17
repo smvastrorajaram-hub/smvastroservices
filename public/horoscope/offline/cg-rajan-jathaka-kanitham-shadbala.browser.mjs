@@ -133,11 +133,29 @@ function compoundRelation(p,other,signs){
   if(n==='enemy'&&temporary==='friend')return 'neutral';
   return 'greatEnemy';
 }
+function validatedSevenGrahaSigns(planets){
+  if(!Array.isArray(planets))
+    throw new TypeError('seven-graha planetary positions required');
+  const source=planets.filter(p=>NAMES.includes(p?.name));
+  const counts=new Map();
+  for(const p of source)counts.set(p.name,(counts.get(p.name)||0)+1);
+  const duplicates=NAMES.filter(name=>(counts.get(name)||0)>1);
+  if(duplicates.length)
+    throw new RangeError('duplicate graha positions: '+duplicates.join(','));
+  const missing=NAMES.filter(name=>(counts.get(name)||0)===0);
+  if(missing.length)
+    throw new RangeError('missing graha positions: '+missing.join(','));
+  const invalid=source.filter(p=>!finite(p.longitude));
+  if(invalid.length)
+    throw new TypeError('non-finite longitude for: '+invalid.map(p=>p.name).join(','));
+  return Object.freeze(Object.fromEntries(source.map(p=>[p.name,signIndex(p.longitude)])));
+}
 export function cgRajanSaptavargajaBala({planet,longitude,planets=[]}={}){
   if(!NAMES.includes(planet)||!finite(longitude)||!Array.isArray(planets))
     throw new TypeError('planet, finite longitude and seven-graha positions required');
-  const signs=Object.fromEntries(planets.filter(p=>NAMES.includes(p.name)&&finite(p.longitude))
-    .map(p=>[p.name,signIndex(p.longitude)]));
+  // Temporary friendship is a function of all seven Rasi signs. Do not turn
+  // a missing sign into NaN, then silently classify it as temporary enmity.
+  const signs=validatedSevenGrahaSigns(planets);
   const breakdown=VARAGAS.map(varga=>{
     const sign=vargaSign(longitude,varga),lord=SIGN_LORDS[sign];
     const relation=compoundRelation(planet,lord,signs);
