@@ -41,7 +41,7 @@
 
 - Keep `classicalCertified:false` until all required gates are proven.
 - Keep `strength3` and customer Horoscope/Matching outputs unchanged.
-- Do not merge PR #14 to `main` or describe a green arithmetic workflow as full Shadbala certification.
+- PR #14 is now merged on GitHub and accepts the rule-derived Mars Saptavargaja value 147 while keeping `classicalCertified:false`. That merge is NOT a complete Shadbala certification. The new Amsa/Arudha changes are in Draft PR #17; do not merge that draft until its current source QA and independent component gaps are resolved.
 - Keep Ayurdaya separate from Shadbala and do not emit lifespan/death-age conclusions.
 
 
