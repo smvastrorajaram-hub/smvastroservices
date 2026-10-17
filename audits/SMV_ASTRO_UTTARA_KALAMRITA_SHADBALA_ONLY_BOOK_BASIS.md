@@ -37,7 +37,7 @@
 
 Therefore `classicalCertified:false`, `totalVirupa:null` whenever evidence is missing, and **NO FINAL SHADBALA CERTIFICATE**. No main merge until the whole UK numerical source chain has a credible independent evidence set.
 
-**Future-only:** User specified Ayurdhaya as a later step. No Ayurdhaya equations have been added to this module or tests.
+**Separate second step now implemented as research:** Ayurdaya was subsequently explicitly requested. The standalone UK III module exists, with no live report integration, and full Ayurdaya remains uncertified.
 
 
 ## Second workstream — UK Section III Ayurdhaya source-only research
@@ -47,8 +47,12 @@ The user explicitly requested this as a second step after initiating UK Shadbala
 - Sloka 1: completed stars mod 3, completed Padas and position evidence; book's Venus Karka example of 1 day 45 ghatis 22 vighatis elapsed / 2 days 43 ghatis 32 vighatis total; continuous fraction must use actual entry/exit UTC and is null otherwise.
 - Sloka 2: house 12→7 reductions with separate benefic-half and explicit flags for debility/enemy/defeat; the result is **one provisional planet contribution only**.
 - Sloka 3: Lagna elapsed-ghati/full-sign-ghati ratio ×9; needs trustworthy rising instant.
-- Slokas 4–5: three Drekkanas' UK Saptavargaja strengths, Punya/Papa and (120/7) arithmetic; source-dependent, never a released lifespan number.
+- Slokas 4–5: three Drekkanas' UK Saptavargaja strengths, Punya/Papa and (120/7) arithmetic. A separate bridge now derives the three adjacent decan rulers from the actual Lagna and reads their **UK-only Saptavargaja components** from the chart; source-dependent, never a released lifespan number.
 - Seven source positions × five Perambalur births = 35 intermediate inputs; `personPredictedLifespan:null`, `deathTimingPrediction:null`, `completeAyurdayaCertified:false`.
-- Remaining Sections III 6–8 (qualitative longevity yogas) are NOT automatically assessed; source-specific aspect/classification rules and final UK Shadbala need independent verification first.
+- Slokas 6–8: separate, research-only **structural house-placement group flags** and **nullable validated aspect-evidence flags**, with no lifespan classification or prediction; missing aspect confirmation remains null, not presumed. A final UK Shadbala and source-specific calibrated aspect calculation are still prerequisites.
 
 **No certified full UK Shadbala or complete Ayurdhaya, and no main merge.** Historical time-of-death predictions would not be scientifically verifiable from these astrology rules and must never be represented as a medical fact.
+
+### Latest second-stage CI numerical result
+
+[UK III source-only QA run](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/38988119392) PASS: book Venus passage fraction 0.6443130860171219, five Perambalur sample dates × seven birth planets = 35 completed Nakshatra/Pada-position research inputs, 3 UK-specific adjacent Drekkana owners per Lagna, plus UK Section III.6–8 nonpredictive condition flags. The research calculation does not generate any certified native lifespan or time-of-death output.
