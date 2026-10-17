@@ -67,7 +67,8 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  */
 export function cgRajanAmsaHaranaResearch({
  planet,rawAmsaYears,enemySign,combust,houseFromLagna,occupantCount,
- chakrapadaBenefic,strongestOccupantVerified,isExaltationSign,retrograde,
+ chakrapadaBenefic,strongestOccupantVerified,strongestOccupantSelected,
+ applyChakrapadaLoss=true,isExaltationSign,retrograde,
  ownSign,ownNavamsa,ownDrekkana,vargottama
 }={}){
  if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
@@ -84,17 +85,19 @@ export function cgRajanAmsaHaranaResearch({
  const chakrapadaApplies=Number.isInteger(houseFromLagna)&&houseFromLagna>=7&&houseFromLagna<=12;
  if(chakrapadaApplies&&typeof chakrapadaBenefic!=='boolean')
   blockers.push('Missing chart-verified benefic/malefic status required for Chakrapada Harana');
- if(chakrapadaApplies&&Number.isInteger(occupantCount)&&occupantCount>1&&strongestOccupantVerified!==true)
-  blockers.push('Shadbala-verified strongest occupant required for multi-occupant Chakrapada Harana');
+ if(chakrapadaApplies&&Number.isInteger(occupantCount)&&occupantCount>1&&
+  strongestOccupantVerified!==true&&strongestOccupantSelected!==true)
+  blockers.push('A unique strongest-occupant selection is required for multi-occupant Chakrapada Harana');
  if(blockers.length)return Object.freeze({planet,rawAmsaYears,resolved:false,
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,blockers,
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
  const condition=cgRajanConditionReductions({planet,enemySign,combust});
  const benefic=chakrapadaApplies?chakrapadaBenefic:null;
- const chakra=chakrapadaApplies?
+ const chakra=chakrapadaApplies&&applyChakrapadaLoss!==false?
   cgRajanChakrapadaHouseFraction({house:houseFromLagna,benefic}):
-  Object.freeze({house:houseFromLagna,benefic:null,lossFraction:0,remainingFraction:1});
+  Object.freeze({house:houseFromLagna,benefic:chakrapadaApplies?benefic:null,
+   lossFraction:0,remainingFraction:1,applied:false});
  const chakrapadaLossFraction=chakra.lossFraction;
  const totalHaranaFraction=condition.conditionHaranaFraction+chakrapadaLossFraction;
  if(totalHaranaFraction>1+1e-10)return Object.freeze({planet,rawAmsaYears,resolved:false,
@@ -116,6 +119,9 @@ export function cgRajanAmsaHaranaResearch({
  const adjustedAmsaYearsCandidate=yearsBeforeMultiplier*multiplier;
  return Object.freeze({planet,rawAmsaYears,resolved:true,enemySign,combust,
   houseFromLagna,occupantCount,benefic,
+  chakrapadaApplied:chakrapadaApplies&&applyChakrapadaLoss!==false,
+  strongestOccupantSelected:strongestOccupantSelected===true,
+  strongestOccupantVerified:strongestOccupantVerified===true,
   enemySignLossFraction:condition.enemySignLossFraction,
   combustionLossFraction:condition.combustionLossFraction,
   combustionHaranaExempt:condition.combustionHaranaExempt,
@@ -125,16 +131,21 @@ export function cgRajanAmsaHaranaResearch({
   adjustedAmsaYearsCandidate,
   traditionalUnitsCandidate:units(Math.round(adjustedAmsaYearsCandidate*NY)),
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
-  blockers:['Research candidate only: no complete independent printed Amsa worked-example oracle yet',
-   'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison and required Shadbala/occupant-strength inputs are not independently certified',
-   'Benefic/malefic classification and strongest-occupant state must be verified for the actual chart before Chakrapada Harana is treated as final'],
+  blockers:[
+   'Research candidate only: no complete independent printed Amsa worked-example oracle yet',
+   'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison is not independently certified',
+   ...(strongestOccupantSelected===true&&strongestOccupantVerified!==true?
+    ['The strongest occupant is selected provisionally from current strength3 scores; those scores are not independently certified Shadbala']:[]),
+   'The computed result is a candidate, not a certified final Ayurdaya'
+  ],
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
 }
 /**
- * Resolve the Amsa Harana candidate from fields already present in the
- * natal chart. This intentionally refuses to infer source facts which the
- * chart object does not carry (notably chart-verified benefic status and a
- * Shadbala winner when multiple grahas share a Chakrapada house).
+ * Resolve an Amsa Harana research candidate from the existing natal chart.
+ * Explicit source-reviewed benefic status wins; otherwise derive a transparent
+ * natural benefic/malefic candidate. When a Chakrapada house has multiple
+ * seven-graha occupants, pick the unique highest current strength3 score for
+ * candidate display only. Current strength3 is not independently certified.
  */
 const RAJAN_OWN_SIGNS=Object.freeze({
  'சூரியன்':[4],'சந்திரன்':[3],'செவ்வாய்':[0,7],'புதன்':[2,5],
@@ -160,15 +171,59 @@ function rajanExplicitBeneficState(planetRow){
  ];
  return candidates.find(v=>typeof v==='boolean');
 }
+/**
+ * Provisional natural-subha/paapa classification for the book's Chakrapada
+ * half-loss. An explicit source-reviewed amsaHaranaBenefic flag takes
+ * precedence. Moon nature follows waxing/waning elongation; Mercury is
+ * treated as benefic unless it shares a sign with a natural malefic or node.
+ * These classifications are candidates only and do not certify method choice.
+ */
+function rajanDerivedAmsaBenefic(planet,planets){
+ if(planet==='குரு'||planet==='சுக்கிரன்')return true;
+ if(planet==='சூரியன்'||planet==='செவ்வாய்'||planet==='சனி')return false;
+ const sun=Array.isArray(planets)?planets.find(p=>p?.name==='சூரியன்'):null;
+ const row=Array.isArray(planets)?planets.find(p=>p?.name===planet):null;
+ if(planet==='சந்திரன்'){
+  if(!finite(row?.longitude)||!finite(sun?.longitude))return undefined;
+  const phase=norm(row.longitude-sun.longitude);
+  if(phase<1e-7||Math.abs(phase-180)<1e-7)return undefined;
+  return phase<180;
+ }
+ if(planet==='புதன்'){
+  const sign=finite(row?.longitude)?Math.floor(norm(row.longitude)/30):null;
+  if(sign===null)return undefined;
+  const maleficOrNode=new Set(['சூரியன்','செவ்வாய்','சனி','ராகு','கேது']);
+  const associated=Array.isArray(planets)&&planets.some(p=>p?.name!==planet&&
+   maleficOrNode.has(p?.name)&&finite(p?.longitude)&&Math.floor(norm(p.longitude)/30)===sign);
+  return !associated;
+ }
+ return undefined;
+}
+function rajanAmsaBeneficState(planetRow,planets){
+ const explicit=rajanExplicitBeneficState(planetRow);
+ return typeof explicit==='boolean'?explicit:rajanDerivedAmsaBenefic(planetRow?.name,planets);
+}
 function cgRajanAmsaChartHarana({planet,amsa,planets}={}){
  const row=Array.isArray(planets)?planets.find(p=>p?.name===planet):null;
  const state=row?.strength||{};
  const lon=amsa?.trueLongitude;
  const sun=Array.isArray(planets)?planets.find(p=>p?.name==='சூரியன்'):null;
  const house=Number.isInteger(row?.bhava)&&row.bhava>=1&&row.bhava<=12?row.bhava:undefined;
- const allHouseEvidence=Array.isArray(planets)&&planets.length>0&&planets.every(p=>
+ const sevenGrahas=Array.isArray(planets)?planets.filter(p=>Object.prototype.hasOwnProperty.call(SPEC,p?.name)):[];
+ const allHouseEvidence=sevenGrahas.length===7&&sevenGrahas.every(p=>
   Number.isInteger(p?.bhava)&&p.bhava>=1&&p.bhava<=12);
- const occupants=house&&allHouseEvidence?planets.filter(p=>p.bhava===house).length:undefined;
+ const occupants=house&&allHouseEvidence?sevenGrahas.filter(p=>p.bhava===house).length:undefined;
+ const houseOccupants=house&&allHouseEvidence?sevenGrahas.filter(p=>p.bhava===house):[];
+ const occupantScores=houseOccupants.map(p=>({
+  planet:p.name,score:p?.strength3?.totalVirupa,
+  certified:p?.strength3?.classicalCertified===true
+ }));
+ const rankable=occupantScores.length>1&&occupantScores.every(x=>finite(x.score));
+ const ranked=[...occupantScores].sort((a,b)=>b.score-a.score);
+ const uniqueWinner=rankable&&ranked.length>1&&Math.abs(ranked[0].score-ranked[1].score)>1e-9;
+ const selectedStrongest=occupants>1&&uniqueWinner?ranked[0].planet:null;
+ const strongestOccupantSelected=occupants>1&&selectedStrongest!==null;
+ const strongestOccupantVerified=strongestOccupantSelected&&occupantScores.every(x=>x.certified);
  const relationship=state.relationship;
  const enemySign=['பகை','enemy','Enemy'].includes(relationship)?true:
   ['நட்பு','நடுநிலை','சுய ராசி','friend','neutral','own sign'].includes(relationship)?false:undefined;
@@ -180,15 +235,18 @@ function cgRajanAmsaChartHarana({planet,amsa,planets}={}){
  const d9=finite(lon)?rajanNavamsaSignIndex(lon):null;
  const d3=finite(lon)?rajanDrekkanaSignIndex(lon):null;
  const own=RAJAN_OWN_SIGNS[planet]||[];
- const chakraBenefic=rajanExplicitBeneficState(row);
+ const chakraBenefic=rajanAmsaBeneficState(row,planets);
+ const chakraApplies=Number.isInteger(house)&&house>=7&&house<=12;
+ const applyChakrapadaLoss=!chakraApplies||occupants<=1||
+  (selectedStrongest===planet);
  return cgRajanAmsaHaranaResearch({
   planet,rawAmsaYears:amsa?.rawAmsaYears,
   enemySign,combust:combustStatus.resolved===true?combustStatus.combust:undefined,
   houseFromLagna:house,occupantCount:occupants,
   chakrapadaBenefic:chakraBenefic,
-  // The current chart does not provide a certified classical Shadbala
-  // ranking, so multiple house occupants must remain unresolved.
-  strongestOccupantVerified:false,
+  strongestOccupantVerified,
+  strongestOccupantSelected,
+  applyChakrapadaLoss,
   isExaltationSign:typeof state.exalted==='boolean'?state.exalted:undefined,
   retrograde:typeof state.retrograde==='boolean'?state.retrograde:undefined,
   ownSign:typeof state.ownSign==='boolean'?state.ownSign:undefined,
@@ -329,8 +387,8 @@ export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
   :esc(ta?'— (அம்ச ஹரணத் தகவல் முழுமையில்லை)':'— (Amsa Harana inputs incomplete)');
  const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுள் — மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3 (இடைநிலை கணிதச் சராசரி)':'Average Ayurdaya — sum of the three totals ÷ 3 (provisional arithmetic mean)'}</span> <strong>${averageText}</strong></th></tr>`;
  const note=ta?
- 'அம்ச ஆயுள் பத்தியில் மூல அட்டவணை A மதிப்பை இறுதி முடிவாகக் காட்டவில்லை. தேவையான கிரக உறவு, அஸ்தங்கதத் தொலைவு/வக்ரநிலை, பாவம், Navamsa/Drekkana/Vargottama மற்றும் சக்கிரபாத நிலை உறுதியாகக் கிடைத்தால் தேர்ந்தெடுத்த ஹரணம் கழித்து பொருந்தும் அதிகபட்ச multiplier பயன்படுத்திய ஆய்வு-மதிப்பு காட்டப்படும்; தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும். பல கிரகங்கள் ஒரே சக்கிரபாதப் பாவத்தில் இருந்தால் முழுமையாகச் சான்றளிக்கப்பட்ட Shadbala வலிமைத் தேர்வு இல்லாமல் முடிவு காட்டப்படாது. பிண்டம் மற்றும் நைசர்க்கிகம் இங்கு இன்னும் மூலக் கணக்கீட்டு இடைநிலைகள்; ஏதேனும் அம்ச ஹரணத் தகவல் தீராதபோது அம்ச மொத்தமும் மூன்று மொத்தச் சராசரியும் மறைக்கப்படும். காட்டப்படும் அம்ச மதிப்புகளும் முழுமையான அச்சுப் புத்தக worked-example மூலம் இன்னும் சுயாதீனமாகச் சான்றளிக்கப்படாத ஆய்வு-வேட்பாளர்கள் மட்டுமே; இறுதி ஆயுள் உறுதியோ மரண வயது/நாள்கணிப்போ அல்ல; இது அறிவியல் அல்லது மருத்துவ ஆயுள் கணிப்பும் அல்ல.':
- 'The Amsa column does not present the raw Table-A lookup as a final result. It shows a research candidate only when chart relationship, combustion distance/retrograde state, house, Navamsa/Drekkana/Vargottama and applicable Chakrapada evidence can be resolved; otherwise it shows —. If several grahas occupy a Chakrapada house, the result stays blocked until a source-valid Shadbala strength winner is verified. Pinda and Naisargika here remain intermediate raw terms. If any Amsa Harana inputs are unresolved, the Amsa total and three-method mean are withheld rather than substituting the raw Table-A sum. Even displayed adjusted Amsa values remain research candidates because a complete independent printed worked-example oracle and method-selection rule are not yet certified; this is NOT a prediction of personal lifespan, death age or death date.';
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுள்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
+ 'அம்ச ஆயுள் பத்தியில் மூல அட்டவணை A மதிப்பை இறுதி ஹரண முடிவாகக் காட்டவில்லை. கிரக உறவு, அஸ்தங்கதம், பாவம், Navamsa/Drekkana/Vargottama ஆகியவற்றிலிருந்து கிடைக்கும் தரவுகளைப் பயன்படுத்தி ஹரண candidate கணக்கிடப்படுகிறது. பல கிரகங்கள் ஒரே சக்கிரபாதப் பாவத்தில் இருந்தால் தற்போதைய strength3 மதிப்பின் அடிப்படையில் அதிக வலிமை கொண்ட கிரகம் ஆய்வு-வேட்பாளராகத் தேர்வு செய்யப்படுகிறது; அந்த strength3 மதிப்புகள் சுயாதீனமாகச் சான்றளிக்கப்பட்ட Shadbala அல்ல. முழுமையான அச்சுப் புத்தக worked-example மற்றும் Lagna-வலிமை முறைத் தேர்வு இன்னும் சான்றளிக்கப்படாததால், இவை இடைக்காலக் கணித ஆய்வு மதிப்புகள் மட்டுமே; இறுதி ஆயுள் உறுதியோ மரண வயது/நாள்கணிப்போ அல்ல; இது அறிவியல் அல்லது மருத்துவ ஆயுள் கணிப்பும் அல்ல.':
+ 'The Amsa column does not present raw Table-A values as final Harana results. It calculates research candidates from chart relationship, combustion, house, Navamsa/Drekkana/Vargottama and Chakrapada inputs. When multiple grahas occupy a Chakrapada house, the highest current strength3 score selects a research candidate; those scores are not independently certified Shadbala. The complete printed Amsa worked example and Lagna-strength method-selection rule are not yet certified, so these remain provisional arithmetic candidates, not a prediction of lifespan, death age or death date.';
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுள் (ஹரணத்திற்குப் பின் — ஆய்வு மதிப்பு)':'Amsa Ayurdaya (post-Harana candidate)'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
 
 }
