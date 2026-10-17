@@ -1,5 +1,5 @@
 /** C.G. Rajan Part I Pindayurdaya printed-example and browser report QA.
- * Source: user supplied Jathaka Kanitham I printed pp.249–254.
+ * Source: user supplied Jathaka Kanitham I printed pp.249–256.
  * NEVER predict an actual lifespan or death age.
  */
 import assert from 'node:assert/strict';
@@ -25,13 +25,16 @@ const ref=[['சூரியன்',167+2/60],['சந்திரன்',118+10
  .map(([name,longitude])=>({name,longitude}));
 const research=cgRajanCompareGrahas({planets:ref});
 eq(research.entries.length,7,'seven researched grahas');
+eq(research.threeMethodAverage.available,false,'average blocked until all three final totals are verified');
 eq(research.allEightMethodsComplete,false,'cannot claim 8 methods are complete');
 eq(research.combinedLongevityYears,null,'no calculated personal total');
 eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
-ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்'),'Tamil columns');
-ok(en.includes('Pinda component')&&en.includes('Natural component'),'English columns');
+ok(ta.includes('பிண்டக் கணிதப் பங்கு')&&ta.includes('நைசர்க்கிகக் கணிதப் பங்கு')&&
+ ta.includes('அம்சக் கணிதப் பங்கு'),'Tamil Pinda/Naisargika/Amsa columns');
+ok(en.includes('Pinda component')&&en.includes('Naisargika component')&&
+ en.includes('Amsa component'),'English Pinda/Naisargika/Amsa columns');
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
 eq((ta.match(/<tr>/g)||[]).length,8,'one header plus seven planet rows');
@@ -58,8 +61,9 @@ for(const [date,time] of births){
  eq(x.entries.length,7,'all grahas '+date);
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
- ok(cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'}).includes('Natural component'),
- 'html ' + date);
+ ok(cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'}).includes('Naisargika component')&&
+ cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'}).includes('Amsa component'),
+ 'html Pinda/Naisargika/Amsa ' + date);
  count+=x.entries.length;
 }
 eq(count,35,'five births x seven grahas');
