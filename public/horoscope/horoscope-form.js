@@ -45,12 +45,11 @@
   window.__smvHoroscopeIsBusy=()=>busy||window.__smvSnapshotBusy;
 
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
-    if(busy)return;
+    if(busy||window.__smvHoroscopeGenerating)return;
     const lang=document.documentElement.lang==='ta'?'ta':'en';
     // V90: lock the language at Generate click. The generated report language remains immutable for this calculation.
     const generationLanguage=lang;
     let phase='startup';
-    try{await window.SMVEngineReady;}catch{alert(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));return;}
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'',currentWork='',maritalStatus='',currentResidence=''; // Age-only reading: no voluntary life-context supplied;
     if(Number(date.slice(0,4))<1800||Number(date.slice(0,4))>2399){alert(text('Supported birth years: 1800–2399.','ஆதரிக்கப்படும் பிறந்த ஆண்டுகள்: 1800–2399.'));return;}
     // UTC offset is derived from the selected IANA zone and birth date/time below.
@@ -71,8 +70,11 @@ if(lat===''||lon===''){
     copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');
     const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;tplace.dataset.timezone=$('englishBirthTimezone')?.value||'';if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=tplace.dataset.timezone;
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
-    busy=true;document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
+    busy=true;
+    const generationId=(window.__smvHoroscopeGenerationId=Number(window.__smvHoroscopeGenerationId||0)+1);
+    document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
     const englishResult=$('englishHoroscopeResult');
+    const coreResult=$('tamilHoroscopeResult');
     // Clear only the previous, user-visible diagnostic. No automatic re-fetch or retry.
     $('smvHoroscopeGenerationError')?.remove();
     // FINAL HOROSCOPE RELEASE RULE: do not open/show the horoscope result while
@@ -84,11 +86,24 @@ if(lat===''||lon===''){
       englishResult.removeAttribute('data-smv-report-incomplete');
       englishResult.innerHTML='';
     }
+    // Keep the reusable core host hidden. The English flow owns the one loader;
+    // it must not run the Tamil form generator and publish a transient Basic report.
+    if(coreResult){
+      coreResult.classList.add('hidden');
+      coreResult.setAttribute('aria-busy','true');
+      coreResult.innerHTML='';
+    }
+    window.__smvHoroscopeGenerating=true;
     window.__smvLastFullReport=null; // New user-triggered calculation must not inherit an older full report.
     const btn=$('generateEnglishHoroscope');
     if(btn){btn.disabled=true;btn.textContent=text('⏳ Creating Horoscope…','⏳ ஜாதகம் உருவாகிறது…');}
     let englishProgress=$('englishHoroscopeProgress'); if(!englishProgress&&btn){englishProgress=document.createElement('div');englishProgress.id='englishHoroscopeProgress';englishProgress.className='smv-horoscope-progress';englishProgress.innerHTML='<span class="spin"></span><span>'+text('Creating Horoscope… Preparing all calculations and features…','ஜாதகம் உருவாகிறது… அனைத்துக் கணக்கீடுகளும் தயாராகின்றன…')+'</span>';btn.insertAdjacentElement('afterend',englishProgress);}
     try{
+      // Start painting the progress indicator before waiting on startup assets or
+      // beginning synchronous chart/advanced work on the main thread.
+      phase='engine-ready';
+      try{await window.SMVEngineReady;}catch{throw new Error(text('Offline engine could not start. Reopen with internet to download the app files.','இணையமில்லா கணிப்பு இயங்கவில்லை. கோப்புகளைப் பதிவிறக்க இணைய இணைப்புடன் மீண்டும் திறக்கவும்.'));}
+      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       phase='birth-details';
       const normalizeHoroscopeTime=value=>{
         const s=String(value||'').trim();
@@ -116,9 +131,22 @@ if(lat===''||lon===''){
       // Full calculation is routed directly to the bundled offline engine.
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:place,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60,language:generationLanguage});
       phase='core-calculation';
-      const generated=await window.__smvGenerateHoroscopeEngine(false);
-      if(!generated || !Array.isArray(generated.planets)) throw new Error('Birth chart did not finish: no valid D1 planet data was returned.');
-      const source=$('tamilHoroscopeResult'),target=$('englishHoroscopeResult');
+      // Direct core calculation avoids the nested Tamil generator's own spinner,
+      // reveal and cleanup. The same D1 chart is then reused by the full engine.
+      const core=await window.SMVOffline.full({
+        date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,
+        utcOffsetMinutes:Number($('birthUtcOffset')?.value??5.5)*60,
+        houseSystem:'S',language:'ta',
+        name:String($('englishAstroName')?.value||'').trim(),basicOnly:true
+      });
+      const generated=core?.chart;
+      if(core?.ok!==true||!generated||!Array.isArray(generated.planets))
+        throw new Error(core?.error||'Birth chart did not finish: no valid D1 planet data was returned.');
+      if(typeof window.__smvRenderCachedCore!=='function')
+        throw new Error('Horoscope core renderer is not ready. Please refresh the page.');
+      window.__smvRenderCachedCore(generated);
+      const source=coreResult,target=$('englishHoroscopeResult');
+      if(!source)throw new Error('Reusable core result container is missing.');
       if(source&&target&&source.innerHTML.trim()){
         target.innerHTML=source.innerHTML;
         source.innerHTML=''; // One live result tree; no duplicate result IDs or stale handlers.
@@ -149,10 +177,7 @@ if(lat===''||lon===''){
             if(next==='en')window.__smvApplyEnglishToHoroscope(target);
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
             if(completedFull){
-              await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
-              // Wait for Section X's integrated 15-year evidence on language
-              // switches before the next snapshot can be announced as ready.
-              await ensureLongPredictionComplete(target.querySelector('#englishAdvancedAstrology'));
+              await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
             }
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
             window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
@@ -188,39 +213,18 @@ if(lat===''||lon===''){
             throw new Error('Full report section(s) missing: '+namesMissing+(missing.includes('IX. Deities')?' (horoscope-details.js must load successfully)':''));
           }
         };
-        // V304: Section X now contains exactly twelve integrated house readings.
-        // Validate the completed 15-year timeline, NOT removed age-80 DOM sections.
-        // Wait on the existing local computation Promise; do not issue any new
-        // API, Firebase, Swiss or rendering request. Keep Save/Print guarded.
-        const ensureLongPredictionComplete=async advancedRoot=>{
-          if(!advancedRoot)return;
-          const x=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
-          if(!x)return; // Genuine Basic-only flow intentionally has no Section X.
-          const pending=advancedRoot.__smvLongTimelineReady;
-          if(pending)await pending;
-          const integrated=x.querySelector('.smv-v303-integrated[data-smv-integrated="12"]');
-          const topics=integrated?.querySelectorAll('.smv-v303-house[data-d1-topic]')||[];
-          const failure=x.querySelector('.smv-v302-unavailable')?.textContent?.trim()||'';
-          const ids=new Set(Array.from(topics,t=>Number(t.getAttribute('data-d1-topic'))));
-          const twelve=topics.length===12&&Array.from({length:12},(_,i)=>i+1).every(i=>ids.has(i));
-          if(!integrated||!twelve||integrated.getAttribute('data-smv-15-year-ready')!=='1'||failure){
-            throw new Error('Section X integrated 15-year reading is incomplete. '+(failure||'12 house chapters or 15-year Swiss/Dasha result missing.').slice(0,210));
-          }
-        };
-        // Core + Advanced Analysis are calculated locally in the browser.
+        // Keep the result hidden through access checking and full-report assembly.
+        // Reveal only the final full report or an intentional Basic-only outcome.
         if(typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
-          target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
-          englishAdvancedRoot.classList.remove('hidden');
           const runEnglishAdvanced=async()=>{
             target.classList.add('hidden'); target.setAttribute('aria-busy','true');
+            englishAdvancedRoot.classList.remove('hidden');
             englishAdvancedRoot.innerHTML='';
             phase='full-advanced-calculation';
-            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
-            // V304: do not publish any partial 12-house/15-year report.
-            phase='full-integrated-15-year-predictions';
-            await ensureLongPredictionComplete(englishAdvancedRoot);
-            // Validate ALL sections BEFORE signalling report-ready / Save / Print.
-            // The old flow notified report-store first and rejected missing IX later.
+            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
+            // The 15-year refinement continues inside Section X instead of
+            // blocking the whole report. Section X shows a pending state and the
+            // capture-phase guard keeps Save/Print waiting for the real timeline.
             phase='advanced-content-validation';
             verifyCompleteAdvanced();
             completedFull=window.__smvLastFullReport;
@@ -230,7 +234,9 @@ if(lat===''||lon===''){
           };
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
           if(!allowed){
+            englishAdvancedRoot.classList.add('hidden');
             target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
+            target.classList.remove('hidden');target.setAttribute('aria-busy','false');
             // Basic result uses the same final language renderer.
             if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
             window.__smvLocalizeTamilResult?.(target,generationLanguage);
@@ -294,7 +300,8 @@ if(lat===''||lon===''){
       if(englishResult) englishResult.setAttribute('aria-busy','false');
       if(btn){btn.disabled=false;btn.textContent=text('Create Horoscope','ஜாதகம் உருவாக்குக');}
       if(englishProgress) englishProgress.remove();
-      busy=false;document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=false);
+      busy=false;window.__smvHoroscopeGenerating=false;
+      document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=false);
     }
   });
   $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishDob','englishTob','englishBirthPlace','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishBirthPlace')){$('englishBirthPlace').dataset.locationSelected='0';$('englishBirthPlace').dataset.latitude='';$('englishBirthPlace').dataset.longitude='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});

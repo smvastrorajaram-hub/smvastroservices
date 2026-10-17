@@ -1885,6 +1885,14 @@ try{
         const fifteenKey=JSON.stringify([dailyDate,c?.birthDate||c?.birth?.date||payload?.date,payload?.time||'',payload?.lat??payload?.latitude,payload?.lon??payload?.longitude,(c?.planets||[]).map(p=>Number(p.longitude).toFixed(5))]);
         const fifteenCache=window.__smvIntegrated15Cache||(window.__smvIntegrated15Cache=new Map());
         root.dataset.smvLongPending='1';
+        const forecastPending=document.createElement('p');
+        forecastPending.className='small smv-v303-pending';
+        forecastPending.dataset.smvLongPendingMessage='1';
+        forecastPending.textContent=lang==='ta'
+          ?'அடுத்த 15 ஆண்டுகளின் தசை–கோச்சார விவரங்கள் கணக்கிடப்படுகின்றன…'
+          :'Calculating the next 15 years of Dasha and transit details…';
+        const forecastIntro=lifeSlot.querySelector('.smv-v303-intro');
+        if(forecastIntro)forecastIntro.after(forecastPending);else lifeSlot.prepend(forecastPending);
         const requestKey=fifteenKey+'|'+lang;root.__smvV302RequestKey=requestKey;
         const stillCurrent=()=>root.__smvV302RequestKey===requestKey&&lifeSlot.isConnected;
         const job=import('./d1-15-year-reading.mjs').then(async mod=>{
@@ -1903,6 +1911,7 @@ try{
           window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
         }).catch(error=>{
           if(!stillCurrent())return;
+          lifeSlot.querySelector('[data-smv-long-pending-message]')?.remove();
           const intro=lifeSlot.querySelector('.smv-v303-intro');
           if(intro){const p=document.createElement('p');p.className='smv-v302-unavailable';
             p.textContent=(lang==='ta'?'அடுத்த 15 ஆண்டுகளுக்கான உண்மையான தசை–பெயர்ச்சிக் கணக்கீடு கிடைக்கவில்லை. கணிக்கப்படாத காலப்பலன்கள் ஊகித்துச் சேர்க்கப்படவில்லை. காரணம்: ':'The computed 15-year period/transit results could not be loaded; no uncomputed dates were invented. Cause: ')+String(error?.message||error);
@@ -1913,14 +1922,39 @@ try{
         root.__smvLongTimelineReady=job;
         // Preserve Save/Print waiting until all 12 topics include calculated
         // 15-year detail; no change to auth, quotas, payment or print engines.
-        if(!root.__smvLongSaveGateBound){
-          root.__smvLongSaveGateBound=true;
-          root.addEventListener('click',async event=>{
+        // Save/Print controls are attached to the outer result host, not this
+        // Advanced child. Use one delegated capture guard so every current
+        // Horoscope report button waits for its own Section-X timeline.
+        if(!document.__smvLongSaveGateBound){
+          document.__smvLongSaveGateBound=true;
+          document.addEventListener('click',async event=>{
             const button=event.target?.closest?.('[data-save],[data-print]');
-            if(!button||!root.contains(button)||root.dataset.smvLongPending!=='1')return;
+            if(!button)return;
+            const resultHost=button.closest('#englishHoroscopeResult, #tamilHoroscopeResult');
+            if(!resultHost)return;
+            const advancedRoot=resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology');
+            if(!advancedRoot||advancedRoot.dataset.smvLongPending!=='1')return;
             event.preventDefault();event.stopImmediatePropagation();button.disabled=true;
-            try{await root.__smvLongTimelineReady;}finally{
-              if(button.isConnected){button.disabled=false;button.click();}
+            let ready=false;
+            try{
+              const pending=advancedRoot.__smvLongTimelineReady;
+              if(pending)await pending;
+              // The generation may have been replaced while the async timeline ran.
+              if(!button.isConnected||!advancedRoot.isConnected||
+                 resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology')!==advancedRoot)return;
+              const section=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
+              const integrated=section?.querySelector('.smv-v303-integrated[data-smv-integrated="12"]');
+              const topics=integrated?.querySelectorAll('.smv-v303-house[data-d1-topic]')||[];
+              const ids=new Set(Array.from(topics,t=>Number(t.getAttribute('data-d1-topic'))));
+              const twelve=topics.length===12&&Array.from({length:12},(_,i)=>i+1).every(i=>ids.has(i));
+              const failure=section?.querySelector('.smv-v302-unavailable')?.textContent?.trim()||'';
+              ready=!!integrated&&twelve&&integrated.getAttribute('data-smv-15-year-ready')==='1'&&!failure;
+              if(!ready)alert(document.documentElement.lang==='ta'
+                ?'15 வருட தசை–கோச்சார விவரங்கள் முழுமையாகத் தயாராகவில்லை. முழு கணக்கீடு முடிந்த பிறகு மீண்டும் முயற்சிக்கவும்.'
+                :'The 15-year Dasha/transit details are incomplete. Please retry after the calculation finishes.');
+            }finally{
+              if(button.isConnected)button.disabled=false;
+              if(ready&&button.isConnected)button.click();
             }
           },true);
         }
@@ -2700,6 +2734,8 @@ if(lat===''||lon===''){
     if(btn){btn.disabled=true;btn.textContent='⏳ ஜாதகம் உருவாக்கப்படுகிறது…';}
     let progress=$('tamilHoroscopeProgress'); if(!progress&&btn){progress=document.createElement('div');progress.id='tamilHoroscopeProgress';progress.className='smv-horoscope-progress';progress.innerHTML='<span class="spin"></span><span>ஜாதகம் உருவாக்கப்படுகிறது…<br>அனைத்து கணக்கீடுகளும் தயார் செய்யப்படுகின்றன…</span>';btn.insertAdjacentElement('afterend',progress);}
     try{
+      // Let the browser paint the progress indicator before the calculation task.
+      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       // Native mobile time inputs normally return HH:mm (for example 22:05 for 10:05 PM).
       // Normalize common 12-hour text values too, so the API always receives HH:mm.
       function normalizeHoroscopeTime(value){

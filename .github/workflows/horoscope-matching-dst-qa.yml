@@ -70,6 +70,8 @@ jobs:
           while IFS= read -r path; do
             node --check "$path"
           done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
+      - name: Horoscope single-release and responsive full-report regression
+        run: node tests/horoscope-generation-progress-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
       - name: V358 unified result layer source regression
