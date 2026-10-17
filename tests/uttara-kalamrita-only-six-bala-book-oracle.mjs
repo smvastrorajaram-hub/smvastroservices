@@ -160,8 +160,7 @@ close(withExalted.grades[0].virupa,30,'UK II.6 exalted companion 1/2 Rupa');
 close(withExalted.saptavargajaPartsVirupa[0],30,'UK II.6 Rasi full one-half');
 for(let i=1;i<7;i++)close(withExalted.saptavargajaPartsVirupa[i],
  alone.saptavargajaPartsVirupa[i],'UK II.6 keeps distinct varga ownership '+i);
-close(withExalted.sthanaMinusConjunction??
- (withExalted.totalVirupa-alone.totalVirupa),-15,
+close(withExalted.totalVirupa-alone.totalVirupa,-15,
  'UK II.6 changes total Sthana only by 15 Virupa');
 const withDebilitated=getMars([{name:'சனி',longitude:11}]);
 close(withDebilitated.grades[0].virupa,0,
