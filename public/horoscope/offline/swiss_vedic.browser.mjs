@@ -575,7 +575,7 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
     apparentSolarHour:solarHour,owners:ukOwners,
     tribhagaLord:temporal?.tribhagaLord,
     declinations:ukAyana,classicalOrbitalInputs:{}});
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'},strengthUttaraKalamrita:SHADBALA_REQUIRED[p.name]?uk.birthSevenGraha[p.name]:{available:false,reason:'Nodes excluded from seven-graha UK Shadbala'},strengthJathakaKanitham:SHADBALA_REQUIRED[p.name]?(()=>{try{return cgRajanShadbalaForPlanet({planet:p.name,planets:withHour,ascendantLongitude:birthInput?.ascendantLongitude,declination:declinations[p.name],apparentSolarHour:solarHour,weekdayLord:temporal?.dinaLord??VARA_LORDS[weekday],monthLord:temporal?.masaLord,yearLord:temporal?.abdaLord,horaLord:temporal?.horaLord,tribhagaLord:temporal?.tribhagaLord});}catch(error){return {available:false,source:'C.G. Rajan Jathaka Kanitham Part I',classicalCertified:false,total:null,reason:String(error?.message||error)};}})():{available:false,reason:'Rahu/Ketu excluded from seven-graha C.G. Rajan Shadbala'}}));
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'},strengthUttaraKalamrita:SHADBALA_REQUIRED[p.name]?uk.birthSevenGraha[p.name]:{available:false,reason:'Nodes excluded from seven-graha UK Shadbala'},strengthJathakaKanitham:SHADBALA_REQUIRED[p.name]?(()=>{try{return cgRajanShadbalaForPlanet({planet:p.name,planets:withHour,ascendantLongitude:birthInput?.ascendantLongitude,midheavenLongitude:birthInput?.midheavenLongitude,declination:declinations[p.name],apparentSolarHour:solarHour,weekdayLord:temporal?.dinaLord??VARA_LORDS[weekday],monthLord:temporal?.masaLord,yearLord:temporal?.abdaLord,horaLord:temporal?.horaLord,tribhagaLord:temporal?.tribhagaLord});}catch(error){return {available:false,source:'C.G. Rajan Jathaka Kanitham Part I',classicalCertified:false,total:null,reason:String(error?.message||error)};}})():{available:false,reason:'Rahu/Ketu excluded from seven-graha C.G. Rajan Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
@@ -814,7 +814,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
   const enriched2=enrichPhase2(enriched0,jdUt);
-  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes,ascendantLongitude:ascLon});
+  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes,ascendantLongitude:ascLon,midheavenLongitude:Number.isFinite(mc)?norm360(mc):null});
   const d9Lagna=navamsa(ascLon);
   const moon=enriched.find(p=>p.name==='சந்திரன்');
   return {
