@@ -34,8 +34,8 @@ export const CG_RAJAN_PRINTED_P50 = Object.freeze({
   subtotalBeforeDrig: Object.freeze([604,695,580,909,947,612,758]),
   drig: Object.freeze([11,6,40,24,4,37,29]),
   afterDrig: Object.freeze([615,701,620,933,951,649,787]),
-  yuddha: Object.freeze([0,0,10,0,0,0,0]),
-  final: Object.freeze([615,701,630,933,951,649,787])
+  yuddha: Object.freeze([0,0,0,0,0,0,0]),
+  final: Object.freeze([615,701,620,933,951,649,787])
 });
 
 const NAMES = CG_RAJAN_PRINTED_P50.planets;
@@ -316,7 +316,6 @@ export function cgRajanShadbalaForPlanet({
       ...(!finite(sourceDrigVirupa)?
         ['Rajan Drig aspect-generation formula not fully reconciled to printed p.30 matrix']:[]),
       ['Mars Dvadasamsa Saptavargaja p.39/41 mismatch: calculated 38 vs printed 50'],
-      ['Printed p.50 final total omits Mars Yuddha +10; corrected Mars total is 630'],
       ['Printed p.50 Dig has Venus/Saturn one-point rounding differences']
     ]),
     method:'C.G. Rajan source-specific partial Shadbala; not a final total certificate'
