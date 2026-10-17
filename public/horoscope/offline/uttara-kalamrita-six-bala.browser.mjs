@@ -298,6 +298,35 @@ export function uttaraKalamritaCheshta({meanLongitude,trueLongitude,sheeghrocca,
   certified:sourceFrameVerified,
   source:'Uttara Kalamrita II 16½–17½ (Sighra Kendra)'});
 }
+/**
+ * UK II.16½–17½ Sighra-Kendra selection for five planets, as described
+ * in the Sastri commentary. Mercury/Venus: mean Sun at first correction
+ * and own mean as Sighrocca; Mars/Jupiter/Saturn: own mean at first
+ * correction and mean Sun as Sighrocca. Same-frame source is mandatory
+ * for CERTIFICATION, not for showing an openly research-only number.
+ * NEVER combine classical mean orbital positions with unrelated Swiss
+ * true positions. No 2024 study or constants are referenced.
+ */
+export function uttaraKalamritaFiveGrahaCheshta({
+ planet,meanSun,meanPlanet,truePlanet,sourceFrameVerified=false
+}={}){
+ if(!['புதன்','சுக்கிரன்','செவ்வாய்','குரு','சனி'].includes(planet))
+  throw new RangeError('UK only the 5 non-luminary grahas receive Sighra kendra');
+ if(![meanSun,meanPlanet,truePlanet].every(finite))
+  return Object.freeze({planet,meanLongitude:null,sheeghrocca:null,
+   virupa:null,pending:['same-frame planetary means and true longitude'],
+   certified:false});
+ const inner=['புதன்','சுக்கிரன்'].includes(planet);
+ const meanLongitude=norm(inner?meanSun:meanPlanet);
+ const sheeghrocca=norm(inner?meanPlanet:meanSun);
+ const cheshta=uttaraKalamritaCheshta({
+  meanLongitude,trueLongitude:truePlanet,sheeghrocca,
+  sourceFrameVerified});
+ return Object.freeze({planet,meanLongitude,sheeghrocca,
+  trueLongitude:norm(truePlanet),...cheshta,
+  noProductionActivation:true,fullShadbalaCertified:false,
+  source:'Uttara Kalamrita II.16½–17½, five graha Sighra-Kendra selector'});
+}
 export function uttaraKalamritaSixBala({planets,bhavas,apparentSolarHour,owners,
  tribhagaLord,declinations={},classicalOrbitalInputs={}}={}){
  if(!Array.isArray(planets))throw new TypeError('seven visible planetary positions required');
