@@ -558,9 +558,12 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
     abda:temporal.abdaLord,masa:temporal.masaLord,
     vara:temporal.dinaLord,hora:temporal.horaLord
   }:null;
-  const ukAyana=Object.fromEntries(Object.entries(declinations).map(
-    ([name,decl])=>[name,ayanaBala(decl,name)]
-  ));
+  // UK II.16½–17½ states direction of Ayana strength but does NOT
+  // independently prescribe an exact declination-to-Virupa equation here.
+  // Do not import the old BPHS numerical Ayana rule into UK-only results.
+  // Keep Kala Ayana explicitly pending until an unambiguous UK source
+  // equation and independent numerical reference establish its value.
+  const ukAyana={};
   const uk=uttaraKalamritaSixBala({planets:withHour,bhavas,
     apparentSolarHour:solarHour,owners:ukOwners,
     tribhagaLord:temporal?.tribhagaLord,
