@@ -1002,7 +1002,7 @@
     // The 12-Lagna display is intentionally rendered once, immediately below D-9 Navamsa.
     // Do not render the old separate Phase-1 Special Lagnas cards here.
     if(p1.arudhas){
-      h+=`<div class="adv-section phase1-module"><h3>🔱 ${p1Title('Arudha Padas A1–A12','ஆரூட பாதங்கள் A1–A12')}</h3><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>#</th><th>${p1Title('Arudha','ஆரூடம்')}</th><th>${p1Title('Source sign','மூல ராசி')}</th><th>${p1Title('Lord','அதிபதி')}</th><th>${p1Title('Lord sign','அதிபதி ராசி')}</th><th>${p1Title('Result','பலன் ராசி')}</th></tr></thead><tbody>${safeRows(p1.arudhas.items).map(x=>`<tr><td>${p1Esc(x.house)}</td><td><b>${p1Esc(x.name)}</b></td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.lordSign)}</td><td><b>${S(x.rasi)}</b></td></tr>`).join('')}</tbody></table></div><p class="small">${p1Esc(p1.arudhas.method)}</p></div>`;
+      h+=`<div class="adv-section phase1-module"><h3>🔱 ${p1Title('Arudha Padas AL, A2–A11, UL','ஆரூட பாதங்கள் AL, A2–A11, UL')}</h3><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>#</th><th>${p1Title('Arudha','ஆரூடம்')}</th><th>${p1Title('Source sign','மூல ராசி')}</th><th>${p1Title('Lord','அதிபதி')}</th><th>${p1Title('Lord sign','அதிபதி ராசி')}</th><th>${p1Title('Result','பலன் ராசி')}</th></tr></thead><tbody>${safeRows(p1.arudhas.items).map(x=>`<tr><td>${p1Esc(x.house)}</td><td><b>${p1Esc(x.name)}</b></td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.lordSign)}</td><td><b>${S(x.rasi)}</b></td></tr>`).join('')}</tbody></table></div><p class="small">${p1Esc(p1.arudhas.method)}</p></div>`;
     }
     if(p1.grahaArudhas){
       h+=`<div class="adv-section phase1-module"><h3>🪐 ${p1Title('Graha Arudhas','கிரக ஆரூடங்கள்')}</h3>${simpleTable([p1Title('Planet','கிரகம்'),p1Title('Source sign','மூல ராசி'),p1Title('Lord','அதிபதி'),p1Title('Arudha','ஆரூட ராசி')],safeRows(p1.grahaArudhas.items).map(x=>`<tr><td>${p1P(x.planet)}</td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.arudha)}</td></tr>`))}<p class="small">${p1Esc(p1.grahaArudhas.method)}</p></div>`;
@@ -1538,8 +1538,8 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
         const aliases=[
           ['Lagna','லக்னம்'],['Bhava Lagna','பாவ லக்னம்'],['Hora Lagna','ஹோரா லக்னம்'],
           ['Ghati Lagna','கதி லக்னம்'],['Vighati Lagna','விகதி லக்னம்'],['Varnada Lagna','வர்ணத லக்னம்'],
-          ['Sree Lagna','ஸ்ரீ லக்னம்'],['Indu Lagna','இந்து லக்னம்'],['Arudha Lagna (A1)','ஆரூட லக்னம் (A1)'],
-          ['Pranapada Lagna','பிராணபத லக்னம்'],['Karakamsa Lagna','காரகாம்ச லக்னம்'],['Upapada Lagna (A12)','உபபத லக்னம் (A12)'],['Paaka Lagna','பாக லக்னம்'],['Chandra Lagna','சந்திர லக்னம்'],['Ravi Lagna','ரவி லக்னம்']
+          ['Sree Lagna','ஸ்ரீ லக்னம்'],['Indu Lagna','இந்து லக்னம்'],['AL','AL'],
+          ['Pranapada Lagna','பிராணபத லக்னம்'],['Karakamsa Lagna','காரகாம்ச லக்னம்'],['UL','UL'],['Paaka Lagna','பாக லக்னம்'],['Chandra Lagna','சந்திர லக்னம்'],['Ravi Lagna','ரவி லக்னம்']
         ];
         const findItem=(en,taName)=>sourceItems.find(x=>{
           const n=String(x?.englishName||x?.name||'').trim().toLowerCase();
@@ -1548,12 +1548,12 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
         const purposeFallback={
           'Lagna':'Self, body and primary chart reference','Bhava Lagna':'Bhava / body reference','Hora Lagna':'Wealth, money and prosperity','Ghati Lagna':'Fame, power and authority',
           'Vighati Lagna':'Fine-grained time-sensitive reference','Varnada Lagna':'Social / professional reference','Sree Lagna':'Prosperity and wealth','Indu Lagna':'Special wealth / prosperity reference',
-          'Arudha Lagna (A1)':'Public image / manifest perception','Pranapada Lagna':'Life-force and fine birth-time reference','Karakamsa Lagna':'Jaimini / Atmakaraka reference','Upapada Lagna (A12)':'Marriage / spouse reference','Paaka Lagna':'Physical self reference (textbook)','Chandra Lagna':'Mind / mental perspective reference (textbook)','Ravi Lagna':'Soul / physical vitality reference (textbook)'
+          'AL':'Public image / manifest perception','Pranapada Lagna':'Life-force and fine birth-time reference','Karakamsa Lagna':'Jaimini / Atmakaraka reference','UL':'Marriage / spouse reference','Paaka Lagna':'Physical self reference (textbook)','Chandra Lagna':'Mind / mental perspective reference (textbook)','Ravi Lagna':'Soul / physical vitality reference (textbook)'
         };
         const purposeTa={
           'Lagna':'சுயம் / உடல் / வாழ்க்கையின் அடிப்படை','Bhava Lagna':'பாவ / உடல் சார்ந்த குறிப்பு','Hora Lagna':'செல்வம், பணம், வளம்','Ghati Lagna':'புகழ், அதிகாரம், ஆட்சி',
           'Vighati Lagna':'மிக நுணுக்கமான நேரக் குறிப்பு','Varnada Lagna':'சமூக நிலை / தொழில் சார்ந்த குறிப்பு','Sree Lagna':'செழிப்பு / வளம்','Indu Lagna':'செல்வம் மற்றும் வளம் சார்ந்த சிறப்பு லக்னம்',
-          'Arudha Lagna (A1)':'உலகப் பார்வை / வெளிப்படையான உருவம்','Pranapada Lagna':'உயிர்சக்தி / பிறப்பு நேர நுணுக்கம்','Karakamsa Lagna':'ஜைமினி / ஆத்மகாரக ஆய்வு','Upapada Lagna (A12)':'திருமணம் / துணை சார்ந்த ஆய்வு','Paaka Lagna':'உடல் / பௌதிக சுயத்தின் குறிப்பு (பாடநூல்)','Chandra Lagna':'மனம் / மனப்பாங்கின் குறிப்பு (பாடநூல்)','Ravi Lagna':'ஆத்மா / உடல் உயிர்சக்தியின் குறிப்பு (பாடநூல்)'
+          'AL':'உலகப் பார்வை / வெளிப்படையான உருவம்','Pranapada Lagna':'உயிர்சக்தி / பிறப்பு நேர நுணுக்கம்','Karakamsa Lagna':'ஜைமினி / ஆத்மகாரக ஆய்வு','UL':'திருமணம் / துணை சார்ந்த ஆய்வு','Paaka Lagna':'உடல் / பௌதிக சுயத்தின் குறிப்பு (பாடநூல்)','Chandra Lagna':'மனம் / மனப்பாங்கின் குறிப்பு (பாடநூல்)','Ravi Lagna':'ஆத்மா / உடல் உயிர்சக்தியின் குறிப்பு (பாடநூல்)'
         };
         const rows12=aliases.map(([en,taName],i)=>{
           const x=findItem(en,taName);
