@@ -1,0 +1,40 @@
+name: Uttara Kalamrita Only Shadbala Book Intermediate QA
+on:
+  push:
+    branches: [audit/v365-saura-mean-motion-panchang-oracle, main]
+    paths:
+      - 'public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'tests/uttara-kalamrita-only-six-bala-book-oracle.mjs'
+      - 'tests/uttara-kalamrita-five-natal-intermediate-integration.mjs'
+      - '.github/workflows/uttara-kalamrita-only-shadbala-qa.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  uttara-kalamrita-only-book-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: UK-only source / test syntax checks
+        run: |
+          node --check public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs
+          node --check public/horoscope/offline/swiss_vedic.browser.mjs
+          node --check tests/uttara-kalamrita-only-six-bala-book-oracle.mjs
+          node --check tests/uttara-kalamrita-five-natal-intermediate-integration.mjs
+      - name: Uttara Kalamrita printed seven Saptavargaja totals, all six intermediate formulas
+        run: node tests/uttara-kalamrita-only-six-bala-book-oracle.mjs
+      - name: Five Perambalur births x seven UK grahas and legacy preservation
+        run: node tests/uttara-kalamrita-five-natal-intermediate-integration.mjs
+      - name: UK certification boundary — no lifespan/Ayurdaya
+        run: |
+          echo 'UK book formula and intermediate numeric regression only.'
+          echo 'FULL UK SHADBALA NOT YET CERTIFIED: historical Cheshta triple missing.'
+          echo 'AYURDAYA NOT ADDED.'
