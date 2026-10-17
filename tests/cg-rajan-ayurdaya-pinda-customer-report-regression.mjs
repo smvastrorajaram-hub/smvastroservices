@@ -62,7 +62,7 @@ for(const [date,time] of [
   eq(x.pinda.totalHumanLifetime,null,'Pinda never makes death date '+date+x.name);
  }
  for(const lang of [ta,en]){
-  eq((lang.match(/<tr>/g)||[]).length,10,'header + seven rows + total + average');
+  eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
   yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுள்'),'Amsa column exists');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
