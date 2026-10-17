@@ -67,10 +67,11 @@ export function cgRajanChakrapadaHouseFraction({house,benefic}={}){
   multiOccupantPriorityVerified:false,source:'CG Rajan I printed pp.231–232'});
 }
 /**
- * Rajan pp.231 and 244: enemy sign loses one third; combustion loses
- * half, with the source's explicit Venus and Saturn exceptions.
- * Reduction PRIORITY is NOT independently verified, so the product is
- * illustrative research arithmetic only; not a final natal reduction.
+ * Rajan pp.231–232 and 244: enemy-sign Harana is one third; applicable
+ * combustion Harana is one half, EXCEPT Venus and Saturn. When both enemy
+ * sign and combustion Harana apply, p.231 explicitly chooses combustion
+ * Harana alone rather than adding both. The p.244 combustion thresholds
+ * classify the state; they do not cancel the p.231 Venus/Saturn exception.
  */
 /**
  * C.G. Rajan I printed p.244: combustion limits measured from the Sun.
@@ -82,6 +83,7 @@ const COMBUSTION_LIMITS=Object.freeze({
  'புதன்':Object.freeze({direct:14,retrograde:12}),
  'குரு':11,'சுக்கிரன்':Object.freeze({direct:10,retrograde:8}),'சனி':15
 });
+const COMBUSTION_HARANA_EXEMPTIONS=new Set(['சுக்கிரன்','சனி']);
 export function cgRajanCombustionLimitDegrees({planet,retrograde}={}){
  if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
   throw new RangeError('Seven traditional grahas only');
@@ -108,33 +110,49 @@ export function cgRajanCombustionHaranaStatus({planet,trueLongitude,sunLongitude
  const delta=norm(norm(trueLongitude)-norm(sunLongitude));
  const distanceDegrees=Math.min(delta,360-delta);
  if(!limit.applicable)return Object.freeze({planet,distanceDegrees,combust:false,resolved:true,
-  combustionHaranaFraction:0,limitDegrees:null,source:limit.source});
+  combustionHaranaFraction:0,combustionHaranaExempt:false,limitDegrees:null,source:limit.source});
  if(!limit.resolved)return Object.freeze({planet,distanceDegrees,combust:null,resolved:false,
-  combustionHaranaFraction:null,limitDegrees:null,reason:limit.reason,source:limit.source});
+  combustionHaranaFraction:null,
+  combustionHaranaExempt:COMBUSTION_HARANA_EXEMPTIONS.has(planet),
+  limitDegrees:null,reason:limit.reason,source:limit.source});
  if(Math.abs(distanceDegrees-limit.limitDegrees)<1e-8)
   return Object.freeze({planet,distanceDegrees,combust:null,resolved:false,
-   combustionHaranaFraction:null,limitDegrees:limit.limitDegrees,
+   combustionHaranaFraction:null,
+   combustionHaranaExempt:COMBUSTION_HARANA_EXEMPTIONS.has(planet),
+   limitDegrees:limit.limitDegrees,
    reason:'Exact combustion threshold: source equality convention not independently verified',
    source:limit.source});
  const combust=distanceDegrees<limit.limitDegrees;
+ const combustionHaranaExempt=COMBUSTION_HARANA_EXEMPTIONS.has(planet);
  return Object.freeze({planet,distanceDegrees,combust,resolved:true,
-  combustionHaranaFraction:combust?1/2:0,limitDegrees:limit.limitDegrees,source:limit.source});
+  combustionHaranaFraction:combust&&!combustionHaranaExempt?1/2:0,
+  combustionHaranaExempt,limitDegrees:limit.limitDegrees,source:limit.source});
 }
 /**
- * Rajan pp.231–232 and p.235: enemy-sign and combustion losses are deductions
- * from the raw Amsa term. Add the loss fractions; multiplying the remaining
- * fractions would encode an unverified sequential-reduction rule.
+ * Rajan p.231 gives explicit precedence: if both enemy-sign and combustion
+ * Harana apply, choose only the larger combustion loss (1/2), not 1/3 + 1/2.
+ * The same page exempts Venus and Saturn from combustion Harana even though
+ * p.244 supplies their distances for identifying combustion. Thus an enemy
+ * sign still incurs 1/3 for Venus/Saturn when no combustion Harana is allowed.
+ * Amsa p.235 then adds this one selected condition deduction to Chakrapada's
+ * separate deduction; it does not multiply the remaining fractions.
  */
 export function cgRajanConditionReductions({planet,enemySign,combust}={}){
  if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
   throw new RangeError('Seven grahas only');
  if(typeof enemySign!=='boolean'||typeof combust!=='boolean')
   throw new TypeError('Explicit, verified enemySign and combust Boolean evidence required');
- const enemySignLossFraction=enemySign?1/3:0;
- const combustionLossFraction=combust?1/2:0;
- const conditionHaranaFraction=enemySignLossFraction+combustionLossFraction;
- return Object.freeze({planet,enemySign,combust,enemySignLossFraction,combustionLossFraction,
-  conditionHaranaFraction,remainingFractionCandidate:1-conditionHaranaFraction,
+ const combustionHaranaExempt=COMBUSTION_HARANA_EXEMPTIONS.has(planet);
+ const combustionHaranaApplied=combust&&!combustionHaranaExempt;
+ const enemySignLossFraction=enemySign&&!combustionHaranaApplied?1/3:0;
+ const combustionLossFraction=combustionHaranaApplied?1/2:0;
+ const conditionHaranaFraction=combustionLossFraction||enemySignLossFraction;
+ const selectedConditionHarana=combustionHaranaApplied?'combustion':
+  (enemySignLossFraction?'enemy-sign':'none');
+ return Object.freeze({planet,enemySign,combust,
+  combustionHaranaExempt,combustionHaranaApplied,selectedConditionHarana,
+  enemySignLossFraction,combustionLossFraction,conditionHaranaFraction,
+  remainingFractionCandidate:1-conditionHaranaFraction,
   combinedResearchFraction:1-conditionHaranaFraction,
   independentNatalFinalCertified:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.231–232, 235, 244'});

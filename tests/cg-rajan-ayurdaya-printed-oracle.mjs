@@ -13,6 +13,8 @@ import {cgRajanNaturalAyurdayaGraha as nat,
  cgRajanSevenNaturalResearch as seven,
  cgRajanSumTraditionalRows as sumRows}
 from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';
+import {cgRajanAmsaHaranaResearch as amsaHarana}
+from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let assertions=0;
 function eq(a,b,msg){assert.deepEqual(a,b,msg);assertions++;}
 function close(a,b,msg){assert.ok(Math.abs(a-b)<1e-10,msg+': '+a+' != '+b);assertions++;}
@@ -52,16 +54,77 @@ for(let h=12;h>=7;h--){
 }
 eq(house({house:6,benefic:true}).lossFraction,0,'outside 7..12');
 const bothHarana=red({planet:'செவ்வாய்',enemySign:true,combust:true});
-close(bothHarana.enemySignLossFraction,1/3,'enemy-sign loss is one third');
-close(bothHarana.combustionLossFraction,1/2,'combustion loss is one half');
-close(bothHarana.conditionHaranaFraction,5/6,'enemy-sign and combustion losses are additive');
-close(bothHarana.remainingFractionCandidate,1/6,'remaining term after additive deductions');
-close(red({planet:'சனி',enemySign:true,combust:true}).conditionHaranaFraction,5/6,
- 'Saturn has a p.244 threshold and no blanket exemption');
-close(red({planet:'சுக்கிரன்',enemySign:false,combust:true}).conditionHaranaFraction,1/2,
- 'Venus has a p.244 threshold and no blanket exemption');
+close(bothHarana.enemySignLossFraction,0,
+ 'p231 priority suppresses enemy-sign loss when combustion Harana applies');
+close(bothHarana.combustionLossFraction,1/2,'applicable combustion Harana is one half');
+close(bothHarana.conditionHaranaFraction,1/2,
+ 'p231 chooses the larger combustion Harana instead of adding 1/3 + 1/2');
+close(bothHarana.remainingFractionCandidate,1/2,'remaining term after the selected condition Harana');
+eq(bothHarana.selectedConditionHarana,'combustion','combustion precedence is explicit');
+const enemyOnly=red({planet:'செவ்வாய்',enemySign:true,combust:false});
+close(enemyOnly.enemySignLossFraction,1/3,'enemy-sign loss is one third when combustion Harana does not apply');
+close(enemyOnly.conditionHaranaFraction,1/3,'enemy-sign only case');
+for(const planet of ['சுக்கிரன்','சனி']){
+ const exempt=red({planet,enemySign:false,combust:true});
+ eq(exempt.combustionHaranaExempt,true,planet+' p231 combustion Harana exemption');
+ close(exempt.combustionLossFraction,0,planet+' combustion state does not trigger the excluded Harana');
+ close(exempt.conditionHaranaFraction,0,planet+' no other condition loss');
+ const enemyExempt=red({planet,enemySign:true,combust:true});
+ close(enemyExempt.enemySignLossFraction,1/3,planet+' enemy sign still applies when combustion Harana is exempt');
+ close(enemyExempt.conditionHaranaFraction,1/3,planet+' source exception is not lost');
+}
 eq(red({planet:'சூரியன்',enemySign:false,combust:false}).independentNatalFinalCertified,false,
  'reduction research only');
+const completeEvidence={
+ houseFromLagna:10,occupantCount:1,chakrapadaBenefic:false,strongestOccupantVerified:true,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+};
+const amsaOverlap=amsaHarana({planet:'செவ்வாய்',rawAmsaYears:6,enemySign:true,combust:true,...completeEvidence});
+eq(amsaOverlap.resolved,true,'candidate resolves when all required inputs are provided');
+close(amsaOverlap.enemySignLossFraction,0,'Amsa candidate follows combustion priority');
+close(amsaOverlap.combustionLossFraction,1/2,'Amsa candidate uses half combustion loss');
+close(amsaOverlap.chakrapadaLossFraction,1/3,'Amsa candidate adds separate tenth-house malefic Chakra loss');
+close(amsaOverlap.totalHaranaFraction,5/6,'selected condition loss plus Chakrapada loss');
+close(amsaOverlap.yearsBeforeMultiplier,1,'deductions are applied before strength multiplier');
+close(amsaOverlap.adjustedAmsaYearsCandidate,1,'candidate result respects printed order');
+eq(amsaOverlap.finalAmsaCertified,false,'research candidate does not certify full Amsa chain');
+const missingChakrapadaStatus=amsaHarana({
+ planet:'புதன்',rawAmsaYears:4,enemySign:false,combust:false,
+ houseFromLagna:10,occupantCount:1,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+});
+eq(missingChakrapadaStatus.resolved,false,'missing chart-specific benefic status blocks Chakra Harana');
+eq(missingChakrapadaStatus.adjustedAmsaYearsCandidate,null,'no silent Mercury natural-benefic guess');
+eq(missingChakrapadaStatus.blockers.some(x=>x.includes('benefic/malefic status')),true,
+ 'missing Chakra benefic/malefic status is explicitly reported');
+const noChakraMultiOccupants=amsaHarana({
+ planet:'செவ்வாய்',rawAmsaYears:4,enemySign:false,combust:false,
+ houseFromLagna:1,occupantCount:2,strongestOccupantVerified:false,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+});
+eq(noChakraMultiOccupants.resolved,true,'multi-occupant Shadbala ranking is irrelevant outside houses 7–12');
+eq(noChakraMultiOccupants.chakrapadaLossFraction,0,'no Chakra loss outside houses 7–12');
+const amsaMultiFactor=amsaHarana({
+ planet:'செவ்வாய்',rawAmsaYears:6,enemySign:false,combust:false,
+ houseFromLagna:1,occupantCount:1,strongestOccupantVerified:true,
+ isExaltationSign:true,retrograde:true,ownSign:true,ownNavamsa:true,
+ ownDrekkana:true,vargottama:true
+});
+eq(amsaMultiFactor.multiplier,3,'p235 uses the larger x3 multiplier, never x3 times x2');
+close(amsaMultiFactor.adjustedAmsaYearsCandidate,18,'raw years times only the selected maximum multiplier');
+const amsaVenusExemption=amsaHarana({
+ planet:'சுக்கிரன்',rawAmsaYears:6,enemySign:true,combust:true,
+ houseFromLagna:1,occupantCount:1,strongestOccupantVerified:true,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+});
+close(amsaVenusExemption.enemySignLossFraction,1/3,'Amsa candidate keeps enemy loss for Venus because combustion Harana is exempt');
+close(amsaVenusExemption.combustionLossFraction,0,'Amsa candidate skips combustion Harana for Venus');
+close(amsaVenusExemption.adjustedAmsaYearsCandidate,4,'Venus candidate uses one-third enemy loss');
+
 assert.throws(()=>red({planet:'சூரியன்'}),TypeError,'unknown conditions cannot default to false');assertions++;
 const limits=[
  ['சூரியன்',undefined,null,true],['சந்திரன்',undefined,12,true],
@@ -76,8 +139,11 @@ for(const [planet,retrograde,limit,resolved] of limits){
 }
 eq(combustStatus({planet:'சூரியன்',trueLongitude:100,sunLongitude:100}).combust,false,'Sun is not self-combust');
 eq(combustStatus({planet:'செவ்வாய்',trueLongitude:113,sunLongitude:100}).combust,true,'Mars within 17-degree limit');
-eq(combustStatus({planet:'சனி',trueLongitude:114,sunLongitude:100}).combust,true,'Saturn within 15-degree limit');
-eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:129,sunLongitude:120,retrograde:false}).combust,true,'direct Venus within 10-degree limit');
+eq(combustStatus({planet:'சனி',trueLongitude:114,sunLongitude:100}).combust,true,'Saturn within 15-degree combustion-status limit');
+eq(combustStatus({planet:'சனி',trueLongitude:114,sunLongitude:100}).combustionHaranaFraction,0,'Saturn Harana exemption applies despite combustion status');
+eq(combustStatus({planet:'சனி',trueLongitude:114,sunLongitude:100}).combustionHaranaExempt,true,'Saturn exemption visible');
+eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:129,sunLongitude:120,retrograde:false}).combust,true,'direct Venus within 10-degree combustion-status limit');
+eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:129,sunLongitude:120,retrograde:false}).combustionHaranaFraction,0,'Venus Harana exemption applies despite combustion status');
 eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:127,sunLongitude:120,retrograde:true}).combust,true,'retrograde Venus within 8-degree limit');
 eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:130,sunLongitude:120,retrograde:false}).resolved,false,'exact Venus threshold unresolved');
 eq(combustStatus({planet:'புதன்',trueLongitude:113,sunLongitude:100}).resolved,false,'Mercury motion state required');

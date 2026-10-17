@@ -39,7 +39,18 @@ ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
-ok(ta.includes('ஹரணத்திற்கு முன்')&&en.includes('before Harana'),'Amsa table A is explicitly labelled pre-Harana');
+eq(ta.includes('அம்ச ஆயுள் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
+ 'Amsa heading omits the Harana status label in Tamil');
+eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
+ 'Amsa heading omits the Harana status label in English');
+ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
+ 'raw Table-A terms are not presented in the customer table as results');
+ok(ta.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்')&&en.includes('otherwise it shows —'),
+ 'missing natal Harana evidence fails closed in the Amsa column');
+eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
+ 'fixture without chart facts displays no raw Amsa values for all seven grahas');
+ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
+ 'Amsa total stays unavailable until all seven chart-specific Harana results resolve');
 const amsaCases=[
  [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
@@ -51,19 +62,21 @@ for(const [longitude,years] of amsaCases){
 }
 const completeHaranaEvidence={
  planet:'குரு',rawAmsaYears:12,enemySign:true,combust:true,
- houseFromLagna:7,occupantCount:1,strongestOccupantVerified:false,
+ houseFromLagna:7,occupantCount:1,chakrapadaBenefic:true,strongestOccupantVerified:false,
  isExaltationSign:false,retrograde:false,ownSign:true,ownNavamsa:false,
  ownDrekkana:false,vargottama:false
 };
 const haraCandidate=cgRajanAmsaHaranaResearch(completeHaranaEvidence);
 eq(haraCandidate.resolved,true,'explicit evidence permits a Harana research candidate');
-eq(haraCandidate.enemySignLossFraction,1/3,'Amsa enemy-sign deduction');
-eq(haraCandidate.combustionLossFraction,1/2,'Amsa combustion deduction');
+eq(haraCandidate.enemySignLossFraction,0,'combustion Harana takes precedence over enemy-sign Harana');
+eq(haraCandidate.combustionLossFraction,1/2,'applicable combustion Harana is one half');
+eq(haraCandidate.selectedConditionHarana,'combustion','printed p.231 precedence is surfaced');
+eq(haraCandidate.benefic,true,'chart-verified Chakra benefic status is surfaced');
 eq(haraCandidate.chakrapadaLossFraction,1/12,'Jupiter benefic house-7 loss is half the malefic fraction');
-ok(Math.abs(haraCandidate.totalHaranaFraction-11/12)<1e-9,'Amsa Harana deductions are additive');checks++;
-ok(Math.abs(haraCandidate.yearsBeforeMultiplier-1)<1e-9,'deduct Haranas from raw 12-year term before multiplier');checks++;
+ok(Math.abs(haraCandidate.totalHaranaFraction-7/12)<1e-9,'selected condition deduction plus separate Chakrapada deduction');checks++;
+ok(Math.abs(haraCandidate.yearsBeforeMultiplier-5)<1e-9,'deduct Haranas from raw 12-year term before multiplier');checks++;
 eq(haraCandidate.multiplier,2,'only the maximum applicable multiplier is used');
-ok(Math.abs(haraCandidate.adjustedAmsaYearsCandidate-2)<1e-9,'post-Harana own-sign candidate');checks++;
+ok(Math.abs(haraCandidate.adjustedAmsaYearsCandidate-10)<1e-9,'post-Harana own-sign candidate');checks++;
 eq(haraCandidate.finalAmsaCertified,false,'candidate never self-certifies');
 const missingHarana=cgRajanAmsaHaranaResearch({planet:'குரு',rawAmsaYears:12});
 eq(missingHarana.resolved,false,'missing chart evidence blocks Amsa Harana');
@@ -71,13 +84,43 @@ eq(missingHarana.adjustedAmsaYearsCandidate,null,'missing evidence never assumes
 const collisionHarana=cgRajanAmsaHaranaResearch({...completeHaranaEvidence,occupantCount:2,strongestOccupantVerified:false});
 eq(collisionHarana.resolved,false,'multiple occupants require verified strongest graha');
 eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice cannot be guessed');
+// End-to-end renderer fixture: every required fact is explicit and all
+// Chakrapada houses are avoided. Jupiter is in enemy-sign Gemini and has no
+// applicable multiplier, so raw Amsa 11 becomes 11 × (1 - 1/3) = 7y 4m.
+const chartResolvedFixture=ref.map((p,i)=>({
+ ...p,
+ ...(p.name==='குரு'?{longitude:75}:{}),
+ bhava:[1,2,3,4,5,6,6][i],
+ strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
+  retrograde:false,exalted:false,ownSign:false}
+}));
+const resolvedChart=cgRajanCompareGrahas({planets:chartResolvedFixture});
+eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
+ 'all seven Amsa rows resolve when all chart evidence is explicit');
+const jupiterPost=resolvedChart.entries.find(x=>x.name==='குரு').amsaHarana;
+eq(jupiterPost.rawAmsaYears,11,'fixture Jupiter raw Table-A lookup');
+eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from chart relation');
+eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
+eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:4,days:0,nazhigai:0},
+ 'fixture displays the post-Harana Jupiter candidate, not raw 11 years');
+eq(resolvedChart.totals.amsa.available,true,
+ 'adjusted Amsa total available only after all seven rows resolve');
+const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
+eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven fully evidenced grahas display post-Harana candidates');
+ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
+ 'adjusted Amsa total is rendered only when complete');
+const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
+eq(jupiterAmsaCell,'7y 4m 0d 0n',
+ 'customer table cell contains post-Harana 7y 4m candidate rather than raw 11 years');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
-eq(totals.amsa.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
- 'seven Amsa A terms sum to 48 traditional years in printed example input');
-const sumNadis=totals.pinda.totalNazhigai+totals.natural.totalNazhigai+totals.amsa.totalNazhigai;
-eq(totals.averageOfThreeTotals.exactNazhigaiNumerator,sumNadis,'mean numerator is sum of three totals');
-eq(totals.averageOfThreeTotals.exactNazhigaiDenominator,3,'mean denominator remains three');
-eq(totals.averageOfThreeTotals.exactNazhigai,sumNadis/3,'mean retains exact third-nazhigai precision');
+eq(totals.amsa.traditionalUnits,null,
+ 'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
+eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until all adjusted rows resolve');
+eq(totals.amsaTableARaw.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
+ 'raw Table-A total remains internal arithmetic only and is not presented as final');
+eq(totals.averageOfThreeTotals,null,
+ 'three-method mean is withheld rather than calculated from raw Amsa Table-A values');
 const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
 eq(oneThird.traditionalUnits.nazhigai,0,'one-third has no whole nazhigai');
 eq(oneThird.traditionalUnits.nazhigaiFractionNumerator,1,'one-third nazhigai retained');
@@ -92,6 +135,21 @@ for(const html of [ta,en]){
 }
 const src=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const printSrc=fs.readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
+const shadbalaStart=src.indexOf('<h3 class="base-shadbala"');
+const shadbalaEnd=src.indexOf('<div class="transit-before-vimsottari">',shadbalaStart);
+const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
+ok(shadbalaUi.includes('💪 ஷட்பலம் (Shadbala)'),'Horoscope uses a plain Shadbala heading');
+eq(shadbalaUi.includes('Uttara Kalamrita'),false,'Shadbala section does not display book-source status');
+eq(shadbalaUi.includes('Classical Parashari Shadbala'),false,'Shadbala heading has no lineage/status text');
+eq(shadbalaUi.includes('reference-grade software parity'),false,'Shadbala section omits explanatory status note');
+eq(shadbalaUi.includes('வலிமை'),false,'Shadbala rows omit Strong/Below-required status text');
+const analysisShadbalaStart=src.indexOf('const shadbalaRows=');
+const analysisShadbalaEnd=src.indexOf('h+=`<div class="adv-section adv-ishta-kashta"',analysisShadbalaStart);
+const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
+eq(analysisShadbalaUi.includes('Uttara Kalamrita'),false,'Chart Analysis Shadbala has no book-source label');
+eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
+eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
+ 'Chart Analysis omits a status message when no numerical rows are available');
 ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
  'live Horoscope module integration');
 ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),

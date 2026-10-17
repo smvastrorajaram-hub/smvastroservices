@@ -67,11 +67,21 @@ for(const [date,time] of [
   yes(Number.isFinite(x.natural.theoreticalNaturalYearComponent),
     'numeric Naisargika '+date+x.name);
   eq(x.pinda.totalHumanLifetime,null,'Pinda never makes death date '+date+x.name);
+  if(x.amsaHarana.resolved!==true)
+   eq(x.amsaHarana.adjustedAmsaYearsCandidate,null,
+    'unresolved chart evidence never falls back to raw Amsa '+date+x.name);
  }
  for(const lang of [ta,en]){
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
   yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுள்'),'Amsa column exists');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
+  const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
+  const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
+  eq(blocked+adjusted,7,'each graha has adjusted Amsa candidate or blocked cell');
+  eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
+    'Amsa total is shown only when every chart-specific Harana resolves');
+  eq(lang.includes('data-amsa-total="blocked"'),result.totals.amsa.available!==true,
+    'Amsa total is withheld if any chart-specific Harana is blocked');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
  }
  seen.add(ta);
