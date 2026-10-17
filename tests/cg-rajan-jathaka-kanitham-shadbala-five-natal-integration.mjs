@@ -36,6 +36,10 @@ for(const [date,time] of births){
   ok(Number.isFinite(r.naisargika),'Naisargika partial '+name+' '+date);
   ok(Number.isFinite(r.dig),'Dig partial '+name+' '+date);
   eq(r.drig,null,'unverified source Drig never passed as final '+name+' '+date);
+  ok(Number.isFinite(r.yuddha)||r.yuddha===null,
+   'C.G. Rajan project Yuddha is numeric or explicitly unresolved '+name+' '+date);
+  eq(r.yuddhaDetails?.policy,'SMV ASTRO fixed +10/-10/0 project rule',
+   'UK eligibility/winner method maps to the declared project rule '+name+' '+date);
   eq(r.drigCandidate.certified,false,'BPHS angle candidate clearly unverified '+name+' '+date);
   eq(r.deathAgeOrDate,null,'no death-date output '+name+' '+date);
   ok(Number.isFinite(p.strength3?.totalVirupa),
@@ -53,4 +57,4 @@ for(const [date,time] of births){
 eq(pairs,35,'five births times seven grahas');
 console.log(JSON.stringify({pass:true,checks,birthCharts:births.length,planetPairs:pairs,
  legacyStrength3Preserved:true,rajanPartialAttached:true,fullRajanCertificate:false,
- blocked:['five-planet Cheshta','Rajan Drig angle generation','Mars D12 Saptavargaja','Dig rounding','Yuddha printed-total conflict']}));
+ blocked:['five-planet Cheshta','Rajan Drig angle generation','Mars D12 Saptavargaja','Dig rounding','full classical Shadbala certification']}));
