@@ -186,13 +186,31 @@ eq(cgRajanYuddhaBala({planet:'சூரியன்',planets:sunMoonOnly}).virup
 eq(cgRajanYuddhaBala({planet:'சந்திரன்',planets:sunMoonOnly}).virupa,0,
  'Moon is excluded from Graha Yuddha');
 
+// Synthetic arithmetic fixture only: flags are true here to exercise the
+// total path; this does NOT certify any real natal Cheshta/Drig value.
 const completeMars=cgRajanShadbalaForPlanet({
+ planet:'செவ்வாய்',planets:warChart,ascendantLongitude:asc,midheavenLongitude:95,
+ declination:decl['செவ்வாய்'],apparentSolarHour:7.2,weekdayLord:'சனி',
+ monthLord:'சனி',yearLord:'சனி',horaLord:'குரு',tribhagaLord:'புதன்',
+ classicalCheshtaVirupa:7,sourceDrigVirupa:2,
+ classicalCheshtaEvidenceVerified:true,sourceDrigEvidenceVerified:true
+});
+eq(completeMars.yuddha,10,'complete score path includes winner +10');
+eq(completeMars.total!==null,true,'synthetic verified fixture exercises arithmetic total only');
+const unverifiedNumeric=cgRajanShadbalaForPlanet({
  planet:'செவ்வாய்',planets:warChart,ascendantLongitude:asc,midheavenLongitude:95,
  declination:decl['செவ்வாய்'],apparentSolarHour:7.2,weekdayLord:'சனி',
  monthLord:'சனி',yearLord:'சனி',horaLord:'குரு',tribhagaLord:'புதன்',
  classicalCheshtaVirupa:7,sourceDrigVirupa:2
 });
-eq(completeMars.yuddha,10,'complete score path includes winner +10');
+eq(unverifiedNumeric.cheshta,null,'numeric Cheshta alone is not evidence verification');
+eq(unverifiedNumeric.drig,null,'numeric Drig alone is not source verification');
+eq(unverifiedNumeric.total,null,'unverified numeric components cannot create a full total');
+ok(unverifiedNumeric.blockers.some(x=>x.includes('without independent evidence')),
+ 'missing Cheshta evidence is explicitly reported');
+ok(unverifiedNumeric.blockers.some(x=>x.includes('without independent source-matrix')),
+ 'missing Drig evidence is explicitly reported');
+
 eq(completeMars.total,completeMars.partialSubtotalExcludingCheshtaDrigAndYuddha+
  completeMars.cheshta+completeMars.drig+completeMars.yuddha,
  'complete score includes Yuddha exactly once');
