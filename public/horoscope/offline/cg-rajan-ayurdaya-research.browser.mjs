@@ -128,3 +128,105 @@ export function cgRajanSumTraditionalRows({rows=[]}={}){
   printedFullTableReconciliationVerified:false,
   finalHumanLifespanYears:null,predictedDeathAge:null});
 }
+
+
+/**
+ * Amsayurdaya arithmetic from C. G. Rajan, Jathaka Kanitham I,
+ * printed pp. 255–256 (scanned PDF pp. 277–278).
+ *
+ * The printed worked examples show that the longitude is reduced to
+ * its remainder in a 40-degree cycle; one degree contributes 0.3 year
+ * = 3 months, 18 days = 6480 nazhigai. This is the raw graha/Lagna
+ * component only. It does NOT apply all natal reductions or certify a
+ * final Ayurdhaya method total.
+ */
+const AYURDAYA_NAZHIGAI_PER_DEGREE = 6480;
+function ayurdayaUnitsFromNazhigai(totalNazhigai) {
+ if(!Number.isSafeInteger(totalNazhigai)||totalNazhigai<0)
+  throw new RangeError('nonnegative safe integer nazhigai required');
+ let rem=totalNazhigai;
+ const years=Math.floor(rem/NADIS_PER_YEAR);rem%=NADIS_PER_YEAR;
+ const months=Math.floor(rem/(DAYS_PER_MONTH*NADIS_PER_DAY));rem%=DAYS_PER_MONTH*NADIS_PER_DAY;
+ const days=Math.floor(rem/NADIS_PER_DAY);rem%=NADIS_PER_DAY;
+ return Object.freeze({years,months,days,nazhigai:rem});
+}
+function ayurdayaUnitPartsAreNormalized(u) {
+ return !!u && ['years','months','days','nazhigai'].every(k=>
+  Number.isSafeInteger(u[k])&&u[k]>=0) &&
+  u.months<MONTHS_PER_YEAR && u.days<DAYS_PER_MONTH && u.nazhigai<NADIS_PER_DAY;
+}
+function ayurdayaUnitsToNazhigai(u) {
+ if(!ayurdayaUnitPartsAreNormalized(u))
+  throw new RangeError('normalized years/months/days/nazhigai required');
+ const total=u.years*NADIS_PER_YEAR+u.months*DAYS_PER_MONTH*NADIS_PER_DAY+
+  u.days*NADIS_PER_DAY+u.nazhigai;
+ if(!Number.isSafeInteger(total))throw new RangeError('Ayurdaya unit total outside safe integer range');
+ return total;
+}
+
+/** Carry exactly by 12 months/year, 30 days/month, 60 nazhigai/day. */
+export function cgRajanNormalizeAyurdayaUnits({years=0,months=0,days=0,nazhigai=0}={}) {
+ for(const [key,value] of Object.entries({years,months,days,nazhigai})) {
+  if(!Number.isSafeInteger(value)||value<0)
+   throw new TypeError(key+' must be a nonnegative safe integer');
+ }
+ const total=years*NADIS_PER_YEAR+months*DAYS_PER_MONTH*NADIS_PER_DAY+
+  days*NADIS_PER_DAY+nazhigai;
+ if(!Number.isSafeInteger(total))throw new RangeError('Ayurdaya unit total outside safe integer range');
+ return Object.freeze({...ayurdayaUnitsFromNazhigai(total),totalNazhigai:total});
+}
+
+/**
+ * Source-specific Amsha term. Longitudes are normalized first, then the
+ * remainder of 40 degrees is converted at 6480 nazhigai/degree. This API
+ * deliberately labels the result as a raw component, not a final method.
+ */
+export function cgRajanAmsaAyurdayaGraha({planet=null,trueLongitude}={}) {
+ if(!finite(trueLongitude))throw new TypeError('finite sidereal longitude required');
+ const longitude=norm(trueLongitude);
+ const reducedDegrees=longitude%40;
+ const exactNazhigai=reducedDegrees*AYURDAYA_NAZHIGAI_PER_DEGREE;
+ const totalNazhigai=Math.round(exactNazhigai);
+ return Object.freeze({
+  planet,trueLongitude:longitude,reductionCycleDegrees:40,reducedDegrees,
+  nazhigaiPerDegree:AYURDAYA_NAZHIGAI_PER_DEGREE,
+  theoreticalYearComponent:reducedDegrees*0.3,
+  traditionalUnits:ayurdayaUnitsFromNazhigai(totalNazhigai),
+  exactPreRoundingNazhigai:exactNazhigai,
+  source:'C. G. Rajan Jathaka Kanitham I printed pp.255–256 (PDF pp.277–278)',
+  researchOnly:true,rawGrahaComponent:true,methodFinalCertified:false,
+  natalTotalYears:null,predictedDeathAge:null
+ });
+}
+
+/**
+ * Average only three already-final, already-normalized method totals.
+ * A raw graha component or an unverified method total is intentionally
+ * rejected. No current source result satisfies this gate yet.
+ */
+export function cgRajanAverageFinalThreeMethods({pinda,naisargika,amsa}={}) {
+ const methods={pinda,naisargika,amsa};
+ const blocked=Object.entries(methods).filter(([,v])=>
+  !v || v.status!=='final' || !ayurdayaUnitPartsAreNormalized(v.traditionalUnits))
+  .map(([name])=>name);
+ if(blocked.length) return Object.freeze({
+  available:false,status:'blocked-unverified-final-method-values',
+  blockedMethods:Object.freeze(blocked),finalMethodValuesSameUnit:false,
+  exactAverageNazhigai:null,roundedAverageNazhigai:null,traditionalUnits:null,
+  averageLifespanYears:null,source:'Average requires three verified final totals; no value inferred'
+ });
+ const totals=Object.values(methods).map(v=>ayurdayaUnitsToNazhigai(v.traditionalUnits));
+ const sum=totals.reduce((a,b)=>a+b,0);
+ if(!Number.isSafeInteger(sum))throw new RangeError('Three-method sum outside safe integer range');
+ const exactAverageNazhigai=sum/3;
+ const roundedAverageNazhigai=Math.round(exactAverageNazhigai);
+ return Object.freeze({
+  available:true,status:'verified-final-three-method-average',
+  finalMethodValuesSameUnit:true,methodTotalNazhigai:Object.freeze(totals),
+  sumNazhigai:sum,exactAverageNazhigai,roundedAverageNazhigai,
+  traditionalUnits:ayurdayaUnitsFromNazhigai(roundedAverageNazhigai),
+  averageRounding:'nearest final nazhigai only',
+  averageLifespanYears:null,predictedDeathAge:null,
+  source:'Arithmetic average of three independently verified final method totals'
+ });
+}

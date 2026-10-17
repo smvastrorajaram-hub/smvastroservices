@@ -114,12 +114,15 @@ eq(kala.map(x=>x.hora),[0,0,0,0,100,0,0],'Hora Bala components');
 eq(kala.map(x=>x.paksha),[73,27,73,27,27,27,73],'Kala Paksha subcomponents');
 eq(kala.map(x=>x.total),[133,67,113,227,287,87,263],'printed Kala Bala');
 
+// The scanned worked example supplies Lagna but not an independently
+// verified MC / complete Dig frame. MC=95 is a synthetic geometry fixture,
+// so this validates the angle formula only and MUST NOT be compared with the
+// printed p.50 Dig row or treated as a Dig certification oracle.
 const dig=sample.map(p=>cgRajanDigBala({
  planet:p.name,longitude:p.longitude,ascendantLongitude:asc,midheavenLongitude:95
 }).virupa);
-eq(dig,[60,13,38,96,13,61,25],'formula-derived Dig Bala (two printed one-point mismatches retained)');
-eq(dig.map((x,i)=>x-CG_RAJAN_PRINTED_P50.dig[i]),[0,0,0,0,0,1,-1],
- 'Dig source-oracle mismatch is explicit, not silently rounded away');
+eq(dig,[60,13,38,96,13,61,25],
+ 'Dig angle geometry for the explicit synthetic MC=95 input only');
 
 const matrix=[
  [0,0,7,0,66,7,30],      // Sun aspector
@@ -147,9 +150,11 @@ const final=sample.map((p,i)=>CG_RAJAN_PRINTED_P50.sthana[i]+CG_RAJAN_PRINTED_P5
  CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]+
  CG_RAJAN_PRINTED_P50.yuddha[i]);
 eq(final,CG_RAJAN_PRINTED_P50.final,'corrected final total includes the separate Yuddha row');
-eq(final[2],620,'Mars final total remains 620 when Yuddha is absent');
+eq(CG_RAJAN_PRINTED_P50.printedFinal[2],620,
+ 'scan prints Mars final as 620; preserve this as a source discrepancy');
+eq(final[2],630,'accepted arithmetic: Mars 620 after Drig + printed Yuddha 10 = 630');
 eq(final[2],CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
- 'Mars 620 after Drig + zero Yuddha = 620');
+ 'Mars corrected final = after-Drig 620 + Yuddha 10');
 
 const partial=cgRajanShadbalaForPlanet({
  planet:'சூரியன்',planets:sample,ascendantLongitude:asc,midheavenLongitude:95,declination:decl['சூரியன்'],
@@ -262,10 +267,10 @@ console.log(JSON.stringify({
  },
  mismatches:{
   saptavargajaMarsD12:{calculated:147,printed:159,delta:-12},
-  digBala:{venus:{calculated:61,printed:60},saturn:{calculated:25,printed:26}},
+  digBala:{status:'not independently certified',reason:'printed source example does not provide a verified MC / complete Dig frame; synthetic MC=95 is geometry-only'},
   drigAngleGeneration:'BPHS candidate does not reproduce all printed p.30 planet-pair values',
   fivePlanetCheshta:'source formula still unreconciled',
-  marsYuddha:'not established for this example; Yuddha remains zero unless chart-specific evidence confirms it'
+  marsYuddha:'printed p.50 row is +10; corrected arithmetic is 630 while scanned final 620 is preserved separately; synthetic natal sample itself still has no qualifying war'
  },
  fullSevenGrahaCertificate:false
 }));

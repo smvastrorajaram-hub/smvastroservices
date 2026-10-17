@@ -58,10 +58,17 @@ for(const [date,time] of [
   yes(Number.isFinite(x.pinda.symbolicComponentYears),'numeric Pinda '+date+x.name);
   yes(Number.isFinite(x.natural.theoreticalNaturalYearComponent),
     'numeric Naisargika '+date+x.name);
+  yes(Number.isFinite(x.amsa.theoreticalYearComponent),
+    'numeric Amsa component '+date+x.name);
+  eq(x.amsa.methodFinalCertified,false,'Amsa raw component not mislabelled final '+date+x.name);
   eq(x.pinda.totalHumanLifetime,null,'Pinda never makes death date '+date+x.name);
  }
  for(const lang of [ta,en]){
   eq((lang.match(/<tr>/g)||[]).length,8,'one header + seven rows');
+  yes(lang.includes('Amsa component')||lang.includes('அம்சக் கணிதப் பங்கு'),
+    'Amsa column present');
+  yes(lang.includes('smv-cg-rajan-ayurdaya-table-wrap'),
+    'stable scroll table wrapper');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
  }
  seen.add(ta);

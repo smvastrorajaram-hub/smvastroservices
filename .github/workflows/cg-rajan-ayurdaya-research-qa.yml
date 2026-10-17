@@ -7,6 +7,9 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
       - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'tests/arudha-al-ul-identity-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -14,12 +17,14 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-amsa-average-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
       - 'public/horoscope/report-print.js'
       - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
       - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
   pull_request:
@@ -45,14 +50,20 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+          node --check tests/cg-rajan-ayurdaya-amsa-average-regression.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
           node --check public/horoscope/horoscope.js
+          node --check public/horoscope/offline/astro_advanced.browser.mjs
+          node --check tests/arudha-al-ul-identity-regression.mjs
           node --check tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
           node --check public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+      - name: Verify corrected printed p.50 arithmetic, including Mars 620 + 10 = 630
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
       - name: Verify C.G. Rajan Shadbala source formula and p.50 oracle
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
       - name: Verify Rajan partial Shadbala attaches to five Perambalur natal charts
@@ -61,6 +72,10 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
       - name: Check five Perambalur birth charts x seven natural components
         run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
+      - name: Printed Pinda, Naisargika and Amsa source examples + guarded average
+        run: node tests/cg-rajan-ayurdaya-amsa-average-regression.mjs
+      - name: Arudha Lagna / Upapada Lagna identity and Ayurdaya table scrolling regression
+        run: node tests/arudha-al-ul-identity-regression.mjs
       - name: Printed Pinda examples and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
       - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping

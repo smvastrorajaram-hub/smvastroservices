@@ -30,7 +30,9 @@ Column order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn. Numerical units 
 | Printed Yuddha row | 0 | 0 | 10 | 0 | 0 | 0 | 0 |
 | Printed final | **615** | **701** | **620** | **933** | **951** | **649** | **787** |
 
-A self-contained independent fixture in `tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs` validates **23 arithmetic assertions**. The six-group subtotals and after-Drig printed final numbers agree for seven planets. **Open discrepancy: Mars prints Yuddha +10 but final stays 620, not 630.** This must be researched before implementing a source-specific Yuddha total. Do not 'fix' either printed value to conceal the discrepancy. These are figures for the author's worked example, **not** five SMV natal input charts.
+A self-contained independent fixture in `tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs` now checks the six-group subtotals and after-Drig values while preserving the scan's final column as a separate source fact. **Mars discrepancy: the scan prints Yuddha +10 but leaves the final at 620. Accepted arithmetic rule: 620 after-Drig + 10 Yuddha = 630.** The source keeps `printedFinal=620` for audit traceability and uses `final=630` for the corrected arithmetic; no printed source value is rewritten. This resolves the arithmetic decision only; it does NOT certify the other planetary components or five SMV natal charts.
+
+**Dig Bala audit correction:** the earlier Venus/Saturn one-point differences compared the printed p.50 Dig row with a synthetic `midheavenLongitude=95`. The scanned worked example supplies Lagna but no independently verified MC / complete Dig frame, so that was not a valid numerical oracle. The source QA now labels MC=95 as geometry-only and no longer reports those values as book mismatches. The printed Dig entries remain transcribed, but their calculation is **not independently certified** until the correct source frame is established.
 
 ## Part II — `...ஜாதக_கணிதம்_இரண்டாம்_பாகம்_என்னும்_ஜாதகப்_பலாபலன்கள்_நிர்ணயம்.pdf`: 421 PDF pages
 
@@ -57,4 +59,4 @@ The book provides conditional interpretive rules, **not** evidence that the exis
 - **Shadbala:** The printed p.50 example alone is useful independent arithmetic evidence, **not** a five-date independent astronomical mean/true/sheeghrocca validation or seven-graha full certification. No production `classicalCertified:true` change.
 - **Ayurdaya:** separate numerical study and regression suite. No lifespan/death estimate published and no Shadbala merge.
 - **Prediction:** Part II rule extraction/implementation is a **separate workstream**, not part of a numerical certificate.
-- **Main:** PR #14 may remain draft; this audit and fixture require no production formula change.
+- **Main / next phase:** PR #14 was merged on 2026-10-17 (merge commit `ce93df3c68a100f36b5970c14fba1bb9f2f833fb`). This follow-up PR corrects the accepted Mars arithmetic and strengthens its CI gate; it does not enable `classicalCertified` or claim complete Shadbala. After remaining numerical blockers are resolved, Part II conditional life predictions, marriage matching, Gochara and Dasha–Bhukti are to be audited as a separate source-level workstream.
