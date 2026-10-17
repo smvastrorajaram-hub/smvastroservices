@@ -336,7 +336,9 @@ async function computeTransitTimeline(full,payload,{onProgress,signal}={}){
   const next=dateData(cursor);
   for(const planet of KEY)if(next[planet].sign!==lastPos[planet].sign)pushEvent(planet,last,cursor,lastPos[planet].sign,next[planet].sign);
   iterations++;
-  if(iterations%70===0){onProgress?.({stage:'transit',done:cursor-born,total:end-born});await new Promise(resolve=>setTimeout(resolve,0));}
+  // Yield frequently enough for the result, spinner and section-X status to paint.
+  // The seven-day sampling grid and daily ingress refinement remain unchanged.
+  if(iterations%8===0){onProgress?.({stage:'transit',done:cursor-born,total:end-born});await new Promise(resolve=>setTimeout(resolve,0));}
   last=cursor;lastPos=next;if(cursor===end)break;
  }
  // The yearly focus uses an exact (calculated) midway snapshot, not invented long-range transit positions.
