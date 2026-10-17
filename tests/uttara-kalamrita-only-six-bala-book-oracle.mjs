@@ -15,6 +15,7 @@ import {
  uttaraKalamritaSthana as sthana,
  uttaraKalamritaDigBala as dig,
  uttaraKalamritaNatonnatha as nat,
+ uttaraKalamritaAyanaFromDeclination as ayana,
  uttaraKalamritaAspectVirupa as aspect,
  uttaraKalamritaDrigBala as drig,
  uttaraKalamritaKala as kala,
@@ -32,6 +33,45 @@ const pNames=['சூரியன்','சந்திரன்','செவ்�
 // book worked-example totals, independently printed Rupas.
 // This certifies the book's aggregation formula for PUBLISHED EXAMPLE
 // INPUTS only; it says nothing about date-specific natal input positions.
+
+// UK Sastri II.16½–17½ COMMENTARY: independent worked declinations,
+// south negative/north positive; same commentary prints rounded Rupas.
+// Keep incompatible printed Sun/Moon figures as explicit discrepancies.
+const obliquity=23+27/60;
+const ayanaSamples=[
+ {name:'செவ்வாய்',decl:10+10/60,bookRupa:.7},
+ {name:'புதன்',decl:-(20+46/60),bookRupa:.921},
+ {name:'குரு',decl:4+26/60,bookRupa:.58},
+ {name:'சுக்கிரன்',decl:-(12+34/60),bookRupa:.23},
+ {name:'சூரியன்',decl:-(22+20/60),bookRupa:.04125},
+ {name:'சந்திரன்',decl:-(5+28/60),bookRupa:.65}
+];
+const ayanaBookExampleDiscrepancies=[];
+for(const row of ayanaSamples){
+ const result=ayana(row.name,row.decl);
+ const signed=row.name==='புதன்'?Math.abs(row.decl):
+  ['சந்திரன்','சனி'].includes(row.name)?-row.decl:row.decl;
+ const directIndependent=(obliquity+signed)*1.25;
+ close(result.rawVirupa,directIndependent,
+   'UK commentary independent signed declination arithmetic '+row.name);
+ const diffRupa=result.virupa/60-row.bookRupa;
+ ayanaBookExampleDiscrepancies.push({graha:row.name,declination:row.decl,
+  printedRupa:row.bookRupa,formulaRupa:result.virupa/60,
+  differenceRupa:diffRupa});
+ if(['சூரியன்','சந்திரன்'].includes(row.name))
+  yes(Math.abs(diffRupa)>.01,
+   'UK book printed Sun/Moon table is materially inconsistent with its own commentary '+row.name);
+ else yes(Math.abs(diffRupa)<.005,
+   'UK published Mars/Mercury/Jupiter/Venus table near rounded calculation '+row.name);
+}
+close(ayana('சூரியன்',0).virupa,obliquity*1.25,'UK equinox does NOT import BPHS 30');
+close(ayana('சனி',-obliquity).virupa,obliquity*2*1.25,
+  'UK Saturn southern solstice favoured');
+close(ayana('புதன்',-obliquity).virupa,ayana('புதன்',obliquity).virupa,
+  'UK Mercury always adds the declination magnitude');
+eq(ayana('குரு',null).virupa,null,
+ 'UK missing equatorial input stays null (not fabricated)');
+assert.throws(()=>ayana('குரு',91),RangeError);assertions++;
 const bookFour=[3.83825,5.564,5.3799,7.658,5.1384,4.47685,4.97275];
 const bookNatural=[1,.857,.286,.428,.571,.714,.143];
 const bookDrig=[.2236,-.333,-.105,-.0256,.066,-.0123,.25];
@@ -160,6 +200,9 @@ assert.throws(()=>sthana({planet:'ராகு',longitude:0,bhava:1,signPosition
 console.log(JSON.stringify({pass:true,assertions,
  ukSaptavargajaPrintedSevenTotalsReconciled:6,
  ukJupiterDrekkanaPrintedSourceInconsistency:true,
+ ukAyanaIndependentBookExamples:ayanaBookExampleDiscrepancies,
+ ukAyanaCommentaryFormulaVerified:true,
+ ukAyanaPrintedSunMoonMismatch:true,
  ukLiteralPrintedRowDiscrepancies:independentPrintedDeltas,
  ukShadbalaPrintedSevenFinalTotalsReconciled:7,
  ukDrekkanaAuthorSpecificVerified:true,
