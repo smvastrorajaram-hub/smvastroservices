@@ -69,7 +69,7 @@ eq(kala.map(x=>x.paksha),[73,27,73,27,27,27,73],'Kala Paksha subcomponents');
 eq(kala.map(x=>x.total),[133,67,113,227,287,87,263],'printed Kala Bala');
 
 const dig=sample.map(p=>cgRajanDigBala({
- planet:p.name,longitude:p.longitude,ascendantLongitude:asc
+ planet:p.name,longitude:p.longitude,ascendantLongitude:asc,midheavenLongitude:95
 }).virupa);
 eq(dig,[60,13,38,96,13,61,25],'formula-derived Dig Bala (two printed one-point mismatches retained)');
 eq(dig.map((x,i)=>x-CG_RAJAN_PRINTED_P50.dig[i]),[0,0,0,0,0,1,-1],
@@ -106,7 +106,7 @@ eq(final[2],CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
  'Mars 620 after Drig + Yuddha 10 = corrected 630');
 
 const partial=cgRajanShadbalaForPlanet({
- planet:'சூரியன்',planets:sample,ascendantLongitude:asc,declination:decl['சூரியன்'],
+ planet:'சூரியன்',planets:sample,ascendantLongitude:asc,midheavenLongitude:95,declination:decl['சூரியன்'],
  apparentSolarHour:7.2,weekdayLord:'சனி',monthLord:'சனி',yearLord:'சனி',
  horaLord:'குரு',tribhagaLord:'புதன்'
 });
