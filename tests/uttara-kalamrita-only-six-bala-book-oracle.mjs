@@ -147,6 +147,37 @@ const sunRetroExalt=sthana({planet:'சூரியன்',longitude:10,bhava:1,
 close(sunRetroExalt.grades[0].virupa,0,'UK II.6 reverse exaltation retrograde rule diagnostic');
 const sunRetroDeb=sthana({planet:'சூரியன்',longitude:190,bhava:8,signPositions,retrograde:true});
 close(sunRetroDeb.grades[0].virupa,60,'UK II.6 retrograde debilitation -> full strength');
+// UK II.6 special case: conjunction changes the RASI dignity only; it
+// cannot silently change the six other half-Varga owner strengths.
+const cSigns={...signPositions,'சூரியன்':0,'செவ்வாய்':0,'சனி':0};
+const getMars=(others,retrograde=false)=>sthana({planet:'செவ்வாய்',longitude:12,
+ bhava:1,signPositions:cSigns,retrograde,
+ planets:[{name:'செவ்வாய்',longitude:12},...others]});
+const alone=getMars([]);
+const withExalted=getMars([{name:'சூரியன்',longitude:10}]);
+close(alone.grades[0].virupa,45,'UK Rasi Mars moolatrikona before conjunction');
+close(withExalted.grades[0].virupa,30,'UK II.6 exalted companion 1/2 Rupa');
+close(withExalted.saptavargajaPartsVirupa[0],30,'UK II.6 Rasi full one-half');
+for(let i=1;i<7;i++)close(withExalted.saptavargajaPartsVirupa[i],
+ alone.saptavargajaPartsVirupa[i],'UK II.6 keeps distinct varga ownership '+i);
+close(withExalted.sthanaMinusConjunction??
+ (withExalted.totalVirupa-alone.totalVirupa),-15,
+ 'UK II.6 changes total Sthana only by 15 Virupa');
+const withDebilitated=getMars([{name:'சனி',longitude:11}]);
+close(withDebilitated.grades[0].virupa,0,
+ 'UK II.6 debilitated companion gives zero Rasi dignity');
+const conflicting=getMars([{name:'சனி',longitude:11,retrograde:true}]);
+eq(conflicting.conjunctionPriorityUnresolved,true,
+ 'UK II.6 mutually contradictory 0/30 conditions not silently prioritized');
+eq(conflicting.rasiConjunction.conjunctionVirupa,null,
+ 'UK II.6 conflicting book directions do not manufacture a replacement');
+close(conflicting.grades[0].virupa,45,'UK II.6 unresolved keeps identified base');
+const ownRetroConflict=getMars([{name:'சூரியன்',longitude:10}],true);
+eq(ownRetroConflict.conjunctionPriorityUnresolved,true,
+ 'UK II.6 no invented precedence between retrograde-self and conjunction');
+close(ownRetroConflict.grades[0].virupa,60,
+ 'UK II.6 retrograde-self intrinsic grade remains diagnostic not certified');
+
 const bhavas=Array.from({length:12},(_,i)=>({house:i+1,longitude:i*30,madhyaLongitude:i*30}));
 close(dig({planet:'சூரியன்',longitude:270,bhavas}).virupa,60,
  'UK Sun ideal southern tenth-house position');
