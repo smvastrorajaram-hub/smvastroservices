@@ -163,6 +163,43 @@ export function uttaraKalamritaDigBala({planet,longitude,bhavas}){
   source:'Uttara Kalamrita Khanda I Section II 11½–12½',
   cuspSourceCertified:false});
 }
+/**
+ * Uttara Kalamrita II.16½–17½ AND Sastri explanatory worked table
+ * ("add to 23°27′, multiply by 5 and divide by 4").
+ *
+ * Formula is in the book COMMENTARY, not a claim that the original sloka
+ * itself specifies this numerical factor. Input must be TRUE signed
+ * declination relative to celestial equator (north positive), not Lahiri
+ * sidereal ecliptic longitude or ecliptic latitude.
+ *
+ * North-favoured: Sun Mars Jupiter Venus; south-favoured: Moon Saturn;
+ * Mercury ALWAYS adds absolute declination. Raw result in VIRUPA =
+ * (23°27′ +/- actual signed declination) × (5/4).
+ * This UK-specific ~29.3125 Virupa at equinox differs from BPHS 30.
+ */
+export function uttaraKalamritaAyanaFromDeclination(planet,declinationDegrees,{
+  equatorialFrameVerified=false
+}={}){
+ graha(planet);
+ if(!finite(declinationDegrees))return Object.freeze({
+  virupa:null,rawVirupa:null,declinationDegrees:null,
+  pending:['true tropical equatorial declination from independently checked ephemeris'],
+  certified:false});
+ if(Math.abs(declinationDegrees)>90)
+  throw new RangeError('Declination must be within ±90°');
+ const e=23+27/60;
+ const signed=planet==='புதன்'?Math.abs(declinationDegrees):
+   ['சந்திரன்','சனி'].includes(planet)?-declinationDegrees:declinationDegrees;
+ const raw=(e+signed)*5/4;
+ return Object.freeze({
+  virupa:Math.max(0,Math.min(60,raw)),rawVirupa:raw,
+  declinationDegrees,declinationSignedForStrength:signed,
+  equatorialFrameVerified:!!equatorialFrameVerified,
+  pending:equatorialFrameVerified?[]:['independent tropical equatorial input verification'],
+  certified:!!equatorialFrameVerified,
+  source:'Uttara Kalamrita II.16½–17½, Sastri UK numerical commentary: 23°27′, 5/4'
+ });
+}
 export function uttaraKalamritaNatonnatha(planet,apparentSolarHour){
  graha(planet);
  if(!finite(apparentSolarHour))return null;
