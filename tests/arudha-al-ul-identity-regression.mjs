@@ -71,9 +71,9 @@ yes(css.includes('-webkit-overflow-scrolling: touch'),
 const wrapperStart=css.indexOf('.smv-cg-rajan-ayurdaya .smv-cg-rajan-ayurdaya-table-wrap');
 const tableStyleStart=css.indexOf('.smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table',wrapperStart);
 const wrapperStyles=css.slice(wrapperStart,tableStyleStart);
-yes(/overscroll-behavior-x:\\s*contain/.test(wrapperStyles),
+yes(/overscroll-behavior-x:\s*contain/.test(wrapperStyles),
  'horizontal swipe stays inside the report wrapper');
-yes(/touch-action:\\s*pan-x pan-y/.test(wrapperStyles),
+yes(/touch-action:\s*pan-x pan-y/.test(wrapperStyles),
  'horizontal table gestures do not disable vertical page scrolling');
 yes(/table\.smv-cg-rajan-ayurdaya-table\s*\{[^}]*display:\s*table;[^}]*width:\s*max-content;[^}]*min-width:\s*100%/s.test(css),
  'table remains a real table and expands only as needed');
