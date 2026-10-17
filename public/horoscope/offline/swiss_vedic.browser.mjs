@@ -2,7 +2,7 @@
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
-import {uttaraKalamritaSixBala} from './uttara-kalamrita-six-bala.browser.mjs';
+import {uttaraKalamritaSixBala,uttaraKalamritaAyanaFromDeclination} from './uttara-kalamrita-six-bala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
 import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
 import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
@@ -558,12 +558,15 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
     abda:temporal.abdaLord,masa:temporal.masaLord,
     vara:temporal.dinaLord,hora:temporal.horaLord
   }:null;
-  // UK II.16½–17½ states direction of Ayana strength but does NOT
-  // independently prescribe an exact declination-to-Virupa equation here.
-  // Do not import the old BPHS numerical Ayana rule into UK-only results.
-  // Keep Kala Ayana explicitly pending until an unambiguous UK source
-  // equation and independent numerical reference establish its value.
-  const ukAyana={};
+  // Uttara Kalamrita commentary supplies its OWN 23°27′ × 5/4
+  // declination formula. The Swiss tropical/equatorial declinations
+  // were computed above: source frame is explicit, but independent
+  // natal ephemeris certification is still FALSE. This does NOT reuse
+  // BPHS ayanaBala(), whose coefficient is materially different.
+  const ukAyana=Object.fromEntries(Object.entries(declinations).map(
+    ([name,decl])=>[name,
+      uttaraKalamritaAyanaFromDeclination(name,decl).virupa]
+  ));
   const uk=uttaraKalamritaSixBala({planets:withHour,bhavas,
     apparentSolarHour:solarHour,owners:ukOwners,
     tribhagaLord:temporal?.tribhagaLord,
