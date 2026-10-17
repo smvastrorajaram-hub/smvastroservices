@@ -231,7 +231,8 @@ export function uttaraKalamritaKala({planet,apparentSolarHour,solarLongitude,moo
   const benefic=isBenefic(planet,planets);
   paksha=(benefic?phase/3:60-phase/3)*(planet==='சந்திரன்'?2:1);
  }
- const lord=(key,value)=>owners?.[key]===planet?value:null===owners?.[key]?null:0;
+ const lord=(key,value)=>owners?.[key]===undefined||owners?.[key]===null?
+   null:owners[key]===planet?value:0;
  const values={
   natonnatha,paksha,
   tribhaga:tribhagaLord===undefined||tribhagaLord===null?null:(planet===tribhagaLord||planet==='குரு'?60:0),
