@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
-import {cgRajanPindaGraha, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml}
+import {cgRajanPindaGraha, cgRajanAmsaAyurdayaGraha, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let checks=0;
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
@@ -30,11 +30,33 @@ eq(research.combinedLongevityYears,null,'no calculated personal total');
 eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
-ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்'),'Tamil columns');
-ok(en.includes('Pinda component')&&en.includes('Natural component'),'English columns');
+ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுள்'),'Tamil three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
+ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
+ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
+ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
-eq((ta.match(/<tr>/g)||[]).length,8,'one header plus seven planet rows');
+eq((ta.match(/<tr>/g)||[]).length,10,'header + seven grahas + total + average');
+const amsaCases=[
+ [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
+ [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
+ [28+17/60,9],[204+32/60,2],[230+27/60,10]
+];
+for(const [longitude,years] of amsaCases){
+ eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude}).rawAmsaYears,
+  years,'C.G. Rajan Amsa-table lookup '+longitude);
+}
+const totals=cgRajanCompareGrahas({planets:ref}).totals;
+eq(totals.amsa.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
+ 'seven Amsa A terms sum to 48 traditional years in printed example input');
+const sumNadis=totals.pinda.totalNazhigai+totals.natural.totalNazhigai+totals.amsa.totalNazhigai;
+eq(totals.averageOfThreeTotals.traditionalUnits,
+ {years:Math.floor(Math.round(sumNadis/3)/21600),
+  months:Math.floor((Math.round(sumNadis/3)%21600)/1800),
+  days:Math.floor((Math.round(sumNadis/3)%1800)/60),
+  nazhigai:Math.round(sumNadis/3)%60},
+ 'average is sum of three seven-graha totals divided by three');
 for(const html of [ta,en]){
  ok(!/NaN|undefined|\[object Object\]/.test(html),'no NaN/undefined');
  ok(!/deathAgeOrDate|totalHumanLifetime|combinedLongevityYears/.test(html),
