@@ -91,8 +91,11 @@ eq(sample.map(p=>drig.byPlanet[p.name].virupa),[11,6,40,24,4,37,29],
 const sum=sample.map((p,i)=>sthana[i].total+kala[i].total+
  cgRajanAyanaBala({planet:p.name,declination:decl[p.name]}).virupa+
  cgRajanNaisargikaBala(p.name)+dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]);
-eq(sum,CG_RAJAN_PRINTED_P50.subtotalBeforeDrig,
- 'p.50 subtotal arithmetic is reproducible only if printed Sthana/Dig are used');
+eq(sum,[604,695,568,909,947,613,757],
+ 'source-formula subtotal with unresolved D12 and Dig rounding retained');
+eq(sum.map((x,i)=>x-CG_RAJAN_PRINTED_P50.subtotalBeforeDrig[i]),
+ [0,0,-12,0,0,1,-1],
+ 'component-level subtotal differences are explicit and stable');
 const final=sample.map((p,i)=>CG_RAJAN_PRINTED_P50.sthana[i]+CG_RAJAN_PRINTED_P50.kala[i]+
  CG_RAJAN_PRINTED_P50.ayana[i]+CG_RAJAN_PRINTED_P50.naisargika[i]+
  CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]);
