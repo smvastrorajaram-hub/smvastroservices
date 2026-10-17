@@ -60,7 +60,7 @@ for(const language of ['ta','en']){
  const html=cgRajanAyurdayaReportHtml({planets:grahas,language});
  yes(html.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   language+' semantic report section');
- exactly((html.match(/<tr>/g)||[]).length,10,language+' 7 rows + header + total + average');
+ exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
  yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுள்'),language+' provisional average row');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுள்')),
