@@ -46,7 +46,55 @@ for(const [date,time] of births){
  outcomes.push(chart);
 }
 yes(values===35,'exact 35 sixfold sums');
+/*
+ * Additional 2026 same-instant seven-graha, sixfold *ARITHMETIC*
+ * reconciliation. The Sun/Moon and all other source positions come from
+ * the site's Swiss/Lahiri runtime, not a falsely claimed independent
+ * classical ephemeris. The five nonluminary LIVE Cheshta values still use
+ * motionClassical(speed), NOT certified BPHS mean–true–sighrocca inputs.
+ * Thus this regression verifies SUMS and internally exposed components,
+ * while explicitly disallowing astronomical/full Shadbala certification.
+ */
+const official2026SevenPlanet={date:'2026-03-22',time:'05:30',
+ location:'Perambalur',latitude:11.232,longitude:78.88,
+ timeZone:'Asia/Kolkata',planets:{}};
+const snapshot=await full({
+ date:official2026SevenPlanet.date,time:official2026SevenPlanet.time,
+ lat:official2026SevenPlanet.latitude,lon:official2026SevenPlanet.longitude,
+ utcOffsetMinutes:330,referenceDate:'2026-10-17',
+ name:'Seven-graha 2026 mathematical-only sixfold audit'
+});
+yes(snapshot.ok,'2026 seven planet source Shadbala arithmetic full chart');
+for(const [name,rank,required] of ranks){
+ const p=snapshot.chart.planets.find(x=>x.name===name),s=p?.strength3;
+ yes(s?.available===true,'2026 sixfold chart has '+name);
+ yes(!s.classicalCertified&&s.provisional,'2026 prevent full-cert from partial true source '+name);
+ near(s.requiredVirupa,required,0,'2026 exact BPHS required Virupa '+name);
+ near(s.components.naisargika,Number((rank*60/7).toFixed(3)),1e-9,
+      '2026 exact 7-rank Naisargika '+name);
+ const c=s.components;
+ const kalaParts=Object.entries(c.kala).filter(([k])=>k!=='total').map(([,v])=>v);
+ const independentlyAddedKala=kalaParts.reduce((a,b)=>a+b,0);
+ const independentlyAddedSix=[c.sthana.total,c.dig,
+   independentlyAddedKala,c.cheshta,c.naisargika,c.drik].reduce((a,b)=>a+b,0);
+ near(independentlyAddedKala,c.kala.total,.006,'2026 nine-part Kala total '+name);
+ near(independentlyAddedSix,s.totalVirupa,.008,'2026 sixfold full Virupa sum '+name);
+ near(s.totalRupa,Number((s.totalVirupa/60).toFixed(3)),.001,
+   '2026 conversion to Rupas '+name);
+ yes(c.cheshta>=0&&c.cheshta<=120&&Number.isFinite(c.drik),
+   '2026 Cheshta/Drig numerical bounds '+name);
+ official2026SevenPlanet.planets[name]={
+  sthana:c.sthana.total,dig:c.dig,kala:c.kala.total,
+  cheshta:c.cheshta,naisargika:c.naisargika,drik:c.drik,
+  totalVirupa:s.totalVirupa,totalRupa:s.totalRupa,
+  fullClassicalShadbalaCertified:false
+ };
+}
+yes(Object.keys(official2026SevenPlanet.planets).length===7,
+  'seven graha full sixfold mathematical snapshot only, no 2024 evidence');
 console.log(JSON.stringify({pass:true,assertions,verifiedSixBalaSummations:values,
+ sevenGraha2026MathematicalSnapshot:official2026SevenPlanet,
+  classicalAstronomicalCertification2026:false,
  exactBookNaisargikaSevenGraha:true,bookChapter:'BPHS I Ch27 v14',
  mathematicalReconciliationPASS:true,historicalClassicalTrueLongitudeCertified:false,
  completeShadbalaCertified:false,charts:outcomes}));
