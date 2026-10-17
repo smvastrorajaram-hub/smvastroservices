@@ -147,9 +147,11 @@ const final=sample.map((p,i)=>CG_RAJAN_PRINTED_P50.sthana[i]+CG_RAJAN_PRINTED_P5
  CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]+
  CG_RAJAN_PRINTED_P50.yuddha[i]);
 eq(final,CG_RAJAN_PRINTED_P50.final,'corrected final total includes the separate Yuddha row');
-eq(final[2],620,'Mars final total remains 620 when Yuddha is absent');
+eq(CG_RAJAN_PRINTED_P50.printedFinal[2],620,
+ 'scan prints Mars final as 620; preserve this as a source discrepancy');
+eq(final[2],630,'accepted arithmetic: Mars 620 after Drig + printed Yuddha 10 = 630');
 eq(final[2],CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
- 'Mars 620 after Drig + zero Yuddha = 620');
+ 'Mars corrected final = after-Drig 620 + Yuddha 10');
 
 const partial=cgRajanShadbalaForPlanet({
  planet:'சூரியன்',planets:sample,ascendantLongitude:asc,midheavenLongitude:95,declination:decl['சூரியன்'],
@@ -265,7 +267,7 @@ console.log(JSON.stringify({
   digBala:{venus:{calculated:61,printed:60},saturn:{calculated:25,printed:26}},
   drigAngleGeneration:'BPHS candidate does not reproduce all printed p.30 planet-pair values',
   fivePlanetCheshta:'source formula still unreconciled',
-  marsYuddha:'not established for this example; Yuddha remains zero unless chart-specific evidence confirms it'
+  marsYuddha:'printed p.50 row is +10; corrected arithmetic is 630 while scanned final 620 is preserved separately; synthetic natal sample itself still has no qualifying war'
  },
  fullSevenGrahaCertificate:false
 }));
