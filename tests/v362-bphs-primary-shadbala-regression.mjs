@@ -46,7 +46,7 @@ assert.throws(()=>war(encounters,{'செவ்வாய்':Infinity,'புத
 // The eligibility-only fallback comes from UK when BPHS does not specify
 // northern latitude winner. Its OWN +/-60 is not used in the live BPHS total.
 const p=(name,longitude,eclipticLatitude,bhava=1)=>({name,longitude,eclipticLatitude,bhava});
-const uk=ukEligibility([p('செவ்வாய்',100,1.2),p('புதன்',100.5,0.2)]);
+const uk=ukEligibility([p('செவ்வாய்',100+1/3600,1.2),p('புதன்',100+30/3600,0.2)]);
 eq(uk.encounters[0].winner,'செவ்வாய்','northern winner from UK II p41 only');
 eq(war(uk.encounters,{'செவ்வாய்':250,'புதன்':280}).virupaByPlanet['செவ்வாய்'],30,'BPHS v20 gives +30, NOT UK +60');
 // BPHS derived geometry also validates Drig calculation: one Jupiter
