@@ -69,7 +69,7 @@ Direct comparison of the user's scanned printed pages **231, 232, 235 and 244** 
 2. **Combustion Harana application** is governed by p.231: Venus and Saturn are exempt from that deduction. If both enemy-sign and applicable combustion deductions arise for another graha, p.231 directs the larger combustion Harana only. The separate Chakrapada deduction is then added to this selected condition deduction before the multiplier.
 3. Printed p.235 says the applicable strength increase is ×3 if exalted or retrograde; otherwise ×2 if in own sign, own Navamsa, own Drekkana or Vargottama. When a ×3 and ×2 condition both apply, only the higher ×3 multiplier is used.
 
-The browser research helper and printed-oracle regression have been corrected accordingly. This is a **specific rule-level correction**, not a full Amsa certificate. The unresolved source decisions below still prevent a final output.
+The browser research helper and printed-oracle regression have been corrected accordingly. A further fail-closed guard now requires chart-verified benefic/malefic status when Chakrapada loss actually applies (houses 7–12); the helper no longer silently treats every Moon/Mercury/Jupiter/Venus as a context-independent benefic. Shadbala verification of the strongest occupant is required only when more than one graha occupies a house where Chakrapada loss applies; irrelevant occupants in houses 1–6 do not block the candidate. This is a **specific rule-level correction**, not a full Amsa certificate. The unresolved source decisions below still prevent a final output.
 
 ## Uttara Kalamrita Shadbala — remaining book-only blockers
 
