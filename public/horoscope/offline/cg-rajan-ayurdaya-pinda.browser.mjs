@@ -57,10 +57,12 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  });
 }
 /**
- * Rajan I printed p.235: research-only candidate for Table-A Amsa Harana.
- * Every chart condition is explicit. Missing evidence or unresolved
- * strongest-occupant selection blocks the adjusted candidate; this helper
- * never certifies a complete natal Amsa result.
+ * Rajan I printed pp.231–232, 235 and 244: research-only candidate for
+ * Table-A Amsa Harana. p.231 selects combustion Harana over enemy-sign
+ * Harana when both apply, and exempts Venus/Saturn from combustion Harana;
+ * p.235 then adds the selected condition loss to the separate Chakrapada loss.
+ * Missing chart facts or unverified strongest-occupant selection blocks
+ * adjustment. This helper never certifies a complete natal Amsa result.
  */
 const AMSA_BENEFICS=new Set(['சந்திரன்','புதன்','குரு','சுக்கிரன்']);
 export function cgRajanAmsaHaranaResearch({
@@ -93,8 +95,12 @@ export function cgRajanAmsaHaranaResearch({
  if(totalHaranaFraction>1+1e-10)return Object.freeze({planet,rawAmsaYears,resolved:false,
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,
   enemySignLossFraction:condition.enemySignLossFraction,
-  combustionLossFraction:condition.combustionLossFraction,chakrapadaLossFraction,totalHaranaFraction,
-  blockers:['Additive Harana deductions exceed the raw Table-A term; source order/example unresolved'],
+  combustionLossFraction:condition.combustionLossFraction,
+  combustionHaranaExempt:condition.combustionHaranaExempt,
+  combustionHaranaApplied:condition.combustionHaranaApplied,
+  selectedConditionHarana:condition.selectedConditionHarana,
+  chakrapadaLossFraction,totalHaranaFraction,
+  blockers:['The separate condition and Chakrapada deductions exceed the raw Table-A term; source example does not authorize a negative contribution'],
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
  // Apply only the maximum factor: x3 if exalted or retrograde; otherwise x2
@@ -107,12 +113,15 @@ export function cgRajanAmsaHaranaResearch({
   houseFromLagna,occupantCount,benefic,
   enemySignLossFraction:condition.enemySignLossFraction,
   combustionLossFraction:condition.combustionLossFraction,
+  combustionHaranaExempt:condition.combustionHaranaExempt,
+  combustionHaranaApplied:condition.combustionHaranaApplied,
+  selectedConditionHarana:condition.selectedConditionHarana,
   chakrapadaLossFraction,totalHaranaFraction,yearsBeforeMultiplier,multiplier,
   adjustedAmsaYearsCandidate,
   traditionalUnitsCandidate:units(Math.round(adjustedAmsaYearsCandidate*NY)),
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
-  blockers:['Research candidate only: complete Amsa Harana chain has no independent printed worked-example oracle',
-   'Lagna-lord-strength Table A/B/C selection and full Shadbala decisions remain unverified'],
+  blockers:['Research candidate only: no complete independent printed Amsa worked-example oracle yet',
+   'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison and required Shadbala/occupant-strength inputs are not independently certified'],
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
 }
 /** Exact arithmetic mean of three integer-nazhigai method totals. */
