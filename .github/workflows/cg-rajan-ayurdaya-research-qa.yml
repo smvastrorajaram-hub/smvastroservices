@@ -20,6 +20,7 @@ on:
       - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
       - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
   pull_request:
@@ -52,7 +53,10 @@ jobs:
           node --check public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+      - name: Verify corrected printed p.50 arithmetic, including Mars 620 + 10 = 630
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
       - name: Verify C.G. Rajan Shadbala source formula and p.50 oracle
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
       - name: Verify Rajan partial Shadbala attaches to five Perambalur natal charts
