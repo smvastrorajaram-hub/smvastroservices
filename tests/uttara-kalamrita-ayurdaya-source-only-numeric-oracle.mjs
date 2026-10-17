@@ -15,7 +15,7 @@ import {
  uttaraAyurdayaLagnaFromGhati as lagna,
  uttaraAyurdayaThreeDrekkanaPunyaPapa as punya,
  uttaraAyurdayaResearchChart as chart
-} from '../public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs';
+,} from '../public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs';
 const star=360/27,pada=star/4;
 let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++};
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
@@ -67,6 +67,23 @@ eq(pp.finalHumanLifespanYears,null,'no certified predicted age');
 assert.throws(()=>ghati({elapsedDays:2,elapsedGhati:0,elapsedVighati:0,
  totalDays:1,totalGhati:0,totalVighati:0}),RangeError);checks++;
 assert.throws(()=>fraction({enteredMs:0,birthMs:1001,exitedMs:1000}),RangeError);checks++;
+
+const yogaFixture=yoga({planets:[
+ {name:'புதன்',bhava:1},{name:'குரு',bhava:11},
+ {name:'சுக்கிரன்',bhava:6}
+]});
+eq(yogaFixture.beneficPlacements.map(x=>x.ukIII6Group),
+ ['kendra-or-trikona','second-third-eleventh','sixth-eighth-twelfth'],
+ 'UK Section III.6 independent house classification for three grahas');
+eq(yogaFixture.allAspectPredicatesIndependentlyEstablished,false,
+ 'Unknown aspect evidence remains UNKNOWN');
+eq(yogaFixture.sourceAspectChecks.lagnaLordBeneficAspect,null,
+ 'UK III.7 no default benefic aspect guess');
+eq(yogaFixture.deathAgePrediction,null,
+ 'UK III.6-8 makes no death-age forecast');
+eq(yogaFixture.customerOutputAllowed,false,
+ 'UK III.6-8 isolated from Horoscope and Matching');
+assert.throws(()=>yoga({planets:[],verifiedAspectFlags:{lagnaBeneficAspect:42}}),TypeError);checks++;
 assert.throws(()=>amsa(NaN),TypeError);checks++;
 assert.throws(()=>house({house:12,benefic:null}),TypeError);checks++;
 const births=[
