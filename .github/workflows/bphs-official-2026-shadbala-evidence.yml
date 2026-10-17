@@ -1,0 +1,76 @@
+name: BPHS Official 2026 Shadbala Evidence (Not Full Certificate)
+on:
+  push:
+    branches: [main, audit/v365-saura-mean-motion-panchang-oracle]
+    paths:
+      - 'public/horoscope/offline/**'
+      - 'tests/bphs-2026-live-cheshta-official-oracle.mjs'
+      - 'tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - 'tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
+      - 'tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
+      - 'tests/v357-bphs-shadbala-positional-regression.mjs'
+      - 'tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
+      - 'tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - 'tests/v357-bphs-mercury-paksha-regression.mjs'
+      - '.github/workflows/bphs-official-2026-shadbala-evidence.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/offline/**'
+      - 'tests/**'
+      - '.github/workflows/bphs-official-2026-shadbala-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-bphs-evidence:
+    name: Official-source tests only — provisional full certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check official evidence test modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            tests/v357-bphs-shadbala-positional-regression.mjs \
+            tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs \
+            tests/v363-bphs-swiss-solar-cheshta-regression.mjs \
+            tests/bphs-ch26-sputa-drig-live-five-charts.mjs \
+            tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs \
+            tests/v366-bphs-published-cheshta-numerical-regression.mjs \
+            tests/bphs-2026-live-cheshta-official-oracle.mjs \
+            tests/v357-bphs-mercury-paksha-regression.mjs
+          do
+            node --check "$f"
+          done
+      - name: BPHS Sthana Bala numerical checks
+        run: node tests/v357-bphs-shadbala-positional-regression.mjs
+      - name: BPHS Kala / Sun Moon Cheshta rule checks
+        run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
+      - name: Swiss solar horizon versus independent rise-set source
+        run: node tests/v363-bphs-swiss-solar-cheshta-regression.mjs
+      - name: BPHS Sputa and Drig 35 natal evaluations
+        run: node tests/bphs-ch26-sputa-drig-live-five-charts.mjs
+      - name: Official IMD 2026 five planets seven-day Cheshta oracle
+        run: node tests/v366-bphs-published-cheshta-numerical-regression.mjs
+      - name: Official IMD 2026 compared with actual provisional live Cheshta
+        run: node tests/bphs-2026-live-cheshta-official-oracle.mjs
+      - name: Seven-graha sixfold totals for five natal years and current official epoch
+        run: node tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs
+      - name: Mercury Moon Paksha source checks
+        run: node tests/v357-bphs-mercury-paksha-regression.mjs
+      - name: Show release certification decision
+        shell: bash
+        run: |
+          echo '2026 official source regression checks completed.'
+          echo 'FULL CLASSICAL SHADBALA CERTIFICATION: WITHHELD'
+          echo 'Blocking reason: live Mars/Mercury/Jupiter/Venus/Saturn still'
+          echo 'uses discrete speed-state Cheshta instead of individually'
+          echo 'validated same-frame mean/true/sheeghrocca for arbitrary natal dates.'
+          echo 'This green QA is a check of the OPEN certification blocker,'
+          echo 'not a declaration of full classical BPHS certification.'
