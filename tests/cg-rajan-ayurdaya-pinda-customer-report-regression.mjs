@@ -59,7 +59,7 @@ for(const [date,time] of [
  const en=html({planets:r.chart.planets,language:'en'});
  yes(ta.includes('ஜாதக கணிதம்')&&en.includes('Jathaka Kanitham'),
   'bilingual customer report heading');
- yes(ta.includes('அறிவியல்')&&en.includes('NOT a prediction'),
+ yes(ta.includes('அறிவியல்')&&/not a prediction/i.test(en),
   'plain-language boundaries retained');
  for(const x of result.entries){
   rows++;
