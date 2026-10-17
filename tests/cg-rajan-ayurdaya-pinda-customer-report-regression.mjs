@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {cgRajanPindaGraha as pinda,
+ cgRajanAmsaAyurdayaGraha as amsa,
  cgRajanCompareGrahas as all,
  cgRajanAyurdayaReportHtml as html}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
@@ -61,13 +62,19 @@ for(const [date,time] of [
   eq(x.pinda.totalHumanLifetime,null,'Pinda never makes death date '+date+x.name);
  }
  for(const lang of [ta,en]){
-  eq((lang.match(/<tr>/g)||[]).length,8,'one header + seven rows');
+  eq((lang.match(/<tr>/g)||[]).length,10,'header + seven rows + total + average');
+  yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுள்'),'Amsa column exists');
+  yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
  }
  seen.add(ta);
 }
 eq(rows,35,'five natal charts x seven grahas Pinda and natural');
 eq(seen.size,5,'distinct chart numeric report outputs');
+eq(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).rawAmsaYears,2,
+ 'source Amsa table value for 206°30′');
+eq(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).allSourceReductionsApplied,false,
+ 'Amsa remains explicitly provisional before book reductions');
 console.log(JSON.stringify({pass:true,assertions,printedPindaExamples:2,
  perNatalRows:35,languageVersions:2,fullEightMethodCertification:false,
  printedPatientLifespan:false,deathAgePredictions:0}));
