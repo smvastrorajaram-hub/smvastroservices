@@ -10,7 +10,7 @@
 | Gate | Current result | Evidence / remaining work |
 |---|---|---|
 | Seven-graha input integrity | **PASS — source guard added** | Saptavargaja now requires exactly one finite Rasi longitude for each of the seven grahas; missing, duplicate or invalid positions throw instead of silently changing temporary friendship. |
-| Sthana Bala | **FAIL / unresolved** | C.G. Rajan printed p.50 oracle does not match Mars Dvadasamsa/Saptavargaja by 12 points: source calculation 147 vs printed 159; Sthana total 321 vs printed 333. Do not fit the code to the printed total without resolving the underlying D12 rule/input. |
+| Sthana Bala | **FAIL — source conflict proven; certification blocked** | Root cause of the Mars 12-point delta is now isolated: p.37 marks Mars–Sun as great friend; p.39 says D12 uses the Navamsa method and its row gives a great-friend score of 38; p.39/p.41 nevertheless print Mars D12 as 50. Rule-derived values remain D12 38, Saptavargaja 147, Sthana 321; literal printed values remain 50, 159, 333. No +12 patch. See the D12 source-conflict audit. |
 | Dig Bala | **FAIL / unresolved** | Printed p.50 comparison: Venus calculated 61 vs printed 60; Saturn calculated 25 vs printed 26. The exact input precision / intermediate rounding rule needs a source-supported reconciliation. |
 | Kala Bala | **PARTIAL PASS** | Fixed worked-example arithmetic reproduces the printed p.50 total, but the historical natal time, sunrise/Hora, year/month/day lord and other temporal inputs need independent source verification per chart. |
 | Ayana Bala | **PARTIAL PASS** | Rounded-Kranti p.50 values match the printed worked example. This alone does not validate the historical equatorial-declination input for all 35 natal rows. |
@@ -30,7 +30,7 @@
 
 ## Next required work, in order
 
-1. Reconcile the Mars D12/Saptavargaja discrepancy against the scanned C.G. Rajan pp. 38–42 and the exact example inputs; do not patch by matching a single total.
+1. Mars D12 root cause is isolated to an internal contradiction in the supplied book example (p.37 relationship table vs p.39/p.41 printed D12 score). Preserve the rule-derived 38/147/321 and literal printed 50/159/333 separately; do not force-fit. Full book-example reconciliation still requires independent evidence such as an erratum, alternate edition, or corrected input.
 2. Reconcile Dig rounding using exact source input precision and independent calculations.
 3. Reconstruct the Rajan angle-by-angle Drig generation from the printed pp. 30–32 matrix and add independent pairwise tests.
 4. Verify the five-planet Cheshta chain using same-frame historical classical inputs and independent numeric evidence for each of the five natal dates.
@@ -43,3 +43,10 @@
 - Keep `strength3` and customer Horoscope/Matching outputs unchanged.
 - Do not merge PR #14 to `main` or describe a green arithmetic workflow as full Shadbala certification.
 - Keep Ayurdaya separate from Shadbala and do not emit lifespan/death-age conclusions.
+
+
+## Mars D12 discrepancy — root cause isolated (17 Oct 2026)
+
+The scanned source comparison now establishes an internal contradiction rather than a demonstrated D12 implementation defect. Printed p.37 (scan PDF p.59) marks Mars–Sun as great friend. Printed p.39 (PDF p.61) says D12 Vargaja Bala is calculated by the Navamsa method and gives the Moon's great-friend score as 38; the same row gives Jupiter's own-sign score as 50. Mars 206°30′ is Libra 26°30′, the 11th D12 segment, hence Leo ruled by Sun. The source-rule result is therefore Mars D12 38. The printed p.39/p.41 row says 50, which propagates to printed Saptavargaja 159 and Sthana 333. Rule-derived results are 147 and 321, respectively; Mars subtotal before Drig becomes 568 rather than 580, and with the printed +40 Drig candidate the arithmetic would be 608 rather than 620. These are rule-derived reconstructions, not a final certified natal total.
+
+Added independent D12 arithmetic and cross-check assertions to the source QA test, and an inline source comment. The literal printed table oracle remains unchanged; no arbitrary +12 adjustment was added. The full certificate remains withheld because this resolves only the cause of this discrepancy, not the remaining Dig, Cheshta, Drig and historical-input gates.
