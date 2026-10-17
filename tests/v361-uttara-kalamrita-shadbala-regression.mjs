@@ -18,25 +18,38 @@ near(total(5,.5,-.25,1),6.25,'UK northern planetary victory +1 Rupa');
 near(total(5,.5,-.25,-1),4.25,'UK southern planetary defeat -1 Rupa');
 assert.throws(()=>total(NaN,1,1),TypeError);checks++;
 const p=(name,longitude,eclipticLatitude,bhava=4)=>({name,longitude,eclipticLatitude,bhava});
-const base=[p('செவ்வாய்',100.1,1.1),p('புதன்',100.6,-.2),p('குரு',201,1)];
+// UK II.16½–17½: unlike the old 1°-proximity approximation,
+ // Graha Yuddha requires SAME degree and whole minute.
+const base=[p('செவ்வாய்',100+1/3600,1.1),
+            p('புதன்',100+55/3600,-.2),p('குரு',201,1)];
 const input=JSON.stringify(base);
 const a=war(base);
-same([a.virupaByPlanet['செவ்வாய்'],a.virupaByPlanet['புதன்']],[60,-60],'within 1 degree northern latitude wins');
+same([a.virupaByPlanet['செவ்வாய்'],a.virupaByPlanet['புதன்']],[60,-60],
+ 'same degree+minute northern latitude wins');
 same(a.encounters.length,1,'one unambiguous war');
 same(a.unresolved.length,0,'no unresolved wars');
 same(JSON.stringify(base),input,'war does not mutate birth planets');
-same(war([p('செவ்வாய்',100,-2),p('புதன்',100.5,1)]).virupaByPlanet['புதன்'],60,'symmetric northern winner');
-same(war([p('செவ்வாய்',359.7,1),p('புதன்',.3,0)]).virupaByPlanet['செவ்வாய்'],60,'360 degree crossing');
-same(war([p('செவ்வாய்',100,1),p('புதன்',101.001,-1)]).encounters.length,0,'outside 1 degree no war');
-same(war([p('செவ்வாய்',100,1,3),p('புதன்',100.5,-1,4)]).encounters.length,0,'different bhavas no war');
-const missing=war([p('செவ்வாய்',100,null),p('புதன்',100.5,0)]);
+same(war([p('செவ்வாய்',100+4/3600,-2),p('புதன்',100+49/3600,1)])
+ .virupaByPlanet['புதன்'],60,'same minute symmetric northern winner');
+same(war([p('செவ்வாய்',359.7,1),p('புதன்',.3,0)])
+ .encounters.length,0,'360 degree crossing is NOT identical degree+minute');
+same(war([p('செவ்வாய்',100.001,1),p('புதன்',100.5,-1)])
+ .encounters.length,0,'within one degree but different minutes means no war');
+same(war([p('செவ்வாய்',100.01,1,3),p('புதன்',100.011,-1,4)])
+ .encounters.length,0,'same minute but different bhavas means no war');
+const missing=war([p('செவ்வாய்',100+1/3600,null),
+                   p('புதன்',100+30/3600,0)]);
 same(missing.encounters.length,0,'missing Swiss ecliptic latitude never guesses');
-yes(missing.unresolved.some(x=>x.reason==='missing-ecliptic-latitude'),'missing latitude explicitly marked unresolved');
-same(war([p('செவ்வாய்',100,0),p('புதன்',100.5,0)]).encounters.length,0,'north latitude tie no guessed winner');
-const overlap=war([p('செவ்வாய்',100,2),p('புதன்',100.4,1),p('குரு',100.8,0)]);
-same(overlap.encounters.length,0,'three-way overlapping war not silently double counted');
-yes(overlap.unresolved.length>0,'overlap expressly unresolved');
-same(war([p('சூரியன்',100,2),p('சந்திரன்',100.5,1),p('ராகு',100.7,0)]).encounters.length,0,'Sun Moon nodes not war contestants');
+yes(missing.unresolved.some(x=>x.reason==='missing-ecliptic-latitude'),
+ 'missing latitude explicitly marked unresolved');
+same(war([p('செவ்வாய்',100+1/3600,0),p('புதன்',100+30/3600,0)])
+ .encounters.length,0,'same-minute north latitude tie no guessed winner');
+const overlap=war([p('செவ்வாய்',100+1/3600,2),
+ p('புதன்',100+20/3600,1),p('குரு',100+45/3600,0)]);
+same(overlap.encounters.length,0,'same-minute three-way war cannot double count');
+yes(overlap.unresolved.length>0,'same-minute overlap expressly unresolved');
+same(war([p('சூரியன்',100,2),p('சந்திரன்',100.5,1),p('ராகு',100.7,0)])
+ .encounters.length,0,'Sun Moon nodes not war contestants');
 assert.throws(()=>war([p('செவ்வாய்',100,1),p('செவ்வாய்',100.5,0)]),RangeError);checks++;
 const sun=p('சூரியன்',0,0),moon=p('சந்திரன்',90,0),mer=p('புதன்',210,0);
 same(drigAspectorBenefic('சந்திரன்',[sun,moon,mer]),true,'waxing Moon benefic Drig');

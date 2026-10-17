@@ -2,7 +2,10 @@
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
+import {uttaraKalamritaSixBala,uttaraKalamritaAyanaFromDeclination,uttaraKalamritaHoraFromSunrise} from './uttara-kalamrita-six-bala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
+import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
+import { cgRajanShadbalaForPlanet } from './cg-rajan-jathaka-kanitham-shadbala.browser.mjs';
 import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
 let swe=null;
 const C={SE_SUN:WC.SUN,SE_MOON:WC.MOON,SE_MERCURY:WC.MERCURY,SE_VENUS:WC.VENUS,SE_MARS:WC.MARS,SE_JUPITER:WC.JUPITER,SE_SATURN:WC.SATURN,SE_MEAN_NODE:WC.MEAN_NODE,SE_GREG_CAL:1,SE_SIDM_LAHIRI:1,SEFLG_SWIEPH:2,SEFLG_MOSEPH:4,SEFLG_SPEED:256,SEFLG_EQUATORIAL:2048,SEFLG_SIDEREAL:65536};
@@ -184,7 +187,13 @@ const SHADBALA_REQUIRED = {
   'சூரியன்':390, 'சந்திரன்':360, 'செவ்வாய்':300, 'புதன்':420,
   'குரு':390, 'சுக்கிரன்':330, 'சனி':300
 };
-const SHADBALA_NATURAL = NATURAL_BALA;
+// BPHS I Ch27 v14: exact 60*n/7 Virupas; DO NOT reuse the 2-decimal
+// NATURAL_BALA display map from Phase2. Exact fractions matter when summing
+// all six Shadbala components, even though UI later rounds to 3 decimals.
+export const SHADBALA_NATURAL = Object.freeze({
+  'சூரியன்':60,'சந்திரன்':6*60/7,'செவ்வாய்':2*60/7,
+  'புதன்':3*60/7,'குரு':4*60/7,'சுக்கிரன்':5*60/7,'சனி':60/7
+});
 const PLANET_GENDER = {
   'சூரியன்':'male','செவ்வாய்':'male','குரு':'male',
   'புதன்':'neutral','சனி':'neutral','சந்திரன்':'female','சுக்கிரன்':'female'
@@ -362,6 +371,7 @@ export function kalaDayFromSunrise(date,time,latitude,longitude,offsetMinutes){
   const horaStep=Math.min(23,Math.floor(fromRise/60));
   const horaLord=HORA_ORDER[(HORA_ORDER.indexOf(owners.dinaLord)+horaStep)%7];
   return {...owners,weekday:VARA_LORDS.indexOf(owners.dinaLord),horaLord,tribhagaLord,
+    ghatikasSinceLastSunrise:fromRise/24,
     sunriseMinutes:rise.sunrise,sunsetMinutes:rise.sunset,sunriseApprox:true,
     solarCalendarDay:baseDate.toISOString().slice(0,10)};
 }
@@ -390,47 +400,10 @@ export function ayanaBala(decl, planet){
   const virupa=(obliquity+signed)*60/(2*obliquity);
   return Math.max(0,Math.min(planet==='சூரியன்'?120:60,virupa*(planet==='சூரியன்'?2:1)));
 }
-function sputaDrishti(angle, aspector){
-  const a=norm360(angle);
-  let s=0;
-  if(a<30||a>330) s=0;
-  else if(aspector==='சனி'){
-    if(a<60) s=(a-30)*2;
-    else if(a<90) s=120-a;
-    else if(a<120) s=90-a/2;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<240) s=150-a/2;
-    else if(a<270) s=a-210;
-    else if(a<300) s=600-2*a;
-  } else if(aspector==='செவ்வாய்'){
-    if(a<60) s=a/2-15;
-    else if(a<90) s=1.5*a-75;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<210) s=150-a/2;
-    else if(a<240) s=270-a;
-    else if(a<300) s=150-a/2;
-  } else if(aspector==='குரு'){
-    if(a<60) s=a/2-15;
-    else if(a<90) s=a-45;
-    else if(a<120) s=a/2;
-    else if(a<150) s=180-a;
-    else if(a<180) s=2*a-300;
-    else if(a<210) s=150-a/2;
-    else if(a<240) s=a-150;
-    else if(a<270) s=300-a;
-    else if(a<300) s=150-a/2;
-  } else {
-    if(a<60) s=(a-30)/2;
-    else if(a<90) s=a-45;
-    else if(a<120) s=30+(120-a)/2;
-    else if(a<150) s=150-a;
-    else if(a<180) s=2*a-300;
-    else if(a<300) s=(300-a)/2;
-  }
-  return Math.max(0,Math.min(60,s));
-}
+// BPHS Ch26 exact-degree Drishti is centralized in the book-oracled module.
+// No speed-bin or generic special-aspect heuristic is used here.
+const sputaDrishti=bphsSputaDrishtiVirupa;
+
 /**
  * UK Chapter II printed p.44: Moon's waxing phase and Mercury's conjunction
  * determine whether their Drishti contributes as benefic or malefic.
@@ -503,11 +476,17 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
   const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
+  // Never mistake discrete speed-state estimates for BPHS Ch27 vv24–25's
+  // continuous mean/true/śīghrocca Cheshta Kendra ÷ 3. The ancient
+  // orbital inputs have not passed historical same-frame certification.
+  const cheshtaSourceMethod=planet==='சூரியன்'?'BPHS Sun = Ayana Bala':
+    planet==='சந்திரன்'?'BPHS Moon = Paksha Bala':
+    'PROVISIONAL discrete motionClassical(speed) estimate; not BPHS mean-true-sheeghrocha';
   const naisargika=SHADBALA_NATURAL[planet];
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:[solarContext?.ephemerisBased?'Solar rise from Swiss solar-altitude model; weather, elevation and exact atmospheric refraction unavailable':'Fallback geometric sunrise approximation','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',solarTimeMethod:solarContext?.solarTimeMethod??'fallback approximate sunrise',birthApparentSolarHour:Number(sh.toFixed(7)),components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,cheshtaSourceMethod,cheshtaClassicalOrbitalInputsVerified:false,limitations:[solarContext?.ephemerisBased?'Solar rise from Swiss solar-altitude model; weather, elevation and exact atmospheric refraction unavailable':'Fallback geometric sunrise approximation','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',solarTimeMethod:solarContext?.solarTimeMethod??'fallback approximate sunrise',birthApparentSolarHour:Number(sh.toFixed(7)),components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 /**
  * For the natal Shadbala temporal divisions, obtain Swiss Sun geocentric
@@ -571,7 +550,32 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const grahaYuddha=bphsGrahaYuddhaFromBaselines(warEligibility.encounters,baselines);
   // Second pass: BPHS v20 correction only; candidate detection still uses
   // Uttara p41's north latitude test where BPHS does not name the winner.
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  // Parallel BOOK-SPECIFIC Uttara Kalamrita channel, not a renamed BPHS
+  // total. This records all verifiable intermediates but deliberately omits
+  // five-graha Cheshta unless same-frame independently validated mean /
+  // true / sighrocca data are actually supplied. Solar/lunar Cheshta also
+  // remains unresolved in this separate UK source model. No total or
+  // certificate is fabricated; existing live Phase-3 reports are untouched.
+  const ukHora=temporal?.dinaLord&&Number.isFinite(temporal?.ghatikasSinceLastSunrise)?
+    uttaraKalamritaHoraFromSunrise(temporal.dinaLord,temporal.ghatikasSinceLastSunrise):null;
+  const ukOwners=temporal?{
+    abda:temporal.abdaLord,masa:temporal.masaLord,
+    vara:temporal.dinaLord,hora:ukHora?.lord??null
+  }:null;
+  // Uttara Kalamrita commentary supplies its OWN 23°27′ × 5/4
+  // declination formula. The Swiss tropical/equatorial declinations
+  // were computed above: source frame is explicit, but independent
+  // natal ephemeris certification is still FALSE. This does NOT reuse
+  // BPHS ayanaBala(), whose coefficient is materially different.
+  const ukAyana=Object.fromEntries(Object.entries(declinations).map(
+    ([name,decl])=>[name,
+      uttaraKalamritaAyanaFromDeclination(name,decl).virupa]
+  ));
+  const uk=uttaraKalamritaSixBala({planets:withHour,bhavas,
+    apparentSolarHour:solarHour,owners:ukOwners,
+    tribhagaLord:temporal?.tribhagaLord,
+    declinations:ukAyana,classicalOrbitalInputs:{}});
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'},strengthUttaraKalamrita:SHADBALA_REQUIRED[p.name]?uk.birthSevenGraha[p.name]:{available:false,reason:'Nodes excluded from seven-graha UK Shadbala'},strengthJathakaKanitham:SHADBALA_REQUIRED[p.name]?(()=>{try{return cgRajanShadbalaForPlanet({planet:p.name,planets:withHour,ascendantLongitude:birthInput?.ascendantLongitude,midheavenLongitude:birthInput?.midheavenLongitude,declination:declinations[p.name],apparentSolarHour:solarHour,weekdayLord:temporal?.dinaLord??VARA_LORDS[weekday],monthLord:temporal?.masaLord,yearLord:temporal?.abdaLord,horaLord:temporal?.horaLord,tribhagaLord:temporal?.tribhagaLord});}catch(error){return {available:false,source:'C.G. Rajan Jathaka Kanitham Part I',classicalCertified:false,total:null,reason:String(error?.message||error)};}})():{available:false,reason:'Rahu/Ketu excluded from seven-graha C.G. Rajan Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
@@ -810,7 +814,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
   const enriched2=enrichPhase2(enriched0,jdUt);
-  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes});
+  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes,ascendantLongitude:ascLon,midheavenLongitude:Number.isFinite(mc)?norm360(mc):null});
   const d9Lagna=navamsa(ascLon);
   const moon=enriched.find(p=>p.name==='சந்திரன்');
   return {

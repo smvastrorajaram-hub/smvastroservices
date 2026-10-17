@@ -1,0 +1,76 @@
+name: CG Rajan Part I Shadbala and Ayurdaya Source QA
+on:
+  push:
+    branches: [main, audit/v365-saura-mean-motion-panchang-oracle]
+    paths:
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/horoscope-predictions.js'
+      - 'public/horoscope/horoscope.js'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
+      - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
+      - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
+      - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/horoscope-predictions.js'
+      - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
+      - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rajans-ayurdaya-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check isolated CG Rajan module and tests
+        run: |
+          node --check public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs
+          node --check tests/cg-rajan-ayurdaya-printed-oracle.mjs
+          node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
+          node --check tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
+          node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
+          node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
+          node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+          node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
+          node --check public/horoscope/horoscope-predictions.js
+          node --check public/horoscope/horoscope.js
+          node --check tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
+          node --check public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs
+          node --check public/horoscope/offline/swiss_vedic.browser.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+      - name: Verify C.G. Rajan Shadbala source formula and p.50 oracle
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+      - name: Verify Rajan partial Shadbala attaches to five Perambalur natal charts
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+      - name: Check seven printed CG Rajan natural-quotient examples and reductions
+        run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
+      - name: Check five Perambalur birth charts x seven natural components
+        run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
+      - name: Printed Pinda examples and bilingual customer-appendix regression
+        run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+      - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
+        run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
+      - name: Check printed Pinda answers, 35 natal terms and Horoscope report render
+        run: node tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
+      - name: Guard Advanced Analysis I final Ayurdaya placement and print visibility
+        run: node tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
+      - name: Enforce no customer lifespan/death report
+        run: |
+          echo 'Research-only CG Rajan first-volume Ayurdaya module.'
+          echo 'Printed example mathematics does not certify an individual lifespan.'
+          echo 'No mixing with Uttara Section III or Marriage Matching. Horoscope displays historical numeric components only, no predicted lifespan.'
