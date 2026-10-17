@@ -32,6 +32,8 @@ Column order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn. Numerical units 
 
 A self-contained independent fixture in `tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs` now checks the six-group subtotals and after-Drig values while preserving the scan's final column as a separate source fact. **Mars discrepancy: the scan prints Yuddha +10 but leaves the final at 620. Accepted arithmetic rule: 620 after-Drig + 10 Yuddha = 630.** The source keeps `printedFinal=620` for audit traceability and uses `final=630` for the corrected arithmetic; no printed source value is rewritten. This resolves the arithmetic decision only; it does NOT certify the other planetary components or five SMV natal charts.
 
+**Dig Bala audit correction:** the earlier Venus/Saturn one-point differences compared the printed p.50 Dig row with a synthetic `midheavenLongitude=95`. The scanned worked example supplies Lagna but no independently verified MC / complete Dig frame, so that was not a valid numerical oracle. The source QA now labels MC=95 as geometry-only and no longer reports those values as book mismatches. The printed Dig entries remain transcribed, but their calculation is **not independently certified** until the correct source frame is established.
+
 ## Part II — `...ஜாதக_கணிதம்_இரண்டாம்_பாகம்_என்னும்_ஜாதகப்_பலாபலன்கள்_நிர்ணயம்.pdf`: 421 PDF pages
 
 Approximate PDF page = printed page + 13; checked directly at printed pp. 111 and 365.
