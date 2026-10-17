@@ -110,6 +110,8 @@ jobs:
         run: node tests/saura-manda-karna-two-source-numerical-reconciliation.mjs
       - name: BPHS Ch26 independent Sputa Drig + 35 live seven-graha chart numeric QA
         run: node tests/bphs-ch26-sputa-drig-live-five-charts.mjs
+      - name: Official 2026 IMD versus actual live five-planet Cheshta source gap
+        run: node tests/bphs-2026-live-cheshta-official-oracle.mjs
       - name: BPHS exact Naisargika and seven-graha sixfold mathematical reconciliation
         run: node tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs
       - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
