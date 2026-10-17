@@ -40,12 +40,12 @@ for(const html of [ta,en]){
  ok(!/deathAgeOrDate|totalHumanLifetime|combinedLongevityYears/.test(html),
  'no internal lifespan/death data printed');
 }
-const src=fs.readFileSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url),'utf8');
+const src=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const printSrc=fs.readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
 ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
  'live Horoscope module integration');
-ok(src.includes("predictionSection.insertAdjacentHTML('afterend'"),
- 'separate chapter survives legacy integrated-predictions stripping');
+ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
+ 'Ayurdaya is attached inside Advanced Analysis I, safe from print legacy stripping');
 ok(printSrc.includes("root.querySelectorAll('.integrated-predictions"),'print strips only legacy content');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30']];
