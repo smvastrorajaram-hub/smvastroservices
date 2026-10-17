@@ -39,6 +39,25 @@ eq(sthana.map(x=>x.saptavargaja),[164,251,147,138,207,158,170],
  'source-rule Saptavargaja: Mars D12 mismatch remains visible');
 eq(sthana.map(x=>x.total),[227,479,321,373,420,323,303],
  'source-rule Sthana total: Mars is 12 below the printed table');
+assert.throws(()=>cgRajanSthanaBala({
+ planet:'செவ்வாய்',longitude:sample[2].longitude,ascendantLongitude:asc,
+ planets:sample.filter(p=>p.name!=='சனி')
+}),/missing graha positions/,
+ 'incomplete chart must not silently fabricate temporary friendship');
+assertions++;
+assert.throws(()=>cgRajanSaptavargajaBala({
+ planet:'செவ்வாய்',longitude:sample[2].longitude,
+ planets:[...sample,{...sample[0]}]
+}),/duplicate graha positions/,
+ 'duplicate planet input must not silently overwrite a Rasi sign');
+assertions++;
+assert.throws(()=>cgRajanSaptavargajaBala({
+ planet:'செவ்வாய்',longitude:sample[2].longitude,
+ planets:sample.map(p=>p.name==='குரு'?{...p,longitude:NaN}:p)
+}),/non-finite longitude/,
+ 'invalid planet longitude must not silently change friendship score');
+assertions++;
+
 eq(CG_RAJAN_PRINTED_P50.sthana[2]-sthana[2].total,12,
  'Mars Sthana discrepancy exactly equals the D12 component discrepancy');
 
