@@ -84,6 +84,32 @@ eq(missingHarana.adjustedAmsaYearsCandidate,null,'missing evidence never assumes
 const collisionHarana=cgRajanAmsaHaranaResearch({...completeHaranaEvidence,occupantCount:2,strongestOccupantVerified:false});
 eq(collisionHarana.resolved,false,'multiple occupants require verified strongest graha');
 eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice cannot be guessed');
+// End-to-end renderer fixture: every required fact is explicit and all
+// Chakrapada houses are avoided. Jupiter is in enemy-sign Gemini and has no
+// applicable multiplier, so raw Amsa 11 becomes 11 × (1 - 1/3) = 7y 4m.
+const chartResolvedFixture=ref.map((p,i)=>({
+ ...p,
+ ...(p.name==='குரு'?{longitude:75}:{}),
+ bhava:[1,2,3,4,5,6,6][i],
+ strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
+  retrograde:false,exalted:false,ownSign:false}
+}));
+const resolvedChart=cgRajanCompareGrahas({planets:chartResolvedFixture});
+eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
+ 'all seven Amsa rows resolve when all chart evidence is explicit');
+const jupiterPost=resolvedChart.entries.find(x=>x.name==='குரு').amsaHarana;
+eq(jupiterPost.rawAmsaYears,11,'fixture Jupiter raw Table-A lookup');
+eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from chart relation');
+eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
+eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:4,days:0,nazhigai:0},
+ 'fixture displays the post-Harana Jupiter candidate, not raw 11 years');
+eq(resolvedChart.totals.amsa.available,true,
+ 'adjusted Amsa total available only after all seven rows resolve');
+const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
+eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven fully evidenced grahas display post-Harana candidates');
+ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
+ 'adjusted Amsa total is rendered only when complete');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
 eq(totals.amsa.traditionalUnits,null,
  'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
