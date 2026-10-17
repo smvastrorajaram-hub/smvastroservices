@@ -71,7 +71,9 @@ if(lat===''||lon===''){
     copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');
     const tplace=$('tamilBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;tplace.dataset.timezone=$('englishBirthTimezone')?.value||'';if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=tplace.dataset.timezone;
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
-    busy=true;document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
+    busy=true;
+    const generationId=(window.__smvHoroscopeGenerationId=Number(window.__smvHoroscopeGenerationId||0)+1);
+    document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=true);
     const englishResult=$('englishHoroscopeResult');
     const coreResult=$('tamilHoroscopeResult');
     // Clear only the previous, user-visible diagnostic. No automatic re-fetch or retry.
@@ -171,7 +173,7 @@ if(lat===''||lon===''){
             if(next==='en')window.__smvApplyEnglishToHoroscope(target);
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
             if(completedFull){
-              await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId:window.__smvHoroscopeGenerationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
+              await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
             }
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
             window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
@@ -215,7 +217,7 @@ if(lat===''||lon===''){
             englishAdvancedRoot.classList.remove('hidden');
             englishAdvancedRoot.innerHTML='';
             phase='full-advanced-calculation';
-            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId:window.__smvHoroscopeGenerationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
+            await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
             // The 15-year refinement continues inside Section X instead of
             // blocking the whole report. Section X shows a pending state and the
             // capture-phase guard keeps Save/Print waiting for the real timeline.
