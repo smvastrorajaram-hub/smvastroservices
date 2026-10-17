@@ -152,8 +152,6 @@ const RAJAN_OWN_SIGNS=Object.freeze({
  'சூரியன்':[4],'சந்திரன்':[3],'செவ்வாய்':[0,7],'புதன்':[2,5],
  'குரு':[8,11],'சுக்கிரன்':[1,6],'சனி':[9,10]
 });
-const RAJAN_SIGN_LORDS=['செவ்வாய்','சுக்கிரன்','புதன்','சந்திரன்','சூரியன்','புதன்',
- 'சுக்கிரன்','செவ்வாய்','குரு','சனி','சனி','குரு'];
 const rajanSignIndex=lon=>Math.floor(norm(lon)/30);
 function rajanNavamsaSignIndex(lon){
  const x=norm(lon),r=Math.floor(x/30),part=Math.min(8,Math.floor((x%30)/(30/9)));
@@ -162,7 +160,8 @@ function rajanNavamsaSignIndex(lon){
 }
 function rajanDrekkanaSignIndex(lon){
  const x=norm(lon),r=Math.floor(x/30),part=Math.min(2,Math.floor((x%30)/10));
- return norm(r+(r%2===0?[0,4,8][part]:[8,4,0][part]));
+ // Drekkana returns a sign index, so wrap at 12 signs (not 360 degrees).
+ return (r+(r%2===0?[0,4,8][part]:[8,4,0][part]))%12;
 }
 function rajanExplicitBeneficState(planetRow){
  const candidates=[

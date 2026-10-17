@@ -45,8 +45,9 @@ eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
  'raw Table-A terms are not presented in the customer table as results');
-ok(ta.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்')&&en.includes('otherwise it shows —'),
- 'missing natal Harana evidence fails closed in the Amsa column');
+ok(ta.includes('அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை')&&
+ en.includes('Amsa Harana inputs are incomplete'),
+ 'missing natal Harana evidence has explicit bilingual blocked-cell labels');
 eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
  'fixture without chart facts displays no raw Amsa values for all seven grahas');
 ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
@@ -87,9 +88,11 @@ eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice can
 // End-to-end renderer fixture: every required fact is explicit. Saturn is
 // the sole occupant of Chakrapada house 7, so its malefic loss is 1/6. Jupiter
 // is in enemy-sign Gemini and has no multiplier: raw Amsa 11 -> 7y 4m.
+// Sun at 260° tests Drekkana wrap: Sagittarius' third Drekkana is Leo (sign 4).
 const chartResolvedFixture=ref.map((p,i)=>({
  ...p,
  ...(p.name==='குரு'?{longitude:75}:{}),
+ ...(p.name==='சூரியன்'?{longitude:260}:{}),
  bhava:[1,2,3,4,5,6,7][i],
  strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
   retrograde:false,exalted:false,ownSign:false}
@@ -98,6 +101,11 @@ const resolvedChart=cgRajanCompareGrahas({planets:chartResolvedFixture});
 eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
  'all seven Amsa rows resolve when all chart evidence is explicit');
 const jupiterPost=resolvedChart.entries.find(x=>x.name==='குரு').amsaHarana;
+const sunPost=resolvedChart.entries.find(x=>x.name==='சூரியன்').amsaHarana;
+eq(sunPost.multiplier,2,
+ 'wrapped Drekkana sign maps to Leo and applies the Sun own-Drekkana multiplier');
+eq(sunPost.adjustedAmsaYearsCandidate,sunPost.rawAmsaYears*2,
+ 'own-Drekkana multiplier is applied after Harana without stacking another multiplier');
 eq(jupiterPost.rawAmsaYears,11,'fixture Jupiter raw Table-A lookup');
 eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from chart relation');
 eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
