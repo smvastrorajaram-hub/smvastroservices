@@ -45,6 +45,12 @@ for(const [date,time] of dates){
     date+' '+p.name+' 23°27′ x5/4 UK versus BPHS-specific Ayana scale');
   ok(!u.missing.includes('Kala: ayana'),
     date+' '+p.name+' UK II source-aware Ayana no longer falsely missing');
+  ok([0,60].includes(u.kala.parts.hora),
+    date+' '+p.name+' UK II sunrise-ghati Hora lord has 0/60 Virupa');
+  ok(Number.isFinite(u.kala.totalVirupa)&&
+    Math.abs(u.kala.totalVirupa-Object.values(u.kala.parts).reduce((a,b)=>a+b,0))<1e-8,
+    date+' '+p.name+' UK eight Kala intermediate terms reconcile');
+
   ok(u.naisargikaVirupa>=0&&u.naisargikaVirupa<=60,
     date+' '+p.name+' UK natural Virupa in range');
   ok(u.source.includes('Uttara Kalamrita')&&Number.isFinite(prior?.totalVirupa),
