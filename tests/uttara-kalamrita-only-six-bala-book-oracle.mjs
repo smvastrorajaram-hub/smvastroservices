@@ -6,6 +6,7 @@
  * No 2024 academic research data. No Ayurdaya computation.
  */
 import assert from 'node:assert/strict';
+import {uttaraKalamritaRectifiedTotal as bookTotal} from '../public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs';
 import {
  UTTARA_KALAMRITA_NAISARGIKA_VIRUPA as natural,
  UTTARA_KALAMRITA_RELATION_VIRUPA as rel,
@@ -26,6 +27,19 @@ const eq=(a,b,m)=>{assert.deepEqual(a,b,m);assertions++};
 const close=(a,b,m,tol=1e-10)=>{yes(Number.isFinite(a)&&Math.abs(a-b)<=tol,
  m+' actual='+a+' expected='+b)};
 const pNames=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'];
+
+// UK printed p.12–13 Section II slokas 19½–21½: seven external COMPLETE
+// book worked-example totals, independently printed Rupas.
+// This certifies the book's aggregation formula for PUBLISHED EXAMPLE
+// INPUTS only; it says nothing about date-specific natal input positions.
+const bookFour=[3.83825,5.564,5.3799,7.658,5.1384,4.47685,4.97275];
+const bookNatural=[1,.857,.286,.428,.571,.714,.143];
+const bookDrig=[.2236,-.333,-.105,-.0256,.066,-.0123,.25];
+const publishedShadbalaRupa=[5.06185,6.088,5.5609,8.0604,5.7754,5.17855,5.36575];
+for(let i=0;i<7;i++)
+ close(bookTotal(bookFour[i],bookNatural[i],bookDrig[i]),
+   publishedShadbalaRupa[i],pNames[i]+' UK 7 final printed worked-example totals');
+
 // UK pp.9-10 independent worked-example TABLE, seven varga rows in Rupas.
 // Printed book truncates .1875 as ".187" and ".0625" as ".062"; this
 // full-precision reconstruction is constrained by exact printed TOTALS.
@@ -133,6 +147,7 @@ assert.throws(()=>aspect(NaN,'குரு'),TypeError);assertions++;
 assert.throws(()=>sthana({planet:'ராகு',longitude:0,bhava:1,signPositions}),RangeError);assertions++;
 console.log(JSON.stringify({pass:true,assertions,
  ukSaptavargajaPrintedSevenTotalsReconciled:7,
+ ukShadbalaPrintedSevenFinalTotalsReconciled:7,
  ukDrekkanaAuthorSpecificVerified:true,
  ukNaturalSevenVerified:true,
  ukSixBalaIntermediateCategories:6,
