@@ -292,13 +292,14 @@ export function cgRajanShadbalaForPlanet({
   const cheshta=planet==='சூரியன்'?ayana.virupa:planet==='சந்திரன்'?paksha.virupa:
     finite(classicalCheshtaVirupa)?classicalCheshtaVirupa:null;
   const drig=finite(sourceDrigVirupa)?sourceDrigVirupa:null;
+  const drigCandidate=cgRajanDrigBalaCandidate({planet,longitude:p.longitude,planets});
   const knownSubtotal=sthana.total+kala.total+ayana.virupa+naisargika+dig.virupa;
   const complete=finite(cheshta)&&finite(drig);
   const total=complete?knownSubtotal+cheshta+drig:null;
   return Object.freeze({
     available:true,source:'C.G. Rajan Jathaka Kanitham Part I',
     unit:'printed 100-point component scale',sthana,kala,ayana:ayana.virupa,
-    naisargika,dig:dig.virupa,cheshta,drig,
+    naisargika,dig:dig.virupa,cheshta,drig,drigCandidate,
     partialSubtotalExcludingCheshtaAndDrig:knownSubtotal,
     total, totalHumanLifetime:null, deathAgeOrDate:null,
     classicalCertified:false,completeBookFormula:false,
