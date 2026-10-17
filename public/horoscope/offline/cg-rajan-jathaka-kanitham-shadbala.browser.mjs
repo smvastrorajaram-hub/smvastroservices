@@ -354,9 +354,9 @@ export function cgRajanShadbalaForPlanet({
     planet==='சந்திரன்'?paksha.virupa:
     finite(classicalCheshtaVirupa)?classicalCheshtaVirupa:null;
   const cheshtaEvidenceRequired=planet!=='சூரியன்'&&planet!=='சந்திரன்';
-  const cheshta=cheshtaEvidenceRequired&&!classicalCheshtaEvidenceVerified?null:cheshtaRuleValue;
+  const cheshta=cheshtaEvidenceRequired&&classicalCheshtaEvidenceVerified!==true?null:cheshtaRuleValue;
   const drigCandidate=cgRajanDrigBalaCandidate({planet,longitude:p.longitude,planets});
-  const drig=finite(sourceDrigVirupa)&&sourceDrigEvidenceVerified?sourceDrigVirupa:null;
+  const drig=finite(sourceDrigVirupa)&&sourceDrigEvidenceVerified===true?sourceDrigVirupa:null;
   const yuddhaResult=cgRajanYuddhaBala({planet,planets});
   const yuddha=yuddhaResult.virupa;
   const knownSubtotal=sthana.total+kala.total+ayana.virupa+naisargika+dig.virupa;
@@ -378,11 +378,11 @@ export function cgRajanShadbalaForPlanet({
     blockers:Object.freeze([
       ...(planet!=='சூரியன்'&&planet!=='சந்திரன்'&&!finite(classicalCheshtaVirupa)?
         ['Five-planet Rajan Cheshta value missing']:[]),
-      ...(planet!=='சூரியன்'&&planet!=='சந்திரன்'&&finite(classicalCheshtaVirupa)&&!classicalCheshtaEvidenceVerified?
+      ...(planet!=='சூரியன்'&&planet!=='சந்திரன்'&&finite(classicalCheshtaVirupa)&&classicalCheshtaEvidenceVerified!==true?
         ['Five-planet Rajan Cheshta value supplied without independent evidence verification']:[]),
       ...(!finite(sourceDrigVirupa)?
         ['Rajan Drig value missing']:[]),
-      ...(finite(sourceDrigVirupa)&&!sourceDrigEvidenceVerified?
+      ...(finite(sourceDrigVirupa)&&sourceDrigEvidenceVerified!==true?
         ['Rajan Drig value supplied without independent source-matrix verification']:[]),
       ...(!finite(yuddha)?
         ['Graha Yuddha cannot be resolved from the available UK eligibility/winner inputs']:[]),
