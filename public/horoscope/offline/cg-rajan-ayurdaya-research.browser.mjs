@@ -98,3 +98,33 @@ export function cgRajanSevenNaturalResearch({planets=[]}={}){
   natalTotalYears:null,predictedDeathAge:null,
   publishedToCustomers:false,otherAyurdayaSystemsCombined:false});
 }
+
+/**
+ * Research-only arithmetic for Rajan's printed p.248 eight rows
+ * (seven planets + Lagna). This is NOT the selection/reduction method,
+ * because p.248's printed sum does not include the Sun's shown 0y9m row.
+ * All individual rows must be sourced/verified before drawing any outcome.
+ */
+export function cgRajanSumTraditionalRows({rows=[]}={}){
+ if(!Array.isArray(rows)||rows.length===0||rows.length>8)
+  throw new RangeError('1..8 documented rows required');
+ let sum=0;
+ for(const x of rows){
+  if(!x||!['years','months','days','nazhigai'].every(k=>
+   Number.isSafeInteger(x[k])&&x[k]>=0))
+   throw new TypeError('Four nonnegative integer traditional-unit entries required');
+  if(x.months>=12||x.days>=30||x.nazhigai>=60)
+   throw new RangeError('Normalize each row into 12 months, 30 days, 60 nazhigai');
+  sum+=x.years*NADIS_PER_YEAR+x.months*DAYS_PER_MONTH*NADIS_PER_DAY+
+       x.days*NADIS_PER_DAY+x.nazhigai;
+  if(!Number.isSafeInteger(sum))throw new RangeError('Sum outside safe integer range');
+ }
+ let rem=sum;
+ const years=Math.floor(rem/NADIS_PER_YEAR);rem%=NADIS_PER_YEAR;
+ const months=Math.floor(rem/(DAYS_PER_MONTH*NADIS_PER_DAY));rem%=DAYS_PER_MONTH*NADIS_PER_DAY;
+ const days=Math.floor(rem/NADIS_PER_DAY);rem%=NADIS_PER_DAY;
+ return Object.freeze({source:'CG Rajan I printed p.248 (research arithmetic)',
+  traditionalUnits:Object.freeze({years,months,days,nazhigai:rem}),
+  printedFullTableReconciliationVerified:false,
+  finalHumanLifespanYears:null,predictedDeathAge:null});
+}
