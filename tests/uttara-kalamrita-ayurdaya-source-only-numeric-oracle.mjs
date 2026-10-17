@@ -15,7 +15,8 @@ import {
  uttaraAyurdayaLagnaFromGhati as lagna,
  uttaraAyurdayaThreeDrekkanaPunyaPapa as punya,
  uttaraAyurdayaResearchChart as chart,
- uttaraAyurdayaTextualYogaEvidence as yoga
+ uttaraAyurdayaTextualYogaEvidence as yoga,
+ uttaraAyurdayaThreeDrekkanaFromResearchChart as threeDrekkana
 } from '../public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs';
 const star=360/27,pada=star/4;
 let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++};
@@ -97,6 +98,15 @@ for(const [date,time] of births){
  const r=await full({date,time,lat:11.232,lon:78.88,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'UK III private math QA'});
  ok(r.ok,'valid seven graha and Lagna chart '+date);
+ const strength=Object.fromEntries(r.chart.planets.filter(p=>p.strengthUttaraKalamrita).map(p=>
+  [p.name,p.strengthUttaraKalamrita]));
+ const uç=threeDrekkana({lagnaLongitude:r.chart.lagna.longitude,
+   ukStrengthByGraha:strength});
+ eq(ukThree.entries.length,3,'UK 3 decanates per Lagna '+date);
+ eq(ukThree.missing.length,0,'all UK research-only Saptavargaja source intermediates available '+date);
+ ok(ukThree.bookIntermediate?.punyaRupa>=0,'UK III.4 Punya research computed '+date);
+ ok(ukThree.bookIntermediate?.papaRupa>=0,'UK III.4 Papa research computed '+date);
+ eq(ukThree.finalNativeLifespanYears,null,'UK 3 decanate cannot certify life years '+date);
  const input=chart({planets:r.chart.planets,lagnaLongitude:r.chart.lagna.longitude,
   certifiedUttaraShadbala:false});
  eq(input.publishedToCustomers,false,'no lifespan report output '+date);
