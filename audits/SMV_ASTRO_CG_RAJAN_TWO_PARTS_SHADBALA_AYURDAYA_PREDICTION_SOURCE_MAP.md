@@ -30,7 +30,7 @@ Column order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn. Numerical units 
 | Printed Yuddha row | 0 | 0 | 10 | 0 | 0 | 0 | 0 |
 | Printed final | **615** | **701** | **620** | **933** | **951** | **649** | **787** |
 
-A self-contained independent fixture in `tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs` validates **23 arithmetic assertions**. The six-group subtotals and after-Drig printed final numbers agree for seven planets. **Open discrepancy: Mars prints Yuddha +10 but final stays 620, not 630.** This must be researched before implementing a source-specific Yuddha total. Do not 'fix' either printed value to conceal the discrepancy. These are figures for the author's worked example, **not** five SMV natal input charts.
+A self-contained independent fixture in `tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs` now checks the six-group subtotals and after-Drig values while preserving the scan's final column as a separate source fact. **Mars discrepancy: the scan prints Yuddha +10 but leaves the final at 620. Accepted arithmetic rule: 620 after-Drig + 10 Yuddha = 630.** The source keeps `printedFinal=620` for audit traceability and uses `final=630` for the corrected arithmetic; no printed source value is rewritten. This resolves the arithmetic decision only; it does NOT certify the other planetary components or five SMV natal charts.
 
 ## Part II — `...ஜாதக_கணிதம்_இரண்டாம்_பாகம்_என்னும்_ஜாதகப்_பலாபலன்கள்_நிர்ணயம்.pdf`: 421 PDF pages
 
