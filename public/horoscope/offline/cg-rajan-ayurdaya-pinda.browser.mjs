@@ -19,13 +19,13 @@ const SPEC=Object.freeze({
 const names=Object.keys(SPEC);
 const norm=x=>((x%360)+360)%360;
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
-const NY=21600, NM=1800;
+const NY=21600, NM=1800, ND=60;
 const units=value=>{
  if(!Number.isSafeInteger(value)||value<0)throw new RangeError('integer nazhigai required');
  let rem=value;
  const years=Math.floor(rem/NY);rem%=NY;
  const months=Math.floor(rem/NM);rem%=NM;
- const days=Math.floor(rem/60);rem%=60;
+ const days=Math.floor(rem/ND);rem%=ND;
  return Object.freeze({years,months,days,nazhigai:rem});
 };
 /** Same retained major arc (180..360 degrees) demonstrated by Rajan's
@@ -86,7 +86,7 @@ export function cgRajanCompareGrahas({planets=[]}={}){
    amsa:cgRajanAmsaAyurdayaGraha({planet:name,trueLongitude:p?.longitude})});
  });
  const nadis=u=>Number(u?.years||0)*NY+Number(u?.months||0)*NM+
-  Number(u?.days||0)*NADIS_PER_DAY+Number(u?.nazhigai||0);
+  Number(u?.days||0)*ND+Number(u?.nazhigai||0);
  const sumTerms=key=>entries.reduce((n,e)=>n+nadis(e[key]?.traditionalUnits),0);
  const pindaTotalNadis=sumTerms('pinda');
  const naturalTotalNadis=sumTerms('natural');
