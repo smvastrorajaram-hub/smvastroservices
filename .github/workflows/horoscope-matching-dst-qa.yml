@@ -72,6 +72,8 @@ jobs:
           done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
+      - name: Arudha AL/UL display and Ayurdaya scroll regression
+        run: node tests/arudha-al-ul-identity-regression.mjs
       - name: V358 unified result layer source regression
         run: node tests/v358-unified-result-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
