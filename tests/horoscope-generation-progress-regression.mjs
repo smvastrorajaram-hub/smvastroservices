@@ -21,6 +21,8 @@ no(accessPrelude.includes("target.classList.remove('hidden')"),'result is not re
 yes(horoscope.includes('data-smv-long-pending-message'),'Section X shows that its 15-year refinement is in progress');
 yes(horoscope.includes("advancedRoot.dataset.smvLongPending!=='1'")&&horoscope.includes("integrated.getAttribute('data-smv-15-year-ready')==='1'"),'Save/Print remain gated until all 12 topics are ready');
 yes(horoscope.includes("document.addEventListener('click',async event=>")&&horoscope.includes("button.closest('#englishHoroscopeResult, #tamilHoroscopeResult')"),'Save/Print gate listens at the outer report host where controls are attached');
+yes(horoscope.includes('if(!pendingNow&&initial.ready&&!initial.failure)return;'),'only a complete and successful 15-year result bypasses the Save/Print gate');
+yes(horoscope.includes("ready=advancedRoot.dataset.smvLongPending!=='1'&&result.ready&&!result.failure;"),'a failed or incomplete timeline stays blocked after the pending flag clears');
 yes(timeline.includes('iterations%8===0')&&timeline.includes('setTimeout(resolve,0)'),'15-year calculation yields to the browser every eight weekly samples');
 yes(timeline.includes('step=7*ONE_DAY')&&timeline.includes('hi-lo>ONE_DAY'),'seven-day sample grid and daily ingress refinement remain unchanged');
 console.log(JSON.stringify({pass:true,checks,scope:'single loading lifecycle, no Basic flash, earlier report display, non-blocking timeline, guarded Save/Print'}));
