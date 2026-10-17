@@ -62,8 +62,9 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  * Table-A Amsa Harana. p.231 selects combustion Harana over enemy-sign
  * Harana when both apply, and exempts Venus/Saturn from combustion Harana;
  * p.235 then adds the selected condition loss to the separate Chakrapada loss.
- * Missing chart facts or unverified strongest-occupant selection blocks
- * adjustment. This helper never certifies a complete natal Amsa result.
+ * Missing chart facts or a tied/unavailable occupant ranking blocks the
+ * candidate. A provisional strength3 winner allows a research candidate only;
+ * this helper never certifies a complete natal Amsa result.
  */
 export function cgRajanAmsaHaranaResearch({
  planet,rawAmsaYears,enemySign,combust,houseFromLagna,occupantCount,
