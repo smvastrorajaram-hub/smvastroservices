@@ -100,7 +100,7 @@ for(const [date,time] of births){
  ok(r.ok,'valid seven graha and Lagna chart '+date);
  const strength=Object.fromEntries(r.chart.planets.filter(p=>p.strengthUttaraKalamrita).map(p=>
   [p.name,p.strengthUttaraKalamrita]));
- const uç=threeDrekkana({lagnaLongitude:r.chart.lagna.longitude,
+ const ukThree=threeDrekkana({lagnaLongitude:r.chart.lagna.longitude,
    ukStrengthByGraha:strength});
  eq(ukThree.entries.length,3,'UK 3 decanates per Lagna '+date);
  eq(ukThree.missing.length,0,'all UK research-only Saptavargaja source intermediates available '+date);
