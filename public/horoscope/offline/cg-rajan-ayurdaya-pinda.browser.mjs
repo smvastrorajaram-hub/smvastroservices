@@ -5,7 +5,8 @@
  * an age/date-of-death prediction. Do not combine totals across systems.
  */
 import {
- cgRajanNaturalAyurdayaGraha, cgRajanSevenNaturalResearch
+ cgRajanNaturalAyurdayaGraha, cgRajanSevenNaturalResearch,
+ cgRajanAmsaAyurdayaGraha, cgRajanAverageFinalThreeMethods
 } from './cg-rajan-ayurdaya-research.browser.mjs';
 const SPEC=Object.freeze({
  'சூரியன்':{maximumYears:19,exaltation:10,en:'Sun'},
@@ -58,20 +59,22 @@ export function cgRajanCompareGrahas({planets=[]}={}){
  const entries=names.map(name=>{
   const p=planets.find(x=>x.name===name);
   const pinda=cgRajanPindaGraha({planet:name,trueLongitude:p?.longitude});
+  const amsa=cgRajanAmsaAyurdayaGraha({planet:name,trueLongitude:p?.longitude});
   return Object.freeze({name,english:SPEC[name].en,
-   natural:native.byPlanet[name],pinda});
+   natural:native.byPlanet[name],pinda,amsa});
  });
  return Object.freeze({entries,
   methods:Object.freeze({
    pindayurdaya:'seven component arithmetic independently tested',
    naisargika:'seven component arithmetic independently tested',
-   amsayurdaya:'not independently reconciled to Rajan worked example',
+   amsayurdaya:'raw longitude-remainder component independently reproduced against printed pp.255–256; final reductions/selection not certified',
    pindashtakavarga:'not independently reconciled to Rajan worked example',
    rasija:'not independently reconciled to Rajan worked example',
    nakshatra:'not independently reconciled to Rajan worked example',
    kalachakra:'not independently reconciled to Rajan worked example',
    samudaya:'not independently reconciled to Rajan worked example'
   }),
+  threeMethodAverage:cgRajanAverageFinalThreeMethods({}),
   methodSelectionAndReductionsVerified:false,allEightMethodsComplete:false,
   combinedLongevityYears:null,deathAgeOrDate:null,predictionCertified:false,
   source:'CG Rajan Jathaka Kanitham I (source-specific research)'});
@@ -93,9 +96,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
 export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
  const research=cgRajanCompareGrahas({planets});
  const ta=language==='ta';
- const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td></tr>`).join('');
+ const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td><td>${esc(fmt(v.amsa,ta))}</td></tr>`).join('');
  const note=ta?
- 'இவை பழைய ஜோதிட நூலின் இரண்டு முறைகளுக்கான கிரக வாரியான கணிதப் பங்குகள் மட்டுமே. வருடம்/மாதம்/நாள்/நாழிகை என்பது நூலின் கணித அலகு. தனிநபரின் உண்மையான ஆயுட்காலம் அல்லது மரண வயது அல்ல; அறிவியல் அல்லது மருத்துவ வாழ்நாள் கணிப்பு அல்ல. எட்டு முறைகளுக்கான இறுதித் தேர்வும் அரண விதிகளும் இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.':
- 'These are planet-wise arithmetic terms from two historical astrological methods. Year/month/day/nazhigai are traditional computational units, NOT a prediction of a person\'s actual lifespan, age at death, or a scientific/medical life-expectancy estimate. Complete selection and reductions across all eight source methods remain unverified.';
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><table><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள் — கிரகக் கணிதப் பங்கு':'Pinda component'}</th><th>${ta?'நைசர்க்கிக ஆயுள் — கிரகக் கணிதப் பங்கு':'Natural component'}</th></tr></thead><tbody>${lines}</tbody></table><p class="small">${ta?'அம்சம் மற்றும் மீதமுள்ள ஐந்து முறைகளின் முழுக் கணக்கீடுகள் சரிபார்ப்பில் உள்ளன. எந்த முறைகளையும் ஒன்றாகக் கூட்டி ஒருவருக்கு ஆயுள் ஆண்டுகள் கணிக்கப்படவில்லை.':'Amsa and five other source methods await worked-example reconciliation. No personal lifespan total is calculated from these rows.'}</p></section>`;
+ 'இவை நூலில் காட்டப்பட்ட பிண்டம், நைசர்க்கிகம் மற்றும் அம்சம் ஆகியவற்றின் கிரக வாரியான கணிதப் பங்குகள் மட்டுமே. அம்சத்தின் 40° சுற்று மற்றும் அச்சுப் பக்க உதாரணங்கள் சரிபார்க்கப்பட்டுள்ளன; ஆனால் ஒவ்வொரு முறையின் இறுதி குறைப்புகள்/தேர்வு விதிகள் முழுமையாகச் சரிபார்க்கப்படவில்லை. ஆகவே மூன்று முறைகளின் சராசரி இப்போது கணக்கிடப்படாது. இவை தனிநபரின் உண்மையான ஆயுட்காலம் அல்லது மரண வயதைக் கணிக்கும் பலன் அல்ல.':
+ 'These are planet-wise arithmetic components for Pinda, Naisargika and Amsa. The Amsa 40-degree cycle and printed examples are reproduced, but final reductions/method selection for each method are not fully verified. Therefore no three-method average is shown. These values are not a person\'s lifespan or age-at-death prediction.';;
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="smv-cg-rajan-ayurdaya-table-wrap" role="region" tabindex="0" aria-label="${ta?'பாரம்பரிய ஆயுர்த்தாய அட்டவணை — கிடைமட்டமாக உருட்டவும்':'Traditional Ayurdaya table — scroll horizontally'}"><table class="smv-cg-rajan-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்டக் கணிதப் பங்கு':'Pinda component'}</th><th>${ta?'நைசர்க்கிகக் கணிதப் பங்கு':'Naisargika component'}</th><th>${ta?'அம்சக் கணிதப் பங்கு':'Amsa component'}</th></tr></thead><tbody>${lines}</tbody></table></div><p class="small">${ta?'மூன்று முறைகளின் சராசரி பெற, பிண்டம், நைசர்க்கிகம், அம்சம் ஆகிய ஒவ்வொன்றின் இறுதி மதிப்பும் ஒரே அலகில் மூல விதிகளால் உறுதிப்படுத்தப்பட வேண்டும். அந்த இறுதிக் குறைப்புகள்/தேர்வு இன்னும் சரிபார்ப்பில் உள்ளதால் சராசரி காட்டப்படவில்லை.':'The three-method average requires a source-verified final total for each method in the same unit. Final reductions/selection remain under audit, so the average is withheld.'}</p></section>`;
 }

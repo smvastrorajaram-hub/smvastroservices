@@ -14,6 +14,7 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-amsa-average-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
       - 'public/horoscope/report-print.js'
@@ -45,6 +46,7 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+          node --check tests/cg-rajan-ayurdaya-amsa-average-regression.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
           node --check public/horoscope/horoscope.js
@@ -61,6 +63,8 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
       - name: Check five Perambalur birth charts x seven natural components
         run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
+      - name: Printed Pinda, Naisargika and Amsa source examples + guarded average
+        run: node tests/cg-rajan-ayurdaya-amsa-average-regression.mjs
       - name: Printed Pinda examples and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
       - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
