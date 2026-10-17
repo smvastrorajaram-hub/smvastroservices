@@ -72,17 +72,72 @@ export function cgRajanChakrapadaHouseFraction({house,benefic}={}){
  * Reduction PRIORITY is NOT independently verified, so the product is
  * illustrative research arithmetic only; not a final natal reduction.
  */
-export function cgRajanConditionReductions({planet,enemySign=false,combust=false}={}){
- if(!PLANETS[planet])throw new RangeError('Seven grahas only');
+/**
+ * C.G. Rajan I printed p.244: combustion limits measured from the Sun.
+ * Mercury and Venus have different direct/retrograde limits. An exact
+ * threshold is unresolved because the scan does not establish equality.
+ */
+const COMBUSTION_LIMITS=Object.freeze({
+ 'சூரியன்':null,'சந்திரன்':12,'செவ்வாய்':17,
+ 'புதன்':Object.freeze({direct:14,retrograde:12}),
+ 'குரு':11,'சுக்கிரன்':Object.freeze({direct:10,retrograde:8}),'சனி':15
+});
+export function cgRajanCombustionLimitDegrees({planet,retrograde}={}){
+ if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
+  throw new RangeError('Seven traditional grahas only');
+ const entry=COMBUSTION_LIMITS[planet];
+ if(entry===null)return Object.freeze({planet,applicable:false,resolved:true,limitDegrees:null,
+  source:'CG Rajan Jathaka Kanitham I printed p.244'});
+ if(typeof entry==='number')return Object.freeze({planet,applicable:true,resolved:true,
+  limitDegrees:entry,retrogradeRelevant:false,source:'CG Rajan Jathaka Kanitham I printed p.244'});
+ if(typeof retrograde!=='boolean')return Object.freeze({planet,applicable:true,resolved:false,
+  limitDegrees:null,retrogradeRelevant:true,
+  reason:'Direct/retrograde state required by the printed threshold',
+  source:'CG Rajan Jathaka Kanitham I printed p.244'});
+ return Object.freeze({planet,applicable:true,resolved:true,
+  limitDegrees:entry[retrograde?'retrograde':'direct'],retrograde,retrogradeRelevant:true,
+  source:'CG Rajan Jathaka Kanitham I printed p.244'});
+}
+/** Combustion is measured by minimum angular separation from the Sun. */
+export function cgRajanCombustionHaranaStatus({planet,trueLongitude,sunLongitude,retrograde}={}){
+ if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
+  throw new RangeError('Seven traditional grahas only');
+ if(!finite(trueLongitude)||!finite(sunLongitude))
+  throw new TypeError('Finite sidereal graha and Sun longitudes required');
+ const limit=cgRajanCombustionLimitDegrees({planet,retrograde});
+ const delta=norm(norm(trueLongitude)-norm(sunLongitude));
+ const distanceDegrees=Math.min(delta,360-delta);
+ if(!limit.applicable)return Object.freeze({planet,distanceDegrees,combust:false,resolved:true,
+  combustionHaranaFraction:0,limitDegrees:null,source:limit.source});
+ if(!limit.resolved)return Object.freeze({planet,distanceDegrees,combust:null,resolved:false,
+  combustionHaranaFraction:null,limitDegrees:null,reason:limit.reason,source:limit.source});
+ if(Math.abs(distanceDegrees-limit.limitDegrees)<1e-8)
+  return Object.freeze({planet,distanceDegrees,combust:null,resolved:false,
+   combustionHaranaFraction:null,limitDegrees:limit.limitDegrees,
+   reason:'Exact combustion threshold: source equality convention not independently verified',
+   source:limit.source});
+ const combust=distanceDegrees<limit.limitDegrees;
+ return Object.freeze({planet,distanceDegrees,combust,resolved:true,
+  combustionHaranaFraction:combust?1/2:0,limitDegrees:limit.limitDegrees,source:limit.source});
+}
+/**
+ * Rajan pp.231–232 and p.235: enemy-sign and combustion losses are deductions
+ * from the raw Amsa term. Add the loss fractions; multiplying the remaining
+ * fractions would encode an unverified sequential-reduction rule.
+ */
+export function cgRajanConditionReductions({planet,enemySign,combust}={}){
+ if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
+  throw new RangeError('Seven grahas only');
  if(typeof enemySign!=='boolean'||typeof combust!=='boolean')
-  throw new TypeError('Explicit Boolean condition indicators required');
- const combustionExempt=planet==='சுக்கிரன்'||planet==='சனி';
- const enemySignRemaining=enemySign?2/3:1;
- const combustionRemaining=combust&&!combustionExempt?1/2:1;
- return Object.freeze({planet,enemySignRemaining,combustionRemaining,
-  combustionExempt,combinedResearchFraction:enemySignRemaining*combustionRemaining,
-  priorityBetweenReductionsNotBookVerified:true,
-  independentNatalFinalCertified:false,source:'CG Rajan I printed pp.231 and 244'});
+  throw new TypeError('Explicit, verified enemySign and combust Boolean evidence required');
+ const enemySignLossFraction=enemySign?1/3:0;
+ const combustionLossFraction=combust?1/2:0;
+ const conditionHaranaFraction=enemySignLossFraction+combustionLossFraction;
+ return Object.freeze({planet,enemySign,combust,enemySignLossFraction,combustionLossFraction,
+  conditionHaranaFraction,remainingFractionCandidate:1-conditionHaranaFraction,
+  combinedResearchFraction:1-conditionHaranaFraction,
+  independentNatalFinalCertified:false,
+  source:'CG Rajan Jathaka Kanitham I printed pp.231–232, 235, 244'});
 }
 /** Seven per-planet contributions, NOT their sum or a lifespan. */
 export function cgRajanSevenNaturalResearch({planets=[]}={}){
