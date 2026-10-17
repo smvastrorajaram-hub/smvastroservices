@@ -201,7 +201,7 @@ export function cgRajanPakshaBala({planet,sunLongitude,moonLongitude,planets=[]}
       finite(p.longitude)&&signIndex(p.longitude)===sign);
     benefic=!joined;
   }
-  const value=planet==='சந்திரன்'?moonBala:(bright===benefic?moonBala:100-moonBala);
+  const value=planet==='சந்திரன்'?moonBala:(benefic?moonBala:100-moonBala);
   return Object.freeze({virupa:roundHalfUp(value),raw:+value.toFixed(6),
     elongation,bright,moonPhaseBase:+moonBala.toFixed(6),benefic,
     source:'Jathaka Kanitham I printed pp. 27 and 45-46'});
