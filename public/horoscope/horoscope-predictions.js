@@ -1805,6 +1805,19 @@ async function renderV59(ev){
  const loadOnline=async()=>{if(onlinePromise)return onlinePromise;onlinePromise=(async()=>{const rows=await getRows(),evidence=v251OnlineHoroscopeEvidence(c,full,rows,payload||{}),api=window.SMVPredictionOnline;if(!api)throw Error('Online synthesis client is unavailable.');const result=await api.requestHoroscope(evidence);return {result,rows}})();try{return await onlinePromise}catch(e){onlinePromise=null;throw e}};
  const life=x.querySelector('[data-smv-v252-body="life"]'),timing=x.querySelector('[data-smv-v252-body="timing"]');
  try{const {result,rows}=await loadOnline(),api=window.SMVPredictionOnline;const lifeHtml=api.horoscopeLifeHtml?.(result,lang)||api.horoscopeHtml?.(result,lang)||'',timeHtml=api.horoscopeTimingHtml?.(result,lang)||'';life.innerHTML=lifeHtml||v251LocalLifeFallback(c,full,lang,payload||{});timing.innerHTML=timeHtml||v251LocalTimingFallback(c,full,rows,lang,payload||{});}catch(err){console.warn('V252 online deterministic synthesis fallback:',err);const rows=await getRows().catch(()=>[]);life.innerHTML=v251LocalLifeFallback(c,full,lang,payload||{});timing.innerHTML=v251LocalTimingFallback(c,full,rows,lang,payload||{});}
+ // Keep Ayurdaya as a separate, source-labelled arithmetic APPENDIX.
+ // Wait for this asynchronous import before report/save completion so the
+ // resulting self-contained HTML is present in both saved and PDF reports.
+ // Never create a human lifespan total or predict the time of death.
+ try{
+  const ayur=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs');
+  if(!x.querySelector('[data-smv-cg-rajan-ayurdaya]'))
+   x.insertAdjacentHTML('beforeend',ayur.cgRajanAyurdayaReportHtml({
+    planets:c.planets,language:lang
+   }));
+ }catch(error){
+  console.warn('CG Rajan research appendix unavailable; horoscope remains usable:',error);
+ }
  const report=root.closest('#englishHoroscopeResult,#tamilHoroscopeResult');if(report)report.__smvPrepareReport=async()=>{root.querySelectorAll('details').forEach(n=>{const technical=n.matches('[data-print-technical="1"]');n.open=!technical;if(technical)n.removeAttribute('open');else n.setAttribute('open','')});await loadOnline().catch(()=>null)};root.querySelectorAll('.smv-v61-sub').forEach(n=>{n.open=true;n.setAttribute('open','')});
 }
 
