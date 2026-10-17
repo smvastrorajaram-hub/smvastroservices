@@ -84,13 +84,13 @@ eq(missingHarana.adjustedAmsaYearsCandidate,null,'missing evidence never assumes
 const collisionHarana=cgRajanAmsaHaranaResearch({...completeHaranaEvidence,occupantCount:2,strongestOccupantVerified:false});
 eq(collisionHarana.resolved,false,'multiple occupants require verified strongest graha');
 eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice cannot be guessed');
-// End-to-end renderer fixture: every required fact is explicit and all
-// Chakrapada houses are avoided. Jupiter is in enemy-sign Gemini and has no
-// applicable multiplier, so raw Amsa 11 becomes 11 × (1 - 1/3) = 7y 4m.
+// End-to-end renderer fixture: every required fact is explicit. Saturn is
+// the sole occupant of Chakrapada house 7, so its malefic loss is 1/6. Jupiter
+// is in enemy-sign Gemini and has no multiplier: raw Amsa 11 -> 7y 4m.
 const chartResolvedFixture=ref.map((p,i)=>({
  ...p,
  ...(p.name==='குரு'?{longitude:75}:{}),
- bhava:[1,2,3,4,5,6,6][i],
+ bhava:[1,2,3,4,5,6,7][i],
  strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
   retrograde:false,exalted:false,ownSign:false}
 }));
@@ -104,7 +104,12 @@ eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multip
 eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:4,days:0,nazhigai:0},
  'fixture displays the post-Harana Jupiter candidate, not raw 11 years');
 eq(resolvedChart.totals.amsa.available,true,
- 'adjusted Amsa total available only after all seven rows resolve');
+ 'adjusted Amsa total available when all seven row candidates resolve');
+const saturnAmsa=resolvedChart.entries.find(x=>x.name==='சனி').amsaHarana;
+eq(saturnAmsa.chakrapadaApplied,true,'single occupant in house 7 receives Chakrapada Harana');
+eq(saturnAmsa.chakrapadaLossFraction,1/6,'malefic house-7 Chakrapada loss is 1/6');
+ok(resolvedChart.totals.averageOfThreeTotals?.traditionalUnits,
+ 'three-method mean is rendered when all seven post-Harana candidates resolve');
 const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
 eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven fully evidenced grahas display post-Harana candidates');
