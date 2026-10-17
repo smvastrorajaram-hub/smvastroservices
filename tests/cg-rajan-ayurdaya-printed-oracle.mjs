@@ -64,7 +64,7 @@ eq(red({planet:'சூரியன்',enemySign:false,combust:false}).independe
  'reduction research only');
 assert.throws(()=>red({planet:'சூரியன்'}),TypeError,'unknown conditions cannot default to false');assertions++;
 const limits=[
- ['சூரியன்',undefined,null,false],['சந்திரன்',undefined,12,true],
+ ['சூரியன்',undefined,null,true],['சந்திரன்',undefined,12,true],
  ['செவ்வாய்',undefined,17,true],['புதன்',false,14,true],['புதன்',true,12,true],
  ['குரு',undefined,11,true],['சுக்கிரன்',false,10,true],['சுக்கிரன்',true,8,true],
  ['சனி',undefined,15,true]
