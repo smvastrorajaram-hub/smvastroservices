@@ -114,12 +114,15 @@ eq(kala.map(x=>x.hora),[0,0,0,0,100,0,0],'Hora Bala components');
 eq(kala.map(x=>x.paksha),[73,27,73,27,27,27,73],'Kala Paksha subcomponents');
 eq(kala.map(x=>x.total),[133,67,113,227,287,87,263],'printed Kala Bala');
 
+// The scanned worked example supplies Lagna but not an independently
+// verified MC / complete Dig frame. MC=95 is a synthetic geometry fixture,
+// so this validates the angle formula only and MUST NOT be compared with the
+// printed p.50 Dig row or treated as a Dig certification oracle.
 const dig=sample.map(p=>cgRajanDigBala({
  planet:p.name,longitude:p.longitude,ascendantLongitude:asc,midheavenLongitude:95
 }).virupa);
-eq(dig,[60,13,38,96,13,61,25],'formula-derived Dig Bala (two printed one-point mismatches retained)');
-eq(dig.map((x,i)=>x-CG_RAJAN_PRINTED_P50.dig[i]),[0,0,0,0,0,1,-1],
- 'Dig source-oracle mismatch is explicit, not silently rounded away');
+eq(dig,[60,13,38,96,13,61,25],
+ 'Dig angle geometry for the explicit synthetic MC=95 input only');
 
 const matrix=[
  [0,0,7,0,66,7,30],      // Sun aspector
@@ -264,7 +267,7 @@ console.log(JSON.stringify({
  },
  mismatches:{
   saptavargajaMarsD12:{calculated:147,printed:159,delta:-12},
-  digBala:{venus:{calculated:61,printed:60},saturn:{calculated:25,printed:26}},
+  digBala:{status:'not independently certified',reason:'printed source example does not provide a verified MC / complete Dig frame; synthetic MC=95 is geometry-only'},
   drigAngleGeneration:'BPHS candidate does not reproduce all printed p.30 planet-pair values',
   fivePlanetCheshta:'source formula still unreconciled',
   marsYuddha:'printed p.50 row is +10; corrected arithmetic is 630 while scanned final 620 is preserved separately; synthetic natal sample itself still has no qualifying war'
