@@ -110,7 +110,7 @@ eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven fully evidenced grahas display post-Harana candidates');
 ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
  'adjusted Amsa total is rendered only when complete');
-const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\\/td><\\/tr>/)?.[1];
+const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
 eq(jupiterAmsaCell,'7y 4m 0d 0n',
  'customer table cell contains post-Harana 7y 4m candidate rather than raw 11 years');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
