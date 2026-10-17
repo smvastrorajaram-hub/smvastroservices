@@ -21,9 +21,8 @@ let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++};
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
 const near=(a,b,m,t=1e-10)=>{ok(Number.isFinite(a)&&Math.abs(a-b)<=t,
  m+' '+a+' vs '+b)};
-for(let a=0;a<360;a+=star){
- const x=amsa(a+0.01);
- const n=Math.round(a/star);
+for(let n=0;n<27;n++){
+ const x=amsa(n*star+0.01);
  eq(x.completedNakshatras,n,'UK Amsa previous Nakshatra '+n);
  eq(x.completedPadas,0,'UK Amsa nakshatra first pada '+n);
  eq(x.integerYears,(n%3)*4,'UK exact star-mod-three x four');
