@@ -10,6 +10,7 @@ import {cgRajanAyurdayaReportHtml} from '../public/horoscope/offline/cg-rajan-ay
 const source=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const old=fs.readFileSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url),'utf8');
 const printer=fs.readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
+const astro=fs.readFileSync(new URL('../public/horoscope/offline/astro_advanced.browser.mjs',import.meta.url),'utf8');
 let checks=0;
 const yes=(v,label)=>{assert.ok(v,label);checks++};
 const no=(v,label)=>{assert.ok(!v,label);checks++};
@@ -45,6 +46,12 @@ yes(source.includes("makePart('chart-analysis','CHART ANALYSIS','ஜாதக �
  'I has original heading');
 yes(source.includes("makePart('life-predictions','PREDICTIONS','பலன்கள்','X')"),
  'X is untouched');
+yes(astro.includes("const arudhaLabel=h===1?'AL':h===12?'UL':`A${h}`;"),
+ '12 arudha rows label the first AL, middle A2–A11, final UL');
+yes(source.includes("p1Title('Arudha Padas (A1–A12)','ஆரூட பாதங்கள் (A1–A12)')"),
+ 'Arudha table heading explicitly identifies the A1–A12 series');
+no(source.includes("<th>#</th><th>${p1Title('Arudha','ஆரூடம்')}"),
+ 'redundant numeric ordinal column removed; label is the first column');
 const grahas=[['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
  ['செவ்வாய்',206.5],['புதன்',191+52/60],['குரு',28+17/60],
  ['சுக்கிரன்',204+32/60],['சனி',230+27/60]]
@@ -53,7 +60,11 @@ for(const language of ['ta','en']){
  const html=cgRajanAyurdayaReportHtml({planets:grahas,language});
  yes(html.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   language+' semantic report section');
- exactly((html.match(/<tr>/g)||[]).length,8,language+' 7 rows + table header');
+ exactly((html.match(/<tr>/g)||[]).length,10,language+' 7 rows + header + total + average');
+ yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுள்'),language+' provisional average row');
+ yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
+     (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுள்')),
+     language+' three-method columns');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
  no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
