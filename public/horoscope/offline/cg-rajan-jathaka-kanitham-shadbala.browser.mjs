@@ -230,13 +230,16 @@ export function cgRajanKalaBala({
     paksha,total,source:'Jathaka Kanitham I printed pp. 43-46',
     temporalLordsIndependentlyReconciled:false});
 }
-export function cgRajanDigBala({planet,longitude,ascendantLongitude}={}){
-  if(!NAMES.includes(planet)||![longitude,ascendantLongitude].every(finite))
-    throw new TypeError('planet longitude and ascendant longitude required');
-  const idealOffset=DIURNAL.has(planet)?270:
-    ['சந்திரன்','சுக்கிரன்'].includes(planet)?90:
-    ['புதன்','குரு'].includes(planet)?0:180;
-  const ideal=norm(ascendantLongitude+idealOffset);
+export function cgRajanDigBala({planet,longitude,ascendantLongitude,midheavenLongitude}={}){
+  if(!NAMES.includes(planet)||![longitude,ascendantLongitude,midheavenLongitude].every(finite))
+    throw new TypeError('planet longitude, ascendant and midheaven longitudes required');
+  // Directional maxima: Sun/Mars at MC; Moon/Venus at IC; Mercury/Jupiter
+  // at Ascendant; Saturn at Descendant. Do not approximate MC from Ascendant.
+  const ideal=norm(
+    ['சூரியன்','செவ்வாய்'].includes(planet)?midheavenLongitude:
+    ['சந்திரன்','சுக்கிரன்'].includes(planet)?midheavenLongitude+180:
+    ['புதன்','குரு'].includes(planet)?ascendantLongitude:ascendantLongitude+180
+  );
   const d=distance(longitude,ideal),raw=(180-d)/180*100;
   return Object.freeze({virupa:roundHalfUp(raw),raw:+raw.toFixed(6),idealLongitude:ideal,
     angularDistance:d,source:'Jathaka Kanitham I printed p. 48',
@@ -278,7 +281,7 @@ export function cgRajanDrigBalaCandidate({planet,longitude,planets=[]}={}){
     certified:false,reason:'Rajan printed aspect matrix differs from the current BPHS angle routine for selected planet pairs'});
 }
 export function cgRajanShadbalaForPlanet({
-  planet,planets=[],ascendantLongitude,declination,apparentSolarHour,
+  planet,planets=[],ascendantLongitude,midheavenLongitude,declination,apparentSolarHour,
   weekdayLord,monthLord,yearLord,horaLord,tribhagaLord,
   classicalCheshtaVirupa,sourceDrigVirupa
 }={}){
@@ -289,7 +292,7 @@ export function cgRajanShadbalaForPlanet({
   const sthana=cgRajanSthanaBala({planet,longitude:p.longitude,ascendantLongitude,planets});
   const ayana=cgRajanAyanaBala({planet,declination});
   const naisargika=cgRajanNaisargikaBala(planet);
-  const dig=cgRajanDigBala({planet,longitude:p.longitude,ascendantLongitude});
+  const dig=cgRajanDigBala({planet,longitude:p.longitude,ascendantLongitude,midheavenLongitude});
   const kala=cgRajanKalaBala({planet,apparentSolarHour,weekdayLord,monthLord,yearLord,horaLord,
     tribhagaLord,sunLongitude:sun.longitude,moonLongitude:moon.longitude,planets});
   const paksha=cgRajanPakshaBala({planet,sunLongitude:sun.longitude,moonLongitude:moon.longitude,planets});
