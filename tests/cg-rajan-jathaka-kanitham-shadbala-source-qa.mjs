@@ -44,19 +44,19 @@ assert.throws(()=>cgRajanSthanaBala({
  planets:sample.filter(p=>p.name!=='சனி')
 }),/missing graha positions/,
  'incomplete chart must not silently fabricate temporary friendship');
-assertions++;
+checks++;
 assert.throws(()=>cgRajanSaptavargajaBala({
  planet:'செவ்வாய்',longitude:sample[2].longitude,
  planets:[...sample,{...sample[0]}]
 }),/duplicate graha positions/,
  'duplicate planet input must not silently overwrite a Rasi sign');
-assertions++;
+checks++;
 assert.throws(()=>cgRajanSaptavargajaBala({
  planet:'செவ்வாய்',longitude:sample[2].longitude,
  planets:sample.map(p=>p.name==='குரு'?{...p,longitude:NaN}:p)
 }),/non-finite longitude/,
  'invalid planet longitude must not silently change friendship score');
-assertions++;
+checks++;
 
 eq(CG_RAJAN_PRINTED_P50.sthana[2]-sthana[2].total,12,
  'Mars Sthana discrepancy exactly equals the D12 component discrepancy');
