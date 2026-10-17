@@ -755,7 +755,8 @@ function phase1ChartAnalysis(chart,lang='ta'){
   for(let h=1;h<=12;h++){
     const source=norm(rasi(chart?.lagna?.longitude||0)+h-1);
     const a=padaFor(source);
-    arudhaItems.push({house:h,name:ta?`A${h} ஆரூடம்`:`A${h}`,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
+    const label=arudhaPadaDisplayCode(h);
+    arudhaItems.push({house:h,key:label,name:label,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
   }
   const grahaArudhaItems=names.map(n=>{
     const p=pm[n]; if(!p||!Number.isFinite(Number(p.longitude))) return {planet:ta?(LORD_TA[n]||n):n,sourceSign:'—',lord:'—',arudha:'—'};
@@ -913,5 +914,10 @@ function bookRemedies(chart,lang='ta'){
  return {rows,guidance};
 }
 
+function arudhaPadaDisplayCode(house){
+ if(!Number.isInteger(house)||house<1||house>12)
+  throw new RangeError('Arudha pada must be an integer from 1 through 12');
+ return house===1?'AL':house===12?'UL':`A${house}`;
+}
 function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; return {ashtakavarga:ashtakavarga(chart,lang),vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
-export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation};
+export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation,arudhaPadaDisplayCode};

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {arudhaPadaDisplayCode} from '../public/horoscope/offline/astro_advanced.browser.mjs';
 
 const astroAdvanced=readFileSync('public/horoscope/offline/astro_advanced.browser.mjs','utf8');
 const horoscope=readFileSync('public/horoscope/horoscope.js','utf8');
@@ -8,6 +9,16 @@ const css=readFileSync('public/horoscope/horoscope.css','utf8');
 let assertions=0;
 const eq=(a,b,message)=>{assert.deepEqual(a,b,message);assertions++};
 const yes=(v,message)=>{assert.ok(v,message);assertions++};
+
+// A1/A12 display aliases and A2–A11 codes must be identical in both languages.
+const expectedPadaCodes=['AL','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','UL'];
+eq(expectedPadaCodes.map((_,i)=>arudhaPadaDisplayCode(i+1)),expectedPadaCodes,
+ 'A1 is AL, A2–A11 keep their A-code, A12 is UL');
+assert.throws(()=>arudhaPadaDisplayCode(0),RangeError);assertions++;
+assert.throws(()=>arudhaPadaDisplayCode(13),RangeError);assertions++;
+assert.throws(()=>arudhaPadaDisplayCode(1.5),RangeError);assertions++;
+yes(/const label=arudhaPadaDisplayCode\(h\);\s*arudhaItems\.push\(\{house:h,key:label,name:label/.test(astroAdvanced),
+ 'the actual A1–A12 table uses the tested labels and stable keys');
 
 // The output labels are presentation-only. Stable keys bind the actual
 // calculated AL/A1 and UL/A12 rows regardless of Tamil/English wording.
