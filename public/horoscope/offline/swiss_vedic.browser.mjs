@@ -2,7 +2,7 @@
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
-import {uttaraKalamritaSixBala,uttaraKalamritaAyanaFromDeclination} from './uttara-kalamrita-six-bala.browser.mjs';
+import {uttaraKalamritaSixBala,uttaraKalamritaAyanaFromDeclination,uttaraKalamritaHoraFromSunrise} from './uttara-kalamrita-six-bala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
 import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
 import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
@@ -370,6 +370,7 @@ export function kalaDayFromSunrise(date,time,latitude,longitude,offsetMinutes){
   const horaStep=Math.min(23,Math.floor(fromRise/60));
   const horaLord=HORA_ORDER[(HORA_ORDER.indexOf(owners.dinaLord)+horaStep)%7];
   return {...owners,weekday:VARA_LORDS.indexOf(owners.dinaLord),horaLord,tribhagaLord,
+    ghatikasSinceLastSunrise:fromRise/24,
     sunriseMinutes:rise.sunrise,sunsetMinutes:rise.sunset,sunriseApprox:true,
     solarCalendarDay:baseDate.toISOString().slice(0,10)};
 }
@@ -554,9 +555,11 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   // true / sighrocca data are actually supplied. Solar/lunar Cheshta also
   // remains unresolved in this separate UK source model. No total or
   // certificate is fabricated; existing live Phase-3 reports are untouched.
+  const ukHora=temporal?.dinaLord&&Number.isFinite(temporal?.ghatikasSinceLastSunrise)?
+    uttaraKalamritaHoraFromSunrise(temporal.dinaLord,temporal.ghatikasSinceLastSunrise):null;
   const ukOwners=temporal?{
     abda:temporal.abdaLord,masa:temporal.masaLord,
-    vara:temporal.dinaLord,hora:temporal.horaLord
+    vara:temporal.dinaLord,hora:ukHora?.lord??null
   }:null;
   // Uttara Kalamrita commentary supplies its OWN 23°27′ × 5/4
   // declination formula. The Swiss tropical/equatorial declinations
