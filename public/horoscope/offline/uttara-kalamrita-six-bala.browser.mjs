@@ -419,7 +419,8 @@ export function uttaraKalamritaSixBala({planets,bhavas,apparentSolarHour,owners,
   const n=NATURAL[p.name];
   const list=[sthana.totalVirupa,dig?.virupa,kala.totalVirupa,
    cheshta.virupa,n,drig.virupa,warVirupa];
-  const complete=list.every(finite)&&cheshta.certified&&wars.unresolved.length===0;
+  const complete=list.every(finite)&&cheshta.certified&&
+    !sthana.conjunctionPriorityUnresolved&&wars.unresolved.length===0;
   const missing=[
    ...(dig===null?['Dig: house reference']:[]),
    ...kala.pending.map(k=>'Kala: '+k),
