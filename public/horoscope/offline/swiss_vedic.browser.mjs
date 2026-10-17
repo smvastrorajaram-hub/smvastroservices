@@ -2,6 +2,7 @@
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
 import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
+import {uttaraKalamritaSixBala} from './uttara-kalamrita-six-bala.browser.mjs';
 import { bphsDrigBalaFromAspects, bphsGrahaYuddhaFromBaselines } from './bphs-shadbala-rectification.browser.mjs';
 import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
 import { bphsSwissKalaContext, bphsApparentSolarHour } from './bphs-swiss-solar-cheshta.browser.mjs';
@@ -547,7 +548,24 @@ function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
   const grahaYuddha=bphsGrahaYuddhaFromBaselines(warEligibility.encounters,baselines);
   // Second pass: BPHS v20 correction only; candidate detection still uses
   // Uttara p41's north latitude test where BPHS does not name the winner.
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  // Parallel BOOK-SPECIFIC Uttara Kalamrita channel, not a renamed BPHS
+  // total. This records all verifiable intermediates but deliberately omits
+  // five-graha Cheshta unless same-frame independently validated mean /
+  // true / sighrocca data are actually supplied. Solar/lunar Cheshta also
+  // remains unresolved in this separate UK source model. No total or
+  // certificate is fabricated; existing live Phase-3 reports are untouched.
+  const ukOwners=temporal?{
+    abda:temporal.abdaLord,masa:temporal.masaLord,
+    vara:temporal.dinaLord,hora:temporal.horaLord
+  }:null;
+  const ukAyana=Object.fromEntries(Object.entries(declinations).map(
+    ([name,decl])=>[name,ayanaBala(decl,name)]
+  ));
+  const uk=uttaraKalamritaSixBala({planets:withHour,bhavas,
+    apparentSolarHour:solarHour,owners:ukOwners,
+    tribhagaLord:temporal?.tribhagaLord,
+    declinations:ukAyana,classicalOrbitalInputs:{}});
+  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal,grahaYuddha):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'},strengthUttaraKalamrita:SHADBALA_REQUIRED[p.name]?uk.birthSevenGraha[p.name]:{available:false,reason:'Nodes excluded from seven-graha UK Shadbala'}}));
 }
 
 function setEphe(){ swe.set_ephe_path('/sweph'); return '/sweph'; }
