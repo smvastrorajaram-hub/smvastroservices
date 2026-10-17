@@ -1805,24 +1805,9 @@ async function renderV59(ev){
  const loadOnline=async()=>{if(onlinePromise)return onlinePromise;onlinePromise=(async()=>{const rows=await getRows(),evidence=v251OnlineHoroscopeEvidence(c,full,rows,payload||{}),api=window.SMVPredictionOnline;if(!api)throw Error('Online synthesis client is unavailable.');const result=await api.requestHoroscope(evidence);return {result,rows}})();try{return await onlinePromise}catch(e){onlinePromise=null;throw e}};
  const life=x.querySelector('[data-smv-v252-body="life"]'),timing=x.querySelector('[data-smv-v252-body="timing"]');
  try{const {result,rows}=await loadOnline(),api=window.SMVPredictionOnline;const lifeHtml=api.horoscopeLifeHtml?.(result,lang)||api.horoscopeHtml?.(result,lang)||'',timeHtml=api.horoscopeTimingHtml?.(result,lang)||'';life.innerHTML=lifeHtml||v251LocalLifeFallback(c,full,lang,payload||{});timing.innerHTML=timeHtml||v251LocalTimingFallback(c,full,rows,lang,payload||{});}catch(err){console.warn('V252 online deterministic synthesis fallback:',err);const rows=await getRows().catch(()=>[]);life.innerHTML=v251LocalLifeFallback(c,full,lang,payload||{});timing.innerHTML=v251LocalTimingFallback(c,full,rows,lang,payload||{});}
- // Keep Ayurdaya as a separate, source-labelled arithmetic APPENDIX.
- // Wait for this asynchronous import before report/save completion so the
- // resulting self-contained HTML is present in both saved and PDF reports.
- // Never create a human lifespan total or predict the time of death.
- try{
-  const ayur=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs');
-  // Save/Print strips .integrated-predictions as legacy technical content.
-  // Keep this chapter as a SIBLING outside that discarded subtree; otherwise
-  // it would be visible on screen and silently absent from saved PDFs.
-  const predictionSection=x.closest('.smv-advanced-part.integrated-predictions');
-  if(!predictionSection)throw Error('Integrated report section unavailable');
-  if(!root.querySelector('[data-smv-cg-rajan-ayurdaya]'))
-   predictionSection.insertAdjacentHTML('afterend',ayur.cgRajanAyurdayaReportHtml({
-    planets:c.planets,language:lang
-   }));
- }catch(error){
-  console.warn('CG Rajan research appendix unavailable; horoscope remains usable:',error);
- }
+ // The original Horoscope main renderer mounts the CG Rajan Ayurdaya
+ // appendix at the END of Advanced Analysis > I. Chart Analysis.
+ // Do not mount it again beside legacy integrated-predictions.
  const report=root.closest('#englishHoroscopeResult,#tamilHoroscopeResult');if(report)report.__smvPrepareReport=async()=>{root.querySelectorAll('details').forEach(n=>{const technical=n.matches('[data-print-technical="1"]');n.open=!technical;if(technical)n.removeAttribute('open');else n.setAttribute('open','')});await loadOnline().catch(()=>null)};root.querySelectorAll('.smv-v61-sub').forEach(n=>{n.open=true;n.setAttribute('open','')});
 }
 
