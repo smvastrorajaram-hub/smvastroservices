@@ -1505,11 +1505,6 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
           if(target && n.parentElement!==(target.__smvContent||target)) (target.__smvContent||target).appendChild(n);
           else if(owner && target && owner!==target) target.appendChild(n);
         });
-        // Ensure Part I's Ayurdaya appendix stays after all late-loaded
-        // Chart Analysis features; do not create any additional section.
-        const partI=advancedBox.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
-        const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]');
-        if(appendix)partI.appendChild(appendix);
       };
       advancedBox.__smvRouteAdvancedSections();
       // V60: all Advanced Analysis sections I-X start minimized.
@@ -1848,24 +1843,20 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
-        // C.G. Rajan Part I: place the source-labelled Ayurdaya arithmetic
-        // INSIDE Advanced Analysis > I. Chart Analysis, as its final child.
-        // Never attach it to Predictions X or the retired integrated-predictions
-        // container. The markup is part of the normal Saved / Print snapshot.
-        // It intentionally contains NO combined lifespan or death date.
+        // Source-based Ayurdhaya arithmetic belongs at the end of Advanced Analysis I.
+        // This reuses the already calculated chart; it makes no extra API/Firestore call.
         try{
           const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
-          if(!sectionI)throw new Error('Advanced Analysis Part I content not found');
-          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs');
-          const html=cgRajanAyurdayaReportHtml({planets:full.chart.planets,language:lang});
+          if(!sectionI) throw new Error('Advanced Analysis I content not found');
+          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261017-amsa-total-average-a1-a12');
+          const html=cgRajanAyurdayaReportHtml({planets:fullChart?.planets||full?.chart?.planets||chart?.planets||[],language:lang});
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
           sectionI.insertAdjacentHTML('beforeend',html);
-          // Any async routed sub-module may update I; preserve Ayurdaya LAST.
           root.__smvRouteAdvancedSections?.();
           const ayur=sectionI.querySelector('[data-smv-cg-rajan-ayurdaya]');
-          if(ayur)sectionI.appendChild(ayur);
+          if(ayur) sectionI.appendChild(ayur);
         }catch(ayurError){
-          console.warn('CG Rajan Part I Ayurdaya appendix unavailable:',ayurError);
+          console.warn('C. G. Rajan Ayurdaya report unavailable:',ayurError);
         }
         // V266: Put the already-calculated D1 life reading under
         // X. Predictions > I. Complete Life Predictions (12 topics).
@@ -1879,7 +1870,7 @@ try{
         // Merge stable D1, bodily associations and real 15-year Swiss/Dasha
         // observations IN each house; do not append legacy separate II/III/80y.
         const v302=window.SMVD1IntegratedV303;
-        if(!v302?.build||!v302?.html)throw new Error('Missing d1-integrated-reading.js and strength dependency');
+        if(!v302?.build||!v302?.html)throw new Error('Missing d1-v303-integrated.js and strength dependency');
         const context={currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,birthPlace:contextBirthPlace};
         const natalOnly=v302.build(fullChart,lang,context,null);
         lifeSlot.innerHTML=v302.html(natalOnly);
@@ -1889,7 +1880,7 @@ try{
         root.dataset.smvLongPending='1';
         const requestKey=fifteenKey+'|'+lang;root.__smvV302RequestKey=requestKey;
         const stillCurrent=()=>root.__smvV302RequestKey===requestKey&&lifeSlot.isConnected;
-        const job=import('./d1-15-year-reading.mjs').then(async mod=>{
+        const job=import('./d1-15-year-reading.mjs?v=302-integrated-15years').then(async mod=>{
           let entry=fifteenCache.get(fifteenKey);
           if(!entry){
             entry=mod.build15Year(full,{...payload,referenceDate:dailyDate},{lang:'ta'});
@@ -2159,8 +2150,8 @@ function renderTransitPanchang(t,p,lang,rootId){
       [ta?'நல்ல நேரம்':'Nalla Neram',`<span class="nalla-neram-time">${Array.isArray(p?.nallaNeram)?p.nallaNeram.map(esc2).join(' · '):esc2(p?.nallaNeram||'—')}</span>`]
     ];
     const dailyTable=`<div class="adv-table-wrap"><table class="data-table panchang-data-table"><thead><tr><th>${ta?'விவரம்':'Details'}</th><th>${ta?'முடிவு':'Result'}</th></tr></thead><tbody>${dailyRows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody></table></div>`;
-    let h=`<div class="transit-panchang-grid"><div class="card panchang-card" data-smv-screen-only="daily-panchang"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="small">${ta?'திருக்கணித பஞ்சாங்க கணிப்பு':'Thirukanitha Panchang calculation'}</div>${dailyTable}</div></div>`;
-    h+=`<div class="card hora-card" data-smv-screen-only="daily-hora"><h3>🕐 ${ta?'தினசரி ஹோரா':'Daily Hora'}</h3><div class="hora-section">${horaHtml}</div></div>`;
+    let h=`<div class="transit-panchang-grid"><div class="card panchang-card"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="small">${ta?'திருக்கணித பஞ்சாங்க கணிப்பு':'Thirukanitha Panchang calculation'}</div>${dailyTable}</div></div>`;
+    h+=`<div class="card hora-card"><h3>🕐 ${ta?'தினசரி ஹோரா':'Daily Hora'}</h3><div class="hora-section">${horaHtml}</div></div>`;
     const signIndex=v=>{const en=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const taR=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];let i=en.indexOf(String(v));return i>=0?i:taR.indexOf(String(v));};
     const short={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke','சூரியன்':'சூ','சந்திரன்':'சந்','செவ்வாய்':'செ','புதன்':'பு','குரு':'கு','சுக்கிரன்':'சு','சனி':'ச','ராகு':'ரா','கேது':'கே'};
     const bySign=Array.from({length:12},()=>[]); planets.forEach(x=>{const i=signIndex(x.rasi);if(i>=0)bySign[i].push(x);});
@@ -2714,12 +2705,6 @@ if(lat===''||lon===''){
       }
       const normalizedTime=normalizeHoroscopeTime(time);
       if(!normalizedTime) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும். உதாரணம்: 22:05 (10:05 PM).');
-      let zone=String($('tamilBirthTimezone')?.value||$('tamilBirthPlace')?.dataset.timezone||'').trim();
-      if(!zone&&$('tamilBirthPlace')?.dataset.timezoneSource==='unverified')throw new Error('GeoNames நேர மண்டலம் உறுதியாகவில்லை. சரியான IANA timezone-ஐ உள்ளிடவும்.');
-      const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
-      if(!zone){zone=await approximateTimezoneAt(lat,lon);if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=zone;}
-      const historicalOffset=offsetMinutesAt(zone,date,normalizedTime);
-      if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang()});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
       // are calculated once later, after access/gating is resolved.
