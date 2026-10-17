@@ -9,6 +9,9 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/report-print.js'
       - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
   pull_request:
     branches: [main]
@@ -31,6 +34,7 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+          node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
       - name: Check seven printed CG Rajan natural-quotient examples and reductions
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
@@ -38,6 +42,8 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
       - name: Printed Pinda examples and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+      - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
+        run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
       - name: Enforce no customer lifespan/death report
         run: |
           echo 'Research-only CG Rajan first-volume Ayurdaya module.'
