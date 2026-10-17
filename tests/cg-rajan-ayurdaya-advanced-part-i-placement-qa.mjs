@@ -70,7 +70,9 @@ for(const language of ['ta','en']){
   language+' no raw Table-A number shown when all chart-specific inputs are absent');
  yes(html.includes('data-amsa-total="blocked"'),
   language+' raw Table-A sum is not shown as final Amsa total');
- yes(html.includes('otherwise it shows —')||html.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்'),
+ yes(html.includes(language==='ta'?
+  'அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை':
+  'Amsa Harana inputs are incomplete'),
   language+' report describes fail-closed Amsa cells');
  no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
