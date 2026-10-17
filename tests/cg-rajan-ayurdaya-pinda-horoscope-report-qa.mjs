@@ -45,8 +45,9 @@ eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
  'raw Table-A terms are not presented in the customer table as results');
-ok(ta.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்')&&en.includes('otherwise it shows —'),
- 'missing natal Harana evidence fails closed in the Amsa column');
+ok(ta.includes('அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை')&&
+ en.includes('Amsa Harana inputs are incomplete'),
+ 'missing natal Harana evidence has explicit bilingual blocked-cell labels');
 eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
  'fixture without chart facts displays no raw Amsa values for all seven grahas');
 ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
