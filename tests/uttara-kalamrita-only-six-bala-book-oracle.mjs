@@ -16,6 +16,7 @@ import {
  uttaraKalamritaDigBala as dig,
  uttaraKalamritaNatonnatha as nat,
  uttaraKalamritaAyanaFromDeclination as ayana,
+ uttaraKalamritaHoraFromSunrise as ukHora,
  uttaraKalamritaAspectVirupa as aspect,
  uttaraKalamritaDrigBala as drig,
  uttaraKalamritaKala as kala,
@@ -38,6 +39,15 @@ const pNames=['சூரியன்','சந்திரன்','செவ்�
 // south negative/north positive; same commentary prints rounded Rupas.
 // Keep incompatible printed Sun/Moon figures as explicit discrepancies.
 const obliquity=23+27/60;
+
+// UK II.15½–16½: explicit ghati*2/5 Hora arithmetic.
+// Monday first Hora Moon; after 2.5 ghatis the second is Saturn.
+eq(ukHora('சந்திரன்',0).lord,'சந்திரன்','UK Monday sunrise first Hora is Moon');
+eq(ukHora('சந்திரன்',2.5).lord,'சனி','UK book Monday second Hora is Saturn');
+eq(ukHora('சந்திரன்',5).lord,'குரு','UK Monday third Hora is Jupiter');
+eq(ukHora('சூரியன்',59.9).step,23,'UK full last 24th fixed hora');
+eq(ukHora('சூரியன்',60).lord,null,'UK time beyond 24-hour slot fails closed');
+assert.throws(()=>ukHora('ராகு',0),RangeError);assertions++;
 const ayanaSamples=[
  {name:'செவ்வாய்',decl:10+10/60,bookRupa:.7},
  {name:'புதன்',decl:-(20+46/60),bookRupa:.921},
@@ -202,6 +212,7 @@ console.log(JSON.stringify({pass:true,assertions,
  ukJupiterDrekkanaPrintedSourceInconsistency:true,
  ukAyanaIndependentBookExamples:ayanaBookExampleDiscrepancies,
  ukAyanaCommentaryFormulaVerified:true,
+ ukHoraIndependentSunriseGhatiBookChecked:true,
  ukAyanaPrintedSunMoonMismatch:true,
  ukLiteralPrintedRowDiscrepancies:independentPrintedDeltas,
  ukShadbalaPrintedSevenFinalTotalsReconciled:7,
