@@ -17,8 +17,8 @@ const finite=x=>typeof x==='number'&&Number.isFinite(x);
 
 /**
  * Accepted input is the existing seven-graha output, augmented with Swiss
- * geocentric ecliptic latitude. A war requires SAME bhava and longitude
- * LONGITUDES AGREE TO THE DEGREE AND MINUTE (same DMS minute bin),
+ * geocentric ecliptic latitude. A war requires SAME bhava and longitudes
+ * agreeing TO THE DEGREE AND MINUTE (same DMS minute bin),
  * NOT a loose <=1 degree orbit. Northern ecliptic latitude wins (UK II.16½–17½).
  * E.g. 100°00′09″ and 100°00′59″ match, 100°00′59″ and 100°01′00″ do not.
  * Ambiguous overlaps, exact latitude ties and missing data yield NO guessed
@@ -40,8 +40,11 @@ export function uttaraKalamritaGrahaYuddha(planets){
     // Compare the full 0..21599 arcminute index (degree plus whole minute),
     // rather than the previously used 1° proximity approximation.
     // Never fold a 359°59′/0°00′ boundary into the same longitude minute.
-    const minuteA=Math.floor(normalized(a.longitude)*60);
-    const minuteB=Math.floor(normalized(b.longitude)*60);
+    // Modulo twice can introduce an IEEE-754 underflow at e.g.
+    // 100°01′00″. Snap only sub-nanominute rounding noise, then wrap.
+    const minuteIndex=longitude=>Math.floor(normalized(longitude)*60+1e-9)%21600;
+    const minuteA=minuteIndex(a.longitude);
+    const minuteB=minuteIndex(b.longitude);
     if(minuteA!==minuteB)continue;
     const degrees=separation(a.longitude,b.longitude);
     if(!Number.isInteger(a.bhava)||!Number.isInteger(b.bhava)){
