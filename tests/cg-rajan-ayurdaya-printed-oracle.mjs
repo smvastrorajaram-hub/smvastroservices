@@ -8,12 +8,13 @@ import assert from 'node:assert/strict';
 import {cgRajanNaturalAyurdayaGraha as nat,
  cgRajanChakrapadaHouseFraction as house,
  cgRajanConditionReductions as red,
- cgRajanAmsaHaranaResearch as amsaHarana,
  cgRajanCombustionLimitDegrees as combustLimit,
  cgRajanCombustionHaranaStatus as combustStatus,
  cgRajanSevenNaturalResearch as seven,
  cgRajanSumTraditionalRows as sumRows}
 from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';
+import {cgRajanAmsaHaranaResearch as amsaHarana}
+from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let assertions=0;
 function eq(a,b,msg){assert.deepEqual(a,b,msg);assertions++;}
 function close(a,b,msg){assert.ok(Math.abs(a-b)<1e-10,msg+': '+a+' != '+b);assertions++;}
