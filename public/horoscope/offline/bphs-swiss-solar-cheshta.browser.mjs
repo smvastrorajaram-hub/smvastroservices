@@ -122,7 +122,11 @@ export function bphsSwissKalaContext({date,time,latitude,longitude,utcOffsetMinu
     tribhagaIndex=Math.max(0,Math.min(2,Math.floor(3*(birthUtcMs-sunset)/(nextRise-sunset))));
   }
   return {...owners,solarCalendarDay,
-    day,tribhagaIndex,horaStep,sunriseMinutes:today.sunriseMinutes,
+    day,tribhagaIndex,horaStep,
+    // UK II.15½–16½ needs elapsed ghatis from REAL preceding sunrise.
+    // 1 ghati = 24 civil minutes; keep BPHS's existing horaStep untouched.
+    ghatikasSinceLastSunrise:elapsedFromRise/(24*MINUTE),
+    sunriseMinutes:today.sunriseMinutes,
     sunsetMinutes:today.sunsetMinutes,
     sunriseApprox:true,ephemerisBased:true,
     solarTimeMethod:'Swiss Sun ephemeris RA/Dec, standard sea-level atmospheric horizon',
