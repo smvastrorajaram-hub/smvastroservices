@@ -200,6 +200,25 @@ export function uttaraKalamritaAyanaFromDeclination(planet,declinationDegrees,{
   source:'Uttara Kalamrita II.16½–17½, Sastri UK numerical commentary: 23°27′, 5/4'
  });
 }
+/**
+ * UK II.15½–16½: elapsed ghatis from LAST sunrise × 2 / 5
+ * gives the number of COMPLETED horas, not the solar-day length/24.
+ * From weekday lord the seven hora owners repeat every seventh,
+ * ordered [Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars].
+ */
+const UK_HORA_ORDER=Object.freeze(['சூரியன்','சுக்கிரன்','புதன்',
+ 'சந்திரன்','சனி','குரு','செவ்வாய்']);
+export function uttaraKalamritaHoraFromSunrise(weekdayLord,ghatikasSinceLastSunrise){
+ graha(weekdayLord);
+ if(!finite(ghatikasSinceLastSunrise)||ghatikasSinceLastSunrise<0||
+    ghatikasSinceLastSunrise>=60)
+  return Object.freeze({lord:null,step:null,virupa:null,
+   pending:['valid 0..<60 ghatis after last sunrise']});
+ const step=Math.floor(ghatikasSinceLastSunrise*2/5);
+ const lord=UK_HORA_ORDER[(UK_HORA_ORDER.indexOf(weekdayLord)+step)%7];
+ return Object.freeze({lord,step,ghatikasSinceLastSunrise,
+  source:'Uttara Kalamrita II.15½–16½, ghatis ×2/5'});
+}
 export function uttaraKalamritaNatonnatha(planet,apparentSolarHour){
  graha(planet);
  if(!finite(apparentSolarHour))return null;
