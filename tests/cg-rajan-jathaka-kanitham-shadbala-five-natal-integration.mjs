@@ -30,6 +30,11 @@ for(const [date,time] of births){
   ok(r?.available===true,'Rajan partial calculator attached '+name+' '+date);
   eq(r.classicalCertified,false,'no false certification '+name+' '+date);
   eq(r.total,null,'no final total until Cheshta/Drig verified '+name+' '+date);
+  eq(r.cheshtaEvidenceVerified,name==='சூரியன்'||name==='சந்திரன்',
+   'only source-defined Sun/Moon Cheshta is accepted without five-planet orbital evidence '+name+' '+date);
+  eq(r.drigEvidenceVerified,false,
+   'natal Drig is not certified from a numeric candidate alone '+name+' '+date);
+
   ok(Number.isFinite(r.sthana.total),'Sthana partial '+name+' '+date);
   ok(Number.isFinite(r.kala.total),'Kala partial '+name+' '+date);
   ok(Number.isFinite(r.ayana),'Ayana partial '+name+' '+date);
