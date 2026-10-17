@@ -40,24 +40,36 @@ for(let i=0;i<7;i++)
  close(bookTotal(bookFour[i],bookNatural[i],bookDrig[i]),
    publishedShadbalaRupa[i],pNames[i]+' UK 7 final printed worked-example totals');
 
-// UK pp.9-10 independent worked-example TABLE, seven varga rows in Rupas.
-// Printed book truncates .1875 as ".187" and ".0625" as ".062"; this
-// full-precision reconstruction is constrained by exact printed TOTALS.
-const bookRows=[
- [0.375,.125,.1875,.1875,.125,.1875,.375],
+// Faithful row-by-row transcription from UK Section II printed table (p.9).
+// DO NOT reconstruct values to force a printed TOTAL. Values written with
+// 3 decimals are TRUNCATED; Jupiter Drekkana ".157" has a materially
+// inconsistent 0.032 Rupa contribution, far greater than rounding.
+// The book's printed 7 total line is retained independently.
+const bookPrintedRows=[
+ [0.375,.125,.187,.187,.125,.187,.375],
  [.25,.125,.125,.125,.125,.125,.375],
- [.375,.1875,.375,.375,.375,.0625,.1875],
- [.25,.1875,.375,.0625,.0625,.375,.0625],
- [.75,.1875,.1875,.375,.1875,.375,.1875],
- [.25,.1875,.1875,.125,.1875,.125,.375],
+ [.375,.187,.375,.375,.375,.062,.187],
+ [.25,.187,.375,.062,.062,.375,.062],
+ [.75,.187,.157,.375,.187,.375,.187],
+ [.25,.187,.187,.125,.187,.125,.375],
  [.125,.125,.375,.125,.375,.375,.125]
 ];
 const expectedTotals=[1.5625,1.25,1.9375,1.375,2.25,1.4375,1.625];
+const independentPrintedDeltas=[];
 for(let n=0;n<7;n++){
- const row=bookRows[n],input=[row[0],...row.slice(1).map(x=>x*2)];
- const computed=varga(input);
- for(let i=0;i<7;i++)close(computed.fractionsRupa[i],row[i],pNames[n]+' book table cell '+i);
- close(computed.totalVirupa,expectedTotals[n]*60,pNames[n]+' printed UK total '+n);
+ const row=bookPrintedRows[n],printedSum=row.reduce((a,b)=>a+b,0);
+ const printedBookTotal=expectedTotals[n];
+ const delta=printedBookTotal-printedSum;
+ independentPrintedDeltas.push({graha:pNames[n],printedRowSum:printedSum,
+   printedTotal:printedBookTotal,discrepancyRupa:delta});
+ if(n===4){
+  close(delta,.032,'Jupiter: printed Drekhana .157 is NOT fixed by usual truncation',1e-10);
+  yes(Math.abs(delta)>.01,'Jupiter book row inconsistency flagged, never forged');
+ }else
+  yes(Math.abs(delta)<=.003,'other UK book row matches expected within truncation '+pNames[n]);
+ const rowRecomputedByModule=varga([row[0],...row.slice(1).map(x=>x*2)]);
+ close(rowRecomputedByModule.totalVirupa,printedSum*60,
+   'UK literal row arithmetic independently matches '+pNames[n]);
 }
 eq(Object.values(rel),[60,45,30,22.5,15,7.5,3.75,1.875],
  'UK full Rupa dignity ladder is NOT prior BPHS 20/10/4/2');
@@ -146,7 +158,9 @@ assert.throws(()=>signs(NaN),TypeError);assertions++;
 assert.throws(()=>aspect(NaN,'குரு'),TypeError);assertions++;
 assert.throws(()=>sthana({planet:'ராகு',longitude:0,bhava:1,signPositions}),RangeError);assertions++;
 console.log(JSON.stringify({pass:true,assertions,
- ukSaptavargajaPrintedSevenTotalsReconciled:7,
+ ukSaptavargajaPrintedSevenTotalsReconciled:6,
+ ukJupiterDrekkanaPrintedSourceInconsistency:true,
+ ukLiteralPrintedRowDiscrepancies:independentPrintedDeltas,
  ukShadbalaPrintedSevenFinalTotalsReconciled:7,
  ukDrekkanaAuthorSpecificVerified:true,
  ukNaturalSevenVerified:true,
