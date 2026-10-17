@@ -91,7 +91,7 @@ for(const [name,rank,required] of ranks){
  };
 }
 yes(Object.keys(official2026SevenPlanet.planets).length===7,
-  'seven graha full sixfold mathematical snapshot only, no 2024 evidence');
+  'seven graha full sixfold mathematical snapshot uses current official-date evidence only');
 console.log(JSON.stringify({pass:true,assertions,verifiedSixBalaSummations:values,
  sevenGraha2026MathematicalSnapshot:official2026SevenPlanet,
   classicalAstronomicalCertification2026:false,
