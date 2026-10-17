@@ -36,8 +36,12 @@ export const CG_RAJAN_PRINTED_P50 = Object.freeze({
   subtotalBeforeDrig: Object.freeze([604,695,580,909,947,612,758]),
   drig: Object.freeze([11,6,40,24,4,37,29]),
   afterDrig: Object.freeze([615,701,620,933,951,649,787]),
-  yuddha: Object.freeze([0,0,0,0,0,0,0]),
-  final: Object.freeze([615,701,620,933,951,649,787])
+  // The scan prints Mars Yuddha +10 but leaves its final at 620.
+  // Preserve that printed row separately and apply the user's accepted
+  // arithmetic: 620 after-Drig + 10 Yuddha = 630.
+  yuddha: Object.freeze([0,0,10,0,0,0,0]),
+  printedFinal: Object.freeze([615,701,620,933,951,649,787]),
+  final: Object.freeze([615,701,630,933,951,649,787])
 });
 
 const NAMES = CG_RAJAN_PRINTED_P50.planets;
