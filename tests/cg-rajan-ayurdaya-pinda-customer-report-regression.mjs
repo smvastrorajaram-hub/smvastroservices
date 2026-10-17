@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {cgRajanPindaGraha as pinda,
  cgRajanAmsaAyurdayaGraha as amsa,
+ cgRajanAmsaHaranaResearch as amsaHarana,
+ cgRajanMeanThreeTraditionalTotals as exactMean,
  cgRajanCompareGrahas as all,
  cgRajanAyurdayaReportHtml as html}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
@@ -23,6 +25,11 @@ for(const e of examples){
  eq(r.totalHumanLifetime,null,'never person lifespan');
  eq(r.deathAgeOrDate,null,'never death age/date');
 }
+const unknownHarana=amsaHarana({planet:'செவ்வாய்',rawAmsaYears:2});
+eq(unknownHarana.adjustedAmsaYearsCandidate,null,'missing evidence blocks customer Harana result');
+eq(unknownHarana.finalAmsaCertified,false,'Amsa Harana research stays uncertified');
+eq(exactMean({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:1})
+ .traditionalUnits.nazhigaiFractionNumerator,2,'exact mean preserves two-thirds nazhigai');
 const max={'சூரியன்':[10,19],'சந்திரன்':[33,25],'செவ்வாய்':[298,15],
  'புதன்':[165,12],'குரு':[95,15],'சுக்கிரன்':[357,21],'சனி':[200,20]};
 for(const [planet,[exalt,quota]] of Object.entries(max)){
