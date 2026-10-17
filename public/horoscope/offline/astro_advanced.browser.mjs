@@ -192,7 +192,7 @@ function lonDms(lon){const x=((Number(lon)%360)+360)%360; const d=Math.floor(x);
 function solarDayNight(chart){const b=chart?.birth||{}; const date=String(b.date||''); const time=String(b.time||''); const lat=Number(b.latitude), lon=Number(b.longitude), off=Number(b.utcOffsetMinutes??330); if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{1,2}:\d{2}$/.test(time)||!Number.isFinite(lat)||!Number.isFinite(lon)) return true; const [Y,M,D]=date.split('-').map(Number), [hh,mm]=time.split(':').map(Number); const N=Math.floor((Date.UTC(Y,M-1,D)-Date.UTC(Y,0,1))/86400000)+1; const g=2*Math.PI/365*(N-1+(12-12)/24); const eq=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g)); const decl=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)+0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g); const phi=lat*Math.PI/180; const zen=90.833*Math.PI/180; const cosH=(Math.cos(zen)/(Math.cos(phi)*Math.cos(decl))-Math.tan(phi)*Math.tan(decl)); if(cosH>=1)return false; if(cosH<=-1)return true; const H=Math.acos(cosH)*180/Math.PI; const noon=(720-4*lon-eq+off*60); const rise=noon-4*H, set=noon+4*H, local=hh*60+mm; return local>=rise && local<=set; }
 function signName(i,lang){return (lang==='en'?EN_RASIS:RASIS)[norm(i)];}
 function planetMap(chart){return Object.fromEntries((Array.isArray(chart?.planets)?chart.planets:[]).map(p=>[p.name,p]));}
-function vargaSign(lon,d){const r=rasi(lon),x=degIn(lon),odd=r%2===0;if(d===1)return r;if(d===2)return (odd?[4,3]:[3,4])[Math.min(1,Math.floor(x/15))];if(d===3)return norm(r+[0,4,8][Math.min(2,Math.floor(x/10))]);if(d===4)return norm(r+[0,3,6,9][Math.min(3,Math.floor(x/7.5))]);if(d===7){let p=Math.min(6,Math.floor(x/(30/7)));return norm((odd?r:r+6)+p);}if(d===9){let p=Math.min(8,Math.floor(x/(30/9)));let st=r%3===0?r:r%3===1?norm(r+8):norm(r+4);return norm(st+p);}if(d===10){let p=Math.min(9,Math.floor(x/3));return norm((odd?r:norm(r+8))+p);}if(d===12)return norm(r+Math.min(11,Math.floor(x/2.5)));if(d===16){const p=Math.min(15,Math.floor(x/(30/16)));return norm([0,4,8][r%3]+p);}if(d===20){let p=Math.min(19,Math.floor(x/(30/20)));let st=r%4===0?0:r%4===1?8:r%4===2?4:0;return norm(st+p);}if(d===24){let p=Math.min(23,Math.floor(x/(30/24)));return norm((odd?4:3)+p);}if(d===27){const p=Math.min(26,Math.floor(x/(30/27)));return norm([0,3,6,9][r%4]+p);}if(d===30){if(odd){if(x<5)return 0;if(x<10)return 10;if(x<18)return 8;if(x<25)return 2;return 6;}else{if(x<5)return 1;if(x<12)return 5;if(x<20)return 11;if(x<25)return 9;return 7;}}if(d===40)return norm((odd?0:6)+Math.min(39,Math.floor(x/.75)));if(d===45)return norm([0,4,8][r%3]+Math.min(44,Math.floor(x/(2/3))));if(d===60){const p=Math.min(59,Math.floor(x/.5));return norm(r+p);}return r;}
+function vargaSign(lon,d){const r=rasi(lon),x=degIn(lon),odd=r%2===0;if(d===1)return r;if(d===2)return (odd?[4,3]:[3,4])[Math.min(1,Math.floor(x/15))];if(d===3)return norm(r+[0,4,8][Math.min(2,Math.floor(x/10))]);if(d===4)return norm(r+[0,3,6,9][Math.min(3,Math.floor(x/7.5))]);if(d===7){let p=Math.min(6,Math.floor(x/(30/7)));return norm((odd?r:r+6)+p);}if(d===9){let p=Math.min(8,Math.floor(x/(30/9)));let st=r%3===0?r:r%3===1?norm(r+8):norm(r+4);return norm(st+p);}if(d===10){let p=Math.min(9,Math.floor(x/3));return norm((odd?r:norm(r+8))+p);}if(d===12)return norm(r+Math.min(11,Math.floor(x/2.5)));if(d===16){let p=Math.min(15,Math.floor(x/(30/16)));let st=odd?[0,4,8,0]:[4,8,0,4];return norm(st[Math.floor(p/4)]+(p%4)*3);}if(d===20){let p=Math.min(19,Math.floor(x/(30/20)));let st=r%4===0?0:r%4===1?8:r%4===2?4:0;return norm(st+p);}if(d===24){let p=Math.min(23,Math.floor(x/(30/24)));return norm((odd?4:3)+p);}if(d===27){let p=Math.min(26,Math.floor(x/(30/27)));return norm([0,3,6,9][Math.floor(r/3)]+p);}if(d===30){if(odd){if(x<5)return 0;if(x<10)return 10;if(x<18)return 8;if(x<25)return 2;return 1;}else{if(x<5)return 1;if(x<12)return 2;if(x<20)return 8;if(x<25)return 10;return 0;}}if(d===40)return norm((odd?0:6)+Math.min(39,Math.floor(x/.75)));if(d===45)return norm((odd?0:6)+Math.min(44,Math.floor(x/(2/3))));if(d===60){let p=Math.min(59,Math.floor(x/.5));return norm(odd?p:11-p);}return r;}
 function nakshatraInfoFromLongitude(lon,lang='en'){
   const q=normLon(lon), span=360/27, padaSpan=span/4;
   const idx=Math.min(26,Math.floor(q/span));
@@ -214,8 +214,8 @@ function vargaLongitude(lon,d){
   if(d===30){
     const odd=r%2===0;
     const parts=odd
-      ? [{end:5,sign:0},{end:10,sign:10},{end:18,sign:8},{end:25,sign:2},{end:30,sign:6}]
-      : [{end:5,sign:1},{end:12,sign:5},{end:20,sign:11},{end:25,sign:9},{end:30,sign:7}];
+      ? [{end:5,sign:0},{end:10,sign:10},{end:18,sign:8},{end:25,sign:2},{end:30,sign:1}]
+      : [{end:5,sign:1},{end:12,sign:2},{end:20,sign:8},{end:25,sign:10},{end:30,sign:0}];
     let start=0;
     for(const part of parts){
       if(x < part.end || (part.end===30 && x<=30)){
@@ -233,23 +233,6 @@ function vargaLongitude(lon,d){
   const part=Math.min(d-1,Math.floor(x/partSize));
   const local=(x-part*partSize)*d;
   return normLon(vargaSign(q,d)*30+local);
-}
-
-// BPHS Volume I, R. Santhanam, Chapter 6 (printed pp. 83–86):
-// the 60 designation names are in forward order for odd signs and
-// REVERSE order for even signs. The sign-lord mapping is independent.
-// #27 Kalinasa is marked beneficial in the printed table but the
-// commentary mentions a malefic alternative: do not certify its quality.
-const D60_DESIGNATIONS=["Ghora","Rakshasa","Deva","Kubera","Yaksha","Kinnara","Bhrashta","Kulaghna","Garala","Vahni","Maya","Purishaka","Apampathi","Marutwan","Kala","Sarpa","Amrita","Indu","Mridu","Komala","Heramba","Brahma","Vishnu","Maheswara","Deva","Ardra","Kalinasa","Kshiteesa","Kamalakara","Gulika","Mrithyu","Kaala","Davagni","Ghora","Yama","Kantaka","Sudha","Amrita","Poornachandra","Vishadagdha","Kulanasa","Vamsakshaya","Utpata","Kaala","Saumya","Komala","Seetala","Karala Damshtra","Chandramukhi","Praveena","Kalapavaka","Dandayudha","Nirmala","Saumya","Kroora","Atiseetala","Amrita","Payodhi","Bhramana","Chandrarekha"];
-const D60_BENEFIC_NUMBERS=new Set([3,4,5,6,13,14,17,18,19,20,21,22,23,24,25,26,28,29,37,38,39,45,46,47,49,50,53,54,56,57,58,60]);
-function shashtiamsaDesignation(lon){
-  const r=rasi(lon),part=Math.min(59,Math.floor(degIn(lon)/0.5));
-  const nameIndex=(r%2===0)?part:59-part;
-  const ordinal=nameIndex+1;
-  const quality=ordinal===27?'disputed':D60_BENEFIC_NUMBERS.has(ordinal)?'benefic':'malefic';
-  const lordSign=vargaSign(lon,60);
-  return {sequence:ordinal,part:part+1,name:D60_DESIGNATIONS[nameIndex],quality,
-    signIndex:lordSign,signLord:SIGN_LORDS[lordSign],book:'BPHS I Chapter 6',verifiedBy:'table-name-and-sign-rule'};
 }
 
 function buildVargas(chart,lang){
@@ -271,13 +254,12 @@ function buildVargas(chart,lang){
         natalLongitude:p.longitude,
         natalDegree:p.degree,
         natalNakshatra:p.nakshatra,
-        natalPada:p.pada,
-        ...(d===60?{shashtiamsa:shashtiamsaDesignation(p.longitude)}:{})
+        natalPada:p.pada
       };
     })
   }));
 }
-function ashtakavarga(chart,lang){const pm=planetMap(chart),refs=[...P7,'லக்கினம்'];const refLon=Object.fromEntries(P7.map(x=>[x,Number(pm[x]?.longitude??0)]));refLon['லக்கினம்']=Number(chart?.lagna?.longitude??0);const rows=[];for(const target of P7){const table=BAV_TABLES[target]||[];const bindus=Array(12).fill(0),prastara=Array.from({length:12},()=>Array(8).fill(0));for(let h=1;h<=12;h++)for(let j=0;j<8;j++)if(table[h-1]?.[j]){const sign=norm(rasi(refLon[refs[j]])+h-1);bindus[sign]++;prastara[sign][j]=1;}const total=bindus.reduce((a,b)=>a+b,0);rows.push({planet:target,sign:signName(rasi(pm[target]?.longitude??0),lang),bindus,total,classification:bindus.map(v=>v>=5?'favorable':v===4?'neutral':'unfavorable'),referencePositions:refs.map(s=>({source:s,rasi:signName(rasi(refLon[s]),lang)})),prastara});}const sarva=Array.from({length:12},(_,i)=>rows.reduce((n,x)=>n+x.bindus[i],0)),totals=Object.fromEntries(rows.map(x=>[x.planet,x.total])),expected={சூரியன்:48,சந்திரன்:49,செவ்வாய்:39,புதன்:54,குரு:56,சுக்கிரன்:52,சனி:39},checks=Object.fromEntries(Object.entries(expected).map(([p,e])=>[p,{expected:e,actual:totals[p],ok:totals[p]===e}])),savTotal=sarva.reduce((a,b)=>a+b,0),kL=['சனி','குரு','செவ்வாய்','சூரியன்','சுக்கிரன்','புதன்','சந்திரன்','லக்கினம்'];const kakshyas=(chart.planets||[]).filter(Boolean).map(p=>{const idx=Math.min(7,Math.floor(degIn(p.longitude||0)/3.75)),sign=rasi(p.longitude||0),row=rows.find(x=>x.planet===p.name),contributorIndex=refs.indexOf(kL[idx]);return {planet:p.name,rasi:signName(sign,lang),degree:degIn(p.longitude||0),kakshyaIndex:idx+1,lord:lang==='en'?(LORD_EN[kL[idx]]||kL[idx]):kL[idx],hasRekha:contributorIndex>=0&&!!row?.prastara?.[sign]?.[contributorIndex]};});return {bhinna:rows,sarva,sarvaTotal:savTotal,planetTotals:totals,referencePoints:refs,validation:{expectedBavTotals:expected,checks,expectedSavTotal:337,actualSavTotal:savTotal,ok:savTotal===337,note:'Textbook Tables 19-26 validation: BAV 5-8 favorable, 4 neutral, 0-3 unfavorable; SAV 30+ is a strong sign in the supplied examples.'},kakshya:{lords:kL,items:kakshyas},method:'Phase 3 classical Ashtakavarga using supplied textbook Tables 19-26 plus BAV/SAV and Kakshya diagnostics.'};}
+function ashtakavarga(chart,lang){const pm=planetMap(chart),refs=[...P7,'லக்கினம்'];const refLon=Object.fromEntries(P7.map(x=>[x,Number(pm[x]?.longitude??0)]));refLon['லக்கினம்']=Number(chart?.lagna?.longitude??0);const rows=[];for(const target of P7){const table=BAV_TABLES[target]||[];const bindus=Array(12).fill(0),prastara=Array.from({length:12},()=>Array(8).fill(0));for(let h=1;h<=12;h++)for(let j=0;j<8;j++)if(table[h-1]?.[j]){const sign=norm(rasi(refLon[refs[j]])+h-1);bindus[sign]++;prastara[sign][j]=1;}const total=bindus.reduce((a,b)=>a+b,0);rows.push({planet:target,sign:signName(rasi(pm[target]?.longitude??0),lang),bindus,total,classification:bindus.map(v=>v>=5?'favorable':v===4?'neutral':'unfavorable'),referencePositions:refs.map(s=>({source:s,rasi:signName(rasi(refLon[s]),lang)})),prastara});}const sarva=Array.from({length:12},(_,i)=>rows.reduce((n,x)=>n+x.bindus[i],0)),totals=Object.fromEntries(rows.map(x=>[x.planet,x.total])),expected={சூரியன்:48,சந்திரன்:49,செவ்வாய்:39,புதன்:54,குரு:56,சுக்கிரன்:52,சனி:39},checks=Object.fromEntries(Object.entries(expected).map(([p,e])=>[p,{expected:e,actual:totals[p],ok:totals[p]===e}])),savTotal=sarva.reduce((a,b)=>a+b,0),kL=['சனி','குரு','செவ்வாய்','சூரியன்','சுக்கிரன்','புதன்','சந்திரன்','லக்கினம்'];const kakshyas=(chart.planets||[]).filter(Boolean).map(p=>{const idx=Math.min(7,Math.floor(degIn(p.longitude||0)/3.75)),sign=rasi(p.longitude||0),row=rows.find(x=>x.planet===p.name);return {planet:p.name,rasi:signName(sign,lang),degree:degIn(p.longitude||0),kakshyaIndex:idx+1,lord:lang==='en'?(LORD_EN[kL[idx]]||kL[idx]):kL[idx],hasRekha:!!row?.prastara?.[sign]?.[idx]};});return {bhinna:rows,sarva,sarvaTotal:savTotal,planetTotals:totals,referencePoints:refs,validation:{expectedBavTotals:expected,checks,expectedSavTotal:337,actualSavTotal:savTotal,ok:savTotal===337,note:'Textbook Tables 19-26 validation: BAV 5-8 favorable, 4 neutral, 0-3 unfavorable; SAV 30+ is a strong sign in the supplied examples.'},kakshya:{lords:kL,items:kakshyas},method:'Phase 3 classical Ashtakavarga using supplied textbook Tables 19-26 plus BAV/SAV and Kakshya diagnostics.'};}
 // V337 Book Table 35: odd signs ascend Bala→Mrita; even signs reverse.
 function avastha(chart,lang){
   const pm=planetMap(chart);
@@ -618,10 +600,10 @@ function phase1SpecialLagnas(chart,lang='ta'){
     specialLagnaRow(ta?'வர்ணத லக்னம்':'Varnada Lagna',varnada*30,ta?'சமூக நிலை / தொழில் சார்ந்த குறிப்பு':'Social/professional reference; sign-level calculation',lang,{englishName:'Varnada Lagna',source:'Parasara odd/even sign-count method',signOnly:true}),
     specialLagnaRow(ta?'ஸ்ரீ லக்னம்':'Sree Lagna',sl,ta?'செழிப்பு / வளம்':'Prosperity and wealth',lang,{englishName:'Sree Lagna',source:'Chapter 5.7'}),
     specialLagnaRow(ta?'இந்து லக்னம்':'Indu Lagna',indu,ta?'செல்வம் மற்றும் வளம் சார்ந்த சிறப்பு லக்னம்':'Special wealth/prosperity reference',lang,{englishName:'Indu Lagna',source:'User-supplied Kala/remainder method',ninthLords:lords9,kalaValues:lords9.map(x=>INDU_KALA[x]||0),kalaSum,kalaRemainder:kalaSum%12}),
-    {key:'AL',name:ta?'ஆரூட லக்னம் (A1)':'Arudha Lagna (A1)',englishName:'Arudha Lagna (A1)',longitude:null,rasi:al?signName(al.sign,lang):'—',degree:'—',nakshatra:'—',pada:'—',purpose:ta?'உலகப் பார்வை / வெளிப்படையான உருவம்':'Public image / manifest perception',signOnly:true,source:'Arudha Pada A1'},
+    {name:ta?'ஆரூட லக்னம் (A1)':'Arudha Lagna (A1)',englishName:'Arudha Lagna (A1)',longitude:null,rasi:al?signName(al.sign,lang):'—',degree:'—',nakshatra:'—',pada:'—',purpose:ta?'உலகப் பார்வை / வெளிப்படையான உருவம்':'Public image / manifest perception',signOnly:true,source:'Arudha Pada A1'},
     specialLagnaRow(ta?'பிராணபத லக்னம்':'Pranapada Lagna',pranapada,ta?'உயிர்சக்தி / பிறப்பு நேர நுணுக்கம்':'Life-force and fine birth-time reference',lang,{englishName:'Pranapada Lagna',source:'Sunrise Sun + sign correction + 5°/minute elapsed-time method'}),
     {name:ta?'காரகாம்ச லக்னம்':'Karakamsa Lagna',englishName:'Karakamsa Lagna',longitude:null,rasi:karakamshaSign==null?'—':signName(karakamshaSign,lang),degree:'—',nakshatra:'—',pada:'—',purpose:ta?'ஜைமினி / ஆத்மகாரக ஆய்வு':'Jaimini / Atmakaraka reference',signOnly:true,source:'Navamsa sign of Atmakaraka'},
-    {key:'UL',name:ta?'உபபத லக்னம் (A12)':'Upapada Lagna (A12)',englishName:'Upapada Lagna (A12)',longitude:null,rasi:ul?signName(ul.sign,lang):'—',degree:'—',nakshatra:'—',pada:'—',purpose:ta?'திருமணம் / துணை சார்ந்த ஆய்வு':'Marriage / spouse reference',signOnly:true,source:'Arudha of the 12th house'},
+    {name:ta?'உபபத லக்னம் (A12)':'Upapada Lagna (A12)',englishName:'Upapada Lagna (A12)',longitude:null,rasi:ul?signName(ul.sign,lang):'—',degree:'—',nakshatra:'—',pada:'—',purpose:ta?'திருமணம் / துணை சார்ந்த ஆய்வு':'Marriage / spouse reference',signOnly:true,source:'Arudha of the 12th house'},
     // Textbook Chapter 7.3.5: Paaka Lagna = sign occupied by Lagna lord.
     (()=>{const lagnaSign=rasi(asc), lagnaLord=SIGN_LORDS[lagnaSign], lp=v5planet(chart,lagnaLord), sign=Number.isFinite(Number(lp?.longitude))?rasi(lp.longitude):null; return {name:ta?'பாக லக்னம்':'Paaka Lagna',englishName:'Paaka Lagna',longitude:null,rasi:sign===null?'—':signName(sign,lang),degree:'—',nakshatra:'—',pada:'—',purpose:ta?'உடல் / பௌதிக சுயத்தின் குறிப்பு':'Physical self reference',signOnly:true,source:'Textbook Chapter 7.3.5',lagnaLord:lagnaLord};})(),
     // Textbook Chapter 7.3.2: Chandra Lagna = Moon taken as reference.
@@ -755,8 +737,7 @@ function phase1ChartAnalysis(chart,lang='ta'){
   for(let h=1;h<=12;h++){
     const source=norm(rasi(chart?.lagna?.longitude||0)+h-1);
     const a=padaFor(source);
-    const label=arudhaPadaDisplayCode(h);
-    arudhaItems.push({house:h,key:label,name:label,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
+    arudhaItems.push({house:h,name:ta?`A${h} ஆரூடம்`:`A${h}`,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
   }
   const grahaArudhaItems=names.map(n=>{
     const p=pm[n]; if(!p||!Number.isFinite(Number(p.longitude))) return {planet:ta?(LORD_TA[n]||n):n,sourceSign:'—',lord:'—',arudha:'—'};
@@ -914,10 +895,5 @@ function bookRemedies(chart,lang='ta'){
  return {rows,guidance};
 }
 
-function arudhaPadaDisplayCode(house){
- if(!Number.isInteger(house)||house<1||house>12)
-  throw new RangeError('Arudha pada must be an integer from 1 through 12');
- return house===1?'AL':house===12?'UL':`A${house}`;
-}
 function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; return {ashtakavarga:ashtakavarga(chart,lang),vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
-export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation,arudhaPadaDisplayCode};
+export {advanced,vargaSign,vargaLongitude};
