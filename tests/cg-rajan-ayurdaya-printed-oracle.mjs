@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import {cgRajanNaturalAyurdayaGraha as nat,
  cgRajanChakrapadaHouseFraction as house,
  cgRajanConditionReductions as red,
- cgRajanSevenNaturalResearch as seven}
+ cgRajanSevenNaturalResearch as seven,
+ cgRajanSumTraditionalRows as sumRows}
 from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';
 let assertions=0;
 function eq(a,b,msg){assert.deepEqual(a,b,msg);assertions++;}
@@ -63,8 +64,30 @@ const assembled=seven({planets:example.map(([name,longitude])=>({name,longitude}
 eq(assembled.grahaCount,7,'all seven assembled');
 eq(assembled.natalTotalYears,null,'no final natal total');
 eq(assembled.publishedToCustomers,false,'isolated from customer reports');
+// The eight lines on PRINTED p.248 / scan PDF p.270 are:
+// Sun 0-9-0-0, Moon 0-6-26-7, Mars 1-5-27-0,
+// Mercury 8-3-28-12, Jupiter 13-2-11-11, Venus 11-6-10-40,
+// Saturn 30-6-5-0, Lagna 6-1-27-36.
+// Straight addition of ALL 8 rows = 72-6-15-46, but the author
+// prints 71-9-15-46, exactly the result WITHOUT Sun's 0-9 row.
+// Record the source conflict, do NOT invent a different reduction.
+const originalEight=[
+ [0,9,0,0],[0,6,26,7],[1,5,27,0],[8,3,28,12],
+ [13,2,11,11],[11,6,10,40],[30,6,5,0],[6,1,27,36]
+].map(([years,months,days,nazhigai])=>({years,months,days,nazhigai}));
+const completeEight=sumRows({rows:originalEight});
+const withoutSun=sumRows({rows:originalEight.slice(1)});
+eq(completeEight.traditionalUnits,{years:72,months:6,days:15,nazhigai:46},
+ 'printed p248 ALL eight row arithmetic, including Sun');
+eq(withoutSun.traditionalUnits,{years:71,months:9,days:15,nazhigai:46},
+ 'printed p248 final total agrees exactly ONLY if Sun excluded');
+eq(completeEight.finalHumanLifespanYears,null,
+ 'printed book discrepancy cannot certify person lifespan');
 console.log(JSON.stringify({pass:true,assertions,
  source:'CG Rajan I printed pp.231–244',bookExampleGrahasVerified:7,
  bookExampleUnits:example.map(([name,,,expected])=>({planet:name,units:expected})),
  personLifeExpectancyOutput:false,fullAyurdayaCertified:false,
- UttaraKalamritaModuleUnchanged:true}));
+ UttaraKalamritaModuleUnchanged:true,
+ printedP248AllEightRows:completeEight.traditionalUnits,
+ printedP248OmittingSun:withoutSun.traditionalUnits,
+ p248PrintedTotalConflictUnresolved:true}));
