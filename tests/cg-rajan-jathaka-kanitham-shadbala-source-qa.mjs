@@ -98,11 +98,12 @@ eq(sum.map((x,i)=>x-CG_RAJAN_PRINTED_P50.subtotalBeforeDrig[i]),
  'component-level subtotal differences are explicit and stable');
 const final=sample.map((p,i)=>CG_RAJAN_PRINTED_P50.sthana[i]+CG_RAJAN_PRINTED_P50.kala[i]+
  CG_RAJAN_PRINTED_P50.ayana[i]+CG_RAJAN_PRINTED_P50.naisargika[i]+
- CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]);
-eq(final,CG_RAJAN_PRINTED_P50.final,'printed p.50 final total before Yuddha row');
-eq(final[2],620,'printed Mars final total is 620');
-no(final[2]===CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
- 'printed Mars Yuddha +10 is not added to the printed final total');
+ CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]+
+ CG_RAJAN_PRINTED_P50.yuddha[i]);
+eq(final,CG_RAJAN_PRINTED_P50.final,'corrected final total includes the separate Yuddha row');
+eq(final[2],630,'corrected Mars final total is 630');
+eq(final[2],CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
+ 'Mars 620 after Drig + Yuddha 10 = corrected 630');
 
 const partial=cgRajanShadbalaForPlanet({
  planet:'சூரியன்',planets:sample,ascendantLongitude:asc,declination:decl['சூரியன்'],
@@ -127,7 +128,7 @@ console.log(JSON.stringify({
   digBala:{venus:{calculated:61,printed:60},saturn:{calculated:25,printed:26}},
   drigAngleGeneration:'BPHS candidate does not reproduce all printed p.30 planet-pair values',
   fivePlanetCheshta:'source formula still unreconciled',
-  marsYuddha:'printed +10 conflicts with printed final 620'
+  marsYuddha:'printed final omitted Yuddha +10; corrected Mars total is 630'
  },
  fullSevenGrahaCertificate:false
 }));
