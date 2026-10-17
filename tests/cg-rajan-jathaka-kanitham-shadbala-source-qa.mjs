@@ -38,6 +38,17 @@ const sthana=sample.map(p=>cgRajanSthanaBala({
 eq(sthana.map(x=>x.uccha),[13,53,49,85,63,15,83],'printed Uchcha Bala');
 eq(sthana.map(x=>x.saptavargaja),[164,251,147,138,207,158,170],
  'source-rule Saptavargaja: Mars D12 mismatch remains visible');
+eq(CG_RAJAN_PRINTED_P50.saptavargaja,[164,251,159,138,207,158,170],
+ 'independent transcription of C.G. Rajan printed p.41 Saptavargaja totals');
+const marsD12=sthana[2].saptavargajaBreakdown.find(x=>x.varga===12);
+eq(marsD12.sign,4,'source calculation maps 206°30′ Mars to Leo in D12');
+eq(marsD12.signLord,'சூரியன்','Mars D12 sign lord is Sun under the current standard D12 mapping');
+eq(marsD12.relation,'greatFriend','current compound relation from printed p.37 friendship table');
+eq(marsD12.points,38,'current formula gives 38 points, while p.41 prints 50');
+eq(sthana.map((x,i)=>x.saptavargaja-CG_RAJAN_PRINTED_P50.saptavargaja[i]),
+ [0,0,-12,0,0,0,0],
+ 'D12 mismatch is isolated to Mars and not hidden in the Saptavargaja total');
+
 eq(sthana.map(x=>x.total),[227,479,321,373,420,323,303],
  'source-rule Sthana total: Mars is 12 below the printed table');
 assert.throws(()=>cgRajanSthanaBala({
