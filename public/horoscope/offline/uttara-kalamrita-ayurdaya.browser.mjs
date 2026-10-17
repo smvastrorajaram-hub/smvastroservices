@@ -155,6 +155,40 @@ export function uttaraAyurdayaThreeDrekkanaPunyaPapa(
  });
 }
 /**
+ * UK III.4–5 actual chart bridge: 3 Drekkana lords adjacent to the
+ * Lagna's decan, per the author's own II.6½–8½ 1st/12th/11th view.
+ * Uses the book-specific Saptavargaja INTERMEDIATE, not old strength3.
+ * Still does NOT create a supported native lifespan estimate.
+ */
+export function uttaraAyurdayaThreeDrekkanaFromResearchChart({
+ lagnaLongitude,ukStrengthByGraha={}
+}={}){
+ requireFinite(lagnaLongitude,'lagnaLongitude');
+ const lords=[
+  'செவ்வாய்','சுக்கிரன்','புதன்','சந்திரன்','சூரியன்','புதன்',
+  'சுக்கிரன்','செவ்வாய்','குரு','சனி','சனி','குரு'
+ ];
+ const x=norm(lagnaLongitude),lagnaRasi=Math.floor(x/30);
+ const decanateIndex=Math.min(2,Math.floor((x%30)/10));
+ const decanateRasis=[lagnaRasi,(lagnaRasi+11)%12,(lagnaRasi+10)%12];
+ const around=[(decanateIndex+2)%3,decanateIndex,(decanateIndex+1)%3];
+ const entries=around.map(ix=>{
+  const ruler=lords[decanateRasis[ix]],part=ukStrengthByGraha[ruler]?.sthana?.saptavargaja;
+  return {decanateIndex:ix,owner:ruler,ukSaptavargajaVirupa:finite(part)?part:null};
+ });
+ const missing=entries.filter(z=>z.ukSaptavargajaVirupa===null).map(z=>z.owner);
+ const bookArithmetic=missing.length===0?uttaraAyurdayaThreeDrekkanaPunyaPapa({
+  ukSaptavargajaRupas:entries.map(x=>x.ukSaptavargajaVirupa/60),
+  independentShadbalaVerified:false}):null;
+ return Object.freeze({
+  lagnaRasi,decanateIndex,entries,missing,
+  bookIntermediate:bookArithmetic,
+  completeAyurdayaCertified:false,
+  finalNativeLifespanYears:null,
+  source:'Uttara Kalamrita II.6½–8½ and III.4–5'
+ });
+}
+/**
  * Uttara Kalamrita III.6–8: an UNRATED evidence matrix only.
  * These verses describe placement/aspect yogas; the book's qualitative
  * claims about life length are not medically validated or numerically
