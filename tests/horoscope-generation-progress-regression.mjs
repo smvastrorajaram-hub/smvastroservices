@@ -10,6 +10,7 @@ yes(form.includes('const core=await window.SMVOffline.full({'),'English core cha
 yes(form.includes("name:String($('englishAstroName')?.value||'').trim(),basicOnly:true"),'core pass is Basic-only and can be reused by Full calculation');
 no(form.includes('window.__smvGenerateHoroscopeEngine(false)'),'no nested Tamil generator / second spinner lifecycle');
 yes(form.includes('window.__smvHoroscopeGenerating=true')&&form.includes('busy=false;window.__smvHoroscopeGenerating=false'),'one cross-language generation lock is acquired and released');
+yes(form.includes('const generationId=(window.__smvHoroscopeGenerationId=Number(window.__smvHoroscopeGenerationId||0)+1)')&&form.includes('generationId,cachedBasic:basicSnapshot'),'single-release flow owns a fresh generation token and passes it to Full render');
 no(form.includes('ensureLongPredictionComplete'),'obsolete whole-report timeline wait was removed');
 const accessPrelude=form.slice(form.indexOf('// Keep the result hidden through access checking'),form.indexOf('const runEnglishAdvanced=async()=>{'));
 no(accessPrelude.includes("target.classList.remove('hidden')"),'result is not released before access resolution');
