@@ -335,7 +335,8 @@ export function cgRajanYuddhaBala({planet,planets=[]}={}) {
 export function cgRajanShadbalaForPlanet({
   planet,planets=[],ascendantLongitude,midheavenLongitude,declination,apparentSolarHour,
   weekdayLord,monthLord,yearLord,horaLord,tribhagaLord,
-  classicalCheshtaVirupa,sourceDrigVirupa
+  classicalCheshtaVirupa,sourceDrigVirupa,
+  classicalCheshtaEvidenceVerified=false,sourceDrigEvidenceVerified=false
 }={}){
   const p=planets.find(x=>x.name===planet);
   if(!p||!finite(p.longitude))throw new TypeError('planet position missing');
@@ -348,10 +349,13 @@ export function cgRajanShadbalaForPlanet({
   const kala=cgRajanKalaBala({planet,apparentSolarHour,weekdayLord,monthLord,yearLord,horaLord,
     tribhagaLord,sunLongitude:sun.longitude,moonLongitude:moon.longitude,planets});
   const paksha=cgRajanPakshaBala({planet,sunLongitude:sun.longitude,moonLongitude:moon.longitude,planets});
-  const cheshta=planet==='சூரியன்'?ayana.virupa:planet==='சந்திரன்'?paksha.virupa:
+  const cheshtaRuleValue=planet==='சூரியன்'?ayana.virupa:
+    planet==='சந்திரன்'?paksha.virupa:
     finite(classicalCheshtaVirupa)?classicalCheshtaVirupa:null;
-  const drig=finite(sourceDrigVirupa)?sourceDrigVirupa:null;
+  const cheshtaEvidenceRequired=planet!=='சூரியன்'&&planet!=='சந்திரன்';
+  const cheshta=cheshtaEvidenceRequired&&!classicalCheshtaEvidenceVerified?null:cheshtaRuleValue;
   const drigCandidate=cgRajanDrigBalaCandidate({planet,longitude:p.longitude,planets});
+  const drig=finite(sourceDrigVirupa)&&sourceDrigEvidenceVerified?sourceDrigVirupa:null;
   const yuddhaResult=cgRajanYuddhaBala({planet,planets});
   const yuddha=yuddhaResult.virupa;
   const knownSubtotal=sthana.total+kala.total+ayana.virupa+naisargika+dig.virupa;
@@ -363,15 +367,22 @@ export function cgRajanShadbalaForPlanet({
     naisargika,dig:dig.virupa,cheshta,drig,drigCandidate,
     yuddha,yuddhaDetails:yuddhaResult,
     yuddhaPolicy:'Uttara Kalamrita eligibility/winner calculation mapped to SMV ASTRO fixed +10/-10/0',
+    cheshtaCandidate:cheshtaRuleValue,
+    cheshtaEvidenceVerified:!cheshtaEvidenceRequired||classicalCheshtaEvidenceVerified===true,
+    drigEvidenceVerified:sourceDrigEvidenceVerified===true&&finite(sourceDrigVirupa),
     partialSubtotalExcludingCheshtaAndDrig:knownSubtotal,
     partialSubtotalExcludingCheshtaDrigAndYuddha:knownSubtotal,
     total, totalHumanLifetime:null, deathAgeOrDate:null,
     classicalCertified:false,completeBookFormula:false,
     blockers:Object.freeze([
       ...(planet!=='சூரியன்'&&planet!=='சந்திரன்'&&!finite(classicalCheshtaVirupa)?
-        ['Five-planet Rajan Cheshta formula/input not independently reconciled']:[]),
+        ['Five-planet Rajan Cheshta value missing']:[]),
+      ...(planet!=='சூரியன்'&&planet!=='சந்திரன்'&&finite(classicalCheshtaVirupa)&&!classicalCheshtaEvidenceVerified?
+        ['Five-planet Rajan Cheshta value supplied without independent evidence verification']:[]),
       ...(!finite(sourceDrigVirupa)?
-        ['Rajan Drig aspect-generation formula not fully reconciled to printed p.30 matrix']:[]),
+        ['Rajan Drig value missing']:[]),
+      ...(finite(sourceDrigVirupa)&&!sourceDrigEvidenceVerified?
+        ['Rajan Drig value supplied without independent source-matrix verification']:[]),
       ...(!finite(yuddha)?
         ['Graha Yuddha cannot be resolved from the available UK eligibility/winner inputs']:[]),
       'Mars Dvadasamsa Saptavargaja p.39/41 mismatch: calculated 38 vs printed 50',
