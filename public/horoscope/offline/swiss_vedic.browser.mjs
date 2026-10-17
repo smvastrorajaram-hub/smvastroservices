@@ -473,11 +473,17 @@ function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions,
   const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha};
   kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
   const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
+  // Never mistake discrete speed-state estimates for BPHS Ch27 vv24–25's
+  // continuous mean/true/śīghrocca Cheshta Kendra ÷ 3. The ancient
+  // orbital inputs have not passed historical same-frame certification.
+  const cheshtaSourceMethod=planet==='சூரியன்'?'BPHS Sun = Ayana Bala':
+    planet==='சந்திரன்'?'BPHS Moon = Paksha Bala':
+    'PROVISIONAL discrete motionClassical(speed) estimate; not BPHS mean-true-sheeghrocha';
   const naisargika=SHADBALA_NATURAL[planet];
   const drik=drikBalaClassical(planet,chartPlanets);
   const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
   const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:[solarContext?.ephemerisBased?'Solar rise from Swiss solar-altitude model; weather, elevation and exact atmospheric refraction unavailable':'Fallback geometric sunrise approximation','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',solarTimeMethod:solarContext?.solarTimeMethod??'fallback approximate sunrise',birthApparentSolarHour:Number(sh.toFixed(7)),components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
+  return {available:true,classicalCertified:false,provisional:true,cheshtaSourceMethod,cheshtaClassicalOrbitalInputsVerified:false,limitations:[solarContext?.ephemerisBased?'Solar rise from Swiss solar-altitude model; weather, elevation and exact atmospheric refraction unavailable':'Fallback geometric sunrise approximation','BPHS Ch27 v20 pre-war Shadbala difference used for Yuddha; Uttara Kalamrita p41 consulted solely for north-wins eligibility','Five-planet Cheshta mean/sheeghra and full Drig angular numerical oracle pending'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',solarTimeMethod:solarContext?.solarTimeMethod??'fallback approximate sunrise',birthApparentSolarHour:Number(sh.toFixed(7)),components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
 }
 /**
  * For the natal Shadbala temporal divisions, obtain Swiss Sun geocentric
