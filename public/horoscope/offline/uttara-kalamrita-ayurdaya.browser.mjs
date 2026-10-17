@@ -84,7 +84,7 @@ export function uttaraAyurdayaHouseFraction({house,benefic}={}){
  const i=12-house;
  if(i<0||i>5)return Object.freeze({
   house,benefic,lossFraction:0,remainingFraction:1,source:'UK III.2'});
- const lossFraction=(benefic?.5:1)/(i+1);
+ const lossFraction=(benefic ? 0.5 : 1)/(i+1);
  return Object.freeze({house,benefic,lossFraction,remainingFraction:1-lossFraction,
   formula:'12th, 11th, 10th, 9th, 8th, 7th: full, half, third, fourth, fifth, sixth',
   source:'UK III.2'});
@@ -102,9 +102,9 @@ export function uttaraAyurdayaBookReductions({
  const positional=uttaraAyurdayaHouseFraction({house,benefic});
  const conditions=[
   {type:'house',fraction:positional.remainingFraction},
-  {type:'debilitation',fraction:atDebilitation?.5:1},
+  {type:'debilitation',fraction:atDebilitation ? 0.5 : 1},
   {type:'enemy-sign',fraction:inEnemySign?2/3:1},
-  {type:'eclipse-or-war-defeat',fraction:eclipsedOrWarDefeated?.5:1}
+  {type:'eclipse-or-war-defeat',fraction:eclipsedOrWarDefeated ? 0.5 : 1}
  ];
  const finalFraction=conditions.reduce((a,c)=>a*c.fraction,1);
  return Object.freeze({
