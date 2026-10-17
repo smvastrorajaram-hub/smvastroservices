@@ -615,7 +615,7 @@ textarea[id^="ans_"]:where(:not(.smv-css-island,.smv-css-island *)), textarea[id
 [id*="answer" i]:where(:not(.smv-type-root,.smv-type-root *)),
 [class*="answer" i]:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.45}
 [class*="question" i]:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.42}
-#tamilHoroscopeResult table, #englishHoroscopeResult table, .horoscope-result table, .data-table-wrap table, table.data-table, .bhava-table, .strength-table, .phase2-strength-table, .phase3-shadbala-table, .dasha-table, .dasha-subtable{width:100%!important;min-width:0px!important;max-width:100%!important;table-layout:fixed!important;display:table!important;overflow:visible!important}
+#tamilHoroscopeResult table:not(.smv-cg-rajan-ayurdaya-table), #englishHoroscopeResult table:not(.smv-cg-rajan-ayurdaya-table), .horoscope-result table:not(.smv-cg-rajan-ayurdaya-table), .data-table-wrap table:not(.smv-cg-rajan-ayurdaya-table), table.data-table:not(.smv-cg-rajan-ayurdaya-table), .bhava-table:not(.smv-cg-rajan-ayurdaya-table), .strength-table:not(.smv-cg-rajan-ayurdaya-table), .phase2-strength-table:not(.smv-cg-rajan-ayurdaya-table), .phase3-shadbala-table:not(.smv-cg-rajan-ayurdaya-table), .dasha-table:not(.smv-cg-rajan-ayurdaya-table), .dasha-subtable:not(.smv-cg-rajan-ayurdaya-table){width:100%!important;min-width:0px!important;max-width:100%!important;table-layout:fixed!important;display:table!important;overflow:visible!important}
 .data-table-wrap:where(:not(.smv-css-island,.smv-css-island *)){overflow:visible!important;width:100%!important;max-width:100%!important}
 .data-table th:where(:not(.smv-css-island,.smv-css-island *)), .data-table td:where(:not(.smv-css-island,.smv-css-island *)), .bhava-table th:where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:where(:not(.smv-css-island,.smv-css-island *)), .strength-table th:where(:not(.smv-css-island,.smv-css-island *)), .strength-table td:where(:not(.smv-css-island,.smv-css-island *)), .phase2-strength-table th:where(:not(.smv-css-island,.smv-css-island *)), .phase2-strength-table td:where(:not(.smv-css-island,.smv-css-island *)), .phase3-shadbala-table th:where(:not(.smv-css-island,.smv-css-island *)), .phase3-shadbala-table td:where(:not(.smv-css-island,.smv-css-island *)), .dasha-table th:where(:not(.smv-css-island,.smv-css-island *)), .dasha-table td:where(:not(.smv-css-island,.smv-css-island *)), .dasha-subtable th:where(:not(.smv-css-island,.smv-css-island *)), .dasha-subtable td:where(:not(.smv-css-island,.smv-css-island *)){padding:6px 4px!important;font-size:10.5px!important;line-height:1.25!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}
 .data-table th:where(:not(.smv-css-island,.smv-css-island *)), .bhava-table th:where(:not(.smv-css-island,.smv-css-island *)), .strength-table th:where(:not(.smv-css-island,.smv-css-island *)), .phase2-strength-table th:where(:not(.smv-css-island,.smv-css-island *)), .phase3-shadbala-table th:where(:not(.smv-css-island,.smv-css-island *)), .dasha-table th:where(:not(.smv-css-island,.smv-css-island *)), .dasha-subtable th:where(:not(.smv-css-island,.smv-css-island *)){font-size:10.5px!important}
@@ -1191,7 +1191,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)){min-height:90px!importan
 .feature-section:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;margin:22px auto!important;padding:0px 10px!important}
 .feature-shell:where(:not(.smv-css-island,.smv-css-island *)){padding:14px!important}
 .feature-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important}
-table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
+table:not(.smv-cg-rajan-ayurdaya-table):where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
 img:where(:not(.smv-css-island,.smv-css-island *)), video:where(:not(.smv-css-island,.smv-css-island *)), iframe:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 .modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
 @media print{
@@ -2918,3 +2918,50 @@ details>*{display:block!important}
 
 /* Direct Print/Save PDF: the live result retains today's Panchang/Hora. */
 @media print{#tamilHoroscopeResult .panchang-card,#tamilHoroscopeResult .hora-card,#englishHoroscopeResult .panchang-card,#englishHoroscopeResult .hora-card,[data-smv-screen-only^="daily-"]{display:none!important}}
+
+
+/* C. G. Rajan Ayurdaya report: scroll belongs to the wrapper, not the table. */
+.smv-cg-rajan-ayurdaya .smv-cg-rajan-ayurdaya-table-wrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  box-sizing: border-box;
+}
+.smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table {
+  display: table;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+.smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table th,
+.smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+@media print {
+  .smv-cg-rajan-ayurdaya .smv-cg-rajan-ayurdaya-table-wrap {
+    overflow: visible;
+    width: 100%;
+    max-width: 100%;
+  }
+  .smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table {
+    display: table;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    table-layout: auto;
+  }
+  .smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table th,
+  .smv-cg-rajan-ayurdaya table.smv-cg-rajan-ayurdaya-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
