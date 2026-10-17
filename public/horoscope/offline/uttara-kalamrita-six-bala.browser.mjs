@@ -75,6 +75,46 @@ function rawDignity(planet,sign,positions,{rasi=false,retrograde=false}={}){
  return {grade,virupa:UTTARA_KALAMRITA_RELATION_VIRUPA[grade]};
 }
 /**
+ * UK Section II.6: conjunction modifiers to the Rasi dignity.
+ * This book explicitly awards 1/2 Rupa for conjunction with a retrograde
+ * or exalted graha, zero for conjunction with a debilitated graha, and
+ * 1/2 Rupa for a friendly malefic or inimical benefic companion.
+ *
+ * The book does NOT declare priority when contradictory companions occur.
+ * Only a uniquely determined outcome may replace the base Rasi dignity;
+ * conflicting outputs remain visible and unasserted, never silently fitted.
+ * Conjunction is same Rasi, independently of Graha Yuddha's tighter DMS rule.
+ */
+export function uttaraKalamritaRasiConjunction({planet,longitude,planets=[],signPositions}={}){
+ graha(planet);
+ if(!finite(longitude)||!Array.isArray(planets))
+   throw new TypeError('UK II.6 requires finite Rasi and planetary positions');
+ const rasi=signIndex(longitude),rules=[];
+ for(const p of planets){
+  if(!namesSet.has(p?.name)||p.name===planet||!finite(p.longitude)||
+     signIndex(p.longitude)!==rasi)continue;
+  const retro=!!(p.retrograde||p.strength?.retrograde);
+  if(retro)rules.push({companion:p.name,reason:'conjoined-retrograde',virupa:30});
+  if(rasi===EXALT[p.name])
+   rules.push({companion:p.name,reason:'conjoined-exalted',virupa:30});
+  if(rasi===DEB[p.name])
+   rules.push({companion:p.name,reason:'conjoined-debilitated',virupa:0});
+  if(signPositions){
+   const rel=relation(planet,p.name,signPositions);
+   const benefic=isBenefic(p.name,planets);
+   if((benefic&&['enemy','greatEnemy'].includes(rel))||
+      (!benefic&&['friend','greatFriend'].includes(rel)))
+    rules.push({companion:p.name,reason:benefic?'inimical-benefic':'friendly-malefic',virupa:30});
+  }
+ }
+ const possibilities=[...new Set(rules.map(x=>x.virupa))];
+ return Object.freeze({rules,conjunctionVirupa:possibilities.length===1?possibilities[0]:null,
+  conflict:possibilities.length>1,
+  source:'Uttara Kalamrita Khanda I Section II.6 (Rasi conjunction special cases)',
+  noConjunctionRule:rules.length===0});
+}
+
+/**
  * UK II.8½–9½: the full Rasi dignity plus HALF each of six VARGA-owner
  * dignities (Hora/Drekkana/Saptamsa/Navamsa/Dvadasamsa/Trimsamsa).
  * Accept exactly seven original full-Rupa dignity values.
@@ -117,15 +157,24 @@ export function uttaraKalamritaSevenVargaSigns(longitude){
   source:'Uttara Kalamrita Khanda I Section II 6½–8½'
  });
 }
-export function uttaraKalamritaSthana({planet,longitude,bhava,signPositions,retrograde=false}){
+export function uttaraKalamritaSthana({planet,longitude,bhava,signPositions,retrograde=false,planets=[]}){
  graha(planet);
  if(!finite(longitude)||!Number.isInteger(bhava)||bhava<1||bhava>12)
    throw new RangeError('finite planet longitude and bhava 1..12 required');
  for(const n of names)if(!Number.isInteger(signPositions?.[n]))
    throw new TypeError('seven graha Rasi positions required');
  const {signs,trimsamsaLord,drekkanaConvention}=uttaraKalamritaSevenVargaSigns(longitude);
+ const rasiConjunction=uttaraKalamritaRasiConjunction({planet,longitude,planets,signPositions});
+ const hasConflictingOwnRetro=retrograde&&!rasiConjunction.noConjunctionRule;
  const dignities=signs.map((sign,i)=>{
-  if(i===0)return rawDignity(planet,sign,signPositions,{rasi:true,retrograde});
+  if(i===0){
+   const base=rawDignity(planet,sign,signPositions,{rasi:true,retrograde});
+   // For the owner's own retrograde versus a conjunction exception UK II.6
+   // gives no precedence. Retain base and expose the pending source conflict.
+   if(rasiConjunction.conjunctionVirupa===null||hasConflictingOwnRetro)return base;
+   return {grade:'UK-II.6-conjunction',virupa:rasiConjunction.conjunctionVirupa,
+    previousRasiVirupa:base.virupa,conjunctionRuleCount:rasiConjunction.rules.length};
+  }
   // UK II.7½–9½ assigns Trimsamsa to a GRAHA, not to a unique
   // representative Rasi; determine strength from its actual LORD.
   if(i===6){
@@ -147,6 +196,7 @@ export function uttaraKalamritaSthana({planet,longitude,bhava,signPositions,retr
  const result={uccha,saptavargaja:varga.totalVirupa,ojayugma:oja,kendradi,drekkana:drekkanaVirupa};
  return Object.freeze({planet,vargaSigns:signs,grades:dignities,
   drekkanaConvention,trimsamsaLord,saptavargajaPartsVirupa:varga.partsVirupa,
+  rasiConjunction,conjunctionPriorityUnresolved:rasiConjunction.conflict||hasConflictingOwnRetro,
   ...result,totalVirupa:Object.values(result).reduce((a,b)=>a+b,0),
   source:'Uttara Kalamrita Khanda I Section II 3½–11½',
   bookArithmeticVerified:false,historicalPlanetPositionsCertified:false});
@@ -357,7 +407,7 @@ export function uttaraKalamritaSixBala({planets,bhavas,apparentSolarHour,owners,
  const result={};
  for(const p of seven){
   const sthana=uttaraKalamritaSthana({planet:p.name,longitude:p.longitude,
-   bhava:p.bhava,signPositions:signs,retrograde:!!p.strength?.retrograde});
+   bhava:p.bhava,signPositions:signs,retrograde:!!p.strength?.retrograde,planets:seven});
   const dig=uttaraKalamritaDigBala({planet:p.name,longitude:p.longitude,bhavas});
   const drig=uttaraKalamritaDrigBala(p.name,planets);
   const kala=uttaraKalamritaKala({planet:p.name,apparentSolarHour,
@@ -374,6 +424,7 @@ export function uttaraKalamritaSixBala({planets,bhavas,apparentSolarHour,owners,
    ...(dig===null?['Dig: house reference']:[]),
    ...kala.pending.map(k=>'Kala: '+k),
    ...cheshta.pending.map(k=>'Cheshta: '+k),
+   ...(sthana.conjunctionPriorityUnresolved?['Sthana: UK II.6 conflicting conjunction dignity']:[]),
    ...(wars.unresolved.length?['planetary war unresolved']:[])
   ];
   const partialWithoutCheshta=[sthana.totalVirupa,dig?.virupa,kala.totalVirupa,n,drig.virupa,warVirupa]
