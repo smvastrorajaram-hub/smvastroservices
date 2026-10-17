@@ -197,8 +197,12 @@ export function cgRajanPakshaBala({planet,sunLongitude,moonLongitude,planets=[]}
   if(planet==='புதன்'){
     const m=planets.find(p=>p.name==='புதன்');
     const sign=m&&finite(m.longitude)?signIndex(m.longitude):null;
+    // Do not equate same-sign occupancy with close planetary association.
+    // The p.50 printed oracle has Mercury 14.6 degrees from Mars yet assigns
+    // Mercury the benefic Paksha share. Until Rajan's exact association orb is
+    // independently sourced, only a close conjunction is treated as joined.
     const joined=planets.some(p=>p.name!=='புதன்'&&NATURAL_MALEFICS.has(p.name)&&
-      finite(p.longitude)&&signIndex(p.longitude)===sign);
+      finite(p.longitude)&&signIndex(p.longitude)===sign&&distance(m.longitude,p.longitude)<=8);
     benefic=!joined;
   }
   const value=planet==='சந்திரன்'?moonBala:(benefic?moonBala:100-moonBala);
