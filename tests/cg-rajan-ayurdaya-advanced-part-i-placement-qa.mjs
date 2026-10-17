@@ -66,6 +66,12 @@ for(const language of ['ta','en']){
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுள்')),
      language+' three-method columns');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
+ exactly((html.match(/data-amsa-harana="blocked"/g)||[]).length,7,
+  language+' no raw Table-A number shown when all chart-specific inputs are absent');
+ yes(html.includes('data-amsa-total="blocked"'),
+  language+' raw Table-A sum is not shown as final Amsa total');
+ yes(html.includes('otherwise it shows —')||html.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்'),
+  language+' report describes fail-closed Amsa cells');
  no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
   language+' no computed human death prediction');
