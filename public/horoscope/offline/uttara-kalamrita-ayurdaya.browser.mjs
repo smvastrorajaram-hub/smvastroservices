@@ -154,6 +154,54 @@ export function uttaraAyurdayaThreeDrekkanaPunyaPapa(
   source:'UK III.4–5'
  });
 }
+/**
+ * Uttara Kalamrita III.6–8: an UNRATED evidence matrix only.
+ * These verses describe placement/aspect yogas; the book's qualitative
+ * claims about life length are not medically validated or numerically
+ * calibrated and MUST NOT be delivered as a lifespan prognosis.
+ * Source-specific aspect predicates are NOT guessed from longitude;
+ * externally validated booleans are optional and unknown stays null.
+ */
+export function uttaraAyurdayaTextualYogaEvidence({
+ planets,verifiedAspectFlags={}
+}={}){
+ if(!Array.isArray(planets))throw new TypeError('planet placements required');
+ const get=name=>planets.find(x=>x.name===name);
+ const selected=['புதன்','குரு','சுக்கிரன்'];
+ const beneficPlacements=selected.map(name=>{
+  const p=get(name),h=p?.bhava;
+  if(!Number.isInteger(h)||h<1||h>12)
+   return {planet:name,house:null,ukIII6Group:null};
+  const kendraKona=[1,4,5,7,9,10].includes(h);
+  const mild=[2,3,11].includes(h);
+  const difficult=[6,8,12].includes(h);
+  return {planet:name,house:h,ukIII6Group:
+    kendraKona?'kendra-or-trikona':mild?'second-third-eleventh':
+    difficult?'sixth-eighth-twelfth':'other'};
+ });
+ const aspectNames=[
+  'lagnaLordBeneficAspect','lagnaLordDispositorBeneficAspect',
+  'lagnaBeneficAspect','eighthLordToLagnaOrMoon',
+  'eighthLordReceivesMarsOrSaturnAspect',
+  'lagnaLordOrDispositorHasBeneficRelief'
+ ];
+ const aspects={};
+ for(const name of aspectNames){
+  const v=verifiedAspectFlags[name];
+  if(v!==undefined&&v!==null&&typeof v!=='boolean')
+   throw new TypeError('Verified aspect flag must be true/false or absent: '+name);
+  aspects[name]=typeof v==='boolean'?v:null;
+ }
+ return Object.freeze({
+  beneficPlacements,sourceAspectChecks:aspects,
+  allAspectPredicatesIndependentlyEstablished:
+   Object.values(aspects).every(x=>typeof x==='boolean'),
+  longevityYogaConclusion:null,deathAgePrediction:null,
+  scientificallyValidatedLongevityPrediction:false,
+  customerOutputAllowed:false,
+  source:'Uttara Kalamrita III.6–8'
+ });
+}
 /** Produces research-only per-body POSITION intermediate, never a native
  * longevity result. Section II must be separately source certified before
  * any Section III candidate can move towards release. */
