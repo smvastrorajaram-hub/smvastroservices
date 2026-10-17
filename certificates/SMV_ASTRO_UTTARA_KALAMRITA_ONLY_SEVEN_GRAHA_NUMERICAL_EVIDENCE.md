@@ -11,7 +11,7 @@
 1. **UK book-rule arithmetic:** 167 passing assertions — precise dignity fractions, author-specific 1st/12th/11th Drekkana, seven Varga aggregation, Sthana, Dig, Kala, Drig, Naisargika, Hora/Ayana commentary, Section II.6 conjunction modifiers, and strict same-minute north-wins Yuddha.
 2. **Five real sample births × seven planets:** 537 passing assertions for **35** actual chart intermediate groups (position, direction, time, natural, signed aspects), still based on existing chart astronomical inputs; **NOT independently verified natal classical orbital mean–true–Sighrocca chains**.
 3. **UK Cheshta five visible grahas:** 258 arithmetic checks for 2026 published-mean and published-true IMD snapshot and six subsequent projected-mean dates, totalling 35 comparison calculations. Only **5** are a source-published same-date corrected-mean / true pair, on 2026-03-22. These are **not** birth-date verification for 1971, 1974, 1992, 1994, 2015.
-4. **Risk gate:** The **35 natal Cheshta values and all 35 full UK total scores remain NULL**. `classicalCertified:false` and no end-user UK replacement. Ayurdaya entirely excluded from this certificate.
+4. **Risk gate:** The **25 historical five-planet Cheshta orbital triples remain unverified**, and **10 Sun/Moon Cheshta methods are not supplied by Uttara Kalamrita II** (five births × two luminaries); consequently **all 35 full UK total scores remain NULL**. `classicalCertified:false` and no end-user UK replacement. Ayurdaya entirely excluded from this certificate.
 
 ## Seven-graha independently printed UK Saptavargaja and Naisargika source checks
 
@@ -37,7 +37,7 @@
 | Jupiter | 36.113364 | Official 2026 snapshot only |
 | Saturn | 2.688162 | Official 2026 snapshot only |
 
-The cited IMD positions are **astronomical numerical input oracles only, not an additional Shadbala rulebook**. None provides an independent classical mean/true pair at the five historical natal dates.
+The cited IMD positions are **astronomical numerical input oracles only, not an additional Shadbala rulebook**. UK II.16½–17½ explicitly points outside itself for the five planets' astronomical Sighra Kendras; it does not independently define a Sun/Moon Cheshta method. None provides an independent classical mean/true pair at the five historical natal dates.
 
 ## Full reproducible natal intermediate ledger: five dates × seven grahas = 35 rows
 
@@ -87,8 +87,15 @@ The source integration also records UK II.6 conjunction conflicts and UK II Grah
 
 - **PASS — executable UK Section II arithmetic**, 167+537+258 = **962** current dedicated-workflow assertions; latest CI green.
 - **PASS — 7/7 Naisargika ratios and seven separately printed Saptavargaja total-cell readings**; one Jupiter literal-cell sum conflict explicitly disclosed.
-- **BLOCKED — 35 historical birth-specific mean/true/Sighrocca input chains**, required by UK II.16½–17½. The Uttara Kalamrita section does not supply the required dated astronomical ephemerides. No fabricated same-frame historical orbital data or speed-bin substitutes accepted.
+- **BLOCKED — 25 historical birth-specific mean/true/Sighrocca input chains** (five births × Mercury, Venus, Mars, Jupiter, Saturn), required by UK II.16½–17½. **For the 10 Sun/Moon cases, the UK passage does not prescribe this five-graha Cheshta method**; a separate supported luminary rule would be needed, not two more fabricated orbital triples. The Uttara Kalamrita section does not supply the required dated astronomical ephemerides. No fabricated same-frame historical orbital data or speed-bin substitutes accepted.
 - **BLOCKED — all seven full sixfold numerical natal certificates** and replacement of production `strength3`. **No `classicalCertified:true`**; no main merge on the strength of a limited certificate.
 - **OUT OF SCOPE — Ayurdaya (UK Section III)**; no lifespan/demise claims or calculations in this certificate.
 
 **Acceptance note:** This document certifies the specifically named **mathematical and source-rule checkpoints only**. Calling it an end-to-end Seven-Graha Full Shadbala Numerical Certificate would exceed the actual evidence. The limitations are mandatory and auditable.
+
+
+## 17 Oct source-boundary correction (PR #14)
+
+This certificate separates *five-planet orbital-input gaps* from *luminary book-rule gaps*: **25** missing date-specific classical mean/true/Śīghrocca triples for five non-luminaries, plus **10** cases (Sun and Moon × five births) with no numerical Cheshta method specified in the chosen Uttara Kālamṛta Section II. Calling all 35 rows 'missing historical orbital triples' was inaccurate. The sixfold input groups are still **35** (7 × 5), but only the first 25 require this particular same-frame orbital chain.
+
+The sole UK rule source says these Śīghra Kendras were described by 'others'; treating a second astronomical ephemeris as source *data* does not alter the sole **Shadbala rulebook**, but the external data's date, frame, provenance, and precision must be validated. No historical data are manufactured by this correction. Ayurdaya remains excluded.
