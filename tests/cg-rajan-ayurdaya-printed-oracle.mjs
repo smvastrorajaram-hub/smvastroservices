@@ -76,7 +76,7 @@ for(const planet of ['சுக்கிரன்','சனி']){
 eq(red({planet:'சூரியன்',enemySign:false,combust:false}).independentNatalFinalCertified,false,
  'reduction research only');
 const completeEvidence={
- houseFromLagna:10,occupantCount:1,strongestOccupantVerified:true,
+ houseFromLagna:10,occupantCount:1,chakrapadaBenefic:false,strongestOccupantVerified:true,
  isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
  ownDrekkana:false,vargottama:false
 };
@@ -89,6 +89,24 @@ close(amsaOverlap.totalHaranaFraction,5/6,'selected condition loss plus Chakrapa
 close(amsaOverlap.yearsBeforeMultiplier,1,'deductions are applied before strength multiplier');
 close(amsaOverlap.adjustedAmsaYearsCandidate,1,'candidate result respects printed order');
 eq(amsaOverlap.finalAmsaCertified,false,'research candidate does not certify full Amsa chain');
+const missingChakrapadaStatus=amsaHarana({
+ planet:'புதன்',rawAmsaYears:4,enemySign:false,combust:false,
+ houseFromLagna:10,occupantCount:1,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+});
+eq(missingChakrapadaStatus.resolved,false,'missing chart-specific benefic status blocks Chakra Harana');
+eq(missingChakrapadaStatus.adjustedAmsaYearsCandidate,null,'no silent Mercury natural-benefic guess');
+ok(missingChakrapadaStatus.blockers.some(x=>x.includes('benefic/malefic status')),
+ 'missing Chakra benefic/malefic status is explicitly reported');
+const noChakraMultiOccupants=amsaHarana({
+ planet:'செவ்வாய்',rawAmsaYears:4,enemySign:false,combust:false,
+ houseFromLagna:1,occupantCount:2,strongestOccupantVerified:false,
+ isExaltationSign:false,retrograde:false,ownSign:false,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+});
+eq(noChakraMultiOccupants.resolved,true,'multi-occupant Shadbala ranking is irrelevant outside houses 7–12');
+eq(noChakraMultiOccupants.chakrapadaLossFraction,0,'no Chakra loss outside houses 7–12');
 const amsaMultiFactor=amsaHarana({
  planet:'செவ்வாய்',rawAmsaYears:6,enemySign:false,combust:false,
  houseFromLagna:1,occupantCount:1,strongestOccupantVerified:true,
