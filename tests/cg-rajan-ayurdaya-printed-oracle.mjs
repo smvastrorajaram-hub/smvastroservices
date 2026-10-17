@@ -97,7 +97,7 @@ const missingChakrapadaStatus=amsaHarana({
 });
 eq(missingChakrapadaStatus.resolved,false,'missing chart-specific benefic status blocks Chakra Harana');
 eq(missingChakrapadaStatus.adjustedAmsaYearsCandidate,null,'no silent Mercury natural-benefic guess');
-ok(missingChakrapadaStatus.blockers.some(x=>x.includes('benefic/malefic status')),
+eq(missingChakrapadaStatus.blockers.some(x=>x.includes('benefic/malefic status')),true,
  'missing Chakra benefic/malefic status is explicitly reported');
 const noChakraMultiOccupants=amsaHarana({
  planet:'செவ்வாய்',rawAmsaYears:4,enemySign:false,combust:false,
