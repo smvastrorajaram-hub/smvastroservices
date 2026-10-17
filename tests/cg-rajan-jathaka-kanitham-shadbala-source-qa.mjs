@@ -218,6 +218,17 @@ const unverifiedNumeric=cgRajanShadbalaForPlanet({
 eq(unverifiedNumeric.cheshta,null,'numeric Cheshta alone is not evidence verification');
 eq(unverifiedNumeric.drig,null,'numeric Drig alone is not source verification');
 eq(unverifiedNumeric.total,null,'unverified numeric components cannot create a full total');
+const truthyFlagsOnly=cgRajanShadbalaForPlanet({
+ planet:'செவ்வாய்',planets:warChart,ascendantLongitude:asc,midheavenLongitude:95,
+ declination:decl['செவ்வாய்'],apparentSolarHour:7.2,weekdayLord:'சனி',
+ monthLord:'சனி',yearLord:'சனி',horaLord:'குரு',tribhagaLord:'புதன்',
+ classicalCheshtaVirupa:7,sourceDrigVirupa:2,
+ classicalCheshtaEvidenceVerified:1,sourceDrigEvidenceVerified:'true'
+});
+eq(truthyFlagsOnly.cheshta,null,'truthy non-boolean Cheshta flag is not accepted');
+eq(truthyFlagsOnly.drig,null,'truthy non-boolean Drig flag is not accepted');
+eq(truthyFlagsOnly.total,null,'non-boolean evidence flags cannot unlock a total');
+
 ok(unverifiedNumeric.blockers.some(x=>x.includes('without independent evidence')),
  'missing Cheshta evidence is explicitly reported');
 ok(unverifiedNumeric.blockers.some(x=>x.includes('without independent source-matrix')),
