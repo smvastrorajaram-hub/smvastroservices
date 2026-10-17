@@ -6,7 +6,7 @@
  * No 2024 academic research data. No Ayurdaya computation.
  */
 import assert from 'node:assert/strict';
-import {uttaraKalamritaRectifiedTotal as bookTotal} from '../public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs';
+import {uttaraKalamritaRectifiedTotal as bookTotal, uttaraKalamritaGrahaYuddha as yuddha} from '../public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs';
 import {
  UTTARA_KALAMRITA_NAISARGIKA_VIRUPA as natural,
  UTTARA_KALAMRITA_RELATION_VIRUPA as rel,
@@ -187,6 +187,31 @@ close(cheshta({meanLongitude:10,trueLongitude:10,sheeghrocca:190,
  sourceFrameVerified:true}).virupa,60,'UK true/mean/sighra full 180° Kendra');
 eq(cheshta({meanLongitude:10,trueLongitude:10,sheeghrocca:190}).certified,false,
  'non-certified source data fail closed');
+// UK II.16½–17½: a war needs IDENTICAL longitude DEGREE + MINUTE;
+// approximate 1-degree conjunction is NOT sufficient in Uttara Kalamrita.
+const warPair=(a,b,bhava=3,latA=0.1,latB=-0.1)=>[
+ {name:'செவ்வாய்',longitude:a,bhava,eclipticLatitude:latA},
+ {name:'சுக்கிரன்',longitude:b,bhava,eclipticLatitude:latB}
+];
+const exactMinuteWar=yuddha(warPair(100+1/3600,100+55/3600));
+eq(exactMinuteWar.encounters.length,1,'UK same degree/minute means valid Graha Yuddha');
+eq(exactMinuteWar.virupaByPlanet['செவ்வாய்'],60,'UK north graha wins exactly 1 rupa');
+eq(exactMinuteWar.virupaByPlanet['சுக்கிரன்'],-60,'UK south graha loses exactly 1 rupa');
+eq(exactMinuteWar.unresolved.length,0,'UK unambiguous single encounter');
+eq(yuddha(warPair(100.01,100.76)).encounters.length,0,
+ 'UK former <=1 degree heuristic must NOT declare war');
+eq(yuddha(warPair(100+59/3600,100+60/3600)).encounters.length,0,
+ 'UK immediately adjacent minute bins do not mean agreement of degree/minute');
+eq(yuddha(warPair(359+59/60+59/3600,0)).encounters.length,0,
+ 'UK zodiac wrap does not falsely match 359:59 and 0:00');
+const equalLat=yuddha(warPair(120,120,1,0.1,0.1));
+eq(equalLat.encounters.length,0,'UK equal latitude never guesses north winner');
+eq(equalLat.unresolved[0]?.reason,'equal-north-latitude',
+ 'UK same-minute latitude tie explicitly unresolved');
+const missingLat=yuddha(warPair(100,100,2,NaN,0.3));
+eq(missingLat.unresolved[0]?.reason,'missing-ecliptic-latitude',
+ 'UK missing north/south coordinate explicitly blocks Yuddha');
+
 const computed=six({planets:chart,bhavas,apparentSolarHour:12,
  owners:{abda:'சூரியன்',masa:'சந்திரன்',vara:'செவ்வாய்',hora:'புதன்'},
  tribhagaLord:'சூரியன்',
