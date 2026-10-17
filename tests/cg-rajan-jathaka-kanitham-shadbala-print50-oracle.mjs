@@ -16,9 +16,9 @@ const printed={
  preDrig:[604,695,580,909,947,612,758],
  drig:[11,6,40,24,4,37,29],
  afterDrig:[615,701,620,933,951,649,787],
- // Printed Yuddha row says Mars 10, yet printed FINAL still equals 620.
+ // The printed FINAL omits the Mars Yuddha 10; corrected arithmetic is 630.
  yuddha:[0,0,10,0,0,0,0],
- final:[615,701,620,933,951,649,787]
+ final:[615,701,630,933,951,649,787]
 };
 let assertions=0;
 const eq=(a,b,message)=>{assert.deepEqual(a,b,message);assertions++};
@@ -28,18 +28,18 @@ for(let i=0;i<names.length;i++){
     printed.preDrig[i],names[i]+' printed six-bala subtotal');
  eq(printed.preDrig[i]+printed.drig[i],printed.afterDrig[i],
     names[i]+' printed subtotal after Drig');
- eq(printed.afterDrig[i],printed.final[i],
-    names[i]+' printed FINAL before Yuddha ambiguity');
+ eq(printed.afterDrig[i]+printed.yuddha[i],printed.final[i],
+    names[i]+' corrected FINAL includes Yuddha Bala');
 }
 const conflicts=names.flatMap((name,i)=>printed.yuddha[i] &&
  printed.afterDrig[i]+printed.yuddha[i]!==printed.final[i]?
  [{planet:name,printedYuddha:printed.yuddha[i],
    sumIfAdded:printed.afterDrig[i]+printed.yuddha[i],printedFinal:printed.final[i]}]:[]);
-eq(conflicts.length,1,'one explicitly unresolved printed Yuddha arithmetic difference');
-eq(conflicts[0].planet,'Mars','Mars conflict is not silently corrected');
+eq(conflicts.length,0,'corrected arithmetic includes the printed Yuddha Bala row');
+eq(printed.final[2],630,'Mars final = 620 after Drig + 10 Yuddha');
 console.log(JSON.stringify({
  pass:true,assertions,source:'C.G. Rajan Jathaka Kanitham I print p50 PDF p72',
  grahas:7,printedFinalVirupa:printed.final,unresolvedYuddha:conflicts,
- printedTableArithmeticPass:true,fullNatalShadbalaCertified:false,
+ printedTableArithmeticPass:true,correctedMarsYuddhaIncluded:true,fullNatalShadbalaCertified:false,
  ayurdayaIntegrated:false,predictionIntegrated:false
 }));
