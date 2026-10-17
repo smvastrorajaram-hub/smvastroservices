@@ -147,6 +147,17 @@ const missingLatitudeChart=warChart.map(p=>({...p}));
 missingLatitudeChart[5]={...missingLatitudeChart[5],eclipticLatitude:null};
 eq(cgRajanYuddhaBala({planet:'செவ்வாய்',planets:missingLatitudeChart}).virupa,null,
  'possible war with missing latitude is unresolved, not falsely zero');
+const unresolvedTotal=cgRajanShadbalaForPlanet({
+ planet:'செவ்வாய்',planets:missingLatitudeChart,ascendantLongitude:asc,midheavenLongitude:95,
+ declination:decl['செவ்வாய்'],apparentSolarHour:7.2,weekdayLord:'சனி',
+ monthLord:'சனி',yearLord:'சனி',horaLord:'குரு',tribhagaLord:'புதன்',
+ classicalCheshtaVirupa:7,sourceDrigVirupa:2
+});
+eq(unresolvedTotal.yuddha,null,'unresolved Yuddha remains null in Shadbala output');
+eq(unresolvedTotal.total,null,'unresolved Yuddha blocks a seemingly complete total');
+ok(unresolvedTotal.blockers.some(x=>x.includes('Graha Yuddha')),
+ 'Yuddha blocker explains why the total remains withheld');
+
 const sunMoonOnly=[
  {name:'சூரியன்',longitude:120.25,bhava:3,eclipticLatitude:0.4},
  {name:'சந்திரன்',longitude:120.25,bhava:3,eclipticLatitude:-0.2}
