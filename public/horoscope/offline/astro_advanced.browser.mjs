@@ -755,7 +755,8 @@ function phase1ChartAnalysis(chart,lang='ta'){
   for(let h=1;h<=12;h++){
     const source=norm(rasi(chart?.lagna?.longitude||0)+h-1);
     const a=padaFor(source);
-    arudhaItems.push({house:h,name:ta?`A${h} ஆரூடம்`:`A${h}`,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
+    const arudhaLabel=h===1?'AL':h===12?'UL':`A${h}`;
+    arudhaItems.push({house:h,name:arudhaLabel,englishName:arudhaLabel,sourceSign:signLabel(source),lord:a?.lord||'—',lordSign:a?signLabel(a.lordSign):'—',rasi:a?signLabel(a.sign):'—'});
   }
   const grahaArudhaItems=names.map(n=>{
     const p=pm[n]; if(!p||!Number.isFinite(Number(p.longitude))) return {planet:ta?(LORD_TA[n]||n):n,sourceSign:'—',lord:'—',arudha:'—'};
