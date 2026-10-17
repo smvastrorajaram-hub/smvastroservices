@@ -37,7 +37,7 @@ ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.incl
 ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
-eq((ta.match(/<tr>/g)||[]).length,10,'header + seven grahas + total + average');
+eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 const amsaCases=[
  [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
