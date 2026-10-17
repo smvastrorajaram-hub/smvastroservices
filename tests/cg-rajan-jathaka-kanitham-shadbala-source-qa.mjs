@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {
   CG_RAJAN_PRINTED_P50,
   cgRajanSthanaBala,
+  cgRajanSaptavargajaBala,
   cgRajanAyanaBala,
   cgRajanNaisargikaBala,
   cgRajanPakshaBala,
