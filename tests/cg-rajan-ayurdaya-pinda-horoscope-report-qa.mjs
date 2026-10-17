@@ -80,8 +80,10 @@ for(const [date,time] of births){
  eq(x.entries.length,7,'all grahas '+date);
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
- ok(cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'}).includes('Natural component'),
- 'html ' + date);
+ const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'});
+ ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
+  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
+ eq((perNatalHtml.match(/<tr\\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  count+=x.entries.length;
 }
 eq(count,35,'five births x seven grahas');
