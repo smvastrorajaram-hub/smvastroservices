@@ -37,10 +37,14 @@ for(const [date,time] of dates){
     date+' '+p.name+' UK Drig signed algebraic sum');
   ok(u.cheshta.virupa===null&&u.totalVirupa===null,
     date+' '+p.name+' no invented historical Cheshta/complete Shadbala');
-  ok(u.kala.parts.ayana===null&&u.kala.totalVirupa===null,
-    date+' '+p.name+' UK-only Ayana numerical interpretation remains unverified');
-  ok(u.missing.includes('Kala: ayana'),
-    date+' '+p.name+' no BPHS Ayana arithmetic silently mixed into UK basis');
+  ok(Number.isFinite(u.kala.parts.ayana)&&u.kala.parts.ayana>=0&&
+    u.kala.parts.ayana<=60,
+    date+' '+p.name+' UK commentary Ayana numeric calculation present');
+  const oldBPHS=prior?.components?.kala?.ayana;
+  ok(Number.isFinite(oldBPHS)&&Math.abs(u.kala.parts.ayana-oldBPHS)>.001,
+    date+' '+p.name+' 23°27′ x5/4 UK versus BPHS-specific Ayana scale');
+  ok(!u.missing.includes('Kala: ayana'),
+    date+' '+p.name+' UK II source-aware Ayana no longer falsely missing');
   ok(u.naisargikaVirupa>=0&&u.naisargikaVirupa<=60,
     date+' '+p.name+' UK natural Virupa in range');
   ok(u.source.includes('Uttara Kalamrita')&&Number.isFinite(prior?.totalVirupa),
