@@ -126,8 +126,13 @@ export function uttaraKalamritaSthana({planet,longitude,bhava,signPositions,retr
  const {signs,trimsamsaLord,drekkanaConvention}=uttaraKalamritaSevenVargaSigns(longitude);
  const dignities=signs.map((sign,i)=>{
   if(i===0)return rawDignity(planet,sign,signPositions,{rasi:true,retrograde});
-  if(i===6)return {grade:relation(planet,trimsamsaLord,signPositions),
-    virupa:rawDignity(planet,sign,signPositions).virupa};
+  // UK II.7½–9½ assigns Trimsamsa to a GRAHA, not to a unique
+  // representative Rasi; determine strength from its actual LORD.
+  if(i===6){
+    const grade=relation(planet,trimsamsaLord,signPositions);
+    return {grade,virupa:grade==='own'?30:
+      UTTARA_KALAMRITA_RELATION_VIRUPA[grade]};
+  }
   return rawDignity(planet,sign,signPositions);
  });
  const varga=uttaraKalamritaSaptavargajaFromRupa(dignities.map(x=>x.virupa/60));
