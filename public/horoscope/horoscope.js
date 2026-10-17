@@ -2734,6 +2734,8 @@ if(lat===''||lon===''){
     if(btn){btn.disabled=true;btn.textContent='⏳ ஜாதகம் உருவாக்கப்படுகிறது…';}
     let progress=$('tamilHoroscopeProgress'); if(!progress&&btn){progress=document.createElement('div');progress.id='tamilHoroscopeProgress';progress.className='smv-horoscope-progress';progress.innerHTML='<span class="spin"></span><span>ஜாதகம் உருவாக்கப்படுகிறது…<br>அனைத்து கணக்கீடுகளும் தயார் செய்யப்படுகின்றன…</span>';btn.insertAdjacentElement('afterend',progress);}
     try{
+      // Let the browser paint the progress indicator before the calculation task.
+      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       // Native mobile time inputs normally return HH:mm (for example 22:05 for 10:05 PM).
       // Normalize common 12-hour text values too, so the API always receives HH:mm.
       function normalizeHoroscopeTime(value){
