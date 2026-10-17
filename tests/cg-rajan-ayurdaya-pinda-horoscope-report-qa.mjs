@@ -43,8 +43,14 @@ eq(ta.includes('அம்ச ஆயுள் (அட்டவணை A — ஹர
  'Amsa heading omits the Harana status label in Tamil');
 eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
-ok(ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&en.includes('pre-Harana planetary terms'),
- 'detail text remains honest about the current raw Amsa terms');
+ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
+ 'raw Table-A terms are not presented in the customer table as results');
+ok(ta.includes('தேவையான தகவல் இல்லாத கிரகத்திற்கு — காட்டப்படும்')&&en.includes('otherwise it shows —'),
+ 'missing natal Harana evidence fails closed in the Amsa column');
+eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
+ 'fixture without chart facts displays no raw Amsa values for all seven grahas');
+ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
+ 'Amsa total stays unavailable until all seven chart-specific Harana results resolve');
 const amsaCases=[
  [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
@@ -79,12 +85,13 @@ const collisionHarana=cgRajanAmsaHaranaResearch({...completeHaranaEvidence,occup
 eq(collisionHarana.resolved,false,'multiple occupants require verified strongest graha');
 eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice cannot be guessed');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
-eq(totals.amsa.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
- 'seven Amsa A terms sum to 48 traditional years in printed example input');
-const sumNadis=totals.pinda.totalNazhigai+totals.natural.totalNazhigai+totals.amsa.totalNazhigai;
-eq(totals.averageOfThreeTotals.exactNazhigaiNumerator,sumNadis,'mean numerator is sum of three totals');
-eq(totals.averageOfThreeTotals.exactNazhigaiDenominator,3,'mean denominator remains three');
-eq(totals.averageOfThreeTotals.exactNazhigai,sumNadis/3,'mean retains exact third-nazhigai precision');
+eq(totals.amsa.traditionalUnits,null,
+ 'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
+eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until all adjusted rows resolve');
+eq(totals.amsaTableARaw.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
+ 'raw Table-A total remains internal arithmetic only and is not presented as final');
+eq(totals.averageOfThreeTotals,null,
+ 'three-method mean is withheld rather than calculated from raw Amsa Table-A values');
 const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
 eq(oneThird.traditionalUnits.nazhigai,0,'one-third has no whole nazhigai');
 eq(oneThird.traditionalUnits.nazhigaiFractionNumerator,1,'one-third nazhigai retained');
