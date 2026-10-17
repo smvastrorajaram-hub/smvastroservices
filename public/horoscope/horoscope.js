@@ -1922,16 +1922,27 @@ try{
         root.__smvLongTimelineReady=job;
         // Preserve Save/Print waiting until all 12 topics include calculated
         // 15-year detail; no change to auth, quotas, payment or print engines.
-        if(!root.__smvLongSaveGateBound){
-          root.__smvLongSaveGateBound=true;
-          root.addEventListener('click',async event=>{
+        // Save/Print controls are attached to the outer result host, not this
+        // Advanced child. Use one delegated capture guard so every current
+        // Horoscope report button waits for its own Section-X timeline.
+        if(!document.__smvLongSaveGateBound){
+          document.__smvLongSaveGateBound=true;
+          document.addEventListener('click',async event=>{
             const button=event.target?.closest?.('[data-save],[data-print]');
-            if(!button||!root.contains(button)||root.dataset.smvLongPending!=='1')return;
+            if(!button)return;
+            const resultHost=button.closest('#englishHoroscopeResult, #tamilHoroscopeResult');
+            if(!resultHost)return;
+            const advancedRoot=resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology');
+            if(!advancedRoot||advancedRoot.dataset.smvLongPending!=='1')return;
             event.preventDefault();event.stopImmediatePropagation();button.disabled=true;
             let ready=false;
             try{
-              await root.__smvLongTimelineReady;
-              const section=root.querySelector('.smv-advanced-part.life-predictions');
+              const pending=advancedRoot.__smvLongTimelineReady;
+              if(pending)await pending;
+              // The generation may have been replaced while the async timeline ran.
+              if(!button.isConnected||!advancedRoot.isConnected||
+                 resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology')!==advancedRoot)return;
+              const section=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
               const integrated=section?.querySelector('.smv-v303-integrated[data-smv-integrated="12"]');
               const topics=integrated?.querySelectorAll('.smv-v303-house[data-d1-topic]')||[];
               const ids=new Set(Array.from(topics,t=>Number(t.getAttribute('data-d1-topic'))));
