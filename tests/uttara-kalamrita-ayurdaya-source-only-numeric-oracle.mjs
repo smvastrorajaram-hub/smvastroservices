@@ -1,5 +1,5 @@
 /**
- * UK Section III (Ayurdaya) slokas 1-5 book arithmetic + seven
+ * UK Section III (Ayurdaya) slokas 1-8 book arithmetic/evidence + seven
  * research-only chart inputs, NEVER customer longevity forecasts.
  * V. Subrahmanya Sastri (1939) PDF pp 13-14.
  * No previously excluded study numbers or other longevity sources.
@@ -14,8 +14,9 @@ import {
  uttaraAyurdayaBookReductions as reduction,
  uttaraAyurdayaLagnaFromGhati as lagna,
  uttaraAyurdayaThreeDrekkanaPunyaPapa as punya,
- uttaraAyurdayaResearchChart as chart
-,} from '../public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs';
+ uttaraAyurdayaResearchChart as chart,
+ uttaraAyurdayaTextualYogaEvidence as yoga
+} from '../public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs';
 const star=360/27,pada=star/4;
 let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++};
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
