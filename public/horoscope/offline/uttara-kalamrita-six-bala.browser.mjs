@@ -414,7 +414,16 @@ export function uttaraKalamritaSixBala({planets,bhavas,apparentSolarHour,owners,
    solarLongitude:sun.longitude,moonLongitude:moon.longitude,
    owners,tribhagaLord,declinationVirupa:declinations[p.name],
    planets});
-  const cheshta=uttaraKalamritaCheshta(classicalOrbitalInputs[p.name]);
+  // UK II.16½–17½ specifies Sighra-Kendra Cheshta for the FIVE planets
+  // starting with Mars. It does not prescribe a matching Sun/Moon orbital
+  // triplet or their own numerical Cheshta. Do not treat those as 10 missing
+  // five-planet mean–true–Sighrocca records across five natal samples.
+  const cheshta=['சூரியன்','சந்திரன்'].includes(p.name)?Object.freeze({
+   virupa:null,certified:false,
+   pending:['Uttara Kalamrita II does not specify solar/lunar Cheshta numerical method'],
+   source:'Uttara Kalamrita II.16½–17½; luminary method not specified',
+   status:'book-unspecified-luminary-method'
+  }):uttaraKalamritaCheshta(classicalOrbitalInputs[p.name]);
   const warVirupa=wars.virupaByPlanet[p.name]??0;
   const n=NATURAL[p.name];
   const list=[sthana.totalVirupa,dig?.virupa,kala.totalVirupa,
