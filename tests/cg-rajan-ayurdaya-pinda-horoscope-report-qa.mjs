@@ -39,7 +39,12 @@ ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
-ok(ta.includes('ஹரணத்திற்கு முன்')&&en.includes('before Harana'),'Amsa table A is explicitly labelled pre-Harana');
+eq(ta.includes('அம்ச ஆயுள் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
+ 'Amsa heading omits the Harana status label in Tamil');
+eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
+ 'Amsa heading omits the Harana status label in English');
+ok(ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&en.includes('pre-Harana planetary terms'),
+ 'detail text remains honest about the current raw Amsa terms');
 const amsaCases=[
  [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
@@ -94,6 +99,21 @@ for(const html of [ta,en]){
 }
 const src=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const printSrc=fs.readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
+const shadbalaStart=src.indexOf('<h3 class="base-shadbala"');
+const shadbalaEnd=src.indexOf('<div class="transit-before-vimsottari">',shadbalaStart);
+const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
+ok(shadbalaUi.includes('💪 ஷட்பலம் (Shadbala)'),'Horoscope uses a plain Shadbala heading');
+eq(shadbalaUi.includes('Uttara Kalamrita'),false,'Shadbala section does not display book-source status');
+eq(shadbalaUi.includes('Classical Parashari Shadbala'),false,'Shadbala heading has no lineage/status text');
+eq(shadbalaUi.includes('reference-grade software parity'),false,'Shadbala section omits explanatory status note');
+eq(shadbalaUi.includes('வலிமை'),false,'Shadbala rows omit Strong/Below-required status text');
+const analysisShadbalaStart=src.indexOf('const shadbalaRows=');
+const analysisShadbalaEnd=src.indexOf('h+=`<div class="adv-section adv-ishta-kashta"',analysisShadbalaStart);
+const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
+eq(analysisShadbalaUi.includes('Uttara Kalamrita'),false,'Chart Analysis Shadbala has no book-source label');
+eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
+eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
+ 'Chart Analysis omits a status message when no numerical rows are available');
 ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
  'live Horoscope module integration');
 ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
