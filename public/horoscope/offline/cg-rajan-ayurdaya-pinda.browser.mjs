@@ -64,11 +64,10 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  * Missing chart facts or unverified strongest-occupant selection blocks
  * adjustment. This helper never certifies a complete natal Amsa result.
  */
-const AMSA_BENEFICS=new Set(['சந்திரன்','புதன்','குரு','சுக்கிரன்']);
 export function cgRajanAmsaHaranaResearch({
  planet,rawAmsaYears,enemySign,combust,houseFromLagna,occupantCount,
- strongestOccupantVerified,isExaltationSign,retrograde,ownSign,ownNavamsa,
- ownDrekkana,vargottama
+ chakrapadaBenefic,strongestOccupantVerified,isExaltationSign,retrograde,
+ ownSign,ownNavamsa,ownDrekkana,vargottama
 }={}){
  if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
  if(!finite(rawAmsaYears)||rawAmsaYears<1||rawAmsaYears>12)
@@ -81,16 +80,21 @@ export function cgRajanAmsaHaranaResearch({
   blockers.push('Missing valid house-from-Lagna evidence');
  if(!Number.isInteger(occupantCount)||occupantCount<1)
   blockers.push('Missing verified occupancy count');
- if(Number.isInteger(occupantCount)&&occupantCount>1&&strongestOccupantVerified!==true)
-  blockers.push('Shadbala-verified strongest occupant required for Chakrapada Harana');
+ const chakrapadaApplies=Number.isInteger(houseFromLagna)&&houseFromLagna>=7&&houseFromLagna<=12;
+ if(chakrapadaApplies&&typeof chakrapadaBenefic!=='boolean')
+  blockers.push('Missing chart-verified benefic/malefic status required for Chakrapada Harana');
+ if(chakrapadaApplies&&Number.isInteger(occupantCount)&&occupantCount>1&&strongestOccupantVerified!==true)
+  blockers.push('Shadbala-verified strongest occupant required for multi-occupant Chakrapada Harana');
  if(blockers.length)return Object.freeze({planet,rawAmsaYears,resolved:false,
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,blockers,
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
  const condition=cgRajanConditionReductions({planet,enemySign,combust});
- const benefic=AMSA_BENEFICS.has(planet);
- const chakra=cgRajanChakrapadaHouseFraction({house:houseFromLagna,benefic});
- const chakrapadaLossFraction=houseFromLagna>=7?chakra.lossFraction:0;
+ const benefic=chakrapadaApplies?chakrapadaBenefic:null;
+ const chakra=chakrapadaApplies?
+  cgRajanChakrapadaHouseFraction({house:houseFromLagna,benefic}):
+  Object.freeze({house:houseFromLagna,benefic:null,lossFraction:0,remainingFraction:1});
+ const chakrapadaLossFraction=chakra.lossFraction;
  const totalHaranaFraction=condition.conditionHaranaFraction+chakrapadaLossFraction;
  if(totalHaranaFraction>1+1e-10)return Object.freeze({planet,rawAmsaYears,resolved:false,
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,
@@ -121,7 +125,8 @@ export function cgRajanAmsaHaranaResearch({
   traditionalUnitsCandidate:units(Math.round(adjustedAmsaYearsCandidate*NY)),
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   blockers:['Research candidate only: no complete independent printed Amsa worked-example oracle yet',
-   'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison and required Shadbala/occupant-strength inputs are not independently certified'],
+   'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison and required Shadbala/occupant-strength inputs are not independently certified',
+   'Benefic/malefic classification and strongest-occupant state must be verified for the actual chart before Chakrapada Harana is treated as final'],
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
 }
 /** Exact arithmetic mean of three integer-nazhigai method totals. */
