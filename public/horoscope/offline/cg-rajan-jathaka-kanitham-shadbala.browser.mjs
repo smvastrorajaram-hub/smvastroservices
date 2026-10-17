@@ -66,6 +66,11 @@ const NATURAL_RELATION = Object.freeze({
   'சுக்கிரன்':{friends:['புதன்','சனி'],enemies:['சூரியன்','சந்திரன்']},
   'சனி':{friends:['புதன்','சுக்கிரன்'],enemies:['சூரியன்','சந்திரன்','செவ்வாய்']}
 });
+// Source conflict audit: printed pp.39/41 assign Mars D12 50, but p.37 marks
+// Mars–Sun as great friend and p.39 says D12 is calculated like Navamsa.
+// For the sample Mars 206°30′ = Libra 26°30′, D12 segment 11 is Leo (Sun lord),
+// so the rule-derived score is 38. Keep this score map rule-derived; do not add
+// +12 to fit the contradictory printed row. See the D12 source-conflict audit.
 const VARAGA_POINTS = Object.freeze({
   own:50, greatFriend:38, friend:25, neutral:13, enemy:6, greatEnemy:3
 });
