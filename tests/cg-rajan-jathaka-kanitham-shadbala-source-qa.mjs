@@ -101,9 +101,9 @@ const final=sample.map((p,i)=>CG_RAJAN_PRINTED_P50.sthana[i]+CG_RAJAN_PRINTED_P5
  CG_RAJAN_PRINTED_P50.dig[i]+CG_RAJAN_PRINTED_P50.cheshta[i]+CG_RAJAN_PRINTED_P50.drig[i]+
  CG_RAJAN_PRINTED_P50.yuddha[i]);
 eq(final,CG_RAJAN_PRINTED_P50.final,'corrected final total includes the separate Yuddha row');
-eq(final[2],630,'corrected Mars final total is 630');
+eq(final[2],620,'Mars final total remains 620 when Yuddha is absent');
 eq(final[2],CG_RAJAN_PRINTED_P50.afterDrig[2]+CG_RAJAN_PRINTED_P50.yuddha[2],
- 'Mars 620 after Drig + Yuddha 10 = corrected 630');
+ 'Mars 620 after Drig + zero Yuddha = 620');
 
 const partial=cgRajanShadbalaForPlanet({
  planet:'சூரியன்',planets:sample,ascendantLongitude:asc,midheavenLongitude:95,declination:decl['சூரியன்'],
@@ -114,7 +114,7 @@ eq(partial.total,null,'no final total without reconciled Drig/Cheshta inputs');
 eq(partial.classicalCertified,false,'never issue full certification');
 eq(partial.deathAgeOrDate,null,'Shadbala never includes death-age output');
 ok(partial.blockers.some(x=>x.includes('Mars Dvadasamsa')),'D12 blocker is surfaced');
-ok(partial.blockers.some(x=>x.includes('Yuddha')),'Yuddha contradiction is surfaced');
+no(partial.blockers.some(x=>x.includes('Yuddha')),'no unsupported Yuddha contradiction is introduced');
 
 console.log(JSON.stringify({
  pass:true,checks,
@@ -128,7 +128,7 @@ console.log(JSON.stringify({
   digBala:{venus:{calculated:61,printed:60},saturn:{calculated:25,printed:26}},
   drigAngleGeneration:'BPHS candidate does not reproduce all printed p.30 planet-pair values',
   fivePlanetCheshta:'source formula still unreconciled',
-  marsYuddha:'printed final omitted Yuddha +10; corrected Mars total is 630'
+  marsYuddha:'not established for this example; Yuddha remains zero unless chart-specific evidence confirms it'
  },
  fullSevenGrahaCertificate:false
 }));
