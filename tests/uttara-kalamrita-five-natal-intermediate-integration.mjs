@@ -12,7 +12,7 @@ const dates=[
  ['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30']
 ];
-let count=0,valid=0,meaningfulDifferences=0;const snapshots=[];
+let count=0,valid=0,meaningfulDifferences=0,missingFiveGrahaTriples=0,unspecifiedLuminaryMethods=0;const snapshots=[];
 const ok=(condition,message)=>{assert.ok(condition,message);count++};
 for(const [date,time] of dates){
  const calc=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,
@@ -37,6 +37,16 @@ for(const [date,time] of dates){
     date+' '+p.name+' UK Drig signed algebraic sum');
   ok(u.cheshta.virupa===null&&u.totalVirupa===null,
     date+' '+p.name+' no invented historical Cheshta/complete Shadbala');
+  if(['சூரியன்','சந்திரன்'].includes(p.name)){
+    ok(u.cheshta.status==='book-unspecified-luminary-method'&&
+       u.cheshta.pending.some(s=>s.includes('solar/lunar')),
+       date+' '+p.name+' UK II does not specify a luminary Cheshta method');
+    unspecifiedLuminaryMethods++;
+  }else{
+    ok(u.cheshta.pending.includes('same-frame classical mean, true, Sighrocca'),
+       date+' '+p.name+' UK II requires its own mean/true/Sighrocca triple');
+    missingFiveGrahaTriples++;
+  }
   ok(Number.isFinite(u.kala.parts.ayana)&&u.kala.parts.ayana>=0&&
     u.kala.parts.ayana<=60,
     date+' '+p.name+' UK commentary Ayana numeric calculation present');
@@ -70,10 +80,13 @@ for(const [date,time] of dates){
  snapshots.push(output);
 }
 ok(valid===35,'seven planets times five real Perambalur birth charts');
+ok(missingFiveGrahaTriples===25,'five real births x five orbital Cheshta triplets');
+ok(unspecifiedLuminaryMethods===10,'five real births x two UK-unspecified luminary Cheshta methods');
 ok(meaningfulDifferences>=20,
  'UK source-specific Sthana differs materially from pre-existing BPHS rules');
 console.log(JSON.stringify({
  pass:true,assertions:count,ukNatalPlanetComputations:valid,
+ missingHistoricalFiveGrahaTriples:missingFiveGrahaTriples,unspecifiedLuminaryMethods,
  ukVsOldPositionalDifferences:meaningfulDifferences,
  source:'Uttara Kalamrita Khanda I Section II only, 1939 V Subrahmanya Sastri',
  bookTextIntermediatesPresent:true,independentHistoricalAstronomicalInputsCertified:false,
