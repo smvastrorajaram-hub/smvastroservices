@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import {cgRajanNaturalAyurdayaGraha as nat,
  cgRajanChakrapadaHouseFraction as house,
  cgRajanConditionReductions as red,
+ cgRajanCombustionLimitDegrees as combustLimit,
+ cgRajanCombustionHaranaStatus as combustStatus,
  cgRajanSevenNaturalResearch as seven,
  cgRajanSumTraditionalRows as sumRows}
 from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';
@@ -49,13 +51,37 @@ for(let h=12;h>=7;h--){
  close(house({house:h,benefic:true}).lossFraction,1/(2*(13-h)),'benefic '+h);
 }
 eq(house({house:6,benefic:true}).lossFraction,0,'outside 7..12');
-close(red({planet:'செவ்வாய்',enemySign:true,combust:true}).combinedResearchFraction,1/3,
- 'enemy-sign and combustion research product');
-close(red({planet:'சனி',enemySign:true,combust:true}).combinedResearchFraction,2/3,
- 'Saturn combustion exempt');
-close(red({planet:'சுக்கிரன்',enemySign:false,combust:true}).combinedResearchFraction,1,
- 'Venus combustion exempt');
-eq(red({planet:'சூரியன்'}).independentNatalFinalCertified,false,'reduction research only');
+const bothHarana=red({planet:'செவ்வாய்',enemySign:true,combust:true});
+close(bothHarana.enemySignLossFraction,1/3,'enemy-sign loss is one third');
+close(bothHarana.combustionLossFraction,1/2,'combustion loss is one half');
+close(bothHarana.conditionHaranaFraction,5/6,'enemy-sign and combustion losses are additive');
+close(bothHarana.remainingFractionCandidate,1/6,'remaining term after additive deductions');
+close(red({planet:'சனி',enemySign:true,combust:true}).conditionHaranaFraction,5/6,
+ 'Saturn has a p.244 threshold and no blanket exemption');
+close(red({planet:'சுக்கிரன்',enemySign:false,combust:true}).conditionHaranaFraction,1/2,
+ 'Venus has a p.244 threshold and no blanket exemption');
+eq(red({planet:'சூரியன்',enemySign:false,combust:false}).independentNatalFinalCertified,false,
+ 'reduction research only');
+assert.throws(()=>red({planet:'சூரியன்'}),TypeError,'unknown conditions cannot default to false');assertions++;
+const limits=[
+ ['சூரியன்',undefined,null,true],['சந்திரன்',undefined,12,true],
+ ['செவ்வாய்',undefined,17,true],['புதன்',false,14,true],['புதன்',true,12,true],
+ ['குரு',undefined,11,true],['சுக்கிரன்',false,10,true],['சுக்கிரன்',true,8,true],
+ ['சனி',undefined,15,true]
+];
+for(const [planet,retrograde,limit,resolved] of limits){
+ const r=combustLimit({planet,retrograde});
+ eq(r.limitDegrees,limit,planet+' p244 combustion limit');
+ eq(r.resolved,resolved,planet+' p244 source status');
+}
+eq(combustStatus({planet:'சூரியன்',trueLongitude:100,sunLongitude:100}).combust,false,'Sun is not self-combust');
+eq(combustStatus({planet:'செவ்வாய்',trueLongitude:113,sunLongitude:100}).combust,true,'Mars within 17-degree limit');
+eq(combustStatus({planet:'சனி',trueLongitude:114,sunLongitude:100}).combust,true,'Saturn within 15-degree limit');
+eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:129,sunLongitude:120,retrograde:false}).combust,true,'direct Venus within 10-degree limit');
+eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:127,sunLongitude:120,retrograde:true}).combust,true,'retrograde Venus within 8-degree limit');
+eq(combustStatus({planet:'சுக்கிரன்',trueLongitude:130,sunLongitude:120,retrograde:false}).resolved,false,'exact Venus threshold unresolved');
+eq(combustStatus({planet:'புதன்',trueLongitude:113,sunLongitude:100}).resolved,false,'Mercury motion state required');
+eq(combustStatus({planet:'புதன்',trueLongitude:113,sunLongitude:100,retrograde:true}).combust,false,'13 degrees is beyond retrograde Mercury 12-degree limit');
 assert.throws(()=>nat({planet:'ராகு',trueLongitude:20}),RangeError);assertions++;
 assert.throws(()=>nat({planet:'சனி',trueLongitude:NaN}),TypeError);assertions++;
 assert.throws(()=>house({house:13,benefic:true}),RangeError);assertions++;

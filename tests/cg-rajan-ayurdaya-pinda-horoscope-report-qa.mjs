@@ -5,7 +5,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
-import {cgRajanPindaGraha, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml}
+import {cgRajanPindaGraha, cgRajanAmsaAyurdayaGraha, cgRajanAmsaHaranaResearch,
+ cgRajanMeanThreeTraditionalTotals, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let checks=0;
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
@@ -30,11 +31,60 @@ eq(research.combinedLongevityYears,null,'no calculated personal total');
 eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
-ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்'),'Tamil columns');
-ok(en.includes('Pinda component')&&en.includes('Natural component'),'English columns');
+ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுள்'),'Tamil three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
+ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
+ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
+ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
-eq((ta.match(/<tr>/g)||[]).length,8,'one header plus seven planet rows');
+eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
+ok(ta.includes('ஹரணத்திற்கு முன்')&&en.includes('before Harana'),'Amsa table A is explicitly labelled pre-Harana');
+const amsaCases=[
+ [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
+ [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
+ [28+17/60,9],[204+32/60,2],[230+27/60,10]
+];
+for(const [longitude,years] of amsaCases){
+ eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude}).rawAmsaYears,
+  years,'C.G. Rajan Amsa-table lookup '+longitude);
+}
+const completeHaranaEvidence={
+ planet:'குரு',rawAmsaYears:12,enemySign:true,combust:true,
+ houseFromLagna:7,occupantCount:1,strongestOccupantVerified:false,
+ isExaltationSign:false,retrograde:false,ownSign:true,ownNavamsa:false,
+ ownDrekkana:false,vargottama:false
+};
+const haraCandidate=cgRajanAmsaHaranaResearch(completeHaranaEvidence);
+eq(haraCandidate.resolved,true,'explicit evidence permits a Harana research candidate');
+eq(haraCandidate.enemySignLossFraction,1/3,'Amsa enemy-sign deduction');
+eq(haraCandidate.combustionLossFraction,1/2,'Amsa combustion deduction');
+eq(haraCandidate.chakrapadaLossFraction,1/12,'Jupiter benefic house-7 loss is half the malefic fraction');
+ok(Math.abs(haraCandidate.totalHaranaFraction-11/12)<1e-9,'Amsa Harana deductions are additive');checks++;
+ok(Math.abs(haraCandidate.yearsBeforeMultiplier-1)<1e-9,'deduct Haranas from raw 12-year term before multiplier');checks++;
+eq(haraCandidate.multiplier,2,'only the maximum applicable multiplier is used');
+ok(Math.abs(haraCandidate.adjustedAmsaYearsCandidate-2)<1e-9,'post-Harana own-sign candidate');checks++;
+eq(haraCandidate.finalAmsaCertified,false,'candidate never self-certifies');
+const missingHarana=cgRajanAmsaHaranaResearch({planet:'குரு',rawAmsaYears:12});
+eq(missingHarana.resolved,false,'missing chart evidence blocks Amsa Harana');
+eq(missingHarana.adjustedAmsaYearsCandidate,null,'missing evidence never assumes no Harana');
+const collisionHarana=cgRajanAmsaHaranaResearch({...completeHaranaEvidence,occupantCount:2,strongestOccupantVerified:false});
+eq(collisionHarana.resolved,false,'multiple occupants require verified strongest graha');
+eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice cannot be guessed');
+const totals=cgRajanCompareGrahas({planets:ref}).totals;
+eq(totals.amsa.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
+ 'seven Amsa A terms sum to 48 traditional years in printed example input');
+const sumNadis=totals.pinda.totalNazhigai+totals.natural.totalNazhigai+totals.amsa.totalNazhigai;
+eq(totals.averageOfThreeTotals.exactNazhigaiNumerator,sumNadis,'mean numerator is sum of three totals');
+eq(totals.averageOfThreeTotals.exactNazhigaiDenominator,3,'mean denominator remains three');
+eq(totals.averageOfThreeTotals.exactNazhigai,sumNadis/3,'mean retains exact third-nazhigai precision');
+const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
+eq(oneThird.traditionalUnits.nazhigai,0,'one-third has no whole nazhigai');
+eq(oneThird.traditionalUnits.nazhigaiFractionNumerator,1,'one-third nazhigai retained');
+eq(oneThird.traditionalUnits.nazhigaiFractionDenominator,3,'fraction denominator is three');
+const twoThirds=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:2,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
+eq(twoThirds.traditionalUnits.nazhigaiFractionNumerator,2,'two-thirds nazhigai retained');
+eq(twoThirds.traditionalUnits.nazhigaiFractionDenominator,3,'two-thirds denominator is three');
 for(const html of [ta,en]){
  ok(!/NaN|undefined|\[object Object\]/.test(html),'no NaN/undefined');
  ok(!/deathAgeOrDate|totalHumanLifetime|combinedLongevityYears/.test(html),
@@ -58,8 +108,10 @@ for(const [date,time] of births){
  eq(x.entries.length,7,'all grahas '+date);
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
- ok(cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'}).includes('Natural component'),
- 'html ' + date);
+ const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'});
+ ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
+  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
+ eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  count+=x.entries.length;
 }
 eq(count,35,'five births x seven grahas');

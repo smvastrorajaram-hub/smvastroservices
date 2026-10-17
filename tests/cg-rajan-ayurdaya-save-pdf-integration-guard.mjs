@@ -42,8 +42,13 @@ for(const language of ['ta','en']){
   'Do not mark as hidden appendix '+language);
  check(result.includes('data-smv-cg-rajan-ayurdaya="1"'),
   'Stable report section marker '+language);
- check((result.match(/<tr>/g)||[]).length===8,
-  'Seven grahas in a standalone table '+language);
+ check((result.match(/<tr\b/g)||[]).length===10,
+  'Header + seven grahas + total + average rows '+language);
+ check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('Amsa Ayurdaya'))||
+       (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுள்')),
+  'Three-method table columns '+language);
+ check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுள்'),
+  'Three-total mean row '+language);
  check(!result.includes('<script')&&!result.includes('onload='),
   'Safe snapshot HTML '+language);
 }
