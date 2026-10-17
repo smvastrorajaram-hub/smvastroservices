@@ -27,6 +27,7 @@ export const CG_RAJAN_SHADBALA_SOURCE = Object.freeze({
 export const CG_RAJAN_PRINTED_P50 = Object.freeze({
   planets: Object.freeze(['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி']),
   sthana: Object.freeze([227,479,333,373,420,323,303]),
+  saptavargaja: Object.freeze([164,251,159,138,207,158,170]),
   kala: Object.freeze([133,67,113,227,287,87,263]),
   ayana: Object.freeze([42,23,12,83,85,12,94]),
   naisargika: Object.freeze([100,86,29,43,57,71,14]),
