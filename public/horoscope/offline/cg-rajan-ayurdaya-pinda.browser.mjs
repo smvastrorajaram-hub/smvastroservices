@@ -1,101 +1,156 @@
 /**
- * CG Rajan Jathaka Kanitham I, pp. 249–254 (scanned PDF pp.271–276).
- * Pindayurdaya and separately reviewed Naisargika per-graha fractions.
- * RESEARCH / CULTURAL ARITHMETIC, never a medical lifespan estimate or
- * an age/date-of-death prediction. Do not combine totals across systems.
+ * SMV ASTRO — C. G. Rajan Jathaka Kanitham I, source-specific arithmetic.
+ * Pinda: printed pp.249–254; Naisargika component: pp.242–243;
+ * Amsa raw component: printed pp.255–256 (PDF pp.277–278).
+ *
+ * The output sums seven graha components in a common traditional unit.
+ * It is not a medical life-expectancy or death-age prediction. The classical
+ * source's separate condition/house reductions are not silently inferred here;
+ * see the visible method note in cgRajanAyurdayaReportHtml().
  */
-import {
- cgRajanNaturalAyurdayaGraha, cgRajanSevenNaturalResearch
-} from './cg-rajan-ayurdaya-research.browser.mjs';
-const SPEC=Object.freeze({
- 'சூரியன்':{maximumYears:19,exaltation:10,en:'Sun'},
- 'சந்திரன்':{maximumYears:25,exaltation:33,en:'Moon'},
- 'செவ்வாய்':{maximumYears:15,exaltation:298,en:'Mars'},
- 'புதன்':{maximumYears:12,exaltation:165,en:'Mercury'},
- 'குரு':{maximumYears:15,exaltation:95,en:'Jupiter'},
- 'சுக்கிரன்':{maximumYears:21,exaltation:357,en:'Venus'},
- 'சனி':{maximumYears:20,exaltation:200,en:'Saturn'}
-});
-const names=Object.keys(SPEC);
-const norm=x=>((x%360)+360)%360;
-const finite=x=>typeof x==='number'&&Number.isFinite(x);
-const NY=21600, NM=1800;
-const units=value=>{
- if(!Number.isSafeInteger(value)||value<0)throw new RangeError('integer nazhigai required');
- let rem=value;
- const years=Math.floor(rem/NY);rem%=NY;
- const months=Math.floor(rem/NM);rem%=NM;
- const days=Math.floor(rem/60);rem%=60;
- return Object.freeze({years,months,days,nazhigai:rem});
-};
-/** Same retained major arc (180..360 degrees) demonstrated by Rajan's
- * Sun (202°58′) and Jupiter (293°17′) examples. Book-specific Pinda
- * maxima are 19,25,15,12,15,21,20.
- */
-export function cgRajanPindaGraha({planet,trueLongitude}={}){
- const v=SPEC[planet];
- if(!v)throw new RangeError('Seven planets only');
- if(!finite(trueLongitude))throw new TypeError('finite sidereal longitude required');
- const difference=norm(v.exaltation-norm(trueLongitude));
- const arc=difference<180?360-difference:difference;
- const nazhigaiExact=arc/360*v.maximumYears*NY;
- return Object.freeze({
-  planet,trueLongitude:norm(trueLongitude),exaltationLongitude:v.exaltation,
-  retainedArcDegrees:arc,maximumPindaYears:v.maximumYears,
-  symbolicComponentYears:arc/360*v.maximumYears,
-  traditionalUnits:units(Math.round(nazhigaiExact)),
-  researchOnly:true,independentBirthLongitudeCertified:false,
-  totalHumanLifetime:null,deathAgeOrDate:null,
-  source:'C. G. Rajan Jathaka Kanitham I printed pp.249–254'
- });
+const GRAHAS = Object.freeze([
+  {ta:'சூரியன்', en:'Sun', pindaMax:19, exaltation:10, naisargikaMax:20},
+  {ta:'சந்திரன்', en:'Moon', pindaMax:25, exaltation:33, naisargikaMax:1},
+  {ta:'செவ்வாய்', en:'Mars', pindaMax:15, exaltation:298, naisargikaMax:2},
+  {ta:'புதன்', en:'Mercury', pindaMax:12, exaltation:165, naisargikaMax:9},
+  {ta:'குரு', en:'Jupiter', pindaMax:15, exaltation:95, naisargikaMax:18},
+  {ta:'சுக்கிரன்', en:'Venus', pindaMax:21, exaltation:357, naisargikaMax:20},
+  {ta:'சனி', en:'Saturn', pindaMax:20, exaltation:200, naisargikaMax:50}
+]);
+const BY_NAME = new Map(GRAHAS.flatMap(g => [[g.ta,g],[g.en.toLowerCase(),g]]));
+const NAZHIGAI_PER_DAY = 60;
+const DAYS_PER_MONTH = 30;
+const MONTHS_PER_YEAR = 12;
+const NAZHIGAI_PER_MONTH = NAZHIGAI_PER_DAY * DAYS_PER_MONTH;
+const NAZHIGAI_PER_YEAR = NAZHIGAI_PER_MONTH * MONTHS_PER_YEAR;
+const finiteNumber = value => value !== null && value !== undefined && String(value).trim() !== '' && Number.isFinite(Number(value));
+const norm360 = value => ((value % 360) + 360) % 360;
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function fromNazhi(total) {
+  if (!Number.isSafeInteger(total) || total < 0) throw new RangeError('Expected nonnegative integer nazhigai');
+  let left = total;
+  const years = Math.floor(left / NAZHIGAI_PER_YEAR); left %= NAZHIGAI_PER_YEAR;
+  const months = Math.floor(left / NAZHIGAI_PER_MONTH); left %= NAZHIGAI_PER_MONTH;
+  const days = Math.floor(left / NAZHIGAI_PER_DAY); left %= NAZHIGAI_PER_DAY;
+  return Object.freeze({years, months, days, nazhigai:left, totalNazhigai:total});
 }
-/** No birth-longitude recomputation: uses the already-produced chart
- * and never writes back into live Swiss graha, Shadbala or prediction.
- */
-export function cgRajanCompareGrahas({planets=[]}={}){
- if(!Array.isArray(planets))throw new TypeError('chart planets required');
- const native=cgRajanSevenNaturalResearch({planets});
- const entries=names.map(name=>{
-  const p=planets.find(x=>x.name===name);
-  const pinda=cgRajanPindaGraha({planet:name,trueLongitude:p?.longitude});
-  return Object.freeze({name,english:SPEC[name].en,
-   natural:native.byPlanet[name],pinda});
- });
- return Object.freeze({entries,
-  methods:Object.freeze({
-   pindayurdaya:'seven component arithmetic independently tested',
-   naisargika:'seven component arithmetic independently tested',
-   amsayurdaya:'not independently reconciled to Rajan worked example',
-   pindashtakavarga:'not independently reconciled to Rajan worked example',
-   rasija:'not independently reconciled to Rajan worked example',
-   nakshatra:'not independently reconciled to Rajan worked example',
-   kalachakra:'not independently reconciled to Rajan worked example',
-   samudaya:'not independently reconciled to Rajan worked example'
-  }),
-  methodSelectionAndReductionsVerified:false,allEightMethodsComplete:false,
-  combinedLongevityYears:null,deathAgeOrDate:null,predictionCertified:false,
-  source:'CG Rajan Jathaka Kanitham I (source-specific research)'});
+function toNazhi(value) {
+  const keys = ['years','months','days','nazhigai'];
+  if (!value || !keys.every(k => Number.isSafeInteger(value[k]) && value[k] >= 0) ||
+      value.months >= 12 || value.days >= 30 || value.nazhigai >= 60) {
+    throw new RangeError('Ayurdhaya components must use normalized years/months/days/nazhigai');
+  }
+  const result = value.years * NAZHIGAI_PER_YEAR + value.months * NAZHIGAI_PER_MONTH + value.days * NAZHIGAI_PER_DAY + value.nazhigai;
+  if (!Number.isSafeInteger(result)) throw new RangeError('Ayurdhaya value exceeds safe integer range');
+  return result;
 }
-const fmt=(value,ta)=>{
- const u=value.traditionalUnits;
- return ta?
-  `${u.years} வ ${u.months} மா ${u.days} நா ${u.nazhigai} நாழி`:
-  `${u.years}y ${u.months}m ${u.days}d ${u.nazhigai}n`;
+const roundNazhi = value => fromNazhi(Math.round(value));
+const fmt = (value, ta) => ta
+  ? `${value.years} வருடம் ${value.months} மாதம் ${value.days} நாள் ${value.nazhigai} நாழிகை`
+  : `${value.years} years ${value.months} months ${value.days} days ${value.nazhigai} nazhigai`;
+const fmtDegrees = value => {
+  let whole = Math.floor(value + 1e-10);
+  let minutes = Math.round((value - whole) * 60);
+  if (minutes === 60) { whole += 1; minutes = 0; }
+  return `${whole}°${String(minutes).padStart(2,'0')}′`;
 };
-const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
- '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-}[ch]));
-/** Customer-visible CULTURAL arithmetic transparency, not longevity
- * prognostication; no consolidated lifespan or death-time output.
- * Does not depend on print-only DOM state so Saved/PDF snapshots can
- * contain this section just like the already-rendered horoscope.
- */
-export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
- const research=cgRajanCompareGrahas({planets});
- const ta=language==='ta';
- const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td></tr>`).join('');
- const note=ta?
- 'இவை பழைய ஜோதிட நூலின் இரண்டு முறைகளுக்கான கிரக வாரியான கணிதப் பங்குகள் மட்டுமே. வருடம்/மாதம்/நாள்/நாழிகை என்பது நூலின் கணித அலகு. தனிநபரின் உண்மையான ஆயுட்காலம் அல்லது மரண வயது அல்ல; அறிவியல் அல்லது மருத்துவ வாழ்நாள் கணிப்பு அல்ல. எட்டு முறைகளுக்கான இறுதித் தேர்வும் அரண விதிகளும் இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.':
- 'These are planet-wise arithmetic terms from two historical astrological methods. Year/month/day/nazhigai are traditional computational units, NOT a prediction of a person\'s actual lifespan, age at death, or a scientific/medical life-expectancy estimate. Complete selection and reductions across all eight source methods remain unverified.';
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><table><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள் — கிரகக் கணிதப் பங்கு':'Pinda component'}</th><th>${ta?'நைசர்க்கிக ஆயுள் — கிரகக் கணிதப் பங்கு':'Natural component'}</th></tr></thead><tbody>${lines}</tbody></table><p class="small">${ta?'அம்சம் மற்றும் மீதமுள்ள ஐந்து முறைகளின் முழுக் கணக்கீடுகள் சரிபார்ப்பில் உள்ளன. எந்த முறைகளையும் ஒன்றாகக் கூட்டி ஒருவருக்கு ஆயுள் ஆண்டுகள் கணிக்கப்படவில்லை.':'Amsa and five other source methods await worked-example reconciliation. No personal lifespan total is calculated from these rows.'}</p></section>`;
+function pindaComponent(graha, longitude) {
+  const raw = norm360(graha.exaltation - norm360(longitude));
+  const remainingArc = raw < 180 ? 360 - raw : raw;
+  const exactNazhi = remainingArc / 360 * graha.pindaMax * NAZHIGAI_PER_YEAR;
+  return Object.freeze({value:roundNazhi(exactNazhi), arc:remainingArc, maximumYears:graha.pindaMax, exactNazhi});
+}
+function naisargikaComponent(graha, longitude) {
+  const raw = norm360(graha.exaltation - norm360(longitude));
+  const remainingArc = raw < 180 ? 360 - raw : raw;
+  const exactNazhi = remainingArc / 360 * graha.naisargikaMax * NAZHIGAI_PER_YEAR;
+  return Object.freeze({value:roundNazhi(exactNazhi), arc:remainingArc, maximumYears:graha.naisargikaMax, exactNazhi});
+}
+function amsaComponent(longitude) {
+  const normalizedLongitude = norm360(longitude);
+  const remainder = normalizedLongitude % 40;
+  // Rajan's example: 24°48′ × 0.3 year/degree = 7y 5m 8d 24n.
+  const exactNazhi = remainder * 0.3 * NAZHIGAI_PER_YEAR;
+  return Object.freeze({value:roundNazhi(exactNazhi), longitude:normalizedLongitude, remainder, yearsPerDegree:0.3, exactNazhi});
+}
+function findGraha(chartPlanets, spec) {
+  const p = chartPlanets.find(x => {
+    const key = String(x?.name ?? x?.planet ?? '').trim();
+    const canonical = BY_NAME.get(key) || BY_NAME.get(key.toLowerCase());
+    return canonical?.en === spec.en;
+  });
+  if (!p || !finiteNumber(p.longitude)) throw new TypeError(`Missing true chart longitude for ${spec.en}`);
+  return Number(p.longitude);
+}
+
+/** Build the transparent, common-unit result from the already-computed chart. */
+export function cgRajanCompareGrahas({planets=[]}={}) {
+  if (!Array.isArray(planets)) throw new TypeError('chart planets must be an array');
+  const entries = GRAHAS.map(g => {
+    const longitude = findGraha(planets, g);
+    return Object.freeze({
+      name:g.ta, english:g.en, longitude,
+      pinda:pindaComponent(g, longitude),
+      natural:naisargikaComponent(g, longitude),
+      amsa:amsaComponent(longitude)
+    });
+  });
+  const totalFor = key => fromNazhi(entries.reduce((sum, e) => sum + toNazhi(e[key].value), 0));
+  const totals = Object.freeze({pinda:totalFor('pinda'), naisargika:totalFor('natural'), amsa:totalFor('amsa')});
+  const sumNazhi = toNazhi(totals.pinda) + toNazhi(totals.naisargika) + toNazhi(totals.amsa);
+  const average = fromNazhi(Math.round(sumNazhi / 3));
+  return Object.freeze({
+    entries:Object.freeze(entries), totals, average,
+    averageExactNazhi:sumNazhi / 3,
+    averageSource:'Arithmetic mean of the three seven-graha component totals, expressed in 12-month/30-day/60-nazhigai units',
+    finalClassicalReductionsApplied:false,
+    includesLagnaComponent:false,
+    source:'C. G. Rajan, Jathaka Kanitham I, Pinda pp.249–254; Naisargika pp.242–243; Amsa pp.255–256'
+  });
+}
+
+export function cgRajanAyurdayaReportHtml({planets, language='ta'}={}) {
+  const ta = language === 'ta';
+  const result = cgRajanCompareGrahas({planets});
+  const degree = value => esc(fmtDegrees(value));
+  const cell = (component, formula) => `<td class="smv-ayurdaya-value"><span class="smv-ayurdaya-units">${esc(fmt(component.value,ta))}</span><small class="smv-ayurdaya-formula">${formula}</small></td>`;
+  const rows = result.entries.map(g => `<tr>
+    <th scope="row" class="smv-ayurdaya-graha">${esc(ta?g.name:g.english)}</th>
+    ${cell(g.pinda,`${ta?'வளைவு':'Arc'} ${degree(g.pinda.arc)} ÷ 360 × ${g.pinda.maximumYears}`)}
+    ${cell(g.natural,`${ta?'வளைவு':'Arc'} ${degree(g.natural.arc)} ÷ 360 × ${g.natural.maximumYears}`)}
+    ${cell(g.amsa,`${ta?'மீதி':'Remainder'} ${degree(g.amsa.remainder)} × 0.3`)}
+  </tr>`).join('');
+  const headers = ta
+    ? ['கிரகம்','பிண்ட ஆயுர்த்தாயம்','நைசர்க்கிக ஆயுர்த்தாயம்','அம்ச ஆயுர்த்தாயம்']
+    : ['Planet','Pinda Ayurdhaya','Naisargika Ayurdhaya','Amsa Ayurdhaya'];
+  const totalLabel = ta ? 'ஏழு கிரக மொத்தம்' : '7-graha total';
+  const averageLabel = ta ? 'மூன்று முறைகளின் சராசரி ஆயுட்காலக் கணக்கு' : 'Average Longevity (three-method arithmetic result)';
+  const note = ta
+    ? 'மூலக் கணக்கு: 1 வருடம் = 12 மாதம்; 1 மாதம் = 30 நாள்; 1 நாள் = 60 நாழிகை. இங்கு ஏழு கிரகங்களின் அடிப்படைப் பங்குகள் மட்டுமே கூட்டப்பட்டுள்ளன. நூலில் தனியாகக் கூறப்படும் பாவ/நிலை சார்ந்த அரணக் குறைப்புகள் மற்றும் லக்னப் பங்கு இம்மொத்தத்தில் சேர்க்கப்படவில்லை; எனவே இதை முழுமையாகத் திருத்திய இறுதி ஆயுட்காலக் கணிப்பாகக் கருத வேண்டாம். இது மருத்துவ வாழ்நாள் கணிப்போ மரண வயது கணிப்போ அல்ல.'
+    : 'Unit basis: 1 year = 12 months, 1 month = 30 days, 1 day = 60 nazhigai. This sums the displayed base components for the seven grahas only. Source-specific house/condition reductions and the Lagna component are not included, so this is not a fully reduced final classical longevity calculation, a medical life-expectancy estimate, or a death-age prediction.';
+  const averageFormula = ta
+    ? `(${fmt(result.totals.pinda,true)} + ${fmt(result.totals.naisargika,true)} + ${fmt(result.totals.amsa,true)}) ÷ 3 = ${fmt(result.average,true)}`
+    : `(${fmt(result.totals.pinda,false)} + ${fmt(result.totals.naisargika,false)} + ${fmt(result.totals.amsa,false)}) ÷ 3 = ${fmt(result.average,false)}`;
+  return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1">
+    <h3>${ta?'பாரம்பரிய ஆயுர்த்தாயக் கணக்கீடு':'Traditional Ayurdhaya Calculation'}</h3>
+    <p class="small smv-ayurdaya-method-note">${esc(note)}</p>
+    <div class="smv-cg-rajan-ayurdaya-table-wrap" role="region" tabindex="0" aria-label="${ta?'ஆயுர்த்தாய அட்டவணை; கிடைமட்டமாக உருட்டலாம்':'Ayurdhaya table; scroll horizontally'}">
+      <table class="smv-cg-rajan-ayurdaya-table">
+        <thead><tr>${headers.map((v,i)=>`<th scope="col" class="${i===0?'smv-ayurdaya-graha-head':''}">${esc(v)}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="smv-ayurdaya-total-row"><th scope="row">${esc(totalLabel)}</th>
+          <td><b>${esc(fmt(result.totals.pinda,ta))}</b></td>
+          <td><b>${esc(fmt(result.totals.naisargika,ta))}</b></td>
+          <td><b>${esc(fmt(result.totals.amsa,ta))}</b></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="smv-ayurdaya-average" aria-live="polite">
+      <h4>${esc(averageLabel)}</h4>
+      <p class="smv-ayurdaya-average-formula">${esc(averageFormula)}</p>
+      <p class="smv-ayurdaya-average-result"><b>${esc(fmt(result.average,ta))}</b></p>
+    </div>
+    <p class="small smv-ayurdaya-unit-note">${ta?'சராசரியை கணக்கிட, மூன்று மொத்தங்களும் முதலில் நாழிகையாக மாற்றப்பட்டு கூட்டப்பட்டு 3-ஆல் வகுக்கப்பட்டன; இறுதி சராசரியில் அருகிலுள்ள ஒரு நாழிகைக்கு மட்டும் வட்டமிடப்பட்டது.':'For the mean, all three totals are converted to nazhigai, added, and divided by 3; only the final average is rounded to the nearest nazhigai.'}</p>
+  </section>`;
 }
