@@ -51,7 +51,7 @@ for(const [longitude,years] of amsaCases){
 }
 const completeHaranaEvidence={
  planet:'குரு',rawAmsaYears:12,enemySign:true,combust:true,
- houseFromLagna:7,occupantCount:1,strongestOccupantVerified:false,
+ houseFromLagna:7,occupantCount:1,chakrapadaBenefic:true,strongestOccupantVerified:false,
  isExaltationSign:false,retrograde:false,ownSign:true,ownNavamsa:false,
  ownDrekkana:false,vargottama:false
 };
@@ -60,6 +60,7 @@ eq(haraCandidate.resolved,true,'explicit evidence permits a Harana research cand
 eq(haraCandidate.enemySignLossFraction,0,'combustion Harana takes precedence over enemy-sign Harana');
 eq(haraCandidate.combustionLossFraction,1/2,'applicable combustion Harana is one half');
 eq(haraCandidate.selectedConditionHarana,'combustion','printed p.231 precedence is surfaced');
+eq(haraCandidate.benefic,true,'chart-verified Chakra benefic status is surfaced');
 eq(haraCandidate.chakrapadaLossFraction,1/12,'Jupiter benefic house-7 loss is half the malefic fraction');
 ok(Math.abs(haraCandidate.totalHaranaFraction-7/12)<1e-9,'selected condition deduction plus separate Chakrapada deduction');checks++;
 ok(Math.abs(haraCandidate.yearsBeforeMultiplier-5)<1e-9,'deduct Haranas from raw 12-year term before multiplier');checks++;
