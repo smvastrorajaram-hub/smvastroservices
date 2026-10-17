@@ -1505,6 +1505,11 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
           if(target && n.parentElement!==(target.__smvContent||target)) (target.__smvContent||target).appendChild(n);
           else if(owner && target && owner!==target) target.appendChild(n);
         });
+        // Ensure Part I's Ayurdaya appendix stays after all late-loaded
+        // Chart Analysis features; do not create any additional section.
+        const partI=advancedBox.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
+        const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]');
+        if(appendix)partI.appendChild(appendix);
       };
       advancedBox.__smvRouteAdvancedSections();
       // V60: all Advanced Analysis sections I-X start minimized.
@@ -1843,6 +1848,25 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
+        // C.G. Rajan Part I: place the source-labelled Ayurdaya arithmetic
+        // INSIDE Advanced Analysis > I. Chart Analysis, as its final child.
+        // Never attach it to Predictions X or the retired integrated-predictions
+        // container. The markup is part of the normal Saved / Print snapshot.
+        // It intentionally contains NO combined lifespan or death date.
+        try{
+          const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
+          if(!sectionI)throw new Error('Advanced Analysis Part I content not found');
+          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs');
+          const html=cgRajanAyurdayaReportHtml({planets:full.chart.planets,language:lang});
+          sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
+          sectionI.insertAdjacentHTML('beforeend',html);
+          // Any async routed sub-module may update I; preserve Ayurdaya LAST.
+          root.__smvRouteAdvancedSections?.();
+          const ayur=sectionI.querySelector('[data-smv-cg-rajan-ayurdaya]');
+          if(ayur)sectionI.appendChild(ayur);
+        }catch(ayurError){
+          console.warn('CG Rajan Part I Ayurdaya appendix unavailable:',ayurError);
+        }
         // V266: Put the already-calculated D1 life reading under
         // X. Predictions > I. Complete Life Predictions (12 topics).
         // The prior deleted 'Integrated Predictions' code remains removed.
