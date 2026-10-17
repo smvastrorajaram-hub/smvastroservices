@@ -34,7 +34,7 @@ ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்�
 ok(en.includes('Pinda component')&&en.includes('Natural component'),'English columns');
 ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
 ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
-eq((ta.match(/<tr>/g)||[]).length,7,'seven planet rows plus header with no <tr> opening?');
+eq((ta.match(/<tr>/g)||[]).length,8,'one header plus seven planet rows');
 for(const html of [ta,en]){
  ok(!/NaN|undefined|\[object Object\]/.test(html),'no NaN/undefined');
  ok(!/deathAgeOrDate|totalHumanLifetime|combinedLongevityYears/.test(html),
