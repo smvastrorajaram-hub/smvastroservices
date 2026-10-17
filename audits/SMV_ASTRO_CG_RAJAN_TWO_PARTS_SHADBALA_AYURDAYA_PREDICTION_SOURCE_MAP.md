@@ -57,4 +57,4 @@ The book provides conditional interpretive rules, **not** evidence that the exis
 - **Shadbala:** The printed p.50 example alone is useful independent arithmetic evidence, **not** a five-date independent astronomical mean/true/sheeghrocca validation or seven-graha full certification. No production `classicalCertified:true` change.
 - **Ayurdaya:** separate numerical study and regression suite. No lifespan/death estimate published and no Shadbala merge.
 - **Prediction:** Part II rule extraction/implementation is a **separate workstream**, not part of a numerical certificate.
-- **Main:** PR #14 may remain draft; this audit and fixture require no production formula change.
+- **Main / next phase:** PR #14 was merged on 2026-10-17 (merge commit `ce93df3c68a100f36b5970c14fba1bb9f2f833fb`). This follow-up PR corrects the accepted Mars arithmetic and strengthens its CI gate; it does not enable `classicalCertified` or claim complete Shadbala. After remaining numerical blockers are resolved, Part II conditional life predictions, marriage matching, Gochara and Dasha–Bhukti are to be audited as a separate source-level workstream.
