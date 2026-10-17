@@ -1933,22 +1933,31 @@ try{
             const resultHost=button.closest('#englishHoroscopeResult, #tamilHoroscopeResult');
             if(!resultHost)return;
             const advancedRoot=resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology');
-            if(!advancedRoot||advancedRoot.dataset.smvLongPending!=='1')return;
-            event.preventDefault();event.stopImmediatePropagation();button.disabled=true;
-            let ready=false;
-            try{
-              const pending=advancedRoot.__smvLongTimelineReady;
-              if(pending)await pending;
-              // The generation may have been replaced while the async timeline ran.
-              if(!button.isConnected||!advancedRoot.isConnected||
-                 resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology')!==advancedRoot)return;
+            if(!advancedRoot)return;
+            const readiness=()=>{
               const section=advancedRoot.querySelector('.smv-advanced-part.life-predictions');
               const integrated=section?.querySelector('.smv-v303-integrated[data-smv-integrated="12"]');
               const topics=integrated?.querySelectorAll('.smv-v303-house[data-d1-topic]')||[];
               const ids=new Set(Array.from(topics,t=>Number(t.getAttribute('data-d1-topic'))));
               const twelve=topics.length===12&&Array.from({length:12},(_,i)=>i+1).every(i=>ids.has(i));
               const failure=section?.querySelector('.smv-v302-unavailable')?.textContent?.trim()||'';
-              ready=!!integrated&&twelve&&integrated.getAttribute('data-smv-15-year-ready')==='1'&&!failure;
+              return {ready:!!integrated&&twelve&&integrated.getAttribute('data-smv-15-year-ready')==='1'&&!failure,failure};
+            };
+            const pendingNow=advancedRoot.dataset.smvLongPending==='1';
+            const initial=readiness();
+            // Ready reports go straight through. Still-pending and failed timelines
+            // both fail closed: a completed-but-incomplete result is not printable.
+            if(!pendingNow&&initial.ready&&!initial.failure)return;
+            event.preventDefault();event.stopImmediatePropagation();button.disabled=true;
+            let ready=false;
+            try{
+              const pending=advancedRoot.__smvLongTimelineReady;
+              if(pendingNow&&pending)await pending;
+              // The generation may have been replaced while the async timeline ran.
+              if(!button.isConnected||!advancedRoot.isConnected||
+                 resultHost.querySelector('#englishAdvancedAstrology, #tamilAdvancedAstrology')!==advancedRoot)return;
+              const result=readiness();
+              ready=advancedRoot.dataset.smvLongPending!=='1'&&result.ready&&!result.failure;
               if(!ready)alert(document.documentElement.lang==='ta'
                 ?'15 வருட தசை–கோச்சார விவரங்கள் முழுமையாகத் தயாராகவில்லை. முழு கணக்கீடு முடிந்த பிறகு மீண்டும் முயற்சிக்கவும்.'
                 :'The 15-year Dasha/transit details are incomplete. Please retry after the calculation finishes.');
