@@ -41,10 +41,24 @@ eq(sthana.map(x=>x.saptavargaja),[164,251,147,138,207,158,170],
 eq(CG_RAJAN_PRINTED_P50.saptavargaja,[164,251,159,138,207,158,170],
  'independent transcription of C.G. Rajan printed p.41 Saptavargaja totals');
 const marsD12=sthana[2].saptavargajaBreakdown.find(x=>x.varga===12);
+// Independent hand-check of D12: do not use vargaSign() for this proof.
+const marsAbsoluteLongitude=206+30/60;
+const marsRasiIndex=Math.floor(marsAbsoluteLongitude/30);
+const marsWithinSign=marsAbsoluteLongitude-marsRasiIndex*30;
+const marsD12Part=Math.floor(marsWithinSign/2.5)+1;
+const marsD12Sign=(marsRasiIndex+marsD12Part-1)%12;
+eq(marsD12Part,11,'206°30′ Libra is the 11th D12 segment');
+eq(marsD12Sign,4,'independent D12 arithmetic maps the 11th Libra segment to Leo');
 eq(marsD12.sign,4,'source calculation maps 206°30′ Mars to Leo in D12');
-eq(marsD12.signLord,'சூரியன்','Mars D12 sign lord is Sun under the current standard D12 mapping');
-eq(marsD12.relation,'greatFriend','current compound relation from printed p.37 friendship table');
-eq(marsD12.points,38,'current formula gives 38 points, while p.41 prints 50');
+eq(marsD12.signLord,'சூரியன்','Mars D12 sign lord is Sun under the source D12 mapping');
+eq(marsD12.relation,'greatFriend','p.37 compound relationship table marks Mars–Sun great friend');
+eq(marsD12.points,38,'rule-derived Mars D12 is 38; the p.39/p.41 printed row says 50');
+const moonD12=sthana[1].saptavargajaBreakdown.find(x=>x.varga===12);
+const jupiterD12=sthana[4].saptavargajaBreakdown.find(x=>x.varga===12);
+eq(moonD12.relation,'greatFriend','Moon D12 provides the p.39 great-friend score cross-check');
+eq(moonD12.points,38,'printed p.39 Moon D12 great-friend score is 38');
+eq(jupiterD12.relation,'own','Jupiter D12 is own sign in the worked example');
+eq(jupiterD12.points,50,'printed p.39 Jupiter D12 own-sign score is 50');
 eq(sthana.map((x,i)=>x.saptavargaja-CG_RAJAN_PRINTED_P50.saptavargaja[i]),
  [0,0,-12,0,0,0,0],
  'D12 mismatch is isolated to Mars and not hidden in the Saptavargaja total');
