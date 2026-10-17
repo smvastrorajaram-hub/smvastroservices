@@ -1069,8 +1069,11 @@
       const moonLon=Number.isFinite(moonRow.longitude)?moonRow.longitude:NaN;
       const slItem=arr(p1.specialLagnas?.items).find(x=>/sree\s*lagna|sri\s*lagna|ஸ்ரீ லக்னம்|ஸ்ரீ லக்ன/i.test(String(x.name||'')))||{};
       const slIdx=normR(slItem.rasi);
-      const alIdx=normR(p2.karakamsha?.arudhaLagna||p2.arudhaLagna||vx.jaimini?.arudhaLagna||'');
-      const ulItem=arr(p1.arudhas?.items).find(x=>/upapada|ul\b/i.test(String(x.name||'')))||{};
+      // AL/UL are resolved by permanent machine identity, never display text.
+      // This also keeps the verified Phase-1 A1/A12 arithmetic as the single source.
+      const alItem=arr(p1.specialLagnas?.items).find(x=>x.key==='AL')||{};
+      const ulItem=arr(p1.specialLagnas?.items).find(x=>x.key==='UL')||{};
+      const alIdx=normR(alItem.rasi);
       const ulIdx=normR(ulItem.rasi);
       const hIdx=(r,h,dir=1)=>((r+(h-1)*dir)%12+12)%12;
       const oddSign=i=>[0,2,4,6,8,10].includes(i);

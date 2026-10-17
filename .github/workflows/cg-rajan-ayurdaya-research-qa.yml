@@ -7,6 +7,9 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
       - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'tests/arudha-al-ul-identity-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -50,6 +53,8 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
           node --check public/horoscope/horoscope.js
+          node --check public/horoscope/offline/astro_advanced.browser.mjs
+          node --check tests/arudha-al-ul-identity-regression.mjs
           node --check tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
           node --check public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
@@ -65,6 +70,8 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
       - name: Printed Pinda, Naisargika and Amsa source examples + guarded average
         run: node tests/cg-rajan-ayurdaya-amsa-average-regression.mjs
+      - name: Arudha Lagna / Upapada Lagna identity and Ayurdaya table scrolling regression
+        run: node tests/arudha-al-ul-identity-regression.mjs
       - name: Printed Pinda examples and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
       - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
