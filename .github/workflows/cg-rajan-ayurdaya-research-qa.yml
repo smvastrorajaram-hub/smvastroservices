@@ -6,6 +6,8 @@ on:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'public/horoscope/horoscope-predictions.js'
+      - 'public/horoscope/horoscope.js'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
@@ -41,6 +43,8 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
+          node --check public/horoscope/horoscope.js
+          node --check tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
       - name: Check seven printed CG Rajan natural-quotient examples and reductions
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
       - name: Check five Perambalur birth charts x seven natural components
@@ -51,6 +55,8 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
       - name: Check printed Pinda answers, 35 natal terms and Horoscope report render
         run: node tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
+      - name: Guard Advanced Analysis I final Ayurdaya placement and print visibility
+        run: node tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
       - name: Enforce no customer lifespan/death report
         run: |
           echo 'Research-only CG Rajan first-volume Ayurdaya module.'
