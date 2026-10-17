@@ -1,0 +1,37 @@
+name: CG Rajan Part I Ayurdaya Printed Arithmetic QA
+on:
+  push:
+    branches: [main, audit/v365-saura-mean-motion-panchang-oracle]
+    paths:
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
+      - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
+      - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rajans-ayurdaya-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check isolated CG Rajan module and tests
+        run: |
+          node --check public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs
+          node --check tests/cg-rajan-ayurdaya-printed-oracle.mjs
+          node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
+      - name: Check seven printed CG Rajan natural-quotient examples and reductions
+        run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
+      - name: Check five Perambalur birth charts x seven natural components
+        run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
+      - name: Enforce no customer lifespan/death report
+        run: |
+          echo 'Research-only CG Rajan first-volume Ayurdaya module.'
+          echo 'Printed example mathematics does not certify an individual lifespan.'
+          echo 'No mixing with Uttara Section III or Horoscope/Matching outputs.'
