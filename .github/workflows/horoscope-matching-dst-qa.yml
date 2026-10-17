@@ -88,6 +88,8 @@ jobs:
         run: node tests/v357-bphs-shadbala-positional-regression.mjs
       - name: V361 Uttara Kalamrita seven-planet Shadbala p45, Yuddha and Drig QA
         run: node tests/v361-uttara-kalamrita-shadbala-regression.mjs
+      - name: CG Rajan Jathaka Kanitham printed seven-graha Shadbala example independent oracle
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
       - name: V362 BPHS Chapter 27 Drig Bala and planetary-war pre-war difference
         run: node tests/v362-bphs-primary-shadbala-regression.mjs
       - name: V363 BPHS Swiss solar rise/set independent numeric oracle and Cheshta arithmetic
