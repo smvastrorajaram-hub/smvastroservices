@@ -32,6 +32,29 @@ const units=value=>{
  * Sun (202°58′) and Jupiter (293°17′) examples. Book-specific Pinda
  * maxima are 19,25,15,12,15,21,20.
  */
+/**
+ * C.G. Rajan I, printed pp.237–238: Amsa Ayurdaya table A.
+ * The printed lookup advances in 3°20′ arc intervals and cycles values 1..12.
+ * This returns ONLY the raw table-A graha term. The book's Lagna-lord-strength
+ * condition and graha-specific strength/reduction rules are not yet fully
+ * resolved, so this term cannot by itself certify final Ayurdaya.
+ */
+export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
+ if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
+ if(!finite(trueLongitude))throw new TypeError('finite sidereal longitude required');
+ const longitude=norm(trueLongitude);
+ const arcMinutes=longitude*60;
+ const amsaIntervals=Math.max(1,Math.ceil(arcMinutes/200-1e-10));
+ const amsaYears=((amsaIntervals-1)%12)+1;
+ return Object.freeze({
+  planet,trueLongitude:longitude,arcMinutes,intervalArcMinutes:200,
+  amsaIntervals,rawAmsaYears:amsaYears,
+  traditionalUnits:Object.freeze({years:amsaYears,months:0,days:0,nazhigai:0}),
+  variant:'A',source:'C.G. Rajan Jathaka Kanitham I printed pp.237–238, Amsa table A',
+  lagnaLordStrengthConditionVerified:false,allSourceReductionsApplied:false,
+  individualLifespanCertified:false,deathAgeOrDate:null
+ });
+}
 export function cgRajanPindaGraha({planet,trueLongitude}={}){
  const v=SPEC[planet];
  if(!v)throw new RangeError('Seven planets only');
@@ -59,13 +82,30 @@ export function cgRajanCompareGrahas({planets=[]}={}){
   const p=planets.find(x=>x.name===name);
   const pinda=cgRajanPindaGraha({planet:name,trueLongitude:p?.longitude});
   return Object.freeze({name,english:SPEC[name].en,
-   natural:native.byPlanet[name],pinda});
+   natural:native.byPlanet[name],pinda,
+   amsa:cgRajanAmsaAyurdayaGraha({planet:name,trueLongitude:p?.longitude})});
  });
- return Object.freeze({entries,
+ const nadis=u=>Number(u?.years||0)*NY+Number(u?.months||0)*NM+
+  Number(u?.days||0)*NADIS_PER_DAY+Number(u?.nazhigai||0);
+ const sumTerms=key=>entries.reduce((n,e)=>n+nadis(e[key]?.traditionalUnits),0);
+ const pindaTotalNadis=sumTerms('pinda');
+ const naturalTotalNadis=sumTerms('natural');
+ const amsaTotalNadis=sumTerms('amsa');
+ const averageExactNadis=(pindaTotalNadis+naturalTotalNadis+amsaTotalNadis)/3;
+ const totals=Object.freeze({
+  pinda:Object.freeze({traditionalUnits:units(pindaTotalNadis),totalNazhigai:pindaTotalNadis}),
+  natural:Object.freeze({traditionalUnits:units(naturalTotalNadis),totalNazhigai:naturalTotalNadis}),
+  amsa:Object.freeze({traditionalUnits:units(amsaTotalNadis),totalNazhigai:amsaTotalNadis}),
+  averageOfThreeTotals:Object.freeze({traditionalUnits:units(Math.round(averageExactNadis)),
+   exactNazhigai:averageExactNadis,roundedNazhigai:Math.round(averageExactNadis)})
+ });
+ return Object.freeze({entries,totals,
+  averagingBasis:'Arithmetic mean of the three seven-graha raw method totals before all book-specific strength selection and reductions are reconciled',
+  finalAyurdayaCertified:false,personalLifespanCertified:false,
   methods:Object.freeze({
    pindayurdaya:'seven component arithmetic independently tested',
    naisargika:'seven component arithmetic independently tested',
-   amsayurdaya:'not independently reconciled to Rajan worked example',
+   amsayurdaya:'Amsa table A raw graha terms implemented from printed pp.237–238; Lagna-lord-strength selection and all source reductions remain unverified',
    pindashtakavarga:'not independently reconciled to Rajan worked example',
    rasija:'not independently reconciled to Rajan worked example',
    nakshatra:'not independently reconciled to Rajan worked example',
@@ -93,9 +133,12 @@ const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
 export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
  const research=cgRajanCompareGrahas({planets});
  const ta=language==='ta';
- const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td></tr>`).join('');
+ const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td><td>${esc(fmt(v.amsa,ta))}</td></tr>`).join('');
+ const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th><td>${esc(fmt(research.totals.pinda,ta))}</td><td>${esc(fmt(research.totals.natural,ta))}</td><td>${esc(fmt(research.totals.amsa,ta))}</td></tr>`;
+ const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுள் — மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3 (இடைநிலை கணிதச் சராசரி)':'Average Ayurdaya — sum of the three totals ÷ 3 (provisional arithmetic mean)'}</span> <strong>${esc(fmt(research.totals.averageOfThreeTotals,ta))}</strong></th></tr>`;
  const note=ta?
- 'இவை பழைய ஜோதிட நூலின் இரண்டு முறைகளுக்கான கிரக வாரியான கணிதப் பங்குகள் மட்டுமே. வருடம்/மாதம்/நாள்/நாழிகை என்பது நூலின் கணித அலகு. தனிநபரின் உண்மையான ஆயுட்காலம் அல்லது மரண வயது அல்ல; அறிவியல் அல்லது மருத்துவ வாழ்நாள் கணிப்பு அல்ல. எட்டு முறைகளுக்கான இறுதித் தேர்வும் அரண விதிகளும் இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.':
- 'These are planet-wise arithmetic terms from two historical astrological methods. Year/month/day/nazhigai are traditional computational units, NOT a prediction of a person\'s actual lifespan, age at death, or a scientific/medical life-expectancy estimate. Complete selection and reductions across all eight source methods remain unverified.';
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><table><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள் — கிரகக் கணிதப் பங்கு':'Pinda component'}</th><th>${ta?'நைசர்க்கிக ஆயுள் — கிரகக் கணிதப் பங்கு':'Natural component'}</th></tr></thead><tbody>${lines}</tbody></table><p class="small">${ta?'அம்சம் மற்றும் மீதமுள்ள ஐந்து முறைகளின் முழுக் கணக்கீடுகள் சரிபார்ப்பில் உள்ளன. எந்த முறைகளையும் ஒன்றாகக் கூட்டி ஒருவருக்கு ஆயுள் ஆண்டுகள் கணிக்கப்படவில்லை.':'Amsa and five other source methods await worked-example reconciliation. No personal lifespan total is calculated from these rows.'}</p></section>`;
+ 'பிண்டம், நைசர்க்கிகம், அம்ச அட்டவணை A (நூல் பக்கங்கள் 237–238) ஆகியவற்றின் ஆரம்ப கிரகக் கணிதப் பங்குகள் இங்கே காட்டப்பட்டுள்ளன. கீழுள்ள மொத்தங்களும் சராசரியும் இந்தப் பங்குகளை மட்டும் கூட்டி கணக்கிட்ட இடைநிலை முடிவுகள். சத்துரு க்ஷேத்திரம், அஸ்தங்கதம், சக்கிரபாதம், கிரக வலிமை மற்றும் லக்னாதிபதி-வலிமை சார்ந்த தேர்வு ஆகியவற்றை முழுமையாக இணைத்து சுயாதீனமாகச் சரிபார்ப்பது இன்னும் நிலுவையில் உள்ளது. எனவே இந்தச் சராசரி இறுதி ஆயுள் உறுதியோ, தனிநபர் மரண வயது/நாள்கணிப்போ அல்ல.':
+ 'This table shows the initial planetary arithmetic terms for Pinda, Naisargika and Amsa table A (book pp.237–238). Totals and their arithmetic mean below only sum these initial terms. Enemy-sign, combustion, Chakrapada, planetary-strength and Lagna-lord-strength variant rules still require full integration and independent verification. This provisional mean is not a certified lifespan or a personal death-age/date prediction.';
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுள் (அட்டவணை A)':'Amsa Ayurdaya (table A)'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
+
 }
