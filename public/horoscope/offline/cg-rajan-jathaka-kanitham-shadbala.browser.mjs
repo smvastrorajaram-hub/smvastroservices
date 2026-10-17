@@ -8,6 +8,7 @@
  * Drig inputs remain unreconciled.
  */
 import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
+import { uttaraKalamritaGrahaYuddha } from './uttara-kalamrita-shadbala.browser.mjs';
 
 export const CG_RAJAN_SHADBALA_SOURCE = Object.freeze({
   book: 'C.G. Rajan, Jathaka Kanitham Part I',
@@ -280,6 +281,39 @@ export function cgRajanDrigBalaCandidate({planet,longitude,planets=[]}={}){
   return Object.freeze({aspects,virupa:null,source:'Rajan p.30 source matrix not yet fully reproduced',
     certified:false,reason:'Rajan printed aspect matrix differs from the current BPHS angle routine for selected planet pairs'});
 }
+/**
+ * Project-specific C.G. Rajan Shadbala Graha-Yuddha policy.
+ *
+ * Reuses Uttara Kalamrita's war eligibility, same-bhava + same-degree/minute
+ * test, northern-latitude winner, and ambiguity guards, but intentionally
+ * maps a resolved war to the user's fixed SMV ASTRO scale (+10/-10/0).
+ * This is NOT Uttara Kalamrita's native one-Rupa (+60/-60) value or its
+ * separate disc-diameter quotient; those remain available in the UK module.
+ */
+export function cgRajanYuddhaBala({planet,planets=[]}={}) {
+  if(!NAMES.includes(planet)||!Array.isArray(planets))
+    throw new TypeError('seven-graha planet and chart positions required');
+  const source=uttaraKalamritaGrahaYuddha(planets);
+  const unresolved=source.unresolved.filter(x=>x.grahas.includes(planet));
+  if(unresolved.length){
+    return Object.freeze({
+      virupa:null, encounters:source.encounters.filter(x=>x.grahas.includes(planet)),
+      unresolved, source:'Uttara Kalamrita Chapter II war eligibility/winner method',
+      policy:'SMV ASTRO fixed +10/-10/0 project rule', certified:false,
+      reason:'Potential Graha Yuddha is unresolved; do not assume zero'
+    });
+  }
+  const encounter=source.encounters.find(x=>x.winner===planet||x.loser===planet);
+  const virupa=!encounter?0:(encounter.winner===planet?10:-10);
+  return Object.freeze({
+    virupa, encounters:source.encounters.filter(x=>x.grahas.includes(planet)),
+    unresolved:[], source:'Uttara Kalamrita Chapter II war eligibility/winner method',
+    policy:'SMV ASTRO fixed +10/-10/0 project rule',
+    classicalFormulaValue:!encounter?0:(encounter.winner===planet?60:-60),
+    certified:false
+  });
+}
+
 export function cgRajanShadbalaForPlanet({
   planet,planets=[],ascendantLongitude,midheavenLongitude,declination,apparentSolarHour,
   weekdayLord,monthLord,yearLord,horaLord,tribhagaLord,
@@ -300,14 +334,19 @@ export function cgRajanShadbalaForPlanet({
     finite(classicalCheshtaVirupa)?classicalCheshtaVirupa:null;
   const drig=finite(sourceDrigVirupa)?sourceDrigVirupa:null;
   const drigCandidate=cgRajanDrigBalaCandidate({planet,longitude:p.longitude,planets});
+  const yuddhaResult=cgRajanYuddhaBala({planet,planets});
+  const yuddha=yuddhaResult.virupa;
   const knownSubtotal=sthana.total+kala.total+ayana.virupa+naisargika+dig.virupa;
-  const complete=finite(cheshta)&&finite(drig);
-  const total=complete?knownSubtotal+cheshta+drig:null;
+  const complete=finite(cheshta)&&finite(drig)&&finite(yuddha);
+  const total=complete?knownSubtotal+cheshta+drig+yuddha:null;
   return Object.freeze({
     available:true,source:'C.G. Rajan Jathaka Kanitham Part I',
     unit:'printed 100-point component scale',sthana,kala,ayana:ayana.virupa,
     naisargika,dig:dig.virupa,cheshta,drig,drigCandidate,
+    yuddha,yuddhaDetails:yuddhaResult,
+    yuddhaPolicy:'Uttara Kalamrita eligibility/winner calculation mapped to SMV ASTRO fixed +10/-10/0',
     partialSubtotalExcludingCheshtaAndDrig:knownSubtotal,
+    partialSubtotalExcludingCheshtaDrigAndYuddha:knownSubtotal,
     total, totalHumanLifetime:null, deathAgeOrDate:null,
     classicalCertified:false,completeBookFormula:false,
     blockers:Object.freeze([
@@ -315,6 +354,8 @@ export function cgRajanShadbalaForPlanet({
         ['Five-planet Rajan Cheshta formula/input not independently reconciled']:[]),
       ...(!finite(sourceDrigVirupa)?
         ['Rajan Drig aspect-generation formula not fully reconciled to printed p.30 matrix']:[]),
+      ...(!finite(yuddha)?
+        ['Graha Yuddha cannot be resolved from the available UK eligibility/winner inputs']:[]),
       'Mars Dvadasamsa Saptavargaja p.39/41 mismatch: calculated 38 vs printed 50',
       'Printed p.50 Dig has Venus/Saturn one-point rounding differences'
     ]),
