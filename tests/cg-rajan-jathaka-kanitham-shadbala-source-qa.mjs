@@ -13,7 +13,8 @@ import {
   cgRajanKalaBala,
   cgRajanDigBala,
   cgRajanDrigBalaFromAspectMatrix,
-  cgRajanShadbalaForPlanet
+  cgRajanShadbalaForPlanet,
+  cgRajanYuddhaBala
 } from '../public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs';
 
 let checks=0;
@@ -115,6 +116,57 @@ eq(partial.classicalCertified,false,'never issue full certification');
 eq(partial.deathAgeOrDate,null,'Shadbala never includes death-age output');
 ok(partial.blockers.some(x=>x.includes('Mars Dvadasamsa')),'D12 blocker is surfaced');
 no(partial.blockers.some(x=>x.includes('Yuddha')),'no unsupported Yuddha contradiction is introduced');
+eq(partial.yuddha,0,'C.G. Rajan sample has no qualifying war, so project Yuddha = 0');
+eq(partial.yuddhaDetails.policy,'SMV ASTRO fixed +10/-10/0 project rule',
+ 'project policy is explicitly separated from Uttara Kalamrita native formula');
+
+const warChart=sample.map((p,i)=>({
+ ...p,bhava:i+1,eclipticLatitude:[0,0,0.4,0,0,-0.2,0][i]
+}));
+warChart[2]={...warChart[2],longitude:120.25,bhava:3,eclipticLatitude:0.4};
+warChart[5]={...warChart[5],longitude:120.25,bhava:3,eclipticLatitude:-0.2};
+const marsWar=cgRajanYuddhaBala({planet:'செவ்வாய்',planets:warChart});
+const venusWar=cgRajanYuddhaBala({planet:'சுக்கிரன்',planets:warChart});
+eq(marsWar.virupa,10,'northern-latitude winner gets fixed +10');
+eq(venusWar.virupa,-10,'southern-latitude loser gets fixed -10');
+eq(marsWar.encounters.length,1,'same-bhava same-degree-minute pair recognized');
+eq(marsWar.encounters[0].winner,'செவ்வாய்','Uttara Kalamrita winner method retained');
+eq(marsWar.classicalFormulaValue,60,'native UK +60 is exposed only for method comparison');
+eq(venusWar.classicalFormulaValue,-60,'native UK -60 is exposed only for method comparison');
+eq(marsWar.virupa+venusWar.virupa,0,'fixed pair adjustment is balanced');
+
+const nearWarChart=warChart.map(p=>({...p}));
+nearWarChart[5]={...nearWarChart[5],longitude:120.75};
+eq(cgRajanYuddhaBala({planet:'செவ்வாய்',planets:nearWarChart}).virupa,0,
+ 'different degree-minute bin is not treated as war');
+const differentBhavaChart=warChart.map(p=>({...p}));
+differentBhavaChart[5]={...differentBhavaChart[5],bhava:4};
+eq(cgRajanYuddhaBala({planet:'செவ்வாய்',planets:differentBhavaChart}).virupa,0,
+ 'same longitude in a different bhava is not treated as war');
+const missingLatitudeChart=warChart.map(p=>({...p}));
+missingLatitudeChart[5]={...missingLatitudeChart[5],eclipticLatitude:null};
+eq(cgRajanYuddhaBala({planet:'செவ்வாய்',planets:missingLatitudeChart}).virupa,null,
+ 'possible war with missing latitude is unresolved, not falsely zero');
+const sunMoonOnly=[
+ {name:'சூரியன்',longitude:120.25,bhava:3,eclipticLatitude:0.4},
+ {name:'சந்திரன்',longitude:120.25,bhava:3,eclipticLatitude:-0.2}
+];
+eq(cgRajanYuddhaBala({planet:'சூரியன்',planets:sunMoonOnly}).virupa,0,
+ 'Sun is excluded from Graha Yuddha');
+eq(cgRajanYuddhaBala({planet:'சந்திரன்',planets:sunMoonOnly}).virupa,0,
+ 'Moon is excluded from Graha Yuddha');
+
+const completeMars=cgRajanShadbalaForPlanet({
+ planet:'செவ்வாய்',planets:warChart,ascendantLongitude:asc,midheavenLongitude:95,
+ declination:decl['செவ்வாய்'],apparentSolarHour:7.2,weekdayLord:'சனி',
+ monthLord:'சனி',yearLord:'சனி',horaLord:'குரு',tribhagaLord:'புதன்',
+ classicalCheshtaVirupa:7,sourceDrigVirupa:2
+});
+eq(completeMars.yuddha,10,'complete score path includes winner +10');
+eq(completeMars.total,completeMars.partialSubtotalExcludingCheshtaDrigAndYuddha+
+ completeMars.cheshta+completeMars.drig+completeMars.yuddha,
+ 'complete score includes Yuddha exactly once');
+
 
 console.log(JSON.stringify({
  pass:true,checks,
