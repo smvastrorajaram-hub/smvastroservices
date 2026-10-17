@@ -16,9 +16,9 @@ const printed={
  preDrig:[604,695,580,909,947,612,758],
  drig:[11,6,40,24,4,37,29],
  afterDrig:[615,701,620,933,951,649,787],
- // The printed FINAL omits the Mars Yuddha 10; corrected arithmetic is 630.
- yuddha:[0,0,10,0,0,0,0],
- final:[615,701,630,933,951,649,787]
+ // No Graha Yuddha is established for this worked example: do not add +10.
+ yuddha:[0,0,0,0,0,0,0],
+ final:[615,701,620,933,951,649,787]
 };
 let assertions=0;
 const eq=(a,b,message)=>{assert.deepEqual(a,b,message);assertions++};
@@ -36,10 +36,10 @@ const conflicts=names.flatMap((name,i)=>printed.yuddha[i] &&
  [{planet:name,printedYuddha:printed.yuddha[i],
    sumIfAdded:printed.afterDrig[i]+printed.yuddha[i],printedFinal:printed.final[i]}]:[]);
 eq(conflicts.length,0,'corrected arithmetic includes the printed Yuddha Bala row');
-eq(printed.final[2],630,'Mars final = 620 after Drig + 10 Yuddha');
+eq(printed.final[2],620,'Mars final = 620 after Drig + zero Yuddha');
 console.log(JSON.stringify({
  pass:true,assertions,source:'C.G. Rajan Jathaka Kanitham I print p50 PDF p72',
  grahas:7,printedFinalVirupa:printed.final,unresolvedYuddha:conflicts,
- printedTableArithmeticPass:true,correctedMarsYuddhaIncluded:true,fullNatalShadbalaCertified:false,
+ printedTableArithmeticPass:true,marsYuddhaAssumedZero:true,fullNatalShadbalaCertified:false,
  ayurdayaIntegrated:false,predictionIntegrated:false
 }));
