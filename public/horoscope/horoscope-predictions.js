@@ -1811,8 +1811,13 @@ async function renderV59(ev){
  // Never create a human lifespan total or predict the time of death.
  try{
   const ayur=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs');
-  if(!x.querySelector('[data-smv-cg-rajan-ayurdaya]'))
-   x.insertAdjacentHTML('beforeend',ayur.cgRajanAyurdayaReportHtml({
+  // Save/Print strips .integrated-predictions as legacy technical content.
+  // Keep this chapter as a SIBLING outside that discarded subtree; otherwise
+  // it would be visible on screen and silently absent from saved PDFs.
+  const predictionSection=x.closest('.smv-advanced-part.integrated-predictions');
+  if(!predictionSection)throw Error('Integrated report section unavailable');
+  if(!root.querySelector('[data-smv-cg-rajan-ayurdaya]'))
+   predictionSection.insertAdjacentHTML('afterend',ayur.cgRajanAyurdayaReportHtml({
     planets:c.planets,language:lang
    }));
  }catch(error){
