@@ -201,6 +201,11 @@
 }
 @media print{
  .mm-basic-report,.mm-basic-report *{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ /* Keep the Shadbala heading, methodology note and complete seven-graha table
+    on one page so the table never starts without its identifying heading. */
+ .mm-basic-report .smv-shadbala-section{break-inside:avoid!important;page-break-inside:avoid!important}
+ .mm-basic-report .smv-shadbala-section>h3,
+ .mm-basic-report .smv-shadbala-section>h4{break-after:avoid!important;page-break-after:avoid!important}
  .mm-basic-report .mm-base-person{
    width:100%;max-width:100%;margin:4mm auto 6mm;border:0;background:#fff;box-shadow:none;
    padding:0;break-inside:auto;page-break-inside:auto;
