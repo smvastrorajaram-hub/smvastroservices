@@ -38,3 +38,9 @@ Until these are resolved, the system must not show a final lifespan, death age, 
 `tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs` checks constants, edge cases in both reductions, per-sign product sums, a published-secondary Sun example, Method-B alternate branches, malformed inputs, and separation from other Ayurdaya engines. The new dedicated workflow also runs the existing BPHS and P.V.R. Shodhana regressions.
 
 A passing regression confirms the encoded arithmetic and guardrails only. It does not establish primary-source certification or authorize customer-facing integration.
+
+## 2026-10-19 regression expansion
+
+A separate B. V. Raman *Hindu Predictive Astrology* Chapter XXVI worked-example transcription is now kept separate from the still-missing primary pages of *Ashtakavarga System of Prediction*. Regression covers the transcribed Sun row and the sign/planet products, the published Trikona examples, gross-year arithmetic for seven reported Pinda pairs, displayed Harana sum, and the 334/365 conversion discrepancy. The ASOP secondary Method-A comparison also pins the three rows beyond the 0.1-year tolerance (Jupiter, Venus, Saturn). Method-B continues to expose both 100-year-rule branches without selecting a certified final.
+
+Evidence limits: the HPA source text is a searchable scan/OCR transcription; page-image verification is pending. The dedicated ASOP primary worked pages remain absent. Passing CI therefore means only that these arithmetic cases and known discrepancies are reproducible; it is not a certification of all seven reduced BAV rows or either method's final answer.
