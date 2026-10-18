@@ -25,5 +25,33 @@ for (const [name,lat,lon,date,time,zone,want] of samples) {
 }
 for(const [z,d,t] of [['America/New_York','2025-03-09','02:30'],['Europe/London','2026-03-29','01:30']]){assert.throws(()=>offsetMinutesAt(z,d,t),/did not exist/);count++;}
 equal(offsetMinutesAt('America/New_York','2025-11-02','01:30'),-240,'repeated hour uses first occurrence (needs verification)');
+
+// Preserve the existing statutory time-zone auto-corrections in timezone.mjs.
+// These rules are independent of coordinate-to-zone selection.
+equal(offsetMinutesAt('America/Vancouver','2026-11-01','02:00'),-420,'BC statutory auto-correction after 2026 change');
+equal(offsetMinutesAt('America/Edmonton','2026-11-01','02:00'),-360,'Alberta statutory auto-correction after 2026 change');
+equal(offsetMinutesAt('America/Yellowknife','2026-11-01','02:00'),-360,'NWT statutory auto-correction');
+equal(offsetMinutesAt('America/Inuvik','2026-11-01','02:00'),-360,'NWT Inuvik statutory auto-correction');
+equal(offsetMinutesAt('America/Winnipeg','2026-11-01','02:00'),-300,'Manitoba statutory auto-correction');
+equal(offsetMinutesAt('America/Rainy_River','2026-11-01','02:00'),-300,'Rainy River statutory auto-correction');
+equal(offsetMinutesAt('Africa/Casablanca','2026-09-20','02:00'),0,'Morocco statutory offset auto-correction');
+equal(offsetMinutesAt('Africa/El_Aaiun','2026-09-20','02:00'),0,'Western Sahara statutory offset auto-correction');
+
+// Preserve legacy offset precision and the Moldova-to-Bucharest rule.
+equal(offsetMinutesAt('EST5EDT','1883-11-17','12:00'),-300,'POSIX legacy pre-standard offset');
+equal(offsetMinutesAt('CST6CDT','1883-11-17','12:00'),-360,'POSIX legacy central offset');
+equal(offsetMinutesAt('Europe/Chisinau','2025-01-15','12:00'),120,'Moldova winter delegation');
+equal(offsetMinutesAt('Europe/Chisinau','2025-07-15','12:00'),180,'Moldova summer delegation');
+
+// Nearby locations on the other side of known borders must remain on their own zones.
+equal(timezoneFromCoordinates(-53.1638,-70.9171),'America/Punta_Arenas','Nearby Chile zone not captured by Ushuaia correction');
+equal(timezoneFromCoordinates(-13.8333,-171.75),'Pacific/Apia','Independent Samoa zone not captured by Pago Pago correction');
+equal(timezoneFromCoordinates(-9.4438,147.1803),'Pacific/Port_Moresby','Papua New Guinea zone not captured by Jayapura correction');
+equal(timezoneFromCoordinates(18.4861,-69.9312),'America/Santo_Domingo','Dominican zone not captured by Grand Turk correction');
+
 assert.rejects(()=>approximateTimezoneAt('',0),/required/);count++;
-console.log(JSON.stringify({pass:true,assertions:count,locations:samples.length,dstSeasonal:true}));
+console.log(JSON.stringify({
+ pass:true,assertions:count,locations:samples.length,dstSeasonal:true,
+ statutoryAutoCorrections:'PASS',fractionalHourMinuteZones:'PASS',
+ posixLegacyOffsets:'PASS',moldovaDelegation:'PASS',neighborZoneIsolation:'PASS'
+}));
