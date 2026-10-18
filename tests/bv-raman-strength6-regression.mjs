@@ -73,8 +73,8 @@ for(const name of planets){
  near(nodePhala.ishtaPhala,browserPhala.ishtaPhala,0.001,name+' Node/browser Ishta parity');
  near(nodePhala.kashtaPhala,browserPhala.kashtaPhala,0.001,name+' Node/browser Kashta parity');
  near(browserPhala.sixfoldShadbalaCheshtaBala,standard.planets[name].components.cheshta,0.001,name+' sixfold Cheshta remains separately evidenced');
- eq(browserPhala.ishtaPhala,Number(Math.sqrt(browserPhala.uchchaBala*browserPhala.cheshtaForPhala).toFixed(2)),name+' Ishta formula uses special Chesta-for-Phala');
- eq(browserPhala.kashtaPhala,Number(Math.sqrt((60-browserPhala.uchchaBala)*(60-browserPhala.cheshtaForPhala)).toFixed(2)),name+' Kashta formula uses special Chesta-for-Phala');
+ eq(browserPhala.ishtaPhala,Math.round((Math.sqrt(browserPhala.uchchaBala*browserPhala.cheshtaForPhala)+Number.EPSILON)*100)/100,name+' Ishta formula uses special Chesta-for-Phala');
+ eq(browserPhala.kashtaPhala,Math.round((Math.sqrt((60-browserPhala.uchchaBala)*(60-browserPhala.cheshtaForPhala))+Number.EPSILON)*100)/100,name+' Kashta formula uses special Chesta-for-Phala');
 }
 eq(standard.classicalCertified,false,'standard fixture never overclaims full certification');
 eq(Object.keys(standard.planets).length,7,'exactly seven classical grahas');
