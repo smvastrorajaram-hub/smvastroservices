@@ -227,7 +227,7 @@ eq(analysisShadbalaUi.includes('Uttara Kalamrita'),false,'Chart Analysis Shadbal
 eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
 eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
  'Chart Analysis omits a status message when no numerical rows are available');
-ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
+ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-average-fix1')"),
  'live Horoscope module integration');
 ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Ayurdaya is attached inside Advanced Analysis I, safe from print legacy stripping');
