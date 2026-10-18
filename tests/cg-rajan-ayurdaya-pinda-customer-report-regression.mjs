@@ -95,6 +95,12 @@ for(const [date,time] of [
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
   eq(blocked+adjusted,7,'each graha has adjusted Amsa candidate or blocked cell');
+  eq((lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
+    'Pinda report exposes seven actual post-Harana rows '+date);
+  eq((lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
+    'Naisargika report exposes seven actual post-Harana rows '+date);
+  yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-adjusted-amsa-years='),
+    'customer table includes auditable raw/deduction/adjusted values '+date);
   eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
     'Amsa total is shown only when every chart-specific Harana resolves');
   eq(lang.includes('data-amsa-total="blocked"'),result.totals.amsa.available!==true,
