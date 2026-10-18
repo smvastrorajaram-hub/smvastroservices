@@ -5,6 +5,7 @@ import {
   BV_RAMAN_RASI_GUNAKARA,
   BV_RAMAN_GRAHA_GUNAKARA,
   BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE,
+  BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE,
   bvRamanTrikonaShodhana,
   bvRamanEkadhipatyaShodhana,
   bvRamanAshtakavargaShodhana,
@@ -123,6 +124,94 @@ near(standardMethodA.planets.Sun.grossLunarYearsModulo27, 20.1851851852, 1e-8,
 same(standardMethodA.finalSolarYears, null,
   'matching Pinda arithmetic does not certify Harana/final solar years');
 
+// A separate worked example from B. V. Raman, Hindu Predictive Astrology,
+ // Chapter XXVI, pp. 199–203. Do not conflate this chart with the separate
+ // Ashtakavarga System of Prediction Method-A/B secondary-transcription chart.
+const hpa = BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE;
+const hpaRows = Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(
+  planet => [planet, [...hpa.sunAfterReductionRow]]
+));
+const hpaMethodA = bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows: hpaRows,
+  planetSigns: hpa.planetSigns
+});
+same(hpaMethodA.planets.Sun.rasiPinda, hpa.reportedRasiPinda.Sun,
+  'HPA Ch. XXVI Sun sign-products sum to printed Rasi Pinda 112');
+same(hpaMethodA.planets.Sun.grahaPinda, hpa.reportedGrahaPinda.Sun,
+  'HPA Ch. XXVI Sun planetary products sum to printed Graha Pinda 45');
+same(hpaMethodA.planets.Sun.sodyaPinda, 157,
+  'HPA Ch. XXVI Sun Sodhya Pinda is 112 + 45');
+near(hpaMethodA.planets.Sun.grossLunarYearsModulo27, 13.7037037037, 1e-9,
+  'HPA Ch. XXVI Sun gross lunar years are 157 × 7 / 27 less 27');
+near(hpaMethodA.planets.Sun.grossSolarYears334HpaCh26,
+  hpaMethodA.planets.Sun.grossLunarYearsModulo27 * 334 / 365, 1e-10,
+  'HPA 334/365 conversion is separately retained');
+near(hpaMethodA.planets.Sun.grossSolarYears324Secondary,
+  hpaMethodA.planets.Sun.grossLunarYearsModulo27 * 324 / 365, 1e-10,
+  'secondary ASOP 324/365 conversion is separately retained');
+
+// Recalculate each book-reported HPA gross value from printed Pinda subtotals.
+const hpaGrossArithmetic = {};
+for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+  const pinda = hpa.reportedRasiPinda[planet] + hpa.reportedGrahaPinda[planet];
+  const unwrapped = pinda * 7 / 27;
+  const reduced = ((unwrapped % 27) + 27) % 27;
+  hpaGrossArithmetic[planet] = reduced;
+  near(reduced, hpa.reportedGrossLunarYears[planet], 0.02,
+    'HPA Ch. XXVI ' + planet + ' reported gross years reconcile with Pinda arithmetic');
+}
+const hpaHaranaValues = BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
+  Math.trunc((hpa.reportedGrossLunarYears[planet] *
+    hpa.reportedHaranaFactors[planet]) * 100) / 100
+);
+same(hpaHaranaValues, [13.7, 7.76, 2.33, 0.48, 4, 12.44, 8.27],
+  'HPA Ch. XXVI example Harana factors reproduce the displayed per-graha values');
+near(hpaHaranaValues.reduce((sum, value) => sum + value, 0),
+  hpa.reportedNetLunarYears, 1e-10,
+  'HPA Ch. XXVI net 48.98 is the sum of displayed two-decimal Harana values');
+const hpaSolarRecalculated =
+  hpa.reportedNetLunarYears * hpa.reportedLunarToSolarNumerator /
+  hpa.reportedLunarToSolarDenominator;
+near(hpaSolarRecalculated, 44.822, 0.002,
+  'HPA Ch. XXVI recalculated solar total from 48.98 × 334 / 365');
+ok(Math.abs(hpaSolarRecalculated - hpa.reportedFinalSolarYears) > 0.04,
+  'HPA Ch. XXVI printed 44.87 remains explicitly inconsistent with its own 334/365 ratio');
+
+// Secondary Method-A guide arithmetic audit. These are explicitly not the
+// missing primary ASOP pages and must not be converted into a false oracle.
+const secondaryMethodASamples = [
+  { planet: 'Sun', rasi: 96, graha: 86, reported: 20.20 },
+  { planet: 'Moon', rasi: 80, graha: 20, reported: 26.00 },
+  { planet: 'Mars', rasi: 126, graha: 71, reported: 24.00 },
+  { planet: 'Mercury', rasi: 97, graha: 61, reported: 14.00 },
+  { planet: 'Jupiter', rasi: 79, graha: 45, reported: 5.00 },
+  { planet: 'Venus', rasi: 66, graha: 0, reported: 15.80 },
+  { planet: 'Saturn', rasi: 170, graha: 42, reported: 12.00 }
+];
+const secondaryMethodADiscrepancies = [];
+for (const item of secondaryMethodASamples) {
+  const modulo = ((((item.rasi + item.graha) * 7 / 27) % 27) + 27) % 27;
+  if (Math.abs(modulo - item.reported) > 0.1) {
+    secondaryMethodADiscrepancies.push({
+      planet: item.planet,
+      calculated: Number(modulo.toFixed(4)),
+      reported: item.reported,
+      difference: Number(Math.abs(modulo - item.reported).toFixed(4))
+    });
+  }
+}
+same(secondaryMethodADiscrepancies.map(item => item.planet),
+  ['Mars', 'Jupiter', 'Venus', 'Saturn'],
+  'secondary Method-A published gross-year values contain four reproducible arithmetic discrepancies');
+near(secondaryMethodADiscrepancies[0].difference, 0.1481, 0.0001,
+  'Method-A Mars arithmetic discrepancy is recorded, not patched over');
+near(secondaryMethodADiscrepancies[1].difference, 0.1481, 0.0001,
+  'Method-A Jupiter arithmetic discrepancy is recorded, not patched over');
+near(secondaryMethodADiscrepancies[2].difference, 1.3111, 0.0001,
+  'Method-A Venus arithmetic discrepancy is recorded, not patched over');
+near(secondaryMethodADiscrepancies[3].difference, 11.0370, 0.0001,
+  'Method-A Saturn arithmetic discrepancy is recorded, not patched over');
+
 const fixture = BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE;
 const methodB = bvRamanAshtakavargaMethodB({
   reducedSarvashtakavarga: fixture.reducedSarvashtakavarga,
@@ -175,7 +264,12 @@ console.log(JSON.stringify({
   pass: true,
   assertions,
   module: 'B.V. Raman Ashtakavarga Ayurdaya research engine',
-  sourceStatus: 'PRIMARY_PRINTED_CHART_PENDING',
+  sourceStatus: 'ASOP_PRIMARY_PAGES_PENDING_HPA_CHAPTER_XXVI_ARITHMETIC_GAPS_PINNED',
+  hpaSolarYearDiscrepancy: {
+    reported: hpa.reportedFinalSolarYears,
+    recalculated: Number(hpaSolarRecalculated.toFixed(4))
+  },
+  secondaryMethodADiscrepancies,
   certification: false,
   customerReportIntegration: false,
   finalLifespanEmitted: false
