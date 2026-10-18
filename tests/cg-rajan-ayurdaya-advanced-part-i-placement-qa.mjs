@@ -21,7 +21,7 @@ const routeOf="root.__smvRouteAdvancedSections?.();";
 const readyOf="window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready'";
 yes(source.includes(locationOf),'the main renderer targets actual Advanced Analysis Part I');
 yes(source.includes(appendOf),'calculation HTML is inside section I, not outside the accordion');
-yes(source.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-source-audit2')"),
+yes(source.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-pdf-dasha-fix1')"),
  'main renderer imports only source-specific Pinda/Natural calculator');
 yes(source.includes("const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]')"),
  'async module router keeps Ayurdaya last');
@@ -42,6 +42,8 @@ yes(source.indexOf(locationOf)<source.indexOf(readyOf),
 yes(printer.includes("root.querySelectorAll('.integrated-predictions")&&
  !printer.includes("querySelectorAll('.smv-advanced-part.chart-analysis'"),
  'print strips legacy predictions but retains section I');
+yes(printer.includes("const dashaTree=root.querySelector('#dashaTree')")&&printer.includes('dasha-head-print')&&!printer.includes('rawDasha.remove()'),
+ 'Vimshottari tree is preserved in native PDF');
 yes(source.includes("makePart('chart-analysis','CHART ANALYSIS','ஜாதக பகுப்பாய்வு','I')"),
  'I has original heading');
 yes(source.includes("makePart('life-predictions','PREDICTIONS','பலன்கள்','X')"),
