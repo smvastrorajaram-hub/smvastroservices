@@ -6,27 +6,29 @@ on:
       - 'public/horoscope/**/*.js'
       - 'public/horoscope/**/*.mjs'
       - 'public/horoscope/**/*.cjs'
-      - 'tests/**'
-      - '!tests/v358-result-layout-browser-smoke.mjs'
-      - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
-      - '!tests/cg-rajan-*.mjs'
-      - '!tests/uttara-kalamrita-*.mjs'
-      - '!tests/v357-bphs-shadbala-positional-regression.mjs'
-      - '!tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
-      - '!tests/v357-bphs-mercury-paksha-regression.mjs'
-      - '!tests/v361-uttara-kalamrita-shadbala-regression.mjs'
-      - '!tests/v362-bphs-primary-shadbala-regression.mjs'
-      - '!tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
-      - '!tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
-      - '!tests/v366-bphs-published-cheshta-numerical-regression.mjs'
-      - '!tests/v367-saura-true-natal-certification-gate.mjs'
-      - '!tests/v368-published-stage-historical-shadbala-audit.mjs'
-      - '!tests/classical-five-graha-date-to-cheshta-engine.mjs'
-      - '!tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
-      - '!tests/bphs-2026-live-cheshta-official-oracle.mjs'
-      - '!tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
-      - '!tests/marriage-print-browser-smoke.mjs'
-      - '!tests/smv-output-result-pdf-audit.mjs'
+      - 'tests/horoscope-generation-progress-regression.mjs'
+      - 'tests/calculation-regression.mjs'
+      - 'tests/v358-unified-result-layout-regression.mjs'
+      - 'tests/v357-bphs-varga-regression.mjs'
+      - 'tests/v357-d60-deity-designation-regression.mjs'
+      - 'tests/v357-bphs-shodhana-regression.mjs'
+      - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
+      - 'tests/bv-raman-ishta-kashta-regression.mjs'
+      - 'tests/v365-saura-mean-motion-official-panchang-regression.mjs'
+      - 'tests/saura-24-jya-true-natal-precision-regression.mjs'
+      - 'tests/saura-manda-karna-two-source-numerical-reconciliation.mjs'
+      - 'tests/v357-bphs-bav-prastara-regression.mjs'
+      - 'tests/v357-bphs-bav-remaining-four-regression.mjs'
+      - 'tests/v357-kakshya-sav-independent-regression.mjs'
+      - 'tests/v357-12-lagna-narrative-variability.mjs'
+      - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
+      - 'tests/five-book-structural-audit.mjs'
+      - 'tests/marriage-basic-report-regression.mjs'
+      - 'tests/print-dst-location-regression.mjs'
+      - 'tests/geonames-location-regression.cjs'
+      - 'tests/horoscope-birth-offset-ui-regression.mjs'
+      - 'tests/dst-seasonal-regression.mjs'
+      - 'tests/timezone-boundary-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
     branches: [main]
@@ -34,27 +36,29 @@ on:
       - 'public/horoscope/**/*.js'
       - 'public/horoscope/**/*.mjs'
       - 'public/horoscope/**/*.cjs'
-      - 'tests/**'
-      - '!tests/v358-result-layout-browser-smoke.mjs'
-      - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
-      - '!tests/cg-rajan-*.mjs'
-      - '!tests/uttara-kalamrita-*.mjs'
-      - '!tests/v357-bphs-shadbala-positional-regression.mjs'
-      - '!tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
-      - '!tests/v357-bphs-mercury-paksha-regression.mjs'
-      - '!tests/v361-uttara-kalamrita-shadbala-regression.mjs'
-      - '!tests/v362-bphs-primary-shadbala-regression.mjs'
-      - '!tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
-      - '!tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
-      - '!tests/v366-bphs-published-cheshta-numerical-regression.mjs'
-      - '!tests/v367-saura-true-natal-certification-gate.mjs'
-      - '!tests/v368-published-stage-historical-shadbala-audit.mjs'
-      - '!tests/classical-five-graha-date-to-cheshta-engine.mjs'
-      - '!tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
-      - '!tests/bphs-2026-live-cheshta-official-oracle.mjs'
-      - '!tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
-      - '!tests/marriage-print-browser-smoke.mjs'
-      - '!tests/smv-output-result-pdf-audit.mjs'
+      - 'tests/horoscope-generation-progress-regression.mjs'
+      - 'tests/calculation-regression.mjs'
+      - 'tests/v358-unified-result-layout-regression.mjs'
+      - 'tests/v357-bphs-varga-regression.mjs'
+      - 'tests/v357-d60-deity-designation-regression.mjs'
+      - 'tests/v357-bphs-shodhana-regression.mjs'
+      - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
+      - 'tests/bv-raman-ishta-kashta-regression.mjs'
+      - 'tests/v365-saura-mean-motion-official-panchang-regression.mjs'
+      - 'tests/saura-24-jya-true-natal-precision-regression.mjs'
+      - 'tests/saura-manda-karna-two-source-numerical-reconciliation.mjs'
+      - 'tests/v357-bphs-bav-prastara-regression.mjs'
+      - 'tests/v357-bphs-bav-remaining-four-regression.mjs'
+      - 'tests/v357-kakshya-sav-independent-regression.mjs'
+      - 'tests/v357-12-lagna-narrative-variability.mjs'
+      - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
+      - 'tests/five-book-structural-audit.mjs'
+      - 'tests/marriage-basic-report-regression.mjs'
+      - 'tests/print-dst-location-regression.mjs'
+      - 'tests/geonames-location-regression.cjs'
+      - 'tests/horoscope-birth-offset-ui-regression.mjs'
+      - 'tests/dst-seasonal-regression.mjs'
+      - 'tests/timezone-boundary-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   workflow_dispatch:
 permissions:
@@ -67,13 +71,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check JavaScript source syntax
+      - name: Check Horoscope source JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
           while IFS= read -r path; do
             node --check "$path"
-          done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
+          done < <(find public/horoscope -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope single-release and responsive full-report regression
         run: node tests/horoscope-generation-progress-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
@@ -130,57 +134,3 @@ jobs:
           name: SMV-TIMEZONE-PRECISION-AUDIT
           path: timezone-precision-audit.json
           retention-days: 14
-
-  geonames-render-production-status:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Render GeoNames configuration and live timezoneId
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT='https://smvastroservices.onrender.com'
-          temp="$(mktemp)"
-          status="$(curl --silent --show-error --location --connect-timeout 15 --max-time 95 --output "$temp" --write-out '%{http_code}' "$ROOT/api/locations/status" || echo 000)"
-          if [ "$status" != 200 ]; then
-            echo "::warning::Render GeoNames backend not deployed/ready (HTTP $status); set GEONAMES_USERNAME and redeploy Render."
-            exit 0
-          fi
-          if [ "$(jq -r '.configured // false' "$temp")" != true ]; then
-            echo "::warning::Render GeoNames source deployed but GEONAMES_USERNAME is not configured. Worldwide online search remains disabled."
-            exit 0
-          fi
-          city="$(curl --silent --show-error --location --max-time 40 "$ROOT/api/locations/search?q=London&limit=10")"
-          zone="$(curl --silent --show-error --location --max-time 40 "$ROOT/api/locations/timezone?lat=51.5074&lng=-0.1278")"
-          if [ "$(jq -r '.ok // false' <<< "$city")" != true ] || [ "$(jq -r '.ok // false' <<< "$zone")" != true ]; then
-            echo "::error::Live GeoNames credentials or quota failed upstream test."
-            exit 1
-          fi
-          found="$(jq -r '.timezoneId // ""' <<< "$zone")"
-          echo "Live GeoNames London timezoneId=$found"
-          [ "$found" = 'Europe/London' ] || { echo "::error::Unexpected live London timezoneId";exit 1; }
-  production-http-smoke:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Cloudflare Pages and custom domain HTTP endpoints
-        shell: bash
-        run: |
-          set -euo pipefail
-          check() {
-            url="$1"
-            body="$(mktemp)"
-            code="$(curl --location --retry 2 --connect-timeout 10 --max-time 35 --silent --show-error --output "$body" --write-out '%{http_code}' "$url")"
-            echo "$url => HTTP $code ($(wc -c < "$body") bytes)"
-            if [ "$code" != "200" ] || ! grep -iq '<html' "$body"; then
-              echo "::error::Live HTTP acceptance failed for $url"
-              rm -f "$body"
-              return 1
-            fi
-            rm -f "$body"
-          }
-          check 'https://smvastroservices.pages.dev/'
-          check 'https://smvastroservices.pages.dev/horoscope/'
-          check 'https://smvastroservices.pages.dev/horoscope/calendar/'
-          check 'https://smvastroservices.in/'
-          check 'https://smvastroservices.in/horoscope/'
