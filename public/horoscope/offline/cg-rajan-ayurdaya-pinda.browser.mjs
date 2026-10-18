@@ -116,6 +116,7 @@ export function cgRajanAmsaHaranaResearch({
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,
   enemySignLossFraction:condition.enemySignLossFraction,
   combustionLossFraction:condition.combustionLossFraction,
+   conditionHaranaFraction:condition.conditionHaranaFraction,
   combustionHaranaExempt:condition.combustionHaranaExempt,
   combustionHaranaApplied:condition.combustionHaranaApplied,
   selectedConditionHarana:condition.selectedConditionHarana,
@@ -136,6 +137,7 @@ export function cgRajanAmsaHaranaResearch({
   strongestOccupantVerified:strongestOccupantVerified===true,
   enemySignLossFraction:condition.enemySignLossFraction,
   combustionLossFraction:condition.combustionLossFraction,
+   conditionHaranaFraction:condition.conditionHaranaFraction,
   combustionHaranaExempt:condition.combustionHaranaExempt,
   combustionHaranaApplied:condition.combustionHaranaApplied,
   selectedConditionHarana:condition.selectedConditionHarana,
@@ -362,20 +364,37 @@ export function cgRajanPindaNaisargikaHaranaResearch({
   blockers.push('Common chart-specific condition/Chakrapada evidence is unresolved');
  if(gururodayaHarana?.resolved!==true)
   blockers.push(...(gururodayaHarana?.blockers||['Gururodaya Harana evidence is unresolved']));
+ const sourceEnemySignLossFraction=amsaHarana?.enemySignLossFraction;
+ const sourceCombustionLossFraction=amsaHarana?.combustionLossFraction;
+ const explicitConditionHaranaFraction=amsaHarana?.conditionHaranaFraction;
+ const conditionLossesCompete=finite(sourceEnemySignLossFraction)&&sourceEnemySignLossFraction>0&&
+  finite(sourceCombustionLossFraction)&&sourceCombustionLossFraction>0;
+ // Older internal callers may provide the two component fractions without the
+ // explicit selected field. Infer only when at most one condition deduction is
+ // nonzero; conflicting simultaneous deductions still fail closed.
+ const selectedConditionHaranaFraction=finite(explicitConditionHaranaFraction)
+  ?explicitConditionHaranaFraction
+  :(finite(sourceEnemySignLossFraction)&&sourceEnemySignLossFraction>=0&&
+    finite(sourceCombustionLossFraction)&&sourceCombustionLossFraction>=0&&!conditionLossesCompete
+    ?sourceEnemySignLossFraction+sourceCombustionLossFraction:null);
  const fractions=[
   amsaHarana?.enemySignLossFraction,amsaHarana?.combustionLossFraction,
   amsaHarana?.chakrapadaLossFraction
  ];
  if(fractions.some(v=>!finite(v)||v<0||v>1))
   blockers.push('Missing verified condition/Chakrapada Harana fractions');
+ if(!finite(selectedConditionHaranaFraction)||selectedConditionHaranaFraction<0||selectedConditionHaranaFraction>1)
+  blockers.push('Missing the single source-precedence-selected condition Harana fraction');
+ else if(finite(amsaHarana?.enemySignLossFraction)&&finite(amsaHarana?.combustionLossFraction)&&
+  Math.abs(amsaHarana.enemySignLossFraction+amsaHarana.combustionLossFraction-selectedConditionHaranaFraction)>1e-9)
+  blockers.push('Enemy-sign and combustion Harana evidence conflicts with the single selected condition deduction');
  if(blockers.length)return Object.freeze({
   planet,resolved:false,adjustedNazhigaiCandidate:null,
   traditionalUnitsCandidate:null,blockers,
   finalAyurdayaCertified:false,
   source:'C.G. Rajan Jathaka Kanitham I printed pp.231–234'
  });
- const conditionHaranaFraction=amsaHarana.enemySignLossFraction+
-  amsaHarana.combustionLossFraction;
+ const conditionHaranaFraction=selectedConditionHaranaFraction;
  const chakrapadaHaranaFraction=amsaHarana.chakrapadaLossFraction;
  const conditionHaranaNazhigai=rawNazhigai*conditionHaranaFraction;
  const chakrapadaHaranaNazhigai=rawNazhigai*chakrapadaHaranaFraction;
