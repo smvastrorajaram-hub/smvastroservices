@@ -342,9 +342,14 @@ for(const [date,time] of births){
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
   perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
  if(date==='2002-10-18'||date==='1989-10-18'){
-  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
-  ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
-   'actual saved Horoscope birth '+date+' renders Amsa days/nazhigai instead of zero for every resolved row');
+  const rawTerms=[...perNatalHtml.matchAll(/data-raw-amsa-years="([^"]+)"/g)].map(m=>Number(m[1]));
+  eq(rawTerms.length,7,'actual saved Horoscope birth '+date+' retains all seven raw Table E Amsa terms');
+  ok(rawTerms.some(v=>Number.isFinite(v)&&Math.abs(v-Math.round(v))>1e-9),
+   'actual saved Horoscope birth '+date+' preserves fractional raw Table E values');
+  eq((perNatalHtml.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
+   'actual saved Horoscope birth '+date+' labels every Amsa row raw until Table E selection is verified');
+  eq(perNatalHtml.includes('data-amsa-days='),false,
+   'actual saved Horoscope birth '+date+' does not publish unverified post-Harana Amsa day fields');
  }
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  const shadbalaRows=r.chart.planets.filter(p=>p?.strength6?.available);
