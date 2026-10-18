@@ -32,18 +32,28 @@ const standardPlanets=[
 ];
 const jd=Date.UTC(1918,9,16,14,6,16)/86400000+2440587.5;
 const planets=standardPlanets.map(p=>p.name);
+// B.V. Raman, Graha and Bhava Balas, 13th ed., Ch. VI, Examples 49-51.
+// These are transcribed from the printed Standard Horoscope table and are
+// independent of the engine's astronomy path.
+const standardChestaInputs={
+ 'செவ்வாய்':{meanLongitude:266.34,trueLongitude:229.50,sheeghroccaLongitude:181.23},
+ 'புதன்':{meanLongitude:181.23,trueLongitude:181.52,sheeghroccaLongitude:174.49},
+ 'குரு':{meanLongitude:66.91,trueLongitude:84.01,sheeghroccaLongitude:181.23},
+ 'சுக்கிரன்':{meanLongitude:181.23,trueLongitude:171.16,sheeghroccaLongitude:158.35},
+ 'சனி':{meanLongitude:111.23,trueLongitude:124.39,sheeghroccaLongitude:181.23}
+};
 const standard=calculateBVRamanShadbala({
  planets:standardPlanets,bhavas:[],
  ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
  apparentSolarHour:14.336,
  temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},
- jdUt:jd
+ jdUt:jd,classicalChestaInputs:standardChestaInputs
 });
 const nodeStandard=nodeRaman.calculateBVRamanShadbala({
   planets:standardPlanets,bhavas:[],ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
   apparentSolarHour:14.336,temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
-  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},jdUt:jd
+  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},jdUt:jd,classicalChestaInputs:standardChestaInputs
 });
 eq(nodeStandard.method,standard.method,'Node and browser use same B.V. Raman engine identity');
 for(const name of planets){
@@ -72,6 +82,13 @@ const expectedDrik={
  'சூரியன்':15.86,'சந்திரன்':-21.73,'செவ்வாய்':0.95,
  'புதன்':15.64,'குரு':-16.04,'சுக்கிரன்':18.47,'சனி':7.21
 };
+const expectedDrishtiPinda={
+ 'சூரியன்':63.45,'சந்திரன்':-86.93,'செவ்வாய்':3.81,
+ 'புதன்':62.57,'குரு':-64.14,'சுக்கிரன்':73.88,'சனி':28.82
+};
+const expectedCheshta={
+ 'செவ்வாய்':22.23,'புதன்':2.30,'குரு':35.26,'சுக்கிரன்':5.95,'சனி':21.14
+};
 for(const name of planets){
  const r=standard.planets[name];
  eq(r.classicalCertified,false,name+' keeps certification withheld');
@@ -80,6 +97,11 @@ for(const name of planets){
  near(r.components.dig,expectedDig[name],0.06,name+' Raman printed Dig Bala worked example (source-table rounding)');
  near(r.components.kala.total,expectedKala[name],0.08,name+' Raman printed Kala Bala worked example');
  near(r.components.drik,expectedDrik[name],0.08,name+' Raman printed Drik Bala worked example');
+ near(r.evidence.drikPinda,expectedDrishtiPinda[name],0.15,name+' Raman printed Drishti Pinda');
+ if(Object.hasOwn(expectedCheshta,name)){
+  near(r.components.cheshta,expectedCheshta[name],0.02,name+' Raman printed Chesta Bala worked example');
+  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',name+' uses independently transcribed Raman Chesta inputs');
+ }
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
 }
 // Five real Perambalur dates: the live chart must now expose strength6 and must not re-create strength3.
@@ -101,6 +123,10 @@ for(const [date,time] of births){
   eq(p.strength6.classicalCertified,false,date+' '+p.name+' inputs remain honestly provisional');
   const c=p.strength6.components;
   ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
+  if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
+   near(p.strength6.evidence.cheshtaSource.trueLongitude,p.longitude,1e-7,date+' '+p.name+' Cheshta uses actual ephemeris longitude');
+   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',date+' '+p.name+' exposes its unresolved mean/Sheeghrocca source gate');
+  }
   if(Number.isFinite(p.strength6.totalVirupa)){
    const kalaSum=Object.entries(c.kala).filter(([k])=>k!=='total').reduce((s,[,v])=>s+v,0);
    near(kalaSum,c.kala.total,.005,date+' '+p.name+' Kala subtotal reconciles');
