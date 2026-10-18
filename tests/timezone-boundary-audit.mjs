@@ -9,15 +9,24 @@ const dates=['1992-01-15','1992-07-15','2026-01-15','2026-07-15'];
 const differing=[];
 for(const [place,expectedZone,latitude,longitude] of cases){
  const predicted=timezoneFromCoordinates(latitude,longitude);
+ // Kwajalein is a hard-gated regression: do not let this known historical
+ // offset error degrade to a non-failing precision warning.
+ const isKwajalein = place === "Marshall Islands Kwajalein";
+ if (isKwajalein && predicted !== expectedZone) {
+  throw new Error(`Kwajalein timezone regression: expected ${expectedZone}, got ${predicted}`);
+ }
  const wrongDates=[];
  for(const date of dates){
   const expected=offsetMinutesAt(expectedZone,date,'12:00');
   const actual=offsetMinutesAt(predicted,date,'12:00');
-  if(actual!==expected)wrongDates.push({date,expected,actual});
+  if(actual!==expected){
+   wrongDates.push({date,expected,actual});
+   if(isKwajalein) throw new Error(`Kwajalein historical offset regression on ${date}: expected ${expected}, got ${actual}`);
+  }
  }
  if(wrongDates.length)differing.push({place,expectedZone,predicted,wrongDates});
 }
-const result={referenceLocations:cases.length,timezoneOffsetMismatches:differing.length,notProductionCertified:differing.length>0,examples:differing};
+const result={referenceLocations:cases.length,timezoneOffsetMismatches:differing.length,kwajaleinHistoricalGate:"PASS",notProductionCertified:differing.length>0,examples:differing};
 console.log(JSON.stringify(result,null,2));
 if(differing.length)console.warn('::warning::Automatic coordinate-to-timezone lookups are approximate. IANA offset mismatches remain; do not certify worldwide DST production accuracy.');
 if(process.env.DST_STRICT==='1' && differing.length)process.exitCode=1;
