@@ -213,18 +213,39 @@ function ayanaBala(planet,declination){
  const raw=(24+signedTerm)*60/48;
  return round3(Math.max(0,Math.min(planet==='சூரியன்'?120:60,raw*(planet==='சூரியன்'?2:1))));
 }
-function chestaBala(planet,jdUt){
+function chestaFromRamanInputs(planet,sourceInputs){
+ const required=['meanLongitude','trueLongitude','sheeghroccaLongitude'];
+ if(!sourceInputs||!required.every(k=>finite(sourceInputs[k])))throw new TypeError('B.V. Raman Chesta Bala needs printed mean, true and Sheeghrocca longitudes for '+planet);
+ const mean=norm360(sourceInputs.meanLongitude),actual=norm360(sourceInputs.trueLongitude),sheeghrocca=norm360(sourceInputs.sheeghroccaLongitude);
+ const separation=norm360(actual-mean);
+ if(Math.abs(separation-180)<1e-10)throw new RangeError('Mean/true midpoint is ambiguous at 180 degrees for '+planet);
+ const signed=separation>180?separation-360:separation,midpoint=norm360(mean+signed/2);
+ const kendra=norm360(sheeghrocca-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
+ if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
+ return {value,available:true,method:'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',
+  meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:sheeghrocca,midpoint,reducedChestaKendra:reduced,
+  trueLongitudeHistoricalCertified:true,numericallyCertified:true};
+}
+function chestaBala(planet,jdUt,planetRow,printedInputs){
  // In Raman Ch. VI the sixfold Cheshta is motional/retrograde strength.
  // The Sun/Moon special calculations in Ch. X are only for Ishta/Kashta Phala.
  if(planet==='சூரியன்'||planet==='சந்திரன்')return {value:0,available:true,method:'BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',evidence:'Raman Ch. VI motional bala; Ch. X special Chesta-for-Phala remains separate'};
- const english=EN[planet],inputs=sauraFivePlanetCheshtaInputs(jdUt,english),apsis=sauraMandoccaResearch(jdUt,english);
- const candidate=sauraFourPassTrueLongitude({planet:english,meanLongitude:inputs.meanLongitude,mandocca:apsis.mandocca,sheeghrocha:inputs.sheeghrocha,mandaKarṇaConvention:'absolute-koti-minus'});
- const delta=norm360(candidate.trueLongitude-inputs.meanLongitude);
- if(Math.abs(delta-180)<1e-10)throw new RangeError('Mean/true midpoint is ambiguous at 180 degrees for '+planet);
- const signed=delta>180?delta-360:delta,midpoint=norm360(inputs.meanLongitude+signed/2);
- const kendra=norm360(inputs.sheeghrocha-midpoint),reduced=kendra>180?360-kendra:kendra,bala=round3(reduced/3);
- if(!finite(bala)||bala<0||bala>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
- return {value:bala,available:true,method:'BV_RAMAN_TRADITIONAL_MEAN_TRUE_SHEEGHROCCA',meanLongitude:inputs.meanLongitude,trueLongitude:candidate.trueLongitude,sheeghroccaLongitude:inputs.sheeghrocha,midpoint,reducedChestaKendra:reduced,trueLongitudeHistoricalCertified:false,numericallyCertified:false};
+ const explicit=printedInputs||planetRow?.ramanChestaInputs;
+ if(explicit)return chestaFromRamanInputs(planet,explicit);
+ const english=EN[planet],inputs=sauraFivePlanetCheshtaInputs(jdUt,english);
+ // Use the actual true longitude produced by the horoscope ephemeris. The former
+ // production path reconstructed a second, approximate "true" longitude with a
+ // four-pass Saura epicycle model, which was not Raman's printed Chesta input.
+ const mean=norm360(inputs.meanLongitude),actual=norm360(planetRow?.longitude);
+ if(!finite(actual))throw new TypeError('Ephemeris true longitude missing for Raman Chesta Bala: '+planet);
+ const separation=norm360(actual-mean);
+ if(Math.abs(separation-180)<1e-10)throw new RangeError('Mean/true midpoint is ambiguous at 180 degrees for '+planet);
+ const signed=separation>180?separation-360:separation,midpoint=norm360(mean+signed/2);
+ const kendra=norm360(inputs.sheeghrocha-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
+ if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
+ return {value,available:true,method:'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',
+  meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:inputs.sheeghrocha,midpoint,reducedChestaKendra:reduced,
+  trueLongitudeHistoricalCertified:false,numericallyCertified:false};
 }
 function ramanDrishtiVirupa(angle,aspector){
  const a=norm360(angle);let base;
@@ -306,7 +327,7 @@ function applyRamanYuddha(rows,planets){
 }
 
 /** Full seven-graha B.V. Raman Shadbala. Inputs are never guessed or replaced. */
-function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLongitude,apparentSolarHour,temporal,declinations,jdUt}={}){
+function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLongitude,apparentSolarHour,temporal,declinations,jdUt,classicalChestaInputs}={}){
  if(!Array.isArray(planets))throw new TypeError('Seven-graha positions are required');
  const chart=PLANETS.map(name=>planets.find(p=>p?.name===name));
  if(chart.some(p=>!p||!finite(p.longitude)))throw new TypeError('All seven finite planetary longitudes are required');
@@ -315,11 +336,11 @@ function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLo
  const lagnaSign=Math.floor(norm360(ascendantLongitude)/30),rasiPositions=Object.fromEntries(chart.map(p=>[p.name,Math.floor(norm360(p.longitude)/30)]));
  const angles={ascendant:norm360(ascendantLongitude),midheaven:norm360(midheavenLongitude),descendant:norm360(ascendantLongitude+180),nadir:norm360(midheavenLongitude+180)},baseRows={};
  for(const planet of PLANETS){
-  const p=chart.find(x=>x.name===planet),sthana=sthanaBala(planet,p,lagnaSign,rasiPositions),dig=directionBala(planet,p.longitude,angles),kala=kalaBase(planet,chart,apparentSolarHour,temporal,declinations||{}),cheshta=chestaBala(planet,jdUt),naisargika=NAISARGIKA[planet],drik=drikBala(planet,chart);
+  const p=chart.find(x=>x.name===planet),sthana=sthanaBala(planet,p,lagnaSign,rasiPositions),dig=directionBala(planet,p.longitude,angles),kala=kalaBase(planet,chart,apparentSolarHour,temporal,declinations||{}),cheshta=chestaBala(planet,jdUt,p,classicalChestaInputs?.[planet]),naisargika=NAISARGIKA[planet],drik=drikBala(planet,chart);
   baseRows[planet]={available:true,classicalCertified:false,provisional:true,method:'B.V. Raman, Graha and Bhava Balas',unit:'virupa',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII',
    components:{sthana,dig,kala,cheshta:cheshta.value,naisargika,drik:drik.drik},
    evidence:{drikPinda:drik.pinda,drikTrace:drik.trace,cheshtaSource:cheshta,solarTimeMethod:temporal?.solarTimeMethod??'unverified/fallback solar-time context',birthApparentSolarHour:round3(apparentSolarHour)},
-   limitations:['Full natal Shadbala remains uncertified until the worked example and historical astronomical inputs reconcile independently',...(cheshta.trueLongitudeHistoricalCertified===false?['Five-planet traditional mean/true/Sheeghrocca chain remains research-only; no modern speed-bucket estimate is substituted']:[])],
+   limitations:['Full natal Shadbala remains uncertified until the worked example and historical astronomical inputs reconcile independently',...(cheshta.trueLongitudeHistoricalCertified===false?['Five-planet traditional mean-longitude/Sheeghrocca chain remains research-only; sixfold Cheshta uses the calculated chart true longitude rather than a synthetic reconstructed true longitude. No modern speed-bucket estimate is substituted.']:[])],
    totalVirupa:null,totalRupa:null,requiredVirupa:REQUIRED[planet],ratio:null,isStrong:null};
  }
  const wars=applyRamanYuddha(baseRows,chart);
