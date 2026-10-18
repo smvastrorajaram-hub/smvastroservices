@@ -158,12 +158,13 @@
 }
 .mm-basic-report table.smv-ayurdaya-table{
  box-sizing:border-box;border-collapse:collapse;width:max-content;min-width:100%;
- max-width:none;table-layout:auto;font-size:.76rem;line-height:1.35;margin:0;background:#fff;
+ max-width:none;table-layout:auto;font-size:.76rem;line-height:1.35;margin:0;background:#fffdfb;
 }
 .mm-basic-report table.smv-ayurdaya-table th,
 .mm-basic-report table.smv-ayurdaya-table td{
  box-sizing:border-box;border:1px solid #c8bca8;padding:5px 6px;
  text-align:center;vertical-align:middle;white-space:nowrap;word-break:normal;overflow-wrap:normal;
+ background:#fffdfb;
 }
 .mm-basic-report table.smv-ayurdaya-table th{
  color:#4b251b;background:#f4ead8;font-weight:700;
@@ -173,13 +174,13 @@
  font-weight:700;background:#faf2e4;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th{
- white-space:normal;text-align:start;line-height:1.4;background:#fff;color:#302722;
+ white-space:normal;text-align:start;line-height:1.4;background:#faf2e4;color:#302722;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average-basis{
- display:block;margin-top:.28em;padding:.1em 0;font-size:.84rem;line-height:1.45;font-weight:700;color:#333;background:#fff;
+ display:block;margin-top:.28em;padding:.1em 0;font-size:.84rem;line-height:1.45;font-weight:700;color:#333;background:transparent;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average td{
- background:#fff;color:#302722;text-align:center;white-space:normal;font-weight:700;
+ background:#faf2e4;color:#302722;text-align:center;white-space:normal;font-weight:700;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average-value strong{font-weight:800}
 @media print{
