@@ -1,16 +1,22 @@
 name: B.V. Raman Ashtakavarga Ayurdaya Research QA
 on:
   push:
-    branches: [main]
+    branches: [main, research/bv-raman-ashtakavarga-ayurdaya]
     paths:
       - 'public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
       - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
+      - 'tests/v357-bphs-shodhana-regression.mjs'
+      - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
       - '.github/workflows/bv-raman-ashtakavarga-ayurdaya-qa.yml'
   pull_request:
     branches: [main]
     paths:
       - 'public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
       - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
+      - 'tests/v357-bphs-shodhana-regression.mjs'
+      - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
       - '.github/workflows/bv-raman-ashtakavarga-ayurdaya-qa.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +27,7 @@ concurrency:
 jobs:
   raman-ashtakavarga-ayurdaya:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,5 +37,9 @@ jobs:
         run: |
           node --check public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs
           node --check tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
-      - name: Run source-boundary, Shodhana and arithmetic research regressions
+      - name: Run B.V. Raman Ayurdaya research regression
         run: node tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
+      - name: Run BPHS Shodhana textbook regression
+        run: node tests/v357-bphs-shodhana-regression.mjs
+      - name: Run P.V.R. Narasimha Rao Shodhana textbook regression
+        run: node tests/v360-pvr-shodhana-textbook-regression.mjs
