@@ -599,7 +599,7 @@
       <h3 class="base-planet-strength" style="margin-top:22px">💪 கிரக வலிமை & நிலை</h3>
       <p class="small">வக்கிரம், அஸ்தமனம் (Combustion), உச்சம்/நீசம், சுய ராசி மற்றும் மூலத்திரிகோணம் ஆகிய அடிப்படை நிலைகள்.</p>
       <div class="data-table-wrap"><table class="data-table strength-table"><thead><tr><th>கிரகம்</th><th>வக்கிரம்</th><th>அஸ்தமனம்</th><th>சூரிய தூரம்</th><th>ராசி நிலை</th></tr></thead><tbody>${(d.planets||[]).map(p=>{const s=p.strength||{};return `<tr><td><b>${esc(p.name)}</b></td><td>${s.retrograde?'ஆம்':'இல்லை'}</td><td>${s.combustion?'ஆம்':'இல்லை'}</td><td>${Number(s.sunDistance||0).toFixed(2)}°</td><td>${esc(smvV339Dignity(p))}</td></tr>`}).join('')}</tbody></table></div>
-      <h3 class="base-shadbala" style="margin-top:22px">💪 ஷட்பலம்</h3>
+      <h3 class="base-shadbala" style="margin-top:22px">${shadbalaTa?'💪 ஷட்பலம்':'💪 Shadbala'}</h3>
       <p class="small smv-shadbala-method-note">${esc(shadbalaNote)}</p>
       <div class="data-table-wrap smv-shadbala-scroll"><table class="data-table phase3-shadbala-table smv-shadbala-table"><thead><tr>${shadbalaHeadings.map(label=>'<th>'+esc(label)+'</th>').join('')}</tr></thead><tbody>${shadbalaRows}</tbody></table></div>
       <div class="transit-before-vimsottari"></div>
