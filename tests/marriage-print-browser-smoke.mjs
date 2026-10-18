@@ -1,6 +1,8 @@
 // Browser and A4 Print QA: all 3 styles, real two-person Swiss/Varga/BAV data.
 import assert from 'node:assert/strict';
-import {mkdir,writeFile,stat} from 'node:fs/promises';
+import {mkdir,writeFile,stat,readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
+import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
@@ -8,7 +10,24 @@ import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
 const root=new URL('../public/horoscope/',import.meta.url),output=new URL('../marriage-print-smoke-output/',import.meta.url);
+const rootPath=fileURLToPath(root);
 await mkdir(output,{recursive:true});
+// Serve the fixtures over a same-origin loopback HTTP server. A file:// page
+// can report a CSS FontFace as loaded while Chromium refuses to embed its local
+// WOFF2 resource in the printed PDF; production uses ordinary HTTP(S).
+const mimeTypes={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.woff2':'font/woff2','.ttf':'font/ttf'};
+const server=createServer(async(req,res)=>{
+ try{
+  const pathname=decodeURIComponent(new URL(req.url||'/', 'http://127.0.0.1').pathname);
+  const filePath=resolve(rootPath,'.'+pathname);
+  if(filePath!==rootPath&&!filePath.startsWith(rootPath+sep)){res.writeHead(403);res.end('Forbidden');return;}
+  const bytes=await readFile(filePath);
+  res.writeHead(200,{'Content-Type':mimeTypes[extname(filePath)]||'application/octet-stream','Cache-Control':'no-store'});
+  res.end(bytes);
+ }catch(_){res.writeHead(404);res.end('Not found');}
+});
+await new Promise((resolvePromise,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolvePromise);});
+const origin=`http://127.0.0.1:${server.address().port}/`;
 const people=[];
 for(const [name,date,time,lat,lon,zone,utc] of [
  ['Bride audit','1992-07-31','22:05',11.232,78.88,'Asia/Kolkata',330],
@@ -50,7 +69,7 @@ try{
   const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261018-ayurdaya-planet-white-v247"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v249"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
-  await page.goto(fixture.href,{waitUntil:'load'});
+  await page.goto(new URL('__matching_print_smoke_temp.html',origin).href,{waitUntil:'load'});
   const mobile=await page.evaluate(()=>{
    const charts=[...document.querySelectorAll('.mm-base-chart')];
    const tables=[...document.querySelectorAll('.mm-base-table')];
@@ -145,7 +164,7 @@ try{
  for(const matching of [true,false]){
   await writeFile(coverFile,coverHtml(matching));
   await page.setViewport({width:390,height:830,deviceScaleFactor:1});
-  await page.goto(coverFile.href,{waitUntil:'load'});
+  await page.goto(new URL('__matching_cover_print_smoke_temp.html',origin).href,{waitUntil:'load'});
   await page.emulateMediaType('print');
   const m=await page.evaluate(()=>{
     const cover=document.querySelector('#smvPrintCover'),
@@ -182,7 +201,7 @@ try{
  const inputFile=new URL('__matching_input_layer_smoke_temp.html',root);
  const inputHtml='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="smv-ui.css"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><div id="mmPublicChoice">Mode</div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Date<input type="date"></label></fieldset><fieldset><legend>Groom</legend><label>Date<input type="date"></label></fieldset></div></div><div id="mmManualEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Rasi<select><option>Aries</option></select></label></fieldset><fieldset><legend>Groom</legend><label>Rasi<select><option>Taurus</option></select></label></fieldset></div></div></div></body></html>';
  await writeFile(inputFile,inputHtml);
- await page.goto(inputFile.href,{waitUntil:'load'});
+ await page.goto(new URL('__matching_input_layer_smoke_temp.html',origin).href,{waitUntil:'load'});
  await page.emulateMediaType('screen');
  const form=await page.evaluate(()=>[...document.querySelectorAll('#mmFullEntry fieldset,#mmManualEntry fieldset')].map(x=>{
     const c=getComputedStyle(x);
@@ -192,4 +211,4 @@ try{
  assert.ok(form.every(x=>x.border==='0px'&&x.shadow==='none'),'No nested fieldset cards in either Nakshatra mode');
  console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length}));
 
-}finally{await browser.close();}
+}finally{await browser.close();await new Promise(resolvePromise=>server.close(resolvePromise));}
