@@ -132,6 +132,7 @@ jobs:
           retention-days: 14
 
   geonames-render-production-status:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check Render GeoNames configuration and live timezoneId
@@ -159,6 +160,7 @@ jobs:
           echo "Live GeoNames London timezoneId=$found"
           [ "$found" = 'Europe/London' ] || { echo "::error::Unexpected live London timezoneId";exit 1; }
   production-http-smoke:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check Cloudflare Pages and custom domain HTTP endpoints

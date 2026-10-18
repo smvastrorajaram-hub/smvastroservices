@@ -3,35 +3,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'smv-output-result/*.pdf'
-      - 'public/horoscope/horoscope.js'
-      - 'public/horoscope/horoscope-predictions.js'
-      - 'public/horoscope/report-print.js'
-      - 'public/horoscope/report-store.mjs'
-      - 'public/horoscope/marriage-basic-report.mjs'
-      - 'public/horoscope/marriage-basic-report.css'
-      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
-      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
+      - 'screenshot/*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'smv-output-result/*.pdf'
-      - 'public/horoscope/horoscope.js'
-      - 'public/horoscope/horoscope-predictions.js'
-      - 'public/horoscope/report-print.js'
-      - 'public/horoscope/report-store.mjs'
-      - 'public/horoscope/marriage-basic-report.mjs'
-      - 'public/horoscope/marriage-basic-report.css'
-      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
-      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs'
-      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
+      - 'screenshot/*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   workflow_dispatch:
@@ -46,19 +24,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check whether saved report PDF fixtures are present
+      - name: Check whether checked-in Horoscope and Matching PDF fixtures are present
         id: pdf_fixtures
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
-          pdfs=(smv-output-result/*.pdf)
+          pdfs=(screenshot/*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping stored-PDF text audit: fewer than two saved PDF fixtures are present. This does not certify PDF output; browser/HTML regression tests still run separately."
+            echo "::notice::Skipping stored-PDF text audit: fewer than two PDF fixtures are present under screenshot/. This does not certify PDF output; browser/HTML regression tests still run separately."
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Found ${#pdfs[@]} saved PDF fixture(s)."
+            echo "Found ${#pdfs[@]} PDF fixture(s) under screenshot/."
           fi
       - name: Install PDF text extraction utility
         if: steps.pdf_fixtures.outputs.found == 'true'
@@ -72,7 +50,7 @@ jobs:
           set -euo pipefail
           mkdir -p smv-output-pdf-audit
           shopt -s nullglob
-          pdfs=(smv-output-result/*.pdf)
+          pdfs=(screenshot/*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "::error::PDF fixtures disappeared after the fixture check."
             exit 1
