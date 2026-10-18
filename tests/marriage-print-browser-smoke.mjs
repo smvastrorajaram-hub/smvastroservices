@@ -223,7 +223,12 @@ try{
   try{if(new URL(req.url()).origin===sameOrigin)req.continue();else req.abort();}
   catch{req.abort();}
  });
- await page.goto(new URL('index.html',origin).href,{waitUntil:'domcontentloaded',timeout:45000});
+ const actualIndexHtml=await readFile(new URL('index.html',root),'utf8');
+ const rendererOnlyHtml=actualIndexHtml.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi,(block,attrs)=>
+  /\\bsrc=[\"'][^\"']*horoscope\\.js(?:\\?[^\"']*)?[\"']/i.test(attrs)?block:'');
+ const rendererFixture=new URL('__horoscope_pdf_smoke_temp.html',root);
+ await writeFile(rendererFixture,rendererOnlyHtml,'utf8');
+ await page.goto(new URL('__horoscope_pdf_smoke_temp.html',origin).href,{waitUntil:'domcontentloaded',timeout:30000});
  await page.waitForFunction(()=>typeof window.__smvRenderCachedCore==='function',{timeout:15000}).catch(async error=>{
   const dom=await page.evaluate(()=>({url:location.href,readyState:document.readyState,hook:typeof window.__smvRenderCachedCore,
    scriptLoads:[...document.scripts].map(x=>({src:x.src,readyState:x.readyState})).filter(x=>x.src.includes('horoscope.js')),
