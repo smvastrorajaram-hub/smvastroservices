@@ -144,7 +144,7 @@ for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'])
 }
 const printedNetSum = Object.values(sourceReportedNet).reduce((a,b)=>a+b,0);
 const recomputedNetSum = Object.values(pindaRecomputedNet).reduce((a,b)=>a+b,0);
-eq(printedNetSum, 48.98, 'printed per-graha net terms sum to the book total 48.98');
+near(printedNetSum, 48.98, 1e-9, 'printed per-graha net terms sum to the book total 48.98');
 eq(recomputedNetSum, 48.97,
   'unrounded Pinda-to-gross recomputation then Harana truncation yields 48.97; discrepancy is preserved');
 near(48.98 * 334 / 365, 44.8200547945, 1e-8,
