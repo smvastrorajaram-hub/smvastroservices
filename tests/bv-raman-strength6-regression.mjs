@@ -31,6 +31,7 @@ const standardPlanets=[
  {name:'சனி',longitude:124+22/60+41/3600,bhava:11}
 ];
 const jd=Date.UTC(1918,9,16,14,6,16)/86400000+2440587.5;
+const planets=standardPlanets.map(p=>p.name);
 const standard=calculateBVRamanShadbala({
  planets:standardPlanets,bhavas:[],
  ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
@@ -53,7 +54,6 @@ for(const name of planets){
  near(nodeStandard.planets[name].components.drik,standard.planets[name].components.drik,0.001,name+' browser/Node Drik parity');
 }
 eq(standard.classicalCertified,false,'standard fixture never overclaims full certification');
-const planets=standardPlanets.map(p=>p.name);
 eq(Object.keys(standard.planets).length,7,'exactly seven classical grahas');
 eq(Object.keys(nodeStandard.planets).length,7,'Node engine also returns seven classical grahas');
 const expectedSthana={
