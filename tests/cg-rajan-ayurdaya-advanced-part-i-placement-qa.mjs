@@ -21,7 +21,7 @@ const routeOf="root.__smvRouteAdvancedSections?.();";
 const readyOf="window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready'";
 yes(source.includes(locationOf),'the main renderer targets actual Advanced Analysis Part I');
 yes(source.includes(appendOf),'calculation HTML is inside section I, not outside the accordion');
-yes(source.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-shadbala-ayurdaya-raw-fallback2')"),
+yes(/await import\('\.\/offline\/cg-rajan-ayurdaya-pinda\.browser\.mjs\?v=[^']+'\)/.test(source),
  'main renderer imports only source-specific Pinda/Natural calculator');
 yes(source.includes("const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]')"),
  'async module router keeps Ayurdaya last');
