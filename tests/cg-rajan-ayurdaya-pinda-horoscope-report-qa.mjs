@@ -45,7 +45,8 @@ for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
  ok(averageRow.includes('<strong>'),language+' average value is bold and separate from its label');
 }
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
-ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows have no indication/source note');
+ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows remain uncluttered by source-book labels');
+ok(ta.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.')&&en.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'),'Both language reports warn that Ayurdaya is not a certified actual-lifespan prediction');
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
  'raw printed Sun Pinda example remains testable internally');
