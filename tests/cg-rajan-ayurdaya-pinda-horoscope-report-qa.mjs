@@ -33,7 +33,7 @@ eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
-ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('AMSA AYURDAYAM'),'English three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
 ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
 ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
@@ -281,7 +281,7 @@ for(const [date,time] of births){
  eq(x.predictionCertified,false,'no certification '+date);
  const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('AMSA AYURDAYAM'),'three-method html ' + date);
+  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
  if(date==='2002-10-18'||date==='1989-10-18'){
   const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days=\"(\\d+)\" data-amsa-nazhigai=\"(\\d+)\"/g)];
   ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
