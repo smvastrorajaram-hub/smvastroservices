@@ -937,6 +937,65 @@
   };
 })();
 
+  async function mountBVRamanIshtaKashta(chart, language, rootId){
+    const root=document.getElementById(rootId);
+    if(!root||!chart||!Array.isArray(chart.planets))return;
+    const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
+    if(!sectionI)return;
+    sectionI.querySelectorAll('[data-smv-ishta-kashta="1"]').forEach(node=>node.remove());
+    const birth=chart.birth||{},jdUt=Number(birth.utc_jd),ayanamsa=Number(chart.ayanamsa);
+    const grahas=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].map(name=>chart.planets.find(p=>p?.name===name)).filter(Boolean);
+    if(grahas.length!==7||!Number.isFinite(jdUt)||!Number.isFinite(ayanamsa))return;
+    const ta=language!=='en';
+    const escText=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const norm360=v=>((v%360)+360)%360;
+    const debilitationLongitude=Object.freeze({Sun:190,Moon:213,Mars:118,Mercury:345,Jupiter:275,Venus:177,Saturn:20});
+    const tamilToEnglish=Object.freeze({'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn'});
+    const uchchaBala=(englishPlanet,longitude)=>{
+      const deb=debilitationLongitude[englishPlanet];
+      if(!Number.isFinite(longitude)||!Number.isFinite(deb))return null;
+      const arc=norm360(longitude-deb),distance=Math.min(arc,360-arc);
+      return Math.max(0,Math.min(60,distance/3));
+    };
+    let phalaModule,meanModule,trueModule;
+    try{
+      [phalaModule,meanModule,trueModule]=await Promise.all([
+        import('./offline/bv-raman-ishta-kashta.browser.mjs?v=20261018-ishta-kashta-visible1'),
+        import('./offline/saura-classical-mean-motion.browser.mjs?v=20261018-ishta-kashta-visible1'),
+        import('./offline/saura-classical-true-longitude.browser.mjs?v=20261018-ishta-kashta-visible1')
+      ]);
+    }catch(error){console.warn('B.V. Raman Ishta/Kashta calculator could not be loaded:',error);return;}
+    const sun=chart.planets.find(p=>p?.name==='சூரியன்'),moon=chart.planets.find(p=>p?.name==='சந்திரன்');
+    const sayanaSun=Number.isFinite(Number(sun?.longitude))?norm360(Number(sun.longitude)+ayanamsa):null;
+    const rows=[];
+    for(const p of grahas){
+      const english=tamilToEnglish[p.name];let trueLongitude=Number(p.longitude),specialCheshta=null;
+      try{
+        if(english==='Sun'){
+          specialCheshta=phalaModule.bvRamanChestaForPhala({planet:p.name,sunSayanaLongitude:sayanaSun}).cheshtaForPhala;
+        }else if(english==='Moon'){
+          specialCheshta=phalaModule.bvRamanChestaForPhala({planet:p.name,sunNirayanaLongitude:Number(sun?.longitude),moonNirayanaLongitude:Number(moon?.longitude)}).cheshtaForPhala;
+        }else{
+          const inputs=meanModule.sauraFivePlanetCheshtaInputs(jdUt,english);
+          const apsis=trueModule.sauraMandoccaResearch(jdUt,english);
+          const candidate=trueModule.sauraFourPassTrueLongitude({planet:english,meanLongitude:inputs.meanLongitude,mandocca:apsis.mandocca,sheeghrocha:inputs.sheeghrocha,mandaKarṇaConvention:'absolute-koti-minus'});
+          trueLongitude=candidate.trueLongitude;
+          specialCheshta=phalaModule.bvRamanChestaForPhala({planet:p.name,meanLongitude:inputs.meanLongitude,trueLongitude:candidate.trueLongitude,sheeghroccaLongitude:inputs.sheeghrocha}).cheshtaForPhala;
+        }
+        const uchcha=uchchaBala(english,trueLongitude);
+        const result=phalaModule.bvRamanIshtaKashta({uchchaBala:uchcha,cheshtaBala:specialCheshta});
+        rows.push({name:p.name,uchcha,cheshta:specialCheshta,ishta:result.ishtaPhala,kashta:result.kashtaPhala});
+      }catch(error){rows.push({name:p.name,uchcha:null,cheshta:null,ishta:null,kashta:null});console.warn('Ishta/Kashta input unavailable for '+p.name+':',error);}
+    }
+    const fmt=v=>Number.isFinite(v)?Number(v).toFixed(2):'—';
+    const heads=ta?['கிரகம்','உச்ச பலம்','சேஷ்டா (இஷ்ட/கஷ்ட)','இஷ்ட பலம்','கஷ்ட பலம்']:['Planet','Uchcha Bala','Cheshta-for-Phala','Ishta Phala','Kashta Phala'];
+    const body=rows.map(row=>'<tr><td><b>'+escText(ta?row.name:tamilToEnglish[row.name])+'</b></td><td>'+fmt(row.uchcha)+'</td><td>'+fmt(row.cheshta)+'</td><td><b>'+fmt(row.ishta)+'</b></td><td><b>'+fmt(row.kashta)+'</b></td></tr>').join('');
+    const note=ta?'B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள் ஆய்வு நிலை Saura மாதிரியில் இருந்து கணக்கிடப்படுகின்றன; இம்மாதிரி இன்னும் சுயாதீன எண்ணியல் சான்றளிப்பு பெறவில்லை.':'B.V. Raman square-root method. Five-planet special Cheshta-for-Phala inputs use a research-stage Saura model and are not independently numerically certified.';
+    const html='<div class="adv-section part1-ishta-kashta" data-smv-ishta-kashta="1" data-research-candidate="true"><h4>🌗 '+(ta?'இஷ்ட பலம் / கஷ்ட பலம்':'Ishta Bala / Kashta Bala')+'</h4><p class="small">'+escText(note)+'</p><div class="adv-table-wrap smv-ishta-kashta-scroll"><table class="adv-wide smv-ishta-kashta-table"><thead><tr>'+heads.map(x=>'<th>'+escText(x)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+    const shadbala=sectionI.querySelector('.part1-planetary-strength');
+    if(shadbala)shadbala.insertAdjacentHTML('afterend',html);else sectionI.insertAdjacentHTML('beforeend',html);
+  }
+
   function renderAdvancedAstrology(data, lang, rootId){
     window.__smvDeitiesData=data;
     const box=document.getElementById(rootId); if(!box)return;
@@ -1902,7 +1961,8 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
-        // C.G. Rajan Part I: place the source-labelled Ayurdaya arithmetic
+        try{await mountBVRamanIshtaKashta(fullChart,lang,rootId);}
+        catch(ishtaError){console.warn('B.V. Raman Ishta/Kashta result unavailable:',ishtaError);}
         // INSIDE Advanced Analysis > I. Chart Analysis, as its final child.
         // Never attach it to Predictions X or the retired integrated-predictions
         // container. The markup is part of the normal Saved / Print snapshot.
