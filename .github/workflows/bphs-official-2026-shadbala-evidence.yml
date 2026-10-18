@@ -3,7 +3,8 @@ on:
   push:
     branches: [main, audit/v365-saura-mean-motion-panchang-oracle]
     paths:
-      - 'public/horoscope/offline/**'
+      - 'public/horoscope/offline/bphs*.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
       - 'tests/bphs-2026-live-cheshta-official-oracle.mjs'
       - 'tests/v366-bphs-published-cheshta-numerical-regression.mjs'
       - 'tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
@@ -16,8 +17,16 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'public/horoscope/offline/**'
-      - 'tests/**'
+      - 'public/horoscope/offline/bphs*.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'tests/bphs-2026-live-cheshta-official-oracle.mjs'
+      - 'tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - 'tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
+      - 'tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
+      - 'tests/v357-bphs-shadbala-positional-regression.mjs'
+      - 'tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
+      - 'tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - 'tests/v357-bphs-mercury-paksha-regression.mjs'
       - '.github/workflows/bphs-official-2026-shadbala-evidence.yml'
   workflow_dispatch:
 permissions:
