@@ -267,8 +267,10 @@ const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
  'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
-ok(shadbalaUi.includes('strength3')&&!shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
- 'primary Shadbala uses current calculation values without Rajan partial subtotal or separate war column');
+ok(!shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala template does not show Rajan partial subtotal or separate war column');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
+ 'primary Shadbala values are calculated by the shared current-result helper');
 for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(src.includes(heading),'primary Shadbala defines '+heading);
 for(const heading of ['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'])ok(src.includes(heading),'primary Shadbala defines English '+heading);
 
