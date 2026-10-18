@@ -250,10 +250,18 @@ export function bvRamanAshtakavargaMethodAFromReducedRows({
     const sodyaPinda = rasiPinda + grahaPinda;
     const grossLunarYearsUnwrapped = sodyaPinda * 7 / 27;
     const grossLunarYearsModulo27 = ((grossLunarYearsUnwrapped % 27) + 27) % 27;
+    // Keep the two source-reported conversion constants separate. The
+    // dedicated ASOP Method-A secondary transcription uses 324/365; the
+    // separate Hindu Predictive Astrology Ch. XXVI transcription says 334/365.
+    // Neither gross candidate is a final/net lifespan because Harana is pending.
+    const grossSolarYears324Secondary = grossLunarYearsModulo27 * 324 / 365;
+    const grossSolarYears334HpaCh26 = grossLunarYearsModulo27 * 334 / 365;
     planets[subject] = Object.freeze({
       rasiPinda, rasiProducts: Object.freeze(rasiProducts),
       grahaPinda, grahaProducts: Object.freeze(grahaProducts.map(Object.freeze)),
       sodyaPinda, grossLunarYearsUnwrapped, grossLunarYearsModulo27,
+      grossSolarYears324Secondary,
+      grossSolarYears334HpaCh26,
       netAfterHaranaLunarYears: null,
       solarYears: null
     });
@@ -274,7 +282,8 @@ export function bvRamanAshtakavargaMethodAFromReducedRows({
     blockers: Object.freeze([
       'Secondary Method-A transcription contains mismatched reported Venus/Saturn gross years versus Sodya-Pinda arithmetic.',
       'Visible-half Harana wording and at least one worked reduction do not agree.',
-      'Exact primary book example and original printed pages are required before net/final arithmetic can be certified.',
+      'Exact primary Ashtakavarga System of Prediction Method-A pages and its complete worked chart are still required.',
+      'Separate Hindu Predictive Astrology Chapter XXVI transcribes 334/365, while the ASOP secondary transcription reports 324/365; these source tracks must not be conflated.',
       'No Method-A Harana loss is silently stacked; no final value is emitted.'
     ])
   });
@@ -342,4 +351,45 @@ export const BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE = Object.freeze({
   reportedSolarYears: 94.8,
   evidenceGrade: 'SECONDARY_TRANSCRIPTION_ONLY',
   primaryBookPagesVerified: false
+});
+
+/**
+ * Cross-reference oracle from B. V. Raman, Hindu Predictive Astrology,
+ * 20th edition (1992), Chapter XXVI, printed pp. 199–203 (Scribd-indexed
+ * book text). This is NOT the same chart as the secondary ASOP Method-A/B
+ * example. OCR/page-image confirmation remains a separate evidence task.
+ *
+ * The Sun's after-reduction row and the planet placements are supplied so
+ * tests can independently recalculate its Rasi/Graha/Sodya Pinda. The other
+ * grahas' Pinda totals and printed gross years are a separate book-reported
+ * aggregate oracle; per-sign rows for those grahas are not fabricated here.
+ */
+export const BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE = Object.freeze({
+  source: 'B. V. Raman, Hindu Predictive Astrology, 20th ed. (1992), Ch. XXVI, pp. 199–203',
+  evidenceGrade: 'PRIMARY_AUTHOR_TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING',
+  sunAfterReductionRow: Object.freeze([2, 3, 0, 3, 0, 0, 0, 0, 0, 2, 2, 2]),
+  planetSigns: Object.freeze({
+    Sun: 3, Moon: 1, Mars: 4, Mercury: 4, Jupiter: 7, Venus: 4, Saturn: 1
+  }),
+  reportedRasiPinda: Object.freeze({
+    Sun: 112, Moon: 104, Mars: 8, Mercury: 132,
+    Jupiter: 85, Venus: 81, Saturn: 118
+  }),
+  reportedGrahaPinda: Object.freeze({
+    Sun: 45, Moon: 60, Mars: 10, Mercury: 80,
+    Jupiter: 50, Venus: 15, Saturn: 50
+  }),
+  reportedGrossLunarYears: Object.freeze({
+    Sun: 13.70, Moon: 15.52, Mars: 4.66, Mercury: 0.96,
+    Jupiter: 8.00, Venus: 24.88, Saturn: 16.55
+  }),
+  reportedHaranaFactors: Object.freeze({
+    Sun: 1, Moon: 0.5, Mars: 0.5, Mercury: 0.5,
+    Jupiter: 0.5, Venus: 0.5, Saturn: 0.5
+  }),
+  reportedNetLunarYears: 48.98,
+  reportedLunarToSolarNumerator: 334,
+  reportedLunarToSolarDenominator: 365,
+  reportedFinalSolarYears: 44.87,
+  note: 'Displayed net total and final solar years do not reconcile under the transcribed 334/365 ratio; retain as an explicit source-arithmetic discrepancy.'
 });
