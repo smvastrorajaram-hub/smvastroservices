@@ -54,6 +54,7 @@ try{
    const cell0=first?.querySelector('.mm-base-pos-0')?.getBoundingClientRect();
    const cell11=first?.querySelector('.mm-base-pos-11')?.getBoundingClientRect();
    const wrap=document.querySelector('.mm-base-shad-components')?.closest('.mm-base-scroll');
+   const shadTable=document.querySelector('.mm-base-shad-components');
    const td=document.querySelector('.mm-base-shad-components td');
    const extra=charts.map(c=>c.innerText).join(' ');
    const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
