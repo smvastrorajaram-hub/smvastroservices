@@ -35,15 +35,15 @@ const planets=standardPlanets.map(p=>p.name);
 const standard=calculateBVRamanShadbala({
  planets:standardPlanets,bhavas:[],
  ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
- apparentSolarHour:14.1,
+ apparentSolarHour:14.336,
  temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
- declinations:{'சூரியன்':-8.75,'சந்திரன்':10.75,'செவ்வாய்':-22.75,'புதன்':9,'குரு':23.83,'சுக்கிரன்':-17.85,'சனி':-21.14},
+ declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},
  jdUt:jd
 });
 const nodeStandard=nodeRaman.calculateBVRamanShadbala({
   planets:standardPlanets,bhavas:[],ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
-  apparentSolarHour:14.1,temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
-  declinations:{'சூரியன்':-8.75,'சந்திரன்':10.75,'செவ்வாய்':-22.75,'புதன்':9,'குரு':23.83,'சுக்கிரன்':-17.85,'சனி':-21.14},jdUt:jd
+  apparentSolarHour:14.336,temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
+  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},jdUt:jd
 });
 eq(nodeStandard.method,standard.method,'Node and browser use same B.V. Raman engine identity');
 for(const name of planets){
@@ -63,6 +63,14 @@ const expectedSthana={
 const expectedDig={
  'சூரியன்':48.1,'சந்திரன்':31.56,'செவ்வாய்':55.7,
  'புதன்':21.09,'குரு':11.5,'சுக்கிரன்':15.15,'சனி':58.02
+};
+const expectedKala={
+ 'சூரியன்':102.98,'சந்திரன்':202.04,'செவ்வாய்':30.06,
+ 'புதன்':192.79,'குரு':211.18,'சுக்கிரன்':115.53,'சனி':116.97
+};
+const expectedDrik={
+ 'சூரியன்':15.86,'சந்திரன்':-21.73,'செவ்வாய்':0.95,
+ 'புதன்':15.64,'குரு':-16.04,'சுக்கிரன்':18.47,'சனி':7.21
 };
 for(const name of planets){
  const r=standard.planets[name];
