@@ -1,7 +1,7 @@
 /* Full V10.7 browser port generated from authoritative SOURCE-swiss_vedic.js.
    Astrology formulas below are preserved; only Node sweph/fs/path bindings are replaced. */
 import { getSwe, C as WC } from './wasm-provider.mjs';
-import { calculateBVRamanShadbala } from './bv-raman-shadbala.browser.mjs';
+import { calculateBVRamanShadbala, BV_RAMAN_SHADBALA_SOURCE } from './bv-raman-shadbala.browser.mjs';
 import {uttaraKalamritaSixBala,uttaraKalamritaAyanaFromDeclination,uttaraKalamritaHoraFromSunrise} from './uttara-kalamrita-six-bala.browser.mjs';
 import { bphsDrigBalaFromAspects } from './bphs-shadbala-rectification.browser.mjs';
 import { bphsSputaDrishtiVirupa } from './bphs-sputa-drishti.browser.mjs';
@@ -534,7 +534,7 @@ function enrichStrength6(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=nul
       ?(raman?.planets?.[p.name]||{
         available:false,classicalCertified:false,provisional:true,
         method:'B.V. Raman, Graha and Bhava Balas',
-        totalVirupa:null,totalRupa:null,requiredVirupa:SHADBALA_REQUIRED[p.name],
+        totalVirupa:null,totalRupa:null,requiredVirupa:BV_RAMAN_SHADBALA_SOURCE.requiredVirupa[p.name],
         reason:ramanFailure||'Raman Shadbala inputs unavailable'
       })
       :{available:false,classicalCertified:false,reason:'Rahu/Ketu excluded from seven-graha Shadbala'},
