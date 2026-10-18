@@ -6,8 +6,8 @@ This folder intentionally contains two kinds of checks:
 
 - `.github/workflows/horoscope-matching-dst-qa.yml`: core Horoscope/Matching, Dasha, report/save/print, location, DST, boundary, and selected BPHS/numerical regression checks.
 - `.github/workflows/cg-rajan-ayurdaya-research-qa.yml`: CG Rajan Pinda/Naisargika/Amsa Ayurdaya source arithmetic, consolidated five-chart natural/Pinda integration, bilingual report placement, and saved-report/print guards.
-- `.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml`: independent C.G. Rajan printed Shadbala arithmetic, source-conflict gates, and five-natal source-specific integration checks.
-- `.github/workflows/uttara-kalamrita-six-bala-source-qa.yml`: Uttara Kalamrita's independent printed six-Bala oracle, Graha Yuddha/Drig classification boundaries, and five-natal integration checks.
+- `.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml`: independent C.G. Rajan printed Shadbala arithmetic plus BPHS positional Bala, Ahargana/temporal Bala, Drig Bala, Graha Yuddha, source-conflict gates, and five-natal integration.
+- `.github/workflows/uttara-kalamrita-six-bala-source-qa.yml`: independent Uttara Kalamrita six-Bala and Section III Ayurdaya oracles, 2026 IMD Cheshta inputs, V363/V364/V366 numerical evidence, V367 certification blockers, V368 published-stage audit, and five-natal integration.
 - `.github/workflows/horoscope-result-layout-browser-smoke.yml`: V358/V359 browser geometry checks.
 - `.github/workflows/marriage-print-browser-smoke.yml`: Chromium native-print integration.
 - `.github/workflows/smv-output-pdf-report-audit.yml`: searchable-text audit of checked-in PDF fixtures.
@@ -15,7 +15,7 @@ This folder intentionally contains two kinds of checks:
 
 ## Standalone source-oracle / research checks
 
-Several BPHS, C.G. Rajan Jathaka Kanitham/Shadbala, Uttara Kalamrita, Surya Siddhanta, and V357–V368 files preserve independent printed-number or published-reference comparisons, partial-component tests, or explicit certification blockers. They are not all part of the fast core regression job. Run a standalone test explicitly with:
+Several BPHS, C.G. Rajan Jathaka Kanitham/Shadbala, Uttara Kalamrita, and Surya Siddhanta scripts preserve independent printed-number or published-reference comparisons, partial-component tests, or explicit certification blockers. The three BPHS Shadbala scripts and the listed Uttara Kalamrita/Cheshta research scripts now run automatically from focused source-QA workflows; they remain separate test files so a failed oracle is traceable. Other checks may still be run explicitly with:
 
 ```sh
 node tests/<test-file>.mjs

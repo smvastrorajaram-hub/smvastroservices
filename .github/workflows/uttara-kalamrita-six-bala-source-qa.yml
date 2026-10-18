@@ -1,4 +1,4 @@
-name: Uttara Kalamrita Six Bala Source QA
+name: Uttara Kalamrita Source QA (Six Bala, Ayurdaya & Cheshta)
 on:
   push:
     branches: [main]
@@ -8,8 +8,21 @@ on:
       - 'public/horoscope/offline/offline-engine.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs'
+      - 'public/horoscope/offline/bphs-cheshta-swiss-orbital-research.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-true-longitude.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-mean-motion.browser.mjs'
+      - 'public/horoscope/offline/saura-natal-five-cheshta.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
       - 'tests/uttara-kalamrita-only-six-bala-book-oracle.mjs'
       - 'tests/uttara-kalamrita-five-natal-intermediate-integration.mjs'
+      - 'tests/uttara-kalamrita-2026-imd-same-frame-cheshta-oracle.mjs'
+      - 'tests/uttara-kalamrita-ayurdaya-source-only-numeric-oracle.mjs'
+      - 'tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - 'tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
+      - 'tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - 'tests/v367-saura-true-natal-certification-gate.mjs'
+      - 'tests/v368-published-stage-historical-shadbala-audit.mjs'
       - '.github/workflows/uttara-kalamrita-six-bala-source-qa.yml'
   pull_request:
     branches: [main]
@@ -19,8 +32,21 @@ on:
       - 'public/horoscope/offline/offline-engine.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs'
+      - 'public/horoscope/offline/bphs-cheshta-swiss-orbital-research.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-true-longitude.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-mean-motion.browser.mjs'
+      - 'public/horoscope/offline/saura-natal-five-cheshta.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
       - 'tests/uttara-kalamrita-only-six-bala-book-oracle.mjs'
       - 'tests/uttara-kalamrita-five-natal-intermediate-integration.mjs'
+      - 'tests/uttara-kalamrita-2026-imd-same-frame-cheshta-oracle.mjs'
+      - 'tests/uttara-kalamrita-ayurdaya-source-only-numeric-oracle.mjs'
+      - 'tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - 'tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
+      - 'tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - 'tests/v367-saura-true-natal-certification-gate.mjs'
+      - 'tests/v368-published-stage-historical-shadbala-audit.mjs'
       - '.github/workflows/uttara-kalamrita-six-bala-source-qa.yml'
   workflow_dispatch:
 permissions:
@@ -33,7 +59,7 @@ concurrency:
 jobs:
   book-and-natal-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +71,34 @@ jobs:
           node --check public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs
           node --check tests/uttara-kalamrita-only-six-bala-book-oracle.mjs
           node --check tests/uttara-kalamrita-five-natal-intermediate-integration.mjs
+          node --check public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs
+          node --check public/horoscope/offline/bphs-cheshta-swiss-orbital-research.browser.mjs
+          node --check public/horoscope/offline/saura-classical-true-longitude.browser.mjs
+          node --check public/horoscope/offline/saura-classical-mean-motion.browser.mjs
+          node --check public/horoscope/offline/saura-natal-five-cheshta.browser.mjs
+          node --check public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs
+          node --check tests/uttara-kalamrita-2026-imd-same-frame-cheshta-oracle.mjs
+          node --check tests/uttara-kalamrita-ayurdaya-source-only-numeric-oracle.mjs
+          node --check tests/v363-bphs-swiss-solar-cheshta-regression.mjs
+          node --check tests/v364-swiss-orbital-cheshta-evidence-regression.mjs
+          node --check tests/v366-bphs-published-cheshta-numerical-regression.mjs
+          node --check tests/v367-saura-true-natal-certification-gate.mjs
+          node --check tests/v368-published-stage-historical-shadbala-audit.mjs
       - name: Verify independent Uttara Kalamrita printed six-Bala oracle
         run: node tests/uttara-kalamrita-only-six-bala-book-oracle.mjs
       - name: Verify seven-graha Uttara Kalamrita integration across five natal charts
         run: node tests/uttara-kalamrita-five-natal-intermediate-integration.mjs
+      - name: Verify independent IMD same-frame Uttara Kalamrita Cheshta oracle
+        run: node tests/uttara-kalamrita-2026-imd-same-frame-cheshta-oracle.mjs
+      - name: Verify Uttara Kalamrita Section III Ayurdaya source-only arithmetic
+        run: node tests/uttara-kalamrita-ayurdaya-source-only-numeric-oracle.mjs
+      - name: Verify BPHS temporal Bala against independent Swiss solar events
+        run: node tests/v363-bphs-swiss-solar-cheshta-regression.mjs
+      - name: Verify Swiss orbital evidence without classical-longitude certification
+        run: node tests/v364-swiss-orbital-cheshta-evidence-regression.mjs
+      - name: Verify published numerical Cheshta snapshots
+        run: node tests/v366-bphs-published-cheshta-numerical-regression.mjs
+      - name: Enforce independent true-natal certification gate
+        run: node tests/v367-saura-true-natal-certification-gate.mjs
+      - name: Audit published historical Shadbala stages and blockers
+        run: node tests/v368-published-stage-historical-shadbala-audit.mjs
