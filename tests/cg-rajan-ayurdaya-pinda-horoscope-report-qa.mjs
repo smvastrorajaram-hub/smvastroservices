@@ -267,8 +267,8 @@ const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
  'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
-ok(shadbalaUi.includes('strengthJathakaKanitham')&&shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
- 'primary Shadbala shows calculated C.G. Rajan components and subtotal without a separate Yuddha/status column');
+ok(shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala shows calculated C.G. Rajan components without an uncertified subtotal or separate Yuddha/status column');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
