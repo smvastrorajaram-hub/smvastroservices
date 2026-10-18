@@ -242,8 +242,8 @@ eq((resolvedHtml.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
 eq((resolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven Naisargika rows display post-Harana candidates');
 ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&
- resolvedHtml.includes('data-adjusted-amsa-years='),
- 'the customer table retains row-level Harana arithmetic for audit');
+ resolvedHtml.includes('data-raw-amsa-years=')&&!resolvedHtml.includes('data-adjusted-amsa-years='),
+ 'the report keeps raw Table E evidence while withholding unverified adjusted Amsa values');
 ok(resolvedHtml.includes('data-amsa-total="blocked"'),
  'Amsa total renderer enforces the Table E method-selection gate');
 const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
