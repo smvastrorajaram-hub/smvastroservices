@@ -23,6 +23,12 @@ for(const [date,time] of dates){
  const output={birth:date+' '+time,UK:{}};
  for(const p of seven){
   const u=p.strengthUttaraKalamrita,prior=p.strength3;
+  ok(Number.isFinite(p.eclipticLatitude),
+   date+' '+p.name+' current Swiss ecliptic latitude is present');
+  ok(Number.isFinite(prior?.components?.kala?.yuddha),
+   date+' '+p.name+' existing engine Yuddha component is numeric');
+  ok(prior?.classicalCertified===false,
+   date+' '+p.name+' existing BPHS Shadbala is not falsely certified');
   ok(u&&u.classicalCertified===false,date+' '+p.name+' correct fail-closed UK certification');
   ok(u?.sthana?.saptavargajaPartsVirupa?.length===7,
    date+' '+p.name+' seven independent UK varga parts');

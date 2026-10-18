@@ -63,9 +63,17 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
+# This source-regression job is safe to cancel when a newer commit supersedes it.
+# Key pull-request runs by PR number, and main pushes by their branch ref.
+concurrency:
+  group: horoscope-matching-dst-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   source-regression:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,8 +96,6 @@ jobs:
         run: node tests/v357-bphs-varga-regression.mjs
       - name: V357 D60 deity name reverse order and sign-lord regression
         run: node tests/v357-d60-deity-designation-regression.mjs
-      # V357 resumed by user request: test Chapter 68 literal prose and
-      # separately ASSERT conflicting illustration stays recorded.
       - name: BPHS II Chapters 67–69 Shodhana numeric & editorial tests
         run: node tests/v357-bphs-shodhana-regression.mjs
       - name: V360 PVR textbook independent Shodhana numerical examples 40-43
