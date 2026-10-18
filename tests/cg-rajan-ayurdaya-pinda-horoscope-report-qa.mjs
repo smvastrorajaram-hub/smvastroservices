@@ -49,6 +49,9 @@ eq((ta.match(/data-natural-harana="blocked"/g)||[]).length,7,
  'Naisargika raw values are not shown as final when required Harana facts are missing');
 ok(ta.includes('data-pinda-total="blocked"')&&ta.includes('data-natural-total="blocked"'),
  'Pinda and Naisargika totals are blocked without chart-specific Harana evidence');
+ok(en.includes('Harana evidence incomplete: Pinda: Sun')&&
+ en.includes('Naisargika: Sun')&&en.includes('Amsa: Sun'),
+ 'incomplete three-method report lists which methods/grahas block the average');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
@@ -198,6 +201,13 @@ ok(resolvedChart.totals.averageOfThreeTotals?.traditionalUnits,
 const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
 eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven fully evidenced grahas display post-Harana candidates');
+eq((resolvedHtml.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven Pinda rows display post-Harana candidates');
+eq((resolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven Naisargika rows display post-Harana candidates');
+ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&
+ resolvedHtml.includes('data-adjusted-amsa-years='),
+ 'the customer table retains row-level Harana arithmetic for audit');
 ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
  'adjusted Amsa total is rendered only when complete');
 const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
