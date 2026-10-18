@@ -283,7 +283,7 @@ for(const [date,time] of births){
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
   perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
  if(date==='2002-10-18'||date==='1989-10-18'){
-  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days=\"(\\d+)\" data-amsa-nazhigai=\"(\\d+)\"/g)];
+  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
   ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
    'actual saved Horoscope birth '+date+' renders Amsa days/nazhigai instead of zero for every resolved row');
  }
