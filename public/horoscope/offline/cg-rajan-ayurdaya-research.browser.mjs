@@ -137,19 +137,23 @@ export function cgRajanCombustionHaranaStatus({planet,trueLongitude,sunLongitude
  * Amsa p.235 then adds this one selected condition deduction to Chakrapada's
  * separate deduction; it does not multiply the remaining fractions.
  */
-export function cgRajanConditionReductions({planet,enemySign,combust}={}){
+export function cgRajanConditionReductions({planet,enemySign,combust,retrograde=false}={}){
  if(!Object.prototype.hasOwnProperty.call(PLANETS,planet))
   throw new RangeError('Seven grahas only');
- if(typeof enemySign!=='boolean'||typeof combust!=='boolean')
-  throw new TypeError('Explicit, verified enemySign and combust Boolean evidence required');
+ if(typeof enemySign!=='boolean'||typeof combust!=='boolean'||typeof retrograde!=='boolean')
+  throw new TypeError('Explicit, verified enemySign, combust and retrograde Boolean evidence required');
  const combustionHaranaExempt=COMBUSTION_HARANA_EXEMPTIONS.has(planet);
  const combustionHaranaApplied=combust&&!combustionHaranaExempt;
- const enemySignLossFraction=enemySign&&!combustionHaranaApplied?1/3:0;
+ // C.G. Rajan I printed p.231: a retrograde graha is exempt from
+ // enemy-sign Harana. Combustion precedence/exemptions remain separate.
+ const enemySignHaranaSuppressedByRetrograde=retrograde===true;
+ const enemySignLossFraction=enemySign&&!combustionHaranaApplied&&!enemySignHaranaSuppressedByRetrograde?1/3:0;
  const combustionLossFraction=combustionHaranaApplied?1/2:0;
  const conditionHaranaFraction=combustionLossFraction||enemySignLossFraction;
  const selectedConditionHarana=combustionHaranaApplied?'combustion':
   (enemySignLossFraction?'enemy-sign':'none');
- return Object.freeze({planet,enemySign,combust,
+ return Object.freeze({planet,enemySign,combust,retrograde,
+  enemySignHaranaSuppressedByRetrograde,
   combustionHaranaExempt,combustionHaranaApplied,selectedConditionHarana,
   enemySignLossFraction,combustionLossFraction,conditionHaranaFraction,
   remainingFractionCandidate:1-conditionHaranaFraction,

@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {cgRajanPindaGraha, cgRajanAmsaAyurdayaGraha, cgRajanAmsaHaranaResearch,
- cgRajanMeanThreeTraditionalTotals, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml}
+ cgRajanMeanThreeTraditionalTotals, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml,
+ cgRajanGururodayaHaranaResearch, cgRajanPindaNaisargikaHaranaResearch}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let checks=0;
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
@@ -31,17 +32,27 @@ eq(research.combinedLongevityYears,null,'no calculated personal total');
 eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
-ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுள்'),'Tamil three columns');
-ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
+ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('AMSA AYURDAYAM'),'English three columns');
 ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
 ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
-ok(ta.includes('10 வ 8 மா 16 நா 22 நாழி'),'Tamil Sun printed result');
-ok(en.includes('12y 2m 19d 15n'),'English Jupiter printed result');
+eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
+ {years:10,months:8,days:16,nazhigai:22},
+ 'raw printed Sun Pinda example remains testable internally');
+eq(research.entries.find(x=>x.name==='குரு').pinda.traditionalUnits,
+ {years:12,months:2,days:19,nazhigai:15},
+ 'raw printed Jupiter Pinda example remains testable internally');
+eq((ta.match(/data-pinda-harana="blocked"/g)||[]).length,7,
+ 'Pinda raw values are not shown as final when required Harana facts are missing');
+eq((ta.match(/data-natural-harana="blocked"/g)||[]).length,7,
+ 'Naisargika raw values are not shown as final when required Harana facts are missing');
+ok(ta.includes('data-pinda-total="blocked"')&&ta.includes('data-natural-total="blocked"'),
+ 'Pinda and Naisargika totals are blocked without chart-specific Harana evidence');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
-eq(ta.includes('அம்ச ஆயுள் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
+eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
-eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
+eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
  'raw Table-A terms are not presented in the customer table as results');
@@ -93,7 +104,7 @@ const chartResolvedFixture=ref.map((p,i)=>({
  ...p,
  ...(p.name==='குரு'?{longitude:75}:{}),
  ...(p.name==='சூரியன்'?{longitude:260}:{}),
- bhava:[1,2,3,4,5,6,7][i],
+ bhava:[2,3,4,5,6,8,7][i],
  strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
   retrograde:false,exalted:false,ownSign:false}
 }));
@@ -116,6 +127,59 @@ eq(resolvedChart.totals.amsa.available,true,
 const saturnAmsa=resolvedChart.entries.find(x=>x.name==='சனி').amsaHarana;
 eq(saturnAmsa.chakrapadaApplied,true,'single occupant in house 7 receives Chakrapada Harana');
 eq(saturnAmsa.chakrapadaLossFraction,1/6,'malefic house-7 Chakrapada loss is 1/6');
+eq(resolvedChart.entries.every(x=>x.pindaHarana.resolved===true&&
+ x.naturalHarana.resolved===true),true,
+ 'all Pinda and Naisargika candidates resolve only with complete chart Harana evidence');
+const jupiterPinda=resolvedChart.entries.find(x=>x.name==='குரு').pindaHarana;
+const jupiterNatural=resolvedChart.entries.find(x=>x.name==='குரு').naturalHarana;
+eq(jupiterPinda.enemySignLossFraction,1/3,
+ 'Pinda applies the book enemy-sign Harana to Jupiter');
+eq(jupiterNatural.enemySignLossFraction,1/3,
+ 'Naisargika applies the book enemy-sign Harana to Jupiter');
+ok(jupiterPinda.adjustedNazhigaiCandidate<jupiterPinda.rawNazhigai,
+ 'Pinda candidate subtracts the source Harana, not just displays its raw component');
+ok(jupiterNatural.adjustedNazhigaiCandidate<jupiterNatural.rawNazhigai,
+ 'Naisargika candidate subtracts the source Harana, not just displays its raw component');
+eq(resolvedChart.totals.pinda.available,true,
+ 'Pinda total is made from seven Harana-adjusted rows');
+eq(resolvedChart.totals.natural.available,true,
+ 'Naisargika total is made from seven Harana-adjusted rows');
+// Printed p.248 Lagna conversion: six complete signs + 1°27′36″ =>
+// 6 years, 1 month, 27 days and 36 nazhigai in the source's traditional units.
+const lagnaGuru=cgRajanGururodayaHaranaResearch({
+ planets:[{name:'சூரியன்',longitude:181+27/60+36/3600,bhava:1,amsaHaranaBenefic:false}],
+ lagna:{longitude:181+27/60+36/3600}
+});
+eq(lagnaGuru.resolved,true,'Gururodaya resolves when Lagna data and a unique malefic occupant are explicit');
+eq(lagnaGuru.applied,true,'Gururodaya applies to malefic closest to Lagna');
+eq(lagnaGuru.lossNazhigai,6*21600+1*1800+27*60+36,
+ 'Gururodaya contribution uses the full Lagna sign/degree/minute/nazhigai notation');
+const lagnaGuruHalved=cgRajanGururodayaHaranaResearch({
+ planets:[
+  {name:'சூரியன்',longitude:181+27/60+36/3600,bhava:1,amsaHaranaBenefic:false},
+  {name:'புதன்',longitude:1+27/60+36/3600,bhava:7,amsaHaranaBenefic:true}
+ ],
+ lagna:{longitude:181+27/60+36/3600}
+});
+eq(lagnaGuruHalved.resolved,true,'Gururodaya resolves when the printed aspect rule is evidenced');
+eq(lagnaGuruHalved.beneficAspecting,true,'benefic Mercury in house 7 views the Lagna malefic');
+eq(lagnaGuruHalved.lossNazhigai,lagnaGuru.lossNazhigai/2,
+ 'a permitted benefic aspect halves the Gururodaya Harana');
+const lagnaGuruBlocked=cgRajanGururodayaHaranaResearch({
+ planets:[{name:'சந்திரன்',longitude:181,bhava:1}],
+ lagna:{longitude:181}
+});
+eq(lagnaGuruBlocked.resolved,false,'Gururodaya blocks missing explicit benefic/malefic evidence');
+const reducedPinda=cgRajanPindaNaisargikaHaranaResearch({
+ planet:'குரு',rawNazhigai:10000,
+ amsaHarana:{resolved:true,enemySignLossFraction:1/3,combustionLossFraction:0,chakrapadaLossFraction:0},
+ gururodayaHarana:{resolved:true,applied:false,targetPlanet:null,lossNazhigai:0}
+});
+eq(reducedPinda.resolved,true,'Pinda/Naisargika Harana helper accepts complete evidence');
+eq(reducedPinda.traditionalUnitsCandidate,
+ {years:0,months:3,days:21,nazhigai:7},
+ 'Harana subtraction rounds only after the adjusted component is calculated');
+
 ok(resolvedChart.totals.averageOfThreeTotals?.traditionalUnits,
  'three-method mean is rendered when all seven post-Harana candidates resolve');
 const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
@@ -175,13 +239,13 @@ for(const [date,time] of births){
  const r=await full({date,time,lat:11.232,lon:78.88,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'private research'});
  ok(r.ok,'calculated birth '+date);
- const x=cgRajanCompareGrahas({planets:r.chart.planets});
+ const x=cgRajanCompareGrahas({planets:r.chart.planets,lagna:r.chart.lagna});
  eq(x.entries.length,7,'all grahas '+date);
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
- const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'});
+ const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
+  perNatalHtml.includes('AMSA AYURDAYAM'),'three-method html ' + date);
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  count+=x.entries.length;
 }

@@ -64,6 +64,14 @@ eq(bothHarana.selectedConditionHarana,'combustion','combustion precedence is exp
 const enemyOnly=red({planet:'செவ்வாய்',enemySign:true,combust:false});
 close(enemyOnly.enemySignLossFraction,1/3,'enemy-sign loss is one third when combustion Harana does not apply');
 close(enemyOnly.conditionHaranaFraction,1/3,'enemy-sign only case');
+const retrogradeEnemyOnly=red({planet:'செவ்வாய்',enemySign:true,combust:false,retrograde:true});
+close(retrogradeEnemyOnly.enemySignLossFraction,0,
+ 'printed p.231 retrograde graha is exempt from enemy-sign Harana');
+eq(retrogradeEnemyOnly.enemySignHaranaSuppressedByRetrograde,true,
+ 'retrograde exemption is explicit in audit evidence');
+const retrogradeCombust=red({planet:'செவ்வாய்',enemySign:true,combust:true,retrograde:true});
+close(retrogradeCombust.combustionLossFraction,1/2,
+ 'retrograde enemy-sign exemption does not suppress applicable combustion Harana');
 for(const planet of ['சுக்கிரன்','சனி']){
  const exempt=red({planet,enemySign:false,combust:true});
  eq(exempt.combustionHaranaExempt,true,planet+' p231 combustion Harana exemption');
