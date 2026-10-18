@@ -23,7 +23,7 @@ check(printer.includes("const dashaTree=root.querySelector('#dashaTree')")&&prin
  'PDF print transform retains full Dasa/Bhukti/Antaram hierarchy');
 check(horoscope.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Rajan appendix is inside I / Chart Analysis, not retired integrated subtree');
-check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-pdf-dasha-fix1')"),
+check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-shadbala-ayurdaya-raw-fallback2')"),
  'Main renderer waits for source-specific arithmetic before report-ready event');
 check(horoscope.includes("sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove())"),
  'Duplicate report append prevented');
