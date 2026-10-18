@@ -50,9 +50,9 @@ eq((ta.match(/data-natural-harana="blocked"/g)||[]).length,7,
 ok(ta.includes('data-pinda-total="blocked"')&&ta.includes('data-natural-total="blocked"'),
  'Pinda and Naisargika totals are blocked without chart-specific Harana evidence');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
-eq(ta.includes('அம்ச ஆயுள் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
+eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
-eq(en.includes('Amsa Ayurdaya (Table A — before Harana)'),false,
+eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
  'raw Table-A terms are not presented in the customer table as results');
@@ -234,7 +234,7 @@ for(const [date,time] of births){
  eq(x.predictionCertified,false,'no certification '+date);
  const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
+  perNatalHtml.includes('AMSA AYURDAYAM'),'three-method html ' + date);
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  count+=x.entries.length;
 }
