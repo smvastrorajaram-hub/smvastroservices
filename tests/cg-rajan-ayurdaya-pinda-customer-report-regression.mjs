@@ -19,18 +19,18 @@ const makeSelectorChart=({sun=700,moon=600,mars=500,mercury=400,jupiter=300,venu
   },totalVirupa:name===missing?null:totalVirupa,classicalCertified:false}
  }));
 const sunWins=selectMethod({planets:makeSelectorChart(),lagna:{longitude:0}});
-eq(sunWins.selectedMethod,'pinda','Sun Shadbala selects Pindayurdaya');
+assert.equal(sunWins.selectedMethod,'pinda','Sun Shadbala selects Pindayurdaya');
 const moonWins=selectMethod({planets:makeSelectorChart({sun:600,moon:700}),lagna:{longitude:0}});
-eq(moonWins.selectedMethod,'natural','Moon Shadbala selects Naisargika Ayurdaya');
+assert.equal(moonWins.selectedMethod,'natural','Moon Shadbala selects Naisargika Ayurdaya');
 const lagnaLordWins=selectMethod({planets:makeSelectorChart({sun:500,moon:600,mars:700}),lagna:{longitude:0}});
-eq(lagnaLordWins.selectedMethod,'amsa','Aries Lagna lord Mars Shadbala selects Amsa Ayurdaya');
+assert.equal(lagnaLordWins.selectedMethod,'amsa','Aries Lagna lord Mars Shadbala selects Amsa Ayurdaya');
 const strengthTie=selectMethod({planets:makeSelectorChart({sun:700,moon:700}),lagna:{longitude:0}});
-eq(strengthTie.available,false,'equal reference strengths block selection instead of averaging');
-eq(strengthTie.reasonCode,'shadbala-tie','equal Shadbala reports a method-selection tie');
+assert.equal(strengthTie.available,false,'equal reference strengths block selection instead of averaging');
+assert.equal(strengthTie.reasonCode,'shadbala-tie','equal Shadbala reports a method-selection tie');
 const missingStrength=selectMethod({planets:makeSelectorChart({missing:'சந்திரன்'}),lagna:{longitude:0}});
-eq(missingStrength.reasonCode,'shadbala-unavailable','missing reference Shadbala blocks selection');
+assert.equal(missingStrength.reasonCode,'shadbala-unavailable','missing reference Shadbala blocks selection');
 const missingLagna=selectMethod({planets:makeSelectorChart(),lagna:{}});
-eq(missingLagna.reasonCode,'lagna-unavailable','missing calculated Lagna blocks Lagna-lord selection');
+assert.equal(missingLagna.reasonCode,'lagna-unavailable','missing calculated Lagna blocks Lagna-lord selection');
 const close=(a,b,m)=>assert.ok(Math.abs(a-b)<1e-9,m+': '+a+' != '+b);
 let assertions=0;
 const yes=(a,m)=>{assert.ok(a,m);assertions++};
