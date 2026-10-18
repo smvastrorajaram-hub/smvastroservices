@@ -188,17 +188,45 @@ function ashtakavarga(c,ta){
  return table(head,rows,'mm-base-av');
 }
 function shadbala(c,ta){
- const ps=(c?.planets||[]).filter(p=>p?.strengthJathakaKanitham?.available===true);
- if(!ps.length)return '';
- const head=ta
-  ?['கிரகம்','ஸ்தானம்','திக்','காலம்','அயனம்','சேஷ்டா','நைசர்கிகம்','த்ரிக்']
-  :['Planet','Sthana','Dig','Kala','Ayana','Cheshta','Naisargika','Drig'];
- const rows=ps.map(p=>{
-  const r=p.strengthJathakaKanitham,st=r.sthana||{},k=r.kala||{};
-  return tr([name(p.name,ta),val(st.total),val(r.dig),val(k.total),val(r.ayana),
-   val(r.cheshta),val(r.naisargika),val(r.drig)]);
+ const ps=(c?.planets||[]).filter(p=>p?.strength3?.available===true&&p.strength3?.components);
+ if(!ps.length)return '<p class="mm-base-unavailable">'+esc(title('Shadbala values are unavailable for this chart.','இந்த ஜாதகத்திற்கான ஷட்பல மதிப்புகள் கிடைக்கவில்லை.',ta?'ta':'en'))+'</p>';
+ const ranked=[...ps].filter(p=>finite(p.strength3.totalVirupa)).sort((a,b)=>Number(b.strength3.totalVirupa)-Number(a.strength3.totalVirupa));
+ const rankByName=new Map();
+ let last=null,rank=0;
+ ranked.forEach((p,index)=>{
+  const total=Number(p.strength3.totalVirupa);
+  if(last===null||Math.abs(total-last)>1e-9)rank=index+1;
+  rankByName.set(p.name,rank);last=total;
  });
- return table(head,rows,'mm-base-shad-components');
+ const status=p=>{
+  const r=p.strength3,req=Number(r.requiredVirupa),total=Number(r.totalVirupa);
+  if(!Number.isFinite(req)||req<=0||!Number.isFinite(total))return ta?'கணக்கீடு இல்லை':'Not available';
+  const pct=Math.round(total/req*100);
+  return (total>=req?(ta?'தேவையான அளவு அடைந்தது':'Meets minimum'):(ta?'தேவையான அளவுக்கு குறைவு':'Below minimum'))+' ('+pct+'%)';
+ };
+ const rows=ps.map(p=>{
+  const r=p.strength3,cx=r.components||{},rupa=finite(r.totalRupa)?Number(r.totalRupa):finite(r.totalVirupa)?Number(r.totalVirupa)/60:null;
+  const requiredRupa=finite(r.requiredVirupa)?Number(r.requiredVirupa)/60:null;
+  const total=finite(r.totalVirupa)?Number(r.totalVirupa):null;
+  const req=finite(r.requiredVirupa)?Number(r.requiredVirupa):null;
+  const below=total!==null&&req!==null&&total<req;
+  const level=status(p);
+  return '<tr><td><b>'+esc(name(p.name,ta))+'</b></td>'+
+   '<td>'+val(cx.sthana?.total,1)+'</td><td>'+val(cx.dig,1)+'</td>'+
+   '<td>'+val(cx.kala?.total,1)+'</td><td>'+val(cx.cheshta,1)+'</td>'+
+   '<td>'+val(cx.naisargika,1)+'</td><td>'+val(cx.drik,1)+'</td>'+
+   '<td><strong>'+val(total,1)+'</strong></td><td>'+val(rupa,3)+'</td>'+
+   '<td>'+val(requiredRupa,2)+'</td>'+
+   '<td>'+(rankByName.has(p.name)?rankByName.get(p.name)+' / '+ps.length:'—')+'</td>'+
+   '<td><span class="smv-shadbala-status '+(below?'smv-strength-below':'smv-strength-pass')+'">'+esc(level)+'</span></td></tr>';
+ });
+ const head=ta
+  ?['கிரகம்','ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை']
+  :['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'];
+ const note=ta
+  ?'Swiss Ephemeris கிரக நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய கணக்கீடு. முழு numerical cross-source validation நிலுவையில் உள்ளது; தரவரிசை தற்போதைய மொத்தத்தை அடிப்படையாகக் கொண்டது.'
+  :'Current calculation based on Swiss Ephemeris planetary positions. Full numerical cross-source validation is pending; rank is based on the current computed total.';
+ return '<p class="mm-base-note smv-shadbala-method-note">'+esc(note)+'</p>'+table(head,rows,'mm-base-shad-components smv-shadbala-table');
 }
 function dasha(c,ta,ref){
  const from=String(ref||new Date().toISOString().slice(0,10));
