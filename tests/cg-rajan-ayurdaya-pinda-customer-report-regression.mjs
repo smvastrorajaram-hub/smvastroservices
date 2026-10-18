@@ -57,13 +57,17 @@ for(const [date,time] of [
  eq(result.deathAgeOrDate,null,'no invented death age');
  const ta=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'ta'});
  const en=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
- if(result.totals.pinda.available&&result.totals.natural.available&&result.totals.amsa.available){
-  yes(Boolean(result.totals.averageOfThreeTotals),
-   'three-method mean is calculated when all three Harana-adjusted totals are available '+date);
-  yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
-      !en.includes('Harana evidence incomplete for one or more methods'),
-   'no incomplete-average fallback when chart evidence resolves '+date);
- }
+ yes(result.totals.pinda.available===true,
+  'Pinda total resolves from all seven Harana-adjusted rows '+date);
+ yes(result.totals.natural.available===true,
+  'Naisargika total resolves from all seven Harana-adjusted rows '+date);
+ yes(result.totals.amsa.available===true,
+  'Amsa total resolves from all seven post-Harana rows '+date);
+ yes(Boolean(result.totals.averageOfThreeTotals),
+  'three-method mean is calculated for a fully evidenced regression chart '+date);
+ yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
+     !en.includes('Harana evidence incomplete'),
+  'no incomplete-average fallback for a fully evidenced regression chart '+date);
  yes(ta.includes('ஜாதக கணிதம்')&&en.includes('Jathaka Kanitham'),
   'bilingual customer report heading');
  yes(ta.includes('ஆயுள் அல்லது மரண')&&/not predictions of lifespan/i.test(en),
@@ -73,18 +77,30 @@ for(const [date,time] of [
   yes(Number.isFinite(x.pinda.symbolicComponentYears),'numeric Pinda '+date+x.name);
   yes(Number.isFinite(x.natural.theoreticalNaturalYearComponent),
     'numeric Naisargika '+date+x.name);
+  yes(x.pindaHarana?.resolved===true,'Pinda Harana resolves '+date+x.name);
+  yes(x.naturalHarana?.resolved===true,'Naisargika Harana resolves '+date+x.name);
+  yes(x.amsaHarana?.resolved===true,'Amsa Harana resolves '+date+x.name);
+  yes(x.pindaHarana.adjustedNazhigaiCandidate<=x.pindaHarana.rawNazhigai,
+    'Pinda does not increase the raw contribution during Harana '+date+x.name);
+  yes(x.naturalHarana.adjustedNazhigaiCandidate<=x.naturalHarana.rawNazhigai,
+    'Naisargika does not increase the raw contribution during Harana '+date+x.name);
   eq(x.pinda.totalHumanLifetime,null,'Pinda never makes death date '+date+x.name);
-  if(x.amsaHarana.resolved!==true)
-   eq(x.amsaHarana.adjustedAmsaYearsCandidate,null,
-    'unresolved chart evidence never falls back to raw Amsa '+date+x.name);
+  yes(Number.isFinite(x.amsaHarana.adjustedAmsaYearsCandidate),
+    'numeric post-Harana Amsa candidate '+date+x.name);
  }
  for(const lang of [ta,en]){
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
-  yes(lang.includes('AMSA AYURDAYAM')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column exists');
+  yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column exists');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
   eq(blocked+adjusted,7,'each graha has adjusted Amsa candidate or blocked cell');
+  eq((lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
+    'Pinda report exposes seven actual post-Harana rows '+date);
+  eq((lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
+    'Naisargika report exposes seven actual post-Harana rows '+date);
+  yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-adjusted-amsa-years='),
+    'customer table includes auditable raw/deduction/adjusted values '+date);
   eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
     'Amsa total is shown only when every chart-specific Harana resolves');
   eq(lang.includes('data-amsa-total="blocked"'),result.totals.amsa.available!==true,

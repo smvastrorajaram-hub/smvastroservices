@@ -21,7 +21,7 @@ const routeOf="root.__smvRouteAdvancedSections?.();";
 const readyOf="window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready'";
 yes(source.includes(locationOf),'the main renderer targets actual Advanced Analysis Part I');
 yes(source.includes(appendOf),'calculation HTML is inside section I, not outside the accordion');
-yes(source.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-average-fix1')"),
+yes(source.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-source-audit2')"),
  'main renderer imports only source-specific Pinda/Natural calculator');
 yes(source.includes("const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]')"),
  'async module router keeps Ayurdaya last');
@@ -62,7 +62,7 @@ for(const language of ['ta','en']){
   language+' semantic report section');
  exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
  yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுள்'),language+' provisional average row');
- yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('AMSA AYURDAYAM'))||
+ yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
