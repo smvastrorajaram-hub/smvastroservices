@@ -10,7 +10,7 @@ import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
 const root=new URL('../public/horoscope/',import.meta.url),output=new URL('../marriage-print-smoke-output/',import.meta.url);
-const rootPath=fileURLToPath(root);
+const rootPath=resolve(fileURLToPath(root));
 await mkdir(output,{recursive:true});
 // Serve the fixtures over a same-origin loopback HTTP server. A file:// page
 // can report a CSS FontFace as loaded while Chromium refuses to embed its local
