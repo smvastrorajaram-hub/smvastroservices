@@ -701,7 +701,7 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
   }
   const rawUnits=v.amsa?.traditionalUnits;
   const explanation=(v.amsaHarana?.blockers||[]).join('; ')||'Amsa Harana adjustment is unresolved; showing the calculated raw Table-A term';
-  return '<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="'+esc(v.amsa?.rawAmsaYears??'')+'" title="'+esc(explanation)+'">'+esc(rawDisplay(rawUnits,ta))+'</td>';
+  return '<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="'+esc(v.amsa?.rawAmsaYears??'')+'" data-amsa-years="'+esc(rawUnits?.years??'')+'" data-amsa-months="'+esc(rawUnits?.months??'')+'" data-amsa-days="'+esc(rawUnits?.days??'')+'" data-amsa-nazhigai="'+esc(rawUnits?.nazhigai??'')+'" data-amsa-total-nazhigai="'+esc(rawUnits?traditionalNazhigai(rawUnits):'')+'" title="'+esc(explanation)+'">'+esc(rawDisplay(rawUnits,ta))+'</td>';
  };
  const commonCell=(method,v)=>{
   const result=v[method+'Harana'];
