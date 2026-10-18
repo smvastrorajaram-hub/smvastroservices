@@ -72,7 +72,7 @@ const matchingShadbalaStart=matchingReportSource.indexOf('function shadbala(c,ta
 const matchingShadbalaEnd=matchingReportSource.indexOf('function dasha(c,ta,ref){',matchingShadbalaStart);
 const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,matchingShadbalaEnd);
 ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
-ok(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),'Matching Shadbala displays the calculated component subtotal when certified total inputs are unavailable');
+eq(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),false,'Matching does not present an incomplete subtotal as Shadbala');
 ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
 ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
  'Matching Shadbala contains no indication/status or standalone Yuddha/war column');
