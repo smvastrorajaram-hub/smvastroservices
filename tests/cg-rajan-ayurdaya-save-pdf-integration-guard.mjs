@@ -51,6 +51,8 @@ for(const language of ['ta','en']){
   'Three-method table columns '+language);
  check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுர்த்தாயம்'),
   'Three-total mean row '+language);
+ check(result.includes('class="smv-ayurdaya-average-basis"'),
+  'Average-method subtext is a distinct visible element '+language);
  check(!result.includes('<script')&&!result.includes('onload='),
   'Safe snapshot HTML '+language);
 }
