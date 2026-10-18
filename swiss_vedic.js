@@ -4,7 +4,7 @@
 // The project must provide its own licensed ephemeris data in ./ephe or via
 // SWISSEPH_EPHE_PATH. No ephemeris binaries are bundled in this patch.
 const swe = require('sweph');
-const {calculateBVRamanShadbala}=require('./bv-raman-shadbala.cjs');
+const {calculateBVRamanShadbala,BV_RAMAN_SHADBALA_SOURCE}=require('./bv-raman-shadbala.cjs');
 const { constants: C } = swe;
 const path = require('path');
 const fs = require('fs');
@@ -482,7 +482,7 @@ function enrichStrength6(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=nul
       ?(result?.planets?.[p.name]||{
         available:false,classicalCertified:false,provisional:true,
         method:'B.V. Raman, Graha and Bhava Balas',totalVirupa:null,totalRupa:null,
-        requiredVirupa:SHADBALA_REQUIRED[p.name],reason:failure||'Raman Shadbala inputs unavailable'
+        requiredVirupa:BV_RAMAN_SHADBALA_SOURCE.requiredVirupa[p.name],reason:failure||'Raman Shadbala inputs unavailable'
       })
       :{available:false,classicalCertified:false,reason:'Rahu/Ketu excluded from seven-graha Shadbala'}
   }));
