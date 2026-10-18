@@ -159,8 +159,9 @@ try{
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
   assert.equal(print.ayurdayaTables,ayurdayaSelections.filter(s=>s.available).length,'Only chosen Ayurdaya method tables remain in print DOM: '+style);
-  assert.ok(print.methodSelections.length===ayurdayaSelections.filter(s=>s.available).length&&print.methodSelections.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700),
-    'The selected-method Shadbala explanation remains readable/visible in print: '+style);
+  const expectedMethodSelectionCount=ayurdayaSelections.filter(s=>s.available).length;
+  assert.ok(print.methodSelections.length===expectedMethodSelectionCount&&print.methodSelections.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700),
+    'The selected-method Shadbala explanation remains readable/visible in print: '+style+' '+JSON.stringify({expectedMethodSelectionCount,actual:print.methodSelections}));
   assert.equal(print.tamilFontReady,true,'Noto Tamil font is loaded for native PDF rendering: '+style);
   assert.equal(print.shadbalaBreakInside,'avoid','Shadbala heading and full table stay together in PDF: '+style);
   const printText=await page.evaluate(()=>document.querySelector('#printReport')?.innerText||'');
