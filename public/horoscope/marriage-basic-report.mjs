@@ -191,12 +191,12 @@ function shadbala(c,ta){
  const ps=(c?.planets||[]).filter(p=>p?.strengthJathakaKanitham?.available===true);
  if(!ps.length)return '';
  const head=ta
-  ?['கிரகம்','ஸ்தானம்','திக்','காலம்','அயனம்','சேஷ்டா','நைசர்கிகம்','த்ரிக்','இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)']
-  :['Planet','Sthana','Dig','Kala','Ayana','Cheshta','Naisargika','Drig','Subtotal (excluding Cheshta/Drig/Yuddha)'];
+  ?['கிரகம்','ஸ்தானம்','திக்','காலம்','அயனம்','சேஷ்டா','நைசர்கிகம்','த்ரிக்']
+  :['Planet','Sthana','Dig','Kala','Ayana','Cheshta','Naisargika','Drig'];
  const rows=ps.map(p=>{
   const r=p.strengthJathakaKanitham,st=r.sthana||{},k=r.kala||{};
   return tr([name(p.name,ta),val(st.total),val(r.dig),val(k.total),val(r.ayana),
-   val(r.cheshta),val(r.naisargika),val(r.drig),val(r.partialSubtotalExcludingCheshtaAndDrig)]);
+   val(r.cheshta),val(r.naisargika),val(r.drig)]);
  });
  return table(head,rows,'mm-base-shad-components');
 }
