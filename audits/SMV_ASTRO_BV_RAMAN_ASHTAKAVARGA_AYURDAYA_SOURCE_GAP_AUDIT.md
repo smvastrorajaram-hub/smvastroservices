@@ -114,3 +114,44 @@ Trikona/Ekadhipatya வரிசை, occupancy விதிவிலக்கு
 ## பாதுகாப்பான வெளியீட்டு விதி
 
 இது பாரம்பரிய நூல் முறையின் கணிதப் பிரதியெடுப்பு ஆராய்ச்சி மட்டுமே. மருத்துவ ஆயுள் கணிப்பு அல்லது மரண வயது/தேதி கணிப்பு அல்ல. முதன்மை நூல்-எண்கள் முழுமையாகப் பொருந்தி, சோதனைகள் சான்றளிக்கும் வரை பயனர் அறிக்கைகளில் இறுதி ஆயுர்த்தாய மதிப்பு காட்டப்படக்கூடாது.
+
+
+## 2026-10-19 — Chapter XIV + Chapter XXVI integration prototype
+
+A new research-only module has been added:
+- public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs
+- Regression: tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
+
+The new module explicitly targets the two chapters of the same book, *Hindu Predictive Astrology*:
+- **Chapter XIV, Ayurdaya or Longevity**: selected qualitative combinations for Balarishta, Alpayu, Madhyayu and Purnayu, plus selected antidotes. It emits matched, not-matched and unknown rule traces. This is a partial list, not the full chapter's combinations.
+- **Chapter XXVI, The Ashtakavarga System**: reduced BAV rows -> Rasi Pinda + Graha Pinda -> Sodhya Pinda -> gross lunar-year term -> separate per-graha Harana -> 334/365 solar-year candidate.
+
+### How the two tracks are combined
+
+They are joined by a cross-check, **not by averaging**:
+1. Chapter XIV makes one or more rule-category candidates from placements and independently supplied source-sensitive facts.
+2. Chapter XXVI calculates its own numerical candidate from the reduced BAV and Pinda arithmetic.
+3. A candidate overlap or disagreement is recorded for review. Neither track overrides the other and no final category is selected automatically.
+4. No death age/date field is produced, no final lifespan is released, and customer Horoscope/Marriage Matching output is not changed.
+
+### Harana rule added from Chapter XXVI
+
+The implementation records all seven factors separately: conjunction in the same sign, debilitation, combustion, temporary-enemy sign, above-horizon placement, defeat in planetary war, and eclipse for Sun/Moon. Where multiple factors apply, it selects only the **largest single deduction** (one-half takes precedence over one-third); it does not multiply/stack all reductions. Every source-sensitive Harana boolean must be explicit; missing facts block the adjusted term.
+
+### Newly pinned arithmetic discrepancy
+
+Using the reported Pinda pairs for the Chapter XXVI example and re-calculating gross lunar years directly from (Rasi Pinda + Graha Pinda) × 7 / 27, then taking the modulo-27 remainder and truncating each post-Harana graha term to two decimals, the prototype gets:
+- Recomputed net lunar-year sum: **48.97**, not the printed **48.98**.
+- Conversion of the printed 48.98 by 334/365: 44.820054…, or **44.82**, not printed **44.87**.
+- Conversion of the independently recomputed 48.97 by 334/365: 44.810904…, or **44.81**.
+
+These differences are deliberately preserved as discrepancies. The formulas are not altered to force the book's printed total. This does **not** prove the original book is wrong: page-image examination is needed to distinguish print, transcription, intermediate rounding, or implementation-method differences.
+
+### Remaining certification blockers
+
+- The original PDF's specific Chapter XIV and XXVI page images have not yet passed page-by-page visual verification. The text transcription is not marked as page-image-certified.
+- The complete Chapter XIV category/rule set and all cancellations are not implemented; unimplemented conditions remain outside this prototype, not interpreted as absent.
+- Strength, Drekkana, aspects and special full-Moon conditions need independently validated inputs. Provisional Shadbala strength6 is not silently elevated to certified evidence.
+- The complete source worked chart must be reconstructed with every input, all BAV cells, both Shodhana reductions, all 12 Rasi products, all 7 Graha products, each Harana factor, each rounding step and the final conversion.
+- Method A/B transcriptions from the separate book *Ashtakavarga System of Prediction* remain a separate research track. They are not silently substituted for *Hindu Predictive Astrology*, Chapter XXVI.
+- The workflow must run green before considering the branch ready for review. Nothing is merged to main as part of this change.
