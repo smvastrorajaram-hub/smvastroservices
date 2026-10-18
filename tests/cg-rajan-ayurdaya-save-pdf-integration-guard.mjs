@@ -44,8 +44,8 @@ for(const language of ['ta','en']){
   'Stable report section marker '+language);
  check((result.match(/<tr\b/g)||[]).length===10,
   'Header + seven grahas + total + average rows '+language);
- check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('Amsa Ayurdaya'))||
-       (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுள்')),
+ check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('AMSA AYURDAYAM'))||
+       (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுர்த்தாயம்')),
   'Three-method table columns '+language);
  check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுள்'),
   'Three-total mean row '+language);
