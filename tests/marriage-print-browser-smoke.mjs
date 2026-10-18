@@ -32,6 +32,7 @@ try{
   assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('யுத்தம் (UK)'), 'No foreign-method note or separate Yuddha column: '+testName);
   assert.ok(html.includes('mm-base-shad-components')&&html.includes('மொத்த ஷட்பலம் (விரூபம்)')&&html.includes('மொத்த ரூபா')&&html.includes('தேவையான ரூபா')&&html.includes('தரவரிசை')&&html.includes('வலிமை நிலை'),
    'Six Bala components, final total, Rupa, required Rupa, rank and strength status render in Tamil: '+testName);
+  assert.ok(html.includes('smv-shadbala-section'),'Shadbala heading, validation note and table are inside one print-break wrapper: '+testName);
   assert.ok(html.includes('class="smv-ayurdaya-average-basis"'),'Ayurdaya method subtext is in the Matching print HTML: '+testName);
   assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
   const meanRows=[...html.matchAll(/<tr class="smv-ayurdaya-average">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
@@ -45,7 +46,7 @@ try{
   assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
   assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
-  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"></head><body><main id="printReport">'+html+'</main></body></html>';
+  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body><main id="printReport">'+html+'</main></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
   await page.goto(fixture.href,{waitUntil:'load'});
@@ -102,10 +103,15 @@ try{
   await page.pdf({path:fileURLToPath(pdfPath),format:'A4',printBackground:true,preferCSSPageSize:true});
   const {size}=await stat(pdfPath);
   assert.ok(size>25000,'PDF is not empty: '+style);
-  const print=await page.evaluate(()=>{
+  const print=await page.evaluate(async()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
    const basis=[...document.querySelectorAll('.smv-ayurdaya-average-basis')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
-   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,averageBasis:basis};
+   const shadbalaSection=document.querySelector('.smv-shadbala-section');
+   const shadbalaBreakInside=shadbalaSection?getComputedStyle(shadbalaSection).breakInside:'missing';
+   await document.fonts.ready;
+   const tamilFonts=await document.fonts.load('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்');
+   const tamilFontReady=tamilFonts.some(face=>face.family.replace(/["']/g,'').includes('SMVTamil'))&&document.fonts.check('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்');
+   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,averageBasis:basis,tamilFontReady,shadbalaBreakInside};
   });
   assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
@@ -113,6 +119,8 @@ try{
   assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
   assert.ok(print.averageBasis.length===2&&print.averageBasis.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7),
     'Both Ayurdaya subtexts remain readable/visible in print: '+style);
+  assert.equal(print.tamilFontReady,true,'Noto Tamil font is loaded for native PDF rendering: '+style);
+  assert.equal(print.shadbalaBreakInside,'avoid','Shadbala heading and full table stay together in PDF: '+style);
   const printText=await page.evaluate(()=>document.querySelector('#printReport')?.innerText||'');
   assert.ok(printText.includes('அந்தரம்')&&printText.includes('மொத்தம் (7 கிரகங்கள்)')&&printText.includes('சராசரி ஆயுர்த்தாயம்'), 'Native print DOM preserves Antaram and Ayurdaya total/mean: '+style);
   results.push({style:testName,pdfBytes:size,mobile,print});
