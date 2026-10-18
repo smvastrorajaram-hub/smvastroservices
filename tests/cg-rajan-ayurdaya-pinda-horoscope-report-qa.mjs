@@ -63,6 +63,9 @@ for(const [report,language] of [[ta,'Tamil'],[en,'English']]){
    language+' retains the actual-lifespan disclaimer');
  ok(report.includes(language==='Tamil'?'ஷட்பலத்தின் அடிப்படையில் தேர்வு':'Selected by chart Shadbala'),
    language+' explains which Shadbala reference selected the method');
+ eq(report.includes('முழு பாரம்பரிய நூல்-சான்று இன்னும் நிலுவையில் உள்ளது')||
+    report.includes('full classical source certification remains pending'),false,
+    language+' omits only the extra certification-status note');
 }
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
