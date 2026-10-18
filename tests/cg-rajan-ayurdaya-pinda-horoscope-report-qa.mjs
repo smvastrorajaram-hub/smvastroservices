@@ -45,9 +45,9 @@ ok(en.includes('Pinda Ayurdaya')&&!en.includes('Naisargika Ayurdaya')&&!en.inclu
  'English report shows only the method selected by Shadbala');
 eq(ta.includes('சராசரி ஆயுர்த்தாயம்')||en.includes('Average Ayurdaya'),false,
  'customer output never shows the average of competing Ayurdaya methods');
-const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
 for(const [report,language] of [[ta,'Tamil'],[en,'English']]){
- eq((report.match(/<tr\\b/g)||[]).length,9,language+' only header + seven grahas + total row');
+ eq((report.match(/<tr\b/g)||[]).length,9,language+' only header + seven grahas + total row');
  eq(report.includes('data-ayurdaya-selection="pinda"'),true,language+' records selected method');
  eq(report.includes('data-selected-reference-role="sun"'),true,language+' records Sun as the strength winner');
  eq((totalRowOf(report).match(/<strong>/g)||[]).length,1,language+' has one selected-method total cell');
@@ -344,10 +344,10 @@ for(const [date,time] of births){
   ok(perNatalHtml.includes(selectedLabel),'natal customer HTML includes its single Shadbala-selected method '+date);
   const hiddenLabels=['Pinda Ayurdaya','Naisargika Ayurdaya','Amsa Ayurdaya'].filter(v=>v!==selectedLabel);
   for(const label of hiddenLabels)ok(!perNatalHtml.includes(label),'natal customer HTML omits unselected method '+label+' '+date);
-  eq((perNatalHtml.match(/<tr\\b/g)||[]).length,9,'one selected method renders header + seven grahas + total '+date);
+  eq((perNatalHtml.match(/<tr\b/g)||[]).length,9,'one selected method renders header + seven grahas + total '+date);
   eq(perNatalHtml.includes('Average Ayurdaya'),false,'natal customer HTML never displays method average '+date);
  }else{
-  eq((perNatalHtml.match(/<tr\\b/g)||[]).length,0,'natal report with missing/tied Shadbala has no unselected method table '+date);
+  eq((perNatalHtml.match(/<tr\b/g)||[]).length,0,'natal report with missing/tied Shadbala has no unselected method table '+date);
   ok(perNatalHtml.includes('data-ayurdaya-selection="unavailable"'),'natal report exposes a safe no-selection state '+date);
  }
  if((date==='2002-10-18'||date==='1989-10-18')&&perNatalSelection.selectedMethod==='amsa'){
