@@ -32,7 +32,8 @@ try{
   assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('யுத்தம் (UK)'), 'No foreign-method note or separate Yuddha column: '+testName);
   assert.ok(html.includes('mm-base-shad-components')&&html.includes('மொத்த ஷட்பலம் (விரூபம்)')&&html.includes('மொத்த ரூபா')&&html.includes('தேவையான ரூபா')&&html.includes('தரவரிசை')&&html.includes('வலிமை நிலை'),
    'Six Bala components, final total, Rupa, required Rupa, rank and strength status render in Tamil: '+testName);
-  assert.ok(html.includes('smv-shadbala-section'),'Shadbala heading, validation note and table are inside one print-break wrapper: '+testName);
+  assert.ok(html.includes('smv-shadbala-section'),'Shadbala heading and table are inside one print-break wrapper: '+testName);
+  assert.ok(!html.includes('smv-shadbala-method-note'),'Matching print output omits the internal Shadbala validation note: '+testName);
   assert.ok(html.includes('class="smv-ayurdaya-average-basis"'),'Ayurdaya method subtext is in the Matching print HTML: '+testName);
   assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
   const meanRows=[...html.matchAll(/<tr class="smv-ayurdaya-average">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
