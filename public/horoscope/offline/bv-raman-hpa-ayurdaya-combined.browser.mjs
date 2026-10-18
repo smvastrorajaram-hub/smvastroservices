@@ -264,7 +264,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-BAL-01', 'Balarishta', 'Malefic in the final Navamsa', maleficsLastNavamsa));
   rules.push(makeRule('XIV-BAL-02', 'Balarishta',
     'Moon in a Kendra with malefic influence and no benefic aspect',
-    triAll(isKendra(moonHouse), moonMaleficInfluence, noBeneficMoonAspect)));
+    triAll(isKendra(moonHouse), moonMaleficInfluence)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
     'Moon in house 7, 8 or 12 with malefic influence and no benefic aspect',
     triAll(inList(moonHouse, [7, 8, 12]), moonMaleficInfluence, noBeneficMoonAspect)));
@@ -315,7 +315,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 5,
       houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 1)));
   rules.push(makeRule('XIV-ALP-02', 'Alpayu', 'Malefic influence across houses 6, 8 and 12',
-    triAny(...[6, 8, 12].map(house => maleficInHouse(map, house)))));
+    triAll(...[6, 8, 12].map(house => maleficInHouse(map, house)))));
   rules.push(makeRule('XIV-ALP-03', 'Alpayu', 'Saturn 1; Sun, Moon and Mars 7',
     triAll(houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
       houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 7,
