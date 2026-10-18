@@ -272,10 +272,10 @@ const analysisShadbalaSectionEnd=src.indexOf('adv-ishta-kashta',analysisShadbala
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
 ok(analysisShadbalaSection.includes('Uttara Kalamrita')&&analysisShadbalaSection.includes('இறுதி சட்பலச் சான்றிதழ்'),
  'Chart Analysis visibly identifies UK provisional status');
-const ishtaSectionStart=src.indexOf('adv-ishta-kashta');
+const ishtaSectionStart=src.indexOf('adv-ishta-kashta',analysisShadbalaSectionStart);
 const ishtaSectionEnd=src.indexOf('part1-natural-karakas',ishtaSectionStart);
 const ishtaSection=src.slice(ishtaSectionStart,ishtaSectionEnd);
-eq(ishtaSection.includes('strength3'),false,'Ishta/Kashta does not use legacy strength3 under UK-only mode');
+eq(ishtaSection.includes('p.strength3'),false,'Ishta/Kashta computation does not read legacy strength3 under UK-only mode');
 ok(ishtaSection.includes('strength3 மதிப்புகள் மாற்றாகப் பயன்படுத்தப்படவில்லை'),
  'Ishta/Kashta explicitly withholds unverified legacy values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
