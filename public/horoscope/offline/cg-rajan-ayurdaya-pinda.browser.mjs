@@ -93,7 +93,7 @@ export function cgRajanAmsaHaranaResearch({
   adjustedAmsaYearsCandidate:null,traditionalUnitsCandidate:null,blockers,
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
- const condition=cgRajanConditionReductions({planet,enemySign,combust});
+ const condition=cgRajanConditionReductions({planet,enemySign,combust,retrograde});
  const benefic=chakrapadaApplies?chakrapadaBenefic:null;
  const chakra=chakrapadaApplies&&applyChakrapadaLoss!==false?
   cgRajanChakrapadaHouseFraction({house:houseFromLagna,benefic}):
