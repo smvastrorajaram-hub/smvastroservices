@@ -260,7 +260,7 @@ eq(resolvedHtml.includes('data-natural-harana='),false,
  'resolved Amsa output omits Naisargika values');
 ok(resolvedHtml.includes('data-total-harana-fraction=')&&resolvedHtml.includes('data-adjusted-amsa-years='),
  'the selected Amsa table retains row-level Harana arithmetic for audit');
-ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"')&&resolvedHtml.includes('data-selected-total="adjusted-candidate"'),
+ok(resolvedHtml.includes('data-selected-total="adjusted-candidate"')&&resolvedHtml.includes('data-selected-method="amsa"'),
  'adjusted Amsa total is rendered only when complete');
 const pindaResolvedHtml=cgRajanAyurdayaReportHtml({
  planets:withShadbalaWinner(chartResolvedFixture,'சூரியன்'),lagna:reportLagna,language:'en'
