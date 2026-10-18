@@ -239,18 +239,43 @@ eq(reducedPinda.traditionalUnitsCandidate,
 
 ok(resolvedChart.totals.averageOfThreeTotals?.traditionalUnits,
  'three-method mean is rendered when all seven post-Harana candidates resolve');
-const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
+const withShadbalaWinner=(planets,winnerName)=>planets.map(p=>{
+ const totalVirupa=p.name===winnerName?900:
+  p.name==='சூரியன்'?700:p.name==='சந்திரன்'?600:p.name==='செவ்வாய்'?500:400;
+ return {...p,strength6:{
+  available:true,components:{sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0},
+  totalVirupa,classicalCertified:false
+ }};
+});
+const reportLagna={longitude:5}; // Aries Lagna: Mars is Lagna lord.
+const amsaResolvedFixture=withShadbalaWinner(chartResolvedFixture,'செவ்வாய்');
+const resolvedHtml=cgRajanAyurdayaReportHtml({planets:amsaResolvedFixture,lagna:reportLagna,language:'en'});
+eq((resolvedHtml.match(/<tr\\b/g)||[]).length,9,
+ 'Amsa-only customer report has header, seven grahas and one total');
 eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
- 'all seven fully evidenced grahas display post-Harana candidates');
-eq((resolvedHtml.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
- 'all seven Pinda rows display post-Harana candidates');
-eq((resolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
- 'all seven Naisargika rows display post-Harana candidates');
-ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&
- resolvedHtml.includes('data-adjusted-amsa-years='),
- 'the customer table retains row-level Harana arithmetic for audit');
-ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
+ 'all seven selected Amsa grahas display post-Harana candidates');
+eq(resolvedHtml.includes('data-pinda-harana='),false,
+ 'resolved Amsa output omits Pinda values');
+eq(resolvedHtml.includes('data-natural-harana='),false,
+ 'resolved Amsa output omits Naisargika values');
+ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&resolvedHtml.includes('data-adjusted-amsa-years='),
+ 'the selected Amsa table retains row-level Harana arithmetic for audit');
+ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"')&&resolvedHtml.includes('data-selected-total="adjusted-candidate"'),
  'adjusted Amsa total is rendered only when complete');
+const pindaResolvedHtml=cgRajanAyurdayaReportHtml({
+ planets:withShadbalaWinner(chartResolvedFixture,'சூரியன்'),lagna:reportLagna,language:'en'
+});
+eq((pindaResolvedHtml.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven selected Pinda rows display post-Harana candidates');
+eq(pindaResolvedHtml.includes('data-natural-harana='),false,'resolved Pinda output omits Naisargika values');
+eq(pindaResolvedHtml.includes('data-amsa-harana='),false,'resolved Pinda output omits Amsa values');
+const naturalResolvedHtml=cgRajanAyurdayaReportHtml({
+ planets:withShadbalaWinner(chartResolvedFixture,'சந்திரன்'),lagna:reportLagna,language:'en'
+});
+eq((naturalResolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
+ 'all seven selected Naisargika rows display post-Harana candidates');
+eq(naturalResolvedHtml.includes('data-pinda-harana='),false,'resolved Naisargika output omits Pinda values');
+eq(naturalResolvedHtml.includes('data-amsa-harana='),false,'resolved Naisargika output omits Amsa values');
 const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
 eq(jupiterAmsaCell,'7y 0m 24d 0n',
  'customer table cell preserves post-Harana fractional Table-A days');
