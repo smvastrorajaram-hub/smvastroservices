@@ -81,6 +81,7 @@ ok(primaryShadbalaStart>=0&&primaryShadbalaEnd>primaryShadbalaStart,'Primary hor
 ok(primaryShadbalaSource.includes('smv-shadbala-table')&&!primaryShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig')&&!primaryShadbalaSource.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'), 'Primary horoscope Shadbala retains components without an uncertified subtotal');
 ok(matchingShadbalaSource.includes('strength3'),'Matching Shadbala uses the current Swiss-position-based six-Bala calculation result');
 eq(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),false,'Matching does not present an incomplete subtotal as Shadbala');
+eq(matchingShadbalaSource.includes('smv-shadbala-method-note'),false,'Matching omits the internal numerical-validation note');
 ok(matchingShadbalaSource.includes('Total Shadbala (Virupa)')&&matchingShadbalaSource.includes('Total Rupa')&&matchingShadbalaSource.includes('Required Rupa')&&matchingShadbalaSource.includes('Rank')&&matchingShadbalaSource.includes('Below minimum'),'Matching source adds total, total/required Rupa, rank and threshold status');
 ok(!matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala no longer displays the source-only Rajan component subset');
 ok(!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
@@ -111,6 +112,7 @@ ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham exp
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('table.smv-shadbala-table{min-width:1120px!important')&&css.includes('.smv-ayurdaya-average-basis'),'Wide Shadbala scroll and readable Ayurdaya basis styles exist');
+ok(css.includes('background:#fff;color:#302722')&&css.includes('color:#333;background:#fff'),'Matching average explanation has a white background with readable dark text');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
 ok(ta.includes('mm-base-shad-components')&&ta.includes('smv-shadbala-table')&&ta.includes('மொத்த ஷட்பலம் (விரூபம்)')&&ta.includes('தேவையான ரூபா')&&ta.includes('தரவரிசை')&&ta.includes('வலிமை நிலை'),'Tamil Matching shows six Bala components, total, Rupas, rank and strength status');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');

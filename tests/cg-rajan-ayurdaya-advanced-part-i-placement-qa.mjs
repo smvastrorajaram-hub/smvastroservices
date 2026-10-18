@@ -72,6 +72,9 @@ for(const language of ['ta','en']){
   yes(averageRow.includes('class="smv-ayurdaya-average-basis"'),
    language+' average basis/subtext has its own readable element');
   yes(averageRow.includes('<strong>'),language+' average output is emphasized');
+  const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
+  yes(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' computed average result is non-empty');
+  no(html.includes('class="adv-wide smv-ayurdaya-table"'),language+' summary is not forced to a wide-table layout');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');

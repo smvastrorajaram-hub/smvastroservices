@@ -43,6 +43,8 @@ for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
  ok(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
   language+' average label and result occupy separate table cells');
  ok(averageRow.includes('<strong>'),language+' average value is bold and separate from its label');
+ const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
+ ok(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' average result cell contains a calculated value');
 }
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
 ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows remain uncluttered by source-book labels');
@@ -274,7 +276,7 @@ ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3
 for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(src.includes(heading),'primary Shadbala defines '+heading);
 for(const heading of ['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'])ok(src.includes(heading),'primary Shadbala defines English '+heading);
 
-ok(shadbalaUi.includes('smv-shadbala-method-note'),'primary Shadbala discloses pending numerical cross-source validation');
+eq(shadbalaUi.includes('smv-shadbala-method-note'),false,'primary Shadbala hides the internal validation note');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
 ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
  'primary customer Shadbala rows come from the current six-Bala calculation result');
@@ -283,6 +285,7 @@ eq(shadbalaUi.includes('சரிபார்க்கப்படாததா�
 const analysisShadbalaStart=src.indexOf('const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
+eq(analysisShadbalaUi.includes('smv-shadbala-method-note'),false,'Chart Analysis hides the internal validation note');
 ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength3?.available===true'),
  'Chart Analysis Shadbala uses current six-component values');
 eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis does not substitute Rajan partial components');
