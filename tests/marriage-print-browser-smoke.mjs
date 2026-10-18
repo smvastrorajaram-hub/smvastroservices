@@ -47,7 +47,7 @@ try{
   assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
   assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
-  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261018-ayurdaya-planet-white-v247"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v248"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
+  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261018-ayurdaya-planet-white-v247"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v249"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
   await page.goto(fixture.href,{waitUntil:'load'});
@@ -56,6 +56,8 @@ try{
    const tables=[...document.querySelectorAll('.mm-base-table')];
    const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')];
    const ayurdayaHeader=ayurdayaTables[0]?.querySelector('thead th');
+   const ayurdayaAverage=ayurdayaTables[0]?.querySelector('tbody .smv-ayurdaya-average td');
+   const ayurdayaAverageStyle=ayurdayaAverage?{background:getComputedStyle(ayurdayaAverage).backgroundColor,color:getComputedStyle(ayurdayaAverage).color}:null;
    const ayurdayaPlanet=ayurdayaTables[0]?.querySelector('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average) th');
    const ayurdayaHeaderStyle=ayurdayaHeader?{color:getComputedStyle(ayurdayaHeader).color,background:getComputedStyle(ayurdayaHeader).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaHeader).fontWeight,10)||400}:null;
    const ayurdayaPlanetStyle=ayurdayaPlanet?{text:ayurdayaPlanet.textContent.trim(),color:getComputedStyle(ayurdayaPlanet).color,background:getComputedStyle(ayurdayaPlanet).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaPlanet).fontWeight,10)||400}:null;
@@ -68,7 +70,7 @@ try{
    const extra=charts.map(c=>c.innerText).join(' ');
    const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
    return {
-    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,ayurdayaHeaderStyle,ayurdayaPlanetStyle,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
+    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,ayurdayaHeaderStyle,ayurdayaAverageStyle,ayurdayaPlanetStyle,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
     rectWidth:rectangle?.width||0,
     firstCell:{left:cell0?.left-rectangle?.left,top:cell0?.top-rectangle?.top},
     lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
@@ -87,6 +89,7 @@ try{
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
   assert.equal(mobile.ayurdayaTables,2,'Two partner Ayurdaya tables remain present on mobile: '+style);
   assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(74, 53, 45)'&&mobile.ayurdayaHeaderStyle.background==='rgb(255, 247, 232)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the exact Shadbala header palette: '+style);
+  assert.ok(mobile.ayurdayaAverageStyle&&mobile.ayurdayaAverageStyle.background==='rgb(255, 247, 232)','Matching Ayurdaya average row uses cream background: '+style);
   assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are black bold on a pure-white cell: '+style);
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
