@@ -35,9 +35,13 @@ const chart=[
  ['செவ்வாய்',206.5],['புதன்',191+52/60],
  ['குரு',28+17/60],['சுக்கிரன்',204+32/60],
  ['சனி',230+27/60]
-].map(([name,longitude],i)=>({name,longitude,bhava:i+1,strength6:{
- available:true,components:{},totalVirupa:[700,600,500,400,300,200,100][i],classicalCertified:false
-}}));
+].map(([name,longitude],i)=>{
+ const totalVirupa=[700,600,500,400,300,200,100][i];
+ return {name,longitude,bhava:i+1,strength6:{
+  available:true,components:{sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0},
+  totalVirupa,classicalCertified:false
+ }};
+});
 const lagna={longitude:5};
 for(const language of ['ta','en']){
  const result=html({planets:chart,lagna,language});
