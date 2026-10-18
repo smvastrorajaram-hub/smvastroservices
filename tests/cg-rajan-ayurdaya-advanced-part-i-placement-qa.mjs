@@ -87,8 +87,10 @@ for(const language of ['ta','en']){
   language+' unselected method rows are not leaked into customer HTML');
  yes(html.includes(language==='ta'?'மூல மதிப்பு: ':'Raw: '),
   language+' unresolved selected-method values are explicitly labelled');
- yes(html.includes('data-selected-total="unavailable"'),
-  language+' does not present a raw, unadjusted sum as the final selected-method total');
+ yes(html.includes('data-selected-total="raw-unadjusted"'),
+  language+' includes the selected method raw sum when Harana remains unresolved');
+ yes(html.includes(language==='ta'?'இது இறுதி ஆயுர்த்தாய மொத்தம் அல்ல':'this is not the final Ayurdaya total'),
+  language+' distinguishes the raw sum from the unverified final total');
   no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
   language+' no computed human death prediction');
