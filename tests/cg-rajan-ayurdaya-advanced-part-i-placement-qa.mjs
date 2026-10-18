@@ -64,6 +64,12 @@ for(const language of ['ta','en']){
   language+' semantic report section');
  exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
  yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுர்த்தாயம்'),language+' average row');
+  const totalRow=html.match(/<tr class="smv-ayurdaya-totals">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+  const averageRow=html.match(/<tr class="smv-ayurdaya-average">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+  exactly((totalRow.match(/<strong>/g)||[]).length,3,language+' three totals are bold');
+  yes(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
+   language+' average label and value use separate cells');
+  yes(averageRow.includes('<strong>'),language+' average output is emphasized');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');
