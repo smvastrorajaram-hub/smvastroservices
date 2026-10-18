@@ -74,7 +74,7 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  * Harana when both apply, and exempts Venus/Saturn from combustion Harana;
  * p.235 then adds the selected condition loss to the separate Chakrapada loss.
  * Missing chart facts or a tied/unavailable occupant ranking blocks the
- * candidate. A provisional strength3 winner allows a research candidate only;
+ * candidate. A provisional strength6 winner allows a research candidate only;
  * this helper never certifies a complete natal Amsa result.
  */
 export function cgRajanAmsaHaranaResearch({
@@ -149,7 +149,7 @@ export function cgRajanAmsaHaranaResearch({
    'Research candidate only: no complete independent printed Amsa worked-example oracle yet',
    'The source selects Amsa when Lagna is the strongest among the Sun, Moon and Lagna factors; this comparison is not independently certified',
    ...(strongestOccupantSelected===true&&strongestOccupantVerified!==true?
-    ['The strongest occupant is selected provisionally from current strength3 scores; those scores are not independently certified Shadbala']:[]),
+    ['The strongest occupant is selected provisionally from B.V. Raman strength6 scores; those scores are not independently certified Shadbala']:[]),
    'The computed result is a candidate, not a certified final Ayurdaya'
   ],
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
@@ -158,8 +158,8 @@ export function cgRajanAmsaHaranaResearch({
  * Resolve an Amsa Harana research candidate from the existing natal chart.
  * Explicit source-reviewed benefic status wins; otherwise derive a transparent
  * natural benefic/malefic candidate. When a Chakrapada house has multiple
- * seven-graha occupants, pick the unique highest current strength3 score for
- * candidate display only. Current strength3 is not independently certified.
+ * seven-graha occupants, pick the unique highest B.V. Raman strength6 score for
+ * candidate display only. Current strength6 is not independently certified.
  */
 const RAJAN_OWN_SIGNS=Object.freeze({
  'சூரியன்':[4],'சந்திரன்':[3],'செவ்வாய்':[0,7],'புதன்':[2,5],
@@ -228,8 +228,8 @@ function cgRajanAmsaChartHarana({planet,amsa,planets}={}){
  const occupants=house&&allHouseEvidence?sevenGrahas.filter(p=>p.bhava===house).length:undefined;
  const houseOccupants=house&&allHouseEvidence?sevenGrahas.filter(p=>p.bhava===house):[];
  const occupantScores=houseOccupants.map(p=>({
-  planet:p.name,score:p?.strength3?.totalVirupa,
-  certified:p?.strength3?.classicalCertified===true
+  planet:p.name,score:p?.strength6?.totalVirupa,
+  certified:p?.strength6?.classicalCertified===true
  }));
  const rankable=occupantScores.length>1&&occupantScores.every(x=>finite(x.score));
  const ranked=[...occupantScores].sort((a,b)=>b.score-a.score);
