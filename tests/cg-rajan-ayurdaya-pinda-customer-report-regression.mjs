@@ -14,7 +14,9 @@ const makeSelectorChart=({sun=700,moon=600,mars=500,mercury=400,jupiter=300,venu
   ['குரு',jupiter],['சுக்கிரன்',venus],['சனி',saturn]]
  .map(([name,totalVirupa],index)=>({
   name,longitude:index*30+1,bhava:index+1,
-  strength6:{available:name!==missing,components:{},totalVirupa:name===missing?null:totalVirupa,classicalCertified:false}
+  strength6:{available:name!==missing,components:{
+   sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0
+  },totalVirupa:name===missing?null:totalVirupa,classicalCertified:false}
  }));
 const sunWins=selectMethod({planets:makeSelectorChart(),lagna:{longitude:0}});
 eq(sunWins.selectedMethod,'pinda','Sun Shadbala selects Pindayurdaya');
