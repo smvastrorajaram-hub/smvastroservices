@@ -49,8 +49,8 @@ function vargaSign(longitude,division){
  if(division===1)return r;
  if(division===2)return deg<15?(oddSign(r)?4:3):(oddSign(r)?3:4);
  if(division===3){
-  const part=Math.min(2,Math.floor(deg/10)),start=oddSign(r)?r:(r+8)%12;
-  return (start+part*(oddSign(r)?4:8))%12;
+  const part=Math.min(2,Math.floor(deg/10));
+  return (r+part*4)%12;
  }
  if(division===7){
   const part=Math.min(6,Math.floor(deg/(30/7))),start=oddSign(r)?r:(r+6)%12;
@@ -267,7 +267,12 @@ export function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midh
  for(const planet of PLANETS){
   const r=baseRows[planet],c=r.components;
   if(!wars.resolved&&wars.unresolved.some(pair=>pair.a===planet||pair.b===planet)){
-   r.available=false;r.reason='Raman Yuddha Bala is unresolved for an overlapping planetary-war candidate';r.warEvidence=wars;continue;
+   // Keep the six components visible but withhold the aggregate total when
+   // Raman's source-based war result is ambiguous; UI can still show all 7 grahas.
+   r.totalVirupa=null;r.totalRupa=null;r.ratio=null;r.isStrong=null;
+   r.classicalCertified=false;r.warEvidence=wars;
+   r.reason='Total withheld because B.V. Raman Yuddha Bala is unresolved';
+   continue;
   }
   const chesta=r.evidence.cheshtaSource;
   if(!finite(chesta.value)||!finite(c.sthana.total)||!finite(c.dig)||!finite(c.kala.total)||!finite(c.naisargika)||!finite(c.drik)){
