@@ -305,7 +305,9 @@ ok(!src.includes('B.V. Raman சதுரவேர் முறை. ஐந்த
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:818px;min-width:818px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v245-ayurdaya-readable-no-white-box-20261018'),'PWA refresh revision activates the latest Horoscope UI');
+ok(swSource.includes('v246-arudha-labels-no-range-heading-20261018'),'PWA refresh revision activates the latest Horoscope UI');
+ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
+ok(src.includes("p1Esc(x.house===1?'AL':x.house===12?'UL':`A${x.house}`)"),'Arudha first column renders AL, A2-A11 and UL explicitly');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
  ['2002-10-18','06:06'],['1989-10-18','09:45']];
