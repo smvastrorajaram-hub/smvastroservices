@@ -16,6 +16,8 @@ on:
     paths:
       - 'public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs'
       - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
       - 'tests/v357-bphs-shodhana-regression.mjs'
       - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
