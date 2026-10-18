@@ -42,13 +42,13 @@ The major arc is used: `remaining = (exaltation - true) mod 360; if < 180, 360 -
 ## Still not complete — no misleading Ayurdaya certificate
 
 1. **Pindayurdaya**: planet-specific full years, ingress/dignity fraction, six forms of cuts and strong-vs-weak method selection require complete printed-example oracles.
-2. **Amsayurdaya**: Table A is a raw lookup (3°20′ intervals, repeating years 1–12). Direct inspection of printed p.235 together with pp.231–232 corrected a material source interpretation: enemy-sign and combustion Harana are not additive; when both apply, choose combustion Harana only, except that Venus/Saturn have no combustion deduction, so their enemy-sign deduction can still apply. Chakrapada is a separate deduction added to that single selected condition loss, and the maximum applicable multiplier is then used without stacking ×3 and ×2. Regression cases now cover these combinations. The live table still remains explicitly **before Harana**, since strength-based method selection, strongest-occupant selection and a full independent worked Amsa example are not yet established. This is not a final life-span result.
+2. **Amsayurdaya**: Table E is a conditional raw lookup (3°20′ intervals, repeating years 1–12), applicable when the Lagna-lord is strong. Direct inspection of printed p.235 together with pp.231–232 corrected a material source interpretation: enemy-sign and combustion Harana are not additive; when both apply, choose combustion Harana only, except that Venus/Saturn have no combustion deduction, so their enemy-sign deduction can still apply. Chakrapada is a separate deduction added to that single selected condition loss, and the maximum applicable multiplier is then used without stacking ×3 and ×2. Regression cases now cover these combinations. The live table remains raw/unadjusted, and its adjusted total is now **withheld** until strength-based method selection is verified; strongest-occupant selection and a full independent worked Amsa example remain unresolved. This is not a final life-span result.
 3. The **other five Ayurdaya varieties** on p.229 are documented, not coded; they must not be silently treated as zero or conflated with Pinda/Amsa/Naisargika.
 4. **Chakrapada multi-occupant priority** and sixfold-strength-controlled choice cannot be certified until the required source strength comparison is established. The p.231 Harana precedence and p.232 house fractions are now source-coded and regression-tested; strongest-occupant selection and complete chart-level arithmetic remain blocked.
 5. The p.248 **Sun row versus total** discrepancy and p.241 **Shadbala p.50** discrepancies must be reconciled from the scanned printed examples.
 6. No calibrated independent personal lifespan/age-of-death inference exists from this source. Therefore `fullAyurdayaCertified:false`, `natalTotalYears:null`, `predictedDeathAge:null`. The engine never attaches these research data to customer outputs.
 
-**Status:** Rajan first-volume seven-graha **Naisargika arithmetic** and Pinda printed examples are source-tested. The raw Amsa table-A lookup is implemented but its Lagna-lord-strength selection and reductions are not certified. The report now includes a per-method total row and provisional mean of three raw totals; this must not be interpreted as a personal lifespan. **Full eight-method and complete natal Ayurdaya certification NOT issued.** The second volume remains reserved for separate Horoscope/Matching prediction rule work.
+**Status:** Rajan first-volume seven-graha **Naisargika arithmetic** and Pinda printed examples are source-tested. The raw Amsa Table E lookup is implemented but its Lagna-lord-strength selection and reductions are not certified. The report keeps the per-method total row, but the Amsa total and three-method mean are withheld until the Table E selection condition is verified; raw Table E rows are not an adjusted total and must not be interpreted as a personal lifespan. **Full eight-method and complete natal Ayurdaya certification NOT issued.** The second volume remains reserved for separate Horoscope/Matching prediction rule work.
 
 
 ## 17 Oct follow-up: independently reproduced Pindayurdaya / guarded customer calculation appendix
@@ -79,4 +79,18 @@ The independent *Uttara Kalamrita* Chapter II regression reproduces its seven pr
 - **Cheshta Bala:** pp.42–43 require historical mean planetary positions and Sheeghra Kendra inputs for Mars, Mercury, Jupiter, Venus and Saturn. The book passage does not provide the actual five-planet historical orbital triples for each tested birth time. Modern Swiss orbital elements/speed bins cannot be substituted and called the book's classical method.
 - **Drig Bala:** the printed sample's seven signed values and aggregate totals are testable, but a complete, independently sourced angle-by-angle Drishti Sputa oracle is still needed to derive all real chart values without fitting the sample.
 - **Certification gate:** keep `classicalCertified:false`, `provisional:true`; never convert a successful limited source QA job into a complete Shadbala certificate. Exact Uttara Kalamrita rules and C.G. Rajan Ayurdaya rules remain separate.
+
+## 19 Oct follow-up: correct Table E identification and fail-closed method-selection gate
+
+A fresh visual inspection of the supplied scan at PDF page 259 (printed p.237) confirms that the lower table heading reads **Amsayurdayam (E) — when the Lagna lord is strong**. The production research module had labelled this lookup as Table A. That source label was wrong.
+
+Source-level correction on branch `fix/cg-rajan-amsa-table-e-selection-gate`:
+
+- Rename the lookup metadata, documentation and diagnostics to **Table E**.
+- Preserve per-graha Table E values as raw research terms only.
+- Add an explicit `amsaMethodSelectionVerified:false` gate because the chart-wide choice among Ayurdaya methods and the Lagna-lord strength criterion are not yet independently implemented and source-certified. A provisional B.V. Raman `strength6` result is not sufficient proof for that gate.
+- Withhold the adjusted Amsa total and the three-method mean while the gate is false; do not substitute the raw Table E sum and do not clamp the result to 120.
+- Make the Tamil/English report disclose why the total and mean are unavailable, and add regression assertions for the blocked total, withheld mean, and raw-only rows.
+
+This is a **fail-closed correctness correction**, not completion of B.V. Raman Ayurdaya, full C.G. Rajan Ayurdaya, or a certified human-lifespan result. The B.V. Raman Ashtakavarga-based Ayurdaya method remains a separate missing implementation. Source regression/CI execution is still required before calling this branch PASS.
 
