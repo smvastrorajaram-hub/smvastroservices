@@ -291,15 +291,21 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#printReport .smv-shadbala-table tbody tr').length===7,{timeout:30000});
  const horoscopePrint=await page.evaluate(async()=>{
   await document.fonts.ready;
-  const root=document.getElementById('printReport'),table=root.querySelector('.smv-shadbala-table');
+  const root=document.getElementById('printReport'),table=root.querySelector('.smv-shadbala-table'),section=table?.closest('.smv-shadbala-section');
   return {
    rows:[...table.querySelectorAll('tbody tr')].map(tr=>({name:tr.cells[0]?.innerText.trim(),total:tr.cells[7]?.innerText.trim()})),
    headers:[...table.querySelectorAll('thead th')].map(th=>th.innerText.trim()),
+   shadbalaBreakInside:section?getComputedStyle(section).breakInside:'missing',
+   headingInsideSameSection:!!section?.querySelector('.base-shadbala'),
+   tableRowsInSection:section?.querySelectorAll('.smv-shadbala-table tbody tr').length||0,
    tamilFontReady:document.fonts.check('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்'),
    title:document.title,ready:document.getElementById('printStatus')?.innerText||''
   };
  });
  assert.equal(horoscopePrint.rows.length,7,'Saved Horoscope print DOM preserves all seven Shadbala rows');
+ assert.equal(horoscopePrint.shadbalaBreakInside,'avoid','Horoscope Shadbala title and table are kept together during pagination');
+ assert.equal(horoscopePrint.headingInsideSameSection,true,'Horoscope Shadbala heading and table share a pagination wrapper');
+ assert.equal(horoscopePrint.tableRowsInSection,7,'Pagination wrapper contains all seven final Shadbala rows');
  assert.ok(horoscopePrint.headers.includes('ஸ்தான பலம்')&&horoscopePrint.headers.includes('திக் பலம்')&&horoscopePrint.headers.includes('கால பலம்')&&horoscopePrint.headers.includes('சேஷ்டா பலம்')&&horoscopePrint.headers.includes('நைசர்கிக பலம்')&&horoscopePrint.headers.includes('த்ரிக் பலம்')&&horoscopePrint.headers.includes('மொத்த ஷட்பலம் (விரூபம்)'),
   'Saved Horoscope print DOM preserves all six Bala columns and final total');
  assert.equal(horoscopePrint.tamilFontReady,true,'Saved Horoscope print DOM loads embedded Tamil font');
