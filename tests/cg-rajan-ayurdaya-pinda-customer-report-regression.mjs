@@ -51,6 +51,7 @@ for(const [date,time] of [
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'Rajan Ayurdaya printable QA'});
  yes(r.ok,'source natal compute '+date);
  const result=all({planets:r.chart.planets,lagna:r.chart.lagna});
+ console.log('AYURDAYA_AVERAGE_DIAGNOSTIC',date,JSON.stringify({totals:result.totals,blocks:result.entries.map(e=>({planet:e.name,amsa:e.amsaHarana?.blockers,pinda:e.pindaHarana?.blockers,natural:e.naturalHarana?.blockers}))}));
  eq(result.entries.length,7,'seven conventional grahas');
  eq(result.allEightMethodsComplete,false,'no artificial 8-method pass');
  eq(result.combinedLongevityYears,null,'no invented individual lifespan');
