@@ -188,24 +188,24 @@ function ashtakavarga(c,ta){
  return table(head,rows,'mm-base-av');
 }
 function shadbala(c,ta){
- const ps=(c?.planets||[]).filter(p=>p?.strength3?.available===true&&p.strength3?.components);
+ const ps=(c?.planets||[]).filter(p=>p?.strength6?.available===true&&p.strength6?.components);
  if(!ps.length)return '<p class="mm-base-unavailable">'+esc(title('Shadbala values are unavailable for this chart.','இந்த ஜாதகத்திற்கான ஷட்பல மதிப்புகள் கிடைக்கவில்லை.',ta?'ta':'en'))+'</p>';
- const ranked=[...ps].filter(p=>finite(p.strength3.totalVirupa)).sort((a,b)=>Number(b.strength3.totalVirupa)-Number(a.strength3.totalVirupa));
+ const ranked=[...ps].filter(p=>finite(p.strength6.totalVirupa)).sort((a,b)=>Number(b.strength6.totalVirupa)-Number(a.strength6.totalVirupa));
  const rankByName=new Map();
  let last=null,rank=0;
  ranked.forEach((p,index)=>{
-  const total=Number(p.strength3.totalVirupa);
+  const total=Number(p.strength6.totalVirupa);
   if(last===null||Math.abs(total-last)>1e-9)rank=index+1;
   rankByName.set(p.name,rank);last=total;
  });
  const status=p=>{
-  const r=p.strength3,req=Number(r.requiredVirupa),total=Number(r.totalVirupa);
+  const r=p.strength6,req=Number(r.requiredVirupa),total=Number(r.totalVirupa);
   if(!Number.isFinite(req)||req<=0||!Number.isFinite(total))return ta?'கணக்கீடு இல்லை':'Not available';
   const pct=Math.round(total/req*100);
   return (total>=req?(ta?'தேவையான அளவு அடைந்தது':'Meets minimum'):(ta?'தேவையான அளவுக்கு குறைவு':'Below minimum'))+' ('+pct+'%)';
  };
  const rows=ps.map(p=>{
-  const r=p.strength3,cx=r.components||{},rupa=finite(r.totalRupa)?Number(r.totalRupa):finite(r.totalVirupa)?Number(r.totalVirupa)/60:null;
+  const r=p.strength6,cx=r.components||{},rupa=finite(r.totalRupa)?Number(r.totalRupa):finite(r.totalVirupa)?Number(r.totalVirupa)/60:null;
   const requiredRupa=finite(r.requiredVirupa)?Number(r.requiredVirupa)/60:null;
   const total=finite(r.totalVirupa)?Number(r.totalVirupa):null;
   const req=finite(r.requiredVirupa)?Number(r.requiredVirupa):null;
