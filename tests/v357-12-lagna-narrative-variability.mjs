@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const {render}=require('../public/horoscope/d1-human-narrative.js');
+const fs=require('node:fs');
+const workflow=fs.readFileSync(new URL('../.github/workflows/horoscope-matching-dst-qa.yml',import.meta.url),'utf8');
 const LORD=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
 const P=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
 const signOf=(n)=>(n%12+12)%12;
@@ -52,4 +54,19 @@ for(const language of ['ta','en']){
  }
  eq(leadFingerprints[language].size,12,'12 distinct '+language+' ascendant opening readings');
 }
-console.log(JSON.stringify({pass:true,assertions,ascendants:12,chartVariantsPerAscendant:2,languages:['ta','en'],testedNarratives:48,scope:'D1 narrative distinctness and house-lord ownership; NOT qualitative or timed dasha certification',shodhana:'SKIPPED',samples:samples.slice(0,4)}));
+// This D1 narrative test does not itself calculate Shodhana. Assert that the
+// dedicated textbook suites are wired into the same CI job instead of emitting
+// a misleading "SKIPPED" status that can be mistaken for a skipped CI stage.
+for (const shodhanaTest of [
+ 'tests/v357-bphs-shodhana-regression.mjs',
+ 'tests/v360-pvr-shodhana-textbook-regression.mjs'
+]) {
+ ok(workflow.includes(`node ${shodhanaTest}`), 'Dedicated Shodhana regression registered in CI: '+shodhanaTest);
+}
+console.log(JSON.stringify({
+ pass:true,assertions,ascendants:12,chartVariantsPerAscendant:2,
+ languages:['ta','en'],testedNarratives:48,
+ scope:'D1 narrative distinctness and house-lord ownership; NOT qualitative or timed dasha certification',
+ shodhanaScope:'Not part of this D1 narrative test; dedicated BPHS and PVR Shodhana suites are invoked by the same CI workflow',
+ shodhanaDedicatedSuites:2,samples:samples.slice(0,4)
+}));
