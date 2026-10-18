@@ -5,6 +5,7 @@
  * imported bindings remain isolated. The original scripts are retired only
  * after this aggregate is wired into CI.
  */
+import fs from 'node:fs';
 import * as __bundle0mod0 from 'node:assert/strict';
 import * as __bundle0mod1 from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import * as __bundle0mod2 from '../public/horoscope/offline/offline-engine.mjs';
@@ -111,8 +112,9 @@ for(const [date,time] of births){
   }
   const independent=quarter+extra;
   near(drikBalaClassical(receiver.name,ps),independent,date+' raw BPHS Drig '+receiver.name);
-  near(receiver.strength3.components.drik,Number(independent.toFixed(3)),date+' Phase3 Drig '+receiver.name);
-  yes(receiver.strength3.classicalCertified===false,date+' not false whole Shadbala certificate');
+  yes(!Object.hasOwn(receiver,'strength3'),date+' BPHS strength3 is no longer attached to production chart '+receiver.name);
+  yes(receiver.strength6?.classicalCertified===false,date+' B.V. Raman strength6 stays explicitly uncertified '+receiver.name);
+  yes(Number.isFinite(receiver.strength6?.components?.drik),date+' B.V. Raman Drik Bala is present '+receiver.name);
   row.virupa[receiver.name]=Number(independent.toFixed(3));grahaTests++;
  }
  totals.push(row);
@@ -452,8 +454,11 @@ for(const [date,time] of [['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-0
 console.log(JSON.stringify({pass:true,assertions:n,reference:'BPHS I R Santhanam Ch27 verses 19-20 pp283-284 (PDF pp283-284)',scope:'BPHS-first Drig Pinda and pre-war difference Yuddha, UK only victory criterion; five natal charts',fullShadbalaCertified:false}));
 }
 
-await runBundledOracle1();
-await runBundledOracle2();
-await runBundledOracle3();
+// Run the BPHS Drig arithmetic as an isolated historical source oracle only.
+// BPHS no longer produces a live Shadbala payload; production uses B.V. Raman strength6.
 await runBundledOracle4();
-await runBundledOracle5();
+const productionBrowser=fs.readFileSync(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs',import.meta.url),'utf8');
+const productionNode=fs.readFileSync(new URL('../swiss_vedic.js',import.meta.url),'utf8');
+assert.ok(!productionBrowser.includes('strength3:')&&!productionBrowser.includes('function phase3Strength('),'browser does not emit BPHS strength3');n++;
+assert.ok(!productionNode.includes('strength3:')&&!productionNode.includes('function phase3Strength('),'Node does not emit BPHS strength3');n++;
+console.log(JSON.stringify({pass:true,assertions:n,scope:'standalone BPHS Drig source oracle only; BPHS live strength3 removed'}));
