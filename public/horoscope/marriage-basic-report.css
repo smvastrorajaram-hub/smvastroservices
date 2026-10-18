@@ -237,7 +237,7 @@
  .mm-basic-report .smv-shadbala-method-note{font-size:7pt!important;line-height:1.3!important;margin:1mm 0 1.5mm}
  .mm-basic-report .smv-shadbala-status{font-size:5.5pt!important;line-height:1.15!important}
  .mm-basic-report .smv-cg-rajan-ayurdaya .smv-ayurdaya-method-selection{
-   font-size:7.2pt!important;line-height:1.3!important;margin-top:.6mm!important;
+   font-size:7.2pt!important;line-height:1.3!important;font-weight:700!important;margin-top:.6mm!important;
  }
  .mm-basic-report .mm-base-chart-row{break-inside:avoid;page-break-inside:avoid;gap:4mm}
  .mm-basic-report .mm-base-chart-wrap{flex:0 0 64mm;width:64mm;max-width:64mm;margin:0 auto}
