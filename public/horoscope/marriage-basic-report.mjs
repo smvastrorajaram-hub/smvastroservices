@@ -223,10 +223,7 @@ function shadbala(c,ta){
  const head=ta
   ?['கிரகம்','ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை']
   :['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'];
- const note=ta
-  ?'Swiss Ephemeris கிரக நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய கணக்கீடு. முழு numerical cross-source validation நிலுவையில் உள்ளது; தரவரிசை தற்போதைய மொத்தத்தை அடிப்படையாகக் கொண்டது.'
-  :'Current calculation based on Swiss Ephemeris planetary positions. Full numerical cross-source validation is pending; rank is based on the current computed total.';
- return '<p class="mm-base-note smv-shadbala-method-note">'+esc(note)+'</p>'+table(head,rows,'mm-base-shad-components smv-shadbala-table');
+ return table(head,rows,'mm-base-shad-components smv-shadbala-table');
 }
 function dasha(c,ta,ref){
  const from=String(ref||new Date().toISOString().slice(0,10));
