@@ -228,11 +228,11 @@ for(const [date,time] of births){
  const r=await full({date,time,lat:11.232,lon:78.88,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'private research'});
  ok(r.ok,'calculated birth '+date);
- const x=cgRajanCompareGrahas({planets:r.chart.planets});
+ const x=cgRajanCompareGrahas({planets:r.chart.planets,lagna:r.chart.lagna});
  eq(x.entries.length,7,'all grahas '+date);
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
- const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,language:'en'});
+ const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
   perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
