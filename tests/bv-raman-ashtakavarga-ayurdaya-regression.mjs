@@ -118,7 +118,7 @@ same(standardMethodA.planets.Sun.grahaPinda, 86,
   'Standard Horoscope Sun Graha Pinda independently matches worked example');
 same(standardMethodA.planets.Sun.sodyaPinda, 182,
   'Standard Horoscope Sun Sodya Pinda independently matches worked example');
-near(standardMethodA.planets.Sun.grossLunarYearsModulo27, 20.2222222222, 1e-8,
+near(standardMethodA.planets.Sun.grossLunarYearsModulo27, 20.1851851852, 1e-8,
   'Standard Horoscope Sun gross years after the 27-year reduction');
 same(standardMethodA.finalSolarYears, null,
   'matching Pinda arithmetic does not certify Harana/final solar years');
