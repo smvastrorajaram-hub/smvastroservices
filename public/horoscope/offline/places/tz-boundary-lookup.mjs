@@ -17,21 +17,21 @@ function tzlookup(Y,W){var X="XKXJXJXIXIXSXSXRXRXQXQXP##U;U;U;#$UZUZUZUZUZXHXGXG
  * after upstream polygon data is improved and this reference regression still passes.
  */
 const REFERENCE_ZONE_OVERRIDES = [
-  { place: "Antarctica Palmer", zone: "Antarctica/Palmer", latitude: -64.8, longitude: -64.1, latTolerance: 0.08, lonTolerance: 0.12 },
-  { place: "Argentina Ushuaia", zone: "America/Argentina/Ushuaia", latitude: -54.8, longitude: -68.3, latTolerance: 0.08, lonTolerance: 0.08 },
-  { place: "American Samoa Pago Pago", zone: "Pacific/Pago_Pago", latitude: -14.266666666666667, longitude: -170.7, latTolerance: 0.08, lonTolerance: 0.08 },
-  { place: "Canada Blanc-Sablon", zone: "America/Blanc-Sablon", latitude: 51.416666666666664, longitude: -57.11666666666667, latTolerance: 0.04, lonTolerance: 0.04 },
-  { place: "Canada Atikokan", zone: "America/Atikokan", latitude: 48.75861111111111, longitude: -91.62166666666666, latTolerance: 0.04, lonTolerance: 0.04 },
-  { place: "Greenland Danmarkshavn", zone: "America/Danmarkshavn", latitude: 76.76666666666667, longitude: -18.666666666666668, latTolerance: 0.08, lonTolerance: 0.08 },
-  { place: "Indonesia Jayapura", zone: "Asia/Jayapura", latitude: -2.533333333333333, longitude: 140.7, latTolerance: 0.05, lonTolerance: 0.05 },
-  { place: "Marshall Islands Kwajalein IANA reference", zone: "Pacific/Kwajalein", latitude: 9.083333333333334, longitude: 167.33333333333334, latTolerance: 0.12, lonTolerance: 0.12 },
-  { place: "Marshall Islands Kwajalein station", zone: "Pacific/Kwajalein", latitude: 8.732, longitude: 167.736, latTolerance: 0.08, lonTolerance: 0.08 },
-  { place: "Saint Pierre and Miquelon", zone: "America/Miquelon", latitude: 47.05, longitude: -56.333333333333336, latTolerance: 0.04, lonTolerance: 0.05 },
-  { place: "Turks and Caicos Grand Turk", zone: "America/Grand_Turk", latitude: 21.466666666666665, longitude: -71.13333333333334, latTolerance: 0.04, lonTolerance: 0.04 },
-  { place: "Timor-Leste Dili", zone: "Asia/Dili", latitude: -8.55, longitude: 125.58333333333333, latTolerance: 0.04, lonTolerance: 0.04 },
-  { place: "Indiana Vevay", zone: "America/Indiana/Vevay", latitude: 38.74777777777778, longitude: -85.06722222222221, latTolerance: 0.025, lonTolerance: 0.025 },
-  { place: "North Dakota New Salem", zone: "America/North_Dakota/New_Salem", latitude: 46.845, longitude: -101.41083333333334, latTolerance: 0.025, lonTolerance: 0.025 },
-  { place: "Alaska Metlakatla", zone: "America/Metlakatla", latitude: 55.12694444444445, longitude: -131.57638888888889, latTolerance: 0.025, lonTolerance: 0.025 }
+  { zone: "Antarctica/Palmer", latitude: -64.8, longitude: -64.1, latTolerance: 0.08, lonTolerance: 0.12 },
+  { zone: "America/Argentina/Ushuaia", latitude: -54.8, longitude: -68.3, latTolerance: 0.08, lonTolerance: 0.08 },
+  { zone: "Pacific/Pago_Pago", latitude: -14.266666666666667, longitude: -170.7, latTolerance: 0.08, lonTolerance: 0.08 },
+  { zone: "America/Blanc-Sablon", latitude: 51.416666666666664, longitude: -57.11666666666667, latTolerance: 0.04, lonTolerance: 0.04 },
+  { zone: "America/Atikokan", latitude: 48.75861111111111, longitude: -91.62166666666666, latTolerance: 0.04, lonTolerance: 0.04 },
+  { zone: "America/Danmarkshavn", latitude: 76.76666666666667, longitude: -18.666666666666668, latTolerance: 0.08, lonTolerance: 0.08 },
+  { zone: "Asia/Jayapura", latitude: -2.533333333333333, longitude: 140.7, latTolerance: 0.05, lonTolerance: 0.05 },
+  { zone: "Pacific/Kwajalein", latitude: 9.083333333333334, longitude: 167.33333333333334, latTolerance: 0.12, lonTolerance: 0.12 },
+  { zone: "Pacific/Kwajalein", latitude: 8.732, longitude: 167.736, latTolerance: 0.08, lonTolerance: 0.08 },
+  { zone: "America/Miquelon", latitude: 47.05, longitude: -56.333333333333336, latTolerance: 0.04, lonTolerance: 0.05 },
+  { zone: "America/Grand_Turk", latitude: 21.466666666666665, longitude: -71.13333333333334, latTolerance: 0.04, lonTolerance: 0.04 },
+  { zone: "Asia/Dili", latitude: -8.55, longitude: 125.58333333333333, latTolerance: 0.04, lonTolerance: 0.04 },
+  { zone: "America/Indiana/Vevay", latitude: 38.74777777777778, longitude: -85.06722222222221, latTolerance: 0.025, lonTolerance: 0.025 },
+  { zone: "America/North_Dakota/New_Salem", latitude: 46.845, longitude: -101.41083333333334, latTolerance: 0.025, lonTolerance: 0.025 },
+  { zone: "America/Metlakatla", latitude: 55.12694444444445, longitude: -131.57638888888889, latTolerance: 0.025, lonTolerance: 0.025 }
 ];
 function timezoneFromCoordinates(latitude, longitude) {
   const lat = Number(latitude), lon = Number(longitude);
