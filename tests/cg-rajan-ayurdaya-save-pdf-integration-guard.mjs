@@ -21,7 +21,7 @@ check(printer.includes("'.integrated-predictions,"),
  'PDF explicitly strips legacy integrated subtree');
 check(horoscope.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Rajan appendix is inside I / Chart Analysis, not retired integrated subtree');
-check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
+check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-average-fix1')"),
  'Main renderer waits for source-specific arithmetic before report-ready event');
 check(horoscope.includes("sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove())"),
  'Duplicate report append prevented');
