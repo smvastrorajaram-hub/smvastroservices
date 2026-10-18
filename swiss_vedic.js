@@ -467,13 +467,22 @@ function enrichStrength6(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=nul
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
+  let ramanAyanamsa=null;
+  try{
+    const ay=typeof swe.get_ayanamsa_ut==='function'?swe.get_ayanamsa_ut(jdUt):null;
+    if(typeof ay==='number'&&Number.isFinite(ay))ramanAyanamsa=ay;
+    else if(ay&&typeof ay==='object'&&!ay.error&&!(ay.flag!==undefined&&Number(ay.flag)<0)){
+      const raw=Array.isArray(ay.data)?ay.data[0]:ay.data;
+      if(raw!==null&&raw!==undefined&&Number.isFinite(Number(raw)))ramanAyanamsa=Number(raw);
+    }
+  }catch{/* Ishta/Kashta remains unavailable if ayanamsa input is unavailable. */}
   let result=null,failure=null;
   try{
     result=calculateBVRamanShadbala({
       planets:withHour,bhavas,
       ascendantLongitude:birthInput?.ascendantLongitude,
       midheavenLongitude:birthInput?.midheavenLongitude,
-      apparentSolarHour:solarHour,temporal,declinations,jdUt
+      apparentSolarHour:solarHour,temporal,declinations,jdUt,ayanamsa:ramanAyanamsa
     });
   }catch(error){failure=String(error?.message||error);}
   return withHour.map(p=>({

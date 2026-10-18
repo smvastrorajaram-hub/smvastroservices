@@ -300,7 +300,10 @@ eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),fa
  'Chart Analysis does not present an incomplete subtotal as Shadbala');
 ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),
  'Chart Analysis heading is only Shadbala / ஷட்பலம் and shows individual Bala components');
-ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('bvRamanIshtaKashta')&&src.includes('bvRamanChestaForPhala'), 'Chart Analysis renders B.V. Raman Ishta/Kashta from separate special Chesta-for-Phala inputs');
+const ramanShadbalaSrc=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-shadbala.browser.mjs',import.meta.url),'utf8');
+ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('p.strength6?.ishtaKashta')&&src.includes('data-engine-source="BV_RAMAN_INTEGRATED_SIX_BALA"')&&
+ ramanShadbalaSrc.includes('bvRamanIshtaKashta')&&ramanShadbalaSrc.includes('bvRamanChestaForPhala'),
+ 'Chart Analysis renders the unified B.V. Raman Ishta/Kashta output calculated by the Shadbala engine');
 ok(!src.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'), 'No Ishta/Kashta research note is displayed to Horoscope users');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:818px;min-width:818px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
@@ -347,7 +350,10 @@ for(const [date,time] of births){
  for(const p of shadbalaRows){
   eq(p.strength6.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength6.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
+  eq(p.strength6.ishtaKashta?.available,true,'integrated B.V. Raman Ishta/Kashta is present '+date+' '+p.name);
+  eq(p.strength6.ishtaKashta.classicalCertified,false,'Ishta/Kashta inputs remain uncertified '+date+' '+p.name);
   const c=p.strength6.components||{};
+  ok(Math.abs(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala-c.cheshta)<0.001,'special Chesta-for-Phala does not replace sixfold Cheshta Bala '+date+' '+p.name);
   ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
    Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
    'B.V. Raman six individual components remain available '+date+' '+p.name);
