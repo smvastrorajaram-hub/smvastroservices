@@ -1,0 +1,338 @@
+/**
+ * B. V. Raman — Ashtakavarga Ayurdaya research module.
+ *
+ * Kept separate from Shadbala (strength6), CG Rajan Pinda/Amsa/Naisargika,
+ * BPHS Ayurdaya, and all customer-facing Horoscope/Marriage Matching output.
+ *
+ * IMPORTANT: The primary Ashtakavarga System of Prediction scan is not present
+ * in the accessible source library. Online secondary transcriptions contain
+ * conflicts in Method-A worked totals, visible-half Harana and Method-B's
+ * 100-year rule. This module intentionally reports arithmetic candidates only;
+ * it never certifies or emits a final lifespan value.
+ *
+ * Sign indices: Aries=0 ... Pisces=11. Planet row keys are English names.
+ */
+export const BV_RAMAN_AYURDAYA_PLANETS = Object.freeze([
+  'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
+]);
+
+// B. V. Raman, Ashtakavarga System of Prediction — reported method factors.
+// Do NOT replace with the BPHS helper's different Virgo multiplier (6).
+export const BV_RAMAN_RASI_GUNAKARA = Object.freeze([
+  7, 10, 8, 4, 10, 5, 7, 8, 9, 5, 11, 12
+]);
+export const BV_RAMAN_GRAHA_GUNAKARA = Object.freeze({
+  Sun: 5, Moon: 5, Mars: 8, Mercury: 5, Jupiter: 10, Venus: 7, Saturn: 5
+});
+export const BV_RAMAN_OWNED_SIGN_PAIRS = Object.freeze([
+  Object.freeze([0, 7]), // Mars: Aries / Scorpio
+  Object.freeze([1, 6]), // Venus: Taurus / Libra
+  Object.freeze([2, 5]), // Mercury: Gemini / Virgo
+  Object.freeze([8, 11]), // Jupiter: Sagittarius / Pisces
+  Object.freeze([9, 10]) // Saturn: Capricorn / Aquarius
+]);
+export const BV_RAMAN_TRIKONA_GROUPS = Object.freeze([
+  Object.freeze([0, 4, 8]),  // Aries / Leo / Sagittarius
+  Object.freeze([1, 5, 9]),  // Taurus / Virgo / Capricorn
+  Object.freeze([2, 6, 10]), // Gemini / Libra / Aquarius
+  Object.freeze([3, 7, 11])  // Cancer / Scorpio / Pisces
+]);
+
+const SOURCE = 'B. V. Raman, Ashtakavarga System of Prediction, Chapter XIV (Ayurdaya)';
+const finite = value => typeof value === 'number' && Number.isFinite(value);
+
+function validateRow(value, label) {
+  if (!Array.isArray(value) || value.length !== 12 ||
+      !value.every(point => Number.isSafeInteger(point) && point >= 0 && point <= 8)) {
+    throw new RangeError(label + ' must contain 12 integer bindus in 0..8');
+  }
+  return [...value];
+}
+function validateRows(rows) {
+  if (!rows || typeof rows !== 'object' || Array.isArray(rows)) {
+    throw new TypeError('bavRows must map the seven graha names to 12-point rows');
+  }
+  for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+    if (!(planet in rows)) throw new TypeError('Missing BAV row for ' + planet);
+  }
+  return Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(
+    planet => [planet, validateRow(rows[planet], 'BAV ' + planet)]
+  ));
+}
+function validatePlanetSigns(planetSigns) {
+  if (!planetSigns || typeof planetSigns !== 'object' || Array.isArray(planetSigns)) {
+    throw new TypeError('planetSigns must map each graha to sign index 0..11');
+  }
+  const output = {};
+  for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+    const sign = planetSigns[planet];
+    if (!Number.isInteger(sign) || sign < 0 || sign > 11) {
+      throw new RangeError('Missing/invalid sign index for ' + planet);
+    }
+    output[planet] = sign;
+  }
+  return output;
+}
+function validateOccupiedSigns(occupiedSigns) {
+  if (!Array.isArray(occupiedSigns) ||
+      occupiedSigns.some(sign => !Number.isInteger(sign) || sign < 0 || sign > 11)) {
+    throw new TypeError('occupiedSigns must explicitly list occupied rasi indices 0..11');
+  }
+  // Duplicates are legitimate when several grahas occupy the same sign.
+  return new Set(occupiedSigns);
+}
+function total(values) {
+  return values.reduce((sum, value) => sum + value, 0);
+}
+
+/**
+ * B. V. Raman's reported Trikona-Shodhana convention:
+ * - all-positive unequal trine: subtract the least from all three;
+ * - all-positive equal trine: zero all three;
+ * - exactly one zero: leave unchanged;
+ * - two zeros: also zero the remaining member.
+ *
+ * This convention is separately encoded; it is not an alias of the BPHS
+ * classical-shodhana helper. Verify the exact convention against the printed
+ * primary text before marking the method certified.
+ */
+export function bvRamanTrikonaShodhana(binduRow) {
+  const values = validateRow(binduRow, 'Trikona Shodhana');
+  const trace = [];
+  for (const group of BV_RAMAN_TRIKONA_GROUPS) {
+    const before = group.map(index => values[index]);
+    const zeroCount = before.filter(value => value === 0).length;
+    let rule = 'subtract-minimum';
+    let subtract = 0;
+    if (zeroCount === 1) {
+      rule = 'single-zero-no-reduction';
+    } else if (zeroCount >= 2) {
+      for (const index of group) values[index] = 0;
+      rule = 'two-zero-third-also-zero';
+    } else if (before.every(value => value === before[0])) {
+      for (const index of group) values[index] = 0;
+      rule = 'all-equal-zero-all';
+    } else {
+      subtract = Math.min(...before);
+      for (const index of group) values[index] -= subtract;
+    }
+    trace.push({
+      signs: [...group], before, subtract, rule,
+      after: group.map(index => values[index])
+    });
+  }
+  return Object.freeze({
+    values: Object.freeze(values),
+    trace: Object.freeze(trace.map(Object.freeze)),
+    source: SOURCE,
+    certified: false
+  });
+}
+
+/**
+ * Reported Ekadhipatya Shodhana rules:
+ * - Cancer and Leo are exempt because they have one lord;
+ * - if either sign has zero bindus, do not alter the pair;
+ * - both signs occupied: no reduction;
+ * - one occupied: adjust the empty sign to the occupied count if the empty
+ *   count is higher; otherwise zero the empty sign;
+ * - both empty: equal counts zero both; unequal counts reduce the higher to
+ *   the lower.
+ *
+ * This is deliberately a research transcription until compared against the
+ * actual source pages. Occupancy must be supplied by the caller, not guessed.
+ */
+export function bvRamanEkadhipatyaShodhana(binduRow, occupiedSigns) {
+  const values = validateRow(binduRow, 'Ekadhipatya Shodhana');
+  const occupied = validateOccupiedSigns(occupiedSigns);
+  const trace = [];
+  for (const [a, b] of BV_RAMAN_OWNED_SIGN_PAIRS) {
+    const before = [values[a], values[b]];
+    const occupiedPair = [occupied.has(a), occupied.has(b)];
+    let rule = 'unchanged-zero-bindus';
+    if (values[a] > 0 && values[b] > 0) {
+      if (occupiedPair[0] && occupiedPair[1]) {
+        rule = 'both-occupied-no-reduction';
+      } else if (occupiedPair[0] !== occupiedPair[1]) {
+        const inhabited = occupiedPair[0] ? a : b;
+        const empty = occupiedPair[0] ? b : a;
+        values[empty] = values[empty] > values[inhabited] ? values[inhabited] : 0;
+        rule = 'one-occupied-adjust-empty';
+      } else if (values[a] === values[b]) {
+        values[a] = 0;
+        values[b] = 0;
+        rule = 'both-empty-equal-zero';
+      } else {
+        const least = Math.min(values[a], values[b]);
+        values[a] = least;
+        values[b] = least;
+        rule = 'both-empty-reduce-higher-to-lower';
+      }
+    }
+    trace.push({
+      signs: [a, b], before, occupancy: occupiedPair, rule,
+      after: [values[a], values[b]]
+    });
+  }
+  return Object.freeze({
+    values: Object.freeze(values),
+    trace: Object.freeze(trace.map(Object.freeze)),
+    source: SOURCE,
+    certified: false
+  });
+}
+
+/** Perform per-graha Trikona then Ekadhipatya reductions and form reduced SAV. */
+export function bvRamanAshtakavargaShodhana({ bavRows, occupiedSigns } = {}) {
+  const rows = validateRows(bavRows);
+  const occupied = validateOccupiedSigns(occupiedSigns);
+  const afterReduction = {};
+  const traces = {};
+  for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+    const trine = bvRamanTrikonaShodhana(rows[planet]);
+    const ekadhipatya = bvRamanEkadhipatyaShodhana(trine.values, [...occupied]);
+    afterReduction[planet] = [...ekadhipatya.values];
+    traces[planet] = {
+      before: rows[planet],
+      trikona: trine,
+      ekadhipatya
+    };
+  }
+  const reducedSarva = Array.from({ length: 12 }, (_, sign) =>
+    BV_RAMAN_AYURDAYA_PLANETS.reduce((sum, planet) => sum + afterReduction[planet][sign], 0)
+  );
+  return Object.freeze({
+    beforeReductionRows: Object.freeze(rows),
+    afterReductionRows: Object.freeze(afterReduction),
+    afterReductionSarvashtakavarga: Object.freeze(reducedSarva),
+    afterReductionSarvashtakavargaTotal: total(reducedSarva),
+    traces: Object.freeze(traces),
+    source: SOURCE,
+    certified: false,
+    blockers: Object.freeze([
+      'Primary printed source pages have not yet been attached to the source audit.',
+      'Raman-specific reduction edge cases need a full printed worked-chart oracle.'
+    ])
+  });
+}
+
+/**
+ * Method A (Bhinnashtakavarga): calculate Rasi/Graha/Sodya Pinda and gross
+ * formula candidates for each graha. Harana/net-year/final solar results are
+ * intentionally withheld because the transcribed worked example has arithmetic
+ * conflicts; see the dedicated audit note.
+ */
+export function bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows, planetSigns
+} = {}) {
+  const rows = validateRows(afterReductionRows);
+  const signs = validatePlanetSigns(planetSigns);
+  const planets = {};
+  for (const subject of BV_RAMAN_AYURDAYA_PLANETS) {
+    const row = rows[subject];
+    const rasiProducts = row.map((bindu, index) => bindu * BV_RAMAN_RASI_GUNAKARA[index]);
+    const rasiPinda = total(rasiProducts);
+    const grahaProducts = BV_RAMAN_AYURDAYA_PLANETS.map(planet => ({
+      planet,
+      sign: signs[planet],
+      bindus: row[signs[planet]],
+      multiplier: BV_RAMAN_GRAHA_GUNAKARA[planet],
+      product: row[signs[planet]] * BV_RAMAN_GRAHA_GUNAKARA[planet]
+    }));
+    const grahaPinda = grahaProducts.reduce((sum, entry) => sum + entry.product, 0);
+    const sodyaPinda = rasiPinda + grahaPinda;
+    const grossLunarYearsUnwrapped = sodyaPinda * 7 / 27;
+    const grossLunarYearsModulo27 = ((grossLunarYearsUnwrapped % 27) + 27) % 27;
+    planets[subject] = Object.freeze({
+      rasiPinda, rasiProducts: Object.freeze(rasiProducts),
+      grahaPinda, grahaProducts: Object.freeze(grahaProducts.map(Object.freeze)),
+      sodyaPinda, grossLunarYearsUnwrapped, grossLunarYearsModulo27,
+      netAfterHaranaLunarYears: null,
+      solarYears: null
+    });
+  }
+  return Object.freeze({
+    method: 'A — individual Bhinnashtakavarga',
+    planets: Object.freeze(planets),
+    sumOfModulo27GrossCandidates: total(
+      BV_RAMAN_AYURDAYA_PLANETS.map(planet => planets[planet].grossLunarYearsModulo27)
+    ),
+    netTotalLunarYears: null,
+    finalSolarYears: null,
+    finalLifespan: null,
+    source: SOURCE,
+    researchOnly: true,
+    certified: false,
+    customerDisplayAllowed: false,
+    blockers: Object.freeze([
+      'Secondary Method-A transcription contains mismatched reported Venus/Saturn gross years versus Sodya-Pinda arithmetic.',
+      'Visible-half Harana wording and at least one worked reduction do not agree.',
+      'Exact primary book example and original printed pages are required before net/final arithmetic can be certified.',
+      'No Method-A Harana loss is silently stacked; no final value is emitted.'
+    ])
+  });
+}
+
+/**
+ * Method B (Nakshatrayu): use reduced Sarvashtakavarga. Both outcomes of the
+ * source's disputed 100-year rule are returned for comparison; neither is
+ * selected as the final result.
+ */
+export function bvRamanAshtakavargaMethodB({
+  reducedSarvashtakavarga, planetSigns
+} = {}) {
+  const sav = validateRow(reducedSarvashtakavarga, 'Reduced Sarvashtakavarga');
+  const signs = validatePlanetSigns(planetSigns);
+  const rasiProducts = sav.map((bindu, index) => bindu * BV_RAMAN_RASI_GUNAKARA[index]);
+  const rasiPinda = total(rasiProducts);
+  const grahaProducts = BV_RAMAN_AYURDAYA_PLANETS.map(planet => ({
+    planet,
+    sign: signs[planet],
+    bindus: sav[signs[planet]],
+    multiplier: BV_RAMAN_GRAHA_GUNAKARA[planet],
+    product: sav[signs[planet]] * BV_RAMAN_GRAHA_GUNAKARA[planet]
+  }));
+  const grahaPinda = grahaProducts.reduce((sum, entry) => sum + entry.product, 0);
+  const sodyaPinda = rasiPinda + grahaPinda;
+  const lunarYearsUnadjusted = sodyaPinda * 7 / 27;
+  const lunarYearsAfterSingle100Subtraction = lunarYearsUnadjusted > 100
+    ? lunarYearsUnadjusted - 100 : lunarYearsUnadjusted;
+  return Object.freeze({
+    method: 'B — Sarvashtakavarga / Nakshatrayu',
+    reducedSarvashtakavarga: Object.freeze(sav),
+    rasiProducts: Object.freeze(rasiProducts),
+    rasiPinda,
+    grahaProducts: Object.freeze(grahaProducts.map(Object.freeze)),
+    grahaPinda,
+    sodyaPinda,
+    lunarYearsUnadjusted,
+    lunarYearsAfterSingle100Subtraction,
+    solarYearsWithout100Subtraction: lunarYearsUnadjusted * 324 / 365,
+    solarYearsAfter100Subtraction: lunarYearsAfterSingle100Subtraction * 324 / 365,
+    finalSolarYears: null,
+    finalLifespan: null,
+    source: SOURCE,
+    researchOnly: true,
+    certified: false,
+    customerDisplayAllowed: false,
+    blockers: Object.freeze([
+      'The source example reports 94.8 solar years from the unadjusted 106.8 lunar-year quotient while also stating a 100-year subtraction rule.',
+      'The displayed source example is not reconciled with the 100-year rule; neither branch is designated final.',
+      'Primary printed source pages and independent worked-chart oracle are required.'
+    ])
+  });
+}
+
+/** Secondary-transcription fixture only; never an independent certification source. */
+export const BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE = Object.freeze({
+  reducedSarvashtakavarga: Object.freeze([7, 0, 7, 1, 0, 10, 0, 0, 2, 1, 1, 2]),
+  planetSigns: Object.freeze({
+    Sun: 5, Moon: 10, Mars: 7, Mercury: 6, Jupiter: 2, Venus: 5, Saturn: 4
+  }),
+  reportedRasiPinda: 217,
+  reportedGrahaPinda: 195,
+  reportedSodyaPinda: 412,
+  reportedSolarYears: 94.8,
+  evidenceGrade: 'SECONDARY_TRANSCRIPTION_ONLY',
+  primaryBookPagesVerified: false
+});
