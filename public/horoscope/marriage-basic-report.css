@@ -166,24 +166,25 @@
  text-align:center;vertical-align:middle;white-space:nowrap;word-break:normal;overflow-wrap:normal;
  background:#fffdfb;
 }
-html body.smv-v12-theme #smvMarriageMatching .mm-full-results.mm-v281-results .mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{
- color:#4a352d!important;background:#fff7e8!important;font-weight:800!important;
+/* Matching table colors are owned by the Ayurdaya component, not late page overrides. */
+.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{
+ color:#4a352d;background:#fff7e8;font-weight:800;
 }
-html body.smv-v12-theme #smvMarriageMatching .mm-full-results.mm-v281-results .mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{
- color:#302722!important;background:#fff!important;font-weight:800!important;
+.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{
+ color:#302722;background:#fff;font-weight:800;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals th,
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals td{
  font-weight:700;background:#faf2e4;
 }
-.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th{
- white-space:normal;text-align:start;line-height:1.4;background:#faf2e4;color:#302722;
+.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table .smv-ayurdaya-average th{
+ white-space:normal;text-align:start;line-height:1.4;background:#fff7e8;color:#302722;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average-basis{
  display:block;margin-top:.28em;padding:.1em 0;font-size:.84rem;line-height:1.45;font-weight:700;color:#333;background:transparent;
 }
-.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average td{
- background:#faf2e4;color:#302722;text-align:center;white-space:normal;font-weight:700;
+.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table .smv-ayurdaya-average td{
+ background:#fff7e8;color:#302722;text-align:center;white-space:normal;font-weight:700;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average-value strong{font-weight:800}
 @media print{
