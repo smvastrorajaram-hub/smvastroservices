@@ -271,23 +271,23 @@ ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printS
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
 ok(!shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
  'primary Shadbala template does not show Rajan partial subtotal or separate war column');
-ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
- 'primary Shadbala values are calculated by the shared current-result helper');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength6?.available===true'),
+ 'primary Shadbala values are calculated from B.V. Raman strength6');
 for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(src.includes(heading),'primary Shadbala defines '+heading);
 for(const heading of ['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'])ok(src.includes(heading),'primary Shadbala defines English '+heading);
 
 eq(shadbalaUi.includes('smv-shadbala-method-note'),false,'primary Shadbala hides the internal validation note');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
-ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
- 'primary customer Shadbala rows come from the current six-Bala calculation result');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength6?.available===true'),
+ 'primary customer Shadbala rows come from the B.V. Raman six-Bala result');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
 const analysisShadbalaStart=src.indexOf('const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
 eq(analysisShadbalaUi.includes('smv-shadbala-method-note'),false,'Chart Analysis hides the internal validation note');
-ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength3?.available===true'),
- 'Chart Analysis Shadbala uses current six-component values');
+ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength6?.available===true'),
+ 'Chart Analysis Shadbala uses B.V. Raman strength6 components');
 eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis does not substitute Rajan partial components');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
@@ -334,7 +334,7 @@ for(const [date,time] of births){
    'actual saved Horoscope birth '+date+' renders Amsa days/nazhigai instead of zero for every resolved row');
  }
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
- const shadbalaRows=r.chart.planets.filter(p=>p?.strength3?.available);
+ const shadbalaRows=r.chart.planets.filter(p=>p?.strength6?.available);
  eq(shadbalaRows.length,7,'seven classical Shadbala rows '+date);
  const rajanRows=r.chart.planets.filter(p=>p?.strengthJathakaKanitham?.available===true);
  eq(rajanRows.length,7,'seven Rajan Shadbala rows available to primary and Analysis tables '+date);
@@ -345,12 +345,20 @@ for(const [date,time] of births){
     'Shadbala UI component/subtotal results are numeric '+date+' '+p.name);
  }
  for(const p of shadbalaRows){
-  eq(p.strength3.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
-  eq(p.strength3.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
-  const c=p.strength3.components||{};
-  const sum=Number(c.sthana?.total||0)+Number(c.dig||0)+Number(c.kala?.total||0)+Number(c.cheshta||0)+Number(c.naisargika||0)+Number(c.drik||0);
-  ok(Number.isFinite(sum)&&Number.isFinite(p.strength3.totalVirupa)&&Math.abs(sum-p.strength3.totalVirupa)<0.004,
-   'Shadbala total equals six unrounded components '+date+' '+p.name);
+  eq(p.strength6.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
+  eq(p.strength6.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
+  const c=p.strength6.components||{};
+  ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
+   Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
+   'B.V. Raman six individual components remain available '+date+' '+p.name);
+  if(Number.isFinite(p.strength6.totalVirupa)){
+   const sum=Number(c.sthana.total)+Number(c.dig)+Number(c.kala.total)+Number(c.cheshta)+Number(c.naisargika)+Number(c.drik);
+   ok(Math.abs(sum-p.strength6.totalVirupa)<0.01,
+    'Shadbala total equals six components '+date+' '+p.name);
+  }else{
+   eq(p.strength6.totalVirupa,null,'unresolved total is withheld '+date+' '+p.name);
+   eq(p.strength6.totalRupa,null,'Rupa is also withheld when total is unresolved '+date+' '+p.name);
+  }
  }
  ok(x.entries.some(e=>e.amsa&&e.amsa.rawAmsaFractionOfPada>1e-8&&e.amsa.rawAmsaFractionOfPada<1-1e-8),
   'actual natal longitudes retain fractional Amsa arc '+date);

@@ -1,7 +1,7 @@
 /**
  * UK Khanda I Section II ONLY: seven grahas x five real Perambalur births.
- * Compare the independently assembled research output with what is
- * actually attached to the live chart; preserve the existing BPHS engine.
+ * Compare the independently assembled research output with the live chart's
+ * B.V. Raman strength6; keep the Uttara Kalamrita result isolated.
  * Historically validated Cheshta inputs are not available. No Ayurdaya.
  */
 import assert from 'node:assert/strict';
@@ -22,13 +22,13 @@ for(const [date,time] of dates){
  ok(seven.length===7,date+' all seven classic grahas');
  const output={birth:date+' '+time,UK:{}};
  for(const p of seven){
-  const u=p.strengthUttaraKalamrita,prior=p.strength3;
+  const u=p.strengthUttaraKalamrita,prior=p.strength6;
   ok(Number.isFinite(p.eclipticLatitude),
    date+' '+p.name+' current Swiss ecliptic latitude is present');
   ok(Number.isFinite(prior?.components?.kala?.yuddha),
-   date+' '+p.name+' existing engine Yuddha component is numeric');
+   date+' '+p.name+' B.V. Raman Yuddha component is numeric');
   ok(prior?.classicalCertified===false,
-   date+' '+p.name+' existing BPHS Shadbala is not falsely certified');
+   date+' '+p.name+' B.V. Raman Shadbala is not falsely certified');
   ok(u&&u.classicalCertified===false,date+' '+p.name+' correct fail-closed UK certification');
   ok(u?.sthana?.saptavargajaPartsVirupa?.length===7,
    date+' '+p.name+' seven independent UK varga parts');
@@ -94,7 +94,7 @@ console.log(JSON.stringify({
  pass:true,assertions:count,ukNatalPlanetComputations:valid,
  missingHistoricalFiveGrahaTriples:missingFiveGrahaTriples,unspecifiedLuminaryMethods,
  ukVsOldPositionalDifferences:meaningfulDifferences,
- source:'Uttara Kalamrita Khanda I Section II only, 1939 V Subrahmanya Sastri',
+ source:'Uttara Kalamrita Khanda I Section II only, 1939 V Subrahmanya Sastri', productionShadbala:'B.V. Raman strength6 only',
  bookTextIntermediatesPresent:true,independentHistoricalAstronomicalInputsCertified:false,
  completeUkShadbalaCertification:false,ayurdayaImplemented:false,
  result:snapshots

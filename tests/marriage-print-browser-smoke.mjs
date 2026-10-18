@@ -1,6 +1,8 @@
 // Browser and A4 Print QA: all 3 styles, real two-person Swiss/Varga/BAV data.
 import assert from 'node:assert/strict';
-import {mkdir,writeFile,stat} from 'node:fs/promises';
+import {mkdir,writeFile,stat,readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
+import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
@@ -8,7 +10,24 @@ import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
 const root=new URL('../public/horoscope/',import.meta.url),output=new URL('../marriage-print-smoke-output/',import.meta.url);
+const rootPath=resolve(fileURLToPath(root));
 await mkdir(output,{recursive:true});
+// Serve the fixtures over a same-origin loopback HTTP server. A file:// page
+// can report a CSS FontFace as loaded while Chromium refuses to embed its local
+// WOFF2 resource in the printed PDF; production uses ordinary HTTP(S).
+const mimeTypes={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.woff2':'font/woff2','.ttf':'font/ttf'};
+const server=createServer(async(req,res)=>{
+ try{
+  const pathname=decodeURIComponent(new URL(req.url||'/', 'http://127.0.0.1').pathname);
+  const filePath=resolve(rootPath,'.'+pathname);
+  if(filePath!==rootPath&&!filePath.startsWith(rootPath+sep)){res.writeHead(403);res.end('Forbidden');return;}
+  const bytes=await readFile(filePath);
+  res.writeHead(200,{'Content-Type':mimeTypes[extname(filePath)]||'application/octet-stream','Cache-Control':'no-store'});
+  res.end(bytes);
+ }catch(_){res.writeHead(404);res.end('Not found');}
+});
+await new Promise((resolvePromise,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolvePromise);});
+const origin=`http://127.0.0.1:${server.address().port}/`;
 const people=[];
 for(const [name,date,time,lat,lon,zone,utc] of [
  ['Bride audit','1992-07-31','22:05',11.232,78.88,'Asia/Kolkata',330],
@@ -50,7 +69,7 @@ try{
   const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261018-ayurdaya-planet-white-v247"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v249"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
-  await page.goto(fixture.href,{waitUntil:'load'});
+  await page.goto(new URL('__matching_print_smoke_temp.html',origin).href,{waitUntil:'load'});
   const mobile=await page.evaluate(()=>{
    const charts=[...document.querySelectorAll('.mm-base-chart')];
    const tables=[...document.querySelectorAll('.mm-base-table')];
@@ -145,7 +164,7 @@ try{
  for(const matching of [true,false]){
   await writeFile(coverFile,coverHtml(matching));
   await page.setViewport({width:390,height:830,deviceScaleFactor:1});
-  await page.goto(coverFile.href,{waitUntil:'load'});
+  await page.goto(new URL('__matching_cover_print_smoke_temp.html',origin).href,{waitUntil:'load'});
   await page.emulateMediaType('print');
   const m=await page.evaluate(()=>{
     const cover=document.querySelector('#smvPrintCover'),
@@ -182,7 +201,7 @@ try{
  const inputFile=new URL('__matching_input_layer_smoke_temp.html',root);
  const inputHtml='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="smv-ui.css"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><div id="mmPublicChoice">Mode</div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Date<input type="date"></label></fieldset><fieldset><legend>Groom</legend><label>Date<input type="date"></label></fieldset></div></div><div id="mmManualEntry"><div class="mm-grid mm-birth-grid"><fieldset><legend>Bride</legend><label>Rasi<select><option>Aries</option></select></label></fieldset><fieldset><legend>Groom</legend><label>Rasi<select><option>Taurus</option></select></label></fieldset></div></div></div></body></html>';
  await writeFile(inputFile,inputHtml);
- await page.goto(inputFile.href,{waitUntil:'load'});
+ await page.goto(new URL('__matching_input_layer_smoke_temp.html',origin).href,{waitUntil:'load'});
  await page.emulateMediaType('screen');
  const form=await page.evaluate(()=>[...document.querySelectorAll('#mmFullEntry fieldset,#mmManualEntry fieldset')].map(x=>{
     const c=getComputedStyle(x);
@@ -190,6 +209,109 @@ try{
  }));
  assert.equal(form.length,4,'Two DOB and two Rasi/Nakshatra fieldsets present');
  assert.ok(form.every(x=>x.border==='0px'&&x.shadow==='none'),'No nested fieldset cards in either Nakshatra mode');
- console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length}));
 
-}finally{await browser.close();}
+ // End-to-end standalone Horoscope snapshot -> report-print.html -> Chromium PDF.
+ // This exercises the same cached-core renderer and saved-report printer used by
+ // customer Horoscope, not a hand-written duplicate Shadbala table.
+ const sameOrigin=new URL(origin).origin;
+ const horoscopePageErrors=[],horoscopeConsoleErrors=[],horoscopeFailedRequests=[];
+ page.on('pageerror',error=>horoscopePageErrors.push(String(error?.stack||error)));
+ page.on('console',msg=>{if(msg.type()==='error')horoscopeConsoleErrors.push(msg.text());});
+ page.on('requestfailed',req=>{if(req.url().startsWith(sameOrigin))horoscopeFailedRequests.push(req.url()+': '+(req.failure()?.errorText||'failed'));});
+ await page.setRequestInterception(true);
+ page.on('request',req=>{
+  try{if(new URL(req.url()).origin===sameOrigin)req.continue();else req.abort();}
+  catch{req.abort();}
+ });
+ const actualIndexHtml=await readFile(new URL('index.html',root),'utf8');
+ const rendererOnlyHtml=actualIndexHtml.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(block,attrs)=>
+  /\bsrc=["'][^"']*horoscope\.js(?:\?[^"']*)?["']/i.test(attrs)?block:'');
+ const rendererFixture=new URL('__horoscope_pdf_smoke_temp.html',root);
+ await writeFile(rendererFixture,rendererOnlyHtml,'utf8');
+ await page.goto(new URL('__horoscope_pdf_smoke_temp.html',origin).href,{waitUntil:'domcontentloaded',timeout:30000});
+ await page.waitForFunction(()=>typeof window.__smvRenderCachedCore==='function',{timeout:15000}).catch(async error=>{
+  const dom=await page.evaluate(()=>({url:location.href,readyState:document.readyState,hook:typeof window.__smvRenderCachedCore,
+   scriptLoads:[...document.scripts].map(x=>({src:x.src,readyState:x.readyState})).filter(x=>x.src.includes('horoscope.js')),
+   resultExists:!!document.getElementById('tamilHoroscopeResult')}));
+  throw new Error('Primary Horoscope renderer hook unavailable: '+JSON.stringify({dom,pageErrors:horoscopePageErrors.slice(-6),consoleErrors:horoscopeConsoleErrors.slice(-8),failedRequests:horoscopeFailedRequests.slice(-8)})+'; cause='+error.message);
+ });
+ const horoscopeChart={...people[0]};
+ delete horoscopeChart.advanced;
+ const horoscopeRender=await page.evaluate(data=>{
+  document.documentElement.lang='ta';
+  try{localStorage.setItem('smvLanguage','ta');}catch{}
+  const name=document.getElementById('tamilAstroName');if(name)name.value='B.V. Raman Horoscope PDF QA';
+  const place=document.getElementById('tamilBirthPlace');if(place)place.value='Perambalur';
+  window.__smvRenderCachedCore(data);
+  const root=document.getElementById('tamilHoroscopeResult');
+  const rows=[...root.querySelectorAll('.smv-shadbala-table tbody tr')].map(tr=>({
+   name:tr.cells[0]?.innerText.trim(),components:[...tr.cells].slice(1,7).map(td=>td.innerText.trim()),
+   total:tr.cells[7]?.innerText.trim(),rupa:tr.cells[8]?.innerText.trim(),
+   required:tr.cells[9]?.innerText.trim(),rank:tr.cells[10]?.innerText.trim()
+  }));
+  return {html:root.innerHTML,rows,expected:data.planets.filter(p=>p?.strength6?.available&&p.strength6.components).map(p=>({name:p.name,total:Number.isFinite(p.strength6.totalVirupa)?p.strength6.totalVirupa:null}))};
+ },horoscopeChart);
+ assert.ok(horoscopeRender.html.includes('மொத்த ஷட்பலம் (விரூபம்)')&&horoscopeRender.html.includes('சேஷ்டா பலம்')&&horoscopeRender.html.includes('த்ரிக் பலம்'),
+  'Primary Horoscope renderer creates all six Bala columns in Tamil');
+ assert.equal(horoscopeRender.rows.length,7,'Primary Horoscope renderer produces seven graha rows');
+ for(const row of horoscopeRender.rows){
+  const expected=horoscopeRender.expected.find(p=>p.name===row.name);
+  assert.ok(expected&&expected.total!==null,'Primary Horoscope row has live strength6 total: '+row.name);
+  assert.equal(row.total,Number(expected.total).toFixed(1),'Primary Horoscope printed Virupa matches strength6: '+row.name);
+ }
+ const horoscopeReportKey='smv-strength6-horoscope-pdf-smoke';
+ const horoscopeSelection={key:horoscopeReportKey,owner:'smv-pdf-smoke-user',language:'ta',mode:'view',createdAt:Date.now()};
+ await page.evaluate(async({html,selection,birth})=>{
+  const db=await new Promise((resolve,reject)=>{
+   const q=indexedDB.open('smv-reports-v2',3);
+   q.onupgradeneeded=()=>{
+    const d=q.result;
+    let st;
+    if(!d.objectStoreNames.contains('reports'))st=d.createObjectStore('reports',{keyPath:'key'});
+    else st=q.transaction.objectStore('reports');
+    if(!st.indexNames.contains('owner'))st.createIndex('owner','owner',{unique:false});
+    if(!st.indexNames.contains('updatedAt'))st.createIndex('updatedAt','updatedAt',{unique:false});
+   };
+   q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+  });
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('reports','readwrite');
+   tx.objectStore('reports').put({
+    key:selection.key,owner:selection.owner,feature:'advanced_analysis',name:'B.V. Raman Horoscope PDF QA',
+    language:'ta',html,views:{ta:html},identity:{date:birth?.date||'1992-07-31',time:birth?.time||'22:05',birthPlace:'Perambalur'},
+    calculation:{birth:birth||{},birthPlace:'Perambalur'},cover:{person:{name:'B.V. Raman Horoscope PDF QA',place:'Perambalur'}},
+    createdAt:Date.now(),updatedAt:Date.now(),deleted:false
+   });
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+  });
+  db.close();
+  sessionStorage.setItem('smv-print-report',JSON.stringify(selection));
+ },{html:horoscopeRender.html,selection:horoscopeSelection,birth:horoscopeChart.birth||{}});
+ await page.goto(new URL('report-print.html?mode=view',origin).href,{waitUntil:'load',timeout:45000});
+ await page.waitForFunction(()=>document.querySelectorAll('#printReport .smv-shadbala-table tbody tr').length===7,{timeout:30000});
+ const horoscopePrint=await page.evaluate(async()=>{
+  await document.fonts.ready;
+  const root=document.getElementById('printReport'),table=root.querySelector('.smv-shadbala-table');
+  return {
+   rows:[...table.querySelectorAll('tbody tr')].map(tr=>({name:tr.cells[0]?.innerText.trim(),total:tr.cells[7]?.innerText.trim()})),
+   headers:[...table.querySelectorAll('thead th')].map(th=>th.innerText.trim()),
+   tamilFontReady:document.fonts.check('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்'),
+   title:document.title,ready:document.getElementById('printStatus')?.innerText||''
+  };
+ });
+ assert.equal(horoscopePrint.rows.length,7,'Saved Horoscope print DOM preserves all seven Shadbala rows');
+ assert.ok(horoscopePrint.headers.includes('ஸ்தான பலம்')&&horoscopePrint.headers.includes('திக் பலம்')&&horoscopePrint.headers.includes('கால பலம்')&&horoscopePrint.headers.includes('சேஷ்டா பலம்')&&horoscopePrint.headers.includes('நைசர்கிக பலம்')&&horoscopePrint.headers.includes('த்ரிக் பலம்')&&horoscopePrint.headers.includes('மொத்த ஷட்பலம் (விரூபம்)'),
+  'Saved Horoscope print DOM preserves all six Bala columns and final total');
+ assert.equal(horoscopePrint.tamilFontReady,true,'Saved Horoscope print DOM loads embedded Tamil font');
+ for(const row of horoscopePrint.rows){
+  const expected=horoscopeRender.rows.find(p=>p.name===row.name);
+  assert.equal(row.total,expected.total,'Saved Horoscope print total matches visible Horoscope result: '+row.name);
+ }
+ const horoscopePdf=new URL('horoscope-print-strength6.pdf',output);
+ await page.pdf({path:fileURLToPath(horoscopePdf),format:'A4',printBackground:true,preferCSSPageSize:true});
+ assert.ok((await stat(horoscopePdf)).size>25000,'Standalone Horoscope Shadbala PDF is generated');
+ await page.screenshot({path:fileURLToPath(new URL('horoscope-print-strength6.png',output)),fullPage:false});
+
+ console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length,horoscopePdf:true,horoscopePdfRows:horoscopePrint.rows.length,horoscopePdfHeaders:horoscopePrint.headers,tamilFontReady:horoscopePrint.tamilFontReady}));
+
+}finally{await browser.close();await new Promise(resolvePromise=>server.close(resolvePromise));}

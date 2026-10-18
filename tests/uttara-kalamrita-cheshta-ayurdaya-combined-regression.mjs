@@ -94,20 +94,19 @@ yes(live.ok,'2026 official epoch actual SMV live chart exists');
 const solarMean=dms(imdCorrectedMean2026.Sun);
 for(const [planet,tamilName] of Object.entries(tamil)){
  const liveP=live.chart.planets.find(x=>x.name===tamilName);
- yes(liveP?.strength3?.available===true,planet+' live has sixfold Bala');
- const s=liveP.strength3;
+ yes(liveP?.strength6?.available===true,planet+' live has sixfold Bala');
+ const s=liveP.strength6;
  const independentlyPublishedOrbital=cheshta(tamilName,solarMean,
    dms(imdCorrectedMean2026[planet]),dms(imdGeocentricTrue2026[planet]));
  near(independentlyPublishedOrbital.virupa,publishedInputsExpectedVirupa[planet],
    .0000015,planet+' IMD published source input Cheshta Virupa');
- yes(s.cheshtaClassicalOrbitalInputsVerified===false,
-   planet+' live DOES NOT claim independent ancient input confirmation');
- yes(s.cheshtaSourceMethod.includes('PROVISIONAL discrete'),
-   planet+' exact live speed-heuristic source visible');
+ const orbitalEvidence=s.evidence?.cheshtaSource;
+ yes(orbitalEvidence?.method==='BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA'&&orbitalEvidence.numericallyCertified===false,
+   planet+' live uses B.V. Raman classical-formula candidate, not speed buckets');
  const liveVirupa=s.components.cheshta;
  const discrepancy=Math.abs(liveVirupa-independentlyPublishedOrbital.virupa);
- yes(Number.isFinite(liveVirupa)&&discrepancy>.5,
-    planet+' live speed approximation differs materially from published-source Cheshta');
+ yes(Number.isFinite(liveVirupa)&&orbitalEvidence?.trueLongitudeHistoricalCertified===false,
+    planet+' Raman Cheshta remains numerical candidate pending historical input certification');
  yes(s.classicalCertified===false&&s.provisional===true,
    planet+' shall NOT be classically certified');
  verifiedNoFusion.push({
@@ -121,15 +120,12 @@ for(const [planet,tamilName] of Object.entries(tamil)){
  });
 }
 for(const planet of ['சூரியன்','சந்திரன்']){
- const s=live.chart.planets.find(p=>p.name===planet)?.strength3;
- yes(s&&s.classicalCertified===false&&s.cheshtaClassicalOrbitalInputsVerified===false,
+ const s=live.chart.planets.find(p=>p.name===planet)?.strength6;
+ yes(s&&s.classicalCertified===false,
      planet+' no false full Shadbala certificate');
- yes(s.cheshtaSourceMethod.startsWith('BPHS '),
-     planet+' source-specific BPHS Cheshta replacement documented');
- if(planet==='சூரியன்')near(s.components.cheshta,s.components.kala.ayana,
-     1e-9,'Sun Cheshta equals Ayana');
- else near(s.components.cheshta,s.components.kala.paksha,
-     1e-9,'Moon Cheshta equals Paksha');
+ yes(s.evidence?.cheshtaSource?.method==='BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',
+     planet+' Sun/Moon sixfold Cheshta follows the B.V. Raman source-specific rule');
+ near(s.components.cheshta,0,1e-12,planet+' sixfold Cheshta is distinct from Ishta/Kashta special Chesta-for-Phala');
 }
 yes(verifiedNoFusion.length===5,'all five traditional mean-vs-speed comparisons');
 console.log(JSON.stringify({
@@ -575,10 +571,10 @@ for(const [date,time,sunriseRef,sunsetRef] of refs){
  const actual=r.chart.planets.filter(x=>['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(x.name));
  eq(actual.length,7,'seven natal planets');
  for(const p of actual){
-   yes(p.strength3.solarTimeMethod.includes('Swiss Sun ephemeris'),date+' '+p.name+' Swiss-based Kala source');
-   yes(Number.isFinite(p.strength3.birthApparentSolarHour),date+' '+p.name+' apparent hour valid');
-   yes(Number.isFinite(p.strength3.totalVirupa),date+' '+p.name+' finite Shadbala');
-   eq(p.strength3.classicalCertified,false,date+' five-planet Cheshta still not certified');
+   yes(p.strength6.evidence.solarTimeMethod.includes('Swiss Sun ephemeris'),date+' '+p.name+' Swiss-based Kala source');
+   yes(Number.isFinite(p.strength6.evidence.birthApparentSolarHour),date+' '+p.name+' apparent hour valid');
+   yes(Number.isFinite(p.strength6.totalVirupa),date+' '+p.name+' finite Shadbala');
+   eq(p.strength6.classicalCertified,false,date+' five-planet Cheshta still not certified');
  }
 }
 // Arctic polar winter: do not invent sunrise for a day without one.
@@ -664,8 +660,8 @@ for(const [date,time,referenceEt,means] of cases){
  const natal=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'V364 read-only orbital comparison'});
  ok(natal.ok,date+' natal calculations preserved');
  for(const body of natal.chart.planets.filter(x=>['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(x.name))){
-   eq(body.strength3.classicalCertified,false,date+' '+body.name+' classical certification is not faked');
-   ok(Number.isFinite(body.strength3.components.cheshta),date+' '+body.name+' existing Cheshta finite');
+   eq(body.strength6.classicalCertified,false,date+' '+body.name+' classical certification is not faked');
+   ok(Number.isFinite(body.strength6.components.cheshta),date+' '+body.name+' existing Cheshta finite');
  }
  summaries.push({date,reference:row});
 }
@@ -1143,11 +1139,11 @@ for(const [date,time] of births){
  A(report.ok,date+' natal calculation still works');
  for(const name of shadbalaNames){
   const p=report.chart.planets.find(x=>x.name===name);
-  A(!!p?.strength3,date+' Shadbala exists '+name);
-  const b=p.strength3;
+  A(!!p?.strength6,date+' Shadbala exists '+name);
+  const b=p.strength6;
   A(!b.classicalCertified&&b.provisional,date+' seven-graha full numerical certificate remains correctly blocked '+name);
-  A(Number.isFinite(b.totalVirupa)&&Number.isFinite(b.components.cheshta),
-    date+' output finite '+name);
+  A(Number.isFinite(b.components.cheshta)&&((Number.isFinite(b.totalVirupa))||b.totalVirupa===null),
+    date+' B.V. Raman components are finite and unresolved totals fail closed '+name);
   sample.fullSevenShadbala[name]={totalVirupa:b.totalVirupa,cheshta:b.components.cheshta,
        certified:false};
  }
@@ -1163,7 +1159,7 @@ console.log(JSON.stringify({
  modernVsClassicalDiagnostic:samples,
  independentHistoricalClassicalOracleCount:0,
  historicalTrueLongitudeCertified:false,natalCheshtaCertified:false,
- sevenPlanetShadbalaCertified:false,productionStrengthChanged:false,
+ sevenPlanetShadbalaCertified:false,productionStrengthChanged:true,productionEngine:'B.V. Raman strength6',
  note:'Swiss modern Lahiri is NOT same frame as unmodified Saura, so 25 differences are NOT errors or certification references'
 }));
 }

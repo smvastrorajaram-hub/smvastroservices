@@ -82,8 +82,10 @@ assert.ok(horoscopeSource.includes('data-smv-ishta-kashta="1"'),'B.V. Raman resu
 assert.ok(horoscopeSource.includes('bvRamanChestaForPhala'),'Ishta/Kashta uses special Chesta-for-Phala'); assertions++;
 assert.ok(horoscopeSource.includes("'சேஷ்டா பலம்'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'Cheshta column does not imply its value is Ishta or Kashta output'); assertions++;
 assert.ok(!horoscopeSource.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'),'the unwanted Ishta/Kashta research note is absent from visible HTML'); assertions++;
-assert.ok(!horoscopeSource.includes('cheshtaBala: Number(p.strength3'),'it does not substitute sixfold Shadbala Cheshta Bala'); assertions++;
+assert.ok(!horoscopeSource.includes('cheshtaBala: Number(p.strength6'),'Ishta/Kashta does not substitute sixfold strength6 Cheshta Bala'); assertions++;
 assert.ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important'),'Horoscope Ayurdaya scroll style is source-guarded'); assertions++;
+
+assert.ok(!horoscopeSource.includes('strength3'),'old BPHS strength3 is absent from customer Horoscope source'); assertions++;
 
 console.log(JSON.stringify({
   pass:true,

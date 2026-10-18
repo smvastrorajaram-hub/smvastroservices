@@ -512,9 +512,9 @@
     return s.exalted?'உச்சம்':s.debilitated?'நீசம்':s.moolatrikona?'மூலத்திரிகோணம்':s.ownSign?'ஆட்சி':s.relationship||'—';
   }
   function smvShadbalaDisplayRows(planets){
-    const data=(planets||[]).filter(p=>p?.strength3?.available===true&&p.strength3?.components)
+    const data=(planets||[]).filter(p=>p?.strength6?.available===true&&p.strength6?.components)
       .map(planet=>{
-        const strength=planet.strength3;
+        const strength=planet.strength6;
         return {planet,strength,components:strength.components||{},
           total:Number.isFinite(strength.totalVirupa)?strength.totalVirupa:null,
           required:Number.isFinite(strength.requiredVirupa)?strength.requiredVirupa:null};
@@ -1308,7 +1308,7 @@
         return `<tr><td><b>${hNo}</b></td><td>${S(sign)}</td><td><b>${groups.join(' · ')}</b></td></tr>`;
       }).join('');
       // Display all six current Swiss-position-based Bala components plus the computed total,
-      // minimum required Rupas, rank and ratio status from one consistent strength3 result.
+      // minimum required Rupas, rank and ratio status from one consistent B.V. Raman strength6 result.
       const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);
       const shadbalaRowsCount=shadbalaDisplayRows.length;
       const shadbalaRows=shadbalaDisplayRows.map(row=>{
