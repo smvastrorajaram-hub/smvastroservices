@@ -511,12 +511,31 @@
     }
     return s.exalted?'உச்சம்':s.debilitated?'நீசம்':s.moolatrikona?'மூலத்திரிகோணம்':s.ownSign?'ஆட்சி':s.relationship||'—';
   }
-  function render(d){
+${helper}  function render(d){
     const result=$('tamilHoroscopeResult');
     const name=($('tamilAstroName')?.value||'அன்பார்ந்தவர்').trim()||'அன்பார்ந்தவர்';
     const created=new Date().toLocaleDateString('ta-IN',{day:'2-digit',month:'long',year:'numeric'});
     const current=d.planets.find(x=>x.name==='சந்திரன்');
     result.setAttribute('aria-busy','false');
+    const shadbalaDisplayRows=smvShadbalaDisplayRows(d.planets);
+    const shadbalaNumber=(value,digits=1)=>Number.isFinite(value)?value.toFixed(digits):'—';
+    const shadbalaRows=shadbalaDisplayRows.map(row=>{
+      const c=row.components,level=row.ratio===null?'கணக்கீடு இல்லை':
+        row.ratio>=1?'தேவையான அளவு அடைந்தது':'தேவையான அளவுக்கு குறைவு';
+      const levelText=row.ratioPercent===null?level:level+' ('+row.ratioPercent+'%)';
+      return '<tr><td><b>'+esc(row.planet.name)+'</b></td>'+
+        '<td>'+shadbalaNumber(c.sthana?.total)+'</td>'+
+        '<td>'+shadbalaNumber(c.dig)+'</td>'+
+        '<td>'+shadbalaNumber(c.kala?.total)+'</td>'+
+        '<td>'+shadbalaNumber(c.cheshta)+'</td>'+
+        '<td>'+shadbalaNumber(c.naisargika)+'</td>'+
+        '<td>'+shadbalaNumber(c.drik)+'</td>'+
+        '<td><b>'+shadbalaNumber(row.total)+'</b></td>'+
+        '<td>'+shadbalaNumber(row.totalRupa,3)+'</td>'+
+        '<td>'+shadbalaNumber(row.requiredRupa,2)+'</td>'+
+        '<td>'+(row.rank===null?'—':row.rank+' / '+shadbalaDisplayRows.length)+'</td>'+
+        '<td><span class="smv-shadbala-status '+(row.ratio!==null&&row.ratio>=1?'smv-strength-pass':'smv-strength-below')+'">'+esc(levelText)+'</span></td></tr>';
+    }).join('');
     result.innerHTML=`<div class="card" style="background:linear-gradient(180deg,#fffaf0,#fff)">
       <div class="home-rule"><span>☾</span><span>தமிழ் ஜாதக கணக்கீடு</span><span>☀</span></div>
       <h2 style="text-align:center">${esc(name)}</h2>
@@ -549,7 +568,8 @@
       <p class="small">வக்கிரம், அஸ்தமனம் (Combustion), உச்சம்/நீசம், சுய ராசி மற்றும் மூலத்திரிகோணம் ஆகிய அடிப்படை நிலைகள்.</p>
       <div class="data-table-wrap"><table class="data-table strength-table"><thead><tr><th>கிரகம்</th><th>வக்கிரம்</th><th>அஸ்தமனம்</th><th>சூரிய தூரம்</th><th>ராசி நிலை</th></tr></thead><tbody>${(d.planets||[]).map(p=>{const s=p.strength||{};return `<tr><td><b>${esc(p.name)}</b></td><td>${s.retrograde?'ஆம்':'இல்லை'}</td><td>${s.combustion?'ஆம்':'இல்லை'}</td><td>${Number(s.sunDistance||0).toFixed(2)}°</td><td>${esc(smvV339Dignity(p))}</td></tr>`}).join('')}</tbody></table></div>
       <h3 class="base-shadbala" style="margin-top:22px">💪 ஷட்பலம்</h3>
-      <div class="data-table-wrap"><table class="data-table phase3-shadbala-table smv-shadbala-table"><thead><tr><th>கிரகம்</th><th>ஸ்தான பலம்</th><th>திக் பலம்</th><th>கால பலம்</th><th>அயன பலம்</th><th>சேஷ்டா</th><th>நைசர்கிக</th><th>த்ரிக்</th></tr></thead><tbody>${(d.planets||[]).filter(p=>p?.strengthJathakaKanitham?.available===true).map(p=>{const r=p.strengthJathakaKanitham,st=r.sthana||{},k=r.kala||{},fmt=v=>Number.isFinite(v)?Number(v).toFixed(1):'—';return '<tr><td><b>'+esc(p.name)+'</b></td><td>'+fmt(st.total)+'<br><span class="small">உச்ச '+fmt(st.uccha)+' · வர்க '+fmt(st.saptavargaja)+'</span></td><td>'+fmt(r.dig)+'</td><td>'+fmt(k.total)+'</td><td>'+fmt(r.ayana)+'</td><td>'+fmt(r.cheshta)+'</td><td>'+fmt(r.naisargika)+'</td><td>'+fmt(r.drig)+'</td></tr>';}).join('')}</tbody></table></div>
+      <p class="small smv-shadbala-method-note">Swiss Ephemeris கிரக நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய கணக்கீடு. முழு numerical cross-source validation நிலுவையில் உள்ளது; தரவரிசை தற்போதைய மொத்தத்தின் அடிப்படையில்.</p>
+      <div class="data-table-wrap smv-shadbala-scroll"><table class="data-table phase3-shadbala-table smv-shadbala-table"><thead><tr><th>கிரகம்</th><th>ஸ்தான பலம்</th><th>திக் பலம்</th><th>கால பலம்</th><th>சேஷ்டா பலம்</th><th>நைசர்கிக பலம்</th><th>த்ரிக் பலம்</th><th>மொத்த ஷட்பலம் (விரூபம்)</th><th>மொத்த ரூபா</th><th>தேவையான ரூபா</th><th>தரவரிசை</th><th>வலிமை நிலை</th></tr></thead><tbody>${shadbalaRows}</tbody></table></div>
       <div class="transit-before-vimsottari"></div>
       <h3 style="margin-top:22px">📅 விம்சோத்தரி தசா</h3>
       <p class="small">மகாதசையை touch செய்தால் <b>புக்தி / அந்தர்தசை</b> திறக்கும். புக்தியை touch செய்தால் <b>அந்தரம் / பிரத்யந்தர்தசை</b> திறக்கும்.</p>
@@ -1200,13 +1220,23 @@
         const sign=signIdx>=0?caRasiNames[signIdx]:String(existing?.rasi||fallbackSign||'—');
         return `<tr><td><b>${hNo}</b></td><td>${S(sign)}</td><td><b>${groups.join(' · ')}</b></td></tr>`;
       }).join('');
-      // Display the already-calculated C.G. Rajan Jathaka Kanitham Part I components.
-      // The shown subtotal excludes unresolved Cheshta, Drig and Yuddha; it is not a full total.
-      const shadbalaRows=caPlanets.filter(p=>p?.strengthJathakaKanitham?.available===true).map(p=>{
-        const r=p.strengthJathakaKanitham,st=r.sthana||{},k=r.kala||{},fmt=v=>Number.isFinite(v)?Number(v).toFixed(1):'—';
-        return '<tr><td><b>'+caP(p.name)+'</b></td><td>'+fmt(st.total)+'</td><td>'+fmt(r.dig)+'</td><td>'+fmt(k.total)+'</td><td>'+fmt(r.ayana)+'</td><td>'+fmt(r.cheshta)+'</td><td>'+fmt(r.naisargika)+'</td><td>'+fmt(r.drig)+'</td></tr>';
+      // Display all six current Swiss-position-based Bala components plus the computed total,
+      // minimum required Rupas, rank and ratio status from one consistent strength3 result.
+      const shadbalaRows=smvShadbalaDisplayRows(caPlanets).map(row=>{
+        const c=row.components,n=(v,d=1)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
+        const level=row.ratio===null?caTitle('Not available','கணக்கீடு இல்லை'):
+          row.ratio>=1?caTitle('Meets minimum','தேவையான அளவு அடைந்தது'):
+            caTitle('Below minimum','தேவையான அளவுக்கு குறைவு');
+        const levelText=row.ratioPercent===null?level:level+' ('+row.ratioPercent+'%)';
+        return '<tr><td><b>'+caP(row.planet.name)+'</b></td>'+
+          '<td>'+n(c.sthana?.total)+'</td><td>'+n(c.dig)+'</td><td>'+n(c.kala?.total)+'</td>'+
+          '<td>'+n(c.cheshta)+'</td><td>'+n(c.naisargika)+'</td><td>'+n(c.drik)+'</td>'+
+          '<td><b>'+n(row.total)+'</b></td><td>'+n(row.totalRupa,3)+'</td>'+
+          '<td>'+n(row.requiredRupa,2)+'</td><td>'+(row.rank===null?'—':row.rank+' / '+shadbalaRowsCount)+'</td>'+
+          '<td><span class="smv-shadbala-status '+(row.ratio!==null&&row.ratio>=1?'smv-strength-pass':'smv-strength-below')+'">'+levelText+'</span></td></tr>';
       }).join('');
-      if(shadbalaRows) h+='<div class="adv-section part1-planetary-strength"><h4>'+caTitle('Shadbala','ஷட்பலம்')+'</h4><div class="adv-table-wrap"><table class="adv-wide smv-shadbala-table"><thead><tr><th>'+caTitle('Planet','கிரகம்')+'</th><th>'+caTitle('Sthana','ஸ்தானம்')+'</th><th>'+caTitle('Dig','திக்')+'</th><th>'+caTitle('Kala','காலம்')+'</th><th>'+caTitle('Ayana','அயனம்')+'</th><th>'+caTitle('Cheshta','சேஷ்டா')+'</th><th>'+caTitle('Naisargika','நைசர்கிகம்')+'</th><th>'+caTitle('Drig','த்ரிக்')+'</th></tr></thead><tbody>'+shadbalaRows+'</tbody></table></div></div>';
+      const shadbalaRowsCount=smvShadbalaDisplayRows(caPlanets).length;
+      if(shadbalaRows) h+='<div class="adv-section part1-planetary-strength"><h4>'+caTitle('Shadbala','ஷட்பலம்')+'</h4><p class="small smv-shadbala-method-note">'+caTitle('Current Swiss-Ephemeris-position-based values; final numerical cross-source validation is pending. Rank reflects current computed totals.','Swiss Ephemeris நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய மதிப்புகள்; முழு எண்ணியல் cross-source validation நிலுவையில் உள்ளது. தரவரிசை தற்போதைய மொத்தத்தை அடிப்படையாகக் கொண்டது.')+'</p><div class="adv-table-wrap smv-shadbala-scroll"><table class="adv-wide smv-shadbala-table"><thead><tr><th>'+caTitle('Planet','கிரகம்')+'</th><th>'+caTitle('Sthana','ஸ்தான பலம்')+'</th><th>'+caTitle('Dig','திக் பலம்')+'</th><th>'+caTitle('Kala','கால பலம்')+'</th><th>'+caTitle('Cheshta','சேஷ்டா பலம்')+'</th><th>'+caTitle('Naisargika','நைசர்கிக பலம்')+'</th><th>'+caTitle('Drig','த்ரிக் பலம்')+'</th><th>'+caTitle('Total Shadbala (Virupa)','மொத்த ஷட்பலம் (விரூபம்)')+'</th><th>'+caTitle('Total Rupa','மொத்த ரூபா')+'</th><th>'+caTitle('Required Rupa','தேவையான ரூபா')+'</th><th>'+caTitle('Rank','தரவரிசை')+'</th><th>'+caTitle('Strength','வலிமை நிலை')+'</th></tr></thead><tbody>'+shadbalaRows+'</tbody></table></div></div>';
 
       h+=`<div class="adv-section part1-natural-karakas"><h4>🪷 ${caTitle('Natural Karakas','இயற்கை காரகர்கள்')}</h4><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${caTitle('Planet','கிரகம்')}</th><th>${caTitle('Natural Karaka','இயற்கை காரகம்')}</th></tr></thead><tbody>${nkRows}</tbody></table></div></div>`;
       h+=`<div class="adv-section part1-chara-karakas"><h4>🔱 ${caTitle('Chara Karakas','சர காரகர்கள்')}</h4><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${caTitle('Chara Karaka','சர காரகம்')}</th><th>${caTitle('Planet','கிரகம்')}</th><th>${caTitle('Degree in Sign','ராசி பாகை')}</th></tr></thead><tbody>${ckRows||`<tr><td colspan="3">${caTitle('No Chara Karaka data available.','சர காரக தரவு இல்லை.')}</td></tr>`}</tbody></table></div></div>`;
