@@ -358,7 +358,7 @@ function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,jdUt,ayanamsa,uchchaBa
   specialChestaMethod:'BV_RAMAN_SPECIAL_CHESTA_FOR_ISHTA_KASHTA',specialChestaFormula:formula,
   ishtaPhala:Math.round((ishtaRaw+Number.EPSILON)*100)/100,
   kashtaPhala:Math.round((kashtaRaw+Number.EPSILON)*100)/100,
-  ishtaRaw,kashtaRaw,sixfoldShadbalaCheshtaBala,
+  ishtaRaw,kashtaRaw,sixfoldShadbalaCheshtaBala:sixfoldCheshtaBala,
   formulaVerified:true,chartInputsCertified:false,classicalCertified:false,provisional:true,
   source:'B.V. Raman, Graha and Bhava Balas, Chapter X, paras 138-139, printed pp. 103-104',
   limitations:['B.V. Raman Chapter X special Chesta-for-Phala is distinct from sixfold Chapter VI Cheshta Bala','Five-planet traditional true-longitude reconstruction remains research-only; no classical certificate is claimed']
