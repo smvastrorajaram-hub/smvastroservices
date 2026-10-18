@@ -334,14 +334,27 @@ for(const [date,time] of births){
  eq(x.combinedLongevityYears,null,'no calculated age '+date);
  eq(x.predictionCertified,false,'no certification '+date);
  const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
- ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
- if(date==='2002-10-18'||date==='1989-10-18'){
-  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
-  ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
-   'actual saved Horoscope birth '+date+' renders Amsa days/nazhigai instead of zero for every resolved row');
+ const perNatalSelection=selectMethod({planets:r.chart.planets,lagna:r.chart.lagna});
+ if(perNatalSelection.available){
+  const selectedLabel={
+   pinda:'Pinda Ayurdaya',
+   natural:'Naisargika Ayurdaya',
+   amsa:'Amsa Ayurdaya'
+  }[perNatalSelection.selectedMethod];
+  ok(perNatalHtml.includes(selectedLabel),'natal customer HTML includes its single Shadbala-selected method '+date);
+  const hiddenLabels=['Pinda Ayurdaya','Naisargika Ayurdaya','Amsa Ayurdaya'].filter(v=>v!==selectedLabel);
+  for(const label of hiddenLabels)ok(!perNatalHtml.includes(label),'natal customer HTML omits unselected method '+label+' '+date);
+  eq((perNatalHtml.match(/<tr\\b/g)||[]).length,9,'one selected method renders header + seven grahas + total '+date);
+  eq(perNatalHtml.includes('Average Ayurdaya'),false,'natal customer HTML never displays method average '+date);
+ }else{
+  eq((perNatalHtml.match(/<tr\\b/g)||[]).length,0,'natal report with missing/tied Shadbala has no unselected method table '+date);
+  ok(perNatalHtml.includes('data-ayurdaya-selection="unavailable"'),'natal report exposes a safe no-selection state '+date);
  }
- eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
+ if((date==='2002-10-18'||date==='1989-10-18')&&perNatalSelection.selectedMethod==='amsa'){
+  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\\d+)" data-amsa-nazhigai="(\\d+)"/g)];
+  ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
+   'when Amsa is actually selected, its output preserves computed days/nazhigai '+date);
+ }
  const shadbalaRows=r.chart.planets.filter(p=>p?.strength6?.available);
  eq(shadbalaRows.length,7,'seven classical Shadbala rows '+date);
  const rajanRows=r.chart.planets.filter(p=>p?.strengthJathakaKanitham?.available===true);
