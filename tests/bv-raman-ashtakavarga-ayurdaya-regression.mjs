@@ -144,13 +144,26 @@ const standardPindaOracle = {
   Venus: {rasiPinda:61, grahaPinda:5, sodyaPinda:66},
   Saturn: {rasiPinda:108, grahaPinda:62, sodyaPinda:170}
 };
-for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+for (const subject of BV_RAMAN_AYURDAYA_PLANETS) {
+  const row = standardShodhana.afterReductionRows[subject];
+  same(standardMethodAAll.planets[subject].rasiProducts,
+    row.map((bindu, sign) => bindu * BV_RAMAN_RASI_GUNAKARA[sign]),
+    'Standard Horoscope ' + subject + ' all 12 Rasi Pinda products');
+  same(standardMethodAAll.planets[subject].grahaProducts,
+    BV_RAMAN_AYURDAYA_PLANETS.map(planet => ({
+      planet,
+      sign: standardOracle.planetSigns[planet],
+      bindus: row[standardOracle.planetSigns[planet]],
+      multiplier: BV_RAMAN_GRAHA_GUNAKARA[planet],
+      product: row[standardOracle.planetSigns[planet]] * BV_RAMAN_GRAHA_GUNAKARA[planet]
+    })),
+    'Standard Horoscope ' + subject + ' all 7 Graha Pinda products');
   same({
-    rasiPinda: standardMethodAAll.planets[planet].rasiPinda,
-    grahaPinda: standardMethodAAll.planets[planet].grahaPinda,
-    sodyaPinda: standardMethodAAll.planets[planet].sodyaPinda
-  }, standardPindaOracle[planet],
-  'Standard Horoscope ' + planet + ' Rasi/Graha/Sodhya Pinda multiplication and sum');
+    rasiPinda: standardMethodAAll.planets[subject].rasiPinda,
+    grahaPinda: standardMethodAAll.planets[subject].grahaPinda,
+    sodyaPinda: standardMethodAAll.planets[subject].sodyaPinda
+  }, standardPindaOracle[subject],
+  'Standard Horoscope ' + subject + ' Rasi/Graha/Sodhya Pinda multiplication and sum');
 }
 
 const methodA = bvRamanAshtakavargaMethodAFromReducedRows({
