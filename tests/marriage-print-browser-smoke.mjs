@@ -31,6 +31,12 @@ try{
   assert.ok(html.includes('அந்தரம்')&&html.includes('மகாதசை')&&html.includes('புக்தி'), 'Native report HTML contains Mahadasha/Bhukti/Antaram rows: '+testName);
   assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('mm-shadbala-status')&&!html.includes('யுத்தம் (UK)'), 'No Shadbala indication or separate Yuddha column: '+testName);
   assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
+  const meanRows=[...html.matchAll(/<tr class="smv-ayurdaya-average">([\\s\\S]*?)<\\/tr>/g)].map(m=>m[1]);
+  const totalRows=[...html.matchAll(/<tr class="smv-ayurdaya-totals">([\\s\\S]*?)<\\/tr>/g)].map(m=>m[1]);
+  assert.ok(meanRows.length>=1&&meanRows.every(row=>row.includes('class="smv-ayurdaya-average-label"')&&row.includes('class="smv-ayurdaya-average-value"')&&row.includes('<strong>')),
+   'Printable Ayurdaya mean label/value cells remain separate: '+testName);
+  assert.ok(totalRows.length>=1&&totalRows.every(row=>(row.match(/<strong>/g)||[]).length===3),
+   'Printable Pinda/Naisargika/Amsa total values are bold: '+testName);
   const appendixCount=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
   assert.equal(appendixCount,2,'Both bride and groom Ayurdaya appendix sections are present: '+testName);
   assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
