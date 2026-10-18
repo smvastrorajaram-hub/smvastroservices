@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const planets=(Array.isArray(data?.planets)?data.planets:[]).map(p=>{
       const planet=pkey(p?.name);
       const d20=d20FromLongitude(longitudeOf(p));
-      const score=Number(p?.strength3?.totalVirupa);
+      const score=Number(p?.strength6?.totalVirupa);
       return d20?{planet,d20,score:Number.isFinite(score)?score:null}:null;
     }).filter(Boolean);
 
