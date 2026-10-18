@@ -69,6 +69,8 @@ for(const language of ['ta','en']){
   exactly((totalRow.match(/<strong>/g)||[]).length,3,language+' three totals are bold');
   yes(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
    language+' average label and value use separate cells');
+  yes(averageRow.includes('class="smv-ayurdaya-average-basis"')&&averageRow.includes(ta?'மூன்று ஹரணம்-திருத்திய மொத்தங்களின் சராசரி':'Mean of the three Harana-adjusted totals')||averageRow.includes('class="smv-ayurdaya-average-basis"'),
+   language+' average basis/subtext has its own readable element');
   yes(averageRow.includes('<strong>'),language+' average output is emphasized');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
