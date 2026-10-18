@@ -940,9 +940,9 @@
   async function mountBVRamanIshtaKashta(chart, language, rootId){
     const root=document.getElementById(rootId);
     if(!root||!chart||!Array.isArray(chart.planets))return;
-    const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
-    if(!sectionI)return;
-    sectionI.querySelectorAll('[data-smv-ishta-kashta="1"]').forEach(node=>node.remove());
+    const ishtaHost=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
+    if(!ishtaHost)return;
+    ishtaHost.querySelectorAll('[data-smv-ishta-kashta="1"]').forEach(node=>node.remove());
     const birth=chart.birth||{},jdUt=Number(birth.utc_jd),ayanamsa=Number(chart.ayanamsa);
     const grahas=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].map(name=>chart.planets.find(p=>p?.name===name)).filter(Boolean);
     if(grahas.length!==7||!Number.isFinite(jdUt)||!Number.isFinite(ayanamsa))return;
@@ -992,8 +992,8 @@
     const body=rows.map(row=>'<tr><td><b>'+escText(ta?row.name:tamilToEnglish[row.name])+'</b></td><td>'+fmt(row.uchcha)+'</td><td>'+fmt(row.cheshta)+'</td><td><b>'+fmt(row.ishta)+'</b></td><td><b>'+fmt(row.kashta)+'</b></td></tr>').join('');
     const note=ta?'B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள் ஆய்வு நிலை Saura மாதிரியில் இருந்து கணக்கிடப்படுகின்றன; இம்மாதிரி இன்னும் சுயாதீன எண்ணியல் சான்றளிப்பு பெறவில்லை.':'B.V. Raman square-root method. Five-planet special Cheshta-for-Phala inputs use a research-stage Saura model and are not independently numerically certified.';
     const html='<div class="adv-section part1-ishta-kashta" data-smv-ishta-kashta="1" data-research-candidate="true"><h4>🌗 '+(ta?'இஷ்ட பலம் / கஷ்ட பலம்':'Ishta Bala / Kashta Bala')+'</h4><p class="small">'+escText(note)+'</p><div class="adv-table-wrap smv-ishta-kashta-scroll"><table class="adv-wide smv-ishta-kashta-table"><thead><tr>'+heads.map(x=>'<th>'+escText(x)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
-    const shadbala=sectionI.querySelector('.part1-planetary-strength');
-    if(shadbala)shadbala.insertAdjacentHTML('afterend',html);else sectionI.insertAdjacentHTML('beforeend',html);
+    const shadbala=ishtaHost.querySelector('.part1-planetary-strength');
+    if(shadbala)shadbala.insertAdjacentHTML('afterend',html);else ishtaHost.insertAdjacentHTML('beforeend',html);
   }
 
   function renderAdvancedAstrology(data, lang, rootId){
