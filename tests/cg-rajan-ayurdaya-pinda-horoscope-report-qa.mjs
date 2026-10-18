@@ -35,8 +35,8 @@ const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
 ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
 ok(ta.includes('சராசரி ஆயுர்த்தாயம்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
-const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\\s\\S]*?<\\/tr>/)?.[0]||'';
-const averageRowOf=html=>html.match(/<tr class="smv-ayurdaya-average">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+const averageRowOf=html=>html.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
 for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
  const totalRow=totalRowOf(html),averageRow=averageRowOf(html);
  ok((totalRow.match(/<strong>/g)||[]).length===3,language+' three Ayurdaya totals are each bold');
