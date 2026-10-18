@@ -473,7 +473,12 @@ n#modal.profile-modal-active .profile-dialog .profile-bio::-webkit-scrollbar-tra
 #tamilHoroscopeResult .dasha-subtable th:nth-child(3), #tamilHoroscopeResult .dasha-subtable td:nth-child(3), #englishHoroscopeResult .dasha-subtable th:nth-child(3), #englishHoroscopeResult .dasha-subtable td:nth-child(3){width:31%!important}
 #tamilHoroscopeResult .adv-table-wrap, #englishHoroscopeResult .adv-table-wrap{width:100%!important;max-width:100%!important;overflow:auto hidden!important}
 #tamilHoroscopeResult .adv-wide, #englishHoroscopeResult .adv-wide{width:max-content!important;min-width:760px!important;table-layout:auto!important;border-collapse:collapse!important}
-#tamilHoroscopeResult .adv-wide th, #tamilHoroscopeResult .adv-wide td, #englishHoroscopeResult .adv-wide th, #englishHoroscopeResult .adv-wide td{white-space:nowrap!important;text-align:center!important;vertical-align:middle!important;padding:8px 10px!important}
+#tamilHoroscopeResult .adv-wide th:not(.smv-ayurdaya-average-label), #tamilHoroscopeResult .adv-wide td, #englishHoroscopeResult .adv-wide th:not(.smv-ayurdaya-average-label), #englishHoroscopeResult .adv-wide td{white-space:nowrap!important;text-align:center!important;vertical-align:middle!important;padding:8px 10px!important}
+#tamilHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-label, #englishHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-label{white-space:normal;text-align:start;line-height:1.4}
+#tamilHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-label small, #englishHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-label small{display:block;margin-top:.2em;font-size:.82em;line-height:1.35;font-weight:400;white-space:normal}
+#tamilHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-value, #englishHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-value{font-weight:700}
+#tamilHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-totals td strong, #englishHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-totals td strong{font-weight:800}
+#tamilHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-value strong, #englishHoroscopeResult .smv-ayurdaya-table .smv-ayurdaya-average-value strong{font-weight:800}
 @media (max-width: 700px){
 #tamilHoroscopeResult .data-table, #englishHoroscopeResult .data-table{font-size:13px!important}
 #tamilHoroscopeResult .data-table th, #tamilHoroscopeResult .data-table td, #englishHoroscopeResult .data-table th, #englishHoroscopeResult .data-table td{padding:8px 6px!important;line-height:1.3!important}

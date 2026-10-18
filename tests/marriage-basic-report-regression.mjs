@@ -31,6 +31,7 @@ const taAyurdaya=[...ta.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\
 eq(taAyurdaya.length,2,'Tamil Matching report includes two guarded Ayurdaya appendices');
 for(const [i,section] of taAyurdaya.entries()){
  ok(section.includes('அம்ச ஆயுர்த்தாயம்')&&section.includes('பிண்ட ஆயுள்')&&section.includes('நைசர்க்கிக ஆயுள்'),'Tamil partner '+(i+1)+' has all three Ayurdaya methods');
+  ok(section.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'),'Tamil partner '+(i+1)+' has the actual-lifespan disclaimer');
  eq((section.match(/<tr\b/g)||[]).length,10,'Tamil partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
 }
 const taRemainders=[...ta.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
@@ -55,6 +56,7 @@ const enAyurdaya=[...en.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\
 eq(enAyurdaya.length,2,'English Matching report includes two guarded Ayurdaya appendices');
 for(const [i,section] of enAyurdaya.entries()){
  ok(section.includes('Amsa Ayurdaya')&&section.includes('Pinda Ayurdaya')&&section.includes('Naisargika Ayurdaya'),'English partner '+(i+1)+' has all three Ayurdaya methods');
+  ok(section.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'),'English partner '+(i+1)+' has the actual-lifespan disclaimer');
  eq((section.match(/<tr\b/g)||[]).length,10,'English partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
 }
 ok(!en.includes('AMSA AYURDAYAM'),'English Matching report uses the required Amsa Ayurdaya heading');
@@ -71,13 +73,19 @@ ok(matchingDashaSource.includes('x.pratyantars||x.pratyantaras||x.antars')&&matc
 const matchingShadbalaStart=matchingReportSource.indexOf('function shadbala(c,ta){');
 const matchingShadbalaEnd=matchingReportSource.indexOf('function dasha(c,ta,ref){',matchingShadbalaStart);
 const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,matchingShadbalaEnd);
+const primaryHoroscopeSource=read('public/horoscope/horoscope.js');
+const primaryShadbalaStart=primaryHoroscopeSource.indexOf('<h3 class="base-shadbala"');
+const primaryShadbalaEnd=primaryHoroscopeSource.indexOf('<div class="transit-before-vimsottari"></div>',primaryShadbalaStart);
+const primaryShadbalaSource=primaryHoroscopeSource.slice(primaryShadbalaStart,primaryShadbalaEnd);
+ok(primaryShadbalaStart>=0&&primaryShadbalaEnd>primaryShadbalaStart,'Primary horoscope Shadbala table source can be isolated');
+ok(primaryShadbalaSource.includes('smv-shadbala-table')&&!primaryShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig')&&!primaryShadbalaSource.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'), 'Primary horoscope Shadbala retains components without an uncertified subtotal');
 ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
-ok(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),'Matching Shadbala displays the calculated component subtotal when certified total inputs are unavailable');
+eq(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),false,'Matching does not present an incomplete subtotal as Shadbala');
 ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
 ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
  'Matching Shadbala contains no indication/status or standalone Yuddha/war column');
-ok(matchingShadbalaSource.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),
- 'Matching subtotal explicitly states it excludes unresolved Cheshta/Drig/Yuddha contributions');
+eq(matchingShadbalaSource.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),false,
+ 'Matching does not render an uncertified Shadbala subtotal');
 
 for(const suffix of ['UtcOffset','ChartStyle']){
  ok(matching.includes("id='")||matching.includes('id="'),'Template ids rendered');
@@ -102,7 +110,7 @@ ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham exp
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
-ok(ta.includes('mm-base-shad-components')&&ta.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'),'Tamil Shadbala table shows readable components with an explicitly limited subtotal');
+ok(ta.includes('mm-base-shad-components')&&!ta.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'),'Tamil Shadbala table shows readable components without an uncertified subtotal');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');
 const basicModule=read('public/horoscope/marriage-basic-report.mjs');
 ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');

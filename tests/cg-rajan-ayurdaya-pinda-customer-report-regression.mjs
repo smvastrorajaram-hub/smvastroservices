@@ -92,6 +92,12 @@ for(const [date,time] of [
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
   yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column has the required bilingual heading');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுர்த்தாயம்'),'mean row exists');
+  yes(lang.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.')||lang.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'),'customer report shows the actual-lifespan disclaimer');
+  const totalRow=lang.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+  const averageRow=lang.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
+  yes((totalRow.match(/<strong>/g)||[]).length===3,'three Ayurdaya totals each bold in customer HTML');
+  yes(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
+    'average result is separate from average label in customer HTML');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
   const raw=(lang.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length;

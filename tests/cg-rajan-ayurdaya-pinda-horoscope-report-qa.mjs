@@ -35,8 +35,18 @@ const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
 ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
 ok(ta.includes('சராசரி ஆயுர்த்தாயம்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
+const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+const averageRowOf=html=>html.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
+for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
+ const totalRow=totalRowOf(html),averageRow=averageRowOf(html);
+ ok((totalRow.match(/<strong>/g)||[]).length===3,language+' three Ayurdaya totals are each bold');
+ ok(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
+  language+' average label and result occupy separate table cells');
+ ok(averageRow.includes('<strong>'),language+' average value is bold and separate from its label');
+}
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
-ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows have no indication/source note');
+ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows remain uncluttered by source-book labels');
+ok(ta.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.')&&en.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'),'Both language reports warn that Ayurdaya is not a certified actual-lifespan prediction');
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
  'raw printed Sun Pinda example remains testable internally');
@@ -49,8 +59,8 @@ eq((ta.match(/data-natural-harana="raw-unadjusted"/g)||[]).length,7,
  'Naisargika raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
 ok(ta.includes('data-pinda-total="raw-unadjusted"')&&ta.includes('data-natural-total="raw-unadjusted"'),
  'Pinda and Naisargika raw totals remain visible with an explicit unadjusted marker');
-ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Raw-term mean (before Harana reductions)')&&en.includes('Raw: '),
- 'unresolved Harana cells and total mean expose calculated raw terms without claiming adjustment');
+ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Mean of raw totals; Harana reductions not applied')&&en.includes('Raw: '),
+ 'unresolved Harana cells and separate mean label/value expose raw terms without claiming adjustment');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
@@ -257,8 +267,9 @@ const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
  'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
-ok(shadbalaUi.includes('strengthJathakaKanitham')&&shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
- 'primary Shadbala shows calculated C.G. Rajan components and subtotal without a separate Yuddha/status column');
+ok(shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala shows calculated C.G. Rajan components without an uncertified subtotal or separate Yuddha/status column');
+ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
@@ -272,6 +283,10 @@ const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisSha
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
 ok(!analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
  'Chart Analysis uses six Bala components without source/status text or a war column');
+eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),false,
+ 'Chart Analysis does not present an incomplete subtotal as Shadbala');
+ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),
+ 'Chart Analysis heading is only Shadbala / ஷட்பலம் and shows individual Bala components');
 eq(src.includes('adv-ishta-kashta'),false,'No note-only Ishta/Kashta panel is shown without calculated values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
@@ -296,6 +311,14 @@ for(const [date,time] of births){
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  const shadbalaRows=r.chart.planets.filter(p=>p?.strength3?.available);
  eq(shadbalaRows.length,7,'seven classical Shadbala rows '+date);
+ const rajanRows=r.chart.planets.filter(p=>p?.strengthJathakaKanitham?.available===true);
+ eq(rajanRows.length,7,'seven Rajan Shadbala rows available to primary and Analysis tables '+date);
+ for(const p of rajanRows){
+  const v=p.strengthJathakaKanitham;
+  ok(Number.isFinite(v.sthana?.total)&&Number.isFinite(v.dig)&&Number.isFinite(v.kala?.total)&&
+    Number.isFinite(v.ayana)&&Number.isFinite(v.naisargika)&&Number.isFinite(v.partialSubtotalExcludingCheshtaAndDrig),
+    'Shadbala UI component/subtotal results are numeric '+date+' '+p.name);
+ }
  for(const p of shadbalaRows){
   eq(p.strength3.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength3.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
