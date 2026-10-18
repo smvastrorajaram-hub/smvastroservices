@@ -5,7 +5,7 @@ This folder intentionally contains two kinds of checks:
 ## Automated CI checks
 
 - `.github/workflows/horoscope-matching-dst-qa.yml`: core Horoscope/Matching, Dasha, report/save/print, location, DST, boundary, and selected BPHS/numerical regression checks.
-- `.github/workflows/cg-rajan-ayurdaya-research-qa.yml`: CG Rajan Pinda/Naisargika/Amsa Ayurdaya source arithmetic, five-chart integration, bilingual report placement, and saved-report/print guards.
+- `.github/workflows/cg-rajan-ayurdaya-research-qa.yml`: CG Rajan Pinda/Naisargika/Amsa Ayurdaya source arithmetic, consolidated five-chart natural/Pinda integration, bilingual report placement, and saved-report/print guards.
 - `.github/workflows/horoscope-result-layout-browser-smoke.yml`: V358/V359 browser geometry checks.
 - `.github/workflows/marriage-print-browser-smoke.yml`: Chromium native-print integration.
 - `.github/workflows/smv-output-pdf-report-audit.yml`: searchable-text audit of checked-in PDF fixtures.
@@ -26,4 +26,4 @@ These scripts must not be deleted merely because they are not listed as a step i
 - Keep each independently sourced numerical oracle and safety/certification gate unless its assertions are shown to be fully covered by another retained test.
 - Keep workflow trigger paths scoped to tests that the workflow actually executes. This avoids running the full core suite and live production checks when an unrelated manual research fixture changes.
 - Keep live Render checks separate from browser/static production HTTP checks and from source-only regression runs.
-- No test file was deleted in this audit because the inspected candidates had distinct numerical inputs, integration scope, or evidence-gating assertions; deleting them would not yet be justified as a safe deduplication.
+- The duplicate five-chart CG Rajan natural-arithmetic pass was consolidated into `cg-rajan-ayurdaya-pinda-customer-report-regression.mjs`. Its 5-birth × 7-graha range checks and no-lifespan/no-cross-book safety assertions remain active there; the standalone script and its duplicate CI invocation are removed.
