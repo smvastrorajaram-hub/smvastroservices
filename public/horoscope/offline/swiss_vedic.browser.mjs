@@ -505,13 +505,22 @@ function enrichStrength6(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=nul
     if(Array.isArray(q?.data)&&Number.isFinite(q.data[0]))solarHour=bphsApparentSolarHour(jdUt,q.data[0],longitude);
   }catch{/* preserve explicit provisional fallback */}
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
+  let ramanAyanamsa=null;
+  try{
+    const ay=typeof swe.get_ayanamsa_ut==='function'?swe.get_ayanamsa_ut(jdUt):null;
+    if(typeof ay==='number'&&Number.isFinite(ay))ramanAyanamsa=ay;
+    else if(ay&&typeof ay==='object'&&!ay.error&&!(ay.flag!==undefined&&Number(ay.flag)<0)){
+      const raw=Array.isArray(ay.data)?ay.data[0]:ay.data;
+      if(raw!==null&&raw!==undefined&&Number.isFinite(Number(raw)))ramanAyanamsa=Number(raw);
+    }
+  }catch{/* Ishta/Kashta remains unavailable if ayanamsa input is unavailable. */}
   let raman=null,ramanFailure=null;
   try{
     raman=calculateBVRamanShadbala({
       planets:withHour,bhavas,
       ascendantLongitude:birthInput?.ascendantLongitude,
       midheavenLongitude:birthInput?.midheavenLongitude,
-      apparentSolarHour:solarHour,temporal,declinations,jdUt
+      apparentSolarHour:solarHour,temporal,declinations,jdUt,ayanamsa:ramanAyanamsa
     });
   }catch(error){ramanFailure=String(error?.message||error);}
   // Retain UK and C.G. Rajan as labelled source-research channels only. These
