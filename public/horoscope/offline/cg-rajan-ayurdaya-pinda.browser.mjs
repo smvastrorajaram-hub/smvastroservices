@@ -574,33 +574,55 @@ const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
 export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  const research=cgRajanCompareGrahas({planets,lagna});
  const ta=language==='ta';
- const amsaCell=v=>{
-  if(v.amsaHarana?.resolved!==true||!v.amsaHarana.traditionalUnitsCandidate)
-   return `<td data-amsa-harana="blocked" aria-label="${esc(ta?'அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை':'Amsa Harana inputs are incomplete')}" title="${esc((v.amsaHarana?.blockers||[]).join('; '))}">—</td>`;
-  const candidateUnits=v.amsaHarana.traditionalUnitsCandidate;
-  const displayedUnits=fmt({traditionalUnits:candidateUnits},ta);
-  const unitsTrace=ta?`ஹரணத்திற்குப் பின் அலகுகள்=${displayedUnits}`:`Post-Harana normalized units=${displayedUnits}`;
-  const auditTitle=(ta
-   ?`மூல அம்ச ஆண்டு=${v.amsa.rawAmsaYears}; மொத்த ஹரணப் பின்னம்=${v.amsaHarana.totalHaranaFraction}; பெருக்கிக்கு முன்=${v.amsaHarana.yearsBeforeMultiplier}; பெருக்கி=${v.amsaHarana.multiplier}; ஹரணத்திற்குப் பின்=${v.amsaHarana.adjustedAmsaYearsCandidate}`
-   :`Raw Amsa years=${v.amsa.rawAmsaYears}; total Harana fraction=${v.amsaHarana.totalHaranaFraction}; before multiplier=${v.amsaHarana.yearsBeforeMultiplier}; multiplier=${v.amsaHarana.multiplier}; post-Harana years=${v.amsaHarana.adjustedAmsaYearsCandidate}`)+`; ${unitsTrace}`;
-  return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" data-amsa-years="${esc(candidateUnits.years)}" data-amsa-months="${esc(candidateUnits.months)}" data-amsa-days="${esc(candidateUnits.days)}" data-amsa-nazhigai="${esc(candidateUnits.nazhigai)}" data-amsa-total-nazhigai="${esc(traditionalNazhigai(candidateUnits))}" title="${esc(auditTitle)}">${esc(displayedUnits)}</td>`;
+ const rawDisplay=(rawUnits,languageCode)=>{
+  if(!rawUnits)return languageCode?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable';
+  return (languageCode?'மூல மதிப்பு: ':'Raw: ')+fmt({traditionalUnits:rawUnits},languageCode);
  };
- const fmtMaybe=(value,ta)=>value?.traditionalUnits?fmt(value,ta):'—';
+ const amsaCell=v=>{
+  if(v.amsaHarana?.resolved===true&&v.amsaHarana.traditionalUnitsCandidate){
+   const candidateUnits=v.amsaHarana.traditionalUnitsCandidate;
+   const displayedUnits=fmt({traditionalUnits:candidateUnits},ta);
+   const unitsTrace=ta?`ஹரணத்திற்குப் பின் அலகுகள்=${displayedUnits}`:`Post-Harana normalized units=${displayedUnits}`;
+   const auditTitle=(ta
+    ?`மூல அம்ச ஆண்டு=${v.amsa.rawAmsaYears}; மொத்த ஹரணப் பின்னம்=${v.amsaHarana.totalHaranaFraction}; பெருக்கிக்கு முன்=${v.amsaHarana.yearsBeforeMultiplier}; பெருக்கி=${v.amsaHarana.multiplier}; ஹரணத்திற்குப் பின்=${v.amsaHarana.adjustedAmsaYearsCandidate}`
+    :`Raw Amsa years=${v.amsa.rawAmsaYears}; total Harana fraction=${v.amsaHarana.totalHaranaFraction}; before multiplier=${v.amsaHarana.yearsBeforeMultiplier}; multiplier=${v.amsaHarana.multiplier}; post-Harana years=${v.amsaHarana.adjustedAmsaYearsCandidate}`)+`; ${unitsTrace}`;
+   return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" data-amsa-years="${esc(candidateUnits.years)}" data-amsa-months="${esc(candidateUnits.months)}" data-amsa-days="${esc(candidateUnits.days)}" data-amsa-nazhigai="${esc(candidateUnits.nazhigai)}" data-amsa-total-nazhigai="${esc(traditionalNazhigai(candidateUnits))}" title="${esc(auditTitle)}">${esc(displayedUnits)}</td>`;
+  }
+  const rawUnits=v.amsa?.traditionalUnits;
+  const explanation=(v.amsaHarana?.blockers||[]).join('; ')||'Amsa Harana adjustment is unresolved; showing the calculated raw Table-A term';
+  return `<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="${esc(v.amsa?.rawAmsaYears??'')}" title="${esc(explanation)}">${esc(rawDisplay(rawUnits,ta))}</td>`;
+ };
  const commonCell=(method,v)=>{
   const result=v[method+'Harana'];
-  if(result?.resolved!==true||!result.traditionalUnitsCandidate)
-   return `<td data-${method}-harana="blocked" title="${esc((result?.blockers||[]).join('; '))}">—</td>`;
-  const auditTitle=ta
-   ?`மூல நாழிகை=${result.rawNazhigai}; பகை ராசி ஹரணம்=${result.enemySignLossFraction}; அஸ்தங்கத ஹரணம்=${result.combustionLossFraction}; சக்கிரபாத ஹரணம்=${result.chakrapadaHaranaFraction}; குரூரோதய ஹரணம்=${result.gururodayaHaranaNazhigai}; மொத்தக் கழிவு=${result.totalHaranaNazhigai}; கழித்த பின்=${result.adjustedNazhigaiCandidate}`
-   :`Raw nazhigai=${result.rawNazhigai}; enemy-sign loss fraction=${result.enemySignLossFraction}; combustion loss fraction=${result.combustionLossFraction}; Chakrapada loss fraction=${result.chakrapadaHaranaFraction}; Gururodaya loss nazhigai=${result.gururodayaHaranaNazhigai}; total Harana nazhigai=${result.totalHaranaNazhigai}; adjusted nazhigai=${result.adjustedNazhigaiCandidate}`;
-  return `<td data-${method}-harana="adjusted-candidate" data-raw-nazhigai="${esc(result.rawNazhigai)}" data-total-harana-nazhigai="${esc(result.totalHaranaNazhigai)}" data-adjusted-nazhigai="${esc(result.adjustedNazhigaiCandidate)}" title="${esc(auditTitle)}">${esc(fmt({traditionalUnits:result.traditionalUnitsCandidate},ta))}</td>`;
+  if(result?.resolved===true&&result.traditionalUnitsCandidate){
+   const auditTitle=ta
+    ?`மூல நாழிகை=${result.rawNazhigai}; பகை ராசி ஹரணம்=${result.enemySignLossFraction}; அஸ்தங்கத ஹரணம்=${result.combustionLossFraction}; சக்கிரபாத ஹரணம்=${result.chakrapadaHaranaFraction}; குரூரோதய ஹரணம்=${result.gururodayaHaranaNazhigai}; மொத்தக் கழிவு=${result.totalHaranaNazhigai}; கழித்த பின்=${result.adjustedNazhigaiCandidate}`
+    :`Raw nazhigai=${result.rawNazhigai}; enemy-sign loss fraction=${result.enemySignLossFraction}; combustion loss fraction=${result.combustionLossFraction}; Chakrapada loss fraction=${result.chakrapadaHaranaFraction}; Gururodaya loss nazhigai=${result.gururodayaHaranaNazhigai}; total Harana nazhigai=${result.totalHaranaNazhigai}; adjusted nazhigai=${result.adjustedNazhigaiCandidate}`;
+   return `<td data-${method}-harana="adjusted-candidate" data-raw-nazhigai="${esc(result.rawNazhigai)}" data-total-harana-nazhigai="${esc(result.totalHaranaNazhigai)}" data-adjusted-nazhigai="${esc(result.adjustedNazhigaiCandidate)}" title="${esc(auditTitle)}">${esc(fmt({traditionalUnits:result.traditionalUnitsCandidate},ta))}</td>`;
+  }
+  const raw=v[method]?.traditionalUnits;
+  const explanation=(result?.blockers||[]).join('; ')||'Harana adjustment is unresolved; showing the calculated raw graha term';
+  return `<td data-${method}-harana="raw-unadjusted" data-raw-nazhigai="${esc(v[method]?.exactPreRoundingNazhigai??'')}" title="${esc(explanation)}">${esc(rawDisplay(raw,ta))}</td>`;
  };
  const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th>${commonCell('pinda',v)}${commonCell('natural',v)}${amsaCell(v)}</tr>`).join('');
- const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th><td data-pinda-total="${research.totals.pinda.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.pinda,ta))}</td><td data-natural-total="${research.totals.natural.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.natural,ta))}</td><td data-amsa-total="${research.totals.amsa.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.amsa,ta))}</td></tr>`;
- const averageText=research.totals.averageOfThreeTotals
-  ?esc(fmt(research.totals.averageOfThreeTotals,ta))
-  :'—';
- const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுர்த்தாயம் (மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3)':'Average Ayurdaya (sum of three totals ÷ 3)'}</span> <strong>${averageText}</strong></th></tr>`;
+ const totalCell=(method,rawKey)=>{
+  const value=research.totals[method],raw=research.totals[rawKey];
+  if(value?.available===true&&value.traditionalUnits)
+   return `<td data-${method}-total="adjusted-candidate">${esc(fmt(value,ta))}</td>`;
+  return `<td data-${method}-total="raw-unadjusted" title="${esc('At least one graha Harana adjustment is unresolved; this is the sum of raw, unadjusted graha terms')}">${esc(rawDisplay(raw?.traditionalUnits,ta))}</td>`;
+ };
+ const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th>${totalCell('pinda','pindaRaw')}${totalCell('natural','naturalRaw')}${totalCell('amsa','amsaTableARaw')}</tr>`;
+ const correctedMean=research.totals.averageOfThreeTotals;
+ const rawMean=cgRajanMeanThreeTraditionalTotals({
+  pindaTotalNazhigai:research.totals.pindaRaw.totalNazhigai,
+  naturalTotalNazhigai:research.totals.naturalRaw.totalNazhigai,
+  amsaTotalNazhigai:research.totals.amsaTableARaw.totalNazhigai
+ });
+ const averageLabel=correctedMean
+  ?(ta?'சராசரி ஆயுர்த்தாயம் (மூன்று ஹரணம்-திருத்திய மொத்தங்களின் கூட்டுத்தொகை ÷ 3)':'Average Ayurdaya (sum of three Harana-adjusted totals ÷ 3)')
+  :(ta?'மூலக் கணக்கீட்டு சராசரி (ஹரணக் கழிவுகளுக்கு முன்)':'Raw-term mean (before Harana reductions)');
+ const averageText=correctedMean?fmt(correctedMean,ta):rawMean?rawDisplay(rawMean.traditionalUnits,ta):(ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable');
+ const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${averageLabel}</span> <strong>${esc(averageText)}</strong></th></tr>`;
  return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
 
 }
