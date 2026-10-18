@@ -11,8 +11,6 @@ on:
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
-      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
-      - 'public/horoscope/horoscope-predictions.js'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
@@ -24,6 +22,24 @@ on:
       - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/horoscope-predictions.js'
+      - 'public/horoscope/horoscope.js'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
+      - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
+      - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
+      - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
+      - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
+      - '.github/workflows/cg-rajan-ayurdaya-research-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,7 +56,6 @@ jobs:
         run: |
           node --check public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs
           node --check tests/cg-rajan-ayurdaya-printed-oracle.mjs
-          node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
           node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
