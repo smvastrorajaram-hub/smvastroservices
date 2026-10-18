@@ -51,13 +51,19 @@ for(const [date,time] of [
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'Rajan Ayurdaya printable QA'});
  yes(r.ok,'source natal compute '+date);
  const result=all({planets:r.chart.planets,lagna:r.chart.lagna});
- console.log('AYURDAYA_AVERAGE_DIAGNOSTIC',date,JSON.stringify({totals:result.totals,blocks:result.entries.map(e=>({planet:e.name,amsa:e.amsaHarana?.blockers,pinda:e.pindaHarana?.blockers,natural:e.naturalHarana?.blockers}))}));
  eq(result.entries.length,7,'seven conventional grahas');
  eq(result.allEightMethodsComplete,false,'no artificial 8-method pass');
  eq(result.combinedLongevityYears,null,'no invented individual lifespan');
  eq(result.deathAgeOrDate,null,'no invented death age');
  const ta=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'ta'});
  const en=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
+ if(result.totals.pinda.available&&result.totals.natural.available&&result.totals.amsa.available){
+  yes(Boolean(result.totals.averageOfThreeTotals),
+   'three-method mean is calculated when all three Harana-adjusted totals are available '+date);
+  yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
+      !en.includes('Harana evidence incomplete for one or more methods'),
+   'no incomplete-average fallback when chart evidence resolves '+date);
+ }
  yes(ta.includes('ஜாதக கணிதம்')&&en.includes('Jathaka Kanitham'),
   'bilingual customer report heading');
  yes(ta.includes('ஆயுள் அல்லது மரண')&&/not predictions of lifespan/i.test(en),
