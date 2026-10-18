@@ -282,7 +282,7 @@ const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisSha
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
 ok(!analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
  'Chart Analysis uses six Bala components without source/status text or a war column');
-ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes('<strong>'+fmt(r.partialSubtotalExcludingCheshtaAndDrig)+'</strong>'),
+ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("<strong>'+fmt(r.partialSubtotalExcludingCheshtaAndDrig)+'</strong>"),
  'Chart Analysis keeps the calculated partial Shadbala subtotal visibly bold');
 eq(src.includes('adv-ishta-kashta'),false,'No note-only Ishta/Kashta panel is shown without calculated values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
