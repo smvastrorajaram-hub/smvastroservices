@@ -76,8 +76,12 @@ eq(ta.includes('data-natural-harana='),false,
  'unselected Naisargika graha values are not displayed');
 eq(ta.includes('data-amsa-harana='),false,
  'unselected Amsa graha values are not displayed');
-eq(ta.includes('data-selected-total="unavailable"')&&en.includes('data-selected-total="unavailable"'),true,
- 'the seven-graha total is withheld when chart-specific Harana evidence is incomplete');
+eq(ta.includes('data-selected-total="raw-unadjusted"')&&en.includes('data-selected-total="raw-unadjusted"'),true,
+ 'the selected method shows its raw seven-graha sum while final Harana evidence is incomplete');
+eq(ta.includes('மூல மொத்தம் (7 கிரகங்கள்)')&&en.includes('Raw total (7 grahas)'),true,
+ 'the raw sum is labelled provisional rather than as the final Harana-adjusted lifespan');
+eq(ta.includes('இது இறுதி ஆயுர்த்தாய மொத்தம் அல்ல')&&en.includes('this is not the final Ayurdaya total'),true,
+ 'both languages warn that the provisional sum is not the final Ayurdaya total');
 ok(ta.includes('Raw: ')===false&&en.includes('Raw: '),
  'English selected Pinda terms clearly disclose that unresolved entries are raw');
 eq(ta.includes('data-amsa-total=')||en.includes('data-amsa-total='),false,
@@ -349,9 +353,9 @@ ok(horoscopeCss.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-a
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{')&&matchingCss.includes('color:#4a352d;background:#fff7e8;font-weight:800;')&&matchingCss.includes('color:#302722;background:#fff;font-weight:800;')&&matchingCss.includes('.smv-ayurdaya-method-selection{')&&!matchingCss.includes('background:#fff7e8!important'), 'Matching Ayurdaya colors live in semantic component rules without a wrapper-specific override stack');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.css?v=20261019-ayurdaya-single-method-v250')&&appHtml.includes('marriage-basic-report.css?v=20261019-ayurdaya-single-method-v250'), 'Live pages request the revised Marriage Matching stylesheet');
+ok(appHtml.includes('horoscope.css?v=20261019-ayurdaya-selected-total-v251')&&appHtml.includes('marriage-basic-report.css?v=20261019-ayurdaya-selected-total-v251'), 'Live pages request the revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v249-arudha-a2-a11-cream-average-20261018'),'PWA refresh revision activates the revised Matching stylesheet');
+ok(swSource.includes('v250-ayurdaya-selected-total-20261019'),'PWA refresh revision activates the revised Matching stylesheet');
 ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
 ok(src.includes("p1ArudhaLabel(x,i)")&&src.includes("const p1ArudhaLabel=(x,i=0)=>{const h=Number(x?.house);"), 'Arudha renderer normalizes house values before showing AL, A2-A11 and UL');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
