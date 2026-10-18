@@ -283,7 +283,7 @@ function applyRamanYuddha(rows,planets){
  */
 function ramanIshtaKashtaForPlanet({planet,planetRow,sunRow,moonRow,jdUt,ayanamsa,uchchaBala,sixfoldCheshtaBala}){
  const english=EN[planet];
- if(!finite(uchchaBala)||!finite(ayanamsa))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and Lahiri ayanamsa');
+ if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
  let special;
  if(planet==='சூரியன்'){
   special=bvRamanChestaForPhala({planet,sunSayanaLongitude:norm360(sunRow.longitude+ayanamsa)});
