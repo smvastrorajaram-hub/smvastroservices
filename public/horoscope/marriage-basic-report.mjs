@@ -5,7 +5,7 @@
  */
 import {vargaSign,vargaLongitude} from './offline/astro_advanced.browser.mjs';
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
-import {cgRajanAyurdayaReportHtml} from './offline/cg-rajan-ayurdaya-pinda.browser.mjs';
+import {cgRajanAyurdayaReportHtml} from './offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261019-shadbala-ayurdaya-single-method-v1';
 const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const P_EN=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
