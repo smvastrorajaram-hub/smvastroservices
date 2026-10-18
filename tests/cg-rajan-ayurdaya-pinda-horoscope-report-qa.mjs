@@ -33,7 +33,7 @@ eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
-ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('AMSA AYURDAYAM'),'English three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
 ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
 ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
@@ -72,6 +72,19 @@ for(const [longitude,years] of amsaCases){
  eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude}).rawAmsaYears,
   years,'C.G. Rajan Amsa-table lookup '+longitude);
 }
+// A one-fifth Chakrapada loss must carry through to days, not be
+// truncated to whole years/months or replaced by the raw Table-A term.
+const fifthLossCase=cgRajanAmsaHaranaResearch({
+ planet:'செவ்வாய்',rawAmsaYears:3,enemySign:false,combust:false,
+ houseFromLagna:8,occupantCount:1,chakrapadaBenefic:false,
+ isExaltationSign:false,retrograde:false,ownSign:false,
+ ownNavamsa:false,ownDrekkana:false,vargottama:false
+});
+eq(fifthLossCase.resolved,true,'house-8 one-fifth Harana has complete evidence');
+eq(fifthLossCase.chakrapadaLossFraction,1/5,'house-8 Harana uses the printed one-fifth fraction');
+eq(fifthLossCase.traditionalUnitsCandidate,
+ {years:2,months:4,days:24,nazhigai:0},
+ 'fractional Amsa years normalize to 2y 4m 24d without dropping the day remainder');
 const completeHaranaEvidence={
  planet:'குரு',rawAmsaYears:12,enemySign:true,combust:true,
  houseFromLagna:7,occupantCount:1,chakrapadaBenefic:true,strongestOccupantVerified:false,
@@ -227,7 +240,7 @@ eq(analysisShadbalaUi.includes('Uttara Kalamrita'),false,'Chart Analysis Shadbal
 eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
 eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
  'Chart Analysis omits a status message when no numerical rows are available');
-ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-average-fix1')"),
+ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-source-audit2')"),
  'live Horoscope module integration');
 ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Ayurdaya is attached inside Advanced Analysis I, safe from print legacy stripping');
@@ -245,7 +258,7 @@ for(const [date,time] of births){
  eq(x.predictionCertified,false,'no certification '+date);
  const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('AMSA AYURDAYAM'),'three-method html ' + date);
+  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  count+=x.entries.length;
 }
