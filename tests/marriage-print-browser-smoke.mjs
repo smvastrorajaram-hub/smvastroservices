@@ -47,7 +47,7 @@ try{
   assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
   assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
-  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body><main id="printReport">'+html+'</main></body></html>';
+  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body><div id="smvMarriageMatching"><main class="mm-v281-results" id="printReport">'+html+'</main></div></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
   await page.goto(fixture.href,{waitUntil:'load'});
