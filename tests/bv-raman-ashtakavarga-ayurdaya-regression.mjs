@@ -6,6 +6,7 @@ import {
   BV_RAMAN_GRAHA_GUNAKARA,
   BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE,
   BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE,
+  BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE,
   bvRamanTrikonaShodhana,
   bvRamanEkadhipatyaShodhana,
   bvRamanAshtakavargaShodhana,
@@ -106,6 +107,51 @@ ok(shodhana.afterReductionSarvashtakavarga.every(value =>
   Number.isSafeInteger(value) && value >= 0 && value <= 56),
   'reduced SAV values are integer sums within the seven-graha theoretical bound');
 ok(shodhana.certified === false, 'combined Shodhana remains research-only');
+
+// Seven-graha Standard Horoscope oracle: test every BAV cell before and
+// after Trikona + Ekadhipatya, not merely a repeated synthetic row.
+const standardOracle = BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE;
+const standardShodhana = bvRamanAshtakavargaShodhana({
+  bavRows: standardOracle.beforeReductionRows,
+  occupiedSigns: standardOracle.occupiedSigns
+});
+same(
+  Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
+    [planet, standardShodhana.afterReductionRows[planet]])),
+  standardOracle.afterReductionRows,
+  'all seven standard-horoscope BAV rows match the two-reduction table oracle cell by cell'
+);
+same(standardShodhana.afterReductionSarvashtakavarga,
+  [...standardOracle.afterReductionSarvashtakavarga],
+  'per-sign reduced SAV sums match the standard-horoscope table');
+same(standardOracle.afterReductionSarvashtakavarga.reduce((sum, n) => sum + n, 0),
+  standardOracle.afterSavTotal,
+  'reduced SAV aggregate is 82');
+same(Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
+  [planet, standardOracle.beforeReductionRows[planet].reduce((sum, n) => sum + n, 0)])),
+  {Sun:48, Moon:49, Mars:39, Mercury:54, Jupiter:56, Venus:52, Saturn:39},
+  'seven Standard Horoscope BAV source-row totals match 48/49/39/54/56/52/39');
+const standardMethodAAll = bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows: standardShodhana.afterReductionRows,
+  planetSigns: standardOracle.planetSigns
+});
+const standardPindaOracle = {
+  Sun: {rasiPinda:96, grahaPinda:86, sodyaPinda:182},
+  Moon: {rasiPinda:80, grahaPinda:20, sodyaPinda:100},
+  Mars: {rasiPinda:126, grahaPinda:71, sodyaPinda:197},
+  Mercury: {rasiPinda:97, grahaPinda:61, sodyaPinda:158},
+  Jupiter: {rasiPinda:79, grahaPinda:45, sodyaPinda:124},
+  Venus: {rasiPinda:61, grahaPinda:5, sodyaPinda:66},
+  Saturn: {rasiPinda:108, grahaPinda:62, sodyaPinda:170}
+};
+for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+  same({
+    rasiPinda: standardMethodAAll.planets[planet].rasiPinda,
+    grahaPinda: standardMethodAAll.planets[planet].grahaPinda,
+    sodyaPinda: standardMethodAAll.planets[planet].sodyaPinda
+  }, standardPindaOracle[planet],
+  'Standard Horoscope ' + planet + ' Rasi/Graha/Sodhya Pinda multiplication and sum');
+}
 
 const methodA = bvRamanAshtakavargaMethodAFromReducedRows({
   afterReductionRows: bavRows,
