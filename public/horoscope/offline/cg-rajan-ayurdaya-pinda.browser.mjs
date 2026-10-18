@@ -46,13 +46,22 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  if(!finite(trueLongitude))throw new TypeError('finite sidereal longitude required');
  const longitude=norm(trueLongitude);
  const arcMinutes=longitude*60;
- const amsaIntervals=Math.max(1,Math.ceil(arcMinutes/200-1e-10));
- const amsaYears=((amsaIntervals-1)%12)+1;
+ const intervalPosition=arcMinutes/200;
+ const completedIntervals=Math.floor(intervalPosition+1e-10);
+ const rawAmsaFractionOfPada=Math.max(0,Math.min(1,intervalPosition-completedIntervals));
+ // Printed Table A gives year values at each 3°20′ boundary, repeating 1..12.
+ // The 360°/0° boundary corresponds to 12; fractional arcs are interpolated
+ // between the adjacent printed values by rule of three instead of rounded up.
+ const tableYearAt=index=>index<=0?12:((index-1)%12)+1;
+ const lowerBoundaryYears=tableYearAt(completedIntervals);
+ const upperBoundaryYears=tableYearAt(completedIntervals+1);
+ const rawAmsaYears=lowerBoundaryYears+(upperBoundaryYears-lowerBoundaryYears)*rawAmsaFractionOfPada;
+ const amsaIntervals=Math.max(1,completedIntervals+1);
  return Object.freeze({
   planet,trueLongitude:longitude,arcMinutes,intervalArcMinutes:200,
-  amsaIntervals,rawAmsaYears:amsaYears,
-  traditionalUnits:Object.freeze({years:amsaYears,months:0,days:0,nazhigai:0}),
-  variant:'A',source:'C.G. Rajan Jathaka Kanitham I printed pp.237–238, Amsa table A',
+  amsaIntervals,completedIntervals,lowerBoundaryYears,upperBoundaryYears,rawAmsaFractionOfPada,rawAmsaYears,
+  traditionalUnits:units(Math.round(rawAmsaYears*NY)),
+  variant:'A',source:'C.G. Rajan Jathaka Kanitham I printed pp.237–238, Amsa table A; fractional arc by rule of three',
   lagnaLordStrengthConditionVerified:false,allSourceReductionsApplied:false,
   individualLifespanCertified:false,deathAgeOrDate:null
  });
@@ -584,6 +593,6 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  const note=ta?
  'பிண்ட மற்றும் நைசர்க்கிக முறைகளில் நூலின் சத்துரு-க்ஷேத்திரம்/அஸ்தங்கத முன்னுரிமை, சக்கிரபாத ஹரணங்கள் பயன்படுத்தப்படுகின்றன; தேவையான லக்னத் தகவல் உறுதியாக இருந்தால் பிண்ட/நைசர்க்கிகத்தில் மட்டும் குரூரோதய ஹரணமும் சேர்க்கப்படுகிறது. அம்ச முறையில் அட்டவணை A, பொருந்தும் ஹரணம், சக்கிரபாதம், பின்னர் மிக வலுவான பெருக்கி என்ற வரிசை பயன்படுத்தப்படுகிறது. ஒரே பாவத்தில் பல கிரகங்கள் இருந்தால் தற்போதைய strength3 மதிப்பின் அடிப்படையில் இடைக்காலத் தேர்வு செய்யப்படுகிறது; அது சுயாதீனமாகச் சான்றளிக்கப்பட்ட Shadbala அல்ல. தேவையான ஜாதகத் தகவல் இல்லையெனில் அல்லது ஹரணத்திற்குப் பின் எதிர்மறை மதிப்பு வந்தால் மூல மதிப்பை இறுதி பலனாகக் காட்டாமல் அந்தப் பத்தி/மொத்தம் மறைக்கப்படும். முறைத் தேர்வும் நூலில் உள்ள மொத்தக் கூட்டல் முரண்பாடும் இன்னும் முழுமையாகத் தீர்க்கப்படவில்லை; இவை ஆய்வு மதிப்புகள் மட்டுமே, ஆயுள் அல்லது மரண வயது/நாள் கணிப்பு அல்ல.':
  `Pinda and Naisargika use the book's common enemy-sign/combustion precedence and Chakrapada deductions; Pinda/Naisargika alone also apply the p.233 Gururodaya rule when the required Lagna evidence resolves. Amsa uses Table A, the selected condition Harana, Chakrapada and the strongest applicable multiplier in the printed order. Multiple Chakrapada occupants are selected provisionally from the current strength3 scores, which are not independently certified Shadbala. If required chart facts or a nonnegative post-Harana term cannot be resolved, the affected cell/total is withheld rather than replaced by an unadjusted raw value. Method selection and the book's printed-total discrepancy remain unreconciled; these are research candidates, not predictions of lifespan, death age or death date.`;
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'AMSA AYURDAYAM'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
 
 }

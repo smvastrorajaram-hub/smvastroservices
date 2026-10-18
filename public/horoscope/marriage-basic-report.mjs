@@ -200,7 +200,11 @@ function shadbala(c,ta){
   return tr([name(p.name,ta),val(x.totalVirupa),val(x.totalRupa,3),val(x.requiredVirupa),val(x.ratio,3)]);
  });
  // Two complete, aligned tables prevent single Tamil letters in 11 narrow columns.
- return table(h1,part1,'mm-base-shad-components')+table(h2,part2,'mm-base-shad-total');
+ // The active strength3 payload is provisional, not a certified natal Shadbala.
+ const status=ta
+  ?'<p class="small mm-shadbala-status">குறிப்பு: இந்த ஆறு-கூறு Shadbala மதிப்புகள் இடைக்காலக் கணக்கீடுகள். Uttara Kalamrita நூலை அடிப்படையாகக் கொண்ட முழுமையான சுயாதீனப் பிறப்பு ஜாதகச் சரிபார்ப்பு இன்னும் முடிவடையவில்லை; இதை இறுதி சட்பலச் சான்றிதழாகக் கருத வேண்டாம்.</p>'
+  :'<p class="small mm-shadbala-status">Note: these six-component Shadbala values are provisional. Full independent natal-chart verification against Uttara Kalamrita is unfinished; do not treat this as a final classical Shadbala certificate.</p>';
+ return status+table(h1,part1,'mm-base-shad-components')+table(h2,part2,'mm-base-shad-total');
 }
 function dasha(c,ta,ref){
  const from=String(ref||new Date().toISOString().slice(0,10));

@@ -90,7 +90,7 @@ for(const [date,time] of [
  }
  for(const lang of [ta,en]){
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
-  yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column exists');
+  yes(lang.includes('AMSA AYURDAYAM')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column has the required bilingual heading');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
@@ -111,8 +111,8 @@ for(const [date,time] of [
 }
 eq(rows,35,'five natal charts x seven grahas Pinda and natural');
 eq(seen.size,5,'distinct chart numeric report outputs');
-eq(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).rawAmsaYears,2,
- 'source Amsa table value for 206°30′');
+close(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).rawAmsaYears,1.95,
+ 'source Amsa table value with fractional degree at 206°30′');
 eq(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).allSourceReductionsApplied,false,
  'Amsa remains explicitly provisional before book reductions');
 console.log(JSON.stringify({pass:true,assertions,printedPindaExamples:2,

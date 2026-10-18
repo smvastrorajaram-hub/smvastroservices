@@ -33,7 +33,7 @@ eq(research.deathAgeOrDate,null,'no human death age');
 const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
-ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
+ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('AMSA AYURDAYAM'),'English three columns');
 ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
 ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
 ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
@@ -67,14 +67,18 @@ eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
 ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
  'Amsa total stays unavailable until all seven chart-specific Harana results resolve');
 const amsaCases=[
- [0,1],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
- [167+2/60,3],[118+10/60,12],[206.5,2],[191+52/60,10],
- [28+17/60,9],[204+32/60,2],[230+27/60,10]
+ [0,12],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
+ [167+2/60,2.11],[118+10/60,11.45],[206.5,1.95],[191+52/60,9.56],
+ [28+17/60,8.485],[204+32/60,1.36],[230+27/60,9.135]
 ];
 for(const [longitude,years] of amsaCases){
- eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude}).rawAmsaYears,
-  years,'C.G. Rajan Amsa-table lookup '+longitude);
+ const row=cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude});
+ ok(Math.abs(row.rawAmsaYears-years)<1e-8,
+  'C.G. Rajan Amsa table includes fractional arc '+longitude+': '+row.rawAmsaYears+' vs '+years);
 }
+eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:206.5}).traditionalUnits,
+ {years:1,months:11,days:12,nazhigai:0},
+ 'fractional Table-A remainder converts into months/days by rule of three');
 // A one-fifth Chakrapada loss must carry through to days, not be
 // truncated to whole years/months or replaced by the raw Table-A term.
 const fifthLossCase=cgRajanAmsaHaranaResearch({
@@ -118,7 +122,7 @@ eq(collisionHarana.adjustedAmsaYearsCandidate,null,'Shadbala occupant choice can
 // Sun at 260° tests Drekkana wrap: Sagittarius' third Drekkana is Leo (sign 4).
 const chartResolvedFixture=ref.map((p,i)=>({
  ...p,
- ...(p.name==='குரு'?{longitude:75}:{}),
+ ...(p.name==='குரு'?{longitude:75+20/60}:{}),
  ...(p.name==='சூரியன்'?{longitude:260}:{}),
  bhava:[2,3,4,5,6,8,7][i],
  strength:{relationship:p.name==='குரு'?'பகை':'நட்பு',
@@ -128,7 +132,7 @@ const resolvedChart=cgRajanCompareGrahas({planets:chartResolvedFixture});
 eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
  'all seven Amsa rows resolve when all chart evidence is explicit');
 const remainderDisplayFixture=chartResolvedFixture.map(p=>
- p.name==='செவ்வாய்'?{...p,longitude:167+2/60,bhava:8}:
+ p.name==='செவ்வாய்'?{...p,longitude:10,bhava:8}:
  p.name==='சுக்கிரன்'?{...p,bhava:9}:p);
 const remainderHtml=cgRajanAyurdayaReportHtml({planets:remainderDisplayFixture,language:'en'});
 ok(remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
@@ -141,11 +145,11 @@ eq(sunPost.multiplier,2,
  'wrapped Drekkana sign maps to Leo and applies the Sun own-Drekkana multiplier');
 eq(sunPost.adjustedAmsaYearsCandidate,sunPost.rawAmsaYears*2,
  'own-Drekkana multiplier is applied after Harana without stacking another multiplier');
-eq(jupiterPost.rawAmsaYears,11,'fixture Jupiter raw Table-A lookup');
+ok(Math.abs(jupiterPost.rawAmsaYears-10.6)<1e-8,'fixture Jupiter raw Table-A lookup preserves fractional arc');
 eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from chart relation');
 eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
-eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:4,days:0,nazhigai:0},
- 'fixture displays the post-Harana Jupiter candidate, not raw 11 years');
+eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:0,days:24,nazhigai:0},
+ 'fractional Table-A term survives enemy-sign Harana and displays post-Harana days');
 eq(resolvedChart.totals.amsa.available,true,
  'adjusted Amsa total available when all seven row candidates resolve');
 const saturnAmsa=resolvedChart.entries.find(x=>x.name==='சனி').amsaHarana;
@@ -219,14 +223,14 @@ ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&
 ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
  'adjusted Amsa total is rendered only when complete');
 const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
-eq(jupiterAmsaCell,'7y 4m 0d 0n',
- 'customer table cell contains post-Harana 7y 4m candidate rather than raw 11 years');
+eq(jupiterAmsaCell,'7y 0m 24d 0n',
+ 'customer table cell preserves post-Harana fractional Table-A days');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
 eq(totals.amsa.traditionalUnits,null,
  'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
 eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until all adjusted rows resolve');
-eq(totals.amsaTableARaw.traditionalUnits,{years:48,months:0,days:0,nazhigai:0},
- 'raw Table-A total remains internal arithmetic only and is not presented as final');
+eq(totals.amsaTableARaw.traditionalUnits,{years:44,months:0,days:18,nazhigai:0},
+ 'raw Table-A total preserves fractional day arithmetic internally and is not presented as final');
 eq(totals.averageOfThreeTotals,null,
  'three-method mean is withheld rather than calculated from raw Amsa Table-A values');
 const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
@@ -247,14 +251,14 @@ const shadbalaStart=src.indexOf('<h3 class="base-shadbala"');
 const shadbalaEnd=src.indexOf('<div class="transit-before-vimsottari">',shadbalaStart);
 const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(shadbalaUi.includes('💪 ஷட்பலம் (Shadbala)'),'Horoscope uses a plain Shadbala heading');
-eq(shadbalaUi.includes('Uttara Kalamrita'),false,'Shadbala section does not display book-source status');
+ok(shadbalaUi.includes('Uttara Kalamrita')&&shadbalaUi.includes('இடைக்காலக் கணக்கீடுகள்'),'primary Horoscope table identifies provisional Uttara Kalamrita status');
 eq(shadbalaUi.includes('Classical Parashari Shadbala'),false,'Shadbala heading has no lineage/status text');
 eq(shadbalaUi.includes('reference-grade software parity'),false,'Shadbala section omits explanatory status note');
 eq(shadbalaUi.includes('வலிமை'),false,'Shadbala rows omit Strong/Below-required status text');
 const analysisShadbalaStart=src.indexOf('const shadbalaRows=');
 const analysisShadbalaEnd=src.indexOf('h+=`<div class="adv-section adv-ishta-kashta"',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
-eq(analysisShadbalaUi.includes('Uttara Kalamrita'),false,'Chart Analysis Shadbala has no book-source label');
+ok(analysisShadbalaUi.includes('Uttara Kalamrita')&&analysisShadbalaUi.includes('இறுதி சட்பலச் சான்றிதழ்'),'Chart Analysis identifies provisional Uttara Kalamrita status');
 eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
 eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
  'Chart Analysis omits a status message when no numerical rows are available');
@@ -264,10 +268,11 @@ ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Ayurdaya is attached inside Advanced Analysis I, safe from print legacy stripping');
 ok(printSrc.includes("root.querySelectorAll('.integrated-predictions"),'print strips only legacy content');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
- ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30']];
+ ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
+ ['2002-10-18','06:06'],['1989-10-18','09:45']];
 let count=0;
 for(const [date,time] of births){
- const r=await full({date,time,lat:11.232,lon:78.88,
+ const r=await full({date,time,lat:11.23333,lon:78.88333,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'private research'});
  ok(r.ok,'calculated birth '+date);
  const x=cgRajanCompareGrahas({planets:r.chart.planets,lagna:r.chart.lagna});
@@ -276,11 +281,23 @@ for(const [date,time] of births){
  eq(x.predictionCertified,false,'no certification '+date);
  const perNatalHtml=cgRajanAyurdayaReportHtml({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  ok(perNatalHtml.includes('Pinda Ayurdaya')&&perNatalHtml.includes('Naisargika Ayurdaya')&&
-  perNatalHtml.includes('Amsa Ayurdaya'),'three-method html ' + date);
+  perNatalHtml.includes('AMSA AYURDAYAM'),'three-method html ' + date);
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
+ const shadbalaRows=r.chart.planets.filter(p=>p?.strength3?.available);
+ eq(shadbalaRows.length,7,'seven classical Shadbala rows '+date);
+ for(const p of shadbalaRows){
+  eq(p.strength3.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
+  eq(p.strength3.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
+  const c=p.strength3.components||{};
+  const sum=Number(c.sthana?.total||0)+Number(c.dig||0)+Number(c.kala?.total||0)+Number(c.cheshta||0)+Number(c.naisargika||0)+Number(c.drik||0);
+  ok(Number.isFinite(sum)&&Number.isFinite(p.strength3.totalVirupa)&&Math.abs(sum-p.strength3.totalVirupa)<1e-6,
+   'Shadbala total equals six unrounded components '+date+' '+p.name);
+ }
+ ok(x.entries.some(e=>e.amsa&&e.amsa.rawAmsaFractionOfPada>1e-8&&e.amsa.rawAmsaFractionOfPada<1-1e-8),
+  'actual natal longitudes retain fractional Amsa arc '+date);
  count+=x.entries.length;
 }
-eq(count,35,'five births x seven grahas');
-console.log(JSON.stringify({pass:true,assertions:checks,printedPinda:2,natalResearchPlanetPairs:35,
+eq(count,49,'seven births including both saved Horoscope PDF charts x seven grahas');
+console.log(JSON.stringify({pass:true,assertions:checks,printedPinda:2,natalResearchPlanetPairs:49,
  customerHtml:{tamil:true,english:true},certifiedWholeAyurdaya:false,
  printedLifetimeYearsToCustomers:false,deathTimingComputed:false}));
