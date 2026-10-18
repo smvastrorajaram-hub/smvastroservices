@@ -12,7 +12,6 @@
  * Missing required inputs fail closed; no speed-bucket fallback is accepted.
  */
 import { sauraFivePlanetCheshtaInputs } from './saura-classical-mean-motion.browser.mjs';
-import { sauraFourPassTrueLongitude, sauraMandoccaResearch } from './saura-classical-true-longitude.browser.mjs';
 import { bvRamanIshtaKashta, bvRamanChestaForPhala } from './bv-raman-ishta-kashta.browser.mjs';
 
 const PLANETS=Object.freeze(['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி']);
@@ -277,35 +276,44 @@ function applyRamanYuddha(rows,planets){
 
 /**
  * Attach Raman's Chapter X Ishta/Kashta Phala to the same graha result as
- * Shadbala. The Chapter X Chesta-for-Phala input is computed separately from
- * the sixfold Chapter VI Cheshta Bala; the latter is exposed only as evidence.
- * The five-planet true-longitude reconstruction remains research-only.
+ * Shadbala. For Sun/Moon, Chapter X prescribes special Chesta-for-Phala values.
+ * For Mars-Saturn, reuse the exact Chapter VI inputs/value already calculated
+ * for sixfold Cheshta; do not reconstruct a second true longitude here.
  */
-function ramanIshtaKashtaForPlanet({planet,planetRow,sunRow,moonRow,jdUt,ayanamsa,uchchaBala,sixfoldCheshtaBala}){
- const english=EN[planet];
+function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,ayanamsa,uchchaBala,sixfoldCheshtaBala,sixfoldCheshtaSource}){
  if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
- let special;
+ let special,cheshtaForPhala,specialChestaMethod;
  if(planet==='சூரியன்'){
   special=bvRamanChestaForPhala({planet,sunSayanaLongitude:norm360(sunRow.longitude+ayanamsa)});
+  cheshtaForPhala=special.cheshtaForPhala;
+  specialChestaMethod=special.method;
  }else if(planet==='சந்திரன்'){
   special=bvRamanChestaForPhala({planet,sunNirayanaLongitude:sunRow.longitude,moonNirayanaLongitude:moonRow.longitude});
+  cheshtaForPhala=special.cheshtaForPhala;
+  specialChestaMethod=special.method;
  }else{
-  const inputs=sauraFivePlanetCheshtaInputs(jdUt,english);
-  const apsis=sauraMandoccaResearch(jdUt,english);
-  const candidate=sauraFourPassTrueLongitude({planet:english,meanLongitude:inputs.meanLongitude,mandocca:apsis.mandocca,sheeghrocha:inputs.sheeghrocha,mandaKarṇaConvention:'absolute-koti-minus'});
-  special=bvRamanChestaForPhala({planet,meanLongitude:inputs.meanLongitude,trueLongitude:candidate.trueLongitude,sheeghroccaLongitude:inputs.sheeghrocha});
+  const source=sixfoldCheshtaSource||{};
+  const inputs=[source.meanLongitude,source.trueLongitude,source.sheeghroccaLongitude];
+  if(!inputs.every(finite)||!finite(sixfoldCheshtaBala))throw new TypeError('B.V. Raman Ishta/Kashta must reuse the sixfold Chapter VI Cheshta inputs for '+planet);
+  special=bvRamanChestaForPhala({planet,meanLongitude:source.meanLongitude,trueLongitude:source.trueLongitude,sheeghroccaLongitude:source.sheeghroccaLongitude});
+  if(Math.abs(special.cheshtaForPhala-sixfoldCheshtaBala)>0.006)throw new RangeError('Chapter VI and Chapter X Cheshta inputs do not reconcile for '+planet);
+  // Preserve the identical unrounded engine value rather than substituting a
+  // second, separately rounded/reconstructed Chesta-for-Phala value.
+  cheshtaForPhala=sixfoldCheshtaBala;
+  specialChestaMethod='BV_RAMAN_CHAPTER_VI_SHARED_SIXFOLD_INPUT';
  }
- const phala=bvRamanIshtaKashta({uchchaBala,cheshtaBala:special.cheshtaForPhala});
+ const phala=bvRamanIshtaKashta({uchchaBala,cheshtaBala:cheshtaForPhala});
  return Object.freeze({
   available:true,planet,method:phala.method,unit:phala.unit,uchchaBala,
-  cheshtaBala:special.cheshtaForPhala,cheshtaForPhala:special.cheshtaForPhala,
-  specialChestaMethod:special.method,specialChestaFormula:special.formula,
+  cheshtaBala:cheshtaForPhala,cheshtaForPhala,
+  computedChestaForPhala:special.cheshtaForPhala,
+  specialChestaMethod,specialChestaFormula:special.formula,
   sixfoldShadbalaCheshtaBala:sixfoldCheshtaBala,
   ishtaPhala:phala.ishtaPhala,kashtaPhala:phala.kashtaPhala,
   ishtaRaw:phala.ishtaRaw,kashtaRaw:phala.kashtaRaw,
   formulaVerified:true,chartInputsCertified:false,classicalCertified:false,provisional:true,
   source:phala.source,
-  limitations:['B.V. Raman Chapter X special Chesta-for-Phala is distinct from sixfold Chapter VI Cheshta Bala','Five-planet traditional true-longitude reconstruction remains research-only; no classical certificate is claimed']
+  limitations:['Sun/Moon use the separate Chapter X Chesta-for-Phala calculation; their sixfold Chapter VI Cheshta remains zero','Mars-Saturn reuse the same Chapter VI Cheshta value and source longitudes for Ishta/Kashta; historical true-longitude inputs remain uncertified']
  });
 }
 
@@ -322,7 +330,7 @@ export function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midh
   const p=chart.find(x=>x.name===planet),sthana=sthanaBala(planet,p,lagnaSign,rasiPositions),dig=directionBala(planet,p.longitude,angles),kala=kalaBase(planet,chart,apparentSolarHour,temporal,declinations||{}),cheshta=chestaBala(planet,jdUt,p,classicalChestaInputs?.[planet]),naisargika=NAISARGIKA[planet],drik=drikBala(planet,chart);
   let ishtaKashta;
   try{
-   ishtaKashta=ramanIshtaKashtaForPlanet({planet,planetRow:p,sunRow:chart.find(x=>x.name==='சூரியன்'),moonRow:chart.find(x=>x.name==='சந்திரன்'),jdUt,ayanamsa,uchchaBala:sthana.uccha,sixfoldCheshtaBala:cheshta.value});
+   ishtaKashta=ramanIshtaKashtaForPlanet({planet,sunRow:chart.find(x=>x.name==='சூரியன்'),moonRow:chart.find(x=>x.name==='சந்திரன்'),ayanamsa,uchchaBala:sthana.uccha,sixfoldCheshtaBala:cheshta.value,sixfoldCheshtaSource:cheshta});
   }catch(error){
    ishtaKashta={available:false,planet,method:'BV_RAMAN_SQRT_ISHTA_KASHTA',classicalCertified:false,provisional:true,reason:String(error?.message||error),chartInputsCertified:false};
   }

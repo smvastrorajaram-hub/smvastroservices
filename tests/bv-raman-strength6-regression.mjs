@@ -49,12 +49,12 @@ const standard=calculateBVRamanShadbala({
  apparentSolarHour:14.336,
  temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},
- jdUt:jd,ayanamsa:23.85,classicalChestaInputs:standardChestaInputs
+ jdUt:jd,ayanamsa:(202+10/60)-(180+53/60+55/3600),classicalChestaInputs:standardChestaInputs
 });
 const nodeStandard=nodeRaman.calculateBVRamanShadbala({
   planets:standardPlanets,bhavas:[],ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
   apparentSolarHour:14.336,temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
-  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},jdUt:jd,ayanamsa:23.85,classicalChestaInputs:standardChestaInputs
+  declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},jdUt:jd,ayanamsa:(202+10/60)-(180+53/60+55/3600),classicalChestaInputs:standardChestaInputs
 });
 eq(nodeStandard.method,standard.method,'Node and browser use same B.V. Raman engine identity');
 for(const name of planets){
@@ -73,7 +73,16 @@ for(const name of planets){
  near(nodePhala.ishtaPhala,browserPhala.ishtaPhala,0.001,name+' Node/browser Ishta parity');
  near(nodePhala.kashtaPhala,browserPhala.kashtaPhala,0.001,name+' Node/browser Kashta parity');
  near(browserPhala.sixfoldShadbalaCheshtaBala,standard.planets[name].components.cheshta,0.001,name+' sixfold Cheshta remains separately evidenced');
- eq(browserPhala.ishtaPhala,Math.round((Math.sqrt(browserPhala.uchchaBala*browserPhala.cheshtaForPhala)+Number.EPSILON)*100)/100,name+' Ishta formula uses special Chesta-for-Phala');
+ if(name==='சூரியன்'||name==='சந்திரன்'){
+  eq(standard.planets[name].components.cheshta,0,name+' sixfold Shadbala Cheshta remains zero for a luminary');
+  ok(browserPhala.cheshtaForPhala>0,name+' Chapter X Ishta/Kashta Chesta-for-Phala is independently non-zero');
+  eq(browserPhala.specialChestaMethod,'BV_RAMAN_SPECIAL_CHESTA_FOR_ISHTA_KASHTA',name+' uses Raman Chapter X luminary-specific rule');
+ }else{
+  near(browserPhala.cheshtaForPhala,standard.planets[name].components.cheshta,0.001,name+' Ishta/Kashta reuses the identical Chapter VI Cheshta value');
+  near(browserPhala.computedChestaForPhala,standard.planets[name].components.cheshta,0.006,name+' Chapter X source formula reconciles with shared Chapter VI input');
+  eq(browserPhala.specialChestaMethod,'BV_RAMAN_CHAPTER_VI_SHARED_SIXFOLD_INPUT',name+' explicitly shares Shadbala Cheshta');
+ }
+ eq(browserPhala.ishtaPhala,Math.round((Math.sqrt(browserPhala.uchchaBala*browserPhala.cheshtaForPhala)+Number.EPSILON)*100)/100,name+' Ishta formula uses the correct Chesta-for-Phala input');
  eq(browserPhala.kashtaPhala,Math.round((Math.sqrt((60-browserPhala.uchchaBala)*(60-browserPhala.cheshtaForPhala))+Number.EPSILON)*100)/100,name+' Kashta formula uses special Chesta-for-Phala');
 }
 eq(standard.classicalCertified,false,'standard fixture never overclaims full certification');
@@ -139,6 +148,12 @@ for(const [date,time] of births){
   eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
   near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,p.strength6.components.cheshta,0.001,date+' '+p.name+' Phala input never replaces sixfold Cheshta');
   const c=p.strength6.components;
+  if(p.name==='சூரியன்'||p.name==='சந்திரன்'){
+   eq(c.cheshta,0,date+' '+p.name+' sixfold Shadbala Cheshta stays zero by Raman Chapter VI');
+   ok(p.strength6.ishtaKashta.cheshtaForPhala>0,date+' '+p.name+' separate Chapter X Chesta-for-Phala remains non-zero');
+  }else{
+   near(p.strength6.ishtaKashta.cheshtaForPhala,c.cheshta,0.001,date+' '+p.name+' Ishta/Kashta Chesta-for-Phala equals sixfold Cheshta');
+  }
   ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
   if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
    near(p.strength6.evidence.cheshtaSource.trueLongitude,p.longitude,1e-7,date+' '+p.name+' Cheshta uses actual ephemeris longitude');

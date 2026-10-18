@@ -85,6 +85,7 @@ assert.ok(horoscopeSource.includes('p.strength6?.ishtaKashta')&&horoscopeSource.
 assert.ok(browserEngineSource.includes('bvRamanChestaForPhala')&&browserEngineSource.includes('bvRamanIshtaKashta')&&browserEngineSource.includes('sixfoldShadbalaCheshtaBala'),'browser Shadbala computes special Chesta-for-Phala separately and attaches formula output'); assertions++;
 assert.ok(nodeEngineSource.includes('ramanIshtaKashtaForPlanet')&&nodeEngineSource.includes('sixfoldShadbalaCheshtaBala'),'Node Shadbala mirrors integrated Ishta/Kashta output'); assertions++;
 assert.ok(horoscopeSource.includes("'சேஷ்டா-பலன் உள்ளீடு'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'UI labels the Chapter X input separately from sixfold Cheshta Bala'); assertions++;
+assert.ok(horoscopeSource.includes('Shadbala Cheshta is 0 for Sun/Moon')&&horoscopeSource.includes('Mars–Saturn reuse the same Cheshta value as Shadbala'),'UI explains the source-defined luminary difference and five-graha parity rule'); assertions++;
 assert.ok(!horoscopeSource.includes('bvRamanChestaForPhala')&&!horoscopeSource.includes('bvRamanIshtaKashta'),'presentation layer no longer independently recalculates Ishta/Kashta'); assertions++;
 assert.ok(!horoscopeSource.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'),'the unwanted Ishta/Kashta research note is absent from visible HTML'); assertions++;
 assert.ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important'),'Horoscope Ayurdaya scroll style is source-guarded'); assertions++;
