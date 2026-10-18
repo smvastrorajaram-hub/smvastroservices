@@ -62,8 +62,8 @@ for(const language of ['ta','en']){
   language+' semantic report section');
  exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
  yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுள்'),language+' provisional average row');
- yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
-     (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுள்')),
+ yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('AMSA AYURDAYAM'))||
+     (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
  exactly((html.match(/data-amsa-harana="blocked"/g)||[]).length,7,
