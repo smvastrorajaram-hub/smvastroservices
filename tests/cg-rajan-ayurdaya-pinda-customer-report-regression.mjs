@@ -133,13 +133,19 @@ for(const [date,time] of [
     'numeric post-Harana Amsa candidate '+date+x.name);
  }
  const selected=selectMethod({planets:r.chart.planets,lagna:r.chart.lagna});
- yes(selected.available,'unique Shadbala reference selects one method '+date);
  const methodLabels={
   pinda:{ta:'பிண்ட ஆயுள்',en:'Pinda Ayurdaya'},
   natural:{ta:'நைசர்க்கிக ஆயுள்',en:'Naisargika Ayurdaya'},
   amsa:{ta:'அம்ச ஆயுர்த்தாயம்',en:'Amsa Ayurdaya'}
  };
  for(const [lang,code] of [[ta,'ta'],[en,'en']]){
+  if(!selected.available){
+   eq((lang.match(/<tr\b/g)||[]).length,0,'missing/tied Shadbala never chooses a fallback method '+date+' '+code);
+   eq(lang.includes('data-ayurdaya-selection="unavailable"'),true,'no-selection state is explicit '+date+' '+code);
+   for(const labels of Object.values(methodLabels))yes(!lang.includes(labels[code]),'no method is shown when Shadbala selection is unsafe '+date+' '+code);
+   yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'no mean is shown in no-selection state '+date+' '+code);
+   continue;
+  }
   eq((lang.match(/<tr\b/g)||[]).length,9,'single method: header + seven grahas + total '+date+' '+code);
   yes(lang.includes(methodLabels[selected.selectedMethod][code]),'selected method heading is shown '+date+' '+code);
   eq(lang.includes('data-ayurdaya-selection="'+selected.selectedMethod+'"'),true,'the selected method is explicit in customer HTML '+date+' '+code);
