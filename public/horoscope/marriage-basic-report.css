@@ -162,9 +162,15 @@
  font-weight:700;background:#faf2e4;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th{
- white-space:normal;text-align:start;line-height:1.45;background:#f8f4ed;
+ white-space:normal;text-align:start;line-height:1.4;background:#f8f4ed;
 }
-.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average strong{margin-inline-start:.5em}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th small{
+ display:block;margin-top:.2em;font-size:.82em;line-height:1.35;font-weight:400;
+}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average td{
+ background:#f8f4ed;text-align:center;white-space:nowrap;font-weight:700;
+}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average-value strong{font-weight:800}
 @media print{
  .mm-basic-report .smv-cg-rajan-ayurdaya{margin:5mm 0 7mm;break-inside:auto;page-break-inside:auto}
  .mm-basic-report .smv-cg-rajan-ayurdaya h3{font-size:10pt;margin:2mm 0}
