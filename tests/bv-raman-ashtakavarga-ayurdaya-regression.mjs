@@ -83,7 +83,7 @@ same(Object.keys(shodhana.afterReductionRows).sort(), [...BV_RAMAN_AYURDAYA_PLAN
   'Shodhana output retains all seven graha rows');
 ok(shodhana.afterReductionSarvashtakavarga.every(value =>
   Number.isSafeInteger(value) && value >= 0 && value <= 56),
-  'reduced SAV bindus are integer sums and allow values above one BAV row limit');
+  'reduced SAV values are integer sums within the seven-graha theoretical bound');
 ok(shodhana.certified === false, 'combined Shodhana remains research-only');
 
 const methodA = bvRamanAshtakavargaMethodAFromReducedRows({
@@ -104,6 +104,8 @@ const methodB = bvRamanAshtakavargaMethodB({
   reducedSarvashtakavarga: fixture.reducedSarvashtakavarga,
   planetSigns: fixture.planetSigns
 });
+same(methodB.reducedSarvashtakavarga[5], 10,
+  'Method B accepts a reduced SAV total greater than the single-BAV maximum of eight');
 same(methodB.rasiPinda, fixture.reportedRasiPinda,
   'secondary Method B example Rasi Pinda arithmetic');
 same(methodB.grahaPinda, fixture.reportedGrahaPinda,
