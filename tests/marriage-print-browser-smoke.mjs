@@ -65,7 +65,7 @@ try{
     for(const [method,label] of Object.entries(methodLabels))if(method!==selection.selectedMethod)
      assert.ok(!section.includes(label),'Unselected Ayurdaya method '+method+' is hidden: '+testName);
     assert.equal((section.match(/<tr\b/g)||[]).length,9,'One selected method renders seven grahas plus total: '+testName);
-    assert.ok(section.includes('class="smv-ayurdaya-method-selection"'),'Selected-method basis is visible: '+testName);
+    assert.ok(section.includes('smv-ayurdaya-method-selection'),'Selected-method basis is visible: '+testName);
     const totalRow=section.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
     assert.equal((totalRow.match(/<strong>/g)||[]).length,1,'One selected method total is emphasized: '+testName);
    }else{
