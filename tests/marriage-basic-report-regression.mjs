@@ -28,7 +28,7 @@ const opts={language:'ta',brideStyle:'south',groomStyle:'north',reviewDate:'2026
 const ta=await renderBasicMatching(charts[0],charts[1],opts);
 ok(ta.includes('mm-shadbala-status')&&ta.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&ta.includes('இறுதி சட்பலச் சான்றிதழ்'),'Tamil Matching report discloses UK intermediate-only Shadbala');
 const taAyurdaya=[...ta.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
-eq(taAyurdaya.length,2,'Tamil Matching report includes each person's guarded Ayurdaya research appendix');
+eq(taAyurdaya.length,2,'Tamil Matching report includes two guarded Ayurdaya appendices');
 for(const [i,section] of taAyurdaya.entries()){
  ok(section.includes('அம்ச ஆயுர்த்தாயம்')&&section.includes('பிண்ட ஆயுள்')&&section.includes('நைசர்க்கிக ஆயுள்'),'Tamil partner '+(i+1)+' has all three Ayurdaya methods');
  eq((section.match(/<tr\b/g)||[]).length,10,'Tamil partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
@@ -50,7 +50,7 @@ eq(values[0].language,'en','One language-neutral transit calculation per person'
 const en=await renderBasicMatching(charts[0],charts[1],{...opts,language:'en',brideStyle:'east',groomStyle:'north'});
 ok(en.includes('mm-shadbala-status')&&en.includes('Only Uttara Kalamrita intermediate components are shown')&&en.includes('not a final Shadbala certificate'),'English Matching report discloses UK intermediate-only Shadbala');
 const enAyurdaya=[...en.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
-eq(enAyurdaya.length,2,'English Matching report includes each person's guarded Ayurdaya research appendix');
+eq(enAyurdaya.length,2,'English Matching report includes two guarded Ayurdaya appendices');
 for(const [i,section] of enAyurdaya.entries()){
  ok(section.includes('Amsa Ayurdaya')&&section.includes('Pinda Ayurdaya')&&section.includes('Naisargika Ayurdaya'),'English partner '+(i+1)+' has all three Ayurdaya methods');
  eq((section.match(/<tr\b/g)||[]).length,10,'English partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
