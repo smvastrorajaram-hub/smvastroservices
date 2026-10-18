@@ -306,11 +306,11 @@ const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',i
 ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:818px;min-width:818px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
 ok(horoscopeCss.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th, #englishHoroscopeResult .smv-cg-rajan-ayurdaya .smv-ayurdaya-table tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{background:#fff!important'), 'Horoscope Ayurdaya planet-name cells are truly white under the shared theme');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
-ok(matchingCss.includes('background:#fff7e8!important')&&matchingCss.includes('color:#4a352d!important')&&matchingCss.includes('background:#fff!important;font-weight:800!important'), 'Matching Ayurdaya uses Shadbala header colors and white/black bold planet cells');
+ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{')&&matchingCss.includes('color:#4a352d;background:#fff7e8;font-weight:800;')&&matchingCss.includes('color:#302722;background:#fff;font-weight:800;')&&matchingCss.includes('background:#fff7e8;color:#302722;text-align:center')&&!matchingCss.includes('background:#fff7e8!important'), 'Matching Ayurdaya colors live in semantic component rules; average row is cream without the previous override stack');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.css?v=20261018-ayurdaya-planet-white-v247')&&appHtml.includes('marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v247'), 'Live pages request versioned stylesheet assets to prevent stale colors');
+ok(appHtml.includes('horoscope.css?v=20261018-ayurdaya-planet-white-v247')&&appHtml.includes('marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v248'), 'Live pages request the revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v247-ayurdaya-white-planets-matching-shadbala-palette-20261018'),'PWA refresh revision activates the latest Horoscope UI');
+ok(swSource.includes('v248-ayurdaya-cream-average-source-css-20261018'),'PWA refresh revision activates the revised Matching stylesheet');
 ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
 ok(src.includes("p1Esc(x.house===1?'AL':x.house===12?'UL':`A${x.house}`)"),'Arudha first column renders AL, A2-A11 and UL explicitly');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
