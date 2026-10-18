@@ -4,11 +4,19 @@
  * Kept separate from Shadbala (strength6), CG Rajan Pinda/Amsa/Naisargika,
  * BPHS Ayurdaya, and all customer-facing Horoscope/Marriage Matching output.
  *
- * IMPORTANT: The primary Ashtakavarga System of Prediction scan is not present
- * in the accessible source library. Online secondary transcriptions contain
- * conflicts in Method-A worked totals, visible-half Harana and Method-B's
- * 100-year rule. This module intentionally reports arithmetic candidates only;
- * it never certifies or emits a final lifespan value.
+ * SOURCE BOUNDARY:
+ * - Chapter II / Standard Horoscope Table I is available through a secondary
+ *   transcription of the printed table, including a July 2026 position
+ *   correction. The original table page still needs visual verification.
+ * - Chapter XIV (Ayurdaya) primary worked pages are not yet fully verified.
+ *   Available secondary Method-A totals, visible-half Harana wording and
+ *   Method-B's 100-year rule contain arithmetic conflicts.
+ * - Hindu Predictive Astrology Chapter XXVI is a separate cross-reference,
+ *   not a substitute for ASOP Chapter XIV.
+ *
+ * This module records arithmetic candidates and discrepancy traces only. It
+ * never certifies or emits a final lifespan value. Nothing here is production
+ * integrated or customer-display approved.
  *
  * Sign indices: Aries=0 ... Pisces=11. Planet row keys are English names.
  */
@@ -79,7 +87,11 @@ export const BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE = Object.freeze({
   afterSavTotal: 82
 });
 
-const SOURCE = 'B. V. Raman, Ashtakavarga System of Prediction, Chapter XIV (Ayurdaya)';
+const SHODHANA_SOURCE =
+  'B. V. Raman, Ashtakavarga System of Prediction, Chapter II / Standard Horoscope Table I (secondary transcription; printed page-image verification pending)';
+const AYURDAYA_SOURCE =
+  'B. V. Raman, Ashtakavarga System of Prediction, Chapter XIV (Ayurdaya; primary Method A/B worked pages pending verification)';
+const SOURCE = AYURDAYA_SOURCE;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
 function validateRow(value, label) {
@@ -172,7 +184,7 @@ export function bvRamanTrikonaShodhana(binduRow) {
   return Object.freeze({
     values: Object.freeze(values),
     trace: Object.freeze(trace.map(Object.freeze)),
-    source: SOURCE,
+    source: SHODHANA_SOURCE,
     certified: false
   });
 }
@@ -225,7 +237,7 @@ export function bvRamanEkadhipatyaShodhana(binduRow, occupiedSigns) {
   return Object.freeze({
     values: Object.freeze(values),
     trace: Object.freeze(trace.map(Object.freeze)),
-    source: SOURCE,
+    source: SHODHANA_SOURCE,
     certified: false
   });
 }
@@ -255,11 +267,11 @@ export function bvRamanAshtakavargaShodhana({ bavRows, occupiedSigns } = {}) {
     afterReductionSarvashtakavarga: Object.freeze(reducedSarva),
     afterReductionSarvashtakavargaTotal: total(reducedSarva),
     traces: Object.freeze(traces),
-    source: SOURCE,
+    source: SHODHANA_SOURCE,
     certified: false,
     blockers: Object.freeze([
-      'Primary printed source pages have not yet been attached to the source audit.',
-      'Raman-specific reduction edge cases need a full printed worked-chart oracle.'
+      'Chapter II standard-horoscope reductions currently match a secondary transcription; original printed Table I page-image verification remains pending.',
+      'The Chapter XIV Ayurdaya primary worked chart is still required to certify any final Method A/B result.'
     ])
   });
 }
