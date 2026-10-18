@@ -272,13 +272,15 @@ ok(shadbalaUi.includes('strength3')&&!shadbalaUi.includes('strengthJathakaKanith
 for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(shadbalaUi.includes(heading),'primary Shadbala includes '+heading);
 ok(shadbalaUi.includes('smv-shadbala-method-note'),'primary Shadbala discloses pending numerical cross-source validation');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
-ok(shadbalaUi.includes('strength3'),'primary customer Shadbala uses current six-Bala calculation values');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
+ 'primary customer Shadbala rows come from the current six-Bala calculation result');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
 const analysisShadbalaStart=src.indexOf('const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
-ok(analysisShadbalaUi.includes('strength3'),'Chart Analysis Shadbala uses current six-component values');
+ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength3?.available===true'),
+ 'Chart Analysis Shadbala uses current six-component values');
 eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis does not substitute Rajan partial components');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
