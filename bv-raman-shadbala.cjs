@@ -329,7 +329,7 @@ function applyRamanYuddha(rows,planets){
 /** Full seven-graha B.V. Raman Shadbala. Inputs are never guessed or replaced. */
 function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,jdUt,ayanamsa,uchchaBala,sixfoldCheshtaBala}){
  const english=EN[planet];
- if(!finite(uchchaBala)||!finite(ayanamsa))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and Lahiri ayanamsa');
+ if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
  let chestaKendraRaw,midpoint=null,formula;
  if(planet==='சூரியன்'){
   chestaKendraRaw=normalizeSaura(sunRow.longitude+ayanamsa+90);
