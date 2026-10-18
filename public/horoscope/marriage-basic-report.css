@@ -166,8 +166,11 @@
  text-align:center;vertical-align:middle;white-space:nowrap;word-break:normal;overflow-wrap:normal;
  background:#fffdfb;
 }
-.mm-basic-report table.smv-ayurdaya-table th{
- color:#4b251b;background:#f4ead8;font-weight:700;
+.mm-basic-report table.smv-ayurdaya-table thead th{
+ color:#4b251b;background:#f4ead8;font-weight:800;
+}
+.mm-basic-report table.smv-ayurdaya-table tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{
+ color:#302722;background:#fffdfb;font-weight:800;
 }
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals th,
 .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals td{

@@ -988,7 +988,7 @@
       }catch(error){rows.push({name:p.name,uchcha:null,cheshta:null,ishta:null,kashta:null});console.warn('Ishta/Kashta input unavailable for '+p.name+':',error);}
     }
     const fmt=v=>Number.isFinite(v)?Number(v).toFixed(2):'—';
-    const heads=ta?['கிரகம்','உச்ச பலம்','சேஷ்டா (இஷ்ட/கஷ்ட)','இஷ்ட பலம்','கஷ்ட பலம்']:['Planet','Uchcha Bala','Cheshta-for-Phala','Ishta Phala','Kashta Phala'];
+    const heads=ta?['கிரகம்','உச்ச பலம்','சேஷ்டா பலம்','இஷ்ட பலம்','கஷ்ட பலம்']:['Planet','Uchcha Bala','Cheshta-for-Phala','Ishta Phala','Kashta Phala'];
     const body=rows.map(row=>'<tr><td><b>'+escText(ta?row.name:tamilToEnglish[row.name])+'</b></td><td>'+fmt(row.uchcha)+'</td><td>'+fmt(row.cheshta)+'</td><td><b>'+fmt(row.ishta)+'</b></td><td><b>'+fmt(row.kashta)+'</b></td></tr>').join('');
     const html='<div class="adv-section part1-ishta-kashta" data-smv-ishta-kashta="1" data-research-candidate="true"><h4>🌗 '+(ta?'இஷ்ட பலம் / கஷ்ட பலம்':'Ishta Bala / Kashta Bala')+'</h4><div class="adv-table-wrap smv-ishta-kashta-scroll"><table class="adv-wide smv-ishta-kashta-table"><thead><tr>'+heads.map(x=>'<th>'+escText(x)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
     const shadbala=ishtaHost.querySelector('.part1-planetary-strength');
