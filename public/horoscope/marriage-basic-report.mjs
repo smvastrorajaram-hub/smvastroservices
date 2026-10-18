@@ -284,7 +284,7 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
   try{trData=await reviewTransit(c,ref,transitFn);}catch(e){transitError=String(e.message||e);}
   const maandi=natalMaandi(c);
   const native=c.planets||[],natal=[...native,...(maandi?[maandi]:[])];
-  const ayurdayaReport=cgRajanAyurdayaReportHtml({planets:native,lagna:c.lagna,language});
+  const ayurdayaReport=cgRajanAyurdayaReportHtml({planets:native,lagna:c.lagna,language});.replace('<table class="smv-ayurdaya-table">','<table class="smv-ayurdaya-table smv-css-island">')
   const vargaMaandi=maandi?{...maandi,longitude:vargaLongitude(Number(maandi.longitude),9)}:null;
   const d9Planets=d9?[...d9.planets,...(vargaMaandi?[vargaMaandi]:[])]:[];
   const charts='<div class="mm-base-chart-row">'+
