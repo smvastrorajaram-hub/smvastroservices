@@ -11,6 +11,7 @@ on:
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/ayurdaya-lagna-lord-selection-diagnostic.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
       - 'public/horoscope/report-print.js'
@@ -51,6 +52,7 @@ jobs:
           node --check tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+          node --check tests/ayurdaya-lagna-lord-selection-diagnostic.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
           node --check public/horoscope/horoscope-predictions.js
           node --check public/horoscope/horoscope.js
@@ -60,6 +62,8 @@ jobs:
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
       - name: Printed Pinda, five-natal natural audit, and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+      - name: Actual 31-Oct-2026 Perambalur Shadbala method-selection regression
+        run: node tests/ayurdaya-lagna-lord-selection-diagnostic.mjs
       - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
         run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
       - name: Check printed Pinda answers, 35 natal terms and Horoscope report render
