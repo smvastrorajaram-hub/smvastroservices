@@ -84,13 +84,15 @@ for(const [date,time] of [
   'Pinda total resolves from all seven Harana-adjusted rows '+date);
  yes(result.totals.natural.available===true,
   'Naisargika total resolves from all seven Harana-adjusted rows '+date);
- yes(result.totals.amsa.available===true,
-  'Amsa total resolves from all seven post-Harana rows '+date);
- yes(Boolean(result.totals.averageOfThreeTotals),
-  'three-method mean is calculated for a fully evidenced regression chart '+date);
- yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
-     !en.includes('Harana evidence incomplete'),
-  'no incomplete-average fallback for a fully evidenced regression chart '+date);
+ yes(result.amsaMethodSelectionVerified===false,
+  'Table E method selection remains unverified '+date);
+ yes(result.totals.amsa.available===false&&result.totals.amsa.blockedBy==='method-selection',
+  'Amsa total is withheld until Table E method selection is source-verified '+date);
+ eq(result.totals.averageOfThreeTotals,null,
+  'three-method mean is withheld until Table E method selection is verified '+date);
+ yes(ta.includes('அம்ச அட்டவணை E நிபந்தனைக்குட்பட்டது')&&
+     en.includes('Amsa Table E is conditional'),
+  'both language reports disclose the Table E method-selection gate '+date);
  yes(ta.includes('ஆயுர்த்தாயக் கணக்கீடு')&&en.includes('Ayurdaya Calculation')&&!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham'),
   'bilingual source-neutral customer heading');
  yes(!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham')&&!ta.includes('Harana evidence incomplete')&&!en.includes('Harana evidence incomplete'),
@@ -125,8 +127,11 @@ for(const [date,time] of [
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
   const raw=(lang.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length;
   eq(blocked+adjusted+raw,7,'each graha has adjusted, raw-unadjusted, or data-missing Amsa cell');
-  yes(raw===0||lang.includes('Raw: ')||lang.includes('மூல மதிப்பு: '),
-    'unresolved Amsa rows expose raw terms with an explicit label');
+  eq(blocked,0,'per-graha Table E candidates are available internally even though method selection is blocked');
+  eq(adjusted,0,'no per-graha Table E Harana adjustment is published before method selection');
+  eq(raw,7,'all seven Amsa Table E rows are raw-unadjusted in the customer report');
+  yes(lang.includes('Raw: ')||lang.includes('மூல மதிப்பு: '),
+    'unverified Amsa Table E raw terms have an explicit label');
   const pindaAdjusted=(lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length;
   const pindaRaw=(lang.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length;
   const naturalAdjusted=(lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length;
@@ -135,12 +140,14 @@ for(const [date,time] of [
     'Pinda report exposes seven adjusted or clearly raw rows '+date);
   eq(naturalAdjusted+naturalRaw,7,
     'Naisargika report exposes seven adjusted or clearly raw rows '+date);
-  yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-adjusted-amsa-years='),
-    'customer table includes auditable raw/deduction/adjusted values '+date);
-  eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
-    'Amsa total is shown only when every chart-specific Harana resolves');
-  eq(lang.includes('data-amsa-total="raw-unadjusted"'),result.totals.amsa.available!==true,
-    'Amsa total falls back to an explicitly unadjusted raw total when chart Harana is unresolved');
+  yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-raw-amsa-years=')&&!lang.includes('data-adjusted-amsa-years='),
+    'customer table audits Pinda/Naisargika Harana while keeping Amsa Table E raw '+date);
+  eq(lang.includes('data-amsa-total="adjusted-candidate"'),false,
+    'Amsa total cannot be displayed as adjusted before Table E method selection');
+  eq(lang.includes('data-amsa-total="blocked"'),true,
+    'Amsa total shows an explicit blocked marker until method selection is verified');
+  eq(lang.includes('data-amsa-total="raw-unadjusted"'),false,
+    'Amsa total is not mislabeled as merely a Harana issue when the real blocker is method selection');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
  }
  seen.add(ta);
