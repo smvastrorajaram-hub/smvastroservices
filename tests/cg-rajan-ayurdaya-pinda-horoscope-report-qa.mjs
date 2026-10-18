@@ -384,7 +384,7 @@ for(const [date,time] of births){
   ok(perNatalHtml.includes('data-ayurdaya-selection="unavailable"'),'natal report exposes a safe no-selection state '+date);
  }
  if((date==='2002-10-18'||date==='1989-10-18')&&perNatalSelection.selectedMethod==='amsa'){
-  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\\d+)" data-amsa-nazhigai="(\\d+)"/g)];
+  const remainderRows=[...perNatalHtml.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
   ok(remainderRows.some(m=>Number(m[1])>0||Number(m[2])>0),
    'when Amsa is actually selected, its output preserves computed days/nazhigai '+date);
  }
