@@ -71,7 +71,8 @@ ok(matchingDashaSource.includes('x.pratyantars||x.pratyantaras||x.antars')&&matc
 const matchingShadbalaStart=matchingReportSource.indexOf('function shadbala(c,ta){');
 const matchingShadbalaEnd=matchingReportSource.indexOf('function dasha(c,ta,ref){',matchingShadbalaStart);
 const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,matchingShadbalaEnd);
-ok(matchingShadbalaSource.includes('strengthUttaraKalamrita'),'Matching Shadbala uses the Uttara Kalamrita-only payload');
+ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
+ok(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),'Matching Shadbala displays the calculated component subtotal when certified total inputs are unavailable');
 ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
 ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes('Yuddha')&&!matchingShadbalaSource.includes('war'),
  'Matching Shadbala contains no indication/status or separate war column');
