@@ -6,8 +6,31 @@ import {cgRajanPindaGraha as pinda,
  cgRajanAmsaHaranaResearch as amsaHarana,
  cgRajanMeanThreeTraditionalTotals as exactMean,
  cgRajanCompareGrahas as all,
- cgRajanAyurdayaReportHtml as html}
+ cgRajanAyurdayaReportHtml as html,
+ cgRajanSelectAyurdayaMethod as selectMethod}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
+const makeSelectorChart=({sun=700,moon=600,mars=500,mercury=400,jupiter=300,venus=200,saturn=100,missing}={})=>
+ [['சூரியன்',sun],['சந்திரன்',moon],['செவ்வாய்',mars],['புதன்',mercury],
+  ['குரு',jupiter],['சுக்கிரன்',venus],['சனி',saturn]]
+ .map(([name,totalVirupa],index)=>({
+  name,longitude:index*30+1,bhava:index+1,
+  strength6:{available:name!==missing,components:{
+   sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0
+  },totalVirupa:name===missing?null:totalVirupa,classicalCertified:false}
+ }));
+const sunWins=selectMethod({planets:makeSelectorChart(),lagna:{longitude:0}});
+assert.equal(sunWins.selectedMethod,'pinda','Sun Shadbala selects Pindayurdaya');
+const moonWins=selectMethod({planets:makeSelectorChart({sun:600,moon:700}),lagna:{longitude:0}});
+assert.equal(moonWins.selectedMethod,'natural','Moon Shadbala selects Naisargika Ayurdaya');
+const lagnaLordWins=selectMethod({planets:makeSelectorChart({sun:500,moon:600,mars:700}),lagna:{longitude:0}});
+assert.equal(lagnaLordWins.selectedMethod,'amsa','Aries Lagna lord Mars Shadbala selects Amsa Ayurdaya');
+const strengthTie=selectMethod({planets:makeSelectorChart({sun:700,moon:700}),lagna:{longitude:0}});
+assert.equal(strengthTie.available,false,'equal reference strengths block selection instead of averaging');
+assert.equal(strengthTie.reasonCode,'shadbala-tie','equal Shadbala reports a method-selection tie');
+const missingStrength=selectMethod({planets:makeSelectorChart({missing:'சந்திரன்'}),lagna:{longitude:0}});
+assert.equal(missingStrength.reasonCode,'shadbala-unavailable','missing reference Shadbala blocks selection');
+const missingLagna=selectMethod({planets:makeSelectorChart(),lagna:{}});
+assert.equal(missingLagna.reasonCode,'lagna-unavailable','missing calculated Lagna blocks Lagna-lord selection');
 const close=(a,b,m)=>assert.ok(Math.abs(a-b)<1e-9,m+': '+a+' != '+b);
 let assertions=0;
 const yes=(a,m)=>{assert.ok(a,m);assertions++};
@@ -111,37 +134,51 @@ for(const [date,time] of [
   yes(Number.isFinite(x.amsaHarana.adjustedAmsaYearsCandidate),
     'numeric post-Harana Amsa candidate '+date+x.name);
  }
- for(const lang of [ta,en]){
-  eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
-  yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column has the required bilingual heading');
-  yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுர்த்தாயம்'),'mean row exists');
-  yes(lang.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.')||lang.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'),'customer report shows the actual-lifespan disclaimer');
+ const selected=selectMethod({planets:r.chart.planets,lagna:r.chart.lagna});
+ const methodLabels={
+  pinda:{ta:'பிண்ட ஆயுள்',en:'Pinda Ayurdaya'},
+  natural:{ta:'நைசர்க்கிக ஆயுள்',en:'Naisargika Ayurdaya'},
+  amsa:{ta:'அம்ச ஆயுர்த்தாயம்',en:'Amsa Ayurdaya'}
+ };
+ for(const [lang,code] of [[ta,'ta'],[en,'en']]){
+  if(!selected.available){
+   eq((lang.match(/<tr\b/g)||[]).length,0,'missing/tied Shadbala never chooses a fallback method '+date+' '+code);
+   eq(lang.includes('data-ayurdaya-selection="unavailable"'),true,'no-selection state is explicit '+date+' '+code);
+   for(const labels of Object.values(methodLabels))yes(!lang.includes(labels[code]),'no method is shown when Shadbala selection is unsafe '+date+' '+code);
+   yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'no mean is shown in no-selection state '+date+' '+code);
+   continue;
+  }
+  eq((lang.match(/<tr\b/g)||[]).length,9,'single method: header + seven grahas + total '+date+' '+code);
+  yes(lang.includes(methodLabels[selected.selectedMethod][code]),'selected method heading is shown '+date+' '+code);
+  eq(lang.includes('data-ayurdaya-selection="'+selected.selectedMethod+'"'),true,'the selected method is explicit in customer HTML '+date+' '+code);
+  eq(lang.includes('data-selected-reference-role="'+selected.referenceRole+'"'),true,'the correct Sun/Moon/Lagna-lord reference is recorded '+date+' '+code);
+  yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'no mean/average is shown '+date+' '+code);
+  const otherMethods=Object.keys(methodLabels).filter(method=>method!==selected.selectedMethod);
+  for(const other of otherMethods){
+   yes(!lang.includes(methodLabels[other][code]),'unchosen method hidden: '+other+' '+date+' '+code);
+  }
   const totalRow=lang.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
-  const averageRow=lang.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
-  yes((totalRow.match(/<strong>/g)||[]).length===3,'three Ayurdaya totals each bold in customer HTML');
-  yes(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
-    'average result is separate from average label in customer HTML');
-  const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
-  const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
-  const raw=(lang.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length;
-  eq(blocked+adjusted+raw,7,'each graha has adjusted, raw-unadjusted, or data-missing Amsa cell');
-  yes(raw===0||lang.includes('Raw: ')||lang.includes('மூல மதிப்பு: '),
-    'unresolved Amsa rows expose raw terms with an explicit label');
-  const pindaAdjusted=(lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length;
-  const pindaRaw=(lang.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length;
-  const naturalAdjusted=(lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length;
-  const naturalRaw=(lang.match(/data-natural-harana="raw-unadjusted"/g)||[]).length;
-  eq(pindaAdjusted+pindaRaw,7,
-    'Pinda report exposes seven adjusted or clearly raw rows '+date);
-  eq(naturalAdjusted+naturalRaw,7,
-    'Naisargika report exposes seven adjusted or clearly raw rows '+date);
-  yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-adjusted-amsa-years='),
-    'customer table includes auditable raw/deduction/adjusted values '+date);
-  eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
-    'Amsa total is shown only when every chart-specific Harana resolves');
-  eq(lang.includes('data-amsa-total="raw-unadjusted"'),result.totals.amsa.available!==true,
-    'Amsa total falls back to an explicitly unadjusted raw total when chart Harana is unresolved');
-  yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
+  eq((totalRow.match(/<strong>/g)||[]).length,1,'only the selected method total is emphasized '+date+' '+code);
+  eq(lang.includes('data-selected-total="adjusted-candidate"'),true,'selected seven-graha total is available for this fully evidenced chart '+date+' '+code);
+  eq(lang.includes('class="smv-ayurdaya-average"'),false,'no average row markup '+date+' '+code);
+  const selectedPrefix=selected.selectedMethod==='amsa'?'data-amsa-harana=':
+   selected.selectedMethod==='pinda'?'data-pinda-harana=':'data-natural-harana=';
+  eq((lang.match(new RegExp(selectedPrefix+'"(?:adjusted-candidate|raw-unadjusted)"','g'))||[]).length,7,
+   'exactly seven rows for the selected Ayurdaya method '+date+' '+code);
+  const unselectedPrefixes=['pinda','natural','amsa'].filter(method=>method!==selected.selectedMethod);
+  for(const method of unselectedPrefixes){
+   eq(lang.includes('data-'+method+'-harana='),false,'other graha calculation rows are omitted '+method+' '+date+' '+code);
+  }
+  yes(lang.includes(code==='ta'
+   ?'இவை பாரம்பரிய ஆயுர்த்தாய முறையின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'
+   :'This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.'),
+   'actual-lifespan disclaimer stays visible '+date+' '+code);
+  yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed selected-method rows '+date+' '+code);
+  if(selected.selectedMethod==='amsa'){
+   yes(lang.includes('data-adjusted-amsa-years='),'Amsa row preserves auditable Harana details '+date+' '+code);
+  }else{
+   yes(lang.includes('data-total-harana-nazhigai='),'Pinda/Naisargika row preserves auditable Harana details '+date+' '+code);
+  }
  }
  seen.add(ta);
 }

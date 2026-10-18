@@ -59,34 +59,41 @@ no(source.includes("<th>#</th><th>${p1Title('Arudha','ஆரூடம்')}"),
 const grahas=[['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
  ['செவ்வாய்',206.5],['புதன்',191+52/60],['குரு',28+17/60],
  ['சுக்கிரன்',204+32/60],['சனி',230+27/60]]
- .map(([name,longitude])=>({name,longitude}));
+ .map(([name,longitude],i)=>{
+  const totalVirupa=[700,600,500,400,300,200,100][i];
+  return {name,longitude,bhava:i+1,strength6:{
+   available:true,components:{sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0},
+   totalVirupa,classicalCertified:false
+  }};
+ });
+const lagna={longitude:5};
 for(const language of ['ta','en']){
- const html=cgRajanAyurdayaReportHtml({planets:grahas,language});
+ const html=cgRajanAyurdayaReportHtml({planets:grahas,lagna,language});
  yes(html.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   language+' semantic report section');
- exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
- yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுர்த்தாயம்'),language+' average row');
-  const totalRow=html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
-  const averageRow=html.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
-  exactly((totalRow.match(/<strong>/g)||[]).length,3,language+' three totals are bold');
-  yes(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
-   language+' average label and value use separate cells');
-  yes(averageRow.includes('class="smv-ayurdaya-average-basis"'),
-   language+' average basis/subtext has its own readable element');
-  yes(averageRow.includes('<strong>'),language+' average output is emphasized');
-  const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
-  yes(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' computed average result is non-empty');
-  no(html.includes('class="adv-wide smv-ayurdaya-table"'),language+' summary is not forced to a wide-table layout');
- yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
-     (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
-     language+' three-method columns');
+ exactly((html.match(/<tr\b/g)||[]).length,9,language+' one method: header + seven grahas + selected total');
+ const pindaLabel=language==='ta'?'பிண்ட ஆயுள்':'Pinda Ayurdaya';
+ const naturalLabel=language==='ta'?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya';
+ const amsaLabel=language==='ta'?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya';
+ yes(html.includes(pindaLabel)&&!html.includes(naturalLabel)&&!html.includes(amsaLabel),
+  language+' only strongest-Sun Pinda method is visible');
+ no(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுர்த்தாயம்'),
+  language+' customer report excludes mean/average');
+ const totalRow=html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+ exactly((totalRow.match(/<strong>/g)||[]).length,1,language+' selected total is the only bold total');
+ no(html.includes('data-natural-harana=')||html.includes('data-amsa-harana='),
+  language+' unselected natural/Amsa graha rows are not exposed');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
- exactly((html.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
-  language+' all seven raw Table-A graha terms remain visible with unadjusted labeling');
- yes(html.includes('data-amsa-total="raw-unadjusted"'),
-  language+' raw Table-A sum is visible but not presented as the final Harana-adjusted Amsa total');
+ exactly((html.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length,7,
+  language+' all seven selected Pinda terms are clearly marked raw when Harana evidence is missing');
+ no(html.includes('data-natural-harana=')||html.includes('data-amsa-harana='),
+  language+' unselected method rows are not leaked into customer HTML');
  yes(html.includes(language==='ta'?'மூல மதிப்பு: ':'Raw: '),
-  language+' raw Amsa values are explicitly labelled');
+  language+' unresolved selected-method values are explicitly labelled');
+ yes(html.includes('data-selected-total="raw-unadjusted"'),
+  language+' includes the selected method raw sum when Harana remains unresolved');
+ yes(html.includes(language==='ta'?'இது இறுதி ஆயுர்த்தாய மொத்தம் அல்ல':'this is not the final Ayurdaya total'),
+  language+' distinguishes the raw sum from the unverified final total');
   no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
   language+' no computed human death prediction');

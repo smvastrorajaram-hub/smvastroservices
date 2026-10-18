@@ -9,6 +9,7 @@ import chromium from '@sparticuz/chromium';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
+import {cgRajanSelectAyurdayaMethod as selectMethod} from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 const root=new URL('../public/horoscope/',import.meta.url),output=new URL('../marriage-print-smoke-output/',import.meta.url);
 const rootPath=resolve(fileURLToPath(root));
 await mkdir(output,{recursive:true});
@@ -37,6 +38,7 @@ for(const [name,date,time,lat,lon,zone,utc] of [
  Object.assign(r.chart,{advanced:r.advanced,birthName:name,birthDate:date,birthTime:time,birthPlace:name,birthLat:lat,birthLon:lon,birthTimezone:zone,birthOffsetMinutes:utc});
  people.push(r.chart);
 }
+const ayurdayaSelections=people.map(p=>selectMethod({planets:p.planets,lagna:p.lagna}));
 const browser=await puppeteer.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:true});
 const results=[];
 try{
@@ -53,20 +55,29 @@ try{
    'Six Bala components, final total, Rupa, required Rupa, rank and strength status render in Tamil: '+testName);
   assert.ok(html.includes('smv-shadbala-section'),'Shadbala heading and table are inside one print-break wrapper: '+testName);
   assert.ok(!html.includes('smv-shadbala-method-note'),'Matching print output omits the internal Shadbala validation note: '+testName);
-  assert.ok(html.includes('class="smv-ayurdaya-average-basis"'),'Ayurdaya method subtext is in the Matching print HTML: '+testName);
-  assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
-  const meanRows=[...html.matchAll(/<tr class="smv-ayurdaya-average">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
-  const totalRows=[...html.matchAll(/<tr class="smv-ayurdaya-totals">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
-  assert.ok(meanRows.length>=1&&meanRows.every(row=>row.includes('class="smv-ayurdaya-average-label"')&&row.includes('class="smv-ayurdaya-average-value"')&&row.includes('<strong>')),
-   'Printable Ayurdaya mean label/value cells remain separate: '+testName);
-  assert.ok(totalRows.length>=1&&totalRows.every(row=>(row.match(/<strong>/g)||[]).length===3),
-   'Printable Pinda/Naisargika/Amsa total values are bold: '+testName);
-  const appendixCount=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
-  assert.equal(appendixCount,2,'Both bride and groom Ayurdaya appendix sections are present: '+testName);
-  assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
+  const ayurdayaSections=[...html.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
+  assert.equal(ayurdayaSections.length,2,'Both bride and groom Ayurdaya appendices are present: '+testName);
+  const methodLabels={pinda:'பிண்ட ஆயுள்',natural:'நைசர்க்கிக ஆயுள்',amsa:'அம்ச ஆயுர்த்தாயம்'};
+  for(const [i,section] of ayurdayaSections.entries()){
+   const selection=ayurdayaSelections[i];
+   if(selection.available){
+    assert.ok(section.includes(methodLabels[selection.selectedMethod]),'Only the Shadbala-selected method is present for person '+(i+1)+': '+testName);
+    for(const [method,label] of Object.entries(methodLabels))if(method!==selection.selectedMethod)
+     assert.ok(!section.includes(label),'Unselected Ayurdaya method '+method+' is hidden: '+testName);
+    assert.equal((section.match(/<tr\b/g)||[]).length,9,'One selected method renders seven grahas plus total: '+testName);
+    assert.ok(section.includes('smv-ayurdaya-method-selection'),'Selected-method basis is visible: '+testName);
+    const totalRow=section.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+    assert.equal((totalRow.match(/<strong>/g)||[]).length,1,'One selected method total is emphasized: '+testName);
+   }else{
+    assert.equal((section.match(/<tr\b/g)||[]).length,0,'No arbitrary method is displayed on a Shadbala tie/missing value: '+testName);
+    assert.ok(section.includes('data-ayurdaya-selection="unavailable"'),'Missing/tied method selection is explicit: '+testName);
+   }
+  }
+  assert.ok(!html.includes('சராசரி ஆயுர்த்தாயம்')&&!html.includes('Average Ayurdaya')&&!html.includes('smv-ayurdaya-average-basis'),
+   'Matching HTML omits all competing-method averages: '+testName);
   assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
-  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261018-ayurdaya-planet-white-v247"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v249"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
+  const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="horoscope.css?v=20261019-ayurdaya-selected-total-v251"><link rel="stylesheet" href="chart-style.css"><link rel="stylesheet" href="marriage-basic-report.css?v=20261019-ayurdaya-selected-total-v251"><link rel="stylesheet" href="horoscope-readings.css"><link rel="stylesheet" href="smv-ui.css"><link rel="stylesheet" href="header-layout.css"><link rel="stylesheet" href="v358-result-layout.css"><link rel="stylesheet" href="v359-symmetric-gutters.css"><link rel="stylesheet" href="report-print.css" media="print"></head><body class="smv-v12-theme"><div id="smvMarriageMatching"><main class="mm-full-results mm-v281-results mm-v308-results" id="printReport">'+html+'</main></div></body></html>';
   await writeFile(fixture,document);
   await page.setViewport({width:360,height:800,deviceScaleFactor:1});
   await page.goto(new URL('__matching_print_smoke_temp.html',origin).href,{waitUntil:'load'});
@@ -75,9 +86,9 @@ try{
    const tables=[...document.querySelectorAll('.mm-base-table')];
    const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')];
    const ayurdayaHeader=ayurdayaTables[0]?.querySelector('thead th');
-   const ayurdayaAverage=ayurdayaTables[0]?.querySelector('tbody .smv-ayurdaya-average td');
-   const ayurdayaAverageStyle=ayurdayaAverage?{background:getComputedStyle(ayurdayaAverage).backgroundColor,color:getComputedStyle(ayurdayaAverage).color}:null;
-   const ayurdayaPlanet=ayurdayaTables[0]?.querySelector('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average) th');
+   const ayurdayaTotal=ayurdayaTables[0]?.querySelector('tbody .smv-ayurdaya-totals td');
+   const ayurdayaTotalStyle=ayurdayaTotal?{background:getComputedStyle(ayurdayaTotal).backgroundColor,color:getComputedStyle(ayurdayaTotal).color,weight:parseInt(getComputedStyle(ayurdayaTotal).fontWeight,10)||400}:null;
+   const ayurdayaPlanet=ayurdayaTables[0]?.querySelector('tbody tr:not(.smv-ayurdaya-totals) th');
    const ayurdayaHeaderStyle=ayurdayaHeader?{color:getComputedStyle(ayurdayaHeader).color,background:getComputedStyle(ayurdayaHeader).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaHeader).fontWeight,10)||400}:null;
    const ayurdayaPlanetStyle=ayurdayaPlanet?{text:ayurdayaPlanet.textContent.trim(),color:getComputedStyle(ayurdayaPlanet).color,background:getComputedStyle(ayurdayaPlanet).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaPlanet).fontWeight,10)||400}:null;
    const first=charts[0],groom=charts[4],rectangle=first?.getBoundingClientRect();
@@ -89,7 +100,7 @@ try{
    const extra=charts.map(c=>c.innerText).join(' ');
    const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
    return {
-    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,ayurdayaHeaderStyle,ayurdayaAverageStyle,ayurdayaPlanetStyle,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
+    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,ayurdayaHeaderStyle,ayurdayaTotalStyle,ayurdayaPlanetStyle,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
     rectWidth:rectangle?.width||0,
     firstCell:{left:cell0?.left-rectangle?.left,top:cell0?.top-rectangle?.top},
     lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
@@ -106,10 +117,12 @@ try{
   assert.equal(mobile.groomStyle,groomStyle,'Incorrect groom selected style: '+groomStyle);
   assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
-  assert.equal(mobile.ayurdayaTables,2,'Two partner Ayurdaya tables remain present on mobile: '+style);
-  assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(74, 53, 45)'&&mobile.ayurdayaHeaderStyle.background==='rgb(255, 247, 232)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the exact Shadbala header palette: '+style+' '+JSON.stringify(mobile.ayurdayaHeaderStyle));
-  assert.ok(mobile.ayurdayaAverageStyle&&mobile.ayurdayaAverageStyle.background==='rgb(255, 247, 232)','Matching Ayurdaya average row uses cream background: '+style);
-  assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are black bold on a pure-white cell: '+style);
+  assert.equal(mobile.ayurdayaTables,ayurdayaSelections.filter(s=>s.available).length,'Only Shadbala-selected Ayurdaya tables appear on mobile: '+style);
+  if(mobile.ayurdayaTables>0){
+   assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(74, 53, 45)'&&mobile.ayurdayaHeaderStyle.background==='rgb(255, 247, 232)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the exact Shadbala header palette: '+style+' '+JSON.stringify(mobile.ayurdayaHeaderStyle));
+   assert.ok(mobile.ayurdayaTotalStyle&&mobile.ayurdayaTotalStyle.background==='rgb(250, 242, 228)'&&mobile.ayurdayaTotalStyle.weight>=700,'Selected Ayurdaya total row uses the approved cream palette: '+style);
+   assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are black bold on a pure-white cell: '+style);
+  }
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
@@ -134,24 +147,25 @@ try{
   assert.ok(size>25000,'PDF is not empty: '+style);
   const print=await page.evaluate(async()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
-   const basis=[...document.querySelectorAll('.smv-ayurdaya-average-basis')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),fontWeight:parseInt(getComputedStyle(node).fontWeight,10)||400,backgroundColor:getComputedStyle(node).backgroundColor,visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
+   const methodSelections=[...document.querySelectorAll('.smv-ayurdaya-method-selection')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),fontWeight:parseInt(getComputedStyle(node).fontWeight,10)||400,backgroundColor:getComputedStyle(node).backgroundColor,visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
    const shadbalaSection=document.querySelector('.smv-shadbala-section');
    const shadbalaBreakInside=shadbalaSection?getComputedStyle(shadbalaSection).breakInside:'missing';
    await document.fonts.ready;
-   const tamilFonts=await document.fonts.load('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்');
-   const tamilFontReady=tamilFonts.some(face=>face.family.replace(/["']/g,'').includes('SMVTamil'))&&document.fonts.check('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்');
-   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,averageBasis:basis,tamilFontReady,shadbalaBreakInside};
+   const tamilFonts=await document.fonts.load('8pt SMVTamil','ஷட்பலத்தின் அடிப்படையில் தேர்வு');
+   const tamilFontReady=tamilFonts.some(face=>face.family.replace(/["']/g,'').includes('SMVTamil'))&&document.fonts.check('8pt SMVTamil','ஷட்பலத்தின் அடிப்படையில் தேர்வு');
+   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,methodSelections,tamilFontReady,shadbalaBreakInside};
   });
   assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
-  assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
-  assert.ok(print.averageBasis.length===2&&print.averageBasis.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700&&x.backgroundColor!=='rgb(255, 255, 255)'),
-    'Both Ayurdaya subtexts remain readable/visible in print: '+style);
+  assert.equal(print.ayurdayaTables,ayurdayaSelections.filter(s=>s.available).length,'Only chosen Ayurdaya method tables remain in print DOM: '+style);
+  const expectedMethodSelectionCount=ayurdayaSelections.filter(s=>s.available).length;
+  assert.ok(print.methodSelections.length===expectedMethodSelectionCount&&print.methodSelections.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700),
+    'The selected-method Shadbala explanation remains readable/visible in print: '+style+' '+JSON.stringify({expectedMethodSelectionCount,actual:print.methodSelections}));
   assert.equal(print.tamilFontReady,true,'Noto Tamil font is loaded for native PDF rendering: '+style);
   assert.equal(print.shadbalaBreakInside,'avoid','Shadbala heading and full table stay together in PDF: '+style);
   const printText=await page.evaluate(()=>document.querySelector('#printReport')?.innerText||'');
-  assert.ok(printText.includes('அந்தரம்')&&printText.includes('மொத்தம் (7 கிரகங்கள்)')&&printText.includes('சராசரி ஆயுர்த்தாயம்'), 'Native print DOM preserves Antaram and Ayurdaya total/mean: '+style);
+  assert.ok(printText.includes('அந்தரம்')&&(!ayurdayaSelections.some(s=>s.available)||printText.includes('மொத்தம் (7 கிரகங்கள்)'))&&!printText.includes('சராசரி ஆயுர்த்தாயம்')&&!printText.includes('Average Ayurdaya'), 'Native print DOM preserves Antaram and selected Ayurdaya total without a mean: '+style);
   results.push({style:testName,pdfBytes:size,mobile,print});
   await page.emulateMediaType('screen');
  }

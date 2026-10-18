@@ -35,24 +35,34 @@ const chart=[
  ['செவ்வாய்',206.5],['புதன்',191+52/60],
  ['குரு',28+17/60],['சுக்கிரன்',204+32/60],
  ['சனி',230+27/60]
-].map(([name,longitude])=>({name,longitude}));
+].map(([name,longitude],i)=>{
+ const totalVirupa=[700,600,500,400,300,200,100][i];
+ return {name,longitude,bhava:i+1,strength6:{
+  available:true,components:{sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0},
+  totalVirupa,classicalCertified:false
+ }};
+});
+const lagna={longitude:5};
 for(const language of ['ta','en']){
- const result=html({planets:chart,language});
+ const result=html({planets:chart,lagna,language});
  check(result.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   'Standalone printable section '+language);
  check(!result.includes('data-print-technical="1"'),
   'Do not mark as hidden appendix '+language);
  check(result.includes('data-smv-cg-rajan-ayurdaya="1"'),
   'Stable report section marker '+language);
- check((result.match(/<tr\b/g)||[]).length===10,
-  'Header + seven grahas + total + average rows '+language);
- check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('Amsa Ayurdaya'))||
-       (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுர்த்தாயம்')),
-  'Three-method table columns '+language);
- check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுர்த்தாயம்'),
-  'Three-total mean row '+language);
- check(result.includes('class="smv-ayurdaya-average-basis"'),
-  'Average-method subtext is a distinct visible element '+language);
+ check((result.match(/<tr\b/g)||[]).length===9,
+  'Header + seven grahas + selected-method total only '+language);
+ check((result.includes('Pinda Ayurdaya')&&!result.includes('Naisargika Ayurdaya')&&!result.includes('Amsa Ayurdaya'))||
+       (result.includes('பிண்ட ஆயுள்')&&!result.includes('நைசர்க்கிக ஆயுள்')&&!result.includes('அம்ச ஆயுர்த்தாயம்')),
+  'Only the Shadbala-selected method is present in print HTML '+language);
+ check(!result.includes('Average Ayurdaya')&&!result.includes('சராசரி ஆயுர்த்தாயம்')&&!result.includes('smv-ayurdaya-average-basis'),
+  'No competing-method average is emitted to saved/printed customers '+language);
+ check(result.includes('data-ayurdaya-selection="pinda"'),
+  'The strongest Sun selects Pinda Ayurdaya in this fixture '+language);
+ const totalRow=result.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
+ check((totalRow.match(/<strong>/g)||[]).length===1,
+  'Exactly one selected-method total cell is bold '+language);
  check(!result.includes('<script')&&!result.includes('onload='),
   'Safe snapshot HTML '+language);
 }
