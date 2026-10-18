@@ -255,6 +255,148 @@ function cgRajanAmsaChartHarana({planet,amsa,planets}={}){
   vargottama:rasi===null||d9===null?undefined:rasi===d9
  });
 }
+
+/**
+ * C.G. Rajan I printed pp.232–234, Gururodaya Harana.
+ * Convert the Lagna's rasi/bhaga/kala/vikala into years/months/days/nazhigai.
+ * If the closest graha in Lagna is malefic, deduct this Lagna term from
+ * that graha's Pinda/Naisargika contribution; a source-defined benefic aspect
+ * halves this deduction. This does NOT apply to Amsa (printed p.232).
+ */
+function cgRajanLagnaContributionNazhigai(longitude){
+ if(!finite(longitude))throw new TypeError('Verified Lagna longitude required for Gururodaya Harana');
+ const x=norm(longitude);
+ let rasi=Math.floor(x/30);
+ const within=x-rasi*30;
+ let bhaga=Math.floor(within+1e-10);
+ let minute=Math.floor(((within-bhaga)*60)+1e-8);
+ let second=Math.round((((within-bhaga)*60)-minute)*60);
+ if(second>=60){second=0;minute++;}
+ if(minute>=60){minute=0;bhaga++;}
+ if(bhaga>=30){bhaga=0;rasi++;}
+ return rasi*NY+bhaga*NM+minute*ND+second;
+}
+const RAJAN_GURU_ASPECT_HOUSES=Object.freeze({
+ 'சந்திரன்':[7],'புதன்':[7],'சுக்கிரன்':[7],'குரு':[5,7,9]
+});
+/**
+ * Resolve only the p.233 Lagna rule from explicit chart facts. Ambiguous
+ * nearest-graha ties and absent Lagna longitude fail closed instead of
+ * manufacturing a Harana. Planetary aspect convention follows p.233.
+ */
+export function cgRajanGururodayaHaranaResearch({planets=[],lagna}={}){
+ if(!Array.isArray(planets))throw new TypeError('chart planets required');
+ const inLagna=planets.filter(p=>SPEC[p?.name]&&p?.bhava===1);
+ if(!inLagna.length)return Object.freeze({
+  resolved:true,applied:false,targetPlanet:null,lossNazhigai:0,
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.232–233'
+ });
+ const stateRows=inLagna.map(p=>({
+  row:p,benefic:rajanAmsaBeneficState(p,planets),
+  distance:finite(p?.longitude)&&finite(lagna?.longitude)
+   ?Math.min(norm(p.longitude-lagna.longitude),360-norm(p.longitude-lagna.longitude))
+   :null
+ }));
+ if(stateRows.some(p=>typeof p.benefic!=='boolean'))
+  return Object.freeze({resolved:false,applied:false,targetPlanet:null,lossNazhigai:null,
+   blockers:['Gururodaya Harana needs verified benefic/malefic classification for every Lagna occupant'],
+   source:'C.G. Rajan Jathaka Kanitham I printed pp.232–233'});
+ if(!stateRows.some(p=>p.benefic===false))return Object.freeze({
+  resolved:true,applied:false,targetPlanet:null,lossNazhigai:0,
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.232–233'
+ });
+ if(!finite(lagna?.longitude)||stateRows.some(p=>p.distance===null))
+  return Object.freeze({resolved:false,applied:false,targetPlanet:null,lossNazhigai:null,
+   blockers:['Gururodaya Harana needs the true Lagna longitude and each Lagna-occupant longitude'],
+   source:'C.G. Rajan Jathaka Kanitham I printed pp.232–233'});
+ const ranked=[...stateRows].sort((a,b)=>a.distance-b.distance);
+ if(ranked.length>1&&Math.abs(ranked[0].distance-ranked[1].distance)<1e-8)
+  return Object.freeze({resolved:false,applied:false,targetPlanet:null,lossNazhigai:null,
+   blockers:['Gururodaya Harana cannot choose between Lagna occupants tied in angular proximity'],
+   source:'C.G. Rajan Jathaka Kanitham I printed p.233'});
+ const closest=ranked[0];
+ if(closest.benefic)return Object.freeze({
+  resolved:true,applied:false,targetPlanet:null,closestPlanet:closest.row.name,
+  closestIsBenefic:true,lossNazhigai:0,
+  source:'C.G. Rajan Jathaka Kanitham I printed p.233'
+ });
+ const beneficAspecting=planets.some(p=>{
+  if(!SPEC[p?.name]||rajanAmsaBeneficState(p,planets)!==true)return false;
+  const permitted=RAJAN_GURU_ASPECT_HOUSES[p.name]||[];
+  return permitted.includes(p?.bhava);
+ });
+ const lagnaContributionNazhigai=cgRajanLagnaContributionNazhigai(lagna.longitude);
+ return Object.freeze({
+  resolved:true,applied:true,targetPlanet:closest.row.name,
+  closestPlanet:closest.row.name,closestIsBenefic:false,
+  beneficAspecting,lagnaContributionNazhigai,
+  lossNazhigai:lagnaContributionNazhigai*(beneficAspecting?0.5:1),
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.232–233'
+ });
+}
+/**
+ * Shared Pinda/Naisargika reductions. Rajan pp.232–234 says to total the
+ * applicable reductions and subtract them from the original graha term.
+ * Enemy-sign/combustion precedence and Chakrapada fractions are reused from
+ * the separately tested Amsa evidence (without applying Amsa's multiplier).
+ */
+export function cgRajanPindaNaisargikaHaranaResearch({
+ planet,rawNazhigai,amsaHarana,gururodayaHarana
+}={}){
+ if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
+ const blockers=[];
+ if(!finite(rawNazhigai)||rawNazhigai<0)
+  blockers.push('Missing finite nonnegative unrounded Pinda/Naisargika term');
+ if(amsaHarana?.resolved!==true)
+  blockers.push('Common chart-specific condition/Chakrapada evidence is unresolved');
+ if(gururodayaHarana?.resolved!==true)
+  blockers.push(...(gururodayaHarana?.blockers||['Gururodaya Harana evidence is unresolved']));
+ const fractions=[
+  amsaHarana?.enemySignLossFraction,amsaHarana?.combustionLossFraction,
+  amsaHarana?.chakrapadaLossFraction
+ ];
+ if(fractions.some(v=>!finite(v)||v<0||v>1))
+  blockers.push('Missing verified condition/Chakrapada Harana fractions');
+ if(blockers.length)return Object.freeze({
+  planet,resolved:false,adjustedNazhigaiCandidate:null,
+  traditionalUnitsCandidate:null,blockers,
+  finalAyurdayaCertified:false,
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.231–234'
+ });
+ const conditionHaranaFraction=amsaHarana.enemySignLossFraction+
+  amsaHarana.combustionLossFraction;
+ const chakrapadaHaranaFraction=amsaHarana.chakrapadaLossFraction;
+ const conditionHaranaNazhigai=rawNazhigai*conditionHaranaFraction;
+ const chakrapadaHaranaNazhigai=rawNazhigai*chakrapadaHaranaFraction;
+ const gururodayaHaranaNazhigai=gururodayaHarana.targetPlanet===planet
+  ?gururodayaHarana.lossNazhigai:0;
+ const totalHaranaNazhigai=conditionHaranaNazhigai+
+  chakrapadaHaranaNazhigai+gururodayaHaranaNazhigai;
+ const adjustedNazhigaiCandidate=rawNazhigai-totalHaranaNazhigai;
+ if(adjustedNazhigaiCandidate< -1e-7)return Object.freeze({
+  planet,resolved:false,rawNazhigai,conditionHaranaFraction,
+  chakrapadaHaranaFraction,conditionHaranaNazhigai,
+  chakrapadaHaranaNazhigai,gururodayaHaranaNazhigai,totalHaranaNazhigai,
+  adjustedNazhigaiCandidate:null,traditionalUnitsCandidate:null,
+  blockers:['Source Harana deductions exceed the raw graha term; negative contribution is not assumed'],
+  finalAyurdayaCertified:false,
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.231–234'
+ });
+ const adjusted=Math.max(0,adjustedNazhigaiCandidate);
+ return Object.freeze({
+  planet,resolved:true,rawNazhigai,
+  enemySignLossFraction:amsaHarana.enemySignLossFraction,
+  combustionLossFraction:amsaHarana.combustionLossFraction,
+  conditionHaranaFraction,chakrapadaHaranaFraction,
+  conditionHaranaNazhigai,chakrapadaHaranaNazhigai,
+  gururodayaHaranaNazhigai,totalHaranaNazhigai,
+  adjustedNazhigaiCandidate:adjusted,
+  traditionalUnitsCandidate:units(Math.round(adjusted)),
+  blockers:[],finalAyurdayaCertified:false,
+  source:'C.G. Rajan Jathaka Kanitham I printed pp.231–234'
+ });
+}
+
 const traditionalNazhigai=value=>{
  const u=value||{};
  return Number(u.years||0)*NY+Number(u.months||0)*NM+
@@ -290,6 +432,7 @@ export function cgRajanPindaGraha({planet,trueLongitude}={}){
   planet,trueLongitude:norm(trueLongitude),exaltationLongitude:v.exaltation,
   retainedArcDegrees:arc,maximumPindaYears:v.maximumYears,
   symbolicComponentYears:arc/360*v.maximumYears,
+  exactPreRoundingNazhigai:nazhigaiExact,
   traditionalUnits:units(Math.round(nazhigaiExact)),
   researchOnly:true,independentBirthLongitudeCertified:false,
   totalHumanLifetime:null,deathAgeOrDate:null,
@@ -299,35 +442,62 @@ export function cgRajanPindaGraha({planet,trueLongitude}={}){
 /** No birth-longitude recomputation: uses the already-produced chart
  * and never writes back into live Swiss graha, Shadbala or prediction.
  */
-export function cgRajanCompareGrahas({planets=[]}={}){
+export function cgRajanCompareGrahas({planets=[],lagna}={}){
  if(!Array.isArray(planets))throw new TypeError('chart planets required');
  const native=cgRajanSevenNaturalResearch({planets});
+ const gururodayaHarana=cgRajanGururodayaHaranaResearch({planets,lagna});
  const entries=names.map(name=>{
   const p=planets.find(x=>x.name===name);
   const pinda=cgRajanPindaGraha({planet:name,trueLongitude:p?.longitude});
+  const natural=native.byPlanet[name];
   const amsa=cgRajanAmsaAyurdayaGraha({planet:name,trueLongitude:p?.longitude});
   const amsaHarana=cgRajanAmsaChartHarana({planet:name,amsa,planets});
-  return Object.freeze({name,english:SPEC[name].en,
-   natural:native.byPlanet[name],pinda,amsa,amsaHarana});
+  const pindaHarana=cgRajanPindaNaisargikaHaranaResearch({
+   planet:name,rawNazhigai:pinda.exactPreRoundingNazhigai,
+   amsaHarana,gururodayaHarana
+  });
+  const naturalHarana=cgRajanPindaNaisargikaHaranaResearch({
+   planet:name,rawNazhigai:natural.exactPreRoundingNazhigai,
+   amsaHarana,gururodayaHarana
+  });
+  return Object.freeze({name,english:SPEC[name].en,natural,pinda,amsa,amsaHarana,
+   pindaHarana,naturalHarana});
  });
  const nadis=u=>traditionalNazhigai(u);
  const sumTerms=key=>entries.reduce((n,e)=>n+nadis(e[key]?.traditionalUnits),0);
- const pindaTotalNadis=sumTerms('pinda');
- const naturalTotalNadis=sumTerms('natural');
- // Keep raw Table-A arithmetic internally auditable, but never use it as the
- // displayed Amsa result or as a substitute for a Harana-adjusted total.
+ const rawPindaTotalNadis=sumTerms('pinda');
+ const rawNaturalTotalNadis=sumTerms('natural');
  const rawAmsaTableATotalNadis=sumTerms('amsa');
+ const allPindaHaranaResolved=entries.every(e=>e.pindaHarana?.resolved===true&&
+  e.pindaHarana.traditionalUnitsCandidate);
+ const allNaturalHaranaResolved=entries.every(e=>e.naturalHarana?.resolved===true&&
+  e.naturalHarana.traditionalUnitsCandidate);
  const allAmsaHaranaResolved=entries.every(e=>e.amsaHarana?.resolved===true&&
   e.amsaHarana.traditionalUnitsCandidate);
+ const pindaTotalNadis=allPindaHaranaResolved
+  ?entries.reduce((n,e)=>n+nadis(e.pindaHarana.traditionalUnitsCandidate),0):null;
+ const naturalTotalNadis=allNaturalHaranaResolved
+  ?entries.reduce((n,e)=>n+nadis(e.naturalHarana.traditionalUnitsCandidate),0):null;
  const amsaTotalNadis=allAmsaHaranaResolved
   ?entries.reduce((n,e)=>n+nadis(e.amsaHarana.traditionalUnitsCandidate),0):null;
- const averageOfThree=allAmsaHaranaResolved?cgRajanMeanThreeTraditionalTotals({
-  pindaTotalNazhigai:pindaTotalNadis,naturalTotalNazhigai:naturalTotalNadis,
-  amsaTotalNazhigai:amsaTotalNadis
- }):null;
+ const averageOfThree=allPindaHaranaResolved&&allNaturalHaranaResolved&&allAmsaHaranaResolved
+  ?cgRajanMeanThreeTraditionalTotals({
+    pindaTotalNazhigai:pindaTotalNadis,naturalTotalNazhigai:naturalTotalNadis,
+    amsaTotalNazhigai:amsaTotalNadis
+   }):null;
  const totals=Object.freeze({
-  pinda:Object.freeze({traditionalUnits:units(pindaTotalNadis),totalNazhigai:pindaTotalNadis}),
-  natural:Object.freeze({traditionalUnits:units(naturalTotalNadis),totalNazhigai:naturalTotalNadis}),
+  pinda:Object.freeze(allPindaHaranaResolved
+   ?{traditionalUnits:units(pindaTotalNadis),totalNazhigai:pindaTotalNadis,available:true}
+   :{traditionalUnits:null,totalNazhigai:null,available:false,
+     blockedGrahas:entries.filter(e=>!e.pindaHarana?.resolved).map(e=>e.name)}),
+  natural:Object.freeze(allNaturalHaranaResolved
+   ?{traditionalUnits:units(naturalTotalNadis),totalNazhigai:naturalTotalNadis,available:true}
+   :{traditionalUnits:null,totalNazhigai:null,available:false,
+     blockedGrahas:entries.filter(e=>!e.naturalHarana?.resolved).map(e=>e.name)}),
+  pindaRaw:Object.freeze({traditionalUnits:units(rawPindaTotalNadis),
+   totalNazhigai:rawPindaTotalNadis,displayedAsFinal:false}),
+  naturalRaw:Object.freeze({traditionalUnits:units(rawNaturalTotalNadis),
+   totalNazhigai:rawNaturalTotalNadis,displayedAsFinal:false}),
   amsa:Object.freeze(allAmsaHaranaResolved
    ?{traditionalUnits:units(amsaTotalNadis),totalNazhigai:amsaTotalNadis,available:true}
    :{traditionalUnits:null,totalNazhigai:null,available:false,
@@ -337,9 +507,9 @@ export function cgRajanCompareGrahas({planets=[]}={}){
   averageOfThreeTotals:averageOfThree
  });
  return Object.freeze({entries,totals,
-  averagingBasis:allAmsaHaranaResolved
-   ?'Exact arithmetic mean of Pinda, Naisargika and post-Harana Amsa candidate totals divided by three; method selection remains provisional'
-   :'Withheld because one or more chart-specific Amsa Harana inputs are unresolved; raw Table-A Amsa is not substituted',
+  averagingBasis:averageOfThree
+   ?'Exact arithmetic mean of the three Harana-adjusted research candidate totals divided by three; method selection remains provisional'
+   :'Withheld until all seven Pinda, Naisargika and post-Harana Amsa rows resolve; raw terms are not substituted',
   finalAyurdayaCertified:false,personalLifespanCertified:false,
   methods:Object.freeze({
    pindayurdaya:'seven component arithmetic independently tested',
@@ -380,15 +550,21 @@ export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
   return `<td data-amsa-harana="adjusted-candidate" title="${esc(ta?'மூல அட்டவணை A − தேர்ந்தெடுத்த ஹரணம்; பின்னர் அதிகபட்சப் பொருந்தும் multiplier':'Table A raw term less selected Harana, then maximum applicable multiplier')}">${esc(fmt({traditionalUnits:v.amsaHarana.traditionalUnitsCandidate},ta))}</td>`;
  };
  const fmtMaybe=(value,ta)=>value?.traditionalUnits?fmt(value,ta):'—';
- const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th><td>${esc(fmt(v.pinda,ta))}</td><td>${esc(fmt(v.natural,ta))}</td>${amsaCell(v)}</tr>`).join('');
- const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th><td>${esc(fmt(research.totals.pinda,ta))}</td><td>${esc(fmt(research.totals.natural,ta))}</td><td data-amsa-total="${research.totals.amsa.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.amsa,ta))}</td></tr>`;
+ const commonCell=(method,v)=>{
+  const result=v[method+'Harana'];
+  if(result?.resolved!==true||!result.traditionalUnitsCandidate)
+   return `<td data-${method}-harana="blocked" title="${esc((result?.blockers||[]).join('; '))}">—</td>`;
+  return `<td data-${method}-harana="adjusted-candidate" title="${esc(ta?'மூலப் பங்கு − சத்துரு/அஸ்தங்கத/சக்கிரபாத/பொருந்தும் குரூரோதய ஹரணம்':'Raw term less enemy-sign/combustion/Chakrapada/applicable Gururodaya Harana')}">${esc(fmt({traditionalUnits:result.traditionalUnitsCandidate},ta))}</td>`;
+ };
+ const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th>${commonCell('pinda',v)}${commonCell('natural',v)}${amsaCell(v)}</tr>`).join('');
+ const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th><td data-pinda-total="${research.totals.pinda.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.pinda,ta))}</td><td data-natural-total="${research.totals.natural.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.natural,ta))}</td><td data-amsa-total="${research.totals.amsa.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.amsa,ta))}</td></tr>`;
  const averageText=research.totals.averageOfThreeTotals
   ?esc(fmt(research.totals.averageOfThreeTotals,ta))
-  :esc(ta?'— (அம்ச ஹரணத் தகவல் முழுமையில்லை)':'— (Amsa Harana inputs incomplete)');
+  :esc(ta?'— (மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை)':'— (Harana evidence incomplete for one or more methods)');
  const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுள் — மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3 (இடைநிலை கணிதச் சராசரி)':'Average Ayurdaya — sum of the three totals ÷ 3 (provisional arithmetic mean)'}</span> <strong>${averageText}</strong></th></tr>`;
  const note=ta?
- 'அம்ச ஆயுள் பத்தியில் மூல அட்டவணை A மதிப்பை இறுதி ஹரண முடிவாகக் காட்டவில்லை. கிரக உறவு, அஸ்தங்கதம், பாவம், Navamsa/Drekkana/Vargottama ஆகியவற்றிலிருந்து கிடைக்கும் தரவுகளைப் பயன்படுத்தி ஹரண candidate கணக்கிடப்படுகிறது. பல கிரகங்கள் ஒரே சக்கிரபாதப் பாவத்தில் இருந்தால் தற்போதைய strength3 மதிப்பின் அடிப்படையில் அதிக வலிமை கொண்ட கிரகம் ஆய்வு-வேட்பாளராகத் தேர்வு செய்யப்படுகிறது; அந்த strength3 மதிப்புகள் சுயாதீனமாகச் சான்றளிக்கப்பட்ட Shadbala அல்ல. முழுமையான அச்சுப் புத்தக worked-example மற்றும் Lagna-வலிமை முறைத் தேர்வு இன்னும் சான்றளிக்கப்படாததால், இவை இடைக்காலக் கணித ஆய்வு மதிப்புகள் மட்டுமே; இறுதி ஆயுள் உறுதியோ மரண வயது/நாள்கணிப்போ அல்ல; இது அறிவியல் அல்லது மருத்துவ ஆயுள் கணிப்பும் அல்ல.':
- 'The Amsa column does not present raw Table-A values as final Harana results. It calculates research candidates from chart relationship, combustion, house, Navamsa/Drekkana/Vargottama and Chakrapada inputs. When multiple grahas occupy a Chakrapada house, the highest current strength3 score selects a research candidate; those scores are not independently certified Shadbala. The complete printed Amsa worked example and Lagna-strength method-selection rule are not yet certified, so these remain provisional arithmetic candidates, not a prediction of lifespan, death age or death date.';
+ 'பிண்ட மற்றும் நைசர்க்கிக முறைகளில் நூலின் சத்துரு-க்ஷேத்திரம்/அஸ்தங்கத முன்னுரிமை, சக்கிரபாத ஹரணங்கள் பயன்படுத்தப்படுகின்றன; தேவையான லக்னத் தகவல் உறுதியாக இருந்தால் பிண்ட/நைசர்க்கிகத்தில் மட்டும் குரூரோதய ஹரணமும் சேர்க்கப்படுகிறது. அம்ச முறையில் அட்டவணை A, பொருந்தும் ஹரணம், சக்கிரபாதம், பின்னர் மிக வலுவான பெருக்கி என்ற வரிசை பயன்படுத்தப்படுகிறது. ஒரே பாவத்தில் பல கிரகங்கள் இருந்தால் தற்போதைய strength3 மதிப்பின் அடிப்படையில் இடைக்காலத் தேர்வு செய்யப்படுகிறது; அது சுயாதீனமாகச் சான்றளிக்கப்பட்ட Shadbala அல்ல. தேவையான ஜாதகத் தகவல் இல்லையெனில் அல்லது ஹரணத்திற்குப் பின் எதிர்மறை மதிப்பு வந்தால் மூல மதிப்பை இறுதி பலனாகக் காட்டாமல் அந்தப் பத்தி/மொத்தம் மறைக்கப்படும். முறைத் தேர்வும் நூலில் உள்ள மொத்தக் கூட்டல் முரண்பாடும் இன்னும் முழுமையாகத் தீர்க்கப்படவில்லை; இவை ஆய்வு மதிப்புகள் மட்டுமே, ஆயுள் அல்லது மரண வயது/நாள் கணிப்பு அல்ல.':
+ 'Pinda and Naisargika use the book's common enemy-sign/combustion precedence and Chakrapada deductions; Pinda/Naisargika alone also apply the p.233 Gururodaya rule when the required Lagna evidence resolves. Amsa uses Table A, the selected condition Harana, Chakrapada and the strongest applicable multiplier in the printed order. Multiple Chakrapada occupants are selected provisionally from the current strength3 scores, which are not independently certified Shadbala. If required chart facts or a nonnegative post-Harana term cannot be resolved, the affected cell/total is withheld rather than replaced by an unadjusted raw value. Method selection and the book's printed-total discrepancy remain unreconciled; these are research candidates, not predictions of lifespan, death age or death date.';
  return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
 
 }
