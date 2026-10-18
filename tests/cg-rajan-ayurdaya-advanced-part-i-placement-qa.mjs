@@ -63,7 +63,7 @@ for(const language of ['ta','en']){
  yes(html.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   language+' semantic report section');
  exactly((html.match(/<tr\b/g)||[]).length,10,language+' 7 rows + header + total + average');
- yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுள்'),language+' provisional average row');
+ yes(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுர்த்தாயம்'),language+' average row');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');
