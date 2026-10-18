@@ -260,7 +260,7 @@ ok(shadbalaUi.includes('💪 ஷட்பலம் (Uttara Kalamrita)'),'primary
 ok(shadbalaUi.includes('strengthUttaraKalamrita')&&shadbalaUi.includes('முழு கணக்கு நிலுவை'),
  'primary Shadbala reads UK components and withholds incomplete totals');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
-ok(shadbalaUi.includes('சேஷ்டா உள்ளீடுகள்')&&shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),
+ok(shadbalaUi.includes('Cheshta உள்ளீடுகள்')&&shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),
  'primary Shadbala explains the unresolved source input');
 const analysisShadbalaStart=src.indexOf('const shadbalaRows=caPlanets.filter');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
