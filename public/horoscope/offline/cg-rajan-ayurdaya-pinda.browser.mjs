@@ -620,7 +620,7 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  });
  const averageLabel=correctedMean
   ?(ta?'சராசரி ஆயுர்த்தாயம் (மூன்று ஹரணம்-திருத்திய மொத்தங்களின் கூட்டுத்தொகை ÷ 3)':'Average Ayurdaya (sum of three Harana-adjusted totals ÷ 3)')
-  :(ta?'மூலக் கணக்கீட்டு சராசரி (ஹரணக் கழிவுகளுக்கு முன்)':'Raw-term mean (before Harana reductions)');
+  :(ta?'சராசரி ஆயுர்த்தாயம் (மூல மதிப்புகளின் சராசரி; ஹரணக் கழிவுகளுக்கு முன்)':'Average Ayurdaya — Raw-term mean (before Harana reductions)');
  const averageText=correctedMean?fmt(correctedMean,ta):rawMean?rawDisplay(rawMean.traditionalUnits,ta):(ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable');
  const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${averageLabel}</span> <strong>${esc(averageText)}</strong></th></tr>`;
  return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
