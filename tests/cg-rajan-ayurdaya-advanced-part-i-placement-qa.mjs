@@ -75,16 +75,19 @@ for(const language of ['ta','en']){
    language+' average basis/subtext has its own readable element');
   yes(averageRow.includes('<strong>'),language+' average output is emphasized');
   const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
-  yes(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' computed average result is non-empty');
+  yes(averageValue.trim().length>0&&/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' average is withheld until Table E method selection is verified');
+  yes(averageRow.includes('Mean withheld until Amsa Table E selection')||averageRow.includes('அம்ச அட்டவணை E முறைத் தேர்வு'),language+' average basis explains the blocked method-selection gate');
   no(html.includes('class="adv-wide smv-ayurdaya-table"'),language+' summary is not forced to a wide-table layout');
  yes((html.includes('Pinda Ayurdaya')&&html.includes('Naisargika Ayurdaya')&&html.includes('Amsa Ayurdaya'))||
      (html.includes('பிண்ட ஆயுள்')&&html.includes('நைசர்க்கிக ஆயுள்')&&html.includes('அம்ச ஆயுர்த்தாயம்')),
      language+' three-method columns');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
  exactly((html.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
-  language+' all seven raw Table-A graha terms remain visible with unadjusted labeling');
- yes(html.includes('data-amsa-total="raw-unadjusted"'),
-  language+' raw Table-A sum is visible but not presented as the final Harana-adjusted Amsa total');
+  language+' all seven raw Table-E graha terms remain visible with unadjusted labeling');
+ yes(html.includes('data-amsa-total="blocked"'),
+  language+' Amsa total is blocked while Table E method selection remains unverified');
+  yes(html.includes('Amsa Table E is conditional')||html.includes('அம்ச அட்டவணை E நிபந்தனைக்குட்பட்டது'),
+  language+' report explains the Table E condition');
  yes(html.includes(language==='ta'?'மூல மதிப்பு: ':'Raw: '),
   language+' raw Amsa values are explicitly labelled');
   no(/NaN|undefined/.test(html),language+' arithmetic valid');
