@@ -4,6 +4,7 @@
 // The project must provide its own licensed ephemeris data in ./ephe or via
 // SWISSEPH_EPHE_PATH. No ephemeris binaries are bundled in this patch.
 const swe = require('sweph');
+const {calculateBVRamanShadbala}=require('./bv-raman-shadbala.cjs');
 const { constants: C } = swe;
 const path = require('path');
 const fs = require('fs');
@@ -449,46 +450,42 @@ function motionClassical(planet, speed, state){
   if(ratio<1.6) return 45;
   return 30;
 }
-function phase3Strength(planet, chartPlanets, jdUt, jdEt, bhavas, rasiPositions, weekday, declinations, calcFlags, solarContext=null){
-  const p=chartPlanets.find(x=>x.name===planet); if(!p) return null;
-  const state=p.strength||{};
-  const sth=sthanaClassical(planet,p.longitude,p.bhava,rasiPositions);
-  const dig=digBalaClassical(planet,p.longitude,bhavas);
-  const solarHour=localSolarHour(jdUt,0); // Longitude correction is injected below by caller when available.
-  const sun=chartPlanets.find(x=>x.name==='சூரியன்'), moon=chartPlanets.find(x=>x.name==='சந்திரன்');
-  const sh=Number(p._solarHour??solarHour);
-  const nat=natonnatha(planet,sh);
-  const pak=pakshaBala(planet,sun.longitude,moon.longitude,chartPlanets);
-  const tri=solarContext?(solarContext.tribhagaLord===planet||planet==='குரு'?60:0):tribhagaBala(planet,sh);
-  const hLord=solarContext?.horaLord??horaLord(sh,weekday);
-  const hora=hLord===planet?60:0;
-  const vara=VARA_LORDS[weekday]===planet?45:0;
-  const masaLord=solarContext?.masaLord??SIGN_LORDS[Math.floor(sun.longitude/30)];
-  const masa=masaLord===planet?30:0;
-  const abda=solarContext?.abdaLord===planet?15:0;
-  const ayana=ayanaBala(declinations[planet],planet);
-  const kala={natonnatha:nat,paksha:pak,tribhaga:tri,abda,masa,vara,hora,ayana,yuddha:0};
-  kala.total=Object.values(kala).reduce((a,b)=>a+b,0);
-  const cheshta=planet==='சூரியன்'?ayana:planet==='சந்திரன்'?pak:motionClassical(planet,p.speed,state);
-  const naisargika=SHADBALA_NATURAL[planet];
-  const drik=drikBalaClassical(planet,chartPlanets);
-  const total=sth.total+dig+kala.total+cheshta+naisargika+drik;
-  const req=SHADBALA_REQUIRED[planet];
-  return {available:true,classicalCertified:false,provisional:true,limitations:['Sunrise from approximate geometric model','Yuddha Bala not calculated','Remaining Drig and five-planet Cheshta require numeric textbook verification'],method:'Partial Parashari Shadbala Phase 3; not fully certified',unit:'virupa',components:{sthana:{...sth,total:Number(sth.total.toFixed(3))},dig:Number(dig.toFixed(3)),kala:Object.fromEntries(Object.entries(kala).map(([k,v])=>[k,Number(v.toFixed(3))])),cheshta:Number(cheshta.toFixed(3)),naisargika:Number(naisargika.toFixed(3)),drik:Number(drik.toFixed(3))},totalVirupa:Number(total.toFixed(3)),totalRupa:Number((total/60).toFixed(3)),requiredVirupa:req,ratio:Number((total/req).toFixed(3)),isStrong:total>=req};
-}
-function enrichPhase3(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
-  const rasiPositions=Object.fromEntries(planets.filter(p=>SHADBALA_REQUIRED[p.name]).map(p=>[p.name,Math.floor(p.longitude/30)]));
-  const temporal=birthInput?kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes):null;
+function enrichStrength6(planets,jdUt,jdEt,bhavas,longitude,flags,birthInput=null){
+  const temporal=birthInput
+    ?kalaDayFromSunrise(birthInput.date,birthInput.time,birthInput.lat,birthInput.lon,birthInput.utcOffsetMinutes)
+    :null;
   const weekday=temporal?.weekday??((Math.floor(jdUt+1.5)%7)+7)%7;
-  const declinations={};
   const eqFlags=(flags & ~(C.SEFLG_SIDEREAL||0)) | (C.SEFLG_EQUATORIAL||0);
+  const declinations={};
   for(const p of planets){
-    if(!SHADBALA_REQUIRED[p.name]) continue;
-    try{ const r=swe.calc(jdEt,PLANETS.find(x=>x[0]===p.name)?.[1]??C.SE_SUN,eqFlags); declinations[p.name]=Array.isArray(r?.data)&&Number.isFinite(Number(r.data[1]))?Number(r.data[1]):null; }catch{ declinations[p.name]=null; }
+    if(!SHADBALA_REQUIRED[p.name])continue;
+    try{
+      const id=PLANETS.find(x=>x[0]===p.name)?.[1]??C.SE_SUN;
+      const r=swe.calc(jdEt,id,eqFlags);
+      declinations[p.name]=Array.isArray(r?.data)&&Number.isFinite(Number(r.data[1]))?Number(r.data[1]):null;
+    }catch{declinations[p.name]=null;}
   }
   const solarHour=localSolarHour(jdUt,longitude);
   const withHour=planets.map(p=>({...p,_solarHour:solarHour}));
-  return withHour.map(p=>({...p,strength3:SHADBALA_REQUIRED[p.name]?phase3Strength(p.name,withHour,jdUt,jdEt,bhavas,rasiPositions,weekday,declinations,flags,temporal):{available:false,reason:'Rahu/Ketu excluded from classical seven-graha Shadbala'}}));
+  let result=null,failure=null;
+  try{
+    result=calculateBVRamanShadbala({
+      planets:withHour,bhavas,
+      ascendantLongitude:birthInput?.ascendantLongitude,
+      midheavenLongitude:birthInput?.midheavenLongitude,
+      apparentSolarHour:solarHour,temporal,declinations,jdUt
+    });
+  }catch(error){failure=String(error?.message||error);}
+  return withHour.map(p=>({
+    ...p,
+    strength6:SHADBALA_REQUIRED[p.name]
+      ?(result?.planets?.[p.name]||{
+        available:false,classicalCertified:false,provisional:true,
+        method:'B.V. Raman, Graha and Bhava Balas',totalVirupa:null,totalRupa:null,
+        requiredVirupa:SHADBALA_REQUIRED[p.name],reason:failure||'Raman Shadbala inputs unavailable'
+      })
+      :{available:false,classicalCertified:false,reason:'Rahu/Ketu excluded from seven-graha Shadbala'}
+  }));
 }
 
 function setEphe(){
@@ -739,7 +736,7 @@ function calculateSwiss({date,time,lat,lon,height=0,houseSystem,timezone='Asia/K
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
   const enriched2=enrichPhase2(enriched0,jdUt);
-  const enriched=enrichPhase3(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes});
+  const enriched=enrichStrength6(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes,ascendantLongitude:ascLon,midheavenLongitude:Number.isFinite(mc)?norm360(mc):null});
   const d9Lagna=navamsa(ascLon);
   const moon=enriched.find(p=>p.name==='சந்திரன்');
   return {
