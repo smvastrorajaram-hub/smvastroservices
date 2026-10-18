@@ -141,7 +141,7 @@ function temporaryRelation(planet,other,rasiPositions){
 function compoundRelation(planet,other,rasiPositions){
  const natural=naturalRelation(planet,other),temporary=temporaryRelation(planet,other,rasiPositions);
  if(natural==='friend'&&temporary==='friend')return 'greatFriend';
- if(natural==='friend'&&temporary==='enemy')return 'friend';
+ if(natural==='friend'&&temporary==='enemy')return 'neutral';
  if(natural==='neutral'&&temporary==='friend')return 'friend';
  if(natural==='neutral'&&temporary==='enemy')return 'enemy';
  if(natural==='enemy'&&temporary==='friend')return 'neutral';
@@ -159,13 +159,13 @@ function vargaDignity(planet,division,sign,rasiPositions,longitude){
  const lord=SIGN_LORDS[sign],rel=compoundRelation(planet,lord,rasiPositions);
  return {greatFriend:22.5,friend:15,neutral:7.5,enemy:3.75,greatEnemy:1.875}[rel]??7.5;
 }
-function sthanaBala(planet,row,lagnaSign,rasiPositions,vargaPositionsByDivision){
+function sthanaBala(planet,row,lagnaSign,rasiPositions){
  const longitude=Number(row.longitude);
  if(!finite(longitude)||!Number.isInteger(row.bhava)||row.bhava<1||row.bhava>12)throw new TypeError('Sthana Bala needs finite longitude and house for '+planet);
  // Raman Ch. III §20: shortest angular distance from exact debilitation point / 3.
  const uccha=round3(Math.max(0,Math.min(60,angleDistance(longitude,DEBILITATION[planet])/3)));
  const divisions=[1,2,3,7,9,12,30];
- const saptavargaja=divisions.reduce((sum,d)=>sum+vargaDignity(planet,d,vargaSign(longitude,d),vargaPositionsByDivision?.[d]||rasiPositions,longitude),0);
+ const saptavargaja=divisions.reduce((sum,d)=>sum+vargaDignity(planet,d,vargaSign(longitude,d),rasiPositions,longitude),0);
  const d1=Math.floor(norm360(longitude)/30),d9=vargaSign(longitude,9),g=GENDER[planet];
  const receivesOdd=g==='male'||g==='neutral',receivesEven=g==='female';
  const ojayugma=receivesOdd?((oddSign(d1)?15:0)+(oddSign(d9)?15:0)):
@@ -333,10 +333,10 @@ function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLo
  if(chart.some(p=>!p||!finite(p.longitude)))throw new TypeError('All seven finite planetary longitudes are required');
  if(!finite(ascendantLongitude)||!finite(midheavenLongitude))throw new TypeError('Ascendant and Midheaven longitudes required');
  if(!finite(jdUt))throw new TypeError('UT Julian day required for Raman Chesta Bala');
- const lagnaSign=Math.floor(norm360(ascendantLongitude)/30),rasiPositions=Object.fromEntries(chart.map(p=>[p.name,Math.floor(norm360(p.longitude)/30)])),vargaPositionsByDivision=Object.fromEntries([1,2,3,7,9,12,30].map(d=>[d,Object.fromEntries(chart.map(p=>[p.name,vargaSign(p.longitude,d)]))]));
+ const lagnaSign=Math.floor(norm360(ascendantLongitude)/30),rasiPositions=Object.fromEntries(chart.map(p=>[p.name,Math.floor(norm360(p.longitude)/30)]));
  const angles={ascendant:norm360(ascendantLongitude),midheaven:norm360(midheavenLongitude),descendant:norm360(ascendantLongitude+180),nadir:norm360(midheavenLongitude+180)},baseRows={};
  for(const planet of PLANETS){
-  const p=chart.find(x=>x.name===planet),sthana=sthanaBala(planet,p,lagnaSign,rasiPositions,vargaPositionsByDivision),dig=directionBala(planet,p.longitude,angles),kala=kalaBase(planet,chart,apparentSolarHour,temporal,declinations||{}),cheshta=chestaBala(planet,jdUt,p,classicalChestaInputs?.[planet]),naisargika=NAISARGIKA[planet],drik=drikBala(planet,chart);
+  const p=chart.find(x=>x.name===planet),sthana=sthanaBala(planet,p,lagnaSign,rasiPositions),dig=directionBala(planet,p.longitude,angles),kala=kalaBase(planet,chart,apparentSolarHour,temporal,declinations||{}),cheshta=chestaBala(planet,jdUt,p,classicalChestaInputs?.[planet]),naisargika=NAISARGIKA[planet],drik=drikBala(planet,chart);
   baseRows[planet]={available:true,classicalCertified:false,provisional:true,method:'B.V. Raman, Graha and Bhava Balas',unit:'virupa',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII',
    components:{sthana,dig,kala,cheshta:cheshta.value,naisargika,drik:drik.drik},
    evidence:{drikPinda:drik.pinda,drikTrace:drik.trace,cheshtaSource:cheshta,solarTimeMethod:temporal?.solarTimeMethod??'unverified/fallback solar-time context',birthApparentSolarHour:round3(apparentSolarHour)},
