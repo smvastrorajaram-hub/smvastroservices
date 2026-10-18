@@ -38,6 +38,47 @@ export const BV_RAMAN_TRIKONA_GROUPS = Object.freeze([
   Object.freeze([3, 7, 11])  // Cancer / Scorpio / Pisces
 ]);
 
+/**
+ * Standard Horoscope, B.V. Raman, Ashtakavarga System of Prediction, Chapter II,
+ * Table I. Values transcribed from a modern reproduction of the printed table;
+ * that reproduction records a July 2026 correction to Moon=Aquarius and
+ * Mercury=Libra. Keep this as a secondary table-transcription oracle until
+ * the original printed Table I scan is visually audited.
+ *
+ * Signs: Aries=0 ... Pisces=11. Values are BAV before both reductions and the
+ * table's after-Ekadhipatya result for each graha. This data is only a
+ * regression fixture; it is not an extra production calculation dependency.
+ */
+export const BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE = Object.freeze({
+  source: 'B. V. Raman, Ashtakavarga System of Prediction, Ch. II, Table I; secondary table transcription corrected July 2026',
+  evidenceGrade: 'SECONDARY_REPRODUCTION_OF_PRINTED_TABLE',
+  planetSigns: Object.freeze({
+    Sun: 5, Moon: 10, Mars: 7, Mercury: 6, Jupiter: 2, Venus: 5, Saturn: 4
+  }),
+  occupiedSigns: Object.freeze([2, 4, 5, 6, 7, 10]),
+  beforeReductionRows: Object.freeze({
+    Sun: Object.freeze([5, 3, 5, 4, 4, 4, 3, 5, 5, 0, 5, 5]),
+    Moon: Object.freeze([5, 3, 5, 5, 3, 2, 3, 4, 6, 5, 3, 5]),
+    Mars: Object.freeze([4, 3, 4, 3, 4, 1, 1, 5, 3, 2, 5, 4]),
+    Mercury: Object.freeze([4, 6, 4, 5, 5, 5, 3, 6, 4, 4, 5, 3]),
+    Jupiter: Object.freeze([3, 4, 7, 6, 4, 4, 6, 4, 5, 5, 4, 4]),
+    Venus: Object.freeze([7, 4, 4, 3, 3, 4, 5, 3, 4, 5, 4, 6]),
+    Saturn: Object.freeze([5, 2, 4, 4, 3, 3, 5, 2, 3, 3, 1, 4])
+  }),
+  afterReductionRows: Object.freeze({
+    Sun: Object.freeze([0, 3, 2, 0, 0, 4, 0, 1, 0, 0, 2, 0]),
+    Moon: Object.freeze([2, 1, 2, 1, 0, 0, 0, 0, 1, 3, 0, 1]),
+    Mars: Object.freeze([0, 2, 3, 0, 1, 0, 0, 2, 0, 0, 4, 1]),
+    Mercury: Object.freeze([0, 2, 1, 2, 1, 1, 0, 3, 0, 0, 2, 0]),
+    Jupiter: Object.freeze([0, 0, 3, 2, 1, 0, 2, 0, 2, 1, 0, 0]),
+    Venus: Object.freeze([4, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1]),
+    Saturn: Object.freeze([2, 0, 3, 2, 0, 1, 4, 0, 0, 1, 0, 2])
+  }),
+  beforeSavTotal: 337,
+  afterReductionSarvashtakavarga: Object.freeze([8, 8, 14, 7, 3, 6, 7, 6, 4, 6, 8, 5]),
+  afterSavTotal: 82
+});
+
 const SOURCE = 'B. V. Raman, Ashtakavarga System of Prediction, Chapter XIV (Ayurdaya)';
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
