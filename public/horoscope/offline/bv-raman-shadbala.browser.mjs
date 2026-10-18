@@ -140,18 +140,23 @@ function pakshaBala(planet,planets){
  if(!finite(sun?.longitude)||!finite(moon?.longitude))throw new TypeError('Raman Paksha Bala needs Sun and Moon longitudes');
  const elongation=norm360(moon.longitude-sun.longitude),phase=elongation<=180?elongation:360-elongation,base=Math.min(60,phase/3);
  if(planet==='சந்திரன்')return round3(Math.min(120,base*2));
- const waxing=elongation>0&&elongation<180;
  const mercury=planets.find(p=>p.name==='புதன்');
  const mercurySign=finite(mercury?.longitude)?Math.floor(norm360(mercury.longitude)/30):null;
- const joinedMalefic=planet==='புதன்'&&mercurySign!==null&&planets.some(p=>p.name!=='புதன்'&&['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'].includes(p.name)&&finite(p.longitude)&&Math.floor(norm360(p.longitude)/30)===mercurySign);
+ const joinedMalefic=planet==='புதன்'&&(
+  mercury?.strength?.combustion===true||
+  (mercurySign!==null&&planets.some(p=>p.name!=='புதன்'&&['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'].includes(p.name)&&finite(p.longitude)&&Math.floor(norm360(p.longitude)/30)===mercurySign))
+ );
  const benefic=['குரு','சுக்கிரன்'].includes(planet)||(planet==='புதன்'&&!joinedMalefic);
- return round3(benefic===waxing?base:60-base);
+ // Raman's Paksha Bala assigns the arc/3 to Subhas and 60-minus-that to Papas,
+ // regardless of whether the current date is waxing or waning. Only Moon itself
+ // receives the doubled figure above.
+ return round3(benefic?base:60-base);
 }
 function ayanaBala(planet,declination){
  if(!finite(declination))throw new TypeError('Tropical declination missing for '+planet);
  // Raman Ch. V §§71-75: 24-degree method shown in Example 33; Sun is doubled.
- const favoursNorth=['சூரியன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்'].includes(planet);
- const signedTerm=(favoursNorth?1:-1)*declination;
+ const signedTerm=planet==='புதன்'?Math.abs(declination):
+  (['சூரியன்','செவ்வாய்','குரு','சுக்கிரன்'].includes(planet)?declination:-declination);
  const raw=(24+signedTerm)*60/48;
  return round3(Math.max(0,Math.min(planet==='சூரியன்'?120:60,raw*(planet==='சூரியன்'?2:1))));
 }
