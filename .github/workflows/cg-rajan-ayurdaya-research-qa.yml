@@ -10,7 +10,6 @@ on:
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
-      - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
@@ -27,7 +26,6 @@ on:
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
-      - 'tests/cg-rajan-ayurdaya-five-natal-research.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'public/horoscope/report-store.mjs'
@@ -51,7 +49,6 @@ jobs:
           node --check public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs
           node --check tests/cg-rajan-ayurdaya-printed-oracle.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs
-          node --check tests/cg-rajan-ayurdaya-five-natal-research.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
@@ -61,9 +58,7 @@ jobs:
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
       - name: Check seven printed CG Rajan natural-quotient examples and reductions
         run: node tests/cg-rajan-ayurdaya-printed-oracle.mjs
-      - name: Check five Perambalur birth charts x seven natural components
-        run: node tests/cg-rajan-ayurdaya-five-natal-research.mjs
-      - name: Printed Pinda examples and bilingual customer-appendix regression
+      - name: Printed Pinda, five-natal natural audit, and bilingual customer-appendix regression
         run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
       - name: Guard separate Ayurdaya appendix survives Saved Report and print stripping
         run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
