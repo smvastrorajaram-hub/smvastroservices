@@ -12,6 +12,10 @@ const topics = [
   ['Ayurdaya', /ayurdaya|ஆயுர்த்தாயம்|ஆயுர்தாயம்|பிண்ட ஆயுள்|நைசர்க்கிக ஆயுள்/i],
   ['Amsa', /amsa|அம்ச/i],
   ['Shadbala', /shadbala|சட்பல|ஷட்பல|ஸ்தான பலம்|Sthana Bala/i],
+  ['Vimshottari Dasha', /Vimshottari|விம்சோத்தரி|மகாதசை|Mahadasha/i],
+  ['Bhukti', /Bhukti|புக்தி/i],
+  ['Antaram', /Antaram|Antharam|அந்தரம்|அந்தர்தசை|Pratyantara/i],
+  ['Removed source/status labels', /Uttara Kalamrita இடைக்காலக் கூறுகள்|இறுதி சட்பலச் சான்றிதழ் அல்ல|Yuddha \\(UK\\)|யுத்தம் \\(UK\\)|Jathaka Kanitham/i],
   ['Matching / பொருத்தம்', /matching|பொருத்தம்|தினம்|கணம்|யோனி|ராசி பொருத்தம்/i],
   ['Marriage / திருமணம்', /marriage|திருமண|களத்திர|மாங்கல்ய/i]
 ];

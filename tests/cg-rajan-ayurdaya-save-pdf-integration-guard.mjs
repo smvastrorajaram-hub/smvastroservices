@@ -19,9 +19,11 @@ check(saver.includes("'.integrated-predictions,"),
  'Save explicitly strips legacy integrated subtree');
 check(printer.includes("'.integrated-predictions,"),
  'PDF explicitly strips legacy integrated subtree');
+check(printer.includes("const dashaTree=root.querySelector('#dashaTree')")&&printer.includes('dasha-head-print')&&!printer.includes('rawDasha.remove()'),
+ 'PDF print transform retains full Dasa/Bhukti/Antaram hierarchy');
 check(horoscope.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
  'Rajan appendix is inside I / Chart Analysis, not retired integrated subtree');
-check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-source-audit2')"),
+check(horoscope.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-pdf-dasha-fix1')"),
  'Main renderer waits for source-specific arithmetic before report-ready event');
 check(horoscope.includes("sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove())"),
  'Duplicate report append prevented');
@@ -47,7 +49,7 @@ for(const language of ['ta','en']){
  check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('Amsa Ayurdaya'))||
        (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுர்த்தாயம்')),
   'Three-method table columns '+language);
- check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுள்'),
+ check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுர்த்தாயம்'),
   'Three-total mean row '+language);
  check(!result.includes('<script')&&!result.includes('onload='),
   'Safe snapshot HTML '+language);

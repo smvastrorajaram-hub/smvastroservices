@@ -34,9 +34,9 @@ const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
 const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
 ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
 ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
-ok(ta.includes('சராசரி ஆயுள்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
-ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அட்டவணை A'),'Tamil total row and source variant note');
-ok(en.includes('Total (7 grahas)')&&en.includes('provisional arithmetic mean'),'English total row and provisional status');
+ok(ta.includes('சராசரி ஆயுர்த்தாயம்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
+ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
+ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows have no indication/source note');
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
  'raw printed Sun Pinda example remains testable internally');
@@ -49,9 +49,8 @@ eq((ta.match(/data-natural-harana="blocked"/g)||[]).length,7,
  'Naisargika raw values are not shown as final when required Harana facts are missing');
 ok(ta.includes('data-pinda-total="blocked"')&&ta.includes('data-natural-total="blocked"'),
  'Pinda and Naisargika totals are blocked without chart-specific Harana evidence');
-ok(en.includes('Harana evidence incomplete: Pinda: Sun')&&
- en.includes('Naisargika: Sun')&&en.includes('Amsa: Sun'),
- 'incomplete three-method report lists which methods/grahas block the average');
+ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('—</strong>'),
+ 'missing method values use a neutral dash instead of the long indication text');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
@@ -256,28 +255,25 @@ const printSrc=fs.readFileSync(new URL('../public/horoscope/report-print.js',imp
 const shadbalaStart=src.indexOf('<h3 class="base-shadbala"');
 const shadbalaEnd=src.indexOf('<div class="transit-before-vimsottari">',shadbalaStart);
 const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
-ok(shadbalaUi.includes('💪 ஷட்பலம் (Uttara Kalamrita)'),'primary Horoscope identifies UK-only Shadbala source');
-ok(shadbalaUi.includes('strengthUttaraKalamrita')&&shadbalaUi.includes('முழு கணக்கு நிலுவை'),
- 'primary Shadbala reads UK components and withholds incomplete totals');
+ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
+ 'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
+ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
+ok(shadbalaUi.includes('strengthUttaraKalamrita')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala keeps six bala columns without status or Yuddha column');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
-ok(shadbalaUi.includes('Cheshta உள்ளீடுகள்')&&shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),
- 'primary Shadbala explains the unresolved source input');
+eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
+ 'primary Shadbala has no indication message');
 const analysisShadbalaStart=src.indexOf('const shadbalaRows=caPlanets.filter');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
 ok(analysisShadbalaUi.includes('strengthUttaraKalamrita'),'Chart Analysis Shadbala reads UK-only payload');
 eq(analysisShadbalaUi.includes('strength3'),false,'Chart Analysis Shadbala does not use legacy totals');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
-const analysisShadbalaSectionEnd=src.indexOf('adv-ishta-kashta',analysisShadbalaSectionStart);
+const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
-ok(analysisShadbalaSection.includes('Uttara Kalamrita')&&analysisShadbalaSection.includes('இறுதி சட்பலச் சான்றிதழ்'),
- 'Chart Analysis visibly identifies UK provisional status');
-const ishtaSectionStart=src.indexOf('adv-ishta-kashta',analysisShadbalaSectionStart);
-const ishtaSectionEnd=src.indexOf('part1-natural-karakas',ishtaSectionStart);
-const ishtaSection=src.slice(ishtaSectionStart,ishtaSectionEnd);
-eq(ishtaSection.includes('p.strength3'),false,'Ishta/Kashta computation does not read legacy strength3 under UK-only mode');
-ok(ishtaSection.includes('strength3 மதிப்புகள் மாற்றாகப் பயன்படுத்தப்படவில்லை'),
- 'Ishta/Kashta explicitly withholds unverified legacy values');
+ok(!analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
+ 'Chart Analysis uses six Bala components without source/status text or a war column');
+eq(src.includes('adv-ishta-kashta'),false,'No note-only Ishta/Kashta panel is shown without calculated values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
  ['2002-10-18','06:06'],['1989-10-18','09:45']];

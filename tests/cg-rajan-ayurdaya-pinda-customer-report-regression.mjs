@@ -68,10 +68,10 @@ for(const [date,time] of [
  yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
      !en.includes('Harana evidence incomplete'),
   'no incomplete-average fallback for a fully evidenced regression chart '+date);
- yes(ta.includes('ஜாதக கணிதம்')&&en.includes('Jathaka Kanitham'),
-  'bilingual customer report heading');
- yes(ta.includes('ஆயுள் அல்லது மரண')&&/not predictions of lifespan/i.test(en),
-  'plain-language boundaries retained');
+ yes(ta.includes('ஆயுர்த்தாயக் கணக்கீடு')&&en.includes('Ayurdaya Calculation')&&!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham'),
+  'bilingual source-neutral customer heading');
+ yes(!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham')&&!ta.includes('Harana evidence incomplete')&&!en.includes('Harana evidence incomplete'),
+  'no source-book name or long calculation indication in customer results');
  for(const x of result.entries){
   rows++;
   yes(Number.isFinite(x.pinda.symbolicComponentYears),'numeric Pinda '+date+x.name);
@@ -91,7 +91,7 @@ for(const [date,time] of [
  for(const lang of [ta,en]){
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
   yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column has the required bilingual heading');
-  yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
+  yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுர்த்தாயம்'),'mean row exists');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
   eq(blocked+adjusted,7,'each graha has adjusted Amsa candidate or blocked cell');

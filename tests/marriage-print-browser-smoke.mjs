@@ -28,6 +28,9 @@ try{
    language:'ta',brideStyle:style,groomStyle,reviewDate:'2026-10-16',
    transitFn:input=>transit(input),poruthamRows:[['தினம்',true,''],['ரஜ்ஜு',false,'']]
   });
+  assert.ok(html.includes('அந்தரம்')&&html.includes('மகாதசை')&&html.includes('புக்தி'), 'Native report HTML contains Mahadasha/Bhukti/Antaram rows: '+testName);
+  assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('mm-shadbala-status')&&!html.includes('யுத்தம் (UK)'), 'No Shadbala indication or separate Yuddha column: '+testName);
+  assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
   const appendixCount=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
   assert.equal(appendixCount,2,'Both bride and groom Ayurdaya appendix sections are present: '+testName);
   assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
@@ -94,6 +97,8 @@ try{
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
   assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
+  const printText=await page.evaluate(()=>document.querySelector('#printReport')?.innerText||'');
+  assert.ok(printText.includes('அந்தரம்')&&printText.includes('மொத்தம் (7 கிரகங்கள்)')&&printText.includes('சராசரி ஆயுர்த்தாயம்'), 'Native print DOM preserves Antaram and Ayurdaya total/mean: '+style);
   results.push({style:testName,pdfBytes:size,mobile,print});
   await page.emulateMediaType('screen');
  }
