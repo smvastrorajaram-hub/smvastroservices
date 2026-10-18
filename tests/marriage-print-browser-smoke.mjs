@@ -28,6 +28,10 @@ try{
    language:'ta',brideStyle:style,groomStyle,reviewDate:'2026-10-16',
    transitFn:input=>transit(input),poruthamRows:[['தினம்',true,''],['ரஜ்ஜு',false,'']]
   });
+  const appendixCount=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
+  assert.equal(appendixCount,2,'Both bride and groom Ayurdaya appendix sections are present: '+testName);
+  assert.ok(html.includes('Amsa Ayurdaya')&&html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Amsa heading is included: '+testName);
+  assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
   const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"></head><body><main id="printReport">'+html+'</main></body></html>';
   await writeFile(fixture,document);
@@ -36,6 +40,7 @@ try{
   const mobile=await page.evaluate(()=>{
    const charts=[...document.querySelectorAll('.mm-base-chart')];
    const tables=[...document.querySelectorAll('.mm-base-table')];
+   const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')];
    const first=charts[0],groom=charts[4],rectangle=first?.getBoundingClientRect();
    const cell0=first?.querySelector('.mm-base-pos-0')?.getBoundingClientRect();
    const cell11=first?.querySelector('.mm-base-pos-11')?.getBoundingClientRect();
@@ -44,7 +49,7 @@ try{
    const extra=charts.map(c=>c.innerText).join(' ');
    const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
    return {
-    charts:charts.length,tables:tables.length,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
+    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
     rectWidth:rectangle?.width||0,
     firstCell:{left:cell0?.left-rectangle?.left,top:cell0?.top-rectangle?.top},
     lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
@@ -60,6 +65,7 @@ try{
   assert.equal(mobile.groomStyle,groomStyle,'Incorrect groom selected style: '+groomStyle);
   assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
+  assert.equal(mobile.ayurdayaTables,2,'Two partner Ayurdaya tables remain present on mobile: '+style);
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
@@ -82,11 +88,12 @@ try{
   assert.ok(size>25000,'PDF is not empty: '+style);
   const print=await page.evaluate(()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
-   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length};
+   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length};
   });
   assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
+  assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
   results.push({style:testName,pdfBytes:size,mobile,print});
   await page.emulateMediaType('screen');
  }

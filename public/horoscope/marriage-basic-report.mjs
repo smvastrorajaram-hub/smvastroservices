@@ -5,6 +5,7 @@
  */
 import {vargaSign,vargaLongitude} from './offline/astro_advanced.browser.mjs';
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
+import {cgRajanAyurdayaReportHtml} from './offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const P_EN=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
@@ -261,6 +262,7 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
   let trData=null,transitError='';
   try{trData=await reviewTransit(c,ref,transitFn);}catch(e){transitError=String(e.message||e);}
   const maandi=natalMaandi(c);
+  const ayurdayaReport=cgRajanAyurdayaReportHtml({planets:native,lagna:c.lagna,language});
   const native=c.planets||[],natal=[...native,...(maandi?[maandi]:[])];
   const vargaMaandi=maandi?{...maandi,longitude:vargaLongitude(Number(maandi.longitude),9)}:null;
   const d9Planets=d9?[...d9.planets,...(vargaMaandi?[vargaMaandi]:[])]:[];
@@ -279,6 +281,7 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
    ...[[2,'Hora','ஹோரா'],[7,'Saptamsa','சப்தாம்சம்'],[9,'Navamsa','நவாம்சம்'],[10,'Dasamsa','தசாம்சம்']].map(([d,en,tm])=>heading('D'+d+' — '+en+' · Nakshatra/Pada','D'+d+' — '+tm+' · நட்சத்திரம்/பாதம்',language)+vargaTable(c,d,ta)),
    heading('Bhinna and Sarvashtakavarga','பின்னாஷ்டகவர்க்கம் மற்றும் சர்வாஷ்டகவர்க்கம்',language)+ashtakavarga(c,ta),
    heading('Shadbala (seven classical planets)','ஷட்பலம் (ஏழு கிரகங்கள்)',language)+shadbala(c,ta),
+   ayurdayaReport,
    heading('Vimshottari Dasha / Bhukti — Next 15 Years','விம்சோத்தரி தசா / புக்தி — அடுத்த 15 ஆண்டுகள்',language)+dasha(c,ta,new Date().toISOString().slice(0,10)),
    heading('Gochara chart and positions','கோச்சாரக் கட்டம் மற்றும் கிரக நிலைகள்',language)+transitSection
   ];

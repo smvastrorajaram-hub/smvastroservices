@@ -27,6 +27,15 @@ const opts={language:'ta',brideStyle:'south',groomStyle:'north',reviewDate:'2026
  poruthamRows:[['Dina',true,''],['Rajju',false,'Audit']],transitFn:fn};
 const ta=await renderBasicMatching(charts[0],charts[1],opts);
 ok(ta.includes('mm-shadbala-status')&&ta.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&ta.includes('இறுதி சட்பலச் சான்றிதழ்'),'Tamil Matching report discloses UK intermediate-only Shadbala');
+const taAyurdaya=[...ta.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
+eq(taAyurdaya.length,2,'Tamil Matching report includes each person's guarded Ayurdaya research appendix');
+for(const [i,section] of taAyurdaya.entries()){
+ ok(section.includes('அம்ச ஆயுர்த்தாயம்')&&section.includes('பிண்ட ஆயுள்')&&section.includes('நைசர்க்கிக ஆயுள்'),'Tamil partner '+(i+1)+' has all three Ayurdaya methods');
+ eq((section.match(/<tr\b/g)||[]).length,10,'Tamil partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
+}
+const taRemainders=[...ta.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
+ok(taRemainders.some(m=>Number(m[1])>0||Number(m[2])>0),'Tamil Matching natal charts carry Amsa fractional days/nazhigai into report HTML');
+ok(!ta.includes('AMSA AYURDAYAM'),'Tamil Matching HTML never uses the rejected uppercase heading');
 ok(ta.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'Tamil title');
 ok(ta.includes('mm-base-south')&&ta.includes('mm-base-north'),'Independent South and North charts');
 for(const needle of ['ராசிக் கட்டம் D1','நவாம்சக் கட்டம் D9','பாவக் கட்டம்','D2','D7','D9','D10','நட்சத்திரம்','பாதம்','பின்னாஷ்டகவர்க்கம்','சர்வாஷ்டகவர்க்கம்','ஷட்பலம்','விம்சோத்தரி தசா','கோச்சாரக் கட்டம்'])ok(ta.includes(needle),'Tamil report missing '+needle);
@@ -40,6 +49,13 @@ eq(values[1].utcOffsetMinutes,60,'London October-16 DST offset 60');
 eq(values[0].language,'en','One language-neutral transit calculation per person');
 const en=await renderBasicMatching(charts[0],charts[1],{...opts,language:'en',brideStyle:'east',groomStyle:'north'});
 ok(en.includes('mm-shadbala-status')&&en.includes('Only Uttara Kalamrita intermediate components are shown')&&en.includes('not a final Shadbala certificate'),'English Matching report discloses UK intermediate-only Shadbala');
+const enAyurdaya=[...en.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
+eq(enAyurdaya.length,2,'English Matching report includes each person's guarded Ayurdaya research appendix');
+for(const [i,section] of enAyurdaya.entries()){
+ ok(section.includes('Amsa Ayurdaya')&&section.includes('Pinda Ayurdaya')&&section.includes('Naisargika Ayurdaya'),'English partner '+(i+1)+' has all three Ayurdaya methods');
+ eq((section.match(/<tr\b/g)||[]).length,10,'English partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
+}
+ok(!en.includes('AMSA AYURDAYAM'),'English Matching report uses the required Amsa Ayurdaya heading');
 ok(en.includes('Marriage Matching — Basic Calculation Report'),'English title');
 ok(en.includes('mm-base-east')&&en.includes('mm-base-north'),'East and North combinations');
 ok(en.includes('Shadbala')&&en.includes('Sarvashtakavarga')&&en.includes('Nakshatra')&&en.includes('Bhukti'),'English labels');

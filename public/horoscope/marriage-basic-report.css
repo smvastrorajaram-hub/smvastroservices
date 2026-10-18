@@ -127,6 +127,54 @@
 .mm-basic-report table.mm-base-table tr{break-inside:avoid;page-break-inside:avoid}
 .mm-basic-report table.mm-base-av th,
 .mm-basic-report table.mm-base-av td{min-width:34px!important;padding:5px 6px!important}
+
+/* C.G. Rajan Ayurdaya appendix — same clean table surface in screen,
+   saved snapshots and native PDF. The source module owns all displayed values. */
+.mm-basic-report .smv-cg-rajan-ayurdaya{
+ box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+ margin:18px 0 22px;overflow:visible;break-inside:auto;page-break-inside:auto;
+}
+.mm-basic-report .smv-cg-rajan-ayurdaya h3{
+ margin:8px 0;font-size:1.04rem;line-height:1.35;text-align:start;color:#842026;
+}
+.mm-basic-report .smv-cg-rajan-ayurdaya>p{
+ margin:6px 0 10px;font-size:.76rem;line-height:1.5;overflow-wrap:anywhere;
+}
+.mm-basic-report .smv-cg-rajan-ayurdaya .adv-table-wrap{
+ display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+ overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+ margin:6px 0 12px;overscroll-behavior-x:contain;
+}
+.mm-basic-report table.smv-ayurdaya-table{
+ box-sizing:border-box;border-collapse:collapse;width:max-content;min-width:100%;
+ max-width:none;table-layout:auto;font-size:.76rem;line-height:1.35;margin:0;background:#fff;
+}
+.mm-basic-report table.smv-ayurdaya-table th,
+.mm-basic-report table.smv-ayurdaya-table td{
+ box-sizing:border-box;border:1px solid #c8bca8;padding:5px 6px;
+ text-align:center;vertical-align:middle;white-space:nowrap;word-break:normal;overflow-wrap:normal;
+}
+.mm-basic-report table.smv-ayurdaya-table th{
+ color:#4b251b;background:#f4ead8;font-weight:700;
+}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals th,
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-totals td{
+ font-weight:700;background:#faf2e4;
+}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th{
+ white-space:normal;text-align:start;line-height:1.45;background:#f8f4ed;
+}
+.mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average strong{margin-inline-start:.5em}
+@media print{
+ .mm-basic-report .smv-cg-rajan-ayurdaya{margin:5mm 0 7mm;break-inside:auto;page-break-inside:auto}
+ .mm-basic-report .smv-cg-rajan-ayurdaya h3{font-size:10pt;margin:2mm 0}
+ .mm-basic-report .smv-cg-rajan-ayurdaya>p{font-size:7pt;line-height:1.35;margin:1.5mm 0 2mm}
+ .mm-basic-report table.smv-ayurdaya-table{width:100%;min-width:0;table-layout:fixed;font-size:7.2pt;line-height:1.25}
+ .mm-basic-report table.smv-ayurdaya-table th,
+ .mm-basic-report table.smv-ayurdaya-table td{padding:1.2mm 1mm;white-space:normal;overflow-wrap:anywhere}
+ .mm-basic-report table.smv-ayurdaya-table thead{display:table-header-group}
+ .mm-basic-report table.smv-ayurdaya-table .smv-ayurdaya-average th{text-align:start}
+}
 #smvMarriageMatching .mm-calculated-offset{background:#fff9ed;color:#382c22;font-weight:600}
 #smvMarriageMatching .mm-offset-message{display:block;font-size:.78rem;line-height:1.5;margin-top:3px;color:#694e36}
 @media(max-width:640px){
