@@ -547,7 +547,7 @@
     const shadbalaNumber=(value,digits=1)=>Number.isFinite(value)?value.toFixed(digits):'—';
     const shadbalaHeadings=shadbalaTa
       ?['கிரகம்','ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை']
-      :['Planet','Sthana Bala','Dig Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'];
+      :['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'];
     const shadbalaNote=shadbalaTa
       ?'Swiss Ephemeris கிரக நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய கணக்கீடு. முழு numerical cross-source validation நிலுவையில் உள்ளது; தரவரிசை தற்போதைய மொத்தத்தின் அடிப்படையில்.'
       :'Current calculation based on Swiss Ephemeris planetary positions. Full numerical cross-source validation is pending; rank reflects the current computed total.';
