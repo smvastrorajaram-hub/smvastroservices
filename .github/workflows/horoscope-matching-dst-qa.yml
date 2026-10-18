@@ -9,6 +9,14 @@ on:
       - 'tests/**'
       - '!tests/v358-result-layout-browser-smoke.mjs'
       - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
+      - '!tests/cg-rajan-*.mjs'
+      - '!tests/uttara-kalamrita-*.mjs'
+      - '!tests/v357-bphs-*.mjs'
+      - '!tests/v363-bphs-*.mjs'
+      - '!tests/v366-bphs-*.mjs'
+      - '!tests/bphs-*.mjs'
+      - '!tests/marriage-print-browser-smoke.mjs'
+      - '!tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
     branches: [main]
