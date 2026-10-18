@@ -73,7 +73,7 @@ for(const [date,time] of [
  }
  for(const lang of [ta,en]){
   eq((lang.match(/<tr\b/g)||[]).length,10,'header + seven rows + total + average');
-  yes(lang.includes('Amsa Ayurdaya')||lang.includes('அம்ச ஆயுள்'),'Amsa column exists');
+  yes(lang.includes('AMSA AYURDAYAM')||lang.includes('அம்ச ஆயுர்த்தாயம்'),'Amsa column exists');
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுள்'),'mean row exists');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
