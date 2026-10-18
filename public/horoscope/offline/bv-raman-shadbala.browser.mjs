@@ -19,7 +19,7 @@ const EN=Object.freeze({'சூரியன்':'Sun','சந்திரன்'
 const REQUIRED=Object.freeze({'சூரியன்':300,'சந்திரன்':360,'செவ்வாய்':300,'புதன்':420,'குரு':390,'சுக்கிரன்':330,'சனி':300});
 // B.V. Raman Ch. VII values as printed (rounded in the source).
 const NAISARGIKA=Object.freeze({'சூரியன்':60.00,'சந்திரன்':51.43,'சுக்கிரன்':42.85,'குரு':34.28,'புதன்':25.70,'செவ்வாய்':17.14,'சனி':8.57});
-const DEBILITATION=Object.freeze({'சூரியன்':190,'சந்திரன்':213,'செவ்வாய்':118,'புதன்':345,'குரு':275,'சுக்கிரன்':177,'சனி':20});
+const DEBILITATION=Object.freeze({'சூரியன்':190,'சந்திரன்':213,'செவ்வாய்':118+20/60,'புதன்':345,'குரு':275,'சுக்கிரன்':177,'சனி':20});
 const MOOLATRIKONA=Object.freeze({
  'சூரியன்':{rasi:4,from:0,to:20},'சந்திரன்':{rasi:1,from:4,to:30},
  'செவ்வாய்':{rasi:0,from:0,to:12},'புதன்':{rasi:5,from:16,to:20},
