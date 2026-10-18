@@ -300,7 +300,11 @@ eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),fa
  'Chart Analysis does not present an incomplete subtotal as Shadbala');
 ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),
  'Chart Analysis heading is only Shadbala / ஷட்பலம் and shows individual Bala components');
-eq(src.includes('adv-ishta-kashta'),false,'No note-only Ishta/Kashta panel is shown without calculated values');
+ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('bvRamanIshtaKashta')&&src.includes('bvRamanChestaForPhala'), 'Chart Analysis renders B.V. Raman Ishta/Kashta from separate special Chesta-for-Phala inputs');
+const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
+ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('min-width:680px'), 'Horoscope Ayurdaya table uses a dedicated horizontal-scroll viewport');
+const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
+ok(swSource.includes('v244-ishta-kashta-ayurdaya-ui-20261018'),'PWA refresh revision activates the latest Horoscope UI');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
  ['2002-10-18','06:06'],['1989-10-18','09:45']];

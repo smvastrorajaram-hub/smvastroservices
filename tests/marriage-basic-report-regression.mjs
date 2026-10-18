@@ -113,6 +113,7 @@ const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('table.smv-shadbala-table{min-width:1120px!important')&&css.includes('.smv-ayurdaya-average-basis'),'Wide Shadbala scroll and readable Ayurdaya basis styles exist');
 ok(css.includes('background:#fff;color:#302722')&&css.includes('color:#333;background:#fff'),'Matching average explanation has a white background with readable dark text');
+ok(css.includes('font-size:1.12rem;line-height:1.3;text-align:center;color:#842026')&&css.includes('font-weight:700;color:#333;background:#fff'),'Matching Ayurdaya heading matches other headings and only the average explanation is bold');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
 ok(ta.includes('mm-base-shad-components')&&ta.includes('smv-shadbala-table')&&ta.includes('மொத்த ஷட்பலம் (விரூபம்)')&&ta.includes('தேவையான ரூபா')&&ta.includes('தரவரிசை')&&ta.includes('வலிமை நிலை'),'Tamil Matching shows six Bala components, total, Rupas, rank and strength status');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');

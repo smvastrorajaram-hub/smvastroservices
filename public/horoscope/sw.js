@@ -1,5 +1,5 @@
 /* SMV HOROSCOPE service worker — ONLINE AUTHORITY.
-   V242 context refresh marker: 2026-10-18 — Ayurdaya average cache refresh.
+   V244 context refresh marker: 2026-10-18 — Ishta/Kashta and Ayurdaya UI refresh.
    No V-number UI cache.
    Frontend, access policy and Print always come from the current network.
    Only /offline/ calculation/location assets may use one stable lazy cache.
@@ -9,7 +9,7 @@
    activation, every open Horoscope page is navigated once to its current URL.
 */
 const OFFLINE_CACHE='smv-horoscope-offline';
-const RUNTIME_REVISION='v243-context-refresh-20261018-ayurdaya-source-audit';
+const RUNTIME_REVISION='v244-ishta-kashta-ayurdaya-ui-20261018';
 
 function isOfflineAsset(url){
   if(url.origin!==self.location.origin)return false;
