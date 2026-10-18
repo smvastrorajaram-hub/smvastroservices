@@ -55,6 +55,10 @@ try{
    const charts=[...document.querySelectorAll('.mm-base-chart')];
    const tables=[...document.querySelectorAll('.mm-base-table')];
    const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')];
+   const ayurdayaHeader=ayurdayaTables[0]?.querySelector('thead th');
+   const ayurdayaPlanet=ayurdayaTables[0]?.querySelector('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average) th');
+   const ayurdayaHeaderStyle=ayurdayaHeader?{color:getComputedStyle(ayurdayaHeader).color,background:getComputedStyle(ayurdayaHeader).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaHeader).fontWeight,10)||400}:null;
+   const ayurdayaPlanetStyle=ayurdayaPlanet?{text:ayurdayaPlanet.textContent.trim(),color:getComputedStyle(ayurdayaPlanet).color,background:getComputedStyle(ayurdayaPlanet).backgroundColor,weight:parseInt(getComputedStyle(ayurdayaPlanet).fontWeight,10)||400}:null;
    const first=charts[0],groom=charts[4],rectangle=first?.getBoundingClientRect();
    const cell0=first?.querySelector('.mm-base-pos-0')?.getBoundingClientRect();
    const cell11=first?.querySelector('.mm-base-pos-11')?.getBoundingClientRect();
@@ -64,7 +68,7 @@ try{
    const extra=charts.map(c=>c.innerText).join(' ');
    const allPlanets=[...document.querySelectorAll('.mm-base-planet')].map(c=>c.textContent);
    return {
-    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
+    charts:charts.length,tables:tables.length,ayurdayaTables:ayurdayaTables.length,ayurdayaHeaderStyle,ayurdayaPlanetStyle,firstStyle:first?.dataset.chartStyle,groomStyle:groom?.dataset.chartStyle,
     rectWidth:rectangle?.width||0,
     firstCell:{left:cell0?.left-rectangle?.left,top:cell0?.top-rectangle?.top},
     lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
@@ -82,6 +86,8 @@ try{
   assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
   assert.equal(mobile.ayurdayaTables,2,'Two partner Ayurdaya tables remain present on mobile: '+style);
+  assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(255, 255, 255)'&&mobile.ayurdayaHeaderStyle.background==='rgb(143, 0, 0)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya table heading is white and bold on dark red: '+style);
+  assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.background==='rgb(143, 0, 0)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are white and bold on dark red: '+style);
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
