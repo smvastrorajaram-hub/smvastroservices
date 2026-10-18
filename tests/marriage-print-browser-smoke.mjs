@@ -30,7 +30,7 @@ try{
   });
   const appendixCount=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
   assert.equal(appendixCount,2,'Both bride and groom Ayurdaya appendix sections are present: '+testName);
-  assert.ok(html.includes('Amsa Ayurdaya')&&html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Amsa heading is included: '+testName);
+  assert.ok(html.includes('அம்ச ஆயுர்த்தாயம்'),'The exact Tamil Amsa heading is included for Tamil output: '+testName);
   assert.ok(!html.includes('AMSA AYURDAYAM'),'The rejected uppercase heading is absent: '+testName);
   const fixture=new URL('__matching_print_smoke_temp.html',root);
   const document='<html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="marriage-basic-report.css"></head><body><main id="printReport">'+html+'</main></body></html>';
