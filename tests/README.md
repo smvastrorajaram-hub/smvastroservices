@@ -6,8 +6,8 @@ This folder intentionally contains two kinds of checks:
 
 - `.github/workflows/horoscope-matching-dst-qa.yml`: core Horoscope/Matching, Dasha, report/save/print, location, DST, boundary, and selected BPHS/numerical regression checks.
 - `.github/workflows/cg-rajan-ayurdaya-research-qa.yml`: CG Rajan Pinda/Naisargika/Amsa Ayurdaya source arithmetic, consolidated five-chart natural/Pinda integration, bilingual report placement, and saved-report/print guards.
-- `.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml`: independent C.G. Rajan printed Shadbala arithmetic, BPHS positional/temporal Bala, Drig Bala, Graha Yuddha, source-conflict gates, and five-natal integration. Three BPHS regression scripts are consolidated in `bphs-shadbala-combined-regression.mjs`.
-- `.github/workflows/uttara-kalamrita-six-bala-source-qa.yml`: independent Uttara Kalamrita six-Bala, Section III Ayurdaya, 2026 IMD Cheshta inputs, V363/V364/V366 numerical evidence, V367 certification blockers, V368 published-stage audit, and five-natal integration. Seven standalone Ayurdaya/Cheshta scripts are consolidated in `uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs`.
+- `.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml`: independent C.G. Rajan printed Shadbala arithmetic, BPHS positional/temporal Bala, Drig Bala, Graha Yuddha, source-conflict gates, and five-natal integration. Five BPHS oracles are consolidated in `bphs-shadbala-combined-regression.mjs`, including the independent Chapter 26 Drig-angle oracle and seven-graha six-Bala arithmetic reconciliation.
+- `.github/workflows/uttara-kalamrita-six-bala-source-qa.yml`: independent Uttara Kalamrita six-Bala, Section III Ayurdaya, 2026 IMD Cheshta inputs, V363/V364/V366 numerical evidence, V367 certification blockers, V368 published-stage audit, and five-natal integration. Nine independent Ayurdaya/Cheshta oracles are consolidated in `uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs`, including the official IMD 2026 live discrepancy check and the Surya Siddhanta five-graha natal Cheshta research engine check.
 - `.github/workflows/horoscope-result-layout-browser-smoke.yml`: V358/V359 browser geometry checks.
 - `.github/workflows/marriage-print-browser-smoke.yml`: Chromium native-print integration.
 - `.github/workflows/smv-output-pdf-report-audit.yml`: searchable-text audit of checked-in PDF fixtures.
@@ -15,7 +15,7 @@ This folder intentionally contains two kinds of checks:
 
 ## Standalone source-oracle / research checks
 
-Several BPHS, C.G. Rajan Jathaka Kanitham/Shadbala, Uttara Kalamrita, and Surya Siddhanta checks preserve independent printed-number or published-reference comparisons, partial-component tests, or explicit certification blockers. The BPHS positional/temporal/primary Shadbala scripts are consolidated in `bphs-shadbala-combined-regression.mjs`; the seven Uttara Kalamrita Ayurdaya/Cheshta scripts are consolidated in `uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs`. Each original check runs in an isolated function scope within its aggregate so assertions and fixtures remain separate. Other checks may still be run explicitly with:
+Several BPHS, C.G. Rajan Jathaka Kanitham/Shadbala, Uttara Kalamrita, and Surya Siddhanta checks preserve independent printed-number or published-reference comparisons, partial-component tests, or explicit certification blockers. The BPHS positional/temporal/primary Shadbala, Chapter 26 Drig-angle, and seven-graha six-Bala arithmetic oracles are consolidated in `bphs-shadbala-combined-regression.mjs`; the nine Uttara Kalamrita/IMD/Surya Cheshta and Ayurdaya oracles are consolidated in `uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs`. Each original check runs in an isolated function scope within its aggregate so assertions and fixtures remain separate. Other checks may still be run explicitly with:
 
 ```sh
 node tests/<test-file>.mjs
