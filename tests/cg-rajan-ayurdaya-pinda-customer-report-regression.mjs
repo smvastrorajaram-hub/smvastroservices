@@ -50,16 +50,16 @@ for(const [date,time] of [
  const r=await full({date,time,lat:11.232,lon:78.88,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'Rajan Ayurdaya printable QA'});
  yes(r.ok,'source natal compute '+date);
- const result=all({planets:r.chart.planets});
+ const result=all({planets:r.chart.planets,lagna:r.chart.lagna});
  eq(result.entries.length,7,'seven conventional grahas');
  eq(result.allEightMethodsComplete,false,'no artificial 8-method pass');
  eq(result.combinedLongevityYears,null,'no invented individual lifespan');
  eq(result.deathAgeOrDate,null,'no invented death age');
- const ta=html({planets:r.chart.planets,language:'ta'});
- const en=html({planets:r.chart.planets,language:'en'});
+ const ta=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'ta'});
+ const en=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
  yes(ta.includes('ஜாதக கணிதம்')&&en.includes('Jathaka Kanitham'),
   'bilingual customer report heading');
- yes(ta.includes('அறிவியல்')&&/not a prediction/i.test(en),
+ yes(ta.includes('ஆயுள் அல்லது மரண')&&/not predictions of lifespan/i.test(en),
   'plain-language boundaries retained');
  for(const x of result.entries){
   rows++;
