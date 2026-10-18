@@ -49,6 +49,7 @@ body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.s
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table :where(th,td){min-width:86px;padding:7px 8px;white-space:nowrap}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table th:first-child,
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table td:first-child{min-width:90px}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table th{white-space:normal;line-height:1.3}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-shadbala-method-note{font-size:.78rem;line-height:1.45;color:#62534a;margin:4px 0 8px}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-shadbala-status{display:inline-block;white-space:normal;font-size:.72rem;line-height:1.3;font-weight:750}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-strength-pass{color:#286341}
