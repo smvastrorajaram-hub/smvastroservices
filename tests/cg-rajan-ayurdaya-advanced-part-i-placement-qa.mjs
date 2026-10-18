@@ -72,7 +72,10 @@ for(const language of ['ta','en']){
  yes(html.startsWith('<section class="smv-cg-rajan-ayurdaya"'),
   language+' semantic report section');
  exactly((html.match(/<tr\b/g)||[]).length,9,language+' one method: header + seven grahas + selected total');
- yes(html.includes('Pinda Ayurdaya')&&!html.includes('Naisargika Ayurdaya')&&!html.includes('Amsa Ayurdaya'),
+ const pindaLabel=language==='ta'?'பிண்ட ஆயுள்':'Pinda Ayurdaya';
+ const naturalLabel=language==='ta'?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya';
+ const amsaLabel=language==='ta'?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya';
+ yes(html.includes(pindaLabel)&&!html.includes(naturalLabel)&&!html.includes(amsaLabel),
   language+' only strongest-Sun Pinda method is visible');
  no(html.includes('Average Ayurdaya')||html.includes('சராசரி ஆயுர்த்தாயம்'),
   language+' customer report excludes mean/average');
