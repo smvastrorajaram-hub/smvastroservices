@@ -188,19 +188,17 @@ function ashtakavarga(c,ta){
  return table(head,rows,'mm-base-av');
 }
 function shadbala(c,ta){
- const ps=(c?.planets||[]).filter(p=>p?.strengthUttaraKalamrita?.source);
+ const ps=(c?.planets||[]).filter(p=>p?.strengthJathakaKanitham?.available===true);
  if(!ps.length)return '';
- const h1=ta?['கிரகம்','ஸ்தானம்','திக்','காலம்','சேஷ்டா','நைசர்கிகம்','த்ரிக்']:['Planet','Sthana','Dig','Kala','Cheshta','Naisargika','Drig'];
- const h2=ta?['கிரகம்','மொத்த விரூபம்','ரூபம்']:['Planet','Total Virupa','Rupa'];
- const part1=ps.map(p=>{
-  const x=p.strengthUttaraKalamrita,st=x.sthana||{},k=x.kala||{};
-  return tr([name(p.name,ta),val(st.totalVirupa),val(x.dig?.virupa),val(k.totalVirupa),val(x.cheshta?.virupa),val(x.naisargikaVirupa),val(x.drig?.virupa)]);
+ const head=ta
+  ?['கிரகம்','ஸ்தானம்','திக்','காலம்','அயனம்','சேஷ்டா','நைசர்கிகம்','த்ரிக்','கணக்கிடப்பட்ட இடைமொத்தம்']
+  :['Planet','Sthana','Dig','Kala','Ayana','Cheshta','Naisargika','Drig','Computed subtotal'];
+ const rows=ps.map(p=>{
+  const r=p.strengthJathakaKanitham,st=r.sthana||{},k=r.kala||{};
+  return tr([name(p.name,ta),val(st.total),val(r.dig),val(k.total),val(r.ayana),
+   val(r.cheshta),val(r.naisargika),val(r.drig),val(r.partialSubtotalExcludingCheshtaAndDrig)]);
  });
- const part2=ps.map(p=>{
-  const x=p.strengthUttaraKalamrita;
-  return tr([name(p.name,ta),val(x.totalVirupa),val(x.totalRupa,3)]);
- });
- return table(h1,part1,'mm-base-shad-components')+table(h2,part2,'mm-base-shad-total');
+ return table(head,rows,'mm-base-shad-components');
 }
 function dasha(c,ta,ref){
  const from=String(ref||new Date().toISOString().slice(0,10));
