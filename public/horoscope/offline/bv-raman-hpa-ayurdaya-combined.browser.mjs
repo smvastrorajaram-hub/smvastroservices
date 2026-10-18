@@ -11,7 +11,6 @@
  */
 import {
   BV_RAMAN_AYURDAYA_PLANETS,
-  BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE,
   bvRamanAshtakavargaShodhana
 } from './bv-raman-ashtakavarga-ayurdaya.browser.mjs';
 
@@ -178,7 +177,7 @@ function conjunctionState(map, planetName, className = 'malefic', evidence = {})
     if (className === 'benefic' && nature === 'benefic') return true;
     if (!nature) unknown = true;
   }
-  return unknown ? null : false;
+  return unknown || !map.planets.has('Rahu') || !map.planets.has('Ketu') ? null : false;
 }
 function maleficInHouse(map, house) {
   if (!houseValid(house)) return null;
@@ -316,7 +315,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 5,
       houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 1)));
   rules.push(makeRule('XIV-ALP-02', 'Alpayu', 'Malefic influence across houses 6, 8 and 12',
-    triAny(...[6, 8, 12].map(house => maleficInHouse(map, house))));
+    triAny(...[6, 8, 12].map(house => maleficInHouse(map, house)))));
   rules.push(makeRule('XIV-ALP-03', 'Alpayu', 'Saturn 1; Sun, Moon and Mars 7',
     triAll(houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
       houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 7,
@@ -361,7 +360,10 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-PUR-03', 'Purnayu',
     'Jupiter in a Kendra from Lagna lord with no malefics in Kendras',
     triAll(isKendra(relativeJupiterHouse), maleficKendra === null ? null : maleficKendra === false)));
-  const anyExalted = [...map.planets.entries()].some(([name, p]) => isExalted(name, p.sign));
+  const anyKnownExalted = [...map.planets.entries()].some(([name, p]) => isExalted(name, p.sign));
+  const fullSevenSignsKnown = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+    .every(name => signValid(signOf(map, name)));
+  const anyExalted = anyKnownExalted ? true : (fullSevenSignsKnown ? false : null);
   rules.push(makeRule('XIV-PUR-04', 'Purnayu', 'Cancer Lagna, Jupiter in Lagna and an exalted planet',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 3,
       jupiterHouse === null ? null : jupiterHouse === 1, anyExalted)));
