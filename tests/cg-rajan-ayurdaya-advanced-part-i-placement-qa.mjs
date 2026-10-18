@@ -77,12 +77,14 @@ for(const language of ['ta','en']){
  no(html.includes('data-natural-harana=')||html.includes('data-amsa-harana='),
   language+' unselected natural/Amsa graha rows are not exposed');
  yes(html.includes('data-smv-cg-rajan-ayurdaya="1"'),language+' stable anchor');
- exactly((html.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
-  language+' all seven raw Table-A graha terms remain visible with unadjusted labeling');
- yes(html.includes('data-amsa-total="raw-unadjusted"'),
-  language+' raw Table-A sum is visible but not presented as the final Harana-adjusted Amsa total');
+ exactly((html.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length,7,
+  language+' all seven selected Pinda terms are clearly marked raw when Harana evidence is missing');
+ no(html.includes('data-natural-harana=')||html.includes('data-amsa-harana='),
+  language+' unselected method rows are not leaked into customer HTML');
  yes(html.includes(language==='ta'?'மூல மதிப்பு: ':'Raw: '),
-  language+' raw Amsa values are explicitly labelled');
+  language+' unresolved selected-method values are explicitly labelled');
+ yes(html.includes('data-selected-total="unavailable"'),
+  language+' does not present a raw, unadjusted sum as the final selected-method total');
   no(/NaN|undefined/.test(html),language+' arithmetic valid');
  no(/(?:deathAgeOrDate|predictedDeathAge|totalHumanLifetime)=/.test(html),
   language+' no computed human death prediction');
