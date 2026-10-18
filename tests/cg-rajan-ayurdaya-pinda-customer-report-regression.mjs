@@ -94,7 +94,10 @@ for(const [date,time] of [
   yes(lang.includes('Average Ayurdaya')||lang.includes('சராசரி ஆயுர்த்தாயம்'),'mean row exists');
   const blocked=(lang.match(/data-amsa-harana="blocked"/g)||[]).length;
   const adjusted=(lang.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length;
-  eq(blocked+adjusted,7,'each graha has adjusted Amsa candidate or blocked cell');
+  const raw=(lang.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length;
+  eq(blocked+adjusted+raw,7,'each graha has adjusted, raw-unadjusted, or data-missing Amsa cell');
+  yes(raw===0||lang.includes('Raw: ')||lang.includes('மூல மதிப்பு: '),
+    'unresolved Amsa rows expose raw terms with an explicit label');
   eq((lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
     'Pinda report exposes seven actual post-Harana rows '+date);
   eq((lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
@@ -103,8 +106,8 @@ for(const [date,time] of [
     'customer table includes auditable raw/deduction/adjusted values '+date);
   eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
     'Amsa total is shown only when every chart-specific Harana resolves');
-  eq(lang.includes('data-amsa-total="blocked"'),result.totals.amsa.available!==true,
-    'Amsa total is withheld if any chart-specific Harana is blocked');
+  eq(lang.includes('data-amsa-total="raw-unadjusted"'),result.totals.amsa.available!==true,
+    'Amsa total falls back to an explicitly unadjusted raw total when chart Harana is unresolved');
   yes(!lang.includes('undefined')&&!lang.includes('NaN'),'no malformed rows');
  }
  seen.add(ta);
