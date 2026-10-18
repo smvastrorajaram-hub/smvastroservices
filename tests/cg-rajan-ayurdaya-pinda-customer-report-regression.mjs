@@ -140,7 +140,7 @@ for(const [date,time] of [
   amsa:{ta:'அம்ச ஆயுர்த்தாயம்',en:'Amsa Ayurdaya'}
  };
  for(const [lang,code] of [[ta,'ta'],[en,'en']]){
-  eq((lang.match(/<tr\\b/g)||[]).length,9,'single method: header + seven grahas + total '+date+' '+code);
+  eq((lang.match(/<tr\b/g)||[]).length,9,'single method: header + seven grahas + total '+date+' '+code);
   yes(lang.includes(methodLabels[selected.selectedMethod][code]),'selected method heading is shown '+date+' '+code);
   eq(lang.includes('data-ayurdaya-selection="'+selected.selectedMethod+'"'),true,'the selected method is explicit in customer HTML '+date+' '+code);
   eq(lang.includes('data-selected-reference-role="'+selected.referenceRole+'"'),true,'the correct Sun/Moon/Lagna-lord reference is recorded '+date+' '+code);
@@ -149,7 +149,7 @@ for(const [date,time] of [
   for(const other of otherMethods){
    yes(!lang.includes(methodLabels[other][code]),'unchosen method hidden: '+other+' '+date+' '+code);
   }
-  const totalRow=lang.match(/<tr class="smv-ayurdaya-totals">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+  const totalRow=lang.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
   eq((totalRow.match(/<strong>/g)||[]).length,1,'only the selected method total is emphasized '+date+' '+code);
   eq(lang.includes('data-selected-total="adjusted-candidate"'),true,'selected seven-graha total is available for this fully evidenced chart '+date+' '+code);
   eq(lang.includes('class="smv-ayurdaya-average"'),false,'no average row markup '+date+' '+code);
