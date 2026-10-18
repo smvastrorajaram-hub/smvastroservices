@@ -5,6 +5,7 @@ on:
     paths:
       - 'public/horoscope/marriage-basic-report.mjs'
       - 'public/horoscope/marriage-basic-report.css'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'tests/marriage-print-browser-smoke.mjs'
       - '.github/workflows/marriage-print-browser-smoke.yml'
   pull_request:

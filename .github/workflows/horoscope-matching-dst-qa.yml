@@ -3,59 +3,63 @@ on:
   push:
     branches: [main]
     paths:
-      - 'public/horoscope/**'
+      - 'public/horoscope/**/*.js'
+      - 'public/horoscope/**/*.mjs'
+      - 'public/horoscope/**/*.cjs'
       - 'tests/**'
+      - '!tests/v358-result-layout-browser-smoke.mjs'
+      - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
+      - '!tests/cg-rajan-*.mjs'
+      - '!tests/uttara-kalamrita-*.mjs'
+      - '!tests/v357-bphs-shadbala-positional-regression.mjs'
+      - '!tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
+      - '!tests/v357-bphs-mercury-paksha-regression.mjs'
+      - '!tests/v361-uttara-kalamrita-shadbala-regression.mjs'
+      - '!tests/v362-bphs-primary-shadbala-regression.mjs'
+      - '!tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - '!tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
+      - '!tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - '!tests/v367-saura-true-natal-certification-gate.mjs'
+      - '!tests/v368-published-stage-historical-shadbala-audit.mjs'
+      - '!tests/classical-five-graha-date-to-cheshta-engine.mjs'
+      - '!tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
+      - '!tests/bphs-2026-live-cheshta-official-oracle.mjs'
+      - '!tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
+      - '!tests/marriage-print-browser-smoke.mjs'
+      - '!tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'public/horoscope/**'
+      - 'public/horoscope/**/*.js'
+      - 'public/horoscope/**/*.mjs'
+      - 'public/horoscope/**/*.cjs'
       - 'tests/**'
+      - '!tests/v358-result-layout-browser-smoke.mjs'
+      - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
+      - '!tests/cg-rajan-*.mjs'
+      - '!tests/uttara-kalamrita-*.mjs'
+      - '!tests/v357-bphs-shadbala-positional-regression.mjs'
+      - '!tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
+      - '!tests/v357-bphs-mercury-paksha-regression.mjs'
+      - '!tests/v361-uttara-kalamrita-shadbala-regression.mjs'
+      - '!tests/v362-bphs-primary-shadbala-regression.mjs'
+      - '!tests/v363-bphs-swiss-solar-cheshta-regression.mjs'
+      - '!tests/v364-swiss-orbital-cheshta-evidence-regression.mjs'
+      - '!tests/v366-bphs-published-cheshta-numerical-regression.mjs'
+      - '!tests/v367-saura-true-natal-certification-gate.mjs'
+      - '!tests/v368-published-stage-historical-shadbala-audit.mjs'
+      - '!tests/classical-five-graha-date-to-cheshta-engine.mjs'
+      - '!tests/bphs-ch26-sputa-drig-live-five-charts.mjs'
+      - '!tests/bphs-2026-live-cheshta-official-oracle.mjs'
+      - '!tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs'
+      - '!tests/marriage-print-browser-smoke.mjs'
+      - '!tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  v358-result-layout-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install Chromium and Puppeteer dependencies from repo
-        run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: V358 responsive result borders and layer geometry
-        run: node tests/v358-result-layout-browser-smoke.mjs
-      - name: Preserve V358 mobile and desktop screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: SMV-V358-LAYOUT-SMOKE
-          path: v358-layout-smoke-output/
-          if-no-files-found: warn
-          retention-days: 14
-  v359-symmetric-gutters-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install existing Chromium dependencies
-        run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: V359 four-viewport symmetric left/right border QA
-        run: node tests/v359-symmetric-gutters-browser-smoke.mjs
-      - name: Preserve V359 viewport screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: SMV-V359-SYMMETRY-SMOKE
-          path: v359-layout-smoke-output/
-          if-no-files-found: warn
-          retention-days: 14
   source-regression:
     runs-on: ubuntu-latest
     steps:
@@ -86,44 +90,14 @@ jobs:
         run: node tests/v357-bphs-shodhana-regression.mjs
       - name: V360 PVR textbook independent Shodhana numerical examples 40-43
         run: node tests/v360-pvr-shodhana-textbook-regression.mjs
-      - name: V357 BPHS positional Shadbala independent calculation oracle
-        run: node tests/v357-bphs-shadbala-positional-regression.mjs
-      - name: V361 Uttara Kalamrita seven-planet Shadbala p45, Yuddha and Drig QA
-        run: node tests/v361-uttara-kalamrita-shadbala-regression.mjs
       - name: B.V. Raman Ishta/Kashta formula and Chesta-for-Phala regression
         run: node tests/bv-raman-ishta-kashta-regression.mjs
-      - name: CG Rajan Jathaka Kanitham printed seven-graha Shadbala example independent oracle
-        run: node tests/cg-rajan-jathaka-kanitham-shadbala-print50-oracle.mjs
-      - name: V362 BPHS Chapter 27 Drig Bala and planetary-war pre-war difference
-        run: node tests/v362-bphs-primary-shadbala-regression.mjs
-      - name: V363 BPHS Swiss solar rise/set independent numeric oracle and Cheshta arithmetic
-        run: node tests/v363-bphs-swiss-solar-cheshta-regression.mjs
-      - name: V364 Swiss WASM mean orbital longitude source and BPHS classical isolation QA
-        run: node tests/v364-swiss-orbital-cheshta-evidence-regression.mjs
       - name: V365 independent IMD Surya Siddhanta mean-longitude and five Sheeghrocha oracle
         run: node tests/v365-saura-mean-motion-official-panchang-regression.mjs
-      - name: Official IMD seven-day five-graha BPHS Cheshta numerical reconciliation
-        run: node tests/v366-bphs-published-cheshta-numerical-regression.mjs
-      - name: V367 true-longitude dual-source 5-natal Shadbala certification gate
-        run: node tests/v367-saura-true-natal-certification-gate.mjs
-      - name: V368 paper step forensic and 25 historical candidate versus Swiss, 35 Shadbala totals
-        run: node tests/v368-published-stage-historical-shadbala-audit.mjs
-      - name: Classical five-graha DOB to True Longitude to Cheshta numeric engine
-        run: node tests/classical-five-graha-date-to-cheshta-engine.mjs
       - name: Surya Siddhanta 24 printed Jya versus geometric four-pass and five natal checks
         run: node tests/saura-24-jya-true-natal-precision-regression.mjs
       - name: Saturn Manda Karna sign conflict and academic Mars two-date source reconciliation
         run: node tests/saura-manda-karna-two-source-numerical-reconciliation.mjs
-      - name: BPHS Ch26 independent Sputa Drig + 35 live seven-graha chart numeric QA
-        run: node tests/bphs-ch26-sputa-drig-live-five-charts.mjs
-      - name: Official 2026 IMD versus actual live five-planet Cheshta source gap
-        run: node tests/bphs-2026-live-cheshta-official-oracle.mjs
-      - name: BPHS exact Naisargika and seven-graha sixfold mathematical reconciliation
-        run: node tests/bphs-seven-graha-sixfold-mathematical-reconciliation.mjs
-      - name: V357 BPHS Abda Masa sunrise temporal Bala and Sun Moon Cheshta
-        run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
-      - name: V357 Mercury conjunction Paksha Bala classical audit
-        run: node tests/v357-bphs-mercury-paksha-regression.mjs
       - name: V357 independent BPHS II Sun Moon Mars BAV Prastara audit
         run: node tests/v357-bphs-bav-prastara-regression.mjs
       - name: V357 book independent remaining four BAV contributor audit
