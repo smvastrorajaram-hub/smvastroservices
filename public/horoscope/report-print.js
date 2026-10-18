@@ -153,12 +153,21 @@
   }
   root.querySelectorAll('[hidden]').forEach(e=>e.hidden=false);
   root.querySelectorAll('.hidden').forEach(e=>e.classList.remove('hidden'));
-  // The complete interactive Vimshottari tree can span many calculation-only pages. The new Dasha/Bhukti human reading carries the timing interpretation in print.
-  const rawDasha=root.querySelector('#dashaTree');
-  if(rawDasha){
-    let prev=rawDasha.previousElementSibling;
-    while(prev&&!prev.classList.contains('transit-before-vimsottari')){const x=prev.previousElementSibling;prev.remove();prev=x;}
-    rawDasha.remove();
+  // Preserve the existing Vimshottari Dasa -> Bhukti -> Antaram tree in native PDF.
+  // Convert interactive headings to their same visible text before the print sanitizer removes controls.
+  const dashaTree=root.querySelector('#dashaTree');
+  if(dashaTree){
+    dashaTree.querySelectorAll('.dasha-head').forEach(button=>{
+      const heading=document.createElement('div');
+      heading.className='dasha-head dasha-head-print';
+      heading.innerHTML=button.innerHTML;
+      button.replaceWith(heading);
+    });
+    dashaTree.querySelectorAll('.dasha-arrow').forEach(node=>node.remove());
+    dashaTree.querySelectorAll('.dasha-node').forEach(node=>node.classList.add('open'));
+    dashaTree.querySelectorAll('.dasha-body').forEach(body=>{
+      body.hidden=false;body.style.display='block';body.style.maxHeight='none';body.style.height='auto';body.style.overflow='visible';
+    });
   }
   root.querySelectorAll('.smv-advanced-part').forEach(e=>e.classList.add('is-expanded'));
   root.querySelectorAll('[aria-expanded]').forEach(e=>e.setAttribute('aria-expanded','true'));

@@ -597,23 +597,10 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  };
  const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th>${commonCell('pinda',v)}${commonCell('natural',v)}${amsaCell(v)}</tr>`).join('');
  const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th><td data-pinda-total="${research.totals.pinda.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.pinda,ta))}</td><td data-natural-total="${research.totals.natural.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.natural,ta))}</td><td data-amsa-total="${research.totals.amsa.available===true?'adjusted-candidate':'blocked'}">${esc(fmtMaybe(research.totals.amsa,ta))}</td></tr>`;
- const blockedMethods=[
-  {key:'pinda',en:'Pinda',ta:'பிண்டம்'},
-  {key:'natural',en:'Naisargika',ta:'நைசர்க்கிகம்'},
-  {key:'amsa',en:'Amsa',ta:'அம்சம்'}
- ].filter(x=>research.totals[x.key].available!==true).map(x=>{
-  const blocked=(research.totals[x.key].blockedGrahas||[])
-   .map(name=>ta?name:(SPEC[name]?.en||name));
-  return (ta?x.ta:x.en)+': '+(blocked.length?blocked.join(', '):(ta?'கணக்கீட்டு ஆதாரம் இல்லை':'calculation evidence unavailable'));
- });
  const averageText=research.totals.averageOfThreeTotals
   ?esc(fmt(research.totals.averageOfThreeTotals,ta))
-  :esc(ta?'— (ஹரண ஆதாரம் முழுமையில்லை: '+blockedMethods.join('; ')+')':
-    '— (Harana evidence incomplete: '+blockedMethods.join('; ')+')');
- const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுள் — மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3 (இடைநிலை கணிதச் சராசரி)':'Average Ayurdaya — sum of the three totals ÷ 3 (provisional arithmetic mean)'}</span> <strong>${averageText}</strong></th></tr>`;
- const note=ta?
- 'பிண்ட மற்றும் நைசர்க்கிக முறைகளில் நூலின் சத்துரு-க்ஷேத்திரம்/அஸ்தங்கத முன்னுரிமை, சக்கிரபாத ஹரணங்கள் பயன்படுத்தப்படுகின்றன; தேவையான லக்னத் தகவல் உறுதியாக இருந்தால் பிண்ட/நைசர்க்கிகத்தில் மட்டும் குரூரோதய ஹரணமும் சேர்க்கப்படுகிறது. அம்ச முறையில் அட்டவணை A, பொருந்தும் ஹரணம், சக்கிரபாதம், பின்னர் மிக வலுவான பெருக்கி என்ற வரிசை பயன்படுத்தப்படுகிறது. ஒரே பாவத்தில் பல கிரகங்கள் இருந்தால் தற்போதைய strength3 மதிப்பின் அடிப்படையில் இடைக்காலத் தேர்வு செய்யப்படுகிறது; அது சுயாதீனமாகச் சான்றளிக்கப்பட்ட Shadbala அல்ல. தேவையான ஜாதகத் தகவல் இல்லையெனில் அல்லது ஹரணத்திற்குப் பின் எதிர்மறை மதிப்பு வந்தால் மூல மதிப்பை இறுதி பலனாகக் காட்டாமல் அந்தப் பத்தி/மொத்தம் மறைக்கப்படும். முறைத் தேர்வும் நூலில் உள்ள மொத்தக் கூட்டல் முரண்பாடும் இன்னும் முழுமையாகத் தீர்க்கப்படவில்லை; இவை ஆய்வு மதிப்புகள் மட்டுமே, ஆயுள் அல்லது மரண வயது/நாள் கணிப்பு அல்ல.':
- `Pinda and Naisargika use the book's common enemy-sign/combustion precedence and Chakrapada deductions; Pinda/Naisargika alone also apply the p.233 Gururodaya rule when the required Lagna evidence resolves. Amsa uses Table A, the selected condition Harana, Chakrapada and the strongest applicable multiplier in the printed order. Multiple Chakrapada occupants are selected provisionally from the current strength3 scores, which are not independently certified Shadbala. If required chart facts or a nonnegative post-Harana term cannot be resolved, the affected cell/total is withheld rather than replaced by an unadjusted raw value. Method selection and the book's printed-total discrepancy remain unreconciled; these are research candidates, not predictions of lifespan, death age or death date.`;
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஜாதக கணிதம் — பாரம்பரிய ஆயுர்த்தாயக் கணிதப் பகுப்பாய்வு':'Jathaka Kanitham — Traditional Ayurdaya Arithmetic'}</h3><p class="small">${esc(note)}</p><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}</tbody><tfoot>${totalLine}${averageLine}</tfoot></table></div></section>`;
+  :'—';
+ const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="4"><span>${ta?'சராசரி ஆயுர்த்தாயம் (மூன்று மொத்தங்களின் கூட்டுத்தொகை ÷ 3)':'Average Ayurdaya (sum of three totals ÷ 3)'}</span> <strong>${averageText}</strong></th></tr>`;
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><div class="adv-table-wrap smv-viii-table-scroll"><table class="adv-wide smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
 
 }
