@@ -459,6 +459,6 @@ console.log(JSON.stringify({pass:true,assertions:n,reference:'BPHS I R Santhanam
 await runBundledOracle4();
 const productionBrowser=fs.readFileSync(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs',import.meta.url),'utf8');
 const productionNode=fs.readFileSync(new URL('../swiss_vedic.js',import.meta.url),'utf8');
-assert.ok(!productionBrowser.includes('strength3:')&&!productionBrowser.includes('function phase3Strength('),'browser does not emit BPHS strength3');n++;
-assert.ok(!productionNode.includes('strength3:')&&!productionNode.includes('function phase3Strength('),'Node does not emit BPHS strength3');n++;
-console.log(JSON.stringify({pass:true,assertions:n,scope:'standalone BPHS Drig source oracle only; BPHS live strength3 removed'}));
+assert.ok(!productionBrowser.includes('strength3:')&&!productionBrowser.includes('function phase3Strength('),'browser does not emit BPHS strength3');
+assert.ok(!productionNode.includes('strength3:')&&!productionNode.includes('function phase3Strength('),'Node does not emit BPHS strength3');
+console.log(JSON.stringify({pass:true,sourceChecks:2,scope:'standalone BPHS Drig source oracle only; BPHS live strength3 removed'}));
