@@ -1079,6 +1079,7 @@
     function simpleTable(heads,rows){ const rr=Array.isArray(rows)?rows:(rows==null?[]:[rows]); const body=rr.map(r=>{ if(typeof r==='string') return r; if(Array.isArray(r)) return `<tr>${r.map(x=>`<td>${escSafe(x??'—')}</td>`).join('')}</tr>`; if(r&&typeof r==='object') return `<tr>${Object.values(r).map(x=>`<td>${escSafe(x??'—')}</td>`).join('')}</tr>`; return `<tr><td>${escSafe(r??'—')}</td></tr>`; }).join(''); return `<div class="adv-table-wrap"><table class="adv-wide"><thead><tr>${heads.map(x=>`<th>${escSafe(x)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`; }
     const p1Title=(en,taText)=>lang==='en'?en:taText;
     const p1Esc=v=>escSafe(v??'—');
+    const p1ArudhaLabel=(x,i=0)=>{const h=Number(x?.house);const house=Number.isInteger(h)&&h>=1&&h<=12?h:i+1;return house===1?'AL':house===12?'UL':`A${house}`;};
     const p1P=v=>{
   const q=raw(v);
   const planetEnglish={
@@ -1106,7 +1107,7 @@
     // The 12-Lagna display is intentionally rendered once, immediately below D-9 Navamsa.
     // Do not render the old separate Phase-1 Special Lagnas cards here.
     if(p1.arudhas){
-      h+=`<div class="adv-section phase1-module"><h3>🔱 ${p1Title('Arudha Padas','ஆரூட பாதங்கள்')}</h3><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${p1Title('Arudha','ஆரூடம்')}</th><th>${p1Title('Source sign','மூல ராசி')}</th><th>${p1Title('Lord','அதிபதி')}</th><th>${p1Title('Lord sign','அதிபதி ராசி')}</th><th>${p1Title('Result','பலன் ராசி')}</th></tr></thead><tbody>${safeRows(p1.arudhas.items).map(x=>`<tr><td><b>${p1Esc(x.house===1?'AL':x.house===12?'UL':`A${x.house}`)}</b></td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.lordSign)}</td><td><b>${S(x.rasi)}</b></td></tr>`).join('')}</tbody></table></div><p class="small">${p1Esc(p1.arudhas.method)}</p></div>`;;
+      h+=`<div class="adv-section phase1-module"><h3>🔱 ${p1Title('Arudha Padas','ஆரூட பாதங்கள்')}</h3><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${p1Title('Arudha','ஆரூடம்')}</th><th>${p1Title('Source sign','மூல ராசி')}</th><th>${p1Title('Lord','அதிபதி')}</th><th>${p1Title('Lord sign','அதிபதி ராசி')}</th><th>${p1Title('Result','பலன் ராசி')}</th></tr></thead><tbody>${safeRows(p1.arudhas.items).map((x,i)=>`<tr><td><b>${p1Esc(p1ArudhaLabel(x,i))}</b></td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.lordSign)}</td><td><b>${S(x.rasi)}</b></td></tr>`).join('')}</tbody></table></div><p class="small">${p1Esc(p1.arudhas.method)}</p></div>`;;
     }
     if(p1.grahaArudhas){
       h+=`<div class="adv-section phase1-module"><h3>🪐 ${p1Title('Graha Arudhas','கிரக ஆரூடங்கள்')}</h3>${simpleTable([p1Title('Planet','கிரகம்'),p1Title('Source sign','மூல ராசி'),p1Title('Lord','அதிபதி'),p1Title('Arudha','ஆரூட ராசி')],safeRows(p1.grahaArudhas.items).map(x=>`<tr><td>${p1P(x.planet)}</td><td>${S(x.sourceSign)}</td><td>${p1P(x.lord)}</td><td>${S(x.arudha)}</td></tr>`))}<p class="small">${p1Esc(p1.grahaArudhas.method)}</p></div>`;
