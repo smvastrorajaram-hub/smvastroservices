@@ -150,8 +150,9 @@ function pakshaBala(planet,planets){
 function ayanaBala(planet,declination){
  if(!finite(declination))throw new TypeError('Tropical declination missing for '+planet);
  // Raman Ch. V §§71-75: 24-degree method shown in Example 33; Sun is doubled.
- const favoursNorth=['சந்திரன்','புதன்','குரு'].includes(planet);
- const raw=(24+(favoursNorth?Math.abs(declination):-Math.abs(declination)))*60/48;
+ const favoursNorth=['சூரியன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்'].includes(planet);
+ const signedTerm=(favoursNorth?1:-1)*declination;
+ const raw=(24+signedTerm)*60/48;
  return round3(Math.max(0,Math.min(planet==='சூரியன்'?120:60,raw*(planet==='சூரியன்'?2:1))));
 }
 function chestaBala(planet,jdUt){
