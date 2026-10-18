@@ -1,5 +1,5 @@
 /**
- * CG Rajan Jathaka Kanitham I, pp. 249–254 (scanned PDF pp.271–276).
+ * CG Rajan Jathaka Kanitham I, printed pp.231–254 (scanned PDF pp.253–276).
  * Pindayurdaya and separately reviewed Naisargika per-graha fractions.
  * RESEARCH / CULTURAL ARITHMETIC, never a medical lifespan estimate or
  * an age/date-of-death prediction. Do not combine totals across systems.
