@@ -102,7 +102,7 @@ ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham exp
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
-ok(ta.includes('mm-base-shad-components')&&ta.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),'Shadbala split into readable components with an explicitly limited subtotal');
+ok(ta.includes('mm-base-shad-components')&&ta.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'),'Tamil Shadbala table shows readable components with an explicitly limited subtotal');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');
 const basicModule=read('public/horoscope/marriage-basic-report.mjs');
 ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');
