@@ -209,6 +209,95 @@ try{
  }));
  assert.equal(form.length,4,'Two DOB and two Rasi/Nakshatra fieldsets present');
  assert.ok(form.every(x=>x.border==='0px'&&x.shadow==='none'),'No nested fieldset cards in either Nakshatra mode');
- console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length}));
+
+ // End-to-end standalone Horoscope snapshot -> report-print.html -> Chromium PDF.
+ // This exercises the same cached-core renderer and saved-report printer used by
+ // customer Horoscope, not a hand-written duplicate Shadbala table.
+ const sameOrigin=new URL(origin).origin;
+ await page.setRequestInterception(true);
+ page.on('request',req=>{
+  try{if(new URL(req.url()).origin===sameOrigin)req.continue();else req.abort();}
+  catch{req.abort();}
+ });
+ await page.goto(new URL('index.html',origin).href,{waitUntil:'domcontentloaded',timeout:45000});
+ await page.waitForFunction(()=>typeof window.__smvRenderCachedCore==='function',{timeout:30000});
+ const horoscopeChart={...people[0]};
+ delete horoscopeChart.advanced;
+ const horoscopeRender=await page.evaluate(data=>{
+  document.documentElement.lang='ta';
+  try{localStorage.setItem('smvLanguage','ta');}catch{}
+  const name=document.getElementById('tamilAstroName');if(name)name.value='B.V. Raman Horoscope PDF QA';
+  const place=document.getElementById('tamilBirthPlace');if(place)place.value='Perambalur';
+  window.__smvRenderCachedCore(data);
+  const root=document.getElementById('tamilHoroscopeResult');
+  const rows=[...root.querySelectorAll('.smv-shadbala-table tbody tr')].map(tr=>({
+   name:tr.cells[0]?.innerText.trim(),components:[...tr.cells].slice(1,7).map(td=>td.innerText.trim()),
+   total:tr.cells[7]?.innerText.trim(),rupa:tr.cells[8]?.innerText.trim(),
+   required:tr.cells[9]?.innerText.trim(),rank:tr.cells[10]?.innerText.trim()
+  }));
+  return {html:root.innerHTML,rows,expected:data.planets.filter(p=>p?.strength6?.available&&p.strength6.components).map(p=>({name:p.name,total:Number.isFinite(p.strength6.totalVirupa)?p.strength6.totalVirupa:null}))};
+ },horoscopeChart);
+ assert.ok(horoscopeRender.html.includes('மொத்த ஷட்பலம் (விரூபம்)')&&horoscopeRender.html.includes('சேஷ்டா பலம்')&&horoscopeRender.html.includes('த்ரிக் பலம்'),
+  'Primary Horoscope renderer creates all six Bala columns in Tamil');
+ assert.equal(horoscopeRender.rows.length,7,'Primary Horoscope renderer produces seven graha rows');
+ for(const row of horoscopeRender.rows){
+  const expected=horoscopeRender.expected.find(p=>p.name===row.name);
+  assert.ok(expected&&expected.total!==null,'Primary Horoscope row has live strength6 total: '+row.name);
+  assert.equal(row.total,Number(expected.total).toFixed(1),'Primary Horoscope printed Virupa matches strength6: '+row.name);
+ }
+ const horoscopeReportKey='smv-strength6-horoscope-pdf-smoke';
+ const horoscopeSelection={key:horoscopeReportKey,owner:'smv-pdf-smoke-user',language:'ta',mode:'view',createdAt:Date.now()};
+ await page.evaluate(async({html,selection,birth})=>{
+  const db=await new Promise((resolve,reject)=>{
+   const q=indexedDB.open('smv-reports-v2',3);
+   q.onupgradeneeded=()=>{
+    const d=q.result;
+    let st;
+    if(!d.objectStoreNames.contains('reports'))st=d.createObjectStore('reports',{keyPath:'key'});
+    else st=q.transaction.objectStore('reports');
+    if(!st.indexNames.contains('owner'))st.createIndex('owner','owner',{unique:false});
+    if(!st.indexNames.contains('updatedAt'))st.createIndex('updatedAt','updatedAt',{unique:false});
+   };
+   q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+  });
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('reports','readwrite');
+   tx.objectStore('reports').put({
+    key:selection.key,owner:selection.owner,feature:'advanced_analysis',name:'B.V. Raman Horoscope PDF QA',
+    language:'ta',html,views:{ta:html},identity:{date:birth?.date||'1992-07-31',time:birth?.time||'22:05',birthPlace:'Perambalur'},
+    calculation:{birth:birth||{},birthPlace:'Perambalur'},cover:{person:{name:'B.V. Raman Horoscope PDF QA',place:'Perambalur'}},
+    createdAt:Date.now(),updatedAt:Date.now(),deleted:false
+   });
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+  });
+  db.close();
+  sessionStorage.setItem('smv-print-report',JSON.stringify(selection));
+ },{html:horoscopeRender.html,selection:horoscopeSelection,birth:horoscopeChart.birth||{}});
+ await page.goto(new URL('report-print.html?mode=view',origin).href,{waitUntil:'load',timeout:45000});
+ await page.waitForFunction(()=>document.querySelectorAll('#printReport .smv-shadbala-table tbody tr').length===7,{timeout:30000});
+ const horoscopePrint=await page.evaluate(async()=>{
+  await document.fonts.ready;
+  const root=document.getElementById('printReport'),table=root.querySelector('.smv-shadbala-table');
+  return {
+   rows:[...table.querySelectorAll('tbody tr')].map(tr=>({name:tr.cells[0]?.innerText.trim(),total:tr.cells[7]?.innerText.trim()})),
+   headers:[...table.querySelectorAll('thead th')].map(th=>th.innerText.trim()),
+   tamilFontReady:document.fonts.check('8pt SMVTamil','சராசரி ஆயுர்த்தாயம்'),
+   title:document.title,ready:document.getElementById('printStatus')?.innerText||''
+  };
+ });
+ assert.equal(horoscopePrint.rows.length,7,'Saved Horoscope print DOM preserves all seven Shadbala rows');
+ assert.ok(horoscopePrint.headers.includes('ஸ்தான பலம்')&&horoscopePrint.headers.includes('திக் பலம்')&&horoscopePrint.headers.includes('கால பலம்')&&horoscopePrint.headers.includes('சேஷ்டா பலம்')&&horoscopePrint.headers.includes('நைசர்கிக பலம்')&&horoscopePrint.headers.includes('த்ரிக் பலம்')&&horoscopePrint.headers.includes('மொத்த ஷட்பலம் (விரூபம்)'),
+  'Saved Horoscope print DOM preserves all six Bala columns and final total');
+ assert.equal(horoscopePrint.tamilFontReady,true,'Saved Horoscope print DOM loads embedded Tamil font');
+ for(const row of horoscopePrint.rows){
+  const expected=horoscopeRender.rows.find(p=>p.name===row.name);
+  assert.equal(row.total,expected.total,'Saved Horoscope print total matches visible Horoscope result: '+row.name);
+ }
+ const horoscopePdf=new URL('horoscope-print-strength6.pdf',output);
+ await page.pdf({path:fileURLToPath(horoscopePdf),format:'A4',printBackground:true,preferCSSPageSize:true});
+ assert.ok((await stat(horoscopePdf)).size>25000,'Standalone Horoscope Shadbala PDF is generated');
+ await page.screenshot({path:fileURLToPath(new URL('horoscope-print-strength6.png',output)),fullPage:false});
+
+ console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length,horoscopePdf:true,horoscopePdfRows:horoscopePrint.rows.length,horoscopePdfHeaders:horoscopePrint.headers,tamilFontReady:horoscopePrint.tamilFontReady}));
 
 }finally{await browser.close();await new Promise(resolvePromise=>server.close(resolvePromise));}
