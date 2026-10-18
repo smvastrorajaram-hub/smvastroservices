@@ -26,7 +26,7 @@ const fn=input=>{values.push(input);return transit(input);};
 const opts={language:'ta',brideStyle:'south',groomStyle:'north',reviewDate:'2026-10-16',
  poruthamRows:[['Dina',true,''],['Rajju',false,'Audit']],transitFn:fn};
 const ta=await renderBasicMatching(charts[0],charts[1],opts);
-ok(ta.includes('mm-shadbala-status')&&ta.includes('இடைக்காலக் கணக்கீடுகள்')&&ta.includes('Uttara Kalamrita'),'Tamil Matching report marks Shadbala provisional');
+ok(ta.includes('mm-shadbala-status')&&ta.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&ta.includes('இறுதி சட்பலச் சான்றிதழ்'),'Tamil Matching report discloses UK intermediate-only Shadbala');
 ok(ta.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'Tamil title');
 ok(ta.includes('mm-base-south')&&ta.includes('mm-base-north'),'Independent South and North charts');
 for(const needle of ['ராசிக் கட்டம் D1','நவாம்சக் கட்டம் D9','பாவக் கட்டம்','D2','D7','D9','D10','நட்சத்திரம்','பாதம்','பின்னாஷ்டகவர்க்கம்','சர்வாஷ்டகவர்க்கம்','ஷட்பலம்','விம்சோத்தரி தசா','கோச்சாரக் கட்டம்'])ok(ta.includes(needle),'Tamil report missing '+needle);
@@ -39,7 +39,7 @@ eq(values[0].utcOffsetMinutes,330,'India review-date offset 330');
 eq(values[1].utcOffsetMinutes,60,'London October-16 DST offset 60');
 eq(values[0].language,'en','One language-neutral transit calculation per person');
 const en=await renderBasicMatching(charts[0],charts[1],{...opts,language:'en',brideStyle:'east',groomStyle:'north'});
-ok(en.includes('mm-shadbala-status')&&en.includes('provisional')&&en.includes('Uttara Kalamrita'),'English Matching report marks Shadbala provisional');
+ok(en.includes('mm-shadbala-status')&&en.includes('Only Uttara Kalamrita intermediate components are shown')&&en.includes('not a final Shadbala certificate'),'English Matching report discloses UK intermediate-only Shadbala');
 ok(en.includes('Marriage Matching — Basic Calculation Report'),'English title');
 ok(en.includes('mm-base-east')&&en.includes('mm-base-north'),'East and North combinations');
 ok(en.includes('Shadbala')&&en.includes('Sarvashtakavarga')&&en.includes('Nakshatra')&&en.includes('Bhukti'),'English labels');
