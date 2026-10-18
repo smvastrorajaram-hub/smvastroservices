@@ -49,7 +49,7 @@ for(const language of ['ta','en']){
  check((result.includes('Pinda Ayurdaya')&&result.includes('Naisargika Ayurdaya')&&result.includes('Amsa Ayurdaya'))||
        (result.includes('பிண்ட ஆயுள்')&&result.includes('நைசர்க்கிக ஆயுள்')&&result.includes('அம்ச ஆயுர்த்தாயம்')),
   'Three-method table columns '+language);
- check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுள்'),
+ check(result.includes('Average Ayurdaya')||result.includes('சராசரி ஆயுர்த்தாயம்'),
   'Three-total mean row '+language);
  check(!result.includes('<script')&&!result.includes('onload='),
   'Safe snapshot HTML '+language);
