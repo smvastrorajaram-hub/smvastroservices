@@ -96,4 +96,107 @@ eq([hpaSun.planets.Sun.rasiPinda,hpaSun.planets.Sun.grahaPinda,hpaSun.planets.Su
   [112,45,157], 'HPA Chapter XXVI Sun Pinda example');
 near(hpaSun.planets.Sun.grossLunarYears, 157 * 7 / 27 - 27, 1e-10,
   'Sun gross lunar-year arithmetic before Harana');
-eq(hpaSun.planets.Sun.har ana, undefined, 'will be replaced');
+eq(hpaSun.planets.Sun.harana.resolved, true, 'explicit Sun Harana inputs resolve the Sun term');
+eq(hpaSun.netLunarYears, null, 'other six planets remain unresolved without their own Harana inputs');
+eq(hpaSun.finalLifespan, null, 'HPA source arithmetic never releases a final result');
+
+const standard = BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE;
+const standardCalc = bvRamanHpaChapterXXVICompute({
+  afterReductionRows: standard.afterReductionRows,
+  planetSigns: standard.planetSigns,
+  haranaByPlanet: {}
+});
+const standardPinda = {
+  Sun:[96,86,182], Moon:[80,20,100], Mars:[126,71,197], Mercury:[97,61,158],
+  Jupiter:[79,45,124], Venus:[61,5,66], Saturn:[108,62,170]
+};
+for (const [planet, expected] of Object.entries(standardPinda)) {
+  eq([standardCalc.planets[planet].rasiPinda, standardCalc.planets[planet].grahaPinda,
+    standardCalc.planets[planet].sodyaPinda], expected,
+    planet + ' distinct Standard Horoscope reduced-row arithmetic');
+}
+
+// The book reports rounded gross terms for its worked chart. Keep those source
+// figures separate from gross years recomputed from integer Pinda products.
+const reportedNetExpected = {
+  Sun:13.70, Moon:7.76, Mars:2.33, Mercury:0.48,
+  Jupiter:4.00, Venus:12.44, Saturn:8.27
+};
+const sourceReportedNet = {};
+const pindaRecomputedNet = {};
+for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']) {
+  const flags = {
+    conjunctionInSign: hpa.reportedHaranaFactors[planet] === 0.5,
+    debilitated:false, combust:false, temporaryEnemySign:false,
+    aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:false
+  };
+  const sourceGross = hpa.reportedGrossLunarYears[planet];
+  const sourceNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:sourceGross,factors:flags});
+  sourceReportedNet[planet] = sourceNet.printedNetLunarYears;
+  eq(sourceNet.printedNetLunarYears, reportedNetExpected[planet],
+    planet + ' displayed gross term plus displayed Harana reproduces the printed net term');
+
+  const pindaSum = hpa.reportedRasiPinda[planet] + hpa.reportedGrahaPinda[planet];
+  const unwrapped = pindaSum * 7 / 27;
+  const formulaGross = ((unwrapped % 27) + 27) % 27;
+  const recomputedNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:formulaGross,factors:flags});
+  pindaRecomputedNet[planet] = recomputedNet.printedNetLunarYears;
+}
+const printedNetSum = Object.values(sourceReportedNet).reduce((a,b)=>a+b,0);
+const recomputedNetSum = Object.values(pindaRecomputedNet).reduce((a,b)=>a+b,0);
+eq(printedNetSum, 48.98, 'printed per-graha net terms sum to the book total 48.98');
+eq(recomputedNetSum, 48.97,
+  'unrounded Pinda-to-gross recomputation then Harana truncation yields 48.97; discrepancy is preserved');
+near(48.98 * 334 / 365, 44.8200547945, 1e-8,
+  'printed total converted by 334/365 gives 44.82, not printed 44.87');
+near(48.97 * 334 / 365, 44.8109041096, 1e-8,
+  'recomputed net candidate converted by 334/365 gives 44.81');
+ok(Math.abs(44.87 - 48.98 * 334 / 365) > 0.04,
+  'printed 44.87 discrepancy is explicit and not patched');
+eq(hpaSun.finalLifespan, null, 'source-example calculation never emits final lifespan');
+
+// End-to-end join: raw BAV -> Trikona/Ekadhipatya -> Chapter XXVI Pinda/Harana,
+// while the Chapter XIV category evidence stays as an independent track.
+const noHarana = Object.fromEntries(
+  ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'].map(name => [name, {
+    conjunctionInSign:false, debilitated:false, combust:false, temporaryEnemySign:false,
+    aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:false
+  }])
+);
+const integrated = bvRamanIntegratedAyurdayaResearch({
+  chart, evidence: { strongPlanets: ['Jupiter'] },
+  bavRows: standard.beforeReductionRows,
+  occupiedSigns: standard.occupiedSigns,
+  planetSigns: standard.planetSigns,
+  haranaByPlanet: noHarana
+});
+ok(integrated.shodhana !== null, 'combined flow includes both Ashtakavarga reductions');
+ok(integrated.chapterXXVI !== null, 'combined flow includes Chapter XXVI calculation');
+ok(integrated.chapterXIV.matchedRuleIds.includes('XIV-BAL-09'),
+  'combined flow carries the Chapter XIV rule trace');
+eq(integrated.crossCheck.ruleAndNumberTracksKeptSeparate, true,
+  'category evidence is not averaged with numerical arithmetic');
+eq(integrated.finalLifespan, null, 'combined research flow has no final lifespan');
+eq(integrated.finalAgeOrDateOfDeath, null, 'combined research flow has no death-age/date output');
+eq(integrated.certified, false, 'combined flow remains uncertified');
+eq(integrated.customerDisplayAllowed, false, 'combined flow is not customer-facing');
+
+const fs = await import('node:fs');
+const source = fs.readFileSync(
+  new URL('../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs', import.meta.url),
+  'utf8'
+);
+ok(!/cg-rajan|classical-shodhana/i.test(source),
+  'combined module does not import C.G. Rajan or BPHS Shodhana helpers');
+ok(!/predictedDeathAge|finalAgeOrDateOfDeath\s*=\s*[^n]/i.test(source),
+  'combined module has no age-of-death predictor');
+console.log(JSON.stringify({
+  pass:true, assertions,
+  scope:'B.V. Raman HPA Chapter XIV rule evidence + Chapter XXVI Ashtakavarga arithmetic',
+  printedNetLunarYears:printedNetSum,
+  recomputedNetLunarYears:recomputedNetSum,
+  printedSolarYears:44.87,
+  solarYearsFromPrintedNet:48.98 * 334 / 365,
+  solarYearsFromRecomputedNet:48.97 * 334 / 365,
+  certification:false, finalLifespanEmitted:false, customerDisplayAllowed:false
+}, null, 2));
