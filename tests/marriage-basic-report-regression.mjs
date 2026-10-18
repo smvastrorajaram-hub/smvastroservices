@@ -112,7 +112,7 @@ ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham exp
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('table.smv-shadbala-table{min-width:1120px!important')&&css.includes('.smv-ayurdaya-average-basis'),'Wide Shadbala scroll and readable Ayurdaya basis styles exist');
-ok(css.includes('.mm-basic-report table.smv-ayurdaya-table thead th,')&&css.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th')&&css.includes('color:#fff;background:#8f0000;font-weight:800'),'Matching Ayurdaya heading and planet names are white, dark-red backed, and bold');
+ok(css.includes('.mm-basic-report table.smv-ayurdaya-table thead th{')&&css.includes('color:#4b251b;background:#f4ead8;font-weight:800')&&css.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{')&&css.includes('color:#302722;background:#fffdfb;font-weight:800'),'Matching Ayurdaya heading and planet-name cells follow the Shadbala table palette');
 ok(css.includes('font-weight:700;background:#faf2e4'),'Matching Ayurdaya total row keeps its existing palette');
 ok(css.includes('font-weight:700;color:#333;background:transparent;')&&css.includes('background:#faf2e4;color:#302722;text-align:center'),'Matching average explanation has no white box; average row follows the standard warm table palette');
 ok(css.includes('font-size:1.12rem;line-height:1.3;text-align:center;color:#842026'),'Matching Ayurdaya heading follows the normal section-heading style');
