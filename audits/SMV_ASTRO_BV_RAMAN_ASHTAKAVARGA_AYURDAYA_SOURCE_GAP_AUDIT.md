@@ -85,6 +85,25 @@ Method B secondary worked example-ல் `Rasi Pinda=217; Graha Pinda=195; Sodhy
 
 Trikona/Ekadhipatya வரிசை, occupancy விதிவிலக்குகள் மற்றும் reduced Sarvashtakavarga கட்டமைப்பு research-only ஆகச் சேர்க்கப்பட்டுள்ளன. இது BPHS Shodhana helper-ஐ மறுபெயரிட்டு பயன்படுத்துவது அல்ல. ஆனால் முதன்மை Raman அச்சுப் பக்கங்களும், முழுக் கணக்கைக் கொண்ட அசல் chart example-உம் சேர்க்கப்படும் வரை `certified:false` எனவே இருக்கும்.
 
+## ஏழு கிரகங்களுக்கான Standard Horoscope reduction regression
+
+இப்போது B. V. Raman, *Ashtakavarga System of Prediction*, Chapter II, Table I-இன் before/after-reduction தரவுகளின் ஒரு secondary transcription தனி oracle ஆகச் சேர்க்கப்பட்டுள்ளது. அந்த transcription-இல் ஜூலை 2026 திருத்தக் குறிப்பு உள்ளது: Standard Horoscope-இல் சந்திரன் கும்பம், புதன் துலாம். இது அசல் அச்சுப் பக்கத்தை நேரடியாகக் கண்ணால் சரிபார்த்ததற்கு மாற்றாகாது; இருந்தாலும், ஏழு கிரகங்களின் 84 reduced bindu cells, 12 reduced-SAV totals ஆகியவற்றை regression-ல் ஒப்பிட முடிகிறது.
+
+| கிரகம் | BAV மொத்தம் (முன்) | Trikona + Ekadhipatya பின் மொத்தம் | Rasi Pinda | Graha Pinda | Sodhya Pinda |
+|---|---:|---:|---:|---:|---:|
+| சூரியன் | 48 | 12 | 96 | 86 | 182 |
+| சந்திரன் | 49 | 11 | 80 | 20 | 100 |
+| செவ்வாய் | 39 | 13 | 126 | 71 | 197 |
+| புதன் | 54 | 12 | 97 | 61 | 158 |
+| குரு | 56 | 11 | 79 | 45 | 124 |
+| சுக்கிரன் | 52 | 8 | 61 | 5 | 66 |
+| சனி | 39 | 15 | 108 | 62 | 170 |
+| **மொத்தம்** | **337** | **82** |  |  |  |
+
+இந்த Rasi Pinda-கள் அனைத்திலும் 12 ராசிகளுக்கான ஒவ்வொரு `after-reduction bindu × Rasi Gunakara` பெருக்கலும், Graha Pinda-வில் ஏழு கிரகங்களின் `bindu at that planet's sign × Graha Gunakara` பெருக்கல்களும் test-ல் தனித்தனியாக ஒப்பிடப்படுகின்றன. பின்னர் Rasi + Graha = Sodhya என்பதும் ஒவ்வொரு கிரகத்திற்கும் உறுதிசெய்யப்படுகிறது.
+
+**குறிப்பு:** மேலுள்ள Standard Horoscope Pinda அட்டவணை என்பது Table I reduced rows-இலிருந்து மறுகணக்கிட்ட மதிப்புகள். இதை ASOP Method-A secondary guide-ல் வேறு இடத்தில் கூறப்பட்ட `Venus 66+0`, `Saturn 170+42` போன்ற split-களுடன் ஒன்றாகக் கருதக்கூடாது. அந்த guide-ல் உள்ள Planet totals/gross-year எடுத்துக்காட்டுகள் அப்படியே தனி discrepancy test ஆக வைத்திருக்கப்படுகின்றன; ஒன்றை மற்றொன்றுக்கு ஏற்றவாறு மாற்றவில்லை.
+
 ## கட்டாயமாக நிறைவேற்ற வேண்டிய சான்றுகள்
 
 1. *Ashtakavarga System of Prediction* நூலின் பதிப்பு விவரம், Ayurdaya அத்தியாயம் மற்றும் சம்பந்தப்பட்ட அச்சுப் பக்கங்களை scan-இல் காட்சி வடிவில் சரிபார்த்தல்.
