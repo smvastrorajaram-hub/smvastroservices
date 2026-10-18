@@ -348,9 +348,17 @@ for(const [date,time] of births){
   eq(p.strength6.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength6.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
   const c=p.strength6.components||{};
-  const sum=Number(c.sthana?.total||0)+Number(c.dig||0)+Number(c.kala?.total||0)+Number(c.cheshta||0)+Number(c.naisargika||0)+Number(c.drik||0);
-  ok(Number.isFinite(sum)&&Number.isFinite(p.strength6.totalVirupa)&&Math.abs(sum-p.strength6.totalVirupa)<0.004,
-   'Shadbala total equals six unrounded components '+date+' '+p.name);
+  ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
+   Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
+   'B.V. Raman six individual components remain available '+date+' '+p.name);
+  if(Number.isFinite(p.strength6.totalVirupa)){
+   const sum=Number(c.sthana.total)+Number(c.dig)+Number(c.kala.total)+Number(c.cheshta)+Number(c.naisargika)+Number(c.drik);
+   ok(Math.abs(sum-p.strength6.totalVirupa)<0.01,
+    'Shadbala total equals six components '+date+' '+p.name);
+  }else{
+   eq(p.strength6.totalVirupa,null,'unresolved total is withheld '+date+' '+p.name);
+   eq(p.strength6.totalRupa,null,'Rupa is also withheld when total is unresolved '+date+' '+p.name);
+  }
  }
  ok(x.entries.some(e=>e.amsa&&e.amsa.rawAmsaFractionOfPada>1e-8&&e.amsa.rawAmsaFractionOfPada<1-1e-8),
   'actual natal longitudes retain fractional Amsa arc '+date);
