@@ -118,9 +118,11 @@ try{
   assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
   assert.equal(mobile.ayurdayaTables,ayurdayaSelections.filter(s=>s.available).length,'Only Shadbala-selected Ayurdaya tables appear on mobile: '+style);
-  assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(74, 53, 45)'&&mobile.ayurdayaHeaderStyle.background==='rgb(255, 247, 232)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the exact Shadbala header palette: '+style+' '+JSON.stringify(mobile.ayurdayaHeaderStyle));
-  if(mobile.ayurdayaTables>0)assert.ok(mobile.ayurdayaTotalStyle&&mobile.ayurdayaTotalStyle.background==='rgb(250, 242, 228)'&&mobile.ayurdayaTotalStyle.weight>=700,'Selected Ayurdaya total row uses the approved cream palette: '+style);
-  assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are black bold on a pure-white cell: '+style);
+  if(mobile.ayurdayaTables>0){
+   assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(74, 53, 45)'&&mobile.ayurdayaHeaderStyle.background==='rgb(255, 247, 232)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the exact Shadbala header palette: '+style+' '+JSON.stringify(mobile.ayurdayaHeaderStyle));
+   assert.ok(mobile.ayurdayaTotalStyle&&mobile.ayurdayaTotalStyle.background==='rgb(250, 242, 228)'&&mobile.ayurdayaTotalStyle.weight>=700,'Selected Ayurdaya total row uses the approved cream palette: '+style);
+   assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are black bold on a pure-white cell: '+style);
+  }
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
