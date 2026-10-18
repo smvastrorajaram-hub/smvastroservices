@@ -566,64 +566,186 @@ const fmt=(value,ta)=>{
 const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[ch]));
-/** Customer-visible CULTURAL arithmetic transparency, not longevity
- * prognostication; no consolidated lifespan or death-time output.
- * Does not depend on print-only DOM state so Saved/PDF snapshots can
- * contain this section just like the already-rendered horoscope.
+/**
+ * Select exactly one of Rajan's principal methods from the actual chart's
+ * available sixfold Shadbala totals (Virupa). The Lagna lord is derived only
+ * from the calculated Lagna longitude; no sign-label guessing is permitted.
+ *
+ * This selector reports the engine's current Shadbala basis and its
+ * certification status separately. It never upgrades a provisional Shadbala
+ * total or Ayurdaya candidate into a classical certification.
  */
-export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
- const research=cgRajanCompareGrahas({planets,lagna});
+const RAJAN_LAGNA_LORD_BY_SIGN = Object.freeze([
+ 'செவ்வாய்', 'சுக்கிரன்', 'புதன்', 'சந்திரன்', 'சூரியன்', 'புதன்',
+ 'சுக்கிரன்', 'செவ்வாய்', 'குரு', 'சனி', 'சனி', 'குரு'
+]);
+const RAJAN_METHOD_FOR_REFERENCE = Object.freeze({
+ sun: 'pinda',
+ moon: 'natural',
+ lagnaLord: 'amsa'
+});
+export function cgRajanSelectAyurdayaMethod({planets=[],lagna}={}) {
+ const unavailable = (reasonCode, reason) => Object.freeze({
+  available:false, selectedMethod:null, referenceRole:null,
+  referencePlanet:null, scoreVirupa:null, shadbalaBasisCertified:false,
+  reasonCode, reason,
+  source:'C.G. Rajan Jathaka Kanitham I, printed p.230; strength comparison uses chart strength6.totalVirupa'
+ });
+ if(!Array.isArray(planets)) {
+  return unavailable('chart-unavailable','Chart graha data is unavailable.');
+ }
+ if(!finite(lagna?.longitude)) {
+  return unavailable('lagna-unavailable','A finite calculated Lagna longitude is required to determine the Lagna lord.');
+ }
+ const lagnaSignIndex=Math.floor(norm(lagna.longitude)/30);
+ const lagnaLordPlanet=RAJAN_LAGNA_LORD_BY_SIGN[lagnaSignIndex];
+ const references=[
+  {referenceRole:'sun',planet:'சூரியன்',method:RAJAN_METHOD_FOR_REFERENCE.sun},
+  {referenceRole:'moon',planet:'சந்திரன்',method:RAJAN_METHOD_FOR_REFERENCE.moon},
+  {referenceRole:'lagnaLord',planet:lagnaLordPlanet,method:RAJAN_METHOD_FOR_REFERENCE.lagnaLord}
+ ];
+ const candidates=references.map(reference=>{
+  const row=planets.find(p=>p?.name===reference.planet);
+  const shadbala=row?.strength6;
+  const available=shadbala?.available===true &&
+   !!shadbala.components && finite(shadbala.totalVirupa);
+  return Object.freeze({
+   ...reference,
+   available,
+   scoreVirupa:available?shadbala.totalVirupa:null,
+   classicalCertified:available&&shadbala.classicalCertified===true
+  });
+ });
+ const missing=candidates.filter(candidate=>!candidate.available);
+ if(missing.length) {
+  return Object.freeze({
+   ...unavailable('shadbala-unavailable',
+    'Computed Shadbala totals for Sun, Moon, and the Lagna lord are not all available.'),
+   lagnaLordPlanet, lagnaSignIndex,
+   missingReferences:missing.map(candidate=>candidate.referenceRole)
+  });
+ }
+ const maximum=Math.max(...candidates.map(candidate=>candidate.scoreVirupa));
+ const winners=candidates.filter(candidate=>Math.abs(candidate.scoreVirupa-maximum)<=1e-7);
+ if(winners.length!==1) {
+  return Object.freeze({
+   ...unavailable('shadbala-tie',
+    'The comparison has equal Shadbala strength; one method cannot be selected uniquely.'),
+   lagnaLordPlanet, lagnaSignIndex,
+   tiedReferences:winners.map(candidate=>candidate.referenceRole),
+   comparedCandidateCount:candidates.length
+  });
+ }
+ const winner=winners[0];
+ return Object.freeze({
+  available:true,
+  selectedMethod:winner.method,
+  referenceRole:winner.referenceRole,
+  referencePlanet:winner.planet,
+  referencePlanetEnglish:SPEC[winner.planet]?.en||'',
+  scoreVirupa:winner.scoreVirupa,
+  lagnaLordPlanet,
+  lagnaLordEnglish:SPEC[lagnaLordPlanet]?.en||'',
+  lagnaSignIndex,
+  shadbalaBasisCertified:candidates.every(candidate=>candidate.classicalCertified),
+  methodSelectionAndReductionsVerified:false,
+  source:'C.G. Rajan Jathaka Kanitham I, printed p.230; chart Shadbala strength6.totalVirupa'
+ });
+}
+
+/**
+ * Customer-visible single-method Ayurdaya arithmetic.
+ * The chart's computed Shadbala selects one method; only that method's seven
+ * graha terms and its seven-graha total are rendered. A tie, missing score,
+ * or unresolved Harana does not silently substitute an average/raw total.
+ * This remains a traditional calculation, never a medical lifespan estimate
+ * or a death-age/date prediction.
+ */
+export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
  const ta=language==='ta';
+ const selection=cgRajanSelectAyurdayaMethod({planets,lagna});
+ const heading=ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation';
+ const disclaimer=ta
+  ?'இவை பாரம்பரிய ஆயுர்த்தாய முறையின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'
+  :'This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.';
+ const unavailableText=selection.reasonCode==='shadbala-tie'
+  ?(ta?'ஷட்பலத்தில் சமபலம் உள்ளது; ஒரே ஆயுர்த்தாய முறையைத் தேர்ந்தெடுக்க முடியவில்லை.':'Shadbala values are tied; one Ayurdaya method cannot be selected uniquely.')
+  :selection.reasonCode==='lagna-unavailable'
+   ?(ta?'கணக்கிடப்பட்ட லக்ன நீளம் கிடைக்கவில்லை; லக்னாதிபதியை நிர்ணயிக்க முடியாததால் ஆயுர்த்தாய முறை தேர்வு செய்யப்படவில்லை.':'The calculated Lagna longitude is unavailable, so the Lagna lord and Ayurdaya method cannot be determined.')
+   :(ta?'சூரியன், சந்திரன், லக்னாதிபதி ஆகியோரின் ஷட்பல மொத்த மதிப்புகள் அனைத்தும் கிடைக்கவில்லை; ஆயுர்த்தாய முறை தேர்வு செய்யப்படவில்லை.':'All three comparison Shadbala totals are not available, so the Ayurdaya method was not selected.');
+ if(!selection.available) {
+  return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="unavailable">' +
+   '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>' +
+   '<p class="small smv-ayurdaya-selection-unavailable">'+esc(unavailableText)+'</p></section>';
+ }
+ const research=cgRajanCompareGrahas({planets,lagna});
  const rawDisplay=(rawUnits,languageCode)=>{
   if(!rawUnits)return languageCode?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable';
   return (languageCode?'மூல மதிப்பு: ':'Raw: ')+fmt({traditionalUnits:rawUnits},languageCode);
  };
  const amsaCell=v=>{
-  if(v.amsaHarana?.resolved===true&&v.amsaHarana.traditionalUnitsCandidate){
+  if(v.amsaHarana?.resolved===true&&v.amsaHarana.traditionalUnitsCandidate) {
    const candidateUnits=v.amsaHarana.traditionalUnitsCandidate;
    const displayedUnits=fmt({traditionalUnits:candidateUnits},ta);
-   const unitsTrace=ta?`ஹரணத்திற்குப் பின் அலகுகள்=${displayedUnits}`:`Post-Harana normalized units=${displayedUnits}`;
+   const unitsTrace=ta?'ஹரணத்திற்குப் பின் அலகுகள்='+displayedUnits:'Post-Harana normalized units='+displayedUnits;
    const auditTitle=(ta
-    ?`மூல அம்ச ஆண்டு=${v.amsa.rawAmsaYears}; மொத்த ஹரணப் பின்னம்=${v.amsaHarana.totalHaranaFraction}; பெருக்கிக்கு முன்=${v.amsaHarana.yearsBeforeMultiplier}; பெருக்கி=${v.amsaHarana.multiplier}; ஹரணத்திற்குப் பின்=${v.amsaHarana.adjustedAmsaYearsCandidate}`
-    :`Raw Amsa years=${v.amsa.rawAmsaYears}; total Harana fraction=${v.amsaHarana.totalHaranaFraction}; before multiplier=${v.amsaHarana.yearsBeforeMultiplier}; multiplier=${v.amsaHarana.multiplier}; post-Harana years=${v.amsaHarana.adjustedAmsaYearsCandidate}`)+`; ${unitsTrace}`;
-   return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" data-amsa-years="${esc(candidateUnits.years)}" data-amsa-months="${esc(candidateUnits.months)}" data-amsa-days="${esc(candidateUnits.days)}" data-amsa-nazhigai="${esc(candidateUnits.nazhigai)}" data-amsa-total-nazhigai="${esc(traditionalNazhigai(candidateUnits))}" title="${esc(auditTitle)}">${esc(displayedUnits)}</td>`;
+    ?'மூல அம்ச ஆண்டு='+v.amsa.rawAmsaYears+'; மொத்த ஹரணப் பின்னம்='+v.amsaHarana.totalHaranaFraction+'; பெருக்கிக்கு முன்='+v.amsaHarana.yearsBeforeMultiplier+'; பெருக்கி='+v.amsaHarana.multiplier+'; ஹரணத்திற்குப் பின்='+v.amsaHarana.adjustedAmsaYearsCandidate
+    :'Raw Amsa years='+v.amsa.rawAmsaYears+'; total Harana fraction='+v.amsaHarana.totalHaranaFraction+'; before multiplier='+v.amsaHarana.yearsBeforeMultiplier+'; multiplier='+v.amsaHarana.multiplier+'; post-Harana years='+v.amsaHarana.adjustedAmsaYearsCandidate)+'; '+unitsTrace;
+   return '<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="'+esc(v.amsa.rawAmsaYears)+'" data-total-harana-fraction="'+esc(v.amsaHarana.totalHaranaFraction)+'" data-multiplier="'+esc(v.amsaHarana.multiplier)+'" data-adjusted-amsa-years="'+esc(v.amsaHarana.adjustedAmsaYearsCandidate)+'" data-amsa-years="'+esc(candidateUnits.years)+'" data-amsa-months="'+esc(candidateUnits.months)+'" data-amsa-days="'+esc(candidateUnits.days)+'" data-amsa-nazhigai="'+esc(candidateUnits.nazhigai)+'" data-amsa-total-nazhigai="'+esc(traditionalNazhigai(candidateUnits))+'" title="'+esc(auditTitle)+'">'+esc(displayedUnits)+'</td>';
   }
   const rawUnits=v.amsa?.traditionalUnits;
   const explanation=(v.amsaHarana?.blockers||[]).join('; ')||'Amsa Harana adjustment is unresolved; showing the calculated raw Table-A term';
-  return `<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="${esc(v.amsa?.rawAmsaYears??'')}" title="${esc(explanation)}">${esc(rawDisplay(rawUnits,ta))}</td>`;
+  return '<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="'+esc(v.amsa?.rawAmsaYears??'')+'" title="'+esc(explanation)+'">'+esc(rawDisplay(rawUnits,ta))+'</td>';
  };
  const commonCell=(method,v)=>{
   const result=v[method+'Harana'];
-  if(result?.resolved===true&&result.traditionalUnitsCandidate){
+  if(result?.resolved===true&&result.traditionalUnitsCandidate) {
    const auditTitle=ta
-    ?`மூல நாழிகை=${result.rawNazhigai}; பகை ராசி ஹரணம்=${result.enemySignLossFraction}; அஸ்தங்கத ஹரணம்=${result.combustionLossFraction}; சக்கிரபாத ஹரணம்=${result.chakrapadaHaranaFraction}; குரூரோதய ஹரணம்=${result.gururodayaHaranaNazhigai}; மொத்தக் கழிவு=${result.totalHaranaNazhigai}; கழித்த பின்=${result.adjustedNazhigaiCandidate}`
-    :`Raw nazhigai=${result.rawNazhigai}; enemy-sign loss fraction=${result.enemySignLossFraction}; combustion loss fraction=${result.combustionLossFraction}; Chakrapada loss fraction=${result.chakrapadaHaranaFraction}; Gururodaya loss nazhigai=${result.gururodayaHaranaNazhigai}; total Harana nazhigai=${result.totalHaranaNazhigai}; adjusted nazhigai=${result.adjustedNazhigaiCandidate}`;
-   return `<td data-${method}-harana="adjusted-candidate" data-raw-nazhigai="${esc(result.rawNazhigai)}" data-total-harana-nazhigai="${esc(result.totalHaranaNazhigai)}" data-adjusted-nazhigai="${esc(result.adjustedNazhigaiCandidate)}" title="${esc(auditTitle)}">${esc(fmt({traditionalUnits:result.traditionalUnitsCandidate},ta))}</td>`;
+    ?'மூல நாழிகை='+result.rawNazhigai+'; பகை ராசி ஹரணம்='+result.enemySignLossFraction+'; அஸ்தங்கத ஹரணம்='+result.combustionLossFraction+'; சக்கிரபாத ஹரணம்='+result.chakrapadaHaranaFraction+'; குரூரோதய ஹரணம்='+result.gururodayaHaranaNazhigai+'; மொத்தக் கழிவு='+result.totalHaranaNazhigai+'; கழித்த பின்='+result.adjustedNazhigaiCandidate
+    :'Raw nazhigai='+result.rawNazhigai+'; enemy-sign loss fraction='+result.enemySignLossFraction+'; combustion loss fraction='+result.combustionLossFraction+'; Chakrapada loss fraction='+result.chakrapadaHaranaFraction+'; Gururodaya loss nazhigai='+result.gururodayaHaranaNazhigai+'; total Harana nazhigai='+result.totalHaranaNazhigai+'; adjusted nazhigai='+result.adjustedNazhigaiCandidate;
+   return '<td data-'+method+'-harana="adjusted-candidate" data-raw-nazhigai="'+esc(result.rawNazhigai)+'" data-total-harana-nazhigai="'+esc(result.totalHaranaNazhigai)+'" data-adjusted-nazhigai="'+esc(result.adjustedNazhigaiCandidate)+'" title="'+esc(auditTitle)+'">'+esc(fmt({traditionalUnits:result.traditionalUnitsCandidate},ta))+'</td>';
   }
   const raw=v[method]?.traditionalUnits;
   const explanation=(result?.blockers||[]).join('; ')||'Harana adjustment is unresolved; showing the calculated raw graha term';
-  return `<td data-${method}-harana="raw-unadjusted" data-raw-nazhigai="${esc(v[method]?.exactPreRoundingNazhigai??'')}" title="${esc(explanation)}">${esc(rawDisplay(raw,ta))}</td>`;
+  return '<td data-'+method+'-harana="raw-unadjusted" data-raw-nazhigai="'+esc(v[method]?.exactPreRoundingNazhigai??'')+'" title="'+esc(explanation)+'">'+esc(rawDisplay(raw,ta))+'</td>';
  };
- const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th>${commonCell('pinda',v)}${commonCell('natural',v)}${amsaCell(v)}</tr>`).join('');
- const totalCell=(method,rawKey)=>{
-  const value=research.totals[method],raw=research.totals[rawKey];
-  if(value?.available===true&&value.traditionalUnits)
-   return `<td data-${method}-total="adjusted-candidate"><strong>${esc(fmt(value,ta))}</strong></td>`;
-  return `<td data-${method}-total="raw-unadjusted" title="${esc('At least one graha Harana adjustment is unresolved; this is the sum of raw, unadjusted graha terms')}"><strong>${esc(rawDisplay(raw?.traditionalUnits,ta))}</strong></td>`;
- };
- const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th>${totalCell('pinda','pindaRaw')}${totalCell('natural','naturalRaw')}${totalCell('amsa','amsaTableARaw')}</tr>`;
- const correctedMean=research.totals.averageOfThreeTotals;
- const rawMean=cgRajanMeanThreeTraditionalTotals({
-  pindaTotalNazhigai:research.totals.pindaRaw.totalNazhigai,
-  naturalTotalNazhigai:research.totals.naturalRaw.totalNazhigai,
-  amsaTotalNazhigai:research.totals.amsaTableARaw.totalNazhigai
- });
- const averageLabel=ta?'சராசரி ஆயுர்த்தாயம் :':'Average Ayurdaya:';
- const averageBasis=correctedMean
-  ?(ta?'மூன்று ஹரணம்-திருத்திய மொத்தங்களின் சராசரி':'Mean of the three Harana-adjusted totals')
-  :(ta?'மூல மொத்தங்களின் சராசரி; ஹரணக் கழிவுகள் சேர்க்கப்படவில்லை':'Mean of raw totals; Harana reductions not applied');
- const averageText=correctedMean?fmt(correctedMean,ta):rawMean?rawDisplay(rawMean.traditionalUnits,ta):(ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable');
- const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="3" class="smv-ayurdaya-average-label"><span class="smv-ayurdaya-average-title">${averageLabel}</span><span class="smv-ayurdaya-average-basis">${esc(averageBasis)}</span></th><td class="smv-ayurdaya-average-value"><strong>${esc(averageText)}</strong></td></tr>`;
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><p class="small smv-ayurdaya-disclaimer">${ta?'இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.':'These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'}</p><div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
-
+ const selectedMethod=selection.selectedMethod;
+ const methodLabel={
+  pinda:ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya',
+  natural:ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya',
+  amsa:ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'
+ }[selectedMethod];
+ const referenceLabel=selection.referenceRole==='sun'
+  ?(ta?'சூரியன்':'Sun')
+  :selection.referenceRole==='moon'
+   ?(ta?'சந்திரன்':'Moon')
+   :(ta?'லக்னாதிபதி ('+selection.referencePlanet+')':'Lagna lord ('+selection.referencePlanetEnglish+')');
+ const selectionLabel=(ta?'ஷட்பலத்தின் அடிப்படையில் தேர்வு: ':'Selected by chart Shadbala: ')+referenceLabel+
+  ' ('+selection.scoreVirupa.toFixed(2)+' '+(ta?'விரூபம்':'Virupa')+') — '+methodLabel;
+ const selectionLine='<p class="small smv-ayurdaya-method-selection" data-selected-ayurdaya-method="'+esc(selectedMethod)+'" data-selected-reference-role="'+esc(selection.referenceRole)+'" data-selected-reference-planet="'+esc(selection.referencePlanet)+'" data-selected-strength-virupa="'+esc(selection.scoreVirupa)+'">'+esc(selectionLabel)+'</p>';
+ const certificationLine=selection.shadbalaBasisCertified?'':'<p class="small smv-ayurdaya-selection-note">'+esc(ta
+  ?'இந்தத் தேர்வு ஜாதகத்தில் கணக்கிடப்பட்ட ஷட்பல மதிப்புகளைப் பயன்படுத்துகிறது; முழு பாரம்பரிய நூல்-சான்று இன்னும் நிலுவையில் உள்ளது.'
+  :'This selection uses the chart’s computed Shadbala totals; full classical source certification remains pending.')+'</p>';
+ const tableRows=research.entries.map(v=>{
+  const cell=selectedMethod==='amsa'?amsaCell(v):commonCell(selectedMethod,v);
+  return '<tr><th scope="row">'+esc(ta?v.name:v.english)+'</th>'+cell+'</tr>';
+ }).join('');
+ const total=research.totals[selectedMethod];
+ let totalCell;
+ if(total?.available===true&&total.traditionalUnits) {
+  totalCell='<td data-selected-total="adjusted-candidate" data-selected-method="'+esc(selectedMethod)+'"><strong>'+esc(fmt(total,ta))+'</strong></td>';
+ } else {
+  const blockedCount=Array.isArray(total?.blockedGrahas)?total.blockedGrahas.length:7;
+  const unavailableTotal=ta
+   ?'ஹரணத் திருத்தம் முழுமையில்லாததால் மொத்தம் வெளியிடப்படவில்லை ('+blockedCount+' கிரகங்கள் சரிபார்க்கப்பட வேண்டும்).'
+   :'Total withheld because Harana adjustments are incomplete ('+blockedCount+' graha rows need verification).';
+  totalCell='<td data-selected-total="unavailable" data-selected-method="'+esc(selectedMethod)+'"><strong>'+esc(unavailableTotal)+'</strong></td>';
+ }
+ const totalLabel=ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)';
+ const totalLine='<tr class="smv-ayurdaya-totals"><th scope="row">'+totalLabel+'</th>'+totalCell+'</tr>';
+ return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="'+esc(selectedMethod)+'">' +
+  '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>' +
+  selectionLine+certificationLine+
+  '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>'+(ta?'கிரகம்':'Planet')+'</th><th>'+esc(methodLabel)+'</th></tr></thead><tbody>'+
+  tableRows+totalLine+'</tbody></table></div></section>';
 }
