@@ -58,8 +58,8 @@ eq((ta.match(/data-natural-harana="raw-unadjusted"/g)||[]).length,7,
  'Naisargika raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
 ok(ta.includes('data-pinda-total="raw-unadjusted"')&&ta.includes('data-natural-total="raw-unadjusted"'),
  'Pinda and Naisargika raw totals remain visible with an explicit unadjusted marker');
-ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Raw-term mean (before Harana reductions)')&&en.includes('Raw: '),
- 'unresolved Harana cells and total mean expose calculated raw terms without claiming adjustment');
+ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Mean of raw totals; Harana reductions not applied')&&en.includes('Raw: '),
+ 'unresolved Harana cells and separate mean label/value expose raw terms without claiming adjustment');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
@@ -268,6 +268,7 @@ ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printS
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
 ok(shadbalaUi.includes('strengthJathakaKanitham')&&shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
  'primary Shadbala shows calculated C.G. Rajan components and subtotal without a separate Yuddha/status column');
+ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
@@ -281,6 +282,8 @@ const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisSha
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
 ok(!analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
  'Chart Analysis uses six Bala components without source/status text or a war column');
+ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes('<strong>'+fmt(r.partialSubtotalExcludingCheshtaAndDrig)+'</strong>'),
+ 'Chart Analysis keeps the calculated partial Shadbala subtotal visibly bold');
 eq(src.includes('adv-ishta-kashta'),false,'No note-only Ishta/Kashta panel is shown without calculated values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
@@ -305,6 +308,14 @@ for(const [date,time] of births){
  eq((perNatalHtml.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average '+date);
  const shadbalaRows=r.chart.planets.filter(p=>p?.strength3?.available);
  eq(shadbalaRows.length,7,'seven classical Shadbala rows '+date);
+ const rajanRows=r.chart.planets.filter(p=>p?.strengthJathakaKanitham?.available===true);
+ eq(rajanRows.length,7,'seven Rajan Shadbala rows available to primary and Analysis tables '+date);
+ for(const p of rajanRows){
+  const v=p.strengthJathakaKanitham;
+  ok(Number.isFinite(v.sthana?.total)&&Number.isFinite(v.dig)&&Number.isFinite(v.kala?.total)&&
+    Number.isFinite(v.ayana)&&Number.isFinite(v.naisargika)&&Number.isFinite(v.partialSubtotalExcludingCheshtaAndDrig),
+    'Shadbala UI component/subtotal results are numeric '+date+' '+p.name);
+ }
  for(const p of shadbalaRows){
   eq(p.strength3.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength3.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
