@@ -1,7 +1,7 @@
 /**
  * Five Perambalur birth charts: live Swiss engine integration guard.
  * This verifies source-specific PARTIAL components are attached without
- * replacing the legacy BPHS-style strength3 total or claiming certification.
+ * depending on or preserving BPHS strength3 or claiming certification.
  */
 import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
@@ -47,8 +47,9 @@ for(const [date,time] of births){
    'UK eligibility/winner method maps to the declared project rule '+name+' '+date);
   eq(r.drigCandidate.certified,false,'BPHS angle candidate clearly unverified '+name+' '+date);
   eq(r.deathAgeOrDate,null,'no death-date output '+name+' '+date);
-  ok(Number.isFinite(p.strength3?.totalVirupa),
-   'legacy engine strength3 remains available separately '+name+' '+date);
+  ok(p.strength6?.available===true,
+   'B.V. Raman strength6 remains the only production Shadbala '+name+' '+date);
+  eq(Object.hasOwn(p,'strength3'),false,'BPHS strength3 removed '+name+' '+date);
   if(name==='சூரியன்')eq(r.cheshta,r.ayana,'Sun Cheshta follows book Ayana rule '+date);
   else if(name==='சந்திரன்')ok(Number.isFinite(r.cheshta),'Moon Cheshta follows book Paksha rule '+date);
   else eq(r.cheshta,null,'five-planet Cheshta is not invented '+name+' '+date);
@@ -61,5 +62,5 @@ for(const [date,time] of births){
 }
 eq(pairs,35,'five births times seven grahas');
 console.log(JSON.stringify({pass:true,checks,birthCharts:births.length,planetPairs:pairs,
- legacyStrength3Preserved:true,rajanPartialAttached:true,fullRajanCertificate:false,
+ legacyStrength3Removed:true,BVRamanStrength6Production:true,rajanPartialAttached:true,fullRajanCertificate:false,
  blocked:['five-planet Cheshta','Rajan Drig angle generation','Mars D12 Saptavargaja','Dig rounding','full classical Shadbala certification']}));
