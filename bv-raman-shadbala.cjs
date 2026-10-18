@@ -162,7 +162,8 @@ function vargaDignity(planet,division,sign,rasiPositions,longitude){
 function sthanaBala(planet,row,lagnaSign,rasiPositions){
  const longitude=Number(row.longitude);
  if(!finite(longitude)||!Number.isInteger(row.bhava)||row.bhava<1||row.bhava>12)throw new TypeError('Sthana Bala needs finite longitude and house for '+planet);
- // Raman Ch. III §29: shortest angular distance from exact debilitation point / 3.\n const uccha=round3(Math.max(0,Math.min(60,angleDistance(longitude,DEBILITATION[planet])/3)));
+ // Raman Ch. III §20: shortest angular distance from exact debilitation point / 3.
+ const uccha=round3(Math.max(0,Math.min(60,angleDistance(longitude,DEBILITATION[planet])/3)));
  const divisions=[1,2,3,7,9,12,30];
  const saptavargaja=divisions.reduce((sum,d)=>sum+vargaDignity(planet,d,vargaSign(longitude,d),rasiPositions,longitude),0);
  const d1=Math.floor(norm360(longitude)/30),d9=vargaSign(longitude,9),g=GENDER[planet];
