@@ -129,7 +129,7 @@ for(const [date,time] of births){
    eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',date+' '+p.name+' exposes its unresolved mean/Sheeghrocca source gate');
   }
   if(Number.isFinite(p.strength6.totalVirupa)){
-   const kalaSum=Object.entries(c.kala).filter(([k])=>k!=='total').reduce((s,[,v])=>s+v,0);
+   const kalaSum=Object.entries(c.kala).filter(([k,v])=>!['total','warPreTotal','yuddhaTrace'].includes(k)&&Number.isFinite(v)).reduce((s,[,v])=>s+v,0);
    near(kalaSum,c.kala.total,.005,date+' '+p.name+' Kala subtotal reconciles');
    near(c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik,p.strength6.totalVirupa,.01,date+' '+p.name+' strength6 total reconciles');
    near(p.strength6.totalRupa,p.strength6.totalVirupa/60,.002,date+' '+p.name+' Rupa conversion');
