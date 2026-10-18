@@ -48,6 +48,13 @@ function validateRow(value, label) {
   }
   return [...value];
 }
+function validateReducedSav(value) {
+  if (!Array.isArray(value) || value.length !== 12 ||
+      !value.every(point => Number.isSafeInteger(point) && point >= 0 && point <= 56)) {
+    throw new RangeError('Reduced Sarvashtakavarga must contain 12 integer totals within 0..56');
+  }
+  return [...value];
+}
 function validateRows(rows) {
   if (!rows || typeof rows !== 'object' || Array.isArray(rows)) {
     throw new TypeError('bavRows must map the seven graha names to 12-point rows');
@@ -281,7 +288,7 @@ export function bvRamanAshtakavargaMethodAFromReducedRows({
 export function bvRamanAshtakavargaMethodB({
   reducedSarvashtakavarga, planetSigns
 } = {}) {
-  const sav = validateRow(reducedSarvashtakavarga, 'Reduced Sarvashtakavarga');
+  const sav = validateReducedSav(reducedSarvashtakavarga);
   const signs = validatePlanetSigns(planetSigns);
   const rasiProducts = sav.map((bindu, index) => bindu * BV_RAMAN_RASI_GUNAKARA[index]);
   const rasiPinda = total(rasiProducts);
