@@ -14,7 +14,7 @@ const normalizeSaura=x=>((x%360)+360)%360;
 function sauraBody(planet){const key=({'செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn'})[planet]||planet;if(!Object.prototype.hasOwnProperty.call(SAURA_EPICYCLES,key))throw new RangeError('Five visible planets only');return key;}
 function sauraMeanOrbitalLongitude(jdUt,body){
  if(!Number.isFinite(jdUt)||jdUt<0||jdUt>SAURA_KALI_EPOCH_JD_UT+SAURA_YUGA_CIVIL_DAYS+5000000)throw new RangeError('Finite UTC Julian day in supported civil-date range required');
- const key=body==='சூரியன்'?'Sun':sauraBody(body);
+ const key=(body==='Sun'||body==='சூரியன்')?'Sun':sauraBody(body);
  const days=jdUt-SAURA_KALI_EPOCH_JD_UT+SAURA_UJJAIN/360;
  const turns=days*SAURA_REVOLUTIONS[key]/SAURA_YUGA_CIVIL_DAYS;
  return normalizeSaura((turns%1)*360);
