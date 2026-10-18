@@ -737,17 +737,24 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
   return '<tr><th scope="row">'+esc(ta?v.name:v.english)+'</th>'+cell+'</tr>';
  }).join('');
  const total=research.totals[selectedMethod];
- let totalCell;
- if(total?.available===true&&total.traditionalUnits) {
+ const rawTotal=selectedMethod==='pinda'?research.totals.pindaRaw:
+  selectedMethod==='natural'?research.totals.naturalRaw:research.totals.amsaTableARaw;
+ const adjustedTotalAvailable=total?.available===true&&!!total.traditionalUnits;
+ let totalCell,totalLabel;
+ if(adjustedTotalAvailable) {
+  totalLabel=ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)';
   totalCell='<td data-selected-total="adjusted-candidate" data-selected-method="'+esc(selectedMethod)+'"><strong>'+esc(fmt(total,ta))+'</strong></td>';
- } else {
+ } else if(rawTotal?.traditionalUnits) {
   const blockedCount=Array.isArray(total?.blockedGrahas)?total.blockedGrahas.length:7;
-  const unavailableTotal=ta
-   ?'ஹரணத் திருத்தம் முழுமையில்லாததால் மொத்தம் வெளியிடப்படவில்லை ('+blockedCount+' கிரகங்கள் சரிபார்க்கப்பட வேண்டும்).'
-   :'Total withheld because Harana adjustments are incomplete ('+blockedCount+' graha rows need verification).';
-  totalCell='<td data-selected-total="unavailable" data-selected-method="'+esc(selectedMethod)+'"><strong>'+esc(unavailableTotal)+'</strong></td>';
+  const note=ta
+   ?'ஹரணத் திருத்தம் நிலுவையில் உள்ளது ('+blockedCount+' கிரகங்கள்); இது இறுதி ஆயுர்த்தாய மொத்தம் அல்ல.'
+   :'Harana adjustments remain unresolved for '+blockedCount+' graha rows; this is not the final Ayurdaya total.';
+  totalLabel=ta?'மூல மொத்தம் (7 கிரகங்கள்)':'Raw total (7 grahas)';
+  totalCell='<td data-selected-total="raw-unadjusted" data-selected-method="'+esc(selectedMethod)+'" title="'+esc(note)+'"><strong>'+esc(fmt(rawTotal,ta))+'</strong><p class="small smv-ayurdaya-total-note">'+esc(note)+'</p></td>';
+ } else {
+  totalLabel=ta?'மொத்தம் கிடைக்கவில்லை':'Total unavailable';
+  totalCell='<td data-selected-total="unavailable" data-selected-method="'+esc(selectedMethod)+'"><strong>'+esc(ta?'மூல மொத்தத்தையும் கணக்கிட முடியவில்லை':'Raw total could not be calculated')+'</strong></td>';
  }
- const totalLabel=ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)';
  const totalLine='<tr class="smv-ayurdaya-totals"><th scope="row">'+totalLabel+'</th>'+totalCell+'</tr>';
  return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="'+esc(selectedMethod)+'">' +
   '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>' +
