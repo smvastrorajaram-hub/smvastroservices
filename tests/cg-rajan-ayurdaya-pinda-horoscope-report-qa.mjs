@@ -289,8 +289,8 @@ eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis 
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
-ok(analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
- 'Chart Analysis has strength-status/rank columns without source mixing or a war column');
+ok(analysisShadbalaUi.includes('smv-shadbala-status')&&analysisShadbalaSection.includes('shadbalaRows')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
+ 'Chart Analysis renders the shared strength-status rows without source mixing or a war column');
 for(const heading of ["caTitle('Sthana','ஸ்தான பலம்')","caTitle('Dig','திக் பலம்')","caTitle('Kala','கால பலம்')","caTitle('Total Shadbala (Virupa)','மொத்த ஷட்பலம் (விரூபம்)')","caTitle('Total Rupa','மொத்த ரூபா')","caTitle('Required Rupa','தேவையான ரூபா')","caTitle('Rank','தரவரிசை')","caTitle('Strength','வலிமை நிலை')"])ok(analysisShadbalaSection.includes(heading),'Chart Analysis column '+heading);
 
 eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),false,
