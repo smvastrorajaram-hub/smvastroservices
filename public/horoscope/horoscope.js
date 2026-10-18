@@ -1851,7 +1851,7 @@ try{
         try{
           const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
           if(!sectionI)throw new Error('Advanced Analysis Part I content not found');
-          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-pdf-dasha-fix1');
+          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-shadbala-ayurdaya-raw-fallback2');
           const html=cgRajanAyurdayaReportHtml({planets:full.chart.planets,lagna:full.chart.lagna,language:lang});
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
           sectionI.insertAdjacentHTML('beforeend',html);
