@@ -155,7 +155,7 @@ eq(lagnaGuru.applied,true,'Gururodaya applies to malefic closest to Lagna');
 eq(lagnaGuru.lossNazhigai,6*21600+1*1800+27*60+36,
  'Gururodaya contribution uses the full Lagna sign/degree/minute/nazhigai notation');
 const lagnaGuruBlocked=cgRajanGururodayaHaranaResearch({
- planets:[{name:'சூரியன்',longitude:181,bhava:1}],
+ planets:[{name:'சந்திரன்',longitude:181,bhava:1}],
  lagna:{longitude:181}
 });
 eq(lagnaGuruBlocked.resolved,false,'Gururodaya blocks missing explicit benefic/malefic evidence');
