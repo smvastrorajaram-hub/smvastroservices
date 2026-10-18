@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {cgRajanPindaGraha, cgRajanAmsaAyurdayaGraha, cgRajanAmsaHaranaResearch,
  cgRajanMeanThreeTraditionalTotals, cgRajanCompareGrahas, cgRajanAyurdayaReportHtml,
+ cgRajanSelectAyurdayaMethod as selectMethod,
  cgRajanGururodayaHaranaResearch, cgRajanPindaNaisargikaHaranaResearch}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let checks=0;
@@ -24,31 +25,42 @@ for(const [planet,longitude,result] of [
 const ref=[['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
  ['செவ்வாய்',206+30/60],['புதன்',191+52/60],
  ['குரு',28+17/60],['சுக்கிரன்',204+32/60],['சனி',230+27/60]]
- .map(([name,longitude])=>({name,longitude}));
-const research=cgRajanCompareGrahas({planets:ref});
+ .map(([name,longitude],i)=>({name,longitude,strength6:{
+  available:true,components:{},totalVirupa:[700,600,500,400,300,200,100][i],
+  classicalCertified:false
+ }}));
+const lagna={longitude:5};
+const research=cgRajanCompareGrahas({planets:ref,lagna});
 eq(research.entries.length,7,'seven researched grahas');
 eq(research.allEightMethodsComplete,false,'cannot claim 8 methods are complete');
 eq(research.combinedLongevityYears,null,'no calculated personal total');
 eq(research.deathAgeOrDate,null,'no human death age');
-const ta=cgRajanAyurdayaReportHtml({planets:ref,language:'ta'});
-const en=cgRajanAyurdayaReportHtml({planets:ref,language:'en'});
-ok(ta.includes('பிண்ட ஆயுள்')&&ta.includes('நைசர்க்கிக ஆயுள்')&&ta.includes('அம்ச ஆயுர்த்தாயம்'),'Tamil three columns');
-ok(en.includes('Pinda Ayurdaya')&&en.includes('Naisargika Ayurdaya')&&en.includes('Amsa Ayurdaya'),'English three columns');
-ok(ta.includes('சராசரி ஆயுர்த்தாயம்')&&en.includes('Average Ayurdaya'),'three-total arithmetic mean is displayed');
-const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
-const averageRowOf=html=>html.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<\/tr>/)?.[0]||'';
-for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
- const totalRow=totalRowOf(html),averageRow=averageRowOf(html);
- ok((totalRow.match(/<strong>/g)||[]).length===3,language+' three Ayurdaya totals are each bold');
- ok(averageRow.includes('colspan="3"')&&averageRow.includes('class="smv-ayurdaya-average-label"')&&averageRow.includes('class="smv-ayurdaya-average-value"'),
-  language+' average label and result occupy separate table cells');
- ok(averageRow.includes('<strong>'),language+' average value is bold and separate from its label');
- const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
- ok(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' average result cell contains a calculated value');
+const selection=selectMethod({planets:ref,lagna});
+eq(selection.selectedMethod,'pinda','strongest Sun Shadbala selects only Pindayurdaya');
+const ta=cgRajanAyurdayaReportHtml({planets:ref,lagna,language:'ta'});
+const en=cgRajanAyurdayaReportHtml({planets:ref,lagna,language:'en'});
+ok(ta.includes('பிண்ட ஆயுள்')&&!ta.includes('நைசர்க்கிக ஆயுள்')&&!ta.includes('அம்ச ஆயுர்த்தாயம்'),
+ 'Tamil report shows only the method selected by Shadbala');
+ok(en.includes('Pinda Ayurdaya')&&!en.includes('Naisargika Ayurdaya')&&!en.includes('Amsa Ayurdaya'),
+ 'English report shows only the method selected by Shadbala');
+eq(ta.includes('சராசரி ஆயுர்த்தாயம்')||en.includes('Average Ayurdaya'),false,
+ 'customer output never shows the average of competing Ayurdaya methods');
+const totalRowOf=html=>html.match(/<tr class="smv-ayurdaya-totals">[\\s\\S]*?<\\/tr>/)?.[0]||'';
+for(const [report,language] of [[ta,'Tamil'],[en,'English']]){
+ eq((report.match(/<tr\\b/g)||[]).length,9,language+' only header + seven grahas + total row');
+ eq(report.includes('data-ayurdaya-selection="pinda"'),true,language+' records selected method');
+ eq(report.includes('data-selected-reference-role="sun"'),true,language+' records Sun as the strength winner');
+ eq((totalRowOf(report).match(/<strong>/g)||[]).length,1,language+' has one selected-method total cell');
+ eq(report.includes('class="smv-ayurdaya-average"'),false,language+' has no average-row markup');
+ eq(report.includes('Naisargika Ayurdaya')||report.includes('நைசர்க்கிக ஆயுள்'),false,language+' never shows Moon-method output');
+ eq(report.includes('Amsa Ayurdaya')||report.includes('அம்ச ஆயுர்த்தாயம்'),false,language+' never shows Lagna-lord method output');
+ ok(report.includes(language==='Tamil'
+   ?'இவை பாரம்பரிய ஆயுர்த்தாய முறையின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'
+   :'This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.'),
+   language+' retains the actual-lifespan disclaimer');
+ ok(report.includes(language==='Tamil'?'ஷட்பலத்தின் அடிப்படையில் தேர்வு':'Selected by chart Shadbala'),
+   language+' explains which Shadbala reference selected the method');
 }
-ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
-ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows remain uncluttered by source-book labels');
-ok(ta.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.')&&en.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'),'Both language reports warn that Ayurdaya is not a certified actual-lifespan prediction');
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
  'raw printed Sun Pinda example remains testable internally');
@@ -56,26 +68,17 @@ eq(research.entries.find(x=>x.name==='குரு').pinda.traditionalUnits,
  {years:12,months:2,days:19,nazhigai:15},
  'raw printed Jupiter Pinda example remains testable internally');
 eq((ta.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length,7,
- 'Pinda raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
-eq((ta.match(/data-natural-harana="raw-unadjusted"/g)||[]).length,7,
- 'Naisargika raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
-ok(ta.includes('data-pinda-total="raw-unadjusted"')&&ta.includes('data-natural-total="raw-unadjusted"'),
- 'Pinda and Naisargika raw totals remain visible with an explicit unadjusted marker');
-ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Mean of raw totals; Harana reductions not applied')&&en.includes('Raw: '),
- 'unresolved Harana cells and separate mean label/value expose raw terms without claiming adjustment');
-eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
-eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
- 'Amsa heading omits the Harana status label in Tamil');
-eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
- 'Amsa heading omits the Harana status label in English');
-ok(ta.includes('மூல மதிப்பு: ')&&en.includes('Raw: '),
- 'raw Table-A and Pinda/Naisargika terms are explicitly labelled as raw values when Harana is unresolved');
-ok(ta.includes('data-amsa-harana="raw-unadjusted"')&&en.includes('data-amsa-harana="raw-unadjusted"'),
- 'missing natal Harana evidence is labelled as raw-unadjusted in both report languages');
-eq((ta.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
- 'fixture without chart facts still displays all seven raw Amsa terms with unadjusted labeling');
-ok(ta.includes('data-amsa-total="raw-unadjusted"')&&en.includes('data-amsa-total="raw-unadjusted"'),
- 'raw Amsa table total stays visible but is marked unadjusted until every Harana resolves');
+ 'only the seven selected Pinda terms are displayed when Harana is unresolved');
+eq(ta.includes('data-natural-harana='),false,
+ 'unselected Naisargika graha values are not displayed');
+eq(ta.includes('data-amsa-harana='),false,
+ 'unselected Amsa graha values are not displayed');
+eq(ta.includes('data-selected-total="unavailable"')&&en.includes('data-selected-total="unavailable"'),true,
+ 'the seven-graha total is withheld when chart-specific Harana evidence is incomplete');
+ok(ta.includes('Raw: ')===false&&en.includes('Raw: '),
+ 'English selected Pinda terms clearly disclose that unresolved entries are raw');
+eq(ta.includes('data-amsa-total=')||en.includes('data-amsa-total='),false,
+ 'nonselected method totals are not output');
 const amsaCases=[
  [0,0],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,2.11],[118+10/60,11.45],[206.5,1.95],[191+52/60,9.56],
@@ -150,7 +153,9 @@ eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
 const remainderDisplayFixture=chartResolvedFixture.map(p=>
  p.name==='செவ்வாய்'?{...p,longitude:10,bhava:8}:
  p.name==='சுக்கிரன்'?{...p,bhava:9}:p);
-const remainderHtml=cgRajanAyurdayaReportHtml({planets:remainderDisplayFixture,language:'en'});
+const amsaUiFixture=remainderDisplayFixture.map(p=>({...p,strength6:{...p.strength6,totalVirupa:p.name==='செவ்வாய்'?900:p.name==='சூரியன்'?700:p.name==='சந்திரன்'?600:100}}));
+const remainderHtml=cgRajanAyurdayaReportHtml({planets:amsaUiFixture,lagna:{longitude:5},language:'en'});
+eq(selectMethod({planets:amsaUiFixture,lagna:{longitude:5}}).selectedMethod,'amsa','Amsa output is used only when the Lagna lord has the strongest Shadbala');
 ok(remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
  'Amsa report renderer preserves year/month/day/nazhigai after a one-fifth Harana');
 ok(remainderHtml.includes('Post-Harana normalized units=2y 4m 24d 0n'),
@@ -306,10 +311,10 @@ ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('p.strength6?.ishtaKa
  'Chart Analysis renders the unified B.V. Raman Ishta/Kashta output calculated by the Shadbala engine');
 ok(!src.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'), 'No Ishta/Kashta research note is displayed to Horoscope users');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
-ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:818px;min-width:818px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
+ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:358px;min-width:358px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
 ok(horoscopeCss.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th, #englishHoroscopeResult .smv-cg-rajan-ayurdaya .smv-ayurdaya-table tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-average)>th{background:#fff!important'), 'Horoscope Ayurdaya planet-name cells are truly white under the shared theme');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
-ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{')&&matchingCss.includes('color:#4a352d;background:#fff7e8;font-weight:800;')&&matchingCss.includes('color:#302722;background:#fff;font-weight:800;')&&matchingCss.includes('background:#fff7e8;color:#302722;text-align:center')&&!matchingCss.includes('background:#fff7e8!important'), 'Matching Ayurdaya colors live in semantic component rules; average row is cream without the previous override stack');
+ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{')&&matchingCss.includes('color:#4a352d;background:#fff7e8;font-weight:800;')&&matchingCss.includes('color:#302722;background:#fff;font-weight:800;')&&!matchingCss.includes('background:#fff7e8!important'), 'Matching Ayurdaya colors live in semantic component rules without a wrapper-specific override stack');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
 ok(appHtml.includes('horoscope.css?v=20261018-ayurdaya-planet-white-v247')&&appHtml.includes('marriage-basic-report.css?v=20261018-matching-ayurdaya-shadbala-v249'), 'Live pages request the revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
