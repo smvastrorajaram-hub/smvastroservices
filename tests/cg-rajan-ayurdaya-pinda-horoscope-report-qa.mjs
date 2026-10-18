@@ -154,6 +154,17 @@ eq(lagnaGuru.resolved,true,'Gururodaya resolves when Lagna data and a unique mal
 eq(lagnaGuru.applied,true,'Gururodaya applies to malefic closest to Lagna');
 eq(lagnaGuru.lossNazhigai,6*21600+1*1800+27*60+36,
  'Gururodaya contribution uses the full Lagna sign/degree/minute/nazhigai notation');
+const lagnaGuruHalved=cgRajanGururodayaHaranaResearch({
+ planets:[
+  {name:'சூரியன்',longitude:181+27/60+36/3600,bhava:1,amsaHaranaBenefic:false},
+  {name:'புதன்',longitude:1+27/60+36/3600,bhava:7,amsaHaranaBenefic:true}
+ ],
+ lagna:{longitude:181+27/60+36/3600}
+});
+eq(lagnaGuruHalved.resolved,true,'Gururodaya resolves when the printed aspect rule is evidenced');
+eq(lagnaGuruHalved.beneficAspecting,true,'benefic Mercury in house 7 views the Lagna malefic');
+eq(lagnaGuruHalved.lossNazhigai,lagnaGuru.lossNazhigai/2,
+ 'a permitted benefic aspect halves the Gururodaya Harana');
 const lagnaGuruBlocked=cgRajanGururodayaHaranaResearch({
  planets:[{name:'சந்திரன்',longitude:181,bhava:1}],
  lagna:{longitude:181}
