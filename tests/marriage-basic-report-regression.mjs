@@ -79,11 +79,12 @@ const primaryShadbalaEnd=primaryHoroscopeSource.indexOf('<div class="transit-bef
 const primaryShadbalaSource=primaryHoroscopeSource.slice(primaryShadbalaStart,primaryShadbalaEnd);
 ok(primaryShadbalaStart>=0&&primaryShadbalaEnd>primaryShadbalaStart,'Primary horoscope Shadbala table source can be isolated');
 ok(primaryShadbalaSource.includes('smv-shadbala-table')&&!primaryShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig')&&!primaryShadbalaSource.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'), 'Primary horoscope Shadbala retains components without an uncertified subtotal');
-ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
+ok(matchingShadbalaSource.includes('strength3'),'Matching Shadbala uses the current Swiss-position-based six-Bala calculation result');
 eq(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),false,'Matching does not present an incomplete subtotal as Shadbala');
-ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
-ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
- 'Matching Shadbala contains no indication/status or standalone Yuddha/war column');
+ok(matchingShadbalaSource.includes('Total Shadbala (Virupa)')&&matchingShadbalaSource.includes('Total Rupa')&&matchingShadbalaSource.includes('Required Rupa')&&matchingShadbalaSource.includes('Rank')&&matchingShadbalaSource.includes('Below minimum'),'Matching source adds total, total/required Rupa, rank and threshold status');
+ok(!matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala no longer displays the source-only Rajan component subset');
+ok(!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
+ 'Matching Shadbala does not mix another book system or add a separate war column');
 eq(matchingShadbalaSource.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),false,
  'Matching does not render an uncertified Shadbala subtotal');
 
@@ -109,8 +110,9 @@ ok(matching.includes('fullVerdict(pr,ks,ds,bf,gf,sync,b,g)'),'Original match ver
 ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham explanation is available');
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
+ok(css.includes('table.smv-shadbala-table{min-width:1120px!important')&&css.includes('.smv-ayurdaya-average-basis'),'Wide Shadbala scroll and readable Ayurdaya basis styles exist');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
-ok(ta.includes('mm-base-shad-components')&&!ta.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'),'Tamil Shadbala table shows readable components without an uncertified subtotal');
+ok(ta.includes('mm-base-shad-components')&&ta.includes('smv-shadbala-table')&&ta.includes('மொத்த ஷட்பலம் (விரூபம்)')&&ta.includes('தேவையான ரூபா')&&ta.includes('தரவரிசை')&&ta.includes('வலிமை நிலை'),'Tamil Matching shows six Bala components, total, Rupas, rank and strength status');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');
 const basicModule=read('public/horoscope/marriage-basic-report.mjs');
 ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');

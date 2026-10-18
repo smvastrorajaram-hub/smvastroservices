@@ -267,22 +267,32 @@ const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
  'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
-ok(shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
- 'primary Shadbala shows calculated C.G. Rajan components without an uncertified subtotal or separate Yuddha/status column');
+ok(!shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala template does not show Rajan partial subtotal or separate war column');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
+ 'primary Shadbala values are calculated by the shared current-result helper');
+for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(src.includes(heading),'primary Shadbala defines '+heading);
+for(const heading of ['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'])ok(src.includes(heading),'primary Shadbala defines English '+heading);
+
+ok(shadbalaUi.includes('smv-shadbala-method-note'),'primary Shadbala discloses pending numerical cross-source validation');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
-eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
+ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength3?.available===true'),
+ 'primary customer Shadbala rows come from the current six-Bala calculation result');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
-const analysisShadbalaStart=src.indexOf('const shadbalaRows=caPlanets.filter');
+const analysisShadbalaStart=src.indexOf('const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
-ok(analysisShadbalaUi.includes('strengthJathakaKanitham'),'Chart Analysis Shadbala reads C.G. Rajan calculated components');
-eq(analysisShadbalaUi.includes('strength3'),false,'Chart Analysis Shadbala does not use legacy totals');
+ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength3?.available===true'),
+ 'Chart Analysis Shadbala uses current six-component values');
+eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis does not substitute Rajan partial components');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
 const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
-ok(!analysisShadbalaSection.includes('smv-shadbala-status')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
- 'Chart Analysis uses six Bala components without source/status text or a war column');
+ok(analysisShadbalaUi.includes('smv-shadbala-status')&&analysisShadbalaSection.includes('shadbalaRows')&&!analysisShadbalaSection.includes('யுத்தம் (UK)')&&!analysisShadbalaSection.includes('Shadbala · Uttara Kalamrita'),
+ 'Chart Analysis renders the shared strength-status rows without source mixing or a war column');
+for(const heading of ["caTitle('Sthana','ஸ்தான பலம்')","caTitle('Dig','திக் பலம்')","caTitle('Kala','கால பலம்')","caTitle('Total Shadbala (Virupa)','மொத்த ஷட்பலம் (விரூபம்)')","caTitle('Total Rupa','மொத்த ரூபா')","caTitle('Required Rupa','தேவையான ரூபா')","caTitle('Rank','தரவரிசை')","caTitle('Strength','வலிமை நிலை')"])ok(analysisShadbalaSection.includes(heading),'Chart Analysis column '+heading);
+
 eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),false,
  'Chart Analysis does not present an incomplete subtotal as Shadbala');
 ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),

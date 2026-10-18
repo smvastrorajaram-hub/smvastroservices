@@ -42,8 +42,19 @@ body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-section,.phase1-module,.v5-module,.numerology-module,.birth-time-panchang,.hora-section,.avastha154-section){margin-block:12px!important;background:#fff!important}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.home-rule,.smv-part-heading){color:var(--smv207-red)!important;font-weight:850!important;letter-spacing:.015em}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.small,.mm-note){color:var(--smv207-muted)!important}
-body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-table-wrap,.data-table-wrap,.bhava-table-wrap,.smv-viii-table-scroll,.smv-tithi-table-scroll,.adv-scroll){max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--smv207-radius-sm)}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(.adv-table-wrap,.data-table-wrap,.bhava-table-wrap,.smv-viii-table-scroll,.smv-tithi-table-scroll,.adv-scroll){box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:var(--smv207-radius-sm);overscroll-behavior-x:contain}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table{border-collapse:collapse;max-width:100%;font-variant-numeric:tabular-nums}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-shadbala-scroll{overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table{width:max-content;min-width:100%;max-width:none;table-layout:auto;font-size:.78rem;line-height:1.3}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table :where(th,td){min-width:86px;padding:7px 8px;white-space:nowrap}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table th:first-child,
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table td:first-child{min-width:90px}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) table.smv-shadbala-table th{white-space:normal;line-height:1.3}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-shadbala-method-note{font-size:.78rem;line-height:1.45;color:#62534a;margin:4px 0 8px}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-shadbala-status{display:inline-block;white-space:normal;font-size:.72rem;line-height:1.3;font-weight:750}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-strength-pass{color:#286341}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-strength-below{color:#8b2727}
+body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .smv-ayurdaya-average-basis{display:block;margin-top:.28em;font-size:.84rem;line-height:1.45;font-weight:450;color:#594c42}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(table,.data-table,.smv-ref-table,.bhava-table,.strength-table,.panchang-data-table) th{font-weight:800!important;color:#4a352d!important;background:#fff7e8!important}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) :where(table,.data-table,.smv-ref-table,.bhava-table,.strength-table,.panchang-data-table) :where(th,td){border-color:#e7dcc9!important;line-height:1.42;vertical-align:top}
 body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) details{border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius-sm)!important}
