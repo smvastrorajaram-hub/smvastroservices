@@ -547,10 +547,13 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  const amsaCell=v=>{
   if(v.amsaHarana?.resolved!==true||!v.amsaHarana.traditionalUnitsCandidate)
    return `<td data-amsa-harana="blocked" aria-label="${esc(ta?'அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை':'Amsa Harana inputs are incomplete')}" title="${esc((v.amsaHarana?.blockers||[]).join('; '))}">—</td>`;
-  const auditTitle=ta
+  const candidateUnits=v.amsaHarana.traditionalUnitsCandidate;
+  const displayedUnits=fmt({traditionalUnits:candidateUnits},ta);
+  const unitsTrace=ta?`ஹரணத்திற்குப் பின் அலகுகள்=${displayedUnits}`:`Post-Harana normalized units=${displayedUnits}`;
+  const auditTitle=(ta
    ?`மூல அம்ச ஆண்டு=${v.amsa.rawAmsaYears}; மொத்த ஹரணப் பின்னம்=${v.amsaHarana.totalHaranaFraction}; பெருக்கிக்கு முன்=${v.amsaHarana.yearsBeforeMultiplier}; பெருக்கி=${v.amsaHarana.multiplier}; ஹரணத்திற்குப் பின்=${v.amsaHarana.adjustedAmsaYearsCandidate}`
-   :`Raw Amsa years=${v.amsa.rawAmsaYears}; total Harana fraction=${v.amsaHarana.totalHaranaFraction}; before multiplier=${v.amsaHarana.yearsBeforeMultiplier}; multiplier=${v.amsaHarana.multiplier}; post-Harana years=${v.amsaHarana.adjustedAmsaYearsCandidate}`;
-  return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" title="${esc(auditTitle)}">${esc(fmt({traditionalUnits:v.amsaHarana.traditionalUnitsCandidate},ta))}</td>`;
+   :`Raw Amsa years=${v.amsa.rawAmsaYears}; total Harana fraction=${v.amsaHarana.totalHaranaFraction}; before multiplier=${v.amsaHarana.yearsBeforeMultiplier}; multiplier=${v.amsaHarana.multiplier}; post-Harana years=${v.amsaHarana.adjustedAmsaYearsCandidate}`)+`; ${unitsTrace}`;
+  return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" data-amsa-years="${esc(candidateUnits.years)}" data-amsa-months="${esc(candidateUnits.months)}" data-amsa-days="${esc(candidateUnits.days)}" data-amsa-nazhigai="${esc(candidateUnits.nazhigai)}" data-amsa-total-nazhigai="${esc(traditionalNazhigai(candidateUnits))}" title="${esc(auditTitle)}">${esc(displayedUnits)}</td>`;
  };
  const fmtMaybe=(value,ta)=>value?.traditionalUnits?fmt(value,ta):'—';
  const commonCell=(method,v)=>{

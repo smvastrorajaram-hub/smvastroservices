@@ -127,6 +127,14 @@ const chartResolvedFixture=ref.map((p,i)=>({
 const resolvedChart=cgRajanCompareGrahas({planets:chartResolvedFixture});
 eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
  'all seven Amsa rows resolve when all chart evidence is explicit');
+const remainderDisplayFixture=chartResolvedFixture.map(p=>
+ p.name==='செவ்வாய்'?{...p,longitude:167+2/60,bhava:8}:
+ p.name==='சுக்கிரன்'?{...p,bhava:9}:p);
+const remainderHtml=cgRajanAyurdayaReportHtml({planets:remainderDisplayFixture,language:'en'});
+ok(remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
+ 'Amsa report renderer preserves year/month/day/nazhigai after a one-fifth Harana');
+ok(remainderHtml.includes('Post-Harana normalized units=2y 4m 24d 0n'),
+ 'Amsa row hover evidence exposes the exact normalized post-Harana units');
 const jupiterPost=resolvedChart.entries.find(x=>x.name==='குரு').amsaHarana;
 const sunPost=resolvedChart.entries.find(x=>x.name==='சூரியன்').amsaHarana;
 eq(sunPost.multiplier,2,

@@ -1,7 +1,4 @@
 import {calculateVedicChart,findTajakaAnnualChart} from './server-wrapper.browser.mjs';
-import {advanced} from './astro_advanced.browser.mjs';
-import {phase4Dasa} from './dasa_engine.browser.mjs';
-import {panchang,transit} from './transit_panchang.browser.mjs';
 export async function full(body){
  // Phase 4: the Horoscope UI already calculated this natal chart once for the
  // core result. Reuse that same-generation chart for Advanced Analysis instead
@@ -18,7 +15,22 @@ export async function full(body){
  if(body?.basicOnly===true)return{ok:true,meta:{complete:false,basicOnly:true,version:'SMV-basic-1'},chart};
  try{const targetYear=Number(body?.tajakaYear)||new Date().getFullYear();chart.tajakaAnnual=await findTajakaAnnualChart(body,targetYear);}catch(e){chart.tajakaAnnualError=String(e?.message||e);}
  const lang=body.language==='en'?'en':'ta';
+ // Load advanced and Dasa code only after the Basic-only exit. Public
+ // Nakshatra Porutham should not pay to parse modules it never calculates.
+ const [{advanced},{phase4Dasa}]=await Promise.all([
+  import('./astro_advanced.browser.mjs'),
+  import('./dasa_engine.browser.mjs')
+ ]);
  const adv=advanced(chart,lang);
+ // Full Marriage Matching needs natal advanced evidence and Vimshottari Dasa,
+ // but it does not consume this engine's birth/daily Panchang or daily Transit.
+ // Avoid those independent calculations here; the report calculates its own
+ // review-date transit and 15-year timeline through the matching path.
+ if(body?.matchingOnly===true){
+  const phase4=phase4Dasa(chart);
+  return {ok:true,meta:{complete:true,matchingOnly:true,version:'SMV-matching-1'},chart,advanced:adv,phase4};
+ }
+ const {panchang,transit}=await import('./transit_panchang.browser.mjs');
  const cachedBasic=body?.__smvPrecomputedBasic;
  const cacheLanguage=!cachedBasic?.language||cachedBasic.language===lang;
  const birthPanchang=cacheLanguage&&cachedBasic?.birthPanchang?cachedBasic.birthPanchang:panchang({...body,date:body.date,time:body.time});

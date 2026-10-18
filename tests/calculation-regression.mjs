@@ -21,6 +21,12 @@ for(const sample of [
 let code=fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8');
 const transformed=code.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,getD9Sign,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
 ok(code!==transformed,'Missing matching audit entry point');
+const offlineSource=fs.readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
+ok(!offlineSource.includes("import {advanced} from './astro_advanced.browser.mjs'")&&offlineSource.includes("import('./astro_advanced.browser.mjs')"),'Basic-only startup defers Advanced module loading');
+ok(!offlineSource.includes("import {phase4Dasa} from './dasa_engine.browser.mjs'")&&offlineSource.includes("import('./dasa_engine.browser.mjs')"),'Basic-only startup defers Dasa module loading');
+ok(offlineSource.includes("if(body?.matchingOnly===true)")&&offlineSource.includes("matchingOnly:true,version:'SMV-matching-1'"),'Matching-only engine response bypasses unused Panchang/Transit work');
+ok(code.includes('async function getChart(prefix,basicOnly=false,matchingOnly=false)')&&code.includes('matchingOnly:matchingOnly===true'),'Matching profile reaches the offline calculation engine');
+ok(code.includes("getChart('mmBride',false,true)")&&code.includes("getChart('mmGroom',false,true)"),'Full matching uses the dedicated matching calculation profile');
 const context={document:{readyState:'loading',documentElement:{lang:'ta'},body:{classList:{contains:()=>false}},addEventListener(){}},window:{addEventListener(){}}};
 vm.runInNewContext(transformed,context,{timeout:20000});
 const m=context.TEST;
