@@ -729,9 +729,6 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
  const selectionLabel=(ta?'ஷட்பலத்தின் அடிப்படையில் தேர்வு: ':'Selected by chart Shadbala: ')+referenceLabel+
   ' ('+selection.scoreVirupa.toFixed(2)+' '+(ta?'விரூபம்':'Virupa')+') — '+methodLabel;
  const selectionLine='<p class="small smv-ayurdaya-method-selection" data-selected-ayurdaya-method="'+esc(selectedMethod)+'" data-selected-reference-role="'+esc(selection.referenceRole)+'" data-selected-reference-planet="'+esc(selection.referencePlanet)+'" data-selected-strength-virupa="'+esc(selection.scoreVirupa)+'">'+esc(selectionLabel)+'</p>';
- const certificationLine=selection.shadbalaBasisCertified?'':'<p class="small smv-ayurdaya-selection-note">'+esc(ta
-  ?'இந்தத் தேர்வு ஜாதகத்தில் கணக்கிடப்பட்ட ஷட்பல மதிப்புகளைப் பயன்படுத்துகிறது; முழு பாரம்பரிய நூல்-சான்று இன்னும் நிலுவையில் உள்ளது.'
-  :'This selection uses the chart’s computed Shadbala totals; full classical source certification remains pending.')+'</p>';
  const tableRows=research.entries.map(v=>{
   const cell=selectedMethod==='amsa'?amsaCell(v):commonCell(selectedMethod,v);
   return '<tr><th scope="row">'+esc(ta?v.name:v.english)+'</th>'+cell+'</tr>';
@@ -758,7 +755,7 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
  const totalLine='<tr class="smv-ayurdaya-totals"><th scope="row">'+totalLabel+'</th>'+totalCell+'</tr>';
  return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="'+esc(selectedMethod)+'">' +
   '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>' +
-  selectionLine+certificationLine+
+  selectionLine+
   '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>'+(ta?'கிரகம்':'Planet')+'</th><th>'+esc(methodLabel)+'</th></tr></thead><tbody>'+
   tableRows+totalLine+'</tbody></table></div></section>';
 }
