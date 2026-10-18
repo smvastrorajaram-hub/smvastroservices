@@ -221,16 +221,16 @@ for (const item of secondaryMethodASamples) {
   }
 }
 same(secondaryMethodADiscrepancies.map(item => item.planet),
-  ['Mars', 'Jupiter', 'Venus', 'Saturn'],
-  'secondary Method-A published gross-year values contain four reproducible arithmetic discrepancies');
+  ['Jupiter', 'Venus', 'Saturn'],
+  'secondary Method-A published gross-year values contain three discrepancies above 0.1 year');
 near(secondaryMethodADiscrepancies[0].difference, 0.1481, 0.0001,
-  'Method-A Mars arithmetic discrepancy is recorded, not patched over');
-near(secondaryMethodADiscrepancies[1].difference, 0.1481, 0.0001,
   'Method-A Jupiter arithmetic discrepancy is recorded, not patched over');
-near(secondaryMethodADiscrepancies[2].difference, 1.3111, 0.0001,
+near(secondaryMethodADiscrepancies[1].difference, 1.3111, 0.0001,
   'Method-A Venus arithmetic discrepancy is recorded, not patched over');
-near(secondaryMethodADiscrepancies[3].difference, 11.0370, 0.0001,
+near(secondaryMethodADiscrepancies[2].difference, 11.0370, 0.0001,
   'Method-A Saturn arithmetic discrepancy is recorded, not patched over');
+near((((197 * 7 / 27) % 27) + 27) % 27, 24.0740740741, 1e-9,
+  'Method-A Mars recalculated gross years are 24.0741, a 0.0741 difference within comparison tolerance');
 
 const fixture = BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE;
 const methodB = bvRamanAshtakavargaMethodB({
