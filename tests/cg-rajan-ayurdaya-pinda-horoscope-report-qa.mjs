@@ -84,7 +84,9 @@ const amsaCases=[
 for(const [longitude,years] of amsaCases){
  const row=cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:longitude});
  ok(Math.abs(row.rawAmsaYears-years)<1e-8,
-  'C.G. Rajan Amsa table includes fractional arc '+longitude+': '+row.rawAmsaYears+' vs '+years);
+  'C.G. Rajan Amsa Table E includes fractional arc '+longitude+': '+row.rawAmsaYears+' vs '+years);
+ eq(row.variant,'E','lookup metadata matches the scanned Table E');
+ eq(row.lagnaLordStrengthConditionVerified,false,'Table E condition is not falsely marked verified');
 }
 eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:206.5}).traditionalUnits,
  {years:1,months:11,days:12,nazhigai:0},
@@ -252,11 +254,11 @@ eq(jupiterAmsaCell,undefined,
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
 eq(totals.amsa.traditionalUnits,null,
  'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
-eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until all adjusted rows resolve');
+eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until method selection is verified');
 eq(totals.amsaTableERaw.traditionalUnits,{years:44,months:0,days:18,nazhigai:0},
  'raw Table-E total preserves fractional day arithmetic internally and is not presented as final');
 eq(totals.averageOfThreeTotals,null,
- 'three-method mean is withheld rather than calculated from raw Amsa Table-A values');
+ 'three-method mean is withheld rather than calculated from raw Amsa Table-E values');
 const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
 eq(oneThird.traditionalUnits.nazhigai,0,'one-third has no whole nazhigai');
 eq(oneThird.traditionalUnits.nazhigaiFractionNumerator,1,'one-third nazhigai retained');
