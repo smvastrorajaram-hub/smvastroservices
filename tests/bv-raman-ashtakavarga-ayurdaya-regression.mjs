@@ -115,6 +115,11 @@ const standardShodhana = bvRamanAshtakavargaShodhana({
   bavRows: standardOracle.beforeReductionRows,
   occupiedSigns: standardOracle.occupiedSigns
 });
+ok(standardShodhana.source.includes('Chapter II'),
+  'Trikona/Ekadhipatya audit explicitly cites the Chapter II table source track');
+ok(!standardShodhana.source.includes('Chapter XIV'),
+  'Shodhana source is not mislabeled as the Ayurdaya chapter');
+
 same(
   Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
     [planet, standardShodhana.afterReductionRows[planet]])),
@@ -177,6 +182,9 @@ same(methodA.netTotalLunarYears, null, 'Method A refuses unsupported net-year to
 same(methodA.finalSolarYears, null, 'Method A refuses unsupported final solar-year total');
 same(methodA.finalLifespan, null, 'Method A does not emit final lifespan');
 same(methodA.customerDisplayAllowed, false, 'Method A must not appear in customer UI');
+ok(methodA.source.includes('Chapter XIV'),
+  'Ayurdaya Method A explicitly cites Chapter XIV, separate from Chapter II Shodhana');
+
 ok(methodA.certified === false, 'Method A not marked certified');
 
 // Standard Horoscope Sun row transcribed from the worked example's
