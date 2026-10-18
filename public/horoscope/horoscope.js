@@ -511,7 +511,32 @@
     }
     return s.exalted?'உச்சம்':s.debilitated?'நீசம்':s.moolatrikona?'மூலத்திரிகோணம்':s.ownSign?'ஆட்சி':s.relationship||'—';
   }
-${helper}  function render(d){
+  function smvShadbalaDisplayRows(planets){
+    const data=(planets||[]).filter(p=>p?.strength3?.available===true&&p.strength3?.components)
+      .map(planet=>{
+        const strength=planet.strength3;
+        return {planet,strength,components:strength.components||{},
+          total:Number.isFinite(strength.totalVirupa)?strength.totalVirupa:null,
+          required:Number.isFinite(strength.requiredVirupa)?strength.requiredVirupa:null};
+      });
+    const sorted=data.filter(row=>row.total!==null).slice().sort((a,b)=>b.total-a.total);
+    const ranks=new Map();
+    let lastTotal=null,rank=0;
+    sorted.forEach((row,index)=>{
+      if(lastTotal===null||Math.abs(row.total-lastTotal)>1e-9)rank=index+1;
+      ranks.set(row.planet.name,rank);
+      lastTotal=row.total;
+    });
+    return data.map(row=>{
+      const ratio=row.total!==null&&row.required!==null&&row.required>0?row.total/row.required:null;
+      return {...row,rank:ranks.get(row.planet.name)||null,ratio,
+        ratioPercent:ratio===null?null:Math.round(ratio*100),
+        totalRupa:Number.isFinite(row.strength.totalRupa)?row.strength.totalRupa:
+          (row.total===null?null:row.total/60),
+        requiredRupa:row.required===null?null:row.required/60};
+    });
+  }
+  function render(d){
     const result=$('tamilHoroscopeResult');
     const name=($('tamilAstroName')?.value||'அன்பார்ந்தவர்').trim()||'அன்பார்ந்தவர்';
     const created=new Date().toLocaleDateString('ta-IN',{day:'2-digit',month:'long',year:'numeric'});
@@ -1222,7 +1247,9 @@ ${helper}  function render(d){
       }).join('');
       // Display all six current Swiss-position-based Bala components plus the computed total,
       // minimum required Rupas, rank and ratio status from one consistent strength3 result.
-      const shadbalaRows=smvShadbalaDisplayRows(caPlanets).map(row=>{
+      const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);
+      const shadbalaRowsCount=shadbalaDisplayRows.length;
+      const shadbalaRows=shadbalaDisplayRows.map(row=>{
         const c=row.components,n=(v,d=1)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
         const level=row.ratio===null?caTitle('Not available','கணக்கீடு இல்லை'):
           row.ratio>=1?caTitle('Meets minimum','தேவையான அளவு அடைந்தது'):
@@ -1235,7 +1262,6 @@ ${helper}  function render(d){
           '<td>'+n(row.requiredRupa,2)+'</td><td>'+(row.rank===null?'—':row.rank+' / '+shadbalaRowsCount)+'</td>'+
           '<td><span class="smv-shadbala-status '+(row.ratio!==null&&row.ratio>=1?'smv-strength-pass':'smv-strength-below')+'">'+levelText+'</span></td></tr>';
       }).join('');
-      const shadbalaRowsCount=smvShadbalaDisplayRows(caPlanets).length;
       if(shadbalaRows) h+='<div class="adv-section part1-planetary-strength"><h4>'+caTitle('Shadbala','ஷட்பலம்')+'</h4><p class="small smv-shadbala-method-note">'+caTitle('Current Swiss-Ephemeris-position-based values; final numerical cross-source validation is pending. Rank reflects current computed totals.','Swiss Ephemeris நிலைகளை அடிப்படையாகக் கொண்ட தற்போதைய மதிப்புகள்; முழு எண்ணியல் cross-source validation நிலுவையில் உள்ளது. தரவரிசை தற்போதைய மொத்தத்தை அடிப்படையாகக் கொண்டது.')+'</p><div class="adv-table-wrap smv-shadbala-scroll"><table class="adv-wide smv-shadbala-table"><thead><tr><th>'+caTitle('Planet','கிரகம்')+'</th><th>'+caTitle('Sthana','ஸ்தான பலம்')+'</th><th>'+caTitle('Dig','திக் பலம்')+'</th><th>'+caTitle('Kala','கால பலம்')+'</th><th>'+caTitle('Cheshta','சேஷ்டா பலம்')+'</th><th>'+caTitle('Naisargika','நைசர்கிக பலம்')+'</th><th>'+caTitle('Drig','த்ரிக் பலம்')+'</th><th>'+caTitle('Total Shadbala (Virupa)','மொத்த ஷட்பலம் (விரூபம்)')+'</th><th>'+caTitle('Total Rupa','மொத்த ரூபா')+'</th><th>'+caTitle('Required Rupa','தேவையான ரூபா')+'</th><th>'+caTitle('Rank','தரவரிசை')+'</th><th>'+caTitle('Strength','வலிமை நிலை')+'</th></tr></thead><tbody>'+shadbalaRows+'</tbody></table></div></div>';
 
       h+=`<div class="adv-section part1-natural-karakas"><h4>🪷 ${caTitle('Natural Karakas','இயற்கை காரகர்கள்')}</h4><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${caTitle('Planet','கிரகம்')}</th><th>${caTitle('Natural Karaka','இயற்கை காரகம்')}</th></tr></thead><tbody>${nkRows}</tbody></table></div></div>`;
