@@ -86,8 +86,8 @@ try{
   assert.ok(mobile.charts===8,'D1/D9/Bhava/Gochara for both users: '+style);
   assert.ok(mobile.tables>=20,'Full technical tables for both users: '+style);
   assert.equal(mobile.ayurdayaTables,2,'Two partner Ayurdaya tables remain present on mobile: '+style);
-  assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(255, 255, 255)'&&mobile.ayurdayaHeaderStyle.background==='rgb(143, 0, 0)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya table heading is white and bold on dark red: '+style);
-  assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(255, 255, 255)'&&mobile.ayurdayaPlanetStyle.background==='rgb(143, 0, 0)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are white and bold on dark red: '+style);
+  assert.ok(mobile.ayurdayaHeaderStyle&&mobile.ayurdayaHeaderStyle.color==='rgb(75, 37, 27)'&&mobile.ayurdayaHeaderStyle.background==='rgb(244, 234, 216)'&&mobile.ayurdayaHeaderStyle.weight>=700,'Matching Ayurdaya heading matches the Shadbala table header palette: '+style);
+  assert.ok(mobile.ayurdayaPlanetStyle&&mobile.ayurdayaPlanetStyle.text.length>0&&mobile.ayurdayaPlanetStyle.color==='rgb(48, 39, 34)'&&mobile.ayurdayaPlanetStyle.background==='rgb(255, 253, 251)'&&mobile.ayurdayaPlanetStyle.weight>=700,'Matching Ayurdaya planet names are dark bold text on the same light cell surface: '+style);
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
