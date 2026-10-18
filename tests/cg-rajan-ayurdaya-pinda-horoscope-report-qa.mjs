@@ -67,7 +67,7 @@ eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
 ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
  'Amsa total stays unavailable until all seven chart-specific Harana results resolve');
 const amsaCases=[
- [0,12],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
+ [0,0],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,2.11],[118+10/60,11.45],[206.5,1.95],[191+52/60,9.56],
  [28+17/60,8.485],[204+32/60,1.36],[230+27/60,9.135]
 ];
@@ -79,6 +79,12 @@ for(const [longitude,years] of amsaCases){
 eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:206.5}).traditionalUnits,
  {years:1,months:11,days:12,nazhigai:0},
  'fractional Table-A remainder converts into months/days by rule of three');
+eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:1+40/60}).rawAmsaYears,0.5,
+ 'first pada fraction is calculated from the 0° origin using the printed 200-minute rule');
+eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:41+40/60}).rawAmsaYears,12.5,
+ 'fraction within the printed 12-year pada uses Table C, not interpolation toward the next cycle label');
+eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:43+20/60}).rawAmsaYears,1,
+ 'Table A resets to year 1 at the next printed 3°20′ boundary');
 // A one-fifth Chakrapada loss must carry through to days, not be
 // truncated to whole years/months or replaced by the raw Table-A term.
 const fifthLossCase=cgRajanAmsaHaranaResearch({

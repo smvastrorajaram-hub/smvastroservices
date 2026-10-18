@@ -49,13 +49,15 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  const intervalPosition=arcMinutes/200;
  const completedIntervals=Math.floor(intervalPosition+1e-10);
  const rawAmsaFractionOfPada=Math.max(0,Math.min(1,intervalPosition-completedIntervals));
- // Printed Table A gives year values at each 3°20′ boundary, repeating 1..12.
- // The 360°/0° boundary corresponds to 12; fractional arcs are interpolated
- // between the adjacent printed values by rule of three instead of rounded up.
- const tableYearAt=index=>index<=0?12:((index-1)%12)+1;
+ // Printed Table A gives year values at 3°20′ boundaries, cycling 1..12
+ // after the initial 0° origin. Table C converts the arcminutes progressed
+ // inside the CURRENT pada by rule of three: 200′ = one year, 1′ = 1d 48n.
+ // Do not interpolate the two boundary labels (notably 12 -> 1 at a cycle):
+ // preserve the lower table value and add only the current-pada fraction.
+ const tableYearAt=index=>index<=0?0:((index-1)%12)+1;
  const lowerBoundaryYears=tableYearAt(completedIntervals);
  const upperBoundaryYears=tableYearAt(completedIntervals+1);
- const rawAmsaYears=lowerBoundaryYears+(upperBoundaryYears-lowerBoundaryYears)*rawAmsaFractionOfPada;
+ const rawAmsaYears=lowerBoundaryYears+rawAmsaFractionOfPada;
  const amsaIntervals=Math.max(1,completedIntervals+1);
  return Object.freeze({
   planet,trueLongitude:longitude,arcMinutes,intervalArcMinutes:200,
@@ -82,8 +84,8 @@ export function cgRajanAmsaHaranaResearch({
  ownSign,ownNavamsa,ownDrekkana,vargottama
 }={}){
  if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
- if(!finite(rawAmsaYears)||rawAmsaYears<1||rawAmsaYears>12)
-  throw new RangeError('Raw Amsa table-A years must be between 1 and 12');
+ if(!finite(rawAmsaYears)||rawAmsaYears<0||rawAmsaYears>=13)
+  throw new RangeError('Raw Amsa table-A term must be 0..12 years plus the current-pada fraction');
  const blockers=[];
  const flags={enemySign,combust,isExaltationSign,retrograde,ownSign,ownNavamsa,ownDrekkana,vargottama};
  for(const [key,value] of Object.entries(flags))if(typeof value!=='boolean')
