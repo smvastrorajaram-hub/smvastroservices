@@ -101,7 +101,7 @@ for(const [planet,tamilName] of Object.entries(tamil)){
  near(independentlyPublishedOrbital.virupa,publishedInputsExpectedVirupa[planet],
    .0000015,planet+' IMD published source input Cheshta Virupa');
  const orbitalEvidence=s.evidence?.cheshtaSource;
- yes(orbitalEvidence?.method==='BV_RAMAN_TRADITIONAL_MEAN_TRUE_SHEEGHROCCA'&&orbitalEvidence.numericallyCertified===false,
+ yes(orbitalEvidence?.method==='BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA'&&orbitalEvidence.numericallyCertified===false,
    planet+' live uses B.V. Raman classical-formula candidate, not speed buckets');
  const liveVirupa=s.components.cheshta;
  const discrepancy=Math.abs(liveVirupa-independentlyPublishedOrbital.virupa);
