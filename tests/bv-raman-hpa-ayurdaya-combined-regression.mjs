@@ -114,4 +114,73 @@ for (const [planet, expected] of Object.entries(reportedPairs)) {
   eq([hpaCalc.planets[planet].rasiPinda,hpaCalc.planets[planet].grahaPinda,hpaCalc.planets[planet].sodyaPinda],
     expected, planet + ' Rasi/Graha/Sodhya Pinda arithmetic');
 }
-eq(hpaCalc.planets.Sun.har ana, undefined, 'placeholder');
+const expectedDisplayedNet = {
+  Sun: 13.70, Moon: 7.75, Mars: 2.33, Mercury: 0.48,
+  Jupiter: 4.00, Venus: 12.44, Saturn: 8.27
+};
+for (const [planet, expected] of Object.entries(expectedDisplayedNet)) {
+  near(hpaCalc.planets[planet].harana.printedNetLunarYears, expected, 0.0001,
+    planet + ' source-formula Harana term uses computed Pinda gross, then one maximum reduction');
+}
+eq(hpaCalc.netLunarYears, 48.97,
+  'independent Pinda-to-Harana calculation yields 48.97 rather than silently forcing printed 48.98');
+near(hpaCalc.solarYearsCandidate, 48.97 * 334 / 365, 1e-12,
+  'candidate solar years use the HPA 334/365 ratio');
+near(hpaCalc.knownSourceArithmeticDiscrepancy.recalculatedSolarYears, 48.98 * 334 / 365, 1e-12,
+  'printed total conversion is separately recalculated');
+ok(Math.abs(hpaCalc.knownSourceArithmeticDiscrepancy.printedSolarYears -
+  hpaCalc.knownSourceArithmeticDiscrepancy.recalculatedSolarYears) > 0.04,
+  'published 44.87 discrepancy is not patched over');
+eq(hpaCalc.finalLifespan, null, 'Chapter XXVI never exposes a final lifespan');
+eq(hpaCalc.customerDisplayAllowed, false, 'Chapter XXVI research result stays out of customer UI');
+
+// Exercise the end-to-end join of raw BAV -> both Shodhana steps -> Chapter XXVI,
+// with Chapter XIV rule candidates kept in a parallel channel.
+const standard = BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE;
+const noHarana = Object.fromEntries(
+  ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].map(name => [name, {
+    conjunctionInSign:false, debilitated:false, combust:false, temporaryEnemySign:false,
+    aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:false
+  }])
+);
+const integrated = bvRamanIntegratedAyurdayaResearch({
+  chart, evidence: { strongPlanets: ['Jupiter'] },
+  bavRows: standard.beforeReductionRows,
+  occupiedSigns: standard.occupiedSigns,
+  planetSigns: standard.planetSigns,
+  haranaByPlanet: noHarana
+});
+ok(integrated.shodhana !== null, 'combined flow includes BAV Shodhana');
+ok(integrated.chapterXXVI !== null, 'combined flow includes Chapter XXVI Pinda/Harana calculation');
+ok(integrated.chapterXIV.matchedRuleIds.includes('XIV-BAL-09'),
+  'combined flow carries the Chapter XIV matched rule trace');
+eq(integrated.crossCheck.ruleAndNumberTracksKeptSeparate, true,
+  'Chapter XIV class candidates are not averaged with Chapter XXVI arithmetic');
+eq(integrated.finalLifespan, null, 'combined research flow has no final lifespan');
+eq(integrated.finalAgeOrDateOfDeath, null, 'combined research flow has no death-age/date field value');
+eq(integrated.certified, false, 'combined flow remains uncertified');
+eq(integrated.customerDisplayAllowed, false, 'combined flow is never customer-facing');
+
+// Guard against silently reusing the other-school method or turning this into
+// an age/death predictor.
+const combinedSource = (await import('node:fs')).readFileSync(
+  new URL('../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs', import.meta.url),
+  'utf8'
+);
+ok(!/cg-rajan|classical-shodhana/i.test(combinedSource),
+  'combined Raman research module imports no C.G. Rajan/BPHS helpers');
+ok(!/predictedDeathAge|deathAgeOrDate/i.test(combinedSource),
+  'combined module does not implement an age/date-of-death predictor');
+
+console.log(JSON.stringify({
+  pass: true,
+  assertions,
+  scope: 'B.V. Raman HPA Chapter XIV rule-evidence + Chapter XXVI Ashtakavarga arithmetic join',
+  hpaRecomputedNetLunarYears: hpaCalc.netLunarYears,
+  hpaRecomputedSolarYearsCandidate: hpaCalc.solarYearsCandidate,
+  bookPrintedNetLunarYears: 48.98,
+  bookPrintedSolarYears: 44.87,
+  sourceCertification: false,
+  finalLifespanEmitted: false,
+  customerDisplayAllowed: false
+}, null, 2));
