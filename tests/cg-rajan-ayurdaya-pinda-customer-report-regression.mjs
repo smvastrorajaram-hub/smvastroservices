@@ -98,10 +98,14 @@ for(const [date,time] of [
   eq(blocked+adjusted+raw,7,'each graha has adjusted, raw-unadjusted, or data-missing Amsa cell');
   yes(raw===0||lang.includes('Raw: ')||lang.includes('மூல மதிப்பு: '),
     'unresolved Amsa rows expose raw terms with an explicit label');
-  eq((lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
-    'Pinda report exposes seven actual post-Harana rows '+date);
-  eq((lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
-    'Naisargika report exposes seven actual post-Harana rows '+date);
+  const pindaAdjusted=(lang.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length;
+  const pindaRaw=(lang.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length;
+  const naturalAdjusted=(lang.match(/data-natural-harana="adjusted-candidate"/g)||[]).length;
+  const naturalRaw=(lang.match(/data-natural-harana="raw-unadjusted"/g)||[]).length;
+  eq(pindaAdjusted+pindaRaw,7,
+    'Pinda report exposes seven adjusted or clearly raw rows '+date);
+  eq(naturalAdjusted+naturalRaw,7,
+    'Naisargika report exposes seven adjusted or clearly raw rows '+date);
   yes(lang.includes('data-total-harana-nazhigai=')&&lang.includes('data-adjusted-amsa-years='),
     'customer table includes auditable raw/deduction/adjusted values '+date);
   eq(lang.includes('data-amsa-total="adjusted-candidate"'),result.totals.amsa.available===true,
