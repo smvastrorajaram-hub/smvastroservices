@@ -385,8 +385,8 @@ export function bvRamanAshtakavargaMethodB({
     certified: false,
     customerDisplayAllowed: false,
     blockers: Object.freeze([
-      'The source example reports 94.8 solar years from the unadjusted 106.8 lunar-year quotient while also stating a 100-year subtraction rule.',
-      'The displayed source example is not reconciled with the 100-year rule; neither branch is designated final.',
+      'The secondary source does not clearly establish whether a 100-unit deduction precedes or follows lunar-to-solar conversion; 94.8 follows converting the unadjusted quotient.',
+      'Both plausible placements of the 100-unit deduction are kept for audit; neither is designated final until the original Chapter XIV page is checked.',
       'Primary printed source pages and independent worked-chart oracle are required.'
     ])
   });
