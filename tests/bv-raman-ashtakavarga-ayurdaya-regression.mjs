@@ -56,6 +56,26 @@ same([trine.values[3], trine.values[7], trine.values[11]], [0, 0, 0],
   'equal positive trine zeroes all members');
 ok(trine.certified === false, 'Trikona research result is not certified');
 
+// Exact Trikona examples transcribed from B. V. Raman, Hindu Predictive
+// Astrology, Ch. XXVI, pp. 186–189. These verify arithmetic edge cases, not
+// the still-unseen ASOP book pages.
+for (const sample of [
+  { input: [5, 3, 3], expected: [2, 0, 0], label: '5,3,3 -> 2,0,0' },
+  { input: [5, 2, 5], expected: [3, 0, 3], label: '5,2,5 -> 3,0,3' },
+  { input: [1, 1, 3], expected: [0, 0, 2], label: '1,1,3 -> 0,0,2' },
+  { input: [0, 4, 2], expected: [0, 4, 2], label: 'one zero leaves trine unchanged' },
+  { input: [0, 0, 3], expected: [0, 0, 0], label: 'two zeros eliminate third member' },
+  { input: [4, 4, 4], expected: [0, 0, 0], label: 'equal positive trine is eliminated' }
+]) {
+  const row = Array(12).fill(0);
+  row[0] = sample.input[0];
+  row[4] = sample.input[1];
+  row[8] = sample.input[2];
+  const result = bvRamanTrikonaShodhana(row);
+  same([result.values[0], result.values[4], result.values[8]], sample.expected,
+    'HPA Ch. XXVI Trikona example ' + sample.label);
+}
+
 // Test separate Ekadhipatya cases without relying on an astronomical chart.
 const ownedInput = Array(12).fill(1);
 Object.assign(ownedInput, { 0: 2, 7: 5, 1: 4, 6: 2, 2: 3, 5: 7, 8: 4, 11: 4, 9: 5, 10: 2 });
