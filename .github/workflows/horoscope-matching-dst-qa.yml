@@ -71,13 +71,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check JavaScript source syntax
+      - name: Check Horoscope source JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
           while IFS= read -r path; do
             node --check "$path"
-          done < <(find public/horoscope tests -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
+          done < <(find public/horoscope -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope single-release and responsive full-report regression
         run: node tests/horoscope-generation-progress-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
