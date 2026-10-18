@@ -301,10 +301,11 @@ eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),fa
 ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),
  'Chart Analysis heading is only Shadbala / ஷட்பலம் and shows individual Bala components');
 ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('bvRamanIshtaKashta')&&src.includes('bvRamanChestaForPhala'), 'Chart Analysis renders B.V. Raman Ishta/Kashta from separate special Chesta-for-Phala inputs');
+ok(!src.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'), 'No Ishta/Kashta research note is displayed to Horoscope users');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
-ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('min-width:680px'), 'Horoscope Ayurdaya table uses a dedicated horizontal-scroll viewport');
+ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:818px;min-width:818px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v244-ishta-kashta-ayurdaya-ui-20261018'),'PWA refresh revision activates the latest Horoscope UI');
+ok(swSource.includes('v245-ayurdaya-readable-no-white-box-20261018'),'PWA refresh revision activates the latest Horoscope UI');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
  ['2002-10-18','06:06'],['1989-10-18','09:45']];

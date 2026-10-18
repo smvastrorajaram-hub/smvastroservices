@@ -106,7 +106,7 @@ try{
   assert.ok(size>25000,'PDF is not empty: '+style);
   const print=await page.evaluate(async()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
-   const basis=[...document.querySelectorAll('.smv-ayurdaya-average-basis')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),fontWeight:parseInt(getComputedStyle(node).fontWeight,10)||400,visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
+   const basis=[...document.querySelectorAll('.smv-ayurdaya-average-basis')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),fontWeight:parseInt(getComputedStyle(node).fontWeight,10)||400,backgroundColor:getComputedStyle(node).backgroundColor,visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
    const shadbalaSection=document.querySelector('.smv-shadbala-section');
    const shadbalaBreakInside=shadbalaSection?getComputedStyle(shadbalaSection).breakInside:'missing';
    await document.fonts.ready;
@@ -118,7 +118,7 @@ try{
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
   assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
-  assert.ok(print.averageBasis.length===2&&print.averageBasis.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700),
+  assert.ok(print.averageBasis.length===2&&print.averageBasis.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700&&x.backgroundColor!=='rgb(255, 255, 255)'),
     'Both Ayurdaya subtexts remain readable/visible in print: '+style);
   assert.equal(print.tamilFontReady,true,'Noto Tamil font is loaded for native PDF rendering: '+style);
   assert.equal(print.shadbalaBreakInside,'avoid','Shadbala heading and full table stay together in PDF: '+style);
