@@ -187,23 +187,25 @@ function ashtakavarga(c,ta){
  return table(head,rows,'mm-base-av');
 }
 function shadbala(c,ta){
- const ps=(c?.planets||[]).filter(p=>p?.strength3?.available);
- if(!ps.length)return '<p class="mm-base-unavailable">'+(ta?'கணக்கீட்டுத் தரவு கிடைக்கவில்லை':'Calculated data unavailable')+'</p>';
- const h1=ta?['கிரகம்','ஸ்தான','திக்','கால','சேஷ்டா','நைசர்கிக','திருக்']:['Planet','Sthana','Dig','Kala','Cheshta','Naisargika','Drik'];
- const h2=ta?['கிரகம்','மொத்த விரூபம்','ரூபம்','தேவை','விகிதம்']:['Planet','Total Virupa','Rupa','Required','Ratio'];
+ const ps=(c?.planets||[]).filter(p=>p?.strengthUttaraKalamrita?.source);
+ if(!ps.length)return '<p class="mm-base-unavailable">'+(ta?'Uttara Kalamrita இடைக்காலச் சட்பலத் தரவு கிடைக்கவில்லை':'Uttara Kalamrita intermediate Shadbala data unavailable')+'</p>';
+ const h1=ta?['கிரகம்','ஸ்தானம் (UK)','திக் (UK)','காலம் (UK)','சேஷ்டா (UK)','நைசர்கிகம் (UK)','த்ரிக் (UK)','யுத்தம் (UK)']:['Planet','Sthana (UK)','Dig (UK)','Kala (UK)','Cheshta (UK)','Naisargika (UK)','Drig (UK)','Yuddha (UK)'];
+ const h2=ta?['கிரகம்','முழு மொத்த விரூபம்','ரூபம்','நிலை']:['Planet','Full Total Virupa','Rupa','Status'];
  const part1=ps.map(p=>{
-  const x=p.strength3,a=x.components||{};
-  return tr([name(p.name,ta),val(a.sthana?.total),val(a.dig),val(a.kala?.total),val(a.cheshta),val(a.naisargika),val(a.drik)]);
+  const x=p.strengthUttaraKalamrita,st=x.sthana||{},k=x.kala||{};
+  const war=(x.missing||[]).includes('planetary war unresolved')?null:x.warVirupa;
+  return tr([name(p.name,ta),val(st.totalVirupa),val(x.dig?.virupa),val(k.totalVirupa),val(x.cheshta?.virupa),val(x.naisargikaVirupa),val(x.drig?.virupa),val(war)]);
  });
  const part2=ps.map(p=>{
-  const x=p.strength3;
-  return tr([name(p.name,ta),val(x.totalVirupa),val(x.totalRupa,3),val(x.requiredVirupa),val(x.ratio,3)]);
+  const x=p.strengthUttaraKalamrita;
+  const status=Number.isFinite(x.totalVirupa)
+   ?(ta?'இடைக்கால மொத்தம் — முழுச் சான்றிதழ் இல்லை':'Intermediate total — not fully certified')
+   :(ta?'முழு மொத்தம் நிலுவை; சேஷ்டா/மூல ஆதாரம் தீர்க்கப்படவில்லை':'Full total pending; Cheshta/source evidence unresolved');
+  return tr([name(p.name,ta),val(x.totalVirupa),val(x.totalRupa,3),status]);
  });
- // Two complete, aligned tables prevent single Tamil letters in 11 narrow columns.
- // The active strength3 payload is provisional, not a certified natal Shadbala.
  const status=ta
-  ?'<p class="small mm-shadbala-status">குறிப்பு: இந்த ஆறு-கூறு Shadbala மதிப்புகள் இடைக்காலக் கணக்கீடுகள். Uttara Kalamrita நூலை அடிப்படையாகக் கொண்ட முழுமையான சுயாதீனப் பிறப்பு ஜாதகச் சரிபார்ப்பு இன்னும் முடிவடையவில்லை; இதை இறுதி சட்பலச் சான்றிதழாகக் கருத வேண்டாம்.</p>'
-  :'<p class="small mm-shadbala-status">Note: these six-component Shadbala values are provisional. Full independent natal-chart verification against Uttara Kalamrita is unfinished; do not treat this as a final classical Shadbala certificate.</p>';
+  ?'<p class="small mm-shadbala-status">Uttara Kalamrita இடைக்காலக் கூறுகள் மட்டுமே காட்டப்படுகின்றன. பிறப்பு ஜாதக Cheshta உள்ளீடுகளுக்கு ஒரே வானியல் அடிப்படையிலான சுயாதீன ஆதாரம் இல்லாததால் முழு மொத்தம்/விகிதம் காட்டப்படவில்லை; இது இறுதி சட்பலச் சான்றிதழ் அல்ல.</p>'
+  :'<p class="small mm-shadbala-status">Only Uttara Kalamrita intermediate components are shown. A same-frame independently verified natal Cheshta source is still missing, so the full total/ratio is withheld; this is not a final Shadbala certificate.</p>';
  return status+table(h1,part1,'mm-base-shad-components')+table(h2,part2,'mm-base-shad-total');
 }
 function dasha(c,ta,ref){

@@ -256,23 +256,28 @@ const printSrc=fs.readFileSync(new URL('../public/horoscope/report-print.js',imp
 const shadbalaStart=src.indexOf('<h3 class="base-shadbala"');
 const shadbalaEnd=src.indexOf('<div class="transit-before-vimsottari">',shadbalaStart);
 const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
-ok(shadbalaUi.includes('💪 ஷட்பலம் (Shadbala)'),'Horoscope uses a plain Shadbala heading');
-ok(shadbalaUi.includes('Uttara Kalamrita')&&shadbalaUi.includes('இடைக்காலக் கணக்கீடுகள்'),'primary Horoscope table identifies provisional Uttara Kalamrita status');
-eq(shadbalaUi.includes('Classical Parashari Shadbala'),false,'Shadbala heading has no lineage/status text');
-eq(shadbalaUi.includes('reference-grade software parity'),false,'Shadbala section omits explanatory status note');
-eq(shadbalaUi.includes('வலிமை'),false,'Shadbala rows omit Strong/Below-required status text');
-const analysisShadbalaStart=src.indexOf('const shadbalaRows=');
-const analysisShadbalaEnd=src.indexOf('h+=`<div class="adv-section adv-ishta-kashta"',analysisShadbalaStart);
+ok(shadbalaUi.includes('💪 ஷட்பலம் (Uttara Kalamrita)'),'primary Horoscope identifies UK-only Shadbala source');
+ok(shadbalaUi.includes('strengthUttaraKalamrita')&&shadbalaUi.includes('முழு கணக்கு நிலுவை'),
+ 'primary Shadbala reads UK components and withholds incomplete totals');
+eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
+ok(shadbalaUi.includes('சேஷ்டா உள்ளீடுகள்')&&shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),
+ 'primary Shadbala explains the unresolved source input');
+const analysisShadbalaStart=src.indexOf('const shadbalaRows=caPlanets.filter');
+const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
-ok(analysisShadbalaUi.includes('Uttara Kalamrita')&&analysisShadbalaUi.includes('இறுதி சட்பலச் சான்றிதழ்'),'Chart Analysis identifies provisional Uttara Kalamrita status');
-eq(analysisShadbalaUi.includes('Strong'),false,'Chart Analysis Shadbala rows contain only numeric results');
-eq(analysisShadbalaUi.includes('No classical Shadbala data available.'),false,
- 'Chart Analysis omits a status message when no numerical rows are available');
-ok(src.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261018-ayurdaya-source-audit2')"),
- 'live Horoscope module integration');
-ok(src.includes("sectionI.insertAdjacentHTML('beforeend',html)"),
- 'Ayurdaya is attached inside Advanced Analysis I, safe from print legacy stripping');
-ok(printSrc.includes("root.querySelectorAll('.integrated-predictions"),'print strips only legacy content');
+ok(analysisShadbalaUi.includes('strengthUttaraKalamrita'),'Chart Analysis Shadbala reads UK-only payload');
+eq(analysisShadbalaUi.includes('strength3'),false,'Chart Analysis Shadbala does not use legacy totals');
+const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
+const analysisShadbalaSectionEnd=src.indexOf('adv-ishta-kashta',analysisShadbalaSectionStart);
+const analysisShadbalaSection=src.slice(analysisShadbalaSectionStart,analysisShadbalaSectionEnd);
+ok(analysisShadbalaSection.includes('Uttara Kalamrita')&&analysisShadbalaSection.includes('இறுதி சட்பலச் சான்றிதழ்'),
+ 'Chart Analysis visibly identifies UK provisional status');
+const ishtaSectionStart=src.indexOf('adv-ishta-kashta');
+const ishtaSectionEnd=src.indexOf('part1-natural-karakas',ishtaSectionStart);
+const ishtaSection=src.slice(ishtaSectionStart,ishtaSectionEnd);
+eq(ishtaSection.includes('strength3'),false,'Ishta/Kashta does not use legacy strength3 under UK-only mode');
+ok(ishtaSection.includes('strength3 மதிப்புகள் மாற்றாகப் பயன்படுத்தப்படவில்லை'),
+ 'Ishta/Kashta explicitly withholds unverified legacy values');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30'],
  ['2002-10-18','06:06'],['1989-10-18','09:45']];

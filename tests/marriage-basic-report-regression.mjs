@@ -47,6 +47,15 @@ ok(!en.includes('திருமணப் பொருத்தம் — அட
 eq(values.length,2,'TA and EN views reuse both earlier transit results without recomputation');
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const matching=read('public/horoscope/marriage-matching.js');
+const matchingReportSource=read('public/horoscope/marriage-basic-report.mjs');
+const matchingShadbalaStart=matchingReportSource.indexOf('function shadbala(c,ta){');
+const matchingShadbalaEnd=matchingReportSource.indexOf('function dasha(c,ta,ref){',matchingShadbalaStart);
+const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,matchingShadbalaEnd);
+ok(matchingShadbalaSource.includes('strengthUttaraKalamrita'),'Matching Shadbala uses the Uttara Kalamrita-only payload');
+ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
+ok(matchingShadbalaSource.includes('Full total pending')&&matchingShadbalaSource.includes('முழு மொத்தம் நிலுவை'),
+ 'Matching Shadbala withholds totals while UK Cheshta/source evidence is unresolved');
+
 for(const suffix of ['UtcOffset','ChartStyle']){
  ok(matching.includes("id='")||matching.includes('id="'),'Template ids rendered');
  ok(matching.includes(suffix),'Matching inputs have '+suffix);
