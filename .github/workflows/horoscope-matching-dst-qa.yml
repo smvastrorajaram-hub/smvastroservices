@@ -56,6 +56,19 @@ jobs:
           path: v359-layout-smoke-output/
           if-no-files-found: warn
           retention-days: 14
+  bv-raman-ishta-kashta-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check source-specific Ishta/Kashta module syntax
+        run: node --check public/horoscope/offline/bv-raman-ishta-kashta.browser.mjs
+      - name: Verify B.V. Raman Ishta/Kashta math and special Chesta inputs
+        run: node tests/bv-raman-ishta-kashta-regression.mjs
+
   source-regression:
     runs-on: ubuntu-latest
     steps:
