@@ -210,13 +210,18 @@ function dasha(c,ta,ref){
  for(const p of md){
   if(String(p.end||'')<from||String(p.start||'')>to)continue;
   const major=name(p.lord||p.name,ta);
-  rows.push(tr([major,ta?'மகாதசை':'Mahadasha','—',p.start||'—',p.end||'—']));
+  rows.push(tr([major,ta?'மகாதசை':'Mahadasha','—','—',p.start||'—',p.end||'—']));
   for(const x of p.antardashas||p.bhuktis||p.subPeriods||[]){
    if(String(x.end||'')<from||String(x.start||'')>to)continue;
-   rows.push(tr([major,ta?'புக்தி':'Bhukti',name(x.lord||x.name,ta),x.start||'—',x.end||'—']));
+   const bhukti=name(x.lord||x.name,ta);
+   rows.push(tr([major,ta?'புக்தி':'Bhukti',bhukti,'—',x.start||'—',x.end||'—']));
+   for(const y of x.pratyantars||x.pratyantaras||x.antars||[]){
+    if(String(y.end||'')<from||String(y.start||'')>to)continue;
+    rows.push(tr([major,ta?'அந்தரம்':'Antaram',bhukti,name(y.lord||y.name,ta),y.start||'—',y.end||'—']));
+   }
   }
  }
- return rows.length?table(ta?['தசா','கால வகை','புக்தி','தொடக்கம்','முடிவு']:['Dasha','Period','Bhukti','Start','End'],rows):'<p class="mm-base-unavailable">'+(ta?'இந்தக் கால எல்லையில் தசைத் தரவு கிடைக்கவில்லை':'No calculated Dasha periods in the selected window')+'</p>';
+ return rows.length?table(ta?['மகாதசை','கால வகை','புக்தி','அந்தரம்','தொடக்கம்','முடிவு']:['Mahadasha','Period','Bhukti','Antaram','Start','End'],rows):'<p class="mm-base-unavailable">'+(ta?'இந்தக் கால எல்லையில் தசைத் தரவு கிடைக்கவில்லை':'No calculated Dasha periods in the selected window')+'</p>';
 }
 const TRANSIT_CACHE=new WeakMap();
 async function reviewTransit(c,ref,engine){
