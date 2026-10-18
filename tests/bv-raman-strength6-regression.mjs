@@ -78,8 +78,9 @@ for(const name of planets){
  ok(r.components.sthana&&Number.isFinite(r.components.sthana.total),name+' Sthana Bala produced');
  near(r.components.sthana.total,expectedSthana[name],0.015,name+' Raman printed Sthana Bala worked example');
  near(r.components.dig,expectedDig[name],0.015,name+' Raman printed Dig Bala worked example');
+ near(r.components.kala.total,expectedKala[name],0.08,name+' Raman printed Kala Bala worked example');
+ near(r.components.drik,expectedDrik[name],0.08,name+' Raman printed Drik Bala worked example');
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
- ok(Number.isFinite(r.components.drik),name+' Drik Bala finite');
 }
 // Five real Perambalur dates: the live chart must now expose strength6 and must not re-create strength3.
 const births=[
