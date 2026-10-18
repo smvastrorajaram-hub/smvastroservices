@@ -541,8 +541,8 @@ const esc=s=>String(s).replace(/[&<>"']/g,ch=>({
  * Does not depend on print-only DOM state so Saved/PDF snapshots can
  * contain this section just like the already-rendered horoscope.
  */
-export function cgRajanAyurdayaReportHtml({planets,language='ta'}={}){
- const research=cgRajanCompareGrahas({planets});
+export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
+ const research=cgRajanCompareGrahas({planets,lagna});
  const ta=language==='ta';
  const amsaCell=v=>{
   if(v.amsaHarana?.resolved!==true||!v.amsaHarana.traditionalUnitsCandidate)
