@@ -43,28 +43,27 @@ eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalU
 eq(research.entries.find(x=>x.name==='குரு').pinda.traditionalUnits,
  {years:12,months:2,days:19,nazhigai:15},
  'raw printed Jupiter Pinda example remains testable internally');
-eq((ta.match(/data-pinda-harana="blocked"/g)||[]).length,7,
- 'Pinda raw values are not shown as final when required Harana facts are missing');
-eq((ta.match(/data-natural-harana="blocked"/g)||[]).length,7,
- 'Naisargika raw values are not shown as final when required Harana facts are missing');
-ok(ta.includes('data-pinda-total="blocked"')&&ta.includes('data-natural-total="blocked"'),
- 'Pinda and Naisargika totals are blocked without chart-specific Harana evidence');
-ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('—</strong>'),
- 'missing method values use a neutral dash instead of the long indication text');
+eq((ta.match(/data-pinda-harana="raw-unadjusted"/g)||[]).length,7,
+ 'Pinda raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
+eq((ta.match(/data-natural-harana="raw-unadjusted"/g)||[]).length,7,
+ 'Naisargika raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
+ok(ta.includes('data-pinda-total="raw-unadjusted"')&&ta.includes('data-natural-total="raw-unadjusted"'),
+ 'Pinda and Naisargika raw totals remain visible with an explicit unadjusted marker');
+ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Raw-term mean (before Harana reductions)')&&en.includes('Raw: '),
+ 'unresolved Harana cells and total mean expose calculated raw terms without claiming adjustment');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
 eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
-ok(!ta.includes('ஹரணத்திற்கு முந்தைய கிரகப் பங்குகள்')&&!en.includes('pre-Harana planetary terms'),
- 'raw Table-A terms are not presented in the customer table as results');
-ok(ta.includes('அம்ச ஹரண முடிவு காட்டத் தேவையான ஜாதகத் தகவல் முழுமையில்லை')&&
- en.includes('Amsa Harana inputs are incomplete'),
- 'missing natal Harana evidence has explicit bilingual blocked-cell labels');
-eq((ta.match(/data-amsa-harana="blocked"/g)||[]).length,7,
- 'fixture without chart facts displays no raw Amsa values for all seven grahas');
-ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
- 'Amsa total stays unavailable until all seven chart-specific Harana results resolve');
+ok(ta.includes('மூல மதிப்பு: ')&&en.includes('Raw: '),
+ 'raw Table-A and Pinda/Naisargika terms are explicitly labelled as raw values when Harana is unresolved');
+ok(ta.includes('data-amsa-harana="raw-unadjusted"')&&en.includes('data-amsa-harana="raw-unadjusted"'),
+ 'missing natal Harana evidence is labelled as raw-unadjusted in both report languages');
+eq((ta.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
+ 'fixture without chart facts still displays all seven raw Amsa terms with unadjusted labeling');
+ok(ta.includes('data-amsa-total="raw-unadjusted"')&&en.includes('data-amsa-total="raw-unadjusted"'),
+ 'raw Amsa table total stays visible but is marked unadjusted until every Harana resolves');
 const amsaCases=[
  [0,0],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,2.11],[118+10/60,11.45],[206.5,1.95],[191+52/60,9.56],
@@ -258,15 +257,15 @@ const shadbalaUi=src.slice(shadbalaStart,shadbalaEnd);
 ok(printSrc.includes("const dashaTree=root.querySelector('#dashaTree')")&&printSrc.includes('dasha-head-print')&&!printSrc.includes('rawDasha.remove()'),
  'native PDF keeps Dasa/Bhukti/Antaram and makes interactive headings printable');
 ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪 ஷட்பலம் (')&&!shadbalaUi.includes('Uttara Kalamrita'),'primary Horoscope has a source-neutral Shadbala heading');
-ok(shadbalaUi.includes('strengthUttaraKalamrita')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
- 'primary Shadbala keeps six bala columns without status or Yuddha column');
+ok(shadbalaUi.includes('strengthJathakaKanitham')&&shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('smv-shadbala-status')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
+ 'primary Shadbala shows calculated C.G. Rajan components and subtotal without a separate Yuddha/status column');
 eq(shadbalaUi.includes('strength3'),false,'primary customer Shadbala never substitutes the legacy strength3 model');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
 const analysisShadbalaStart=src.indexOf('const shadbalaRows=caPlanets.filter');
 const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
-ok(analysisShadbalaUi.includes('strengthUttaraKalamrita'),'Chart Analysis Shadbala reads UK-only payload');
+ok(analysisShadbalaUi.includes('strengthJathakaKanitham'),'Chart Analysis Shadbala reads C.G. Rajan calculated components');
 eq(analysisShadbalaUi.includes('strength3'),false,'Chart Analysis Shadbala does not use legacy totals');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);

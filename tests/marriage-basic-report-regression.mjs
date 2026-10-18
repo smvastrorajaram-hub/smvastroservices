@@ -71,10 +71,13 @@ ok(matchingDashaSource.includes('x.pratyantars||x.pratyantaras||x.antars')&&matc
 const matchingShadbalaStart=matchingReportSource.indexOf('function shadbala(c,ta){');
 const matchingShadbalaEnd=matchingReportSource.indexOf('function dasha(c,ta,ref){',matchingShadbalaStart);
 const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,matchingShadbalaEnd);
-ok(matchingShadbalaSource.includes('strengthUttaraKalamrita'),'Matching Shadbala uses the Uttara Kalamrita-only payload');
+ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
+ok(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),'Matching Shadbala displays the calculated component subtotal when certified total inputs are unavailable');
 ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
-ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes('Yuddha')&&!matchingShadbalaSource.includes('war'),
- 'Matching Shadbala contains no indication/status or separate war column');
+ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
+ 'Matching Shadbala contains no indication/status or standalone Yuddha/war column');
+ok(matchingShadbalaSource.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),
+ 'Matching subtotal explicitly states it excludes unresolved Cheshta/Drig/Yuddha contributions');
 
 for(const suffix of ['UtcOffset','ChartStyle']){
  ok(matching.includes("id='")||matching.includes('id="'),'Template ids rendered');
@@ -99,7 +102,7 @@ ok(matching.includes('mmFrontPoruthamPanel(pr,false)'),'Original 10 Porutham exp
 const css=read('public/horoscope/marriage-basic-report.css');
 ok(css.includes('white-space:nowrap!important')&&css.includes('overflow-x:auto!important'),'Mobile technical tables cannot split Tamil words into glyphs');
 ok(css.includes('.mm-base-south>.mm-base-pos-11')&&css.includes('.mm-base-north>.mm-base-pos-0')&&css.includes('.mm-base-east>.mm-base-pos-0'),'All chart-layout coordinates defined');
-ok(ta.includes('mm-base-shad-components')&&ta.includes('mm-base-shad-total'),'Shadbala split into readable components and totals');
+ok(ta.includes('mm-base-shad-components')&&ta.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'),'Tamil Shadbala table shows readable components with an explicitly limited subtotal');
 ok(ta.includes('mm-base-centerlabel'),'South and East charts have centered Rasi Navamsa Bhava Transit labels');
 const basicModule=read('public/horoscope/marriage-basic-report.mjs');
 ok(basicModule.includes('madhyaLongitude')&&basicModule.includes('rasiIndex'),'East Bhava uses calculated Sripati midpoint mapping');
