@@ -23,6 +23,7 @@ import {
  uttaraKalamritaCheshta as cheshta,
  uttaraKalamritaSixBala as six
 } from '../public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs';
+import {drigAspectorBenefic,drikBalaClassical} from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 let assertions=0;
 const yes=(v,m)=>{assert.ok(v,m);assertions++};
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);assertions++};
@@ -89,6 +90,9 @@ const publishedShadbalaRupa=[5.06185,6.088,5.5609,8.0604,5.7754,5.17855,5.36575]
 for(let i=0;i<7;i++)
  close(bookTotal(bookFour[i],bookNatural[i],bookDrig[i]),
    publishedShadbalaRupa[i],pNames[i]+' UK 7 final printed worked-example totals');
+close(bookTotal(5,.5,-.25,1),6.25,'UK northern planetary victory adds exactly +1 Rupa');
+close(bookTotal(5,.5,-.25,-1),4.25,'UK southern planetary defeat subtracts exactly 1 Rupa');
+assert.throws(()=>bookTotal(NaN,1,1),TypeError);assertions++;
 
 // Faithful row-by-row transcription from UK Section II printed table (p.9).
 // DO NOT reconstruct values to force a printed TOTAL. Values written with
@@ -199,6 +203,30 @@ const drigSun=drig('சூரியன்',chart);
 close(drigSun.virupa,drigSun.entries.reduce((a,b)=>a+b.signedVirupa,0),
  'UK Drig full aspect signs algebraic sum independent');
 eq(drigSun.entries.length,6,'UK all six other visible planets counted');
+
+/* Unique classifier checks formerly isolated in the V361 regression. */
+const classifierSun={name:'சூரியன்',longitude:0,eclipticLatitude:0};
+const classifierMoon={name:'சந்திரன்',longitude:90,eclipticLatitude:0};
+const classifierMercury={name:'புதன்',longitude:210,eclipticLatitude:0};
+eq(drigAspectorBenefic('சந்திரன்',[classifierSun,classifierMoon,classifierMercury]),true,
+ 'waxing Moon contributes benefic Drig');
+eq(drigAspectorBenefic('சந்திரன்',[classifierSun,{...classifierMoon,longitude:270},classifierMercury]),false,
+ 'waning Moon contributes malefic Drig');
+eq(drigAspectorBenefic('குரு',[classifierSun,classifierMoon]),true,'Jupiter Drig is benefic');
+eq(drigAspectorBenefic('சுக்கிரன்',[classifierSun,classifierMoon]),true,'Venus Drig is benefic');
+eq(drigAspectorBenefic('சனி',[classifierSun,classifierMoon]),false,'Saturn Drig is malefic');
+eq(drigAspectorBenefic('புதன்',[classifierSun,classifierMoon,classifierMercury]),true,
+ 'isolated Mercury Drig is benefic');
+eq(drigAspectorBenefic('புதன்',[classifierSun,classifierMoon,classifierMercury,
+ {name:'ராகு',longitude:211,eclipticLatitude:0}]),false,'Mercury with Rahu is malefic');
+eq(drigAspectorBenefic('புதன்',[classifierSun,classifierMoon,classifierMercury,
+ {name:'சனி',longitude:211,eclipticLatitude:0}]),false,'Mercury with Saturn is malefic');
+eq(drigAspectorBenefic('புதன்',[classifierSun,classifierMoon,
+ {name:'புதன்',longitude:20,eclipticLatitude:0}]),false,'Mercury conjoined with Sun is malefic');
+yes(Number.isFinite(drikBalaClassical('செவ்வாய்',[
+ classifierSun,classifierMoon,classifierMercury,
+ {name:'செவ்வாய்',longitude:180,eclipticLatitude:0}
+])),'classical Drig calculation returns a finite numerical result');
 const sunnyKala=kala({planet:'சூரியன்',apparentSolarHour:12,
  solarLongitude:0,moonLongitude:180,planets:chart,
  owners:{abda:'சூரியன்',masa:'சூரியன்',vara:'சூரியன்',hora:'சூரியன்'},
@@ -223,8 +251,14 @@ const warPair=(a,b,bhava=3,latA=0.1,latB=-0.1)=>[
  {name:'செவ்வாய்',longitude:a,bhava,eclipticLatitude:latA},
  {name:'சுக்கிரன்',longitude:b,bhava,eclipticLatitude:latB}
 ];
-const exactMinuteWar=yuddha(warPair(100+1/3600,100+55/3600));
-eq(exactMinuteWar.encounters.length,1,'UK same degree/minute means valid Graha Yuddha');
+const exactMinuteInput=warPair(100+1/3600,100+55/3600);
+const exactMinuteSnapshot=JSON.stringify(exactMinuteInput);
+const exactMinuteWar=yuddha(exactMinuteInput);
+eq(JSON.stringify(exactMinuteInput),exactMinuteSnapshot,'UK war calculation does not mutate planet inputs');
+eq(yuddha([
+ {name:'செவ்வாய்',longitude:100+4/3600,bhava:3,eclipticLatitude:-2},
+ {name:'புதன்',longitude:100+49/3600,bhava:3,eclipticLatitude:1}
+]).virupaByPlanet['புதன்'],60,'UK opposite-latitude case awards the northern Mercury');
 eq(exactMinuteWar.virupaByPlanet['செவ்வாய்'],60,'UK north graha wins exactly 1 rupa');
 eq(exactMinuteWar.virupaByPlanet['சுக்கிரன்'],-60,'UK south graha loses exactly 1 rupa');
 eq(exactMinuteWar.unresolved.length,0,'UK unambiguous single encounter');
