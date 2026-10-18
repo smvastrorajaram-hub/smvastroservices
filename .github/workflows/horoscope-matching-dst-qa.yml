@@ -7,6 +7,8 @@ on:
       - 'public/horoscope/**/*.mjs'
       - 'public/horoscope/**/*.cjs'
       - 'tests/**'
+      - '!tests/v358-result-layout-browser-smoke.mjs'
+      - '!tests/v359-symmetric-gutters-browser-smoke.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
     branches: [main]
