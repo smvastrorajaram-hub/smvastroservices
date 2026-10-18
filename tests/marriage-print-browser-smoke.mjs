@@ -83,8 +83,8 @@ try{
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
-  assert.ok(mobile.shadbalaHeaders.length===12&&mobile.shadbalaHeaders.some(x=>x.includes('Total Shadbala'))&&mobile.shadbalaHeaders.includes('Rank'),
-    'Scrollable Matching Shadbala has all twelve columns: '+style);
+  assert.ok(mobile.shadbalaHeaders.length===12&&mobile.shadbalaHeaders.some(x=>x.includes('மொத்த ஷட்பலம்'))&&mobile.shadbalaHeaders.includes('தரவரிசை'),
+    'Scrollable Tamil Matching Shadbala has all twelve columns: '+style);
   assert.ok(!mobile.splitNames&&!mobile.longPlanet,'Charts must contain only short planet codes without sign names: '+style);
   assert.ok(mobile.lineCount>25,'All planet codes present: '+style);
   if(style==='south'){
