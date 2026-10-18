@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
+import {cgRajanSevenNaturalResearch as natural} from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';
 import {cgRajanPindaGraha as pinda,
  cgRajanAmsaAyurdayaGraha as amsa,
  cgRajanAmsaHaranaResearch as amsaHarana,
@@ -42,6 +43,7 @@ for(const [planet,[exalt,quota]] of Object.entries(max)){
 assert.throws(()=>pinda({planet:'ராகு',trueLongitude:10}),RangeError);assertions++;
 assert.throws(()=>pinda({planet:'சனி',trueLongitude:Infinity}),TypeError);assertions++;
 let rows=0;const seen=new Set();
+let naturalRows=0;const naturalSignatures=[];
 for(const [date,time] of [
  ['1971-05-04','05:05'],['1974-01-11','16:04'],
  ['1992-07-31','22:05'],['1994-06-15','13:03'],
@@ -50,6 +52,27 @@ for(const [date,time] of [
  const r=await full({date,time,lat:11.232,lon:78.88,
   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'Rajan Ayurdaya printable QA'});
  yes(r.ok,'source natal compute '+date);
+ const naturalResult=natural({planets:r.chart.planets});
+ eq(naturalResult.grahaCount,7,date+' isolated CG Rajan natural research has seven grahas');
+ eq(naturalResult.publishedToCustomers,false,date+' natural research is not published as a customer prediction');
+ eq(naturalResult.fullAyurdayaCertified,false,date+' full Ayurdaya remains uncertified');
+ eq(naturalResult.natalTotalYears,null,date+' research does not combine a life-expectancy total');
+ eq(naturalResult.predictedDeathAge,null,date+' research does not calculate a death age');
+ eq(naturalResult.otherAyurdayaSystemsCombined,false,date+' no cross-book system mixing');
+ const naturalSignature=[];
+ for(const v of Object.values(naturalResult.byPlanet)){
+  naturalRows++;
+  yes(Number.isFinite(v.remainingArcDegrees)&&v.remainingArcDegrees>=180&&
+   v.remainingArcDegrees<=360,date+' '+v.planet+' natural research arc is within source range');
+  yes(Number.isFinite(v.theoreticalNaturalYearComponent)&&
+   v.theoreticalNaturalYearComponent>=v.maximumNaturalYears/2-1e-9&&
+   v.theoreticalNaturalYearComponent<=v.maximumNaturalYears+1e-9,
+   date+' '+v.planet+' natural quotient is within source range');
+  eq(v.individualLifespanCertified,false,date+' '+v.planet+' natural component is not certified as personal lifespan');
+  eq(v.predictedDeathAge,null,date+' '+v.planet+' has no personal death-age prediction');
+  naturalSignature.push(v.remainingArcDegrees.toFixed(5));
+ }
+ naturalSignatures.push(naturalSignature.join(','));
  const result=all({planets:r.chart.planets,lagna:r.chart.lagna});
  eq(result.entries.length,7,'seven conventional grahas');
  eq(result.allEightMethodsComplete,false,'no artificial 8-method pass');
@@ -124,6 +147,8 @@ for(const [date,time] of [
 }
 eq(rows,35,'five natal charts x seven grahas Pinda and natural');
 eq(seen.size,5,'distinct chart numeric report outputs');
+eq(naturalRows,35,'consolidated CG Rajan natural research covers five charts × seven grahas');
+eq(new Set(naturalSignatures).size,5,'consolidated natural research preserves five distinct chart signatures');
 close(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).rawAmsaYears,1.95,
  'source Amsa table value with fractional degree at 206°30′');
 eq(amsa({planet:'செவ்வாய்',trueLongitude:206.5}).allSourceReductionsApplied,false,
