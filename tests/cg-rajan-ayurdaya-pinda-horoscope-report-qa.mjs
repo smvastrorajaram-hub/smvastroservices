@@ -153,10 +153,10 @@ const remainderDisplayFixture=chartResolvedFixture.map(p=>
  p.name==='செவ்வாய்'?{...p,longitude:10,bhava:8}:
  p.name==='சுக்கிரன்'?{...p,bhava:9}:p);
 const remainderHtml=cgRajanAyurdayaReportHtml({planets:remainderDisplayFixture,language:'en'});
-ok(remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
- 'Amsa report renderer preserves year/month/day/nazhigai after a one-fifth Harana');
-ok(remainderHtml.includes('Post-Harana normalized units=2y 4m 24d 0n'),
- 'Amsa row hover evidence exposes the exact normalized post-Harana units');
+ok(remainderHtml.includes('data-raw-amsa-years=')&&!remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
+ 'Amsa report keeps the raw Table E input and withholds the otherwise-computable Harana candidate');
+ok(!remainderHtml.includes('Post-Harana normalized units=2y 4m 24d 0n')&&remainderHtml.includes('Table E applies conditionally'),
+ 'Amsa row does not expose post-Harana hover evidence before Table E method selection is verified');
 const jupiterPost=resolvedChart.entries.find(x=>x.name==='குரு').amsaHarana;
 const sunPost=resolvedChart.entries.find(x=>x.name==='சூரியன்').amsaHarana;
 eq(sunPost.multiplier,2,
