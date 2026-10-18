@@ -332,20 +332,20 @@ function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,jdUt,ayanamsa,uchchaBa
  if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
  let chestaKendraRaw,midpoint=null,formula;
  if(planet==='சூரியன்'){
-  chestaKendraRaw=normalizeSaura(sunRow.longitude+ayanamsa+90);
+  chestaKendraRaw=norm360(sunRow.longitude+ayanamsa+90);
   formula='(Sayana Sun longitude + 90 degrees), reduced to 0..180';
  }else if(planet==='சந்திரன்'){
-  chestaKendraRaw=normalizeSaura(moonRow.longitude-sunRow.longitude);
+  chestaKendraRaw=norm360(moonRow.longitude-sunRow.longitude);
   formula='(Moon Nirayana - Sun Nirayana), reduced to 0..180';
  }else{
   const inputs=sauraFivePlanetCheshtaInputs(jdUt,english);
   const apsis=sauraMandoccaResearch(jdUt,english);
   const candidate=sauraFourPassTrueLongitude({planet:english,meanLongitude:inputs.meanLongitude,mandocca:apsis.mandocca,sheeghrocha:inputs.sheeghrocha,mandaKarṇaConvention:'absolute-koti-minus'});
-  const delta=normalizeSaura(candidate.trueLongitude-inputs.meanLongitude);
+  const delta=norm360(candidate.trueLongitude-inputs.meanLongitude);
   if(Math.abs(delta-180)<1e-10)throw new RangeError('Mean/true longitude midpoint is ambiguous at exactly 180 degrees');
   const signedDelta=delta>180?delta-360:delta;
-  midpoint=normalizeSaura(inputs.meanLongitude+signedDelta/2);
-  chestaKendraRaw=normalizeSaura(inputs.sheeghrocha-midpoint);
+  midpoint=norm360(inputs.meanLongitude+signedDelta/2);
+  chestaKendraRaw=norm360(inputs.sheeghrocha-midpoint);
   formula='Sighrocca - circular midpoint(mean, true), reduced to 0..180';
  }
  const reducedChestaKendra=chestaKendraRaw>180?360-chestaKendraRaw:chestaKendraRaw;
