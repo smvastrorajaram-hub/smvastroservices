@@ -1,5 +1,5 @@
 /**
- * BPHS positional, temporal and primary Shadbala regression suite
+ * BPHS positional, temporal, Drig and seven-graha Shadbala regression suite
  * Consolidates independent source oracles without dropping assertions.
  * Each original oracle runs in its own function scope so its fixtures and
  * imported bindings remain isolated. The original scripts are retired only
@@ -16,6 +16,219 @@ import * as __bundle2mod1 from '../public/horoscope/offline/bphs-shadbala-rectif
 import * as __bundle2mod2 from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import * as __bundle2mod3 from '../public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs';
 import * as __bundle2mod4 from '../public/horoscope/offline/offline-engine.mjs';
+
+import * as __extra3mod0 from 'node:assert/strict';
+import * as __extra3mod1 from '../public/horoscope/offline/bphs-sputa-drishti.browser.mjs';
+import * as __extra3mod2 from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+import * as __extra3mod3 from '../public/horoscope/offline/offline-engine.mjs';
+import * as __extra4mod0 from 'node:assert/strict';
+import * as __extra4mod1 from '../public/horoscope/offline/offline-engine.mjs';
+import * as __extra4mod2 from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+
+async function runBundledOracle4() {
+  const assert = __extra3mod0.default;
+  const { bphsSputaDrishtiVirupa: sputa, bphsSputaDrishtiDetail: detail } = __extra3mod1;
+  const { drikBalaClassical, drigAspectorBenefic } = __extra3mod2;
+  const { full } = __extra3mod3;
+/**
+ * BPHS I Santhanam Chapter 26 pp.257-258 independent angular oracle,
+ * Chapter 27 verse 19 quarter signed Pinda + full Mercury/Jupiter.
+ */
+
+
+
+
+let checks=0;
+const near=(a,b,label)=>{assert.ok(Number.isFinite(a)&&Math.abs(a-b)<.000001,label+' actual '+a+' expected '+b);checks++};
+const yes=(a,label)=>{assert.ok(a,label);checks++};
+const ordinary=[
+ [0,0],[15,0],[30,0],[45,7.5],[60,15],[75,30],[90,45],
+ [105,37.5],[120,30],[135,15],[150,0],[165,30],[180,60],
+ [195,52.5],[210,45],[225,37.5],[240,30],[255,22.5],
+ [270,15],[285,7.5],[300,0],[330,0]
+];
+for(const [angle,expected] of ordinary)
+ near(sputa(angle,'சூரியன்'),expected,'BPHS general '+angle);
+const specials=[
+ ['செவ்வாய்',90,60],['செவ்வாய்',105,52.5],['செவ்வாய்',119,45.5],
+ ['செவ்வாய்',210,60],['செவ்வாய்',225,52.5],['செவ்வாய்',239,45.5],
+ ['குரு',120,60],['குரு',135,45],['குரு',149,31],
+ ['குரு',240,60],['குரு',255,52.5],['குரு',269,45.5],
+ ['சனி',60,60],['சனி',75,60],['சனி',89,60],
+ ['சனி',270,60],['சனி',285,52.5],['சனி',299,45.5]
+];
+for(const [name,angle,expected] of specials)
+ near(sputa(angle,name),expected,'BPHS special '+name+' '+angle);
+for(const a of [-360,-270,-90,0,90,180,270,360,450])
+ for(const name of ['சூரியன்','செவ்வாய்','குரு','சனி'])
+ near(sputa(a,name),sputa(((a%360)+360)%360,name),'wrap '+name+' '+a);
+for(const name of ['செவ்வாய்','குரு','சனி'])
+ for(let angle=0;angle<360;angle+=1.5){
+  const virupa=sputa(angle,name);
+  yes(virupa>=0&&virupa<=60,'Virupa bound');
+ }
+near(detail(90,'செவ்வாய்').ordinaryVirupa,45,'Mars base fourth aspect');
+near(detail(90,'செவ்வாய்').specialAddedVirupa,15,'Mars extra fourth aspect');
+near(detail(120,'குரு').specialAddedVirupa,30,'Jupiter extra fifth aspect');
+near(detail(60,'சனி').specialAddedVirupa,45,'Saturn extra third aspect');
+assert.throws(()=>sputa(NaN,'சனி'),TypeError);checks++;
+assert.throws(()=>sputa(Infinity,'குரு'),TypeError);checks++;
+// Independent linear-interpolation oracle using published breakpoints instead
+// of production's if/else ordinary aspect branches.
+const knots=[[30,0],[60,15],[90,45],[120,30],[150,0],[180,60],[300,0]];
+function oracle(angle,name){
+ const a=((angle%360)+360)%360;
+ let base=0;
+ for(let i=0;i<knots.length-1;i++){
+   const [begin,y0]=knots[i],[end,y1]=knots[i+1];
+   if(a>=begin&&a<end){base=y0+(y1-y0)*(a-begin)/(end-begin);break;}
+ }
+ let extra=0;
+ if(name==='செவ்வாய்'&&((a>=90&&a<120)||(a>=210&&a<240)))extra=15;
+ if(name==='குரு'&&((a>=120&&a<150)||(a>=240&&a<270)))extra=30;
+ if(name==='சனி'&&((a>=60&&a<90)||(a>=270&&a<300)))extra=45;
+ return Math.max(0,Math.min(60,base+extra));
+}
+for(const name of ['சூரியன்','செவ்வாய்','குரு','சனி'])
+ for(let a=0;a<360;a+=1.125)
+  near(sputa(a,name),oracle(a,name),'independent BPHS speculum '+a);
+const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
+ ['1992-07-31','22:05'],['1994-06-15','13:03'],['2015-09-06','09:30']];
+const seven=new Set(['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி']);
+let grahaTests=0;const totals=[];
+for(const [date,time] of births){
+ const r=await full({date,time,lat:11.232,lon:78.88,
+   utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'BPHS Drig QA'});
+ yes(r.ok,'chart generated '+date);
+ const ps=r.chart.planets,row={date,virupa:{}};
+ for(const receiver of ps.filter(p=>seven.has(p.name))){
+  let quarter=0,extra=0;
+  for(const p of ps.filter(q=>seven.has(q.name)&&q.name!==receiver.name)){
+   const angle=((receiver.longitude-p.longitude)%360+360)%360;
+   const v=oracle(angle,p.name),sign=drigAspectorBenefic(p.name,ps)?1:-1;
+   quarter+=sign*v/4;
+   if(p.name==='குரு'||p.name==='புதன்')extra+=sign*v;
+  }
+  const independent=quarter+extra;
+  near(drikBalaClassical(receiver.name,ps),independent,date+' raw BPHS Drig '+receiver.name);
+  near(receiver.strength3.components.drik,Number(independent.toFixed(3)),date+' Phase3 Drig '+receiver.name);
+  yes(receiver.strength3.classicalCertified===false,date+' not false whole Shadbala certificate');
+  row.virupa[receiver.name]=Number(independent.toFixed(3));grahaTests++;
+ }
+ totals.push(row);
+}
+yes(grahaTests===35,'35 seven-graha Drig computations');
+console.log(JSON.stringify({pass:true,checks,verified35NatalDrig:true,
+  bpHsSource:'Santhanam Chapter 26 pp257-258 and Chapter 27 v19',
+  sourceLevelFix:true,fullSixBalaCertified:false,results:totals}));
+}
+
+
+async function runBundledOracle5() {
+  const assert = __extra4mod0.default;
+  const { full } = __extra4mod1;
+  const { SHADBALA_NATURAL } = __extra4mod2;
+// BPHS I Ch27 v14 exact Naisargika + all seven-graha six-Bala
+// end-to-end mathematical reconciliation, five actual Perambalur births.
+// This is a certificate for summation & natural constants ONLY.
+// Other Shadbala inputs (true classical planetary places) are not certified.
+
+
+
+const ranks=Object.freeze([
+ ['சூரியன்',7,390],['சந்திரன்',6,360],
+ ['செவ்வாய்',2,300],['புதன்',3,420],
+ ['குரு',4,390],['சுக்கிரன்',5,330],
+ ['சனி',1,300]
+]);
+const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
+ ['1992-07-31','22:05'],['1994-06-15','13:03'],
+ ['2015-09-06','09:30']];
+let assertions=0;let values=0;const outcomes=[];
+const yes=(v,msg)=>{assert.ok(v,msg);assertions++};
+const near=(a,b,eps,msg)=>{yes(Number.isFinite(a)&&Math.abs(a-b)<=eps,msg+' actual='+a+' expected='+b)};
+for(const [name,rank] of ranks)near(SHADBALA_NATURAL[name],60*rank/7,1e-12,'BPHS book exact seven-rank natural '+name);
+for(const [date,time] of births){
+ const r=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,
+   referenceDate:'2026-10-17',name:'BPHS mathematical certification'});
+ yes(r.ok,'full natal chart generated '+date);
+ const chart={date,time,planets:{}};
+ for(const [name,rank,required] of ranks){
+  const p=r.chart.planets.find(x=>x.name===name),s=p?.strength3;
+  yes(s?.available===true,'seven graha Bala exists '+name);
+  yes(s.classicalCertified===false&&s.provisional===true,'unverified astronomical model is not falsely certified');
+  near(s.requiredVirupa,required,0,'BPHS required strength '+name);
+  near(s.components.naisargika,Number((rank*60/7).toFixed(3)),1e-9,'exact natural shown to 3 decimal '+name);
+  const c=s.components;
+  const sum=c.sthana.total+c.dig+Object.entries(c.kala).filter(([k])=>k!=='total').reduce((a,[,v])=>a+v,0)+c.cheshta+c.naisargika+c.drik;
+  near(sum,s.totalVirupa,0.007,'sixfold total (independent 9 Kala subparts) '+name+' '+date);
+  const kalaSum=Object.entries(c.kala).filter(([k])=>k!=='total').reduce((a,[,v])=>a+v,0);
+  near(kalaSum,c.kala.total,.005,'nine Kala component sum '+name+' '+date);
+  near(s.totalRupa,Number((s.totalVirupa/60).toFixed(3)),.001,'Virupa/Rupa consistency '+name+' '+date);
+  yes(Object.keys(c.sthana).length>=6,'five positional components and positional total '+date+' '+name);
+  yes(c.cheshta>=0&&c.cheshta<=120,'Sun/Moon BPHS nonplanetary Cheshta bound '+date+' '+name);
+  yes(Number.isFinite(c.drik),'Drig signed finite '+date+' '+name);
+  values++;
+  chart.planets[name]={sthana:c.sthana.total,dig:c.dig,kala:c.kala.total,
+    cheshta:c.cheshta,naisargika:c.naisargika,drig:c.drik,
+    totalVirupa:s.totalVirupa};
+ }
+ outcomes.push(chart);
+}
+yes(values===35,'exact 35 sixfold sums');
+/*
+ * Additional 2026 same-instant seven-graha, sixfold *ARITHMETIC*
+ * reconciliation. The Sun/Moon and all other source positions come from
+ * the site's Swiss/Lahiri runtime, not a falsely claimed independent
+ * classical ephemeris. The five nonluminary LIVE Cheshta values still use
+ * motionClassical(speed), NOT certified BPHS mean–true–sighrocca inputs.
+ * Thus this regression verifies SUMS and internally exposed components,
+ * while explicitly disallowing astronomical/full Shadbala certification.
+ */
+const official2026SevenPlanet={date:'2026-03-22',time:'05:30',
+ location:'Perambalur',latitude:11.232,longitude:78.88,
+ timeZone:'Asia/Kolkata',planets:{}};
+const snapshot=await full({
+ date:official2026SevenPlanet.date,time:official2026SevenPlanet.time,
+ lat:official2026SevenPlanet.latitude,lon:official2026SevenPlanet.longitude,
+ utcOffsetMinutes:330,referenceDate:'2026-10-17',
+ name:'Seven-graha 2026 mathematical-only sixfold audit'
+});
+yes(snapshot.ok,'2026 seven planet source Shadbala arithmetic full chart');
+for(const [name,rank,required] of ranks){
+ const p=snapshot.chart.planets.find(x=>x.name===name),s=p?.strength3;
+ yes(s?.available===true,'2026 sixfold chart has '+name);
+ yes(!s.classicalCertified&&s.provisional,'2026 prevent full-cert from partial true source '+name);
+ near(s.requiredVirupa,required,0,'2026 exact BPHS required Virupa '+name);
+ near(s.components.naisargika,Number((rank*60/7).toFixed(3)),1e-9,
+      '2026 exact 7-rank Naisargika '+name);
+ const c=s.components;
+ const kalaParts=Object.entries(c.kala).filter(([k])=>k!=='total').map(([,v])=>v);
+ const independentlyAddedKala=kalaParts.reduce((a,b)=>a+b,0);
+ const independentlyAddedSix=[c.sthana.total,c.dig,
+   independentlyAddedKala,c.cheshta,c.naisargika,c.drik].reduce((a,b)=>a+b,0);
+ near(independentlyAddedKala,c.kala.total,.006,'2026 nine-part Kala total '+name);
+ near(independentlyAddedSix,s.totalVirupa,.008,'2026 sixfold full Virupa sum '+name);
+ near(s.totalRupa,Number((s.totalVirupa/60).toFixed(3)),.001,
+   '2026 conversion to Rupas '+name);
+ yes(c.cheshta>=0&&c.cheshta<=120&&Number.isFinite(c.drik),
+   '2026 Cheshta/Drig numerical bounds '+name);
+ official2026SevenPlanet.planets[name]={
+  sthana:c.sthana.total,dig:c.dig,kala:c.kala.total,
+  cheshta:c.cheshta,naisargika:c.naisargika,drik:c.drik,
+  totalVirupa:s.totalVirupa,totalRupa:s.totalRupa,
+  fullClassicalShadbalaCertified:false
+ };
+}
+yes(Object.keys(official2026SevenPlanet.planets).length===7,
+  'seven graha full sixfold mathematical snapshot uses current official-date evidence only');
+console.log(JSON.stringify({pass:true,assertions,verifiedSixBalaSummations:values,
+ sevenGraha2026MathematicalSnapshot:official2026SevenPlanet,
+  classicalAstronomicalCertification2026:false,
+ exactBookNaisargikaSevenGraha:true,bookChapter:'BPHS I Ch27 v14',
+ mathematicalReconciliationPASS:true,historicalClassicalTrueLongitudeCertified:false,
+ completeShadbalaCertified:false,charts:outcomes}));
+}
 
 async function runBundledOracle1() {
   // Consolidated from tests/v357-bphs-shadbala-positional-regression.mjs; keep this oracle's assertions isolated.
@@ -242,3 +455,5 @@ console.log(JSON.stringify({pass:true,assertions:n,reference:'BPHS I R Santhanam
 await runBundledOracle1();
 await runBundledOracle2();
 await runBundledOracle3();
+await runBundledOracle4();
+await runBundledOracle5();
