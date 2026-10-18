@@ -22,6 +22,51 @@ let checks=0;
 const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++};
 const ok=(v,label)=>{assert.ok(v,label);checks++};
 const no=(v,label)=>{assert.ok(!v,label);checks++};
+
+/*
+ * Independent transcription of C.G. Rajan Part I printed p.50 arithmetic.
+ * Keep this fixture separate from the implementation constant so a changed
+ * component, subtotal, Drig or Yuddha row cannot silently validate itself.
+ */
+const print50ArithmeticOracle=Object.freeze({
+ sthana:[227,479,333,373,420,323,303],
+ kala:[133,67,113,227,287,87,263],
+ ayana:[42,23,12,83,85,12,94],
+ naisargika:[100,86,29,43,57,71,14],
+ dig:[60,13,38,96,13,60,26],
+ cheshta:[42,27,55,87,85,59,58],
+ preDrig:[604,695,580,909,947,612,758],
+ drig:[11,6,40,24,4,37,29],
+ afterDrig:[615,701,620,933,951,649,787],
+ yuddha:[0,0,0,0,0,0,0],
+ final:[615,701,620,933,951,649,787]
+});
+const print50Fields=[
+ ['sthana','sthana'],['kala','kala'],['ayana','ayana'],
+ ['naisargika','naisargika'],['dig','dig'],['cheshta','cheshta'],
+ ['subtotalBeforeDrig','preDrig'],['drig','drig'],
+ ['afterDrig','afterDrig'],['yuddha','yuddha'],['final','final']
+];
+for(let i=0;i<print50ArithmeticOracle.final.length;i++){
+ const planet=CG_RAJAN_PRINTED_P50.planets[i];
+ for(const [moduleField,oracleField] of print50Fields){
+  eq(CG_RAJAN_PRINTED_P50[moduleField][i],print50ArithmeticOracle[oracleField][i],
+    planet+' independent printed p.50 '+moduleField+' transcription');
+ }
+ const sixBalaSubtotal=[
+  print50ArithmeticOracle.sthana[i],print50ArithmeticOracle.kala[i],
+  print50ArithmeticOracle.ayana[i],print50ArithmeticOracle.naisargika[i],
+  print50ArithmeticOracle.dig[i],print50ArithmeticOracle.cheshta[i]
+ ].reduce((sum,value)=>sum+value,0);
+ eq(sixBalaSubtotal,print50ArithmeticOracle.preDrig[i],
+   planet+' printed six-Bala subtotal arithmetic');
+ eq(print50ArithmeticOracle.preDrig[i]+print50ArithmeticOracle.drig[i],
+   print50ArithmeticOracle.afterDrig[i],planet+' printed subtotal after Drig');
+ eq(print50ArithmeticOracle.afterDrig[i]+print50ArithmeticOracle.yuddha[i],
+   print50ArithmeticOracle.final[i],planet+' printed final includes Yuddha exactly once');
+}
+eq(print50ArithmeticOracle.final[2],620,
+ 'C.G. Rajan printed Mars final = 620 when the published Yuddha row is zero');
 const sample=[
  {name:'சூரியன்',longitude:167+2/60},
  {name:'சந்திரன்',longitude:118+10/60},
