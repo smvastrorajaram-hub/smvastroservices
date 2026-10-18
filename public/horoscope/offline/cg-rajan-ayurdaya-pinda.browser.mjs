@@ -35,9 +35,9 @@ const units=value=>{
  * maxima are 19,25,15,12,15,21,20.
  */
 /**
- * C.G. Rajan I, printed pp.237–238: Amsa Ayurdaya table A.
+ * C.G. Rajan I, printed pp.237–238: Amsa Ayurdaya table E (conditional on a strong Lagna-lord).
  * The printed lookup advances in 3°20′ arc intervals and cycles values 1..12.
- * This returns ONLY the raw table-A graha term. The book's Lagna-lord-strength
+ * This returns ONLY the raw table-E graha term; it must not be promoted to an adjusted total until the book's method-selection condition is verified. The book's Lagna-lord-strength
  * condition and graha-specific strength/reduction rules are not yet fully
  * resolved, so this term cannot by itself certify final Ayurdaya.
  */
@@ -49,7 +49,7 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
  const intervalPosition=arcMinutes/200;
  const completedIntervals=Math.floor(intervalPosition+1e-10);
  const rawAmsaFractionOfPada=Math.max(0,Math.min(1,intervalPosition-completedIntervals));
- // Printed Table A gives year values at 3°20′ boundaries, cycling 1..12
+ // Printed Table E gives year values at 3°20′ boundaries, cycling 1..12
  // after the initial 0° origin. Table C converts the arcminutes progressed
  // inside the CURRENT pada by rule of three: 200′ = one year, 1′ = 1d 48n.
  // Do not interpolate the two boundary labels (notably 12 -> 1 at a cycle):
@@ -63,14 +63,14 @@ export function cgRajanAmsaAyurdayaGraha({planet,trueLongitude}={}){
   planet,trueLongitude:longitude,arcMinutes,intervalArcMinutes:200,
   amsaIntervals,completedIntervals,lowerBoundaryYears,upperBoundaryYears,rawAmsaFractionOfPada,rawAmsaYears,
   traditionalUnits:units(Math.round(rawAmsaYears*NY)),
-  variant:'A',source:'C.G. Rajan Jathaka Kanitham I printed pp.237–238, Amsa table A; fractional arc by rule of three',
+  variant:'E',source:'C.G. Rajan Jathaka Kanitham I printed pp.237–238, Amsa table E (strong Lagna-lord condition); fractional arc by rule of three',
   lagnaLordStrengthConditionVerified:false,allSourceReductionsApplied:false,
   individualLifespanCertified:false,deathAgeOrDate:null
  });
 }
 /**
  * Rajan I printed pp.231–232, 235 and 244: research-only candidate for
- * Table-A Amsa Harana. p.231 selects combustion Harana over enemy-sign
+ * Table-E Amsa Harana. p.231 selects combustion Harana over enemy-sign
  * Harana when both apply, and exempts Venus/Saturn from combustion Harana;
  * p.235 then adds the selected condition loss to the separate Chakrapada loss.
  * Missing chart facts or a tied/unavailable occupant ranking blocks the
@@ -85,7 +85,7 @@ export function cgRajanAmsaHaranaResearch({
 }={}){
  if(!SPEC[planet])throw new RangeError('Seven traditional grahas only');
  if(!finite(rawAmsaYears)||rawAmsaYears<0||rawAmsaYears>=13)
-  throw new RangeError('Raw Amsa table-A term must be 0..12 years plus the current-pada fraction');
+  throw new RangeError('Raw Amsa table-E term must be 0..12 years plus the current-pada fraction');
  const blockers=[];
  const flags={enemySign,combust,isExaltationSign,retrograde,ownSign,ownNavamsa,ownDrekkana,vargottama};
  for(const [key,value] of Object.entries(flags))if(typeof value!=='boolean')
@@ -121,7 +121,7 @@ export function cgRajanAmsaHaranaResearch({
   combustionHaranaApplied:condition.combustionHaranaApplied,
   selectedConditionHarana:condition.selectedConditionHarana,
   chakrapadaLossFraction,totalHaranaFraction,
-  blockers:['The separate condition and Chakrapada deductions exceed the raw Table-A term; source example does not authorize a negative contribution'],
+  blockers:['The separate condition and Chakrapada deductions exceed the raw Table-E term; source example does not authorize a negative contribution'],
   finalAmsaCertified:false,sourceSpecificCalculationReconciled:false,
   source:'CG Rajan Jathaka Kanitham I printed pp.235, 237–238'});
  // Apply only the maximum factor: x3 if exalted or retrograde; otherwise x2
@@ -497,13 +497,24 @@ export function cgRajanCompareGrahas({planets=[],lagna}={}){
  const sumTerms=key=>entries.reduce((n,e)=>n+nadis(e[key]?.traditionalUnits),0);
  const rawPindaTotalNadis=sumTerms('pinda');
  const rawNaturalTotalNadis=sumTerms('natural');
- const rawAmsaTableATotalNadis=sumTerms('amsa');
+ const rawAmsaTableETotalNadis=sumTerms('amsa');
  const allPindaHaranaResolved=entries.every(e=>e.pindaHarana?.resolved===true&&
   e.pindaHarana.traditionalUnitsCandidate);
  const allNaturalHaranaResolved=entries.every(e=>e.naturalHarana?.resolved===true&&
   e.naturalHarana.traditionalUnitsCandidate);
- const allAmsaHaranaResolved=entries.every(e=>e.amsaHarana?.resolved===true&&
+ const allAmsaHaranaRowsResolved=entries.every(e=>e.amsaHarana?.resolved===true&&
   e.amsaHarana.traditionalUnitsCandidate);
+ // Printed pp.237–238 identify this lookup as Table E, conditional on a strong
+ // Lagna-lord. The chart-wide comparison that selects Amsa versus Pinda and
+ // Naisargika is not independently implemented/certified, and the provisional
+ // strength6 score cannot satisfy that source gate. Keep row candidates for
+ // research but never publish an adjusted Amsa total or three-method mean.
+ const amsaMethodSelectionVerified=false;
+ const amsaMethodSelectionBlockers=Object.freeze([
+  'C.G. Rajan Table E requires verified Lagna-lord strength and chart-level Ayurdaya method selection',
+  'B.V. Raman strength6 is provisional and is not sufficient evidence to certify method selection'
+ ]);
+ const allAmsaHaranaResolved=amsaMethodSelectionVerified&&allAmsaHaranaRowsResolved;
  const pindaTotalNadis=allPindaHaranaResolved
   ?entries.reduce((n,e)=>n+nadis(e.pindaHarana.traditionalUnitsCandidate),0):null;
  const naturalTotalNadis=allNaturalHaranaResolved
@@ -515,6 +526,8 @@ export function cgRajanCompareGrahas({planets=[],lagna}={}){
     pindaTotalNazhigai:pindaTotalNadis,naturalTotalNazhigai:naturalTotalNadis,
     amsaTotalNazhigai:amsaTotalNadis
    }):null;
+ const rawAmsaTableERaw=Object.freeze({traditionalUnits:units(rawAmsaTableETotalNadis),
+  totalNazhigai:rawAmsaTableETotalNadis,displayedAsFinal:false,table:'E',conditionVerified:false});
  const totals=Object.freeze({
   pinda:Object.freeze(allPindaHaranaResolved
    ?{traditionalUnits:units(pindaTotalNadis),totalNazhigai:pindaTotalNadis,available:true}
@@ -531,20 +544,22 @@ export function cgRajanCompareGrahas({planets=[],lagna}={}){
   amsa:Object.freeze(allAmsaHaranaResolved
    ?{traditionalUnits:units(amsaTotalNadis),totalNazhigai:amsaTotalNadis,available:true}
    :{traditionalUnits:null,totalNazhigai:null,available:false,
-     blockedGrahas:entries.filter(e=>!e.amsaHarana?.resolved).map(e=>e.name)}),
-  amsaTableARaw:Object.freeze({traditionalUnits:units(rawAmsaTableATotalNadis),
-   totalNazhigai:rawAmsaTableATotalNadis,displayedAsFinal:false}),
+     blockedGrahas:entries.filter(e=>!e.amsaHarana?.resolved).map(e=>e.name),
+   blockedBy:'method-selection',blockers:amsaMethodSelectionBlockers}),
+  amsaTableERaw:rawAmsaTableERaw,
   averageOfThreeTotals:averageOfThree
  });
  return Object.freeze({entries,totals,
+  amsaMethodSelectionVerified,
+  amsaMethodSelectionBlockers,
   averagingBasis:averageOfThree
    ?'Exact arithmetic mean of the three Harana-adjusted research candidate totals divided by three; method selection remains provisional'
-   :'Withheld until all seven Pinda, Naisargika and post-Harana Amsa rows resolve; raw terms are not substituted',
+   :'Withheld: C.G. Rajan Table E method-selection condition and chart-wide Ayurdaya choice are not verified; raw terms are not substituted',
   finalAyurdayaCertified:false,personalLifespanCertified:false,
   methods:Object.freeze({
    pindayurdaya:'seven component arithmetic independently tested',
    naisargika:'seven component arithmetic independently tested',
-   amsayurdaya:'Amsa table A raw graha terms implemented from printed pp.237–238; Lagna-lord-strength selection and all source reductions remain unverified',
+   amsayurdaya:'Amsa table E raw graha terms implemented from printed pp.237–238; method selection requires verified Lagna-lord strength and chart-wide Ayurdaya choice',
    pindashtakavarga:'not independently reconciled to Rajan worked example',
    rasija:'not independently reconciled to Rajan worked example',
    nakshatra:'not independently reconciled to Rajan worked example',
@@ -579,7 +594,7 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
   return (languageCode?'மூல மதிப்பு: ':'Raw: ')+fmt({traditionalUnits:rawUnits},languageCode);
  };
  const amsaCell=v=>{
-  if(v.amsaHarana?.resolved===true&&v.amsaHarana.traditionalUnitsCandidate){
+  if(research.amsaMethodSelectionVerified===true&&v.amsaHarana?.resolved===true&&v.amsaHarana.traditionalUnitsCandidate){
    const candidateUnits=v.amsaHarana.traditionalUnitsCandidate;
    const displayedUnits=fmt({traditionalUnits:candidateUnits},ta);
    const unitsTrace=ta?`ஹரணத்திற்குப் பின் அலகுகள்=${displayedUnits}`:`Post-Harana normalized units=${displayedUnits}`;
@@ -589,7 +604,9 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
    return `<td data-amsa-harana="adjusted-candidate" data-raw-amsa-years="${esc(v.amsa.rawAmsaYears)}" data-total-harana-fraction="${esc(v.amsaHarana.totalHaranaFraction)}" data-multiplier="${esc(v.amsaHarana.multiplier)}" data-adjusted-amsa-years="${esc(v.amsaHarana.adjustedAmsaYearsCandidate)}" data-amsa-years="${esc(candidateUnits.years)}" data-amsa-months="${esc(candidateUnits.months)}" data-amsa-days="${esc(candidateUnits.days)}" data-amsa-nazhigai="${esc(candidateUnits.nazhigai)}" data-amsa-total-nazhigai="${esc(traditionalNazhigai(candidateUnits))}" title="${esc(auditTitle)}">${esc(displayedUnits)}</td>`;
   }
   const rawUnits=v.amsa?.traditionalUnits;
-  const explanation=(v.amsaHarana?.blockers||[]).join('; ')||'Amsa Harana adjustment is unresolved; showing the calculated raw Table-A term';
+  const explanation=research.amsaMethodSelectionVerified!==true
+   ?'Table E applies conditionally when the Lagna-lord is strong; chart-wide method selection is not verified, so only the raw Table-E term is shown'
+   :(v.amsaHarana?.blockers||[]).join('; ')||'Amsa Harana adjustment is unresolved; showing the calculated raw Table-E term';
   return `<td data-amsa-harana="raw-unadjusted" data-raw-amsa-years="${esc(v.amsa?.rawAmsaYears??'')}" title="${esc(explanation)}">${esc(rawDisplay(rawUnits,ta))}</td>`;
  };
  const commonCell=(method,v)=>{
@@ -606,24 +623,21 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}){
  };
  const lines=research.entries.map(v=>`<tr><th scope="row">${esc(ta?v.name:v.english)}</th>${commonCell('pinda',v)}${commonCell('natural',v)}${amsaCell(v)}</tr>`).join('');
  const totalCell=(method,rawKey)=>{
-  const value=research.totals[method],raw=research.totals[rawKey];
+  const value=research.totals[method],raw=rawKey?research.totals[rawKey]:null;
+  if(method==='amsa'&&research.amsaMethodSelectionVerified!==true)
+   return `<td data-${method}-total="blocked" title="${esc(research.amsaMethodSelectionBlockers.join('; '))}"><strong>${ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable'}</strong></td>`;
   if(value?.available===true&&value.traditionalUnits)
    return `<td data-${method}-total="adjusted-candidate"><strong>${esc(fmt(value,ta))}</strong></td>`;
   return `<td data-${method}-total="raw-unadjusted" title="${esc('At least one graha Harana adjustment is unresolved; this is the sum of raw, unadjusted graha terms')}"><strong>${esc(rawDisplay(raw?.traditionalUnits,ta))}</strong></td>`;
  };
- const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th>${totalCell('pinda','pindaRaw')}${totalCell('natural','naturalRaw')}${totalCell('amsa','amsaTableARaw')}</tr>`;
+ const totalLine=`<tr class="smv-ayurdaya-totals"><th scope="row">${ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)'}</th>${totalCell('pinda','pindaRaw')}${totalCell('natural','naturalRaw')}${totalCell('amsa',null)}</tr>`;
  const correctedMean=research.totals.averageOfThreeTotals;
- const rawMean=cgRajanMeanThreeTraditionalTotals({
-  pindaTotalNazhigai:research.totals.pindaRaw.totalNazhigai,
-  naturalTotalNazhigai:research.totals.naturalRaw.totalNazhigai,
-  amsaTotalNazhigai:research.totals.amsaTableARaw.totalNazhigai
- });
  const averageLabel=ta?'சராசரி ஆயுர்த்தாயம் :':'Average Ayurdaya:';
  const averageBasis=correctedMean
   ?(ta?'மூன்று ஹரணம்-திருத்திய மொத்தங்களின் சராசரி':'Mean of the three Harana-adjusted totals')
-  :(ta?'மூல மொத்தங்களின் சராசரி; ஹரணக் கழிவுகள் சேர்க்கப்படவில்லை':'Mean of raw totals; Harana reductions not applied');
- const averageText=correctedMean?fmt(correctedMean,ta):rawMean?rawDisplay(rawMean.traditionalUnits,ta):(ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable');
+  :(ta?'அம்ச அட்டவணை E முறைத் தேர்வு மற்றும் ஹரண விதிகள் உறுதிப்படுத்தப்படாததால் சராசரி காட்டப்படவில்லை':'Mean withheld until Amsa Table E selection and all Harana rules are verified');
+ const averageText=correctedMean?fmt(correctedMean,ta):(ta?'கணக்கீடு கிடைக்கவில்லை':'Calculation unavailable');
  const averageLine=`<tr class="smv-ayurdaya-average"><th scope="row" colspan="3" class="smv-ayurdaya-average-label"><span class="smv-ayurdaya-average-title">${averageLabel}</span><span class="smv-ayurdaya-average-basis">${esc(averageBasis)}</span></th><td class="smv-ayurdaya-average-value"><strong>${esc(averageText)}</strong></td></tr>`;
- return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><p class="small smv-ayurdaya-disclaimer">${ta?'இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.':'These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'}</p><div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
+ return `<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"><h3>${ta?'ஆயுர்த்தாயக் கணக்கீடு':'Ayurdaya Calculation'}</h3><p class="small smv-ayurdaya-disclaimer">${ta?'இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.':'These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'}</p><p class="small smv-ayurdaya-method-status">${ta?'அம்ச அட்டவணை E நிபந்தனைக்குட்பட்டது. லக்னாதிபதி வலிமை மற்றும் முறைத் தேர்வு உறுதிப்படுத்தப்படாததால் அம்ச மொத்தமும் மூன்று முறைகளின் சராசரியும் காட்டப்படவில்லை.':'Amsa Table E is conditional. The Amsa total and three-method mean are withheld because Lagna-lord strength and chart-wide method selection are not verified.'}</p><div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya'}</th><th>${ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya'}</th><th>${ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'}</th></tr></thead><tbody>${lines}${totalLine}${averageLine}</tbody></table></div></section>`;
 
 }
