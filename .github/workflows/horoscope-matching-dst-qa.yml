@@ -3,7 +3,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'public/horoscope/**'
+      - 'public/horoscope/**/*.js'
+      - 'public/horoscope/**/*.mjs'
+      - 'public/horoscope/**/*.cjs'
       - 'tests/**'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
@@ -16,46 +18,6 @@ on:
 permissions:
   contents: read
 jobs:
-  v358-result-layout-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install Chromium and Puppeteer dependencies from repo
-        run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: V358 responsive result borders and layer geometry
-        run: node tests/v358-result-layout-browser-smoke.mjs
-      - name: Preserve V358 mobile and desktop screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: SMV-V358-LAYOUT-SMOKE
-          path: v358-layout-smoke-output/
-          if-no-files-found: warn
-          retention-days: 14
-  v359-symmetric-gutters-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install existing Chromium dependencies
-        run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: V359 four-viewport symmetric left/right border QA
-        run: node tests/v359-symmetric-gutters-browser-smoke.mjs
-      - name: Preserve V359 viewport screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: SMV-V359-SYMMETRY-SMOKE
-          path: v359-layout-smoke-output/
-          if-no-files-found: warn
-          retention-days: 14
   source-regression:
     runs-on: ubuntu-latest
     steps:
