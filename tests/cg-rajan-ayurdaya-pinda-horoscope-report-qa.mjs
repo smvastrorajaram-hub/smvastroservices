@@ -66,7 +66,7 @@ ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
-eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
+eq(en.includes('AMSA AYURDAYAM (Table E — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(ta.includes('மூல மதிப்பு: ')&&en.includes('Raw: '),
  'raw Table-E and Pinda/Naisargika terms are explicitly labelled as raw values when Harana is unresolved');
@@ -98,7 +98,7 @@ ok(Math.abs(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLong
 eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:43+20/60}).rawAmsaYears,1,
  'Table E resets to year 1 at the next printed 3°20′ boundary');
 // A one-fifth Chakrapada loss must carry through to days, not be
-// truncated to whole years/months or replaced by the raw Table-A term.
+// truncated to whole years/months or replaced by the raw Table-E term.
 const fifthLossCase=cgRajanAmsaHaranaResearch({
  planet:'செவ்வாய்',rawAmsaYears:3,enemySign:false,combust:false,
  houseFromLagna:8,occupantCount:1,chakrapadaBenefic:false,
@@ -163,11 +163,11 @@ eq(sunPost.multiplier,2,
  'wrapped Drekkana sign maps to Leo and applies the Sun own-Drekkana multiplier');
 eq(sunPost.adjustedAmsaYearsCandidate,sunPost.rawAmsaYears*2,
  'own-Drekkana multiplier is applied after Harana without stacking another multiplier');
-ok(Math.abs(jupiterPost.rawAmsaYears-10.6)<1e-8,'fixture Jupiter raw Table-A lookup preserves fractional arc');
+ok(Math.abs(jupiterPost.rawAmsaYears-10.6)<1e-8,'fixture Jupiter raw Table-E lookup preserves fractional arc');
 eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from chart relation');
 eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
 eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:0,days:24,nazhigai:0},
- 'fractional Table-A term survives enemy-sign Harana and displays post-Harana days');
+ 'fractional Table-E term survives enemy-sign Harana and displays post-Harana days');
 eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
  'all seven raw per-graha Amsa Harana candidates remain available for research');
 eq(resolvedChart.amsaMethodSelectionVerified,false,
