@@ -214,13 +214,22 @@ try{
  // This exercises the same cached-core renderer and saved-report printer used by
  // customer Horoscope, not a hand-written duplicate Shadbala table.
  const sameOrigin=new URL(origin).origin;
+ const horoscopePageErrors=[],horoscopeConsoleErrors=[],horoscopeFailedRequests=[];
+ page.on('pageerror',error=>horoscopePageErrors.push(String(error?.stack||error)));
+ page.on('console',msg=>{if(msg.type()==='error')horoscopeConsoleErrors.push(msg.text());});
+ page.on('requestfailed',req=>{if(req.url().startsWith(sameOrigin))horoscopeFailedRequests.push(req.url()+': '+(req.failure()?.errorText||'failed'));});
  await page.setRequestInterception(true);
  page.on('request',req=>{
   try{if(new URL(req.url()).origin===sameOrigin)req.continue();else req.abort();}
   catch{req.abort();}
  });
  await page.goto(new URL('index.html',origin).href,{waitUntil:'domcontentloaded',timeout:45000});
- await page.waitForFunction(()=>typeof window.__smvRenderCachedCore==='function',{timeout:30000});
+ await page.waitForFunction(()=>typeof window.__smvRenderCachedCore==='function',{timeout:15000}).catch(async error=>{
+  const dom=await page.evaluate(()=>({url:location.href,readyState:document.readyState,hook:typeof window.__smvRenderCachedCore,
+   scriptLoads:[...document.scripts].map(x=>({src:x.src,readyState:x.readyState})).filter(x=>x.src.includes('horoscope.js')),
+   resultExists:!!document.getElementById('tamilHoroscopeResult')}));
+  throw new Error('Primary Horoscope renderer hook unavailable: '+JSON.stringify({dom,pageErrors:horoscopePageErrors.slice(-6),consoleErrors:horoscopeConsoleErrors.slice(-8),failedRequests:horoscopeFailedRequests.slice(-8)})+'; cause='+error.message);
+ });
  const horoscopeChart={...people[0]};
  delete horoscopeChart.advanced;
  const horoscopeRender=await page.evaluate(data=>{
