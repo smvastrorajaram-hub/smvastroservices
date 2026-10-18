@@ -250,7 +250,7 @@ const withShadbalaWinner=(planets,winnerName)=>planets.map(p=>{
 const reportLagna={longitude:5}; // Aries Lagna: Mars is Lagna lord.
 const amsaResolvedFixture=withShadbalaWinner(chartResolvedFixture,'செவ்வாய்');
 const resolvedHtml=cgRajanAyurdayaReportHtml({planets:amsaResolvedFixture,lagna:reportLagna,language:'en'});
-eq((resolvedHtml.match(/<tr\\b/g)||[]).length,9,
+eq((resolvedHtml.match(/<tr\b/g)||[]).length,9,
  'Amsa-only customer report has header, seven grahas and one total');
 eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven selected Amsa grahas display post-Harana candidates');
