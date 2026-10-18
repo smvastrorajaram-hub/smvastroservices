@@ -50,8 +50,10 @@ yes(source.includes("makePart('life-predictions','PREDICTIONS','பலன்க�
  'X is untouched');
 yes(astro.includes("const arudhaLabel=h===1?'AL':h===12?'UL':`A${h}`;"),
  '12 arudha rows label the first AL, middle A2–A11, final UL');
-yes(source.includes("p1Title('Arudha Padas (A1–A12)','ஆரூட பாதங்கள் (A1–A12)')"),
- 'Arudha table heading explicitly identifies the A1–A12 series');
+yes(source.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!source.includes('Arudha Padas (A1–A12)')&&!source.includes('ஆரூட பாதங்கள் (A1–A12)'),
+ 'Arudha section heading omits the A1–A12 suffix');
+yes(source.includes("p1Esc(x.house===1?'AL':x.house===12?'UL':`A${x.house}`)"),
+ 'Arudha first column explicitly renders AL, A2-A11 and UL from house number');
 no(source.includes("<th>#</th><th>${p1Title('Arudha','ஆரூடம்')}"),
  'redundant numeric ordinal column removed; label is the first column');
 const grahas=[['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
