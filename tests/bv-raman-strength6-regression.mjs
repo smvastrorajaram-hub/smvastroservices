@@ -64,7 +64,7 @@ for(const name of planets){
  near(nodeStandard.planets[name].components.cheshta,standard.planets[name].components.cheshta,0.001,name+' browser/Node Cheshta parity');
  near(nodeStandard.planets[name].components.drik,standard.planets[name].components.drik,0.001,name+' browser/Node Drik parity');
  const nodePhala=nodeStandard.planets[name].ishtaKashta, browserPhala=standard.planets[name].ishtaKashta;
- eq(nodePhala.available,true,name+' Node integrated Ishta/Kashta available');
+ eq(nodePhala.available,true,name+' Node integrated Ishta/Kashta available: '+JSON.stringify(nodePhala));
  eq(browserPhala.available,true,name+' browser integrated Ishta/Kashta available');
  eq(browserPhala.method,'BV_RAMAN_SQRT_ISHTA_KASHTA',name+' uses Raman square-root Phala formulas');
  eq(browserPhala.classicalCertified,false,name+' Ishta/Kashta inputs are not falsely certified');
