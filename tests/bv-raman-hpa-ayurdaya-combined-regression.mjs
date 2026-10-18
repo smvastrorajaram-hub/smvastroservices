@@ -59,6 +59,42 @@ eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
 eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only');
 
+const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:300,bhava:10},{name:'Moon',longitude:10,bhava:1},
+    {name:'Mars',longitude:15,bhava:1},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:90,bhava:4},
+    {name:'Saturn',longitude:180,bhava:7},{name:'Rahu',longitude:210,bhava:8},
+    {name:'Ketu',longitude:30,bhava:2}
+  ]}
+});
+ok(moonKendraWithJupiterAspect.matchedRuleIds.includes('XIV-BAL-02'),
+  'Moon-Kendra/malefic combination is evaluated as its own Chapter XIV rule even with a benefic aspect');
+
+const allThreeMaleficHouses = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:160,bhava:6},{name:'Moon',longitude:20,bhava:2},
+    {name:'Mars',longitude:220,bhava:8},{name:'Mercury',longitude:45,bhava:3},
+    {name:'Jupiter',longitude:75,bhava:4},{name:'Venus',longitude:105,bhava:5},
+    {name:'Saturn',longitude:330,bhava:12},{name:'Rahu',longitude:70,bhava:4},
+    {name:'Ketu',longitude:250,bhava:10}
+  ]}
+});
+ok(allThreeMaleficHouses.matchedRuleIds.includes('XIV-ALP-02'),
+  'Alpayu house rule matches when malefic occupants exist in all of 6, 8 and 12');
+
+const onlyOneMaleficHouse = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:160,bhava:6},{name:'Moon',longitude:20,bhava:2},
+    {name:'Mars',longitude:220,bhava:8},{name:'Mercury',longitude:45,bhava:3},
+    {name:'Jupiter',longitude:75,bhava:4},{name:'Venus',longitude:105,bhava:5},
+    {name:'Saturn',longitude:330,bhava:10},{name:'Rahu',longitude:70,bhava:4},
+    {name:'Ketu',longitude:250,bhava:10}
+  ]}
+});
+eq(onlyOneMaleficHouse.matchedRuleIds.includes('XIV-ALP-02'), false,
+  'Alpayu 6/8/12 rule does not match if house 12 has no malefic');
+
 // Harana rule: only the largest loss applies, never a stack of losses.
 const halfAndThirds = bvRamanHpaChapterXXVIApplyHarana({
   grossLunarYears: 12,
