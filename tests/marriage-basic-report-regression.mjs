@@ -74,8 +74,10 @@ const matchingShadbalaSource=matchingReportSource.slice(matchingShadbalaStart,ma
 ok(matchingShadbalaSource.includes('strengthJathakaKanitham'),'Matching Shadbala displays C.G. Rajan Part I calculated components');
 ok(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),'Matching Shadbala displays the calculated component subtotal when certified total inputs are unavailable');
 ok(!matchingShadbalaSource.includes('strength3'),'Matching Shadbala does not use legacy strength3 totals');
-ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes('Yuddha')&&!matchingShadbalaSource.includes('war'),
- 'Matching Shadbala contains no indication/status or separate war column');
+ok(!matchingShadbalaSource.includes('Status')&&!matchingShadbalaSource.includes('Uttara Kalamrita')&&!matchingShadbalaSource.includes("'Yuddha'")&&!matchingShadbalaSource.includes("'war'"),
+ 'Matching Shadbala contains no indication/status or standalone Yuddha/war column');
+ok(matchingShadbalaSource.includes('Subtotal (excluding Cheshta/Drig/Yuddha)'),
+ 'Matching subtotal explicitly states it excludes unresolved Cheshta/Drig/Yuddha contributions');
 
 for(const suffix of ['UtcOffset','ChartStyle']){
  ok(matching.includes("id='")||matching.includes('id="'),'Template ids rendered');
