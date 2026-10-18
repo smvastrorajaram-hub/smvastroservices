@@ -12,9 +12,7 @@ on:
       - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
-      - 'tests/v357-bphs-shadbala-positional-regression.mjs'
-      - 'tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
-      - 'tests/v362-bphs-primary-shadbala-regression.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
       - '.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml'
   pull_request:
     branches: [main]
@@ -28,9 +26,7 @@ on:
       - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
-      - 'tests/v357-bphs-shadbala-positional-regression.mjs'
-      - 'tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs'
-      - 'tests/v362-bphs-primary-shadbala-regression.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
       - '.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml'
   workflow_dispatch:
 permissions:
@@ -55,16 +51,10 @@ jobs:
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
           node --check public/horoscope/offline/bphs-shadbala-rectification.browser.mjs
-          node --check tests/v357-bphs-shadbala-positional-regression.mjs
-          node --check tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
-          node --check tests/v362-bphs-primary-shadbala-regression.mjs
+          node --check tests/bphs-shadbala-combined-regression.mjs
       - name: Reconcile C.G. Rajan printed Shadbala source arithmetic and blockers
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
       - name: Check seven source-specific Shadbala rows across five natal charts
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
-      - name: Verify independent BPHS positional Shadbala values
-        run: node tests/v357-bphs-shadbala-positional-regression.mjs
-      - name: Verify BPHS Ahargana, sunrise and temporal Bala boundaries
-        run: node tests/v357-bphs-temporal-bala-sunrise-ahargana.mjs
-      - name: Verify BPHS primary Drig Bala and Graha Yuddha rules
-        run: node tests/v362-bphs-primary-shadbala-regression.mjs
+      - name: Run consolidated BPHS positional, temporal, Drig and Yuddha oracle suite
+        run: node tests/bphs-shadbala-combined-regression.mjs
