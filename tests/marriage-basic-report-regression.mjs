@@ -34,8 +34,12 @@ for(const [i,section] of taAyurdaya.entries()){
   ok(section.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'),'Tamil partner '+(i+1)+' has the actual-lifespan disclaimer');
  eq((section.match(/<tr\b/g)||[]).length,10,'Tamil partner '+(i+1)+' Ayurdaya has header, 7 grahas, total and average');
 }
-const taRemainders=[...ta.matchAll(/data-amsa-days="(\d+)" data-amsa-nazhigai="(\d+)"/g)];
-ok(taRemainders.some(m=>Number(m[1])>0||Number(m[2])>0),'Tamil Matching natal charts carry Amsa fractional days/nazhigai into report HTML');
+const taRawAmsa=[...ta.matchAll(/data-raw-amsa-years="([^"]+)"/g)].map(m=>Number(m[1]));
+eq(taRawAmsa.length,14,'Tamil Matching retains seven raw Table E graha terms for each person');
+ok(taRawAmsa.some(v=>Number.isFinite(v)&&Math.abs(v-Math.round(v))>1e-9),'Tamil Matching preserves fractional raw Table E values');
+eq((ta.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,14,'Tamil Matching labels all Amsa entries raw until method selection is verified');
+eq((ta.match(/data-amsa-total="blocked"/g)||[]).length,2,'Tamil Matching blocks both unverified Table E totals');
+eq(ta.includes('data-amsa-days='),false,'Tamil Matching does not publish unverified adjusted Amsa day fields');
 ok(!ta.includes('AMSA AYURDAYAM'),'Tamil Matching HTML never uses the rejected uppercase heading');
 ok(ta.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'Tamil title');
 ok(ta.includes('mm-base-south')&&ta.includes('mm-base-north'),'Independent South and North charts');
