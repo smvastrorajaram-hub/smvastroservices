@@ -25,10 +25,13 @@ for(const [planet,longitude,result] of [
 const ref=[['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
  ['செவ்வாய்',206+30/60],['புதன்',191+52/60],
  ['குரு',28+17/60],['சுக்கிரன்',204+32/60],['சனி',230+27/60]]
- .map(([name,longitude],i)=>({name,longitude,strength6:{
-  available:true,components:{},totalVirupa:[700,600,500,400,300,200,100][i],
-  classicalCertified:false
- }}));
+ .map(([name,longitude],i)=>{
+  const totalVirupa=[700,600,500,400,300,200,100][i];
+  return {name,longitude,strength6:{
+   available:true,components:{sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0},
+   totalVirupa,classicalCertified:false
+  }};
+ });
 const lagna={longitude:5};
 const research=cgRajanCompareGrahas({planets:ref,lagna});
 eq(research.entries.length,7,'seven researched grahas');
@@ -153,7 +156,12 @@ eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
 const remainderDisplayFixture=chartResolvedFixture.map(p=>
  p.name==='செவ்வாய்'?{...p,longitude:10,bhava:8}:
  p.name==='சுக்கிரன்'?{...p,bhava:9}:p);
-const amsaUiFixture=remainderDisplayFixture.map(p=>({...p,strength6:{...p.strength6,totalVirupa:p.name==='செவ்வாய்'?900:p.name==='சூரியன்'?700:p.name==='சந்திரன்'?600:100}}));
+const amsaUiFixture=remainderDisplayFixture.map(p=>{
+ const totalVirupa=p.name==='செவ்வாய்'?900:p.name==='சூரியன்'?700:p.name==='சந்திரன்'?600:100;
+ return {...p,strength6:{...p.strength6,components:{
+  sthana:{total:totalVirupa},dig:0,kala:{total:0},cheshta:0,naisargika:0,drik:0
+ },totalVirupa}};
+});
 const remainderHtml=cgRajanAyurdayaReportHtml({planets:amsaUiFixture,lagna:{longitude:5},language:'en'});
 eq(selectMethod({planets:amsaUiFixture,lagna:{longitude:5}}).selectedMethod,'amsa','Amsa output is used only when the Lagna lord has the strongest Shadbala');
 ok(remainderHtml.includes('data-amsa-years="2" data-amsa-months="4" data-amsa-days="24" data-amsa-nazhigai="0"'),
