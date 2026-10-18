@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
+const require=createRequire(import.meta.url);
+const nodeRaman=require('../bv-raman-shadbala.cjs');
 import {
   calculateBVRamanShadbala,
   BV_RAMAN_SHADBALA_SOURCE
@@ -36,10 +39,23 @@ const standard=calculateBVRamanShadbala({
  declinations:{'சூரியன்':-8.75,'சந்திரன்':10.75,'செவ்வாய்':-22.75,'புதன்':9,'குரு':23.83,'சுக்கிரன்':-17.85,'சனி':-21.14},
  jdUt:jd
 });
-eq(standard.method,'BV_RAMAN_INTEGRATED_SIX_BALA','integrated calculation returns B.V. Raman method');
+const nodeStandard=nodeRaman.calculateBVRamanShadbala({
+  planets:standardPlanets,bhavas:[],ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
+  apparentSolarHour:14.1,temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
+  declinations:{'சூரியன்':-8.75,'சந்திரன்':10.75,'செவ்வாய்':-22.75,'புதன்':9,'குரு':23.83,'சுக்கிரன்':-17.85,'சனி':-21.14},jdUt:jd
+});
+eq(nodeStandard.method,standard.method,'Node and browser use same B.V. Raman engine identity');
+for(const name of planets){
+ near(nodeStandard.planets[name].components.sthana.total,standard.planets[name].components.sthana.total,0.001,name+' browser/Node Sthana parity');
+ near(nodeStandard.planets[name].components.dig,standard.planets[name].components.dig,0.001,name+' browser/Node Dig parity');
+ near(nodeStandard.planets[name].components.kala.total,standard.planets[name].components.kala.total,0.001,name+' browser/Node Kala parity');
+ near(nodeStandard.planets[name].components.cheshta,standard.planets[name].components.cheshta,0.001,name+' browser/Node Cheshta parity');
+ near(nodeStandard.planets[name].components.drik,standard.planets[name].components.drik,0.001,name+' browser/Node Drik parity');
+}
 eq(standard.classicalCertified,false,'standard fixture never overclaims full certification');
 const planets=standardPlanets.map(p=>p.name);
 eq(Object.keys(standard.planets).length,7,'exactly seven classical grahas');
+eq(Object.keys(nodeStandard.planets).length,7,'Node engine also returns seven classical grahas');
 const expectedSthana={
  'சூரியன்':198,'சந்திரன்':126.5,'செவ்வாய்':172.06,
  'புதன்':279.5,'குரு':157.58,'சுக்கிரன்':178.2,'சனி':177.3
