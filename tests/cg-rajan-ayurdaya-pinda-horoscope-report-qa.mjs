@@ -44,10 +44,10 @@ for(const [html,language] of [[ta,'Tamil'],[en,'English']]){
   language+' average label and result occupy separate table cells');
  ok(averageRow.includes('<strong>'),language+' average value is bold and separate from its label');
  const averageValue=averageRow.match(new RegExp('<td class="smv-ayurdaya-average-value"><strong>([^<]+)</strong></td>'))?.[1]||'';
- ok(averageValue.trim().length>0&&!/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' average result cell contains a calculated value');
+ ok(averageValue.trim().length>0&&/Calculation unavailable|கணக்கீடு கிடைக்கவில்லை/.test(averageValue),language+' average is explicitly withheld until the Amsa method-selection gate is verified');
 }
-ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&!ta.includes('அட்டவணை A')&&!ta.includes('Jathaka Kanitham'),'Tamil total row has no source-book notice');
-ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&!en.includes('provisional arithmetic mean')&&!en.includes('Jathaka Kanitham'),'English total/mean rows remain uncluttered by source-book labels');
+ok(ta.includes('மொத்தம் (7 கிரகங்கள்)')&&ta.includes('அம்ச அட்டவணை E நிபந்தனைக்குட்பட்டது')&&!ta.includes('Jathaka Kanitham'),'Tamil report explains the guarded Table E method selection without a source-book name');
+ok(en.includes('Total (7 grahas)')&&en.includes('Average Ayurdaya')&&en.includes('Amsa Table E is conditional')&&!en.includes('Jathaka Kanitham'),'English report explains why Table E totals and mean are withheld');
 ok(ta.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறைகளின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.')&&en.includes('These are estimates from traditional Ayurdaya methods only; they do not establish actual lifespan or predict the time of death.'),'Both language reports warn that Ayurdaya is not a certified actual-lifespan prediction');
 eq(research.entries.find(x=>x.name==='சூரியன்').pinda.traditionalUnits,
  {years:10,months:8,days:16,nazhigai:22},
@@ -61,21 +61,21 @@ eq((ta.match(/data-natural-harana="raw-unadjusted"/g)||[]).length,7,
  'Naisargika raw arithmetic remains visible but is explicitly marked unadjusted when Harana evidence is missing');
 ok(ta.includes('data-pinda-total="raw-unadjusted"')&&ta.includes('data-natural-total="raw-unadjusted"'),
  'Pinda and Naisargika raw totals remain visible with an explicit unadjusted marker');
-ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Mean of raw totals; Harana reductions not applied')&&en.includes('Raw: '),
- 'unresolved Harana cells and separate mean label/value expose raw terms without claiming adjustment');
+ok(!en.includes('Harana evidence incomplete')&&en.includes('Average Ayurdaya')&&en.includes('Mean withheld until Amsa Table E selection')&&en.includes('Raw: '),
+ 'unresolved Harana cells expose raw terms while withholding unverified method totals and mean');
 eq((ta.match(/<tr\b/g)||[]).length,10,'header + seven grahas + total + average');
 eq(ta.includes('அம்ச ஆயுர்த்தாயம் (அட்டவணை A — ஹரணத்திற்கு முன்)'),false,
  'Amsa heading omits the Harana status label in Tamil');
 eq(en.includes('AMSA AYURDAYAM (Table A — before Harana)'),false,
  'Amsa heading omits the Harana status label in English');
 ok(ta.includes('மூல மதிப்பு: ')&&en.includes('Raw: '),
- 'raw Table-A and Pinda/Naisargika terms are explicitly labelled as raw values when Harana is unresolved');
+ 'raw Table-E and Pinda/Naisargika terms are explicitly labelled as raw values when Harana is unresolved');
 ok(ta.includes('data-amsa-harana="raw-unadjusted"')&&en.includes('data-amsa-harana="raw-unadjusted"'),
  'missing natal Harana evidence is labelled as raw-unadjusted in both report languages');
 eq((ta.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
  'fixture without chart facts still displays all seven raw Amsa terms with unadjusted labeling');
-ok(ta.includes('data-amsa-total="raw-unadjusted"')&&en.includes('data-amsa-total="raw-unadjusted"'),
- 'raw Amsa table total stays visible but is marked unadjusted until every Harana resolves');
+ok(ta.includes('data-amsa-total="blocked"')&&en.includes('data-amsa-total="blocked"'),
+ 'Amsa total is withheld because the Table E method-selection condition is unverified');
 const amsaCases=[
  [0,0],[3+20/60,1],[6+40/60,2],[40,12],[43+20/60,1],
  [167+2/60,2.11],[118+10/60,11.45],[206.5,1.95],[191+52/60,9.56],
@@ -88,13 +88,13 @@ for(const [longitude,years] of amsaCases){
 }
 eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:206.5}).traditionalUnits,
  {years:1,months:11,days:12,nazhigai:0},
- 'fractional Table-A remainder converts into months/days by rule of three');
+ 'fractional Table-E remainder converts into months/days by rule of three');
 ok(Math.abs(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:1+40/60}).rawAmsaYears-0.5)<1e-8,
  'first pada fraction is calculated from the 0° origin using the printed 200-minute rule');
 ok(Math.abs(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:41+40/60}).rawAmsaYears-12.5)<1e-8,
- 'fraction within the printed 12-year pada uses Table C, not interpolation toward the next cycle label');
+ 'fraction within the printed 12-year Table E interval uses Table C, not interpolation toward the next cycle label');
 eq(cgRajanAmsaAyurdayaGraha({planet:'செவ்வாய்',trueLongitude:43+20/60}).rawAmsaYears,1,
- 'Table A resets to year 1 at the next printed 3°20′ boundary');
+ 'Table E resets to year 1 at the next printed 3°20′ boundary');
 // A one-fifth Chakrapada loss must carry through to days, not be
 // truncated to whole years/months or replaced by the raw Table-A term.
 const fifthLossCase=cgRajanAmsaHaranaResearch({
@@ -166,8 +166,14 @@ eq(jupiterPost.enemySignLossFraction,1/3,'fixture derives enemy-sign Harana from
 eq(jupiterPost.multiplier,1,'fixture does not invent a dignity/retrograde multiplier');
 eq(jupiterPost.traditionalUnitsCandidate,{years:7,months:0,days:24,nazhigai:0},
  'fractional Table-A term survives enemy-sign Harana and displays post-Harana days');
-eq(resolvedChart.totals.amsa.available,true,
- 'adjusted Amsa total available when all seven row candidates resolve');
+eq(resolvedChart.entries.every(x=>x.amsaHarana.resolved===true),true,
+ 'all seven raw per-graha Amsa Harana candidates remain available for research');
+eq(resolvedChart.amsaMethodSelectionVerified,false,
+ 'Table E method selection remains blocked without verified Lagna-lord strength');
+eq(resolvedChart.totals.amsa.available,false,
+ 'adjusted Amsa total stays unavailable even when per-graha candidates resolve');
+eq(resolvedChart.totals.amsa.blockedBy,'method-selection',
+ 'Amsa total explicitly reports the unresolved method-selection gate');
 const saturnAmsa=resolvedChart.entries.find(x=>x.name==='சனி').amsaHarana;
 eq(saturnAmsa.chakrapadaApplied,true,'single occupant in house 7 receives Chakrapada Harana');
 eq(saturnAmsa.chakrapadaLossFraction,1/6,'malefic house-7 Chakrapada loss is 1/6');
@@ -224,11 +230,13 @@ eq(reducedPinda.traditionalUnitsCandidate,
  {years:0,months:3,days:21,nazhigai:7},
  'Harana subtraction rounds only after the adjusted component is calculated');
 
-ok(resolvedChart.totals.averageOfThreeTotals?.traditionalUnits,
- 'three-method mean is rendered when all seven post-Harana candidates resolve');
+eq(resolvedChart.totals.averageOfThreeTotals,null,
+ 'three-method mean stays withheld until the Table E method-selection condition is verified');
 const resolvedHtml=cgRajanAyurdayaReportHtml({planets:chartResolvedFixture,language:'en'});
-eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,7,
- 'all seven fully evidenced grahas display post-Harana candidates');
+eq((resolvedHtml.match(/data-amsa-harana="adjusted-candidate"/g)||[]).length,0,
+ 'no Amsa post-Harana candidate is published before Table E method selection is verified');
+eq((resolvedHtml.match(/data-amsa-harana="raw-unadjusted"/g)||[]).length,7,
+ 'all seven Amsa rows remain explicitly raw until Table E method selection is verified');
 eq((resolvedHtml.match(/data-pinda-harana="adjusted-candidate"/g)||[]).length,7,
  'all seven Pinda rows display post-Harana candidates');
 eq((resolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,7,
@@ -236,17 +244,17 @@ eq((resolvedHtml.match(/data-natural-harana="adjusted-candidate"/g)||[]).length,
 ok(resolvedHtml.includes('data-total-harana-nazhigai=')&&
  resolvedHtml.includes('data-adjusted-amsa-years='),
  'the customer table retains row-level Harana arithmetic for audit');
-ok(resolvedHtml.includes('data-amsa-total="adjusted-candidate"'),
- 'adjusted Amsa total is rendered only when complete');
+ok(resolvedHtml.includes('data-amsa-total="blocked"'),
+ 'Amsa total renderer enforces the Table E method-selection gate');
 const jupiterAmsaCell=resolvedHtml.match(/<tr><th scope="row">Jupiter<\/th>.*?<td data-amsa-harana="adjusted-candidate"[^>]*>(.*?)<\/td><\/tr>/)?.[1];
-eq(jupiterAmsaCell,'7y 0m 24d 0n',
- 'customer table cell preserves post-Harana fractional Table-A days');
+eq(jupiterAmsaCell,undefined,
+ 'unverified Table E method selection prevents rendering a post-Harana adjusted Jupiter result');
 const totals=cgRajanCompareGrahas({planets:ref}).totals;
 eq(totals.amsa.traditionalUnits,null,
  'Amsa adjusted total is not fabricated when chart-specific Harana evidence is absent');
 eq(totals.amsa.available,false,'Amsa total is explicitly unavailable until all adjusted rows resolve');
-eq(totals.amsaTableARaw.traditionalUnits,{years:44,months:0,days:18,nazhigai:0},
- 'raw Table-A total preserves fractional day arithmetic internally and is not presented as final');
+eq(totals.amsaTableERaw.traditionalUnits,{years:44,months:0,days:18,nazhigai:0},
+ 'raw Table-E total preserves fractional day arithmetic internally and is not presented as final');
 eq(totals.averageOfThreeTotals,null,
  'three-method mean is withheld rather than calculated from raw Amsa Table-A values');
 const oneThird=cgRajanMeanThreeTraditionalTotals({pindaTotalNazhigai:1,naturalTotalNazhigai:0,amsaTotalNazhigai:0});
