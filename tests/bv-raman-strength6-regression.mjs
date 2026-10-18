@@ -94,7 +94,8 @@ for(const name of planets){
  eq(r.classicalCertified,false,name+' keeps certification withheld');
  ok(r.components.sthana&&Number.isFinite(r.components.sthana.total),name+' Sthana Bala produced');
  near(r.components.sthana.total,expectedSthana[name],0.06,name+' Raman printed Sthana Bala worked example (source-table rounding)');
- near(r.components.dig,expectedDig[name],0.06,name+' Raman printed Dig Bala worked example (source-table rounding)');
+ // Raman's printed Mercury Dig Bala (21.09) does not reconcile exactly with its own printed arc (63°05′ / 3 ≈ 21.03); keep the source discrepancy visible without distorting the formula.
+ near(r.components.dig,expectedDig[name],name==='புதன்'?0.08:0.06,name+' Raman printed Dig Bala worked example (source-table rounding)');
  near(r.components.kala.total,expectedKala[name],0.08,name+' Raman printed Kala Bala worked example');
  near(r.components.drik,expectedDrik[name],0.08,name+' Raman printed Drik Bala worked example');
  near(r.evidence.drikPinda,expectedDrishtiPinda[name],0.15,name+' Raman printed Drishti Pinda');
