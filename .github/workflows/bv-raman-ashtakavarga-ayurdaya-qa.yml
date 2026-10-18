@@ -5,6 +5,8 @@ on:
     paths:
       - 'public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs'
       - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
       - 'tests/v357-bphs-shodhana-regression.mjs'
       - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
@@ -37,8 +39,12 @@ jobs:
         run: |
           node --check public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs
           node --check tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
+          node --check public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs
+          node --check tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
       - name: Run B.V. Raman Ayurdaya research regression
         run: node tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
+      - name: Run Chapter XIV + XXVI integrated Ayurdaya research regression
+        run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
       - name: Run BPHS Shodhana textbook regression
         run: node tests/v357-bphs-shodhana-regression.mjs
       - name: Run P.V.R. Narasimha Rao Shodhana textbook regression
