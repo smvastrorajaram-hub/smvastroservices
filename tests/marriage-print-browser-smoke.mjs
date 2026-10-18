@@ -29,7 +29,10 @@ try{
    transitFn:input=>transit(input),poruthamRows:[['தினம்',true,''],['ரஜ்ஜு',false,'']]
   });
   assert.ok(html.includes('அந்தரம்')&&html.includes('மகாதசை')&&html.includes('புக்தி'), 'Native report HTML contains Mahadasha/Bhukti/Antaram rows: '+testName);
-  assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('mm-shadbala-status')&&!html.includes('யுத்தம் (UK)'), 'No Shadbala indication or separate Yuddha column: '+testName);
+  assert.ok(!html.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!html.includes('யுத்தம் (UK)'), 'No foreign-method note or separate Yuddha column: '+testName);
+  assert.ok(html.includes('mm-base-shad-components')&&html.includes('Total Shadbala (Virupa)')&&html.includes('Total Rupa')&&html.includes('Required Rupa')&&html.includes('Rank')&&html.includes('Strength status'),
+   'Six Bala components, final total, Rupa, required Rupa, rank and strength status render: '+testName);
+  assert.ok(html.includes('class="smv-ayurdaya-average-basis"'),'Ayurdaya method subtext is in the Matching print HTML: '+testName);
   assert.ok(html.includes('smv-ayurdaya-totals')&&html.includes('மொத்தம் (7 கிரகங்கள்)')&&html.includes('சராசரி ஆயுர்த்தாயம்'), 'Ayurdaya total and mean remain in printable HTML: '+testName);
   const meanRows=[...html.matchAll(/<tr class="smv-ayurdaya-average">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
   const totalRows=[...html.matchAll(/<tr class="smv-ayurdaya-totals">([\s\S]*?)<\/tr>/g)].map(m=>m[1]);
@@ -65,6 +68,7 @@ try{
     lastCell:{left:cell11?.left-rectangle?.left,top:cell11?.top-rectangle?.top},
     whiteSpace:td&&getComputedStyle(td).whiteSpace,
     scrollWidth:wrap?.scrollWidth,clientWidth:wrap?.clientWidth,
+    shadbalaHeaders:[...(shadTable?.querySelectorAll('thead th')||[])].map(th=>th.textContent.trim()),
     lineCount:allPlanets.length,
     splitNames:/மேஷம்|ரிஷபம்|மிதுனம்|கடகம்|சிம்மம்|கன்னி|துலாம்|விருச்சிகம்|தனுசு|மகரம்|கும்பம்|மீனம்/.test(extra),
     longPlanet:allPlanets.some(x=>x.length>5),
@@ -79,6 +83,8 @@ try{
   assert.ok(mobile.rectWidth>=250&&mobile.rectWidth<=360,'Chart mobile size: '+style);
   assert.equal(mobile.whiteSpace,'nowrap','No split words in Shadbala mobile table: '+style);
   assert.ok(mobile.scrollWidth>mobile.clientWidth,'Wide tables must scroll on mobile: '+style);
+  assert.ok(mobile.shadbalaHeaders.length===12&&mobile.shadbalaHeaders.some(x=>x.includes('Total Shadbala'))&&mobile.shadbalaHeaders.includes('Rank'),
+    'Scrollable Matching Shadbala has all twelve columns: '+style);
   assert.ok(!mobile.splitNames&&!mobile.longPlanet,'Charts must contain only short planet codes without sign names: '+style);
   assert.ok(mobile.lineCount>25,'All planet codes present: '+style);
   if(style==='south'){
@@ -98,12 +104,15 @@ try{
   assert.ok(size>25000,'PDF is not empty: '+style);
   const print=await page.evaluate(()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
-   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length};
+   const basis=[...document.querySelectorAll('.smv-ayurdaya-average-basis')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
+   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,averageBasis:basis};
   });
   assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
   assert.equal(print.ayurdayaTables,2,'Both Ayurdaya tables remain in print DOM: '+style);
+  assert.ok(print.averageBasis.length===2&&print.averageBasis.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7),
+    'Both Ayurdaya subtexts remain readable/visible in print: '+style);
   const printText=await page.evaluate(()=>document.querySelector('#printReport')?.innerText||'');
   assert.ok(printText.includes('அந்தரம்')&&printText.includes('மொத்தம் (7 கிரகங்கள்)')&&printText.includes('சராசரி ஆயுர்த்தாயம்'), 'Native print DOM preserves Antaram and Ayurdaya total/mean: '+style);
   results.push({style:testName,pdfBytes:size,mobile,print});
