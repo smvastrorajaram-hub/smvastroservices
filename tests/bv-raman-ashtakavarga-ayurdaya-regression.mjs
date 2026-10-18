@@ -99,6 +99,30 @@ same(methodA.finalLifespan, null, 'Method A does not emit final lifespan');
 same(methodA.customerDisplayAllowed, false, 'Method A must not appear in customer UI');
 ok(methodA.certified === false, 'Method A not marked certified');
 
+// Standard Horoscope Sun row transcribed from the worked example's
+// after-reduction chart; independent of the synthetic arithmetic fixture.
+const standardSunReduced = [0, 3, 2, 0, 0, 4, 0, 1, 0, 0, 2, 0];
+const standardSigns = {
+  Sun: 5, Moon: 10, Mars: 7, Mercury: 6, Jupiter: 2, Venus: 5, Saturn: 4
+};
+const standardRows = Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(
+  planet => [planet, [...standardSunReduced]]
+));
+const standardMethodA = bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows: standardRows,
+  planetSigns: standardSigns
+});
+same(standardMethodA.planets.Sun.rasiPinda, 96,
+  'Standard Horoscope Sun Rasi Pinda independently matches worked example');
+same(standardMethodA.planets.Sun.grahaPinda, 86,
+  'Standard Horoscope Sun Graha Pinda independently matches worked example');
+same(standardMethodA.planets.Sun.sodyaPinda, 182,
+  'Standard Horoscope Sun Sodya Pinda independently matches worked example');
+near(standardMethodA.planets.Sun.grossLunarYearsModulo27, 20.2222222222, 1e-8,
+  'Standard Horoscope Sun gross years after the 27-year reduction');
+same(standardMethodA.finalSolarYears, null,
+  'matching Pinda arithmetic does not certify Harana/final solar years');
+
 const fixture = BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE;
 const methodB = bvRamanAshtakavargaMethodB({
   reducedSarvashtakavarga: fixture.reducedSarvashtakavarga,
