@@ -4,14 +4,34 @@ on:
     branches: [main]
     paths:
       - 'smv-output-result/*.pdf'
-      - 'public/horoscope/**'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope-predictions.js'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'public/horoscope/marriage-basic-report.css'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   pull_request:
     branches: [main]
     paths:
       - 'smv-output-result/*.pdf'
-      - 'public/horoscope/**'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope-predictions.js'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'public/horoscope/marriage-basic-report.css'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   workflow_dispatch:
