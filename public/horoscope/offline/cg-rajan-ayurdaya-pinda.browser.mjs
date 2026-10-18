@@ -607,8 +607,14 @@ export function cgRajanSelectAyurdayaMethod({planets=[],lagna}={}) {
  const candidates=references.map(reference=>{
   const row=planets.find(p=>p?.name===reference.planet);
   const shadbala=row?.strength6;
-  const available=shadbala?.available===true &&
-   !!shadbala.components && finite(shadbala.totalVirupa);
+  const c=shadbala?.components;
+  const sixfoldParts=c?[
+   c.sthana?.total,c.dig,c.kala?.total,c.cheshta,c.naisargika,c.drik
+  ]:[];
+  const sixfoldSum=sixfoldParts.reduce((sum,value)=>sum+(finite(value)?value:0),0);
+  const completeSixfold=sixfoldParts.length===6&&sixfoldParts.every(finite)&&
+   finite(shadbala?.totalVirupa)&&Math.abs(sixfoldSum-shadbala.totalVirupa)<0.01;
+  const available=shadbala?.available===true&&completeSixfold;
   return Object.freeze({
    ...reference,
    available,
