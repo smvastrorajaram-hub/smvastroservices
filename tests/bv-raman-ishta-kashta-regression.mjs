@@ -8,6 +8,11 @@ import {
 let assertions = 0;
 const eq = (actual, expected, label) => { assert.equal(actual, expected, label); assertions++; };
 const throws = (fn, pattern, label) => { assert.throws(fn, pattern, label); assertions++; };
+const near = (actual, expected, tolerance, label) => {
+  assert.ok(Math.abs(actual - expected) <= tolerance,
+    label + ': expected ' + expected + ' ± ' + tolerance + ', received ' + actual);
+  assertions++;
+};
 
 // The method identity is explicit; do not call the square-root algorithm BPHS Ch.28.
 eq(BV_RAMAN_ISHTA_KASHTA_SOURCE.method, 'BV_RAMAN_SQRT_ISHTA_KASHTA', 'source-specific method identifier');
@@ -43,7 +48,7 @@ const sun = bvRamanChestaForPhala({
   planet:'சூரியன்',
   sunSayanaLongitude:202 + 10/60
 });
-eq(sun.reducedChestaKendra, 67 + 50/60, 'Sun special reduced Chesta Kendra');
+near(sun.reducedChestaKendra, 67 + 50/60, 1e-9, 'Sun special reduced Chesta Kendra');
 eq(Math.round(sun.cheshtaForPhalaRaw * 1000000) / 1000000, 22.611111, 'Sun exact divide-by-three arithmetic');
 eq(sun.astronomicalInputsCertified, false, 'Sun source formula does not certify ephemeris input');
 
