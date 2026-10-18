@@ -77,12 +77,16 @@ throws(() => bvRamanChestaForPhala({planet:'சந்திரன்',sunNirayan
 throws(() => bvRamanChestaForPhala({planet:'சனி',meanLongitude:1,trueLongitude:2}), /Sighrocca/, 'five-graha missing Sighrocca rejected');
 
 const horoscopeSource=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
+const browserEngineSource=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-shadbala.browser.mjs',import.meta.url),'utf8');
+const nodeEngineSource=fs.readFileSync(new URL('../bv-raman-shadbala.cjs',import.meta.url),'utf8');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 assert.ok(horoscopeSource.includes('data-smv-ishta-kashta="1"'),'B.V. Raman result panel is mounted in Chart Analysis'); assertions++;
-assert.ok(horoscopeSource.includes('bvRamanChestaForPhala'),'Ishta/Kashta uses special Chesta-for-Phala'); assertions++;
-assert.ok(horoscopeSource.includes("'சேஷ்டா பலம்'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'Cheshta column does not imply its value is Ishta or Kashta output'); assertions++;
+assert.ok(horoscopeSource.includes('p.strength6?.ishtaKashta')&&horoscopeSource.includes('data-engine-source="BV_RAMAN_INTEGRATED_SIX_BALA"'),'Chart Analysis renders Ishta/Kashta from the unified B.V. Raman engine result'); assertions++;
+assert.ok(browserEngineSource.includes('bvRamanChestaForPhala')&&browserEngineSource.includes('bvRamanIshtaKashta')&&browserEngineSource.includes('sixfoldShadbalaCheshtaBala'),'browser Shadbala computes special Chesta-for-Phala separately and attaches formula output'); assertions++;
+assert.ok(nodeEngineSource.includes('ramanIshtaKashtaForPlanet')&&nodeEngineSource.includes('sixfoldShadbalaCheshtaBala'),'Node Shadbala mirrors integrated Ishta/Kashta output'); assertions++;
+assert.ok(horoscopeSource.includes("'சேஷ்டா-பலன் உள்ளீடு'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'UI labels the Chapter X input separately from sixfold Cheshta Bala'); assertions++;
+assert.ok(!horoscopeSource.includes('bvRamanChestaForPhala')&&!horoscopeSource.includes('bvRamanIshtaKashta'),'presentation layer no longer independently recalculates Ishta/Kashta'); assertions++;
 assert.ok(!horoscopeSource.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'),'the unwanted Ishta/Kashta research note is absent from visible HTML'); assertions++;
-assert.ok(!horoscopeSource.includes('cheshtaBala: Number(p.strength6'),'Ishta/Kashta does not substitute sixfold strength6 Cheshta Bala'); assertions++;
 assert.ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important'),'Horoscope Ayurdaya scroll style is source-guarded'); assertions++;
 
 assert.ok(!horoscopeSource.includes('strength3'),'old BPHS strength3 is absent from customer Horoscope source'); assertions++;
