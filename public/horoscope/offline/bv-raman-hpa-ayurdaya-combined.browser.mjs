@@ -426,14 +426,11 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const moon = map.planets.get('Moon');
   const moonHouse = houseOf(map, 'Moon');
   const moonAspect = aspectState(map, e, 'Moon');
-  // HPA p. 64 says "Moon in a Kendra with malefics"; Horoscope No. 1 on
-  // p. 68 explicitly illustrates Moon in the 7th Kendra aspected by Saturn.
-  // Therefore "with malefics" includes same-house conjunction OR malefic aspect.
-  // Rule 2 itself does not require absence of benefic aspect; rule 3 does.
-  const moonWithMalefics = triAny(
-    conjunctionState(map, 'Moon', 'malefic', e),
-    moonAspect.malefic
-  );
+  // HPA p. 64 lists "Moon in a Kendra with malefics". The source wording
+  // is evaluated as co-occupancy for this predicate; a malefic aspect alone
+  // must not be widened into conjunction. Rule 3 additionally requires no
+  // benefic aspect, but it uses this same-house co-occupancy predicate.
+  const moonWithMalefics = conjunctionState(map, 'Moon', 'malefic', e);
   const maleficKendra = maleficInAnyKendra(map);
   const beneficKendra = beneficInAnyKendra(map, e);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
