@@ -487,6 +487,41 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(rahuHouseForBal14 === null ? null : rahuHouseForBal14 === 7,
       isAspecting(map.planets.get('Sun'), rahuHouseForBal14),
       isAspecting(map.planets.get('Moon'), rahuHouseForBal14))));
+
+  // These combinations use source-sensitive inputs only where a chart cannot
+  // establish the fact itself (birth sunrise timing and Dasa/Navamsa context).
+  const bal11MaleficKendraOrTrikona = triAny(
+    ...[1, 4, 7, 10, 5, 9].map(house => maleficInHouse(map, house)));
+  rules.push(makeRule('XIV-BAL-11', 'Balarishta',
+    'Sun rising at birth, malefics in Kendras/Trikonas and Venus in 6th/12th',
+    triAll(tri(e.sunRisingAtBirth), bal11MaleficKendraOrTrikona,
+      inList(houseOf(map, 'Venus'), [6, 12]))));
+  const birthDasaLord = e.birthDasaLord == null ? null : keyName(e.birthDasaLord);
+  const birthAntardasaLord = e.birthAntardasaLord == null ? null : keyName(e.birthAntardasaLord);
+  const bal15DirectDasa = birthDasaLord === null ? null :
+    birthDasaLord === lagnaLord || birthDasaLord === eighthLord;
+  const bal15DasaAntardasa = birthDasaLord === null || birthAntardasaLord === null ||
+    !lagnaLord || !eighthLord ? null :
+    ((birthDasaLord === lagnaLord && birthAntardasaLord === eighthLord) ||
+      (birthDasaLord === eighthLord && birthAntardasaLord === lagnaLord));
+  rules.push(makeRule('XIV-BAL-15', 'Balarishta',
+    'Birth Dasa/Antardasa involving the Lagna lord and 8th lord',
+    triAny(bal15DirectDasa, bal15DasaAntardasa)));
+  const navamsaLagnaLord = e.navamsaLagnaLord == null ? null : keyName(e.navamsaLagnaLord);
+  const moonSignForBal16 = signOf(map, 'Moon');
+  const moonSignLordForBal16 = signValid(moonSignForBal16)
+    ? SIGN_LORDS[moonSignForBal16] : null;
+  const sunSignForBal16 = signOf(map, 'Sun');
+  const sameSignAsSun = name => {
+    if (!name || !signValid(sunSignForBal16)) return null;
+    const planet = map.planets.get(name);
+    return planet && signValid(planet.sign) ? planet.sign === sunSignForBal16 : null;
+  };
+  rules.push(makeRule('XIV-BAL-16', 'Balarishta',
+    'Lagna lord, Navamsa Lagna lord and Moon-sign lord conjunct the Sun',
+    triAll(sameSignAsSun(lagnaLord),
+      navamsaLagnaLord ? sameSignAsSun(navamsaLagnaLord) : null,
+      sameSignAsSun(moonSignLordForBal16))));
   rules.push(makeRule('XIV-BAL-18', 'Balarishta', 'Moon in 8th, Mars in 7th and Saturn in Ascendant',
     triAll(moonHouse === null ? null : moonHouse === 8,
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
