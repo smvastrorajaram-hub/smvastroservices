@@ -56,6 +56,7 @@ on:
       - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
       - 'tests/five-book-structural-audit.mjs'
       - 'tests/marriage-basic-report-regression.mjs'
+      - 'tests/bv-raman-ayurdaya-report-regression.mjs'
       - 'tests/print-dst-location-regression.mjs'
       - 'tests/geonames-location-regression.cjs'
       - 'tests/horoscope-birth-offset-ui-regression.mjs'
