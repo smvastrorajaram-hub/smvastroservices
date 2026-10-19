@@ -248,3 +248,30 @@ This is **not** the same fixture as `BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACL
 - **PENDING — ASOP primary Table I:** the original page image for *Ashtakavarga System of Prediction*, Chapter II, Table I has not been found in the repository or the inspected uploaded-PDF library. The 2026 correction note is secondary evidence, not a replacement for the original page.
 - **Safety gate unchanged:** research-only; `certified:false`; no customer-facing lifespan/death age/date; no production merge.
 
+## 2026-10-19 — Chapter XXVI printed p. 202 Harana rule IDs and per-rule regressions
+
+The original scan image for printed p. 202 (repository PDF image page 209) was visually checked. The seven source deductions are now represented by a single exported rule catalogue, `BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES`, with the source printed page and rule number attached:
+
+| Printed rule | Factor | Deduction |
+|---:|---|---:|
+| 52 | More than one planet in a sign | 1/2 |
+| 53 | Debilitated planet | 1/2 |
+| 54 | Combust planet | 1/2 |
+| 55 | Temporary-enemy sign | 1/3 |
+| 56 | Planet above horizon (houses 7–12) | 1/2 |
+| 57 | Defeat in planetary war | 1/3 |
+| 58 | Unusual/eclipsed Sun or Moon | 1/3 |
+
+Regression now pins all seven rule-to-source mappings and independently runs each factor through the Harana function to test its fraction and net-term arithmetic. The existing cases still require all factor flags to be explicit, reject eclipse Harana for non-luminaries, and apply only the largest deduction rather than stacking reductions.
+
+Printed p. 203 (PDF image page 210) explicitly says that, in this worked example, every planet's term except the Sun is halved because the Sun is below the horizon. It does **not** identify which individual factor from rules 52–58 causes each of the other six halvings. The implementation therefore retains the scanned effective remaining fraction for the numerical formula oracle but does not invent a per-planet cause.
+
+### Gate status
+
+- **PASS — Primary image reviewed:** printed pp. 186–190 for Trikona/Ekadhipatya/table values and pp. 201–203 for formula, Harana definitions and displayed conversion.
+- **PASS — p. 202 factor provenance:** rules 52–58 are explicit in source metadata and each is exercised independently by regression.
+- **PASS — p. 190 reduction oracle:** all 84 B.R. cells, 84 A.R. cells, row totals, sign-column totals, and overall 337/81 aggregates match the scanned table; using the p. 188 worked occupancy (Taurus and Scorpio occupied) the reduction implementation reproduces the printed A.R. table.
+- **PENDING — worked-chart factor cause:** the printed worked example does not attribute each of six half-reductions to a specific one of rules 52–58. Do not synthesize those causes from insufficient scan evidence.
+- **PENDING — separate ASOP primary table:** the original *Ashtakavarga System of Prediction* Table I scan still needs independent access/verification; the secondary transcription remains separate.
+- **Safety gate unchanged:** research-only, `certified:false`, no customer-facing lifespan/death age/date, no merge to `main`.
+
