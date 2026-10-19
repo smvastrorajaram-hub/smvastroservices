@@ -2001,7 +2001,7 @@ try{
   lang,
   rootId
 );
-        if(full?.phase4 && typeof window.__smvRenderPhase4Dasa==='function') window.__smvRenderPhase4Dasa(full.phase4,lang,rootId);
+        if(full?.phase4?.pvrResearch && typeof window.__smvRenderPhase4Dasa==='function') window.__smvRenderPhase4Dasa(full.phase4,lang,rootId);
         else await window.__smvLoadPhase4Dasa(fullChart||payload,lang,rootId);
 
         if(transitSlot){
