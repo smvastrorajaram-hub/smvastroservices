@@ -78,6 +78,78 @@ ok(xiv.blockers.some(text => text.includes('All 76 Chapter XIV rule IDs have eva
 eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
 eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only');
+// Source-rule fixtures for the still-under-audited, chart-derivable placements.
+// These are deliberately constructed rule examples from the printed combinations,
+// not claimed as verbatim natal charts printed in the book.
+const mad03BookCombination = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:60,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:3},
+    {name:'Venus',longitude:300,bhava:11}
+  ]}
+});
+const mad03Rule = mad03BookCombination.rules.find(rule=>rule.id==='XIV-MAD-03');
+eq(mad03Rule.status,'MATCHED',
+  'HPA printed p.70 Madhyayu rule 3 derives Mercury 2 / Jupiter 3 / Venus 11 from natal placements');
+eq(mad03Rule.sourcePrintedPage,70,'Madhyayu rule 3 retains its printed page');
+const mad03Counterexample = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:60,bhava:1},
+    {name:'Jupiter',longitude:90,bhava:3},
+    {name:'Venus',longitude:300,bhava:11}
+  ]}
+});
+eq(mad03Counterexample.rules.find(rule=>rule.id==='XIV-MAD-03').status,'NOT_MATCHED',
+  'Madhyayu rule 3 is negative when Mercury does not occupy the printed second house');
+const mad03Missing = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:60,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:3}
+  ]}
+});
+eq(mad03Missing.rules.find(rule=>rule.id==='XIV-MAD-03').status,'UNKNOWN',
+  'Madhyayu rule 3 stays UNKNOWN when Venus house evidence is absent');
+
+const pur02BookCombination = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:210,bhava:7},
+    {name:'Moon',longitude:300,bhava:4},
+    {name:'Mars',longitude:240,bhava:8},
+    {name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:0,bhava:1},
+    {name:'Venus',longitude:30,bhava:2},
+    {name:'Saturn',longitude:270,bhava:9},
+    {name:'Rahu',longitude:300,bhava:10},
+    {name:'Ketu',longitude:330,bhava:11}
+  ]}
+});
+const pur02Rule = pur02BookCombination.rules.find(rule=>rule.id==='XIV-PUR-02');
+eq(pur02Rule.status,'MATCHED',
+  'HPA printed p.71 Purnayu rule 2 recognizes benefics in houses 1-6 and malefics in 7-12');
+eq(pur02Rule.sourcePrintedPage,71,'Purnayu rule 2 retains its printed page');
+const pur02Counterexample = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:210,bhava:2},
+    {name:'Moon',longitude:300,bhava:4},
+    {name:'Mars',longitude:240,bhava:8},
+    {name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:0,bhava:1},
+    {name:'Venus',longitude:30,bhava:2},
+    {name:'Saturn',longitude:270,bhava:9},
+    {name:'Rahu',longitude:300,bhava:10},
+    {name:'Ketu',longitude:330,bhava:11}
+  ]}
+});
+eq(pur02Counterexample.rules.find(rule=>rule.id==='XIV-PUR-02').status,'NOT_MATCHED',
+  'Purnayu rule 2 is negative when a malefic Sun occupies the benefic-designated first six houses');
+const pur02Missing = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Jupiter',longitude:0,bhava:1},{name:'Venus',longitude:30,bhava:2}
+  ]}
+});
+eq(pur02Missing.rules.find(rule=>rule.id==='XIV-PUR-02').status,'UNKNOWN',
+  'Purnayu rule 2 remains UNKNOWN if the full nine-graha house evidence is unavailable');
+
 const directPositionBal07 = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:0}, planets:[
     {name:'Sun',longitude:240,bhava:9},{name:'Moon',longitude:10,bhava:1},
