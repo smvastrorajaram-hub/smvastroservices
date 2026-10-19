@@ -341,3 +341,28 @@ Regression now checks the 76 unique source rule IDs, that unsupported rules rema
 
 **Release boundary unchanged:** research-only, `certified:false`, customer display prohibited for final lifespan/death-age/death-date, PR #55 stays unmerged.
 
+## 2026-10-19 — Second Chapter XIV evaluator pass
+
+Additional scan-grounded conditions were added as separate evaluators rather than merged into neighbouring rules:
+- Balarishta source rules 7, 8, 13, 14, 18, 21, 22, 23, 24, 29 and 30.
+- Antidote source rule 8, requiring both Moon in house 6/8 and explicit `bornOnNightOfFullMoon` evidence. Missing evidence remains `UNKNOWN`.
+
+The test fixtures now check a direct house-placement oracle for Balarishta rule 7 and an evidence-required oracle for Antidote rule 8. The inventory continues to return all 76 rules. Updated evaluator coverage is:
+
+| Printed category | Source rules | Evaluators currently present | Gap |
+|---|---:|---:|---:|
+| Balarishta | 30 | 20 | 10 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 10 | 5 |
+| Madhyayu | 15 | 5 | 10 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **51** | **25** |
+
+A present evaluator does not imply that a chart result is determinate: missing source-dependent inputs, aspects, strength, or event evidence must still yield `UNKNOWN`. The counts describe code coverage only, not classical certification.
+
+### CI after this pass
+
+- B.V. Raman research QA: PASS — run [39211100622](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39211100622).
+- Horoscope Matching DST Source QA: PASS — run [39211100524](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39211100524).
+- PR #55 remains open and unmerged; this work remains research-only.
+
