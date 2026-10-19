@@ -112,8 +112,12 @@ eq(xiv.ruleCoverageCounts.Balarishta.implemented, 20,
   'twenty source-numbered Balarishta rules have evaluators after this scan pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
-eq(xiv.ruleCoverageCounts.Alpayu.implemented, 10,
-  'Alpayu implementation count includes source-numbered rules 1-8, 12 and 15');
+eq(xiv.ruleCoverageCounts.Alpayu.implemented, 12,
+  'Alpayu implementation count includes rules 1-8, 11, 12, 14 and 15');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-11').implemented, true,
+  'Alpayu rule 11 has an independent evaluator');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-14').implemented, true,
+  'Alpayu rule 14 exposes its explicit strength/aspect evidence gate');
 eq(xiv.ruleCoverageCounts.Antidote.implemented, 10,
   'all ten source-numbered antidote conditions now have evaluators or explicit evidence inputs');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-12').sourceRuleNumber, 12,
