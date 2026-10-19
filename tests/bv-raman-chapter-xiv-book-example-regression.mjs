@@ -694,6 +694,12 @@ statuses('XIV-PUR-02',[
    signs:{Sun:8,Moon:0,Mars:7,Mercury:2,Jupiter:3,Venus:4,Saturn:9,Rahu:10,Ketu:11},omit:['Mercury']}}
 ],'HPA p.71 Purnayu 2');
 
+const coveredChapterXivRuleIds = new Set(ruleCaseResults.map(row=>row.id));
+eq(coveredChapterXivRuleIds.size,76,
+  'source-linked regression has at least one explicit rule fixture for every one of the 76 Chapter XIV rule IDs');
+eq([...sourceRules.keys()].every(id=>coveredChapterXivRuleIds.has(id)),true,
+  'none of the 76 printed Chapter XIV rule IDs is omitted from the rule-by-rule evidence matrix');
+
 const audit = {
   pass:true,assertions,
   source:'B. V. Raman, Hindu Predictive Astrology, Chapter XIV, printed pp.64–72',
