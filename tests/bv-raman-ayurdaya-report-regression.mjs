@@ -85,8 +85,14 @@ ok(combined.indexOf('data-smv-cg-rajan-ayurdaya')<combined.indexOf('data-smv-bv-
 ok(combined.includes('<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"'),'C.G. Rajan section remains present unchanged');
 
 const reportSource=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs',import.meta.url),'utf8');
-ok(reportSource.includes("'XIV-PUR-01':'லக்னத்தை லக்னாதிபதியும் 5-ஆம் பாவத்தை அதன் அதிபதியும் பார்க்க; குரு கேந்திரத்தில் இருத்தல்'"),
- 'Purnayu rule 1 names the 5th-house lord, not the 8th-house lord');
+const sourceRuleIds=BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule=>rule.id).sort();
+const tamilRuleIds=[...reportSource.matchAll(/'((?:XIV)-(?:BAL|ANT|ALP|MAD|PUR)-\d{2})'\s*:/g)].map(match=>match[1]).sort();
+eq(sourceRuleIds.length,76,'Source inventory contains all 76 Chapter XIV rules');
+eq(tamilRuleIds.length,76,'Tamil customer rule labels include all 76 unique rule IDs');
+eq([...new Set(tamilRuleIds)].length,76,'Tamil rule labels contain no duplicate source IDs');
+eq(tamilRuleIds.join(','),sourceRuleIds.join(','),'Every source-rule ID has exactly one Tamil display label');
+ok(reportSource.includes("'XIV-PUR-01':'லக்னத்தை லக்னாதிபதியும் 8-ஆம் பாவத்தை அதன் அதிபதியும் பார்க்க; குரு கேந்திரத்தில் இருத்தல்'"),
+ 'Purnayu rule 1 retains the 8th-house lord from the source inventory');
 ok(reportSource.includes("'XIV-ANT-03':'8-ஆம் பாவச் சந்திரன் புதன், குரு அல்லது சுக்கிரனின் திரேக்காணத்தில் அமைதல்'"),
  'Antidote rule 3 identifies the specified benefic Drekkanas');
 ok(reportSource.includes("'XIV-ANT-10':'பாபக் கிரகங்கள் சுப ஷட்வர்க்கங்களில் அமைந்து, சுப நவாம்சங்களில் உள்ள சுபக் கிரகங்களின் பார்வை பெறுதல்'"),

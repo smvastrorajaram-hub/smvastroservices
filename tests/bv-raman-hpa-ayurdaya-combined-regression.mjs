@@ -61,6 +61,20 @@ ok(xiv.matchedRuleIds.includes('XIV-BAL-09'),
 eq(xiv.categoryCandidates.includes('Balarishta'), true,
   'rule match creates a candidate category');
 eq(xiv.selectedCategory, null, 'Chapter XIV does not select a final category');
+eq(xiv.status, 'RESEARCH_ONLY_PARTIAL_EVIDENCE_VALIDATION',
+  'Rule evaluators exist, but independent evidence validation remains partial');
+eq(xiv.ruleCoverageCounts.Balarishta.notImplemented, 0,
+  'No Balarishta source-rule IDs lack an evaluator');
+eq(xiv.ruleCoverageCounts.Antidote.notImplemented, 0,
+  'No antidote source-rule IDs lack an evaluator');
+eq(xiv.ruleCoverageCounts.Alpayu.notImplemented, 0,
+  'No Alpayu source-rule IDs lack an evaluator');
+eq(xiv.ruleCoverageCounts.Madhyayu.notImplemented, 0,
+  'No Madhyayu source-rule IDs lack an evaluator');
+eq(xiv.ruleCoverageCounts.Purnayu.notImplemented, 0,
+  'No Purnayu source-rule IDs lack an evaluator');
+ok(xiv.blockers.some(text => text.includes('All 76 Chapter XIV rule IDs have evaluator entries')),
+  'Research blockers explain missing evidence wiring and validation rather than claiming rules are absent');
 eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
 eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only');

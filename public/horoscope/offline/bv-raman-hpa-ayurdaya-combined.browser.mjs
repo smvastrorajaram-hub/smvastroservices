@@ -938,8 +938,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })));
   return Object.freeze({
     source: BV_RAMAN_HPA_CHAPTER_XIV_SOURCE,
-    status: 'RESEARCH_ONLY_PARTIAL_RULE_COVERAGE',
-    ruleCoverage: 'all source-numbered rules are indexed; unevaluated rules are explicitly UNKNOWN',
+    status: 'RESEARCH_ONLY_PARTIAL_EVIDENCE_VALIDATION',
+    ruleCoverage: 'all 76 source-numbered rules have evaluator entries; conditions requiring unavailable chart evidence remain UNKNOWN',
     ruleCoverageCounts,
     unimplementedRuleIds: Object.freeze(completeRuleSet.filter(rule => !rule.implemented).map(rule => rule.id)),
     categoryCandidates: Object.freeze(categoryCandidates),
@@ -952,10 +952,10 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     certified: false,
     customerDisplayAllowed: false,
     blockers: Object.freeze([
-      'Only selected Chapter XIV rules are implemented; this is not the complete chapter.',
-      'Strength, Drekkana and special full-Moon facts require source-checked inputs; provisional Shadbala alone is not treated as certified.',
-      'Matched combinations and antidotes remain separate evidence. No category is selected automatically.',
-      'Selected rules have been compared with scan images on printed pp. 63–72; the full Chapter XIV rule list and every cancellation remain outside this partial engine.'
+      'All 76 Chapter XIV rule IDs have evaluator entries, but every rule has not yet been independently validated with source-linked positive and negative fixtures.',
+      'Several predicates depend on externally supplied facts such as birth Dasa/Antardasa, sunrise/sunset interval, Moon hora, Drekkana, Shadvarga placement and selected strength states; absent facts remain UNKNOWN and must not be treated as false.',
+      'Matched combinations and mitigating rules remain separate evidence. No final longevity category is selected automatically.',
+      'The source inventory maps the 76 rules to printed pp. 63–72; exact rule interpretation, evidence wiring and cancellation precedence still require independent source-based regression coverage.'
     ])
   });
 }
