@@ -81,7 +81,8 @@ The 76-rule source inventory has evaluator entries, but 30 distinct rule IDs rem
 | XIV-ANT-04, XIV-ANT-07 | Full Moon, benefic-sign / benefic-between-Moon conditions |
 | XIV-ANT-05 | Strong Mercury, Venus or Jupiter |
 | XIV-ANT-10 | Shadvarga and auspicious Navamsa evidence |
-| XIV-ALP-14 | The “no other planets in Kendras” condition |
+| XIV-ALP-14 | Strong malefics in Kendras without benefic aspects |
+| XIV-ALP-13 | The “no other planets in Kendras” condition | 
 | XIV-MAD-02, XIV-MAD-03, XIV-MAD-04, XIV-MAD-15 | Power/strength and placement combinations |
 | XIV-PUR-02 | Benefic placements in the first six versus malefics in the last six houses |
 
