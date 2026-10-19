@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { bvRamanAyurdayaReportHtml } from '../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs';
 import { advanced } from '../public/horoscope/offline/astro_advanced.browser.mjs';
+import {
+  BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY,
+  bvRamanChapterXIVLongevityRules
+} from '../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs';
 
 let assertions=0;
 const ok=(value,message)=>{assert.ok(value,message);assertions++;};
@@ -22,6 +26,14 @@ const chart={
   {name:'கேது',longitude:165,bhava:6}
  ]
 };
+eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.length,76,
+ 'Chapter XIV inventory retains all 76 combinations, including antidotes');
+const ruleEvaluation=bvRamanChapterXIVLongevityRules({chart});
+eq(ruleEvaluation.selectedCategory,null,
+ 'Partial rule matches are not reported as a definitive selected longevity category');
+ok(ruleEvaluation.rules.some(rule=>rule.status==='UNKNOWN'),
+ 'Rules dependent on unavailable birth-time/strength/evidence inputs remain unknown rather than assumed false');
+
 const noHarana=Object.fromEntries(
  ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'].map(name=>[name,{
   conjunctionInSign:false,debilitated:false,combust:false,temporaryEnemySign:false,
@@ -49,16 +61,18 @@ for (const [html,language] of [[ta,'Tamil'],[en,'English']]) {
  ok(html.includes('Rasi Pinda')||html.includes('ராசி பிண்டம்'),language+' numeric table contains Pinda columns');
  ok(html.includes('Sodhya Pinda')||html.includes('சோத்ய பிண்டம்'),language+' numeric table contains Sodhya Pinda');
  ok(html.includes('smv-ayurdaya-totals')&&html.includes('smv-ayurdaya-average'),language+' numeric table contains both yearly totals');
- ok(html.includes('data-smv-bv-raman-ayurdaya')&&html.includes('Longevity category result')||html.includes('ஆயுள் வகை முடிவு'),language+' report contains category-result table');
+ ok(html.includes('Matched horoscope rules for longevity categories')||html.includes('ஆயுள் வகைக்கான பொருந்திய ஜோதிட விதிகள்'),language+' report shows matched chart-rule evidence instead of an unsupported final category');
  ok(/(?:Balarishta|பாலாரிஷ்டம்)/.test(html),language+' chart fixture produces the expected rule-category candidate');
  ok(/actual lifespan|உண்மையான ஆயுளை/.test(html),language+' report includes the actual-lifespan disclaimer');
  ok(!/B\. V\. Raman|Hindu Predictive Astrology|certified|uncertified|source gap/i.test(html),language+' customer report does not expose book/author or certification audit notes');
  ok(!/deathAgeOrDate|finalAgeOrDateOfDeath|predictedDeathAge/i.test(html),language+' report contains no death-age fields');
 }
-const solarRow=ta.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<td>([\d.]+)<\/td>/);
-ok(!!solarRow,'fully specified test Harana inputs produce a numeric solar-year total');
+const solarRow=ta.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<td>([^<]+)<\/td>/);
+ok(!!solarRow && /\d+ வருடம் \d+ மாதம் \d+ நாள் \d+ நாழிகை/.test(solarRow[1]),'solar-year total is rendered as integer year/month/day/nazhi units, not a decimal year');
 ok(!ta.includes('undefined')&&!ta.includes('NaN'),'Tamil result contains no missing/invalid numeric strings');
+ok(!/\d+\.\d+ வருடம்/.test(ta),'Tamil duration output does not expose decimal-year fragments');
 ok(!en.includes('undefined')&&!en.includes('NaN'),'English result contains no missing/invalid numeric strings');
+ok(/\d+ y \d+ mo \d+ d \d+ nazhi/.test(en),'English duration output uses integer year/month/day/nazhi units');
 
 const missingData=bvRamanAyurdayaReportHtml({chart:{},language:'ta'});
 ok(missingData.includes('data-smv-bv-raman-ayurdaya="1"')&&missingData.includes('கணக்கீடு கிடைக்கவில்லை'),
@@ -74,12 +88,16 @@ const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',impor
 const matching=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.mjs',import.meta.url),'utf8');
 ok(horoscope.includes('bv-raman-ayurdaya-report.browser.mjs'),'Horoscope source imports the new B.V. Raman report renderer');
 ok(matching.includes('bv-raman-ayurdaya-report.browser.mjs'),'Marriage Matching source imports the new B.V. Raman report renderer');
+ok(horoscope.includes('v=20261019-ayurdaya-rules-duration-v2'),'Horoscope uses the updated B.V. Raman report module version');
+ok(matching.includes('v=20261019-ayurdaya-rules-duration-v2'),'Matching uses the updated B.V. Raman report module version');
+ok(fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8').includes('marriage-basic-report.mjs?v=20261019-ayurdaya-rules-duration-v253'),'Matching cache-busts the parent report module too');
+
 ok(horoscope.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Horoscope');
 ok(matching.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Matching');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.js?v=20261019-bv-raman-ayurdaya-v252'),
+ok(appHtml.includes('horoscope.js?v=20261019-ayurdaya-rules-duration-v253'),
  'The PWA requests the revised Horoscope script instead of its previous cached URL');
 ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
  'Horoscope uses the existing cream header colour for both nested result tables');
