@@ -180,3 +180,50 @@ References checked on 2026-10-19:
 - Alternate searchable scan/OCR listing Chapter XIV: https://pdfcoffee.com/b-v-raman-hindu-predictive-astrology-1996pdf-pdf-free.html
 
 Evidence grade remains `TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING`. Do not promote the research prototype to production or mark classical certification complete based on this check.
+
+
+## 2026-10-19 — Primary scan review and formula-first arithmetic correction
+
+The original repository PDF `certificates/hindu-predictive-astrology-bv-raman-1.pdf` was rendered into scan images by the B.V. Raman QA workflow and visually reviewed. Relevant page mapping:
+- PDF image pages 70–79 correspond to printed *Hindu Predictive Astrology* pp. 63–72 (Chapter XIV, Ayurdaya).
+- PDF image pages 206–210 correspond to printed pp. 199–203 (Chapter XXVI, Ashtakavarga).
+- The images came from the repository's source PDF; this check was not limited to OCR/searchable transcription.
+
+### Chapter XIV rule-source correction
+
+Printed p. 64 lists these as distinct conditions:
+1. “The Moon in a kendra (quadrant) with malefics.”
+2. “The Moon in the 7th, the 8th and the 12th houses from the ascendant with malefics and without being aspected by benefics.”
+
+Accordingly, `XIV-BAL-02` no longer imposes a no-benefic-aspect condition that the first printed rule does not state; `XIV-BAL-03` retains it. “With malefics” is checked as co-occupancy of the same house, separately from aspect evidence. The source also lists the first Madhyayu combinations independently on printed p. 70. They are now tracked as separate rules, not incorrectly joined by AND. Additional source combinations remain explicit-input/unknown or outside this partial rule engine.
+
+### Chapter XXVI formula-first oracle
+
+The scan shows the Pinda totals and conversion steps:
+- Printed p. 199: Rasi Gunakara list and the Sun after-reduction row.
+- Printed p. 200: Sun Rasi Pinda 112; Graha Gunakara values; Sun Graha Pinda 45.
+- Printed p. 201: formula `(Rasi Pinda + Graha Pinda) × 7 ÷ 27`, reducing by 27 or multiples of 27 as needed; Sun `112 + 45 = 157`, hence `157 × 7 ÷ 27 − 27 = 13.703703…` years.
+- Printed p. 202: other planets' Pinda pairs and the half/one-third Harana rules; it notes the displayed fractions are omitted for convenience and only the highest deduction applies when several apply.
+- Printed p. 203: the remaining-term table and `334/365` conversion. The scanned page itself prints net total `48.98` and solar result `44.87`.
+
+The implementation now prioritizes formula arithmetic, keeping full precision through each graha term, Harana and sum, and rounding only the final display:
+- Recompute each gross term from the integer Pinda pair, rather than treating the rounded/truncated gross-year display as the numerical input.
+- The scan says every graha term except the Sun is halved in the worked horoscope. Applying that effective remaining fraction to the full-precision terms yields **49.00 lunar years**.
+- `49 × 334 ÷ 365 = 44.8383561643…`, which is **44.84 solar years** at two decimals.
+- Converting the printed `48.98` total alone gives `44.82005479…`, or **44.82**, not the printed `44.87`.
+- The seven displayed net terms add to `48.98`, but the displayed gross/net terms do not consistently preserve the full-precision formula; the engine must not sum truncated display values as if they were exact arithmetic values.
+
+Implementation changes:
+- The Harana result separates `unroundedNetLunarYears` from `roundedNetLunarYears`.
+- The Chapter XXVI engine sums unrounded terms and applies `334/365` before rounding.
+- `reportedRemainingFraction` stores only the effective half/no-half rule established by the scan; the code no longer falsely labels each half reduction as specifically caused by same-sign conjunction.
+- The scanned `48.98` and `44.87` remain available as source-printed values/discrepancies, not as formula-derived outputs.
+
+### Updated status
+
+- **PASS — Primary scan pages visually inspected:** Chapter XIV pp. 63–72; Chapter XXVI pp. 199–203.
+- **PASS — Formula arithmetic:** the source Pinda pairs and effective Harana rule produce 49.00 lunar years and 44.84 solar years at two decimals.
+- **PASS — Source discrepancies retained:** the printed 48.98 / 44.87 are logged but not forced into computed results.
+- **PASS — Chapter XIV rule boundary:** rule 2 vs rule 3 and the separate Madhyayu combinations now follow the scanned wording.
+- **PENDING — Broader certification:** complete per-sign reduced-BAV rows for all seven grahas, source attribution for every half-deduction factor, exhaustive Chapter XIV rule/cancellation coverage, and independent live-chart golden oracles.
+- **SAFETY GATE:** research-only; no customer-facing longevity or death-age/date output; `certified:false`; no production `main` change.
