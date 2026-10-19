@@ -149,8 +149,8 @@ const CATEGORY_LABELS = Object.freeze({
 });
 
 const RULE_CATEGORY_LABELS = Object.freeze({
-  Balarishta:{ta:'பாலாரிஷ்ட விதிகள்',en:'Balarishta rules'},
-  Antidote:{ta:'பாலாரிஷ்ட நிவர்த்தி விதிகள்',en:'Balarishta mitigating rules'},
+  Balarishta:{ta:'பாலாரிஷ்டம் — பொருந்திய விதிகள்',en:'Balarishta rules'},
+  Antidote:{ta:'பாலாரிஷ்டம் தொடர்பான நிவர்த்தி விதிகள்',en:'Balarishta mitigating rules'},
   Alpayu:{ta:'அல்பாயுள் விதிகள்',en:'Alpayu rules'},
   Madhyayu:{ta:'மத்தியாயுள் விதிகள்',en:'Madhyayu rules'},
   Purnayu:{ta:'பூர்ணாயுள் விதிகள்',en:'Purnayu rules'}
