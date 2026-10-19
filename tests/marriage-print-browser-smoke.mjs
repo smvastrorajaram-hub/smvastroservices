@@ -75,7 +75,7 @@ try{
     for(const candidate of selection.tiedCandidates){
      assert.ok(section.includes(methodLabels[candidate.method]),'Tied method is shown '+candidate.method+': '+testName);
      assert.equal((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
-      'Every tied method shows a heading and seven grahas '+candidate.method+': '+testName);
+      'Every tied method shows seven graha cells plus its total '+candidate.method+': '+testName);
     }
     assert.equal((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
      'Each tied method has a separate total: '+testName);
