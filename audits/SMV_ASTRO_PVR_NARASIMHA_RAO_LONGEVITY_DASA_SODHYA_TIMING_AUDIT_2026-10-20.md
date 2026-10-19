@@ -29,7 +29,9 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 | Niryaana Shoola Dasa (§22) | The source's Example 87 applies the Saturn-in-seed forward-direction exception. The old code only used odd/even direction. Corrected for the explicit Saturn example and added a fixture regression. Sign-year mapping remains 7/8/9 years for movable/fixed/dual signs. | Fixed on working branch; CI pending |
 | Shoola Dasa (§23) | The source says antardasas use the same method as the main Shoola sequence with the Dasa sign treated as Lagna. The old code incorrectly reused Narayana-style antardasa progression. Corrected: choose the stronger of Dasa sign and 7th from it, then proceed in zodiacal order through 12 equal antardasas. | Fixed on working branch; CI pending |
 | Ashtottari (§17) | The engine's sequence/duration formula and applicability caveat exist. The book reports that the system's applicability conditions are disputed. | Partial review only |
-| Lagna Kendradi, Sudasa, Drigdasa, Kalachakra | Present in the engine. Drigdasa's progression direction was corrected to use the book's odd-footed/even-footed groups, but its full aspect-group construction and fallback completion still need independent example oracles. Lagna Kendradi/Sudasa/Kalachakra still require fuller rule-by-rule and worked-example audits. | **Not certified / more audit needed** |
+| Lagna Kendradi / Sudasa (§19–20) | A second regression audit found that the engine repeated first-cycle rasi lengths; PVR says their periods are found just like Narayana Dasa. Fixed to use `12 − first-cycle length` for cycle 2, preserving Sudasa's first-period balance fraction. Added per-chart second-cycle regression. | Fixed on branch; full worked-example certification pending |
+| Drigdasa (§21) | The engine also repeated first-cycle rasi lengths despite §21.2 directing durations to be found as in Narayana Dasa. Fixed to use `12 − first-cycle length` in cycle 2. Added per-chart second-cycle regression. Direction uses the source's odd-footed/even-footed groups; full independent aspect-group/sequence oracle is still required. | Fixed on branch; full worked-example certification pending |
+| Kalachakra (§24) | Present in the engine, but the complete rule-by-rule and worked-example regression audit was not completed in this change. | **Not certified / more audit needed** |
 
 ### Longevity category → Dasa timing
 
@@ -37,7 +39,7 @@ The printed pp. 273–284 distinguish the two systems:
 - **Niryaana Shoola Dasa:** the selected short/middle/long category corresponds to the 0–36 / 36–72 / 72–108 age interval. Its Mahadasa durations are variable (7/8/9 years), so the matching intervals are derived from cumulative Dasa years, not by blindly taking the same four row indices. Those intervals must then be cross-checked against the three Trishoola signs; Rudra/Trishoola derivation is not yet a fully certified automated result here.
 - **Shoola Dasa:** every Mahadasa is 9 years, so the category interval selects exactly the first, middle or last four of the 12 Mahadasas. The added display shows the overlapping Dasa periods and dates in both systems, while explicitly warning that these are timing reference windows, not a death prediction.
 
-Regression checks now assert that the selected category maps to its age band, the four Shoola periods fit that band, and Niryaana Shoola periods have cumulative-age intervals overlapping the band.
+Regression checks now assert that the selected category maps to its age band, the four Shoola periods fit that band, and Niryaana Shoola periods have cumulative-age intervals overlapping the band. A follow-on source audit also corrected second-cycle durations for Lagna Kendradi, Sudasa and Drigdasa and added assertions that each cycle-2 rasi period uses `12 − cycle-1 period`.
 
 The implementation uses a heuristic for comparing sign strength. That limitation must not be hidden by a green syntax/regression run.
 
