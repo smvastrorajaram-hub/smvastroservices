@@ -167,7 +167,7 @@ const RULE_LABELS_TA = Object.freeze({
   'XIV-BAL-09':'சந்திரன் 8-ஆம், செவ்வாய் 7-ஆம், ராகு 9-ஆம், குரு 3-ஆம் பாவங்களில் இருத்தல்',
   'XIV-BAL-10':'பிறப்புத் தசை அதிபதி பல பாபக் கிரகங்களுடன் சேர்ந்து இருத்தல்',
   'XIV-BAL-11':'பிறப்பின்போது சூரியன் உதய நிலையில்; கேந்திரம்/திரிகோணங்களில் பாபர்கள்; சுக்கிரன் 6 அல்லது 12-ஆம் பாவத்தில் இருத்தல்',
-  'XIV-BAL-12':'லக்னாதிபதி தகுதி பெறுதல் அல்லது 5 மற்றும் 9-ஆம் பாவ அதிபதிகள் பகை ராசி/8 அல்லது 9-ஆம் பாவத்தில் இருத்தல்',
+  'XIV-BAL-12':'லக்னாதிபதி பகை ராசி அல்லது 8/9-ஆம் பாவத்தில் இருத்தல்; அல்லது 5 மற்றும் 9-ஆம் பாவ அதிபதிகள் இருவரும் தத்தமது பகை ராசி அல்லது 8/9-ஆம் பாவத்தில் இருத்தல்',
   'XIV-BAL-13':'கேது 4-ஆம் பாவத்தில் பாபக் கிரகத்துடன் அல்லது பாபப் பார்வையில் இருத்தல்',
   'XIV-BAL-14':'ராகு 7-ஆம் பாவத்தில் இருந்து சூரியன் மற்றும் சந்திரனின் பார்வை பெறுதல்',
   'XIV-BAL-15':'பிறப்புத் தசை/புக்தியில் லக்னாதிபதி மற்றும் 8-ஆம் பாவ அதிபதி தொடர்பு பெறுதல்',
@@ -285,7 +285,7 @@ export function bvRamanAyurdayaReportHtml(options={}) {
   const totalSolar = calc?.solarYearsCandidate;
   const totalRows =
     '<tr class="smv-ayurdaya-totals"><th scope="row" colspan="4">'+esc(ta?'மொத்த சந்திர ஆண்டு':'Total lunar years')+'</th><td>'+esc(fmtDuration(totalLunar,ta))+'</td></tr>'+
-    '<tr class="smv-ayurdaya-average"><th scope="row" colspan="4">'+esc(ta?'மொத்த சூரிய ஆண்டு (334/365 விகிதம்)':'Total solar years (334/365 ratio)')+'</th><td>'+esc(fmtDuration(totalSolar,ta))+'</td></tr>';
+    '<tr class="smv-ayurdaya-average"><th scope="row" colspan="4">'+esc(ta?'ஆயுர்த்தாய மொத்தம் — சூரிய ஆண்டு (334/365 மாற்றம்)':'Ayurdaya total — solar years (334/365 conversion)')+'</th><td>'+esc(fmtDuration(totalSolar,ta))+'</td></tr>';
   const matchedRules = (result.chapterXIV?.rules || []).filter(rule => rule?.status === 'MATCHED');
   const ruleOrder = ['Balarishta','Antidote','Alpayu','Madhyayu','Purnayu'];
   const ruleRows = ruleOrder.flatMap(category => matchedRules
