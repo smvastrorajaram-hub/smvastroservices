@@ -2,8 +2,8 @@
 
 **Audit date:** 2026-10-20  
 **Repository PR:** [#65 — Fix Ayurdaya missing-evidence audit and Shadbala tie output](https://github.com/smvastrorajaram-hub/smvastroservices/pull/65)  
-**100-chart audit run:** [Run 14](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39309058651)  
-**JSON evidence artifact:** [Download audit artifact](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39309058651/artifacts/12215186655)
+**100-chart audit run:** [Run 24](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39309751447)  
+**JSON evidence artifact:** [Download audit artifact](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39309751447/artifacts/12214204467)
 
 ## Population and calculation path
 
