@@ -1,7 +1,7 @@
 /**
- * Regression: C.G. Rajan Ayurdaya MUST be the LAST sub-section
- * inside the existing Advanced Analysis I / Chart Analysis accordion.
- * Preserve the existing 10 I–X sections and saved/print structure.
+ * Regression: only a gated Ayurdaya category summary may appear as the LAST
+ * sub-section inside the existing Advanced Analysis I / Chart Analysis accordion.
+ * Internal C.G. Rajan arithmetic remains unit-tested separately, not customer-rendered.
  * Book Shadbala fixture is NOT live source-level replacement certification.
  */
 import assert from 'node:assert/strict';
@@ -20,19 +20,20 @@ const appendOf="sectionI.insertAdjacentHTML('beforeend',html)";
 const routeOf="root.__smvRouteAdvancedSections?.();";
 const readyOf="window.dispatchEvent(new CustomEvent('smv:horoscope-full-ready'";
 yes(source.includes(locationOf),'the main renderer targets actual Advanced Analysis Part I');
-yes(source.includes(appendOf),'calculation HTML is inside section I, not outside the accordion');
-yes(/await import\('\.\/offline\/cg-rajan-ayurdaya-pinda\.browser\.mjs\?v=[^']+'\)/.test(source),
- 'main renderer imports only source-specific Pinda/Natural calculator');
-yes(source.includes("const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]')"),
- 'async module router keeps Ayurdaya last');
+yes(source.includes(appendOf),'category result is inside section I, not outside the accordion');
+yes(/await import\('\.\/offline\/ayurdaya-customer-summary\.browser\.mjs\?v=[^']+'\)/.test(source),
+ 'main renderer imports the gated category-only result component');
+yes(source.includes("const appendix=partI?.querySelector('[data-smv-ayurdaya-customer-summary]')"),
+ 'async module router keeps the result last');
 yes(source.includes('if(appendix)partI.appendChild(appendix)'),
- 'late routing re-appends Ayurdaya at bottom');
+ 'late routing re-appends the result at bottom');
 yes(source.includes('if(ayur)sectionI.appendChild(ayur)'),
- 'immediate reroute also moves appendix last');
+ 'immediate reroute also moves result last');
 no(old.includes("predictionSection.insertAdjacentHTML('afterend'"),
  'obsolete integrated-predictions sibling insertion must be absent');
 no(old.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
  'no duplicate legacy calculation/insert');
+no(source.includes('cgRajanAyurdayaReportHtml'),'customer renderer does not call the raw calculation-table builder');
 exactly((source.match(/const sectionI=root.querySelector\('/g)||[]).length,1,
  'only one live section-I Ayurdaya mount');
 yes(source.indexOf(locationOf)>source.indexOf(routeOf,source.indexOf('return response.then(async (full)')),
@@ -100,5 +101,5 @@ for(const language of ['ta','en']){
 }
 console.log(JSON.stringify({pass:true,checks,position:'Advanced Analysis > I. Chart Analysis > last subsection',
  firstRenderBeforeReady:true,asyncReorderGuaranteed:true,savePrintSnapshotPreserved:true,
- tenPartsUnchanged:true,sevenGrahasRendered:true,langs:['ta','en'],
+ tenPartsUnchanged:true,internalCalculationTraceRegression:true,langs:['ta','en'],
  rajansShadbalaFullLiveCertificate:false,allAyurdayaMethodsComplete:false}));
