@@ -543,6 +543,13 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 7,
       moonHouse === null ? null : moonHouse === 8,
       jupiterHouse === null ? null : jupiterHouse === 1)));
+  rules.push(makeRule('XIV-ALP-11', 'Alpayu',
+    'Malefics in houses 1, 2 and 8; benefics outside Kendras',
+    triAll(maleficsInAll([1, 2, 8]),
+      beneficKendra === null ? null : beneficKendra === false)));
+  rules.push(makeRule('XIV-ALP-14', 'Alpayu',
+    'Strong malefics in Kendras without benefic aspects',
+    tri(e.strongMaleficsInKendrasWithoutBeneficAspects)));
   rules.push(makeRule('XIV-ALP-12', 'Alpayu', 'Weak Lagna lord with eighth lord in a Kendra',
     triAll(lagnaLordWeak, isKendra(eighthLordHouse))));
 
