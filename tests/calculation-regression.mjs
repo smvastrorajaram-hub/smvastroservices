@@ -129,7 +129,7 @@ const renderEnd=horoscopeSource.indexOf('\n  window.__smvLoadPhase4Dasa=loadPhas
 ok(renderStart>=0&&renderEnd>renderStart,'Found Phase-4 renderer source for runtime regression');
 const rendererChunk=horoscopeSource.slice(renderStart,renderEnd);
 const renderContext={window:{},mockResult:null};
-const sharedArrStart=horoscopeSource.indexOf('// Shared shape-normalizer');
+const sharedArrStart=horoscopeSource.indexOf('const arr=v=>Array.isArray(v)?v:');
 const sharedArrEnd=horoscopeSource.indexOf(';',sharedArrStart);
 const sharedArrSource=sharedArrStart>=0&&sharedArrEnd>sharedArrStart?horoscopeSource.slice(sharedArrStart,sharedArrEnd+1):'';
 ok(sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:'),'Runtime regression extracts the production shared arr helper');
