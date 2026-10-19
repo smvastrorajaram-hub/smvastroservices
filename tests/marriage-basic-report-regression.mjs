@@ -50,7 +50,7 @@ for(const [i,section] of taAyurdaya.entries()){
   for(const candidate of selection.tiedCandidates){
    ok(section.includes(methodLabels[candidate.method]),'Tamil partner '+(i+1)+' shows tied '+candidate.method);
    eq((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
-    'Tamil partner '+(i+1)+' has a heading plus seven rows for tied '+candidate.method);
+    'Tamil partner '+(i+1)+' has seven graha cells plus a separate total for tied '+candidate.method);
   }
   eq((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
    'Tamil partner '+(i+1)+' shows each tied method total separately');
@@ -95,7 +95,7 @@ for(const [i,section] of enAyurdaya.entries()){
   for(const candidate of selection.tiedCandidates){
    ok(section.includes(enMethodLabels[candidate.method]),'English partner '+(i+1)+' shows tied '+candidate.method);
    eq((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
-    'English partner '+(i+1)+' has a heading plus seven rows for tied '+candidate.method);
+    'English partner '+(i+1)+' has seven graha cells plus a separate total for tied '+candidate.method);
   }
   eq((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
    'English partner '+(i+1)+' shows each tied method total separately');
