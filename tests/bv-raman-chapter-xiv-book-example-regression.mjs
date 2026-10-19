@@ -357,7 +357,12 @@ const bookExample1 = Object.freeze({
   birthDasaLord:'Venus',
   explicitlyReportedConjunctions:['Saturn','Ketu'],
   explicitlyReportedAspectFrom:'Rahu',
-  sourceStatement:'The birth Dasa lord Venus is stated to join Saturn and Ketu and receive Rahu aspect.'
+  statedConditions:[
+    {ruleId:'XIV-BAL-02',predicate:'Moon in the 7th Kendra and aspected by Saturn',sourceStatus:'explicitly stated on printed p.68'},
+    {ruleId:'XIV-BAL-03',predicate:'Moon in house 7 with malefic Saturn aspect and without benefic aspects',sourceStatus:'explicitly stated on printed p.68'},
+    {ruleId:'XIV-BAL-10',predicate:'Birth Dasa lord Venus conjoined Saturn and Ketu',sourceStatus:'explicitly stated on printed p.68'}
+  ],
+  sourceStatement:'Printed p.68 states Moon in the 7th Kendra powerfully aspected by Saturn without benefic aspects; birth Dasa lord Venus joins Saturn and Ketu and receives Rahu aspect. The test replays only these stated predicates and does not claim to reconstruct the entire chart.'
 });
 eq(bookExample1.printedPage,68,'the worked-example metadata points to scanned HPA printed page 68');
 eq(bookExample1.birthDasaLord,'Venus','worked-example birth Dasa lord is transcribed from the source');
@@ -365,6 +370,20 @@ eq(bookExample1.explicitlyReportedConjunctions,['Saturn','Ketu'],
   'worked-example conjunction participants are transcribed from the source');
 eq(bookExample1.explicitlyReportedAspectFrom,'Rahu',
   'worked-example aspect participant is transcribed from the source');
+eq(bookExample1.statedConditions.map(item=>item.ruleId),
+  ['XIV-BAL-02','XIV-BAL-03','XIV-BAL-10'],
+  'HPA printed p.68 Horoscope No.1 maps its three explicit statements to separate rule predicates');
+
+// This is deliberately a predicate replay, not a claimed reconstruction of every
+// sign/longitude on Rasi Chart No.2. Its houses encode only the prose-stated
+// Moon-in-7th / Saturn-aspect condition and avoid a benefic aspect to Moon.
+const bookExample1MoonPredicate = {
+  houses:{Sun:2,Moon:7,Mars:3,Mercury:4,Jupiter:4,Venus:6,Saturn:1,Rahu:8,Ketu:9}
+};
+ruleCase('XIV-BAL-02','MATCHED',bookExample1MoonPredicate,{},
+  'HPA printed p.68 Horoscope No.1 predicate replay: Moon in 7th Kendra receives Saturn aspect');
+ruleCase('XIV-BAL-03','MATCHED',bookExample1MoonPredicate,{},
+  'HPA printed p.68 Horoscope No.1 predicate replay: Moon in 7th with Saturn aspect and no benefic aspect');
 ruleCase('XIV-BAL-10','MATCHED',{},{
   birthDasaLord:bookExample1.birthDasaLord,
   birthDasaLordConjoinedWithManyMalefics:true
@@ -383,21 +402,38 @@ const bookExample2 = Object.freeze({
   birthDate:'1912-08-06',
   birthTimeAfterSunrise:'42 ghatis 30 vighatis',
   birthDasaLord:'Sun',
-  statedFacts:['Ascendant between Rahu and Saturn','Moon afflicted by Saturn','Saturn strongly aspects birth Dasa lord'],
-  sourceNote:'The paragraph provides those interpretive facts; the exact evaluated house/aspect geometry must be recovered from the chart/source before binding another rule.'
+  statedFacts:['Ascendant between Rahu and Saturn','Moon afflicted by a malefic Saturn','Saturn strongly aspects birth Dasa lord'],
+  ruleMappingGaps:[
+    {textFact:'Ascendant between Rahu and Saturn',ruleId:null,reason:'No source-numbered rule in the current inventory maps this exact phrase without the complete chart geometry.'},
+    {textFact:'Moon afflicted by Saturn',ruleId:'XIV-BAL-19',reason:'“Afflicted” alone does not establish Saturn’s exact third-aspect geometry.'},
+    {textFact:'Saturn aspects birth Dasa lord Sun',ruleId:'XIV-BAL-10',reason:'The numbered predicate requires conjunction with many malefics; an aspect is not silently substituted for conjunction.'}
+  ],
+  sourceNote:'The paragraph provides these interpretive facts; exact evaluated house/aspect geometry is not guessed from prose.'
 });
 const bookExample3 = Object.freeze({
   id:'HPA-XIV-HOROSCOPE-3',
   printedPage:69,
   birthDate:'1875-02-12',
   statedFacts:['malefics flank Ascendant','Moon under Rahu influence','Rahu strongly aspected by Mars and Ketu','Jupiter in a quadrant is cited as redemption'],
-  sourceNote:'Preserve the narrative as a source example; do not convert it into a rule match without its complete chart geometry and an explicitly implemented cancellation rule.'
+  redemptionEvidence:{planet:'Jupiter',placement:'quadrant (house 4 in the predicate replay)',strengthExplicitlyReported:true},
+  ruleMappingGaps:[
+    {textFact:'Malefics flank Ascendant',ruleId:null,reason:'The prose alone does not specify all house occupancies / sign-based positions for a rule-level reconstruction.'},
+    {textFact:'Moon under Rahu influence',ruleId:null,reason:'The exact conjunction/aspect and other rule predicates require chart geometry.'},
+    {textFact:'Rahu aspected by Mars and Ketu',ruleId:null,reason:'The exact aspect pattern is recorded as source narrative but not promoted to an unnumbered evaluator.'},
+    {textFact:'Strong Jupiter in a quadrant redeems Balarishta',ruleId:'XIV-ANT-05',reason:'This supports the general strong-Jupiter antidote; the complete cancellation precedence still requires source rule/exception coverage.'}
+  ],
+  sourceNote:'Keep the historical narrative and its Jupiter protection distinct from rule matches; do not select a final category or lifespan without full rule and cancellation precedence.'
 });
 eq(bookExample2.printedPage,68,'HPA Horoscope No.2 retains its printed source page');
 eq(bookExample2.birthDasaLord,'Sun','HPA Horoscope No.2 birth Dasa lord is preserved');
 ok(bookExample2.statedFacts.length===3,'HPA Horoscope No.2 records each stated fact separately');
 eq(bookExample3.printedPage,69,'HPA Horoscope No.3 retains its printed source page');
 ok(bookExample3.statedFacts.length===4,'HPA Horoscope No.3 records affliction and protection facts separately');
+eq(bookExample3.redemptionEvidence.planet,'Jupiter','HPA Horoscope No.3 explicitly names Jupiter as the protective planet');
+eq(bookExample3.redemptionEvidence.placement,'quadrant (house 4 in the predicate replay)',
+  'HPA Horoscope No.3 records the reported quadrant without claiming chart reconstruction');
+eq(bookExample2.ruleMappingGaps[2].ruleId,'XIV-BAL-10',
+  'HPA Horoscope No.2 aspect is not substituted for the Dasa-lord conjunction predicate');
 const sourceExample2Trace = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[]},
   evidence:{birthDasaLord:bookExample2.birthDasaLord}
@@ -406,12 +442,16 @@ eq(sourceExample2Trace.rules.find(rule=>rule.id==='XIV-BAL-10').status,'UNKNOWN'
   'HPA p.68 Horoscope No.2 does not imply the conjunction condition from the Dasa lord name alone');
 eq(sourceExample2Trace.rules.find(rule=>rule.id==='XIV-BAL-19').status,'UNKNOWN',
   'HPA p.68 Horoscope No.2 does not infer Saturn third-aspect geometry from the phrase “Moon afflicted” alone');
+eq(sourceExample2Trace.rules.find(rule=>rule.id==='XIV-BAL-02').status,'UNKNOWN',
+  'HPA p.68 Horoscope No.2 does not infer a Moon Kendra without its house position');
 const sourceExample3Trace = bvRamanChapterXIVLongevityRules({
   chart:makeChart({houses:{Jupiter:4}}),
   evidence:{strongPlanets:['Jupiter']}
 });
 eq(sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-01').status,'NOT_MATCHED',
   'HPA p.69 Horoscope No.3 describes Jupiter in a quadrant, while numbered Antidote 1 is specifically Jupiter in Ascendant');
+eq(sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-05').status,'MATCHED',
+  'HPA p.69 Horoscope No.3 source-stated strong Jupiter satisfies the general strong-Mercury/Venus/Jupiter antidote predicate');
 ok(bookExample3.sourceNote.includes('cancellation'),
   'HPA p.69 quadrant-Jupiter redemption stays recorded as a separate source-example coverage gap, not silently discarded');
 
@@ -451,16 +491,38 @@ const audit = {
     id:example.id,printedPage:example.printedPage,
     birthDate:example.birthDate||null,birthDasaLord:example.birthDasaLord||null,
     statedFacts:example.statedFacts||null,
+    statedConditions:example.statedConditions||null,
+    ruleMappingGaps:example.ruleMappingGaps||null,
+    redemptionEvidence:example.redemptionEvidence||null,
     explicitlyReportedConjunctions:example.explicitlyReportedConjunctions||null,
     explicitlyReportedAspectFrom:example.explicitlyReportedAspectFrom||null,
     sourceStatement:example.sourceStatement||null,
     sourceNote:example.sourceNote||null
   })),
   bookExampleRuleTraces:{
-    horoscope1:{ruleId:'XIV-BAL-10',observedStatus:'MATCHED with explicit conjunction evidence; UNKNOWN if only Dasa lord is known'},
-    horoscope2:{ruleIds:['XIV-BAL-10','XIV-BAL-19'],observedStatus:'UNKNOWN where prose does not provide complete predicate geometry'},
-    horoscope3:{ruleId:'XIV-ANT-01',observedStatus:sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-01').status,
-      gap:'the prose says Jupiter in a quadrant; numbered ANT-01 requires Jupiter in Ascendant; Chapter XIV cancellation precedence requires further source review'}
+    horoscope1:{
+      ruleIds:['XIV-BAL-02','XIV-BAL-03','XIV-BAL-10'],
+      observedStatuses:{
+        'XIV-BAL-02':'MATCHED by source-stated Moon 7th Kendra + Saturn aspect',
+        'XIV-BAL-03':'MATCHED by source-stated Moon 7th + malefic aspect + no benefic aspect',
+        'XIV-BAL-10':'MATCHED only when the source-stated Venus/Saturn/Ketu conjunction is explicitly wired; UNKNOWN from Dasa lord name alone'
+      },
+      predicateReplayIsNotFullChartReconstruction:true
+    },
+    horoscope2:{
+      ruleIds:['XIV-BAL-02','XIV-BAL-10','XIV-BAL-19'],
+      observedStatus:'UNKNOWN where prose does not provide complete predicate geometry',
+      factToRuleMappingGaps:bookExample2.ruleMappingGaps
+    },
+    horoscope3:{
+      ruleIds:['XIV-ANT-01','XIV-ANT-05'],
+      observedStatuses:{
+        'XIV-ANT-01':sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-01').status,
+        'XIV-ANT-05':sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-05').status
+      },
+      redemptionEvidence:bookExample3.redemptionEvidence,
+      gap:'the book states strong Jupiter in a quadrant as redemption; the general strong-Jupiter antidote predicate is recorded, but full rule/cancellation precedence still needs independent source regression'
+    }
   },
   finalLifespan:null,certified:false,customerDisplayAllowed:false
 };
