@@ -72,20 +72,26 @@ eq(xiv.rules.length, 76,
   'runtime rule trace exposes every source rule, not only implemented evaluators');
 eq(xiv.unimplementedRuleIds.includes('XIV-BAL-04'), true,
   'unsupported Balarishta rule 4 remains explicitly visible as unimplemented');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-07').implemented, true,
+  'direct-position Balarishta rule 7 is now evaluated');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-30').implemented, true,
+  'aspect-based Balarishta rule 30 is now evaluated');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
   'unimplemented Balarishta rule is UNKNOWN, never silently NOT_MATCHED');
-eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), true,
-  'unsupported antidote rule 8 remains explicitly visible as unimplemented');
+eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), false,
+  'antidote rule 8 is no longer listed as unimplemented after its evaluator was added');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
-  'unimplemented antidote rule is UNKNOWN');
+  'antidote rule 8 remains UNKNOWN when explicit full-moon-night evidence is absent');
 eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
   'Balarishta inventory has 30 source rules');
-eq(xiv.ruleCoverageCounts.Balarishta.implemented, 9,
-  'only the nine currently encoded Balarishta rules count as implemented');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 20,
+  'twenty source-numbered Balarishta rules have evaluators after this scan pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
 eq(xiv.ruleCoverageCounts.Alpayu.implemented, 10,
   'Alpayu implementation count includes source-numbered rules 1-8, 12 and 15');
+eq(xiv.ruleCoverageCounts.Antidote.implemented, 10,
+  'all ten source-numbered antidote conditions now have evaluators or explicit evidence inputs');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-12').sourceRuleNumber, 12,
   'weak birth lord plus 8th lord in a Kendra is correctly attributed to printed Alpayu rule 12');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-15').sourceRuleNumber, 15,
