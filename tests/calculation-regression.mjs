@@ -81,16 +81,23 @@ ok(d95.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,S
 ok(d95.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR §24.2 Example 97: Scorpio Antardasa order crosses from Rohini Pada 2 into Pada 3');
 ok(Math.abs(d95.sequence[0].antardasas.reduce((s,x)=>s+x.years,0)-d95.sequence[0].years)<1e-8,'Kalachakra Example 95: nine weighted Antardasas sum exactly to the Mahadasa duration');
 ok(Math.abs(d95.sequence[0].antardasas[0].years-(4.75*7/100))<1e-9,'Kalachakra Example 95: Scorpio Antardasa weight uses actual nine-sign sum 100 (not birth pada paramayush 83)');
+ok(d95.dehaRasi==='Sg'&&d95.jeevaRasi==='Sc','PVR §24.3.2 Example 95: Apasavya Deha is the ninth running Dasa (Sagittarius) and Jeeva is the first (Scorpio)');
+ok(d95.sequence[3].antardasas.map(x=>x.rasi).join(',')==='Le,Cn,Ge,Ta,Ar,Sg,Cp,Aq,Pi','PVR Example 97: Leo Antardasa order is Le,Cn,Ge,Ta,Ar,Sg,Cp,Aq,Pi');
+ok(Math.abs(d95.sequence[3].antardasas.reduce((s,x)=>s+x.years,0)-5)<1e-8,'PVR Example 97: nine weighted signs total 86 years and distribute the 5-year Leo Mahadasa');
+const savanaDays=(row)=>((Date.parse(row.end+'T00:00:00Z')-Date.parse(row.start+'T00:00:00Z'))/86400000);
+ok(Math.abs(savanaDays(example59.sequence[0])-example59.sequence[0].years*360)<1.01,'PVR §16.2 Ashtottari dates use the stated 360-day savana-year convention');
+ok(Math.abs(savanaDays(d95.sequence[0])-d95.sequence[0].years*360)<1.01,'PVR Examples 95–97 Kalachakra dates use the stated 360-day savana-year convention');
+
 const d96=phase4Dasa(dasaFixture(93)).kalachakra; // 3° Cancer.
 ok(d96.nakshatraIndex===7&&d96.pada===4&&d96.group==='savya1','PVR §24.2 Example 96: Moon 3° Cancer maps to Punarvasu Pada 4 / Savya-1');
 ok(Math.abs(d96.paramayush-86)<1e-9&&Math.abs(d96.elapsedYearsBeforeBirth-77.4)<1e-9&&Math.abs(d96.birthDasaRemainingYears-8.6)<1e-9,'PVR Example 96: independent paramayush 86, elapsed 77.4 and remaining 8.6 years');
 ok(d96.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','PVR Example 96: remaining Pisces Dasa followed by the first eight Savya-2 signs');
 ok(d96.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','Kalachakra Example 96: antardasa chain crosses after Pada 4 into Savya-2 Pada 1');
 ok(d96.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((s,x)=>s+x.years,0)-md.years)<1e-8),'Kalachakra counterexample grid: all displayed MDs have nine correctly weighted ADs summing to each MD');
-const drigExpected='2,5,8,11,3,1,10,7,4,0,6,9';
+const drigExpected='2,5,8,11,3,1,10,7,4,0,9,6';
 const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
 ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
-ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,6,9','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
+ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
 ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
 for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
  const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
