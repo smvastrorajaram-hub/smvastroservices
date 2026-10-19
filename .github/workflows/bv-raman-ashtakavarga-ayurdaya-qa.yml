@@ -10,6 +10,7 @@ on:
       - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
       - 'tests/v357-bphs-shodhana-regression.mjs'
       - 'tests/v360-pvr-shodhana-textbook-regression.mjs'
+      - 'audits/SMV_ASTRO_BV_RAMAN_ASHTAKAVARGA_AYURDAYA_SOURCE_GAP_AUDIT.md'
       - '.github/workflows/bv-raman-ashtakavarga-ayurdaya-qa.yml'
   pull_request:
     branches: [main]

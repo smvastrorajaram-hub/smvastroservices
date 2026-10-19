@@ -425,3 +425,47 @@ The 19 unevaluated rules remain explicitly indexed as `UNKNOWN`: Balarishta 4, 1
 - PASS — B.V. Raman regression, syntax checks, integrated Chapter XIV + XXVI regression, BPHS Shodhana regression and P.V.R. Narasimha Rao Shodhana regression on `45ca1525b1a3c0194c08a7d46fa8e2a6b71d81e0`, run 39212458326.
 - A separate Horoscope/Marriage Matching source-syntax workflow was still in progress at the last status check; do not count it as a PASS until its run completes.
 - **Merge gate:** PR #55 remains open and unmerged. Keep `certified:false`; no customer-facing longevity, death-age or death-date output. A green CI establishes software regression parity only for the pinned cases, not complete classical certification.
+
+## 2026-10-19 — Latest verified Chapter XIV coverage: 74 of 76 rules
+
+This section supersedes all earlier provisional coverage counts and run-state notes above. Verified branch head before this documentation commit: `e65f3751cc6d42fe9f940857e4018d372efa049c`.
+
+### New evaluators and regression evidence
+
+The latest evaluator pass added source-numbered, individually tested conditions:
+- **Balarishta 4:** the near-sunrise/sunset, Moon's hora and malefic-Navamsa facts are explicit required inputs; absence remains UNKNOWN.
+- **Balarishta 10:** the birth-Dasa lord's conjunction with many malefics is accepted only as an explicit source-sensitive evidence input.
+- **Balarishta 28:** weakness and “badly placed” facts for the Lagna lord / Moon-sign lord are separately required; they are not inferred from house placement alone.
+- **Madhyayu 5:** Sun in Lagna plus explicit enemy-sign/enclosure evidence, weak-Sun evidence and no benefic aspect.
+- **Madhyayu 6:** Lagna lord in 6th/8th with malefic conjunction and without benefic aspect.
+- **Madhyayu 13:** explicit evidence that benefics occupy Kendras, plus computed no-benefic-aspect to Lagna and malefic aspect to the Lagna lord.
+- **Alpayu 9:** Saturn in Lagna, a malefic-owned Lagna sign, and explicit evidence for benefics in houses 3/6/9/12.
+- **Madhyayu 7 and 11:** direct placements are checked, but “other planets in 11th” and Jupiter/Venus/Mercury being in unfavourable houses remain explicit source-sensitive inputs rather than guessed classifications.
+
+Positive, negative and/or missing-evidence regression cases were added for these conditions. A present evaluator means code coverage only; it does not prove the upstream strength, sunrise, Dasa, Navamsa or favourable/unfavourable-house evidence has itself been independently certified.
+
+### Current source-rule coverage
+
+| Chapter XIV category | Source rules | Evaluators present | Not implemented |
+|---|---:|---:|---:|
+| Balarishta | 30 | 29 | 1 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 14 | 1 |
+| Madhyayu | 15 | 15 | 0 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **74** | **2** |
+
+The remaining two rules stay indexed as `UNKNOWN` rather than being “completed” by guesswork:
+
+- **XIV-BAL-12:** the printed wording linking the Ascendant lord / 5th and 9th lords, enemy signs, and 8th/9th houses does not unambiguously map each lord to each condition. A source-faithful evaluator needs a verified interpretation before it can return MATCHED or NOT_MATCHED.
+- **XIV-ALP-13:** the printed wording relating the Ascendant and 8th lords “in quadrants”, a planet in the 8th, and no planets in Kendras does not make the reference point for “quadrants” explicit. Do not assume it means relative quadrants or Kendras from Lagna.
+
+### CI verified on the same source/test head
+
+- **PASS — B.V. Raman Ayurdaya research QA:** [run 39214211547](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39214211547).
+- **PASS — Horoscope / Marriage Matching source and calculation QA:** [run 39214211542](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39214211542).
+- Source artifact now renders printed HPA p. 190 (PDF p. 197) as well as Chapter XIV pp. 63–72 and Chapter XXVI pp. 199–203. HPA p. 190 remains a separate oracle from the *Ashtakavarga System of Prediction* Chapter II, Table I.
+- **Still pending — ASOP primary source:** the original *Ashtakavarga System of Prediction* Table I page image is not present in the inspected repository source PDF or verified uploaded library. Its secondary-transcription oracle remains separate and cannot be upgraded to primary-page evidence by substituting HPA p. 190.
+- **Still pending — numerical certification:** HPA Chapter XXVI's printed total/conversion discrepancy remains recorded: the printed `48.98` converted by `334/365` gives about `44.82`, while formula-first Pinda arithmetic gives `49.00` lunar years and `44.84` solar years. Neither output is patched to imitate the other.
+
+**Release / merge gate remains closed:** PR #55 is research-only, `certified:false`, and unmerged. No final lifespan, age-of-death or death-date value may be emitted to customer-facing Horoscope or Marriage Matching output until the remaining source ambiguities and numerical-source gaps are closed.
