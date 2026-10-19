@@ -1,7 +1,7 @@
 # SMV ASTRO — Special Dasa Source Audit
 Date: 2026-10-20
 Branch: `fix/full-advanced-arr-scope-dasa-regressions`
-Status: **SOURCE FIX + REGRESSION ADDED; CI REQUIRED BEFORE MERGE**
+Status: **CODE MERGED — PRE-MERGE CI PASS; ASHTOTTARI GLOBAL APPLICABILITY REMAINS SOURCE-AMBIGUOUS**
 Baseline: `main` after PR #70. PR #70 is not reused or re-merged.
 
 ## 1. Full-report `arr is not defined`
