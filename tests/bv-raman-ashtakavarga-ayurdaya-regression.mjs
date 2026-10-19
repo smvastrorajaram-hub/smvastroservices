@@ -277,7 +277,7 @@ same(hpaStandardCalculatedReduction.afterReductionSarvashtakavarga,
   hpaStandardTable.printedAfterReductionBySign,
   'HPA p. 190 calculated A.R. per-sign SAV totals match 6/13/6/12/2/7/3/8/8/4/4/8');
 same(hpaStandardCalculatedReduction.afterReductionSarvashtakavargaTotal, 81,
-  'HPA p. 190 reduction engine matches the source's 81 total for this edition/example');
+  "HPA p. 190 reduction engine matches the source's 81 total for this edition/example");
 ok(hpaStandardCalculatedReduction.certified === false,
   'primary worked-table regression does not by itself certify the full Ayurdaya method');
 
