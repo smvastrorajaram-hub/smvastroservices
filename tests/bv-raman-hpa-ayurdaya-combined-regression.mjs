@@ -360,17 +360,20 @@ ok(moonKendraMaleficConjunctionNoBeneficAspect.matchedRuleIds.includes('XIV-BAL-
   'Chapter XIV Balarishta rule 2 matches when Moon is conjunct a malefic in a Kendra and has no benefic aspect');
 
 const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
+  // HPA p. 68 Horoscope No. 1 states Moon in the 7th Kendra powerfully
+  // aspected by Saturn and without benefic aspects. This is a constructed
+  // predicate fixture, not a claim to reconstruct the entire printed chart.
   chart: { lagna:{longitude:0}, planets:[
-    {name:'Sun',longitude:35,bhava:2},{name:'Moon',longitude:5,bhava:1},
+    {name:'Sun',longitude:35,bhava:2},{name:'Moon',longitude:5,bhava:7},
     {name:'Mars',longitude:65,bhava:3},{name:'Mercury',longitude:95,bhava:4},
     {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:155,bhava:6},
-    {name:'Saturn',longitude:185,bhava:7},{name:'Rahu',longitude:215,bhava:8},
+    {name:'Saturn',longitude:185,bhava:1},{name:'Rahu',longitude:215,bhava:8},
     {name:'Ketu',longitude:245,bhava:9}
   ]}
 });
 const bal02AspectOnly = moonKendraMaleficAspectOnly.rules.find(rule => rule.id === 'XIV-BAL-02');
-eq(bal02AspectOnly.status, 'NOT_MATCHED',
-  'Chapter XIV "Moon in a Kendra with malefics" is not widened to a malefic aspect alone');
+eq(bal02AspectOnly.status, 'MATCHED',
+  'HPA p. 68 Horoscope No. 1 demonstrates that a malefic Saturn aspect can satisfy Balarishta rule 2 without same-house co-occupancy');
 
 const bal17TwoMaleficAspects = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
