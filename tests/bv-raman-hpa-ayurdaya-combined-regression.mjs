@@ -110,6 +110,10 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-10').implemented, true,
   'Balarishta rule 10 uses explicit birth-Dasa-lord conjunction evidence');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-28').implemented, true,
   'Balarishta rule 28 uses explicit weakness and poor-placement evidence');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-12').implemented, true,
+  'Balarishta rule 12 evaluates the interpreted Lagna-lord OR paired 5th/9th-lord condition');
+eq(xiv.unimplementedRuleIds.includes('XIV-BAL-12'), false,
+  'Balarishta rule 12 no longer remains unimplemented');
 eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-05').implemented, true,
   'Madhyayu rule 5 separately tests Sun enemy-sign and affliction facts');
 eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-06').implemented, true,
@@ -130,18 +134,22 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
   'antidote rule 8 remains UNKNOWN when explicit full-moon-night evidence is absent');
 eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
   'Balarishta inventory has 30 source rules');
-eq(xiv.ruleCoverageCounts.Balarishta.implemented, 29,
-  'twenty-nine Balarishta source rules have evaluators after the rule 4/10/28 pass');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 30,
+  'all thirty Balarishta source rules now have evaluators');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
-eq(xiv.ruleCoverageCounts.Alpayu.implemented, 14,
-  'Alpayu evaluator count includes rules 9 and 10 with explicit missing-evidence handling');
+eq(xiv.ruleCoverageCounts.Alpayu.implemented, 15,
+  'all fifteen Alpayu source rules now have evaluators, with missing data remaining UNKNOWN');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-11').implemented, true,
   'Alpayu rule 11 has an independent evaluator');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-14').implemented, true,
   'Alpayu rule 14 exposes its explicit strength/aspect evidence gate');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-10').implemented, true,
   'Alpayu rule 10 has an independent lord-placement and aspect evaluator');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-13').implemented, true,
+  'Alpayu rule 13 evaluates Kendra lords, house-8 occupancy and no other Kendra planets');
+eq(xiv.unimplementedRuleIds.includes('XIV-ALP-13'), false,
+  'Alpayu rule 13 no longer remains unimplemented');
 eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-09').implemented, true,
   'Madhyayu rule 9 has an explicit afflicted-Moon evaluator');
 eq(xiv.ruleCoverageCounts.Antidote.implemented, 10,
@@ -156,6 +164,83 @@ eq(xiv.ruleCoverageCounts.Madhyayu.sourceRules, 15,
   'Madhyayu inventory retains all fifteen source rules after the new evaluators');
 eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 15,
   'all fifteen source-numbered Madhyayu rules now have evaluators');
+
+// Balarishta 12 interpretation: Lagna lord alone qualifies, OR both the 5th
+// and 9th lords each qualify through a natural enemy sign or house 8/9.
+const bal12LagnaLordEnemySign = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mars',longitude:60,bhava:3} // Aries Lagna lord Mars in Mercury's Gemini sign.
+  ]}
+});
+eq(bal12LagnaLordEnemySign.rules.find(rule => rule.id === 'XIV-BAL-12').status,
+  'MATCHED', 'Balarishta 12 matches when the Lagna lord occupies its natural enemy sign');
+
+const bal12FifthAndNinthLords = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mars',longitude:5,bhava:1},   // Lagna lord does not qualify.
+    {name:'Sun',longitude:210,bhava:8},  // 5th lord qualifies by house 8.
+    {name:'Jupiter',longitude:240,bhava:9} // 9th lord qualifies by house 9.
+  ]}
+});
+eq(bal12FifthAndNinthLords.rules.find(rule => rule.id === 'XIV-BAL-12').status,
+  'MATCHED', 'Balarishta 12 matches when both 5th and 9th lords qualify');
+
+const bal12NoQualifyingPlacement = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mars',longitude:5,bhava:1},     // Lagna lord in its own sign.
+    {name:'Sun',longitude:125,bhava:5},    // 5th lord in its own sign.
+    {name:'Jupiter',longitude:335,bhava:12} // 9th lord in its own sign, outside 8/9.
+  ]}
+});
+eq(bal12NoQualifyingPlacement.rules.find(rule => rule.id === 'XIV-BAL-12').status,
+  'NOT_MATCHED', 'Balarishta 12 is negative when neither the Lagna lord nor both 5th/9th lords qualify');
+
+const bal12MissingPlacements = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]}
+});
+eq(bal12MissingPlacements.rules.find(rule => rule.id === 'XIV-BAL-12').status,
+  'UNKNOWN', 'Balarishta 12 remains UNKNOWN when the relevant lords lack chart placements');
+
+// Alpayu 13: exclude the two named lords, but reject any additional Kendra
+// occupants; proving the absence of additional occupants requires a complete chart.
+const alp13BasePlanets = [
+  {name:'Sun',longitude:210,bhava:8},
+  {name:'Moon',longitude:30,bhava:2},
+  {name:'Mars',longitude:5,bhava:1},      // Aries Lagna and 8th lord.
+  {name:'Mercury',longitude:70,bhava:3},
+  {name:'Jupiter',longitude:130,bhava:5},
+  {name:'Venus',longitude:160,bhava:6},
+  {name:'Saturn',longitude:300,bhava:11},
+  {name:'Rahu',longitude:250,bhava:9},
+  {name:'Ketu',longitude:330,bhava:12}
+];
+const alp13Matches = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:alp13BasePlanets}
+});
+eq(alp13Matches.rules.find(rule => rule.id === 'XIV-ALP-13').status,
+  'MATCHED', 'Alpayu 13 matches when only the Lagna/8th lord occupies a Kendra and house 8 is occupied');
+
+const alp13OtherKendraGraha = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:alp13BasePlanets.map(p =>
+    p.name === 'Jupiter' ? {...p,bhava:4} : p)}
+});
+eq(alp13OtherKendraGraha.rules.find(rule => rule.id === 'XIV-ALP-13').status,
+  'NOT_MATCHED', 'Alpayu 13 fails when another planet occupies Kendra house 4');
+
+const alp13NoEighthHousePlanet = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:alp13BasePlanets.map(p =>
+    p.name === 'Sun' ? {...p,bhava:2} : p)}
+});
+eq(alp13NoEighthHousePlanet.rules.find(rule => rule.id === 'XIV-ALP-13').status,
+  'NOT_MATCHED', 'Alpayu 13 fails when house 8 is empty');
+
+const alp13IncompleteChart = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mars',longitude:5,bhava:1}
+  ]}
+});
+eq(alp13IncompleteChart.rules.find(rule => rule.id === 'XIV-ALP-13').status,
+  'UNKNOWN', 'Alpayu 13 remains UNKNOWN unless the absence of other Kendra planets can be established');
 
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
