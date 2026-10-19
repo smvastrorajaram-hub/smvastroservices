@@ -37,6 +37,7 @@ const KC_OWNER_YEARS={Ar:7,Sc:7,Ta:16,Li:16,Ge:9,Vi:9,Sg:10,Pi:10,Le:5,Cn:21,Cp:
 const ASHT_ARCS=[{start:66+40/60,end:120,planet:'Sun',years:6},{start:120,end:160,planet:'Moon',years:15},{start:160,end:213+20/60,planet:'Mars',years:8},{start:213+20/60,end:253+20/60,planet:'Mercury',years:17},{start:253+20/60,end:293+20/60,planet:'Saturn',years:10},{start:293+20/60,end:333+20/60,planet:'Jupiter',years:19},{start:333+20/60,end:386+40/60,planet:'Rahu',years:12},{start:26+40/60,end:66+40/60,planet:'Venus',years:21}];
 const ASHT_ORDER=['Sun','Moon','Mars','Mercury','Saturn','Jupiter','Rahu','Venus'];
 
+function norm360(n){const value=Number(n);if(!Number.isFinite(value))return NaN;if(value>=0&&value<360)return value;const reduced=value%360;return reduced<0?reduced+360:reduced;}
 function mod12(n){return ((n%12)+12)%12;}
 function rasiIndex(lon){if(lon===null||lon===undefined||String(lon).trim()===''||!Number.isFinite(Number(lon)))throw new Error('Planetary longitude unavailable for Rasi Dasa');return mod12(Math.floor(((Number(lon)%360+360)%360)/30));}
 function degInSign(lon){if(lon===null||lon===undefined||String(lon).trim()===''||!Number.isFinite(Number(lon)))throw new Error('Planetary longitude unavailable for Rasi Dasa');return ((Number(lon)%30+30)%30);}
@@ -105,7 +106,7 @@ function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
 function ashtottari(chart,startDate,advancedContext=null){
  const p=getPlanets(chart),moon=p.Moon?.longitude;
  if(!Number.isFinite(moon))return {available:false,reason:'Moon longitude unavailable'};
- let L=((moon%360)+360)%360,z=L<26+40/60?L+360:L;
+ let L=norm360(moon),z=L<26+40/60?L+360:L;
  const arc=ASHT_ARCS.find(a=>z>=a.start&&z<a.end);
  if(!arc)return {available:false,reason:'Moon longitude did not match a Table 39 arc'};
  const frac=(arc.end-z)/(arc.end-arc.start),elapsedYears=arc.years*(1-frac);
@@ -166,7 +167,7 @@ function nextKalachakraPosition(group,pada){
 function kalachakra(chart,startDate){
  const moon=Number(chart.planets?.find(x=>planetKey(x.name)==='Moon')?.longitude);
  if(!Number.isFinite(moon))return {available:false,reason:'Moon longitude unavailable'};
- const L=((moon%360)+360)%360,nak=Math.floor(L/(13+1/3)),pada=Math.floor((L%(13+1/3))/(3+1/3));
+ const L=norm360(moon),nak=Math.floor(L/(13+1/3)),pada=Math.floor((L%(13+1/3))/(3+1/3));
  const savya=[0,1,2,6,7,8,12,13,14,18,19,20,24,25,26].includes(nak);
  const savya1=[0,2,6,8,12,14,18,20,24,26].includes(nak);
  const group=savya?(savya1?'savya1':'savya2'):([3,9,15,21].includes(nak)?'apasavya1':'apasavya2');
