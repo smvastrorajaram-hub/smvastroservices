@@ -622,6 +622,14 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Malefics in houses 1, 2 and 8; benefics outside Kendras',
     triAll(maleficsInAll([1, 2, 8]),
       beneficKendra === null ? null : beneficKendra === false)));
+  rules.push(makeRule('XIV-ALP-10', 'Alpayu',
+    'Lagna lord and 8th lord join in house 8 with malefics and without benefic aspects',
+    triAll(
+      lagnaLordHouse === null ? null : lagnaLordHouse === 8,
+      eighthLordHouse === null ? null : eighthLordHouse === 8,
+      maleficInHouse(map, 8),
+      lagnaLord ? noBeneficAspectToPlanet(lagnaLord) : null,
+      eighthLord ? noBeneficAspectToPlanet(eighthLord) : null)));
   rules.push(makeRule('XIV-ALP-14', 'Alpayu',
     'Strong malefics in Kendras without benefic aspects',
     tri(e.strongMaleficsInKendrasWithoutBeneficAspects)));
@@ -651,6 +659,11 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       jupiterHouse === null ? null : jupiterHouse === 1,
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8,
       houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 8)));
+  rules.push(makeRule('XIV-MAD-09', 'Madhyayu',
+    '8th lord in 7th with Moon afflicted by malefic conjunction or aspect',
+    triAll(
+      eighthLordHouse === null ? null : eighthLordHouse === 7,
+      triAny(moonWithMalefics, moonAspect.malefic)));
   rules.push(makeRule('XIV-MAD-10', 'Madhyayu',
     'Jupiter in 8th with Aries Lagna and malefics in Kendras',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 0,
