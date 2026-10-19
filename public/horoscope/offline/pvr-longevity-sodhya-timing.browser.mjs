@@ -241,7 +241,7 @@ export async function calculateSodhyaPindaTransitWindows(rows,options={}){
    }
    planetTransits[body.name]={
     nakshatras:starResults,
-    rasi:{number:rasiNumber,name:row.targetRasi,index:rasiIndex,windows:await windowsFor(body,'rasi',rasiIndex)}
+    rasi:{number:rasiNumber,name:row.targetRasi,nameTamil:row.targetRasiTamil,index:rasiIndex,windows:await windowsFor(body,'rasi',rasiIndex)}
    };
   }
   planetResults.push({
