@@ -96,7 +96,7 @@ function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
   selectedInterpretation:null,
   views:[
    {id:'universal',status:'alternative_view_not_selected',rule:'Applicable in all charts.'},
-   {id:'rahu_from_lagna_lord',status:rule2,rule:'Rahu must not be in Lagna and must be in a quadrant or trine from Lagna lord.',rahuInLagna,lagnaLord,rahuHouseFromLagnaLord:houseFromLagnaLord,qualifyingHouses},
+   {id:'rahu_from_lagna_lord',status:rule2,rule:'Rahu must not be in Lagna and must be in a quadrant or trine from Lagna lord.',rahuInLagna,lagnaLord,rahuHouseFromLagnaLord:houseFromLagnaLord,qualifyingHouses:qualifiesHouses},
    {id:'day_night_paksha',status:condition3,rule:'Daytime birth in Krishna paksha or nighttime birth in Shukla paksha.',birthTimeAvailable:birthMinutes!=null,paksha,birthPeriod,birthTime:timeText||null,sunrise:advancedContext?.birthPanchang?.sunrise||null,sunset:advancedContext?.birthPanchang?.sunset||null,lunarElongationDegrees:elongation,reason:dayNightAvailable?null:'Local birth-time and sunrise/sunset evidence is incomplete; keep this interpretation unresolved.'}
   ],
   policy:'Calculate as a clearly labelled reference only. Do not mark applicability PASS while classical interpretations conflict and no interpretation has been selected.'
