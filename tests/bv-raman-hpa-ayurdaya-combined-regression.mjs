@@ -219,6 +219,10 @@ const alp13Matches = bvRamanChapterXIVLongevityRules({
 });
 eq(alp13Matches.rules.find(rule => rule.id === 'XIV-ALP-13').status,
   'MATCHED', 'Alpayu 13 matches when only the Lagna/8th lord occupies a Kendra and house 8 is occupied');
+eq(alp13Matches.rules.find(rule => rule.id === 'XIV-ALP-13').displayMessageTamil,
+  'கவனம் தேவை', 'Alpayu 13 uses neutral attention-needed wording instead of a death prediction');
+ok(!/death|மரணம்/i.test(alp13Matches.rules.find(rule => rule.id === 'XIV-ALP-13').title),
+  'Alpayu 13 display title must not state or imply a death prediction');
 
 const alp13OtherKendraGraha = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:alp13BasePlanets.map(p =>
