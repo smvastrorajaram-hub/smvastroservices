@@ -247,22 +247,29 @@ for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
   near(reduced, hpa.reportedGrossLunarYears[planet], 0.02,
     'HPA Ch. XXVI ' + planet + ' reported gross years reconcile with Pinda arithmetic');
 }
-const hpaHaranaValues = BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
-  Math.trunc((hpa.reportedGrossLunarYears[planet] *
-    hpa.reportedHaranaFactors[planet]) * 100) / 100
+// Formula-first oracle: retain all gross and net terms at full precision;
+// effective fractions come from the scan, without guessing the cause of each
+// half reduction. Rounded values printed in the book are display evidence only.
+const hpaFormulaNetValues = BV_RAMAN_AYURDAYA_PLANETS.map(planet =>
+  hpaGrossArithmetic[planet] * hpa.reportedRemainingFraction[planet]
 );
-same(hpaHaranaValues, [13.7, 7.76, 2.33, 0.48, 4, 12.44, 8.27],
-  'HPA Ch. XXVI example Harana factors reproduce the displayed per-graha values');
-near(hpaHaranaValues.reduce((sum, value) => sum + value, 0),
-  hpa.reportedNetLunarYears, 1e-10,
-  'HPA Ch. XXVI net 48.98 is the sum of displayed two-decimal Harana values');
-const hpaSolarRecalculated =
+near(hpaFormulaNetValues.reduce((sum, value) => sum + value, 0),
+  49, 1e-10,
+  'HPA Ch. XXVI exact Pinda terms with the scanned effective half-rule sum to 49.00 lunar years');
+const hpaSolarFromFormulaNet =
+  hpaFormulaNetValues.reduce((sum, value) => sum + value, 0) *
+  hpa.reportedLunarToSolarNumerator / hpa.reportedLunarToSolarDenominator;
+near(hpaSolarFromFormulaNet, 44.83835616438356, 1e-10,
+  'HPA Ch. XXVI full-precision 49.00 lunar years convert to 44.838356... solar years');
+same(Math.round((hpaSolarFromFormulaNet + Number.EPSILON) * 100) / 100, 44.84,
+  'HPA Ch. XXVI final display rounds formula-derived solar years to 44.84');
+const hpaSolarFromPrintedNet =
   hpa.reportedNetLunarYears * hpa.reportedLunarToSolarNumerator /
   hpa.reportedLunarToSolarDenominator;
-near(hpaSolarRecalculated, 44.822, 0.002,
-  'HPA Ch. XXVI recalculated solar total from 48.98 × 334 / 365');
-ok(Math.abs(hpaSolarRecalculated - hpa.reportedFinalSolarYears) > 0.04,
-  'HPA Ch. XXVI printed 44.87 remains explicitly inconsistent with its own 334/365 ratio');
+near(hpaSolarFromPrintedNet, 44.82005479452055, 1e-10,
+  'converting printed 48.98 alone yields 44.82, not the printed 44.87');
+ok(Math.abs(hpaSolarFromPrintedNet - hpa.reportedFinalSolarYears) > 0.04,
+  'HPA Ch. XXVI printed 44.87 remains logged as a source arithmetic discrepancy');
 
 // Secondary Method-A guide arithmetic audit. These are explicitly not the
 // missing primary ASOP pages and must not be converted into a false oracle.
