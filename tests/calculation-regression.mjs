@@ -74,6 +74,22 @@ ok(auditNoRahu.views[1].status==='not_met'&&auditNoRahu.views[1].rahuInLagna===t
 const applicabilityRahuQualifies=dasaFixture(144,180,300,30); // Libra Lagna, Venus is Lagna lord at Leo, Rahu Aquarius is 7th from Venus.
 const auditQualifies=phase4Dasa(applicabilityRahuQualifies).ashtottari.applicabilityAudit;
 ok(auditQualifies.views[1].status==='met'&&auditQualifies.views[1].rahuHouseFromLagnaLord===7,'Ashtottari applicability positive example: Rahu in a quadrant from the Lagna lord, outside Lagna');
+const dayKrishnaChart=dasaFixture(200,180,300,30);dayKrishnaChart.birth.time='12:00';
+const dayKrishnaAudit=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit;
+const dayKrishnaResolved=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit.views[2];
+const dayKrishnaWithSunrise=phase4Dasa(dayKrishnaChart,{birthPanchang:{sunrise:'06:00',sunset:'18:00'}}).ashtottari.applicabilityAudit.views[2];
+ok(dayKrishnaWithSunrise.status==='met'&&dayKrishnaWithSunrise.birthPeriod==='day'&&dayKrishnaWithSunrise.paksha==='Krishna','Ashtottari rule (3) positive: daytime Krishna-paksha birth with local sunrise/sunset evidence');
+const nightShuklaChart=dasaFixture(100,180,300,30);nightShuklaChart.birth.time='23:00';
+const nightShukla=phase4Dasa(nightShuklaChart,{birthPanchang:{sunrise:'06:00',sunset:'18:00'}}).ashtottari.applicabilityAudit.views[2];
+ok(nightShukla.status==='met'&&nightShukla.birthPeriod==='night'&&nightShukla.paksha==='Shukla','Ashtottari rule (3) positive: night Shukla-paksha birth with local sunrise/sunset evidence');
+const dayShuklaChart=dasaFixture(100,180,300,30);dayShuklaChart.birth.time='12:00';
+const dayShukla=phase4Dasa(dayShuklaChart,{birthPanchang:{sunrise:'06:00',sunset:'18:00'}}).ashtottari.applicabilityAudit.views[2];
+ok(dayShukla.status==='not_met','Ashtottari rule (3) counterexample: daytime Shukla-paksha birth does not meet this interpretation');
+const nightKrishnaChart=dasaFixture(200,180,300,30);nightKrishnaChart.birth.time='23:00';
+const nightKrishna=phase4Dasa(nightKrishnaChart,{birthPanchang:{sunrise:'06:00',sunset:'18:00'}}).ashtottari.applicabilityAudit.views[2];
+ok(nightKrishna.status==='not_met','Ashtottari rule (3) counterexample: nighttime Krishna-paksha birth does not meet this interpretation');
+ok(dayKrishnaAudit.views[2].status==='not_evaluated'&&dayKrishnaResolved.status==='not_evaluated','Ashtottari applicability remains unresolved without the required sunrise/sunset evidence');
+
 const d95=phase4Dasa(dasaFixture(45+50/60)).kalachakra;
 ok(d95.available&&d95.nakshatraIndex===4&&d95.pada===2&&d95.group==='apasavya1','PVR §24.2 Example 95: Moon 15°50 Taurus maps to Rohini Pada 2 / Apasavya-1');
 ok(Math.abs(d95.paramayush-83)<1e-9&&Math.abs(d95.elapsedYearsBeforeBirth-62.25)<1e-9&&Math.abs(d95.birthDasaRemainingYears-4.75)<1e-9,'PVR Example 95: independent paramayush 83, elapsed 62.25 and remaining 4.75 years');
