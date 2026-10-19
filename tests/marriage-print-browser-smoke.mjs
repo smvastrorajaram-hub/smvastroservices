@@ -69,9 +69,19 @@ try{
     assert.ok(section.includes('smv-ayurdaya-method-selection'),'Selected-method basis is visible: '+testName);
     const totalRow=section.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
     assert.equal((totalRow.match(/<strong>/g)||[]).length,1,'One selected method total is emphasized: '+testName);
+   }else if(selection.reasonCode==='shadbala-tie'){
+    assert.ok(section.includes('data-ayurdaya-selection="shadbala-tie"'),'Tied methods are shown side by side: '+testName);
+    assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,9,'Tie table has header + seven grahas + totals: '+testName);
+    for(const candidate of selection.tiedCandidates){
+     assert.ok(section.includes(methodLabels[candidate.method]),'Tied method is shown '+candidate.method+': '+testName);
+     assert.equal((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,7,
+      'Every tied method shows seven grahas '+candidate.method+': '+testName);
+    }
+    assert.equal((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
+     'Each tied method has a separate total: '+testName);
    }else{
-    assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,0,'No arbitrary method is displayed on a Shadbala tie/missing value: '+testName);
-    assert.ok(section.includes('data-ayurdaya-selection="unavailable"'),'Missing/tied method selection is explicit: '+testName);
+    assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,0,'No method is selected when Shadbala reference data is missing: '+testName);
+    assert.ok(section.includes('data-ayurdaya-selection="unavailable"'),'Missing method inputs are explicit: '+testName);
    }
   }
   assert.ok(!html.includes('சராசரி ஆயுர்த்தாயம்')&&!html.includes('Average Ayurdaya')&&!html.includes('smv-ayurdaya-average-basis'),
