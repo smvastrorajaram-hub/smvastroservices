@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import {calculateSwiss} from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {phase4Dasa} from '../public/horoscope/offline/dasa_engine.browser.mjs';
-import {resolveSodhyaPindaTarget} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
+import {resolveSodhyaPindaTarget,calculateSodhyaPindaTransitWindows} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
 let checks=0;
 const ok=(condition,message)=>{assert.ok(condition,message);checks++};
 for(const sample of [
@@ -74,6 +74,21 @@ ok(charts[2].lagna.rasi==='மீனம்'&&charts[2].moonRasi==='சிம்�
 let rejectDate=false;try{phase4Dasa({birthDate:'',planets:[],lagna:{}})}catch{rejectDate=true}ok(rejectDate,'Invalid Phase-4 default date');
 const zeroSodhyaTarget=resolveSodhyaPindaTarget(0);
 ok(zeroSodhyaTarget.nakshatraNumber===27&&zeroSodhyaTarget.nakshatra==='Revati'&&zeroSodhyaTarget.rasiNumber===12&&zeroSodhyaTarget.rasi==='Pisces','PVR Sodhya Pinda modulo-zero means 27th nakshatra / 12th rasi');
+const historicalSodhyaTransit=await calculateSodhyaPindaTransitWindows([{
+ planet:'Saturn',planetTamil:'சனி',topic:'Longevity',topicTamil:'ஆயுள்',
+ targetNakshatraNumber:27,targetNakshatra:'Revati',targetNakshatraTamil:'ரேவதி',
+ targetRasiNumber:12,targetRasi:'Pisces',targetRasiTamil:'மீனம்',
+ relatedVimshottariNakshatras:[{number:9,name:'Ashlesha'},{number:18,name:'Jyeshtha'}]
+}],{startDate:'1997-01-01',endDate:'1998-01-01',utcOffsetMinutes:330});
+const historicalSaturn=historicalSodhyaTransit.rows[0].transits.Saturn;
+const dianaReferenceMs=Date.parse('1997-08-31T06:30:00Z');
+const sourceExampleNakshatra=historicalSaturn.nakshatras.find(x=>x.key==='primary')?.windows||[];
+const sourceExampleRasi=historicalSaturn.rasi.windows||[];
+ok(sourceExampleNakshatra.some(w=>Date.parse(w.startUtc)<=dianaReferenceMs&&Date.parse(w.endUtc)>dianaReferenceMs),'PVR §25.6 Example 111: Saturn Revati transit covers 1997-08-31');
+ok(sourceExampleRasi.some(w=>Date.parse(w.startUtc)<=dianaReferenceMs&&Date.parse(w.endUtc)>dianaReferenceMs),'PVR §25.6 Example 111: Saturn Pisces transit covers 1997-08-31');
+ok(sourceExampleNakshatra.every(w=>Date.parse(w.startUtc)<Date.parse(w.endUtc))&&sourceExampleRasi.every(w=>Date.parse(w.startUtc)<Date.parse(w.endUtc)),'PVR transit windows have positive duration and valid ingress/egress boundaries');
+ok(historicalSodhyaTransit.ephemeris.includes('Swiss Ephemeris')&&historicalSodhyaTransit.horizon.timezoneLabel==='IST (UTC+05:30)'&&historicalSodhyaTransit.researchOnly===true,'PVR transit calendar exposes local Swiss ephemeris, IST horizon and research-only status');
+console.log(JSON.stringify({pvrHistoricalTransitExample:{source:'PVR §25.6 Example 111',SaturnRevati:sourceExampleNakshatra,SaturnPisces:sourceExampleRasi}}));
 const saturnSeedChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:30},{name:'Moon',longitude:120},{name:'Mars',longitude:210},
  {name:'Mercury',longitude:240},{name:'Jupiter',longitude:270},{name:'Venus',longitude:60},
