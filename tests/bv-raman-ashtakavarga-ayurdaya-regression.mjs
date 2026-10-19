@@ -506,9 +506,20 @@ const integrationSigns = Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet
   const native = integrationChart.planets.find(item => item.name === integrationNameTa[planet]);
   return [planet, Math.floor(native.longitude / 30)];
 }));
+// Match the production Horoscope pipeline: all nine chart grahas affect
+// Ekadhipatya occupied-vs-empty decisions, while only seven classical grahas
+// contribute to the Rasi/Graha Pinda sums.
+const integrationOccupiedSigns = [
+  ...Object.values(integrationSigns),
+  ...integrationChart.planets
+    .filter(item => ['ராகு', 'கேது'].includes(item.name))
+    .map(item => Math.floor(item.longitude / 30))
+];
+same(integrationOccupiedSigns.length, 9,
+  'Horoscope parity oracle includes seven classical grahas plus Rahu/Ketu');
 const integrationReduction = bvRamanAshtakavargaShodhana({
   bavRows: integrationRows,
-  occupiedSigns: Object.values(integrationSigns)
+  occupiedSigns: integrationOccupiedSigns
 });
 const integrationMethodA = bvRamanAshtakavargaMethodAFromReducedRows({
   afterReductionRows: integrationReduction.afterReductionRows,
