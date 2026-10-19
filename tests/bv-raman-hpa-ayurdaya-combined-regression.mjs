@@ -207,6 +207,44 @@ const onlyOneMaleficHouse = bvRamanChapterXIVLongevityRules({
 eq(onlyOneMaleficHouse.matchedRuleIds.includes('XIV-ALP-02'), false,
   'Alpayu 6/8/12 rule does not match if house 12 has no malefic');
 
+// Regression for the original CI runtime failure and the source meaning of
+// Alpayu rule 11: it matches only when houses 1/2/8 contain malefics AND no
+// known benefic occupies a Kendra. The helper must preserve UNKNOWN when a
+// partial chart cannot establish the benefic placements.
+const alpayu11NoBeneficsInKendras = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:10,bhava:1},{name:'Moon',longitude:160,bhava:6},
+    {name:'Mars',longitude:40,bhava:2},{name:'Mercury',longitude:80,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:220,bhava:8},{name:'Rahu',longitude:20,bhava:1},
+    {name:'Ketu',longitude:50,bhava:2}
+  ]}
+});
+eq(alpayu11NoBeneficsInKendras.rules.find(rule => rule.id === 'XIV-ALP-11').status,
+  'MATCHED', 'Alpayu rule 11 matches when all benefics are outside Kendras');
+
+const alpayu11JupiterInKendra = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:10,bhava:1},{name:'Moon',longitude:160,bhava:6},
+    {name:'Mars',longitude:40,bhava:2},{name:'Mercury',longitude:80,bhava:3},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:220,bhava:8},{name:'Rahu',longitude:20,bhava:1},
+    {name:'Ketu',longitude:50,bhava:2}
+  ]}
+});
+eq(alpayu11JupiterInKendra.rules.find(rule => rule.id === 'XIV-ALP-11').status,
+  'NOT_MATCHED', 'Alpayu rule 11 does not match when Jupiter occupies a Kendra');
+
+const alpayu11IncompleteChart = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:10,bhava:1},{name:'Mars',longitude:40,bhava:2},
+    {name:'Saturn',longitude:220,bhava:8},{name:'Rahu',longitude:20,bhava:1},
+    {name:'Ketu',longitude:50,bhava:2}
+  ]}
+});
+eq(alpayu11IncompleteChart.rules.find(rule => rule.id === 'XIV-ALP-11').status,
+  'UNKNOWN', 'Alpayu rule 11 remains UNKNOWN when benefic placement evidence is incomplete');
+
 // Pin every Chapter XXVI p. 202 Harana factor to its printed rule number
 // and fraction, then execute each factor independently through the public API.
 eq(BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES.map(({key, fraction, sourcePrintedPage, sourceRuleNumber}) =>
