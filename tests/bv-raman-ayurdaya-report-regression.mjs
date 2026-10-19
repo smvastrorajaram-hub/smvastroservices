@@ -58,7 +58,7 @@ const report=(await import('../public/horoscope/offline/cg-rajan-ayurdaya-pinda.
 const old=report({planets:chart.planets,lagna:chart.lagna,language:'ta'});
 const combined=old.replace(/<\/section>\s*$/,ta+'</section>');
 ok(combined.indexOf('data-smv-cg-rajan-ayurdaya')<combined.indexOf('data-smv-bv-raman-ayurdaya'),'B.V. Raman tables are nested below the unchanged C.G. Rajan section');
-ok(combined.includes('data-smv-ayurdaya-selection="unavailable"')||combined.includes('data-smv-ayurdaya-selection="pinda"')||combined.includes('data-smv-ayurdaya-selection="natural"')||combined.includes('data-smv-ayurdaya-selection="amsa"'),'C.G. Rajan section remains present');
+ok(combined.includes('<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"'),'C.G. Rajan section remains present unchanged');
 
 const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const matching=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.mjs',import.meta.url),'utf8');
