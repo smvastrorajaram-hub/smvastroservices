@@ -49,16 +49,15 @@ for (const [html,language] of [[ta,'Tamil'],[en,'English']]) {
  ok(html.includes('Rasi Pinda')||html.includes('ராசி பிண்டம்'),language+' numeric table contains Pinda columns');
  ok(html.includes('Sodhya Pinda')||html.includes('சோத்ய பிண்டம்'),language+' numeric table contains Sodhya Pinda');
  ok(html.includes('smv-ayurdaya-totals')&&html.includes('smv-ayurdaya-average'),language+' numeric table contains both yearly totals');
- ok(html.includes('data-smv-bv-raman-ayurdaya')&&html.includes('Longevity category result')||html.includes('ஆயுள் வகை முடிவு'),language+' report contains category-result table');
+ ok(html.includes('Matched horoscope rules for longevity categories')||html.includes('ஆயுள் வகைக்கான பொருந்திய ஜோதிட விதிகள்'),language+' report shows matched chart-rule evidence instead of an unsupported final category');
  ok(/(?:Balarishta|பாலாரிஷ்டம்)/.test(html),language+' chart fixture produces the expected rule-category candidate');
  ok(/actual lifespan|உண்மையான ஆயுளை/.test(html),language+' report includes the actual-lifespan disclaimer');
  ok(!/B\. V\. Raman|Hindu Predictive Astrology|certified|uncertified|source gap/i.test(html),language+' customer report does not expose book/author or certification audit notes');
  ok(!/deathAgeOrDate|finalAgeOrDateOfDeath|predictedDeathAge/i.test(html),language+' report contains no death-age fields');
 }
-const solarRow=ta.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<td>([\d.]+)<\/td>/);
-ok(!!solarRow,'fully specified test Harana inputs produce a numeric solar-year total');
-ok(!ta.includes('undefined')&&!ta.includes('NaN'),'Tamil result contains no missing/invalid numeric strings');
-ok(!en.includes('undefined')&&!en.includes('NaN'),'English result contains no missing/invalid numeric strings');
+const solarRow=ta.match(/<tr class="smv-ayurdaya-average">[\s\S]*?<td>([^<]+)<\/td>/);\nok(!!solarRow && /\\d+ வருடம் \\d+ மாதம் \\d+ நாள் \\d+ நாழிகை/.test(solarRow[1]),'solar-year total is rendered as integer year/month/day/nazhi units, not a decimal year');
+ok(!ta.includes('undefined')&&!ta.includes('NaN'),'Tamil result contains no missing/invalid numeric strings');\nok(!/\\d+\\.\\d+ வருடம்/.test(ta),'Tamil duration output does not expose decimal-year fragments');
+ok(!en.includes('undefined')&&!en.includes('NaN'),'English result contains no missing/invalid numeric strings');\nok(/\\d+ y \\d+ mo \\d+ d \\d+ nazhi/.test(en),'English duration output uses integer year/month/day/nazhi units');
 
 const missingData=bvRamanAyurdayaReportHtml({chart:{},language:'ta'});
 ok(missingData.includes('data-smv-bv-raman-ayurdaya="1"')&&missingData.includes('கணக்கீடு கிடைக்கவில்லை'),
