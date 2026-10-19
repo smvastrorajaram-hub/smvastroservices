@@ -395,6 +395,23 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const maleficKendra = maleficInAnyKendra(map);
   const beneficKendra = beneficInAnyKendra(map, e);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
+  const maleficAspectToHouse = house => {
+    if (!houseValid(house)) return null;
+    let unknown = false;
+    for (const name of NATURAL_MALEFICS) {
+      const source = map.planets.get(name);
+      if (!source || !houseValid(source.house)) {
+        unknown = true;
+        continue;
+      }
+      if (isAspecting(source, house)) return true;
+    }
+    return unknown ? null : false;
+  };
+  const noBeneficAspectToPlanet = name => {
+    const state = aspectState(map, e, name).benefic;
+    return state === null ? null : !state;
+  };
   const lagnaLord = houseLord(map, 1), eighthLord = houseLord(map, 8);
   const thirdLord = houseLord(map, 3), sixthLord = houseLord(map, 6);
   const tenthLord = houseLord(map, 10), eleventhLord = houseLord(map, 11);
@@ -504,6 +521,32 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
         noBeneficProtection('Sun')),
       triAll(moonHouse === null ? null : moonHouse === 1,
         noBeneficProtection('Moon'))))));
+  const moonSignForBal17 = signOf(map, 'Moon');
+  const moonEighthHouse = signValid(map.lagnaSign) && signValid(moonSignForBal17)
+    ? ((moonSignForBal17 + 7 - map.lagnaSign + 12) % 12) + 1 : null;
+  rules.push(makeRule('XIV-BAL-17', 'Balarishta',
+    'Ascendant and the 8th from Moon sign are aspected by malefics',
+    triAll(maleficAspectToHouse(1), maleficAspectToHouse(moonEighthHouse))));
+  const jupiterAspectTargetsBal25 = ['Saturn', 'Sun', 'Moon', 'Mars'].map(name =>
+    isAspecting(map.planets.get('Jupiter'), houseOf(map, name)));
+  const noJupiterAspectBal25 = triAll(...jupiterAspectTargetsBal25.map(value =>
+    value === null ? null : !value));
+  rules.push(makeRule('XIV-BAL-25', 'Balarishta',
+    'Saturn 12, Sun 9, Moon 1 and Mars 8 without Jupiter aspect; Jupiter in 5 cancels',
+    triAll(
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 12,
+      houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 9,
+      moonHouse === null ? null : moonHouse === 1,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8,
+      jupiterHouse === null ? null : jupiterHouse !== 5,
+      noJupiterAspectBal25)));
+  rules.push(makeRule('XIV-BAL-26', 'Balarishta',
+    'Saturn and Mars in house 1, 8 or 7 without benefic aspects',
+    triAll(
+      inList(houseOf(map, 'Saturn'), [1, 8, 7]),
+      inList(houseOf(map, 'Mars'), [1, 8, 7]),
+      noBeneficAspectToPlanet('Saturn'),
+      noBeneficAspectToPlanet('Mars'))));
   rules.push(makeRule('XIV-BAL-27', 'Balarishta', 'Moon at a Mrityubhaga degree in a Kendra or house 8',
     triAll(isMoonMrityubhaga(map), inList(moonHouse, [1, 4, 7, 10, 8]))));
   rules.push(makeRule('XIV-BAL-29', 'Balarishta', 'Moon in 6th or 8th with both malefic and benefic aspects',
