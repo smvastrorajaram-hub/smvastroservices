@@ -616,7 +616,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Mars and Mercury in Kendras, Venus in Ascendant and exalted planets in 3rd/11th',
     triAll(isKendra(houseOf(map, 'Mars')), isKendra(houseOf(map, 'Mercury')),
       houseOf(map, 'Venus') === null ? null : houseOf(map, 'Venus') === 1,
-      exaltedPlanetInHouse(3), exaltedPlanetInHouse(11)));
+      exaltedPlanetInHouse(3), exaltedPlanetInHouse(11))));
   rules.push(makeRule('XIV-MAD-14', 'Madhyayu',
     'Mars in 5th, Sun in 7th and Saturn debilitated',
     triAll(houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 5,
