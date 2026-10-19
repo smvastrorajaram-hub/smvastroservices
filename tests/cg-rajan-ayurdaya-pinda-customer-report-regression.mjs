@@ -29,6 +29,19 @@ assert.equal(strengthTie.available,false,'equal reference strengths do not selec
 assert.equal(strengthTie.reasonCode,'shadbala-tie','equal Shadbala reports a method-selection tie');
 assert.deepEqual(strengthTie.tiedCandidates.map(candidate=>candidate.method).sort(),['natural','pinda'],
  'the tied Sun and Moon methods are both retained for side-by-side output');
+const strengthTieHtml=html({
+ planets:makeSelectorChart({sun:700,moon:700}),lagna:{longitude:0},language:'en'
+});
+assert.ok(strengthTieHtml.includes('data-ayurdaya-selection="shadbala-tie"'),
+ 'equal Sun/Moon Shadbala renders the side-by-side tie table');
+assert.ok(strengthTieHtml.includes('Pinda Ayurdaya')&&strengthTieHtml.includes('Naisargika Ayurdaya'),
+ 'both Pinda and Naisargika methods are labelled when Sun and Moon tie');
+assert.equal((strengthTieHtml.match(/data-tied-method="pinda"/g)||[]).length,8,
+ 'Pinda tie column has seven graha cells and its own total');
+assert.equal((strengthTieHtml.match(/data-tied-method="natural"/g)||[]).length,8,
+ 'Naisargika tie column has seven graha cells and its own total');
+assert.equal((strengthTieHtml.match(/data-tied-total=/g)||[]).length,2,
+ 'Pinda and Naisargika have separate totals, never an average');
 const missingStrength=selectMethod({planets:makeSelectorChart({missing:'சந்திரன்'}),lagna:{longitude:0}});
 assert.equal(missingStrength.reasonCode,'shadbala-unavailable','missing reference Shadbala blocks selection');
 const missingLagna=selectMethod({planets:makeSelectorChart(),lagna:{}});
@@ -149,7 +162,7 @@ for(const [date,time] of [
    for(const candidate of selected.tiedCandidates){
     yes(lang.includes(methodLabels[candidate.method][code]),'tied method label is visible: '+candidate.method+' '+date+' '+code);
     eq((lang.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
-     'tied method has a header plus seven graha results: '+candidate.method+' '+date+' '+code);
+     'tied method has seven graha cells plus its total: '+candidate.method+' '+date+' '+code);
    }
    eq((lang.match(/data-tied-total=/g)||[]).length,selected.tiedCandidates.length,
     'every tied method has its own total '+date+' '+code);
