@@ -514,3 +514,12 @@ Regression cases cover the qualifying chart, an extra graha in a Kendra, an empt
 “76/76” means every indexed source rule now has an evaluator; it does not mean every rule will produce a known result for an incomplete chart, nor that the entire classical Ayurdaya method is certified. The source-sensitive evidence requirements remain in force. The integrated Chapter XIV + XXVI regression and source syntax step passed on code commit `0f0501ecfbca4420d0860ea7506f7df173396218`; the full workflows were still running when this entry was drafted.
 
 **Release boundary unchanged:** PR #55 remains research-only and unmerged; `certified:false`; no customer-facing lifespan, death-age or death-date output.
+
+
+## 2026-10-19 — Neutral Tamil caution wording for XIV-ALP-13
+
+Following the user's wording correction, the operational/display label for this rule is **`கவனம் தேவை`** (“attention required”), not “death will occur” or a specific death-age claim. The English evaluator title has also been changed to start with “Attention required”.
+
+The scanned source is retained as historical/source evidence; the application-facing interpretation must not turn a traditional text statement into a certain personal death prediction. Regression now asserts the Tamil label exists and the evaluator's display title contains no “death” / “மரணம்” wording.
+
+This wording-only safeguard does not alter the rule's chart-condition arithmetic, does not issue a prediction, and does not change the release boundary: research-only, `certified:false`, PR #55 unmerged, and no customer-facing age-of-death/date output.
