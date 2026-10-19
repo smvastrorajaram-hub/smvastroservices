@@ -307,3 +307,37 @@ The selected-rule evaluator still never chooses a final longevity category or em
 - **PENDING:** 37 Chapter XIV rules still have no evaluator; their presence in the inventory is a coverage safeguard, not completion.
 - **Safety gate unchanged:** research-only; `certified:false`; no customer-facing lifespan or death prediction; no merge to `main`.
 
+## 2026-10-19 — Additional Chapter XIV evaluators from the page-image review
+
+The source evaluator has now been extended for directly checkable conditions, keeping conditions that depend on missing Dasa, Shadvarga, sunrise/sunset, Drekkana, aspect or strength evidence explicit rather than guessed.
+
+New source-numbered evaluators added from the scan:
+- **Balarishta 7–8:** exact Moon/Mars/Sun/Saturn house pattern (rule 7); weak Moon in Ascendant plus an explicit sourced-input flag for malefic aspects to houses 5, 8 and 12 (rule 8).
+- **Balarishta 13–14:** Ketu in house 4 with/aspected by malefics; Rahu in 7th aspected by Sun and Moon.
+- **Balarishta 18:** Moon in 8th, Mars in 7th and Saturn in Ascendant.
+- **Balarishta 21–24:** Moon in Ascendant with malefics/no benefic aspect; Moon Ascendant with Rahu/Mars in 8th; Sun/Saturn Ascendant with Rahu/Mars in 8th; malefics 5/8/9 plus Sun or Moon in Ascendant without benefic conjunction/aspect.
+- **Balarishta 29–30:** Moon in 6th/8th with both malefic and benefic aspects versus benefic aspect alone.
+- **Antidote 8:** Moon in 6th/8th with explicit `bornOnNightOfFullMoon` input. Missing evidence does not count as a match.
+
+The latest code-level coverage is now:
+
+| Printed category | Source rules | Evaluators present | Not implemented |
+|---|---:|---:|---:|
+| Balarishta | 30 | 20 | 10 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 10 | 5 |
+| Madhyayu | 15 | 5 | 10 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **51** | **25** |
+
+Regression now checks the 76 unique source rule IDs, that unsupported rules remain `UNKNOWN`, the updated category coverage counters, rule 7's direct positions, and Antidote 8's requirement for explicit evidence. The seven Harana factors from printed p. 202 also remain individually source-numbered and tested.
+
+### Remaining boundaries
+
+- Balarishta 4, 10–12, 15–17, 25–26 and 28 remain unimplemented; the exact birth-time/Dasa conditions and complex wording are not inferred.
+- Madhyayu 5–14 remain indexed as `UNKNOWN`; multiple rules require exact “between malefics,” weakness, Dasa-lord, or complete-placement facts not yet supplied by an independently validated evaluator.
+- Alpayu 9–11 and 13–14 remain `UNKNOWN`; disputed or multi-condition wording is not guessed.
+- This raises rule coverage; it does **not** complete every cancellation or validate the longevity classification, and does not close the separate *Ashtakavarga System of Prediction* primary Table I gate.
+
+**Release boundary unchanged:** research-only, `certified:false`, customer display prohibited for final lifespan/death-age/death-date, PR #55 stays unmerged.
+
