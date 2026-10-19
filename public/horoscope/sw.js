@@ -9,7 +9,7 @@
    activation, every open Horoscope page is navigated once to its current URL.
 */
 const OFFLINE_CACHE='smv-horoscope-offline';
-const RUNTIME_REVISION='v251-bv-raman-ayurdaya-results-20261019';
+const RUNTIME_REVISION='v250-ayurdaya-selected-total-20261019';
 
 function isOfflineAsset(url){
   if(url.origin!==self.location.origin)return false;
