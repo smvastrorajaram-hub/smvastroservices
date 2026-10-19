@@ -27,7 +27,7 @@ export async function full(body){
  // Avoid those independent calculations here; the report calculates its own
  // review-date transit and 15-year timeline through the matching path.
  if(body?.matchingOnly===true){
-  const phase4=phase4Dasa(chart);
+  const phase4=phase4Dasa(chart,adv);
   return {ok:true,meta:{complete:true,matchingOnly:true,version:'SMV-matching-1'},chart,advanced:adv,phase4};
  }
  const {panchang,transit}=await import('./transit_panchang.browser.mjs');
