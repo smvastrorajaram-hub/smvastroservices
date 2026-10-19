@@ -68,6 +68,9 @@ jobs:
           # anchor searches and render only the chapter pages actually needed.
           page_groups = [
               ("Chapter XIV — printed pages 63–72", 70, 79),
+              # The HPA Standard Horoscope BAV reduction table used by the
+              # 84-cell regression oracle is on printed page 190 (PDF page 197).
+              ("Chapter XXVI — Standard Horoscope BAV table, printed page 190", 197, 197),
               ("Chapter XXVI — printed pages 199–203", 206, 210),
           ]
           selected = []
