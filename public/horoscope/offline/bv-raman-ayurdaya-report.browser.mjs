@@ -53,7 +53,10 @@ function chartFacts(chart) {
   const planets = raw.map(p => {
     const name = nameOf(p?.name ?? p?.planet);
     const longitude = finite(p?.longitude) ? norm360(p.longitude) : null;
-    return {raw:p,name,longitude,sign:longitude===null?null:signIndex(longitude)};
+    const eclipticLatitude = finite(p?.eclipticLatitude) ? Number(p.eclipticLatitude)
+      : finite(p?.latitude) ? Number(p.latitude)
+      : finite(p?.raw?.eclipticLatitude) ? Number(p.raw.eclipticLatitude) : null;
+    return {raw:p,name,longitude,eclipticLatitude,sign:longitude===null?null:signIndex(longitude)};
   }).filter(p => PLANETS.includes(p.name));
   const byName = new Map(planets.map(p => [p.name,p]));
   const lagnaLongitude = chart?.lagna?.longitude ?? chart?.ascendantLongitude ?? chart?.lagnaLongitude;
@@ -67,43 +70,127 @@ function chartFacts(chart) {
   return {planets,byName,lagnaLongitude,lagnaSign,houseOf};
 }
 
-function planetaryWarState(planet,facts) {
+function planetaryWarAssessment(planet,facts) {
   const p = facts.byName.get(planet);
-  if (!p) return null;
+  if (!p) return {value:null,source:'chart',reason:'Planetary position is absent from the calculated chart.'};
   const explicit = firstBoolean([
     p.raw?.defeatedInPlanetaryWar,p.raw?.planetaryWarLost,p.raw?.warLost,
     p.raw?.planetaryWar?.defeated,p.raw?.planetaryWar?.lost,p.raw?.yuddha?.lost,
     p.raw?.strength?.defeatedInPlanetaryWar,p.raw?.strength?.planetaryWarLost
   ]);
-  if (explicit !== null) return explicit;
-  if (!WAR_GRAHAS.has(planet) || p.longitude === null) return false;
+  if (explicit !== null) return {value:explicit,source:'explicit-chart-flag',reason:'The chart payload explicitly supplies the planetary-war result.'};
+  if (!WAR_GRAHAS.has(planet)) return {value:false,source:'eligibility-rule',reason:'This graha is not included in the five-graha planetary-war set.'};
+  if (p.longitude === null) return {value:null,source:'missing-chart-position',reason:'The calculated true longitude is unavailable.'};
   const opponents = [...facts.byName.values()].filter(q =>
     q.name !== planet && WAR_GRAHAS.has(q.name) && q.longitude !== null && distance(p.longitude,q.longitude) <= 1);
-  if (!opponents.length) return false;
-  // A close war exists, but the chart payload does not identify the defeated graha.
-  return null;
+  if (!opponents.length) return {value:false,source:'calculated-longitude',reason:'No eligible graha is within the configured one-degree planetary-war limit.'};
+  const pairEvidence = opponents.map(q => {
+    const separation = distance(p.longitude,q.longitude);
+    // Classical latitude-based rule: Venus is treated as victor; otherwise the
+    // more northerly (larger signed ecliptic latitude) participant wins.
+    if (planet === 'Venus') return {opponent:q.name,separation,winner:'Venus',resolved:true};
+    if (q.name === 'Venus') return {opponent:q.name,separation,winner:'Venus',resolved:true};
+    if (!finite(p.eclipticLatitude) || !finite(q.eclipticLatitude)) {
+      return {opponent:q.name,separation,winner:null,resolved:false,
+        reason:'Planetary-war latitude comparison needs ecliptic latitude for both participants.'};
+    }
+    const delta = p.eclipticLatitude-q.eclipticLatitude;
+    if (Math.abs(delta) <= 1e-8) return {opponent:q.name,separation,winner:null,resolved:false,
+      reason:'The participants have indistinguishable ecliptic latitudes; the winner cannot be selected by the latitude rule.'};
+    return {opponent:q.name,separation,winner:delta>0?planet:q.name,resolved:true,
+      planetLatitude:p.eclipticLatitude,opponentLatitude:q.eclipticLatitude};
+  });
+  const defeated = pairEvidence.some(pair => pair.resolved && pair.winner !== planet);
+  if (defeated) return {value:true,source:'calculated-war-and-latitude',
+    reason:'An eligible close-war opponent wins by the Venus/latitude rule.',
+    eclipticLatitude:p.eclipticLatitude,pairEvidence};
+  if (pairEvidence.every(pair => pair.resolved)) return {value:false,source:'calculated-war-and-latitude',
+    reason:'All eligible close-war comparisons are resolved and this graha is not defeated.',
+    eclipticLatitude:p.eclipticLatitude,pairEvidence};
+  return {value:null,source:'incomplete-war-evidence',
+    reason:'A close planetary war is present, but a winner cannot be established for every pair.',
+    eclipticLatitude:p.eclipticLatitude,pairEvidence};
+}
+function planetaryWarState(planet,facts) {
+  return planetaryWarAssessment(planet,facts).value;
 }
 
-function eclipseState(planet,facts) {
+function eclipseAssessment(planet,facts) {
   const p = facts.byName.get(planet);
   const explicit = firstBoolean([
     p?.raw?.eclipsed,p?.raw?.isEclipsed,p?.raw?.strength?.eclipsed
   ]);
-  if (explicit !== null) return explicit;
-  if (planet !== 'Sun' && planet !== 'Moon') return false;
+  if (explicit !== null) return {value:explicit,source:'explicit-chart-flag',
+    reason:'The chart payload explicitly supplies the eclipse result.'};
+  if (planet !== 'Sun' && planet !== 'Moon') return {value:false,source:'eligibility-rule',
+    reason:'The Chapter XXVI eclipse reduction applies only to Sun or Moon.'};
   const sun = facts.byName.get('Sun'), moon = facts.byName.get('Moon');
   const rahu = facts.byName.get('Rahu'), ketu = facts.byName.get('Ketu');
-  if (![sun,moon,rahu,ketu].every(x => x && x.longitude !== null)) return null;
+  const missingBodies = [['Sun',sun],['Moon',moon],['Rahu',rahu],['Ketu',ketu]]
+    .filter(([,body]) => !body || body.longitude === null).map(([name]) => name);
+  if (missingBodies.length) return {value:null,source:'missing-chart-position',
+    reason:'Eclipse geometry cannot be evaluated because one or more required longitudes are missing.',
+    missingBodies};
   const phase = distance(sun.longitude,moon.longitude);
+  const focal = planet === 'Sun' ? sun : moon;
+  const nearNode = Math.min(distance(focal.longitude,rahu.longitude),distance(focal.longitude,ketu.longitude));
+  const moonLatitude = finite(moon.eclipticLatitude) ? moon.eclipticLatitude : null;
   if (planet === 'Sun') {
-    const nearNode = Math.min(distance(sun.longitude,rahu.longitude),distance(sun.longitude,ketu.longitude));
-    if (phase > 15 || nearNode > 18) return false;
-    return phase <= 10 && nearNode <= 10 ? true : null;
+    if (phase > 15 || nearNode > 18) return {value:false,source:'calculated-longitude-orb',
+      reason:'Sun–Moon phase or nearest-node separation is outside the configured possible-eclipse band.',
+      phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
+    if (phase <= 10 && nearNode <= 10) return {value:true,source:'calculated-longitude-orb',
+      reason:'Sun–Moon phase and nearest-node separation are both inside the configured eclipse band.',
+      phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
+  } else {
+    const opposition = Math.abs(180-phase);
+    if (opposition > 15 || nearNode > 18) return {value:false,source:'calculated-longitude-orb',
+      reason:'Moon–Sun opposition or nearest-node separation is outside the configured possible-eclipse band.',
+      phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+      nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
+    if (opposition <= 10 && nearNode <= 10) return {value:true,source:'calculated-longitude-orb',
+      reason:'Moon–Sun opposition and nearest-node separation are both inside the configured eclipse band.',
+      phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+      nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
   }
-  const nearNode = Math.min(distance(moon.longitude,rahu.longitude),distance(moon.longitude,ketu.longitude));
-  const opposition = Math.abs(180-phase);
-  if (opposition > 15 || nearNode > 18) return false;
-  return opposition <= 10 && nearNode <= 10 ? true : null;
+  return {value:null,source:'ambiguous-eclipse-band',
+    reason:'The longitude geometry falls between the configured definite and definitely-not-eclipsed limits. This chart schema has no explicit eclipse flag; latitude is recorded for audit but is not enough to certify the source-book Harana predicate.',
+    phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude,
+    configuredPossiblePhaseDegrees:15,configuredDefinitePhaseDegrees:10,
+    configuredPossibleNodeDistanceDegrees:18,configuredDefiniteNodeDistanceDegrees:10};
+}
+function eclipseState(planet,facts) {
+  return eclipseAssessment(planet,facts).value;
+}
+
+export function bvRamanAyurdayaHaranaDiagnostics(chart) {
+  const facts = chartFacts(chart);
+  const inputs = haranaInputs(chart);
+  const factorKeys = ['conjunctionInSign','debilitated','combust','temporaryEnemySign','aboveHorizon','defeatedInPlanetaryWar','eclipsed'];
+  return Object.freeze(Object.fromEntries(PLANETS.filter(name => !['Rahu','Ketu'].includes(name)).map(name => {
+    const p = facts.byName.get(name);
+    const values = inputs[name] || {};
+    const factors = Object.fromEntries(factorKeys.map(key => {
+      const value = typeof values[key] === 'boolean' ? values[key] : null;
+      let assessment = {value,source:value === null?'unresolved-chart-evidence':'derived-chart-evidence',
+        reason:value === null?'Required evidence for this factor is missing.':'The factor was resolved from the calculated natal chart.'};
+      if (key === 'defeatedInPlanetaryWar') assessment = planetaryWarAssessment(name,facts);
+      if (key === 'eclipsed') assessment = eclipseAssessment(name,facts);
+      if (key === 'conjunctionInSign' && value === null) assessment = {value:null,source:'incomplete-sign-data',
+        reason:'The sign of every required graha is not available, so same-sign conjunction cannot be set to false.'};
+      if (key === 'temporaryEnemySign' && value === null) assessment = {value:null,source:'missing-sign-lord-position',
+        reason:'The planet ruling the occupied sign has no usable calculated sign.'};
+      if (key === 'aboveHorizon' && value === null) assessment = {value:null,source:'missing-lagna-or-house',
+        reason:'The calculated Lagna/house position is unavailable, so above-horizon status cannot be derived.'};
+      if (!p && value === null && !['defeatedInPlanetaryWar','eclipsed'].includes(key)) assessment = {value:null,source:'missing-planet',
+        reason:'The required graha is absent from the calculated chart.'};
+      return [key,Object.freeze({...assessment,missing:value===null})];
+    }));
+    const missingFactors = factorKeys.filter(key => factors[key].value === null);
+    return [name,Object.freeze({planet:name,longitude:p?.longitude??null,
+      eclipticLatitude:p?.eclipticLatitude??null,factors:Object.freeze(factors),
+      missingFactors:Object.freeze(missingFactors)})];
+  })));
 }
 
 function haranaInputs(chart) {
@@ -244,7 +331,7 @@ export function bvRamanAyurdayaResearchResult({chart,bavRows,language='ta',evide
   const occupied = occupiedSigns || [...new Set(facts.planets.filter(p=>p.sign!==null).map(p=>p.sign))];
   const explicitEvidence = evidence || {};
   const selectedHarana = haranaByPlanet || haranaInputs(chart);
-  return bvRamanIntegratedAyurdayaResearch({
+  const integrated = bvRamanIntegratedAyurdayaResearch({
     chart,
     evidence:explicitEvidence,
     bavRows:bavRows ?? chart?.advanced?.ashtakavarga?.bhinna ?? chart?.ashtakavarga?.bhinna,
@@ -252,6 +339,7 @@ export function bvRamanAyurdayaResearchResult({chart,bavRows,language='ta',evide
     planetSigns:signs,
     haranaByPlanet:selectedHarana
   });
+  return Object.freeze({...integrated,haranaInputDiagnostics:bvRamanAyurdayaHaranaDiagnostics(chart)});
 }
 
 /**
