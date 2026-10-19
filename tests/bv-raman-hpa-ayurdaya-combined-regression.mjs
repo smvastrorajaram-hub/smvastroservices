@@ -1104,6 +1104,148 @@ ok(!/cg-rajan|classical-shodhana/i.test(source),
   'combined module does not import C.G. Rajan or BPHS Shodhana helpers');
 ok(!/predictedDeathAge|finalAgeOrDateOfDeath\s*=\s*[^n]/i.test(source),
   'combined module has no age-of-death predictor');
+
+// Chapter XIV source-rule evidence fixtures for the predicates that remained
+// UNKNOWN in every one of the 100 engine-calculated QA charts. These test the
+// exact source-numbered rule evaluator with positive, negative and absent-input
+// cases. They are rule-level fixtures, not claimed to be independent printed
+// worked-chart examples; rule statements/pages remain tied to the inspected
+// HPA 20th-edition pp. 64–71 source inventory.
+const xivSourceFixturePlanets = [
+  ['Sun', 7], ['Moon', 2], ['Mars', 8], ['Mercury', 3], ['Jupiter', 4],
+  ['Venus', 5], ['Saturn', 10], ['Rahu', 11], ['Ketu', 12]
+];
+function makeXivSourceFixture({houses={}, omit=[], lagnaLongitude=0, longitudes={}}={}) {
+  const planets=xivSourceFixturePlanets
+    .filter(([name])=>!omit.includes(name))
+    .map(([name,defaultHouse],index)=>{
+      const house=houses[name]??defaultHouse;
+      const defaultLongitude=((house-1)*30)+5+(index%7);
+      return {name,bhava:house,longitude:longitudes[name]??defaultLongitude};
+    });
+  return {lagna:{longitude:lagnaLongitude},planets};
+}
+function xivRuleStatus(ruleId, chart, evidence={}) {
+  const result=bvRamanChapterXIVLongevityRules({chart,evidence});
+  return result.rules.find(rule=>rule.id===ruleId)?.status;
+}
+function checkXivRuleThreeStates({id,page,number,chart=makeXivSourceFixture(),matchedEvidence,
+  notMatchedEvidence,unknownEvidence={},matchChart=chart,notMatchChart=chart,unknownChart=chart}) {
+  const sourceRule=BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.find(rule=>rule.id===id);
+  ok(!!sourceRule, id+' is linked to the inspected Chapter XIV rule inventory');
+  eq(sourceRule.sourcePrintedPage,page,id+' keeps the printed page citation');
+  eq(sourceRule.sourceRuleNumber,number,id+' keeps the printed rule number');
+  eq(xivRuleStatus(id,matchChart,matchedEvidence),'MATCHED',id+' source-rule positive evidence resolves MATCHED');
+  eq(xivRuleStatus(id,notMatchChart,notMatchedEvidence),'NOT_MATCHED',id+' source-rule negative evidence resolves NOT_MATCHED');
+  eq(xivRuleStatus(id,unknownChart,unknownEvidence),'UNKNOWN',id+' remains UNKNOWN when required evidence is absent');
+}
+// HPA pp. 64–66: Balarishta source rules.
+checkXivRuleThreeStates({
+ id:'XIV-BAL-04',page:64,number:4,
+ matchedEvidence:{birthWithin48MinutesOfSunriseOrSunset:true,moonsHoraRising:true,maleficsInMaleficSignNavamsas:true},
+ notMatchedEvidence:{birthWithin48MinutesOfSunriseOrSunset:false,moonsHoraRising:true,maleficsInMaleficSignNavamsas:true}
+});
+checkXivRuleThreeStates({
+ id:'XIV-BAL-10',page:65,number:10,
+ matchedEvidence:{birthDasaLordConjoinedWithManyMalefics:true},
+ notMatchedEvidence:{birthDasaLordConjoinedWithManyMalefics:false}
+});
+checkXivRuleThreeStates({
+ id:'XIV-BAL-15',page:65,number:15,
+ chart:makeXivSourceFixture({lagnaLongitude:30}),
+ matchedEvidence:{birthDasaLord:'Venus',birthAntardasaLord:'Jupiter'},
+ notMatchedEvidence:{birthDasaLord:'Saturn',birthAntardasaLord:'Mercury'}
+});
+checkXivRuleThreeStates({
+ id:'XIV-BAL-28',page:66,number:28,
+ matchedEvidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:true},
+ notMatchedEvidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:false,moonSignLordBadlyPlaced:false}
+});
+// HPA p. 67: Antidote evidence must not be auto-inferred when absent.
+checkXivRuleThreeStates({
+ id:'XIV-ANT-04',page:67,number:4,
+ matchedEvidence:{fullMoonInBeneficSignAndWellAspected:true},
+ notMatchedEvidence:{fullMoonInBeneficSignAndWellAspected:false}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ANT-05',page:67,number:5,
+ matchedEvidence:{strongPlanets:['Mercury']},
+ notMatchedEvidence:{strongPlanets:[]}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ANT-07',page:67,number:7,
+ matchedEvidence:{fullMoonBetweenBenefics:true},
+ notMatchedEvidence:{fullMoonBetweenBenefics:false}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ANT-09',page:67,number:9,
+ matchedEvidence:{fullMoonAspectsLagna:true},
+ notMatchedEvidence:{fullMoonAspectsLagna:false}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ANT-10',page:67,number:10,
+ matchedEvidence:{maleficsInBeneficShadvargasWithBeneficAspect:true},
+ notMatchedEvidence:{maleficsInBeneficShadvargasWithBeneficAspect:false}
+});
+// HPA pp. 69–70: Alpayu evidence and Lagna/8th-lord placement.
+checkXivRuleThreeStates({
+ id:'XIV-ALP-06',page:69,number:6,
+ chart:makeXivSourceFixture({houses:{Mars:1}}),
+ matchedEvidence:{weakPlanets:['Mars']},
+ notMatchedEvidence:{weakPlanets:[]}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ALP-12',page:70,number:12,
+ chart:makeXivSourceFixture({houses:{Mars:1}}),
+ matchedEvidence:{weakPlanets:['Mars']},
+ notMatchedEvidence:{weakPlanets:[]}
+});
+checkXivRuleThreeStates({
+ id:'XIV-ALP-14',page:70,number:14,
+ matchedEvidence:{strongMaleficsInKendrasWithoutBeneficAspects:true},
+ notMatchedEvidence:{strongMaleficsInKendrasWithoutBeneficAspects:false}
+});
+// HPA pp. 70–71: Madhyayu rules.
+checkXivRuleThreeStates({
+ id:'XIV-MAD-02',page:70,number:2,
+ matchedEvidence:{strongPlanets:['Mars','Saturn']},
+ notMatchedEvidence:{strongPlanets:[]}
+});
+const mad03PositiveChart=makeXivSourceFixture({houses:{Mercury:2,Jupiter:3,Venus:11}});
+const mad03NegativeChart=makeXivSourceFixture({houses:{Mercury:2,Jupiter:4,Venus:11}});
+const mad03IncompleteChart=makeXivSourceFixture({omit:['Mercury']});
+checkXivRuleThreeStates({
+ id:'XIV-MAD-03',page:70,number:3,
+ chart:mad03PositiveChart,matchedEvidence:{},notMatchedEvidence:{},
+ matchChart:mad03PositiveChart,notMatchChart:mad03NegativeChart,unknownChart:mad03IncompleteChart
+});
+checkXivRuleThreeStates({
+ id:'XIV-MAD-04',page:70,number:4,
+ matchedEvidence:{allPlanetsMiddleFourHouses:true},
+ notMatchedEvidence:{allPlanetsMiddleFourHouses:false}
+});
+checkXivRuleThreeStates({
+ id:'XIV-MAD-15',page:71,number:15,
+ matchedEvidence:{beneficsInKendrasAndTrikonas:true,strongPlanets:['Saturn']},
+ notMatchedEvidence:{beneficsInKendrasAndTrikonas:false,strongPlanets:[]}
+});
+// HPA p. 71: this full-chart rule must be derived from actual houses/natures;
+// it should not depend on a duplicated caller-supplied boolean.
+const pur02PositiveChart=makeXivSourceFixture({
+ houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:4,Venus:5,Saturn:10,Rahu:11,Ketu:12},
+ longitudes:{Sun:245,Moon:20,Mars:215,Mercury:65,Jupiter:95,Venus:125,Saturn:275,Rahu:305,Ketu:335}
+});
+const pur02NegativeChart=makeXivSourceFixture({
+ houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:7,Venus:5,Saturn:10,Rahu:11,Ketu:12},
+ longitudes:{Sun:245,Moon:20,Mars:215,Mercury:65,Jupiter:185,Venus:125,Saturn:275,Rahu:305,Ketu:335}
+});
+const pur02IncompleteChart=makeXivSourceFixture({omit:['Mercury']});
+checkXivRuleThreeStates({
+ id:'XIV-PUR-02',page:71,number:2,
+ matchChart:pur02PositiveChart,notMatchChart:pur02NegativeChart,unknownChart:pur02IncompleteChart,
+ matchedEvidence:{},notMatchedEvidence:{},unknownEvidence:{}
+});
+
 console.log(JSON.stringify({
   pass:true, assertions,
   scope:'B.V. Raman HPA Chapter XIV rule evidence + Chapter XXVI Ashtakavarga arithmetic',
