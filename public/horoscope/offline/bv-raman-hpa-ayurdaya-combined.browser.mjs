@@ -264,8 +264,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })();
   rules.push(makeRule('XIV-BAL-01', 'Balarishta', 'Malefic in the final Navamsa', maleficsLastNavamsa));
   rules.push(makeRule('XIV-BAL-02', 'Balarishta',
-    'Moon in a Kendra with malefics (same-sign conjunction)',
-    triAll(isKendra(moonHouse), moonWithMalefics)));
+    'Moon in a Kendra with malefics and no benefic aspect (same-sign conjunction)',
+    triAll(isKendra(moonHouse), moonWithMalefics, noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
     'Moon in house 7, 8 or 12 with malefics and no benefic aspect',
     triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
