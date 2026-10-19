@@ -282,9 +282,9 @@ function strengthFlag(evidence, name, type) {
   if (type === 'weak' && name === 'LagnaLord') return tri(evidence?.weakLagnaLord);
   return null;
 }
-function makeRule(id, category, title, matched) {
+function makeRule(id, category, title, matched, presentation = {}) {
   const value = tri(matched);
-  return Object.freeze({ id, category, title,
+  return Object.freeze({ id, category, title, ...presentation,
     status: value === true ? 'MATCHED' : value === false ? 'NOT_MATCHED' : 'UNKNOWN' });
 }
 
@@ -362,7 +362,7 @@ const CHAPTER_XIV_RULE_GROUPS = Object.freeze([
       'Lagna and 8th lords join in 8th with malefics and without benefic aspect.',
       'Evil planets in houses 1, 2 and 8 with benefics outside Kendras.',
       'Birth lord weak and 8th lord in a Kendra.',
-      'Lagna and 8th lords in Kendras, a planet in house 8, and no other planets in Kendras.',
+      'Attention required: Lagna and 8th lords in Kendras, a planet in house 8, and no other planets in Kendras.',
       'Strong malefics in Kendras without benefic aspects.',
       'Lagna and Moon both in common signs.'
     ]
@@ -769,13 +769,16 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   // occupy a Kendra. Incomplete planetary placement data cannot prove absence.
   const permittedKendraLords = new Set([lagnaLord, eighthLord].filter(Boolean));
   rules.push(makeRule('XIV-ALP-13', 'Alpayu',
-    'Lagna and 8th lords in Kendras; a planet in house 8; no other planets in Kendras',
+    'Attention required: Lagna and 8th lords in Kendras; house 8 occupied; no other planets in Kendras',
     triAll(
       isKendra(lagnaLordHouse),
       isKendra(eighthLordHouse),
       planetInHouseState(map, 8),
       noOtherPlanetsInKendras(map, permittedKendraLords)
-    )));
+    ), {
+      displayMessageTamil: 'கவனம் தேவை',
+      interpretationPolicy: 'Non-fatalistic caution wording; never display as a death prediction.'
+    }));
 
   // Printed pp. 70–71 list these as distinct combinations: never AND separate rules together.
   rules.push(makeRule('XIV-MAD-01', 'Madhyayu',
