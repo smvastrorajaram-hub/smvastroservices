@@ -227,3 +227,24 @@ Implementation changes:
 - **PASS — Chapter XIV rule boundary:** rule 2 vs rule 3 and the separate Madhyayu combinations now follow the scanned wording.
 - **PENDING — Broader certification:** complete per-sign reduced-BAV rows for all seven grahas, source attribution for every half-deduction factor, exhaustive Chapter XIV rule/cancellation coverage, and independent live-chart golden oracles.
 - **SAFETY GATE:** research-only; no customer-facing longevity or death-age/date output; `certified:false`; no production `main` change.
+
+## 2026-10-19 — HPA printed p. 190 Ashtakavarga table pinned as a separate primary oracle
+
+The repository's primary scan was inspected at PDF image page 197, printed p. 190, headed **“Ashtakavarga Tables Before and After Reduction.”** A separate source fixture, `BV_RAMAN_HPA_STANDARD_HOROSCOPE_ASHTAKAVARGA_ORACLE`, and regression pins have been added.
+
+- All 84 before-reduction BAV cells are transcribed by graha and sign, Aries through Pisces.
+- All 84 after-reduction A.R. cells are transcribed separately; no calculated values were substituted for printed cells.
+- Printed row totals before reduction: Sun 48, Moon 49, Mars 39, Mercury 54, Jupiter 56, Venus 52, Saturn 39; overall total **337**.
+- Printed row totals after reduction: Sun 14, Moon 12, Mars 1, Mercury 15, Jupiter 10, Venus 11, Saturn 18; overall total **81**.
+- Printed per-sign totals before reduction: `29, 33, 33, 28, 23, 27, 28, 24, 30, 25, 26, 31`.
+- Printed per-sign totals after reduction: `6, 13, 6, 12, 2, 7, 3, 8, 8, 4, 4, 8`.
+
+This is **not** the same fixture as `BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE`, which remains explicitly attributed to a secondary transcription of *Ashtakavarga System of Prediction*, Chapter II, with its stated 2026 position correction. The old HPA printed table is retained as a cross-reference only; its cells must not silently overwrite the separately versioned ASOP table.
+
+### Gate status after this step
+
+- **PASS — HPA p. 190 transcription regression:** 168 cells (84 B.R. + 84 A.R.), 14 graha-row totals, 24 per-sign totals and the 337/81 aggregate checks are pinned by tests.
+- **NOT YET PASS — all reductions algorithmically reconciled:** this fixture verifies the printed table data and its sums; it does not yet certify that all seven live Trikona/Ekadhipatya calculations reproduce this table from a fully sourced set of placements and occupancy facts.
+- **PENDING — ASOP primary Table I:** the original page image for *Ashtakavarga System of Prediction*, Chapter II, Table I has not been found in the repository or the inspected uploaded-PDF library. The 2026 correction note is secondary evidence, not a replacement for the original page.
+- **Safety gate unchanged:** research-only; `certified:false`; no customer-facing lifespan/death age/date; no production merge.
+
