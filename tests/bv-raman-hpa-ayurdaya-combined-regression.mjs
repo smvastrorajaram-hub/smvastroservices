@@ -81,6 +81,43 @@ eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only')
 // Source-rule fixtures for the still-under-audited, chart-derivable placements.
 // These are deliberately constructed rule examples from the printed combinations,
 // not claimed as verbatim natal charts printed in the book.
+// Primary-source worked chart: HPA 20th ed., printed p.68, Horoscope No.1.
+// The figure places Aquarius Lagna, Moon in Leo (7th), Venus/Saturn/Ketu in
+// Scorpio (10th), Rahu in Taurus (4th), Sun/Mars/Mercury in Sagittarius (11th),
+// and Jupiter in Pisces (2nd). The text says Moon is afflicted by Saturn with
+// no benefic aspect; Venus is the birth Mahadasha lord, conjoined Saturn/Ketu
+// and aspected by Rahu. A representative Moon longitude at 134°40' lies
+// 1°20' into Purva Phalguni: 10% of Venus MD elapsed, so Venus AD has 16 months
+// remaining (40-month AD minus 24 months elapsed in MD). This is a source-based
+// chart-position reconstruction, not an independently calculated historical chart.
+const hpaPrintedHoroscope1 = {
+  lagna:{longitude:300},
+  planets:[
+    {name:'Jupiter',longitude:345,bhava:2},
+    {name:'Rahu',longitude:45,bhava:4},
+    {name:'Moon',longitude:134+40/60,bhava:7},
+    {name:'Venus',longitude:225,bhava:10},
+    {name:'Saturn',longitude:230,bhava:10},
+    {name:'Ketu',longitude:225,bhava:10},
+    {name:'Sun',longitude:250,bhava:11},
+    {name:'Mars',longitude:251,bhava:11},
+    {name:'Mercury',longitude:252,bhava:11}
+  ]
+};
+const hpaHoroscope1Rules = bvRamanChapterXIVLongevityRules({
+  chart:hpaPrintedHoroscope1,evidence:{}
+});
+eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-03').status,'MATCHED',
+  'HPA p.68 Horoscope No.1: Moon in 7th, Saturn aspect and no benefic aspect match Balarishta rule 3');
+eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-10').status,'MATCHED',
+  'HPA p.68 Horoscope No.1: Venus birth Dasa lord conjoined Saturn/Ketu matches Balarishta rule 10');
+eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-15').status,'NOT_MATCHED',
+  'HPA p.68 Horoscope No.1: computed Venus/Venus Dasa pair does not satisfy the Lagna/8th-lord Dasa rule');
+eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-03').sourcePrintedPage,64,
+  'Rule 3 match retains source p.64 while its worked example is p.68');
+eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-10').sourcePrintedPage,65,
+  'Rule 10 match retains source p.65 while its worked example is p.68');
+
 const mad03BookCombination = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
     {name:'Mercury',longitude:60,bhava:2},
