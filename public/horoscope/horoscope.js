@@ -2,6 +2,9 @@
 /* Tamil Horoscope Generator - V121: server-side astronomical calculation engine. */
 (function(){
   const $=id=>document.getElementById(id);
+  // Shared shape-normalizer used by both Advanced Analysis and the Phase-4 Dasa renderer.
+  // Keep it in the enclosing horoscope module scope; Phase-4 renders in a separate function.
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const rasiList=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
   const rasiIndex=r=>rasiList.indexOf(r);
@@ -983,7 +986,6 @@
     const planetMap={சூரியன்:'Sun',சந்திரன்:'Moon',செவ்வாய்:'Mars',புதன்:'Mercury',குரு:'Jupiter',சுக்கிரன்:'Venus',சனி:'Saturn',ராகு:'Rahu',கேது:'Ketu'};
     const nakMap={அஸ்வினி:'Ashwini',பரணி:'Bharani',கார்த்திகை:'Krittika',ரோகிணி:'Rohini',மிருகசீரிஷம்:'Mrigashira',திருவாதிரை:'Ardra',புனர்பூசம்:'Punarvasu',பூசம்:'Pushya',ஆயில்யம்:'Ashlesha',மகம்:'Magha',பூரம்:'Purva Phalguni',உத்திரம்:'Uttara Phalguni',ஹஸ்தம்:'Hasta',சித்திரை:'Chitra',சுவாதி:'Swati',விசாகம்:'Vishakha',அனுஷம்:'Anuradha',கேட்டை:'Jyeshtha',மூலம்:'Mula',பூராடம்:'Purva Ashadha',உத்திராடம்:'Uttara Ashadha',திருவோணம்:'Shravana',அவிட்டம்:'Dhanishtha',சதயம்:'Shatabhisha',பூரட்டாதி:'Purva Bhadrapada',உத்திரட்டாதி:'Uttara Bhadrapada',ரேவதி:'Revati'};
     const raw=v=>{if(v&&typeof v==='object'){return v.name??v.label??v.value??v.rasi??v.planet??v.nakshatra??'';}return v??'';};
-    const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
     const P=v=>{const q=raw(v);const rev={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};return ta?(rev[q]||String(q)):planetMap[q]||String(q);}; const PS=v=>{const q=raw(v);const m={சூரியன்:'Su',சந்திரன்:'Mo',செவ்வாய்:'Ma',புதன்:'Me',குரு:'Ju',சுக்கிரன்:'Ve',சனி:'Sa',ராகு:'Ra',கேது:'Ke',Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};return m[q]||String(q||'');};
     const N=v=>nakEnglish(raw(v));
     const nakEnglish=v=>{const q=String(v??'').trim().replace('மிருகசீரிடம்','மிருகசீரிஷம்');const en=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishtha','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];const ta=['அஸ்வினி','பரணி','கார்த்திகை','ரோகிணி','மிருகசீரிஷம்','திருவாதிரை','புனர்பூசம்','பூசம்','ஆயில்யம்','மகம்','பூரம்','உத்திரம்','ஹஸ்தம்','சித்திரை','சுவாதி','விசாகம்','அனுஷம்','கேட்டை','மூலம்','பூராடம்','உத்திராடம்','திருவோணம்','அவிட்டம்','சதயம்','பூரட்டாதி','உத்திரட்டாதி','ரேவதி'];let i=en.findIndex(n=>q.toLowerCase()===n.toLowerCase()||q.toLowerCase().includes(n.toLowerCase()));if(i>=0)return en[i];i=ta.findIndex(n=>q===n||q.includes(n));return i>=0?(en[i]||q):q||'—'};
