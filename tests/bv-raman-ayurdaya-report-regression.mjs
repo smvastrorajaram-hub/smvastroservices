@@ -85,12 +85,16 @@ const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',impor
 const matching=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.mjs',import.meta.url),'utf8');
 ok(horoscope.includes('bv-raman-ayurdaya-report.browser.mjs'),'Horoscope source imports the new B.V. Raman report renderer');
 ok(matching.includes('bv-raman-ayurdaya-report.browser.mjs'),'Marriage Matching source imports the new B.V. Raman report renderer');
+ok(horoscope.includes('v=20261019-ayurdaya-rules-duration-v2'),'Horoscope uses the updated B.V. Raman report module version');
+ok(matching.includes('v=20261019-ayurdaya-rules-duration-v2'),'Matching uses the updated B.V. Raman report module version');
+ok(fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8').includes('marriage-basic-report.mjs?v=20261019-ayurdaya-rules-duration-v253'),'Matching cache-busts the parent report module too');
+
 ok(horoscope.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Horoscope');
 ok(matching.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Matching');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.js?v=20261019-bv-raman-ayurdaya-v252'),
+ok(appHtml.includes('horoscope.js?v=20261019-ayurdaya-rules-duration-v253'),
  'The PWA requests the revised Horoscope script instead of its previous cached URL');
 ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
  'Horoscope uses the existing cream header colour for both nested result tables');
