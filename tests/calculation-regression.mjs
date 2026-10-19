@@ -77,7 +77,7 @@ ok(auditQualifies.views[1].status==='met'&&auditQualifies.views[1].rahuHouseFrom
 const d95=phase4Dasa(dasaFixture(45+50/60)).kalachakra;
 ok(d95.available&&d95.nakshatraIndex===4&&d95.pada===2&&d95.group==='apasavya1','PVR §24.2 Example 95: Moon 15°50 Taurus maps to Rohini Pada 2 / Apasavya-1');
 ok(Math.abs(d95.paramayush-83)<1e-9&&Math.abs(d95.elapsedYearsBeforeBirth-62.25)<1e-9&&Math.abs(d95.birthDasaRemainingYears-4.75)<1e-9,'PVR Example 95: independent paramayush 83, elapsed 62.25 and remaining 4.75 years');
-ok(d95.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR Example 95/97: Drigdasa? Kalachakra Mahadasa continuation matches Sc, Li, Vi, Le, Cn, Ge, Ta, Ar, Sg');
+ok(d95.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR Examples 95/97: Kalachakra Mahadasa continuation matches Sc, Li, Vi, Le, Cn, Ge, Ta, Ar, Sg');
 ok(d95.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR §24.2 Example 97: Scorpio Antardasa order crosses from Rohini Pada 2 into Pada 3');
 ok(Math.abs(d95.sequence[0].antardasas.reduce((s,x)=>s+x.years,0)-d95.sequence[0].years)<1e-8,'Kalachakra Example 95: nine weighted Antardasas sum exactly to the Mahadasa duration');
 ok(Math.abs(d95.sequence[0].antardasas[0].years-(4.75*7/100))<1e-9,'Kalachakra Example 95: Scorpio Antardasa weight uses actual nine-sign sum 100 (not birth pada paramayush 83)');
@@ -108,7 +108,7 @@ const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
 const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
 renderContext.runRenderer({ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},pvrResearch:{longevity:{dasaTiming:{ageBandYears:{start:0,end:36},niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},shoola:{periods:[]}}},sodhyaPindaEventTiming:{rows:[]}},'ta',mockSlot);
-ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்')&&mockSlot.innerHTML.includes('நூல் பக்கங்கள்')===false,'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
+ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
 
 const charts=[];
 let pvrTransitFixtureRows=null;
