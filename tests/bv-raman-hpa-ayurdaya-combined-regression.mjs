@@ -116,6 +116,12 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-06').implemented, true,
   'Madhyayu rule 6 tests the birth lord in 6/8 with malefic conjunction and no benefic aspect');
 eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-13').implemented, true,
   'Madhyayu rule 13 checks benefic Kendra evidence and aspects to Lagna/lord');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-09').implemented, true,
+  'Alpayu rule 9 checks Saturn/Lagna-owner placement plus explicit benefic-house evidence');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-07').implemented, true,
+  'Madhyayu rule 7 checks Saturn/Moon placements plus explicit other-graha evidence');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-11').implemented, true,
+  'Madhyayu rule 11 checks four placements plus explicit unfavourable-house evidence');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
   'Balarishta rule 4 remains UNKNOWN when sunrise, Hora and Navamsa facts are absent');
 eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), false,
@@ -128,8 +134,8 @@ eq(xiv.ruleCoverageCounts.Balarishta.implemented, 29,
   'twenty-nine Balarishta source rules have evaluators after the rule 4/10/28 pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
-eq(xiv.ruleCoverageCounts.Alpayu.implemented, 13,
-  'Alpayu implementation count includes rule 10 in addition to the previously evaluated rules');
+eq(xiv.ruleCoverageCounts.Alpayu.implemented, 14,
+  'Alpayu evaluator count includes rules 9 and 10 with explicit missing-evidence handling');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-11').implemented, true,
   'Alpayu rule 11 has an independent evaluator');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-14').implemented, true,
@@ -148,8 +154,8 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-15').sourceRuleNumber, 15,
   'powerful Saturn with benefics in Kendras/Trikonas is correctly attributed to printed Madhyayu rule 15');
 eq(xiv.ruleCoverageCounts.Madhyayu.sourceRules, 15,
   'Madhyayu inventory retains all fifteen source rules after the new evaluators');
-eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 13,
-  'Madhyayu evaluator count includes rules 5, 6 and 13');
+eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 15,
+  'all fifteen source-numbered Madhyayu rules now have evaluators');
 
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
@@ -428,6 +434,40 @@ const madhyayu06NoConjunction = bvRamanChapterXIVLongevityRules({
 eq(madhyayu06NoConjunction.rules.find(rule => rule.id === 'XIV-MAD-06').status !== 'MATCHED',
   true, 'Madhyayu rule 6 does not falsely match without malefic conjunction');
 
+const madhyayu07SaturnMoonOtherGrahas = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Saturn',longitude:0,bhava:1},{name:'Moon',longitude:210,bhava:8}
+  ]},evidence:{otherGrahasInEleventh:true}
+});
+eq(madhyayu07SaturnMoonOtherGrahas.rules.find(rule => rule.id === 'XIV-MAD-07').status,
+  'MATCHED', 'Madhyayu rule 7 matches Saturn in Lagna, Moon in 8th and explicit other-graha-in-11th evidence');
+
+const madhyayu07MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Saturn',longitude:0,bhava:1},{name:'Moon',longitude:210,bhava:8}
+  ]}
+});
+eq(madhyayu07MissingEvidence.rules.find(rule => rule.id === 'XIV-MAD-07').status, 'UNKNOWN',
+  'Madhyayu rule 7 remains UNKNOWN without evidence for the other planets');
+
+const madhyayu11PlacementsAndUnfavourableEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Saturn',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:180,bhava:7},{name:'Rahu',longitude:270,bhava:10}
+  ]},evidence:{jupiterVenusMercuryInUnfavourableHouses:true}
+});
+eq(madhyayu11PlacementsAndUnfavourableEvidence.rules.find(rule => rule.id === 'XIV-MAD-11').status,
+  'MATCHED', 'Madhyayu rule 11 matches the four printed placements with explicit unfavourable-house evidence');
+
+const madhyayu11MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Saturn',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:180,bhava:7},{name:'Rahu',longitude:270,bhava:10}
+  ]}
+});
+eq(madhyayu11MissingEvidence.rules.find(rule => rule.id === 'XIV-MAD-11').status, 'UNKNOWN',
+  'Madhyayu rule 11 remains UNKNOWN without a validated Jupiter/Venus/Mercury house assessment');
+
 const madhyayu13BeneficsAndMaleficAspect = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
     {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
@@ -523,6 +563,26 @@ const exaltedSaturnInsteadMadhyayu14 = bvRamanChapterXIVLongevityRules({
 });
 eq(exaltedSaturnInsteadMadhyayu14.rules.find(rule => rule.id === 'XIV-MAD-14').status, 'NOT_MATCHED',
   'Madhyayu rule 14 does not match when Saturn is not debilitated');
+
+const alpayu09SaturnInMaleficOwnedLagna = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Saturn',longitude:0,bhava:1}]},
+  evidence:{beneficsInHouses3_6_9_12:true}
+});
+eq(alpayu09SaturnInMaleficOwnedLagna.rules.find(rule => rule.id === 'XIV-ALP-09').status,
+  'MATCHED', 'Alpayu rule 9 matches Saturn in a malefic-owned Lagna when benefic-house evidence is true');
+
+const alpayu09VenusOwnedLagna = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:30},planets:[{name:'Saturn',longitude:30,bhava:1}]},
+  evidence:{beneficsInHouses3_6_9_12:true}
+});
+eq(alpayu09VenusOwnedLagna.rules.find(rule => rule.id === 'XIV-ALP-09').status,
+  'NOT_MATCHED', 'Alpayu rule 9 does not match when the Lagna is Venus-owned rather than malefic-owned');
+
+const alpayu09MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Saturn',longitude:0,bhava:1}]}
+});
+eq(alpayu09MissingEvidence.rules.find(rule => rule.id === 'XIV-ALP-09').status, 'UNKNOWN',
+  'Alpayu rule 9 remains UNKNOWN without the source-specific benefic-house placement result');
 
 const alpayu10LordsTogetherInEighth = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:30},planets:[
