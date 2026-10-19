@@ -636,9 +636,11 @@ export function cgRajanSelectAyurdayaMethod({planets=[],lagna}={}) {
  if(winners.length!==1) {
   return Object.freeze({
    ...unavailable('shadbala-tie',
-    'The comparison has equal Shadbala strength; one method cannot be selected uniquely.'),
+    'The comparison has equal Shadbala strength; render every tied method separately instead of selecting one.'),
    lagnaLordPlanet, lagnaSignIndex,
    tiedReferences:winners.map(candidate=>candidate.referenceRole),
+   tiedCandidates:Object.freeze(winners.map(candidate=>Object.freeze({...candidate}))),
+   comparedCandidates:Object.freeze(candidates.map(candidate=>Object.freeze({...candidate}))),
    comparedCandidateCount:candidates.length
   });
  }
