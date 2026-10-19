@@ -320,6 +320,20 @@ function beneficInAnyKendra(map, evidence) {
   ].every(name => map.planets.has(name) && houseValid(map.planets.get(name).house));
   return unknownNatureInKendra || !coreComplete ? null : false;
 }
+function beneficInKendraOrTrikona(map, evidence) {
+  let unknownNatureInRelevantHouse = false;
+  const relevantHouses = new Set([1,4,5,7,9,10]);
+  for (const [name, planet] of map.planets.entries()) {
+    if (!relevantHouses.has(planet.house)) continue;
+    const nature = planetNature(map,evidence,name);
+    if (nature === 'benefic') return true;
+    if (nature === null) unknownNatureInRelevantHouse = true;
+  }
+  const coreComplete = [
+    'Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'
+  ].every(name=>map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  return unknownNatureInRelevantHouse || !coreComplete ? null : false;
+}
 function isMoonMrityubhaga(map) {
   const moon = map.planets.get('Moon');
   if (!moon || moon.sign === null || moon.degreeInSign === null) return null;
@@ -931,7 +945,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })();
   rules.push(makeRule('XIV-MAD-13', 'Madhyayu',
     'Benefics in Kendras without aspecting Lagna; Lagna lord aspected by malefics',
-    triAll(tri(e.beneficsOccupyKendras), noBeneficAspectToBirth,
+    triAll(beneficKendra, noBeneficAspectToBirth,
       lagnaLord ? aspectState(map, e, lagnaLord).malefic : null)));
   rules.push(makeRule('XIV-MAD-14', 'Madhyayu',
     'Mars in 5th, Sun in 7th and Saturn debilitated',
@@ -941,7 +955,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
         signOf(map, 'Saturn') === DEBILITATION_SIGN.Saturn)));
   rules.push(makeRule('XIV-MAD-15', 'Madhyayu',
     'Benefics in Kendras/Trikonas with strong Saturn',
-    triAll(tri(e.beneficsInKendrasAndTrikonas), isStrong('Saturn'))));
+    triAll(beneficInKendraOrTrikona(map,e), isStrong('Saturn'))));
 
   // Purnayu: selected configurations; strength and special conditions remain explicit inputs.
   const lagnaAspect = lagnaLord ? isAspecting(map.planets.get(lagnaLord), 1) : null;
