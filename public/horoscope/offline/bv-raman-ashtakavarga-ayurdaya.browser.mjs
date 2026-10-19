@@ -407,10 +407,10 @@ export const BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE = Object.freeze({
 });
 
 /**
- * Cross-reference oracle from B. V. Raman, Hindu Predictive Astrology,
- * 20th edition (1992), Chapter XXVI, printed pp. 199–203 (Scribd-indexed
- * book text). This is NOT the same chart as the secondary ASOP Method-A/B
- * example. OCR/page-image confirmation remains a separate evidence task.
+ * Primary-scan oracle from B. V. Raman, Hindu Predictive Astrology,
+ * 20th edition (1992), Chapter XXVI, printed pp. 199–203, visually inspected.
+ * This is NOT the same chart as the secondary ASOP Method-A/B example.
+ * The scanned per-graha display terms are kept separate from exact formula arithmetic.
  *
  * The Sun's after-reduction row and the planet placements are supplied so
  * tests can independently recalculate its Rasi/Graha/Sodya Pinda. The other
@@ -419,7 +419,7 @@ export const BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE = Object.freeze({
  */
 export const BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE = Object.freeze({
   source: 'B. V. Raman, Hindu Predictive Astrology, 20th ed. (1992), Ch. XXVI, pp. 199–203',
-  evidenceGrade: 'PRIMARY_AUTHOR_TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING',
+  evidenceGrade: 'PRIMARY_PAGE_IMAGES_VISUALLY_CHECKED',
   sunAfterReductionRow: Object.freeze([2, 3, 0, 3, 0, 0, 0, 0, 0, 2, 2, 2]),
   planetSigns: Object.freeze({
     Sun: 3, Moon: 1, Mars: 4, Mercury: 4, Jupiter: 7, Venus: 4, Saturn: 1
@@ -436,7 +436,10 @@ export const BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE = Object.freeze({
     Sun: 13.70, Moon: 15.52, Mars: 4.66, Mercury: 0.96,
     Jupiter: 8.00, Venus: 24.88, Saturn: 16.55
   }),
-  reportedHaranaFactors: Object.freeze({
+  // The scan says every graha term except the Sun is halved in this worked
+  // horoscope. It does not attribute each half to one uniquely identified
+  // factor; do not relabel this effective fraction as "conjunction" Harana.
+  reportedRemainingFraction: Object.freeze({
     Sun: 1, Moon: 0.5, Mars: 0.5, Mercury: 0.5,
     Jupiter: 0.5, Venus: 0.5, Saturn: 0.5
   }),
@@ -444,5 +447,8 @@ export const BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE = Object.freeze({
   reportedLunarToSolarNumerator: 334,
   reportedLunarToSolarDenominator: 365,
   reportedFinalSolarYears: 44.87,
-  note: 'Displayed net total and final solar years do not reconcile under the transcribed 334/365 ratio; retain as an explicit source-arithmetic discrepancy.'
+  formulaNetLunarYearsFromPrintedPindas: 49,
+  formulaSolarYearsFromFullPrecisionNet: 49 * 334 / 365,
+  formulaSolarYearsRounded: 44.84,
+  note: 'The printed per-graha net terms sum to 48.98 and the page prints 44.87 solar years. Full-precision Pinda arithmetic plus the printed effective half-deduction rule gives 49.00 and 44.84; preserve printed values only as source claims.'
 });
