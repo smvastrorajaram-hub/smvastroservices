@@ -74,8 +74,8 @@ try{
     assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,9,'Tie table has header + seven grahas + totals: '+testName);
     for(const candidate of selection.tiedCandidates){
      assert.ok(section.includes(methodLabels[candidate.method]),'Tied method is shown '+candidate.method+': '+testName);
-     assert.equal((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,7,
-      'Every tied method shows seven grahas '+candidate.method+': '+testName);
+     assert.equal((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+      'Every tied method shows a heading and seven grahas '+candidate.method+': '+testName);
     }
     assert.equal((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
      'Each tied method has a separate total: '+testName);
