@@ -6,6 +6,7 @@ import {
   BV_RAMAN_GRAHA_GUNAKARA,
   BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE,
   BV_RAMAN_HPA_CHAPTER_XXVI_ORACLE,
+  BV_RAMAN_HPA_STANDARD_HOROSCOPE_ASHTAKAVARGA_ORACLE,
   BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE,
   bvRamanTrikonaShodhana,
   bvRamanEkadhipatyaShodhana,
@@ -186,6 +187,78 @@ ok(methodA.source.includes('Chapter XIV'),
   'Ayurdaya Method A explicitly cites Chapter XIV, separate from Chapter II Shodhana');
 
 ok(methodA.certified === false, 'Method A not marked certified');
+
+// Primary-source table audit: HPA printed p. 190, separate from the ASOP
+// secondary-transcription oracle above. Pin all 84 B.R./A.R. cells, row
+// totals, sign totals, and printed 337 / 81 aggregates independently.
+const hpaStandardTable = BV_RAMAN_HPA_STANDARD_HOROSCOPE_ASHTAKAVARGA_ORACLE;
+same(hpaStandardTable.evidenceGrade, 'PRIMARY_PAGE_IMAGE_VISUALLY_CHECKED',
+  'HPA p. 190 table has a distinct primary-page evidence grade');
+same(hpaStandardTable.signs,
+  ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+   'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'],
+  'HPA p. 190 uses Aries-to-Pisces sign order');
+const hpaPrintedBeforeRows = {
+  Sun: [5, 5, 3, 6, 3, 2, 3, 3, 3, 5, 5, 5],
+  Moon: [4, 6, 4, 3, 2, 4, 6, 5, 5, 2, 5, 3],
+  Mars: [3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 4],
+  Mercury: [4, 5, 7, 2, 5, 4, 4, 5, 6, 2, 4, 6],
+  Jupiter: [4, 6, 6, 3, 5, 7, 3, 5, 4, 5, 4, 4],
+  Venus: [5, 4, 7, 4, 4, 5, 4, 1, 6, 4, 3, 5],
+  Saturn: [4, 4, 3, 7, 1, 2, 5, 1, 2, 4, 2, 4]
+};
+const hpaPrintedAfterRows = {
+  Sun: [2, 3, 0, 3, 0, 0, 0, 0, 0, 2, 2, 2],
+  Moon: [0, 4, 0, 0, 0, 2, 0, 2, 3, 0, 1, 0],
+  Mars: [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+  Mercury: [0, 3, 2, 0, 1, 2, 0, 3, 2, 0, 0, 2],
+  Jupiter: [0, 1, 2, 0, 1, 2, 0, 2, 0, 0, 1, 1],
+  Venus: [1, 0, 1, 3, 0, 1, 1, 0, 2, 0, 0, 2],
+  Saturn: [3, 2, 1, 6, 0, 0, 2, 0, 1, 2, 0, 1]
+};
+same(hpaStandardTable.beforeReductionRows, hpaPrintedBeforeRows,
+  'all 84 HPA before-reduction cells match the printed p. 190 table');
+same(hpaStandardTable.afterReductionRows, hpaPrintedAfterRows,
+  'all 84 HPA after-reduction cells match the printed p. 190 table');
+same(hpaStandardTable.printedBeforeReductionRowTotals,
+  {Sun:48, Moon:49, Mars:39, Mercury:54, Jupiter:56, Venus:52, Saturn:39},
+  'HPA p. 190 printed before-reduction totals are pinned');
+same(hpaStandardTable.printedAfterReductionRowTotals,
+  {Sun:14, Moon:12, Mars:1, Mercury:15, Jupiter:10, Venus:11, Saturn:18},
+  'HPA p. 190 printed after-reduction totals are pinned');
+for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+  same(hpaStandardTable.beforeReductionRows[planet].reduce((sum, n) => sum + n, 0),
+    hpaStandardTable.printedBeforeReductionRowTotals[planet],
+    'HPA p. 190 ' + planet + ' before-reduction row sum');
+  same(hpaStandardTable.afterReductionRows[planet].reduce((sum, n) => sum + n, 0),
+    hpaStandardTable.printedAfterReductionRowTotals[planet],
+    'HPA p. 190 ' + planet + ' after-reduction row sum');
+}
+same(hpaStandardTable.beforeReductionRows[ 'Sun' ].reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Moon.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Mars.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Mercury.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Jupiter.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Venus.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.beforeReductionRows.Saturn.reduce((sum, n) => sum + n, 0),
+  hpaStandardTable.printedBeforeReductionSarvashtakavargaTotal,
+  'HPA p. 190 seven-graha before-reduction total is 337');
+same(hpaStandardTable.afterReductionRows.Sun.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Moon.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Mars.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Mercury.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Jupiter.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Venus.reduce((sum, n) => sum + n, 0) +
+  hpaStandardTable.afterReductionRows.Saturn.reduce((sum, n) => sum + n, 0),
+  hpaStandardTable.printedAfterReductionSarvashtakavargaTotal,
+  'HPA p. 190 seven-graha after-reduction total is 81');
+same(hpaStandardTable.beforeReductionRows,
+  hpaPrintedBeforeRows,
+  'HPA primary table remains a separate source fixture from ASOP transcription');
+ok(!hpaStandardTable.source.includes('Ashtakavarga System of Prediction'),
+  'HPA primary table is not mislabeled as the separate ASOP book');
+ok(standardOracle.source.includes('Ashtakavarga System of Prediction'),
+  'ASOP Chapter II oracle keeps its own source provenance');
 
 // Standard Horoscope Sun row transcribed from the worked example's
 // after-reduction chart; independent of the synthetic arithmetic fixture.
