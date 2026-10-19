@@ -253,7 +253,7 @@ export async function calculateSodhyaPindaTransitWindows(rows,options={}){
  return Object.freeze({
   source:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §25.6 / printed pp. 337–341',
   ephemeris:'Bundled local Swiss Ephemeris WASM, Lahiri sidereal longitude',
-  horizon:{startDate,endDate,endExclusive:true,utcOffsetMinutes,timezoneLabel:offsetMinutes===330?'IST (UTC+05:30)':`UTC${offsetMinutes<0?'-':'+'}${String(Math.floor(Math.abs(offsetMinutes)/60)).padStart(2,'0')}:${String(Math.abs(offsetMinutes)%60).padStart(2,'0')}`},
+  horizon:{startDate,endDate,endExclusive:true,utcOffsetMinutes:offsetMinutes,timezoneLabel:offsetMinutes===330?'IST (UTC+05:30)':`UTC${offsetMinutes<0?'-':'+'}${String(Math.floor(Math.abs(offsetMinutes)/60)).padStart(2,'0')}:${String(Math.abs(offsetMinutes)%60).padStart(2,'0')}`},
   stepHours:24,ingressRefinement:'daily bracketing then 18-step bisection for each entry/exit',
   rows:planetResults,researchOnly:true,certified:false,
   caution:'These are transit windows for PVR’s target nakshatra/rasi references, not predictions or guaranteed event dates. PVR explicitly says Sodhya-Pinda timing is inconsistent and open to research.'
