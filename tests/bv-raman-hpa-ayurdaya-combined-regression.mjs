@@ -126,6 +126,10 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-15').sourceRuleNumber, 15,
   'common-sign Lagna/Moon condition is correctly attributed to printed Alpayu rule 15');
 eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-15').sourceRuleNumber, 15,
   'powerful Saturn with benefics in Kendras/Trikonas is correctly attributed to printed Madhyayu rule 15');
+eq(xiv.ruleCoverageCounts.Madhyayu.sourceRules, 15,
+  'Madhyayu inventory retains all fifteen source rules after the new evaluators');
+eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 9,
+  'Madhyayu evaluator count includes the four new direct-placement rules');
 
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
@@ -182,6 +186,78 @@ eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-02').status,
   'Madhyayu rule 2 remains unknown without independently supplied lord-strength inputs');
 eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'UNKNOWN',
   'Madhyayu rule 3 remains unknown without the source-chart arrangement input');
+
+const scorpioMadhyayu08 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:210}, planets:[
+    {name:'Sun',longitude:0,bhava:3},{name:'Moon',longitude:30,bhava:4},
+    {name:'Mars',longitude:240,bhava:8},{name:'Mercury',longitude:60,bhava:5},
+    {name:'Jupiter',longitude:90,bhava:1},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:180,bhava:10},{name:'Rahu',longitude:240,bhava:8},
+    {name:'Ketu',longitude:300,bhava:2}
+  ]}
+});
+eq(scorpioMadhyayu08.rules.find(rule => rule.id === 'XIV-MAD-08').status, 'MATCHED',
+  'Madhyayu rule 8 matches Scorpio Lagna, Jupiter in Lagna, Mars and Rahu in 8th');
+
+const ariesJupiterEighthMadhyayu10 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:30,bhava:4},
+    {name:'Mars',longitude:240,bhava:8},{name:'Mercury',longitude:120,bhava:5},
+    {name:'Jupiter',longitude:90,bhava:8},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:180,bhava:10},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:12}
+  ]}
+});
+eq(ariesJupiterEighthMadhyayu10.rules.find(rule => rule.id === 'XIV-MAD-10').status, 'MATCHED',
+  'Madhyayu rule 10 matches Aries Lagna, Jupiter in 8th and a malefic in a Kendra');
+
+const exaltedThirdAndEleventhMadhyayu12 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:30,bhava:2},{name:'Moon',longitude:60,bhava:5},
+    {name:'Mars',longitude:270,bhava:4},{name:'Mercury',longitude:150,bhava:7},
+    {name:'Jupiter',longitude:90,bhava:3},{name:'Venus',longitude:330,bhava:1},
+    {name:'Saturn',longitude:180,bhava:11},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(exaltedThirdAndEleventhMadhyayu12.rules.find(rule => rule.id === 'XIV-MAD-12').status, 'MATCHED',
+  'Madhyayu rule 12 requires Mars/Mercury in Kendras, Venus in Lagna and exalted planets in houses 3 and 11');
+
+const notExaltedEleventhMadhyayu12 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:30,bhava:2},{name:'Moon',longitude:60,bhava:5},
+    {name:'Mars',longitude:270,bhava:4},{name:'Mercury',longitude:150,bhava:7},
+    {name:'Jupiter',longitude:90,bhava:3},{name:'Venus',longitude:330,bhava:1},
+    {name:'Saturn',longitude:30,bhava:11},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(notExaltedEleventhMadhyayu12.rules.find(rule => rule.id === 'XIV-MAD-12').status, 'NOT_MATCHED',
+  'Madhyayu rule 12 does not match when house 11 has no exalted planet');
+
+const debilitatedSaturnMadhyayu14 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:0,bhava:7},{name:'Moon',longitude:30,bhava:2},
+    {name:'Mars',longitude:250,bhava:5},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:20,bhava:3},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(debilitatedSaturnMadhyayu14.rules.find(rule => rule.id === 'XIV-MAD-14').status, 'MATCHED',
+  'Madhyayu rule 14 matches Mars in 5th, Sun in 7th and Saturn in Aries debilitation');
+
+const exaltedSaturnInsteadMadhyayu14 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:0,bhava:7},{name:'Moon',longitude:30,bhava:2},
+    {name:'Mars',longitude:250,bhava:5},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:180,bhava:3},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(exaltedSaturnInsteadMadhyayu14.rules.find(rule => rule.id === 'XIV-MAD-14').status, 'NOT_MATCHED',
+  'Madhyayu rule 14 does not match when Saturn is not debilitated');
 
 const allThreeMaleficHouses = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
