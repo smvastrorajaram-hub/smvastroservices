@@ -110,8 +110,10 @@ const renderEnd=horoscopeSource.indexOf('\n  window.__smvLoadPhase4Dasa=loadPhas
 ok(renderStart>=0&&renderEnd>renderStart,'Found Phase-4 renderer source for runtime regression');
 const rendererChunk=horoscopeSource.slice(renderStart,renderEnd);
 const renderContext={window:{},mockResult:null};
-const sharedArrSource=(horoscopeSource.match(/  \/\/ Shared shape-normalizer[\\s\\S]*?  const arr=v=>Array\\.isArray\\(v\\)\\?v:\\(v&&typeof v==='object'\\?Object\\.values\\(v\\):\\[\\]\\);/ )||[])[0];
-ok(typeof sharedArrSource==='string'&&sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:' ,'Runtime regression extracts the production shared arr helper');
+const sharedArrStart=horoscopeSource.indexOf('// Shared shape-normalizer');
+const sharedArrEnd=horoscopeSource.indexOf(';',sharedArrStart);
+const sharedArrSource=sharedArrStart>=0&&sharedArrEnd>sharedArrStart?horoscopeSource.slice(sharedArrStart,sharedArrEnd+1):'';
+ok(sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:' ,'Runtime regression extracts the production shared arr helper');
 vm.runInNewContext(sharedArrSource+"\\n"+rendererChunk+"\\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
 const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
