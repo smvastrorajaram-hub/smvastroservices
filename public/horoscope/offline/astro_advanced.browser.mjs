@@ -1,6 +1,11 @@
 // Browser port of the exact V10.7 source logic.
 
 import {phase4Dasa} from './dasa_engine.browser.mjs';
+import {
+ BV_RAMAN_AYURDAYA_PLANETS,
+ bvRamanAshtakavargaShodhana,
+ bvRamanAshtakavargaMethodAFromReducedRows
+} from './bv-raman-ashtakavarga-ayurdaya.browser.mjs';
 const RASIS=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const EN_RASIS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const P7=['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'];
@@ -691,9 +696,63 @@ function jaimini(chart,lang){
  return {charaKarakas:ranked.map((x,i)=>({...x,degreeInSignDms:dms(x.degreeInSign),karaka:karakaNames[i]})),karakamsha:ranked[0]?ranked[0].rasi:'—',arudhaLagna:signName(norm(rasi(chart.lagna?.longitude||0)+Math.max(1,Math.abs(rasi(chart.lagna?.longitude||0)-rasi(v5planet(chart,'சூரியன்').longitude||0)))),lang),method:ta?'ஜைமினி சர காரக வரிசை மற்றும் முக்கிய ராசி குறிப்புகள்.':'Jaimini framework: Chara Karaka ranking and key rasi reference points.'};
 }
 function sodhyaPinda(chart,lang){
- const ta=lang!=='en', av=ashtakavarga(chart,lang), signs=av.sarva||Array(12).fill(0), pinda=signs.map((b,i)=>({rasi:signName(i,lang),bindus:b,signPinda:b*(i+1)}));
- const total=pinda.reduce((a,x)=>a+x.signPinda,0); const graha=(av.bhinna||[]).map(x=>({planet:ta?x.planet:(LORD_EN[x.planet]||x.planet),bindus:x.total,pinda:x.total*(rasi(v5planet(chart,x.planet).longitude||0)+1)}));
- return {rasiPinda:pinda,grahaPinda:graha,total,benefits:ta?'சர்வாஷ்டகவர்க்க பிந்துக்களின் ஒப்பீட்டு வலிமை/பலன் குறிப்பு.':'Comparative strength/benefit indicators derived from SAV bindu distribution.',method:'Sodhya Pinda presentation using the calculated SAV distribution; tradition-specific weighting should be verified against the chosen classical school.'};
+ const ta=lang!=='en';
+ const planetNames={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி'};
+ const av=ashtakavarga(chart,lang);
+ const bavRows={};
+ for(const planet of BV_RAMAN_AYURDAYA_PLANETS){
+  const source=av.bhinna?.find(x=>x.planet===planetNames[planet]);
+  if(!Array.isArray(source?.bindus)||source.bindus.length!==12){
+   throw new Error('Missing 12-sign Bhinna Ashtakavarga row for '+planet);
+  }
+  bavRows[planet]=source.bindus;
+ }
+ const pm=planetMap(chart),planetSigns={},occupiedSigns=[];
+ for(const planet of BV_RAMAN_AYURDAYA_PLANETS){
+  const natal=pm[planetNames[planet]],longitude=Number(natal?.longitude);
+  if(!Number.isFinite(longitude)) throw new Error('Missing natal longitude for '+planet);
+  const sign=rasi(longitude);
+  if(!Number.isInteger(sign)||sign<0||sign>11) throw new Error('Invalid natal sign for '+planet);
+  planetSigns[planet]=sign;
+  occupiedSigns.push(sign);
+ }
+ // Use the same B.V. Raman research engine as the Ashtakavarga Ayurdaya
+ // report: do not substitute raw SAV/BAV totals or the separate BPHS/PVR
+ // helper, whose Shodhana rules and multipliers are not identical.
+ const reduced=bvRamanAshtakavargaShodhana({bavRows,occupiedSigns});
+ const calc=bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows:reduced.afterReductionRows,
+  planetSigns
+ });
+ const planetPindas=BV_RAMAN_AYURDAYA_PLANETS.map(planet=>{
+  const item=calc.planets[planet];
+  return {
+   planet:ta?planetNames[planet]:planet,
+   rasi:signName(planetSigns[planet],lang),
+   bindus:reduced.afterReductionRows[planet][planetSigns[planet]],
+   rasiPinda:item.rasiPinda,
+   grahaPinda:item.grahaPinda,
+   sodyaPinda:item.sodyaPinda
+  };
+ });
+ return {
+  planetPindas,
+  method:ta
+   ?'பி.வி. ராமன் அஷ்டகவர்க்கம் — முறை A; திரிகோண மற்றும் ஏகாதிபத்திய சோதனத்திற்குப் பின்'
+   :'B. V. Raman Ashtakavarga — Method A, after Trikona and Ekadhipatya Shodhana',
+  source:calc.source,
+  shodhanaSource:reduced.source,
+  reducedBavTotals:Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet=>[
+   ta?planetNames[planet]:planet,
+   reduced.afterReductionRows[planet].reduce((sum,value)=>sum+value,0)
+  ])),
+  reducedSavTotal:reduced.afterReductionSarvashtakavargaTotal,
+  note:ta
+   ?'சோத்ய பிண்டக் கணக்கீடு மட்டும். அசல் நூல் அட்டவணை மற்றும் முழு worked example சரிபார்ப்பு நிலுவையில் இருப்பதால் இது சான்றளிக்கப்பட்ட இறுதி ஆயுர்த்தாய முடிவு அல்ல.'
+   :'Pinda arithmetic only. This is not a certified final Ayurdaya result; primary-table and complete worked-example verification remain pending.',
+  certified:false,
+  researchOnly:true
+ };
 }
 function sahams(chart,lang){
  const ta=lang!=='en'; const ascLon=Number(chart?.lagna?.longitude||0); const pm=planetMap(chart); const day=solarDayNight(chart);

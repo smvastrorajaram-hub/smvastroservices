@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { advanced } from '../public/horoscope/offline/astro_advanced.browser.mjs';
 import {
   BV_RAMAN_AYURDAYA_PLANETS,
   BV_RAMAN_RASI_GUNAKARA,
@@ -458,6 +459,90 @@ ok(!/import\s+[^;]*classical-shodhana/i.test(src),
   'Raman Ayurdaya module does not alias BPHS Shodhana helpers');
 ok(!/export\s+function\s+.*(?:deathAge|predictedDeathAge)/i.test(src),
   'module exposes no death-age/date predictor');
+
+
+/* Integration regression: the Horoscope Sodhya Pinda panel must use the
+   same B.V. Raman Method-A pipeline as the Ashtakavarga Ayurdaya engine. */
+const integrationChart = {
+  birth: { date: '1992-07-31', time: '22:05' },
+  lagna: { longitude: 165 },
+  planets: [
+    { name: 'சூரியன்', longitude: 165 },
+    { name: 'சந்திரன்', longitude: 315 },
+    { name: 'செவ்வாய்', longitude: 225 },
+    { name: 'புதன்', longitude: 195 },
+    { name: 'குரு', longitude: 75 },
+    { name: 'சுக்கிரன்', longitude: 165 },
+    { name: 'சனி', longitude: 135 },
+    { name: 'ராகு', longitude: 225 },
+    { name: 'கேது', longitude: 45 }
+  ]
+};
+const integrationAdvanced = advanced(integrationChart, 'ta');
+const integrationPinda = integrationAdvanced?.v5?.sodhyaPinda;
+ok(Array.isArray(integrationPinda?.planetPindas),
+  'Horoscope Sodhya Pinda output is the seven-graha Method-A table');
+same(integrationPinda.planetPindas.length, 7,
+  'Horoscope Sodhya Pinda emits one row per classical graha');
+ok(integrationPinda.method.includes('முறை A'),
+  'Horoscope Sodhya Pinda identifies the same B.V. Raman Method-A convention');
+ok(integrationPinda.certified === false && integrationPinda.researchOnly === true,
+  'unresolved primary-source gaps remain explicitly uncertified');
+ok(!Object.hasOwn(integrationPinda, 'benefits'),
+  'old unsupported generic benefits label/data is not presented as calculation');
+
+const integrationNameTa = {
+  Sun: 'சூரியன்', Moon: 'சந்திரன்', Mars: 'செவ்வாய்', Mercury: 'புதன்',
+  Jupiter: 'குரு', Venus: 'சுக்கிரன்', Saturn: 'சனி'
+};
+const integrationRows = Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet => {
+  const row = integrationAdvanced.ashtakavarga.bhinna.find(item =>
+    item.planet === integrationNameTa[planet]);
+  ok(Array.isArray(row?.bindus) && row.bindus.length === 12,
+    'Horoscope supplies a complete BAV row for ' + planet);
+  return [planet, row.bindus];
+}));
+const integrationSigns = Object.fromEntries(BV_RAMAN_AYURDAYA_PLANETS.map(planet => {
+  const native = integrationChart.planets.find(item => item.name === integrationNameTa[planet]);
+  return [planet, Math.floor(native.longitude / 30)];
+}));
+const integrationReduction = bvRamanAshtakavargaShodhana({
+  bavRows: integrationRows,
+  occupiedSigns: Object.values(integrationSigns)
+});
+const integrationMethodA = bvRamanAshtakavargaMethodAFromReducedRows({
+  afterReductionRows: integrationReduction.afterReductionRows,
+  planetSigns: integrationSigns
+});
+for (const planet of BV_RAMAN_AYURDAYA_PLANETS) {
+  const visible = integrationPinda.planetPindas.find(item =>
+    item.planet === integrationNameTa[planet]);
+  const expected = integrationMethodA.planets[planet];
+  same({
+    rasiPinda: visible?.rasiPinda,
+    grahaPinda: visible?.grahaPinda,
+    sodyaPinda: visible?.sodyaPinda,
+    reducedBindusAtNatalSign: visible?.bindus
+  }, {
+    rasiPinda: expected.rasiPinda,
+    grahaPinda: expected.grahaPinda,
+    sodyaPinda: expected.sodyaPinda,
+    reducedBindusAtNatalSign: integrationReduction.afterReductionRows[planet][integrationSigns[planet]]
+  }, 'Horoscope panel uses exact shared B.V. Raman Method-A values for ' + planet);
+  same(visible.sodyaPinda, visible.rasiPinda + visible.grahaPinda,
+    'visible Sodhya Pinda total reconciles for ' + planet);
+}
+const horoscopeUiSource = fs.readFileSync(
+  new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8'
+);
+ok(horoscopeUiSource.includes("title('Sodhya Pinda','சோத்ய பிண்டம்')"),
+  'Horoscope heading is renamed to Sodhya Pinda / சோத்ய பிண்டம்');
+ok(!horoscopeUiSource.includes('சோத்ய பிண்ட பலன்கள்'),
+  'legacy “Sodhya Pinda Benefits” heading is removed');
+ok(horoscopeUiSource.includes('vx.sodhyaPinda?.planetPindas'),
+  'Horoscope UI renders the unified planet-wise pinda output');
+ok(!horoscopeUiSource.includes('vx.sodhyaPinda?.rasiPinda'),
+  'Horoscope UI no longer renders the obsolete raw-SAV sign-index table');
 
 console.log(JSON.stringify({
   pass: true,
