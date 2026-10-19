@@ -25,7 +25,7 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 
 | Dasa | Finding / change | Status |
 |---|---|---|
-| Narayana Dasa (§18) | The old second cycle repeated the first cycle's lengths, and the duration routine used ordinary odd/even sign-number parity instead of the book's odd-footed/even-footed classification. Corrected both: second-cycle duration is 12 minus the corresponding first-cycle duration; length counting now uses the Table 18.2.2 footed-sign groups. Added regression assertions for both cycles and Taurus/Leo worked conditions. | Fixed on working branch; CI pending |
+| Narayana Dasa (§18) | The old second cycle repeated the first cycle's lengths. During regression, a second root cause was found: Table 40 emits string sign codes (`Ar`, `Ta`, etc.), but the length routine treated them as numeric indices; the antardasa seed resolver did the same. This could produce wrong lengths and antardasas. Both functions now normalize sign codes through `parseSign()`. The first-cycle length also used ordinary odd/even sign-number parity rather than the book's odd-footed/even-footed classification. Corrections now cover sign normalization, proper footed groups, second-cycle duration `12 − first-cycle duration`, and Narayana antardasa sign selection. Added Table 40 progression and regression assertions for cycles, Taurus/Leo and antardasa seeds. | Fixed on working branch; CI pending |
 | Niryaana Shoola Dasa (§22) | The source's Example 87 applies the Saturn-in-seed forward-direction exception. The old code only used odd/even direction. Corrected for the explicit Saturn example and added a fixture regression. Sign-year mapping remains 7/8/9 years for movable/fixed/dual signs. | Fixed on working branch; CI pending |
 | Shoola Dasa (§23) | The source says antardasas use the same method as the main Shoola sequence with the Dasa sign treated as Lagna. The old code incorrectly reused Narayana-style antardasa progression. Corrected: choose the stronger of Dasa sign and 7th from it, then proceed in zodiacal order through 12 equal antardasas. | Fixed on working branch; CI pending |
 | Ashtottari (§17) | The engine's sequence/duration formula and applicability caveat exist. The book reports that the system's applicability conditions are disputed. | Partial review only |
@@ -55,7 +55,7 @@ The UI places these targets and the added longevity rules after the existing Sod
 
 ## Regression coverage added on this branch
 
-- Narayana: all 12 second-cycle lengths equal 12 minus the corresponding first-cycle length.
+- Narayana: the Table 40 Pisces progression matches the printed example; signs are parsed correctly before Dasa length/antardasa calculations; all 12 second-cycle lengths equal 12 minus corresponding first-cycle lengths.
 - Niryaana Shoola: Saturn-in-seed fixture verifies the documented forward exception and movable/fixed/dual durations.
 - Shoola: antardasa starts from the stronger of Dasa sign/7th and proceeds in regular zodiacal order.
 - PVR Sodhya target: zero remainder maps to Revati/Pisces, and each source event product is raw BAV rekhas multiplied by that planet's Sodhya Pinda.
