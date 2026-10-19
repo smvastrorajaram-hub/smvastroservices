@@ -213,7 +213,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
       'Shadbala tie renders a multi-method comparison rather than a blank result for '+birth.name);
     for(const method of new Set(tied.map(candidate=>candidate.method))){
       eq((tieHtml.match(new RegExp('data-tied-method="'+method+'"','g'))||[]).length,8,
-        'tied '+method+' shows a header and seven planet-wise values for '+birth.name);
+        'tied '+method+' shows seven planet-wise cells plus its separate total for '+birth.name);
     }
     eq((tieHtml.match(/data-tied-total=/g)||[]).length,tied.length,
       'every tied method has a separately rendered total for '+birth.name);
