@@ -16,8 +16,8 @@ import {
   cgRajanCompareGrahas
 } from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 import {
-  bvRamanIntegratedAyurdayaResearch
-} from '../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs';
+  bvRamanAyurdayaResearchResult
+} from '../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs';
 import { renderBasicMatching } from '../public/horoscope/marriage-basic-report.mjs';
 import { transit } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 
@@ -92,6 +92,8 @@ const cgMethodCounts = {};
 const longevityCategoryCounts = {};
 const numericBandCounts = {};
 const crossCheckCounts = {};
+const haranaCompletenessCounts = {};
+const haranaMissingFactorCounts = {};
 const cgAvailabilityCounts = {};
 const parity = {charts:0,planetRows:0,rasiPindaMatches:0,grahaPindaMatches:0,sodyaPindaMatches:0,allFieldsEqualRows:0,mismatches:[]};
 const pairs = [];
@@ -135,9 +137,13 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'modified Horoscope Sodhya Pinda has seven graha rows for '+birth.name);
   ok(result.advanced?.ashtakavarga?.bhinna?.length >= 7,
     'actual calculated BAV rows exist for '+birth.name);
-  const bvr = bvRamanIntegratedAyurdayaResearch({
+  // Use the exact report-result path so its evidence-derived Harana inputs
+  // are included; invoking the lower-level join without Harana would incorrectly
+  // make all 100 numeric lifespan bands unavailable by construction.
+  const bvr = bvRamanAyurdayaResearchResult({
     chart,
-    bavRows:result.advanced.ashtakavarga.bhinna
+    bavRows:result.advanced.ashtakavarga.bhinna,
+    language:'ta'
   });
   ok(bvr?.shodhana && bvr?.chapterXXVI?.planets,
     'new Ashtakavarga Ayurdaya calculation consumes this natal chart for '+birth.name);
@@ -195,6 +201,10 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   inc(longevityCategoryCounts,categories.length ? categories.join('+') : 'NO_CONFIRMED_CATEGORY');
   inc(numericBandCounts,bvr.chapterXXVI?.numericBandCandidate || 'UNAVAILABLE');
   inc(crossCheckCounts,bvr.crossCheck?.status || 'UNAVAILABLE');
+  inc(haranaCompletenessCounts,bvr.chapterXXVI?.haranaComplete===true?'COMPLETE':'INCOMPLETE');
+  for(const planet of CLASSICAL){
+    for(const factor of bvr.chapterXXVI?.planets?.[planet]?.harana?.missingFactors||[]) inc(haranaMissingFactorCounts,factor);
+  }
   computed.push({birth,chart,result,bvr,cg,selection});
 }
 eq(computed.length,100,'100 actual chart-engine results completed');
@@ -290,6 +300,7 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
     crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
     haranaComplete:bvr.chapterXXVI?.haranaComplete===true,
+    haranaMissingFactors:Object.fromEntries(CLASSICAL.map(planet=>[planet,bvr.chapterXXVI?.planets?.[planet]?.harana?.missingFactors||[]])),
     netLunarYears:bvr.chapterXXVI?.netLunarYears??null,
     solarYearsCandidate:bvr.chapterXXVI?.solarYearsCandidate??null,
     finalLifespan:bvr.finalLifespan,
@@ -325,6 +336,8 @@ const summary = {
     chapterXIVRuleCategoryCandidateCounts:longevityCategoryCounts,
     chapterXXVINumericBandCandidateCounts:numericBandCounts,
     crossCheckStatusCounts:crossCheckCounts,
+    haranaCompletenessCounts,
+    haranaMissingFactorCounts,
     warning:'Chapter XIV coverage/source arithmetic remains partial; candidates are research outputs, not a certified final lifespan or a medical prediction.'
   },
   marriageMatching:{
