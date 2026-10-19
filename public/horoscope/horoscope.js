@@ -1709,7 +1709,10 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
       <p class="small">${escSafe(caution)}</p><p class="small">${ta?'சான்றளிக்கப்பட்ட ஆயுள் முடிவு அல்லது மரணத் தேதி கணக்கிடப்படவில்லை.':'No certified lifespan or death date is calculated.'}</p></div>`;
       h+=panel;
     }
-    h+=`<div class="adv-section phase4-warning"><p class="small"><b>${ta?'குறிப்பு':'Important:'}</b> ${ta?'இந்த தசா முறைகள் பாரம்பரிய ஜோதிட timing systems. குறிப்பாக Kalachakra மற்றும் longevity-related systems-ஐ உறுதியான எதிர்கால முடிவாகக் கருத வேண்டாம்.':'These are traditional astrological timing systems. Kalachakra and longevity-related systems should not be treated as certainty.'}</p></div>`; slot.innerHTML=h;
+    h+=`<div class="adv-section phase4-warning"><p class="small"><b>${ta?'குறிப்பு':'Important:'}</b> ${ta?'இந்த தசா முறைகள் பாரம்பரிய ஜோதிட timing systems. குறிப்பாக Kalachakra மற்றும் longevity-related systems-ஐ உறுதியான எதிர்கால முடிவாகக் கருத வேண்டாம்.':'These are traditional astrological timing systems. Kalachakra and longevity-related systems should not be treated as certainty.'}</p></div>`;
+    const previousResearch=(slot.closest('.horoscope-result')||slot.parentElement)?.querySelector('.pvr-research-panel');
+    previousResearch?.remove();
+    slot.innerHTML=h;
     const researchPanel=slot.querySelector('.pvr-research-panel');
     const reportRoot=slot.closest('.horoscope-result')||slot.parentElement;
     const advancedTarget=reportRoot?.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
