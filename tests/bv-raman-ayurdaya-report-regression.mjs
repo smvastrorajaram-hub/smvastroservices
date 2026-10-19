@@ -66,5 +66,15 @@ ok(horoscope.includes('bv-raman-ayurdaya-report.browser.mjs'),'Horoscope source 
 ok(matching.includes('bv-raman-ayurdaya-report.browser.mjs'),'Marriage Matching source imports the new B.V. Raman report renderer');
 ok(horoscope.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Horoscope');
 ok(matching.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Matching');
+const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
+const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
+ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
+ 'Horoscope uses the existing cream header colour for both nested result tables');
+ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table')&&matchingCss.includes('background:#fff7e8;font-weight:800;'),
+ 'Matching uses the existing cream header colour for both nested result tables');
+ok(horoscope.includes(String.raw`cgHtml.replace(/<\/section>\s*$/,bvHtml+'</section>')`),
+ 'Horoscope appends the new tables inside the old C.G. Rajan section');
+ok(matching.includes(String.raw`cgAyurdayaHtml`)&&matching.includes(String.raw`bvAyurdayaHtml+'</section>'`),
+ 'Matching appends the new tables below C.G. Rajan rather than replacing its renderer');
 
 console.log(JSON.stringify({pass:true,assertions,tamil:true,english:true,oldCGRajanPreserved:true,results:['Ashtakavarga Ayurdaya','Longevity category']},null,2));
