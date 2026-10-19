@@ -695,10 +695,10 @@ function jaimini(chart,lang){
  const karakaNames=ta?['ஆத்மகாரக','அமாத்யகாரக','ப்ராத்ருகாரக','மாத்ருகாரக','புத்ரகாரக','ஞாதிகாரக','தாரகாரக']:['Atmakaraka','Amatyakaraka','Bhratrukaraka','Matrukaraka','Putrakaraka','Gnatikaraka','Darakaraka'];
  return {charaKarakas:ranked.map((x,i)=>({...x,degreeInSignDms:dms(x.degreeInSign),karaka:karakaNames[i]})),karakamsha:ranked[0]?ranked[0].rasi:'—',arudhaLagna:signName(norm(rasi(chart.lagna?.longitude||0)+Math.max(1,Math.abs(rasi(chart.lagna?.longitude||0)-rasi(v5planet(chart,'சூரியன்').longitude||0)))),lang),method:ta?'ஜைமினி சர காரக வரிசை மற்றும் முக்கிய ராசி குறிப்புகள்.':'Jaimini framework: Chara Karaka ranking and key rasi reference points.'};
 }
-function sodhyaPinda(chart,lang){
+function sodhyaPinda(chart,lang,calculatedAv){
  const ta=lang!=='en';
  const planetNames={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி'};
- const av=ashtakavarga(chart,lang);
+ const av=calculatedAv||ashtakavarga(chart,lang);
  const bavRows={};
  for(const planet of BV_RAMAN_AYURDAYA_PLANETS){
   const source=av.bhinna?.find(x=>x.planet===planetNames[planet]);
@@ -857,9 +857,9 @@ function phase1ChartAnalysis(chart,lang='ta'){
   };
 }
 
-function v5Extras(chart,lang){
+function v5Extras(chart,lang,calculatedAv){
  const safe=(fn)=>{try{return fn()}catch(e){return {error:String(e?.message||e)}}};
- return {phase1:safe(()=>Object.assign({specialLagnas:phase1SpecialLagnas(chart,lang)},phase1ChartAnalysis(chart,lang))),upagrahas:safe(()=>upagrahas(chart,lang)),bookUpagrahas:chart?.upagrahas||null,jaimini:safe(()=>jaimini(chart,lang)),sodhyaPinda:safe(()=>sodhyaPinda(chart,lang)),sahams:safe(()=>sahams(chart,lang)),kalaChakraDasa:safe(()=>kalaChakraDasa(chart,lang))};
+ return {phase1:safe(()=>Object.assign({specialLagnas:phase1SpecialLagnas(chart,lang)},phase1ChartAnalysis(chart,lang))),upagrahas:safe(()=>upagrahas(chart,lang)),bookUpagrahas:chart?.upagrahas||null,jaimini:safe(()=>jaimini(chart,lang)),sodhyaPinda:safe(()=>sodhyaPinda(chart,lang,calculatedAv)),sahams:safe(()=>sahams(chart,lang)),kalaChakraDasa:safe(()=>kalaChakraDasa(chart,lang))};
 }
 
 
@@ -973,5 +973,5 @@ function bookRemedies(chart,lang='ta'){
  return {rows,guidance};
 }
 
-function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; return {ashtakavarga:ashtakavarga(chart,lang),vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
+function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; const av=ashtakavarga(chart,lang); return {ashtakavarga:av,vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang,av),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
 export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation};
