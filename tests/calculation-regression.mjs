@@ -48,6 +48,12 @@ for(const [date,time] of birthCases){
  const c=result.chart;
  ok(result.ok&&result.advanced&&result.phase4&&result.transit&&result.birthPanchang,date+' full calculation');
  ok(result.phase4.narayana.sequence.length===24,date+' Narayana two-cycle rows');
+ for(const key of ['lagnaKendradi','sudasa','drigdasa']){
+  const periods=result.phase4[key]?.sequence||[];
+  const firstCycle=periods.filter(x=>x.cycle===1),secondCycle=periods.filter(x=>x.cycle===2);
+  const bad=firstCycle.map((x,i)=>({rasi:x.rasi,first:x.fullYears,second:secondCycle[i]?.fullYears,expected:Math.max(0,12-x.fullYears)})).filter(x=>Math.abs(Number(x.second)-x.expected)>1e-9);
+  ok(firstCycle.length===12&&secondCycle.length===12&&bad.length===0,date+' '+key+' second-cycle lengths use 12 minus first-cycle: '+JSON.stringify(bad));
+ }
  ok(result.phase4.narayana.sequence.every(md=>md.antardasas?.length===12&&md.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12)),date+' Narayana Antardasa rows use valid rasi indices');
  const n1=result.phase4.narayana.sequence.filter(x=>x.cycle===1),n2=result.phase4.narayana.sequence.filter(x=>x.cycle===2);
  const cycleMismatches=n1.map((x,i)=>({rasi:x.rasi,first:x.fullYears,second:n2[i]?.fullYears,expected:Math.max(0,12-x.fullYears)})).filter(x=>Math.abs(Number(x.second)-x.expected)>1e-9); ok(n1.length===12&&n2.length===12&&cycleMismatches.length===0,date+' Narayana second-cycle source-rule handling mismatches: '+JSON.stringify(cycleMismatches));
