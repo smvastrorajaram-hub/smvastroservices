@@ -46,7 +46,7 @@ export function resolveSodhyaPindaTarget(product){
  const n=Number(product);if(!Number.isSafeInteger(n)||n<0)throw new RangeError('product must be a non-negative safe integer');
  const nn=(n%27)||27,rr=(n%12)||12,ni=nn-1,ri=rr-1;
  return Object.freeze({product:n,nakshatraNumber:nn,nakshatraIndex:ni,nakshatra:NAK_EN[ni],nakshatraTamil:NAK_TA[ni],rasiNumber:rr,rasiIndex:ri,rasi:EN[ri],rasiTamil:TA[ri],
-  relatedVimshottariNakshatras:Object.freeze([((ni+9)%27),((ni+18)%27)].map(i=>({number:i+1,name:NAK_EN[i]})))});
+  relatedVimshottariNakshatras:Object.freeze([((ni+9)%27),((ni+18)%27)].map(i=>({number:i+1,name:NAK_EN[i],nameTamil:NAK_TA[i]})))});
 }
 
 export function pvrLongevitySodhyaTiming(chart,adv){
