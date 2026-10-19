@@ -857,12 +857,28 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-02', 'Madhyayu',
     'At least two of the 8th, 11th, Lagna and 10th lords are powerful',
     strengthTwo));
+  // HPA printed p. 70, Madhyayu rule 3 states the three placements directly;
+  // evaluate the natal positions rather than requiring duplicate evidence.
+  const mad03Houses = ['Mercury','Jupiter','Venus'].map(name=>houseOf(map,name));
+  const mercuryJupiterVenusInSecondThirdEleventh =
+    mad03Houses.some(house=>house===null) ? null :
+      (mad03Houses[0]===2 && mad03Houses[1]===3 && mad03Houses[2]===11);
   rules.push(makeRule('XIV-MAD-03', 'Madhyayu',
-    'Mercury, Jupiter and Venus in houses 2, 3 and 11 from Lagna',
-    tri(e.mercuryJupiterVenusInSecondThirdEleventh)));
+    'Mercury in 2nd, Jupiter in 3rd and Venus in 11th from Lagna',
+    mercuryJupiterVenusInSecondThirdEleventh));
+  // HPA printed p. 70, rule 4: middle four houses are houses 5–8 from Lagna.
+  // Unknown remains if no planet is known to contradict the pattern and one or
+  // more graha placements are missing.
+  const middleFourHouses = new Set([5,6,7,8]);
+  const knownHouses = CHART_GRAHAS.map(name=>houseOf(map,name)).filter(house=>house!==null);
+  const knownGrahaOutsideMiddleFour = knownHouses.some(house=>!middleFourHouses.has(house));
+  const allGrahasLocated = CHART_GRAHAS.every(name=>
+    map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  const allPlanetsMiddleFourHouses = knownGrahaOutsideMiddleFour ? false
+    : allGrahasLocated ? true : null;
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
-    tri(e.allPlanetsMiddleFourHouses)));
+    allPlanetsMiddleFourHouses));
   rules.push(makeRule('XIV-MAD-05', 'Madhyayu',
     'Sun in Lagna, enemy sign, between malefics, weak and without benefic aspect',
     triAll(
