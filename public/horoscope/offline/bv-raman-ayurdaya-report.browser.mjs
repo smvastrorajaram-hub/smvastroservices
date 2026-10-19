@@ -182,10 +182,10 @@ export function bvRamanAyurdayaReportHtml(options={}) {
   const categories = result.chapterXIV?.categoryCandidates || [];
   const matched = categories.map(key => CATEGORY_LABELS[key]?.[ta?'ta':'en']).filter(Boolean);
   const noCategory = ta ? 'வகை முடிவு இல்லை' : 'No category result';
-  const categoryTable = '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>'+
+  const categoryTable = '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table"><thead><tr><th>'+
     esc(ta?'விவரம்':'Details')+'</th><th>'+esc(ta?'முடிவு':'Result')+'</th></tr></thead><tbody><tr><th scope="row">'+
     esc(ta?'ஆயுள் வகை':'Longevity category')+'</th><td>'+esc(matched.length?matched.join(' / '):noCategory)+'</td></tr></tbody></table></div>';
-  const numericTable = '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr>'+
+  const numericTable = '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table"><thead><tr>'+
     header.map(v=>'<th>'+esc(v)+'</th>').join('')+'</tr></thead><tbody>'+planetRows+totalRows+'</tbody></table></div>';
   const disclaimer = ta
     ? 'இவை பாரம்பரிய ஆயுர்த்தாயக் கணக்கீட்டு முடிவுகள் மட்டுமே; உண்மையான ஆயுளை உறுதிப்படுத்தவோ மரண நேரத்தைக் கணிக்கவோ இவை பயன்படாது.'
