@@ -38,7 +38,7 @@ export async function full(body){
  const sameDaily=cacheLanguage&&String(cachedBasic?.referenceDate||'')===dailyDate&&String(cachedBasic?.referenceTime||'')===dailyTime;
  const dailyPanchang=sameDaily&&cachedBasic?.dailyPanchang?cachedBasic.dailyPanchang:panchang({...body,date:dailyDate,time:dailyTime});
  const tr=sameDaily&&cachedBasic?.transit?cachedBasic.transit:transit({...body,date:dailyDate,time:dailyTime});
- const phase4=phase4Dasa(chart,adv);
+ const phase4=phase4Dasa(chart,adv,birthPanchang);
  return{ok:true,meta:{complete:true,version:'SMV-full-1'},chart,advanced:adv,birthPanchang,dailyPanchang,transit:tr,phase4};
 }
 globalThis.SMVOfflineEngine={full};

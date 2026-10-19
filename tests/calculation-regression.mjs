@@ -22,6 +22,12 @@ for(const sample of [
 let code=fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8');
 const transformed=code.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,getD9Sign,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
 ok(code!==transformed,'Missing matching audit entry point');
+const horoscopeSource=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
+const sharedArrDecls=horoscopeSource.match(/\bconst arr\s*=\s*v=>Array\.isArray\(v\)\?v:\(v&&typeof v==='object'\?Object\.values\(v\):\[\]\);/g)||[];
+const sharedArrPos=horoscopeSource.indexOf(sharedArrDecls[0]||'__missing_shared_arr_helper__');
+const advancedRendererPos=horoscopeSource.indexOf('function renderAdvancedAstrology(data, lang, rootId)');
+const phase4RendererPos=horoscopeSource.indexOf('function renderPhase4Dasa(data,lang,slot)');
+ok(sharedArrDecls.length===1&&sharedArrPos>=0&&sharedArrPos<advancedRendererPos&&sharedArrPos<phase4RendererPos,'Full-advanced regression: arr is shared by both Advanced Analysis and Phase-4 Dasa renderers');
 const offlineSource=fs.readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
 ok(!offlineSource.includes("import {advanced} from './astro_advanced.browser.mjs'")&&offlineSource.includes("import('./astro_advanced.browser.mjs')"),'Basic-only startup defers Advanced module loading');
 ok(!offlineSource.includes("import {phase4Dasa} from './dasa_engine.browser.mjs'")&&offlineSource.includes("import('./dasa_engine.browser.mjs')"),'Basic-only startup defers Dasa module loading');
@@ -40,7 +46,110 @@ for(let a=0;a<27;a++)for(let b=0;b<27;b++){
 let rejectMoon=false;try{m.porutham({planets:[{name:'சந்திரன்',longitude:null}]},sampleChart(3))}catch{rejectMoon=true}
 ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
-const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
+const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04'],['2002-10-20','03:41']];
+const dasaSource=fs.readFileSync(new URL('../public/horoscope/offline/dasa_engine.browser.mjs',import.meta.url),'utf8');
+const dasaFixture=(moonLon,lagnaLon=180,rahuLon=300,marsLon=30)=>({birthDate:'2000-01-01',birth:{date:'2000-01-01',time:'12:00',latitude:11.232,longitude:78.88},lagna:{longitude:lagnaLon},planets:[
+ {name:'Sun',longitude:0},{name:'Moon',longitude:moonLon},{name:'Mars',longitude:marsLon},
+ {name:'Mercury',longitude:90},{name:'Jupiter',longitude:240},{name:'Venus',longitude:120},
+ {name:'Saturn',longitude:210},{name:'Rahu',longitude:rahuLon},{name:'Ketu',longitude:(rahuLon+180)%360}
+]});
+const ashtBoundaries=[
+ [26+40/60,'Venus'],[66+40/60,'Sun'],[120,'Moon'],[160,'Mars'],
+ [213+20/60,'Mercury'],[253+20/60,'Saturn'],[293+20/60,'Jupiter'],[333+20/60,'Rahu']
+];
+for(const [longitude,expectedLord] of ashtBoundaries){
+ const d=phase4Dasa(dasaFixture(longitude)).ashtottari;
+ ok(d.available&&d.firstLord===expectedLord,'PVR Table 39 Ashtottari arc boundary '+longitude+'° selects '+expectedLord);
+}
+const example59=phase4Dasa(dasaFixture(144)).ashtottari;
+ok(example59.firstLord==='Moon'&&Math.abs(example59.birthBalanceFraction-0.4)<1e-10,'PVR §17.3 Example 59: Moon at 24° Leo selects Moon Dasa with 0.4 remaining fraction');
+ok(Math.abs(example59.sequence[0].years-6)<1e-9&&Math.abs(example59.sequence[0].elapsedBeforeBirthYears-9)<1e-9,'PVR Example 59: 6 years remain of 15-year Moon Dasa after 9 elapsed years');
+const rahuAd=example59.sequence[0].antardasas[0];
+ok(rahuAd?.lord==='Rahu'&&Math.abs(rahuAd.years-(15*12/108-(9-7.5)))<1e-9,'PVR Example 59: elapsed 9 years falls inside Rahu Antardasa; only its remainder is carried forward');
+ok(Math.abs(example59.sequence[0].antardasas.reduce((s,x)=>s+x.years,0)-example59.sequence[0].years)<1e-8,'Ashtottari partial birth Dasa Antardasas sum to the remaining Mahadasa period');
+ok(example59.applicabilityAudit.status==='UNRESOLVED_NO_INTERPRETATION_SELECTED'&&example59.applicabilityAudit.views.length===3,'PVR §17.2.3: preserve all three applicability interpretations without falsely certifying one');
+const applicabilityNoRahu=dasaFixture(144,180,180,30); // Libra Lagna; Rahu in Libra: view (2) must fail.
+const auditNoRahu=phase4Dasa(applicabilityNoRahu).ashtottari.applicabilityAudit;
+ok(auditNoRahu.views[1].status==='not_met'&&auditNoRahu.views[1].rahuInLagna===true,'Ashtottari applicability counterexample: Rahu in Lagna fails interpretation (2)');
+const applicabilityRahuQualifies=dasaFixture(144,180,300,30); // Libra Lagna, Venus is Lagna lord at Leo, Rahu Aquarius is 7th from Venus.
+const auditQualifies=phase4Dasa(applicabilityRahuQualifies).ashtottari.applicabilityAudit;
+ok(auditQualifies.views[1].status==='met'&&auditQualifies.views[1].rahuHouseFromLagnaLord===7,'Ashtottari applicability positive example: Rahu in a quadrant from the Lagna lord, outside Lagna');
+const dayKrishnaChart=dasaFixture(200,180,300,30);dayKrishnaChart.birth.time='12:00';
+const dayKrishnaAudit=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit;
+const dayKrishnaResolved=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit.views[2];
+const dayKrishnaWithSunrise=phase4Dasa(dayKrishnaChart,null,{sunrise:'06:00',sunset:'18:00'}).ashtottari.applicabilityAudit.views[2];
+ok(dayKrishnaWithSunrise.status==='met'&&dayKrishnaWithSunrise.birthPeriod==='day'&&dayKrishnaWithSunrise.paksha==='Krishna','Ashtottari rule (3) positive: daytime Krishna-paksha birth with local sunrise/sunset evidence');
+const nightShuklaChart=dasaFixture(100,180,300,30);nightShuklaChart.birth.time='23:00';
+const nightShukla=phase4Dasa(nightShuklaChart,null,{sunrise:'06:00',sunset:'18:00'}).ashtottari.applicabilityAudit.views[2];
+ok(nightShukla.status==='met'&&nightShukla.birthPeriod==='night'&&nightShukla.paksha==='Shukla','Ashtottari rule (3) positive: night Shukla-paksha birth with local sunrise/sunset evidence');
+const dayShuklaChart=dasaFixture(100,180,300,30);dayShuklaChart.birth.time='12:00';
+const dayShukla=phase4Dasa(dayShuklaChart,null,{sunrise:'06:00',sunset:'18:00'}).ashtottari.applicabilityAudit.views[2];
+ok(dayShukla.status==='not_met','Ashtottari rule (3) counterexample: daytime Shukla-paksha birth does not meet this interpretation');
+const nightKrishnaChart=dasaFixture(200,180,300,30);nightKrishnaChart.birth.time='23:00';
+const nightKrishna=phase4Dasa(nightKrishnaChart,null,{sunrise:'06:00',sunset:'18:00'}).ashtottari.applicabilityAudit.views[2];
+ok(nightKrishna.status==='not_met','Ashtottari rule (3) counterexample: nighttime Krishna-paksha birth does not meet this interpretation');
+ok(dayKrishnaAudit.views[2].status==='not_evaluated'&&dayKrishnaResolved.status==='not_evaluated','Ashtottari applicability remains unresolved without the required sunrise/sunset evidence');
+
+const d95=phase4Dasa(dasaFixture(45+50/60)).kalachakra;
+ok(d95.available&&d95.nakshatraIndex===4&&d95.pada===2&&d95.group==='apasavya1','PVR §24.2 Example 95: Moon 15°50 Taurus maps to Rohini Pada 2 / Apasavya-1');
+ok(Math.abs(d95.paramayush-83)<1e-9&&Math.abs(d95.elapsedYearsBeforeBirth-62.25)<1e-9&&Math.abs(d95.birthDasaRemainingYears-4.75)<1e-9,'PVR Example 95: independent paramayush 83, elapsed 62.25 and remaining 4.75 years');
+ok(d95.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR Examples 95/97: Kalachakra Mahadasa continuation matches Sc, Li, Vi, Le, Cn, Ge, Ta, Ar, Sg');
+ok(d95.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Sc,Li,Vi,Le,Cn,Ge,Ta,Ar,Sg','PVR §24.2 Example 97: Scorpio Antardasa order crosses from Rohini Pada 2 into Pada 3');
+ok(Math.abs(d95.sequence[0].antardasas.reduce((s,x)=>s+x.years,0)-d95.sequence[0].years)<1e-8,'Kalachakra Example 95: nine weighted Antardasas sum exactly to the Mahadasa duration');
+ok(Math.abs(d95.sequence[0].antardasas[0].years-(4.75*7/100))<1e-9,'Kalachakra Example 95: Scorpio Antardasa weight uses actual nine-sign sum 100 (not birth pada paramayush 83)');
+ok(d95.dehaRasi==='Sg'&&d95.jeevaRasi==='Sc','PVR §24.3.2 Example 95: Apasavya Deha is the ninth running Dasa (Sagittarius) and Jeeva is the first (Scorpio)');
+ok(d95.sequence[3].antardasas.map(x=>x.rasi).join(',')==='Le,Cn,Ge,Ta,Ar,Sg,Cp,Aq,Pi','PVR Example 97: Leo Antardasa order is Le,Cn,Ge,Ta,Ar,Sg,Cp,Aq,Pi');
+ok(Math.abs(d95.sequence[3].antardasas.reduce((s,x)=>s+x.years,0)-5)<1e-8,'PVR Example 97: nine weighted signs total 86 years and distribute the 5-year Leo Mahadasa');
+const savanaDays=(row)=>((Date.parse(row.end+'T00:00:00Z')-Date.parse(row.start+'T00:00:00Z'))/86400000);
+ok(Math.abs(savanaDays(example59.sequence[0])-example59.sequence[0].years*360)<1.01,'PVR §16.2 Ashtottari dates use the stated 360-day savana-year convention');
+ok(Math.abs(savanaDays(d95.sequence[0])-d95.sequence[0].years*360)<1.01,'PVR Examples 95–97 Kalachakra dates use the stated 360-day savana-year convention');
+
+const d96=phase4Dasa(dasaFixture(93)).kalachakra; // 3° Cancer.
+ok(d96.nakshatraIndex===7&&d96.pada===4&&d96.group==='savya1','PVR §24.2 Example 96: Moon 3° Cancer maps to Punarvasu Pada 4 / Savya-1');
+ok(Math.abs(d96.paramayush-86)<1e-9&&Math.abs(d96.elapsedYearsBeforeBirth-77.4)<1e-9&&Math.abs(d96.birthDasaRemainingYears-8.6)<1e-9,'PVR Example 96: independent paramayush 86, elapsed 77.4 and remaining 8.6 years');
+ok(d96.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','PVR Example 96: remaining Pisces Dasa followed by the first eight Savya-2 signs');
+ok(d96.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','Kalachakra Example 96: antardasa chain crosses after Pada 4 into Savya-2 Pada 1');
+ok(d96.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((s,x)=>s+x.years,0)-md.years)<1e-8),'Kalachakra counterexample grid: all displayed MDs have nine correctly weighted ADs summing to each MD');
+const drigExpected='2,5,8,11,3,1,10,7,4,0,9,6';
+const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
+ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
+ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
+ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
+let drigdasaOverlapCases=0;
+for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
+ const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
+ const first=d.sequence.filter(x=>x.cycle===1);
+ ok(d.groups.length===3&&d.groupSequences.length===3&&d.groupSequences.every(g=>g.length===4),'Drigdasa counterexample sign '+lagnaSign+': each source aspect group has exactly four signs');
+ ok(first.length===12&&first.map(x=>x.rasi).join(',')===d.groupSequences.flat().join(','),'Drigdasa counterexample sign '+lagnaSign+': retain all 12 source-ordered group entries without fallback');
+ if(new Set(first.map(x=>x.rasi)).size<12)drigdasaOverlapCases++;
+}
+ok(drigdasaOverlapCases>0,'Drigdasa overlap counterexample: repeated rasis from separately derived house-groups are preserved instead of padded');
+const renderStart=horoscopeSource.indexOf('function renderPhase4Dasa(data,lang,slot){');
+const renderEnd=horoscopeSource.indexOf('\n  window.__smvLoadPhase4Dasa=loadPhase4Dasa;',renderStart);
+ok(renderStart>=0&&renderEnd>renderStart,'Found Phase-4 renderer source for runtime regression');
+const rendererChunk=horoscopeSource.slice(renderStart,renderEnd);
+const renderContext={window:{},mockResult:null};
+const sharedArrStart=horoscopeSource.indexOf('const arr=v=>Array.isArray(v)?v:');
+const sharedArrEnd=horoscopeSource.indexOf(';',sharedArrStart);
+const sharedArrSource=sharedArrStart>=0&&sharedArrEnd>sharedArrStart?horoscopeSource.slice(sharedArrStart,sharedArrEnd+1):'';
+ok(sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:'),'Runtime regression extracts the production shared arr helper');
+vm.runInNewContext(sharedArrSource+"\n"+rendererChunk+"\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
+const mockAdvanced={querySelectorAll:()=>[]};
+const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
+const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
+renderContext.runRenderer({
+ ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},
+ pvrResearch:{
+  longevity:{dasaTiming:{
+   ageBandYears:{start:0,end:36},
+   niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},
+   shoola:{periods:[]}
+  }},
+  sodhyaPindaEventTiming:{rows:[]}
+ }
+},'ta',mockSlot);
+ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
+
 const charts=[];
 let pvrTransitFixtureRows=null;
 for(const [date,time] of birthCases){
