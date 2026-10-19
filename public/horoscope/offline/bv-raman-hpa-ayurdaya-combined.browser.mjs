@@ -236,6 +236,133 @@ function makeRule(id, category, title, matched) {
 }
 
 /**
+ * Full rule inventory from the visually checked Chapter XIV scan.
+ * The implementation below evaluates only a subset; missing evaluators are
+ * returned as UNKNOWN rather than omitted or silently treated as false.
+ */
+const CHAPTER_XIV_RULE_GROUPS = Object.freeze([
+  {
+    prefix: 'XIV-BAL-', category: 'Balarishta',
+    pageFor: n => n <= 9 ? 64 : n <= 24 ? 65 : 66,
+    descriptions: [
+      'Malefics in the final Navamsa of a sign.',
+      'Moon in a Kendra with malefics.',
+      'Moon in houses 7, 8 or 12 with malefics and without benefic aspect.',
+      'Birth near sunrise/sunset with Moon rising and malefics in malefic-sign Navamsas.',
+      'Malefics in houses 2, 6, 8 and 12.',
+      'Weak Moon in Ascendant or 8th with malefics in Kendras.',
+      'Moon in Ascendant, Mars in 8th, Sun in 9th and Saturn in 12th.',
+      'Weak Moon in Ascendant; houses 5, 8 and 12 aspected by evil planets.',
+      'Moon in 8th, Mars in 7th, Rahu in 9th and Jupiter in 3rd.',
+      'Birth Dasa lord in conjunction with many evil planets.',
+      'Sun rising with malefics in Kendras/Trikonas and Venus in house 6 or 12.',
+      'Ascendant lord or 5th/9th lords in the stated enemy-house and 8th/9th combinations.',
+      'Ketu in 4th with or aspected by malefics.',
+      'Rahu in 7th aspected by Sun and Moon.',
+      'Birth Dasa/Antardasa relationship involving 8th lord and Ascendant lord.',
+      'Ascendant lord, Navamsa-Lagna lord and Moon-sign lord conjunct Sun.',
+      'Ascendant and 8th from Moon-sign aspected by malefics.',
+      'Moon in 8th, Mars in 7th and Saturn in Ascendant.',
+      'Moon aspected by Saturn in its third Drishti.',
+      'Moon in 6th or 8th without planetary aspects.',
+      'Moon in Ascendant with malefics and without benefic aspect.',
+      'Moon and Rahu in Ascendant with Mars in 8th.',
+      'Sun in Ascendant with Saturn, and Rahu/Mars in 8th.',
+      'Malefics in houses 5, 8, 9; Sun or Moon in Ascendant without benefic protection.',
+      'Saturn 12th, Sun 9th, Moon Ascendant and Mars 8th, without Jupiter aspect; printed cancellation noted.',
+      'Saturn and Mars in Ascendant, 8th or 7th without good-planet aspect.',
+      'Moon at listed Mrityubhaga degree in a Kendra or 8th.',
+      'Ascendant lord or Moon-sign lord weak and badly placed.',
+      'Moon in 6th/8th receiving both malefic and benefic aspects.',
+      'Moon in 6th/8th receiving benefic aspect alone.'
+    ]
+  },
+  {
+    prefix: 'XIV-ANT-', category: 'Antidote',
+    pageFor: n => n <= 2 ? 66 : 67,
+    descriptions: [
+      'Powerful Jupiter in Ascendant removes Balarishta.',
+      'Powerful Lagna lord with benefic aspects.',
+      'Moon in 8th occupies Drekkana of Mercury, Jupiter or Venus.',
+      'Full Moon in benefic sign with good aspects.',
+      'Strong Mercury, Venus or Jupiter.',
+      'Moon in 6th occupies Drekkana of Jupiter, Venus or Mercury.',
+      'Full Moon between two benefics.',
+      'Protection for a child born during the night of Full-Moon days under the stated Moon condition.',
+      'Full Moon aspects Lagna while Jupiter is in a Kendra.',
+      'Malefics in benefic Shadvargas aspected by benefics in auspicious Navamsas.'
+    ]
+  },
+  {
+    prefix: 'XIV-ALP-', category: 'Alpayu',
+    pageFor: n => n <= 6 ? 69 : 70,
+    descriptions: [
+      'Saturn in 8th, Mars in 5th and Ketu in Ascendant.',
+      'Malefics in houses 6, 8 and 12.',
+      'Saturn in Ascendant; Sun, Moon and Mars in 7th.',
+      '8th lord in Ascendant with Ketu.',
+      'Malefics in Ascendant with Moon conjunct evil planets.',
+      '8th lord in Ascendant with powerless Lagna lord.',
+      'Scorpio Lagna with Sun and Jupiter there, and 8th lord in a Kendra.',
+      'Rahu in 7th, Moon in 8th and Jupiter in Ascendant.',
+      'Saturn in Ascendant owned by malefics, with benefics in houses 3, 6, 9 and 12.',
+      'Lagna and 8th lords join in 8th with malefics and without benefic aspect.',
+      'Evil planets in houses 1, 2 and 8 with benefics outside Kendras.',
+      'Birth lord weak and 8th lord in a Kendra.',
+      'Lagna and 8th lords in the stated quadrants/8th-house combination with no planets in Kendras.',
+      'Strong malefics in Kendras without benefic aspects.',
+      'Lagna and Moon both in common signs.'
+    ]
+  },
+  {
+    prefix: 'XIV-MAD-', category: 'Madhyayu',
+    pageFor: n => n <= 4 ? 70 : 71,
+    descriptions: [
+      '3rd or 6th lord in a Kendra.',
+      'At least two of the 8th, 11th, Lagna and 10th lords powerful.',
+      'Mercury, Jupiter and Venus in houses 2, 3 and 11 from Lagna.',
+      'All planets in the middle four houses from Lagna.',
+      'Sun in enemy sign in Ascendant, between malefics, powerless and without benefic aspect.',
+      'Birth lord in 6th or 8th with malefics and no benefic aspect.',
+      'Saturn at birth, Moon in 8th/12th and other planets in 11th.',
+      'Scorpio Lagna with Jupiter in Lagna and Mars/Rahu in 8th.',
+      '8th lord in 7th with afflicted Moon.',
+      'Jupiter in 8th with Aries Lagna and evil planets in Kendras.',
+      'Saturn at birth, Moon in 4th, Mars 7th, Rahu 10th and Jupiter/Venus/Mercury unfavourably placed.',
+      'Mars and Mercury in Kendras, Venus in Ascendant and exalted planets in 3rd/11th.',
+      'Benefics in Kendras without aspecting birth; birth lord aspected by evil planets.',
+      'Mars in 5th, Sun in 7th and Saturn debilitated.',
+      'Benefics in Kendras/Trikonas with powerful Saturn.'
+    ]
+  },
+  {
+    prefix: 'XIV-PUR-', category: 'Purnayu',
+    pageFor: n => n <= 2 ? 71 : 72,
+    descriptions: [
+      'Lagna aspected by its lord, 8th house by its lord and Jupiter in a Kendra.',
+      'First six houses occupied by benefics and last six by malefics.',
+      'Jupiter in a Kendra from birth lord, with no malefics in Kendras.',
+      'Cancer Lagna with Jupiter there and one or more exalted planets.',
+      'Birth lord and Sun in 10th, Saturn in Ascendant and Jupiter in 4th.',
+      'Jupiter in Lagna, Venus in 4th and Saturn/Moon in 10th.'
+    ]
+  }
+]);
+
+export const BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY = Object.freeze(
+  CHAPTER_XIV_RULE_GROUPS.flatMap(group => group.descriptions.map((description, index) => {
+    const number = index + 1;
+    return Object.freeze({
+      id: group.prefix + String(number).padStart(2, '0'),
+      category: group.category,
+      sourceRuleNumber: number,
+      sourcePrintedPage: group.pageFor(number),
+      sourceDescription: description
+    });
+  }))
+);
+
+/**
  * Selected Chapter XIV rule evidence. It does not implement every combination
  * in the chapter and it does not select a life-span category.
  */
@@ -423,20 +550,57 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 10,
       moonHouse === null ? null : moonHouse === 10)));
 
+  const implementedById = new Map(rules.map(rule => [rule.id, rule]));
+  const completeRuleSet = BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(sourceRule => {
+    const observed = implementedById.get(sourceRule.id);
+    if (observed) {
+      return Object.freeze({
+        ...observed,
+        sourceRuleNumber: sourceRule.sourceRuleNumber,
+        sourcePrintedPage: sourceRule.sourcePrintedPage,
+        sourceDescription: sourceRule.sourceDescription,
+        implemented: true
+      });
+    }
+    return Object.freeze({
+      id: sourceRule.id,
+      category: sourceRule.category,
+      title: sourceRule.sourceDescription,
+      sourceRuleNumber: sourceRule.sourceRuleNumber,
+      sourcePrintedPage: sourceRule.sourcePrintedPage,
+      sourceDescription: sourceRule.sourceDescription,
+      status: 'UNKNOWN',
+      implemented: false,
+      note: 'Source rule indexed; its evaluator has not yet been implemented.'
+    });
+  });
   const categories = ['Balarishta', 'Alpayu', 'Madhyayu', 'Purnayu'];
+  const allCategories = [...categories, 'Antidote'];
   const categoryCandidates = categories.filter(category =>
-    rules.some(rule => rule.category === category && rule.status === 'MATCHED'));
-  const matchedAntidotes = rules.filter(rule => rule.category === 'Antidote' && rule.status === 'MATCHED')
+    completeRuleSet.some(rule => rule.category === category && rule.status === 'MATCHED'));
+  const matchedAntidotes = completeRuleSet.filter(rule => rule.category === 'Antidote' && rule.status === 'MATCHED')
     .map(rule => rule.id);
+  const ruleCoverageCounts = Object.freeze(Object.fromEntries(allCategories.map(category => {
+    const group = completeRuleSet.filter(rule => rule.category === category);
+    return [category, Object.freeze({
+      sourceRules: group.length,
+      implemented: group.filter(rule => rule.implemented).length,
+      notImplemented: group.filter(rule => !rule.implemented).length,
+      matched: group.filter(rule => rule.status === 'MATCHED').length,
+      unknown: group.filter(rule => rule.status === 'UNKNOWN').length
+    })];
+  })));
   return Object.freeze({
     source: BV_RAMAN_HPA_CHAPTER_XIV_SOURCE,
     status: 'RESEARCH_ONLY_PARTIAL_RULE_COVERAGE',
-    ruleCoverage: 'selected combinations only; unresolved rules remain UNKNOWN',
+    ruleCoverage: 'all source-numbered rules are indexed; unevaluated rules are explicitly UNKNOWN',
+    ruleCoverageCounts,
+    unimplementedRuleIds: Object.freeze(completeRuleSet.filter(rule => !rule.implemented).map(rule => rule.id)),
     categoryCandidates: Object.freeze(categoryCandidates),
-    matchedRuleIds: Object.freeze(rules.filter(rule => rule.status === 'MATCHED').map(rule => rule.id)),
-    unknownRuleIds: Object.freeze(rules.filter(rule => rule.status === 'UNKNOWN').map(rule => rule.id)),
+    matchedRuleIds: Object.freeze(completeRuleSet.filter(rule => rule.status === 'MATCHED').map(rule => rule.id)),
+    unknownRuleIds: Object.freeze(completeRuleSet.filter(rule => rule.status === 'UNKNOWN').map(rule => rule.id)),
     matchedAntidotes: Object.freeze(matchedAntidotes),
-    rules: Object.freeze(rules),
+    rules: Object.freeze(completeRuleSet),
     selectedCategory: null,
     finalLifespan: null,
     certified: false,
