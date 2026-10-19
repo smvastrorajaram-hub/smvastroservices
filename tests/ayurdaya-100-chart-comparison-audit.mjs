@@ -8,6 +8,7 @@
  * additionally require the user's 100 verified birth records.
  */
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
 import {
   cgRajanSelectAyurdayaMethod,
@@ -222,6 +223,58 @@ eq(parity.sodyaPindaMatches,700,'Sodhya Pinda exactly matches for all 700 rows')
 eq(parity.allFieldsEqualRows,700,'all three Pinda outputs match row-by-row for all charts');
 eq(parity.mismatches.length,0,'no unexplained mismatch between modified panel and Ayurdaya appendix');
 
+const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
+  cohort:birth.sex, fixtureIndex:birth.index, fixtureId:birth.name,
+  input:{date:birth.date,time:birth.time,place:'Perambalur, Tamil Nadu, India (QA fixture)',lat:birth.lat,lon:birth.lon,utcOffsetMinutes:birth.utcOffsetMinutes},
+  actualPlanetLongitudes:Object.fromEntries((chart.planets||[]).filter(p=>TA_TO_EN[p.name]&&Number.isFinite(Number(p.longitude))
+    ).map(p=>[TA_TO_EN[p.name],Number(Number(p.longitude).toFixed(6))])),
+  lagnaLongitude:Number(Number(chart.lagna?.longitude).toFixed(6)),
+  cgRajan:{
+    methodSelection:selection.selectedMethod,
+    available:selection.available,
+    reasonCode:selection.reasonCode||null,
+    referencePlanet:selection.referencePlanetEnglish||null,
+    pindaTerms:cg.entries.map(e=>({
+      planet:e.english,
+      rawPindaYears:e.pinda?.symbolicComponentYears,
+      rawPindaNazhigai:e.pinda?.exactPreRoundingNazhigai,
+      pindaUnits:e.pinda?.traditionalUnits,
+      naturalUnits:e.natural?.traditionalUnits,
+      amsaRawYears:e.amsa?.rawAmsaYears,
+      pindaHaranaResolved:e.pindaHarana?.resolved===true,
+      naturalHaranaResolved:e.naturalHarana?.resolved===true,
+      amsaHaranaResolved:e.amsaHarana?.resolved===true
+    })),
+    totalsAvailable:{
+      pinda:cg.totals?.pinda?.available===true,
+      natural:cg.totals?.natural?.available===true,
+      amsa:cg.totals?.amsa?.available===true,
+      averageOfThree:cg.totals?.averageOfThreeTotals??null
+    }
+  },
+  modifiedSodhyaPinda:result.advanced.v5.sodhyaPinda.planetPindas.map(row=>({
+    planet:TA_TO_EN[row.planet]||row.planet,
+    rasi:row.rasi,bindus:row.bindus,
+    rasiPinda:row.rasiPinda,grahaPinda:row.grahaPinda,sodyaPinda:row.sodyaPinda
+  })),
+  ashtakavargaAyurdaya:{
+    pindaRows:CLASSICAL.map(planet=>{
+      const x=bvr.chapterXXVI.planets[planet];
+      return {planet,rasiPinda:x.rasiPinda,grahaPinda:x.grahaPinda,sodyaPinda:x.sodyaPinda,
+        grossLunarYears:x.grossLunarYears,haranaResolved:x.harana?.resolved===true,
+        netLunarYears:x.harana?.unroundedNetLunarYears??null};
+    }),
+    chapterXIVCategoryCandidates:bvr.chapterXIV?.categoryCandidates||[],
+    matchedRuleIds:(bvr.chapterXIV?.rules||[]).filter(rule=>rule.status==='MATCHED').map(rule=>rule.id),
+    numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
+    crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
+    haranaComplete:bvr.chapterXXVI?.haranaComplete===true,
+    netLunarYears:bvr.chapterXXVI?.netLunarYears??null,
+    solarYearsCandidate:bvr.chapterXXVI?.solarYearsCandidate??null,
+    finalLifespan:bvr.finalLifespan,
+    certified:bvr.certified
+  }
+}));
 const summary = {
   pass:true,
   assertions,
@@ -246,6 +299,7 @@ const summary = {
     allFieldsEqualRows:parity.allFieldsEqualRows,
     mismatches:parity.mismatches.length
   },
+  perChartResults,
   longevityTypeTracks:{
     chapterXIVRuleCategoryCandidateCounts:longevityCategoryCounts,
     chapterXXVINumericBandCandidateCounts:numericBandCounts,
@@ -265,4 +319,6 @@ const summary = {
   },
   limitation:'These results prove code-path and arithmetic consistency for 100 actual engine-calculated charts from test birth inputs; they do not certify accuracy against 100 real people or resolve outstanding source-book numerical gaps.'
 };
+mkdirSync('artifacts',{recursive:true});
+writeFileSync('artifacts/ayurdaya-100-chart-comparison-audit.json',JSON.stringify(summary,null,2));
 console.log(JSON.stringify(summary,null,2));
