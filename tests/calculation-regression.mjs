@@ -49,7 +49,8 @@ for(const [date,time] of birthCases){
  ok(result.phase4.narayana.sequence.length===24,date+' Narayana two-cycle rows');
  ok(result.phase4.narayana.sequence.every(md=>md.antardasas?.length===12&&md.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12)),date+' Narayana Antardasa rows use valid rasi indices');
  const n1=result.phase4.narayana.sequence.filter(x=>x.cycle===1),n2=result.phase4.narayana.sequence.filter(x=>x.cycle===2);
- const cycleMismatches=n1.map((x,i)=>({rasi:x.rasi,first:x.fullYears,second:n2[i]?.fullYears,expected:12-x.fullYears})).filter(x=>Math.abs(Number(x.second)-x.expected)>1e-9); ok(n1.length===12&&n2.length===12&&cycleMismatches.length===0,date+' Narayana second-cycle source formula mismatches: '+JSON.stringify(cycleMismatches));
+ const cycleMismatches=n1.map((x,i)=>({rasi:x.rasi,first:x.fullYears,second:n2[i]?.fullYears,expected:Math.max(0,12-x.fullYears)})).filter(x=>Math.abs(Number(x.second)-x.expected)>1e-9); ok(n1.length===12&&n2.length===12&&cycleMismatches.length===0,date+' Narayana second-cycle source-rule handling mismatches: '+JSON.stringify(cycleMismatches));
+ if(n1.some(x=>x.fullYears>12))ok(result.phase4.narayana.sourceWarnings?.some(w=>w.rasi===n1.find(x=>x.fullYears>12).rasi),date+' Narayana flags impossible negative second-cycle source result');
  ok(result.phase4.shoola.sequence.length===12&&result.phase4.shoola.sequence.every(md=>md.antardasas?.length===12&&md.antardasas[0].rasi===md.rasi||md.antardasas?.length===12&&md.antardasas[0].rasi===(md.rasi+6)%12),date+' Shoola Antardasa starts from stronger of Dasa sign/7th');
  ok(result.phase4.shoola.sequence.every(md=>md.antardasas.every((x,i,arr)=>i===0||x.rasi===(arr[i-1].rasi+1)%12)),date+' Shoola Antardasa progresses zodiacally');
  ok(result.phase4.pvrResearch?.longevity?.researchOnly===true&&result.phase4.pvrResearch?.sodhyaPindaEventTiming?.researchOnly===true,date+' PVR add-on remains research-only');
@@ -89,9 +90,9 @@ const footedSignChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
 ]};
 const footedDasa=phase4Dasa(footedSignChart);
 ok(footedDasa.narayana.seed===0,'Narayana odd-footed fixture starts Aries');
-ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ta')?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
-ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Le')?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
-const ariesMd=footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ar');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===1)?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===4)?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
+const ariesMd=footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===0);
 ok(ariesMd?.antardasas?.length===12&&ariesMd.antardasas[0].rasi===0&&ariesMd.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12),'Narayana Dasa sign-code parsing preserves correct Antardasa seed and valid rasis');
 const piSeedChart={birthDate:'2000-01-01',lagna:{longitude:330},planets:[
  {name:'Sun',longitude:0},{name:'Moon',longitude:60},{name:'Mars',longitude:90},
@@ -99,8 +100,8 @@ const piSeedChart={birthDate:'2000-01-01',lagna:{longitude:330},planets:[
  {name:'Saturn',longitude:240},{name:'Rahu',longitude:30},{name:'Ketu',longitude:210}
 ]};
 const piSeedDasa=phase4Dasa(piSeedChart);
-ok(piSeedDasa.narayana.seed===11&&piSeedDasa.narayana.sequence.slice(0,12).map(x=>x.rasi).join(',')==='Pi,Cn,Sc,Sg,Ar,Le,Vi,Cp,Ta,Ge,Li,Aq','PVR Narayana Table 40 Example 64: Pisces dual-sign progression');
-ok(piSeedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Pi')?.antardasas?.[0]?.rasi===11,'PVR Narayana Antardasa starts from its Dasa sign lord when Dasa sign is stronger than its 7th');
+ok(piSeedDasa.narayana.seed===11&&piSeedDasa.narayana.sequence.slice(0,12).map(x=>x.rasi).join(',')==='11,3,7,8,0,4,5,9,1,2,6,10','PVR Narayana Table 40 Example 64: Pisces dual-sign progression');
+ok(piSeedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===11)?.antardasas?.[0]?.rasi===11,'PVR Narayana Antardasa starts from its Dasa sign lord when Dasa sign is stronger than its 7th');
 
 let pairs=0;
 for(const bride of charts)for(const groom of charts){
