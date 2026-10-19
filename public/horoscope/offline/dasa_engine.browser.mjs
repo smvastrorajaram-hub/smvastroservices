@@ -84,8 +84,8 @@ function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
  const elongation=Number.isFinite(moon)&&Number.isFinite(sun)?((moon-sun)%360+360)%360:null;
  const paksha=elongation==null?null:(elongation<180?'Shukla':'Krishna');
  const timeText=String(chart?.birth?.time||chart?.birthTime||chart?.time||'');
- const tm=timeText.match(/^(\\d{1,2}):(\\d{2})/),birthMinutes=tm?Number(tm[1])*60+Number(tm[2]):null;
- const clockMinutes=value=>{const m=String(value||'').match(/^(\\d{1,2}):(\\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
+ const tm=timeText.match(/^(\d{1,2}):(\d{2})/),birthMinutes=tm?Number(tm[1])*60+Number(tm[2]):null;
+ const clockMinutes=value=>{const m=String(value||'').match(/^(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
  const sunrise=clockMinutes(advancedContext?.birthPanchang?.sunrise),sunset=clockMinutes(advancedContext?.birthPanchang?.sunset);
  const dayNightAvailable=birthMinutes!=null&&sunrise!=null&&sunset!=null&&sunrise<sunset;
  const birthPeriod=dayNightAvailable?(birthMinutes>=sunrise&&birthMinutes<sunset?'day':'night'):'unknown';
@@ -207,7 +207,7 @@ function kalachakra(chart,startDate){
  });
  return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continue through the current pada row and each following pada row; each Antardasa starts at its Mahadasa rasi and takes 9 continuous rasi tokens, crossing to the next pada row as necessary. Weight each Antardasa by Table 48 years for those nine actual signs.'};
 }
-function phase4Dasa(chart,advancedContext=null){
+function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
  const rawDate=chart?.birthDate||chart?.birth?.date||chart?.date;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(rawDate||'')))throw new Error('Birth date missing for Phase-4 Rasi Dasa');
  const start=new Date(`${rawDate}T00:00:00Z`);
@@ -228,6 +228,6 @@ function phase4Dasa(chart,advancedContext=null){
    caution:'These are age-band/Dasa timing references, not a death prediction. The required Trishoola/AL/maraka corroboration is not automatically certified.'
   };
  }
- return {ashtottari:ashtottari(chart,start,advancedContext),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
+ return {ashtottari:ashtottari(chart,start,{birthPanchang:birthPanchang||advancedContext?.birthPanchang}),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
 }
 export {phase4Dasa};
