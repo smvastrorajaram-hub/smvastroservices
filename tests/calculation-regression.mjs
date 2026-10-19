@@ -42,6 +42,7 @@ ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
 const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
 const charts=[];
+let pvrTransitFixtureRows=null;
 for(const [date,time] of birthCases){
  const result=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-16',name:'Audit'});
  const c=result.chart;
@@ -55,6 +56,7 @@ for(const [date,time] of birthCases){
  ok(result.phase4.shoola.sequence.every(md=>md.antardasas.every((x,i,arr)=>i===0||x.rasi===(arr[i-1].rasi+1)%12)),date+' Shoola Antardasa progresses zodiacally');
  ok(result.phase4.pvrResearch?.longevity?.researchOnly===true&&result.phase4.pvrResearch?.sodhyaPindaEventTiming?.researchOnly===true,date+' PVR add-on remains research-only');
  ok(result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.length===7&&result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.every(x=>x.product===x.rawBavRekhas*x.sodhyaPinda),date+' PVR Sodhya Pinda event products follow raw BAV rekha × Yoga Pinda');
+ if(!pvrTransitFixtureRows)pvrTransitFixtureRows=result.phase4.pvrResearch.sodhyaPindaEventTiming.rows;
  const longevity=result.phase4.pvrResearch.longevity;
  ok(['short','middle','long'].includes(longevity.combinedCategory),date+' PVR method-of-three-pairs selects a longevity category with complete chart inputs');
  ok(longevity.dasaTiming?.category===longevity.combinedCategory&&longevity.dasaTiming.certified===false,date+' PVR longevity category exposes research-only Dasa timing bands');
@@ -88,6 +90,15 @@ ok(sourceExampleNakshatra.some(w=>Date.parse(w.startUtc)<=dianaReferenceMs&&Date
 ok(sourceExampleRasi.some(w=>Date.parse(w.startUtc)<=dianaReferenceMs&&Date.parse(w.endUtc)>dianaReferenceMs),'PVR §25.6 Example 111: Saturn Pisces transit covers 1997-08-31');
 ok(sourceExampleNakshatra.every(w=>Date.parse(w.startUtc)<Date.parse(w.endUtc))&&sourceExampleRasi.every(w=>Date.parse(w.startUtc)<Date.parse(w.endUtc)),'PVR transit windows have positive duration and valid ingress/egress boundaries');
 ok(historicalSodhyaTransit.ephemeris.includes('Swiss Ephemeris')&&historicalSodhyaTransit.horizon.timezoneLabel==='IST (UTC+05:30)'&&historicalSodhyaTransit.researchOnly===true,'PVR transit calendar exposes local Swiss ephemeris, IST horizon and research-only status');
+const next15YearTransit=await calculateSodhyaPindaTransitWindows(pvrTransitFixtureRows,{startDate:'2026-10-20',endDate:'2041-10-20',utcOffsetMinutes:330});
+ok(next15YearTransit.horizon.startDate==='2026-10-20'&&next15YearTransit.horizon.endDate==='2041-10-20'&&next15YearTransit.horizon.endExclusive===true,'PVR transit calendar covers the 15-year IST horizon with exclusive end date');
+ok(next15YearTransit.rows.length===7&&next15YearTransit.rows.every(x=>x.transits?.Saturn&&x.transits?.Jupiter),'PVR 15-year transit calendar contains Saturn/Jupiter for all seven Sodhya topics');
+const next15StarWindows=next15YearTransit.rows.flatMap(x=>x.transits.Jupiter.nakshatras.find(n=>n.key==='primary')?.windows||[]);
+ok(next15StarWindows.length>=7,'Jupiter completes the source-target nakshatra crossings over the 15-year horizon');
+const transitStartMs=Date.parse('2026-10-20T00:00:00Z')-330*60000,transitEndMs=Date.parse('2041-10-20T00:00:00Z')-330*60000;
+const all15YearWindows=next15YearTransit.rows.flatMap(x=>['Saturn','Jupiter'].flatMap(body=>[...(x.transits[body].nakshatras||[]).flatMap(n=>n.windows||[]),...(x.transits[body].rasi?.windows||[])]));
+ok(all15YearWindows.every(w=>Date.parse(w.startUtc)>=transitStartMs&&Date.parse(w.endUtc)<=transitEndMs&&Date.parse(w.startUtc)<Date.parse(w.endUtc)),'Every 15-year transit window is in-range and has valid ingress/egress');
+console.log(JSON.stringify({pvr15YearTransitSample:next15YearTransit.rows.map(x=>({topic:x.topic,planet:x.planet,nakshatra:x.targetNakshatra,rasi:x.targetRasi,saturnNakshatra:x.transits.Saturn.nakshatras.find(n=>n.key==='primary')?.windows.map(w=>[w.startLocal,w.endLocal]),saturnRasi:x.transits.Saturn.rasi.windows.map(w=>[w.startLocal,w.endLocal]),jupiterNakshatra:x.transits.Jupiter.nakshatras.find(n=>n.key==='primary')?.windows.map(w=>[w.startLocal,w.endLocal]),jupiterRasi:x.transits.Jupiter.rasi.windows.map(w=>[w.startLocal,w.endLocal])}))}));
 console.log(JSON.stringify({pvrHistoricalTransitExample:{source:'PVR §25.6 Example 111',SaturnRevati:sourceExampleNakshatra,SaturnPisces:sourceExampleRasi}}));
 const saturnSeedChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:30},{name:'Moon',longitude:120},{name:'Mars',longitude:210},
