@@ -138,7 +138,7 @@ function resultFor({chart,bavRows,language='ta',evidence,occupiedSigns,planetSig
   const signsComplete = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']
     .every(name=>Number.isInteger(derivedSigns[name]));
   const signs = planetSigns || (signsComplete ? derivedSigns : null);
-  const occupied = occupiedSigns || facts.planets.filter(p=>p.sign!==null).map(p=>p.sign);
+  const occupied = occupiedSigns || [...new Set(facts.planets.filter(p=>p.sign!==null).map(p=>p.sign))];
   const explicitEvidence = evidence || {};
   const selectedHarana = haranaByPlanet || haranaInputs(chart);
   return bvRamanIntegratedAyurdayaResearch({
