@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
-import {cgRajanSelectAyurdayaMethod as selectMethod} from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let count=0;
 const ok=(c,msg)=>{assert.ok(c,msg);count++};
 const eq=(a,b,msg)=>{assert.equal(a,b,msg);count++};
@@ -28,25 +27,10 @@ const opts={language:'ta',brideStyle:'south',groomStyle:'north',reviewDate:'2026
  poruthamRows:[['Dina',true,''],['Rajju',false,'Audit']],transitFn:fn};
 const ta=await renderBasicMatching(charts[0],charts[1],opts);
 ok(!ta.includes('mm-shadbala-status')&&!ta.includes('Uttara Kalamrita இடைக்காலக் கூறுகள்')&&!ta.includes('யுத்தம் (UK)'),'Tamil Matching shows six Bala components without indication/source label or war column');
-const taAyurdaya=[...ta.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
-eq(taAyurdaya.length,2,'Tamil Matching report includes two guarded Ayurdaya appendices');
-const methodLabels={pinda:'பிண்ட ஆயுள்',natural:'நைசர்க்கிக ஆயுள்',amsa:'அம்ச ஆயுர்த்தாயம்'};
-for(const [i,section] of taAyurdaya.entries()){
- const selection=selectMethod({planets:charts[i].planets,lagna:charts[i].lagna});
- ok(section.includes('இவை பாரம்பரிய ஆயுர்த்தாய முறையின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'),
-  'Tamil partner '+(i+1)+' has the actual-lifespan disclaimer');
- if(selection.available){
-  ok(section.includes(methodLabels[selection.selectedMethod]),'Tamil partner '+(i+1)+' shows the Shadbala-selected method');
-  for(const [method,label] of Object.entries(methodLabels))if(method!==selection.selectedMethod)
-   ok(!section.includes(label),'Tamil partner '+(i+1)+' hides unselected '+method);
-  eq((section.match(/<tr\b/g)||[]).length,9,'Tamil partner '+(i+1)+' has header, seven grahas and selected total');
-  eq(section.includes('சராசரி ஆயுர்த்தாயம்'),false,'Tamil partner '+(i+1)+' has no average');
-  eq(section.includes('data-ayurdaya-selection="'+selection.selectedMethod+'"'),true,'Tamil partner '+(i+1)+' exposes the selected-method marker');
- }else{
-  eq((section.match(/<tr\b/g)||[]).length,0,'Tamil partner '+(i+1)+' does not show an unselected method table');
-  ok(section.includes('data-ayurdaya-selection="unavailable"'),'Tamil partner '+(i+1)+' records the no-selection state');
- }
-}
+eq((ta.match(/<section class="smv-ayurdaya-customer-summary"[^>]*>/g)||[]).length,0,
+ 'Tamil Matching suppresses Ayurdaya labels until a certified category is supplied');
+ok(!ta.includes('smv-cg-rajan-ayurdaya')&&!ta.includes('data-pinda-harana=')&&!ta.includes('ஹரணத்திற்குப் பின்'),
+ 'Tamil Matching does not expose detailed Ayurdaya calculation rows or traces');
 ok(!ta.includes('சராசரி ஆயுர்த்தாயம்'),'Tamil Matching customer output does not display an average method result');
 ok(!ta.includes('AMSA AYURDAYAM'),'Tamil Matching HTML never uses the rejected uppercase heading');
 ok(ta.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'Tamil title');
@@ -64,24 +48,10 @@ eq(values[1].utcOffsetMinutes,60,'London October-16 DST offset 60');
 eq(values[0].language,'en','One language-neutral transit calculation per person');
 const en=await renderBasicMatching(charts[0],charts[1],{...opts,language:'en',brideStyle:'east',groomStyle:'north'});
 ok(!en.includes('mm-shadbala-status')&&!en.includes('Only Uttara Kalamrita intermediate components are shown')&&!en.includes('Yuddha (UK)'),'English Matching shows six Bala components without indication/source label or war column');
-const enAyurdaya=[...en.matchAll(/<section class="smv-cg-rajan-ayurdaya"[^>]*>[\s\S]*?<\/section>/g)].map(m=>m[0]);
-eq(enAyurdaya.length,2,'English Matching report includes two guarded Ayurdaya appendices');
-const enMethodLabels={pinda:'Pinda Ayurdaya',natural:'Naisargika Ayurdaya',amsa:'Amsa Ayurdaya'};
-for(const [i,section] of enAyurdaya.entries()){
- const selection=selectMethod({planets:charts[i].planets,lagna:charts[i].lagna});
- ok(section.includes('This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.'),
-  'English partner '+(i+1)+' has the actual-lifespan disclaimer');
- if(selection.available){
-  ok(section.includes(enMethodLabels[selection.selectedMethod]),'English partner '+(i+1)+' shows the selected method');
-  for(const [method,label] of Object.entries(enMethodLabels))if(method!==selection.selectedMethod)
-   ok(!section.includes(label),'English partner '+(i+1)+' hides unselected '+method);
-  eq((section.match(/<tr\b/g)||[]).length,9,'English partner '+(i+1)+' has header, seven grahas and selected total');
-  eq(section.includes('Average Ayurdaya'),false,'English partner '+(i+1)+' has no average');
- }else{
-  eq((section.match(/<tr\b/g)||[]).length,0,'English partner '+(i+1)+' does not show an unselected method table');
-  ok(section.includes('data-ayurdaya-selection="unavailable"'),'English partner '+(i+1)+' records the no-selection state');
- }
-}
+eq((en.match(/<section class="smv-ayurdaya-customer-summary"[^>]*>/g)||[]).length,0,
+ 'English Matching suppresses Ayurdaya labels until a certified category is supplied');
+ok(!en.includes('smv-cg-rajan-ayurdaya')&&!en.includes('data-pinda-harana=')&&!en.includes('Harana'),
+ 'English Matching does not expose detailed Ayurdaya calculation rows or traces');
 ok(!en.includes('Average Ayurdaya'),'English Matching customer output does not show an average result');
 ok(!en.includes('AMSA AYURDAYAM'),'English Matching report uses the required Amsa Ayurdaya heading');
 ok(en.includes('Marriage Matching — Basic Calculation Report'),'English title');
