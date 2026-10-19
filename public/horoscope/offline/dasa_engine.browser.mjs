@@ -57,6 +57,9 @@ function narayanaLengthDetail(sign,planets){const si=parseSign(sign);if(si<0)thr
 function narayanaLength(sign,planets){return narayanaLengthDetail(sign,planets).years;}
 function progressionByTable(seed,planets){const s=signCode(seed);let mode=0;if(planets.Saturn?.sign===seed)mode=1;else if(planets.Ketu?.sign===seed)mode=2;const row=NAR_TABLE[seed][mode];return row.map(x=>SHORT[x]);}
 function addYears(date,years){return new Date(date.getTime()+Number(years||0)*365.2425*86400000);}
+// PVR §16.2 / Example 50 explicitly prefers savana years (360 days) for Nakshatra Dasas.
+// Keep that convention local to Ashtottari/Kalachakra; Rasi Dasas continue using addYears().
+function addNakshatraDasaYears(date,years){return new Date(date.getTime()+Number(years||0)*360*86400000);}
 function fmt(d){return isNaN(d?.getTime?.())?'—':d.toISOString().slice(0,10);}
 function periodRows(order,lengthFn,startDate,firstFraction=1,cycles=1){let cur=new Date(startDate),rows=[];for(let c=0;c<cycles;c++){for(let i=0;i<order.length;i++){const sign=order[i],full=Number(lengthFn(sign,i,c)||0),years=(c===0&&i===0)?full*firstFraction:full;const st=new Date(cur),en=addYears(st,years);rows.push({rasi:sign,years,start:fmt(st),end:fmt(en),fullYears:full,cycle:c+1});cur=en;}}return rows;}
 function equalRasiSubs(md,order,lengthFn){const each=md.years/12;let cur=new Date(md.start+'T00:00:00Z');return order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});}
@@ -103,7 +106,7 @@ function ashtottari(chart,startDate){
  let cur=new Date(startDate),rows=[];
  seq.forEach((pl,i)=>{
   const fullYears=ASHT_ARCS.find(a=>a.planet===pl).years,years=i===0?fullYears*frac:fullYears;
-  const st=new Date(cur),en=addYears(st,years);
+  const st=new Date(cur),en=addNakshatraDasaYears(st,years);
   rows.push({lord:pl,years,fullYears,start:fmt(st),end:fmt(en),partialAtBirth:i===0,elapsedBeforeBirthYears:i===0?elapsedYears:0});
   cur=en;
  });
@@ -119,7 +122,7 @@ function ashtottari(chart,startDate){
    const elapsedInThis=Math.max(0,elapsed-passed);
    const years=Math.max(0,whole-elapsedInThis);
    if(years>1e-10){
-    const s=new Date(c),e=addYears(s,years);
+    const s=new Date(c),e=addNakshatraDasaYears(s,years);
     antardasas.push({lord:ords[j],years,fullYears:whole,start:fmt(s),end:fmt(e),partialAtBirth:i===0&&elapsedInThis>0});
     c=e;
    }
@@ -180,7 +183,7 @@ function kalachakra(chart,startDate){
  }
  let cur=new Date(startDate);
  const rows=tokens.slice(0,12).map((token,i)=>{
-  const years=i===0?remaining:token.fullYears,st=new Date(cur),en=addYears(st,years);cur=en;
+  const years=i===0?remaining:token.fullYears,st=new Date(cur),en=addNakshatraDasaYears(st,years);cur=en;
   return {rasi:token.rasi,years,fullYears:token.fullYears,start:fmt(st),end:fmt(en),padaGroup:token.group,pada:token.pada+1,rowIndex:token.rowIndex};
  });
  const withSubs=rows.map((md,i)=>{
@@ -190,12 +193,12 @@ function kalachakra(chart,startDate){
   if(weight<=0)throw new Error('Invalid Kalachakra Antardasa weighting total');
   let c=new Date(md.start+'T00:00:00Z');
   const antardasas=adTokens.map(t=>{
-   const years=md.years*KC_OWNER_YEARS[t.rasi]/weight,s=new Date(c),e=addYears(s,years);c=e;
+   const years=md.years*KC_OWNER_YEARS[t.rasi]/weight,s=new Date(c),e=addNakshatraDasaYears(s,years);c=e;
    return {rasi:t.rasi,years,start:fmt(s),end:fmt(e),padaGroup:t.group,pada:t.pada+1,sourceRowIndex:t.rowIndex};
   });
   return {...md,antardasas};
  });
- return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:initialPadaSigns[0],jeevaRasi:initialPadaSigns[8],paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,method:'PVR §24.2, Tables 43–48, Examples 95–97: continue through the current pada row and each following pada row; each Antardasa starts at its Mahadasa rasi and takes 9 continuous rasi tokens, crossing to the next pada row as necessary. Weight each Antardasa by Table 48 years for those nine actual signs.'};
+ return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continue through the current pada row and each following pada row; each Antardasa starts at its Mahadasa rasi and takes 9 continuous rasi tokens, crossing to the next pada row as necessary. Weight each Antardasa by Table 48 years for those nine actual signs.'};
 }
 function phase4Dasa(chart,advancedContext=null){
  const rawDate=chart?.birthDate||chart?.birth?.date||chart?.date;
