@@ -372,8 +372,8 @@ const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
   ]}
 });
 const bal02AspectOnly = moonKendraMaleficAspectOnly.rules.find(rule => rule.id === 'XIV-BAL-02');
-eq(bal02AspectOnly.status, 'MATCHED',
-  'HPA p. 68 Horoscope No. 1 demonstrates that a malefic Saturn aspect can satisfy Balarishta rule 2 without same-house co-occupancy');
+eq(bal02AspectOnly.status, 'NOT_MATCHED',
+  'HPA p. 68 Horoscope No. 1 does not establish Balarishta rule 2 from Saturn aspect alone without same-house co-occupancy');
 
 const bal17TwoMaleficAspects = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
