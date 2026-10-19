@@ -392,8 +392,8 @@ for(const [date,time] of births){
   for(const candidate of perNatalSelection.tiedCandidates){
    const label={pinda:'Pinda Ayurdaya',natural:'Naisargika Ayurdaya',amsa:'Amsa Ayurdaya'}[candidate.method];
    ok(perNatalHtml.includes(label),'tied method is shown '+candidate.method+' '+date);
-   eq((perNatalHtml.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,7,
-    'tied method has seven planetary cells '+candidate.method+' '+date);
+   eq((perNatalHtml.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+    'tied method has a header plus seven planetary cells '+candidate.method+' '+date);
   }
   eq((perNatalHtml.match(/data-tied-total=/g)||[]).length,perNatalSelection.tiedCandidates.length,
    'every tied method gets a separate total '+date);
