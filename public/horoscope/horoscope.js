@@ -1948,13 +1948,26 @@ try{
           const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
           if(!sectionI)throw new Error('Advanced Analysis Part I content not found');
           const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261019-shadbala-ayurdaya-single-method-v1');
-          const html=cgRajanAyurdayaReportHtml({planets:full.chart.planets,lagna:full.chart.lagna,language:lang});
+          const {bvRamanAyurdayaReportHtml}=await import('./offline/bv-raman-ayurdaya-report.browser.mjs?v=20261019-bv-raman-ayurdaya-report-v1');
+          const cgHtml=cgRajanAyurdayaReportHtml({planets:fullChart.planets,lagna:fullChart.lagna,language:lang});
+          const bvHtml=bvRamanAyurdayaReportHtml({
+            chart:fullChart,
+            bavRows:advancedData?.ashtakavarga?.bhinna,
+            language:lang
+          });
+          // Keep the existing C.G. Rajan section unchanged; render the two
+          // B.V. Raman result tables as a separate adjacent block underneath.
+          const html=cgHtml+bvHtml;
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
+          sectionI.querySelectorAll('[data-smv-bv-raman-ayurdaya-section]').forEach(node=>node.remove());
           sectionI.insertAdjacentHTML('beforeend',html);
-          // Any async routed sub-module may update I; preserve Ayurdaya LAST.
+          // Any async routed sub-module may update I; preserve the original
+          // C.G. Rajan section first, followed by the separate B.V. Raman block.
           root.__smvRouteAdvancedSections?.();
           const ayur=sectionI.querySelector('[data-smv-cg-rajan-ayurdaya]');
           if(ayur)sectionI.appendChild(ayur);
+          const bvAyur=sectionI.querySelector('[data-smv-bv-raman-ayurdaya-section]');
+          if(bvAyur)sectionI.appendChild(bvAyur);
         }catch(ayurError){
           console.warn('CG Rajan Part I Ayurdaya appendix unavailable:',ayurError);
         }

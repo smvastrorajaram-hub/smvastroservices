@@ -6,6 +6,7 @@
 import {vargaSign,vargaLongitude} from './offline/astro_advanced.browser.mjs';
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {cgRajanAyurdayaReportHtml} from './offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261019-shadbala-ayurdaya-single-method-v1';
+import {bvRamanAyurdayaReportHtml} from './offline/bv-raman-ayurdaya-report.browser.mjs?v=20261019-bv-raman-ayurdaya-report-v1';
 const SIGNS_EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const SIGNS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const P_EN=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
@@ -284,7 +285,15 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
   try{trData=await reviewTransit(c,ref,transitFn);}catch(e){transitError=String(e.message||e);}
   const maandi=natalMaandi(c);
   const native=c.planets||[],natal=[...native,...(maandi?[maandi]:[])];
-  const ayurdayaReport=cgRajanAyurdayaReportHtml({planets:native,lagna:c.lagna,language}).replace('<table class="smv-ayurdaya-table">','<table class="smv-ayurdaya-table smv-css-island">')
+  const cgAyurdayaHtml=cgRajanAyurdayaReportHtml({planets:native,lagna:c.lagna,language});
+  const bvAyurdayaHtml=bvRamanAyurdayaReportHtml({
+   chart:c,
+   bavRows:c?.advanced?.ashtakavarga?.bhinna,
+   language
+  });
+  const ayurdayaReport=(cgAyurdayaHtml+bvAyurdayaHtml)
+   .replace(/<table class="smv-ayurdaya-table">/g,'<table class="smv-ayurdaya-table smv-css-island">')
+   .replace(/<table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table">/g,'<table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table smv-css-island">');
   const vargaMaandi=maandi?{...maandi,longitude:vargaLongitude(Number(maandi.longitude),9)}:null;
   const d9Planets=d9?[...d9.planets,...(vargaMaandi?[vargaMaandi]:[])]:[];
   const charts='<div class="mm-base-chart-row">'+
