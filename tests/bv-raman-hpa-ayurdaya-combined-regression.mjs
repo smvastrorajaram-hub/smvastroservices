@@ -69,7 +69,21 @@ const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
   ]}
 });
 ok(moonKendraWithJupiterAspect.matchedRuleIds.includes('XIV-BAL-02'),
-  'Moon-Kendra/malefic combination is evaluated as its own Chapter XIV rule even with a benefic aspect');
+  'Moon-Kendra/malefic conjunction is its own Chapter XIV rule even with a benefic aspect');
+
+
+const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:35,bhava:2},{name:'Moon',longitude:5,bhava:1},
+    {name:'Mars',longitude:65,bhava:3},{name:'Mercury',longitude:95,bhava:4},
+    {name:'Jupiter',longitude:125,bhava:5},{name:'Venus',longitude:155,bhava:6},
+    {name:'Saturn',longitude:185,bhava:7},{name:'Rahu',longitude:215,bhava:8},
+    {name:'Ketu',longitude:245,bhava:9}
+  ]}
+});
+const bal02AspectOnly = moonKendraMaleficAspectOnly.rules.find(rule => rule.id === 'XIV-BAL-02');
+eq(bal02AspectOnly.status, 'NOT_MATCHED',
+  'Chapter XIV "Moon in a Kendra with malefics" is not widened to a malefic aspect alone');
 
 const allThreeMaleficHouses = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
@@ -97,7 +111,7 @@ eq(onlyOneMaleficHouse.matchedRuleIds.includes('XIV-ALP-02'), false,
 
 // Harana rule: only the largest loss applies, never a stack of losses.
 const halfAndThirds = bvRamanHpaChapterXXVIApplyHarana({
-  grossLunarYears: 12,
+  grossLunarYears: 12, planet: 'Sun',
   factors: {
     conjunctionInSign: true, debilitated: false, combust: false,
     temporaryEnemySign: true, aboveHorizon: false,
@@ -110,8 +124,16 @@ eq(halfAndThirds.printedNetLunarYears, 6, '12 years with the highest half-Harana
 eq(halfAndThirds.ignoredLesserRules.includes('temporaryEnemySign'), true,
   'lower one-third deduction is recorded but not stacked');
 eq(bvRamanHpaChapterXXVIApplyHarana({
-  grossLunarYears: 12, factors: { conjunctionInSign: false }
+  grossLunarYears: 12, planet: 'Sun', factors: { conjunctionInSign: false }
 }).resolved, false, 'missing Harana facts block adjusted term');
+const invalidEclipse = bvRamanHpaChapterXXVIApplyHarana({
+  grossLunarYears: 12, planet: 'Mars', factors: {
+    conjunctionInSign:false, debilitated:false, combust:false, temporaryEnemySign:false,
+    aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:true
+  }
+});
+eq(invalidEclipse.resolved, false, 'eclipse Harana cannot be applied to Mars');
+eq(invalidEclipse.invalidFactors, ['eclipsed'], 'non-luminary eclipse input is identified as invalid');
 
 // The HPA Ch. XXVI Sun example: verify its own 112 + 45 = 157 calculation.
 // Do not pretend the other six Pinda pairs come from the same Sun BAV row.
@@ -167,7 +189,7 @@ for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'])
     aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:false
   };
   const sourceGross = hpa.reportedGrossLunarYears[planet];
-  const sourceNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:sourceGross,factors:flags});
+  const sourceNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:sourceGross,factors:flags,planet});
   sourceReportedNet[planet] = sourceNet.printedNetLunarYears;
   eq(sourceNet.printedNetLunarYears, reportedNetExpected[planet],
     planet + ' displayed gross term plus displayed Harana reproduces the printed net term');
@@ -175,7 +197,7 @@ for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'])
   const pindaSum = hpa.reportedRasiPinda[planet] + hpa.reportedGrahaPinda[planet];
   const unwrapped = pindaSum * 7 / 27;
   const formulaGross = ((unwrapped % 27) + 27) % 27;
-  const recomputedNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:formulaGross,factors:flags});
+  const recomputedNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:formulaGross,factors:flags,planet});
   pindaRecomputedNet[planet] = recomputedNet.printedNetLunarYears;
 }
 const printedNetSum = Object.values(sourceReportedNet).reduce((a,b)=>a+b,0);
