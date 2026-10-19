@@ -111,6 +111,12 @@ Eight of the 100 charts have equal Shadbala reference values. Those ties are now
 
 If a particular method's Harana total is not resolved, its raw value is labelled as unadjusted rather than presented as a completed adjusted result.
 
+## Chapter XIV source-rule expansion
+
+The follow-up rule-by-rule regression now includes source-linked three-state test cases for all **76/76** Chapter XIV rule IDs, alongside the three partially replayed horoscope examples printed in the book. See the [Chapter XIV source-rule evidence audit](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/audits/SMV_ASTRO_CHAPTER_XIV_SOURCE_RULE_EVIDENCE_AUDIT_2026-10-20.md) and [rule-by-rule JSON artifact](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39321824507/artifacts/12220013195).
+
+This validates that the currently implemented predicates produce MATCHED / NOT_MATCHED / UNKNOWN under controlled source-rule fixtures. It does **not** eliminate missing birth-Dasa, sunrise/hora, Shadvarga, strength or other evidence from ordinary chart inputs; it also does not certify one final Chapter XIV category. The three printed horoscope examples remain partial predicate replays, not fully reconstructed charts where the book text does not state every required placement/aspect.
+
 ## Source status and limits
 
 - The final lifespan remains `null`; `certified` remains `false`.
