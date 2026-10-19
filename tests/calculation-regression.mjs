@@ -93,6 +93,14 @@ ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ta')?.fullYears==
 ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Le')?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
 const ariesMd=footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ar');
 ok(ariesMd?.antardasas?.length===12&&ariesMd.antardasas[0].rasi===0&&ariesMd.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12),'Narayana Dasa sign-code parsing preserves correct Antardasa seed and valid rasis');
+const piSeedChart={birthDate:'2000-01-01',lagna:{longitude:330},planets:[
+ {name:'Sun',longitude:0},{name:'Moon',longitude:60},{name:'Mars',longitude:90},
+ {name:'Mercury',longitude:60},{name:'Jupiter',longitude:330},{name:'Venus',longitude:120},
+ {name:'Saturn',longitude:240},{name:'Rahu',longitude:30},{name:'Ketu',longitude:210}
+]};
+const piSeedDasa=phase4Dasa(piSeedChart);
+ok(piSeedDasa.narayana.seed===11&&piSeedDasa.narayana.sequence.slice(0,12).map(x=>x.rasi).join(',')==='Pi,Cn,Sc,Sg,Ar,Le,Vi,Cp,Ta,Ge,Li,Aq','PVR Narayana Table 40 Example 64: Pisces dual-sign progression');
+ok(piSeedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Pi')?.antardasas?.[0]?.rasi===11,'PVR Narayana Antardasa starts from its Dasa sign lord when Dasa sign is stronger than its 7th');
 
 let pairs=0;
 for(const bride of charts)for(const groom of charts){
