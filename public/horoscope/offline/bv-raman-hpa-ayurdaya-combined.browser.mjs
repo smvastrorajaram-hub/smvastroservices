@@ -663,7 +663,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     '8th lord in 7th with Moon afflicted by malefic conjunction or aspect',
     triAll(
       eighthLordHouse === null ? null : eighthLordHouse === 7,
-      triAny(moonWithMalefics, moonAspect.malefic)));
+      triAny(moonWithMalefics, moonAspect.malefic))));
   rules.push(makeRule('XIV-MAD-10', 'Madhyayu',
     'Jupiter in 8th with Aries Lagna and malefics in Kendras',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 0,
