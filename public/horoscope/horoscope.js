@@ -1595,10 +1595,10 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
           if(target && n.parentElement!==(target.__smvContent||target)) (target.__smvContent||target).appendChild(n);
           else if(owner && target && owner!==target) target.appendChild(n);
         });
-        // Ensure Part I's Ayurdaya appendix stays after all late-loaded
+        // Ensure Part I's Ayurdaya result stays after all late-loaded
         // Chart Analysis features; do not create any additional section.
         const partI=advancedBox.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
-        const appendix=partI?.querySelector('[data-smv-cg-rajan-ayurdaya]');
+        const appendix=partI?.querySelector('[data-smv-ayurdaya-customer-summary]');
         if(appendix)partI.appendChild(appendix);
       };
       advancedBox.__smvRouteAdvancedSections();
