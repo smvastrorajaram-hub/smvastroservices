@@ -408,6 +408,20 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     }
     return unknown ? null : false;
   };
+  const beneficAspectToHouse = house => {
+    if (!houseValid(house)) return null;
+    let unknownNature = false;
+    for (const [name, source] of map.planets.entries()) {
+      if (!houseValid(source.house) || isAspecting(source, house) !== true) continue;
+      const nature = planetNature(map, e, name);
+      if (nature === 'benefic') return true;
+      if (nature === null) unknownNature = true;
+    }
+    const classicalChartComplete = [
+      'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
+    ].every(name => map.planets.has(name) && houseValid(map.planets.get(name).house));
+    return unknownNature || !classicalChartComplete ? null : false;
+  };
   const noBeneficAspectToPlanet = name => {
     const state = aspectState(map, e, name).benefic;
     return state === null ? null : !state;
@@ -459,6 +473,10 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
     'Moon in house 7, 8 or 12 with malefics and no benefic aspect (same-house co-occupancy)',
     triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
+  rules.push(makeRule('XIV-BAL-04', 'Balarishta',
+    'Birth within 48 minutes before sunrise/after sunset, Moon hora rising and malefics in malefic-sign Navamsas',
+    triAll(tri(e.birthWithin48MinutesOfSunriseOrSunset),
+      tri(e.moonsHoraRising), tri(e.maleficsInMaleficSignNavamsas))));
   rules.push(makeRule('XIV-BAL-05', 'Balarishta', 'Malefics occupy each of houses 2, 6, 8 and 12',
     maleficsInAll([2, 6, 8, 12])));
   rules.push(makeRule('XIV-BAL-06', 'Balarishta',
@@ -478,6 +496,9 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
       houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 9,
       houseOf(map, 'Jupiter') === null ? null : houseOf(map, 'Jupiter') === 3)));
+  rules.push(makeRule('XIV-BAL-10', 'Balarishta',
+    'Birth-period Dasa lord is conjunct many malefics',
+    tri(e.birthDasaLordConjoinedWithManyMalefics)));
   rules.push(makeRule('XIV-BAL-13', 'Balarishta', 'Ketu in house 4 with or aspected by malefics',
     triAll(houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 4,
       triAny(conjunctionState(map, 'Ketu', 'malefic', e),
@@ -584,6 +605,15 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       noBeneficAspectToPlanet('Mars'))));
   rules.push(makeRule('XIV-BAL-27', 'Balarishta', 'Moon at a Mrityubhaga degree in a Kendra or house 8',
     triAll(isMoonMrityubhaga(map), inList(moonHouse, [1, 4, 7, 10, 8]))));
+  const moonSignForBal28 = signOf(map, 'Moon');
+  const moonSignLordForBal28 = signValid(moonSignForBal28)
+    ? SIGN_LORDS[moonSignForBal28] : null;
+  rules.push(makeRule('XIV-BAL-28', 'Balarishta',
+    'Lagna lord or Moon-sign lord is weak and badly placed',
+    triAny(
+      triAll(isWeak(lagnaLord || 'LagnaLord'), tri(e.lagnaLordBadlyPlaced)),
+      triAll(moonSignLordForBal28 ? isWeak(moonSignLordForBal28) : null,
+        tri(e.moonSignLordBadlyPlaced)))));
   rules.push(makeRule('XIV-BAL-29', 'Balarishta', 'Moon in 6th or 8th with both malefic and benefic aspects',
     triAll(inList(moonHouse, [6, 8]), moonAspect.malefic, moonAspect.benefic)));
   rules.push(makeRule('XIV-BAL-30', 'Balarishta', 'Moon in 6th or 8th with benefic aspect alone',
@@ -688,6 +718,18 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
     tri(e.allPlanetsMiddleFourHouses)));
+  rules.push(makeRule('XIV-MAD-05', 'Madhyayu',
+    'Sun in Lagna, enemy sign, between malefics, weak and without benefic aspect',
+    triAll(
+      houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 1,
+      tri(e.sunInEnemySign), tri(e.sunBetweenMalefics),
+      isWeak('Sun'), noBeneficAspectToPlanet('Sun'))));
+  rules.push(makeRule('XIV-MAD-06', 'Madhyayu',
+    'Lagna lord in 6th or 8th with malefics and no benefic aspect',
+    triAll(
+      inList(lagnaLordHouse, [6, 8]),
+      lagnaLord ? conjunctionState(map, lagnaLord, 'malefic', e) : null,
+      lagnaLord ? noBeneficAspectToPlanet(lagnaLord) : null)));
   rules.push(makeRule('XIV-MAD-08', 'Madhyayu',
     'Scorpio Lagna with Jupiter in Lagna and Mars/Rahu in 8th',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 7,
@@ -708,6 +750,14 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(isKendra(houseOf(map, 'Mars')), isKendra(houseOf(map, 'Mercury')),
       houseOf(map, 'Venus') === null ? null : houseOf(map, 'Venus') === 1,
       exaltedPlanetInHouse(3), exaltedPlanetInHouse(11))));
+  const noBeneficAspectToBirth = (() => {
+    const value = beneficAspectToHouse(1);
+    return value === null ? null : !value;
+  })();
+  rules.push(makeRule('XIV-MAD-13', 'Madhyayu',
+    'Benefics in Kendras without aspecting Lagna; Lagna lord aspected by malefics',
+    triAll(tri(e.beneficsOccupyKendras), noBeneficAspectToBirth,
+      lagnaLord ? aspectState(map, e, lagnaLord).malefic : null)));
   rules.push(makeRule('XIV-MAD-14', 'Madhyayu',
     'Mars in 5th, Sun in 7th and Saturn debilitated',
     triAll(houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 5,
