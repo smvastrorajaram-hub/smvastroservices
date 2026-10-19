@@ -47,6 +47,7 @@ for(const [date,time] of birthCases){
  const c=result.chart;
  ok(result.ok&&result.advanced&&result.phase4&&result.transit&&result.birthPanchang,date+' full calculation');
  ok(result.phase4.narayana.sequence.length===24,date+' Narayana two-cycle rows');
+ ok(result.phase4.narayana.sequence.every(md=>md.antardasas?.length===12&&md.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12)),date+' Narayana Antardasa rows use valid rasi indices');
  const n1=result.phase4.narayana.sequence.filter(x=>x.cycle===1),n2=result.phase4.narayana.sequence.filter(x=>x.cycle===2);
  ok(n1.length===12&&n2.length===12&&n1.every((x,i)=>Math.abs(n2[i].fullYears-(12-x.fullYears))<1e-9),date+' Narayana second cycle uses 12 minus first-cycle duration');
  ok(result.phase4.shoola.sequence.length===12&&result.phase4.shoola.sequence.every(md=>md.antardasas?.length===12&&md.antardasas[0].rasi===md.rasi||md.antardasas?.length===12&&md.antardasas[0].rasi===(md.rasi+6)%12),date+' Shoola Antardasa starts from stronger of Dasa sign/7th');
@@ -90,6 +91,8 @@ const footedDasa=phase4Dasa(footedSignChart);
 ok(footedDasa.narayana.seed===0,'Narayana odd-footed fixture starts Aries');
 ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ta')?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
 ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Le')?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
+const ariesMd=footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ar');
+ok(ariesMd?.antardasas?.length===12&&ariesMd.antardasas[0].rasi===0&&ariesMd.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12),'Narayana Dasa sign-code parsing preserves correct Antardasa seed and valid rasis');
 
 let pairs=0;
 for(const bride of charts)for(const groom of charts){
