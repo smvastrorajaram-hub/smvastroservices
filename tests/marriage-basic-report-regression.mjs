@@ -8,6 +8,8 @@ import {cgRajanSelectAyurdayaMethod as selectMethod} from '../public/horoscope/o
 let count=0;
 const ok=(c,msg)=>{assert.ok(c,msg);count++};
 const eq=(a,b,msg)=>{assert.equal(a,b,msg);count++};
+const cgMethodTable=section=>section.match(/<table class="smv-ayurdaya-table(?: smv-css-island)?">[\s\S]*?<\/table>/)?.[0]||'';
+const cgMethodRowCount=section=>(cgMethodTable(section).match(/<tr\b/g)||[]).length;
 const births=[
  {name:'Bride audit',date:'1992-07-31',time:'22:05',lat:11.23333,lon:78.88333,utcOffsetMinutes:330,timezone:'Asia/Kolkata',style:'south'},
  {name:'Groom audit',date:'1994-06-15',time:'13:03',lat:51.50853,lon:-0.12574,utcOffsetMinutes:60,timezone:'Europe/London',style:'north'}
@@ -39,11 +41,11 @@ for(const [i,section] of taAyurdaya.entries()){
   ok(section.includes(methodLabels[selection.selectedMethod]),'Tamil partner '+(i+1)+' shows the Shadbala-selected method');
   for(const [method,label] of Object.entries(methodLabels))if(method!==selection.selectedMethod)
    ok(!section.includes(label),'Tamil partner '+(i+1)+' hides unselected '+method);
-  eq((section.match(/<tr\b/g)||[]).length,9,'Tamil partner '+(i+1)+' has header, seven grahas and selected total');
+  eq(cgMethodRowCount(section),9,'Tamil partner '+(i+1)+' has header, seven grahas and selected total');
   eq(section.includes('சராசரி ஆயுர்த்தாயம்'),false,'Tamil partner '+(i+1)+' has no average');
   eq(section.includes('data-ayurdaya-selection="'+selection.selectedMethod+'"'),true,'Tamil partner '+(i+1)+' exposes the selected-method marker');
  }else{
-  eq((section.match(/<tr\b/g)||[]).length,0,'Tamil partner '+(i+1)+' does not show an unselected method table');
+  eq(cgMethodRowCount(section),0,'Tamil partner '+(i+1)+' does not show an unselected method table');
   ok(section.includes('data-ayurdaya-selection="unavailable"'),'Tamil partner '+(i+1)+' records the no-selection state');
  }
 }
@@ -75,10 +77,10 @@ for(const [i,section] of enAyurdaya.entries()){
   ok(section.includes(enMethodLabels[selection.selectedMethod]),'English partner '+(i+1)+' shows the selected method');
   for(const [method,label] of Object.entries(enMethodLabels))if(method!==selection.selectedMethod)
    ok(!section.includes(label),'English partner '+(i+1)+' hides unselected '+method);
-  eq((section.match(/<tr\b/g)||[]).length,9,'English partner '+(i+1)+' has header, seven grahas and selected total');
+  eq(cgMethodRowCount(section),9,'English partner '+(i+1)+' has header, seven grahas and selected total');
   eq(section.includes('Average Ayurdaya'),false,'English partner '+(i+1)+' has no average');
  }else{
-  eq((section.match(/<tr\b/g)||[]).length,0,'English partner '+(i+1)+' does not show an unselected method table');
+  eq(cgMethodRowCount(section),0,'English partner '+(i+1)+' does not show an unselected method table');
   ok(section.includes('data-ayurdaya-selection="unavailable"'),'English partner '+(i+1)+' records the no-selection state');
  }
 }
