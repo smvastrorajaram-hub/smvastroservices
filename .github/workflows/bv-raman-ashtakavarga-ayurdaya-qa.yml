@@ -54,99 +54,62 @@ jobs:
           python -m pip install --disable-pip-version-check pymupdf pillow
           python - <<'PY'
           from pathlib import Path
-          import re
-          import fitz
-          from PIL import Image, ImageOps, ImageDraw
+          import pymupdf
+          from PIL import Image, ImageDraw
 
           src = Path("certificates/hindu-predictive-astrology-bv-raman-1.pdf")
           out = Path("artifacts/bv-raman-primary-source-pages")
           out.mkdir(parents=True, exist_ok=True)
-          if not src.exists():
+          if not src.is_file() or src.stat().st_size == 0:
               raise SystemExit(f"Missing source PDF: {src}")
 
-          doc = fitz.open(src)
-          rules = {
-              "chapter-xiv-ayurdaya": ("chapterxiv", "ayurdaya"),
-              "chapter-xxvi-ashtakavarga": ("chapterxxvi", "ashtakavarga"),
-              "determination-ayurdaya": ("determinationofayurdaya",),
-              "rasi-gunakara": ("rasigunakara",),
-              "graha-gunakara": ("grahagunakara",),
-              "reduction-example-48-98": ("4898",),
-              "solar-conversion-44-87": ("4487",),
-              "trikona-reduction": ("trikonareduction",),
-              "ekadhipatya-reduction": ("ekadhipatyareduction",),
-              "life-span-categories": ("balarishta", "alpayu", "madhyayu", "purnayu"),
-          }
-
-          def norm(s):
-              return re.sub(r"[^a-z0-9]", "", s.casefold())
-
-          matched = {}
-          all_text = []
-          for i, page in enumerate(doc):
-              text = page.get_text("text")
-              all_text.append(text)
-              n = norm(text)
-              for label, terms in rules.items():
-                  if label == "chapter-xiv-ayurdaya":
-                      ok = "chapterxiv" in n and "ayurdaya" in n
-                  elif label == "chapter-xxvi-ashtakavarga":
-                      ok = "chapterxxvi" in n and "ashtakavarga" in n
-                  elif label == "life-span-categories":
-                      ok = sum(term in n for term in terms) >= 2
-                  else:
-                      ok = any(term in n for term in terms)
-                  if ok:
-                      matched.setdefault(label, set()).add(i)
-
-          selected = set()
-          for indices in matched.values():
-              for i in indices:
-                  selected.update(j for j in range(i - 1, i + 2) if 0 <= j < len(doc))
-
-          fallback_used = not selected
-          if fallback_used:
-              # Printed page numbers are not guaranteed to equal PDF page indices;
-              # render broad windows around the known Chapter XIV and XXVI ranges.
-              for start, end in ((55, 90), (185, 220)):
-                  selected.update(i for i in range(start - 1, min(end, len(doc))) if 0 <= i < len(doc))
+          doc = pymupdf.open(src)
+          # This source PDF contains scanned, image-only pages. Avoid OCR/text
+          # anchor searches and render only the chapter pages actually needed.
+          page_groups = [
+              ("Chapter XIV — printed pages 63–72", 70, 79),
+              ("Chapter XXVI — printed pages 199–203", 206, 210),
+          ]
+          selected = []
+          for label, first_pdf_page, last_pdf_page in page_groups:
+              if last_pdf_page > len(doc):
+                  raise SystemExit(f"{label}: PDF has only {len(doc)} pages")
+              selected.extend((label, n) for n in range(first_pdf_page, last_pdf_page + 1))
 
           manifest = [
               f"PDF: {src}",
-              f"PDF pages: {len(doc)}",
-              f"Fallback page windows used: {fallback_used}",
-              "Matched headings/anchors:",
+              f"PDF page count: {len(doc)}",
+              "Source pages are scanned images; no text layer is expected.",
+              "Page mapping: printed page = PDF page - 7.",
+              "Rendered groups:",
           ]
-          for label in rules:
-              page_nums = sorted(i + 1 for i in matched.get(label, set()))
-              if page_nums:
-                  manifest.append(f"  {label}: PDF page(s) {', '.join(map(str, page_nums))}")
-          manifest.append("Rendered PDF pages:")
-          thumbs = []
-          for i in sorted(selected):
-              page = doc[i]
-              pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
-              image_path = out / f"pdf-page-{i+1:03d}.png"
+          tiles = []
+          for label, pdf_page_number in selected:
+              printed_page_number = pdf_page_number - 7
+              page = doc[pdf_page_number - 1]
+              pix = page.get_pixmap(matrix=pymupdf.Matrix(1.5, 1.5), alpha=False)
+              image_path = out / f"pdf-page-{pdf_page_number:03d}-printed-{printed_page_number:03d}.png"
               pix.save(image_path)
-              extracted = re.sub(r"\s+", " ", all_text[i]).strip()
-              hint = extracted[:180] if extracted else "[no text layer; inspect rendered page]"
-              manifest.append(f"  PDF page {i+1}: {hint}")
+              manifest.append(
+                  f"  {label}; PDF page {pdf_page_number}; printed page {printed_page_number}; image {image_path.name}"
+              )
               img = Image.open(image_path).convert("RGB")
               img.thumbnail((280, 360))
               tile = Image.new("RGB", (300, 400), "white")
-              tile.paste(img, ((300-img.width)//2, 24))
-              ImageDraw.Draw(tile).text((10, 5), f"PDF page {i+1}", fill="black")
-              thumbs.append(tile)
-          (out / "page-manifest.txt").write_text("\n".join(manifest), encoding="utf-8")
+              tile.paste(img, ((300 - img.width) // 2, 24))
+              ImageDraw.Draw(tile).text(
+                  (10, 5), f"Printed p. {printed_page_number} (PDF p. {pdf_page_number})", fill="black"
+              )
+              tiles.append(tile)
 
-          if thumbs:
-              cols = 4
-              rows = (len(thumbs) + cols - 1) // cols
-              sheet = Image.new("RGB", (cols * 300, rows * 400), "#dddddd")
-              for k, tile in enumerate(thumbs):
-                  sheet.paste(tile, ((k % cols) * 300, (k // cols) * 400))
-              sheet.save(out / "contact-sheet.jpg", quality=85)
-          print("\n".join(manifest))
+          (out / "page-manifest.txt").write_text("\\n".join(manifest), encoding="utf-8")
+          columns = 4
+          rows = (len(tiles) + columns - 1) // columns
+          sheet = Image.new("RGB", (columns * 300, rows * 400), "#dddddd")
+          for index, tile in enumerate(tiles):
+              sheet.paste(tile, ((index % columns) * 300, (index // columns) * 400))
+          sheet.save(out / "contact-sheet.jpg", quality=88)
+          print("\\n".join(manifest))
           PY
       - name: Upload rendered primary-source page images
         uses: actions/upload-artifact@v4
