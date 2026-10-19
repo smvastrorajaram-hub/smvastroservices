@@ -50,7 +50,7 @@ for(const [date,time] of birthCases){
  ok(result.phase4.narayana.sequence.every(md=>md.antardasas?.length===12&&md.antardasas.every(x=>Number.isInteger(x.rasi)&&x.rasi>=0&&x.rasi<12)),date+' Narayana Antardasa rows use valid rasi indices');
  const n1=result.phase4.narayana.sequence.filter(x=>x.cycle===1),n2=result.phase4.narayana.sequence.filter(x=>x.cycle===2);
  const cycleMismatches=n1.map((x,i)=>({rasi:x.rasi,first:x.fullYears,second:n2[i]?.fullYears,expected:Math.max(0,12-x.fullYears)})).filter(x=>Math.abs(Number(x.second)-x.expected)>1e-9); ok(n1.length===12&&n2.length===12&&cycleMismatches.length===0,date+' Narayana second-cycle source-rule handling mismatches: '+JSON.stringify(cycleMismatches));
- if(n1.some(x=>x.fullYears>12))ok(result.phase4.narayana.sourceWarnings?.some(w=>w.rasi===n1.find(x=>x.fullYears>12).rasi),date+' Narayana flags impossible negative second-cycle source result');
+ ok(n1.every(x=>x.fullYears<=12)&&n2.every(x=>x.fullYears>=0&&x.fullYears<=12),date+' Narayana Dasa durations respect the 12-year maximum and no-negative second-cycle rule');
  ok(result.phase4.shoola.sequence.length===12&&result.phase4.shoola.sequence.every(md=>md.antardasas?.length===12&&md.antardasas[0].rasi===md.rasi||md.antardasas?.length===12&&md.antardasas[0].rasi===(md.rasi+6)%12),date+' Shoola Antardasa starts from stronger of Dasa sign/7th');
  ok(result.phase4.shoola.sequence.every(md=>md.antardasas.every((x,i,arr)=>i===0||x.rasi===(arr[i-1].rasi+1)%12)),date+' Shoola Antardasa progresses zodiacally');
  ok(result.phase4.pvrResearch?.longevity?.researchOnly===true&&result.phase4.pvrResearch?.sodhyaPindaEventTiming?.researchOnly===true,date+' PVR add-on remains research-only');
@@ -100,6 +100,16 @@ const piSeedChart={birthDate:'2000-01-01',lagna:{longitude:330},planets:[
  {name:'Saturn',longitude:240},{name:'Rahu',longitude:30},{name:'Ketu',longitude:210}
 ]};
 const piSeedDasa=phase4Dasa(piSeedChart);
+const mercuryVirgoChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
+ {name:'Sun',longitude:60},{name:'Moon',longitude:120},{name:'Mars',longitude:210},
+ {name:'Mercury',longitude:165},{name:'Jupiter',longitude:270},{name:'Venus',longitude:30},
+ {name:'Saturn',longitude:240},{name:'Rahu',longitude:150},{name:'Ketu',longitude:300}
+]};
+const mercuryVirgoDasa=phase4Dasa(mercuryVirgoChart);
+const virgoCycle1=mercuryVirgoDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===5);
+const virgoCycle2=mercuryVirgoDasa.narayana.sequence.find(x=>x.cycle===2&&x.rasi===5);
+ok(virgoCycle1?.fullYears===12&&virgoCycle2?.fullYears===0,'Narayana Mercury-in-Virgo conflict resolves to 12+0 years, never 13-1');
+ok(mercuryVirgoDasa.narayana.sourceWarnings?.some(w=>w.rasi===5&&w.lord==='Mercury'&&w.uncappedYears===13&&w.firstCycleYears===12&&w.secondCycleYears===0),'Narayana Mercury-in-Virgo applies the documented inter-source 12-year cap and records the source reconciliation');
 ok(piSeedDasa.narayana.seed===11&&piSeedDasa.narayana.sequence.slice(0,12).map(x=>x.rasi).join(',')==='11,3,7,8,0,4,5,9,1,2,6,10','PVR Narayana Table 40 Example 64: Pisces dual-sign progression');
 ok(piSeedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===11)?.antardasas?.[0]?.rasi===11,'PVR Narayana Antardasa starts from its Dasa sign lord when Dasa sign is stronger than its 7th');
 
