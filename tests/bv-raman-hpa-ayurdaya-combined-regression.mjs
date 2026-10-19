@@ -94,8 +94,8 @@ eq(new Set(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule => rule.id)).
   'every source rule has a unique stable ID');
 eq(xiv.rules.length, 76,
   'runtime rule trace exposes every source rule, not only implemented evaluators');
-eq(xiv.unimplementedRuleIds.includes('XIV-BAL-04'), true,
-  'unsupported Balarishta rule 4 remains explicitly visible as unimplemented');
+eq(xiv.unimplementedRuleIds.includes('XIV-BAL-04'), false,
+  'Balarishta rule 4 now has an evidence-gated evaluator');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-07').implemented, true,
   'direct-position Balarishta rule 7 is now evaluated');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-30').implemented, true,
@@ -106,16 +106,26 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-15').implemented, true,
   'Balarishta rule 15 uses explicit birth Dasa/Antardasa inputs');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-16').implemented, true,
   'Balarishta rule 16 requires an explicit Navamsa Lagna lord');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-10').implemented, true,
+  'Balarishta rule 10 uses explicit birth-Dasa-lord conjunction evidence');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-28').implemented, true,
+  'Balarishta rule 28 uses explicit weakness and poor-placement evidence');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-05').implemented, true,
+  'Madhyayu rule 5 separately tests Sun enemy-sign and affliction facts');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-06').implemented, true,
+  'Madhyayu rule 6 tests the birth lord in 6/8 with malefic conjunction and no benefic aspect');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-13').implemented, true,
+  'Madhyayu rule 13 checks benefic Kendra evidence and aspects to Lagna/lord');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
-  'unimplemented Balarishta rule is UNKNOWN, never silently NOT_MATCHED');
+  'Balarishta rule 4 remains UNKNOWN when sunrise, Hora and Navamsa facts are absent');
 eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), false,
   'antidote rule 8 is no longer listed as unimplemented after its evaluator was added');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
   'antidote rule 8 remains UNKNOWN when explicit full-moon-night evidence is absent');
 eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
   'Balarishta inventory has 30 source rules');
-eq(xiv.ruleCoverageCounts.Balarishta.implemented, 26,
-  'twenty-six source-numbered Balarishta rules have evaluators after the rule 11/15/16 pass');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 29,
+  'twenty-nine Balarishta source rules have evaluators after the rule 4/10/28 pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
 eq(xiv.ruleCoverageCounts.Alpayu.implemented, 13,
@@ -138,8 +148,8 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-15').sourceRuleNumber, 15,
   'powerful Saturn with benefics in Kendras/Trikonas is correctly attributed to printed Madhyayu rule 15');
 eq(xiv.ruleCoverageCounts.Madhyayu.sourceRules, 15,
   'Madhyayu inventory retains all fifteen source rules after the new evaluators');
-eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 10,
-  'Madhyayu evaluator count includes rules 8, 9, 10, 12 and 14');
+eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 13,
+  'Madhyayu evaluator count includes rules 5, 6 and 13');
 
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
@@ -249,6 +259,55 @@ const bal26JupiterAspectsMars = bvRamanChapterXIVLongevityRules({
 eq(bal26JupiterAspectsMars.rules.find(rule => rule.id === 'XIV-BAL-26').status, 'NOT_MATCHED',
   'Balarishta rule 26 does not match when Jupiter aspects Mars');
 
+const bal04AllSourceEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]},
+  evidence:{birthWithin48MinutesOfSunriseOrSunset:true,moonsHoraRising:true,
+    maleficsInMaleficSignNavamsas:true}
+});
+eq(bal04AllSourceEvidence.rules.find(rule => rule.id === 'XIV-BAL-04').status,
+  'MATCHED', 'Balarishta rule 4 matches when all three printed birth-time/Hora/Navamsa facts are explicit');
+
+const bal04MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]},
+  evidence:{birthWithin48MinutesOfSunriseOrSunset:true}
+});
+eq(bal04MissingEvidence.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
+  'Balarishta rule 4 remains UNKNOWN when Hora and malefic-Navamsa facts are missing');
+
+const bal10DasaLordAfflicted = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]},
+  evidence:{birthDasaLordConjoinedWithManyMalefics:true}
+});
+eq(bal10DasaLordAfflicted.rules.find(rule => rule.id === 'XIV-BAL-10').status, 'MATCHED',
+  'Balarishta rule 10 matches only with explicit source-sensitive Dasa conjunction evidence');
+
+const bal10MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]}
+});
+eq(bal10MissingEvidence.rules.find(rule => rule.id === 'XIV-BAL-10').status, 'UNKNOWN',
+  'Balarishta rule 10 stays UNKNOWN without a validated birth-Dasa conjunction result');
+
+const bal28WeakBadlyPlacedLagnaLord = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Moon',longitude:0,bhava:1}]},
+  evidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:true,moonSignLordBadlyPlaced:true}
+});
+eq(bal28WeakBadlyPlacedLagnaLord.rules.find(rule => rule.id === 'XIV-BAL-28').status, 'MATCHED',
+  'Balarishta rule 28 matches when a weak Lagna/Moon-sign lord is explicitly badly placed');
+
+const bal28NotWeak = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Moon',longitude:0,bhava:1}]},
+  evidence:{weakPlanets:[],lagnaLordBadlyPlaced:true,moonSignLordBadlyPlaced:true}
+});
+eq(bal28NotWeak.rules.find(rule => rule.id === 'XIV-BAL-28').status, 'NOT_MATCHED',
+  'Balarishta rule 28 does not match when the relevant lords are not marked weak');
+
+const bal28MissingPlacement = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Moon',longitude:0,bhava:1}]},
+  evidence:{weakPlanets:['Mars']}
+});
+eq(bal28MissingPlacement.rules.find(rule => rule.id === 'XIV-BAL-28').status, 'UNKNOWN',
+  'Balarishta rule 28 remains UNKNOWN without badly-placed evidence');
+
 const bal11SunriseAndMaleficTrikona = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
     {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:0,bhava:1},
@@ -325,6 +384,73 @@ eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-02').status,
   'Madhyayu rule 2 remains unknown without independently supplied lord-strength inputs');
 eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'UNKNOWN',
   'Madhyayu rule 3 remains unknown without the source-chart arrangement input');
+
+const madhyayu05SunEnemySignWeak = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:60,bhava:3},
+    {name:'Mars',longitude:150,bhava:6},{name:'Mercury',longitude:30,bhava:2},
+    {name:'Jupiter',longitude:30,bhava:2},{name:'Venus',longitude:120,bhava:5},
+    {name:'Saturn',longitude:210,bhava:8},{name:'Rahu',longitude:270,bhava:10},
+    {name:'Ketu',longitude:300,bhava:11}
+  ]},
+  evidence:{sunInEnemySign:true,sunBetweenMalefics:true,weakPlanets:['Sun']}
+});
+eq(madhyayu05SunEnemySignWeak.rules.find(rule => rule.id === 'XIV-MAD-05').status,
+  'MATCHED', 'Madhyayu rule 5 matches the Lagna Sun with explicit enemy-sign, enclosure and weakness evidence');
+
+const madhyayu05MissingEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[{name:'Sun',longitude:0,bhava:1}]}
+});
+eq(madhyayu05MissingEvidence.rules.find(rule => rule.id === 'XIV-MAD-05').status, 'UNKNOWN',
+  'Madhyayu rule 5 remains UNKNOWN without enemy-sign, enclosure and strength evidence');
+
+const madhyayu06BirthLordAfflicted = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:180,bhava:6},{name:'Mercury',longitude:120,bhava:5},
+    {name:'Jupiter',longitude:210,bhava:8},{name:'Venus',longitude:60,bhava:3},
+    {name:'Saturn',longitude:185,bhava:6},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(madhyayu06BirthLordAfflicted.rules.find(rule => rule.id === 'XIV-MAD-06').status, 'MATCHED',
+  'Madhyayu rule 6 matches a Lagna lord in the 6th with malefic conjunction and no benefic aspect');
+
+const madhyayu06NoConjunction = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:180,bhava:6},{name:'Mercury',longitude:120,bhava:5},
+    {name:'Jupiter',longitude:210,bhava:8},{name:'Venus',longitude:60,bhava:3},
+    {name:'Saturn',longitude:240,bhava:8},{name:'Rahu',longitude:270,bhava:10},
+    {name:'Ketu',longitude:300,bhava:11}
+  ]}
+});
+eq(madhyayu06BirthLordAfflicted.rules.find(rule => rule.id === 'XIV-MAD-06').status !== 'MATCHED',
+  true, 'Madhyayu rule 6 does not falsely match without malefic conjunction');
+
+const madhyayu13BeneficsAndMaleficAspect = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:30,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:270,bhava:10},
+    {name:'Saturn',longitude:150,bhava:6},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:11}
+  ]},evidence:{beneficsOccupyKendras:true}
+});
+eq(madhyayu13BeneficsAndMaleficAspect.rules.find(rule => rule.id === 'XIV-MAD-13').status,
+  'MATCHED', 'Madhyayu rule 13 requires benefics in Kendras, no benefic aspect to Lagna and malefic aspect to Lagna lord');
+
+const madhyayu13MissingBeneficEvidence = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:30,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:270,bhava:10},
+    {name:'Saturn',longitude:150,bhava:6},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:11}
+  ]}
+});
+eq(madhyayu13MissingBeneficEvidence.rules.find(rule => rule.id === 'XIV-MAD-13').status, 'UNKNOWN',
+  'Madhyayu rule 13 remains UNKNOWN without the independent benefics-in-Kendras input');
 
 const scorpioMadhyayu08 = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:210}, planets:[
