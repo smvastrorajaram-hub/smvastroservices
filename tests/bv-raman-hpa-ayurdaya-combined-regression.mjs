@@ -24,8 +24,12 @@ function ok(actual, message) { assert.ok(actual, message); assertions++; }
 
 eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE.chapter, 'XIV — Ayurdaya or Longevity',
   'Chapter XIV is a separate rule-evidence track');
+eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE.evidenceGrade, 'PRIMARY_PAGE_IMAGES_VISUALLY_CHECKED_PARTIAL',
+  'Chapter XIV scan evidence is checked but rule coverage remains partial');
 eq(BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE.chapter, 'XXVI — The Ashtakavarga System',
   'Chapter XXVI is the separate numerical track');
+eq(BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE.evidenceGrade, 'PRIMARY_PAGE_IMAGES_VISUALLY_CHECKED',
+  'Chapter XXVI pages 199–203 have been visually checked');
 eq(BV_RAMAN_HPA_CHAPTER_XXVI_RASI_GUNAKARA,
   [7, 10, 8, 4, 10, 5, 7, 8, 9, 5, 11, 12],
   'HPA Chapter XXVI Rasi Gunakara constants');
@@ -68,8 +72,8 @@ const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
     {name:'Ketu',longitude:30,bhava:2}
   ]}
 });
-eq(moonKendraWithJupiterAspect.rules.find(rule => rule.id === 'XIV-BAL-02').status, 'NOT_MATCHED',
-  'Chapter XIV Balarishta rule 2 does not match when a benefic aspect protects the Moon');
+eq(moonKendraWithJupiterAspect.rules.find(rule => rule.id === 'XIV-BAL-02').status, 'MATCHED',
+  'Printed Chapter XIV rule 2 says Moon in a Kendra with malefics; unlike rule 3, it does not add a no-benefic-aspect condition');
 
 
 
@@ -97,6 +101,22 @@ const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
 const bal02AspectOnly = moonKendraMaleficAspectOnly.rules.find(rule => rule.id === 'XIV-BAL-02');
 eq(bal02AspectOnly.status, 'NOT_MATCHED',
   'Chapter XIV "Moon in a Kendra with malefics" is not widened to a malefic aspect alone');
+
+const independentMadhyayuRules = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:300,bhava:10},{name:'Moon',longitude:10,bhava:1},
+    {name:'Mars',longitude:35,bhava:2},{name:'Mercury',longitude:80,bhava:4},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:155,bhava:6},
+    {name:'Saturn',longitude:185,bhava:7},{name:'Rahu',longitude:215,bhava:8},
+    {name:'Ketu',longitude:245,bhava:9}
+  ]}, evidence: {}
+});
+eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-01').status, 'MATCHED',
+  'Madhyayu rule 1 independently matches when the 3rd/6th lord is in a Kendra');
+eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-02').status, 'UNKNOWN',
+  'Madhyayu rule 2 remains unknown without independently supplied lord-strength inputs');
+eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'UNKNOWN',
+  'Madhyayu rule 3 remains unknown without the source-chart arrangement input');
 
 const allThreeMaleficHouses = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
@@ -133,7 +153,7 @@ const halfAndThirds = bvRamanHpaChapterXXVIApplyHarana({
 });
 eq(halfAndThirds.appliedDeductionFraction, 0.5, 'half-loss takes precedence over one-third');
 eq(halfAndThirds.remainingFraction, 0.5, 'Harana deductions are not multiplied/stacked');
-eq(halfAndThirds.printedNetLunarYears, 6, '12 years with the highest half-Harana gives 6');
+eq(halfAndThirds.roundedNetLunarYears, 6, '12 years with the highest half-Harana gives 6');
 eq(halfAndThirds.ignoredLesserRules.includes('temporaryEnemySign'), true,
   'lower one-third deduction is recorded but not stacked');
 eq(bvRamanHpaChapterXXVIApplyHarana({
@@ -187,43 +207,43 @@ for (const [planet, expected] of Object.entries(standardPinda)) {
     planet + ' distinct Standard Horoscope reduced-row arithmetic');
 }
 
-// The book reports rounded gross terms for its worked chart. Keep those source
-// figures separate from gross years recomputed from integer Pinda products.
+// Primary scan pp. 199–203 provide the seven Pinda pairs and state that every
+// graha term except the Sun is halved in this worked chart. Recalculate each term
+// from integer Pindas at full precision; source-reported two-decimal terms are
+// display evidence only, not arithmetic inputs. Do not infer which half-Harana
+// factor caused each planet's effective reduction.
 const reportedNetExpected = {
   Sun:13.70, Moon:7.76, Mars:2.33, Mercury:0.48,
   Jupiter:4.00, Venus:12.44, Saturn:8.27
 };
-const sourceReportedNet = {};
-const pindaRecomputedNet = {};
+const formulaNetByPlanet = {};
+const formulaGrossByPlanet = {};
 for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']) {
-  const flags = {
-    conjunctionInSign: hpa.reportedHaranaFactors[planet] === 0.5,
-    debilitated:false, combust:false, temporaryEnemySign:false,
-    aboveHorizon:false, defeatedInPlanetaryWar:false, eclipsed:false
-  };
-  const sourceGross = hpa.reportedGrossLunarYears[planet];
-  const sourceNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:sourceGross,factors:flags,planet});
-  sourceReportedNet[planet] = sourceNet.printedNetLunarYears;
-  eq(sourceNet.printedNetLunarYears, reportedNetExpected[planet],
-    planet + ' displayed gross term plus displayed Harana reproduces the printed net term');
-
   const pindaSum = hpa.reportedRasiPinda[planet] + hpa.reportedGrahaPinda[planet];
-  const unwrapped = pindaSum * 7 / 27;
-  const formulaGross = ((unwrapped % 27) + 27) % 27;
-  const recomputedNet = bvRamanHpaChapterXXVIApplyHarana({grossLunarYears:formulaGross,factors:flags,planet});
-  pindaRecomputedNet[planet] = recomputedNet.printedNetLunarYears;
+  const formulaGross = ((pindaSum * 7 / 27) % 27 + 27) % 27;
+  const net = formulaGross * hpa.reportedRemainingFraction[planet];
+  formulaGrossByPlanet[planet] = formulaGross;
+  formulaNetByPlanet[planet] = net;
+  near(net, formulaGross * hpa.reportedRemainingFraction[planet], 1e-12,
+    planet + ' uses full-precision gross term and scanned effective remaining fraction');
 }
-const printedNetSum = Object.values(sourceReportedNet).reduce((a,b)=>a+b,0);
-const recomputedNetSum = Object.values(pindaRecomputedNet).reduce((a,b)=>a+b,0);
-near(printedNetSum, 48.98, 1e-9, 'printed per-graha net terms sum to the book total 48.98');
-eq(recomputedNetSum, 48.97,
-  'unrounded Pinda-to-gross recomputation then Harana truncation yields 48.97; discrepancy is preserved');
-near(48.98 * 334 / 365, 44.8200547945, 1e-8,
-  'printed total converted by 334/365 gives 44.82, not printed 44.87');
-near(48.97 * 334 / 365, 44.8109041096, 1e-8,
-  'recomputed net candidate converted by 334/365 gives 44.81');
-ok(Math.abs(44.87 - 48.98 * 334 / 365) > 0.04,
-  'printed 44.87 discrepancy is explicit and not patched');
+const exactFormulaNetSum = Object.values(formulaNetByPlanet).reduce((a,b) => a+b, 0);
+near(exactFormulaNetSum, 49, 1e-10,
+  'exact Pinda arithmetic plus the scanned half-rule gives 49.00 lunar years before display rounding');
+near(49 * 334 / 365, 44.83835616438356, 1e-10,
+  'full-precision 49.00 lunar-year total converts to 44.838356... solar years');
+eq(Math.round((49 * 334 / 365 + Number.EPSILON) * 100) / 100, 44.84,
+  'formula-derived solar-year candidate rounds to 44.84 only at final display');
+near(48.98 * 334 / 365, 44.82005479452055, 1e-10,
+  'converting the printed net total alone gives 44.82, not the printed 44.87');
+near(Object.values(reportedNetExpected).reduce((a,b)=>a+b,0),48.98,1e-10,
+  'the seven printed net terms sum to the printed total 48.98');
+eq(hpa.reportedFinalSolarYears,44.87,
+  '44.87 is retained as what the scanned page prints, not treated as the formula result');
+eq(formulaGrossByPlanet.Sun, 157 * 7 / 27 - 27,
+  'Sun gross term comes from 157 Pinda and subtracting one full 27-year cycle');
+ok(Math.abs(44.87 - 49 * 334 / 365) > 0.03,
+  'the printed solar result is not patched into the formula-derived output');
 eq(hpaSun.finalLifespan, null, 'source-example calculation never emits final lifespan');
 
 // End-to-end join: raw BAV -> Trikona/Ekadhipatya -> Chapter XXVI Pinda/Harana,
