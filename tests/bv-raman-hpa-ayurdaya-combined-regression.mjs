@@ -64,6 +64,30 @@ eq(xiv.selectedCategory, null, 'Chapter XIV does not select a final category');
 eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
 eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only');
+const directPositionBal07 = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:240,bhava:9},{name:'Moon',longitude:10,bhava:1},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:90,bhava:4},
+    {name:'Saturn',longitude:330,bhava:12},{name:'Rahu',longitude:180,bhava:7},
+    {name:'Ketu',longitude:0,bhava:1}
+  ]}
+});
+eq(directPositionBal07.rules.find(rule => rule.id === 'XIV-BAL-07').status, 'MATCHED',
+  'HPA p.64 Balarishta rule 7 matches its four printed house placements');
+
+const fullMoonNightAntidote = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:180,bhava:12},{name:'Moon',longitude:5,bhava:6},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:90,bhava:4},
+    {name:'Saturn',longitude:330,bhava:12},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:60,bhava:3}
+  ]}, evidence:{bornOnNightOfFullMoon:true}
+});
+eq(fullMoonNightAntidote.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'MATCHED',
+  'HPA p.67 Antidote rule 8 requires both Moon house 6/8 and explicit birth-night evidence');
+
 eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.length, 76,
   'source inventory includes all 30 Balarishta, 10 antidote, 15 Alpayu, 15 Madhyayu and 6 Purnayu rules');
 eq(new Set(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule => rule.id)).size, 76,
