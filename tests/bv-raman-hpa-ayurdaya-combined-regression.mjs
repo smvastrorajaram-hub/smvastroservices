@@ -112,12 +112,16 @@ eq(xiv.ruleCoverageCounts.Balarishta.implemented, 23,
   'twenty-three source-numbered Balarishta rules have evaluators after the rule 17/25/26 pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
-eq(xiv.ruleCoverageCounts.Alpayu.implemented, 12,
-  'Alpayu implementation count includes rules 1-8, 11, 12, 14 and 15');
+eq(xiv.ruleCoverageCounts.Alpayu.implemented, 13,
+  'Alpayu implementation count includes rule 10 in addition to the previously evaluated rules');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-11').implemented, true,
   'Alpayu rule 11 has an independent evaluator');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-14').implemented, true,
   'Alpayu rule 14 exposes its explicit strength/aspect evidence gate');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-10').implemented, true,
+  'Alpayu rule 10 has an independent lord-placement and aspect evaluator');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-09').implemented, true,
+  'Madhyayu rule 9 has an explicit afflicted-Moon evaluator');
 eq(xiv.ruleCoverageCounts.Antidote.implemented, 10,
   'all ten source-numbered antidote conditions now have evaluators or explicit evidence inputs');
 eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-12').sourceRuleNumber, 12,
@@ -128,8 +132,8 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-15').sourceRuleNumber, 15,
   'powerful Saturn with benefics in Kendras/Trikonas is correctly attributed to printed Madhyayu rule 15');
 eq(xiv.ruleCoverageCounts.Madhyayu.sourceRules, 15,
   'Madhyayu inventory retains all fifteen source rules after the new evaluators');
-eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 9,
-  'Madhyayu evaluator count includes the four new direct-placement rules');
+eq(xiv.ruleCoverageCounts.Madhyayu.implemented, 10,
+  'Madhyayu evaluator count includes rules 8, 9, 10, 12 and 14');
 
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
@@ -326,6 +330,54 @@ const exaltedSaturnInsteadMadhyayu14 = bvRamanChapterXIVLongevityRules({
 });
 eq(exaltedSaturnInsteadMadhyayu14.rules.find(rule => rule.id === 'XIV-MAD-14').status, 'NOT_MATCHED',
   'Madhyayu rule 14 does not match when Saturn is not debilitated');
+
+const alpayu10LordsTogetherInEighth = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:30},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:0,bhava:2},
+    {name:'Mars',longitude:180,bhava:6},{name:'Mercury',longitude:120,bhava:4},
+    {name:'Jupiter',longitude:270,bhava:8},{name:'Venus',longitude:30,bhava:8},
+    {name:'Saturn',longitude:240,bhava:8},{name:'Rahu',longitude:210,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(alpayu10LordsTogetherInEighth.rules.find(rule => rule.id === 'XIV-ALP-10').status,
+  'MATCHED', 'Alpayu rule 10 matches when Lagna/8th lords and a malefic join in house 8 without benefic aspects');
+
+const alpayu10NoMaleficInEighth = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:30},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:0,bhava:2},
+    {name:'Mars',longitude:180,bhava:6},{name:'Mercury',longitude:120,bhava:4},
+    {name:'Jupiter',longitude:270,bhava:8},{name:'Venus',longitude:30,bhava:8},
+    {name:'Saturn',longitude:240,bhava:7},{name:'Rahu',longitude:210,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(alpayu10NoMaleficInEighth.rules.find(rule => rule.id === 'XIV-ALP-10').status,
+  'NOT_MATCHED', 'Alpayu rule 10 does not match when the 8th house has no malefic');
+
+const madhyayu09AfflictedMoon = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:300,bhava:10},{name:'Moon',longitude:10,bhava:4},
+    {name:'Mars',longitude:180,bhava:7},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:90,bhava:6},
+    {name:'Saturn',longitude:185,bhava:4},{name:'Rahu',longitude:215,bhava:8},
+    {name:'Ketu',longitude:245,bhava:9}
+  ]}
+});
+eq(madhyayu09AfflictedMoon.rules.find(rule => rule.id === 'XIV-MAD-09').status,
+  'MATCHED', 'Madhyayu rule 9 matches the 8th lord in house 7 with Moon conjunct a malefic');
+
+const madhyayu09EighthLordElsewhere = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:300,bhava:10},{name:'Moon',longitude:10,bhava:4},
+    {name:'Mars',longitude:180,bhava:6},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:90,bhava:6},
+    {name:'Saturn',longitude:185,bhava:4},{name:'Rahu',longitude:215,bhava:8},
+    {name:'Ketu',longitude:245,bhava:9}
+  ]}
+});
+eq(madhyayu09EighthLordElsewhere.rules.find(rule => rule.id === 'XIV-MAD-09').status,
+  'NOT_MATCHED', 'Madhyayu rule 9 does not match when the 8th lord is outside house 7');
 
 const allThreeMaleficHouses = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
