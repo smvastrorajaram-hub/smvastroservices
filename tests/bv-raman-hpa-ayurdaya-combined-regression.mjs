@@ -491,8 +491,75 @@ eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-01').status,
   'Madhyayu rule 1 independently matches when the 3rd/6th lord is in a Kendra');
 eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-02').status, 'UNKNOWN',
   'Madhyayu rule 2 remains unknown without independently supplied lord-strength inputs');
-eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'UNKNOWN',
-  'Madhyayu rule 3 remains unknown without the source-chart arrangement input');
+eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'NOT_MATCHED',
+  'HPA printed p. 70 Madhyayu rule 3 rejects Mercury/Jupiter/Venus placements 4/5/6 rather than remaining UNKNOWN');
+
+const madhyayu03PrintedPlacement = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:40,bhava:2},
+    {name:'Jupiter',longitude:70,bhava:3},
+    {name:'Venus',longitude:310,bhava:11}
+  ]}
+});
+eq(madhyayu03PrintedPlacement.rules.find(rule=>rule.id==='XIV-MAD-03').status,'MATCHED',
+  'HPA printed p. 70 Madhyayu rule 3 matches Mercury 2nd, Jupiter 3rd and Venus 11th');
+const madhyayu03WrongPlacement = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:40,bhava:2},
+    {name:'Jupiter',longitude:70,bhava:3},
+    {name:'Venus',longitude:280,bhava:10}
+  ]}
+});
+eq(madhyayu03WrongPlacement.rules.find(rule=>rule.id==='XIV-MAD-03').status,'NOT_MATCHED',
+  'HPA p. 70 Madhyayu rule 3 fails when Venus is not in the 11th');
+const madhyayu03MissingPlacement = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Mercury',longitude:40,bhava:2},{name:'Venus',longitude:310,bhava:11}
+  ]}
+});
+eq(madhyayu03MissingPlacement.rules.find(rule=>rule.id==='XIV-MAD-03').status,'UNKNOWN',
+  'HPA p. 70 Madhyayu rule 3 stays UNKNOWN when Jupiter placement is absent');
+
+const pur02FirstSixBeneficsLastSixMalefics = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Moon',longitude:10,bhava:1},
+    {name:'Mercury',longitude:40,bhava:2},
+    {name:'Jupiter',longitude:70,bhava:3},
+    {name:'Venus',longitude:100,bhava:4},
+    {name:'Sun',longitude:195,bhava:7},
+    {name:'Mars',longitude:220,bhava:8},
+    {name:'Saturn',longitude:250,bhava:9},
+    {name:'Rahu',longitude:280,bhava:10},
+    {name:'Ketu',longitude:310,bhava:11}
+  ]}
+});
+eq(pur02FirstSixBeneficsLastSixMalefics.rules.find(rule=>rule.id==='XIV-PUR-02').status,'MATCHED',
+  'HPA printed p. 71 Purnayu rule 2 matches all benefic grahas in houses 1–6 and malefics in 7–12');
+const pur02MaleficInFirstSix = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Moon',longitude:10,bhava:1},
+    {name:'Mercury',longitude:40,bhava:2},
+    {name:'Jupiter',longitude:70,bhava:3},
+    {name:'Venus',longitude:100,bhava:4},
+    {name:'Mars',longitude:130,bhava:5},
+    {name:'Sun',longitude:195,bhava:7},
+    {name:'Saturn',longitude:250,bhava:9},
+    {name:'Rahu',longitude:280,bhava:10},
+    {name:'Ketu',longitude:310,bhava:11}
+  ]}
+});
+eq(pur02MaleficInFirstSix.rules.find(rule=>rule.id==='XIV-PUR-02').status,'NOT_MATCHED',
+  'HPA p. 71 Purnayu rule 2 does not match when a malefic occupies house 5');
+const pur02IncompleteChart = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Moon',longitude:10,bhava:1},{name:'Mercury',longitude:40,bhava:2},
+    {name:'Jupiter',longitude:70,bhava:3},{name:'Venus',longitude:100,bhava:4},
+    {name:'Sun',longitude:195,bhava:7},{name:'Mars',longitude:220,bhava:8},
+    {name:'Saturn',longitude:250,bhava:9},{name:'Rahu',longitude:280,bhava:10}
+  ]}
+});
+eq(pur02IncompleteChart.rules.find(rule=>rule.id==='XIV-PUR-02').status,'UNKNOWN',
+  'HPA p. 71 Purnayu rule 2 cannot prove missing Ketu placement is harmless');
 
 const madhyayu05SunEnemySignWeak = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
