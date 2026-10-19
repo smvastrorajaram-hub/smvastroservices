@@ -25,11 +25,11 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 
 | Dasa | Finding / change | Status |
 |---|---|---|
-| Narayana Dasa (§18) | The old second cycle repeated the first cycle's lengths. The source says the corresponding second-cycle duration is 12 minus the first-cycle duration. Corrected and added a regression assertion for all 12 signs across the two cycles. | Fixed on working branch; CI pending |
+| Narayana Dasa (§18) | The old second cycle repeated the first cycle's lengths, and the duration routine used ordinary odd/even sign-number parity instead of the book's odd-footed/even-footed classification. Corrected both: second-cycle duration is 12 minus the corresponding first-cycle duration; length counting now uses the Table 18.2.2 footed-sign groups. Added regression assertions for both cycles and Taurus/Leo worked conditions. | Fixed on working branch; CI pending |
 | Niryaana Shoola Dasa (§22) | The source's Example 87 applies the Saturn-in-seed forward-direction exception. The old code only used odd/even direction. Corrected for the explicit Saturn example and added a fixture regression. Sign-year mapping remains 7/8/9 years for movable/fixed/dual signs. | Fixed on working branch; CI pending |
 | Shoola Dasa (§23) | The source says antardasas use the same method as the main Shoola sequence with the Dasa sign treated as Lagna. The old code incorrectly reused Narayana-style antardasa progression. Corrected: choose the stronger of Dasa sign and 7th from it, then proceed in zodiacal order through 12 equal antardasas. | Fixed on working branch; CI pending |
 | Ashtottari (§17) | The engine's sequence/duration formula and applicability caveat exist. The book reports that the system's applicability conditions are disputed. | Partial review only |
-| Lagna Kendradi, Sudasa, Drigdasa, Kalachakra | Present in the engine, but the complete rule-by-rule and worked-example regression audit was not completed in this change. | **Not certified / more audit needed** |
+| Lagna Kendradi, Sudasa, Drigdasa, Kalachakra | Present in the engine. Drigdasa's progression direction was corrected to use the book's odd-footed/even-footed groups, but its full aspect-group construction and fallback completion still need independent example oracles. Lagna Kendradi/Sudasa/Kalachakra still require fuller rule-by-rule and worked-example audits. | **Not certified / more audit needed** |
 
 The implementation uses a heuristic for comparing sign strength. That limitation must not be hidden by a green syntax/regression run.
 
