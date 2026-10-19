@@ -476,6 +476,224 @@ const ruleIdCounts = ruleCaseResults.reduce((counts,row)=>{
   counts[row.id]=(counts[row.id]||0)+1;
   return counts;
 },{});
+
+// Source-rule gap closure: three-state, rule-number-linked cases for every
+// Chapter XIV rule ID not previously referenced above. The fixtures are
+// derived from the printed source-rule statements, not presented as invented
+// historical charts from the book. Unknown input remains UNKNOWN rather than
+// being converted to a negative rule match.
+statuses('XIV-BAL-07',[
+ {label:'Moon 1, Mars 8, Sun 9 and Saturn 12',expected:'MATCHED',chart:{houses:{Moon:1,Mars:8,Sun:9,Saturn:12}}},
+ {label:'Sun not in 9',expected:'NOT_MATCHED',chart:{houses:{Moon:1,Mars:8,Sun:8,Saturn:12}}},
+ {label:'Saturn placement unavailable',expected:'UNKNOWN',chart:{houses:{Moon:1,Mars:8,Sun:9},omit:['Saturn']}}
+],'HPA p.64 Balarishta 7');
+statuses('XIV-BAL-09',[
+ {label:'Moon 8, Mars 7, Rahu 9 and Jupiter 3',expected:'MATCHED',chart:{houses:{Moon:8,Mars:7,Rahu:9,Jupiter:3}}},
+ {label:'Moon outside 8',expected:'NOT_MATCHED',chart:{houses:{Moon:6,Mars:7,Rahu:9,Jupiter:3}}},
+ {label:'Jupiter placement unavailable',expected:'UNKNOWN',chart:{houses:{Moon:8,Mars:7,Rahu:9},omit:['Jupiter']}}
+],'HPA p.64 Balarishta 9');
+statuses('XIV-BAL-11',[
+ {label:'Sun rising evidence, malefic in Kendra/Trikona and Venus 6',expected:'MATCHED',chart:{houses:{Mars:10,Venus:6}},evidence:{sunRisingAtBirth:true}},
+ {label:'Sun does not rise at birth',expected:'NOT_MATCHED',chart:{houses:{Mars:10,Venus:6}},evidence:{sunRisingAtBirth:false}},
+ {label:'Sun-rise observation absent',expected:'UNKNOWN',chart:{houses:{Mars:10,Venus:6}},evidence:{}}
+],'HPA p.65 Balarishta 11');
+statuses('XIV-BAL-12',[
+ {label:'Lagna lord Mars in house 8 qualifies directly',expected:'MATCHED',chart:{lagnaLongitude:0,houses:{Mars:8}}},
+ {label:'Lagna lord and the required paired lords do not qualify',expected:'NOT_MATCHED',chart:{lagnaLongitude:0,houses:{Mars:6,Sun:5,Jupiter:12}}},
+ {label:'Lagna lord placement cannot be assessed',expected:'UNKNOWN',chart:{lagnaLongitude:0,omit:['Mars']}}
+],'HPA p.65 Balarishta 12');
+statuses('XIV-BAL-16',[
+ {label:'Lagna lord, Navamsa Lagna lord and Moon-sign lord share Sun sign',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
+ {label:'Lagna lord is not in Sun sign',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:2,Moon:1,Mars:1},signs:{Sun:1,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
+ {label:'Navamsa Lagna lord not supplied',expected:'UNKNOWN',chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}}}
+],'HPA p.65 Balarishta 16');
+statuses('XIV-BAL-17',[
+ {label:'malefics aspect Lagna and the eighth from Moon sign',expected:'MATCHED',
+  chart:{houses:{Sun:7,Moon:1,Mars:1}}},
+ {label:'Lagna is afflicted but eighth-from-Moon is not',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:7,Moon:1,Mars:3,Saturn:4,Rahu:6,Ketu:11}}},
+ {label:'malefic aspect observations unavailable',expected:'UNKNOWN',
+  chart:{houses:{Moon:1},omit:['Sun','Mars','Saturn','Rahu','Ketu']}}
+],'HPA p.65 Balarishta 17');
+statuses('XIV-BAL-25',[
+ {label:'Saturn 12, Sun 9, Moon 1, Mars 8, no Jupiter aspect',expected:'MATCHED',
+  chart:{houses:{Saturn:12,Sun:9,Moon:1,Mars:8,Jupiter:10}}},
+ {label:'Jupiter in house 5 gives the printed cancellation',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:12,Sun:9,Moon:1,Mars:8,Jupiter:5}}},
+ {label:'Moon placement and Jupiter aspect cannot be checked',expected:'UNKNOWN',
+  chart:{houses:{Saturn:12,Sun:9,Mars:8,Jupiter:10},omit:['Moon']}}
+],'HPA p.66 Balarishta 25');
+statuses('XIV-BAL-26',[
+ {label:'Saturn 8 and Mars 7 without benefic aspects',expected:'MATCHED',
+  chart:{houses:{Saturn:8,Mars:7,Jupiter:10,Mercury:4,Venus:5,Moon:5}}},
+ {label:'Mars is outside houses 1, 7 and 8',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:8,Mars:6,Jupiter:10,Mercury:4,Venus:5,Moon:5}}},
+ {label:'benefic-aspect evidence is incomplete',expected:'UNKNOWN',
+  chart:{houses:{Saturn:8,Mars:7,Jupiter:10,Mercury:4,Venus:5,Moon:5},omit:['Jupiter']}}
+],'HPA p.66 Balarishta 26');
+statuses('XIV-BAL-30',[
+ {label:'Moon 8 with benefic aspect and no malefic aspect',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:8,Mars:3,Mercury:4,Jupiter:10,Venus:5,Saturn:4,Rahu:6,Ketu:11}}},
+ {label:'Moon is not in house 6 or 8',expected:'NOT_MATCHED',chart:{houses:{Moon:5}}},
+ {label:'Moon placement is unavailable',expected:'UNKNOWN',chart:{omit:['Moon']}}
+],'HPA p.66 Balarishta 30');
+statuses('XIV-ANT-08',[
+ {label:'Moon 6/8 with explicit full-moon-night birth evidence',expected:'MATCHED',chart:{houses:{Moon:6}},evidence:{bornOnNightOfFullMoon:true}},
+ {label:'the source-stated night condition is false',expected:'NOT_MATCHED',chart:{houses:{Moon:6}},evidence:{bornOnNightOfFullMoon:false}},
+ {label:'night-of-full-moon evidence absent',expected:'UNKNOWN',chart:{houses:{Moon:6}},evidence:{}}
+],'HPA p.67 Antidote 8');
+statuses('XIV-ALP-02',[
+ {label:'malefics in each of houses 6, 8 and 12',expected:'MATCHED',chart:{houses:{Mars:6,Rahu:8,Saturn:12}}},
+ {label:'house 12 has no malefic',expected:'NOT_MATCHED',chart:{houses:{Mars:6,Rahu:8,Saturn:10,Ketu:4,Sun:3}}},
+ {label:'house-12 malefic position cannot be proven',expected:'UNKNOWN',chart:{houses:{Mars:6,Rahu:8,Sun:3},omit:['Saturn','Ketu']}}
+],'HPA p.69 Alpayu 2');
+statuses('XIV-ALP-09',[
+ {label:'Scorpio/Mars-owned Lagna with Saturn in 1 and benefics 3/6/9/12 evidence',expected:'MATCHED',
+  chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
+ {label:'Venus-owned Lagna cannot satisfy malefic ownership',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:30,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
+ {label:'benefics-in-houses evidence absent',expected:'UNKNOWN',
+  chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{}}
+],'HPA p.70 Alpayu 9');
+statuses('XIV-ALP-10',[
+ {label:'Lagna lord and 8th lord Mars in 8 with Saturn and no benefic aspect',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:8,Saturn:8,Mercury:4,Jupiter:10,Venus:5,Moon:5}}},
+ {label:'Lagna lord not in house 8',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:6,Saturn:8,Mercury:4,Jupiter:10,Venus:5,Moon:5}}},
+ {label:'Lagna/eighth lord position unavailable',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,houses:{Saturn:8},omit:['Mars']}}
+],'HPA p.70 Alpayu 10');
+statuses('XIV-ALP-11',[
+ {label:'malefics 1/2/8 and all known benefics outside Kendras',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:6,Mars:2,Mercury:3,Jupiter:9,Venus:5,Saturn:8,Rahu:11,Ketu:12},
+   signs:{Sun:0,Moon:5,Mars:1,Mercury:2,Jupiter:8,Venus:4,Saturn:7,Rahu:10,Ketu:11}}},
+ {label:'Jupiter in Kendra prevents match',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:1,Moon:6,Mars:2,Mercury:3,Jupiter:4,Venus:5,Saturn:8,Rahu:11,Ketu:12},
+   signs:{Sun:0,Moon:5,Mars:1,Mercury:2,Jupiter:3,Venus:4,Saturn:7,Rahu:10,Ketu:11}}},
+ {label:'benefic Kendra absence cannot be proven with Jupiter missing',expected:'UNKNOWN',
+  chart:{houses:{Sun:1,Moon:6,Mars:2,Mercury:3,Venus:5,Saturn:8,Rahu:11,Ketu:12},omit:['Jupiter'],
+   signs:{Sun:0,Moon:5,Mars:1,Mercury:2,Venus:4,Saturn:7,Rahu:10,Ketu:11}}}
+],'HPA p.70 Alpayu 11');
+statuses('XIV-ALP-12',[
+ {label:'weak Aries Lagna lord and eighth lord Mars in Kendra',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:1}},evidence:{weakPlanets:['Mars']}},
+ {label:'Lagna lord is not weak',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:1}},evidence:{weakPlanets:[]}},
+ {label:'weakness evidence absent',expected:'UNKNOWN',chart:{lagnaLongitude:0,houses:{Mars:1}},evidence:{}}
+],'HPA p.70 Alpayu 12');
+statuses('XIV-ALP-13',[
+ {label:'Lagna/eighth lord in Kendra, house 8 occupied, no other Kendra occupants',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:1,Ketu:8,Venus:8,Sun:2,Moon:3,Mercury:5,Jupiter:6,Saturn:11,Rahu:12}}},
+ {label:'extra Saturn in Kendra violates no-other-Kendra condition',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:1,Ketu:8,Venus:8,Sun:2,Moon:3,Mercury:5,Jupiter:6,Saturn:4,Rahu:12}}},
+ {label:'absence of other Kendra planets unproven in incomplete chart',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,houses:{Mars:1,Ketu:8,Venus:8,Sun:2,Moon:3,Jupiter:6,Rahu:12},omit:['Mercury','Saturn']}}
+],'HPA p.70 Alpayu 13');
+statuses('XIV-ALP-15',[
+ {label:'Lagna Gemini and Moon Virgo are both common signs',expected:'MATCHED',
+  chart:{lagnaLongitude:60,houses:{Moon:4}}},
+ {label:'Moon in fixed Leo-sign house does not match',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:60,houses:{Moon:3}}},
+ {label:'Moon sign unavailable',expected:'UNKNOWN',chart:{lagnaLongitude:60,omit:['Moon']}}
+],'HPA p.70 Alpayu 15');
+statuses('XIV-MAD-01',[
+ {label:'third/sixth lord Mercury in a Kendra',expected:'MATCHED',chart:{houses:{Mercury:4}}},
+ {label:'third/sixth lord Mercury outside Kendras',expected:'NOT_MATCHED',chart:{houses:{Mercury:3}}},
+ {label:'Mercury placement unavailable',expected:'UNKNOWN',chart:{omit:['Mercury']}}
+],'HPA p.70 Madhyayu 1');
+statuses('XIV-MAD-03',[
+ {label:'Mercury 2, Jupiter 3 and Venus 11',expected:'MATCHED',chart:{houses:{Mercury:2,Jupiter:3,Venus:11}}},
+ {label:'Jupiter outside house 3',expected:'NOT_MATCHED',chart:{houses:{Mercury:2,Jupiter:4,Venus:11}}},
+ {label:'Mercury position unavailable',expected:'UNKNOWN',chart:{omit:['Mercury']}}
+],'HPA p.70 Madhyayu 3');
+statuses('XIV-MAD-05',[
+ {label:'Sun Lagna enemy sign, between malefics, weak and no benefic aspect',expected:'MATCHED',
+  chart:{lagnaLongitude:30,houses:{Sun:1,Mars:10,Saturn:4,Jupiter:6,Mercury:4,Venus:11,Moon:5}},
+  evidence:{sunInEnemySign:true,sunBetweenMalefics:true,weakPlanets:['Sun']}},
+ {label:'Sun is not in a natural-enemy sign',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:60,houses:{Sun:1,Mars:10,Saturn:4,Jupiter:6,Mercury:4,Venus:11,Moon:5}},
+  evidence:{sunInEnemySign:false,sunBetweenMalefics:true,weakPlanets:['Sun']}},
+ {label:'between-malefics observation absent',expected:'UNKNOWN',
+  chart:{lagnaLongitude:30,houses:{Sun:1,Mars:10,Saturn:4,Jupiter:6,Mercury:4,Venus:11,Moon:5}},
+  evidence:{sunInEnemySign:true,weakPlanets:['Sun']}}
+],'HPA p.71 Madhyayu 5');
+statuses('XIV-MAD-06',[
+ {label:'Lagna lord Mars in 8 with Saturn conjunction and no benefic aspect',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:8,Saturn:8,Jupiter:10,Mercury:4,Venus:5,Moon:5}}},
+ {label:'Lagna lord Mars outside houses 6/8',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:5,Saturn:8,Jupiter:10,Mercury:4,Venus:5,Moon:5}}},
+ {label:'Lagna-lord placement unavailable',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,houses:{Saturn:8},omit:['Mars']}}
+],'HPA p.71 Madhyayu 6');
+statuses('XIV-MAD-07',[
+ {label:'Saturn 1, Moon 8 and remaining-house evidence true',expected:'MATCHED',
+  chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:true}},
+ {label:'other-graha eleventh condition false',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:false}},
+ {label:'other-graha eleventh condition absent',expected:'UNKNOWN',
+  chart:{houses:{Saturn:1,Moon:8}},evidence:{}}
+],'HPA p.71 Madhyayu 7');
+statuses('XIV-MAD-08',[
+ {label:'Scorpio Lagna, Jupiter 1, Mars and Rahu 8',expected:'MATCHED',
+  chart:{lagnaLongitude:210,houses:{Jupiter:1,Mars:8,Rahu:8}}},
+ {label:'Rahu not in 8',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:210,houses:{Jupiter:1,Mars:8,Rahu:9}}},
+ {label:'Jupiter position unavailable',expected:'UNKNOWN',
+  chart:{lagnaLongitude:210,houses:{Mars:8,Rahu:8},omit:['Jupiter']}}
+],'HPA p.71 Madhyayu 8');
+statuses('XIV-MAD-10',[
+ {label:'Aries Lagna, Jupiter 8 and malefic in Kendra',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Jupiter:8,Sun:1}}},
+ {label:'no malefic in any Kendra',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Jupiter:8,Sun:3,Mars:6,Saturn:12,Rahu:11,Ketu:12}}},
+ {label:'malefic Kendra state unavailable',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,houses:{Jupiter:8},omit:['Sun','Mars','Saturn','Rahu','Ketu']}}
+],'HPA p.71 Madhyayu 10');
+statuses('XIV-MAD-11',[
+ {label:'Saturn 1 Moon 4 Mars 7 Rahu 10 and unfavourable benefic-house evidence',expected:'MATCHED',
+  chart:{houses:{Saturn:1,Moon:4,Mars:7,Rahu:10}},evidence:{jupiterVenusMercuryInUnfavourableHouses:true}},
+ {label:'unfavourable-house predicate false',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:1,Moon:4,Mars:7,Rahu:10}},evidence:{jupiterVenusMercuryInUnfavourableHouses:false}},
+ {label:'unfavourable-house evidence missing',expected:'UNKNOWN',
+  chart:{houses:{Saturn:1,Moon:4,Mars:7,Rahu:10}},evidence:{}}
+],'HPA p.71 Madhyayu 11');
+statuses('XIV-MAD-12',[
+ {label:'Mars/Mercury in Kendras, Venus Lagna, exalted Moon 3 and Saturn 11',expected:'MATCHED',
+  chart:{houses:{Mars:4,Mercury:7,Venus:1,Moon:3,Saturn:11},signs:{Moon:1,Saturn:6}}},
+ {label:'no exalted planet in house 11',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:4,Mercury:7,Venus:1,Moon:3,Saturn:11},signs:{Moon:1,Saturn:9}}},
+ {label:'house-3/11 exaltation placements incomplete',expected:'UNKNOWN',
+  chart:{houses:{Mars:4,Mercury:7,Venus:1},omit:['Moon','Saturn']}}
+],'HPA p.71 Madhyayu 12');
+statuses('XIV-MAD-13',[
+ {label:'benefic Kendra evidence, no benefic aspect Lagna, Lagna lord Mars aspected by Sun',expected:'MATCHED',
+  chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:true}},
+ {label:'no benefic Kendra evidence',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:false}},
+ {label:'benefic-occupancy evidence absent',expected:'UNKNOWN',
+  chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{}}
+],'HPA p.71 Madhyayu 13');
+statuses('XIV-MAD-14',[
+ {label:'Mars 5, Sun 7, Saturn debilitated in Aries',expected:'MATCHED',
+  chart:{houses:{Mars:5,Sun:7,Saturn:3},signs:{Saturn:0}}},
+ {label:'Saturn is not debilitated',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:5,Sun:7,Saturn:3},signs:{Saturn:6}}},
+ {label:'Saturn sign unavailable',expected:'UNKNOWN',chart:{houses:{Mars:5,Sun:7},omit:['Saturn']}}
+],'HPA p.71 Madhyayu 14');
+statuses('XIV-PUR-02',[
+ {label:'all benefics in houses 1–6 and all malefics in 7–12',expected:'MATCHED',
+  chart:{houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:4,Venus:5,Saturn:10,Rahu:11,Ketu:12},
+   signs:{Sun:8,Moon:0,Mars:7,Mercury:2,Jupiter:3,Venus:4,Saturn:9,Rahu:10,Ketu:11}}},
+ {label:'benefic Jupiter in house 7 violates the printed condition',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:7,Venus:5,Saturn:10,Rahu:11,Ketu:12},
+   signs:{Sun:8,Moon:0,Mars:7,Mercury:2,Jupiter:6,Venus:4,Saturn:9,Rahu:10,Ketu:11}}},
+ {label:'incomplete nine-graha placement remains UNKNOWN',expected:'UNKNOWN',
+  chart:{houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:4,Venus:5,Saturn:10,Rahu:11,Ketu:12},
+   signs:{Sun:8,Moon:0,Mars:7,Mercury:2,Jupiter:3,Venus:4,Saturn:9,Rahu:10,Ketu:11},omit:['Mercury']}}
+],'HPA p.71 Purnayu 2');
+
 const audit = {
   pass:true,assertions,
   source:'B. V. Raman, Hindu Predictive Astrology, Chapter XIV, printed pp.64–72',
