@@ -8,6 +8,7 @@ const ok=(value,message)=>{assert.ok(value,message);assertions++;};
 const eq=(actual,expected,message)=>{assert.equal(actual,expected,message);assertions++;};
 
 const chart={
+ birth:{date:'1992-07-31',time:'22:05'},
  lagna:{longitude:0},
  planets:[
   {name:'சூரியன்',longitude:105,bhava:4},
