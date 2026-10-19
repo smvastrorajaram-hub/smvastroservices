@@ -40,6 +40,7 @@ const en=bvRamanAyurdayaReportHtml({...common,language:'en'});
 for (const [html,language] of [[ta,'Tamil'],[en,'English']]) {
  ok(html.includes('data-smv-bv-raman-ayurdaya="1"'),language+' report has stable B.V. Raman result hook');
  ok(html.includes('smv-ayurdaya-table'),language+' report reuses cream Ayurdaya table styles');
+ ok((html.match(/smv-bv-raman-ayurdaya-table/g)||[]).length===2,language+' report exposes exactly the two B.V. Raman tables separately from the old C.G. table');
  ok(html.includes('Rasi Pinda')||html.includes('ராசி பிண்டம்'),language+' numeric table contains Pinda columns');
  ok(html.includes('Sodhya Pinda')||html.includes('சோத்ய பிண்டம்'),language+' numeric table contains Sodhya Pinda');
  ok(html.includes('smv-ayurdaya-totals')&&html.includes('smv-ayurdaya-average'),language+' numeric table contains both yearly totals');
@@ -54,6 +55,9 @@ ok(!!solarRow,'fully specified test Harana inputs produce a numeric solar-year t
 ok(!ta.includes('undefined')&&!ta.includes('NaN'),'Tamil result contains no missing/invalid numeric strings');
 ok(!en.includes('undefined')&&!en.includes('NaN'),'English result contains no missing/invalid numeric strings');
 
+const missingData=bvRamanAyurdayaReportHtml({chart:{},language:'ta'});
+ok(missingData.includes('data-smv-bv-raman-ayurdaya="1"')&&missingData.includes('கணக்கீடு கிடைக்கவில்லை'),
+ 'Missing BAV input renders a safe placeholder instead of suppressing the C.G. Rajan report');
 const report=(await import('../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs')).cgRajanAyurdayaReportHtml;
 const old=report({planets:chart.planets,lagna:chart.lagna,language:'ta'});
 const combined=old.replace(/<\/section>\s*$/,ta+'</section>');
