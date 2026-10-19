@@ -469,3 +469,48 @@ The remaining two rules stay indexed as `UNKNOWN` rather than being “completed
 - **Still pending — numerical certification:** HPA Chapter XXVI's printed total/conversion discrepancy remains recorded: the printed `48.98` converted by `334/365` gives about `44.82`, while formula-first Pinda arithmetic gives `49.00` lunar years and `44.84` solar years. Neither output is patched to imitate the other.
 
 **Release / merge gate remains closed:** PR #55 is research-only, `certified:false`, and unmerged. No final lifespan, age-of-death or death-date value may be emitted to customer-facing Horoscope or Marriage Matching output until the remaining source ambiguities and numerical-source gaps are closed.
+
+
+## 2026-10-19 — User-specified interpretations implemented for the final two Chapter XIV rules
+
+The user supplied an explicit operational reading for the two previously unevaluated source rules. The implementation now reflects that reading, rather than leaving the rules permanently unimplemented. This records a clarified software interpretation; it is **not** independent proof that the wording has only one possible classical reading.
+
+### XIV-BAL-12 — Balarishta, printed p. 65
+
+Operational condition:
+
+- The Lagna lord qualifies on its own; **OR**
+- both the 5th lord and the 9th lord qualify individually.
+- Each relevant lord qualifies when its placement is in a sign whose ruler is a natural enemy of that planet, **or** it occupies house 8 or house 9.
+- Natural/permanent enemy relationships are used for “enemy's houses”; this is not conflated with the separate Chapter XXVI *temporary-enemy sign* Harana factor.
+- If the placements needed to decide the condition are missing, the result stays `UNKNOWN`.
+
+Regression cases cover a Lagna lord in its natural enemy's sign (`MATCHED`), the paired 5th/9th-lord branch (`MATCHED`), a fully observed case where neither branch qualifies (`NOT_MATCHED`), and missing placements (`UNKNOWN`).
+
+### XIV-ALP-13 — Alpayu, printed p. 70
+
+Operational condition:
+
+1. The Lagna lord occupies a Kendra (houses 1, 4, 7 or 10).
+2. The 8th lord occupies a Kendra.
+3. At least one graha occupies house 8.
+4. No graha other than the Lagna lord and 8th lord occupies any Kendra. When both lords are the same planet, that planet is counted once.
+
+The two named lords are thus the explicit exception to “no other planets in Kendras.” A known extra graha in a Kendra makes the condition `NOT_MATCHED`; an empty 8th house makes it `NOT_MATCHED`; partial placements that cannot establish absence keep the result `UNKNOWN`.
+
+Regression cases cover the qualifying chart, an extra graha in a Kendra, an empty 8th house, and an incomplete chart.
+
+### Updated coverage and verification boundary
+
+| Chapter XIV category | Source rules | Evaluators now present | Unimplemented |
+|---|---:|---:|---:|
+| Balarishta | 30 | 30 | 0 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 15 | 0 |
+| Madhyayu | 15 | 15 | 0 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **76** | **0** |
+
+“76/76” means every indexed source rule now has an evaluator; it does not mean every rule will produce a known result for an incomplete chart, nor that the entire classical Ayurdaya method is certified. The source-sensitive evidence requirements remain in force. The integrated Chapter XIV + XXVI regression and source syntax step passed on code commit `0f0501ecfbca4420d0860ea7506f7df173396218`; the full workflows were still running when this entry was drafted.
+
+**Release boundary unchanged:** PR #55 remains research-only and unmerged; `certified:false`; no customer-facing lifespan, death-age or death-date output.
