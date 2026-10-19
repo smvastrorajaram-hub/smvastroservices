@@ -366,3 +366,18 @@ A present evaluator does not imply that a chart result is determinate: missing s
 - Horoscope Matching DST Source QA: PASS — run [39211100524](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39211100524).
 - PR #55 remains open and unmerged; this work remains research-only.
 
+## 2026-10-19 — Alpayu source-rule coverage pass
+
+Added separate evaluators for Alpayu rule 11 (malefics in houses 1, 2 and 8, with benefics outside Kendras) and rule 14 (strong malefics in Kendras without benefic aspects). Rule 14 is explicitly an evidence-gated rule at this stage: if the upstream chart pipeline cannot supply the strength/aspect determination, the result remains `UNKNOWN`; the evaluator does not infer classical strength from house placement alone.
+
+| Printed category | Source rules | Evaluators currently present | Gap |
+|---|---:|---:|---:|
+| Balarishta | 30 | 20 | 10 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 12 | 3 |
+| Madhyayu | 15 | 5 | 10 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **53** | **23** |
+
+This is evaluator coverage, not a claim that all inputs are calculated or certified. The next remaining Alpayu gaps are source rules 9, 10 and 13; Madhyayu rules 5–14 and Balarishta rules 4, 10–12, 15–17, 25–26 and 28 remain unimplemented.
+
