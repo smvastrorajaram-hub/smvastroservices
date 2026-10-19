@@ -1668,7 +1668,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
   // "renderAdvancedAstrology is not defined".
   window.renderAdvancedAstrology = renderAdvancedAstrology;
   async function loadPhase4Dasa(chartOrPayload,lang,rootId){
-    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;renderPhase4Dasa(f.phase4||{},lang,slot);return;}const mod=await import('./offline/dasa_engine.browser.mjs');renderPhase4Dasa(mod.phase4Dasa(chart)||{},lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
+    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;renderPhase4Dasa(f.phase4||{},lang,slot);return;}const [mod,advMod]=await Promise.all([import('./offline/dasa_engine.browser.mjs'),import('./offline/astro_advanced.browser.mjs')]);renderPhase4Dasa(mod.phase4Dasa(chart,advMod.advanced(chart,lang))||{},lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
   }
 
   function renderPhase4Dasa(data,lang,slot){
@@ -1694,7 +1694,11 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
       const extraRules=(longevity.additionalRules||[]).map((x,i)=>`<li>${escSafe(ta?(extraTa[i]||x):x)}</li>`).join('');
       const dt=longevity.dasaTiming;
       const ageBand=dt?.ageBandYears;
-      const focusRows=(system,block)=>arr(block?.periods).map(x=>`<tr><td>${escSafe(system)}</td><td>${escSafe(label(typeof x.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[x.rasi]??x.rasi):x.rasi))}</td><td>${escSafe(Number(x.ageStartYears).toFixed(2))}–${escSafe(Number(x.ageEndYears).toFixed(2))}</td><td>${escSafe(Number(x.years).toFixed(2))}</td><td>${escSafe(x.start)}</td><td>${escSafe(x.end)}</td></tr>`).join('');
+      const focusRows=(system,block)=>arr(block?.periods).map(x=>{
+        const signCodes={Ar:0,Ta:1,Ge:2,Cn:3,Le:4,Vi:5,Li:6,Sc:7,Sg:8,Cp:9,Aq:10,Pi:11};
+        const rs=typeof x.rasi==='string'?(signCodes[x.rasi]??x.rasi):x.rasi;
+        return `<tr><td>${escSafe(system)}</td><td>${escSafe(label(rs))}</td><td>${escSafe(Number(x.ageStartYears).toFixed(2))}–${escSafe(Number(x.ageEndYears).toFixed(2))}</td><td>${escSafe(Number(x.years).toFixed(2))}</td><td>${escSafe(x.start)}</td><td>${escSafe(x.end)}</td></tr>`;
+      }).join('');
       const timingRowsByDasa=dt?focusRows('Niryaana Shoola',dt.niryaanaShoola)+focusRows('Shoola Dasa',dt.shoola):'';
       const dasaTimingPanel=dt?`<h4>${ta?'ஆயுள் வகைக்கு ஏற்ப தசா காலச் சாளரம்':'Dasa timing windows by longevity category'}</h4><p class="small">${ta?'வயது வரம்பு':'Age band'}: ${escSafe(ageBand?.start)}–${escSafe(ageBand?.end)} ${ta?'ஆண்டுகள்':'years'}</p><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${ta?'தசா முறை':'Dasa system'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'வயது இடைவெளி':'Age interval'}</th><th>${ta?'ஆண்டுகள்':'Years'}</th><th>${ta?'தொடக்கம்':'Start'}</th><th>${ta?'முடிவு':'End'}</th></tr></thead><tbody>${timingRowsByDasa||`<tr><td colspan="6">${ta?'இந்த வயது வரம்பில் தசா காலம் இல்லை.':'No Dasa interval overlaps this age band.'}</td></tr>`}</tbody></table></div><p class="small">${escSafe(ta?'இது நூலில் குறிப்பிடப்பட்ட வயது வரம்புடன் தசா காலத்தை ஒப்பிடும் குறிப்பு மட்டுமே. திரிசூலம்/ஆரூடம்/மாரகக் குறிகள் தனியாகச் சரிபார்க்கப்பட வேண்டும்.':(dt.caution||'Research-only Dasa reference; not a death prediction.'))}</p>`:'';
       const elon=longevity.eighthLordMethod;
