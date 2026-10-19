@@ -291,8 +291,7 @@ export async function renderBasicMatching(bride,groom,{language='ta',brideStyle=
    bavRows:c?.advanced?.ashtakavarga?.bhinna,
    language
   });
-  const ayurdayaReport=cgAyurdayaHtml
-      .replace(/<\/section>\s*$/,bvAyurdayaHtml+'</section>')
+  const ayurdayaReport=(cgAyurdayaHtml+bvAyurdayaHtml)
    .replace(/<table class="smv-ayurdaya-table">/g,'<table class="smv-ayurdaya-table smv-css-island">')
    .replace(/<table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table">/g,'<table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table smv-css-island">');
   const vargaMaandi=maandi?{...maandi,longitude:vargaLongitude(Number(maandi.longitude),9)}:null;
