@@ -5,6 +5,7 @@
  * The source expressly says Sodhya-Pinda timing is inconsistent and open to research.
  */
 import { classicalShodhana } from './classical-shodhana.browser.mjs';
+import { getSwe, C as SWISS } from './wasm-provider.mjs';
 
 const EN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
@@ -91,5 +92,170 @@ export function pvrLongevitySodhyaTiming(chart,adv){
     'Maheswara: 8th lord from Atmakaraka, subject to the exceptions in §14.3.'
    ],researchOnly:true,certified:false,caution:'The book says longevity-category methods are not infallible; no life-span age or death date is produced.'},
   sodhyaPindaEventTiming:{available:timingRows.length===7,method:'Raw BAV rekhas in the specified house from the planet × that planet’s PVR/Parasara Sodhya Pinda. Divide by 27 for nakshatra and by 12 for rasi; zero remainder means 27th nakshatra/12th rasi.',rows:timingRows,pindaRows,missingInputs:missing,researchOnly:true,certified:false,caution:'The author says this timing method is inconsistent and open to research. Transit indications are not certain event dates.'}
+ });
+}
+
+
+// ---- PVR §25.6 transit-date calculator (Swiss Ephemeris, Lahiri sidereal) ----
+const TRANSIT_BODIES=Object.freeze([
+ {name:'Saturn',id:SWISS.SATURN},
+ {name:'Jupiter',id:SWISS.JUPITER}
+]);
+const DAY_MS=86400000;
+const transitSampleCache=new Map();
+
+function validISODate(value){
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+ const d=new Date(value+'T00:00:00Z');
+ return Number.isFinite(+d)&&d.toISOString().slice(0,10)===value;
+}
+function isoAtOffset(ms,offsetMinutes){
+ return new Date(ms+offsetMinutes*60000).toISOString().slice(0,16).replace('T',' ');
+}
+function dateAtOffsetToday(offsetMinutes){
+ return new Date(Date.now()+offsetMinutes*60000).toISOString().slice(0,10);
+}
+function addYearsISO(date,years){
+ const [y,m,d]=date.split('-').map(Number);
+ const nextYear=y+years;
+ const maxDay=new Date(Date.UTC(nextYear,m,0)).getUTCDate();
+ return `${nextYear}-${String(m).padStart(2,'0')}-${String(Math.min(d,maxDay)).padStart(2,'0')}`;
+}
+function localMidnightUtcMs(date,offsetMinutes){
+ const [y,m,d]=date.split('-').map(Number);
+ return Date.UTC(y,m-1,d)-offsetMinutes*60000;
+}
+async function getSiderealLongitude(swe,body,jdMs,cache){
+ const key=String(body)+'@'+String(jdMs);
+ if(cache.has(key))return cache.get(key);
+ const date=new Date(jdMs);
+ const jd=swe.utcToJd(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate(),
+  date.getUTCHours(),date.getUTCMinutes(),date.getUTCSeconds()+date.getUTCMilliseconds()/1000);
+ if(!Number.isFinite(jd?.et))throw new Error('Swiss Ephemeris returned no ET Julian day for transit timestamp '+new Date(jdMs).toISOString());
+ const p=swe.calc(jd.et,body,swe.siderealSpeedFlags());
+ if(!Number.isFinite(p?.longitude))throw new Error('Swiss Ephemeris returned no sidereal longitude for body '+body);
+ const lon=mod(p.longitude,360);
+ cache.set(key,lon);
+ return lon;
+}
+async function buildTransitSamples(startMs,endMs){
+ const key=startMs+'|'+endMs;
+ if(transitSampleCache.has(key))return transitSampleCache.get(key);
+ const pending=(async()=>{
+  const swe=await getSwe();
+  swe.setSiderealLahiri();
+  const longitudes=new Map(),byBody={};
+  const getLongitude=(body,time)=>getSiderealLongitude(swe,body,time,longitudes);
+  for(const body of TRANSIT_BODIES){
+   const samples=[];
+   for(let t=startMs;t<endMs;t+=DAY_MS){
+    const lon=await getLongitude(body.id,t);
+    samples.push({time:t,longitude:lon,nakshatraIndex:Math.floor(lon/(360/27)),rasiIndex:Math.floor(lon/30)});
+   }
+   const endLon=await getLongitude(body.id,endMs);
+   samples.push({time:endMs,longitude:endLon,nakshatraIndex:Math.floor(endLon/(360/27)),rasiIndex:Math.floor(endLon/30)});
+   byBody[body.name]=samples;
+  }
+  return {byBody,getLongitude};
+ })();
+ transitSampleCache.set(key,pending);
+ try{return await pending;}catch(error){transitSampleCache.delete(key);throw error;}
+}
+async function makeTransitWindows(samples,bodyId,targetKind,targetIndex,getLongitude){
+ const contains=lon=>targetKind==='nakshatra'
+  ?Math.floor(mod(lon,360)/(360/27))===targetIndex
+  :Math.floor(mod(lon,360)/30)===targetIndex;
+ async function refine(lo0,hi0,side){
+  let lo=lo0,hi=hi0;
+  for(let i=0;i<18;i++){
+   const mid=(lo+hi)/2;
+   const inside=contains(await getLongitude(bodyId,mid));
+   if(inside===side)hi=mid;else lo=mid;
+  }
+  return hi;
+ }
+ const windows=[];let active=contains(samples[0].longitude),start=active?samples[0].time:null,startClipped=active;
+ for(let i=1;i<samples.length;i++){
+  const prev=samples[i-1],cur=samples[i],was=contains(prev.longitude),now=contains(cur.longitude);
+  if(was===now)continue;
+  const boundary=await refine(prev.time,cur.time,now);
+  if(now){active=true;start=boundary;startClipped=false;}
+  else{
+   if(active&&start!==null)windows.push({startMs:start,endMs:boundary,startClipped,endClipped:false});
+   active=false;start=null;startClipped=false;
+  }
+ }
+ if(active&&start!==null)windows.push({startMs:start,endMs:samples[samples.length-1].time,startClipped,endClipped:true});
+ return windows;
+}
+
+/**
+ * Generate actual future Saturn/Jupiter target-crossing windows for the target
+ * nakshatra/rasi references calculated by pvrLongevitySodhyaTiming().
+ *
+ * Date bounds are local civil dates in the specified fixed UTC offset (default
+ * IST +05:30), endDate is exclusive. The natal timing formula is from PVR §25.6;
+ * actual transit ingress times are computed from the bundled local Swiss Ephemeris.
+ */
+export async function calculateSodhyaPindaTransitWindows(rows,options={}){
+ if(!Array.isArray(rows))throw new TypeError('Sodhya Pinda timing rows must be an array');
+ const offsetMinutes=Number.isInteger(options.utcOffsetMinutes)?options.utcOffsetMinutes:330;
+ if(offsetMinutes < -720 || offsetMinutes > 840)throw new RangeError('utcOffsetMinutes must be between -720 and +840');
+ const startDate=options.startDate||dateAtOffsetToday(offsetMinutes);
+ const endDate=options.endDate||addYearsISO(startDate,15);
+ if(!validISODate(startDate)||!validISODate(endDate)||endDate<=startDate)throw new RangeError('Transit range requires valid YYYY-MM-DD dates with endDate after startDate');
+ const startMs=localMidnightUtcMs(startDate,offsetMinutes),endMs=localMidnightUtcMs(endDate,offsetMinutes);
+ if((endMs-startMs)/DAY_MS>20*366)throw new RangeError('Transit range is limited to 20 years for browser performance');
+ const sampled=await buildTransitSamples(startMs,endMs),planetResults=[];
+ const windowCache=new Map();
+ async function windowsFor(body,targetKind,index){
+  if(!Number.isInteger(index)||index<0||(targetKind==='nakshatra'?index>=27:index>=12))return [];
+  const key=body.name+'|'+targetKind+'|'+index;
+  if(!windowCache.has(key)){
+   const raw=await makeTransitWindows(sampled.byBody[body.name],body.id,targetKind,index,sampled.getLongitude);
+   windowCache.set(key,raw.map(w=>({
+    startUtc:new Date(w.startMs).toISOString(),
+    endUtc:new Date(w.endMs).toISOString(),
+    startLocal:isoAtOffset(w.startMs,offsetMinutes),
+    endLocal:isoAtOffset(w.endMs,offsetMinutes),
+    startClipped:w.startClipped,
+    endClipped:w.endClipped
+   })));
+  }
+  return windowCache.get(key);
+ }
+ for(const row of rows){
+  const nakNumber=Number(row.targetNakshatraNumber),rasiNumber=Number(row.targetRasiNumber);
+  const baseNakIndex=nakNumber-1,rasiIndex=rasiNumber-1;
+  const related=(row.relatedVimshottariNakshatras||[]).map(x=>({number:Number(x.number),name:x.name,index:Number(x.number)-1}));
+  const targets=[];
+  if(Number.isInteger(baseNakIndex)&&baseNakIndex>=0&&baseNakIndex<27){
+   targets.push({key:'primary',number:nakNumber,name:row.targetNakshatra,index:baseNakIndex});
+   for(const x of related)targets.push({key:x.number===((nakNumber-1+9)%27)+1?'10th':'19th',number:x.number,name:x.name,index:x.index});
+  }
+  const planetTransits={};
+  for(const body of TRANSIT_BODIES){
+   const starResults=[];
+   for(const target of targets){
+    starResults.push({...target,windows:await windowsFor(body,'nakshatra',target.index)});
+   }
+   planetTransits[body.name]={
+    nakshatras:starResults,
+    rasi:{number:rasiNumber,name:row.targetRasi,index:rasiIndex,windows:await windowsFor(body,'rasi',rasiIndex)}
+   };
+  }
+  planetResults.push({
+   planet:row.planet,planetTamil:row.planetTamil,topic:row.topic,topicTamil:row.topicTamil,
+   targetNakshatra:row.targetNakshatra,targetNakshatraNumber:nakNumber,targetRasi:row.targetRasi,targetRasiNumber:rasiNumber,
+   transits:planetTransits
+  });
+ }
+ return Object.freeze({
+  source:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §25.6 / printed pp. 337–341',
+  ephemeris:'Bundled local Swiss Ephemeris WASM, Lahiri sidereal longitude',
+  horizon:{startDate,endDate,endExclusive:true,utcOffsetMinutes,timezoneLabel:offsetMinutes===330?'IST (UTC+05:30)':`UTC${offsetMinutes<0?'-':'+'}${String(Math.floor(Math.abs(offsetMinutes)/60)).padStart(2,'0')}:${String(Math.abs(offsetMinutes)%60).padStart(2,'0')}`},
+  stepHours:24,ingressRefinement:'daily bracketing then 18-step bisection for each entry/exit',
+  rows:planetResults,researchOnly:true,certified:false,
+  caution:'These are transit windows for PVR’s target nakshatra/rasi references, not predictions or guaranteed event dates. PVR explicitly says Sodhya-Pinda timing is inconsistent and open to research.'
  });
 }
