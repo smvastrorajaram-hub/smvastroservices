@@ -1182,15 +1182,24 @@ export function bvRamanIntegratedAyurdayaResearch({
     BV_RAMAN_AYURDAYA_PLANETS.map(planet => [planet,
       chapterXXVI?.planets?.[planet]?.harana?.missingFactors || []])
   ));
+  const chapterXIVFullyEvaluated = unknownXIVRules.length === 0 &&
+    (chapterXIV.unimplementedRuleIds || []).length === 0;
+  const chapterXIVUniqueCategory = categories.length === 1;
   let crossCheckStatus = 'NOT_COMPARABLE_FINAL_WITHHELD';
   let crossCheckReason = 'The two tracks are kept separate; final lifespan selection is withheld.';
   if (numericBand && categories.length) {
-    if (categories.includes(numericBand)) {
+    if (!chapterXIVFullyEvaluated || !chapterXIVUniqueCategory) {
+      crossCheckStatus = 'CHAPTER_XIV_PARTIAL_OR_MULTIPLE_CANDIDATES_NOT_COMPARABLE';
+      crossCheckReason = 'Chapter XIV does not yield a single fully evaluated category for this chart: matched candidate count='+
+        categories.length+', UNKNOWN rule count='+unknownXIVRules.length+
+        ', unimplemented rule count='+(chapterXIV.unimplementedRuleIds || []).length+
+        '. Therefore a different numeric band is not recorded as a genuine disagreement; inspect the individual matched/UNKNOWN rules and evidence before comparison.';
+    } else if (categories.includes(numericBand)) {
       crossCheckStatus = 'CANDIDATE_OVERLAP_NOT_VALIDATION';
-      crossCheckReason = 'The Chapter XIV candidate set contains the Chapter XXVI numeric band; overlap is not validation because Chapter XIV is partial and may return multiple categories.';
+      crossCheckReason = 'The unique fully evaluated Chapter XIV category candidate equals the Chapter XXVI numeric band. This is candidate agreement, not independent validation or a certified lifespan.';
     } else {
       crossCheckStatus = 'CANDIDATE_DISAGREEMENT_REQUIRES_REVIEW';
-      crossCheckReason = 'The numeric band is not among the currently matched Chapter XIV categories. Review the matched rules and unresolved Chapter XIV rule/evidence coverage before interpreting this as a true contradiction.';
+      crossCheckReason = 'Both tracks are available and Chapter XIV has exactly one fully evaluated category candidate, but it differs from the Chapter XXVI numeric band; review the source-linked rule and arithmetic traces.';
     }
   } else if (numericBand && !categories.length) {
     if (unknownXIVRules.length) {
@@ -1218,6 +1227,10 @@ export function bvRamanIntegratedAyurdayaResearch({
       chapterXIVMatchedRuleIds: matchedXIVRules,
       chapterXIVUnknownRuleIds: unknownXIVRules,
       chapterXIVRuleCoverageCounts: chapterXIV.ruleCoverageCounts,
+      chapterXIVFullyEvaluated,
+      chapterXIVUniqueCategory,
+      chapterXIVUnknownRuleCount: unknownXIVRules.length,
+      chapterXIVUnimplementedRuleCount: (chapterXIV.unimplementedRuleIds || []).length,
       chapterXXVINumericBandCandidate: numericBand,
       chapterXXVIHaranaComplete: chapterXXVI?.haranaComplete === true,
       chapterXXVIMissingHaranaByPlanet: missingHaranaByPlanet,
