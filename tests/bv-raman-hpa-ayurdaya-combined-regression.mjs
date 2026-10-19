@@ -68,15 +68,28 @@ const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
     {name:'Ketu',longitude:30,bhava:2}
   ]}
 });
-ok(moonKendraWithJupiterAspect.matchedRuleIds.includes('XIV-BAL-02'),
-  'Moon-Kendra/malefic conjunction is its own Chapter XIV rule even with a benefic aspect');
+eq(moonKendraWithJupiterAspect.rules.find(rule => rule.id === 'XIV-BAL-02').status, 'NOT_MATCHED',
+  'Chapter XIV Balarishta rule 2 does not match when a benefic aspect protects the Moon');
 
+
+
+const moonKendraMaleficConjunctionNoBeneficAspect = bvRamanChapterXIVLongevityRules({
+  chart: { lagna:{longitude:0}, planets:[
+    {name:'Sun',longitude:300,bhava:10},{name:'Moon',longitude:10,bhava:1},
+    {name:'Mars',longitude:15,bhava:1},{name:'Mercury',longitude:60,bhava:4},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:155,bhava:6},
+    {name:'Saturn',longitude:180,bhava:7},{name:'Rahu',longitude:210,bhava:8},
+    {name:'Ketu',longitude:30,bhava:2}
+  ]}
+});
+ok(moonKendraMaleficConjunctionNoBeneficAspect.matchedRuleIds.includes('XIV-BAL-02'),
+  'Chapter XIV Balarishta rule 2 matches when Moon is conjunct a malefic in a Kendra and has no benefic aspect');
 
 const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:0}, planets:[
     {name:'Sun',longitude:35,bhava:2},{name:'Moon',longitude:5,bhava:1},
     {name:'Mars',longitude:65,bhava:3},{name:'Mercury',longitude:95,bhava:4},
-    {name:'Jupiter',longitude:125,bhava:5},{name:'Venus',longitude:155,bhava:6},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:155,bhava:6},
     {name:'Saturn',longitude:185,bhava:7},{name:'Rahu',longitude:215,bhava:8},
     {name:'Ketu',longitude:245,bhava:9}
   ]}
