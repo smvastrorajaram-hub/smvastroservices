@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { bvRamanAyurdayaReportHtml } from '../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs';
 import { advanced } from '../public/horoscope/offline/astro_advanced.browser.mjs';
+import {
+  BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY,
+  bvRamanChapterXIVLongevityRules
+} from '../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs';
 
 let assertions=0;
 const ok=(value,message)=>{assert.ok(value,message);assertions++;};
@@ -22,6 +26,14 @@ const chart={
   {name:'கேது',longitude:165,bhava:6}
  ]
 };
+eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.length,76,
+ 'Chapter XIV inventory retains all 76 combinations, including antidotes');
+const ruleEvaluation=bvRamanChapterXIVLongevityRules({chart});
+eq(ruleEvaluation.selectedCategory,null,
+ 'Partial rule matches are not reported as a definitive selected longevity category');
+ok(ruleEvaluation.rules.some(rule=>rule.status==='UNKNOWN'),
+ 'Rules dependent on unavailable birth-time/strength/evidence inputs remain unknown rather than assumed false');
+
 const noHarana=Object.fromEntries(
  ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'].map(name=>[name,{
   conjunctionInSign:false,debilitated:false,combust:false,temporaryEnemySign:false,
