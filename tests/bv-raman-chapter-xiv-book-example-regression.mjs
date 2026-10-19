@@ -534,8 +534,8 @@ statuses('XIV-BAL-26',[
   chart:{houses:{Saturn:8,Mars:7,Jupiter:10,Mercury:4,Venus:5,Moon:5},omit:['Jupiter']}}
 ],'HPA p.66 Balarishta 26');
 statuses('XIV-BAL-30',[
- {label:'Moon 8 with benefic aspect and no malefic aspect',expected:'MATCHED',
-  chart:{houses:{Sun:1,Moon:8,Mars:3,Mercury:4,Jupiter:10,Venus:5,Saturn:4,Rahu:6,Ketu:11}}},
+ {label:'Moon 8 with Jupiter 12th-house 9th aspect and no malefic aspect',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:8,Mars:3,Mercury:4,Jupiter:12,Venus:5,Saturn:4,Rahu:6,Ketu:11}}},
  {label:'Moon is not in house 6 or 8',expected:'NOT_MATCHED',chart:{houses:{Moon:5}}},
  {label:'Moon placement is unavailable',expected:'UNKNOWN',chart:{omit:['Moon']}}
 ],'HPA p.66 Balarishta 30');
