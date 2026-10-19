@@ -68,6 +68,12 @@ const NATURAL_ENEMIES = Object.freeze({
 const CHART_GRAHAS = Object.freeze([
   'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'
 ]);
+const VIMSHOTTARI_ORDER = Object.freeze([
+  'Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'
+]);
+const VIMSHOTTARI_YEARS = Object.freeze({
+  Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17
+});
 const SIGN_KIND = Object.freeze([
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common',
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common'
@@ -152,6 +158,61 @@ function signOf(map, name) {
 function houseLord(map, house) {
   if (!signValid(map.lagnaSign) || !houseValid(house)) return null;
   return SIGN_LORDS[(map.lagnaSign + house - 1) % 12];
+}
+function vimshottariBirthLords(map, evidence = {}) {
+  const moonLongitude = map.planets.get('Moon')?.longitude;
+  const nakshatraSpan = 360 / 27;
+  const calculatedNakshatraIndex = finite(moonLongitude)
+    ? Math.floor(norm360(moonLongitude) / nakshatraSpan) : null;
+  const calculatedDasaLord = calculatedNakshatraIndex === null
+    ? null : VIMSHOTTARI_ORDER[calculatedNakshatraIndex % 9];
+  const birthDasaLord = evidence.birthDasaLord == null
+    ? calculatedDasaLord : keyName(evidence.birthDasaLord);
+  const nakshatraProgress = finite(moonLongitude)
+    ? (norm360(moonLongitude) % nakshatraSpan) / nakshatraSpan : null;
+  let calculatedAntardasaLord = null;
+  if (birthDasaLord && nakshatraProgress !== null &&
+      finite(VIMSHOTTARI_YEARS[birthDasaLord])) {
+    const mdYears = VIMSHOTTARI_YEARS[birthDasaLord];
+    const elapsed = nakshatraProgress * mdYears;
+    const start = VIMSHOTTARI_ORDER.indexOf(birthDasaLord);
+    let cumulative = 0;
+    for (let i=0; i<VIMSHOTTARI_ORDER.length; i++) {
+      const lord = VIMSHOTTARI_ORDER[(start+i)%VIMSHOTTARI_ORDER.length];
+      const duration = mdYears * VIMSHOTTARI_YEARS[lord] / 120;
+      if (elapsed < cumulative + duration - 1e-10 ||
+          i === VIMSHOTTARI_ORDER.length-1) {
+        calculatedAntardasaLord = lord;
+        break;
+      }
+      cumulative += duration;
+    }
+  }
+  return Object.freeze({
+    birthDasaLord,
+    birthAntardasaLord: evidence.birthAntardasaLord == null
+      ? calculatedAntardasaLord : keyName(evidence.birthAntardasaLord),
+    derivedFromMoonLongitude: evidence.birthDasaLord == null &&
+      finite(moonLongitude),
+    moonLongitude,
+    nakshatraIndex:calculatedNakshatraIndex,
+    nakshatraProgress
+  });
+}
+function birthDasaLordHasManyMaleficConjunctions(map, birthDasaLord) {
+  if (!birthDasaLord) return null;
+  const lord = map.planets.get(birthDasaLord);
+  if (!lord || !houseValid(lord.house)) return null;
+  const sameHouseMalefics = [...NATURAL_MALEFICS].filter(name =>
+    name !== birthDasaLord && houseOf(map,name) === lord.house);
+  // HPA printed p. 68 Horoscope No. 1 expressly gives the Venus Dasa lord
+  // conjoined with Saturn and Ketu: two co-located natural malefics satisfy
+  // the source's word "many". Do not promote a single malefic to this predicate.
+  if (sameHouseMalefics.length >= 2) return true;
+  const allPlacementsKnown = CHART_GRAHAS.every(name =>
+    map.planets.has(name) && houseValid(map.planets.get(name).house));
+  if (!allPlacementsKnown) return null;
+  return false;
 }
 function planetInNaturalEnemySign(map, name) {
   const sign = signOf(map, name);
@@ -258,6 +319,20 @@ function beneficInAnyKendra(map, evidence) {
     'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
   ].every(name => map.planets.has(name) && houseValid(map.planets.get(name).house));
   return unknownNatureInKendra || !coreComplete ? null : false;
+}
+function beneficInKendraOrTrikona(map, evidence) {
+  let unknownNatureInRelevantHouse = false;
+  const relevantHouses = new Set([1,4,5,7,9,10]);
+  for (const [name, planet] of map.planets.entries()) {
+    if (!relevantHouses.has(planet.house)) continue;
+    const nature = planetNature(map,evidence,name);
+    if (nature === 'benefic') return true;
+    if (nature === null) unknownNatureInRelevantHouse = true;
+  }
+  const coreComplete = [
+    'Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'
+  ].every(name=>map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  return unknownNatureInRelevantHouse || !coreComplete ? null : false;
 }
 function isMoonMrityubhaga(map) {
   const moon = map.planets.get('Moon');
@@ -507,8 +582,9 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Moon in a Kendra with malefics (same-house co-occupancy)',
     triAll(isKendra(moonHouse), moonWithMalefics)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
-    'Moon in house 7, 8 or 12 with malefics and no benefic aspect (same-house co-occupancy)',
-    triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
+    'Moon in house 7, 8 or 12 with malefic conjunction/aspect and no benefic aspect',
+    triAll(inList(moonHouse, [7, 8, 12]),
+      triAny(moonWithMalefics, moonAspect.malefic), noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-04', 'Balarishta',
     'Birth within 48 minutes before sunrise/after sunset, Moon hora rising and malefics in malefic-sign Navamsas',
     triAll(tri(e.birthWithin48MinutesOfSunriseOrSunset),
@@ -532,9 +608,13 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
       houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 9,
       houseOf(map, 'Jupiter') === null ? null : houseOf(map, 'Jupiter') === 3)));
+  const birthDasaFacts = vimshottariBirthLords(map,e);
+  const bal10ManyMalefics = e.birthDasaLordConjoinedWithManyMalefics == null
+    ? birthDasaLordHasManyMaleficConjunctions(map,birthDasaFacts.birthDasaLord)
+    : tri(e.birthDasaLordConjoinedWithManyMalefics);
   rules.push(makeRule('XIV-BAL-10', 'Balarishta',
     'Birth-period Dasa lord is conjunct many malefics',
-    tri(e.birthDasaLordConjoinedWithManyMalefics)));
+    bal10ManyMalefics));
   rules.push(makeRule('XIV-BAL-13', 'Balarishta', 'Ketu in house 4 with or aspected by malefics',
     triAll(houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 4,
       triAny(conjunctionState(map, 'Ketu', 'malefic', e),
@@ -572,8 +652,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Sun rising at birth, malefics in Kendras/Trikonas and Venus in 6th/12th',
     triAll(tri(e.sunRisingAtBirth), bal11MaleficKendraOrTrikona,
       inList(houseOf(map, 'Venus'), [6, 12]))));
-  const birthDasaLord = e.birthDasaLord == null ? null : keyName(e.birthDasaLord);
-  const birthAntardasaLord = e.birthAntardasaLord == null ? null : keyName(e.birthAntardasaLord);
+  const birthDasaLord = birthDasaFacts.birthDasaLord;
+  const birthAntardasaLord = birthDasaFacts.birthAntardasaLord;
   const bal15DirectDasa = birthDasaLord === null ? null :
     birthDasaLord === lagnaLord || birthDasaLord === eighthLord;
   const bal15DasaAntardasa = birthDasaLord === null || birthAntardasaLord === null ||
@@ -791,12 +871,28 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-02', 'Madhyayu',
     'At least two of the 8th, 11th, Lagna and 10th lords are powerful',
     strengthTwo));
+  // HPA printed p. 70, Madhyayu rule 3 states the three placements directly;
+  // evaluate the natal positions rather than requiring duplicate evidence.
+  const mad03Houses = ['Mercury','Jupiter','Venus'].map(name=>houseOf(map,name));
+  const mercuryJupiterVenusInSecondThirdEleventh =
+    mad03Houses.some(house=>house===null) ? null :
+      (mad03Houses[0]===2 && mad03Houses[1]===3 && mad03Houses[2]===11);
   rules.push(makeRule('XIV-MAD-03', 'Madhyayu',
-    'Mercury, Jupiter and Venus in houses 2, 3 and 11 from Lagna',
-    tri(e.mercuryJupiterVenusInSecondThirdEleventh)));
+    'Mercury in 2nd, Jupiter in 3rd and Venus in 11th from Lagna',
+    mercuryJupiterVenusInSecondThirdEleventh));
+  // HPA printed p. 70, rule 4: middle four houses are houses 5–8 from Lagna.
+  // Unknown remains if no planet is known to contradict the pattern and one or
+  // more graha placements are missing.
+  const middleFourHouses = new Set([5,6,7,8]);
+  const knownHouses = CHART_GRAHAS.map(name=>houseOf(map,name)).filter(house=>house!==null);
+  const knownGrahaOutsideMiddleFour = knownHouses.some(house=>!middleFourHouses.has(house));
+  const allGrahasLocated = CHART_GRAHAS.every(name=>
+    map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  const allPlanetsMiddleFourHouses = knownGrahaOutsideMiddleFour ? false
+    : allGrahasLocated ? true : null;
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
-    tri(e.allPlanetsMiddleFourHouses)));
+    allPlanetsMiddleFourHouses));
   rules.push(makeRule('XIV-MAD-05', 'Madhyayu',
     'Sun in Lagna, enemy sign, between malefics, weak and without benefic aspect',
     triAll(
@@ -849,7 +945,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })();
   rules.push(makeRule('XIV-MAD-13', 'Madhyayu',
     'Benefics in Kendras without aspecting Lagna; Lagna lord aspected by malefics',
-    triAll(tri(e.beneficsOccupyKendras), noBeneficAspectToBirth,
+    triAll(beneficKendra, noBeneficAspectToBirth,
       lagnaLord ? aspectState(map, e, lagnaLord).malefic : null)));
   rules.push(makeRule('XIV-MAD-14', 'Madhyayu',
     'Mars in 5th, Sun in 7th and Saturn debilitated',
@@ -859,7 +955,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
         signOf(map, 'Saturn') === DEBILITATION_SIGN.Saturn)));
   rules.push(makeRule('XIV-MAD-15', 'Madhyayu',
     'Benefics in Kendras/Trikonas with strong Saturn',
-    triAll(tri(e.beneficsInKendrasAndTrikonas), isStrong('Saturn'))));
+    triAll(beneficInKendraOrTrikona(map,e), isStrong('Saturn'))));
 
   // Purnayu: selected configurations; strength and special conditions remain explicit inputs.
   const lagnaAspect = lagnaLord ? isAspecting(map.planets.get(lagnaLord), 1) : null;
@@ -867,9 +963,37 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-PUR-01', 'Purnayu',
     'Lagna aspected by its lord, eighth by its lord, Jupiter in a Kendra',
     triAll(lagnaAspect, eighthAspect, isKendra(jupiterHouse))));
+  // HPA printed p. 71, Purnayu rule 2: determine the nature of each
+  // graha from the complete natal chart. All nine positions are required to
+  // prove absence; an incomplete chart must not be treated as a non-match.
+  const beneficsFirstSixMaleficsLastSix = (() => {
+    const allGrahasLocated = CHART_GRAHAS.every(name =>
+      map.planets.has(name) && houseValid(map.planets.get(name).house));
+    if (!allGrahasLocated) {
+      const knownContradiction = [...map.planets.values()].some(planet => {
+        const nature = planetNature(map,e,planet.name);
+        if (nature === 'benefic' && planet.house > 6) return true;
+        if (nature === 'malefic' && planet.house < 7) return true;
+        return false;
+      });
+      return knownContradiction ? false : null;
+    }
+    let unknownNature = false;
+    for (const name of CHART_GRAHAS) {
+      const planet = map.planets.get(name);
+      const nature = planetNature(map,e,name);
+      if (nature === null) {
+        unknownNature = true;
+        continue;
+      }
+      if (nature === 'benefic' && planet.house > 6) return false;
+      if (nature === 'malefic' && planet.house < 7) return false;
+    }
+    return unknownNature ? null : true;
+  })();
   rules.push(makeRule('XIV-PUR-02', 'Purnayu',
-    'Benefics in first six houses and malefics in last six',
-    tri(e.beneficsFirstSixMaleficsLastSix)));
+    'Benefic grahas in houses 1–6 and malefic grahas in houses 7–12',
+    beneficsFirstSixMaleficsLastSix));
   const relativeJupiterHouse = (() => {
     const lordHouse = lagnaLord ? houseOf(map, lagnaLord) : null;
     if (!houseValid(lordHouse) || !houseValid(jupiterHouse)) return null;
