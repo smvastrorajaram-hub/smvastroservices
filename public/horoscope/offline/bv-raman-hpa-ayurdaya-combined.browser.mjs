@@ -68,6 +68,12 @@ const NATURAL_ENEMIES = Object.freeze({
 const CHART_GRAHAS = Object.freeze([
   'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'
 ]);
+const VIMSHOTTARI_ORDER = Object.freeze([
+  'Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'
+]);
+const VIMSHOTTARI_YEARS = Object.freeze({
+  Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17
+});
 const SIGN_KIND = Object.freeze([
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common',
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common'
@@ -152,6 +158,61 @@ function signOf(map, name) {
 function houseLord(map, house) {
   if (!signValid(map.lagnaSign) || !houseValid(house)) return null;
   return SIGN_LORDS[(map.lagnaSign + house - 1) % 12];
+}
+function vimshottariBirthLords(map, evidence = {}) {
+  const moonLongitude = map.planets.get('Moon')?.longitude;
+  const nakshatraSpan = 360 / 27;
+  const calculatedNakshatraIndex = finite(moonLongitude)
+    ? Math.floor(norm360(moonLongitude) / nakshatraSpan) : null;
+  const calculatedDasaLord = calculatedNakshatraIndex === null
+    ? null : VIMSHOTTARI_ORDER[calculatedNakshatraIndex % 9];
+  const birthDasaLord = evidence.birthDasaLord == null
+    ? calculatedDasaLord : keyName(evidence.birthDasaLord);
+  const nakshatraProgress = finite(moonLongitude)
+    ? (norm360(moonLongitude) % nakshatraSpan) / nakshatraSpan : null;
+  let calculatedAntardasaLord = null;
+  if (birthDasaLord && nakshatraProgress !== null &&
+      finite(VIMSHOTTARI_YEARS[birthDasaLord])) {
+    const mdYears = VIMSHOTTARI_YEARS[birthDasaLord];
+    const elapsed = nakshatraProgress * mdYears;
+    const start = VIMSHOTTARI_ORDER.indexOf(birthDasaLord);
+    let cumulative = 0;
+    for (let i=0; i<VIMSHOTTARI_ORDER.length; i++) {
+      const lord = VIMSHOTTARI_ORDER[(start+i)%VIMSHOTTARI_ORDER.length];
+      const duration = mdYears * VIMSHOTTARI_YEARS[lord] / 120;
+      if (elapsed < cumulative + duration - 1e-10 ||
+          i === VIMSHOTTARI_ORDER.length-1) {
+        calculatedAntardasaLord = lord;
+        break;
+      }
+      cumulative += duration;
+    }
+  }
+  return Object.freeze({
+    birthDasaLord,
+    birthAntardasaLord: evidence.birthAntardasaLord == null
+      ? calculatedAntardasaLord : keyName(evidence.birthAntardasaLord),
+    derivedFromMoonLongitude: evidence.birthDasaLord == null &&
+      finite(moonLongitude),
+    moonLongitude,
+    nakshatraIndex:calculatedNakshatraIndex,
+    nakshatraProgress
+  });
+}
+function birthDasaLordHasManyMaleficConjunctions(map, birthDasaLord) {
+  if (!birthDasaLord) return null;
+  const lord = map.planets.get(birthDasaLord);
+  if (!lord || !houseValid(lord.house)) return null;
+  const sameHouseMalefics = [...NATURAL_MALEFICS].filter(name =>
+    name !== birthDasaLord && houseOf(map,name) === lord.house);
+  // HPA printed p. 68 Horoscope No. 1 expressly gives the Venus Dasa lord
+  // conjoined with Saturn and Ketu: two co-located natural malefics satisfy
+  // the source's word "many". Do not promote a single malefic to this predicate.
+  if (sameHouseMalefics.length >= 2) return true;
+  const allPlacementsKnown = CHART_GRAHAS.every(name =>
+    map.planets.has(name) && houseValid(map.planets.get(name).house));
+  if (!allPlacementsKnown) return null;
+  return false;
 }
 function planetInNaturalEnemySign(map, name) {
   const sign = signOf(map, name);
@@ -507,8 +568,9 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Moon in a Kendra with malefics (same-house co-occupancy)',
     triAll(isKendra(moonHouse), moonWithMalefics)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
-    'Moon in house 7, 8 or 12 with malefics and no benefic aspect (same-house co-occupancy)',
-    triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
+    'Moon in house 7, 8 or 12 with malefic conjunction/aspect and no benefic aspect',
+    triAll(inList(moonHouse, [7, 8, 12]),
+      triAny(moonWithMalefics, moonAspect.malefic), noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-04', 'Balarishta',
     'Birth within 48 minutes before sunrise/after sunset, Moon hora rising and malefics in malefic-sign Navamsas',
     triAll(tri(e.birthWithin48MinutesOfSunriseOrSunset),
@@ -532,9 +594,13 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
       houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 9,
       houseOf(map, 'Jupiter') === null ? null : houseOf(map, 'Jupiter') === 3)));
+  const birthDasaFacts = vimshottariBirthLords(map,e);
+  const bal10ManyMalefics = e.birthDasaLordConjoinedWithManyMalefics == null
+    ? birthDasaLordHasManyMaleficConjunctions(map,birthDasaFacts.birthDasaLord)
+    : tri(e.birthDasaLordConjoinedWithManyMalefics);
   rules.push(makeRule('XIV-BAL-10', 'Balarishta',
     'Birth-period Dasa lord is conjunct many malefics',
-    tri(e.birthDasaLordConjoinedWithManyMalefics)));
+    bal10ManyMalefics));
   rules.push(makeRule('XIV-BAL-13', 'Balarishta', 'Ketu in house 4 with or aspected by malefics',
     triAll(houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 4,
       triAny(conjunctionState(map, 'Ketu', 'malefic', e),
@@ -572,8 +638,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Sun rising at birth, malefics in Kendras/Trikonas and Venus in 6th/12th',
     triAll(tri(e.sunRisingAtBirth), bal11MaleficKendraOrTrikona,
       inList(houseOf(map, 'Venus'), [6, 12]))));
-  const birthDasaLord = e.birthDasaLord == null ? null : keyName(e.birthDasaLord);
-  const birthAntardasaLord = e.birthAntardasaLord == null ? null : keyName(e.birthAntardasaLord);
+  const birthDasaLord = birthDasaFacts.birthDasaLord;
+  const birthAntardasaLord = birthDasaFacts.birthAntardasaLord;
   const bal15DirectDasa = birthDasaLord === null ? null :
     birthDasaLord === lagnaLord || birthDasaLord === eighthLord;
   const bal15DasaAntardasa = birthDasaLord === null || birthAntardasaLord === null ||
