@@ -1239,10 +1239,10 @@ const pur02NegativeChart=makeXivSourceFixture({
  houses:{Sun:9,Moon:1,Mars:8,Mercury:3,Jupiter:7,Venus:5,Saturn:10,Rahu:11,Ketu:12},
  longitudes:{Sun:245,Moon:20,Mars:215,Mercury:65,Jupiter:185,Venus:125,Saturn:275,Rahu:305,Ketu:335}
 });
-const pur02IncompleteChart=makeXivSourceFixture({omit:['Mercury']});
+const pur02IncompleteChartXivFixture=makeXivSourceFixture({omit:['Mercury']});
 checkXivRuleThreeStates({
  id:'XIV-PUR-02',page:71,number:2,
- matchChart:pur02PositiveChart,notMatchChart:pur02NegativeChart,unknownChart:pur02IncompleteChart,
+ matchChart:pur02PositiveChart,notMatchChart:pur02NegativeChart,unknownChart:pur02IncompleteChartXivFixture,
  matchedEvidence:{},notMatchedEvidence:{},unknownEvidence:{}
 });
 
