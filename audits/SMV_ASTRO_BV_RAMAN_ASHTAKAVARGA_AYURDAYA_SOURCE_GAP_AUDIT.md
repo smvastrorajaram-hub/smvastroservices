@@ -275,3 +275,35 @@ Printed p. 203 (PDF image page 210) explicitly says that, in this worked example
 - **PENDING — separate ASOP primary table:** the original *Ashtakavarga System of Prediction* Table I scan still needs independent access/verification; the secondary transcription remains separate.
 - **Safety gate unchanged:** research-only, `certified:false`, no customer-facing lifespan/death age/date, no merge to `main`.
 
+## 2026-10-19 — Chapter XIV complete source-rule inventory and source-number correction
+
+The scan images for printed pp. 63–72 (repository PDF image pages 70–79) were reviewed as a sequence. The runtime now exposes a 76-entry `BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY` spanning all source-numbered combinations and antidotes. A source rule that has no evaluator is returned as `UNKNOWN` with `implemented: false`; it is no longer absent from the rule trace and cannot be mistaken for a tested non-match.
+
+| Printed category | Source rules | Evaluators currently present | Gap |
+|---|---:|---:|---:|
+| Balarishta | 30 | 9 | 21 |
+| Antidotes | 10 | 9 | 1 |
+| Alpayu | 15 | 10 | 5 |
+| Madhyayu | 15 | 5 | 10 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **39** | **37** |
+
+The page-by-page image review found two rule-ID attribution errors in the prior partial evaluator:
+- The “Lagna and Moon both in common signs” condition is printed Alpayu rule 15, not rule 4. It is now `XIV-ALP-15`.
+- “Weak Lagna lord with the 8th lord in a Kendra” is printed Alpayu rule 12, not rule 5. It is now `XIV-ALP-12`.
+- The actual printed Alpayu rules 4–8 are now represented as their own evaluated conditions (8th lord in Lagna with Ketu; malefics in Lagna with Moon-malefic conjunction; 8th lord in Lagna with powerless Lagna lord; Scorpio Lagna/Sun/Jupiter/8th-lord Kendra combination; Rahu 7th/Moon 8th/Jupiter Lagna).
+- “Benefics in Kendras/Trikonas with powerful Saturn” is printed Madhyayu rule 15, not rule 5. It is now `XIV-MAD-15`; printed Madhyayu rules 5–14 remain individually indexed as unimplemented/unknown.
+
+The selected-rule evaluator still never chooses a final longevity category or emits lifespan/death-age/death-date output. All strength, Drekkana, Dasa and special-condition inputs remain source-sensitive; missing inputs stay unknown.
+
+### Regression evidence after this change
+
+- **PASS:** syntax checks.
+- **PASS:** B.V. Raman Ayurdaya regression (137 assertions).
+- **PASS:** integrated Chapter XIV + XXVI regression (101 assertions).
+- **PASS:** BPHS Shodhana textbook regression (171 assertions).
+- **PASS:** P.V.R. Narasimha Rao Shodhana textbook regression (1,253 assertions).
+- **PASS:** the HPA p. 190 B.R./A.R. oracle still reproduces all table cells and totals.
+- **PENDING:** 37 Chapter XIV rules still have no evaluator; their presence in the inventory is a coverage safeguard, not completion.
+- **Safety gate unchanged:** research-only; `certified:false`; no customer-facing lifespan or death prediction; no merge to `main`.
+
