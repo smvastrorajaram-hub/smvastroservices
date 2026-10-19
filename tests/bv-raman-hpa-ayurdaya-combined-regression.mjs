@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   BV_RAMAN_HPA_CHAPTER_XIV_SOURCE,
+  BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY,
   BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE,
   BV_RAMAN_HPA_CHAPTER_XXVI_RASI_GUNAKARA,
   BV_RAMAN_HPA_CHAPTER_XXVI_GRAHA_GUNAKARA,
@@ -63,6 +64,35 @@ eq(xiv.selectedCategory, null, 'Chapter XIV does not select a final category');
 eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
 eq(xiv.customerDisplayAllowed, false, 'Chapter XIV rule trace is research-only');
+eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.length, 76,
+  'source inventory includes all 30 Balarishta, 10 antidote, 15 Alpayu, 15 Madhyayu and 6 Purnayu rules');
+eq(new Set(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule => rule.id)).size, 76,
+  'every source rule has a unique stable ID');
+eq(xiv.rules.length, 76,
+  'runtime rule trace exposes every source rule, not only implemented evaluators');
+eq(xiv.unimplementedRuleIds.includes('XIV-BAL-04'), true,
+  'unsupported Balarishta rule 4 remains explicitly visible as unimplemented');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
+  'unimplemented Balarishta rule is UNKNOWN, never silently NOT_MATCHED');
+eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), true,
+  'unsupported antidote rule 8 remains explicitly visible as unimplemented');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
+  'unimplemented antidote rule is UNKNOWN');
+eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
+  'Balarishta inventory has 30 source rules');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 9,
+  'only the nine currently encoded Balarishta rules count as implemented');
+eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
+  'Alpayu inventory has 15 source rules');
+eq(xiv.ruleCoverageCounts.Alpayu.implemented, 10,
+  'Alpayu implementation count includes source-numbered rules 1-8, 12 and 15');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-12').sourceRuleNumber, 12,
+  'weak birth lord plus 8th lord in a Kendra is correctly attributed to printed Alpayu rule 12');
+eq(xiv.rules.find(rule => rule.id === 'XIV-ALP-15').sourceRuleNumber, 15,
+  'common-sign Lagna/Moon condition is correctly attributed to printed Alpayu rule 15');
+eq(xiv.rules.find(rule => rule.id === 'XIV-MAD-15').sourceRuleNumber, 15,
+  'powerful Saturn with benefics in Kendras/Trikonas is correctly attributed to printed Madhyayu rule 15');
+
 
 const moonKendraWithJupiterAspect = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:0}, planets:[
