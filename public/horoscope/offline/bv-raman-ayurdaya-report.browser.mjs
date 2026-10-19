@@ -192,8 +192,8 @@ export function bvRamanAyurdayaReportHtml(options={}) {
   const numericTable = '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table smv-bv-raman-ayurdaya-table"><thead><tr>'+
     header.map(v=>'<th>'+esc(v)+'</th>').join('')+'</tr></thead><tbody>'+planetRows+totalRows+'</tbody></table></div>';
   const disclaimer = ta
-    ? 'இவை பாரம்பரிய ஆயுர்த்தாயக் கணக்கீட்டு முடிவுகள் மட்டுமே; உண்மையான ஆயுளை உறுதிப்படுத்தவோ மரண நேரத்தைக் கணிக்கவோ இவை பயன்படாது.'
-    : 'These are traditional Ayurdaya calculation results only; they do not establish actual lifespan or predict the time of death.';
+    ? 'இவை பாரம்பரிய ஆயுர்த்தாய முறையின் கணக்கீட்டு மதிப்பீடுகள் மட்டுமே; உண்மையான ஆயுளையோ மரண நேரத்தையோ உறுதியாகக் கூறுபவை அல்ல.'
+    : 'This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.';
   return '<div class="smv-bv-raman-ayurdaya" data-smv-bv-raman-ayurdaya="1">'+
     '<h4>'+esc(ta?'அஷ்டகவர்க்க ஆயுர்த்தாயம்':'Ashtakavarga Ayurdaya')+'</h4>'+
     numericTable+
