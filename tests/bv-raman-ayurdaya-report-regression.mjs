@@ -86,7 +86,7 @@ ok(combined.includes('<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-a
 
 const reportSource=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs',import.meta.url),'utf8');
 const sourceRuleIds=BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule=>rule.id).sort();
-const tamilRuleIds=[...reportSource.matchAll(/'((?:XIV)-(?:BAL|ANT|ALP|MAD|PUR)-\\d{2})'\\s*:/g)].map(match=>match[1]).sort();
+const tamilRuleIds=[...reportSource.matchAll(/'((?:XIV)-(?:BAL|ANT|ALP|MAD|PUR)-\d{2})'\s*:/g)].map(match=>match[1]).sort();
 eq(sourceRuleIds.length,76,'Source inventory contains all 76 Chapter XIV rules');
 eq(tamilRuleIds.length,76,'Tamil customer rule labels include all 76 unique rule IDs');
 eq([...new Set(tamilRuleIds)].length,76,'Tamil rule labels contain no duplicate source IDs');
