@@ -15,8 +15,8 @@ The rule-by-rule test file now has source-linked cases for **all 76/76 rule IDs*
 | Regression measure | Result |
 |---|---:|
 | Distinct Chapter XIV source-rule IDs covered | 76 / 76 |
-| MATCHED fixture outcomes | 48 |
-| NOT_MATCHED fixture outcomes | 45 |
+| MATCHED fixture outcomes | 47 |
+| NOT_MATCHED fixture outcomes | 46 |
 | UNKNOWN fixture outcomes | 23 |
 | Individual source-rule fixture outcomes | 206 |
 | Actual, partially replayed book horoscope examples | 3 |
@@ -29,7 +29,7 @@ The separate integrated regression also adds MATCHED / NOT_MATCHED / UNKNOWN tri
 
 The three chart/horoscope examples present in the scanned chapter are kept separate from the constructed source-rule fixtures.
 
-- **Book example 1:** Moon-in-Kendra and Moon-affliction predicates can be replayed from the source-stated geometry. The birth-Dasa-lord conjunction rule remains dependent on the source-stated Venus/Saturn/Ketu conjunction; the Dasa-lord name alone is not enough.
+- **Book example 1:** the printed prose says Moon is in the 7th Kendra, Saturn aspects Moon, and no benefic aspects Moon. Rule 2 is **NOT_MATCHED from those facts alone**, because Rule 2's “with malefics” predicate requires same-house co-occupancy; a Saturn aspect alone is not silently substituted for conjunction. Rule 3 is **MATCHED** by Moon in house 7 with a malefic aspect and no benefic aspect. Rule 10 is MATCHED only with the source-stated Venus/Saturn/Ketu conjunction explicitly wired; the Dasa-lord name alone is not enough.
 - **Book example 2:** predicates whose complete aspect/placement geometry is not stated in the prose remain UNKNOWN. Missing planetary facts are not synthesized.
 - **Book example 3:** the text states strong Jupiter in a quadrant as a protective/redemption condition. The general strong-Jupiter antidote is recorded, but cancellation precedence across the full chapter remains a separate source-validation task.
 
