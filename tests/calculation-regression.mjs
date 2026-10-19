@@ -108,7 +108,7 @@ const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
 const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
 renderContext.runRenderer({ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},pvrResearch:{longevity:{dasaTiming:{ageBandYears:{start:0,end:36},niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},shoola:{periods:[]}}},sodhyaPindaEventTiming:{rows:[]}},'ta',mockSlot);
-ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('ராகு')&&mockSlot.innerHTML.includes('சிறப்பு தசா')===false,'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
+ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்')&&mockSlot.innerHTML.includes('நூல் பக்கங்கள்')===false,'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
 
 const charts=[];
 let pvrTransitFixtureRows=null;
