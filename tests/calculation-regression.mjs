@@ -114,7 +114,7 @@ const sharedArrStart=horoscopeSource.indexOf('// Shared shape-normalizer');
 const sharedArrEnd=horoscopeSource.indexOf(';',sharedArrStart);
 const sharedArrSource=sharedArrStart>=0&&sharedArrEnd>sharedArrStart?horoscopeSource.slice(sharedArrStart,sharedArrEnd+1):'';
 ok(sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:' ,'Runtime regression extracts the production shared arr helper');
-vm.runInNewContext(sharedArrSource+"\\n"+rendererChunk+"\\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
+vm.runInNewContext(sharedArrSource+"\n"+rendererChunk+"\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
 const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
 const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
