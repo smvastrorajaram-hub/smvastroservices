@@ -691,8 +691,8 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
    amsa:ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'
   })[method]||method;
   const tiedHead=tied.map(candidate=>'<th scope="col">'+esc(methodLabelFor(candidate.method))+
-   '<div class="small">'+esc(candidate.referencePlanet==='சூரியன்'?(ta?'சூரியன்':'Sun'):
-    candidate.referencePlanet==='சந்திரன்'?(ta?'சந்திரன்':'Moon'):
+   '<div class="small">'+esc(candidate.referenceRole==='sun'?(ta?'சூரியன்':'Sun'):
+    candidate.referenceRole==='moon'?(ta?'சந்திரன்':'Moon'):
     (ta?'லக்னாதிபதி':'Lagna lord')+' — '+candidate.scoreVirupa.toFixed(2)+' '+(ta?'விரூபம்':'Virupa'))+
    '</div></th>').join('');
   const resultCell=(entry,method)=>{
