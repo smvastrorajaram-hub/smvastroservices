@@ -13,6 +13,7 @@ const englishProgressAt=form.indexOf("let englishProgress=$('englishHoroscopePro
 const engineWaitAt=form.indexOf('await window.SMVEngineReady',form.indexOf("phase='engine-ready'"));
 yes(englishProgressAt>=0&&engineWaitAt>englishProgressAt,'English progress indicator exists before waiting for engine readiness');
 yes(form.includes('requestAnimationFrame(()=>setTimeout(resolve,0))')&&horoscope.includes('requestAnimationFrame(()=>setTimeout(resolve,0))'),'English and Tamil flows yield one frame so the loader can paint');
+yes(horoscope.includes("if(full?.phase4?.pvrResearch && typeof window.__smvRenderPhase4Dasa==='function')")&&horoscope.includes('completePvrTransitCalendar(result,lang,slot)'),'server Dasa payload without PVR metadata falls back to local Dasa and the transit calendar starts from every render entry point');
 yes(form.includes('window.__smvHoroscopeGenerating=true')&&form.includes('busy=false;window.__smvHoroscopeGenerating=false'),'one cross-language generation lock is acquired and released');
 yes(form.includes('const generationId=(window.__smvHoroscopeGenerationId=Number(window.__smvHoroscopeGenerationId||0)+1)')&&form.includes('generationId,cachedBasic:basicSnapshot'),'single-release flow owns a fresh generation token and passes it to Full render');
 no(form.includes('ensureLongPredictionComplete'),'obsolete whole-report timeline wait was removed');

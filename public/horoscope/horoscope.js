@@ -1668,7 +1668,22 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
   // "renderAdvancedAstrology is not defined".
   window.renderAdvancedAstrology = renderAdvancedAstrology;
   async function loadPhase4Dasa(chartOrPayload,lang,rootId){
-    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;renderPhase4Dasa(f.phase4||{},lang,slot);return;}const mod=await import('./offline/dasa_engine.browser.mjs');renderPhase4Dasa(mod.phase4Dasa(chart)||{},lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
+    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;const dasaData=f.phase4||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);return;}const [mod,advMod]=await Promise.all([import('./offline/dasa_engine.browser.mjs'),import('./offline/astro_advanced.browser.mjs')]);const dasaData=mod.phase4Dasa(chart,advMod.advanced(chart,lang))||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
+  }
+
+  async function completePvrTransitCalendar(data,lang,slot){
+    const timing=data?.pvrResearch?.sodhyaPindaEventTiming;
+    if(!Array.isArray(timing?.rows)||!timing.rows.length||timing.transitCalendar||timing.transitCalendarStatus==='loading')return;
+    timing.transitCalendarStatus='loading';
+    try{
+      const mod=await import('./offline/pvr-longevity-sodhya-timing.browser.mjs');
+      timing.transitCalendar=await mod.calculateSodhyaPindaTransitWindows(timing.rows,{utcOffsetMinutes:330});
+      timing.transitCalendarStatus='complete';
+    }catch(error){
+      timing.transitCalendarStatus='failed';
+      timing.transitCalendarError=String(error?.message||error||'Transit calculation failed');
+    }
+    if(slot?.isConnected)renderPhase4Dasa(data,lang,slot);
   }
 
   function renderPhase4Dasa(data,lang,slot){
@@ -1679,11 +1694,71 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     const modules=[['ashtottari','🌙','Ashtottari Dasa','108-year Nakshatra Dasa'],['narayana','🪐','Narayana Dasa','Rasi Dasa'],['lagnaKendradi','🧭','Lagna Kendradi Rasi Dasa','Kendra → Panaphara → Apoklima'],['sudasa','💰','Sudasa','Sree Lagna based'],['drigdasa','👁️','Drigdasa','9th/10th/11th house groups'],['niryaanaShoola','⚔️','Niryaana Shoola Dasa','longevity timing reference'],['shoola','🕉️','Shoola Dasa','9-year rasi Dasa'],['kalachakra','⏳','Kalachakra Dasa','Nakshatra/Savya-Apasavya']];
     let h=`<h3>🕉️ ${ta?'Special Dasa System':'Special Dasa System'}</h3>`;
     for(const [key,icon,title,desc] of modules){const d=data[key]; if(!d?.available)continue; const seq=Array.isArray(d.sequence)?d.sequence:[]; const sid='smv_dasa_'+key; h+=`<div class="adv-section phase4-dasa-module"><h4>${icon} ${title}</h4><p class="small">${desc}</p>${d.seed!=null&&d.seed>=0?`<p class="small"><b>${ta?'தொடக்கம்':'Seed'}:</b> ${label(d.seed)}</p>`:''}<div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>#</th><th>${ta?'ராசி / அதிபதி':'Rasi / Lord'}</th><th>${ta?'ஆண்டுகள்':'Years'}</th><th>${ta?'தொடக்கம்':'Start'}</th><th>${ta?'முடிவு':'End'}</th><th>${ta?'உள் காலம்':'Sub-periods'}</th></tr></thead><tbody>`; seq.forEach((x,i)=>{const nm=x.rasi!=null?label(typeof x.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[x.rasi] ?? x.rasi)):x.rasi):x.lord; h+=`<tr><td>${i+1}</td><td><b>${escSafe(nm)}</b></td><td>${escSafe(Number(x.years||0).toFixed(2))}</td><td>${escSafe(x.start)}</td><td>${escSafe(x.end)}</td><td>${Array.isArray(x.antardasas)?`<button type="button" class="btn gray smv-dasa-expand" data-key="${key}" data-index="${i}">${ta?'Antardasa காட்டு':'Show Antardasas'}</button><div class="smv-dasa-sub hidden"></div>`:'—'}</td></tr>`;}); h+=`</tbody></table></div>${key==='kalachakra'&&d.meta?`<p class="small">${escSafe(JSON.stringify(d.meta))}</p>`:''}</div>`;}
-    h+=`<div class="adv-section phase4-warning"><p class="small"><b>${ta?'குறிப்பு':'Important:'}</b> ${ta?'இந்த தசா முறைகள் பாரம்பரிய ஜோதிட timing systems. குறிப்பாக Kalachakra மற்றும் longevity-related systems-ஐ உறுதியான எதிர்கால முடிவாகக் கருத வேண்டாம்.':'These are traditional astrological timing systems. Kalachakra and longevity-related systems should not be treated as certainty.'}</p></div>`; slot.innerHTML=h;
+
+    const narayanaSourceWarning=(data.narayana?.sourceWarnings||[]).map(w=>escSafe(ta?('நாராயண தசா விதி ஒப்புமை: '+label(w.rasi)+'-க்கு PVR விதிகளை நேரடியாகப் பயன்படுத்தினால் '+w.uncappedYears+' ஆண்டுகள் வரும். Sanjay Rath, Narayana Dasa, ப.42-இல் கூறும் அதிகபட்சம் 12 ஆண்டு விதியால் '+w.firstCycleYears+' ஆண்டுகள்; இரண்டாம் சுற்று '+w.secondCycleYears+' ஆண்டுகள். இது இரு நூல்களுக்கிடையிலான வெளிப்படையான ஒப்புமை.'):w.message)).join(' · ');
+    const pvr=data.pvrResearch;
+    if(pvr){
+      const longevity=pvr.longevity||{},timing=pvr.sodhyaPindaEventTiming||{};
+      const catName=c=>ta?({short:'குறுகிய ஆயுள் வகை',middle:'மத்திய ஆயுள் வகை',long:'நீண்ட ஆயுள் வகை'}[c]||'—'):(c||'—');
+      const pairRows=(longevity.pairs||[]).map(x=>`<tr><td>${escSafe(x.label)}</td><td>${escSafe(catName(x.category))}</td></tr>`).join('');
+      const extraTa=[
+        'மாரக பாவங்கள்: 2 மற்றும் 7; உயிர்/ஆயுள் பாவங்கள்: 3 மற்றும் 8. தசா/கோச்சார இணைப்புகள் துணைச் சுட்டிகளாக மட்டுமே பார்க்கப்பட வேண்டும்.',
+        'ருத்ரன்: அட்டவணை 32-இன் சிறப்பு 8-ஆம் பாவங்களின் அதிபதிகள் மற்றும் அவற்றின் பலம்/பாதிப்பு அடிப்படையில் ஆராயப்பட வேண்டும்.',
+        'திரிசூலம்: ருத்ர ராசியிலிருந்து 1, 5, 9 ஆகிய திரிகோண ராசிகள்; நிர்யாண சூல தசையுடன் ஒப்பிட்டு ஆய்வு செய்யலாம்.',
+        'மகேஸ்வரன்: ஆத்மகாரகனிலிருந்து 8-ஆம் அதிபதி; நூல் §14.3-இல் உள்ள விதிவிலக்குகள் பொருந்தும்.'
+      ];
+      const extraRules=(longevity.additionalRules||[]).map((x,i)=>`<li>${escSafe(ta?(extraTa[i]||x):x)}</li>`).join('');
+      const dt=longevity.dasaTiming;
+      const ageBand=dt?.ageBandYears;
+      const focusRows=(system,block)=>arr(block?.periods).map(x=>{
+        const signCodes={Ar:0,Ta:1,Ge:2,Cn:3,Le:4,Vi:5,Li:6,Sc:7,Sg:8,Cp:9,Aq:10,Pi:11};
+        const rs=typeof x.rasi==='string'?(signCodes[x.rasi]??x.rasi):x.rasi;
+        return `<tr><td>${escSafe(system)}</td><td>${escSafe(label(rs))}</td><td>${escSafe(Number(x.ageStartYears).toFixed(2))}–${escSafe(Number(x.ageEndYears).toFixed(2))}</td><td>${escSafe(Number(x.years).toFixed(2))}</td><td>${escSafe(x.start)}</td><td>${escSafe(x.end)}</td></tr>`;
+      }).join('');
+      const timingRowsByDasa=dt?focusRows('Niryaana Shoola',dt.niryaanaShoola)+focusRows('Shoola Dasa',dt.shoola):'';
+      const dasaTimingPanel=dt?`<h4>${ta?'ஆயுள் வகைக்கு ஏற்ப தசா காலச் சாளரம்':'Dasa timing windows by longevity category'}</h4><p class="small">${ta?'வயது வரம்பு':'Age band'}: ${escSafe(ageBand?.start)}–${escSafe(ageBand?.end)} ${ta?'ஆண்டுகள்':'years'}</p><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${ta?'தசா முறை':'Dasa system'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'வயது இடைவெளி':'Age interval'}</th><th>${ta?'ஆண்டுகள்':'Years'}</th><th>${ta?'தொடக்கம்':'Start'}</th><th>${ta?'முடிவு':'End'}</th></tr></thead><tbody>${timingRowsByDasa||`<tr><td colspan="6">${ta?'இந்த வயது வரம்பில் தசா காலம் இல்லை.':'No Dasa interval overlaps this age band.'}</td></tr>`}</tbody></table></div><p class="small">${escSafe(ta?'இது நூலில் குறிப்பிடப்பட்ட வயது வரம்புடன் தசா காலத்தை ஒப்பிடும் குறிப்பு மட்டுமே. திரிசூலம்/ஆரூடம்/மாரகக் குறிகள் தனியாகச் சரிபார்க்கப்பட வேண்டும்.':(dt.caution||'Research-only Dasa reference; not a death prediction.'))}</p>`:'';
+      const elon=longevity.eighthLordMethod;
+      const eLord=elon?`<p class="small">${ta?'எட்டாம் அதிபதி முறை':'Eighth Lord Method'}: ${escSafe(elon.referenceSignTamil&&ta?elon.referenceSignTamil:elon.referenceSign)} · ${escSafe(elon.eighthLord)} · ${escSafe(catName(elon.category))}. ${ta?'ராசி பல மதிப்பீடு SMV heuristic என்பதால் இது சான்றளிக்கப்பட்ட விதி முடிவு அல்ல.':'Sign-strength comparison uses an SMV heuristic and is not book-certified.'}</p>`:'';
+      const transitCalendar=timing.transitCalendar;
+      const formatTransitWindows=windows=>windows?.length?windows.map(w=>`${escSafe(w.startLocal)} → ${escSafe(w.endLocal)}${w.startClipped?(ta?' (வரம்பின் தொடக்கம்)':' (range start)'):''}${w.endClipped?(ta?' (வரம்பின் முடிவு)':' (range end)'):''}`).join('<br>'):(ta?'இந்த காலவரம்பில் சஞ்சாரம் இல்லை':'No crossing in range');
+      const transitCell=(item,bodyName)=>{
+        const body=item?.transits?.[bodyName];
+        if(!body)return `<span class="small">${ta?'கணக்கிடப்படுகிறது…':'Calculating…'}</span>`;
+        const pick=key=>body.nakshatras?.find(n=>n.key===key);
+        const primary=pick('primary'),tenth=pick('10th'),nineteenth=pick('19th');
+        const nLabel=n=>ta?(n?.nameTamil||n?.name||'—'):(n?.name||'—');
+        return `<div class="small"><b>${escSafe(ta?(bodyName==='Saturn'?'சனி':'குரு'):bodyName)}</b><br>${escSafe(ta?'முதன்மை நட்சத்திரம்':'Target nakshatra')} (${escSafe(nLabel(primary))}):<br>${formatTransitWindows(primary?.windows)}<br>${escSafe(ta?'10-ஆம் நட்சத்திர மாற்று':'10th-star alternative')} (${escSafe(nLabel(tenth))}):<br>${formatTransitWindows(tenth?.windows)}<br>${escSafe(ta?'19-ஆம் நட்சத்திர மாற்று':'19th-star alternative')} (${escSafe(nLabel(nineteenth))}):<br>${formatTransitWindows(nineteenth?.windows)}<br>${escSafe(ta?'இலக்கு ராசி':'Target rasi')} (${escSafe(ta?(body.rasi?.nameTamil||body.rasi?.name):body.rasi?.name)}):<br>${formatTransitWindows(body.rasi?.windows)}</div>`;
+      };
+      const eventRows=(timing.rows||[]).map(x=>{const trow=transitCalendar?.rows?.find(r=>r.planet===x.planet);return `<tr><td>${escSafe(ta?x.planetTamil:x.planet)}</td><td>${escSafe(ta?x.topicTamil:x.topic)}</td><td>${escSafe(x.houseFromPlanet)}</td><td>${escSafe(x.rawBavRekhas)}</td><td>${escSafe(x.sodhyaPinda)}</td><td><b>${escSafe(x.product)}</b></td><td>${escSafe(ta?x.targetNakshatraTamil:x.targetNakshatra)}</td><td>${escSafe(ta?x.targetRasiTamil:x.targetRasi)}</td><td>${transitCell(trow,'Saturn')}</td><td>${transitCell(trow,'Jupiter')}</td></tr>`;}).join('');
+      const caution=ta
+        ?'நூலாசிரியர் இந்த சோத்ய பிண்ட காலக் கணிப்பு தொடர்ந்து ஒரே மாதிரி பலன் தருவதில்லை; மேலும் ஆய்வு தேவை என்று குறிப்பிடுகிறார். இது உறுதியான நிகழ்வு தேதி அல்லது ஆயுள் முடிவு அல்ல.'
+        :'The author explicitly says this Sodhya Pinda timing method is inconsistent and open to research. These are transit reference points, not certain event dates or a lifespan prediction.';
+      let panel=`<div class="adv-section v5-module pvr-research-panel"><h3>📚 ${ta?'P.V.R. நரசிம்ம ராவ் — ஆயுள் விதிகள் மற்றும் சோத்ய பிண்ட காலக் குறிப்பு':'P.V.R. Narasimha Rao — Longevity Rules & Sodhya Pinda Timing'}</h3><p class="small">${ta?'நூல் பக்கங்கள் 180–185 மற்றும் 337–341 · ஆய்வு நிலை மட்டும்':'Book pp. 180–185 and 337–341 · Research-only; not certified'}</p>
+      ${narayanaSourceWarning?`<p class="small phase4-warning">${narayanaSourceWarning}</p>`:''}
+      <h4>${ta?'மூன்று ஜோடி ஆயுள் வகை':'Method of Three Pairs — Longevity Category'}</h4>
+      ${pairRows?`<div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${ta?'ஜோடி விதி':'Pair Rule'}</th><th>${ta?'வகை':'Category'}</th></tr></thead><tbody>${pairRows}</tbody></table></div>`:`<p class="small">${ta?'லக்னம், ஹோரா லக்னம் அல்லது கிரக உள்ளீடுகள் கிடைக்காததால் மூன்று ஜோடி விதியை கணக்கிட முடியவில்லை.':'Three-pair method is unavailable because required Lagna/Hora Lagna inputs are missing.'}</p>`}
+      <p class="small"><b>${ta?'தேர்ந்தெடுக்கப்பட்ட ஆயுள் வகை':'Selected category'}:</b> ${escSafe(catName(longevity.combinedCategory))} · <b>${ta?'பரமாயுள் அட்டவணை மதிப்பு':'Paramaayush table value'}:</b> ${escSafe(longevity.paramaayushYears??'—')} ${ta?'ஆண்டுகள்':'years'}</p>${eLord}
+      ${dasaTimingPanel}
+      <ul>${extraRules}</ul>
+      <h4>${ta?'அஷ்டகவர்க்க ஆயுர்த்தாயம் — சோத்ய பிண்ட நிகழ்வு காலக் குறிகள்':'Ashtakavarga Ayurdaya — Sodhya Pinda Event-Timing References'}</h4>
+      <p class="small">${ta?'குறிப்பிட்ட கிரகத்தின் BAV-இல், அதிலிருந்து குறிப்பிட்ட பாவத்தின் ரேகைகள் × அந்த கிரகத்தின் PVR/பராசர சோத்ய பிண்டம். மீதி 27-ஆல் நட்சத்திரத்தையும், 12-ஆல் ராசியையும் குறிக்கிறது.':'Raw BAV rekhas in the specified house from each planet × that planet’s PVR/Parasara Sodhya Pinda. Remainders modulo 27 and 12 give the nakshatra and rasi references.'}</p>
+      ${timing.rows?.length?`<div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'நிகழ்வு வகை':'Topic'}</th><th>${ta?'பாவம்':'House'}</th><th>${ta?'BAV ரேகை':'BAV Rekhas'}</th><th>${ta?'சோத்ய பிண்டம்':'Sodhya Pinda'}</th><th>${ta?'பெருக்கல்':'Product'}</th><th>${ta?'இலக்கு நட்சத்திரம்':'Target Nakshatra'}</th><th>${ta?'இலக்கு ராசி':'Target Rasi'}</th><th>${ta?'சனி சஞ்சார காலங்கள் (IST)':'Saturn transit windows (IST)'}</th><th>${ta?'குரு சஞ்சார காலங்கள் (IST)':'Jupiter transit windows (IST)'}</th></tr></thead><tbody>${eventRows}</tbody></table></div><p class="small">${transitCalendar?`${ta?'சஞ்சார வரம்பு':'Transit horizon'}: ${escSafe(transitCalendar.horizon.startDate)} – ${escSafe(transitCalendar.horizon.endDate)} (${escSafe(transitCalendar.horizon.timezoneLabel)}; ${ta?'இறுதி நாள் சேர்க்கப்படாது':'end date exclusive'}). ${escSafe(transitCalendar.ephemeris)}.`:timing.transitCalendarStatus==='failed'?`${ta?'சஞ்சாரக் கணக்கீடு தோல்வி':'Transit calendar failed'}: ${escSafe(timing.transitCalendarError)}`:ta?'அடுத்த 15 ஆண்டுகளுக்கான சனி/குரு சஞ்சார நுழைவு நேரங்கள் கணக்கிடப்படுகின்றன…':'Calculating actual Saturn/Jupiter ingress windows for the next 15 years…'}</p>`:`<p class="small">${ta?'தேவையான ஏழு BAV வரிசைகள் கிடைக்கவில்லை; காலக் குறிகள் காட்டப்படவில்லை.':'The required seven BAV rows are not available; timing references are not shown.'}</p>`}
+      <p class="small">${escSafe(caution)}</p><p class="small">${ta?'சான்றளிக்கப்பட்ட ஆயுள் முடிவு அல்லது மரணத் தேதி கணக்கிடப்படவில்லை.':'No certified lifespan or death date is calculated.'}</p></div>`;
+      h+=panel;
+    }
+    h+=`<div class="adv-section phase4-warning"><p class="small"><b>${ta?'குறிப்பு':'Important:'}</b> ${ta?'இந்த தசா முறைகள் பாரம்பரிய ஜோதிட timing systems. குறிப்பாக Kalachakra மற்றும் longevity-related systems-ஐ உறுதியான எதிர்கால முடிவாகக் கருத வேண்டாம்.':'These are traditional astrological timing systems. Kalachakra and longevity-related systems should not be treated as certainty.'}</p></div>`;
+    const previousResearch=(slot.closest('.horoscope-result')||slot.parentElement)?.querySelector('.pvr-research-panel');
+    previousResearch?.remove();
+    slot.innerHTML=h;
+    const researchPanel=slot.querySelector('.pvr-research-panel');
+    const reportRoot=slot.closest('.horoscope-result')||slot.parentElement;
+    const advancedTarget=reportRoot?.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
+    const sodhyaSection=Array.from(advancedTarget?.querySelectorAll('.adv-section')||[]).find(n=>String(n.querySelector('h3')?.textContent||'').toLowerCase().includes('sodhya pinda')||String(n.querySelector('h3')?.textContent||'').includes('சோத்ய பிண்டம்'));
+    if(researchPanel&&sodhyaSection) sodhyaSection.insertAdjacentElement('afterend',researchPanel);
     slot.querySelectorAll('.smv-dasa-expand').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.key,idx=Number(btn.dataset.index),md=data[key]?.sequence?.[idx],box=btn.nextElementSibling;if(!md||!box)return; if(!box.classList.contains('hidden')){box.classList.add('hidden');return;} const subs=Array.isArray(md.antardasas)?md.antardasas:[]; box.innerHTML=subs.map((a,j)=>{const nm=a.rasi!=null?label(typeof a.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[a.rasi] ?? a.rasi)):a.rasi):a.lord;return `<div class="small" style="padding:4px 0;border-bottom:1px solid #eee">${j+1}. <b>${escSafe(nm)}</b> · ${escSafe(a.start)} → ${escSafe(a.end)}</div>`;}).join('')||`<div class="small">${ta?'தரவு இல்லை':'No sub-period data.'}</div>`;window.__smvLocalizeTamilResult?.(box,lang);box.classList.remove('hidden');}));
   }
   window.__smvLoadPhase4Dasa=loadPhase4Dasa;
-  window.__smvRenderPhase4Dasa=(data,lang,rootId)=>{const root=document.getElementById(rootId);const slot=root?.querySelector('#smvPhase4DasaSlot');if(slot)renderPhase4Dasa(data||{},lang,slot);};
+  window.__smvRenderPhase4Dasa=(data,lang,rootId)=>{const root=document.getElementById(rootId);const slot=root?.querySelector('#smvPhase4DasaSlot');if(slot){const result=data||{};completePvrTransitCalendar(result,lang,slot);renderPhase4Dasa(result,lang,slot);}};
 
 
   async function loadTransitPanchang({date,time,lat,lon,lang,rootId}){
@@ -1926,7 +2001,7 @@ try{
   lang,
   rootId
 );
-        if(full?.phase4 && typeof window.__smvRenderPhase4Dasa==='function') window.__smvRenderPhase4Dasa(full.phase4,lang,rootId);
+        if(full?.phase4?.pvrResearch && typeof window.__smvRenderPhase4Dasa==='function') window.__smvRenderPhase4Dasa(full.phase4,lang,rootId);
         else await window.__smvLoadPhase4Dasa(fullChart||payload,lang,rootId);
 
         if(transitSlot){
