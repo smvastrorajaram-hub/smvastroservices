@@ -118,6 +118,32 @@ eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-03').sourcePrintedPage
 eq(hpaHoroscope1Rules.rules.find(rule=>rule.id==='XIV-BAL-10').sourcePrintedPage,65,
   'Rule 10 match retains source p.65 while its worked example is p.68');
 
+const mad04AllPlanetsMiddleHouses = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:120,bhava:5},{name:'Moon',longitude:150,bhava:6},
+    {name:'Mars',longitude:180,bhava:7},{name:'Mercury',longitude:210,bhava:8},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:180,bhava:7},{name:'Rahu',longitude:210,bhava:8},
+    {name:'Ketu',longitude:120,bhava:5}
+  ]}
+});
+eq(mad04AllPlanetsMiddleHouses.rules.find(rule=>rule.id==='XIV-MAD-04').status,'MATCHED',
+  'HPA p.70 Madhyayu rule 4 matches when every graha occupies houses 5–8');
+const mad04KnownOutside = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:150,bhava:6}
+  ]}
+});
+eq(mad04KnownOutside.rules.find(rule=>rule.id==='XIV-MAD-04').status,'NOT_MATCHED',
+  'Madhyayu rule 4 is disproved if any known graha lies outside houses 5–8');
+const mad04IncompleteInside = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:120,bhava:5},{name:'Moon',longitude:150,bhava:6}
+  ]}
+});
+eq(mad04IncompleteInside.rules.find(rule=>rule.id==='XIV-MAD-04').status,'UNKNOWN',
+  'Madhyayu rule 4 stays UNKNOWN when all known grahas are in houses 5–8 but other grahas are absent');
+
 const mad03BookCombination = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
     {name:'Mercury',longitude:60,bhava:2},
@@ -600,8 +626,8 @@ eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-01').status,
   'Madhyayu rule 1 independently matches when the 3rd/6th lord is in a Kendra');
 eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-02').status, 'UNKNOWN',
   'Madhyayu rule 2 remains unknown without independently supplied lord-strength inputs');
-eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'UNKNOWN',
-  'Madhyayu rule 3 remains unknown without the source-chart arrangement input');
+eq(independentMadhyayuRules.rules.find(rule => rule.id === 'XIV-MAD-03').status, 'NOT_MATCHED',
+  'Madhyayu rule 3 is a verified negative when all three graha houses are known but the printed pattern is absent');
 
 const madhyayu05SunEnemySignWeak = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
@@ -701,8 +727,8 @@ const madhyayu13MissingBeneficEvidence = bvRamanChapterXIVLongevityRules({
     {name:'Ketu',longitude:300,bhava:11}
   ]}
 });
-eq(madhyayu13MissingBeneficEvidence.rules.find(rule => rule.id === 'XIV-MAD-13').status, 'UNKNOWN',
-  'Madhyayu rule 13 remains UNKNOWN without the independent benefics-in-Kendras input');
+eq(madhyayu13MissingBeneficEvidence.rules.find(rule => rule.id === 'XIV-MAD-13').status, 'MATCHED',
+  'Madhyayu rule 13 derives benefic-Kendra evidence and aspect conditions from the complete natal chart');
 
 const scorpioMadhyayu08 = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:210}, planets:[
