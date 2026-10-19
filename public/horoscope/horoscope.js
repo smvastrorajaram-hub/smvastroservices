@@ -1957,7 +1957,7 @@ try{
           });
           // Preserve the existing C.G. Rajan section and append the two new
           // B.V. Raman result tables strictly beneath it, in the same cream table.
-          const html=cgHtml.replace(/<\\/section>\\s*$/,bvHtml+'</section>');
+          const html=cgHtml.replace(/<\/section>\s*$/,bvHtml+'</section>');
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
           sectionI.insertAdjacentHTML('beforeend',html);
           // Any async routed sub-module may update I; preserve Ayurdaya LAST.
