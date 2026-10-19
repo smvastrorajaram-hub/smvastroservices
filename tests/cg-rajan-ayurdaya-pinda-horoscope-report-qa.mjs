@@ -386,8 +386,19 @@ for(const [date,time] of births){
   for(const label of hiddenLabels)ok(!perNatalHtml.includes(label),'natal customer HTML omits unselected method '+label+' '+date);
   eq((perNatalHtml.match(/<tr\b/g)||[]).length,9,'one selected method renders header + seven grahas + total '+date);
   eq(perNatalHtml.includes('Average Ayurdaya'),false,'natal customer HTML never displays method average '+date);
+ }else if(perNatalSelection.reasonCode==='shadbala-tie'){
+  ok(perNatalHtml.includes('data-ayurdaya-selection="shadbala-tie"'),'natal report retains tied methods '+date);
+  eq((perNatalHtml.match(/<tr\b/g)||[]).length,9,'tied method report has header + seven grahas + totals row '+date);
+  for(const candidate of perNatalSelection.tiedCandidates){
+   const label={pinda:'Pinda Ayurdaya',natural:'Naisargika Ayurdaya',amsa:'Amsa Ayurdaya'}[candidate.method];
+   ok(perNatalHtml.includes(label),'tied method is shown '+candidate.method+' '+date);
+   eq((perNatalHtml.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+    'tied method has seven planetary cells plus a separate total '+candidate.method+' '+date);
+  }
+  eq((perNatalHtml.match(/data-tied-total=/g)||[]).length,perNatalSelection.tiedCandidates.length,
+   'every tied method gets a separate total '+date);
  }else{
-  eq((perNatalHtml.match(/<tr\b/g)||[]).length,0,'natal report with missing/tied Shadbala has no unselected method table '+date);
+  eq((perNatalHtml.match(/<tr\b/g)||[]).length,0,'natal report with missing Shadbala has no unselected method table '+date);
   ok(perNatalHtml.includes('data-ayurdaya-selection="unavailable"'),'natal report exposes a safe no-selection state '+date);
  }
  if((date==='2002-10-18'||date==='1989-10-18')&&perNatalSelection.selectedMethod==='amsa'){

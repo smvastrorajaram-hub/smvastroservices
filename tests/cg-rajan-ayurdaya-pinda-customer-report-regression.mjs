@@ -25,8 +25,25 @@ assert.equal(moonWins.selectedMethod,'natural','Moon Shadbala selects Naisargika
 const lagnaLordWins=selectMethod({planets:makeSelectorChart({sun:500,moon:600,mars:700}),lagna:{longitude:0}});
 assert.equal(lagnaLordWins.selectedMethod,'amsa','Aries Lagna lord Mars Shadbala selects Amsa Ayurdaya');
 const strengthTie=selectMethod({planets:makeSelectorChart({sun:700,moon:700}),lagna:{longitude:0}});
-assert.equal(strengthTie.available,false,'equal reference strengths block selection instead of averaging');
+assert.equal(strengthTie.available,false,'equal reference strengths do not select a single method');
 assert.equal(strengthTie.reasonCode,'shadbala-tie','equal Shadbala reports a method-selection tie');
+assert.deepEqual(strengthTie.tiedCandidates.map(candidate=>candidate.method).sort(),['natural','pinda'],
+ 'the tied Sun and Moon methods are both retained for side-by-side output');
+const strengthTieHtml=html({
+ planets:makeSelectorChart({sun:700,moon:700}),lagna:{longitude:0},language:'en'
+});
+assert.ok(strengthTieHtml.includes('data-ayurdaya-selection="shadbala-tie"'),
+ 'equal Sun/Moon Shadbala renders the side-by-side tie table');
+assert.ok(strengthTieHtml.includes('Pinda Ayurdaya')&&strengthTieHtml.includes('Naisargika Ayurdaya'),
+ 'both Pinda and Naisargika methods are labelled when Sun and Moon tie');
+assert.ok(strengthTieHtml.includes('Sun — 700.00 Virupa')&&strengthTieHtml.includes('Moon — 700.00 Virupa'),
+ 'each tied column labels the correct Sun or Moon Shadbala reference');
+assert.equal((strengthTieHtml.match(/data-tied-method="pinda"/g)||[]).length,8,
+ 'Pinda tie column has seven graha cells and its own total');
+assert.equal((strengthTieHtml.match(/data-tied-method="natural"/g)||[]).length,8,
+ 'Naisargika tie column has seven graha cells and its own total');
+assert.equal((strengthTieHtml.match(/data-tied-total=/g)||[]).length,2,
+ 'Pinda and Naisargika have separate totals, never an average');
 const missingStrength=selectMethod({planets:makeSelectorChart({missing:'சந்திரன்'}),lagna:{longitude:0}});
 assert.equal(missingStrength.reasonCode,'shadbala-unavailable','missing reference Shadbala blocks selection');
 const missingLagna=selectMethod({planets:makeSelectorChart(),lagna:{}});
@@ -141,11 +158,24 @@ for(const [date,time] of [
   amsa:{ta:'அம்ச ஆயுர்த்தாயம்',en:'Amsa Ayurdaya'}
  };
  for(const [lang,code] of [[ta,'ta'],[en,'en']]){
+  if(!selected.available && selected.reasonCode==='shadbala-tie'){
+   eq(lang.includes('data-ayurdaya-selection="shadbala-tie"'),true,'tied methods are rendered separately '+date+' '+code);
+   eq((lang.match(/<tr\\b/g)||[]).length,9,'tie comparison renders header + seven grahas + one totals row '+date+' '+code);
+   for(const candidate of selected.tiedCandidates){
+    yes(lang.includes(methodLabels[candidate.method][code]),'tied method label is visible: '+candidate.method+' '+date+' '+code);
+    eq((lang.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+     'tied method has seven graha cells plus its total: '+candidate.method+' '+date+' '+code);
+   }
+   eq((lang.match(/data-tied-total=/g)||[]).length,selected.tiedCandidates.length,
+    'every tied method has its own total '+date+' '+code);
+   yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'tie rows are not averaged '+date+' '+code);
+   continue;
+  }
   if(!selected.available){
-   eq((lang.match(/<tr\b/g)||[]).length,0,'missing/tied Shadbala never chooses a fallback method '+date+' '+code);
-   eq(lang.includes('data-ayurdaya-selection="unavailable"'),true,'no-selection state is explicit '+date+' '+code);
-   for(const labels of Object.values(methodLabels))yes(!lang.includes(labels[code]),'no method is shown when Shadbala selection is unsafe '+date+' '+code);
-   yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'no mean is shown in no-selection state '+date+' '+code);
+   eq((lang.match(/<tr\\b/g)||[]).length,0,'missing Shadbala never chooses a fallback method '+date+' '+code);
+   eq(lang.includes('data-ayurdaya-selection="unavailable"'),true,'missing-data state is explicit '+date+' '+code);
+   for(const labels of Object.values(methodLabels))yes(!lang.includes(labels[code]),'no method is shown when Shadbala is missing '+date+' '+code);
+   yes(!lang.includes(code==='ta'?'சராசரி ஆயுர்த்தாயம்':'Average Ayurdaya'),'no mean is shown in missing-data state '+date+' '+code);
    continue;
   }
   eq((lang.match(/<tr\b/g)||[]).length,9,'single method: header + seven grahas + total '+date+' '+code);

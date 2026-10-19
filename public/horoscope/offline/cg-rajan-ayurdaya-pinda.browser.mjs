@@ -636,9 +636,11 @@ export function cgRajanSelectAyurdayaMethod({planets=[],lagna}={}) {
  if(winners.length!==1) {
   return Object.freeze({
    ...unavailable('shadbala-tie',
-    'The comparison has equal Shadbala strength; one method cannot be selected uniquely.'),
+    'The comparison has equal Shadbala strength; render every tied method separately instead of selecting one.'),
    lagnaLordPlanet, lagnaSignIndex,
    tiedReferences:winners.map(candidate=>candidate.referenceRole),
+   tiedCandidates:Object.freeze(winners.map(candidate=>Object.freeze({...candidate}))),
+   comparedCandidates:Object.freeze(candidates.map(candidate=>Object.freeze({...candidate}))),
    comparedCandidateCount:candidates.length
   });
  }
@@ -679,6 +681,53 @@ export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
   :selection.reasonCode==='lagna-unavailable'
    ?(ta?'கணக்கிடப்பட்ட லக்ன நீளம் கிடைக்கவில்லை; லக்னாதிபதியை நிர்ணயிக்க முடியாததால் ஆயுர்த்தாய முறை தேர்வு செய்யப்படவில்லை.':'The calculated Lagna longitude is unavailable, so the Lagna lord and Ayurdaya method cannot be determined.')
    :(ta?'சூரியன், சந்திரன், லக்னாதிபதி ஆகியோரின் ஷட்பல மொத்த மதிப்புகள் அனைத்தும் கிடைக்கவில்லை; ஆயுர்த்தாய முறை தேர்வு செய்யப்படவில்லை.':'All three comparison Shadbala totals are not available, so the Ayurdaya method was not selected.');
+ if(!selection.available && selection.reasonCode==='shadbala-tie') {
+  const tieResearch=cgRajanCompareGrahas({planets,lagna});
+  const tied=(selection.tiedCandidates||[]).filter(candidate=>
+   ['pinda','natural','amsa'].includes(candidate.method)&&finite(candidate.scoreVirupa));
+  const methodLabelFor=method=>({
+   pinda:ta?'பிண்ட ஆயுள்':'Pinda Ayurdaya',
+   natural:ta?'நைசர்க்கிக ஆயுள்':'Naisargika Ayurdaya',
+   amsa:ta?'அம்ச ஆயுர்த்தாயம்':'Amsa Ayurdaya'
+  })[method]||method;
+  const tiedHead=tied.map(candidate=>'<th scope="col">'+esc(methodLabelFor(candidate.method))+
+   '<div class="small">'+esc((candidate.referenceRole==='sun'?(ta?'சூரியன்':'Sun'):
+    candidate.referenceRole==='moon'?(ta?'சந்திரன்':'Moon'):
+    (ta?'லக்னாதிபதி':'Lagna lord'))+' — '+candidate.scoreVirupa.toFixed(2)+' '+(ta?'விரூபம்':'Virupa'))+
+   '</div></th>').join('');
+  const resultCell=(entry,method)=>{
+   const adjusted=method==='amsa'?entry.amsaHarana:entry[method+'Harana'];
+   const raw=entry[method]?.traditionalUnits;
+   if(adjusted?.resolved===true&&adjusted.traditionalUnitsCandidate)
+    return '<td data-tied-method="'+esc(method)+'" data-harana-state="adjusted-candidate" title="'+esc((ta?'ஹரணத்திற்குப் பிந்தைய கணக்கீட்டு வேட்பாளர்':'Adjusted research candidate')+'; '+(adjusted.blockers||[]).join('; '))+'">'+esc(fmt({traditionalUnits:adjusted.traditionalUnitsCandidate},ta))+'</td>';
+   return '<td data-tied-method="'+esc(method)+'" data-harana-state="raw-unadjusted" title="'+esc((adjusted?.blockers||[]).join('; ')||'Harana adjustment is unresolved; raw term shown')+'">'+
+    esc(raw?((ta?'மூலம்: ':'Raw: ')+fmt({traditionalUnits:raw},ta)):(ta?'கணக்கீடு இல்லை':'Unavailable'))+
+    (ta?'<div class="small">ஹரணத் திருத்தம் நிலுவையில்</div>':'<div class="small">Harana unresolved</div>')+'</td>';
+  };
+  const tieRows=tieResearch.entries.map(entry=>'<tr><th scope="row">'+esc(ta?entry.name:entry.english)+'</th>'+
+   tied.map(candidate=>resultCell(entry,candidate.method)).join('')+'</tr>').join('');
+  const totalsRow='<tr class="smv-ayurdaya-totals"><th scope="row">'+esc(ta?'மொத்தம் (7 கிரகங்கள்)':'Total (7 grahas)')+'</th>'+
+   tied.map(candidate=>{
+    const adjusted=tieResearch.totals[candidate.method];
+    const raw=candidate.method==='pinda'?tieResearch.totals.pindaRaw:
+     candidate.method==='natural'?tieResearch.totals.naturalRaw:tieResearch.totals.amsaTableARaw;
+    if(adjusted?.available===true&&adjusted.traditionalUnits)
+     return '<td data-tied-total="adjusted-candidate" data-tied-method="'+esc(candidate.method)+'"><strong>'+esc(fmt(adjusted,ta))+'</strong></td>';
+    return '<td data-tied-total="raw-unadjusted" data-tied-method="'+esc(candidate.method)+'"><strong>'+
+     esc(raw?.traditionalUnits?fmt(raw,ta):(ta?'மொத்தம் இல்லை':'Total unavailable'))+'</strong><div class="small">'+
+     esc(ta?'ஹரணத் திருத்தம் முழுமையில்லை; இது இறுதி மொத்தம் அல்ல.':'Harana incomplete; this is not a final total.')+
+     '</div></td>';
+   }).join('')+'</tr>';
+  const tieNote=ta
+   ?'ஷட்பல மதிப்புகள் சமமாக இருப்பதால் எந்த ஒரு முறையையும் மட்டும் தேர்வு செய்யவில்லை. சமநிலையில் உள்ள ஒவ்வொரு முறையின் கிரக வாரியான முடிவுகளும் தனித்தனி மொத்தங்களும் கீழே காட்டப்பட்டுள்ளன.'
+   :'Shadbala values are tied. No single method is selected; the planet-wise results and separate totals for every tied method are shown below.';
+  if(tied.length) return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="shadbala-tie" data-tied-method-count="'+tied.length+'">'+
+   '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>'+
+   '<p class="small smv-ayurdaya-selection-unavailable">'+esc(tieNote)+'</p>'+
+   '<div class="adv-table-wrap smv-viii-table-scroll smv-ayurdaya-scroll"><table class="smv-ayurdaya-table"><thead><tr><th>'+
+   esc(ta?'கிரகம்':'Planet')+'</th>'+tiedHead+'</tr></thead><tbody>'+tieRows+totalsRow+
+   '</tbody></table></div></section>';
+ }
  if(!selection.available) {
   return '<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1" data-ayurdaya-selection="unavailable">' +
    '<h3>'+heading+'</h3><p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>' +

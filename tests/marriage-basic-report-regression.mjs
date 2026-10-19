@@ -44,9 +44,19 @@ for(const [i,section] of taAyurdaya.entries()){
   eq(cgMethodRowCount(section),9,'Tamil partner '+(i+1)+' has header, seven grahas and selected total');
   eq(section.includes('சராசரி ஆயுர்த்தாயம்'),false,'Tamil partner '+(i+1)+' has no average');
   eq(section.includes('data-ayurdaya-selection="'+selection.selectedMethod+'"'),true,'Tamil partner '+(i+1)+' exposes the selected-method marker');
+ }else if(selection.reasonCode==='shadbala-tie'){
+  ok(section.includes('data-ayurdaya-selection="shadbala-tie"'),'Tamil partner '+(i+1)+' displays tied methods');
+  eq(cgMethodRowCount(section),9,'Tamil partner '+(i+1)+' shows seven grahas and totals row');
+  for(const candidate of selection.tiedCandidates){
+   ok(section.includes(methodLabels[candidate.method]),'Tamil partner '+(i+1)+' shows tied '+candidate.method);
+   eq((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+    'Tamil partner '+(i+1)+' has seven graha cells plus a separate total for tied '+candidate.method);
+  }
+  eq((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
+   'Tamil partner '+(i+1)+' shows each tied method total separately');
  }else{
-  eq(cgMethodRowCount(section),0,'Tamil partner '+(i+1)+' does not show an unselected method table');
-  ok(section.includes('data-ayurdaya-selection="unavailable"'),'Tamil partner '+(i+1)+' records the no-selection state');
+  eq(cgMethodRowCount(section),0,'Tamil partner '+(i+1)+' does not show a method table when reference data is missing');
+  ok(section.includes('data-ayurdaya-selection="unavailable"'),'Tamil partner '+(i+1)+' records the missing-data state');
  }
 }
 ok(!ta.includes('சராசரி ஆயுர்த்தாயம்'),'Tamil Matching customer output does not display an average method result');
@@ -79,9 +89,19 @@ for(const [i,section] of enAyurdaya.entries()){
    ok(!section.includes(label),'English partner '+(i+1)+' hides unselected '+method);
   eq(cgMethodRowCount(section),9,'English partner '+(i+1)+' has header, seven grahas and selected total');
   eq(section.includes('Average Ayurdaya'),false,'English partner '+(i+1)+' has no average');
+ }else if(selection.reasonCode==='shadbala-tie'){
+  ok(section.includes('data-ayurdaya-selection="shadbala-tie"'),'English partner '+(i+1)+' displays tied methods');
+  eq(cgMethodRowCount(section),9,'English partner '+(i+1)+' shows seven grahas and totals row');
+  for(const candidate of selection.tiedCandidates){
+   ok(section.includes(enMethodLabels[candidate.method]),'English partner '+(i+1)+' shows tied '+candidate.method);
+   eq((section.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+    'English partner '+(i+1)+' has seven graha cells plus a separate total for tied '+candidate.method);
+  }
+  eq((section.match(/data-tied-total=/g)||[]).length,selection.tiedCandidates.length,
+   'English partner '+(i+1)+' shows each tied method total separately');
  }else{
-  eq(cgMethodRowCount(section),0,'English partner '+(i+1)+' does not show an unselected method table');
-  ok(section.includes('data-ayurdaya-selection="unavailable"'),'English partner '+(i+1)+' records the no-selection state');
+  eq(cgMethodRowCount(section),0,'English partner '+(i+1)+' does not show a method table when reference data is missing');
+  ok(section.includes('data-ayurdaya-selection="unavailable"'),'English partner '+(i+1)+' records the missing-data state');
  }
 }
 ok(!en.includes('Average Ayurdaya'),'English Matching customer output does not show an average result');

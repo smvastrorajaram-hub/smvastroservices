@@ -1176,13 +1176,53 @@ export function bvRamanIntegratedAyurdayaResearch({
   }
   const numericBand = chapterXXVI?.numericBandCandidate ?? null;
   const categories = chapterXIV.categoryCandidates;
+  const unknownXIVRules = chapterXIV.unknownRuleIds || [];
+  const matchedXIVRules = chapterXIV.matchedRuleIds || [];
+  const missingHaranaByPlanet = Object.freeze(Object.fromEntries(
+    BV_RAMAN_AYURDAYA_PLANETS.map(planet => [planet,
+      chapterXXVI?.planets?.[planet]?.harana?.missingFactors || []])
+  ));
+  const chapterXIVFullyEvaluated = unknownXIVRules.length === 0 &&
+    (chapterXIV.unimplementedRuleIds || []).length === 0;
+  const chapterXIVUniqueCategory = categories.length === 1;
+  const numericBandInChapterXIVCandidates = !!numericBand && categories.includes(numericBand);
+  const candidateRelationship = !numericBand
+    ? 'NUMERIC_BAND_UNAVAILABLE'
+    : !categories.length
+      ? 'NO_CHAPTER_XIV_CATEGORY_CANDIDATE'
+      : numericBandInChapterXIVCandidates
+        ? 'NUMERIC_BAND_PRESENT_IN_CHAPTER_XIV_CANDIDATE_SET'
+        : 'NUMERIC_BAND_ABSENT_FROM_CHAPTER_XIV_CANDIDATE_SET';
   let crossCheckStatus = 'NOT_COMPARABLE_FINAL_WITHHELD';
+  let crossCheckReason = 'The two tracks are kept separate; final lifespan selection is withheld.';
   if (numericBand && categories.length) {
-    crossCheckStatus = categories.includes(numericBand)
-      ? 'CANDIDATE_OVERLAP_NOT_VALIDATION'
-      : 'CANDIDATE_DISAGREEMENT_REQUIRES_REVIEW';
+    if (!chapterXIVFullyEvaluated || !chapterXIVUniqueCategory) {
+      crossCheckStatus = 'CHAPTER_XIV_PARTIAL_OR_MULTIPLE_CANDIDATES_NOT_COMPARABLE';
+      crossCheckReason = 'Chapter XIV does not yield a single fully evaluated category for this chart: matched candidate count='+
+        categories.length+', UNKNOWN rule count='+unknownXIVRules.length+
+        ', unimplemented rule count='+(chapterXIV.unimplementedRuleIds || []).length+
+        '. Therefore a different numeric band is not recorded as a genuine disagreement; inspect the individual matched/UNKNOWN rules and evidence before comparison.';
+    } else if (categories.includes(numericBand)) {
+      crossCheckStatus = 'CANDIDATE_OVERLAP_NOT_VALIDATION';
+      crossCheckReason = 'The unique fully evaluated Chapter XIV category candidate equals the Chapter XXVI numeric band. This is candidate agreement, not independent validation or a certified lifespan.';
+    } else {
+      crossCheckStatus = 'CANDIDATE_DISAGREEMENT_REQUIRES_REVIEW';
+      crossCheckReason = 'Both tracks are available and Chapter XIV has exactly one fully evaluated category candidate, but it differs from the Chapter XXVI numeric band; review the source-linked rule and arithmetic traces.';
+    }
   } else if (numericBand && !categories.length) {
-    crossCheckStatus = 'NO_CHAPTER_XIV_RULE_MATCH_IN_PARTIAL_SUBSET';
+    if (unknownXIVRules.length) {
+      crossCheckStatus = 'NO_CONFIRMED_CHAPTER_XIV_CATEGORY_RULE_EVIDENCE';
+      crossCheckReason = 'No category rule matched, but Chapter XIV still has UNKNOWN rules; absence of a confirmed match is not evidence that every category rule is false.';
+    } else {
+      crossCheckStatus = 'NO_CHAPTER_XIV_RULE_MATCH_IN_PARTIAL_SUBSET';
+      crossCheckReason = 'No category rule matched in the currently evaluated subset.';
+    }
+  } else if (!numericBand && chapterXXVI && chapterXXVI.haranaComplete === false) {
+    crossCheckStatus = 'NUMERIC_CANDIDATE_UNAVAILABLE_HARANA_INCOMPLETE';
+    crossCheckReason = 'At least one planet has unresolved Chapter XXVI Harana factor(s); a net total and numeric band are withheld.';
+  } else if (!chapterXXVI) {
+    crossCheckStatus = 'NUMERIC_CANDIDATE_UNAVAILABLE_CALCULATION_BLOCKED';
+    crossCheckReason = 'The Chapter XXVI calculation did not complete; inspect the calculation blocker records.';
   }
   return Object.freeze({
     sourceTracks: Object.freeze({
@@ -1192,8 +1232,20 @@ export function bvRamanIntegratedAyurdayaResearch({
     chapterXIV, shodhana, chapterXXVI,
     crossCheck: Object.freeze({
       chapterXIVCategoryCandidates: categories,
+      chapterXIVMatchedRuleIds: matchedXIVRules,
+      chapterXIVUnknownRuleIds: unknownXIVRules,
+      chapterXIVRuleCoverageCounts: chapterXIV.ruleCoverageCounts,
+      chapterXIVFullyEvaluated,
+      chapterXIVUniqueCategory,
+      numericBandInChapterXIVCandidates,
+      candidateRelationship,
+      chapterXIVUnknownRuleCount: unknownXIVRules.length,
+      chapterXIVUnimplementedRuleCount: (chapterXIV.unimplementedRuleIds || []).length,
       chapterXXVINumericBandCandidate: numericBand,
+      chapterXXVIHaranaComplete: chapterXXVI?.haranaComplete === true,
+      chapterXXVIMissingHaranaByPlanet: missingHaranaByPlanet,
       status: crossCheckStatus,
+      reason: crossCheckReason,
       ruleAndNumberTracksKeptSeparate: true
     }),
     finalLifespan: null,
