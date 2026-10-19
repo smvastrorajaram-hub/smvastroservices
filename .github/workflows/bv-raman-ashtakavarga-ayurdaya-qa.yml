@@ -37,6 +37,112 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Render primary-source PDF pages for Chapter XIV and XXVI evidence
+        run: |
+          python -m pip install --disable-pip-version-check pymupdf pillow
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import fitz
+          from PIL import Image, ImageOps, ImageDraw
+
+          src = Path("certificates/hindu-predictive-astrology-bv-raman-1.pdf")
+          out = Path("artifacts/bv-raman-primary-source-pages")
+          out.mkdir(parents=True, exist_ok=True)
+          if not src.exists():
+              raise SystemExit(f"Missing source PDF: {src}")
+
+          doc = fitz.open(src)
+          rules = {
+              "chapter-xiv-ayurdaya": ("chapterxiv", "ayurdaya"),
+              "chapter-xxvi-ashtakavarga": ("chapterxxvi", "ashtakavarga"),
+              "determination-ayurdaya": ("determinationofayurdaya",),
+              "rasi-gunakara": ("rasigunakara",),
+              "graha-gunakara": ("grahagunakara",),
+              "reduction-example-48-98": ("4898",),
+              "solar-conversion-44-87": ("4487",),
+              "trikona-reduction": ("trikonareduction",),
+              "ekadhipatya-reduction": ("ekadhipatyareduction",),
+              "life-span-categories": ("balarishta", "alpayu", "madhyayu", "purnayu"),
+          }
+
+          def norm(s):
+              return re.sub(r"[^a-z0-9]", "", s.casefold())
+
+          matched = {}
+          all_text = []
+          for i, page in enumerate(doc):
+              text = page.get_text("text")
+              all_text.append(text)
+              n = norm(text)
+              for label, terms in rules.items():
+                  if label == "chapter-xiv-ayurdaya":
+                      ok = "chapterxiv" in n and "ayurdaya" in n
+                  elif label == "chapter-xxvi-ashtakavarga":
+                      ok = "chapterxxvi" in n and "ashtakavarga" in n
+                  elif label == "life-span-categories":
+                      ok = sum(term in n for term in terms) >= 2
+                  else:
+                      ok = any(term in n for term in terms)
+                  if ok:
+                      matched.setdefault(label, set()).add(i)
+
+          selected = set()
+          for indices in matched.values():
+              for i in indices:
+                  selected.update(j for j in range(i - 1, i + 2) if 0 <= j < len(doc))
+
+          fallback_used = not selected
+          if fallback_used:
+              # Printed page numbers are not guaranteed to equal PDF page indices;
+              # render broad windows around the known Chapter XIV and XXVI ranges.
+              for start, end in ((55, 90), (185, 220)):
+                  selected.update(i for i in range(start - 1, min(end, len(doc))) if 0 <= i < len(doc))
+
+          manifest = [
+              f"PDF: {src}",
+              f"PDF pages: {len(doc)}",
+              f"Fallback page windows used: {fallback_used}",
+              "Matched headings/anchors:",
+          ]
+          for label in rules:
+              page_nums = sorted(i + 1 for i in matched.get(label, set()))
+              if page_nums:
+                  manifest.append(f"  {label}: PDF page(s) {', '.join(map(str, page_nums))}")
+          manifest.append("Rendered PDF pages:")
+          thumbs = []
+          for i in sorted(selected):
+              page = doc[i]
+              pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+              image_path = out / f"pdf-page-{i+1:03d}.png"
+              pix.save(image_path)
+              extracted = re.sub(r"\s+", " ", all_text[i]).strip()
+              hint = extracted[:180] if extracted else "[no text layer; inspect rendered page]"
+              manifest.append(f"  PDF page {i+1}: {hint}")
+              img = Image.open(image_path).convert("RGB")
+              img.thumbnail((280, 360))
+              tile = Image.new("RGB", (300, 400), "white")
+              tile.paste(img, ((300-img.width)//2, 24))
+              ImageDraw.Draw(tile).text((10, 5), f"PDF page {i+1}", fill="black")
+              thumbs.append(tile)
+          (out / "page-manifest.txt").write_text("\n".join(manifest), encoding="utf-8")
+
+          if thumbs:
+              cols = 4
+              rows = (len(thumbs) + cols - 1) // cols
+              sheet = Image.new("RGB", (cols * 300, rows * 400), "#dddddd")
+              for k, tile in enumerate(thumbs):
+                  sheet.paste(tile, ((k % cols) * 300, (k // cols) * 400))
+              sheet.save(out / "contact-sheet.jpg", quality=85)
+          print("\n".join(manifest))
+          PY
+      - name: Upload rendered primary-source page images
+        uses: actions/upload-artifact@v4
+        with:
+          name: bv-raman-primary-source-page-images
+          path: artifacts/bv-raman-primary-source-pages/
+          if-no-files-found: error
+          retention-days: 7
       - name: Syntax-check research engine and tests
         run: |
           node --check public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs
