@@ -963,9 +963,37 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-PUR-01', 'Purnayu',
     'Lagna aspected by its lord, eighth by its lord, Jupiter in a Kendra',
     triAll(lagnaAspect, eighthAspect, isKendra(jupiterHouse))));
+  // HPA printed p. 71, Purnayu rule 2: determine the nature of each
+  // graha from the complete natal chart. All nine positions are required to
+  // prove absence; an incomplete chart must not be treated as a non-match.
+  const beneficsFirstSixMaleficsLastSix = (() => {
+    const allGrahasLocated = CHART_GRAHAS.every(name =>
+      map.planets.has(name) && houseValid(map.planets.get(name).house));
+    if (!allGrahasLocated) {
+      const knownContradiction = [...map.planets.values()].some(planet => {
+        const nature = planetNature(map,e,planet.name);
+        if (nature === 'benefic' && planet.house > 6) return true;
+        if (nature === 'malefic' && planet.house < 7) return true;
+        return false;
+      });
+      return knownContradiction ? false : null;
+    }
+    let unknownNature = false;
+    for (const name of CHART_GRAHAS) {
+      const planet = map.planets.get(name);
+      const nature = planetNature(map,e,name);
+      if (nature === null) {
+        unknownNature = true;
+        continue;
+      }
+      if (nature === 'benefic' && planet.house > 6) return false;
+      if (nature === 'malefic' && planet.house < 7) return false;
+    }
+    return unknownNature ? null : true;
+  })();
   rules.push(makeRule('XIV-PUR-02', 'Purnayu',
-    'Benefics in first six houses and malefics in last six',
-    tri(e.beneficsFirstSixMaleficsLastSix)));
+    'Benefic grahas in houses 1–6 and malefic grahas in houses 7–12',
+    beneficsFirstSixMaleficsLastSix));
   const relativeJupiterHouse = (() => {
     const lordHouse = lagnaLord ? houseOf(map, lagnaLord) : null;
     if (!houseValid(lordHouse) || !houseValid(jupiterHouse)) return null;
