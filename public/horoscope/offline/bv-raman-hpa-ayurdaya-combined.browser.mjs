@@ -70,14 +70,20 @@ const EXALTATION_SIGN = Object.freeze({
 const GRAHA_ASPECTS = Object.freeze({
   Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10]
 });
-const HARANA_RULES = Object.freeze([
-  Object.freeze({ key: 'conjunctionInSign', fraction: 1 / 2, label: 'More than one planet in a sign' }),
-  Object.freeze({ key: 'debilitated', fraction: 1 / 2, label: 'Planet debilitated' }),
-  Object.freeze({ key: 'combust', fraction: 1 / 2, label: 'Planet combust' }),
-  Object.freeze({ key: 'temporaryEnemySign', fraction: 1 / 3, label: 'Planet in temporary-enemy sign' }),
-  Object.freeze({ key: 'aboveHorizon', fraction: 1 / 2, label: 'Planet above the horizon (houses 7–12)' }),
-  Object.freeze({ key: 'defeatedInPlanetaryWar', fraction: 1 / 3, label: 'Planet defeated in planetary war' }),
-  Object.freeze({ key: 'eclipsed', fraction: 1 / 3, label: 'Sun or Moon eclipsed' })
+/**
+ * Primary source: B. V. Raman, Hindu Predictive Astrology, Ch. XXVI,
+ * printed p. 202, rules 52-58. The page identifies the reduction category
+ * and fraction; it does not prove which specific cause applied to each
+ * planet in the worked example. Those chart facts remain explicit inputs.
+ */
+export const BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES = Object.freeze([
+  Object.freeze({ key: 'conjunctionInSign', fraction: 1 / 2, label: 'More than one planet in a sign', sourcePrintedPage: 202, sourceRuleNumber: 52 }),
+  Object.freeze({ key: 'debilitated', fraction: 1 / 2, label: 'Planet debilitated', sourcePrintedPage: 202, sourceRuleNumber: 53 }),
+  Object.freeze({ key: 'combust', fraction: 1 / 2, label: 'Planet combust', sourcePrintedPage: 202, sourceRuleNumber: 54 }),
+  Object.freeze({ key: 'temporaryEnemySign', fraction: 1 / 3, label: 'Planet in temporary-enemy sign', sourcePrintedPage: 202, sourceRuleNumber: 55 }),
+  Object.freeze({ key: 'aboveHorizon', fraction: 1 / 2, label: 'Planet above the horizon (houses 7–12)', sourcePrintedPage: 202, sourceRuleNumber: 56 }),
+  Object.freeze({ key: 'defeatedInPlanetaryWar', fraction: 1 / 3, label: 'Planet defeated in planetary war', sourcePrintedPage: 202, sourceRuleNumber: 57 }),
+  Object.freeze({ key: 'eclipsed', fraction: 1 / 3, label: 'Sun or Moon eclipsed', sourcePrintedPage: 202, sourceRuleNumber: 58 })
 ]);
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -437,7 +443,7 @@ export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors, pla
     throw new TypeError('planet must name one of the seven classical planets');
   }
   const resolvedFactors = factors && typeof factors === 'object' ? factors : {};
-  const missing = HARANA_RULES.filter(rule => typeof resolvedFactors[rule.key] !== 'boolean')
+  const missing = BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES.filter(rule => typeof resolvedFactors[rule.key] !== 'boolean')
     .map(rule => rule.key);
   const invalidFactors = resolvedFactors.eclipsed === true && !['Sun', 'Moon'].includes(haranaPlanet)
     ? ['eclipsed'] : [];
@@ -453,7 +459,7 @@ export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors, pla
     missingFactors: Object.freeze(missing), invalidFactors: Object.freeze([]),
     source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
   });
-  const active = HARANA_RULES.filter(rule => resolvedFactors[rule.key] === true);
+  const active = BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES.filter(rule => resolvedFactors[rule.key] === true);
   const largestDeduction = active.reduce((largest, rule) => Math.max(largest, rule.fraction), 0);
   const selectedRules = active.filter(rule => rule.fraction === largestDeduction).map(rule => rule.key);
   const remainingFraction = 1 - largestDeduction;
