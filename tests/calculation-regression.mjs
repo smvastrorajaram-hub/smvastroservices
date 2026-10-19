@@ -73,6 +73,16 @@ const saturnSeedDasa=phase4Dasa(saturnSeedChart);
 ok(saturnSeedDasa.niryaanaShoola.seed===7,'PVR Niryaana Shoola fixture selects Scorpio as stronger of 2nd/8th');
 ok(saturnSeedDasa.niryaanaShoola.sequence.map(x=>x.rasi).join(',')==='7,8,9,10,11,0,1,2,3,4,5,6','PVR Niryaana Shoola Saturn-in-seed exception advances zodiacally');
 ok(saturnSeedDasa.niryaanaShoola.sequence.slice(0,3).map(x=>x.fullYears).join(',')==='8,9,7','PVR Niryaana Shoola sign-duration classes fixed/dual/movable = 8/9/7 years');
+const footedSignChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
+ {name:'Sun',longitude:0},{name:'Moon',longitude:60},{name:'Mars',longitude:0},
+ {name:'Mercury',longitude:90},{name:'Jupiter',longitude:180},{name:'Venus',longitude:120},
+ {name:'Saturn',longitude:240},{name:'Rahu',longitude:30},{name:'Ketu',longitude:210}
+]};
+const footedDasa=phase4Dasa(footedSignChart);
+ok(footedDasa.narayana.seed===0,'Narayana odd-footed fixture starts Aries');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===1)?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===4)?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
+
 let pairs=0;
 for(const bride of charts)for(const groom of charts){
  const p=m.porutham(bride,groom),k=m.kujaSamyam(bride,groom),ds=m.dashaSandhi(bride,groom),s=m.dashaDoshaSync(bride,groom);
