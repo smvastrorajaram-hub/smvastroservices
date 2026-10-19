@@ -148,8 +148,8 @@ for(const [date,time] of [
    eq((lang.match(/<tr\\b/g)||[]).length,9,'tie comparison renders header + seven grahas + one totals row '+date+' '+code);
    for(const candidate of selected.tiedCandidates){
     yes(lang.includes(methodLabels[candidate.method][code]),'tied method label is visible: '+candidate.method+' '+date+' '+code);
-    eq((lang.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,7,
-     'tied method displays all seven graha results: '+candidate.method+' '+date+' '+code);
+    eq((lang.match(new RegExp('data-tied-method="'+candidate.method+'"','g'))||[]).length,8,
+     'tied method has a header plus seven graha results: '+candidate.method+' '+date+' '+code);
    }
    eq((lang.match(/data-tied-total=/g)||[]).length,selected.tiedCandidates.length,
     'every tied method has its own total '+date+' '+code);
