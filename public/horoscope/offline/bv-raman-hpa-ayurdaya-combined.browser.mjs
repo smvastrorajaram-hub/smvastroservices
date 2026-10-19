@@ -54,6 +54,20 @@ const SIGN_LORDS = Object.freeze([
   'Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
   'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'
 ]);
+// Permanent/natural enemies used for the printed “enemy's houses” wording.
+// This is distinct from temporary friendship (used by a separate Harana rule).
+const NATURAL_ENEMIES = Object.freeze({
+  Sun: Object.freeze(['Venus', 'Saturn']),
+  Moon: Object.freeze([]),
+  Mars: Object.freeze(['Mercury']),
+  Mercury: Object.freeze(['Moon']),
+  Jupiter: Object.freeze(['Mercury', 'Venus']),
+  Venus: Object.freeze(['Sun', 'Moon']),
+  Saturn: Object.freeze(['Sun', 'Moon', 'Mars'])
+});
+const CHART_GRAHAS = Object.freeze([
+  'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'
+]);
 const SIGN_KIND = Object.freeze([
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common',
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common'
@@ -139,7 +153,29 @@ function houseLord(map, house) {
   if (!signValid(map.lagnaSign) || !houseValid(house)) return null;
   return SIGN_LORDS[(map.lagnaSign + house - 1) % 12];
 }
+function planetInNaturalEnemySign(map, name) {
+  const sign = signOf(map, name);
+  if (sign === null || !Object.prototype.hasOwnProperty.call(NATURAL_ENEMIES, name)) return null;
+  return NATURAL_ENEMIES[name].includes(SIGN_LORDS[sign]);
+}
 function isKendra(house) { return inList(house, [1, 4, 7, 10]); }
+function planetInHouseState(map, house) {
+  if (!houseValid(house)) return null;
+  if (CHART_GRAHAS.some(name => houseOf(map, name) === house)) return true;
+  const complete = CHART_GRAHAS.every(name => map.planets.has(name) &&
+    houseValid(map.planets.get(name).house));
+  return complete ? false : null;
+}
+// For Alpayu rule 13, the Lagna and 8th lords themselves are exempt from
+// “no other planets in Kendras”; all other grahas must be outside Kendras.
+function noOtherPlanetsInKendras(map, permittedNames) {
+  for (const [name, planet] of map.planets.entries()) {
+    if (isKendra(planet.house) === true && !permittedNames.has(name)) return false;
+  }
+  const complete = CHART_GRAHAS.every(name => map.planets.has(name) &&
+    houseValid(map.planets.get(name).house));
+  return complete ? true : null;
+}
 function planetNature(map, evidence, name) {
   const explicit = evidence?.planetNature?.[name];
   if (explicit === 'benefic' || explicit === 'malefic') return explicit;
@@ -273,7 +309,7 @@ const CHAPTER_XIV_RULE_GROUPS = Object.freeze([
       'Moon in 8th, Mars in 7th, Rahu in 9th and Jupiter in 3rd.',
       'Birth Dasa lord in conjunction with many evil planets.',
       'Sun rising with malefics in Kendras/Trikonas and Venus in house 6 or 12.',
-      'Ascendant lord or 5th/9th lords in the stated enemy-house and 8th/9th combinations.',
+      'Ascendant lord, or both 5th and 9th lords, each in a natural enemy sign or house 8/9.',
       'Ketu in 4th with or aspected by malefics.',
       'Rahu in 7th aspected by Sun and Moon.',
       'Birth Dasa/Antardasa relationship involving 8th lord and Ascendant lord.',
@@ -326,7 +362,7 @@ const CHAPTER_XIV_RULE_GROUPS = Object.freeze([
       'Lagna and 8th lords join in 8th with malefics and without benefic aspect.',
       'Evil planets in houses 1, 2 and 8 with benefics outside Kendras.',
       'Birth lord weak and 8th lord in a Kendra.',
-      'Lagna and 8th lords in the stated quadrants/8th-house combination with no planets in Kendras.',
+      'Lagna and 8th lords in Kendras, a planet in house 8, and no other planets in Kendras.',
       'Strong malefics in Kendras without benefic aspects.',
       'Lagna and Moon both in common signs.'
     ]
@@ -508,6 +544,25 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(rahuHouseForBal14 === null ? null : rahuHouseForBal14 === 7,
       isAspecting(map.planets.get('Sun'), rahuHouseForBal14),
       isAspecting(map.planets.get('Moon'), rahuHouseForBal14))));
+
+  // User-specified reading of HPA p. 65: the Lagna lord qualifies by itself,
+  // OR both the 5th and 9th lords each qualify. A lord qualifies when placed
+  // in its natural enemy's sign OR in house 8/9. Do not equate this with the
+  // separate temporary-enemy-sign rule used in Chapter XXVI.
+  const fifthLordForBal12 = houseLord(map, 5);
+  const ninthLordForBal12 = houseLord(map, 9);
+  const bal12PlacementQualifies = name => name === null ? null : triAny(
+    planetInNaturalEnemySign(map, name),
+    inList(houseOf(map, name), [8, 9])
+  );
+  const lagnaLordBal12Qualifies = bal12PlacementQualifies(lagnaLord);
+  const fifthAndNinthLordsBal12Qualify = triAll(
+    bal12PlacementQualifies(fifthLordForBal12),
+    bal12PlacementQualifies(ninthLordForBal12)
+  );
+  rules.push(makeRule('XIV-BAL-12', 'Balarishta',
+    'Lagna lord qualifies, or both 5th and 9th lords each occupy an enemy sign or house 8/9',
+    triAny(lagnaLordBal12Qualifies, fifthAndNinthLordsBal12Qualify)));
 
   // These combinations use source-sensitive inputs only where a chart cannot
   // establish the fact itself (birth sunrise timing and Dasa/Navamsa context).
@@ -709,6 +764,18 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     tri(e.strongMaleficsInKendrasWithoutBeneficAspects)));
   rules.push(makeRule('XIV-ALP-12', 'Alpayu', 'Weak Lagna lord with eighth lord in a Kendra',
     triAll(lagnaLordWeak, isKendra(eighthLordHouse))));
+  // User-specified reading of HPA p. 70: the two lords occupy Kendras, at
+  // least one graha occupies house 8, and no graha other than those lords may
+  // occupy a Kendra. Incomplete planetary placement data cannot prove absence.
+  const permittedKendraLords = new Set([lagnaLord, eighthLord].filter(Boolean));
+  rules.push(makeRule('XIV-ALP-13', 'Alpayu',
+    'Lagna and 8th lords in Kendras; a planet in house 8; no other planets in Kendras',
+    triAll(
+      isKendra(lagnaLordHouse),
+      isKendra(eighthLordHouse),
+      planetInHouseState(map, 8),
+      noOtherPlanetsInKendras(map, permittedKendraLords)
+    )));
 
   // Printed pp. 70–71 list these as distinct combinations: never AND separate rules together.
   rules.push(makeRule('XIV-MAD-01', 'Madhyayu',
