@@ -220,6 +220,17 @@ same(hpaStandardTable.beforeReductionRows, hpaPrintedBeforeRows,
   'all 84 HPA before-reduction cells match the printed p. 190 table');
 same(hpaStandardTable.afterReductionRows, hpaPrintedAfterRows,
   'all 84 HPA after-reduction cells match the printed p. 190 table');
+
+same(Array.from({length:12}, (_, sign) =>
+  BV_RAMAN_AYURDAYA_PLANETS.reduce((sum, planet) =>
+    sum + hpaStandardTable.beforeReductionRows[planet][sign], 0)),
+  hpaStandardTable.printedBeforeReductionBySign,
+  'HPA p. 190 all 12 before-reduction sign columns sum to their printed values');
+same(Array.from({length:12}, (_, sign) =>
+  BV_RAMAN_AYURDAYA_PLANETS.reduce((sum, planet) =>
+    sum + hpaStandardTable.afterReductionRows[planet][sign], 0)),
+  hpaStandardTable.printedAfterReductionBySign,
+  'HPA p. 190 all 12 after-reduction sign columns sum to their printed values');
 same(hpaStandardTable.printedBeforeReductionRowTotals,
   {Sun:48, Moon:49, Mars:39, Mercury:54, Jupiter:56, Venus:52, Saturn:39},
   'HPA p. 190 printed before-reduction totals are pinned');
