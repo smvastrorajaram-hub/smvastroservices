@@ -101,6 +101,7 @@ const chapterXIVNotMatchedRuleOccurrenceCounts = {};
 const haranaFactorResolutionCounts = {};
 const numericBandCounts = {};
 const crossCheckCounts = {};
+const crossCheckCandidateRelationshipCounts = {};
 const chapterXIVEvidenceCompletenessCounts = {};
 const haranaCompletenessCounts = {};
 const haranaMissingFactorCounts = {};
@@ -236,6 +237,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   }
   inc(numericBandCounts,bvr.chapterXXVI?.numericBandCandidate || 'UNAVAILABLE');
   inc(crossCheckCounts,bvr.crossCheck?.status || 'UNAVAILABLE');
+  inc(crossCheckCandidateRelationshipCounts,bvr.crossCheck?.candidateRelationship || 'UNAVAILABLE');
   inc(chapterXIVEvidenceCompletenessCounts,
     bvr.crossCheck?.chapterXIVFullyEvaluated===true&&bvr.crossCheck?.chapterXIVUniqueCategory===true
       ? 'FULLY_EVALUATED_UNIQUE_CATEGORY' : 'PARTIAL_OR_MULTIPLE_CANDIDATES');
@@ -401,6 +403,8 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
     crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
     crossCheckReason:bvr.crossCheck?.reason||null,
+    candidateRelationship:bvr.crossCheck?.candidateRelationship||'UNAVAILABLE',
+    numericBandInChapterXIVCandidates:bvr.crossCheck?.numericBandInChapterXIVCandidates??false,
     chapterXIVFullyEvaluated:bvr.crossCheck?.chapterXIVFullyEvaluated??false,
     chapterXIVUniqueCategory:bvr.crossCheck?.chapterXIVUniqueCategory??false,
     chapterXIVUnknownRuleCount:bvr.crossCheck?.chapterXIVUnknownRuleCount??null,
@@ -454,6 +458,7 @@ const summary = {
     },
     chapterXXVINumericBandCandidateCounts:numericBandCounts,
     crossCheckStatusCounts:crossCheckCounts,
+    crossCheckCandidateRelationshipCounts,
     chapterXIVEvidenceCompletenessCounts,
     haranaCompletenessCounts,
     haranaMissingFactorCounts,
