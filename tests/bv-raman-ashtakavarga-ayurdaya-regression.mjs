@@ -260,6 +260,27 @@ ok(!hpaStandardTable.source.includes('Ashtakavarga System of Prediction'),
 ok(standardOracle.source.includes('Ashtakavarga System of Prediction'),
   'ASOP Chapter II oracle keeps its own source provenance');
 
+// Re-run both reduction stages against HPA p. 190. The occupancy facts
+// are transcribed from the explanation on printed p. 188: Taurus is occupied,
+// Scorpio is occupied; Aries, Libra, Gemini, Virgo, Sagittarius, Pisces,
+// Capricorn and Aquarius are unoccupied (Rahu/Ketu are explicitly set aside).
+// Sign indices: Taurus=1, Scorpio=7. This tests method output against primary
+// printed A.R. rows, not just the self-contained table fixture.
+const hpaStandardCalculatedReduction = bvRamanAshtakavargaShodhana({
+  bavRows: hpaStandardTable.beforeReductionRows,
+  occupiedSigns: [1, 7]
+});
+same(hpaStandardCalculatedReduction.afterReductionRows,
+  hpaStandardTable.afterReductionRows,
+  'HPA p. 188 occupancy + Trikona/Ekadhipatya reproduces all 84 printed p. 190 A.R. cells');
+same(hpaStandardCalculatedReduction.afterReductionSarvashtakavarga,
+  hpaStandardTable.printedAfterReductionBySign,
+  'HPA p. 190 calculated A.R. per-sign SAV totals match 6/13/6/12/2/7/3/8/8/4/4/8');
+same(hpaStandardCalculatedReduction.afterReductionSarvashtakavargaTotal, 81,
+  'HPA p. 190 reduction engine matches the source's 81 total for this edition/example');
+ok(hpaStandardCalculatedReduction.certified === false,
+  'primary worked-table regression does not by itself certify the full Ayurdaya method');
+
 // Standard Horoscope Sun row transcribed from the worked example's
 // after-reduction chart; independent of the synthetic arithmetic fixture.
 const standardSunReduced = [0, 3, 2, 0, 0, 4, 0, 1, 0, 0, 2, 0];
