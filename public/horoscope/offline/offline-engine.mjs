@@ -13,7 +13,7 @@ export async function full(body){
  // Phase 3: Nakshatra-only public matching needs the natal chart/Moon only.
  // Skip Tajaka, Advanced, Panchang, Transit and Dasa work for this explicit path.
  if(body?.basicOnly===true)return{ok:true,meta:{complete:false,basicOnly:true,version:'SMV-basic-1'},chart};
- try{const targetYear=Number(body?.tajakaYear)||new Date().getFullYear();chart.tajakaAnnual=await findTajakaAnnualChart(body,targetYear);}catch(e){chart.tajakaAnnualError=String(e?.message||e);}
+ if(body?.matchingOnly!==true){try{const targetYear=Number(body?.tajakaYear)||new Date().getFullYear();chart.tajakaAnnual=await findTajakaAnnualChart(body,targetYear);}catch(e){chart.tajakaAnnualError=String(e?.message||e);}}
  const lang=body.language==='en'?'en':'ta';
  // Load advanced and Dasa code only after the Basic-only exit. Public
  // Nakshatra Porutham should not pay to parse modules it never calculates.
