@@ -1185,6 +1185,14 @@ export function bvRamanIntegratedAyurdayaResearch({
   const chapterXIVFullyEvaluated = unknownXIVRules.length === 0 &&
     (chapterXIV.unimplementedRuleIds || []).length === 0;
   const chapterXIVUniqueCategory = categories.length === 1;
+  const numericBandInChapterXIVCandidates = !!numericBand && categories.includes(numericBand);
+  const candidateRelationship = !numericBand
+    ? 'NUMERIC_BAND_UNAVAILABLE'
+    : !categories.length
+      ? 'NO_CHAPTER_XIV_CATEGORY_CANDIDATE'
+      : numericBandInChapterXIVCandidates
+        ? 'NUMERIC_BAND_PRESENT_IN_CHAPTER_XIV_CANDIDATE_SET'
+        : 'NUMERIC_BAND_ABSENT_FROM_CHAPTER_XIV_CANDIDATE_SET';
   let crossCheckStatus = 'NOT_COMPARABLE_FINAL_WITHHELD';
   let crossCheckReason = 'The two tracks are kept separate; final lifespan selection is withheld.';
   if (numericBand && categories.length) {
@@ -1229,6 +1237,8 @@ export function bvRamanIntegratedAyurdayaResearch({
       chapterXIVRuleCoverageCounts: chapterXIV.ruleCoverageCounts,
       chapterXIVFullyEvaluated,
       chapterXIVUniqueCategory,
+      numericBandInChapterXIVCandidates,
+      candidateRelationship,
       chapterXIVUnknownRuleCount: unknownXIVRules.length,
       chapterXIVUnimplementedRuleCount: (chapterXIV.unimplementedRuleIds || []).length,
       chapterXXVINumericBandCandidate: numericBand,
