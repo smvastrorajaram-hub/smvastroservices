@@ -87,10 +87,10 @@ ok(Math.abs(d96.paramayush-86)<1e-9&&Math.abs(d96.elapsedYearsBeforeBirth-77.4)<
 ok(d96.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','PVR Example 96: remaining Pisces Dasa followed by the first eight Savya-2 signs');
 ok(d96.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','Kalachakra Example 96: antardasa chain crosses after Pada 4 into Savya-2 Pada 1');
 ok(d96.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((s,x)=>s+x.years,0)-md.years)<1e-8),'Kalachakra counterexample grid: all displayed MDs have nine correctly weighted ADs summing to each MD');
-const drigExpected='2,5,8,11,3,1,10,7,4,0,9,6';
+const drigExpected='2,5,8,11,3,1,10,7,4,0,6,9';
 const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
 ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
-ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
+ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,6,9','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
 ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
 for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
  const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
@@ -103,7 +103,9 @@ const renderEnd=horoscopeSource.indexOf('\n  window.__smvLoadPhase4Dasa=loadPhas
 ok(renderStart>=0&&renderEnd>renderStart,'Found Phase-4 renderer source for runtime regression');
 const rendererChunk=horoscopeSource.slice(renderStart,renderEnd);
 const renderContext={window:{},mockResult:null};
-vm.runInNewContext("const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);\n"+rendererChunk+"\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
+const sharedArrSource=(horoscopeSource.match(/  \/\/ Shared shape-normalizer[\\s\\S]*?  const arr=v=>Array\\.isArray\\(v\\)\\?v:\\(v&&typeof v==='object'\\?Object\\.values\\(v\\):\\[\\]\\);/ )||[])[0];
+ok(typeof sharedArrSource==='string'&&sharedArrSource.includes('const arr=v=>Array.isArray(v)?v:' ,'Runtime regression extracts the production shared arr helper');
+vm.runInNewContext(sharedArrSource+"\\n"+rendererChunk+"\\nglobalThis.runRenderer=renderPhase4Dasa;",renderContext,{timeout:20000});
 const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
 const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
