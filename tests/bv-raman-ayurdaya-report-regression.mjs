@@ -84,6 +84,13 @@ ok(old.lastIndexOf('</section>')<combined.indexOf('data-smv-bv-raman-ayurdaya'),
 ok(combined.indexOf('data-smv-cg-rajan-ayurdaya')<combined.indexOf('data-smv-bv-raman-ayurdaya'),'C.G. Rajan appears first, B.V. Raman follows as a separate block');
 ok(combined.includes('<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"'),'C.G. Rajan section remains present unchanged');
 
+const reportSource=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs',import.meta.url),'utf8');
+ok(reportSource.includes("'XIV-PUR-01':'லக்னத்தை லக்னாதிபதியும் 5-ஆம் பாவத்தை அதன் அதிபதியும் பார்க்க; குரு கேந்திரத்தில் இருத்தல்'"),
+ 'Purnayu rule 1 names the 5th-house lord, not the 8th-house lord');
+ok(reportSource.includes("'XIV-ANT-03':'8-ஆம் பாவச் சந்திரன் புதன், குரு அல்லது சுக்கிரனின் திரேக்காணத்தில் அமைதல்'"),
+ 'Antidote rule 3 identifies the specified benefic Drekkanas');
+ok(reportSource.includes("'XIV-ANT-10':'பாபக் கிரகங்கள் சுப ஷட்வர்க்கங்களில் அமைந்து, சுப நவாம்சங்களில் உள்ள சுபக் கிரகங்களின் பார்வை பெறுதல்'"),
+ 'Antidote rule 10 preserves benefic Navamsa placement and aspect requirements');
 const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const matching=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.mjs',import.meta.url),'utf8');
 ok(horoscope.includes('bv-raman-ayurdaya-report.browser.mjs'),'Horoscope source imports the new B.V. Raman report renderer');
