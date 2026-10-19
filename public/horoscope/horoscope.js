@@ -1758,7 +1758,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     slot.querySelectorAll('.smv-dasa-expand').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.key,idx=Number(btn.dataset.index),md=data[key]?.sequence?.[idx],box=btn.nextElementSibling;if(!md||!box)return; if(!box.classList.contains('hidden')){box.classList.add('hidden');return;} const subs=Array.isArray(md.antardasas)?md.antardasas:[]; box.innerHTML=subs.map((a,j)=>{const nm=a.rasi!=null?label(typeof a.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[a.rasi] ?? a.rasi)):a.rasi):a.lord;return `<div class="small" style="padding:4px 0;border-bottom:1px solid #eee">${j+1}. <b>${escSafe(nm)}</b> · ${escSafe(a.start)} → ${escSafe(a.end)}</div>`;}).join('')||`<div class="small">${ta?'தரவு இல்லை':'No sub-period data.'}</div>`;window.__smvLocalizeTamilResult?.(box,lang);box.classList.remove('hidden');}));
   }
   window.__smvLoadPhase4Dasa=loadPhase4Dasa;
-  window.__smvRenderPhase4Dasa=(data,lang,rootId)=>{const root=document.getElementById(rootId);const slot=root?.querySelector('#smvPhase4DasaSlot');if(slot)renderPhase4Dasa(data||{},lang,slot);};
+  window.__smvRenderPhase4Dasa=(data,lang,rootId)=>{const root=document.getElementById(rootId);const slot=root?.querySelector('#smvPhase4DasaSlot');if(slot){const result=data||{};completePvrTransitCalendar(result,lang,slot);renderPhase4Dasa(result,lang,slot);}};
 
 
   async function loadTransitPanchang({date,time,lat,lon,lang,rootId}){
