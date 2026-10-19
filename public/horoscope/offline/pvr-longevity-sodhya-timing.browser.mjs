@@ -147,10 +147,13 @@ async function buildTransitSamples(startMs,endMs){
   const longitudes=new Map(),byBody={};
   const getLongitude=(body,time)=>getSiderealLongitude(swe,body,time,longitudes);
   for(const body of TRANSIT_BODIES){
-   const samples=[];
+   const samples=[];let sampleNumber=0;
    for(let t=startMs;t<endMs;t+=DAY_MS){
     const lon=await getLongitude(body.id,t);
     samples.push({time:t,longitude:lon,nakshatraIndex:Math.floor(lon/(360/27)),rasiIndex:Math.floor(lon/30)});
+    // Yield to browser rendering every 128 daily samples; this is a long-horizon
+    // calendar scan, and must not keep a PWA/report screen visually frozen.
+    if(++sampleNumber%128===0)await new Promise(resolve=>setTimeout(resolve,0));
    }
    const endLon=await getLongitude(body.id,endMs);
    samples.push({time:endMs,longitude:endLon,nakshatraIndex:Math.floor(endLon/(360/27)),rasiIndex:Math.floor(endLon/30)});
