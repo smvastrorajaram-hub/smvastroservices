@@ -683,6 +683,15 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 7,
       moonHouse === null ? null : moonHouse === 8,
       jupiterHouse === null ? null : jupiterHouse === 1)));
+  const lagnaSignLordForAlp09 = signValid(map.lagnaSign)
+    ? SIGN_LORDS[map.lagnaSign] : null;
+  rules.push(makeRule('XIV-ALP-09', 'Alpayu',
+    'Saturn in Lagna owned by malefics, with benefics in houses 3, 6, 9 and 12',
+    triAll(
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
+      lagnaSignLordForAlp09 === null ? null :
+        ['Mars', 'Saturn'].includes(lagnaSignLordForAlp09),
+      tri(e.beneficsInHouses3_6_9_12))));
   rules.push(makeRule('XIV-ALP-11', 'Alpayu',
     'Malefics in houses 1, 2 and 8; benefics outside Kendras',
     triAll(maleficsInAll([1, 2, 8]),
@@ -730,6 +739,12 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       inList(lagnaLordHouse, [6, 8]),
       lagnaLord ? conjunctionState(map, lagnaLord, 'malefic', e) : null,
       lagnaLord ? noBeneficAspectToPlanet(lagnaLord) : null)));
+  rules.push(makeRule('XIV-MAD-07', 'Madhyayu',
+    'Saturn in Lagna, Moon in 8th/12th and other planets in 11th',
+    triAll(
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
+      inList(moonHouse, [8, 12]),
+      tri(e.otherGrahasInEleventh))));
   rules.push(makeRule('XIV-MAD-08', 'Madhyayu',
     'Scorpio Lagna with Jupiter in Lagna and Mars/Rahu in 8th',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 7,
@@ -745,6 +760,14 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Jupiter in 8th with Aries Lagna and malefics in Kendras',
     triAll(map.lagnaSign === null ? null : map.lagnaSign === 0,
       jupiterHouse === null ? null : jupiterHouse === 8, maleficKendra)));
+  rules.push(makeRule('XIV-MAD-11', 'Madhyayu',
+    'Saturn in Lagna, Moon 4th, Mars 7th, Rahu 10th and Jupiter/Venus/Mercury unfavourably placed',
+    triAll(
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
+      moonHouse === null ? null : moonHouse === 4,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
+      houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 10,
+      tri(e.jupiterVenusMercuryInUnfavourableHouses))));
   rules.push(makeRule('XIV-MAD-12', 'Madhyayu',
     'Mars and Mercury in Kendras, Venus in Ascendant and exalted planets in 3rd/11th',
     triAll(isKendra(houseOf(map, 'Mars')), isKendra(houseOf(map, 'Mercury')),
