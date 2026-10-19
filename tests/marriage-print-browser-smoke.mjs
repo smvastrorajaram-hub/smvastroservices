@@ -6,6 +6,7 @@ import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+const cgMethodTable=section=>section.match(/<table class="smv-ayurdaya-table(?: smv-css-island)?">[\s\S]*?<\/table>/)?.[0]||'';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
@@ -64,12 +65,12 @@ try{
     assert.ok(section.includes(methodLabels[selection.selectedMethod]),'Only the Shadbala-selected method is present for person '+(i+1)+': '+testName);
     for(const [method,label] of Object.entries(methodLabels))if(method!==selection.selectedMethod)
      assert.ok(!section.includes(label),'Unselected Ayurdaya method '+method+' is hidden: '+testName);
-    assert.equal((section.match(/<tr\b/g)||[]).length,9,'One selected method renders seven grahas plus total: '+testName);
+    assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,9,'One selected method renders seven grahas plus total: '+testName);
     assert.ok(section.includes('smv-ayurdaya-method-selection'),'Selected-method basis is visible: '+testName);
     const totalRow=section.match(/<tr class="smv-ayurdaya-totals">[\s\S]*?<\/tr>/)?.[0]||'';
     assert.equal((totalRow.match(/<strong>/g)||[]).length,1,'One selected method total is emphasized: '+testName);
    }else{
-    assert.equal((section.match(/<tr\b/g)||[]).length,0,'No arbitrary method is displayed on a Shadbala tie/missing value: '+testName);
+    assert.equal((cgMethodTable(section).match(/<tr\b/g)||[]).length,0,'No arbitrary method is displayed on a Shadbala tie/missing value: '+testName);
     assert.ok(section.includes('data-ayurdaya-selection="unavailable"'),'Missing/tied method selection is explicit: '+testName);
    }
   }
@@ -84,7 +85,7 @@ try{
   const mobile=await page.evaluate(()=>{
    const charts=[...document.querySelectorAll('.mm-base-chart')];
    const tables=[...document.querySelectorAll('.mm-base-table')];
-   const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')];
+   const ayurdayaTables=[...document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table:not(.smv-bv-raman-ayurdaya-table)')];
    const ayurdayaHeader=ayurdayaTables[0]?.querySelector('thead th');
    const ayurdayaTotal=ayurdayaTables[0]?.querySelector('tbody .smv-ayurdaya-totals td');
    const ayurdayaTotalStyle=ayurdayaTotal?{background:getComputedStyle(ayurdayaTotal).backgroundColor,color:getComputedStyle(ayurdayaTotal).color,weight:parseInt(getComputedStyle(ayurdayaTotal).fontWeight,10)||400}:null;
@@ -153,12 +154,13 @@ try{
    await document.fonts.ready;
    const tamilFonts=await document.fonts.load('8pt SMVTamil','ஷட்பலத்தின் அடிப்படையில் தேர்வு');
    const tamilFontReady=tamilFonts.some(face=>face.family.replace(/["']/g,'').includes('SMVTamil'))&&document.fonts.check('8pt SMVTamil','ஷட்பலத்தின் அடிப்படையில் தேர்வு');
-   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table').length,methodSelections,tamilFontReady,shadbalaBreakInside};
+   return {style:first.dataset.chartStyle,groomStyle:groom.dataset.chartStyle,width:rect.width,height:rect.height,display:css.display,planets:[...first.querySelectorAll('.mm-base-planet')].length,ayurdayaTables:document.querySelectorAll('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table:not(.smv-bv-raman-ayurdaya-table)').length,bvRamanTables:document.querySelectorAll('.smv-bv-raman-ayurdaya-table').length,methodSelections,tamilFontReady,shadbalaBreakInside};
   });
   assert.ok(print.width>180&&print.height>180,'Print chart not blank: '+style);
   assert.equal(print.style,style,'Print bride style changed unexpectedly');
   assert.equal(print.groomStyle,groomStyle,'Print groom style changed unexpectedly');
   assert.equal(print.ayurdayaTables,ayurdayaSelections.filter(s=>s.available).length,'Only chosen Ayurdaya method tables remain in print DOM: '+style);
+  assert.equal(print.bvRamanTables,4,'Both B.V. Raman result tables render for each matching person: '+style);
   const expectedMethodSelectionCount=ayurdayaSelections.filter(s=>s.available).length;
   assert.ok(print.methodSelections.length===expectedMethodSelectionCount&&print.methodSelections.every(x=>x.display!=='none'&&x.visibility!=='hidden'&&x.text.length>0&&x.fontSize>=7&&x.fontWeight>=700),
     'The selected-method Shadbala explanation remains readable/visible in print: '+style+' '+JSON.stringify({expectedMethodSelectionCount,actual:print.methodSelections}));
