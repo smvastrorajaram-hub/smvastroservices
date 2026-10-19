@@ -284,10 +284,11 @@ ok(!/predictedDeathAge|finalAgeOrDateOfDeath\s*=\s*[^n]/i.test(source),
 console.log(JSON.stringify({
   pass:true, assertions,
   scope:'B.V. Raman HPA Chapter XIV rule evidence + Chapter XXVI Ashtakavarga arithmetic',
-  printedNetLunarYears:printedNetSum,
-  recomputedNetLunarYears:recomputedNetSum,
+  printedNetLunarYears:Object.values(reportedNetExpected).reduce((a,b)=>a+b,0),
+  formulaNetLunarYears:exactFormulaNetSum,
   printedSolarYears:44.87,
   solarYearsFromPrintedNet:48.98 * 334 / 365,
-  solarYearsFromRecomputedNet:48.97 * 334 / 365,
+  formulaSolarYears:exactFormulaNetSum * 334 / 365,
+  formulaSolarYearsRounded:Math.round((exactFormulaNetSum * 334 / 365 + Number.EPSILON) * 100) / 100,
   certification:false, finalLifespanEmitted:false, customerDisplayAllowed:false
 }, null, 2));
