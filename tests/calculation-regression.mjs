@@ -115,12 +115,15 @@ const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
 ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
 ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
 ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
+let drigdasaOverlapCases=0;
 for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
  const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
  const first=d.sequence.filter(x=>x.cycle===1);
  ok(d.groups.length===3&&d.groupSequences.length===3&&d.groupSequences.every(g=>g.length===4),'Drigdasa counterexample sign '+lagnaSign+': each source aspect group has exactly four signs');
- ok(first.length===12&&new Set(first.map(x=>x.rasi)).size===12,'Drigdasa counterexample sign '+lagnaSign+': groups partition 12 signs with no arbitrary fallback');
+ ok(first.length===12&&first.map(x=>x.rasi).join(',')===d.groupSequences.flat().join(','),'Drigdasa counterexample sign '+lagnaSign+': retain all 12 source-ordered group entries without fallback');
+ if(new Set(first.map(x=>x.rasi)).size<12)drigdasaOverlapCases++;
 }
+ok(drigdasaOverlapCases>0,'Drigdasa overlap counterexample: repeated rasis from separately derived house-groups are preserved instead of padded');
 const renderStart=horoscopeSource.indexOf('function renderPhase4Dasa(data,lang,slot){');
 const renderEnd=horoscopeSource.indexOf('\n  window.__smvLoadPhase4Dasa=loadPhase4Dasa;',renderStart);
 ok(renderStart>=0&&renderEnd>renderStart,'Found Phase-4 renderer source for runtime regression');
@@ -134,7 +137,17 @@ vm.runInNewContext(sharedArrSource+"\n"+rendererChunk+"\nglobalThis.runRenderer=
 const mockAdvanced={querySelectorAll:()=>[]};
 const mockReport={querySelector:(selector)=>selector==='.smv-advanced-part.chart-analysis > .smv-advanced-part-content'?mockAdvanced:null};
 const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport,querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
-renderContext.runRenderer({ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},pvrResearch:{longevity:{dasaTiming:{ageBandYears:{start:0,end:36},niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},shoola:{periods:[]}}},sodhyaPindaEventTiming:{rows:[]}},'ta',mockSlot);
+renderContext.runRenderer({
+ ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},
+ pvrResearch:{
+  longevity:{dasaTiming:{
+   ageBandYears:{start:0,end:36},
+   niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},
+   shoola:{periods:[]}
+  }},
+  sodhyaPindaEventTiming:{rows:[]}
+ }
+},'ta',mockSlot);
 ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
 
 const charts=[];
