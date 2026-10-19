@@ -158,7 +158,11 @@ function resultFor({chart,bavRows,language='ta',evidence,occupiedSigns,planetSig
  */
 export function bvRamanAyurdayaReportHtml(options={}) {
   const ta = options.language !== 'en';
-  const result = resultFor(options);
+  // A missing/partial BAV payload must never suppress the existing C.G. Rajan
+  // appendix; render placeholders for this new section instead.
+  let result;
+  try { result = resultFor(options); }
+  catch { result = {chapterXXVI:null,chapterXIV:null}; }
   const calc = result.chapterXXVI;
   const planetLabels = PLANETS.filter(p=>!['Rahu','Ketu'].includes(p)).map(p=>[
     p, (ta?PLANETS_TA:PLANETS_EN)[p]
