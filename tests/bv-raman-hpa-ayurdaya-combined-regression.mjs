@@ -108,8 +108,8 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
   'antidote rule 8 remains UNKNOWN when explicit full-moon-night evidence is absent');
 eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
   'Balarishta inventory has 30 source rules');
-eq(xiv.ruleCoverageCounts.Balarishta.implemented, 20,
-  'twenty source-numbered Balarishta rules have evaluators after this scan pass');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 23,
+  'twenty-three source-numbered Balarishta rules have evaluators after the rule 17/25/26 pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
 eq(xiv.ruleCoverageCounts.Alpayu.implemented, 12,
@@ -170,6 +170,74 @@ const moonKendraMaleficAspectOnly = bvRamanChapterXIVLongevityRules({
 const bal02AspectOnly = moonKendraMaleficAspectOnly.rules.find(rule => rule.id === 'XIV-BAL-02');
 eq(bal02AspectOnly.status, 'NOT_MATCHED',
   'Chapter XIV "Moon in a Kendra with malefics" is not widened to a malefic aspect alone');
+
+const bal17TwoMaleficAspects = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:90,bhava:4},
+    {name:'Mars',longitude:120,bhava:2},{name:'Mercury',longitude:150,bhava:6},
+    {name:'Jupiter',longitude:180,bhava:9},{name:'Venus',longitude:210,bhava:7},
+    {name:'Saturn',longitude:240,bhava:4},{name:'Rahu',longitude:270,bhava:5},
+    {name:'Ketu',longitude:300,bhava:12}
+  ]}
+});
+eq(bal17TwoMaleficAspects.rules.find(rule => rule.id === 'XIV-BAL-17').status, 'MATCHED',
+  'Balarishta rule 17 matches malefic aspects to Lagna and the 8th sign from Moon');
+
+const bal17Incomplete = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:90,bhava:4}
+  ]}
+});
+eq(bal17Incomplete.rules.find(rule => rule.id === 'XIV-BAL-17').status, 'UNKNOWN',
+  'Balarishta rule 17 remains UNKNOWN when the malefic aspect-source set is incomplete');
+
+const bal25NoJupiterAspects = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:120,bhava:9},{name:'Moon',longitude:0,bhava:1},
+    {name:'Mars',longitude:240,bhava:8},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:270,bhava:10},{name:'Venus',longitude:30,bhava:2},
+    {name:'Saturn',longitude:330,bhava:12},{name:'Rahu',longitude:90,bhava:4},
+    {name:'Ketu',longitude:180,bhava:6}
+  ]}
+});
+eq(bal25NoJupiterAspects.rules.find(rule => rule.id === 'XIV-BAL-25').status, 'MATCHED',
+  'Balarishta rule 25 matches the four printed placements when Jupiter aspects none of them');
+
+const bal25JupiterCancellation = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:120,bhava:9},{name:'Moon',longitude:0,bhava:1},
+    {name:'Mars',longitude:240,bhava:8},{name:'Mercury',longitude:60,bhava:3},
+    {name:'Jupiter',longitude:120,bhava:5},{name:'Venus',longitude:30,bhava:2},
+    {name:'Saturn',longitude:330,bhava:12},{name:'Rahu',longitude:90,bhava:4},
+    {name:'Ketu',longitude:180,bhava:6}
+  ]}
+});
+eq(bal25JupiterCancellation.rules.find(rule => rule.id === 'XIV-BAL-25').status, 'NOT_MATCHED',
+  'Balarishta rule 25 is cancelled when Jupiter occupies house 5');
+
+const bal26WithoutBeneficAspects = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:90,bhava:3},{name:'Moon',longitude:0,bhava:2},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:150,bhava:6},
+    {name:'Jupiter',longitude:60,bhava:3},{name:'Venus',longitude:120,bhava:5},
+    {name:'Saturn',longitude:270,bhava:1},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(bal26WithoutBeneficAspects.rules.find(rule => rule.id === 'XIV-BAL-26').status, 'MATCHED',
+  'Balarishta rule 26 matches Saturn/Mars in listed houses without benefic aspects');
+
+const bal26JupiterAspectsMars = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:90,bhava:3},{name:'Moon',longitude:0,bhava:2},
+    {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:150,bhava:6},
+    {name:'Jupiter',longitude:60,bhava:4},{name:'Venus',longitude:120,bhava:5},
+    {name:'Saturn',longitude:270,bhava:1},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(bal26JupiterAspectsMars.rules.find(rule => rule.id === 'XIV-BAL-26').status, 'NOT_MATCHED',
+  'Balarishta rule 26 does not match when Jupiter aspects Mars');
 
 const independentMadhyayuRules = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:0}, planets:[
