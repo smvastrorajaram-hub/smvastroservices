@@ -71,6 +71,17 @@ The new comparison only calls an outcome a confirmed candidate overlap or disagr
 
 This is **not a claim that the two methods agree**. It means Chapter XIV's current evidence track does not produce a fully evaluated unique category for these 100 inputs, so a disagreement count would be misleading.
 
+The raw category-list relationship is also retained separately so the underlying sets can still be inspected without being mistaken for final verdicts:
+
+| Raw candidate-list relationship | Charts |
+|---|---:|
+| Chapter XXVI numeric band appears in the Chapter XIV candidate list | 56 |
+| Numeric band is absent from a non-empty Chapter XIV candidate list | 42 |
+| Chapter XIV has no confirmed category candidate while rule evidence remains UNKNOWN | 2 |
+| Numeric band unavailable | 0 |
+
+The 42 “absent from candidate list” records are **not certified contradictions**: each chart still has unresolved or multiple Chapter XIV rule evidence. The JSON stores both this relationship and the fully-evaluated/unique-category flags.
+
 The 76-rule source inventory has evaluator entries, but 30 distinct rule IDs remain UNKNOWN for at least one tested chart. Fourteen remain UNKNOWN in all 100 fixtures:
 
 | Rule IDs | Source-rule subjects requiring evidence / regression work |
