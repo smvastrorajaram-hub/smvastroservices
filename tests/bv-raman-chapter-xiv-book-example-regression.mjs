@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {mkdirSync,writeFileSync} from 'node:fs';
 import {
   BV_RAMAN_HPA_CHAPTER_XIV_SOURCE,
   BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY,
@@ -6,6 +7,7 @@ import {
 } from '../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs';
 
 let assertions = 0;
+const ruleCaseResults = [];
 function eq(actual, expected, message) {
   assert.deepEqual(actual, expected, message);
   assertions++;
@@ -48,6 +50,14 @@ function ruleCase(id, expected, chartInput={}, evidence={}, description='source-
     description+': '+id+' keeps the printed page mapping');
   eq(rule.sourceRuleNumber,source.sourceRuleNumber,
     description+': '+id+' keeps the source rule number');
+  ruleCaseResults.push({
+    id,category:rule.category,sourceRuleNumber:source.sourceRuleNumber,
+    sourcePrintedPage:source.sourcePrintedPage,sourceDescription:source.sourceDescription,
+    title:rule.title,expected,status:rule.status,implemented:rule.implemented===true,
+    fixtureDescription:description,
+    chartInput:JSON.parse(JSON.stringify(chartInput)),
+    evidence:JSON.parse(JSON.stringify(evidence))
+  });
 }
 function statuses(id, values, label) {
   for (const item of values) ruleCase(id,item.expected,item.chart||{},item.evidence||{},label+' / '+item.label);
@@ -418,12 +428,42 @@ eq(research.finalLifespan,null,'source-rule fixture audit never returns a lifesp
 eq(research.certified,false,'source-rule fixture audit remains uncertified');
 eq(research.customerDisplayAllowed,false,'research rules remain unavailable for customer-facing lifespan display');
 
-console.log(JSON.stringify({
+const statusCounts = ruleCaseResults.reduce((counts,row)=>{
+  counts[row.status]=(counts[row.status]||0)+1;
+  return counts;
+},{});
+const ruleIdCounts = ruleCaseResults.reduce((counts,row)=>{
+  counts[row.id]=(counts[row.id]||0)+1;
+  return counts;
+},{});
+const audit = {
   pass:true,assertions,
   source:'B. V. Raman, Hindu Predictive Astrology, Chapter XIV, printed pp.64–72',
   chapterXIVRuleInventory:sourceRules.size,
+  testedRuleIds:[...new Set(ruleCaseResults.map(row=>row.id))].sort(),
+  directlyTestedRuleIdCount:new Set(ruleCaseResults.map(row=>row.id)).size,
+  individualRuleCaseCount:ruleCaseResults.length,
+  expectedOutcomeCounts:statusCounts,
+  casesPerRuleId:ruleIdCounts,
+  ruleCaseResults,
   sourceDerivedRuleFixtures:'constructed positive/negative rule tests; explicitly not claimed as book-printed natal charts',
-  actualBookExamples:['HPA-XIV-HOROSCOPE-1','HPA-XIV-HOROSCOPE-2','HPA-XIV-HOROSCOPE-3'],
-  actualBookExamplePageReferences:{horoscope1:68,horoscope2:68,horoscope3:69},
+  actualBookExamples:[bookExample1,bookExample2,bookExample3].map(example=>({
+    id:example.id,printedPage:example.printedPage,
+    birthDate:example.birthDate||null,birthDasaLord:example.birthDasaLord||null,
+    statedFacts:example.statedFacts||null,
+    explicitlyReportedConjunctions:example.explicitlyReportedConjunctions||null,
+    explicitlyReportedAspectFrom:example.explicitlyReportedAspectFrom||null,
+    sourceStatement:example.sourceStatement||null,
+    sourceNote:example.sourceNote||null
+  })),
+  bookExampleRuleTraces:{
+    horoscope1:{ruleId:'XIV-BAL-10',observedStatus:'MATCHED with explicit conjunction evidence; UNKNOWN if only Dasa lord is known'},
+    horoscope2:{ruleIds:['XIV-BAL-10','XIV-BAL-19'],observedStatus:'UNKNOWN where prose does not provide complete predicate geometry'},
+    horoscope3:{ruleId:'XIV-ANT-01',observedStatus:sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-01').status,
+      gap:'the prose says Jupiter in a quadrant; numbered ANT-01 requires Jupiter in Ascendant; Chapter XIV cancellation precedence requires further source review'}
+  },
   finalLifespan:null,certified:false,customerDisplayAllowed:false
-},null,2));
+};
+mkdirSync('artifacts',{recursive:true});
+writeFileSync('artifacts/chapter-xiv-book-example-regression.json',JSON.stringify(audit,null,2));
+console.log(JSON.stringify(audit,null,2));
