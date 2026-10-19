@@ -4,6 +4,7 @@ import {
   BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE,
   BV_RAMAN_HPA_CHAPTER_XXVI_RASI_GUNAKARA,
   BV_RAMAN_HPA_CHAPTER_XXVI_GRAHA_GUNAKARA,
+  BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES,
   bvRamanChapterXIVLongevityRules,
   bvRamanHpaChapterXXVIApplyHarana,
   bvRamanHpaChapterXXVICompute,
@@ -141,6 +142,32 @@ const onlyOneMaleficHouse = bvRamanChapterXIVLongevityRules({
 });
 eq(onlyOneMaleficHouse.matchedRuleIds.includes('XIV-ALP-02'), false,
   'Alpayu 6/8/12 rule does not match if house 12 has no malefic');
+
+// Pin every Chapter XXVI p. 202 Harana factor to its printed rule number
+// and fraction, then execute each factor independently through the public API.
+eq(BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES.map(({key, fraction, sourcePrintedPage, sourceRuleNumber}) =>
+  ({key, fraction, sourcePrintedPage, sourceRuleNumber})), [
+  {key:'conjunctionInSign', fraction:1/2, sourcePrintedPage:202, sourceRuleNumber:52},
+  {key:'debilitated', fraction:1/2, sourcePrintedPage:202, sourceRuleNumber:53},
+  {key:'combust', fraction:1/2, sourcePrintedPage:202, sourceRuleNumber:54},
+  {key:'temporaryEnemySign', fraction:1/3, sourcePrintedPage:202, sourceRuleNumber:55},
+  {key:'aboveHorizon', fraction:1/2, sourcePrintedPage:202, sourceRuleNumber:56},
+  {key:'defeatedInPlanetaryWar', fraction:1/3, sourcePrintedPage:202, sourceRuleNumber:57},
+  {key:'eclipsed', fraction:1/3, sourcePrintedPage:202, sourceRuleNumber:58}
+], 'each Harana factor maps to the exact printed page/rule and stated deduction fraction');
+for (const rule of BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES) {
+  const factors = Object.fromEntries(BV_RAMAN_HPA_CHAPTER_XXVI_HARANA_RULES.map(item =>
+    [item.key, item.key === rule.key]));
+  const planet = rule.key === 'eclipsed' ? 'Sun' : 'Mars';
+  const result = bvRamanHpaChapterXXVIApplyHarana({
+    grossLunarYears: 30, planet, factors
+  });
+  eq(result.resolved, true, 'single explicit ' + rule.key + ' Harana factor resolves');
+  eq(result.appliedDeductionFraction, rule.fraction,
+    'single ' + rule.key + ' uses the source-defined fraction');
+  near(result.unroundedNetLunarYears, 30 * (1 - rule.fraction), 1e-12,
+    'single ' + rule.key + ' transforms only the stated fraction');
+}
 
 // Harana rule: only the largest loss applies, never a stack of losses.
 const halfAndThirds = bvRamanHpaChapterXXVIApplyHarana({
