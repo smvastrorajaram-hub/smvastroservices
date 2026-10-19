@@ -380,8 +380,8 @@ eq(bookExample1.statedConditions.map(item=>item.ruleId),
 const bookExample1MoonPredicate = {
   houses:{Sun:2,Moon:7,Mars:3,Mercury:4,Jupiter:4,Venus:6,Saturn:1,Rahu:8,Ketu:9}
 };
-ruleCase('XIV-BAL-02','MATCHED',bookExample1MoonPredicate,{},
-  'HPA printed p.68 Horoscope No.1 predicate replay: Moon in 7th Kendra receives Saturn aspect');
+ruleCase('XIV-BAL-02','NOT_MATCHED',bookExample1MoonPredicate,{},
+  'HPA printed p.68 Horoscope No.1: Saturn aspect alone does not prove same-house malefic co-occupancy for Rule 2');
 ruleCase('XIV-BAL-03','MATCHED',bookExample1MoonPredicate,{},
   'HPA printed p.68 Horoscope No.1 predicate replay: Moon in 7th with Saturn aspect and no benefic aspect');
 ruleCase('XIV-BAL-10','MATCHED',{},{
@@ -736,7 +736,7 @@ const audit = {
     horoscope1:{
       ruleIds:['XIV-BAL-02','XIV-BAL-03','XIV-BAL-10'],
       observedStatuses:{
-        'XIV-BAL-02':'MATCHED by source-stated Moon 7th Kendra + Saturn aspect',
+        'XIV-BAL-02':'NOT_MATCHED from the stated Moon 7th Kendra + Saturn aspect alone; no same-house malefic occupant is stated',
         'XIV-BAL-03':'MATCHED by source-stated Moon 7th + malefic aspect + no benefic aspect',
         'XIV-BAL-10':'MATCHED only when the source-stated Venus/Saturn/Ketu conjunction is explicitly wired; UNKNOWN from Dasa lord name alone'
       },
