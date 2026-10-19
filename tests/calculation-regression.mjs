@@ -53,6 +53,14 @@ for(const [date,time] of birthCases){
  ok(result.phase4.shoola.sequence.every(md=>md.antardasas.every((x,i,arr)=>i===0||x.rasi===(arr[i-1].rasi+1)%12)),date+' Shoola Antardasa progresses zodiacally');
  ok(result.phase4.pvrResearch?.longevity?.researchOnly===true&&result.phase4.pvrResearch?.sodhyaPindaEventTiming?.researchOnly===true,date+' PVR add-on remains research-only');
  ok(result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.length===7&&result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.every(x=>x.product===x.rawBavRekhas*x.sodhyaPinda),date+' PVR Sodhya Pinda event products follow raw BAV rekha × Yoga Pinda');
+ const longevity=result.phase4.pvrResearch.longevity;
+ ok(['short','middle','long'].includes(longevity.combinedCategory),date+' PVR method-of-three-pairs selects a longevity category with complete chart inputs');
+ ok(longevity.dasaTiming?.category===longevity.combinedCategory&&longevity.dasaTiming.certified===false,date+' PVR longevity category exposes research-only Dasa timing bands');
+ const focus=longevity.dasaTiming;
+ const expectedBand={short:[0,36],middle:[36,72],long:[72,108]}[longevity.combinedCategory];
+ ok(focus.ageBandYears.start===expectedBand[0]&&focus.ageBandYears.end===expectedBand[1],date+' PVR Dasa timing age band agrees with short/middle/long category');
+ ok(focus.shoola.periods.length===4&&focus.shoola.periods.every(x=>x.ageStartYears>=expectedBand[0]&&x.ageEndYears<=expectedBand[1]),date+' PVR Shoola Dasa selects the four 9-year periods in the matching longevity range');
+ ok(focus.niryaanaShoola.periods.length>0&&focus.niryaanaShoola.periods.every(x=>x.ageStartYears<expectedBand[1]&&x.ageEndYears>expectedBand[0]),date+' PVR Niryaana Shoola selects periods overlapping the relevant age range');
  ok(c.ephemerisMode==='SWIEPH'&&c.planets.length===9&&c.planets.every(p=>p.longitude>=0&&p.longitude<360&&p.bhava>=1&&p.bhava<=12),date+' valid grahas');
  const ra=c.planets.find(p=>p.name==='ராகு').longitude,ke=c.planets.find(p=>p.name==='கேது').longitude;
  ok(Math.abs(((ke-ra+360)%360)-180)<1e-6,date+' Rahu/Ketu');
