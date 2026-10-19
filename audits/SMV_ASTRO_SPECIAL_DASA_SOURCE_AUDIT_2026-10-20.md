@@ -19,7 +19,7 @@ Source: *Vedic Astrology: An Integrated Approach*, §17.2.1–17.2.3, Table 39 a
 - Table 39 arc boundaries have numerical regressions. Moon at 24° Leo is 144°; it selects Moon Dasa and leaves (15 × (160-144)/40 = 6) years from a 15-year Mahadasa (Example 59).
 - Antardasa follows the next lord after the Mahadasa lord; in Moon Dasa the sequence begins Mars, Mercury, Saturn, Jupiter, Rahu, Venus, Sun, Moon (§17.2.2).
 - Example 59's nine elapsed years place birth within Rahu Antardasa; the remaining Rahu sub-period starts at birth, followed by later Antardasas. The Dasa and Antardasa boundaries use the author's stated 360-day Savana-year convention (§16.2).
-- Applicability is **not certified as a single binary rule**. The book explicitly documents three different views in §17.2.3: universal applicability; a Rahu/Lagna-lord kendra/trikona condition; and a daytime/nighttime plus paksha condition. The implementation reports the alternatives without selecting one. Positive and negative fixtures exercise the second view; the day/night–paksha view remains `not_evaluated` until actual local sunrise/sunset evidence is supplied to this audit path. Do not label applicability PASS solely because a Dasa sequence was calculated.
+- Applicability is **not certified as a single binary rule**. The book explicitly documents three different views in §17.2.3: universal applicability; a Rahu/Lagna-lord kendra/trikona condition; and a daytime/nighttime plus paksha condition. The implementation reports all alternatives without selecting a universal winner. The second view has positive/negative fixtures. The third view is evaluated when the actual birth Panchang supplies local sunrise/sunset; it remains `not_evaluated` when that evidence is absent. Boundary tests also protect exact longitudes from floating-point wraparound during normalization. Do not label overall applicability PASS solely because a Dasa sequence was calculated.
 
 ## 3. Kalachakra Dasa — PVR §24.2, Examples 95–97
 
@@ -37,7 +37,7 @@ For Libra Lagna, Example 80 specifies the full 12-sign sequence:
 - 11th-house group: Le, Ar, Cp, Li
 - Whole first cycle: Ge, Vi, Sg, Pi, Cn, Ta, Aq, Sc, Le, Ar, Cp, Li
 
-The old final fallback that filled missing signs in zodiac order is removed. Each group must produce exactly four signs, and the three groups must partition all 12 signs exactly once, or the engine raises a source-rule error rather than reporting a fabricated sequence. Regression checks Example 80 and iterates all 12 Lagna signs for valid, unique grouping. Dasa lengths use Narayana sign-period rules, as §21.2(5) specifies.
+The old final fallback that filled missing signs in zodiac order is removed. Each independently generated house group must produce exactly four source-derived signs; all 12 first-cycle entries are the concatenation of those three groups. If a source group is incomplete, the engine raises rather than fabricating an order. Overlapping rasis across different house groups are preserved, not deduplicated: the source describes three ordered groups, not a requirement that their union contain 12 unique signs. Regression checks Example 80 and iterates all 12 Lagna signs, including natural overlap cases. Dasa lengths use Narayana sign-period rules, as §21.2(5) specifies.
 
 ## CI / release gates
 
@@ -47,5 +47,6 @@ The old final fallback that filled missing signs in zodiac order is removed. Eac
 - [ ] Kalachakra Examples 95–97 and Savana-year/deha/jeeva rules
 - [ ] Drigdasa Example 80 plus all-12-Lagna group checks
 - [ ] Review all failed jobs before considering merge
+- [ ] Exact Table 39 boundary regression after precision-safe longitude normalization
 
 No PASS is claimed for textbook-complete Ashtottari applicability, all Kalachakra variants, or all possible Drigdasa variants until CI and independent reference comparisons pass. The source fix and tests must remain unmerged if CI fails.
