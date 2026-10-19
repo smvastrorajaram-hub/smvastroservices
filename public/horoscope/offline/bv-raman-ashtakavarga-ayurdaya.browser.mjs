@@ -407,6 +407,50 @@ export const BV_RAMAN_METHOD_B_SECONDARY_EXAMPLE = Object.freeze({
 });
 
 /**
+ * Primary-scan cross-reference from B. V. Raman, Hindu Predictive Astrology,
+ * printed p. 190 (repository scan PDF page 197), "Ashtakavarga Tables Before
+ * and After Reduction". This is a separate older-edition horoscope table:
+ * do NOT substitute it for the separately versioned ASOP Chapter II
+ * Standard-Horoscope oracle below. Rows are Aries through Pisces.
+ */
+export const BV_RAMAN_HPA_STANDARD_HOROSCOPE_ASHTAKAVARGA_ORACLE = Object.freeze({
+  source: 'B. V. Raman, Hindu Predictive Astrology, printed p. 190, repository scan PDF page 197',
+  evidenceGrade: 'PRIMARY_PAGE_IMAGE_VISUALLY_CHECKED',
+  signs: Object.freeze([
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  ]),
+  beforeReductionRows: Object.freeze({
+    Sun: Object.freeze([5, 5, 3, 6, 3, 2, 3, 3, 3, 5, 5, 5]),
+    Moon: Object.freeze([4, 6, 4, 3, 2, 4, 6, 5, 5, 2, 5, 3]),
+    Mars: Object.freeze([3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 4]),
+    Mercury: Object.freeze([4, 5, 7, 2, 5, 4, 4, 5, 6, 2, 4, 6]),
+    Jupiter: Object.freeze([4, 6, 6, 3, 5, 7, 3, 5, 4, 5, 4, 4]),
+    Venus: Object.freeze([5, 4, 7, 4, 4, 5, 4, 1, 6, 4, 3, 5]),
+    Saturn: Object.freeze([4, 4, 3, 7, 1, 2, 5, 1, 2, 4, 2, 4])
+  }),
+  afterReductionRows: Object.freeze({
+    Sun: Object.freeze([2, 3, 0, 3, 0, 0, 0, 0, 0, 2, 2, 2]),
+    Moon: Object.freeze([0, 4, 0, 0, 0, 2, 0, 2, 3, 0, 1, 0]),
+    Mars: Object.freeze([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]),
+    Mercury: Object.freeze([0, 3, 2, 0, 1, 2, 0, 3, 2, 0, 0, 2]),
+    Jupiter: Object.freeze([0, 1, 2, 0, 1, 2, 0, 2, 0, 0, 1, 1]),
+    Venus: Object.freeze([1, 0, 1, 3, 0, 1, 1, 0, 2, 0, 0, 2]),
+    Saturn: Object.freeze([3, 2, 1, 6, 0, 0, 2, 0, 1, 2, 0, 1])
+  }),
+  printedBeforeReductionRowTotals: Object.freeze({
+    Sun: 48, Moon: 49, Mars: 39, Mercury: 54, Jupiter: 56, Venus: 52, Saturn: 39
+  }),
+  printedAfterReductionRowTotals: Object.freeze({
+    Sun: 14, Moon: 12, Mars: 1, Mercury: 15, Jupiter: 10, Venus: 11, Saturn: 18
+  }),
+  printedBeforeReductionBySign: Object.freeze([29, 33, 33, 28, 23, 27, 28, 24, 30, 25, 26, 31]),
+  printedAfterReductionBySign: Object.freeze([6, 13, 6, 12, 2, 7, 3, 8, 8, 4, 4, 8]),
+  printedBeforeReductionSarvashtakavargaTotal: 337,
+  printedAfterReductionSarvashtakavargaTotal: 81
+});
+
+/**
  * Primary-scan oracle from B. V. Raman, Hindu Predictive Astrology,
  * 20th edition (1992), Chapter XXVI, printed pp. 199–203, visually inspected.
  * This is NOT the same chart as the secondary ASOP Method-A/B example.
