@@ -425,7 +425,7 @@ const madhyayu06NoConjunction = bvRamanChapterXIVLongevityRules({
     {name:'Ketu',longitude:300,bhava:11}
   ]}
 });
-eq(madhyayu06BirthLordAfflicted.rules.find(rule => rule.id === 'XIV-MAD-06').status !== 'MATCHED',
+eq(madhyayu06NoConjunction.rules.find(rule => rule.id === 'XIV-MAD-06').status !== 'MATCHED',
   true, 'Madhyayu rule 6 does not falsely match without malefic conjunction');
 
 const madhyayu13BeneficsAndMaleficAspect = bvRamanChapterXIVLongevityRules({
