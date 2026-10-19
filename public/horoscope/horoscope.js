@@ -1947,13 +1947,19 @@ try{
         try{
           const sectionI=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
           if(!sectionI)throw new Error('Advanced Analysis Part I content not found');
-          const {cgRajanAyurdayaReportHtml}=await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs?v=20261019-shadbala-ayurdaya-single-method-v1');
-          const html=cgRajanAyurdayaReportHtml({planets:full.chart.planets,lagna:full.chart.lagna,language:lang});
-          sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
-          sectionI.insertAdjacentHTML('beforeend',html);
-          // Any async routed sub-module may update I; preserve Ayurdaya LAST.
+          const {ayurdayaCustomerSummaryHtml}=await import('./offline/ayurdaya-customer-summary.browser.mjs?v=20261019-ayurdaya-summary-only-v1');
+          // Only a fully source-certified classification explicitly approved for
+          // customer display may produce a category label. Keep all calculation
+          // rows, rules and Harana traces inside the internal calculation layer.
+          const html=ayurdayaCustomerSummaryHtml({
+            classification:full.ayurdayaClassification,
+            language:lang
+          });
+          sectionI.querySelectorAll('[data-smv-ayurdaya-customer-summary]').forEach(node=>node.remove());
+          if(html)sectionI.insertAdjacentHTML('beforeend',html);
+          // Any async routed sub-module may update I; preserve the result LAST.
           root.__smvRouteAdvancedSections?.();
-          const ayur=sectionI.querySelector('[data-smv-cg-rajan-ayurdaya]');
+          const ayur=sectionI.querySelector('[data-smv-ayurdaya-customer-summary]');
           if(ayur)sectionI.appendChild(ayur);
         }catch(ayurError){
           console.warn('CG Rajan Part I Ayurdaya appendix unavailable:',ayurError);
