@@ -660,12 +660,13 @@ export function cgRajanSelectAyurdayaMethod({planets=[],lagna}={}) {
 }
 
 /**
- * Customer-visible single-method Ayurdaya arithmetic.
- * The chart's computed Shadbala selects one method; only that method's seven
- * graha terms and its seven-graha total are rendered. A tie, missing score,
- * or unresolved Harana does not silently substitute an average/raw total.
- * This remains a traditional calculation, never a medical lifespan estimate
- * or a death-age/date prediction.
+ * Internal-only calculation/audit HTML.
+ * Production Horoscope and Marriage Matching reports must not mount this
+ * detailed table; they use ayurdayaCustomerSummaryHtml, which emits only a
+ * source-certified category label approved for customer display.
+ * This helper remains available to internal numeric regression tests and
+ * must never be treated as a certified personal-lifespan estimate or death
+ * age/date prediction.
  */
 export function cgRajanAyurdayaReportHtml({planets,lagna,language='ta'}={}) {
  const ta=language==='ta';
