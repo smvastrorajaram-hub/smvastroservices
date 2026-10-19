@@ -791,9 +791,18 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-02', 'Madhyayu',
     'At least two of the 8th, 11th, Lagna and 10th lords are powerful',
     strengthTwo));
+  // HPA Ch. XIV, printed p. 70, Madhyayu rule 3. The printed order
+  // names Mercury, Jupiter and Venus against houses 2, 3 and 11; derive
+  // those placements from the calculated chart instead of requiring a
+  // duplicate caller-supplied boolean. Missing any required placement stays
+  // UNKNOWN rather than being interpreted as a negative match.
+  const mad03Houses = ['Mercury','Jupiter','Venus'].map(name => houseOf(map,name));
+  const mercuryJupiterVenusInSecondThirdEleventh =
+    mad03Houses.some(house => house === null) ? null :
+      (mad03Houses[0] === 2 && mad03Houses[1] === 3 && mad03Houses[2] === 11);
   rules.push(makeRule('XIV-MAD-03', 'Madhyayu',
-    'Mercury, Jupiter and Venus in houses 2, 3 and 11 from Lagna',
-    tri(e.mercuryJupiterVenusInSecondThirdEleventh)));
+    'Mercury in 2nd, Jupiter in 3rd and Venus in 11th from Lagna',
+    mercuryJupiterVenusInSecondThirdEleventh));
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
     tri(e.allPlanetsMiddleFourHouses)));
@@ -867,9 +876,31 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-PUR-01', 'Purnayu',
     'Lagna aspected by its lord, eighth by its lord, Jupiter in a Kendra',
     triAll(lagnaAspect, eighthAspect, isKendra(jupiterHouse))));
+  // HPA Ch. XIV, printed p. 71, Purnayu rule 2. Evaluate every
+  // graha's actual house and its natural/conditional nature. Do not infer
+  // absence from a partial chart: all nine graha positions must be known.
+  const beneficsFirstSixMaleficsLastSix = (() => {
+    const missing = CHART_GRAHAS.some(name => {
+      const planet = map.planets.get(name);
+      return !planet || !houseValid(planet.house);
+    });
+    if (missing) return null;
+    let unknownNature = false;
+    for (const name of CHART_GRAHAS) {
+      const planet = map.planets.get(name);
+      const nature = planetNature(map,e,name);
+      if (nature === null) {
+        unknownNature = true;
+        continue;
+      }
+      if (nature === 'benefic' && planet.house > 6) return false;
+      if (nature === 'malefic' && planet.house < 7) return false;
+    }
+    return unknownNature ? null : true;
+  })();
   rules.push(makeRule('XIV-PUR-02', 'Purnayu',
-    'Benefics in first six houses and malefics in last six',
-    tri(e.beneficsFirstSixMaleficsLastSix)));
+    'Benefic grahas in houses 1–6 and malefic grahas in houses 7–12',
+    beneficsFirstSixMaleficsLastSix));
   const relativeJupiterHouse = (() => {
     const lordHouse = lagnaLord ? houseOf(map, lagnaLord) : null;
     if (!houseValid(lordHouse) || !houseValid(jupiterHouse)) return null;
