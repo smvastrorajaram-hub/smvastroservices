@@ -65,7 +65,7 @@ function periodRows(order,lengthFn,startDate,firstFraction=1,cycles=1){let cur=n
 function equalRasiSubs(md,order,lengthFn){const each=md.years/12;let cur=new Date(md.start+'T00:00:00Z');return order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});}
 function narayanaSubOrder(dasaRasi,planets){const ds=parseSign(dasaRasi);if(ds<0)throw new RangeError('Invalid Narayana Antardasa Dasa sign: '+dasaRasi);const seed=strongerSign(ds,mod12(ds+6),planets);const lord=ownLord(seed,planets),p=planets[lord];let start=p?.sign??seed;let dir=oddSign(start)?1:-1;if(planets.Saturn?.sign===seed)dir=1;if(planets.Ketu?.sign===seed)dir*=-1;return Array.from({length:12},(_,i)=>mod12(start+i*dir));}
 function addSubperiods(rows,orderFn,count){return rows.map(md=>{const order=orderFn(md.rasi).slice(0,count);let cur=new Date(md.start+'T00:00:00Z');const each=md.years/count;const subs=order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});return {...md,antardasas:subs};});}
-function ashtottariApplicabilityAudit(chart,planets){
+function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
  const lagna=Number.isFinite(Number(chart?.lagna?.longitude))?rasiIndex(chart.lagna.longitude):-1;
  const lagnaLords=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
  const lagnaLord=lagna>=0?lagnaLords[lagna]:null;
@@ -83,19 +83,26 @@ function ashtottariApplicabilityAudit(chart,planets){
  const moon=Number(planets.Moon?.longitude),sun=Number(planets.Sun?.longitude);
  const elongation=Number.isFinite(moon)&&Number.isFinite(sun)?((moon-sun)%360+360)%360:null;
  const paksha=elongation==null?null:(elongation<180?'Shukla':'Krishna');
+ const timeText=String(chart?.birth?.time||chart?.birthTime||chart?.time||'');
+ const tm=timeText.match(/^(\\d{1,2}):(\\d{2})/),birthMinutes=tm?Number(tm[1])*60+Number(tm[2]):null;
+ const clockMinutes=value=>{const m=String(value||'').match(/^(\\d{1,2}):(\\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
+ const sunrise=clockMinutes(advancedContext?.birthPanchang?.sunrise),sunset=clockMinutes(advancedContext?.birthPanchang?.sunset);
+ const dayNightAvailable=birthMinutes!=null&&sunrise!=null&&sunset!=null&&sunrise<sunset;
+ const birthPeriod=dayNightAvailable?(birthMinutes>=sunrise&&birthMinutes<sunset?'day':'night'):'unknown';
+ const condition3=dayNightAvailable&&paksha?((birthPeriod==='day'&&paksha==='Krishna')||(birthPeriod==='night'&&paksha==='Shukla'))? 'met':'not_met':'not_evaluated';
  return {
   status:'UNRESOLVED_NO_INTERPRETATION_SELECTED',
-  source:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §17.2.3, printed pp. 197–198',
+  source:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §17.2.3, printed pp. 226–229',
   selectedInterpretation:null,
   views:[
    {id:'universal',status:'alternative_view_not_selected',rule:'Applicable in all charts.'},
    {id:'rahu_from_lagna_lord',status:rule2,rule:'Rahu must not be in Lagna and must be in a quadrant or trine from Lagna lord.',rahuInLagna,lagnaLord,rahuHouseFromLagnaLord:houseFromLagnaLord,qualifyingHouses},
-   {id:'day_night_paksha',status:'not_evaluated',rule:'Daytime birth in Krishna paksha or nighttime birth in Shukla paksha.',birthTimeAvailable:Boolean(chart?.birth?.time||chart?.birthTime||chart?.time),paksha,lunarElongationDegrees:elongation,reason:'The Dasa engine has not independently verified local sunrise/sunset and day/night classification; do not infer applicability from the date/time alone.'}
+   {id:'day_night_paksha',status:condition3,rule:'Daytime birth in Krishna paksha or nighttime birth in Shukla paksha.',birthTimeAvailable:birthMinutes!=null,paksha,birthPeriod,birthTime:timeText||null,sunrise:advancedContext?.birthPanchang?.sunrise||null,sunset:advancedContext?.birthPanchang?.sunset||null,lunarElongationDegrees:elongation,reason:dayNightAvailable?null:'Local birth-time and sunrise/sunset evidence is incomplete; keep this interpretation unresolved.'}
   ],
   policy:'Calculate as a clearly labelled reference only. Do not mark applicability PASS while classical interpretations conflict and no interpretation has been selected.'
  };
 }
-function ashtottari(chart,startDate){
+function ashtottari(chart,startDate,advancedContext=null){
  const p=getPlanets(chart),moon=p.Moon?.longitude;
  if(!Number.isFinite(moon))return {available:false,reason:'Moon longitude unavailable'};
  let L=((moon%360)+360)%360,z=L<26+40/60?L+360:L;
@@ -130,7 +137,7 @@ function ashtottari(chart,startDate){
   }
   return {...md,antardasas};
  });
- return {available:true,title:'Ashtottari Dasa',cycleYears:108,firstLord:arc.planet,birthBalanceFraction:frac,elapsedBeforeBirthYears:elapsedYears,sequence:subs,applicability:'Unresolved: §17.2.3 presents three different interpretations; this is a reference calculation, not a certified applicability decision.',applicabilityAudit:ashtottariApplicabilityAudit(chart,p),sourceOracle:{section:'§17.2.1–17.2.3',printedPages:'196–198',table:'Table 39',example:'Example 59'}};
+ return {available:true,title:'Ashtottari Dasa',cycleYears:108,firstLord:arc.planet,birthBalanceFraction:frac,elapsedBeforeBirthYears:elapsedYears,sequence:subs,applicability:'Unresolved: §17.2.3 presents three different interpretations; this is a reference calculation, not a certified applicability decision.',applicabilityAudit:ashtottariApplicabilityAudit(chart,p,advancedContext),sourceOracle:{section:'§17.2.1–17.2.3',printedPages:'196–198',table:'Table 39',example:'Example 59'}};
 }
 function narayana(chart,startDate){const p=getPlanets(chart),lagna=Number.isFinite(chart?.lagna?.longitude)?rasiIndex(chart.lagna.longitude):-1;if(lagna<0)return {available:false,reason:'Lagna unavailable'};const seed=strongerSign(lagna,mod12(lagna+6),p);const order=progressionByTable(seed,p);const details=order.map(code=>narayanaLengthDetail(code,p));let rows=periodRows(order,(s,_i,cycle)=>{const first=narayanaLengthDetail(s,p).years;return cycle===0?first:12-first;},startDate,1,2);const sourceWarnings=details.filter(d=>d.capped).map(d=>({rasi:d.sign,lord:d.lord,baseYears:d.baseYears,uncappedYears:d.adjustedYears,firstCycleYears:d.years,secondCycleYears:12-d.years,resolution:'The printed PVR rule sequence would produce more than 12 years (most clearly Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42, which explicitly discusses this exact Mercury-in-Virgo case. This is an inter-source reconciliation; it is not stated in the supplied PVR page itself.',sourceUrl:'https://scienceoflight.net/wp-content/uploads/extra/Narayana%20Dasa%20by%20Sanjay%20Rath.pdf'}));rows=addSubperiods(rows,r=>narayanaSubOrder(r,p),12);return {available:true,title:'Narayana Dasa',seed,sequence:rows,sourceWarnings,method:'PVR Table 40 sequence and §18.2.2 second-cycle rule; sign duration capped at 12 years using the explicit alternative Narayana Dasa source rule (Sanjay Rath, printed p. 42) for PVR’s contradictory 13-year case.'};}
 function kendradi(chart,startDate,seedOverride,sree=false){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude);const seed=seedOverride>=0?seedOverride:strongerSign(lagna,mod12(lagna+6),p);let dir=oddSign(sree?seed:lagna)?1:-1;if(p.Saturn?.sign===seed)dir=1;if(p.Ketu?.sign===seed)dir*=-1;const offs=[0,3,6,9,1,4,7,10,2,5,8,11];const order=offs.map(o=>mod12(seed+o*dir));const slDeg=degInSign(chart.__sreeLagnaLongitude||0);const frac=sree?Math.max(0,(30-slDeg)/30):1;const rows=periodRows(order,(sg,_i,cycle)=>{const first=narayanaLength(sg,p);return cycle===0?first:12-first;},startDate,frac,2);return {available:true,title:sree?'Sudasa':'Lagna Kendradi Rasi Dasa',seed,sequence:rows,firstFraction:frac,method:'Rasi durations use Narayana Dasa rules; second-cycle sign length is 12 minus first-cycle length (§19.2/§20.2).'};}
@@ -221,6 +228,6 @@ function phase4Dasa(chart,advancedContext=null){
    caution:'These are age-band/Dasa timing references, not a death prediction. The required Trishoola/AL/maraka corroboration is not automatically certified.'
   };
  }
- return {ashtottari:ashtottari(chart,start),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
+ return {ashtottari:ashtottari(chart,start,advancedContext),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
 }
 export {phase4Dasa};
