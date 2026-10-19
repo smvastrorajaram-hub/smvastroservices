@@ -88,8 +88,8 @@ const footedSignChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
 ]};
 const footedDasa=phase4Dasa(footedSignChart);
 ok(footedDasa.narayana.seed===0,'Narayana odd-footed fixture starts Aries');
-ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===1)?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
-ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi===4)?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Ta')?.fullYears===3,'Narayana length: Taurus counts forward as odd-footed (source §18.2.2)');
+ok(footedDasa.narayana.sequence.find(x=>x.cycle===1&&x.rasi==='Le')?.fullYears===5,'Narayana length: Leo counts backward as even-footed, with exalted Sun +1 (source §18.2.2)');
 
 let pairs=0;
 for(const bride of charts)for(const groom of charts){
