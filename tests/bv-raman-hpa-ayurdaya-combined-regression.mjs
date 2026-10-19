@@ -100,6 +100,12 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-07').implemented, true,
   'direct-position Balarishta rule 7 is now evaluated');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-30').implemented, true,
   'aspect-based Balarishta rule 30 is now evaluated');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-11').implemented, true,
+  'Balarishta rule 11 requires explicit sunrise evidence and evaluates the placement conditions');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-15').implemented, true,
+  'Balarishta rule 15 uses explicit birth Dasa/Antardasa inputs');
+eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-16').implemented, true,
+  'Balarishta rule 16 requires an explicit Navamsa Lagna lord');
 eq(xiv.rules.find(rule => rule.id === 'XIV-BAL-04').status, 'UNKNOWN',
   'unimplemented Balarishta rule is UNKNOWN, never silently NOT_MATCHED');
 eq(xiv.unimplementedRuleIds.includes('XIV-ANT-08'), false,
@@ -108,8 +114,8 @@ eq(xiv.rules.find(rule => rule.id === 'XIV-ANT-08').status, 'UNKNOWN',
   'antidote rule 8 remains UNKNOWN when explicit full-moon-night evidence is absent');
 eq(xiv.ruleCoverageCounts.Balarishta.sourceRules, 30,
   'Balarishta inventory has 30 source rules');
-eq(xiv.ruleCoverageCounts.Balarishta.implemented, 23,
-  'twenty-three source-numbered Balarishta rules have evaluators after the rule 17/25/26 pass');
+eq(xiv.ruleCoverageCounts.Balarishta.implemented, 26,
+  'twenty-six source-numbered Balarishta rules have evaluators after the rule 11/15/16 pass');
 eq(xiv.ruleCoverageCounts.Alpayu.sourceRules, 15,
   'Alpayu inventory has 15 source rules');
 eq(xiv.ruleCoverageCounts.Alpayu.implemented, 13,
@@ -242,6 +248,67 @@ const bal26JupiterAspectsMars = bvRamanChapterXIVLongevityRules({
 });
 eq(bal26JupiterAspectsMars.rules.find(rule => rule.id === 'XIV-BAL-26').status, 'NOT_MATCHED',
   'Balarishta rule 26 does not match when Jupiter aspects Mars');
+
+const bal11SunriseAndMaleficTrikona = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:0,bhava:1},
+    {name:'Mars',longitude:120,bhava:5},{name:'Mercury',longitude:30,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:270,bhava:10},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:12}
+  ]},evidence:{sunRisingAtBirth:true}
+});
+eq(bal11SunriseAndMaleficTrikona.rules.find(rule => rule.id === 'XIV-BAL-11').status,
+  'MATCHED', 'Balarishta rule 11 matches explicit sunrise evidence, a malefic trine and Venus in 6th');
+
+const bal11MissingSunrise = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:60,bhava:3},{name:'Moon',longitude:0,bhava:1},
+    {name:'Mars',longitude:120,bhava:5},{name:'Mercury',longitude:30,bhava:2},
+    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:150,bhava:6},
+    {name:'Saturn',longitude:270,bhava:10},{name:'Rahu',longitude:240,bhava:9},
+    {name:'Ketu',longitude:300,bhava:12}
+  ]}
+});
+eq(bal11MissingSunrise.rules.find(rule => rule.id === 'XIV-BAL-11').status, 'UNKNOWN',
+  'Balarishta rule 11 remains UNKNOWN without sunrise-at-birth evidence');
+
+const bal15DasaLordAtBirth = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]},
+  evidence:{birthDasaLord:'Mars'}
+});
+eq(bal15DasaLordAtBirth.rules.find(rule => rule.id === 'XIV-BAL-15').status, 'MATCHED',
+  'Balarishta rule 15 matches when birth Dasa lord is the Lagna/8th lord');
+
+const bal15MissingDasa = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]}
+});
+eq(bal15MissingDasa.rules.find(rule => rule.id === 'XIV-BAL-15').status, 'UNKNOWN',
+  'Balarishta rule 15 remains UNKNOWN without birth Dasa/Antardasa evidence');
+
+const bal16AllLordsWithSun = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:270,bhava:9},{name:'Moon',longitude:270,bhava:2},
+    {name:'Mars',longitude:270,bhava:3},{name:'Mercury',longitude:60,bhava:4},
+    {name:'Jupiter',longitude:90,bhava:5},{name:'Venus',longitude:270,bhava:6},
+    {name:'Saturn',longitude:270,bhava:7},{name:'Rahu',longitude:210,bhava:8},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]},evidence:{navamsaLagnaLord:'Venus'}
+});
+eq(bal16AllLordsWithSun.rules.find(rule => rule.id === 'XIV-BAL-16').status, 'MATCHED',
+  'Balarishta rule 16 matches when Lagna, Navamsa Lagna and Moon-sign lords share the Sun sign');
+
+const bal16MissingNavamsaLagna = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[
+    {name:'Sun',longitude:270,bhava:9},{name:'Moon',longitude:270,bhava:2},
+    {name:'Mars',longitude:270,bhava:3},{name:'Mercury',longitude:60,bhava:4},
+    {name:'Jupiter',longitude:90,bhava:5},{name:'Venus',longitude:270,bhava:6},
+    {name:'Saturn',longitude:270,bhava:7},{name:'Rahu',longitude:210,bhava:8},
+    {name:'Ketu',longitude:300,bhava:10}
+  ]}
+});
+eq(bal16MissingNavamsaLagna.rules.find(rule => rule.id === 'XIV-BAL-16').status, 'UNKNOWN',
+  'Balarishta rule 16 remains UNKNOWN without Navamsa Lagna lord input');
 
 const independentMadhyayuRules = bvRamanChapterXIVLongevityRules({
   chart: { lagna:{longitude:0}, planets:[
