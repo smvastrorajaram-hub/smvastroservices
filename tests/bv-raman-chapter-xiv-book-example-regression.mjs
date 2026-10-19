@@ -694,6 +694,15 @@ statuses('XIV-PUR-02',[
    signs:{Sun:8,Moon:0,Mars:7,Mercury:2,Jupiter:3,Venus:4,Saturn:9,Rahu:10,Ketu:11},omit:['Mercury']}}
 ],'HPA p.71 Purnayu 2');
 
+statuses('XIV-MAD-09',[
+ {label:'8th lord Mars in 7 and Moon joined by malefic Saturn',expected:'MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:7,Moon:4,Saturn:4}}},
+ {label:'8th lord outside house 7',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,houses:{Mars:6,Moon:4,Saturn:4}}},
+ {label:'8th-lord placement unavailable',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,houses:{Moon:4,Saturn:4},omit:['Mars']}}
+],'HPA p.71 Madhyayu 9');
+
 const coveredChapterXivRuleIds = new Set(ruleCaseResults.map(row=>row.id));
 eq(coveredChapterXivRuleIds.size,76,
   'source-linked regression has at least one explicit rule fixture for every one of the 76 Chapter XIV rule IDs');
