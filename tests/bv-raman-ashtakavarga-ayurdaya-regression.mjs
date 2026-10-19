@@ -464,6 +464,7 @@ ok(!/export\s+function\s+.*(?:deathAge|predictedDeathAge)/i.test(src),
 /* Integration regression: the Horoscope Sodhya Pinda panel must use the
    same B.V. Raman Method-A pipeline as the Ashtakavarga Ayurdaya engine. */
 const integrationChart = {
+  birth: { date: '1992-07-31', time: '22:05' },
   lagna: { longitude: 165 },
   planets: [
     { name: 'சூரியன்', longitude: 165 },
