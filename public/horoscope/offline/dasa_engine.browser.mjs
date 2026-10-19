@@ -75,7 +75,7 @@ function ashtottariApplicabilityAudit(chart,planets){
   if(!rahuInLagna&&lord&&Number.isFinite(lord.sign)){
    houseFromLagnaLord=mod12(rahu.sign-lord.sign)+1;
    rule2=qualifiesHouses.includes(houseFromLagnaLord)?'met':'not_met';
-  }else rule2='not_met';
+  }else rule2=rahuInLagna?'not_met':'unknown';
  }
  const moon=Number(planets.Moon?.longitude),sun=Number(planets.Sun?.longitude);
  const elongation=Number.isFinite(moon)&&Number.isFinite(sun)?((moon-sun)%360+360)%360:null;
