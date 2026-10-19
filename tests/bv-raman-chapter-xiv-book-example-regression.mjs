@@ -1,0 +1,383 @@
+import assert from 'node:assert/strict';
+import {
+  BV_RAMAN_HPA_CHAPTER_XIV_SOURCE,
+  BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY,
+  bvRamanChapterXIVLongevityRules
+} from '../public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs';
+
+let assertions = 0;
+function eq(actual, expected, message) {
+  assert.deepEqual(actual, expected, message);
+  assertions++;
+}
+function ok(value, message) {
+  assert.ok(value, message);
+  assertions++;
+}
+
+const GRAHAS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const DEFAULT_HOUSES = Object.freeze({
+  Sun:3, Moon:5, Mars:6, Mercury:2, Jupiter:9, Venus:11, Saturn:12, Rahu:10, Ketu:4
+});
+function makeChart({houses={}, signs={}, degrees={}, lagnaLongitude=0, omit=[]}={}) {
+  const lagnaSign = Math.floor(((lagnaLongitude % 360) + 360) % 360 / 30);
+  return {
+    lagna:{longitude:lagnaLongitude},
+    planets:GRAHAS.filter(name=>!omit.includes(name)).map(name=>{
+      const house = houses[name] ?? DEFAULT_HOUSES[name];
+      const sign = signs[name] ?? ((lagnaSign + house - 1) % 12);
+      const degree = degrees[name] ?? 5;
+      return {name,longitude:sign*30+degree,bhava:house};
+    })
+  };
+}
+const sourceRules = new Map(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY.map(rule=>[rule.id,rule]));
+eq(BV_RAMAN_HPA_CHAPTER_XIV_SOURCE.chapter,'XIV — Ayurdaya or Longevity',
+  'the test oracle is tied to B. V. Raman HPA Chapter XIV');
+eq(sourceRules.size,76,'the printed Chapter XIV inventory has 76 distinct rule IDs');
+
+function ruleCase(id, expected, chartInput={}, evidence={}, description='source-rule fixture') {
+  const result = bvRamanChapterXIVLongevityRules({chart:makeChart(chartInput),evidence});
+  const rule = result.rules.find(item=>item.id===id);
+  ok(!!rule,description+': runtime trace contains '+id);
+  eq(rule.implemented,true,description+': '+id+' has an evaluator, not just an index entry');
+  eq(rule.status,expected,description+': '+id+' — '+rule.title);
+  const source = sourceRules.get(id);
+  ok(!!source,description+': '+id+' has a source rule record');
+  eq(rule.sourcePrintedPage,source.sourcePrintedPage,
+    description+': '+id+' keeps the printed page mapping');
+  eq(rule.sourceRuleNumber,source.sourceRuleNumber,
+    description+': '+id+' keeps the source rule number');
+}
+function statuses(id, values, label) {
+  for (const item of values) ruleCase(id,item.expected,item.chart||{},item.evidence||{},label+' / '+item.label);
+}
+
+// These are positive/negative unit fixtures encoded from the printed rule
+// statements on HPA pp. 64–72. They are source-rule tests, not invented claims
+// that these constructed placements are historical birth charts printed by Raman.
+statuses('XIV-BAL-01',[
+ {label:'malefic at last Navamsa degree',expected:'MATCHED',chart:{degrees:{Saturn:26.8}}},
+ {label:'malefic clearly before the last Navamsa',expected:'NOT_MATCHED',chart:{degrees:{Saturn:26.5}}},
+ {label:'missing all candidate malefic longitudes',expected:'UNKNOWN',chart:{omit:['Sun','Mars','Saturn','Rahu','Ketu']}}
+],'HPA p.64 Balarishta 1');
+statuses('XIV-BAL-03',[
+ {label:'Moon in 8 with same-house Mars and no benefic aspect',expected:'MATCHED',
+  chart:{houses:{Sun:3,Moon:8,Mars:8,Mercury:4,Jupiter:5,Venus:3,Saturn:6,Rahu:10,Ketu:11}}},
+ {label:'Moon outside 7/8/12',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Moon:5,Mars:5,Mercury:4,Jupiter:7,Venus:3,Saturn:6,Rahu:10,Ketu:11}}},
+ {label:'Moon house missing',expected:'UNKNOWN',chart:{omit:['Moon']}}
+],'HPA p.64 Balarishta 3');
+statuses('XIV-BAL-05',[
+ {label:'malefics occupy 2, 6, 8 and 12',expected:'MATCHED',
+  chart:{houses:{Sun:2,Mars:6,Saturn:8,Rahu:12,Ketu:3}}},
+ {label:'house 2 has no malefic',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Mars:6,Saturn:8,Rahu:12,Ketu:3}}}
+],'HPA p.64 Balarishta 5');
+statuses('XIV-BAL-06',[
+ {label:'weak Moon in Ascendant and malefic in Kendra',expected:'MATCHED',
+  chart:{houses:{Moon:1,Mars:10,Rahu:11,Saturn:5,Ketu:12},},evidence:{weakPlanets:['Moon']}},
+ {label:'Moon weak but no malefic in Kendra',expected:'NOT_MATCHED',
+  chart:{houses:{Moon:1,Mars:6,Rahu:11,Saturn:5,Ketu:12}},evidence:{weakPlanets:['Moon']}},
+ {label:'weakness evidence absent',expected:'UNKNOWN',
+  chart:{houses:{Moon:1,Mars:10}},evidence:{}}
+],'HPA p.64 Balarishta 6');
+statuses('XIV-BAL-08',[
+ {label:'Moon weak in Ascendant plus stated malefic aspects',expected:'MATCHED',
+  chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:true}},
+ {label:'placement matches but the aspect condition is false',expected:'NOT_MATCHED',
+  chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:false}},
+ {label:'required aspect observation missing',expected:'UNKNOWN',
+  chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon']}}
+],'HPA p.64 Balarishta 8');
+statuses('XIV-BAL-13',[
+ {label:'Ketu in 4 with Mars in the same house',expected:'MATCHED',
+  chart:{houses:{Sun:6,Moon:1,Mars:4,Mercury:2,Jupiter:5,Venus:9,Saturn:5,Rahu:11,Ketu:4}}},
+ {label:'Ketu in 4 without malefic conjunction/aspect',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:6,Moon:1,Mars:3,Mercury:2,Jupiter:5,Venus:9,Saturn:5,Rahu:11,Ketu:4}}}
+],'HPA p.65 Balarishta 13');
+statuses('XIV-BAL-14',[
+ {label:'Rahu in 7 and both luminaries aspect it',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:1,Rahu:7,Mars:5,Mercury:4,Jupiter:8,Venus:6,Saturn:10,Ketu:12}}},
+ {label:'Rahu in 7 but Moon does not aspect it',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:1,Moon:2,Rahu:7,Mars:5,Mercury:4,Jupiter:8,Venus:6,Saturn:10,Ketu:12}}}
+],'HPA p.65 Balarishta 14');
+statuses('XIV-BAL-18',[
+ {label:'Moon 8, Mars 7, Saturn 1',expected:'MATCHED',
+  chart:{houses:{Moon:8,Mars:7,Saturn:1}}},
+ {label:'Mars not in 7',expected:'NOT_MATCHED',
+  chart:{houses:{Moon:8,Mars:6,Saturn:1}}}
+],'HPA p.65 Balarishta 18');
+statuses('XIV-BAL-19',[
+ {label:'Saturn third aspect lands on Moon',expected:'MATCHED',chart:{houses:{Saturn:1,Moon:3}}},
+ {label:'Moon is not in Saturn third aspect',expected:'NOT_MATCHED',chart:{houses:{Saturn:1,Moon:4}}},
+ {label:'Moon placement unavailable',expected:'UNKNOWN',chart:{omit:['Moon']}}
+],'HPA p.65 Balarishta 19');
+statuses('XIV-BAL-20',[
+ {label:'Moon 8 with no graha aspect',expected:'MATCHED',
+  chart:{houses:{Sun:3,Moon:8,Mars:7,Mercury:4,Jupiter:10,Venus:9,Saturn:3,Rahu:11,Ketu:12}}},
+ {label:'Moon outside 6/8',expected:'NOT_MATCHED',chart:{houses:{Moon:5}}}
+],'HPA p.65 Balarishta 20');
+statuses('XIV-BAL-21',[
+ {label:'Moon in Ascendant conjunct malefic and unprotected',expected:'MATCHED',
+  chart:{houses:{Sun:3,Moon:1,Mars:1,Mercury:4,Jupiter:4,Venus:3,Saturn:6,Rahu:9,Ketu:10}}},
+ {label:'Moon in Ascendant but with benefic aspect',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Moon:1,Mars:1,Mercury:4,Jupiter:7,Venus:3,Saturn:6,Rahu:9,Ketu:10}}}
+],'HPA p.65 Balarishta 21');
+statuses('XIV-BAL-22',[
+ {label:'Moon Ascendant, Rahu and Mars 8',expected:'MATCHED',
+  chart:{houses:{Moon:1,Rahu:8,Mars:8}}},
+ {label:'Rahu not in 8',expected:'NOT_MATCHED',chart:{houses:{Moon:1,Rahu:7,Mars:8}}}
+],'HPA p.65 Balarishta 22');
+statuses('XIV-BAL-23',[
+ {label:'Sun/Saturn Ascendant, Rahu/Mars 8',expected:'MATCHED',
+  chart:{houses:{Sun:1,Saturn:1,Rahu:8,Mars:8}}},
+ {label:'Saturn not in Ascendant',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:1,Saturn:2,Rahu:8,Mars:8}}}
+],'HPA p.65 Balarishta 23');
+statuses('XIV-BAL-24',[
+ {label:'malefics 5/8/9 plus unprotected Sun in Ascendant',expected:'MATCHED',
+  chart:{houses:{Sun:1,Moon:3,Mars:5,Mercury:2,Jupiter:4,Venus:3,Saturn:8,Rahu:9,Ketu:6}}},
+ {label:'no malefic in 9',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:1,Moon:3,Mars:5,Mercury:2,Jupiter:4,Venus:3,Saturn:8,Rahu:10,Ketu:6}}}
+],'HPA p.65 Balarishta 24');
+statuses('XIV-BAL-27',[
+ {label:'Moon at Aries 26 degrees in a Kendra',expected:'MATCHED',
+  chart:{houses:{Moon:1},signs:{Moon:0},degrees:{Moon:26.5}}},
+ {label:'Moon at a non-Mrityubhaga degree',expected:'NOT_MATCHED',
+  chart:{houses:{Moon:1},signs:{Moon:0},degrees:{Moon:25.5}}}
+],'HPA p.66 Balarishta 27');
+statuses('XIV-BAL-29',[
+ {label:'Moon 8 receives Saturn and Jupiter aspects',expected:'MATCHED',
+  chart:{houses:{Moon:8,Saturn:6,Jupiter:4,Mars:3,Sun:3,Mercury:2,Venus:9,Rahu:11,Ketu:12}}},
+ {label:'Moon 8 lacks benefic aspect',expected:'NOT_MATCHED',
+  chart:{houses:{Moon:8,Saturn:3,Jupiter:5,Mars:3,Sun:3,Mercury:2,Venus:9,Rahu:11,Ketu:12}}}
+],'HPA p.66 Balarishta 29');
+
+// Source-rule inputs which are not all inferable from longitude/house alone
+// are tested as explicit true / false / absent facts. An absent fact must not
+// be silently treated as false.
+statuses('XIV-ANT-01',[
+ {label:'strong Jupiter in Ascendant',expected:'MATCHED',chart:{houses:{Jupiter:1}},evidence:{strongPlanets:['Jupiter']}},
+ {label:'Jupiter not in Ascendant',expected:'NOT_MATCHED',chart:{houses:{Jupiter:2}},evidence:{strongPlanets:['Jupiter']}},
+ {label:'strength not supplied',expected:'UNKNOWN',chart:{houses:{Jupiter:1}},evidence:{}}
+],'HPA p.66 Antidote 1');
+statuses('XIV-ANT-02',[
+ {label:'strong Lagna lord Mars receives Jupiter aspect',expected:'MATCHED',
+  chart:{houses:{Mars:1,Jupiter:5}},evidence:{strongPlanets:['Mars']}},
+ {label:'Lagna lord not strong',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:1,Jupiter:5}},evidence:{strongPlanets:[]}}
+],'HPA p.66 Antidote 2');
+statuses('XIV-ANT-03',[
+ {label:'Moon 8 in a stated benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:true}},
+ {label:'Drekkana explicitly not benefic',expected:'NOT_MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:false}},
+ {label:'Drekkana not supplied',expected:'UNKNOWN',chart:{houses:{Moon:8}},evidence:{}}
+],'HPA p.67 Antidote 3');
+statuses('XIV-ANT-04',[
+ {label:'source full-Moon/benefic/aspect condition true',expected:'MATCHED',evidence:{fullMoonInBeneficSignAndWellAspected:true}},
+ {label:'source condition false',expected:'NOT_MATCHED',evidence:{fullMoonInBeneficSignAndWellAspected:false}},
+ {label:'no full-Moon observation',expected:'UNKNOWN',evidence:{}}
+],'HPA p.67 Antidote 4');
+statuses('XIV-ANT-05',[
+ {label:'Mercury is explicitly strong',expected:'MATCHED',evidence:{strongPlanets:['Mercury']}},
+ {label:'all three named benefics explicitly not strong',expected:'NOT_MATCHED',evidence:{strongPlanets:[]}},
+ {label:'strength not supplied',expected:'UNKNOWN',evidence:{}}
+],'HPA p.67 Antidote 5');
+statuses('XIV-ANT-06',[
+ {label:'Moon 6 and benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:6},},evidence:{moonDrekkanaBenefic:true}},
+ {label:'Moon not in 6',expected:'NOT_MATCHED',chart:{houses:{Moon:5}},evidence:{moonDrekkanaBenefic:true}},
+ {label:'Drekkana unknown',expected:'UNKNOWN',chart:{houses:{Moon:6}},evidence:{}}
+],'HPA p.67 Antidote 6');
+statuses('XIV-ANT-07',[
+ {label:'Full Moon between benefics fact true',expected:'MATCHED',evidence:{fullMoonBetweenBenefics:true}},
+ {label:'explicitly not enclosed',expected:'NOT_MATCHED',evidence:{fullMoonBetweenBenefics:false}},
+ {label:'no enclosure evidence',expected:'UNKNOWN',evidence:{}}
+],'HPA p.67 Antidote 7');
+statuses('XIV-ANT-09',[
+ {label:'full Moon aspects Lagna and Jupiter is in a Kendra',expected:'MATCHED',
+  chart:{houses:{Jupiter:4}},evidence:{fullMoonAspectsLagna:true}},
+ {label:'Jupiter is not in a Kendra',expected:'NOT_MATCHED',
+  chart:{houses:{Jupiter:3}},evidence:{fullMoonAspectsLagna:true}},
+ {label:'full-Moon Lagna aspect is unknown',expected:'UNKNOWN',
+  chart:{houses:{Jupiter:4}},evidence:{}}
+],'HPA p.67 Antidote 9');
+statuses('XIV-ANT-10',[
+ {label:'benefic Shadvarga protection explicitly present',expected:'MATCHED',evidence:{maleficsInBeneficShadvargasWithBeneficAspect:true}},
+ {label:'protection explicitly absent',expected:'NOT_MATCHED',evidence:{maleficsInBeneficShadvargasWithBeneficAspect:false}},
+ {label:'Shadvarga result not supplied',expected:'UNKNOWN',evidence:{}}
+],'HPA p.67 Antidote 10');
+
+statuses('XIV-ALP-01',[
+ {label:'Saturn 8, Mars 5, Ketu 1',expected:'MATCHED',chart:{houses:{Saturn:8,Mars:5,Ketu:1}}},
+ {label:'Ketu not in Ascendant',expected:'NOT_MATCHED',chart:{houses:{Saturn:8,Mars:5,Ketu:2}}}
+],'HPA p.69 Alpayu 1');
+statuses('XIV-ALP-03',[
+ {label:'Saturn 1, Sun/Moon/Mars all 7',expected:'MATCHED',chart:{houses:{Saturn:1,Sun:7,Moon:7,Mars:7}}},
+ {label:'Mars not in 7',expected:'NOT_MATCHED',chart:{houses:{Saturn:1,Sun:7,Moon:7,Mars:6}}}
+],'HPA p.69 Alpayu 3');
+statuses('XIV-ALP-04',[
+ {label:'Aries Lagna: eighth lord Mars and Ketu in Ascendant',expected:'MATCHED',
+  chart:{houses:{Mars:1,Ketu:1},lagnaLongitude:0}},
+ {label:'Ketu not in Ascendant',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:1,Ketu:2},lagnaLongitude:0}}
+],'HPA p.69 Alpayu 4');
+statuses('XIV-ALP-05',[
+ {label:'malefic occupies Ascendant and Moon is conjunct it',expected:'MATCHED',chart:{houses:{Mars:1,Moon:1}}},
+ {label:'Moon not conjunct Ascendant malefic',expected:'NOT_MATCHED',chart:{houses:{Mars:1,Moon:2}}}
+],'HPA p.69 Alpayu 5');
+statuses('XIV-ALP-06',[
+ {label:'Aries Lagna eighth lord/Lagna lord Mars weak in Ascendant',expected:'MATCHED',
+  chart:{houses:{Mars:1},lagnaLongitude:0},evidence:{weakPlanets:['Mars']}},
+ {label:'Mars not weak',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:1},lagnaLongitude:0},evidence:{weakPlanets:[]}},
+ {label:'weakness unknown',expected:'UNKNOWN',
+  chart:{houses:{Mars:1},lagnaLongitude:0},evidence:{}}
+],'HPA p.69 Alpayu 6');
+statuses('XIV-ALP-07',[
+ {label:'Scorpio Lagna, Sun/Jupiter 1, eighth lord Mercury in Kendra',expected:'MATCHED',
+  chart:{lagnaLongitude:210,houses:{Sun:1,Jupiter:1,Mercury:4}}},
+ {label:'eighth lord Mercury outside Kendra',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:210,houses:{Sun:1,Jupiter:1,Mercury:5}}}
+],'HPA p.70 Alpayu 7');
+statuses('XIV-ALP-08',[
+ {label:'Rahu 7, Moon 8, Jupiter 1',expected:'MATCHED',chart:{houses:{Rahu:7,Moon:8,Jupiter:1}}},
+ {label:'Jupiter not in Ascendant',expected:'NOT_MATCHED',chart:{houses:{Rahu:7,Moon:8,Jupiter:2}}}
+],'HPA p.70 Alpayu 8');
+statuses('XIV-ALP-14',[
+ {label:'explicit strong-malefic/no-benefic-aspect result true',expected:'MATCHED',
+  evidence:{strongMaleficsInKendrasWithoutBeneficAspects:true}},
+ {label:'explicit result false',expected:'NOT_MATCHED',
+  evidence:{strongMaleficsInKendrasWithoutBeneficAspects:false}},
+ {label:'strength/aspect observation missing',expected:'UNKNOWN',evidence:{}}
+],'HPA p.70 Alpayu 14');
+
+statuses('XIV-MAD-04',[
+ {label:'all planets in the printed middle four houses',expected:'MATCHED',evidence:{allPlanetsMiddleFourHouses:true}},
+ {label:'not all planets in middle four',expected:'NOT_MATCHED',evidence:{allPlanetsMiddleFourHouses:false}},
+ {label:'middle-house classification missing',expected:'UNKNOWN',evidence:{}}
+],'HPA p.70 Madhyayu 4');
+statuses('XIV-MAD-15',[
+ {label:'benefics in Kendra/Trikona and powerful Saturn',expected:'MATCHED',
+  evidence:{beneficsInKendrasAndTrikonas:true,strongPlanets:['Saturn']}},
+ {label:'Saturn not powerful',expected:'NOT_MATCHED',
+  evidence:{beneficsInKendrasAndTrikonas:true,strongPlanets:[]}},
+ {label:'benefic-placement evidence missing',expected:'UNKNOWN',evidence:{strongPlanets:['Saturn']}}
+],'HPA p.71 Madhyayu 15');
+statuses('XIV-MAD-02',[
+ {label:'two relevant lords explicitly powerful',expected:'MATCHED',
+  evidence:{strongPlanets:['Mars','Jupiter','Venus','Saturn']}},
+ {label:'none of the relevant lords powerful',expected:'NOT_MATCHED',evidence:{strongPlanets:[],weakPlanets:[]}},
+ {label:'strength evidence absent',expected:'UNKNOWN',evidence:{}}
+],'HPA p.70 Madhyayu 2');
+
+statuses('XIV-PUR-01',[
+ {label:'Taurus Lagna lord Venus aspects 1; eighth lord Jupiter aspects 8; Jupiter Kendra',
+  expected:'MATCHED',chart:{lagnaLongitude:30,houses:{Venus:7,Jupiter:4}}},
+ {label:'Lagna lord fails to aspect Ascendant',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:30,houses:{Venus:6,Jupiter:4}}}
+],'HPA p.71 Purnayu 1');
+statuses('XIV-PUR-03',[
+ {label:'Jupiter Kendra from Lagna lord and no malefics in Kendras',expected:'MATCHED',
+  chart:{houses:{Sun:3,Moon:2,Mars:5,Mercury:6,Jupiter:8,Venus:9,Saturn:6,Rahu:11,Ketu:12}}},
+ {label:'malefic Saturn in a Kendra defeats the condition',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Moon:2,Mars:5,Mercury:6,Jupiter:8,Venus:9,Saturn:10,Rahu:11,Ketu:12}}}
+],'HPA p.72 Purnayu 3');
+statuses('XIV-PUR-04',[
+ {label:'Cancer Lagna, Jupiter 1 (exalted)',expected:'MATCHED',
+  chart:{lagnaLongitude:90,houses:{Jupiter:1}}},
+ {label:'Jupiter not in Lagna',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:90,houses:{Jupiter:2}}}
+],'HPA p.72 Purnayu 4');
+statuses('XIV-PUR-05',[
+ {label:'Lagna lord and Sun 10, Saturn 1, Jupiter 4',expected:'MATCHED',
+  chart:{houses:{Mars:10,Sun:10,Saturn:1,Jupiter:4}}},
+ {label:'Jupiter not in 4',expected:'NOT_MATCHED',
+  chart:{houses:{Mars:10,Sun:10,Saturn:1,Jupiter:5}}}
+],'HPA p.72 Purnayu 5');
+statuses('XIV-PUR-06',[
+ {label:'Jupiter 1, Venus 4, Saturn/Moon 10',expected:'MATCHED',
+  chart:{houses:{Jupiter:1,Venus:4,Saturn:10,Moon:10}}},
+ {label:'Moon not in 10',expected:'NOT_MATCHED',
+  chart:{houses:{Jupiter:1,Venus:4,Saturn:10,Moon:9}}}
+],'HPA p.72 Purnayu 6');
+
+// Evidence from the actual historical examples printed on pp. 68–69 is
+// transcribed separately from synthetic chart fixtures. Horoscope No. 1 says
+// Venus is the birth Dasa lord and is conjunct Saturn/Ketu, with Rahu aspecting
+// Venus. That statement is a direct positive oracle for the Dasa-lord
+// conjunction input; it does not certify a lifespan or reconstruct an entire
+// chart from illegible/ambiguous sign symbols.
+const bookExample1 = Object.freeze({
+  id:'HPA-XIV-HOROSCOPE-1',
+  printedPage:68,
+  birthDate:'1928-01-11',
+  longitudeEastDegrees:74,
+  latitudeNorthDegrees:12,
+  ghatisAfterSunrise:7,
+  birthDasaLord:'Venus',
+  explicitlyReportedConjunctions:['Saturn','Ketu'],
+  explicitlyReportedAspectFrom:'Rahu',
+  sourceStatement:'The birth Dasa lord Venus is stated to join Saturn and Ketu and receive Rahu aspect.'
+});
+eq(bookExample1.printedPage,68,'the worked-example metadata points to scanned HPA printed page 68');
+eq(bookExample1.birthDasaLord,'Venus','worked-example birth Dasa lord is transcribed from the source');
+eq(bookExample1.explicitlyReportedConjunctions,['Saturn','Ketu'],
+  'worked-example conjunction participants are transcribed from the source');
+eq(bookExample1.explicitlyReportedAspectFrom,'Rahu',
+  'worked-example aspect participant is transcribed from the source');
+ruleCase('XIV-BAL-10','MATCHED',{},{
+  birthDasaLord:bookExample1.birthDasaLord,
+  birthDasaLordConjoinedWithManyMalefics:true
+},'HPA p.68 Horoscope No.1: the book-stated Venus/Saturn/Ketu configuration is wired into Balarishta 10');
+ruleCase('XIV-BAL-10','UNKNOWN',{},{
+  birthDasaLord:bookExample1.birthDasaLord
+},'HPA p.68 Horoscope No.1: do not derive conjunction from a Dasa name alone');
+
+// The next two source examples contain facts whose full calculated positions
+// or classical aspects cannot safely be recovered from the printed prose alone.
+// They are retained as source-trace tests: no rule is forced to MATCH just
+// because an unrelated risk/cancellation narrative is reported.
+const bookExample2 = Object.freeze({
+  id:'HPA-XIV-HOROSCOPE-2',
+  printedPage:68,
+  birthDate:'1912-08-06',
+  birthTimeAfterSunrise:'42 ghatis 30 vighatis',
+  birthDasaLord:'Sun',
+  statedFacts:['Ascendant between Rahu and Saturn','Moon afflicted by Saturn','Saturn strongly aspects birth Dasa lord'],
+  sourceNote:'The paragraph provides those interpretive facts; the exact evaluated house/aspect geometry must be recovered from the chart/source before binding another rule.'
+});
+const bookExample3 = Object.freeze({
+  id:'HPA-XIV-HOROSCOPE-3',
+  printedPage:69,
+  birthDate:'1875-02-12',
+  statedFacts:['malefics flank Ascendant','Moon under Rahu influence','Rahu strongly aspected by Mars and Ketu','Jupiter in a quadrant is cited as redemption'],
+  sourceNote:'Preserve the narrative as a source example; do not convert it into a rule match without its complete chart geometry and an explicitly implemented cancellation rule.'
+});
+eq(bookExample2.printedPage,68,'HPA Horoscope No.2 retains its printed source page');
+eq(bookExample2.birthDasaLord,'Sun','HPA Horoscope No.2 birth Dasa lord is preserved');
+ok(bookExample2.statedFacts.length===3,'HPA Horoscope No.2 records each stated fact separately');
+eq(bookExample3.printedPage,69,'HPA Horoscope No.3 retains its printed source page');
+ok(bookExample3.statedFacts.length===4,'HPA Horoscope No.3 records affliction and protection facts separately');
+
+// Core safety invariant: source rules may match individually, but they remain
+// candidates/antidotes. These tests never create a selected category, lifespan,
+// certification or a death-age/date claim.
+const research = bvRamanChapterXIVLongevityRules({
+  chart:makeChart({houses:{Sun:1,Moon:1,Mars:8,Jupiter:4,Saturn:1,Rahu:8,Ketu:8}}),
+  evidence:{}
+});
+eq(research.rules.length,76,'fixture audit leaves all source rule trace rows visible');
+eq(research.selectedCategory,null,'Chapter XIV has no automatically selected longevity category');
+eq(research.finalLifespan,null,'source-rule fixture audit never returns a lifespan');
+eq(research.certified,false,'source-rule fixture audit remains uncertified');
+eq(research.customerDisplayAllowed,false,'research rules remain unavailable for customer-facing lifespan display');
+
+console.log(JSON.stringify({
+  pass:true,assertions,
+  source:'B. V. Raman, Hindu Predictive Astrology, Chapter XIV, printed pp.64–72',
+  chapterXIVRuleInventory:sourceRules.size,
+  sourceDerivedRuleFixtures:'constructed positive/negative rule tests; explicitly not claimed as book-printed natal charts',
+  actualBookExamples:['HPA-XIV-HOROSCOPE-1','HPA-XIV-HOROSCOPE-2','HPA-XIV-HOROSCOPE-3'],
+  actualBookExamplePageReferences:{horoscope1:68,horoscope2:68,horoscope3:69},
+  finalLifespan:null,certified:false,customerDisplayAllowed:false
+},null,2));
