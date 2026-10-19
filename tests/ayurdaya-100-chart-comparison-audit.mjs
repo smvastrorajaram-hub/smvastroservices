@@ -8,6 +8,7 @@
  * additionally require the user's 100 verified birth records.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
 import {
@@ -56,6 +57,25 @@ function longitudeSignature(chart) {
 function pindaSignature(rows) {
   return rows.map(r=>[r.planet,r.rasiPinda,r.grahaPinda,r.sodyaPinda].join(':')).join('|');
 }
+// Source-level guardrails for the two optimization fixes in this PR.
+const offlineSource=readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
+const advancedSource=readFileSync(new URL('../public/horoscope/offline/astro_advanced.browser.mjs',import.meta.url),'utf8');
+const matchingGate=offlineSource.indexOf('if(body?.matchingOnly!==true){try{const targetYear');
+const annualCalc=offlineSource.indexOf('findTajakaAnnualChart(body,targetYear)');
+ok(matchingGate>=0 && annualCalc>matchingGate,
+  'Tajaka annual chart calculation is guarded off for matchingOnly source path');
+const advancedStart=advancedSource.lastIndexOf("function advanced(chart,lang='ta')");
+const advancedTail=advancedSource.slice(advancedStart);
+eq((advancedTail.match(/ashtakavarga\(chart,lang\)/g)||[]).length,1,
+  'advanced() invokes Ashtakavarga once and shares the result');
+ok(advancedTail.includes('v5:v5Extras(chart,lang,av)'),
+  'precomputed BAV/SAV result is reused by the Sodhya Pinda panel');
+const pindaStart=advancedSource.indexOf('function sodhyaPinda(chart,lang,calculatedAv)');
+const pindaEnd=advancedSource.indexOf('function sahams(chart,lang)',pindaStart);
+const pindaSource=advancedSource.slice(pindaStart,pindaEnd);
+ok(pindaSource.includes("for(const node of ['ராகு','கேது'])"),
+  'Ekadhipatya occupancy includes Rahu/Ketu without adding them to Graha Pinda multipliers');
+
 const maleBirths = buildBirths('male',50);
 const femaleBirths = buildBirths('female',50);
 eq(maleBirths.length,50,'50 male-cohort birth fixtures generated');
@@ -84,6 +104,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   const input = {...birth};
   delete input.sex;
   delete input.index;
+  ok(!Object.hasOwn(input,'planets'), 'natal chart positions are not preloaded for '+birth.name);
   const result = await full(input);
   ok(result?.ok === true && result.meta?.complete === true && result.meta?.matchingOnly === true,
     'full natal calculation succeeds through matchingOnly path for '+birth.name);
