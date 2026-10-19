@@ -499,7 +499,7 @@ statuses('XIV-BAL-11',[
 ],'HPA p.65 Balarishta 11');
 statuses('XIV-BAL-12',[
  {label:'Lagna lord Mars in house 8 qualifies directly',expected:'MATCHED',chart:{lagnaLongitude:0,houses:{Mars:8}}},
- {label:'Lagna lord and the required paired lords do not qualify',expected:'NOT_MATCHED',chart:{lagnaLongitude:0,houses:{Mars:6,Sun:5,Jupiter:12}}},
+ {label:'Lagna lord Mars in own sign; 5th lord in own sign; 9th lord in own sign outside 8/9',expected:'NOT_MATCHED',chart:{lagnaLongitude:0,houses:{Mars:1,Sun:5,Jupiter:12}}},
  {label:'Lagna lord placement cannot be assessed',expected:'UNKNOWN',chart:{lagnaLongitude:0,omit:['Mars']}}
 ],'HPA p.65 Balarishta 12');
 statuses('XIV-BAL-16',[
