@@ -31,6 +31,14 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 | Ashtottari (§17) | The engine's sequence/duration formula and applicability caveat exist. The book reports that the system's applicability conditions are disputed. | Partial review only |
 | Lagna Kendradi, Sudasa, Drigdasa, Kalachakra | Present in the engine. Drigdasa's progression direction was corrected to use the book's odd-footed/even-footed groups, but its full aspect-group construction and fallback completion still need independent example oracles. Lagna Kendradi/Sudasa/Kalachakra still require fuller rule-by-rule and worked-example audits. | **Not certified / more audit needed** |
 
+### Longevity category → Dasa timing
+
+The printed pp. 273–284 distinguish the two systems:
+- **Niryaana Shoola Dasa:** the selected short/middle/long category corresponds to the 0–36 / 36–72 / 72–108 age interval. Its Mahadasa durations are variable (7/8/9 years), so the matching intervals are derived from cumulative Dasa years, not by blindly taking the same four row indices. Those intervals must then be cross-checked against the three Trishoola signs; Rudra/Trishoola derivation is not yet a fully certified automated result here.
+- **Shoola Dasa:** every Mahadasa is 9 years, so the category interval selects exactly the first, middle or last four of the 12 Mahadasas. The added display shows the overlapping Dasa periods and dates in both systems, while explicitly warning that these are timing reference windows, not a death prediction.
+
+Regression checks now assert that the selected category maps to its age band, the four Shoola periods fit that band, and Niryaana Shoola periods have cumulative-age intervals overlapping the band.
+
 The implementation uses a heuristic for comparing sign strength. That limitation must not be hidden by a green syntax/regression run.
 
 ## Printed pp. 337–341 — Sodhya Pinda event-timing references
