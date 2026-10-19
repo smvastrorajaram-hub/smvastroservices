@@ -164,3 +164,19 @@ A further code-level review made two fail-closed corrections in the combined pro
 2. Chapter XXVI's eclipse factor explicitly concerns the Sun or Moon. The Harana function now requires the affected classical planet to be named and rejects `eclipsed: true` for Mars, Mercury, Jupiter, Venus or Saturn. A regression test pins this invalid-input case.
 
 These are source-scope and input-validation fixes, not proof of complete classical correctness. The reference accessed during this audit is a searchable OCR/transcription, not the original repo PDF inspected as page images. Accordingly, the evidence grade remains `TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING`, no final lifespan is produced, and production Horoscope/Marriage Matching outputs remain unchanged.
+
+## 2026-10-19 — External searchable-text cross-check (not page-image certification)
+
+An independently accessible searchable transcription of *Hindu Predictive Astrology* was checked against the implementation's Chapter XIV/XXVI scope:
+
+- Chapter XIV is indexed as “Ayurdaya or Longevity”; the searchable chapter text describes the four categories as Balarishta, Alpayu, Madhyayu and Purnayu, and discusses combinations and antidotes. This supports keeping the rule track separate from the numeric Ashtakavarga track, but does not validate the prototype's partial rule list.
+- Chapter XXVI searchable text explicitly lists the selected reductions: multiple planets in a sign (one-half), debilitation (one-half), combustion (one-half), temporary enemy sign (one-third), above-horizon planets (one-half), defeat in planetary war (one-third), and unusual/eclipsed Sun or Moon (one-third). It also says that where a single planet has several reductions, only the highest reduction is applied. This agrees with the current prototype's factor list and non-stacking rule.
+- The same searchable transcription lists net lunar terms as Sun 13.70, Moon 7.76, Mars 2.33, Mercury 0.48, Jupiter 4.00, Venus 12.44, Saturn 8.27, total 48.98; then prints the 334/365 conversion and 44.87 solar years. Direct arithmetic gives 48.98 × 334 ÷ 365 = 44.82005479…, i.e. 44.82 to two decimals. The source-text conflict therefore remains real in the accessible transcription and is not corrected by changing code to force 44.87.
+- The accessible source is a web OCR/searchable-text transcription, not a verified scan of the exact edition/page images in this repository. It cannot close the primary-page evidence gate. The online transcription also notes that the Ashtakavarga longevity system has not been found satisfactory in actual practice; this reinforces withholding a definitive longevity output rather than presenting a spurious precision.
+
+References checked on 2026-10-19:
+- Chapter XIV searchable transcription: https://www.scribd.com/document/808320122/Hindu-Predictive-Astrology-BV-Raman
+- Chapter XXVI searchable transcription around printed pages 202–203: https://www.scribd.com/document/808320122/Hindu-Predictive-Astrology-BV-Raman
+- Alternate searchable scan/OCR listing Chapter XIV: https://pdfcoffee.com/b-v-raman-hindu-predictive-astrology-1996pdf-pdf-free.html
+
+Evidence grade remains `TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING`. Do not promote the research prototype to production or mark classical certification complete based on this check.
