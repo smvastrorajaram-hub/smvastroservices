@@ -426,11 +426,12 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const moon = map.planets.get('Moon');
   const moonHouse = houseOf(map, 'Moon');
   const moonAspect = aspectState(map, e, 'Moon');
-  // HPA p. 64 lists "Moon in a Kendra with malefics". The source wording
-  // is evaluated as co-occupancy for this predicate; a malefic aspect alone
-  // must not be widened into conjunction. Rule 3 additionally requires no
-  // benefic aspect, but it uses this same-house co-occupancy predicate.
+  // HPA p. 64 Rule 2 ("Moon in a Kendra with malefics") is evaluated as
+  // same-house co-occupancy; a malefic aspect alone must not satisfy it.
+  // Rule 3 is a separate 7/8/12 condition, for which this chapter's printed
+  // Horoscope No. 1 states a malefic aspect with no benefic aspect.
   const moonWithMalefics = conjunctionState(map, 'Moon', 'malefic', e);
+  const moonMaleficInfluence = triAny(moonWithMalefics, moonAspect.malefic);
   const maleficKendra = maleficInAnyKendra(map);
   const beneficKendra = beneficInAnyKendra(map, e);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
@@ -510,8 +511,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     'Moon in a Kendra with malefics (same-house co-occupancy)',
     triAll(isKendra(moonHouse), moonWithMalefics)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
-    'Moon in house 7, 8 or 12 with malefics and no benefic aspect (same-house co-occupancy)',
-    triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
+    'Moon in house 7, 8 or 12 with malefic conjunction/aspect and no benefic aspect',
+    triAll(inList(moonHouse, [7, 8, 12]), moonMaleficInfluence, noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-04', 'Balarishta',
     'Birth within 48 minutes before sunrise/after sunset, Moon hora rising and malefics in malefic-sign Navamsas',
     triAll(tri(e.birthWithin48MinutesOfSunriseOrSunset),
