@@ -716,6 +716,13 @@ function sodhyaPinda(chart,lang,calculatedAv){
   planetSigns[planet]=sign;
   occupiedSigns.push(sign);
  }
+ // Ekadhipatya occupancy uses all nine chart grahas in the paired Ayurdaya
+ // engine. Rahu/Ketu affect occupied-vs-empty sign reduction, but they are
+ // not included as Graha-Pinda contributors or in the seven-planet pinda sum.
+ for(const node of ['ராகு','கேது']){
+  const natal=pm[node],longitude=Number(natal?.longitude);
+  if(Number.isFinite(longitude)) occupiedSigns.push(rasi(longitude));
+ }
  // Use the same B.V. Raman research engine as the Ashtakavarga Ayurdaya
  // report: do not substitute raw SAV/BAV totals or the separate BPHS/PVR
  // helper, whose Shodhana rules and multipliers are not identical.
