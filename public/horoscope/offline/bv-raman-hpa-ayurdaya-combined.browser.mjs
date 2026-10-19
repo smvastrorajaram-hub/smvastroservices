@@ -6,8 +6,9 @@
  * Rasi/Graha Pinda, per-graha Harana and lunar-to-solar conversion.
  *
  * These tracks are cross-checked, never averaged or allowed to override one
- * another. Page-image verification and the printed 44.87-year conversion
- * conflict remain unresolved. No final lifespan or death timing is emitted.
+ * another. Primary scan pages for XIV (printed pp. 63–72) and XXVI (pp. 199–203)
+ * were visually inspected. Full-precision formula results remain separate from
+ * inconsistent printed totals. No final lifespan or death timing is emitted.
  */
 import {
   BV_RAMAN_AYURDAYA_PLANETS,
@@ -17,21 +18,27 @@ import {
 export const BV_RAMAN_HPA_CHAPTER_XIV_SOURCE = Object.freeze({
   book: 'B. V. Raman, Hindu Predictive Astrology, 20th edition (1992)',
   chapter: 'XIV — Ayurdaya or Longevity',
-  printedPages: 'approximately 63–72; edition pagination needs page-image confirmation',
-  evidenceGrade: 'TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING',
-  coverage: 'Selected combinations and antidotes only; not the complete chapter rule list'
+  printedPages: '63–72',
+  checkedPrintedPages: '63–72; scan images visually inspected',
+  evidenceGrade: 'PRIMARY_PAGE_IMAGES_VISUALLY_CHECKED_PARTIAL',
+  coverage: 'Selected combinations and antidotes only; page images checked, but this is not the complete chapter rule list'
 });
 
 export const BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE = Object.freeze({
   book: 'B. V. Raman, Hindu Predictive Astrology, 20th edition (1992)',
   chapter: 'XXVI — The Ashtakavarga System',
   printedPages: '199–203',
-  evidenceGrade: 'TEXT_TRANSCRIPTION_PAGE_IMAGE_PENDING',
+  checkedPrintedPages: '199–203; scan images visually inspected',
+  evidenceGrade: 'PRIMARY_PAGE_IMAGES_VISUALLY_CHECKED',
   lunarToSolarRatio: Object.freeze([334, 365]),
   publishedExample: Object.freeze({
-    netLunarYears: 48.98,
+    printedNetLunarYears: 48.98,
     printedSolarYears: 44.87,
-    arithmeticSolarYears: 48.98 * 334 / 365
+    solarYearsFromPrintedNet: 48.98 * 334 / 365,
+    formulaNetLunarYearsFromPindas: 49,
+    formulaSolarYearsFromPindas: 49 * 334 / 365,
+    formulaSolarYearsRounded: 44.84,
+    status: 'PRIMARY_SCAN_CONFIRMED_PRINTED_ARITHMETIC_MISMATCH'
   })
 });
 
@@ -168,10 +175,10 @@ function aspectState(map, evidence, targetName) {
 }
 function conjunctionState(map, planetName, className = 'malefic', evidence = {}) {
   const subject = map.planets.get(planetName);
-  if (!subject || subject.sign === null) return null;
+  if (!subject || !houseValid(subject.house)) return null;
   let unknown = false;
   for (const [name, candidate] of map.planets.entries()) {
-    if (name === planetName || candidate.sign !== subject.sign) continue;
+    if (name === planetName || !houseValid(candidate.house) || candidate.house !== subject.house) continue;
     const nature = planetNature(map, evidence, name);
     if (className === 'malefic' && nature === 'malefic') return true;
     if (className === 'benefic' && nature === 'benefic') return true;
@@ -233,7 +240,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const moon = map.planets.get('Moon');
   const moonHouse = houseOf(map, 'Moon');
   const moonAspect = aspectState(map, e, 'Moon');
-  // Chapter XIV says the Moon is "with" malefics: keep same-sign conjunction separate from aspect evidence.
+  // Printed p. 64 says "Moon in a Kendra with malefics"; evaluate same-house co-occupancy separately from aspects.
   const moonWithMalefics = conjunctionState(map, 'Moon', 'malefic', e);
   const maleficKendra = maleficInAnyKendra(map);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
@@ -264,10 +271,10 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })();
   rules.push(makeRule('XIV-BAL-01', 'Balarishta', 'Malefic in the final Navamsa', maleficsLastNavamsa));
   rules.push(makeRule('XIV-BAL-02', 'Balarishta',
-    'Moon in a Kendra with malefics and no benefic aspect (same-sign conjunction)',
-    triAll(isKendra(moonHouse), moonWithMalefics, noBeneficMoonAspect)));
+    'Moon in a Kendra with malefics (same-house co-occupancy)',
+    triAll(isKendra(moonHouse), moonWithMalefics)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
-    'Moon in house 7, 8 or 12 with malefics and no benefic aspect',
+    'Moon in house 7, 8 or 12 with malefics and no benefic aspect (same-house co-occupancy)',
     triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-05', 'Balarishta', 'Malefics occupy each of houses 2, 6, 8 and 12',
     maleficsInAll([2, 6, 8, 12])));
@@ -333,15 +340,25 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-ALP-05', 'Alpayu', 'Weak Lagna lord with eighth lord in a Kendra',
     triAll(lagnaLordWeak, isKendra(eighthLordHouse))));
 
-  // Madhyayu: third/sixth lord Kendra + at least two key lords source-marked strong.
+  // Printed pp. 70–71 list these as distinct combinations: never AND separate rules together.
+  rules.push(makeRule('XIV-MAD-01', 'Madhyayu',
+    'Third or sixth lord in a Kendra',
+    triAny(isKendra(thirdLordHouse), isKendra(sixthLordHouse))));
   const relevantLords = [eighthLord, eleventhLord, lagnaLord, tenthLord];
   const strongCount = relevantLords.filter(name => name && isStrong(name) === true).length;
   const strengthUnknown = relevantLords.some(name => !name || isStrong(name) === null);
   const strengthTwo = strongCount >= 2 ? true : (strengthUnknown ? null : false);
-  rules.push(makeRule('XIV-MAD-01', 'Madhyayu',
-    'Third or sixth lord in a Kendra and at least two key lords strong',
-    triAll(triAny(isKendra(thirdLordHouse), isKendra(sixthLordHouse)), strengthTwo)));
-  rules.push(makeRule('XIV-MAD-02', 'Madhyayu', 'Benefics in Kendras/Trikonas with strong Saturn',
+  rules.push(makeRule('XIV-MAD-02', 'Madhyayu',
+    'At least two of the 8th, 11th, Lagna and 10th lords are powerful',
+    strengthTwo));
+  rules.push(makeRule('XIV-MAD-03', 'Madhyayu',
+    'Mercury, Jupiter and Venus in houses 2, 3 and 11 from Lagna',
+    tri(e.mercuryJupiterVenusInSecondThirdEleventh)));
+  rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
+    'All planets occupy the middle four houses from Lagna',
+    tri(e.allPlanetsMiddleFourHouses)));
+  rules.push(makeRule('XIV-MAD-05', 'Madhyayu',
+    'Benefics in Kendras/Trikonas with strong Saturn',
     triAll(tri(e.beneficsInKendrasAndTrikonas), isStrong('Saturn'))));
 
   // Purnayu: selected configurations; strength and special conditions remain explicit inputs.
@@ -401,7 +418,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       'Only selected Chapter XIV rules are implemented; this is not the complete chapter.',
       'Strength, Drekkana and special full-Moon facts require source-checked inputs; provisional Shadbala alone is not treated as certified.',
       'Matched combinations and antidotes remain separate evidence. No category is selected automatically.',
-      'Page-image verification and complete rule reconciliation are still pending.'
+      'Selected rules have been compared with scan images on printed pp. 63–72; the full Chapter XIV rule list and every cancellation remain outside this partial engine.'
     ])
   });
 }
@@ -426,13 +443,13 @@ export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors, pla
     ? ['eclipsed'] : [];
   if (invalidFactors.length) return Object.freeze({
     resolved: false, grossLunarYears, appliedDeductionFraction: null, remainingFraction: null,
-    unroundedNetLunarYears: null, printedNetLunarYears: null, selectedRules: Object.freeze([]),
+    unroundedNetLunarYears: null, roundedNetLunarYears: null, selectedRules: Object.freeze([]),
     missingFactors: Object.freeze(missing), invalidFactors: Object.freeze(invalidFactors),
     source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
   });
   if (missing.length) return Object.freeze({
     resolved: false, grossLunarYears, appliedDeductionFraction: null, remainingFraction: null,
-    unroundedNetLunarYears: null, printedNetLunarYears: null, selectedRules: Object.freeze([]),
+    unroundedNetLunarYears: null, roundedNetLunarYears: null, selectedRules: Object.freeze([]),
     missingFactors: Object.freeze(missing), invalidFactors: Object.freeze([]),
     source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
   });
@@ -441,10 +458,10 @@ export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors, pla
   const selectedRules = active.filter(rule => rule.fraction === largestDeduction).map(rule => rule.key);
   const remainingFraction = 1 - largestDeduction;
   const unroundedNetLunarYears = grossLunarYears * remainingFraction;
-  const printedNetLunarYears = Math.trunc((unroundedNetLunarYears + 1e-10) * 100) / 100;
+  const roundedNetLunarYears = Math.round((unroundedNetLunarYears + Number.EPSILON) * 100) / 100;
   return Object.freeze({
     resolved: true, grossLunarYears, appliedDeductionFraction: largestDeduction, remainingFraction,
-    unroundedNetLunarYears, printedNetLunarYears,
+    unroundedNetLunarYears, roundedNetLunarYears,
     selectedRules: Object.freeze(selectedRules),
     ignoredLesserRules: Object.freeze(active.filter(rule => rule.fraction < largestDeduction).map(rule => rule.key)),
     missingFactors: Object.freeze([]), invalidFactors: Object.freeze([]),
@@ -525,17 +542,27 @@ export function bvRamanHpaChapterXXVICompute({
     });
   }
   const allHaranaResolved = BV_RAMAN_AYURDAYA_PLANETS.every(planet => planets[planet].harana.resolved);
+  // Keep every graha term at full precision. Rounding belongs to display only,
+  // never to the summation or the 334/365 conversion.
   const netLunarYears = allHaranaResolved
-    ? Number(BV_RAMAN_AYURDAYA_PLANETS.reduce((sum, planet) =>
-      sum + planets[planet].harana.printedNetLunarYears, 0).toFixed(2))
+    ? BV_RAMAN_AYURDAYA_PLANETS.reduce((sum, planet) =>
+      sum + planets[planet].harana.unroundedNetLunarYears, 0)
+    : null;
+  const netLunarYearsRounded = finite(netLunarYears)
+    ? Math.round((netLunarYears + Number.EPSILON) * 100) / 100
     : null;
   const solarYearsCandidate = finite(netLunarYears) ? netLunarYears * 334 / 365 : null;
+  const solarYearsCandidateRounded = finite(solarYearsCandidate)
+    ? Math.round((solarYearsCandidate + Number.EPSILON) * 100) / 100
+    : null;
   return Object.freeze({
     source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE,
     method: 'Chapter XXVI — reduced BAV, Rasi/Graha/Sodhya Pinda, Harana, 334/365 conversion',
     planets: Object.freeze(planets),
     netLunarYears,
+    netLunarYearsRounded,
     solarYearsCandidate,
+    solarYearsCandidateRounded,
     numericBandCandidate: finite(solarYearsCandidate)
       ? solarYearsCandidate < 8 ? 'Balarishta'
         : solarYearsCandidate < 33 ? 'Alpayu'
@@ -549,14 +576,17 @@ export function bvRamanHpaChapterXXVICompute({
     knownSourceArithmeticDiscrepancy: Object.freeze({
       printedNetLunarYears: 48.98,
       printedSolarYears: 44.87,
-      recalculatedSolarYears: 48.98 * 334 / 365,
-      recalculatedToTwoDecimals: Math.trunc((48.98 * 334 / 365 + 1e-10) * 100) / 100,
-      difference: 44.87 - (48.98 * 334 / 365),
-      status: 'UNRESOLVED_PRINTED_EXAMPLE_DISCREPANCY'
+      solarYearsFromPrintedNet: 48.98 * 334 / 365,
+      solarYearsFromPrintedNetRounded: Math.round((48.98 * 334 / 365 + Number.EPSILON) * 100) / 100,
+      formulaNetLunarYearsFromPrintedPindasAndHalfRule: 49,
+      formulaSolarYearsFromFullPrecisionNet: 49 * 334 / 365,
+      formulaSolarYearsRounded: Math.round((49 * 334 / 365 + Number.EPSILON) * 100) / 100,
+      status: 'PRIMARY_SCAN_CONFIRMED_PRINTED_ARITHMETIC_MISMATCH'
     }),
     blockers: Object.freeze([
-      'The printed 48.98 × 334 / 365 recalculates to 44.82 to two decimals, not the stated 44.87.',
-      'Chapter XXVI page-image checks and a full independent worked-chart oracle remain pending.',
+      'Printed pp. 199–203 have been visually inspected. The printed net total 48.98 and final 44.87 do not match a full-precision Pinda/Harana calculation.',
+      'The scanned Pinda pairs give 49.00 lunar years when the printed rule halves all terms except the Sun; converting 49.00 by 334/365 gives 44.84 solar years to two decimals.',
+      'The full per-sign reduced-BAV input rows and the exact factor responsible for each half-deduction remain incompletely sourced; this stays research-only.',
       'Final lifespan remains null even when the per-graha Harana inputs are complete.'
     ])
   });
