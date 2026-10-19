@@ -1955,8 +1955,8 @@ try{
             bavRows:advancedData?.ashtakavarga?.bhinna,
             language:lang
           });
-          // Preserve the existing C.G. Rajan section and append the two new
-          // B.V. Raman result tables strictly beneath it, in the same cream table.
+          // Keep the existing C.G. Rajan section unchanged; render the two
+          // B.V. Raman result tables as a separate adjacent block underneath.
           const html=cgHtml+bvHtml;
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
           sectionI.querySelectorAll('[data-smv-bv-raman-ayurdaya-section]').forEach(node=>node.remove());
