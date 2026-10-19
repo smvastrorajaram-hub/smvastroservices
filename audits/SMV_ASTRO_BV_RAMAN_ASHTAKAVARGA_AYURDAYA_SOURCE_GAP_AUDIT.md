@@ -244,7 +244,7 @@ This is **not** the same fixture as `BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACL
 ### Gate status after this step
 
 - **PASS — HPA p. 190 transcription regression:** 168 cells (84 B.R. + 84 A.R.), 14 graha-row totals, 24 per-sign totals and the 337/81 aggregate checks are pinned by tests.
-- **NOT YET PASS — all reductions algorithmically reconciled:** this fixture verifies the printed table data and its sums; it does not yet certify that all seven live Trikona/Ekadhipatya calculations reproduce this table from a fully sourced set of placements and occupancy facts.
+- **PASS — HPA p. 188 → p. 190 reduction parity:** the page 188 occupancy explanation identifies Taurus and Scorpio as occupied among the dual-lord signs (the text explicitly sets Rahu/Ketu aside). Applying the encoded Trikona then Ekadhipatya stages to the seven printed B.R. rows reproduces all 84 printed A.R. cells and the per-sign A.R. totals, ending at 81 for this HPA example/edition. This certifies regression parity for this specific table, not the complete Ayurdaya method.
 - **PENDING — ASOP primary Table I:** the original page image for *Ashtakavarga System of Prediction*, Chapter II, Table I has not been found in the repository or the inspected uploaded-PDF library. The 2026 correction note is secondary evidence, not a replacement for the original page.
 - **Safety gate unchanged:** research-only; `certified:false`; no customer-facing lifespan/death age/date; no production merge.
 
