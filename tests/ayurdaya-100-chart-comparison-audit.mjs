@@ -97,6 +97,7 @@ const haranaMissingReasonCounts = {};
 const longevityCategoryCounts = {};
 const numericBandCounts = {};
 const crossCheckCounts = {};
+const chapterXIVEvidenceCompletenessCounts = {};
 const haranaCompletenessCounts = {};
 const haranaMissingFactorCounts = {};
 const cgAvailabilityCounts = {};
@@ -226,6 +227,9 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   inc(longevityCategoryCounts,categories.length ? categories.join('+') : 'NO_CONFIRMED_CATEGORY');
   inc(numericBandCounts,bvr.chapterXXVI?.numericBandCandidate || 'UNAVAILABLE');
   inc(crossCheckCounts,bvr.crossCheck?.status || 'UNAVAILABLE');
+  inc(chapterXIVEvidenceCompletenessCounts,
+    bvr.crossCheck?.chapterXIVFullyEvaluated===true&&bvr.crossCheck?.chapterXIVUniqueCategory===true
+      ? 'FULLY_EVALUATED_UNIQUE_CATEGORY' : 'PARTIAL_OR_MULTIPLE_CANDIDATES');
   inc(haranaCompletenessCounts,bvr.chapterXXVI?.haranaComplete===true?'COMPLETE':'INCOMPLETE');
   const missingEvidenceForChart=[];
   for(const planet of CLASSICAL){
@@ -249,6 +253,12 @@ for (const birth of [...maleBirths,...femaleBirths]) {
 }
 eq(computed.length,100,'100 actual chart-engine results completed');
 eq(cgTieChartDetails.length,8,'all eight tied Shadbala charts retain the method comparisons');
+eq(Object.values(haranaMissingReasonCounts).reduce((sum,n)=>sum+n,0),
+  haranaMissingEvidenceByChart.reduce((sum,row)=>sum+row.missingFactors.length,0),
+  'every unresolved Harana factor is linked to a per-chart evidence reason');
+ok(haranaMissingEvidenceByChart.every(row=>row.missingFactors.every(item=>
+  typeof item.source==='string'&&item.source.length>0&&typeof item.reason==='string'&&item.reason.length>0)),
+  'every unresolved Harana factor has a non-empty source category and explanation');
 eq(Object.values(cgTieMethodCombinationCounts).reduce((sum,n)=>sum+n,0),8,
   'each tied Shadbala chart has a complete method-combination audit');
 ok(chartSignatures.size >= 95,
@@ -361,6 +371,10 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
     crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
     crossCheckReason:bvr.crossCheck?.reason||null,
+    chapterXIVFullyEvaluated:bvr.crossCheck?.chapterXIVFullyEvaluated??false,
+    chapterXIVUniqueCategory:bvr.crossCheck?.chapterXIVUniqueCategory??false,
+    chapterXIVUnknownRuleCount:bvr.crossCheck?.chapterXIVUnknownRuleCount??null,
+    chapterXIVUnimplementedRuleCount:bvr.crossCheck?.chapterXIVUnimplementedRuleCount??null,
     crossCheckRuleContext:{
       matchedRuleIds:bvr.crossCheck?.chapterXIVMatchedRuleIds||[],
       unknownRuleIds:bvr.crossCheck?.chapterXIVUnknownRuleIds||[],
@@ -405,6 +419,7 @@ const summary = {
     chapterXIVRuleCategoryCandidateCounts:longevityCategoryCounts,
     chapterXXVINumericBandCandidateCounts:numericBandCounts,
     crossCheckStatusCounts:crossCheckCounts,
+    chapterXIVEvidenceCompletenessCounts,
     haranaCompletenessCounts,
     haranaMissingFactorCounts,
     haranaMissingReasonCounts,
