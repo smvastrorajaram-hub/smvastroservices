@@ -230,7 +230,7 @@ export async function calculateSodhyaPindaTransitWindows(rows,options={}){
  for(const row of rows){
   const nakNumber=Number(row.targetNakshatraNumber),rasiNumber=Number(row.targetRasiNumber);
   const baseNakIndex=nakNumber-1,rasiIndex=rasiNumber-1;
-  const related=(row.relatedVimshottariNakshatras||[]).map(x=>({number:Number(x.number),name:x.name,index:Number(x.number)-1}));
+  const related=(row.relatedVimshottariNakshatras||[]).map(x=>({number:Number(x.number),name:x.name,nameTamil:x.nameTamil,index:Number(x.number)-1}));
   const targets=[];
   if(Number.isInteger(baseNakIndex)&&baseNakIndex>=0&&baseNakIndex<27){
    targets.push({key:'primary',number:nakNumber,name:row.targetNakshatra,index:baseNakIndex});
