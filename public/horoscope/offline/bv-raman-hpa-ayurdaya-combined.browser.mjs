@@ -338,12 +338,33 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const moonSign = signOf(map, 'Moon');
   const lagnaKind = signValid(map.lagnaSign) ? SIGN_KIND[map.lagnaSign] : null;
   const moonKind = signValid(moonSign) ? SIGN_KIND[moonSign] : null;
-  rules.push(makeRule('XIV-ALP-04', 'Alpayu', 'Lagna and Moon are both in common signs',
+  rules.push(makeRule('XIV-ALP-15', 'Alpayu', 'Lagna and Moon are both in common signs',
     triAll(lagnaKind === null ? null : lagnaKind === 'common',
       moonKind === null ? null : moonKind === 'common')));
   const lagnaLordStrong = isStrong(lagnaLord || 'LagnaLord');
   const lagnaLordWeak = isWeak(lagnaLord || 'LagnaLord');
-  rules.push(makeRule('XIV-ALP-05', 'Alpayu', 'Weak Lagna lord with eighth lord in a Kendra',
+  rules.push(makeRule('XIV-ALP-04', 'Alpayu',
+    '8th lord in Ascendant with Ketu',
+    triAll(eighthLordHouse === null ? null : eighthLordHouse === 1,
+      houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 1)));
+  rules.push(makeRule('XIV-ALP-05', 'Alpayu',
+    'Malefics in Ascendant with Moon conjunct malefics',
+    triAll(maleficInHouse(map, 1), conjunctionState(map, 'Moon', 'malefic', e)));
+  rules.push(makeRule('XIV-ALP-06', 'Alpayu',
+    '8th lord in Ascendant with powerless Lagna lord',
+    triAll(eighthLordHouse === null ? null : eighthLordHouse === 1, lagnaLordWeak)));
+  rules.push(makeRule('XIV-ALP-07', 'Alpayu',
+    'Scorpio Lagna; Sun and Jupiter in Lagna; 8th lord in a Kendra',
+    triAll(map.lagnaSign === null ? null : map.lagnaSign === 7,
+      houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 1,
+      jupiterHouse === null ? null : jupiterHouse === 1,
+      isKendra(eighthLordHouse))));
+  rules.push(makeRule('XIV-ALP-08', 'Alpayu',
+    'Rahu in 7th, Moon in 8th, Jupiter in Ascendant',
+    triAll(houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 7,
+      moonHouse === null ? null : moonHouse === 8,
+      jupiterHouse === null ? null : jupiterHouse === 1)));
+  rules.push(makeRule('XIV-ALP-12', 'Alpayu', 'Weak Lagna lord with eighth lord in a Kendra',
     triAll(lagnaLordWeak, isKendra(eighthLordHouse))));
 
   // Printed pp. 70–71 list these as distinct combinations: never AND separate rules together.
@@ -363,7 +384,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
     tri(e.allPlanetsMiddleFourHouses)));
-  rules.push(makeRule('XIV-MAD-05', 'Madhyayu',
+  rules.push(makeRule('XIV-MAD-15', 'Madhyayu',
     'Benefics in Kendras/Trikonas with strong Saturn',
     triAll(tri(e.beneficsInKendrasAndTrikonas), isStrong('Saturn'))));
 
