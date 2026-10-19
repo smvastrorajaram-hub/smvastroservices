@@ -233,7 +233,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const moon = map.planets.get('Moon');
   const moonHouse = houseOf(map, 'Moon');
   const moonAspect = aspectState(map, e, 'Moon');
-  const moonMaleficInfluence = triAny(conjunctionState(map, 'Moon', 'malefic', e), moonAspect.malefic);
+  // Chapter XIV says the Moon is "with" malefics: keep same-sign conjunction separate from aspect evidence.
+  const moonWithMalefics = conjunctionState(map, 'Moon', 'malefic', e);
   const maleficKendra = maleficInAnyKendra(map);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
   const lagnaLord = houseLord(map, 1), eighthLord = houseLord(map, 8);
@@ -263,11 +264,11 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   })();
   rules.push(makeRule('XIV-BAL-01', 'Balarishta', 'Malefic in the final Navamsa', maleficsLastNavamsa));
   rules.push(makeRule('XIV-BAL-02', 'Balarishta',
-    'Moon in a Kendra with malefic influence and no benefic aspect',
-    triAll(isKendra(moonHouse), moonMaleficInfluence)));
+    'Moon in a Kendra with malefics (same-sign conjunction)',
+    triAll(isKendra(moonHouse), moonWithMalefics)));
   rules.push(makeRule('XIV-BAL-03', 'Balarishta',
-    'Moon in house 7, 8 or 12 with malefic influence and no benefic aspect',
-    triAll(inList(moonHouse, [7, 8, 12]), moonMaleficInfluence, noBeneficMoonAspect)));
+    'Moon in house 7, 8 or 12 with malefics and no benefic aspect',
+    triAll(inList(moonHouse, [7, 8, 12]), moonWithMalefics, noBeneficMoonAspect)));
   rules.push(makeRule('XIV-BAL-05', 'Balarishta', 'Malefics occupy each of houses 2, 6, 8 and 12',
     maleficsInAll([2, 6, 8, 12])));
   rules.push(makeRule('XIV-BAL-06', 'Balarishta',
@@ -410,17 +411,30 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
  * Every rule input must be explicitly true or false; unknown facts block the
  * adjusted term rather than being silently treated as absent.
  */
-export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors } = {}) {
+export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors, planet } = {}) {
   if (!finite(grossLunarYears) || grossLunarYears < 0) {
     throw new RangeError('grossLunarYears must be finite and non-negative');
+  }
+  const haranaPlanet = keyName(planet);
+  if (!BV_RAMAN_AYURDAYA_PLANETS.includes(haranaPlanet)) {
+    throw new TypeError('planet must name one of the seven classical planets');
   }
   const resolvedFactors = factors && typeof factors === 'object' ? factors : {};
   const missing = HARANA_RULES.filter(rule => typeof resolvedFactors[rule.key] !== 'boolean')
     .map(rule => rule.key);
+  const invalidFactors = resolvedFactors.eclipsed === true && !['Sun', 'Moon'].includes(haranaPlanet)
+    ? ['eclipsed'] : [];
+  if (invalidFactors.length) return Object.freeze({
+    resolved: false, grossLunarYears, appliedDeductionFraction: null, remainingFraction: null,
+    unroundedNetLunarYears: null, printedNetLunarYears: null, selectedRules: Object.freeze([]),
+    missingFactors: Object.freeze(missing), invalidFactors: Object.freeze(invalidFactors),
+    source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
+  });
   if (missing.length) return Object.freeze({
     resolved: false, grossLunarYears, appliedDeductionFraction: null, remainingFraction: null,
     unroundedNetLunarYears: null, printedNetLunarYears: null, selectedRules: Object.freeze([]),
-    missingFactors: Object.freeze(missing), source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
+    missingFactors: Object.freeze(missing), invalidFactors: Object.freeze([]),
+    source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
   });
   const active = HARANA_RULES.filter(rule => resolvedFactors[rule.key] === true);
   const largestDeduction = active.reduce((largest, rule) => Math.max(largest, rule.fraction), 0);
@@ -433,7 +447,8 @@ export function bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors } = 
     unroundedNetLunarYears, printedNetLunarYears,
     selectedRules: Object.freeze(selectedRules),
     ignoredLesserRules: Object.freeze(active.filter(rule => rule.fraction < largestDeduction).map(rule => rule.key)),
-    missingFactors: Object.freeze([]), source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
+    missingFactors: Object.freeze([]), invalidFactors: Object.freeze([]),
+    source: BV_RAMAN_HPA_CHAPTER_XXVI_SOURCE, certified: false
   });
 }
 
@@ -501,8 +516,8 @@ export function bvRamanHpaChapterXXVICompute({
     const grossLunarYears = ((unwrappedGrossLunarYears % 27) + 27) % 27;
     const flags = rawHarana[planet];
     const harana = flags
-      ? bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors: flags })
-      : bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors: {} });
+      ? bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors: flags, planet })
+      : bvRamanHpaChapterXXVIApplyHarana({ grossLunarYears, factors: {}, planet });
     planets[planet] = Object.freeze({
       planet, rasiProducts: Object.freeze(rasiProducts), rasiPinda,
       grahaProducts: Object.freeze(grahaProducts.map(Object.freeze)),
