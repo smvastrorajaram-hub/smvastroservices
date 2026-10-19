@@ -137,6 +137,14 @@ jobs:
         run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
       - name: Run Chapter XIV printed-rule and book-example regression
         run: node tests/bv-raman-chapter-xiv-book-example-regression.mjs
+      - name: Upload Chapter XIV rule-by-rule evidence matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bv-raman-chapter-xiv-book-example-regression
+          path: artifacts/chapter-xiv-book-example-regression.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run BPHS Shodhana textbook regression
         run: node tests/v357-bphs-shodhana-regression.mjs
       - name: Run P.V.R. Narasimha Rao Shodhana textbook regression
