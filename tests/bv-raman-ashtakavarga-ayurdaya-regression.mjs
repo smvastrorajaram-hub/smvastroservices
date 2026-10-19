@@ -358,10 +358,12 @@ console.log(JSON.stringify({
   pass: true,
   assertions,
   module: 'B.V. Raman Ashtakavarga Ayurdaya research engine',
-  sourceStatus: 'ASOP_PRIMARY_PAGES_PENDING_HPA_CHAPTER_XXVI_ARITHMETIC_GAPS_PINNED',
+  sourceStatus: 'ASOP_PRIMARY_PAGES_PENDING_HPA_PRIMARY_SCAN_FORMULA_DISCREPANCY_RECORDED',
   hpaSolarYearDiscrepancy: {
     reported: hpa.reportedFinalSolarYears,
-    recalculated: Number(hpaSolarRecalculated.toFixed(4))
+    recalculatedFromPrintedNet: Number(hpaSolarFromPrintedNet.toFixed(4)),
+    formulaDerivedNetLunarYears: 49,
+    formulaDerivedSolarYears: 44.84
   },
   secondaryMethodADiscrepancies,
   certification: false,
