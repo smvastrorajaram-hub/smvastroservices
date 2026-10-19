@@ -90,6 +90,13 @@ statuses('XIV-BAL-08',[
  {label:'required aspect observation missing',expected:'UNKNOWN',
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon']}}
 ],'HPA p.64 Balarishta 8');
+statuses('XIV-BAL-04',[
+ {label:'all three printed sunrise/Moon-hora/Navamsa predicates reported true',expected:'MATCHED',
+  evidence:{birthWithin48MinutesOfSunriseOrSunset:true,moonsHoraRising:true,maleficsInMaleficSignNavamsas:true}},
+ {label:'one required condition reported false',expected:'NOT_MATCHED',
+  evidence:{birthWithin48MinutesOfSunriseOrSunset:true,moonsHoraRising:false,maleficsInMaleficSignNavamsas:true}},
+ {label:'sunrise/hora evidence absent',expected:'UNKNOWN',evidence:{}}
+],'HPA p.64 Balarishta 4');
 statuses('XIV-BAL-13',[
  {label:'Ketu in 4 with Mars in the same house',expected:'MATCHED',
   chart:{houses:{Sun:6,Moon:1,Mars:4,Mercury:2,Jupiter:5,Venus:9,Saturn:5,Rahu:11,Ketu:4}}},
@@ -113,6 +120,29 @@ statuses('XIV-BAL-19',[
  {label:'Moon is not in Saturn third aspect',expected:'NOT_MATCHED',chart:{houses:{Saturn:1,Moon:4}}},
  {label:'Moon placement unavailable',expected:'UNKNOWN',chart:{omit:['Moon']}}
 ],'HPA p.65 Balarishta 19');
+statuses('XIV-BAL-10',[
+ {label:'birth Dasa lord explicitly reported conjunct many malefics',expected:'MATCHED',
+  evidence:{birthDasaLord:'Venus',birthDasaLordConjoinedWithManyMalefics:true}},
+ {label:'Dasa lord conjunction condition explicitly false',expected:'NOT_MATCHED',
+  evidence:{birthDasaLord:'Venus',birthDasaLordConjoinedWithManyMalefics:false}},
+ {label:'Dasa name known but conjunction evidence absent',expected:'UNKNOWN',
+  evidence:{birthDasaLord:'Venus'}}
+],'HPA p.65 Balarishta 10');
+statuses('XIV-BAL-15',[
+ {label:'birth Dasa lord is Lagna/eighth lord',expected:'MATCHED',
+  chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Mars'}},
+ {label:'both known periods are unrelated to Lagna/eighth lord',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Venus',birthAntardasaLord:'Mercury'}},
+ {label:'birth Dasa and Antardasa unavailable',expected:'UNKNOWN',evidence:{}}
+],'HPA p.65 Balarishta 15');
+statuses('XIV-BAL-28',[
+ {label:'weak Lagna lord and poor placement expressly supported',expected:'MATCHED',
+  chart:{lagnaLongitude:0},evidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:true}},
+ {label:'Lagna lord not weak',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0},evidence:{weakPlanets:[],lagnaLordBadlyPlaced:true}},
+ {label:'bad placement evidence missing',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0},evidence:{weakPlanets:['Mars']}}
+],'HPA p.66 Balarishta 28');
 statuses('XIV-BAL-20',[
  {label:'Moon 8 with no graha aspect',expected:'MATCHED',
   chart:{houses:{Sun:3,Moon:8,Mars:7,Mercury:4,Jupiter:10,Venus:9,Saturn:3,Rahu:11,Ketu:12}}},
@@ -358,6 +388,22 @@ eq(bookExample2.birthDasaLord,'Sun','HPA Horoscope No.2 birth Dasa lord is prese
 ok(bookExample2.statedFacts.length===3,'HPA Horoscope No.2 records each stated fact separately');
 eq(bookExample3.printedPage,69,'HPA Horoscope No.3 retains its printed source page');
 ok(bookExample3.statedFacts.length===4,'HPA Horoscope No.3 records affliction and protection facts separately');
+const sourceExample2Trace = bvRamanChapterXIVLongevityRules({
+  chart:{lagna:{longitude:0},planets:[]},
+  evidence:{birthDasaLord:bookExample2.birthDasaLord}
+});
+eq(sourceExample2Trace.rules.find(rule=>rule.id==='XIV-BAL-10').status,'UNKNOWN',
+  'HPA p.68 Horoscope No.2 does not imply the conjunction condition from the Dasa lord name alone');
+eq(sourceExample2Trace.rules.find(rule=>rule.id==='XIV-BAL-19').status,'UNKNOWN',
+  'HPA p.68 Horoscope No.2 does not infer Saturn third-aspect geometry from the phrase “Moon afflicted” alone');
+const sourceExample3Trace = bvRamanChapterXIVLongevityRules({
+  chart:makeChart({houses:{Jupiter:4}}),
+  evidence:{strongPlanets:['Jupiter']}
+});
+eq(sourceExample3Trace.rules.find(rule=>rule.id==='XIV-ANT-01').status,'NOT_MATCHED',
+  'HPA p.69 Horoscope No.3 describes Jupiter in a quadrant, while numbered Antidote 1 is specifically Jupiter in Ascendant');
+ok(bookExample3.sourceNote.includes('cancellation'),
+  'HPA p.69 quadrant-Jupiter redemption stays recorded as a separate source-example coverage gap, not silently discarded');
 
 // Core safety invariant: source rules may match individually, but they remain
 // candidates/antidotes. These tests never create a selected category, lifespan,
