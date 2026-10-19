@@ -403,6 +403,20 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const thirdLordHouse = thirdLord ? houseOf(map, thirdLord) : null;
   const sixthLordHouse = sixthLord ? houseOf(map, sixthLord) : null;
   const jupiterHouse = houseOf(map, 'Jupiter');
+  const exaltedPlanetInHouse = house => {
+    let found = false;
+    for (const [name, planet] of map.planets.entries()) {
+      if (planet.house === house && isExalted(name, planet.sign)) found = true;
+    }
+    if (found) return true;
+    const classicalChartComplete = [
+      'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
+    ].every(name => {
+      const planet = map.planets.get(name);
+      return planet && houseValid(planet.house) && signValid(planet.sign);
+    });
+    return classicalChartComplete ? false : null;
+  };
   const rules = [];
   const noBeneficMoonAspect = moonAspect.benefic === false ? true :
     moonAspect.benefic === true ? false : null;
@@ -588,6 +602,27 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-MAD-04', 'Madhyayu',
     'All planets occupy the middle four houses from Lagna',
     tri(e.allPlanetsMiddleFourHouses)));
+  rules.push(makeRule('XIV-MAD-08', 'Madhyayu',
+    'Scorpio Lagna with Jupiter in Lagna and Mars/Rahu in 8th',
+    triAll(map.lagnaSign === null ? null : map.lagnaSign === 7,
+      jupiterHouse === null ? null : jupiterHouse === 1,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8,
+      houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 8)));
+  rules.push(makeRule('XIV-MAD-10', 'Madhyayu',
+    'Jupiter in 8th with Aries Lagna and malefics in Kendras',
+    triAll(map.lagnaSign === null ? null : map.lagnaSign === 0,
+      jupiterHouse === null ? null : jupiterHouse === 8, maleficKendra)));
+  rules.push(makeRule('XIV-MAD-12', 'Madhyayu',
+    'Mars and Mercury in Kendras, Venus in Ascendant and exalted planets in 3rd/11th',
+    triAll(isKendra(houseOf(map, 'Mars')), isKendra(houseOf(map, 'Mercury')),
+      houseOf(map, 'Venus') === null ? null : houseOf(map, 'Venus') === 1,
+      exaltedPlanetInHouse(3), exaltedPlanetInHouse(11)));
+  rules.push(makeRule('XIV-MAD-14', 'Madhyayu',
+    'Mars in 5th, Sun in 7th and Saturn debilitated',
+    triAll(houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 5,
+      houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 7,
+      signOf(map, 'Saturn') === null ? null :
+        signOf(map, 'Saturn') === DEBILITATION_SIGN.Saturn)));
   rules.push(makeRule('XIV-MAD-15', 'Madhyayu',
     'Benefics in Kendras/Trikonas with strong Saturn',
     triAll(tri(e.beneficsInKendrasAndTrikonas), isStrong('Saturn'))));
