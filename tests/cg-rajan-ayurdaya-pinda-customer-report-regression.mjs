@@ -36,6 +36,8 @@ assert.ok(strengthTieHtml.includes('data-ayurdaya-selection="shadbala-tie"'),
  'equal Sun/Moon Shadbala renders the side-by-side tie table');
 assert.ok(strengthTieHtml.includes('Pinda Ayurdaya')&&strengthTieHtml.includes('Naisargika Ayurdaya'),
  'both Pinda and Naisargika methods are labelled when Sun and Moon tie');
+assert.ok(strengthTieHtml.includes('Sun — 700.00 Virupa')&&strengthTieHtml.includes('Moon — 700.00 Virupa'),
+ 'each tied column labels the correct Sun or Moon Shadbala reference');
 assert.equal((strengthTieHtml.match(/data-tied-method="pinda"/g)||[]).length,8,
  'Pinda tie column has seven graha cells and its own total');
 assert.equal((strengthTieHtml.match(/data-tied-method="natural"/g)||[]).length,8,
