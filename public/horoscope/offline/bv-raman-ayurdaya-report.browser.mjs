@@ -234,7 +234,7 @@ const RULE_LABELS_TA = Object.freeze({
   'XIV-PUR-06':'குரு லக்னத்தில்; சுக்கிரன் 4-ஆம்; சனி மற்றும் சந்திரன் 10-ஆம் பாவத்தில் இருத்தல்'
 });
 
-function resultFor({chart,bavRows,language='ta',evidence,occupiedSigns,planetSigns,haranaByPlanet}={}) {
+export function bvRamanAyurdayaResearchResult({chart,bavRows,language='ta',evidence,occupiedSigns,planetSigns,haranaByPlanet}={}) {
   const facts = chartFacts(chart);
   const derivedSigns = Object.fromEntries(facts.planets.filter(p=>!['Rahu','Ketu'].includes(p.name) && p.sign!==null)
     .map(p=>[p.name,p.sign]));
@@ -264,7 +264,7 @@ export function bvRamanAyurdayaReportHtml(options={}) {
   // A missing/partial BAV payload must never suppress the existing C.G. Rajan
   // appendix; render placeholders for this new section instead.
   let result;
-  try { result = resultFor(options); }
+  try { result = bvRamanAyurdayaResearchResult(options); }
   catch { result = {chapterXXVI:null,chapterXIV:null}; }
   const calc = result.chapterXXVI;
   const planetLabels = PLANETS.filter(p=>!['Rahu','Ketu'].includes(p)).map(p=>[
