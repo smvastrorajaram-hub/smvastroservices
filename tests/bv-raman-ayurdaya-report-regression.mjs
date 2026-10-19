@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { bvRamanAyurdayaReportHtml } from '../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs';
-import { BV_RAMAN_STANDARD_HOROSCOPE_REDUCTION_ORACLE as oracle } from '../public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs';
+import { advanced } from '../public/horoscope/offline/astro_advanced.browser.mjs';
 
 let assertions=0;
 const ok=(value,message)=>{assert.ok(value,message);assertions++;};
@@ -27,11 +27,15 @@ const noHarana=Object.fromEntries(
   aboveHorizon:false,defeatedInPlanetaryWar:false,eclipsed:false
  }])
 );
+const chartAdvanced=advanced(chart,'ta');
+const planetSigns=Object.fromEntries(chart.planets.filter(p=>!['ராகு','கேது','Rahu','Ketu'].includes(p.name))
+ .map(p=>[({சூரியன்:'Sun',சந்திரன்:'Moon',செவ்வாய்:'Mars',புதன்:'Mercury',குரு:'Jupiter',சுக்கிரன்:'Venus',சனி:'Saturn'}[p.name]||p.name),Math.floor((((p.longitude%360)+360)%360)/30)]));
+const occupiedSigns=[...new Set(chart.planets.map(p=>Math.floor((((p.longitude%360)+360)%360)/30)))];
 const common={
  chart,
- bavRows:oracle.beforeReductionRows,
- occupiedSigns:oracle.occupiedSigns,
- planetSigns:oracle.planetSigns,
+ bavRows:chartAdvanced.ashtakavarga.bhinna,
+ occupiedSigns,
+ planetSigns,
  haranaByPlanet:noHarana
 };
 const ta=bvRamanAyurdayaReportHtml({...common,language:'ta'});
