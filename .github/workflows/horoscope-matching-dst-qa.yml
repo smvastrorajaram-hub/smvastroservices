@@ -24,6 +24,9 @@ on:
       - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
       - 'tests/five-book-structural-audit.mjs'
       - 'tests/marriage-basic-report-regression.mjs'
+      - 'tests/ayurdaya-customer-summary-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
+      - 'tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs'
       - 'tests/print-dst-location-regression.mjs'
       - 'tests/geonames-location-regression.cjs'
       - 'tests/horoscope-birth-offset-ui-regression.mjs'
@@ -91,6 +94,12 @@ jobs:
         run: node tests/horoscope-generation-progress-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
+      - name: Ayurdaya customer category-only output regression
+        run: node tests/ayurdaya-customer-summary-regression.mjs
+      - name: Ayurdaya Advanced Analysis placement guard
+        run: node tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
+      - name: Ayurdaya saved-report and native-print guard
+        run: node tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
       - name: V358 unified result layer source regression
         run: node tests/v358-unified-result-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
