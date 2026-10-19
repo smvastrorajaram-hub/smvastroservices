@@ -22,6 +22,12 @@ for(const sample of [
 let code=fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8');
 const transformed=code.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,getD9Sign,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
 ok(code!==transformed,'Missing matching audit entry point');
+const horoscopeSource=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
+const sharedArrDecls=horoscopeSource.match(/\bconst arr\s*=\s*v=>Array\.isArray\(v\)\?v:\(v&&typeof v==='object'\?Object\.values\(v\):\[\]\);/g)||[];
+const sharedArrPos=horoscopeSource.indexOf(sharedArrDecls[0]||'__missing_shared_arr_helper__');
+const advancedRendererPos=horoscopeSource.indexOf('function renderAdvancedAstrology(data, lang, rootId)');
+const phase4RendererPos=horoscopeSource.indexOf('function renderPhase4Dasa(data,lang,slot)');
+ok(sharedArrDecls.length===1&&sharedArrPos>=0&&sharedArrPos<advancedRendererPos&&sharedArrPos<phase4RendererPos,'Full-advanced regression: arr is shared by both Advanced Analysis and Phase-4 Dasa renderers');
 const offlineSource=fs.readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
 ok(!offlineSource.includes("import {advanced} from './astro_advanced.browser.mjs'")&&offlineSource.includes("import('./astro_advanced.browser.mjs')"),'Basic-only startup defers Advanced module loading');
 ok(!offlineSource.includes("import {phase4Dasa} from './dasa_engine.browser.mjs'")&&offlineSource.includes("import('./dasa_engine.browser.mjs')"),'Basic-only startup defers Dasa module loading');
@@ -40,7 +46,7 @@ for(let a=0;a<27;a++)for(let b=0;b<27;b++){
 let rejectMoon=false;try{m.porutham({planets:[{name:'சந்திரன்',longitude:null}]},sampleChart(3))}catch{rejectMoon=true}
 ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
-const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
+const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04'],['2002-10-20','03:41']];
 const charts=[];
 let pvrTransitFixtureRows=null;
 for(const [date,time] of birthCases){
