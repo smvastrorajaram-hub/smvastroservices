@@ -196,10 +196,11 @@ export function bvRamanAyurdayaReportHtml(options={}) {
     : 'This is a traditional Ayurdaya calculation only; it does not establish actual lifespan or predict the time of death.';
   return '<div class="smv-cg-rajan-ayurdaya smv-bv-raman-ayurdaya-skin" data-smv-bv-raman-ayurdaya-section="1">'+
     '<section class="smv-bv-raman-ayurdaya" data-smv-bv-raman-ayurdaya="1">'+
-    '<h4>'+esc(ta?'அஷ்டகவர்க்க ஆயுர்த்தாயம்':'Ashtakavarga Ayurdaya')+'</h4>'+
+    '<h3>'+esc(ta?'அஷ்டகவர்க்க ஆயுர்த்தாயம்':'Ashtakavarga Ayurdaya')+'</h3>'+
     numericTable+
     '<h4>'+esc(ta?'ஆயுள் வகை முடிவு':'Longevity category result')+'</h4>'+
     categoryTable+
+    '</section>'+
     '<p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>'+
-    '</section></div>';
+    '</div>';
 }
