@@ -64,8 +64,9 @@ ok(missingData.includes('data-smv-bv-raman-ayurdaya="1"')&&missingData.includes(
  'Missing BAV input renders a safe placeholder instead of suppressing the C.G. Rajan report');
 const report=(await import('../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs')).cgRajanAyurdayaReportHtml;
 const old=report({planets:chart.planets,lagna:chart.lagna,language:'ta'});
-const combined=old.replace(/<\/section>\s*$/,ta+'</section>');
-ok(combined.indexOf('data-smv-cg-rajan-ayurdaya')<combined.indexOf('data-smv-bv-raman-ayurdaya'),'B.V. Raman tables are nested below the unchanged C.G. Rajan section');
+const combined=old+ta;
+ok(old.lastIndexOf('</section>')<combined.indexOf('data-smv-bv-raman-ayurdaya'),'B.V. Raman result block follows the complete unchanged C.G. Rajan section');
+ok(combined.indexOf('data-smv-cg-rajan-ayurdaya')<combined.indexOf('data-smv-bv-raman-ayurdaya'),'C.G. Rajan appears first, B.V. Raman follows as a separate block');
 ok(combined.includes('<section class="smv-cg-rajan-ayurdaya" data-smv-cg-rajan-ayurdaya="1"'),'C.G. Rajan section remains present unchanged');
 
 const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
@@ -80,9 +81,9 @@ ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscop
  'Horoscope uses the existing cream header colour for both nested result tables');
 ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table')&&matchingCss.includes('background:#fff7e8;font-weight:800;'),
  'Matching uses the existing cream header colour for both nested result tables');
-ok(horoscope.includes(String.raw`cgHtml.replace(/<\/section>\s*$/,bvHtml+'</section>')`),
- 'Horoscope appends the new tables inside the old C.G. Rajan section');
-ok(matching.includes(String.raw`cgAyurdayaHtml`)&&matching.includes(String.raw`bvAyurdayaHtml+'</section>'`),
- 'Matching appends the new tables below C.G. Rajan rather than replacing its renderer');
+ok(horoscope.includes('const html=cgHtml+bvHtml;')&&horoscope.includes('[data-smv-bv-raman-ayurdaya-section]'),
+ 'Horoscope appends B.V. Raman as a distinct block after C.G. Rajan');
+ok(matching.includes('const ayurdayaReport=(cgAyurdayaHtml+bvAyurdayaHtml)'),
+ 'Matching appends B.V. Raman as a distinct block after C.G. Rajan');
 
 console.log(JSON.stringify({pass:true,assertions,tamil:true,english:true,oldCGRajanPreserved:true,results:['Ashtakavarga Ayurdaya','Longevity category']},null,2));
