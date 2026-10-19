@@ -136,28 +136,59 @@ function eclipseAssessment(planet,facts) {
   const nearNode = Math.min(distance(focal.longitude,rahu.longitude),distance(focal.longitude,ketu.longitude));
   const moonLatitude = finite(moon.eclipticLatitude) ? moon.eclipticLatitude : null;
   if (planet === 'Sun') {
-    if (phase > 15 || nearNode > 18) return {value:false,source:'calculated-longitude-orb',
-      reason:'Sun–Moon phase or nearest-node separation is outside the configured possible-eclipse band.',
+    // At the birth instant, a solar eclipse requires the Sun and Moon's
+    // geocentric angular separation to be within their combined apparent radii.
+    // Longitude separation > 1.5° is therefore definitively outside eclipse.
+    if (phase > 1.5) return {value:false,source:'calculated-eclipse-geometry',
+      reason:'Sun–Moon longitude separation exceeds the conservative maximum for an actual solar eclipse at the birth instant.',
       phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
-    if (phase <= 10 && nearNode <= 10) return {value:true,source:'calculated-longitude-orb',
-      reason:'Sun–Moon phase and nearest-node separation are both inside the configured eclipse band.',
-      phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
-  } else {
-    const opposition = Math.abs(180-phase);
-    if (opposition > 15 || nearNode > 18) return {value:false,source:'calculated-longitude-orb',
-      reason:'Moon–Sun opposition or nearest-node separation is outside the configured possible-eclipse band.',
-      phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    if (moonLatitude === null) return {value:null,source:'missing-ecliptic-latitude',
+      reason:'A close Sun–Moon conjunction is present, but the Moon ecliptic latitude needed to determine angular separation is missing.',
+      phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:null};
+    const angularSeparation = Math.hypot(phase,moonLatitude);
+    if (angularSeparation <= 0.55) return {value:true,source:'calculated-eclipse-geometry',
+      reason:'Sun–Moon angular separation, including the Moon ecliptic latitude, is within the approximate combined apparent radii for a solar eclipse.',
+      phaseDistanceDegrees:phase,angularSeparationDegrees:angularSeparation,
       nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
-    if (opposition <= 10 && nearNode <= 10) return {value:true,source:'calculated-longitude-orb',
-      reason:'Moon–Sun opposition and nearest-node separation are both inside the configured eclipse band.',
-      phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    if (angularSeparation > 0.75) return {value:false,source:'calculated-eclipse-geometry',
+      reason:'Sun–Moon angular separation including Moon latitude is outside the conservative actual-eclipse contact band.',
+      phaseDistanceDegrees:phase,angularSeparationDegrees:angularSeparation,
       nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
+    return {value:null,source:'borderline-solar-eclipse-geometry',
+      reason:'Sun–Moon angular separation is in a narrow contact-tolerance band; without apparent-diameter and topocentric contact data the eclipse flag is retained as UNKNOWN.',
+      phaseDistanceDegrees:phase,angularSeparationDegrees:angularSeparation,
+      nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude,
+      definiteSeparationDegrees:0.55,possibleSeparationDegrees:0.75};
   }
-  return {value:null,source:'ambiguous-eclipse-band',
-    reason:'The longitude geometry falls between the configured definite and definitely-not-eclipsed limits. This chart schema has no explicit eclipse flag; latitude is recorded for audit but is not enough to certify the source-book Harana predicate.',
-    phaseDistanceDegrees:phase,nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude,
-    configuredPossiblePhaseDegrees:15,configuredDefinitePhaseDegrees:10,
-    configuredPossibleNodeDistanceDegrees:18,configuredDefiniteNodeDistanceDegrees:10};
+  const opposition = Math.abs(180-phase);
+  // A lunar eclipse is impossible when the Moon is more than two degrees
+  // from exact opposition at the birth instant. Moon latitude then measures
+  // distance from the Earth's shadow axis; penumbral/umbra boundary cases stay
+  // UNKNOWN rather than being forced to false.
+  if (opposition > 2) return {value:false,source:'calculated-eclipse-geometry',
+    reason:'Moon–Sun opposition distance exceeds the conservative maximum for a lunar eclipse at the birth instant.',
+    phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:moonLatitude};
+  if (moonLatitude === null) return {value:null,source:'missing-ecliptic-latitude',
+    reason:'A near-opposition Moon is present, but its ecliptic latitude is needed to determine distance from the Earth-shadow axis.',
+    phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    nearestNodeDistanceDegrees:nearNode,moonEclipticLatitudeDegrees:null};
+  const lunarShadowSeparation = Math.hypot(opposition,moonLatitude);
+  if (lunarShadowSeparation <= 0.95) return {value:true,source:'calculated-eclipse-geometry',
+    reason:'Moon distance from the anti-solar shadow axis is within a conservative umbral-eclipse bound.',
+    phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    lunarShadowSeparationDegrees:lunarShadowSeparation,nearestNodeDistanceDegrees:nearNode,
+    moonEclipticLatitudeDegrees:moonLatitude};
+  if (lunarShadowSeparation > 1.5) return {value:false,source:'calculated-eclipse-geometry',
+    reason:'Moon distance from the anti-solar shadow axis exceeds the conservative penumbral-eclipse bound.',
+    phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    lunarShadowSeparationDegrees:lunarShadowSeparation,nearestNodeDistanceDegrees:nearNode,
+    moonEclipticLatitudeDegrees:moonLatitude};
+  return {value:null,source:'borderline-lunar-eclipse-geometry',
+    reason:'Moon distance from the anti-solar shadow axis lies between conservative umbral and penumbral bounds; the eclipse flag remains UNKNOWN pending a precise shadow-cone calculation.',
+    phaseDistanceDegrees:phase,oppositionDistanceDegrees:opposition,
+    lunarShadowSeparationDegrees:lunarShadowSeparation,nearestNodeDistanceDegrees:nearNode,
+    moonEclipticLatitudeDegrees:moonLatitude,definiteSeparationDegrees:0.95,possibleSeparationDegrees:1.5};
 }
 function eclipseState(planet,facts) {
   return eclipseAssessment(planet,facts).value;
