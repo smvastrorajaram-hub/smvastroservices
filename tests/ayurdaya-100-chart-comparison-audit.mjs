@@ -13,7 +13,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
 import {
   cgRajanSelectAyurdayaMethod,
-  cgRajanCompareGrahas
+  cgRajanCompareGrahas,
+  cgRajanAyurdayaReportHtml
 } from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 import {
   bvRamanAyurdayaResearchResult
@@ -89,6 +90,10 @@ const pindaPanelSignatures = new Set();
 const bvrPindaSignatures = new Set();
 const cgPindaSignatures = new Set();
 const cgMethodCounts = {};
+const cgTieMethodCombinationCounts = {};
+const cgTieChartDetails = [];
+const haranaMissingEvidenceByChart = [];
+const haranaMissingReasonCounts = {};
 const longevityCategoryCounts = {};
 const numericBandCounts = {};
 const crossCheckCounts = {};
@@ -192,6 +197,26 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   const selection = cgRajanSelectAyurdayaMethod({planets:chart.planets,lagna:chart.lagna});
   inc(cgMethodCounts,selection.selectedMethod || ('UNAVAILABLE:'+selection.reasonCode));
   inc(cgAvailabilityCounts,selection.available?'AVAILABLE':'UNAVAILABLE');
+  if(selection.reasonCode==='shadbala-tie'){
+    const tied=selection.tiedCandidates||[];
+    ok(tied.length>=2,'Shadbala tie retains at least two method candidates for '+birth.name);
+    ok(tied.every(candidate=>Number.isFinite(candidate.scoreVirupa)&&['pinda','natural','amsa'].includes(candidate.method)),
+      'every tied candidate retains its method and Shadbala score for '+birth.name);
+    inc(cgTieMethodCombinationCounts,tied.map(candidate=>candidate.method).join('+'));
+    const tieHtml=cgRajanAyurdayaReportHtml({planets:chart.planets,lagna:chart.lagna,language:'en'});
+    ok(tieHtml.includes('data-ayurdaya-selection="shadbala-tie"'),
+      'Shadbala tie renders a multi-method comparison rather than a blank result for '+birth.name);
+    for(const method of new Set(tied.map(candidate=>candidate.method))){
+      eq((tieHtml.match(new RegExp('data-tied-method="'+method+'"','g'))||[]).length,7,
+        'tied '+method+' shows seven planet-wise values for '+birth.name);
+    }
+    eq((tieHtml.match(/data-tied-total=/g)||[]).length,tied.length,
+      'every tied method has a separately rendered total for '+birth.name);
+    cgTieChartDetails.push({fixtureId:birth.name,tiedCandidates:tied.map(candidate=>({
+      referenceRole:candidate.referenceRole,planet:candidate.planet,method:candidate.method,
+      scoreVirupa:candidate.scoreVirupa
+    }))});
+  }
   const cg = cgRajanCompareGrahas({planets:chart.planets,lagna:chart.lagna});
   ok(Array.isArray(cg.entries) && cg.entries.length===7,
     'C.G. Rajan produces source-level per-graha terms for '+birth.name);
@@ -202,12 +227,30 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   inc(numericBandCounts,bvr.chapterXXVI?.numericBandCandidate || 'UNAVAILABLE');
   inc(crossCheckCounts,bvr.crossCheck?.status || 'UNAVAILABLE');
   inc(haranaCompletenessCounts,bvr.chapterXXVI?.haranaComplete===true?'COMPLETE':'INCOMPLETE');
+  const missingEvidenceForChart=[];
   for(const planet of CLASSICAL){
     for(const factor of bvr.chapterXXVI?.planets?.[planet]?.harana?.missingFactors||[]) inc(haranaMissingFactorCounts,factor);
+    const diagnostics=bvr.haranaInputDiagnostics?.[planet];
+    for(const factor of diagnostics?.missingFactors||[]){
+      const detail=diagnostics.factors?.[factor]||{};
+      inc(haranaMissingReasonCounts,detail.source||'unknown-source');
+      missingEvidenceForChart.push({planet,factor,source:detail.source||null,reason:detail.reason||null,
+        eclipticLatitude:diagnostics.eclipticLatitude??null,pairEvidence:detail.pairEvidence||null,
+        phaseDistanceDegrees:detail.phaseDistanceDegrees??null,
+        oppositionDistanceDegrees:detail.oppositionDistanceDegrees??null,
+        nearestNodeDistanceDegrees:detail.nearestNodeDistanceDegrees??null,
+        moonEclipticLatitudeDegrees:detail.moonEclipticLatitudeDegrees??null});
+    }
   }
+  if(missingEvidenceForChart.length) haranaMissingEvidenceByChart.push({
+    fixtureId:birth.name,cohort:birth.sex,missingFactors:missingEvidenceForChart
+  });
   computed.push({birth,chart,result,bvr,cg,selection});
 }
 eq(computed.length,100,'100 actual chart-engine results completed');
+eq(cgTieChartDetails.length,8,'all eight tied Shadbala charts retain the method comparisons');
+eq(Object.values(cgTieMethodCombinationCounts).reduce((sum,n)=>sum+n,0),8,
+  'each tied Shadbala chart has a complete method-combination audit');
 ok(chartSignatures.size >= 95,
   'natal longitude signatures vary across the 100 inputs; no static chart replay');
 ok(pindaPanelSignatures.size >= 80,
@@ -228,14 +271,22 @@ for (const pair of pairs) {
   });
   const cgSections=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
   const bvSections=(html.match(/data-smv-bv-raman-ayurdaya-section="1"/g)||[]).length;
+  const shadbalaTieSections=(html.match(/data-ayurdaya-selection="shadbala-tie"/g)||[]).length;
+  const tiedMethodCells=(html.match(/data-tied-method=/g)||[]).length;
   eq(cgSections,2,'both partners receive a C.G. Rajan report section for pair '+pair.male.index);
   eq(bvSections,2,'both partners receive a B.V. Raman Ashtakavarga Ayurdaya section for pair '+pair.male.index);
   ok(html.includes('Sodhya Pinda') && html.includes('Rasi Pinda') && html.includes('Graha Pinda'),
     'pair report renders Rasi/Graha/Sodhya Pinda labels for pair '+pair.male.index);
   ok(!/final lifespan|predicted death age|மரண வயது/i.test(html),
     'pair report does not present final lifespan/death-age claim for pair '+pair.male.index);
+  eq(shadbalaTieSections,
+    Number(male.selection.reasonCode==='shadbala-tie')+Number(female.selection.reasonCode==='shadbala-tie'),
+    'every tied partner and only tied partners receive side-by-side method output, pair '+pair.male.index);
+  ok(tiedMethodCells>=shadbalaTieSections*14,
+    'each tied partner receives at least two seven-graha method columns, pair '+pair.male.index);
   pairReportAudit.push({
     pair:pair.male.index,
+    shadbalaTieSections,tiedMethodCells,
     cgMethodMale:male.selection.selectedMethod||('UNAVAILABLE:'+male.selection.reasonCode),
     cgMethodFemale:female.selection.selectedMethod||('UNAVAILABLE:'+female.selection.reasonCode),
     maleNumericBand:male.bvr.chapterXXVI?.numericBandCandidate||null,
@@ -264,6 +315,14 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     methodSelection:selection.selectedMethod,
     available:selection.available,
     reasonCode:selection.reasonCode||null,
+    tiedCandidates:(selection.tiedCandidates||[]).map(candidate=>({
+      referenceRole:candidate.referenceRole,planet:candidate.planet,method:candidate.method,
+      scoreVirupa:candidate.scoreVirupa
+    })),
+    comparedCandidates:(selection.comparedCandidates||[]).map(candidate=>({
+      referenceRole:candidate.referenceRole,planet:candidate.planet,method:candidate.method,
+      available:candidate.available,scoreVirupa:candidate.scoreVirupa
+    })),
     referencePlanet:selection.referencePlanetEnglish||null,
     pindaTerms:cg.entries.map(e=>({
       planet:e.english,
@@ -297,10 +356,20 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     }),
     chapterXIVCategoryCandidates:bvr.chapterXIV?.categoryCandidates||[],
     matchedRuleIds:(bvr.chapterXIV?.rules||[]).filter(rule=>rule.status==='MATCHED').map(rule=>rule.id),
+    unknownRuleIds:bvr.chapterXIV?.unknownRuleIds||[],
+    chapterXIVRuleCoverageCounts:bvr.chapterXIV?.ruleCoverageCounts||{},
     numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
     crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
+    crossCheckReason:bvr.crossCheck?.reason||null,
+    crossCheckRuleContext:{
+      matchedRuleIds:bvr.crossCheck?.chapterXIVMatchedRuleIds||[],
+      unknownRuleIds:bvr.crossCheck?.chapterXIVUnknownRuleIds||[],
+      chapterXXVIHaranaComplete:bvr.crossCheck?.chapterXXVIHaranaComplete??false,
+      missingHaranaByPlanet:bvr.crossCheck?.chapterXXVIMissingHaranaByPlanet||{}
+    },
     haranaComplete:bvr.chapterXXVI?.haranaComplete===true,
     haranaMissingFactors:Object.fromEntries(CLASSICAL.map(planet=>[planet,bvr.chapterXXVI?.planets?.[planet]?.harana?.missingFactors||[]])),
+    haranaInputDiagnostics:Object.fromEntries(CLASSICAL.map(planet=>[planet,bvr.haranaInputDiagnostics?.[planet]||null])),
     netLunarYears:bvr.chapterXXVI?.netLunarYears??null,
     solarYearsCandidate:bvr.chapterXXVI?.solarYearsCandidate??null,
     finalLifespan:bvr.finalLifespan,
@@ -338,10 +407,15 @@ const summary = {
     crossCheckStatusCounts:crossCheckCounts,
     haranaCompletenessCounts,
     haranaMissingFactorCounts,
+    haranaMissingReasonCounts,
+    haranaMissingEvidenceByChart,
+    cgTieMethodCombinationCounts,
+    cgTiedChartDetails:cgTieChartDetails,
     warning:'Chapter XIV coverage/source arithmetic remains partial; candidates are research outputs, not a certified final lifespan or a medical prediction.'
   },
   marriageMatching:{
     pairReportsRendered:pairReportAudit.length,
+    shadbalaTieSectionsRendered:pairReportAudit.reduce((sum,row)=>sum+(row.shadbalaTieSections||0),0),
     bothAppendicesVerifiedPerReport:true,
     pairOutputSamples:pairReportAudit.slice(0,5)
   },
