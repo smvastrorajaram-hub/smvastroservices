@@ -73,7 +73,7 @@ eq(xiv.ruleCoverageCounts.Madhyayu.notImplemented, 0,
   'No Madhyayu source-rule IDs lack an evaluator');
 eq(xiv.ruleCoverageCounts.Purnayu.notImplemented, 0,
   'No Purnayu source-rule IDs lack an evaluator');
-ok(xiv.blockers.some(text => text.includes('all 76 Chapter XIV rule IDs have evaluator entries')),
+ok(xiv.blockers.some(text => text.includes('All 76 Chapter XIV rule IDs have evaluator entries')),
   'Research blockers explain missing evidence wiring and validation rather than claiming rules are absent');
 eq(xiv.finalLifespan, null, 'Chapter XIV does not return a final lifespan');
 eq(xiv.certified, false, 'Chapter XIV rules remain uncertified');
