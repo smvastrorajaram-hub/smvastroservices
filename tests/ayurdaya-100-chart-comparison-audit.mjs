@@ -95,6 +95,10 @@ const cgTieChartDetails = [];
 const haranaMissingEvidenceByChart = [];
 const haranaMissingReasonCounts = {};
 const longevityCategoryCounts = {};
+const chapterXIVUnknownRuleOccurrenceCounts = {};
+const chapterXIVMatchedRuleOccurrenceCounts = {};
+const chapterXIVNotMatchedRuleOccurrenceCounts = {};
+const haranaFactorResolutionCounts = {};
 const numericBandCounts = {};
 const crossCheckCounts = {};
 const chapterXIVEvidenceCompletenessCounts = {};
@@ -225,6 +229,11 @@ for (const birth of [...maleBirths,...femaleBirths]) {
 
   const categories = bvr.chapterXIV?.categoryCandidates || [];
   inc(longevityCategoryCounts,categories.length ? categories.join('+') : 'NO_CONFIRMED_CATEGORY');
+  for(const rule of bvr.chapterXIV?.rules||[]){
+    if(rule.status==='UNKNOWN') inc(chapterXIVUnknownRuleOccurrenceCounts,rule.id);
+    else if(rule.status==='MATCHED') inc(chapterXIVMatchedRuleOccurrenceCounts,rule.id);
+    else if(rule.status==='NOT_MATCHED') inc(chapterXIVNotMatchedRuleOccurrenceCounts,rule.id);
+  }
   inc(numericBandCounts,bvr.chapterXXVI?.numericBandCandidate || 'UNAVAILABLE');
   inc(crossCheckCounts,bvr.crossCheck?.status || 'UNAVAILABLE');
   inc(chapterXIVEvidenceCompletenessCounts,
@@ -235,6 +244,10 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   for(const planet of CLASSICAL){
     for(const factor of bvr.chapterXXVI?.planets?.[planet]?.harana?.missingFactors||[]) inc(haranaMissingFactorCounts,factor);
     const diagnostics=bvr.haranaInputDiagnostics?.[planet];
+    for(const [factor,assessment] of Object.entries(diagnostics?.factors||{})){
+      const resolved=assessment.value===true?'TRUE':assessment.value===false?'FALSE':'UNKNOWN';
+      inc(haranaFactorResolutionCounts,factor+':'+(assessment.source||'unknown-source')+':'+resolved);
+    }
     for(const factor of diagnostics?.missingFactors||[]){
       const detail=diagnostics.factors?.[factor]||{};
       inc(haranaMissingReasonCounts,detail.source||'unknown-source');
@@ -252,6 +265,8 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   computed.push({birth,chart,result,bvr,cg,selection});
 }
 eq(computed.length,100,'100 actual chart-engine results completed');
+eq(haranaCompletenessCounts.COMPLETE,100,'all 100 computed charts have complete Chapter XXVI Harana inputs');
+eq(haranaCompletenessCounts.INCOMPLETE||0,0,'no numeric lifespan candidate is withheld for missing Harana inputs');
 eq(cgTieChartDetails.length,8,'all eight tied Shadbala charts retain the method comparisons');
 for (const oldCase of [
   {fixtureId:'AUDIT-F-32',planet:'Moon'},
@@ -377,6 +392,11 @@ const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
     chapterXIVCategoryCandidates:bvr.chapterXIV?.categoryCandidates||[],
     matchedRuleIds:(bvr.chapterXIV?.rules||[]).filter(rule=>rule.status==='MATCHED').map(rule=>rule.id),
     unknownRuleIds:bvr.chapterXIV?.unknownRuleIds||[],
+    unknownRuleDetails:(bvr.chapterXIV?.rules||[]).filter(rule=>rule.status==='UNKNOWN').map(rule=>({
+      id:rule.id,category:rule.category,title:rule.title,
+      sourceRuleNumber:rule.sourceRuleNumber,sourcePrintedPage:rule.sourcePrintedPage,
+      implemented:rule.implemented===true,note:rule.note||null
+    })),
     chapterXIVRuleCoverageCounts:bvr.chapterXIV?.ruleCoverageCounts||{},
     numericBandCandidate:bvr.chapterXXVI?.numericBandCandidate??null,
     crossCheckStatus:bvr.crossCheck?.status||'UNAVAILABLE',
@@ -427,6 +447,11 @@ const summary = {
   perChartResults,
   longevityTypeTracks:{
     chapterXIVRuleCategoryCandidateCounts:longevityCategoryCounts,
+    chapterXIVRuleEvidenceOccurrenceCounts:{
+      unknownByRule:chapterXIVUnknownRuleOccurrenceCounts,
+      matchedByRule:chapterXIVMatchedRuleOccurrenceCounts,
+      notMatchedByRule:chapterXIVNotMatchedRuleOccurrenceCounts
+    },
     chapterXXVINumericBandCandidateCounts:numericBandCounts,
     crossCheckStatusCounts:crossCheckCounts,
     chapterXIVEvidenceCompletenessCounts,
@@ -434,6 +459,7 @@ const summary = {
     haranaMissingFactorCounts,
     haranaMissingReasonCounts,
     haranaMissingEvidenceByChart,
+    haranaFactorResolutionCounts,
     cgTieMethodCombinationCounts,
     cgTiedChartDetails:cgTieChartDetails,
     warning:'Chapter XIV coverage/source arithmetic remains partial; candidates are research outputs, not a certified final lifespan or a medical prediction.'
