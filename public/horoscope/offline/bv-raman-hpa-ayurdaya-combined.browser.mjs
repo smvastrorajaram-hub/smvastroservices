@@ -206,6 +206,23 @@ function maleficInHouse(map, house) {
 function maleficInAnyKendra(map) {
   return triAny(...[1, 4, 7, 10].map(house => maleficInHouse(map, house)));
 }
+
+// Return true when a known benefic occupies a Kendra, false only when all
+// seven classical grahas are present and their nature/house evidence proves
+// no benefic occupies houses 1, 4, 7 or 10. Partial charts stay UNKNOWN.
+function beneficInAnyKendra(map, evidence) {
+  let unknownNatureInKendra = false;
+  for (const [name, planet] of map.planets.entries()) {
+    if (!isKendra(planet.house)) continue;
+    const nature = planetNature(map, evidence, name);
+    if (nature === 'benefic') return true;
+    if (nature === null) unknownNatureInKendra = true;
+  }
+  const coreComplete = [
+    'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
+  ].every(name => map.planets.has(name) && houseValid(map.planets.get(name).house));
+  return unknownNatureInKendra || !coreComplete ? null : false;
+}
 function isMoonMrityubhaga(map) {
   const moon = map.planets.get('Moon');
   if (!moon || moon.sign === null || moon.degreeInSign === null) return null;
@@ -376,6 +393,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   // Printed p. 64 says "Moon in a Kendra with malefics"; evaluate same-house co-occupancy separately from aspects.
   const moonWithMalefics = conjunctionState(map, 'Moon', 'malefic', e);
   const maleficKendra = maleficInAnyKendra(map);
+  const beneficKendra = beneficInAnyKendra(map, e);
   const maleficsInAll = houses => triAll(...houses.map(house => maleficInHouse(map, house)));
   const lagnaLord = houseLord(map, 1), eighthLord = houseLord(map, 8);
   const thirdLord = houseLord(map, 3), sixthLord = houseLord(map, 6);
