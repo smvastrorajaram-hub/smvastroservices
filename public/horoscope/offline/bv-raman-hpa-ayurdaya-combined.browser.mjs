@@ -389,6 +389,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const noBeneficMoonAspect = moonAspect.benefic === false ? true :
     moonAspect.benefic === true ? false : null;
   const noMoonAspect = moonAspect.any === false ? true : moonAspect.any === true ? false : null;
+  const noMaleficMoonAspect = moonAspect.malefic === false ? true : moonAspect.malefic === true ? false : null;
 
   const maleficsLastNavamsa = (() => {
     let found = false;
@@ -414,20 +415,69 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   rules.push(makeRule('XIV-BAL-06', 'Balarishta',
     'Weak Moon in house 1 or 8, with malefics in Kendras',
     triAll(isWeak('Moon'), inList(moonHouse, [1, 8]), maleficKendra)));
+  rules.push(makeRule('XIV-BAL-07', 'Balarishta', 'Moon in Ascendant, Mars in 8th, Sun in 9th and Saturn in 12th',
+    triAll(moonHouse === null ? null : moonHouse === 1,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8,
+      houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 9,
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 12)));
+  rules.push(makeRule('XIV-BAL-08', 'Balarishta', 'Weak Moon in Ascendant with malefic aspects to houses 5, 8 and 12',
+    triAll(isWeak('Moon'), moonHouse === null ? null : moonHouse === 1,
+      tri(e.maleficsAspectingHouses5_8_12))));
   rules.push(makeRule('XIV-BAL-09', 'Balarishta',
     'Moon 8, Mars 7, Rahu 9 and Jupiter 3',
     triAll(moonHouse === null ? null : moonHouse === 8,
       houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
       houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 9,
       houseOf(map, 'Jupiter') === null ? null : houseOf(map, 'Jupiter') === 3)));
+  rules.push(makeRule('XIV-BAL-13', 'Balarishta', 'Ketu in house 4 with or aspected by malefics',
+    triAll(houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 4,
+      triAny(conjunctionState(map, 'Ketu', 'malefic', e),
+        aspectState(map, e, 'Ketu').malefic))));
+  const rahuHouseForBal14 = houseOf(map, 'Rahu');
+  rules.push(makeRule('XIV-BAL-14', 'Balarishta', 'Rahu in 7th aspected by both Sun and Moon',
+    triAll(rahuHouseForBal14 === null ? null : rahuHouseForBal14 === 7,
+      isAspecting(map.planets.get('Sun'), rahuHouseForBal14),
+      isAspecting(map.planets.get('Moon'), rahuHouseForBal14))));
+  rules.push(makeRule('XIV-BAL-18', 'Balarishta', 'Moon in 8th, Mars in 7th and Saturn in Ascendant',
+    triAll(moonHouse === null ? null : moonHouse === 8,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 7,
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1)));
   const saturn = map.planets.get('Saturn');
   const saturnThirdMoon = saturn && moon && houseValid(saturn.house) && houseValid(moon.house)
     ? ((moon.house - saturn.house + 12) % 12 + 1) === 3 : null;
   rules.push(makeRule('XIV-BAL-19', 'Balarishta', 'Saturn casts its third aspect on the Moon', saturnThirdMoon));
   rules.push(makeRule('XIV-BAL-20', 'Balarishta', 'Moon in house 6 or 8 without planetary aspects',
     triAll(inList(moonHouse, [6, 8]), noMoonAspect)));
+  rules.push(makeRule('XIV-BAL-21', 'Balarishta', 'Moon in Ascendant with malefics and without benefic aspect',
+    triAll(moonHouse === null ? null : moonHouse === 1, moonWithMalefics, noBeneficMoonAspect)));
+  rules.push(makeRule('XIV-BAL-22', 'Balarishta', 'Moon in Ascendant, Rahu and Mars in 8th',
+    triAll(moonHouse === null ? null : moonHouse === 1,
+      houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 8,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8)));
+  rules.push(makeRule('XIV-BAL-23', 'Balarishta', 'Sun and Saturn in Ascendant; Rahu and Mars in 8th',
+    triAll(houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 1,
+      houseOf(map, 'Saturn') === null ? null : houseOf(map, 'Saturn') === 1,
+      houseOf(map, 'Rahu') === null ? null : houseOf(map, 'Rahu') === 8,
+      houseOf(map, 'Mars') === null ? null : houseOf(map, 'Mars') === 8)));
+  const noBeneficProtection = name => {
+    const conjunction = conjunctionState(map, name, 'benefic', e);
+    const aspect = aspectState(map, e, name).benefic;
+    return triAll(conjunction === null ? null : !conjunction,
+      aspect === null ? null : !aspect);
+  };
+  rules.push(makeRule('XIV-BAL-24', 'Balarishta',
+    'Malefics in houses 5, 8 and 9; Sun or Moon in Ascendant without benefic protection',
+    triAll(maleficsInAll([5, 8, 9]), triAny(
+      triAll(houseOf(map, 'Sun') === null ? null : houseOf(map, 'Sun') === 1,
+        noBeneficProtection('Sun')),
+      triAll(moonHouse === null ? null : moonHouse === 1,
+        noBeneficProtection('Moon'))))));
   rules.push(makeRule('XIV-BAL-27', 'Balarishta', 'Moon at a Mrityubhaga degree in a Kendra or house 8',
     triAll(isMoonMrityubhaga(map), inList(moonHouse, [1, 4, 7, 10, 8]))));
+  rules.push(makeRule('XIV-BAL-29', 'Balarishta', 'Moon in 6th or 8th with both malefic and benefic aspects',
+    triAll(inList(moonHouse, [6, 8]), moonAspect.malefic, moonAspect.benefic)));
+  rules.push(makeRule('XIV-BAL-30', 'Balarishta', 'Moon in 6th or 8th with benefic aspect alone',
+    triAll(inList(moonHouse, [6, 8]), noMaleficMoonAspect, moonAspect.benefic)));
 
   // Antidotes are a separate evidence list; a matched affliction is never auto-final.
   rules.push(makeRule('XIV-ANT-01', 'Antidote', 'Strong Jupiter in the Ascendant',
@@ -445,6 +495,8 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     triAll(moonHouse === null ? null : moonHouse === 6, tri(e.moonDrekkanaBenefic))));
   rules.push(makeRule('XIV-ANT-07', 'Antidote', 'Full Moon enclosed by benefics',
     tri(e.fullMoonBetweenBenefics)));
+  rules.push(makeRule('XIV-ANT-08', 'Antidote', 'Moon in house 6 or 8 with birth on the night of a Full Moon',
+    triAll(inList(moonHouse, [6, 8]), tri(e.bornOnNightOfFullMoon))));
   rules.push(makeRule('XIV-ANT-09', 'Antidote', 'Full Moon aspects Lagna and Jupiter is in a Kendra',
     triAll(tri(e.fullMoonAspectsLagna), isKendra(jupiterHouse))));
   rules.push(makeRule('XIV-ANT-10', 'Antidote', 'Benefic Shadvarga protection for malefics',
