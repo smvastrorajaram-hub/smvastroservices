@@ -15,13 +15,15 @@ The rule-by-rule test file now has source-linked cases for **all 76/76 rule IDs*
 | Regression measure | Result |
 |---|---:|
 | Distinct Chapter XIV source-rule IDs covered | 76 / 76 |
-| Positive MATCHED cases | 76 |
-| Negative NOT_MATCHED cases | 76 |
-| Explicit UNKNOWN cases | 53 |
-| Individual source-rule fixture outcomes | 205 |
+| MATCHED fixture outcomes | 48 |
+| NOT_MATCHED fixture outcomes | 45 |
+| UNKNOWN fixture outcomes | 23 |
+| Individual source-rule fixture outcomes | 206 |
 | Actual, partially replayed book horoscope examples | 3 |
 
-The 76/76 assertion is part of the automated test, so a future change that omits a source rule from the matrix fails CI.
+The 76/76 assertion is part of the automated test, so a future change that omits a source rule from the matrix fails CI. The three outcomes are not one-per-rule: rules with incomplete source inputs can have UNKNOWN cases, and rules whose fixtures are adequately demonstrated by the text receive the positive/negative cases supported by their available conditions.
+
+The separate integrated regression also adds MATCHED / NOT_MATCHED / UNKNOWN triplets for the 17 predicates that remained UNKNOWN in the first 100-chart fixture, so missing evidence handling is tested directly rather than inferred from this aggregate count.
 
 ## Book examples and limits
 
