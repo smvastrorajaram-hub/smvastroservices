@@ -476,7 +476,7 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
       houseOf(map, 'Ketu') === null ? null : houseOf(map, 'Ketu') === 1)));
   rules.push(makeRule('XIV-ALP-05', 'Alpayu',
     'Malefics in Ascendant with Moon conjunct malefics',
-    triAll(maleficInHouse(map, 1), conjunctionState(map, 'Moon', 'malefic', e)));
+    triAll(maleficInHouse(map, 1), conjunctionState(map, 'Moon', 'malefic', e))));
   rules.push(makeRule('XIV-ALP-06', 'Alpayu',
     '8th lord in Ascendant with powerless Lagna lord',
     triAll(eighthLordHouse === null ? null : eighthLordHouse === 1, lagnaLordWeak)));
