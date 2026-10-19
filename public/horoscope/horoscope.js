@@ -1957,13 +1957,17 @@ try{
           });
           // Preserve the existing C.G. Rajan section and append the two new
           // B.V. Raman result tables strictly beneath it, in the same cream table.
-          const html=cgHtml.replace(/<\/section>\s*$/,bvHtml+'</section>');
+          const html=cgHtml+bvHtml;
           sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove());
+          sectionI.querySelectorAll('[data-smv-bv-raman-ayurdaya-section]').forEach(node=>node.remove());
           sectionI.insertAdjacentHTML('beforeend',html);
-          // Any async routed sub-module may update I; preserve Ayurdaya LAST.
+          // Any async routed sub-module may update I; preserve the original
+          // C.G. Rajan section first, followed by the separate B.V. Raman block.
           root.__smvRouteAdvancedSections?.();
           const ayur=sectionI.querySelector('[data-smv-cg-rajan-ayurdaya]');
           if(ayur)sectionI.appendChild(ayur);
+          const bvAyur=sectionI.querySelector('[data-smv-bv-raman-ayurdaya-section]');
+          if(bvAyur)sectionI.appendChild(bvAyur);
         }catch(ayurError){
           console.warn('CG Rajan Part I Ayurdaya appendix unavailable:',ayurError);
         }
