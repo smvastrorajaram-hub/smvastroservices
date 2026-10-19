@@ -253,6 +253,16 @@ for (const birth of [...maleBirths,...femaleBirths]) {
 }
 eq(computed.length,100,'100 actual chart-engine results completed');
 eq(cgTieChartDetails.length,8,'all eight tied Shadbala charts retain the method comparisons');
+for (const oldCase of [
+  {fixtureId:'AUDIT-F-32',planet:'Moon'},
+  {fixtureId:'AUDIT-F-39',planet:'Moon'},
+  {fixtureId:'AUDIT-F-41',planet:'Sun'}
+]) {
+  const computedCase=computed.find(entry=>entry.birth.name===oldCase.fixtureId);
+  ok(!!computedCase,'formerly incomplete eclipse case is present: '+oldCase.fixtureId);
+  eq(computedCase.bvr.haranaInputDiagnostics[oldCase.planet].factors.eclipsed.value,false,
+    'actual eclipse geometry resolves former missing '+oldCase.planet+' eclipse factor for '+oldCase.fixtureId);
+}
 eq(Object.values(haranaMissingReasonCounts).reduce((sum,n)=>sum+n,0),
   haranaMissingEvidenceByChart.reduce((sum,row)=>sum+row.missingFactors.length,0),
   'every unresolved Harana factor is linked to a per-chart evidence reason');
