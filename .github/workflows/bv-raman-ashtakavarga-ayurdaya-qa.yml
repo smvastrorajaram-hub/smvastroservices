@@ -37,6 +37,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Ensure primary-source PDF exists for every trigger
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_pdf="certificates/hindu-predictive-astrology-bv-raman-1.pdf"
+          if [ ! -s "$source_pdf" ]; then
+            git fetch --no-tags --depth=1 origin main
+            mkdir -p "$(dirname "$source_pdf")"
+            git show "FETCH_HEAD:$source_pdf" > "$source_pdf"
+          fi
+          test -s "$source_pdf"
+          echo "Primary source PDF is available: $source_pdf"
       - name: Render primary-source PDF pages for Chapter XIV and XXVI evidence
         run: |
           python -m pip install --disable-pip-version-check pymupdf pillow
