@@ -381,3 +381,47 @@ Added separate evaluators for Alpayu rule 11 (malefics in houses 1, 2 and 8, wit
 
 This is evaluator coverage, not a claim that all inputs are calculated or certified. The next remaining Alpayu gaps are source rules 9, 10 and 13; Madhyayu rules 5–14 and Balarishta rules 4, 10–12, 15–17, 25–26 and 28 remain unimplemented.
 
+## 2026-10-19 — Latest runtime fix, source-artifact coverage and Madhyayu pass
+
+This section supersedes earlier provisional status lines above where applicable. It records work verified on the current research branch; it does not certify or release an Ayurdaya result.
+
+### Root cause and correction
+
+- The integrated Chapter XIV + XXVI regression initially failed at runtime with `ReferenceError: beneficKendra is not defined` while evaluating Alpayu rule 11.
+- The source fix adds `beneficInAnyKendra(map, evidence)`, deriving whether a benefic occupies houses 1, 4, 7 or 10 from available placements and planet-nature evidence. A partial chart or unknown nature remains indeterminate rather than being treated as “no benefic in a Kendra.”
+- Three regression cases cover rule 11 with benefics outside Kendras (MATCHED), Jupiter in a Kendra (NOT_MATCHED), and incomplete placement data (UNKNOWN).
+- The fix and regressions passed the complete B.V. Raman QA job on commit `51bc7d00303970178a220db23e9551260e639109` (run 39211723029).
+
+### Source-image workflow gap closed
+
+- The first workflow artifact rendered Chapter XIV pp. 63–72 and Chapter XXVI pp. 199–203, but did not render p. 190 despite the test suite referencing the HPA Standard Horoscope B.R./A.R. oracle on that page.
+- The QA workflow now also renders PDF page 197 (printed p. 190), headed “Ashtakavarga Tables Before and After Reduction”, into the same source-evidence artifact. This makes the specific scanned table behind the 168-cell B.R./A.R. fixture available alongside the rule and formula pages.
+- Workflow-only fix commit: `98541f48f89d6d590564baf9b4edf76d1332fe97`.
+- PASS: B.V. Raman QA push and pull-request runs 39211846240 and 39211851381. The separate ASOP Chapter II Table I remains secondary-transcription-only; p. 190 from *Hindu Predictive Astrology* must not be substituted for it.
+
+### Additional source-position evaluators
+
+Four directly testable Madhyayu conditions from printed pp. 70–71 now have individual evaluators:
+- `XIV-MAD-08`: Scorpio Lagna; Jupiter in Lagna; Mars and Rahu in house 8.
+- `XIV-MAD-10`: Aries Lagna; Jupiter in house 8; malefic influence in a Kendra.
+- `XIV-MAD-12`: Mars and Mercury in Kendras, Venus in Lagna, and exalted planets in houses 3 and 11. The rule requires evidence of an exalted planet in each specified house; incomplete charts stay UNKNOWN.
+- `XIV-MAD-14`: Mars in house 5, Sun in house 7, Saturn in its Aries debilitation sign.
+
+Regression includes positive cases and negative cases where the exaltation/debilitation requirement is not satisfied. These are rule-match tests only; they do not select a lifespan category or a number of years.
+
+### Current Chapter XIV coverage and verification
+
+| Source category | Source rules | Evaluators present | Still unimplemented |
+|---|---:|---:|---:|
+| Balarishta | 30 | 20 | 10 |
+| Antidotes | 10 | 10 | 0 |
+| Alpayu | 15 | 12 | 3 |
+| Madhyayu | 15 | 9 | 6 |
+| Purnayu | 6 | 6 | 0 |
+| **Total** | **76** | **57** | **19** |
+
+The 19 unevaluated rules remain explicitly indexed as `UNKNOWN`: Balarishta 4, 10–12, 15–17, 25–26, 28; Alpayu 9, 10, 13; Madhyayu 5–7, 9, 11, 13. Their wording depends on sunrise/sunset, Navamsa, Dasa, source-sensitive affliction/strength, cancellation or multi-placement evidence that must be modelled and tested separately.
+
+- PASS — B.V. Raman regression, syntax checks, integrated Chapter XIV + XXVI regression, BPHS Shodhana regression and P.V.R. Narasimha Rao Shodhana regression on `45ca1525b1a3c0194c08a7d46fa8e2a6b71d81e0`, run 39212458326.
+- A separate Horoscope/Marriage Matching source-syntax workflow was still in progress at the last status check; do not count it as a PASS until its run completes.
+- **Merge gate:** PR #55 remains open and unmerged. Keep `certified:false`; no customer-facing longevity, death-age or death-date output. A green CI establishes software regression parity only for the pinned cases, not complete classical certification.
