@@ -290,7 +290,7 @@ async function run() {
     methodology:{
       networkCacheDisabled:true,networkThrottling:'none (real GitHub Actions runner network)',
       transferMeasurement:'Chromium CDP Network.loadingFinished encodedDataLength; browser performance navigation timings',
-      pwaReset:'fresh anonymous BrowserContext, then unregister service workers + clear CacheStorage/localStorage/sessionStorage/IndexedDB + reload',
+      pwaReset:'fresh anonymous Chromium process/context, then unregister service workers + clear CacheStorage/localStorage/sessionStorage/IndexedDB + reload',
       firebaseScope:'anonymous public Horoscope page; no login, no writes, one read-only published-rules fetch',
       deviceLimitation:'No physical Android handset or Android launcher is attached. This verifies the installed web service-worker/manifest lifecycle in a mobile-emulated Chromium browser, not the Android home-screen installation UI.'
     },
@@ -314,8 +314,8 @@ async function run() {
   report.environment.browserVersion=await browser.version();
   const collector=networkCollector(browser);
   try {
-    const context=await browser.createBrowserContext();
-    const page=await context.newPage();
+    const context=browser.defaultBrowserContext();
+    const page=await browser.newPage();
     await page.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await page.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(page.target());
@@ -400,10 +400,11 @@ async function run() {
       afterReinstall:{serviceWorker:reinstallSw,manifest:reinstallManifest},
       note:'Browser web-app lifecycle verified; Android launcher shortcut/install prompt itself is outside headless-browser capability.'
     };
-    await context.close();
+    await page.close();
 
-    const calContext=await browser.createBrowserContext();
-    const calPage=await calContext.newPage();
+    // Start Calendar in a new page after clearing the anonymous origin state.
+    // The Calendar service-worker scope itself has not yet been registered in this context.
+    const calPage=await browser.newPage();
     await calPage.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await calPage.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(calPage.target());
@@ -443,7 +444,7 @@ async function run() {
       firstSearch:{query:'Perambalur',resultCount:search.count,matched:true,searchElapsedMs:Date.now()-searchStarted,partRequestCount:requestedParts.length},
       pass:true
     };
-    await calContext.close();
+    await calPage.close();
 
     const all=collector.all();
     report.firebaseProfile.totalObserved=countRpc(all,'Firestore ');
