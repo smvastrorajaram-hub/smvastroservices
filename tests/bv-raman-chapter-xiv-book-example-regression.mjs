@@ -723,8 +723,8 @@ statuses('XIV-MAD-13',[
   chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:true}},
  {label:'no benefic Kendra evidence',expected:'NOT_MATCHED',
   chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:false}},
- {label:'benefic-occupancy evidence absent',expected:'UNKNOWN',
-  chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{}}
+ {label:'benefic Kendra occupancy remains unknown when all natural benefics are missing',expected:'UNKNOWN',
+  chart:{houses:{Mars:10,Sun:4,Moon:3,Saturn:7},omit:['Jupiter','Venus','Mercury']},evidence:{}}
 ],'HPA p.71 Madhyayu 13');
 statuses('XIV-MAD-14',[
  {label:'Mars 5, Sun 7, Saturn debilitated in Aries',expected:'MATCHED',
