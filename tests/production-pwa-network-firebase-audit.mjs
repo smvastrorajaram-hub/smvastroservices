@@ -191,14 +191,14 @@ function countRpc(items, prefix) {
 async function navigate(page, url, collector, label) {
   const mark = collector.mark();
   const started = Date.now();
-  const response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:65000});
-  await page.evaluate(() => new Promise(resolve => {
-    if (document.readyState === 'complete') return resolve();
-    window.addEventListener('load', () => resolve(), {once:true});
-    setTimeout(resolve,12000);
-  }));
+  console.log('[audit] navigate:start',label,safeUrl(url).path);
+  const response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000});
+  console.log('[audit] navigate:domcontentloaded',label,'status',response?.status()??null,'ms',Date.now()-started);
+  // Listen to the Chromium-level load event, not a page.evaluate timer. A busy
+  // or frozen page main thread must not block this harness's diagnostic timeout.
+  await Promise.race([new Promise(resolve=>page.once('load',resolve)),sleep(12000)]);
   const pageLoadWallClockMs = Date.now()-started;
-  await sleep(2400);
+  await sleep(1200);
   const timing = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0];
     if (!n) return null;
@@ -305,14 +305,17 @@ async function run() {
   assert.ok(!/\b(onSnapshot|setInterval|MutationObserver)\b/.test(storeCode),'saved report sync has no realtime listener, polling timer, or MutationObserver');
   report.checks.sourceQuotaGuard={pass:true,publishedRulesRead:'single-flight on first explicit calculation/admin entry',savedReports:'local IndexedDB-first; no periodic/listener/MutationObserver reads'};
   await mkdir(OUT_DIR,{recursive:true});
+  console.log('[audit] browser:launch');
   const browser = await puppeteer.launch({
     args: chromium.args,
     executablePath: await chromium.executablePath(),
     headless: chromium.headless,
     defaultViewport: chromium.defaultViewport,
-    dumpio: true
+    dumpio: true,
+    protocolTimeout: 360000
   });
   report.environment.browserVersion=await browser.version();
+  console.log('[audit] browser:ready',report.environment.browserVersion);
   const collector=networkCollector(browser);
   try {
     const context=browser.defaultBrowserContext();
@@ -321,8 +324,11 @@ async function run() {
     await page.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(page.target());
 
+    console.log('[audit] phase:horoscope-cold-start');
     const first=await navigate(page,HOROSCOPE_URL,collector,'horoscope cold profile / first navigation');
+    console.log('[audit] phase:horoscope-pwa-registration');
     const firstSw=await registrationState(page);
+    console.log('[audit] horoscope-sw-state',JSON.stringify(firstSw));
     const firstManifest=await manifestInfo(page);
     report.networkTrials.push(first);
     report.checks.horoscopeInitialPwa={http200:first.httpStatus===200,serviceWorker:firstSw,manifest:firstManifest};
@@ -330,7 +336,9 @@ async function run() {
     assert.equal(firstManifest.status,200,'Horoscope web manifest must load');
     assert.ok((firstManifest.icons||[]).some(i=>i.sizes==='192x192') && (firstManifest.icons||[]).some(i=>i.sizes==='512x512'),'manifest must expose 192px and 512px app icons');
 
+    console.log('[audit] phase:repeat-navigation');
     for(let i=2;i<=3;i++) report.networkTrials.push(await navigate(page,HOROSCOPE_URL,collector,'horoscope no-HTTP-cache navigation '+i));
+    console.log('[audit] phase:idle-firestore-profile');
 
     const baselineMark=collector.mark();
     const baselineFirestore=countRpc(collector.all(),'Firestore ');
@@ -361,6 +369,7 @@ async function run() {
       pass:true
     };
 
+    console.log('[audit] phase:published-rules-read');
     const rulesMark=collector.mark();
     const rulesReady=await page.evaluate(async () => {
       if(!window.SMVPredictionRulesSync?.ensureReady)return {available:false};
@@ -389,7 +398,9 @@ async function run() {
       interpretation:'One logical document read may use more than one HTTP/WebChannel transport request; exact RPC count is reported without payloads.'
     };
 
+    console.log('[audit] phase:reinstall-reset');
     await resetAnonymousProfile(page,context);
+    console.log('[audit] phase:reinstall-navigation');
     const reinstall=await navigate(page,HOROSCOPE_URL,collector,'horoscope after unregister + storage/cache purge');
     const reinstallSw=await registrationState(page);
     const reinstallManifest=await manifestInfo(page);
@@ -405,6 +416,7 @@ async function run() {
 
     // Start Calendar in a new page after clearing the anonymous origin state.
     // The Calendar service-worker scope itself has not yet been registered in this context.
+    console.log('[audit] phase:calendar-cold-start');
     const calPage=await browser.newPage();
     await calPage.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await calPage.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
@@ -418,12 +430,14 @@ async function run() {
     assert.equal(calManifest.status,200,'Calendar manifest must load');
     assert.ok((calManifest.icons||[]).some(i=>i.sizes==='192x192')&&(calManifest.icons||[]).some(i=>i.sizes==='512x512'),'Calendar manifest must contain required app icons');
     await sleep(700);
+    console.log('[audit] phase:calendar-check-before-search');
     const beforeSearch=await cacheEntries(calPage);
     assert.equal(beforeSearch.placeShards.length,0,'fresh Calendar PWA install must not cache any India location JSON shard');
     const installEventEnd=collector.all().length;
     const installNetworkEvents=collector.all().slice(calMark.index,installEventEnd);
     const searchMark=collector.mark();
     const searchStarted=Date.now();
+    console.log('[audit] phase:calendar-first-place-search');
     const search=await calPage.evaluate(async () => {
       const mod=await import('/horoscope/offline/places/place-search.mjs');
       const rows=await mod.searchPlaces('Perambalur',12);
