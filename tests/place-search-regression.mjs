@@ -37,8 +37,10 @@ const rowsB=[
  [102,'Periyakulam','Tamil Nadu','Theni district',10.12,77.55,'Asia/Kolkata',30000,['periyakulam']],
  [103,'Small Perambalur','Tamil Nadu','Perambalur district',11.25,78.9,'Asia/Kolkata',100,['small perambalur']]
 ];
-const fixtureManifest={version:1,source:'fixture',records:4,license:'CC BY 4.0',shards:{
- p:{records:4,bytes:0,parts:[{file:'p-00.json',records:2,bytes:0},{file:'p-01.json',records:2,bytes:0}]}
+const fixtureManifest={version:1,source:'fixture',records:6,license:'CC BY 4.0',shards:{
+ p:{records:4,bytes:0,parts:[{file:'p-00.json',records:2,bytes:0},{file:'p-01.json',records:2,bytes:0}]},
+ q:{file:'q.json',records:1,bytes:0},
+ r:{file:'r.json',records:1,bytes:0}
 }};
 const fetched=[];
 const oldFetch=globalThis.fetch;
@@ -72,6 +74,8 @@ globalThis.fetch=async input=>{
  if(url.endsWith('/india-manifest.json'))return new Response(JSON.stringify(fixtureManifest),{status:200,headers:{'Content-Type':'application/json'}});
  if(url.endsWith('/india/p-00.json'))return new Response(JSON.stringify(rowsA),{status:200,headers:{'Content-Type':'application/json'}});
  if(url.endsWith('/india/p-01.json'))return new Response(JSON.stringify(rowsB),{status:200,headers:{'Content-Type':'application/json'}});
+ if(url.endsWith('/india/q.json'))return new Response(JSON.stringify([[104,'Quincy','Tamil Nadu','Quincy district',12,80,'Asia/Kolkata',60000,['quincy']]]),{status:200,headers:{'Content-Type':'application/json'}});
+ if(url.endsWith('/india/r.json'))return new Response(JSON.stringify([[105,'Ranchi','Jharkhand','Ranchi district',23.35,85.3,'Asia/Kolkata',50000,['ranchi']]]),{status:200,headers:{'Content-Type':'application/json'}});
  throw new Error('Unexpected fixture fetch: '+url);
 };
 try{
@@ -104,6 +108,26 @@ try{
     [...cachedResources.keys()].some(url=>url.endsWith('/india/p-00.json'))&&
     [...cachedResources.keys()].some(url=>url.endsWith('/india/p-01.json')),
   'Manifest and every fetched part are cached independently for offline fallback');
+ const lruFetches=[];
+ const boundedEngine=createPlaceSearchEngine({
+  fetchImpl:async input=>{
+   const url=String(input);lruFetches.push(url);
+   if(url.endsWith('/india-manifest.json'))return new Response(JSON.stringify(fixtureManifest),{status:200,headers:{'Content-Type':'application/json'}});
+   if(url.endsWith('/india/p-00.json'))return new Response(JSON.stringify(rowsA),{status:200,headers:{'Content-Type':'application/json'}});
+   if(url.endsWith('/india/p-01.json'))return new Response(JSON.stringify(rowsB),{status:200,headers:{'Content-Type':'application/json'}});
+   if(url.endsWith('/india/q.json'))return new Response(JSON.stringify([[104,'Quincy','Tamil Nadu','Quincy district',12,80,'Asia/Kolkata',60000,['quincy']]]),{status:200,headers:{'Content-Type':'application/json'}});
+   if(url.endsWith('/india/r.json'))return new Response(JSON.stringify([[105,'Ranchi','Jharkhand','Ranchi district',23.35,85.3,'Asia/Kolkata',50000,['ranchi']]]),{status:200,headers:{'Content-Type':'application/json'}});
+   throw new Error('Unexpected LRU fixture fetch: '+url);
+  },cacheStorage:mockCaches
+ });
+ await boundedEngine.searchPlaces('perambalur',12,'en');
+ await boundedEngine.searchPlaces('quincy',12,'en');
+ await boundedEngine.searchPlaces('ranchi',12,'en');
+ const pFetchesBefore=lruFetches.filter(url=>url.endsWith('/india/p-00.json')).length;
+ await boundedEngine.searchPlaces('perungudi',12,'en');
+ const pFetchesAfter=lruFetches.filter(url=>url.endsWith('/india/p-00.json')).length;
+ ok(pFetchesAfter===pFetchesBefore+1,
+  'Two-shard LRU evicts old letters and reloads an evicted letter only when requested');
 }finally{
  globalThis.fetch=oldFetch;
  if(oldCaches===undefined)delete globalThis.caches;else globalThis.caches=oldCaches;
@@ -118,6 +142,8 @@ ok(engine.includes('Array.isArray(info.parts)')&&engine.includes('Promise.all(in
  'Large letter datasets load from bounded physical shard parts');
 ok(engine.includes('if(++count%1200===0)')&&engine.includes('isCancelled()'),
  'Worker scanning yields between batches and checks cancellation');
+ok(engine.includes('const MAX_SHARD_CACHE=2')&&engine.includes('prefixCandidates.delete(oldest)'),
+ 'Loaded shard rows and associated prefix candidates stay in a bounded two-letter LRU');
 ok(main.includes("{kind:'cancel',id}")&&engine.includes("data?.kind==='cancel'"),
  'Superseded location searches can be cancelled without background rescans');
 ok(!main.includes('place-search.worker.mjs')&&!fs.existsSync(new URL('../public/horoscope/offline/places/place-search-core.mjs',import.meta.url)),
