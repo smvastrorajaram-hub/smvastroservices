@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tests/production-pwa-network-firebase-audit.mjs'
+      - 'tests/production-main-thread-diagnostic.mjs'
       - '.github/workflows/production-pwa-network-firebase-audit.yml'
       - 'audits/SMV_PRODUCTION_PWA_NETWORK_FIREBASE_PROFILE.md'
   workflow_dispatch:
@@ -29,6 +30,12 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Syntax check production profiler
         run: node --check tests/production-pwa-network-firebase-audit.mjs
+      - name: Diagnose production JavaScript responsiveness with CDP Debugger
+        env:
+          SMV_PRODUCTION_BASE_URL: https://smvastroservices.pages.dev
+        run: |
+          set -o pipefail
+          node tests/production-main-thread-diagnostic.mjs 2>&1 | tee main-thread-diagnostic.log
       - name: Measure live PWA cold install, resource transfer, and Firebase traffic
         env:
           SMV_PRODUCTION_BASE_URL: https://smvastroservices.pages.dev
@@ -42,6 +49,8 @@ jobs:
           name: SMV-PRODUCTION-PWA-FIREBASE-PROFILE
           path: |
             artifacts/production-pwa-network-firebase-profile.json
+            artifacts/production-main-thread-diagnostic.json
             production-profile.log
+            main-thread-diagnostic.log
           if-no-files-found: warn
           retention-days: 14
