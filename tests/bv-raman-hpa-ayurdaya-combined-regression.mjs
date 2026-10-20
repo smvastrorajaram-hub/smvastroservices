@@ -650,7 +650,7 @@ eq(madhyayu05SunEnemySignWeak.rules.find(rule => rule.id === 'XIV-MAD-05').statu
   'MATCHED', 'Madhyayu rule 5 matches the Lagna Sun with explicit enemy-sign, enclosure and weakness evidence');
 
 const madhyayu05MissingEvidence = bvRamanChapterXIVLongevityRules({
-  chart:{lagna:{longitude:0},planets:[{name:'Sun',longitude:0,bhava:1}]}
+  chart:{lagna:{longitude:0},planets:[{name:'Sun',longitude:null,bhava:1}]}
 });
 eq(madhyayu05MissingEvidence.rules.find(rule => rule.id === 'XIV-MAD-05').status, 'UNKNOWN',
   'Madhyayu rule 5 remains UNKNOWN without enemy-sign, enclosure and strength evidence');
