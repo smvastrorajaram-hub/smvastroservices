@@ -530,7 +530,7 @@ eq(bal15MissingDasa.rules.find(rule => rule.id === 'XIV-BAL-15').status, 'UNKNOW
   'Balarishta rule 15 remains UNKNOWN without birth Dasa/Antardasa evidence');
 
 const bal16AllLordsWithSun = bvRamanChapterXIVLongevityRules({
-  chart:{lagna:{longitude:0},planets:[
+  chart:{lagna:{longitude:null},planets:[
     {name:'Sun',longitude:270,bhava:9},{name:'Moon',longitude:270,bhava:2},
     {name:'Mars',longitude:270,bhava:3},{name:'Mercury',longitude:60,bhava:4},
     {name:'Jupiter',longitude:90,bhava:5},{name:'Venus',longitude:270,bhava:6},
