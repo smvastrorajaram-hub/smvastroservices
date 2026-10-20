@@ -883,7 +883,7 @@ function p2TrineFrom(a,b){return [1,5,9].includes(norm(b-a+1));}
 function p2Strength(chart,name){const s=p2Sign(chart,name); if(s==null)return false; return (own[name]||[]).includes(s)||exalt[name]===s;}
 function p2TogetherOrOpp(chart,a,b){const x=p2Sign(chart,a),y=p2Sign(chart,b);return x!=null&&y!=null&&([0,6].includes(norm(y-x)));}
 function p2Yoga(name,category,condition,reason,en,ta){return condition?{name:ta?name.ta:name.en,category,matched:true,reason:ta?reason.ta:reason.en,meaning:ta?en.ta:en.en}:null;}
-function p2YogaEngine(chart,lang){
+function p2YogaEngine(chart,lang,calculatedVargas=null){
  const ta=lang!=='en', asc=rasi(chart?.lagna?.longitude||0), ps=chart.planets||[], pm=planetMap(chart);
  const H=n=>p2House(chart,n,asc), S=n=>p2Sign(chart,n), lord=h=>p2Lord(chart,h,asc), ls=h=>{const q=lord(h);return q?S(q):null};
  const benef=['சந்திரன்','புதன்','குரு','சுக்கிரன்']; const malef=['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'];
@@ -919,10 +919,10 @@ function p2YogaEngine(chart,lang){
  add('Lakshmi Yoga','Wealth',H(lord(9))!=null&&p2Strength(chart,lord(9))&&[1,4,7,10].includes(H(lord(9)))&&p2Strength(chart,lord(1)),{en:'9th lord is strong in own/exaltation and a quadrant; Lagna lord is strong.',ta:'9-ம் அதிபதி ஆட்சி/உச்சத்தில் கேந்திரத்தில்; லக்ன அதிபதி வலுவாக உள்ளது.'},{en:'Prosperity, character and fortune.',ta:'வளம், நற்குணம் மற்றும் அதிர்ஷ்டம்.'});
  // Jaimini: Atmakaraka + Karakamsa, using the existing D9 varga calculation.
  const ranked=P7.map(n=>{const p=p2Pos(chart,n);return p?{planet:n,deg:degIn(p.longitude)}:null}).filter(Boolean).sort((a,b)=>b.deg-a.deg); const ak=ranked[0];
- const d9=buildVargas(chart,'en').find(x=>x.division==='D-9'); let karakamsha=null; if(ak&&d9){const q=d9.planets.find(p=>p.planet===ak.planet);karakamsha=q?.rasi||null;}
+ const vargaSet=Array.isArray(calculatedVargas)?calculatedVargas:buildVargas(chart,'en'); const d9=vargaSet.find(x=>x.division==='D-9'); let karakamsha=null; if(ak&&d9){const q=d9.planets.find(p=>p.planet===ak.planet);const signIndex=q&&Number.isFinite(Number(q.longitude))?Math.floor(norm(Number(q.longitude))/30):null;karakamsha=signIndex===null?null:EN_RASIS[signIndex]||null;}
  return {items:out,summary:{count:out.length,sevenPlanetDistinctSigns:distinct},charaKarakas:ranked.map((x,i)=>({planet:x.planet,degreeInSign:x.deg,degreeInSignDms:dms(x.deg),karaka:['Atmakaraka','Amatyakaraka','Bhratrukaraka','Matrukaraka','Putrakaraka','Gnatikaraka','Darakaraka'][i]})),karakamsha,method:''};
 }
-function phase2StrengthAndJaimini(chart,lang){const y=p2YogaEngine(chart,lang);return {yogas:y,charaKarakas:y.charaKarakas,karakamsha:y.karakamsha};}
+function phase2StrengthAndJaimini(chart,lang,calculatedVargas=null){const y=p2YogaEngine(chart,lang,calculatedVargas);return {yogas:y,charaKarakas:y.charaKarakas,karakamsha:y.karakamsha};}
 
 
 
@@ -980,5 +980,5 @@ function bookRemedies(chart,lang='ta'){
  return {rows,guidance};
 }
 
-function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; const av=ashtakavarga(chart,lang); return {ashtakavarga:av,vargas:buildVargas(chart,lang),avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang,av),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2:phase2StrengthAndJaimini(chart,lang),tajaka:tajaka(c,lang)};}
+function advanced(chart,lang='ta'){const c=chart?.tajakaAnnual?{...chart.tajakaAnnual,tajakaNatal:chart}:chart; const av=ashtakavarga(chart,lang),vargas=buildVargas(chart,lang),phase2=phase2StrengthAndJaimini(chart,lang,vargas); return {ashtakavarga:av,vargas,avastha:avastha(chart,lang),avastha154:avastha154(chart,lang),avakhada:avakhada(chart,lang),kota:kota(chart,lang),sudarshana:sudarshana(chart,lang),sarvatobhadra:sarvatobhadra(chart,lang),v5:v5Extras(chart,lang,av),planetRelations:planetRelations(chart,lang),remedies:bookRemedies(chart,lang),phase2,tajaka:tajaka(c,lang)};}
 export {advanced,vargaSign,vargaLongitude,shashtiamsaDesignation};
