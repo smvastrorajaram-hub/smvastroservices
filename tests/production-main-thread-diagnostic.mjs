@@ -80,8 +80,9 @@ async function run(){
     for(const frame of report.debugger.topFrames.slice(0,4)){
      if(!frame.scriptId)continue;
      try{
-      const result=await cdp.send('Debugger.getScriptSource',{scriptId:frame.scriptId});
-      const source=String(result.scriptSource||'');
+      const sourceResult=await Promise.race([cdp.send('Debugger.getScriptSource',{scriptId:frame.scriptId}),sleep(1800).then(()=>({timedOut:true}))]);
+      if(sourceResult.timedOut){frame.sourceFetchError='getScriptSource timed out';continue;}
+      const source=String(sourceResult.scriptSource||'');
       const lines=source.split(/\r?\n/);
       const line=Math.max(0,frame.lineNumber-1);
       const lineText=lines[line]||'';
@@ -137,10 +138,10 @@ async function run(){
   console.log('SMV_PRODUCTION_MAIN_THREAD_DIAGNOSTIC='+JSON.stringify(report));
   await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
   await writeFile(OUT,JSON.stringify(report,null,2)+'\n','utf8');
-  try{await cdp.send('Debugger.resume');}catch{}
-  await cdp.detach().catch(()=>{});
-  await page.close().catch(()=>{});
- }finally{await browser.close();}
+  await Promise.race([cdp.send('Debugger.resume').catch(()=>{}),sleep(1500)]);
+  await Promise.race([cdp.detach().catch(()=>{}),sleep(1000)]);
+  await Promise.race([page.close().catch(()=>{}),sleep(1500)]);
+ }finally{await Promise.race([browser.close().catch(()=>{}),sleep(3000)]);}
 }
 run().catch(async e=>{
  const failure={generatedAt:new Date().toISOString(),verdict:'DIAGNOSTIC_HARNESS_FAILED',error:{name:String(e?.name||'Error'),message:String(e?.message||e).slice(0,400)}};
