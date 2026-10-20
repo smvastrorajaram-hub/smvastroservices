@@ -33,6 +33,12 @@ jobs:
           node --check public/horoscope/marriage-basic-report.mjs
       - name: Admin Prediction Rules published fallback regression
         run: node tests/prediction-rules-published-regression.mjs
+      - name: B.V. Raman Chapter XIV source-rule positive/negative/unknown examples
+        run: node tests/bv-raman-chapter-xiv-book-example-regression.mjs
+      - name: B.V. Raman Chapters XIV/XXVI integrated Ayurdaya regression
+        run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
+      - name: Five-book natal structural audit
+        run: node tests/five-book-structural-audit.mjs
       - name: Calculate 150 full Horoscope profiles and 150 distinct Matching pair reports
         run: node tests/full-website-150-horoscope-150-matching-source-audit.mjs
       - name: Preserve per-chart and per-pair audit evidence
