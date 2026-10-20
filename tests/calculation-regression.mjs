@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {calculateSwiss} from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
-import {phase4Dasa} from '../public/horoscope/offline/dasa_engine.browser.mjs';
+import {phase4Dasa,strongerSign} from '../public/horoscope/offline/dasa_engine.browser.mjs';
+import {dashaAtBirth} from '../public/horoscope/offline/server-wrapper.browser.mjs';
 import {resolveSodhyaPindaTarget,calculateSodhyaPindaTransitWindows,computeRudraTrishoolaMaheswara} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
 let checks=0;
 const ok=(condition,message)=>{assert.ok(condition,message);checks++};
@@ -48,6 +49,14 @@ for(let a=0;a<27;a++)for(let b=0;b<27;b++){
 let rejectMoon=false;try{m.porutham({planets:[{name:'சந்திரன்',longitude:null}]},sampleChart(3))}catch{rejectMoon=true}
 ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
+const vimshottariExample50=dashaAtBirth(302+23/60,new Date('2000-04-28T09:50:00Z'),'2000-04-28',-240);
+const vimBirthMd=vimshottariExample50.periods[0];
+ok(Math.abs(vimshottariExample50.balanceYears-2.24875)<1e-8&&Math.abs(vimBirthMd.years-2.24875)<1e-8&&vimBirthMd.fullYears===7,'PVR §16.2 Example 50: Dhanishtha Moon at 2°23 Aquarius leaves 2.24875 of Mars Dasa years');
+ok(vimBirthMd.start==='2000-04-28'&&['2002-07-15','2002-07-16'].includes(vimBirthMd.end),'PVR Example 50: Mars balance ends at the source worked-example boundary (date granularity allows one day)');
+ok(vimBirthMd.antardashas[0].lord==='கேது'&&Math.abs(vimBirthMd.antardashas[0].years+0.0-(vimBirthMd.antardashas[0].years))<1e-12&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: antardasas are split across the full 7-year Mars Mahadasa; the running birth Antardasa is shown as only its remaining balance');
+ok(Math.abs(vimBirthMd.antardashas.reduce((sum,x)=>sum+x.years,0)-vimBirthMd.years)<1e-8,'Vimshottari visible Antardasa balances sum to the Mahadasa remaining balance at birth');
+const currentVimAd=vimBirthMd.antardashas[0];
+ok(currentVimAd.pratyantars?.length===9&&currentVimAd.pratyantars[0].years<currentVimAd.pratyantars[0].fullYears,'Vimshottari Pratyantardasa nesting clips the birth-running sub-sub-period without changing full-period weights');
 const specialRuleChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:29},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
  {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
@@ -76,6 +85,20 @@ const dasaFixture=(moonLon,lagnaLon=180,rahuLon=300,marsLon=30)=>({birthDate:'20
  {name:'Mercury',longitude:90},{name:'Jupiter',longitude:240},{name:'Venus',longitude:120},
  {name:'Saturn',longitude:210},{name:'Rahu',longitude:rahuLon},{name:'Ketu',longitude:(rahuLon+180)%360}
 ]});
+const sudasaExample77Chart={birthDate:'2000-01-01',lagna:{longitude:270},planets:[
+ {name:'Sun',longitude:30},{name:'Moon',longitude:0.4574074074},{name:'Mars',longitude:120},
+ {name:'Mercury',longitude:60},{name:'Jupiter',longitude:180},{name:'Venus',longitude:210},
+ {name:'Saturn',longitude:275},{name:'Rahu',longitude:40},{name:'Ketu',longitude:220}
+]};
+const sudasaExample77=phase4Dasa(sudasaExample77Chart).sudasa;
+ok(sudasaExample77.seed===9&&sudasaExample77.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')==='9,6,3,0,8,5,2,11,7,4,1,10','PVR §20.2 Example 77: Sudasa follows Sree-Lagna Capricorn backward, ignoring Narayana/Kendradi Saturn/Ketu direction overrides');
+ok(Math.abs(sudasaExample77.firstFraction-(30-12.35)/30)<1e-4,'PVR §20.2 Example 77: first Sudasa balance is (30° minus 12°21′ Sree-Lagna advancement) / 30°');
+const occupancyStrengthFixture={lagna:{longitude:0},planets:[
+ {name:'Sun',longitude:10},{name:'Moon',longitude:20},{name:'Mars',longitude:150},
+ {name:'Mercury',longitude:70},{name:'Jupiter',longitude:15},{name:'Venus',longitude:190},
+ {name:'Saturn',longitude:240},{name:'Rahu',longitude:310},{name:'Ketu',longitude:130}
+]};
+ok(strongerSign(0,6,{Sun:{sign:0},Moon:{sign:0},Mars:{sign:4},Mercury:{sign:2},Jupiter:{sign:0},Venus:{sign:6},Saturn:{sign:8},Rahu:{sign:10},Ketu:{sign:4}})===0,'PVR §15.5.2 rule 1: the sign with more occupied planets wins before any weighted score');
 const ashtBoundaries=[
  [26+40/60,'Venus'],[66+40/60,'Sun'],[120,'Moon'],[160,'Mars'],
  [213+20/60,'Mercury'],[253+20/60,'Saturn'],[293+20/60,'Jupiter'],[333+20/60,'Rahu']
