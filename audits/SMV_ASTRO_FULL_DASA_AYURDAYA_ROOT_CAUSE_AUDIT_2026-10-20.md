@@ -3,7 +3,7 @@
 **Date:** 2026-10-20  
 **Working PR:** [#77 — Full Website 150 Horoscope + 150 Marriage Matching audit](https://github.com/smvastrorajaram-hub/smvastroservices/pull/77)  
 **Branch:** `audit/full-website-150-horoscope-150-matching`  
-**Current release state:** OPEN / NOT MERGED. The latest extended run is still the merge gate; only completed runs may be called PASS.
+**Current release state:** PR #77 MERGED on 2026-10-20 at merge commit `8329528acf776d6f30681e91885ef0549936c59c`. Extended CI run [#57](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39425169995) completed SUCCESS.
 
 ## 1. Audit scope and what PASS means
 
@@ -17,7 +17,7 @@ This audit separates five different questions that should not be conflated:
 
 Automated regression can establish the first four only to the extent the fixture or source oracle actually tests them. It cannot by itself certify question 5. Current 150/150 fixtures are reproducible synthetic birth inputs at Perambalur, not 150 verified real-person records.
 
-The last completed end-to-end full-site baseline before adding the per-period invariant matrix was [run #47](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39422376554): **11,514 assertions PASS**, 150 calculated natal profiles, 150 distinct pair reports, and 1,050/1,050 Pinda-row parity comparisons. Later commits add stricter Dasa-row / date-boundary / Antardasa conservation checks and duration-cache changes; that earlier count is not evidence that those later changes have passed.
+The merged extended full-site run [#57](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39425169995) completed **46,916 assertions PASS**, with 150 engine-calculated natal profiles, 150 distinct pair reports, and 1,050/1,050 Rasi/Graha/Sodhya Pinda parity rows matched (zero mismatches). The completed workflow also ran the expanded Dasa row/date-boundary/Antardasa-conservation matrix, dedicated Chapter XIV and Ashtakavarga oracles, the 100-chart Ayurdaya audit, B.V. Raman report regression, and C.G. Rajan Ayurdaya tests. These are deterministic synthetic QA inputs and source-limited oracles—not verified human prediction outcomes.
 
 ## 2. Source-level optimizations and corrections on this branch
 
@@ -104,7 +104,7 @@ The old published-rule file was an empty array, so online publication had no ver
 
 ## 5. Full-site technical regression — what it proves
 
-The last completed baseline used 150 calculated profiles and 150 distinct pair combinations, not 300 unique people. It checked actual Swiss/WASM planetary calculations, 12 Sripati Bhava midpoints, 16 configured Varga rows, Vimshottari, birth/daily Panchang, Transit, Advanced Analysis, Tamil/English D1 narrative structure, all 10 Matching porutham rows, score arithmetic, Kuja/Dasa-Sandhi evidence and report appendices.
+The merged passing run #57 used 150 calculated profiles and 150 distinct pair combinations, not 300 unique people. It checked actual Swiss/WASM planetary calculations, 12 Sripati Bhava midpoints, 16 configured Varga rows, Vimshottari, birth/daily Panchang, Transit, Advanced Analysis, Tamil/English D1 narrative structure, all 10 Matching porutham rows, score arithmetic, Kuja/Dasa-Sandhi evidence and report appendices.
 
 The new merge gate expands this with:
 - all eight Phase-4 Dasa output grids and period/Antardasa invariants;
@@ -119,7 +119,7 @@ Even when every CI step passes, these are generated fixtures and source-limited 
 
 ## 6. Release / merge gate
 
-**Not yet fully certified.** Keep PR #77 unmerged until the latest run at the latest branch SHA passes the expanded Dasa/ Ayurdaya matrix and all related workflows. Even after that technical PASS, the following source-certification work remains open:
+**Technical merge gate: PASS — PR #77 is merged and the expanded workflow #57 succeeded. Classical source certification is still PARTIAL/BLOCKED. The following source-certification work remains open:
 
 1. Add original printed worked examples for every unresolved longevity-type rule/exception and verify category conflict precedence.
 2. Independently verify the B.V. Raman Standard Horoscope reduction rows from original print images; complete separate Trikona/Ekadhipatya rule oracles.
