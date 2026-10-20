@@ -244,7 +244,7 @@ statuses('XIV-ANT-05',[
 statuses('XIV-ANT-06',[
  {label:'Moon 6 and benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:6},},evidence:{moonDrekkanaBenefic:true}},
  {label:'Moon not in 6',expected:'NOT_MATCHED',chart:{houses:{Moon:5}},evidence:{moonDrekkanaBenefic:true}},
- {label:'Drekkana derives from the calculated Pisces Moon placement',expected:'NOT_MATCHED',chart:{houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}},evidence:{}}
+ {label:'Drekkana derives from the calculated Pisces Moon placement',expected:'MATCHED',chart:{houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}},evidence:{}}
 ],'HPA p.67 Antidote 6');
 statuses('XIV-ANT-07',[
  {label:'Full Moon between benefics fact true',expected:'MATCHED',evidence:{fullMoonBetweenBenefics:true}},
