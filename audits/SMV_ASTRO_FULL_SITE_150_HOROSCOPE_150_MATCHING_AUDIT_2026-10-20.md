@@ -5,9 +5,10 @@
 **Audit branch:** `audit/full-website-150-horoscope-150-matching`  
 **Regression:** `tests/full-website-150-horoscope-150-matching-source-audit.mjs`  
 **CI workflow:** `.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml`  
-**Baseline verification:** PASS on GitHub Actions run [39417147999](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39417147999), audit commit `8529661d9b5889f12bda1e719724a672a3ab6c9d`.
-**Baseline evidence:** 11,361 assertions PASS; 150 full Horoscope charts; 150 distinct Matching pair reports; 1,050/1,050 Rasi/Graha/Sodhya Pinda parity rows matched; zero parity mismatches. The downloadable per-run JSON artifact is retained in that run.
-**Follow-up status:** D9/Karakamsha reuse and Chart-Derived Chapter XIV evidence wiring are implemented on this PR branch; new dedicated CI regressions are required before acceptance. The 11,361-assertion result above is the immutable pre-follow-up baseline, not proof that the follow-up is already passing.
+**Merge status:** PR #77 merged to main at `8329528acf776d6f30681e91885ef0549936c59c`.
+**Latest extended verification:** GitHub Actions run [#57](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39425169995) — **46,916 assertions PASS**. The run covers 150 full Horoscope chart calculations, 150 distinct Matching pair reports, Dasa/Antardasa period boundaries and duration conservation, Chapter XIV three-state source rules, the integrated B.V. Raman Ayurdaya path, 100-chart Harana/Pinda comparison, and source/oracle report regressions.
+**Parity evidence:** 1,050/1,050 Rasi Pinda, Graha Pinda and Sodhya Pinda rows matched; zero parity mismatches. The downloadable per-run JSON artifact is retained in run #57.
+**Scope:** This PASS validates the exercised synthetic chart paths, internal arithmetic/parity and source-linked regression cases. It does not certify every classical lineage, resolve all source ambiguities, validate 150 real people, or certify astrologer-level predictive quality.
 
 ## Population and execution design
 
@@ -24,7 +25,7 @@
 
 | Area | Finding | Classification |
 |---|---|---|
-| Published Admin prediction rules | The versioned static file now contains 24 conservative bilingual house-lord placement modifiers. It is a fallback/context layer, not a full five-book rule set. The live Firestore rule document remains explicitly Admin-published; empty/malformed remote sets fall back to the static snapshot, and the Admin editor blocks publishing an empty rule set. | PARTIAL — ADMIN REVIEW/PUBLISH REQUIRED |
+| Published Admin prediction rules | The versioned static file contains 24 conservative bilingual house-lord placement modifiers. It is a fallback/context layer, not a full five-book rule set. The live Firestore publication remains Admin-controlled; empty/malformed remote sets fall back to the static snapshot and the Admin editor blocks empty publication. | PARTIAL — ADMIN REVIEW/PUBLISH REQUIRED |
 | B.V. Raman Chapter XIV longevity type | The evaluator now derives D9 Lagna lord, Vimshottari birth MD/AD, Moon Drekkana and malefic aspects to houses 5/8/12 from available natal chart data. Sunrise/hora, full-Moon observations, strength judgements and other source-sensitive inputs remain unknown when the needed evidence is absent. Multiple candidate categories still block a final selection. | PARTIAL — EVIDENCE REQUIRED |
 | Ayurdaya final output | The research path intentionally returns `finalLifespan: null` and `certified: false`; no lifespan/death-age prediction is allowed. | SAFETY / SOURCE-CERTIFICATION GUARD |
 | C.G. Rajan Ayurdaya selection | Tied or unavailable Shadbala reference selection must keep method alternatives visible; do not manufacture a winner or averaged final lifespan. | EVIDENCE-GATED |
