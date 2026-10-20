@@ -89,6 +89,7 @@ The completed full-site baseline found the method selector available on 138 of 1
 The new Dasa Analysis section calculates Rudra / Trishoola / Maheswara, the Method-of-Three-Pairs longevity category, the separate Eighth-Lord method and the selected-category Dasa windows. Sodhya-Pinda event timing multiplies raw BAV rekhas by the computed Yoga Pinda to generate Nakshatra/Rasi timing references, and uses transit-window arithmetic to display Saturn/Jupiter ingress dates.
 
 **Root causes / limits:**
+- **Tie-selection risk to resolve:** `computeRudraTrishoolaMaheswara()` compares the two Rudra candidates using a local, heuristic strength vector (sign occupants, dignity, exalted conjunctions, sign aspects, then degree). If the two candidates tie exactly, current code uses `comparison>=0 ? candidateA : candidateB`, so the Lagna-side candidate wins by implementation order. The source-audit record does not yet contain an independent printed-example tie rule establishing that winner. This is a ROOT CAUSE / SOURCE-ORACLE GAP; it should be made explicitly unresolved rather than promoted to a textbook-certified choice if a tied chart is encountered.
 - The Eighth-Lord method uses an explicitly labelled SMV approximate sign-strength heuristic, not a complete textbook strength proof.
 - The source describes Sodhya-Pinda timing as inconsistent/open to research; transit windows are not guaranteed events.
 - The category's short/middle/long age ranges are timing bands, not a death-age algorithm.
