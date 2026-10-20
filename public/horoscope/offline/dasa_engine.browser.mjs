@@ -112,14 +112,6 @@ function chooseCoLord(sign,planets,purpose='rasi',depth=0){
 function ownLord(sign,planets,purpose='rasi'){return chooseCoLord(mod12(sign),planets,purpose);}
 function occupiedCount(sign,planets){return Object.values(planets).filter(p=>p.sign===mod12(sign)).length;}
 function hasExaltedPlanet(sign,planets){return Object.entries(planets).some(([name,p])=>p.sign===mod12(sign)&&EXALT[name]===p.sign);}
-function rasiStrengthRuleTwo(sign,planets,purpose){
- const lord=ownLord(sign,planets,purpose==='dasa'?'dasa':'rasi');
- if(purpose==='ayur'){
-  return Object.keys(planets).filter(name=>name!==lord&&planetConjoinedOrAspectedBy(name,'Sun',planets)===false&&false).length;
- }
- const roles=['Jupiter','Mercury',lord];
- return roles.filter(name=>planetConjoinedOrAspectedBy(name, {sign:mod12(sign)}, planets)).length;
-}
 function strongerSign(a,b,planets,purpose='rasi'){
  if(a<0)return b;
  if(b<0)return a;
@@ -161,7 +153,7 @@ function addNakshatraDasaYears(date,years){return new Date(date.getTime()+Number
 function fmt(d){return isNaN(d?.getTime?.())?'—':d.toISOString().slice(0,10);}
 function periodRows(order,lengthFn,startDate,firstFraction=1,cycles=1){let cur=new Date(startDate),rows=[];for(let c=0;c<cycles;c++){for(let i=0;i<order.length;i++){const sign=order[i],full=Number(lengthFn(sign,i,c)||0),years=(c===0&&i===0)?full*firstFraction:full;const st=new Date(cur),en=addYears(st,years);rows.push({rasi:sign,years,start:fmt(st),end:fmt(en),fullYears:full,cycle:c+1});cur=en;}}return rows;}
 function equalRasiSubs(md,order,lengthFn){const each=md.years/12;let cur=new Date(md.start+'T00:00:00Z');return order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});}
-function narayanaSubOrder(dasaRasi,planets){const ds=parseSign(dasaRasi);if(ds<0)throw new RangeError('Invalid Narayana Antardasa Dasa sign: '+dasaRasi);const seed=strongerSign(ds,mod12(ds+6),planets);const lord=ownLord(seed,planets),p=planets[lord];let start=p?.sign??seed;let dir=oddSign(start)?1:-1;if(planets.Saturn?.sign===seed)dir=1;if(planets.Ketu?.sign===seed)dir*=-1;return Array.from({length:12},(_,i)=>mod12(start+i*dir));}
+function narayanaSubOrder(dasaRasi,planets){const ds=parseSign(dasaRasi);if(ds<0)throw new RangeError('Invalid Narayana Antardasa Dasa sign: '+dasaRasi);const seed=strongerSign(ds,mod12(ds+6),planets);const lord=ownLord(seed,planets,'dasa'),p=planets[lord];let start=p?.sign??seed;let dir=oddSign(start)?1:-1;if(planets.Saturn?.sign===seed)dir=1;if(planets.Ketu?.sign===seed)dir*=-1;return Array.from({length:12},(_,i)=>mod12(start+i*dir));}
 function addSubperiods(rows,orderFn,count){return rows.map(md=>{const order=orderFn(md.rasi).slice(0,count);let cur=new Date(md.start+'T00:00:00Z');const each=md.years/count;const subs=order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});return {...md,antardasas:subs};});}
 function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
  const lagna=Number.isFinite(Number(chart?.lagna?.longitude))?rasiIndex(chart.lagna.longitude):-1;
