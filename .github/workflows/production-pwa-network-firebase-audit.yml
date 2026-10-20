@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tests/production-pwa-network-firebase-audit.mjs'
+      - 'tests/production-pwa-live-acceptance.mjs'
       - 'tests/production-main-thread-diagnostic.mjs'
       - '.github/workflows/production-pwa-network-firebase-audit.yml'
       - 'audits/SMV_PRODUCTION_PWA_NETWORK_FIREBASE_PROFILE.md'
@@ -28,8 +29,10 @@ jobs:
           node-version: '22'
       - name: Install repository browser dependencies
         run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: Syntax check production profiler
-        run: node --check tests/production-pwa-network-firebase-audit.mjs
+      - name: Syntax check production profiling suites
+        run: |
+          node --check tests/production-pwa-network-firebase-audit.mjs
+          node --check tests/production-pwa-live-acceptance.mjs
       - name: Diagnose production JavaScript responsiveness with CDP Debugger
         env:
           SMV_PRODUCTION_BASE_URL: https://smvastroservices.pages.dev
@@ -41,7 +44,7 @@ jobs:
           SMV_PRODUCTION_BASE_URL: https://smvastroservices.pages.dev
         run: |
           set -o pipefail
-          node tests/production-pwa-network-firebase-audit.mjs 2>&1 | tee production-profile.log
+          node tests/production-pwa-live-acceptance.mjs 2>&1 | tee production-profile.log
       - name: Upload redacted measurement report and log
         if: always()
         uses: actions/upload-artifact@v4
