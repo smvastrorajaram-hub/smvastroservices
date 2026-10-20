@@ -103,6 +103,20 @@ const pindaSource=advancedSource.slice(pindaStart,pindaEnd);
 ok(pindaSource.includes("for(const node of ['ராகு','கேது'])"),
   'Ekadhipatya occupancy includes Rahu/Ketu without adding them to Graha Pinda multipliers');
 
+const matchingSource=readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8');
+const publishedRuleSource=readFileSync(new URL('../public/horoscope/prediction-rules-published.js',import.meta.url),'utf8');
+const predictionRulesEmpty=publishedRuleSource.includes('window.SMVPUBLISHED_PREDICTION_RULES = [];');
+ok(matchingSource.includes('function porutham(')&&matchingSource.includes('function fullVerdict(')&&matchingSource.includes('function marriageStrengthMatrix('),
+  'production Matching source exposes porutham, final verdict and marriage-strength evaluation');
+const matchingTestSource=matchingSource.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
+ok(matchingTestSource!==matchingSource,'production Matching functions can be isolated for deterministic audit without altering production code');
+const matchingContext={document:{readyState:'loading',documentElement:{lang:'en'},body:{classList:{contains:()=>false}},addEventListener(){}},window:{addEventListener(){}}};
+vm.runInNewContext(matchingTestSource,matchingContext,{timeout:20000});
+const matchingAudit=matchingContext.TEST;
+ok(typeof matchingAudit?.porutham==='function'&&typeof matchingAudit?.fullVerdict==='function',
+  'existing Matching functions load in isolated test context');
+
+
 const maleBirths = buildBirths('male',75);
 const femaleBirths = buildBirths('female',75);
 eq(maleBirths.length,75,'75 male-cohort birth fixtures generated');
