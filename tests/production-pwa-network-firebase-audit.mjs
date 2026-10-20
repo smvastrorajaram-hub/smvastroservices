@@ -197,6 +197,7 @@ async function navigate(page, url, collector, label) {
     window.addEventListener('load', () => resolve(), {once:true});
     setTimeout(resolve,12000);
   }));
+  const pageLoadWallClockMs = Date.now()-started;
   await sleep(2400);
   const timing = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0];
@@ -214,7 +215,7 @@ async function navigate(page, url, collector, label) {
   });
   const rec = {
     label,url: safeUrl(url),httpStatus:response?.status() ?? null,
-    wallClockMs:Date.now()-started, browserNavigation:timing,
+    pageLoadWallClockMs, browserNavigation:timing,
     network:summarizeNetwork(collector.since(mark))
   };
   assert.equal(rec.httpStatus,200,label+' production document must return HTTP 200');
@@ -428,6 +429,7 @@ async function run() {
       const rows=await mod.searchPlaces('Perambalur',12);
       return {count:rows.length,matchingRow:rows.find(x=>JSON.stringify(x).toLowerCase().includes('perambalur'))||null};
     });
+    const searchElapsedMs=Date.now()-searchStarted;
     await sleep(600);
     assert.ok(search.count>0&&search.matchingRow,'on-demand place search should resolve Perambalur from deployed data');
     const afterSearch=await cacheEntries(calPage);
@@ -441,7 +443,7 @@ async function run() {
       installCache:{cacheNamesBeforeSearch:beforeSearch.cacheNames,placeShardCountBeforeSearch:beforeSearch.placeShards.length,
         placeShardCountAfterSearch:afterSearch.placeShards.length,cachedParts:afterSearch.placeShards.map(x=>({cache:x.cache,path:x.path})),
         networkPartRequestsAtInstall:initialShards.length,networkPartRequestsOnFirstSearch:requestedParts.length},
-      firstSearch:{query:'Perambalur',resultCount:search.count,matched:true,searchElapsedMs:Date.now()-searchStarted,partRequestCount:requestedParts.length},
+      firstSearch:{query:'Perambalur',resultCount:search.count,matched:true,searchElapsedMs,partRequestCount:requestedParts.length},
       pass:true
     };
     await calPage.close();
@@ -450,7 +452,7 @@ async function run() {
     report.firebaseProfile.totalObserved=countRpc(all,'Firestore ');
     report.firebaseProfile.totalRenderBackend=countRpc(all,'SMV Render backend');
     report.networkSummary={
-      trials:report.networkTrials.map(x=>({label:x.label,httpStatus:x.httpStatus,wallClockMs:x.wallClockMs,browserNavigation:x.browserNavigation,network:x.network})),
+      trials:report.networkTrials.map(x=>({label:x.label,httpStatus:x.httpStatus,pageLoadWallClockMs:x.pageLoadWallClockMs,browserNavigation:x.browserNavigation,network:x.network})),
       totalCapturedRequestEvents:all.length,
       note:'CDP wire-transfer counts can exclude requests made by a worker target before its debugger session attaches; page navigation timing remains browser-native. No payload, cookie, email, UID or token is emitted.'
     };
