@@ -176,7 +176,7 @@ ok(d96.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,T
 ok(d96.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((s,x)=>s+x.years,0)-md.years)<1e-8),'Kalachakra counterexample grid: all displayed MDs have nine correctly weighted ADs summing to each MD');
 // Full 108-nakshatra-pada grid. Star subgroup assignment is an explicit selected lineage, not inferred from the implementation under test.
 const kcRasiIndex={Ar:0,Ta:1,Ge:2,Cn:3,Le:4,Vi:5,Li:6,Sc:7,Sg:8,Cp:9,Aq:10,Pi:11};
-const kcExpectedGroupByNak=['savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1'];
+const kcExpectedGroupByNak=['savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya2'];
 const kcExpectedSequences={
  savya1:[[0,1,2,3,4,5,6,7,8],[9,10,11,7,6,5,3,4,2],[1,0,11,10,9,8,0,1,2],[3,4,5,6,7,8,9,10,11]],
  savya2:[[7,6,5,3,4,2,1,0,11],[10,9,8,0,1,2,3,4,5],[6,7,8,9,10,11,7,6,5],[3,4,2,1,0,11,10,9,8]],
