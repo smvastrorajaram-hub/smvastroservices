@@ -59,7 +59,7 @@ function ownsOrExalted(name,ps){const s=ps[name]?.sign;return s!=null&&((OWN_SIG
 function planetStrengthVector(name,ps){
  const p=ps[name];if(!p)return [-1,-1,-1,-1,-1];
  const same=Object.values(ps).filter(x=>x!==p&&x.sign===p.sign).length;
- const exaltedJoiners=Object.values(ps).filter(x=>x!==p&&x.sign===p.sign&&EXALT[x.enName||'']===x.sign).length;
+ const exaltedJoiners=Object.entries(ps).filter(([other,x])=>other!==name&&x.sign===p.sign&&EXALT[other]===x.sign).length;
  const aspectors=Object.entries(ps).filter(([other,x])=>other!==name&&x.sign!==p.sign&&rasiAspects(x.sign,p.sign)).length;
  return [same,ownsOrExalted(name,ps)?1:0,exaltedJoiners,aspectors,Number(p.degree)||0];
 }
