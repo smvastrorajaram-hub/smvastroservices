@@ -208,7 +208,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     ok(system?.available===true&&Array.isArray(rows)&&rows.length===expectedRows,
       key+' provides the expected chart-derived Phase-4 period rows for '+birth.name);
     ok(rows.every((row,i)=>Number.isFinite(Number(row.years))&&Number(row.years)>=-1e-9&&
-      /^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.start))&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.end))&&
+      /^\d{4}-\d{2}-\d{2}$/.test(String(row.start))&&/^\d{4}-\d{2}-\d{2}$/.test(String(row.end))&&
       String(row.end)>=String(row.start)),
       key+' has finite non-negative durations and ISO period boundaries for '+birth.name);
     ok(rows.every((row,i)=>i===0||String(rows[i-1].end)===String(row.start)),
@@ -216,7 +216,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     for(const row of rows){
       if(Array.isArray(row.antardasas)&&row.antardasas.length){
         ok(row.antardasas.every(ad=>Number.isFinite(Number(ad.years))&&Number(ad.years)>=-1e-9&&
-          /^\\d{4}-\\d{2}-\\d{2}$/.test(String(ad.start))&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(ad.end))),
+          /^\d{4}-\d{2}-\d{2}$/.test(String(ad.start))&&/^\d{4}-\d{2}-\d{2}$/.test(String(ad.end))),
           key+' antardasas have finite durations and valid date boundaries for '+birth.name);
         const adTotal=row.antardasas.reduce((sum,ad)=>sum+Number(ad.years),0);
         ok(Math.abs(adTotal-Number(row.years))<1e-6,
