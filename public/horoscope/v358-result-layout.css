@@ -4,15 +4,37 @@
  * continuous content with genuine data tables and chart borders untouched.
  */
 @media screen{
+  /* Authoritative outer gutter rules. Keep these on the source containers;
+     result internals are normalized by the existing report-layout rules below. */
+  body.smv-v12-theme main > :is(#english-horoscope,#tamil-horoscope) {
+    box-sizing:border-box;
+    width:min(100%,1192px);
+    max-width:1192px;
+    min-width:0;
+    margin-inline:auto;
+    padding-inline:6px;
+  }
+  body.smv-v12-theme main > :is(#english-horoscope,#tamil-horoscope) > .card {
+    box-sizing:border-box;
+    display:block;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin-inline:0;
+    padding-inline:6px;
+    border:1px solid var(--smv207-line,#e4d7bf);
+    border-radius:10px;
+  }
+
   body.smv-v12-theme main > #smvMarriageMatching{
     box-sizing:border-box!important;
     width:min(calc(100% - 12px),1180px)!important;
     max-width:1180px!important;
     min-width:0!important;
     margin:12px auto 18px!important;
-    padding:clamp(8px,1.3vw,16px)!important;
+    padding:clamp(8px,1.3vw,16px) 6px!important;
     border:1px solid var(--smv207-line,#e4d7bf)!important;
-    border-radius:12px!important;
+    border-radius:10px!important;
     background:#fff!important;
     box-shadow:0 4px 14px rgba(69,38,22,.06)!important;
   }
@@ -56,6 +78,8 @@
     max-width:100%!important;
     margin-inline:0!important;
     padding-inline:0!important;
+    border-inline:0!important;
+    box-shadow:none!important;
   }
   body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult)
   :is(.card,.adv-section,.phase1-module,.v5-module,.numerology-module,
@@ -70,7 +94,7 @@
     max-width:100%!important;
     margin-inline:0!important;
     margin-block:6px!important;
-    padding:6px 2px!important;
+    padding:6px 0!important;
     border:0!important;
     border-radius:0!important;
     outline:0!important;
@@ -99,7 +123,7 @@
     max-width:100%!important;
     margin-inline:0!important;
     margin-block:7px!important;
-    padding:5px 1px!important;
+    padding:5px 0!important;
     border:0!important;
     border-radius:0!important;
     outline:0!important;
@@ -127,15 +151,50 @@
     column-gap:clamp(8px,2vw,16px)!important;
     row-gap:6px!important;
   }
+  /* Keep entry and result panels inside the single report frame. These are
+     structural layout rules; form fields and table/chart strokes are untouched. */
+  body.smv-v12-theme #smvMarriageMatching :is(
+    #mmPublicChoice,#mmFullEntry,#mmManualEntry,#mmResult,#mmManualResult
+  ) {
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    margin-inline:0;
+    padding-inline:0;
+    border-inline:0;
+    box-shadow:none;
+  }
+  body.smv-v12-theme #smvMarriageMatching
+  :is(#mmFullEntry,#mmManualEntry) .mm-birth-grid fieldset {
+    box-sizing:border-box;
+    min-width:0;
+    max-width:100%;
+    padding-inline:0;
+    border-inline:0;
+  }
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult,#smvMarriageMatching)
+  :is(p,li,h2,h3,h4,h5) {
+    max-width:100%;
+    overflow-wrap:break-word;
+  }
   /* Real report charts and tables retain their original strokes.
      Scroll wrappers still scroll horizontally for wide Ashtakavarga tables. */
-  body.smv-v12-theme #smvMarriageMatching :is(.mm-base-scroll,.mm-base-chart-row,.mm-facts){
+  body.smv-v12-theme #smvMarriageMatching :is(.mm-base-scroll,.mm-base-chart-row,.mm-facts),
+  body.smv-v12-theme :is(#englishHoroscopeResult,#tamilHoroscopeResult)
+  :is(.adv-scroll,.adv-table-wrap,.data-table-wrap,.bhava-table-wrap,
+      .mm-base-scroll,.smv-viii-table-scroll,.smv-tithi-table-scroll) {
     box-sizing:border-box!important;
     min-width:0!important;
     max-width:100%!important;
+    margin-inline:0!important;
   }
 }
 @media screen and (max-width:640px){
+  body.smv-v12-theme main > :is(#english-horoscope,#tamil-horoscope) > .card {
+    padding:8px 6px;
+    margin-inline:0;
+  }
   body.smv-v12-theme main > #smvMarriageMatching{
     width:calc(100% - 12px)!important;
     max-width:calc(100% - 12px)!important;

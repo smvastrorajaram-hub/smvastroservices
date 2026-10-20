@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {cgRajanAyurdayaReportHtml} from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 const source=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
-const old=fs.readFileSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url),'utf8');
+const htmlSource=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
 const printer=fs.readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
 const astro=fs.readFileSync(new URL('../public/horoscope/offline/astro_advanced.browser.mjs',import.meta.url),'utf8');
 let checks=0;
@@ -29,10 +29,12 @@ yes(source.includes('if(appendix)partI.appendChild(appendix)'),
  'late routing re-appends Ayurdaya at bottom');
 yes(source.includes('if(ayur)sectionI.appendChild(ayur)'),
  'immediate reroute also moves appendix last');
-no(old.includes("predictionSection.insertAdjacentHTML('afterend'"),
- 'obsolete integrated-predictions sibling insertion must be absent');
-no(old.includes("await import('./offline/cg-rajan-ayurdaya-pinda.browser.mjs')"),
- 'no duplicate legacy calculation/insert');
+no(fs.existsSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url)),
+ 'obsolete public prediction bundle is removed after consumer review');
+no(/<script[^>]+src=["'][^"']*horoscope-predictions\.js/i.test(htmlSource),
+ 'the Horoscope entry point does not load the retired prediction bundle');
+no(htmlSource.includes("predictionSection.insertAdjacentHTML('afterend'"),
+ 'obsolete integrated-predictions sibling insertion is not present in the live entry point');
 exactly((source.match(/const sectionI=root.querySelector\('/g)||[]).length,1,
  'only one live section-I Ayurdaya mount');
 yes(source.indexOf(locationOf)>source.indexOf(routeOf,source.indexOf('return response.then(async (full)')),

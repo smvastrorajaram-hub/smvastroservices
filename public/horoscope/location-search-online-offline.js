@@ -44,7 +44,7 @@
   if(online.length>=max)return online;
   try{
    const module=await offline();
-   const local=await module.searchPlaces(q,max);
+   const local=await module.searchPlaces(q,max,signal);
    const used=new Set(online.map(x=>String(x.place).toLocaleLowerCase()));
    return [...online,...local.filter(x=>{
     const key=String(x.place||'').toLocaleLowerCase();

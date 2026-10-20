@@ -1198,7 +1198,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)){min-height:90px!importan
 .btn:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:12px!important}
 .action-row:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important;flex-wrap:wrap!important}
 .action-row .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:40px!important}
-.feature-section:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;margin:22px auto!important;padding:0px 10px!important}
+.feature-section:where(:not(.smv-css-island,.smv-css-island *)):not(#english-horoscope):not(#tamil-horoscope):not(#horoscope-tools){width:100%!important;max-width:100%!important;margin:22px auto!important;padding:0px 10px!important}
 .feature-shell:where(:not(.smv-css-island,.smv-css-island *)){padding:14px!important}
 .feature-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important}
 table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
@@ -1322,7 +1322,7 @@ header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important;marg
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:34px!important;height:34px!important;padding:5px 7px!important;font-size:11px!important}
 main:where(:not(.smv-css-island,.smv-css-island *)){padding-top:0px!important}
 section:where(:not(.smv-css-island,.smv-css-island *)){margin-top:8px!important;margin-bottom:8px!important}
-.feature-section:where(:not(.smv-css-island,.smv-css-island *)){padding:0px 6px!important;margin:8px auto!important}
+.feature-section:where(:not(.smv-css-island,.smv-css-island *)):not(#english-horoscope):not(#tamil-horoscope):not(#horoscope-tools){padding:0px 6px!important;margin:8px auto!important}
 .feature-shell:where(:not(.smv-css-island,.smv-css-island *)){padding:8px!important;border-radius:10px!important}
 .feature-section h2:where(:not(.smv-css-island,.smv-css-island *)), .feature-section h3:where(:not(.smv-css-island,.smv-css-island *)){margin:2px 0px 6px!important}
 .feature-section h3:where(:not(.smv-css-island,.smv-css-island *)),
@@ -1995,8 +1995,8 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell) .smv-part-heading{min-width:0px!important;flex:1 1 0px!important}
 html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell) .smv-part-heading h3{font-size:15px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important}
 html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-scope, .smv-advanced-shell) .smv-advanced-part-content{padding:12px!important;background:rgb(255, 255, 255)!important;box-sizing:border-box!important}}
-#horoscope-tools.feature-section, #tamil-horoscope.feature-section, #english-horoscope.feature-section{width:100%!important;max-width:none!important;margin-left:0px!important;margin-right:0px!important}
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{width:min(96vw, 1500px)!important;max-width:1500px!important;margin:12px auto!important;padding:14px 16px!important;border-radius:14px!important;box-sizing:border-box!important}
+#horoscope-tools.feature-section{width:100%!important;max-width:none!important;margin-left:0px!important;margin-right:0px!important}
+#horoscope-tools > .card{width:min(96vw, 1500px)!important;max-width:1500px!important;margin:12px auto!important;padding:14px 16px!important;border-radius:14px!important;box-sizing:border-box!important}
 #tamilHoroscopeResult, #englishHoroscopeResult{width:100%!important;max-width:none!important;margin:0px!important;padding:0px!important;box-sizing:border-box!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.smv-advanced-shell, .smv-advanced-wrapper, .advanced-analysis){width:100%!important;max-width:none!important;margin:8px 0px!important;padding:0px!important;box-sizing:border-box!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) .smv-advanced-part{width:100%!important;max-width:none!important;margin:8px 0px!important;border-radius:10px!important;box-sizing:border-box!important}
@@ -2005,12 +2005,12 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.grid, .form-grid, .panchang-compact-grid){gap:7px 10px!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.adv-table-wrap, .table-wrap, .smv-viii-table-scroll, .smv-tithi-table-scroll){width:100%!important;max-width:100%!important;overflow-x:auto!important}
 @media (min-width: 900px){
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{width:calc(-32px + 100vw)!important;max-width:1540px!important}
+#horoscope-tools > .card{width:calc(-32px + 100vw)!important;max-width:1540px!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.grid, .form-grid){grid-template-columns:repeat(auto-fit, minmax(220px, 1fr))!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) .panchang-compact-grid{grid-template-columns:repeat(5, minmax(0px, 1fr))!important}}
 @media (max-width: 640px){
-#horoscope-tools.feature-section, #tamil-horoscope.feature-section, #english-horoscope.feature-section{padding-left:2px!important;padding-right:2px!important}
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{margin:6px 0px!important;padding:8px!important;border-radius:10px!important}
+#horoscope-tools.feature-section{padding-left:2px!important;padding-right:2px!important}
+#horoscope-tools > .card{margin:6px 0px!important;padding:8px!important;border-radius:10px!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) .smv-advanced-part{margin:6px 0px!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) .smv-advanced-part-content{padding:7px!important}
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.adv-section, .card, .panchang-card, .transit-card){margin-top:5px!important;margin-bottom:5px!important;padding-top:7px!important;padding-bottom:7px!important}}
@@ -2223,12 +2223,12 @@ html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHo
 .transit-panchang-grid > .panchang-card .panchang-compact-grid:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;grid-template-columns:repeat(4, minmax(0px, 1fr))!important}
 .transit-panchang-grid > .transit-card:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;box-sizing:border-box!important;margin-top:12px!important}}
 @media (min-width: 641px){
-#horoscope-tools.feature-section, #tamil-horoscope.feature-section, #english-horoscope.feature-section{width:100%!important;max-width:none!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
+#horoscope-tools.feature-section{width:100%!important;max-width:none!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
 @media (max-width: 640px){
 main.container:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!important;padding-left:8px!important;padding-right:8px!important}
-.feature-section:where(:not(.smv-css-island,.smv-css-island *)){padding-left:10px!important;padding-right:10px!important}
+.feature-section:where(:not(.smv-css-island,.smv-css-island *)):not(#english-horoscope):not(#tamil-horoscope):not(#horoscope-tools){padding-left:10px!important;padding-right:10px!important}
 .feature-shell:where(:not(.smv-css-island,.smv-css-island *)), .card:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:12px!important;padding-right:12px!important;box-sizing:border-box!important}
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:10px!important;padding-right:10px!important;box-sizing:border-box!important}
+#horoscope-tools > .card{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:10px!important;padding-right:10px!important;box-sizing:border-box!important}
 .smv-advanced-shell:where(:not(.smv-css-island,.smv-css-island *)), .smv-advanced-wrapper:where(:not(.smv-css-island,.smv-css-island *)), .advanced-analysis:where(:not(.smv-css-island,.smv-css-island *)), .smv-advanced-part:where(:not(.smv-css-island,.smv-css-island *)), .smv-advanced-part-content:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important;min-width:0px!important;box-sizing:border-box!important}
 .smv-advanced-shell:where(:not(.smv-css-island,.smv-css-island *)), .smv-advanced-wrapper:where(:not(.smv-css-island,.smv-css-island *)), .advanced-analysis:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;margin-left:0px!important;margin-right:0px!important;padding-left:4px!important;padding-right:4px!important}
 .smv-advanced-part:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;margin-left:0px!important;margin-right:0px!important}
@@ -2455,15 +2455,15 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #smvPremiumHeaderV9 .smv9-brand strong{font-size:clamp(20px, 5vw, 29px)}
 #smvPremiumHeaderV9 .smv9-brand small{font-size:8px}}
 @media (min-width: 641px){
-#horoscope-tools, #tamil-horoscope, #english-horoscope{max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
+#horoscope-tools{max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
+#horoscope-tools > .card{max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
 #tamilHoroscopeResult, #englishHoroscopeResult{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
 @media (max-width: 640px){
 html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;overflow-x:hidden!important}
 main.container:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;margin:0px!important;padding-left:4px!important;padding-right:4px!important;box-sizing:border-box!important}
-main.container > section, #smv-content-hub, #horoscope-tools, #tamil-horoscope, #english-horoscope{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
-.feature-section{padding-left:4px!important;padding-right:4px!important}
-#smv-content-hub .feature-shell, #horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:10px!important;padding-right:10px!important;box-sizing:border-box!important}
+main.container > section:not(#english-horoscope):not(#tamil-horoscope), #smv-content-hub, #horoscope-tools{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
+.feature-section:not(#english-horoscope):not(#tamil-horoscope):not(#horoscope-tools){padding-left:4px!important;padding-right:4px!important}
+#smv-content-hub .feature-shell, #horoscope-tools > .card{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:10px!important;padding-right:10px!important;box-sizing:border-box!important}
 #tamilHoroscopeResult, #englishHoroscopeResult{width:100%!important;max-width:100%!important;min-width:0px!important;padding-left:0px!important;padding-right:0px!important;box-sizing:border-box!important}
 #tamilHoroscopeResult .smv-advanced-shell, #englishHoroscopeResult .smv-advanced-shell, #tamilHoroscopeResult .smv-advanced-wrapper, #englishHoroscopeResult .smv-advanced-wrapper, #tamilHoroscopeResult .advanced-analysis, #englishHoroscopeResult .advanced-analysis{width:100%!important;max-width:100%!important;min-width:0px!important;box-sizing:border-box!important}
 #tamilHoroscopeResult .smv-advanced-part, #englishHoroscopeResult .smv-advanced-part{width:100%!important;max-width:100%!important;min-width:0px!important;box-sizing:border-box!important}
@@ -2471,11 +2471,11 @@ main.container > section, #smv-content-hub, #horoscope-tools, #tamil-horoscope, 
 #tamilHoroscopeResult .smv-fixed-text-section, #englishHoroscopeResult .smv-fixed-text-section{width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:2px!important;padding-right:2px!important;box-sizing:border-box!important}
 #smv-adhidevata-analysis-panel .adv-table-wrap, #smv-deities-analysis-panel .adv-table-wrap, #smv-adhidevata-analysis-panel .smv-viii-table-scroll, #smv-adhidevata-analysis-panel .smv-tithi-table-scroll{width:100%!important;min-width:0px!important}}
 @media (min-width: 641px){
-#horoscope-tools, #tamil-horoscope, #english-horoscope{width:100%!important;max-width:none!important;margin:0px!important;padding-left:0px!important;padding-right:0px!important}
-#horoscope-tools > .card, #tamil-horoscope > .card, #english-horoscope > .card{width:100%!important;max-width:none!important;margin:0px!important}}
+#horoscope-tools{width:100%!important;max-width:none!important;margin:0px!important;padding-left:0px!important;padding-right:0px!important}
+#horoscope-tools > .card{width:100%!important;max-width:none!important;margin:0px!important}}
 @media (max-width: 640px){
 main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!important;padding-right:2px!important}
-#tamil-horoscope, #english-horoscope, #horoscope-tools{padding-left:2px!important;padding-right:2px!important}
+#horoscope-tools{padding-left:2px!important;padding-right:2px!important}
 #tamil-horoscope > .card, #english-horoscope > .card, #horoscope-tools > .card{padding-left:6px!important;padding-right:6px!important;border-radius:10px!important}
 #tamilHoroscopeResult, #englishHoroscopeResult{padding:0px!important;margin-left:0px!important;margin-right:0px!important}
 #tamilHoroscopeResult .smv-advanced-shell, #englishHoroscopeResult .smv-advanced-shell, #tamilHoroscopeResult .smv-advanced-wrapper, #englishHoroscopeResult .smv-advanced-wrapper, #tamilHoroscopeResult .advanced-analysis, #englishHoroscopeResult .advanced-analysis{padding-left:0px!important;padding-right:0px!important;margin-left:0px!important;margin-right:0px!important;border-left:0px!important;border-right:0px!important;box-shadow:none!important;background:transparent!important}
