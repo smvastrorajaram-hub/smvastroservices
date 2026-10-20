@@ -57,7 +57,7 @@ The prior shared helper applied Narayana/Kendradi Saturn-in-seed and Ketu-in-see
 1. **Ashtottari applicability:** the implementation explicitly selects BPHS ch.46 v.17 as the eligibility gate. It continues to report the two other PVR-described traditions as alternate evidence and does not combine all conditions into a synthetic rule.
 2. **Narayana Mercury-in-Virgo conflict:** preserve the inter-source cap as a visible/source-documented reconciliation; do not label it as a literal PVR rule.
 3. **Date presentation precision:** the special Rasi-Dasa interface stores date-only rows. Exact birth-time/time-zone anchoring and day-boundary presentation need a separate test before claiming sub-day date precision.
-4. **Kalachakra source reconciliation:** PVR's printed Table 44–45 subgroup labels appear internally incomplete (Uttarabhadrapada is absent; Revati appears under Savya-2), while a parallel BPHS-aligned Kalachakra table places Revati in Savya-1 and Uttarabhadrapada in Savya-2. The implementation deliberately chooses the complete 15/12 taxonomy and records the difference.
+4. **Kalachakra source reconciliation:** PVR Table 45 appears to omit Uttarabhadrapada from the Savya-2 subgroup list. The complete subgroup taxonomy used here has nine Savya-1 stars and six Savya-2 stars, with both Uttarabhadrapada and Revati in Savya-2; the 108-pada regression pins that choice explicitly.
 5. **Full certification:** regressions exercise specified worked examples, the complete Kalachakra 108-pada table grid, selected Lagna Kendradi/Niryaana Shoola/Shoola exception fixtures, boundaries and representative natal charts. They do not prove every possible combination or all living variants.
 
 ## Merge gate
