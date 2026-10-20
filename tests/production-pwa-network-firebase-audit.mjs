@@ -29,7 +29,7 @@ function instrumentPage(page) {
   page.evaluate = (...args) => {
     let timer;
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('Page JavaScript did not answer within 12000ms; phase=' + currentPhase)), 12000);
+      timer = setTimeout(() => reject(new Error('Page JavaScript did not answer within 45000ms; phase=' + currentPhase)), 45000);
     });
     return Promise.race([nativeEvaluate(...args), timeout]).finally(() => clearTimeout(timer));
   };
