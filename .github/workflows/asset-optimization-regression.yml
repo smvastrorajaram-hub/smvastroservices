@@ -7,6 +7,7 @@ on:
       - 'public/horoscope/calendar/sw.js'
       - 'tests/asset-optimization-horoscope-lazy-load-regression.mjs'
       - 'tests/asset-optimization-calendar-cache-regression.mjs'
+      - 'tests/place-search-regression.mjs'
       - '.github/workflows/asset-optimization-regression.yml'
       - 'audits/SMV_ASTRO_ASSET_OPTIMIZATION_2026-10-20.md'
   pull_request:
@@ -42,3 +43,5 @@ jobs:
         run: node tests/asset-optimization-horoscope-lazy-load-regression.mjs
       - name: Calendar PWA no-bulk-place-shard install and on-demand cache gate
         run: node tests/asset-optimization-calendar-cache-regression.mjs
+      - name: GeoNames place-search ranking and Worker fallback regression
+        run: node tests/place-search-regression.mjs
