@@ -42,6 +42,11 @@ eq(E.run(E.getPublishedRules(),{'section.I.available':false,'house.1.lordHouse':
 
 ok(adminSource.includes('if(!rules.length){status('),
   'Admin Publish explicitly blocks publishing an empty rule set');
+ok(adminSource.includes('const baseline=E.getPublishedRules();')&&
+   adminSource.includes('if(baseline.length)E.setLocalRules(baseline);'),
+  'verified Admin login seeds an empty local Draft from the reviewed static/loaded rules without publishing them');
+ok(adminSource.includes('Static fallback விதிகள் Draft-இல் தயாராக உள்ளன'),
+  'Admin receives a clear status that the seeded fallback must be reviewed before publication');
 ok(syncSource.includes('const staticFallback=')&&syncSource.includes('staticFallback();try{localStorage.removeItem(CACHE);}catch{}'),
   'missing/empty remote publication falls back to the version-controlled static rules');
 ok(syncSource.includes('data.rules.length===0)return false'),
