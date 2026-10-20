@@ -120,7 +120,11 @@ ok(pindaSource.includes("for(const node of ['ராகு','கேது'])"),
 
 const matchingSource=readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8');
 const publishedRuleSource=readFileSync(new URL('../public/horoscope/prediction-rules-published.js',import.meta.url),'utf8');
-const predictionRulesEmpty=publishedRuleSource.includes('window.SMVPUBLISHED_PREDICTION_RULES = [];');
+const publishedRuleContext={window:{}};
+vm.runInNewContext(publishedRuleSource,publishedRuleContext,{timeout:5000});
+const publishedRuleCount=Array.isArray(publishedRuleContext.window.SMVPUBLISHED_PREDICTION_RULES)
+  ?publishedRuleContext.window.SMVPUBLISHED_PREDICTION_RULES.length:0;
+const predictionRulesEmpty=publishedRuleCount===0;
 ok(matchingSource.includes('function porutham(')&&matchingSource.includes('function fullVerdict(')&&matchingSource.includes('function marriageStrengthMatrix('),
   'production Matching source exposes porutham, final verdict and marriage-strength evaluation');
 const matchingTestSource=matchingSource.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
@@ -631,7 +635,8 @@ const summary = {
     pairOutputSamples:pairReportAudit.slice(0,5)
   },
   predictionAndNarrativeAudit:{
-    publishedAdminRuleChannel:predictionRulesEmpty?'BLOCKED_EMPTY_RULESET':'NONEMPTY_REQUIRES_RULE_REVIEW',
+    publishedAdminRuleChannel:predictionRulesEmpty?'BLOCKED_EMPTY_RULESET':'STATIC_CONTEXTUAL_FALLBACK_REQUIRES_ADMIN_REVIEW',
+    versionedStaticFallbackRuleCount:publishedRuleCount,
     publishedAdminRuleRootCause:predictionRulesEmpty?'public/horoscope/prediction-rules-published.js sets SMVPUBLISHED_PREDICTION_RULES to an empty array; reviewed owner-published rule content is absent from this channel.':null,
     d1NarrativeLiveCharts:150,languages:['ta','en'],
     distinctTamilNarratives:d1NarrativeSignatures.ta.size,distinctEnglishNarratives:d1NarrativeSignatures.en.size,
