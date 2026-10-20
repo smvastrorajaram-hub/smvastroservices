@@ -21,7 +21,7 @@
 ### 1. Calendar PWA install-time cache
 
 - Removed the auto-generated list that fetched every India location JSON during service-worker installation.
-- Kept the manifest and place-search entry points in the installation core.
+- Kept the manifest, place-search facade, Worker and `place-display.mjs` dependency in the installation core; no location data shards are eagerly fetched.
 - The existing fetch/cache-miss path still caches a requested part on demand; an already searched letter's parts can be reused offline.
 - Rotated the Calendar cache name so activation deletes the previous large bulk-preloaded cache.
 - Added a service-worker test that checks zero place-part fetches during installation and verifies a shard gets cached when requested.
