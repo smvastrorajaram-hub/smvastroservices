@@ -199,6 +199,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'full Horoscope calculation succeeds for '+birth.name);
   ok(result.birthPanchang&&result.dailyPanchang&&result.transit&&result.phase4,
     'full Horoscope includes birth/daily Panchang, transit and Dasa phase for '+birth.name);
+  const chart = result.chart;
   // Source-level/runtime gate for every result newly shown in Phase-4 Dasa Analysis.
   const phase4=result.phase4;
   const dasaLengths={ashtottari:8,narayana:24,lagnaKendradi:24,sudasa:24,drigdasa:24,
@@ -252,7 +253,6 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     eq(JSON.stringify({planets:chart?.planets,lagna:chart?.lagna,keys:Object.keys(chart||{})}),immutableChartSnapshot,
       'running Phase-4 Dasa does not mutate input natal chart / nested planetary data');
   }
-  const chart = result.chart;
   ok(Array.isArray(chart?.planets) && chart.planets.length >= 9,
     'actual calculated planetary positions exist for '+birth.name);
   ok(chart.planets.filter(p=>TA_TO_EN[p.name]).length >= 9 &&
