@@ -182,17 +182,20 @@ function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
  const sunrise=clockMinutes(advancedContext?.birthPanchang?.sunrise),sunset=clockMinutes(advancedContext?.birthPanchang?.sunset);
  const dayNightAvailable=birthMinutes!=null&&sunrise!=null&&sunset!=null&&sunrise<sunset;
  const birthPeriod=dayNightAvailable?(birthMinutes>=sunrise&&birthMinutes<sunset?'day':'night'):'unknown';
- const condition3=dayNightAvailable&&paksha?((birthPeriod==='day'&&paksha==='Krishna')||(birthPeriod==='night'&&paksha==='Shukla'))? 'met':'not_met':'not_evaluated';
+ const condition3=dayNightAvailable&&paksha?((birthPeriod==='day'&&paksha==='Krishna')||(birthPeriod==='night'&&paksha==='Shukla'))?'met':'not_met':'not_evaluated';
+ const applicability=rule2==='met'?'applicable':rule2==='not_met'?'not_applicable':'undetermined';
+ const status=rule2==='met'?'SELECTED_RULE_MET':rule2==='not_met'?'SELECTED_RULE_NOT_MET':'SELECTED_RULE_UNDETERMINED';
  return {
-  status:'UNRESOLVED_NO_INTERPRETATION_SELECTED',
-  source:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §17.2.3, printed pp. 226–229',
-  selectedInterpretation:null,
+  status,applicability,
+  source:'Brihat Parashara Hora Shastra, chapter 46 verse 17; P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach, §17.2.3 view (2)',
+  selectedInterpretation:'rahu_from_lagna_lord',
+  selectedRule:'Rahu must not occupy Lagna and must be in a kendra or trikona from the Lagna lord.',
   views:[
-   {id:'universal',status:'alternative_view_not_selected',rule:'Applicable in all charts.'},
-   {id:'rahu_from_lagna_lord',status:rule2,rule:'Rahu must not be in Lagna and must be in a quadrant or trine from Lagna lord.',rahuInLagna,lagnaLord,rahuHouseFromLagnaLord:houseFromLagnaLord,qualifyingHouses:qualifiesHouses},
-   {id:'day_night_paksha',status:condition3,rule:'Daytime birth in Krishna paksha or nighttime birth in Shukla paksha.',birthTimeAvailable:birthMinutes!=null,paksha,birthPeriod,birthTime:timeText||null,sunrise:advancedContext?.birthPanchang?.sunrise||null,sunset:advancedContext?.birthPanchang?.sunset||null,lunarElongationDegrees:elongation,reason:dayNightAvailable?null:'Local birth-time and sunrise/sunset evidence is incomplete; keep this interpretation unresolved.'}
+   {id:'universal',status:'alternative_not_selected',selected:false,rule:'Applicable in all charts.'},
+   {id:'rahu_from_lagna_lord',status:rule2,selected:true,rule:'Rahu must not be in Lagna and must be in a quadrant or trine from Lagna lord.',rahuInLagna,lagnaLord,rahuHouseFromLagnaLord:houseFromLagnaLord,qualifyingHouses:qualifiesHouses,source:'BPHS chapter 46 verse 17'},
+   {id:'day_night_paksha',status:condition3,selected:false,rule:'Daytime birth in Krishna paksha or nighttime birth in Shukla paksha.',birthTimeAvailable:birthMinutes!=null,paksha,birthPeriod,birthTime:timeText||null,sunrise:advancedContext?.birthPanchang?.sunrise||null,sunset:advancedContext?.birthPanchang?.sunset||null,lunarElongationDegrees:elongation,reason:dayNightAvailable?null:'Local birth-time and sunrise/sunset evidence is incomplete; this alternate interpretation cannot be fully evaluated.'}
   ],
-  policy:'Calculate as a clearly labelled reference only. Do not mark applicability PASS while classical interpretations conflict and no interpretation has been selected.'
+  policy:'The primary applicability gate follows BPHS chapter 46 verse 17. The universal and day/night-paksha views remain visible as alternate lineages; they do not override this selected rule. If required chart data is missing, applicability remains undetermined.'
  };
 }
 function ashtottari(chart,startDate,advancedContext=null){
@@ -230,7 +233,8 @@ function ashtottari(chart,startDate,advancedContext=null){
   }
   return {...md,antardasas};
  });
- return {available:true,title:'Ashtottari Dasa',cycleYears:108,firstLord:arc.planet,birthBalanceFraction:frac,elapsedBeforeBirthYears:elapsedYears,sequence:subs,applicability:'Unresolved: §17.2.3 presents three different interpretations; this is a reference calculation, not a certified applicability decision.',applicabilityAudit:ashtottariApplicabilityAudit(chart,p,advancedContext),sourceOracle:{section:'§17.2.1–17.2.3',printedPages:'196–198',table:'Table 39',example:'Example 59'}};
+ const applicabilityAudit=ashtottariApplicabilityAudit(chart,p,advancedContext);
+ return {available:true,title:'Ashtottari Dasa',cycleYears:108,firstLord:arc.planet,birthBalanceFraction:frac,elapsedBeforeBirthYears:elapsedYears,sequence:subs,applicability:applicabilityAudit.applicability,applicableUnderSelectedRule:applicabilityAudit.applicability==='applicable'?true:applicabilityAudit.applicability==='not_applicable'?false:null,calculationScope:applicabilityAudit.applicability==='applicable'?'selected_rule_eligible':'reference_only',applicabilityAudit,sourceOracle:{section:'§17.2.1–17.2.3',printedPages:'196–198',table:'Table 39',example:'Example 59'}};
 }
 function narayana(chart,startDate){const p=getPlanets(chart),lagna=Number.isFinite(chart?.lagna?.longitude)?rasiIndex(chart.lagna.longitude):-1;if(lagna<0)return {available:false,reason:'Lagna unavailable'};const seed=strongerSign(lagna,mod12(lagna+6),p,'rasi');const order=progressionByTable(seed,p);const details=order.map(code=>narayanaLengthDetail(code,p));let rows=periodRows(order,(s,_i,cycle)=>{const first=narayanaLengthDetail(s,p).years;return cycle===0?first:12-first;},startDate,1,2);const sourceWarnings=details.filter(d=>d.capped).map(d=>({rasi:d.sign,lord:d.lord,baseYears:d.baseYears,uncappedYears:d.adjustedYears,firstCycleYears:d.years,secondCycleYears:12-d.years,resolution:'The printed PVR rule sequence would produce more than 12 years (most clearly Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42, which explicitly discusses this exact Mercury-in-Virgo case. This is an inter-source reconciliation; it is not stated in the supplied PVR page itself.',sourceUrl:'https://scienceoflight.net/wp-content/uploads/extra/Narayana%20Dasa%20by%20Sanjay%20Rath.pdf'}));rows=addSubperiods(rows,r=>narayanaSubOrder(r,p),12);return {available:true,title:'Narayana Dasa',seed,sequence:rows,sourceWarnings,method:'PVR Table 40 sequence and §18.2.2 second-cycle rule; sign duration capped at 12 years using the explicit alternative Narayana Dasa source rule (Sanjay Rath, printed p. 42) for PVR’s contradictory 13-year case.'};}
 function kendradi(chart,startDate,seedOverride,sree=false){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude);const seed=seedOverride>=0?seedOverride:strongerSign(lagna,mod12(lagna+6),p);let dir=oddSign(sree?seed:lagna)?1:-1;if(!sree){if(p.Saturn?.sign===seed)dir=1;if(p.Ketu?.sign===seed)dir*=-1;}const offs=[0,3,6,9,1,4,7,10,2,5,8,11];const order=offs.map(o=>mod12(seed+o*dir));const slDeg=degInSign(chart.__sreeLagnaLongitude||0);const frac=sree?Math.max(0,(30-slDeg)/30):1;const rows=periodRows(order,(sg,_i,cycle)=>{const first=narayanaLength(sg,p);return cycle===0?first:12-first;},startDate,frac,2);return {available:true,title:sree?'Sudasa':'Lagna Kendradi Rasi Dasa',seed,sequence:rows,firstFraction:frac,method:'Rasi durations use Narayana Dasa rules; second-cycle sign length is 12 minus first-cycle length (§19.2/§20.2).'};}
@@ -246,7 +250,7 @@ function drigdasa(chart,startDate){
  }
  if(order.length!==12)throw new Error('Drigdasa source-rule sequence must contain three complete four-rasi groups: '+order.map(signCode).join(','));
  const sequence=periodRows(order,(sg,_i,cycle)=>{const first=narayanaLength(sg,p);return cycle===0?first:12-first;},startDate,1,2);
- return {available:true,title:'Drigdasa',seed:groups[0],sequence,groups,groupSequences,method:'PVR §21.2, Example 80: group 1 = 9th house plus its three aspects; group 2 = 10th house plus its three aspects; group 3 = 11th house plus its three aspects. Within each group count forward for odd-footed signs and backward for even-footed signs. Preserve overlapping rasis between independently generated groups; no arbitrary fill-in or deduplication is permitted.'};
+ return {available:true,title:'Drigdasa',seed:groups[0],sequence,groups,groupSequences,sourceLineage:'PVR/Parashara §21.2, Example 80',variantPolicy:'Use the direct Parashara-style 9th/10th/11th-house aspect-group sequence. Do not merge it with alternate Jaimini-commentary Drigdasa sequences; preserve repeated rasis caused by overlaps between independently generated groups.',method:'Selected PVR §21.2, Example 80: group 1 = 9th house plus its three rasi aspects; group 2 = 10th house plus its three rasi aspects; group 3 = 11th house plus its three rasi aspects. Within each group count forward for odd-footed signs and backward for even-footed signs. Overlapping signs are retained in source order; no arbitrary fill-in or deduplication is permitted.'};
 }
 function niryaanaShoola(chart,startDate){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude),a=mod12(lagna+1),b=mod12(lagna+7),seed=strongerSign(a,b,p);let dir=oddSign(seed)?1:-1;if(p.Saturn?.sign===seed)dir=1;const order=Array.from({length:12},(_,i)=>mod12(seed+i*dir));return {available:true,title:'Niryaana Shoola Dasa',seed,sequence:addSubperiods(periodRows(order,s=>[0,3,6,9].includes(s)?7:[1,4,7,10].includes(s)?8:9,startDate),r=>narayanaSubOrder(r,p),12),note:'PVR §22: stronger of 2nd/8th starts the sequence; Saturn-in-seed forward exception is applied per Example 87. Antardasa follows the author’s Narayana-style suggestion.'};}
 function shoola(chart,startDate){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude),seed=strongerSign(lagna,mod12(lagna+6),p),order=Array.from({length:12},(_,i)=>mod12(seed+i));return {available:true,title:'Shoola Dasa',seed,sequence:addSubperiods(periodRows(order,()=>9,startDate),r=>{const adSeed=strongerSign(r,mod12(r+6),p);return Array.from({length:12},(_,i)=>mod12(adSeed+i));},12)};}
@@ -260,8 +264,9 @@ function kalachakra(chart,startDate){
  const moon=Number(chart.planets?.find(x=>planetKey(x.name)==='Moon')?.longitude);
  if(!Number.isFinite(moon))return {available:false,reason:'Moon longitude unavailable'};
  const L=norm360(moon),nak=Math.floor(L/(13+1/3)),pada=Math.floor((L%(13+1/3))/(3+1/3));
+ // Selected Kalachakra lineage: the complete 15-star Savya / 12-star Apasavya taxonomy, corroborated by a parallel Kalachakra Dasa table. Savya-1 has 9 stars; Savya-2 has 6, including both Uttarabhadrapada and Revati. PVR Table 45's printed list appears to omit Uttarabhadrapada; KC_GROUPS retains PVR's nine-rasi pada sequences.
  const savya=[0,1,2,6,7,8,12,13,14,18,19,20,24,25,26].includes(nak);
- const savya1=[0,2,6,8,12,14,18,20,24,26].includes(nak);
+ const savya1=[0,2,6,8,12,14,18,20,24].includes(nak);
  const group=savya?(savya1?'savya1':'savya2'):([3,9,15,21].includes(nak)?'apasavya1':'apasavya2');
  const initialPadaSigns=KC_GROUPS[group][pada],param=KC_META[group][pada];
  const posInPada=(L%(13+1/3))%(3+1/3),elapsed=(posInPada/(3+1/3))*param;
@@ -298,7 +303,7 @@ function kalachakra(chart,startDate){
   });
   return {...md,antardasas};
  });
- return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continue through the current pada row and each following pada row; each Antardasa starts at its Mahadasa rasi and takes 9 continuous rasi tokens, crossing to the next pada row as necessary. Weight each Antardasa by Table 48 years for those nine actual signs.'};
+ return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continuous pada-row progression and nine-token Antardasa weighting. For subgroup labels, selected lineage uses the complete 15 Savya / 12 Apasavya distribution (Uttarabhadrapada and Revati in Savya-2), correcting the omission in the printed PVR Table 45 star list.'};
 }
 function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
  const rawDate=chart?.birthDate||chart?.birth?.date||chart?.date;

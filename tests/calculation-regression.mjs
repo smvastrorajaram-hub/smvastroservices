@@ -131,13 +131,13 @@ ok(Math.abs(example59.sequence[0].years-6)<1e-9&&Math.abs(example59.sequence[0].
 const rahuAd=example59.sequence[0].antardasas[0];
 ok(rahuAd?.lord==='Rahu'&&Math.abs(rahuAd.years-(15*12/108-(9-7.5)))<1e-9,'PVR Example 59: elapsed 9 years falls inside Rahu Antardasa; only its remainder is carried forward');
 ok(Math.abs(example59.sequence[0].antardasas.reduce((s,x)=>s+x.years,0)-example59.sequence[0].years)<1e-8,'Ashtottari partial birth Dasa Antardasas sum to the remaining Mahadasa period');
-ok(example59.applicabilityAudit.status==='UNRESOLVED_NO_INTERPRETATION_SELECTED'&&example59.applicabilityAudit.views.length===3,'PVR §17.2.3: preserve all three applicability interpretations without falsely certifying one');
+ok(example59.applicabilityAudit.status==='SELECTED_RULE_MET'&&example59.applicabilityAudit.selectedInterpretation==='rahu_from_lagna_lord'&&example59.applicabilityAudit.applicability==='applicable'&&example59.applicabilityAudit.views.length===3,'BPHS ch.46 v.17 selected as the primary Ashtottari gate; alternate lineages remain visible');
 const applicabilityNoRahu=dasaFixture(144,180,180,30); // Libra Lagna; Rahu in Libra: view (2) must fail.
 const auditNoRahu=phase4Dasa(applicabilityNoRahu).ashtottari.applicabilityAudit;
-ok(auditNoRahu.views[1].status==='not_met'&&auditNoRahu.views[1].rahuInLagna===true,'Ashtottari applicability counterexample: Rahu in Lagna fails interpretation (2)');
+ok(auditNoRahu.status==='SELECTED_RULE_NOT_MET'&&auditNoRahu.applicability==='not_applicable'&&auditNoRahu.views[1].status==='not_met'&&auditNoRahu.views[1].rahuInLagna===true,'BPHS Ashtottari gate: Rahu in Lagna does not qualify');
 const applicabilityRahuQualifies=dasaFixture(144,180,300,30); // Libra Lagna, Venus is Lagna lord at Leo, Rahu Aquarius is 7th from Venus.
 const auditQualifies=phase4Dasa(applicabilityRahuQualifies).ashtottari.applicabilityAudit;
-ok(auditQualifies.views[1].status==='met'&&auditQualifies.views[1].rahuHouseFromLagnaLord===7,'Ashtottari applicability positive example: Rahu in a quadrant from the Lagna lord, outside Lagna');
+ok(auditQualifies.status==='SELECTED_RULE_MET'&&auditQualifies.applicability==='applicable'&&auditQualifies.views[1].status==='met'&&auditQualifies.views[1].selected===true&&auditQualifies.views[1].rahuHouseFromLagnaLord===7,'BPHS Ashtottari gate: Rahu in a qualifying kendra from Lagna lord, outside Lagna');
 const dayKrishnaChart=dasaFixture(200,180,300,30);dayKrishnaChart.birth.time='12:00';
 const dayKrishnaAudit=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit;
 const dayKrishnaResolved=phase4Dasa(dayKrishnaChart,null).ashtottari.applicabilityAudit.views[2];
@@ -174,11 +174,35 @@ ok(Math.abs(d96.paramayush-86)<1e-9&&Math.abs(d96.elapsedYearsBeforeBirth-77.4)<
 ok(d96.sequence.slice(0,9).map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','PVR Example 96: remaining Pisces Dasa followed by the first eight Savya-2 signs');
 ok(d96.sequence[0].antardasas.map(x=>x.rasi).join(',')==='Pi,Sc,Li,Vi,Cn,Le,Ge,Ta,Ar','Kalachakra Example 96: antardasa chain crosses after Pada 4 into Savya-2 Pada 1');
 ok(d96.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((s,x)=>s+x.years,0)-md.years)<1e-8),'Kalachakra counterexample grid: all displayed MDs have nine correctly weighted ADs summing to each MD');
+// Full 108-nakshatra-pada grid. Star subgroup assignment is an explicit selected lineage, not inferred from the implementation under test.
+const kcRasiIndex={Ar:0,Ta:1,Ge:2,Cn:3,Le:4,Vi:5,Li:6,Sc:7,Sg:8,Cp:9,Aq:10,Pi:11};
+const kcExpectedGroupByNak=['savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya1','apasavya1','apasavya2','apasavya2','savya1','savya2','savya2'];
+const kcExpectedSequences={
+ savya1:[[0,1,2,3,4,5,6,7,8],[9,10,11,7,6,5,3,4,2],[1,0,11,10,9,8,0,1,2],[3,4,5,6,7,8,9,10,11]],
+ savya2:[[7,6,5,3,4,2,1,0,11],[10,9,8,0,1,2,3,4,5],[6,7,8,9,10,11,7,6,5],[3,4,2,1,0,11,10,9,8]],
+ apasavya1:[[8,9,10,11,0,1,2,4,3],[5,6,7,11,10,9,8,7,6],[5,4,3,2,1,0,8,9,10],[11,0,1,2,4,3,5,6,7]],
+ apasavya2:[[11,10,9,8,7,6,5,4,3],[2,1,0,8,9,10,11,0,1],[2,4,3,5,6,7,11,10,9],[8,7,6,5,4,3,2,1,0]]
+};
+const kcExpectedParamayush={savya1:[100,85,83,86],savya2:[100,85,83,86],apasavya1:[86,83,85,100],apasavya2:[86,83,85,100]};
+let kcGridCases=0;
+for(let nak=0;nak<27;nak++)for(let pada=0;pada<4;pada++){
+ const moonLon=nak*(40/3)+pada*(10/3)+0.0001;
+ const d=phase4Dasa(dasaFixture(moonLon)).kalachakra;
+ const group=kcExpectedGroupByNak[nak],expected=kcExpectedSequences[group][pada];
+ ok(d.available&&d.nakshatraIndex===nak+1&&d.pada===pada+1,'Kalachakra 108-grid: correct star/pada index '+(nak+1)+'/'+(pada+1));
+ ok(d.group===group,'Kalachakra selected-lineage subgroup '+(nak+1)+'/'+(pada+1)+' = '+group);
+ ok(d.paramayush===kcExpectedParamayush[group][pada],'Kalachakra paramayush source-table value '+(nak+1)+'/'+(pada+1));
+ ok(d.sequence.slice(0,9).map(x=>kcRasiIndex[x.rasi]).join(',')===expected.join(','),'Kalachakra nine-rasi table oracle '+group+' pada '+(pada+1));
+ ok(d.sequence.length===12&&d.sequence.every(md=>md.antardasas.length===9&&Math.abs(md.antardasas.reduce((sum,x)=>sum+x.years,0)-md.years)<1e-7),'Kalachakra MD/AD balance conservation '+(nak+1)+'/'+(pada+1));
+ kcGridCases++;
+}
+ok(kcGridCases===108,'Kalachakra complete 108-nakshatra-pada matrix is exercised');
 const drigExpected='2,5,8,11,3,1,10,7,4,0,9,6';
 const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
 ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
 ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
 ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
+ok(drigExample80.sourceLineage==='PVR/Parashara §21.2, Example 80'&&drigExample80.variantPolicy.includes('Do not merge it with alternate Jaimini-commentary'),'Drigdasa explicitly selects Parashara-style lineage without mixing Jaimini commentary variants');
 let drigdasaOverlapCases=0;
 for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
  const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
@@ -221,6 +245,8 @@ renderContext.runRenderer({
 ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
 ok(mockSlot.innerHTML.includes('ருத்ரன்')&&mockSlot.innerHTML.includes('திரிசூல ராசிகள்')&&mockSlot.innerHTML.includes('மகேஸ்வரன்')&&mockSlot.innerHTML.includes('பொருந்தும் நிர்யாண சூல தசைக் காலங்கள்'),'Phase-4 shows computed three-part longevity results');
 ok(!mockSlot.innerHTML.includes('P.V.R. நரசிம்ம ராவ் — ஆயுள் விதிகள்')&&!mockSlot.innerHTML.includes('நூல் பக்கங்கள் 180–185')&&!mockSlot.innerHTML.includes('நூலாசிரியர் இந்த சோத்ய'),'Phase-4 omits copied author/page/rule text');
+renderContext.runRenderer({narayana:{sourceWarnings:[{rasi:5,lord:'Mercury',uncappedYears:13,firstCycleYears:12,secondCycleYears:0,resolution:'The printed PVR rule sequence would produce more than 12 years (Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42. This is an inter-source reconciliation, not stated in the supplied PVR passage.'}]},pvrResearch:{longevity:{pairs:[]},sodhyaPindaEventTiming:{rows:[]}}},'en',mockSlot);
+ok(mockSlot.innerHTML.includes('The printed PVR rule sequence would produce more than 12 years')&&!mockSlot.innerHTML.includes('undefined'),'Narayana English renderer shows the explicit PVR/Sanjay Rath reconciliation instead of undefined');
 
 const charts=[];
 let pvrTransitFixtureRows=null;
@@ -291,10 +317,28 @@ const all15YearWindows=next15YearTransit.rows.flatMap(x=>['Saturn','Jupiter'].fl
 ok(all15YearWindows.every(w=>Date.parse(w.startUtc)>=transitStartMs&&Date.parse(w.endUtc)<=transitEndMs&&Date.parse(w.startUtc)<Date.parse(w.endUtc)),'Every 15-year transit window is in-range and has valid ingress/egress');
 console.log(JSON.stringify({pvr15YearTransitSample:next15YearTransit.rows.map(x=>({topic:x.topic,planet:x.planet,nakshatra:x.targetNakshatra,rasi:x.targetRasi,saturnNakshatra:x.transits.Saturn.nakshatras.find(n=>n.key==='primary')?.windows.map(w=>[w.startLocal,w.endLocal]),saturnRasi:x.transits.Saturn.rasi.windows.map(w=>[w.startLocal,w.endLocal]),jupiterNakshatra:x.transits.Jupiter.nakshatras.find(n=>n.key==='primary')?.windows.map(w=>[w.startLocal,w.endLocal]),jupiterRasi:x.transits.Jupiter.rasi.windows.map(w=>[w.startLocal,w.endLocal])}))}));
 console.log(JSON.stringify({pvrHistoricalTransitExample:{source:'PVR §25.6 Example 111',SaturnRevati:sourceExampleNakshatra,SaturnPisces:sourceExampleRasi}}));
+// Independent source-rule fixtures for Lagna Kendradi, Niryaana Shoola and Shoola.
+const makePhase4Fixture=(lagnaSign,overrides={})=>{
+ const signs={Sun:1,Moon:2,Mars:3,Mercury:4,Jupiter:5,Venus:6,Saturn:11,Rahu:9,Ketu:3,...overrides};
+ return {birthDate:'2000-01-01',lagna:{longitude:lagnaSign*30+10},planets:Object.entries(signs).map(([name,sign])=>({name,longitude:sign*30+5}))};
+};
+const kendradiNormal=phase4Dasa(makePhase4Fixture(7)).lagnaKendradi.sequence.filter(x=>x.cycle===1);
+ok(kendradiNormal.map(x=>x.rasi).join(',')==='1,10,7,4,0,9,6,3,11,8,5,2','PVR §19.2 backward Lagna Kendradi: Scorpio Lagna with stronger Taurus seed follows Kendra/Panaphara/Apoklima groups');
+const kendradiSaturn=phase4Dasa(makePhase4Fixture(7,{Saturn:1})).lagnaKendradi.sequence.filter(x=>x.cycle===1);
+ok(kendradiSaturn.map(x=>x.rasi).join(',')==='1,4,7,10,2,5,8,11,3,6,9,0','PVR §19.2 exception: Saturn in the stronger seed forces the grouped sequence forward');
+const kendradiKetu=phase4Dasa(makePhase4Fixture(7,{Rahu:7,Ketu:1})).lagnaKendradi.sequence.filter(x=>x.cycle===1);
+ok(kendradiKetu.map(x=>x.rasi).join(',')==='1,4,7,10,2,5,8,11,3,6,9,0','PVR §19.2 exception: Ketu in the stronger seed reverses the ordinary direction');
+const niryaanaNormal=phase4Dasa(makePhase4Fixture(0,{Sun:4,Moon:2,Mars:7,Mercury:5,Jupiter:9,Venus:3,Saturn:11,Rahu:7,Ketu:1})).niryaanaShoola;
+ok(niryaanaNormal.seed===7&&niryaanaNormal.sequence.map(x=>x.rasi).join(',')==='7,6,5,4,3,2,1,0,11,10,9,8','PVR §22.2.1 normal even-sign seed runs backward from the stronger 8th-house Scorpio');
+ok(niryaanaNormal.sequence.slice(0,3).map(x=>x.fullYears).join(',')==='8,7,9','Niryaana Shoola fixed/movable/dual sign durations are 8/7/9 years');
+ok(niryaanaNormal.sequence.every(md=>md.antardasas.length===12&&Math.abs(md.antardasas.reduce((sum,x)=>sum+x.years,0)-md.years)<1e-7),'Niryaana Shoola Narayana-style Antardasas conserve each Mahadasa duration');
+const shoolaOracle=phase4Dasa(makePhase4Fixture(0,{Sun:0,Moon:2,Mars:0,Mercury:4,Jupiter:5,Venus:7,Saturn:8,Rahu:9,Ketu:3})).shoola;
+ok(shoolaOracle.seed===0&&shoolaOracle.sequence.map(x=>x.rasi).join(',')==='0,1,2,3,4,5,6,7,8,9,10,11','PVR §23.2 Shoola starts from stronger Lagna/7th and always progresses zodiacally');
+ok(shoolaOracle.sequence.every(md=>md.fullYears===9&&md.antardasas.length===12&&md.antardasas.every(x=>Math.abs(x.years-0.75)<1e-9)),'PVR §23.2 Shoola uses 9-year Mahadasas and 12 equal Antardasas of 0.75 years');
 const saturnSeedChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
- {name:'Sun',longitude:30},{name:'Moon',longitude:120},{name:'Mars',longitude:210},
- {name:'Mercury',longitude:240},{name:'Jupiter',longitude:270},{name:'Venus',longitude:60},
- {name:'Saturn',longitude:210},{name:'Rahu',longitude:150},{name:'Ketu',longitude:300}
+ {name:'Sun',longitude:120},{name:'Moon',longitude:60},{name:'Mars',longitude:210},
+ {name:'Mercury',longitude:150},{name:'Jupiter',longitude:270},{name:'Venus',longitude:90},
+ {name:'Saturn',longitude:210},{name:'Rahu',longitude:210},{name:'Ketu',longitude:30}
 ]};
 const saturnSeedDasa=phase4Dasa(saturnSeedChart);
 ok(saturnSeedDasa.niryaanaShoola.seed===7,'PVR Niryaana Shoola fixture selects Scorpio as stronger of 2nd/8th');
