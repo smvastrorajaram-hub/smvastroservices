@@ -626,6 +626,39 @@ statuses('XIV-MAD-03',[
  {label:'Jupiter outside house 3',expected:'NOT_MATCHED',chart:{houses:{Mercury:2,Jupiter:4,Venus:11}}},
  {label:'Mercury position unavailable',expected:'UNKNOWN',chart:{omit:['Mercury']}}
 ],'HPA p.70 Madhyayu 3');
+statuses('XIV-MAD-04',[
+ {label:'all nine grahas fall in houses 4 through 7',expected:'MATCHED',
+  chart:{houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4}}},
+ {label:'a known graha falls outside the middle four houses',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4}}},
+ {label:'a graha position is missing and no known graha violates the middle-house rule',expected:'UNKNOWN',
+  chart:{houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7},omit:['Ketu']}}
+],'HPA p.70 Madhyayu 4 — middle four houses are evaluated from the chart');
+statuses('XIV-MAD-07',[
+ {label:'Saturn in 1, Moon in 8 and all other grahas in 11',expected:'MATCHED',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:11,Mercury:11,Jupiter:11,Venus:11,Rahu:11,Ketu:11}}},
+ {label:'a non-Saturn/Moon graha is outside house 11',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:10,Mercury:11,Jupiter:11,Venus:11,Rahu:11,Ketu:11}}},
+ {label:'a remaining graha house is unavailable',expected:'UNKNOWN',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:11,Mercury:11,Jupiter:11,Venus:11,Rahu:11},omit:['Ketu']}}
+],'HPA p.71 Madhyayu 7 — remaining graha placement is evaluated from chart');
+statuses('XIV-ALP-09',[
+ {label:'Aries Lagna, Saturn in 1 and natural benefics in each of 3, 6, 9 and 12',expected:'MATCHED',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:6,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:5,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5}}},
+ {label:'the sixth house has no benefic occupant',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:5,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:4,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5}}},
+ {label:'Mercury missing from otherwise qualifying chart leaves the twelfth-house criterion UNKNOWN',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:6,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:5,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5},omit:['Mercury']}}
+],'HPA p.70 Alpayu 9 — benefic occupants are evaluated from chart');
 statuses('XIV-MAD-05',[
  {label:'Sun Lagna enemy sign, between malefics, weak and no benefic aspect',expected:'MATCHED',
   chart:{lagnaLongitude:30,houses:{Sun:1,Mars:10,Saturn:4,Jupiter:6,Mercury:4,Venus:11,Moon:5}},
