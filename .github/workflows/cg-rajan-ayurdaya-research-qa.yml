@@ -5,7 +5,6 @@ on:
     paths:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
-      - 'public/horoscope/horoscope-predictions.js'
       - 'public/horoscope/horoscope.js'
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
@@ -21,7 +20,6 @@ on:
     paths:
       - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
-      - 'public/horoscope/horoscope-predictions.js'
       - 'public/horoscope/horoscope.js'
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - 'tests/cg-rajan-ayurdaya-printed-oracle.mjs'
@@ -52,7 +50,6 @@ jobs:
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
           node --check tests/cg-rajan-ayurdaya-save-pdf-integration-guard.mjs
-          node --check public/horoscope/horoscope-predictions.js
           node --check public/horoscope/horoscope.js
           node --check tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
