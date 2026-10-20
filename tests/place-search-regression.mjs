@@ -54,8 +54,8 @@ globalThis.fetch=async input=>{
 };
 try{
  const found=await searchPlaces('perambalur',12);
- ok(found.length===1&&found[0].geonameId===100&&found[0].latitude===11.23,
-  'Fallback resolves the exact location while preserving coordinates');
+ ok(found.length===2&&found[0].geonameId===100&&found[0].latitude===11.23&&found[1].geonameId===103,
+  'Exact and embedded-alias results retain the existing ranking and coordinates');
  const same=await searchPlaces('perambalur',12);
  ok(same===found,'Result cache avoids rescanning identical queries');
  const limited=await searchPlaces('per',2);
