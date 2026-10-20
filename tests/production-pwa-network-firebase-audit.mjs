@@ -509,12 +509,12 @@ run().catch(async error=>{
     failedPhase:currentPhase,
     partialNetworkSummary:captured.length ? summarizeNetwork(captured) : null,
     recentRedactedRequests:captured.slice(-80).map(cleanRequest),
-    error:{name:String(error?.name||'Error'),message:String(error?.message||error).slice(0,500),stack:String(error?.stack||'').split(/\\r?\\n/).slice(0,10).join('\\n')},
+    error:{name:String(error?.name||'Error'),message:String(error?.message||error).slice(0,500),stack:String(error?.stack||'').split(/\r?\n/).slice(0,10).join('\n')},
     androidDeviceValidation:{status:'NOT_RUN',reason:'No attached Android device/ADB or launcher available in this run.'}
   };
   try{
     await mkdir(OUT_DIR,{recursive:true});
-    await writeFile(REPORT_PATH,JSON.stringify(failure,null,2)+'\\n','utf8');
+    await writeFile(REPORT_PATH,JSON.stringify(failure,null,2)+'\n','utf8');
   }catch(writeError){
     console.error('Could not write failure report:',String(writeError?.message||writeError));
   }
