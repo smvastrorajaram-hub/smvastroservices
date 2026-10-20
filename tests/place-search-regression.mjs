@@ -1,7 +1,6 @@
 /* Location regression: preserve GeoNames results, split-manifest integrity and cancellable Worker loading. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {searchPlaces} from '../public/horoscope/offline/places/place-search.mjs';
 
 let checks=0;
 const ok=(value,message)=>{assert.ok(value,message);checks++;};
@@ -38,6 +37,8 @@ globalThis.fetch=async input=>{
  throw new Error('Unexpected fixture fetch: '+url);
 };
 try{
+ // Import after installing the fetch fixture: the fallback engine captures fetch during initialization.
+ const {searchPlaces}=await import('../public/horoscope/offline/places/place-search.mjs');
  const found=await searchPlaces('perambalur',12);
  ok(found.length===2&&found[0].geonameId===100&&found[1].geonameId===103,
   'Exact and embedded aliases retain their deterministic rank order');
