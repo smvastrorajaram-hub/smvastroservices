@@ -58,7 +58,7 @@ for(const [date,time] of sampleBirths){
 test(raw.includes('function ashtakavarga(')&&!raw.includes('function trikonaShodhana('),'Base Ashtakavarga is present; do not silently claim separate classical Shodhana is implemented here');
 const pub=fs.readFileSync(new URL('../public/horoscope/prediction-rules-published.js',import.meta.url),'utf8');
 const publishedStart=pub.indexOf('window.SMVPUBLISHED_PREDICTION_RULES = ');
-const publishedEnd=publishedStart>=0?pub.indexOf(';',publishedStart):-1;
+const publishedEnd=publishedStart>=0?pub.lastIndexOf('];')+1:-1;
 let publishedRules=[];
 if(publishedStart>=0&&publishedEnd>publishedStart){
  const literal=pub.slice(pub.indexOf('=',publishedStart)+1,publishedEnd).trim();
