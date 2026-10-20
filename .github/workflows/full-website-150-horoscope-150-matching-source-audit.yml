@@ -9,6 +9,12 @@ on:
       - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
       - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/five-book-structural-audit.mjs'
+      - 'tests/calculation-regression.mjs'
+      - 'tests/ayurdaya-100-chart-comparison-audit.mjs'
+      - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
+      - 'tests/bv-raman-ayurdaya-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - '.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
   workflow_dispatch:
 permissions:
@@ -42,6 +48,19 @@ jobs:
         run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
       - name: Five-book natal structural audit
         run: node tests/five-book-structural-audit.mjs
+
+      - name: Full Dasa source and chart-result calculation regression
+        run: node tests/calculation-regression.mjs
+      - name: 100-chart Ayurdaya / Harana / Pinda and 50-pair comparison audit
+        run: node tests/ayurdaya-100-chart-comparison-audit.mjs
+      - name: B.V. Raman Ashtakavarga Ayurdaya numeric oracle
+        run: node tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
+      - name: B.V. Raman Ayurdaya report result regression
+        run: node tests/bv-raman-ayurdaya-report-regression.mjs
+      - name: C.G. Rajan Pinda / Naisargika / Amsa Ayurdaya report regression
+        run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+      - name: C.G. Rajan Advanced Part-I placement evidence audit
+        run: node tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
       - name: Calculate 150 full Horoscope profiles and 150 distinct Matching pair reports
         run: node tests/full-website-150-horoscope-150-matching-source-audit.mjs
       - name: Preserve per-chart and per-pair audit evidence
