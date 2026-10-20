@@ -9,6 +9,10 @@ on:
       - 'tests/horoscope-generation-progress-regression.mjs'
       - 'tests/calculation-regression.mjs'
       - 'tests/prediction-rules-published-regression.mjs'
+      - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
+      - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
+      - 'tests/five-book-structural-audit.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
@@ -42,6 +46,10 @@ on:
       - 'tests/horoscope-generation-progress-regression.mjs'
       - 'tests/calculation-regression.mjs'
       - 'tests/prediction-rules-published-regression.mjs'
+      - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
+      - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
+      - 'tests/five-book-structural-audit.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
@@ -97,6 +105,11 @@ jobs:
         run: node tests/calculation-regression.mjs
       - name: Published Admin Prediction Rules and offline fallback regression
         run: node tests/prediction-rules-published-regression.mjs
+      - name: B.V. Raman Chapter XIV source-rule positive/negative/unknown examples
+        run: node tests/bv-raman-chapter-xiv-book-example-regression.mjs
+      - name: B.V. Raman Chapters XIV/XXVI integrated Ayurdaya regression
+        run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
+
       - name: V358 unified result layer source regression
         run: node tests/v358-unified-result-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
