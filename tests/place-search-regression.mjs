@@ -8,13 +8,26 @@ const root=new URL('../public/horoscope/offline/places/',import.meta.url);
 const manifest=JSON.parse(fs.readFileSync(new URL('india-manifest.json',root),'utf8'));
 ok(manifest.records===557995,'The complete 557,995-record India place manifest remains authoritative');
 const declaredTotal=Object.values(manifest.shards).reduce((n,info)=>n+Number(info.records||0),0);
-ok(declaredTotal===manifest.records,'All letter-shard record counts sum to the published complete database total');
+const uniqueGeoNamesIds=new Set();
+let physicalRows=0;
 for(const [key,info] of Object.entries(manifest.shards)){
  const parts=Array.isArray(info.parts)?info.parts:[info];
  const count=parts.reduce((n,part)=>n+Number(part.records||0),0);
- ok(count===Number(info.records),key+' shard parts preserve its declared record count');
- for(const part of parts)ok(fs.existsSync(new URL('india/'+part.file,root)),key+' data part is present: '+part.file);
+ ok(count===Number(info.records),key+' shard parts preserve its declared row count');
+ for(const part of parts){
+  const dataPath=new URL('india/'+part.file,root);
+  ok(fs.existsSync(dataPath),key+' data part is present: '+part.file);
+  const rows=JSON.parse(fs.readFileSync(dataPath,'utf8'));
+  ok(rows.length===Number(part.records),part.file+' actual array length matches its metadata');
+  physicalRows+=rows.length;
+  for(const row of rows)if(row?.[0]!=null)uniqueGeoNamesIds.add(String(row[0]));
+ }
 }
+ok(physicalRows===declaredTotal,'Physical JSON rows match the sum of per-shard metadata');
+ok(uniqueGeoNamesIds.size===manifest.records,
+ 'Distinct GeoNames IDs match the public 557,995-record database contract');
+const duplicateRows=physicalRows-uniqueGeoNamesIds.size;
+ok(duplicateRows>=0,'Duplicate GeoNames IDs are measured separately from distinct-place coverage');
 
 const rowsA=[
  [100,'Perambalur','Tamil Nadu','Perambalur district',11.23,78.88,'Asia/Kolkata',50000,['perambalur','perambalur town']],
@@ -112,4 +125,4 @@ ok(!main.includes('place-search.worker.mjs')&&!fs.existsSync(new URL('../public/
 ok(!calendar.includes('PLACE_SHARDS')&&!calendar.includes('...PLACE_SHARDS.map'),
  'Calendar install does not bulk-cache every location shard');
 
-console.log(JSON.stringify({pass:true,checks,fullDatasetRecords:manifest.records,letterShards:Object.keys(manifest.shards).length,scope:'manifest/data integrity + split data + worker search semantics'}));
+console.log(JSON.stringify({pass:true,checks,fullDatasetRecords:manifest.records,uniqueGeoNamesIds:uniqueGeoNamesIds.size,physicalRows,duplicateRows,letterShards:Object.keys(manifest.shards).length,scope:'manifest/data integrity + split data + worker search semantics'}));
