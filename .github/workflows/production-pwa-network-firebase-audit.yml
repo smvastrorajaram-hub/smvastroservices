@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-pwa-network-firebase-profile-${{ github.event.pull_request.head.sha || github.sha }}-diagnostic-v2
+  group: production-pwa-network-firebase-profile-diagnostic-v2
   cancel-in-progress: true
 
 jobs:
