@@ -10,7 +10,7 @@ import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 
 const BASE=String(process.env.SMV_PRODUCTION_BASE_URL||'https://smvastroservices.pages.dev').replace(/\/+$/,'');
-const URL=BASE+'/horoscope/';
+const HOROSCOPE_URL=BASE+'/horoscope/';
 const OUT=new URL('../artifacts/production-main-thread-diagnostic.json',import.meta.url);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const safeUrl=value=>{try{const u=new URL(value);return {origin:u.origin,path:u.pathname};}catch{return {origin:'unknown',path:'/'};}};
@@ -18,7 +18,7 @@ const safeUrl=value=>{try{const u=new URL(value);return {origin:u.origin,path:u.
 async function run(){
  const report={
   generatedAt:new Date().toISOString(),
-  target:safeUrl(URL),
+  target:safeUrl(HOROSCOPE_URL),
   environment:{node:process.version,platform:process.platform,browser:null},
   navigation:{status:null,events:[],failedDocuments:[]},
   network:{completedRequests:0,transferredBytes:0,resources:{},p50DurationMs:null,p95DurationMs:null},
@@ -82,7 +82,7 @@ async function run(){
   let navError=null;
   const started=Date.now();
   try{
-   const response=await page.goto(URL,{waitUntil:'domcontentloaded',timeout:30000});
+   const response=await page.goto(HOROSCOPE_URL,{waitUntil:'domcontentloaded',timeout:30000});
    report.navigation.status=response?.status()??null;
    report.navigation.domContentLoadedWallMs=Date.now()-started;
   }catch(e){
