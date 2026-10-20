@@ -35,10 +35,14 @@ async function shard(k){
  if(cache.has(k))return cache.get(k);
  if(shardFlights.has(k))return shardFlights.get(k);
  const flight=(async()=>{
-  const m=await mf(),x=m.shards[k];if(!x)return[];
-  const r=await fetch(new URL('./india/'+x.file,import.meta.url));
-  if(!r.ok)throw new Error('Offline India place shard unavailable');
-  const rows=await r.json();cache.set(k,rows);return rows;
+  const m=await mf(),info=m.shards[k];if(!info)return[];
+  const loadPart=async part=>{
+   const r=await fetch(new URL('./india/'+part.file,import.meta.url));
+   if(!r.ok)throw new Error('Offline India place shard unavailable: '+part.file);
+   return r.json();
+  };
+  const groups=Array.isArray(info.parts)?await Promise.all(info.parts.map(loadPart)):[await loadPart(info)];
+  cache.set(k,groups);return groups;
  })();
  shardFlights.set(k,flight);
  try{return await flight;}finally{shardFlights.delete(k);}
@@ -47,21 +51,23 @@ async function searchPlacesMain(query,max,language,signal){
  const n=norm(query);if(n.length<2)return[];
  const cacheKey=n+'|'+max+'|'+language;
  if(resultCache.has(cacheKey))return resultCache.get(cacheKey);
- const shardKey=keyFor(n),rows=await shard(shardKey),top=[],matched=[];
+ const shardKey=keyFor(n),groups=await shard(shardKey),top=[],matched=[];
  const prev=prefixCandidates.get(shardKey);
- const source=prev&&n.startsWith(prev.q)&&n.length>prev.q.length?prev.rows:rows;
+ const sourceGroups=prev&&n.startsWith(prev.q)&&n.length>prev.q.length?[prev.rows]:groups;
  let count=0;
- for(const x of source){
-  if(signal?.aborted)throw aborted();
-  let best=99;
-  for(const a of aliases(x)){
-   if(a===n){best=0;break}
-   if(a.startsWith(n))best=Math.min(best,1);
-   else if(a.includes(' '+n))best=Math.min(best,2);
-   else if(a.includes(n))best=Math.min(best,3);
+ for(const group of sourceGroups){
+  for(const x of group){
+   if(signal?.aborted)throw aborted();
+   let best=99;
+   for(const a of aliases(x)){
+    if(a===n){best=0;break}
+    if(a.startsWith(n))best=Math.min(best,1);
+    else if(a.includes(' '+n))best=Math.min(best,2);
+    else if(a.includes(n))best=Math.min(best,3);
+   }
+   if(best<99){matched.push(x);insertTop(top,{x,score:best},max);}
+   if(++count%1200===0){await yieldMainThread();if(signal?.aborted)throw aborted();}
   }
-  if(best<99){matched.push(x);insertTop(top,{x,score:best},max);}
-  if(++count%1200===0){await yieldMainThread();if(signal?.aborted)throw aborted();}
  }
  prefixCandidates.set(shardKey,{q:n,rows:matched});
  const result=top.map(({x})=>{
