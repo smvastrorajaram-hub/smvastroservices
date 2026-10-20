@@ -125,6 +125,14 @@ eq(femaleBirths.length,75,'75 female-cohort birth fixtures generated');
 eq(new Set([...maleBirths,...femaleBirths].map(b=>b.date+'T'+b.time)).size,150,
   'all 150 birth-input fixtures are unique');
 const startedAt = Date.now();
+const matchingOnlyProbe=await full({...maleBirths[0],matchingOnly:true});
+ok(matchingOnlyProbe?.ok===true&&matchingOnlyProbe.meta?.complete===true&&matchingOnlyProbe.meta?.matchingOnly===true,
+  'Matching-only optimization returns a complete natal/Advanced/Dasa profile');
+ok(!Object.hasOwn(matchingOnlyProbe.chart||{},'tajakaAnnual'),
+  'Matching-only runtime skips the unrelated Tajaka annual chart calculation');
+ok(matchingOnlyProbe.phase4&&matchingOnlyProbe.advanced,
+  'Matching-only optimization preserves Dasa and Advanced Analysis output');
+
 const computed = [];
 const chartSignatures = new Set();
 const pindaPanelSignatures = new Set();
@@ -607,6 +615,8 @@ const summary = {
     classicalSourceCertification:'PARTIAL: Chapter XIV UNKNOWN evidence and independent source numerical oracles remain documented blockers.'
   },
   sourceOptimization:{
+    matchingOnlyRuntimeVerified:true,
+    fullAdvancedSectionKeys:['ashtakavarga','vargas','avastha','avastha154','avakhada','kota','sudarshana','sarvatobhadra','v5','planetRelations','remedies','phase2','tajaka'],
     matchingOnlySkipsTajakaAnnual:true,
     advancedSharesOneAshtakavargaResultWithSodhyaPinda:true,
     sequentialChartExecution:true,
