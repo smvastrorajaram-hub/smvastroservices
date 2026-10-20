@@ -34,6 +34,8 @@ ok(loader.includes('tag.async=false') && loader.includes('Promise.all(lazyScript
    'Bundles download concurrently while dynamic classic-script execution remains ordered');
 ok(loader.includes('if(waitingButton)return') && loader.includes('window.__smvLoadHoroscopeAdvanced=ensure'),
    'Rapid taps coalesce and Matching can await the shared loader');
+ok(loader.includes('#smvAdmPreview')&&loader.includes('[data-wb-calculate]')&&!loader.includes('#smvAdminRulesAccess'),
+   'Admin Preview/Calculate load their dependencies on demand without intercepting Admin entry/login');
 ok(html.includes('window.__smvLoadHoroscopeAdvanced?window.__smvLoadHoroscopeAdvanced():Promise.resolve()'),
    'Marriage Matching waits for calculation dependencies before loading its own script');
 
@@ -96,7 +98,7 @@ vm.runInNewContext(match[1], {
 
 let replayCount = 0;
 const button = {
-  id: 'generateTamilHoroscope', isConnected: true, busy: false,
+  id: 'smvAdmPreview', isConnected: true, busy: false,
   closest(selector) { return selector.includes('#' + this.id) ? this : null; },
   setAttribute(name) { if (name === 'aria-busy') this.busy = true; },
   removeAttribute(name) { if (name === 'aria-busy') this.busy = false; },
@@ -113,10 +115,10 @@ runtime.clickHandler({
 });
 await new Promise(resolve => setTimeout(resolve, 0));
 await new Promise(resolve => setTimeout(resolve, 0));
-ok(prevented === 1 && stopped === 1, 'Initial tap waits behind the lazy dependency loader');
+ok(prevented === 1 && stopped === 1, 'First Admin Preview action waits behind the lazy dependency loader');
 ok(JSON.stringify(runtime.appended) === JSON.stringify(lazy),
-   'Runtime loader inserts all six scripts in the audited order');
-ok(replayCount === 1 && !button.busy, 'One original user action is replayed and loading state clears');
+   'Runtime loader inserts all six scripts in the audited order for Admin Preview');
+ok(replayCount === 1 && !button.busy, 'Admin Preview is replayed exactly once after loading and busy state clears');
 console.log(JSON.stringify({pass:true,assertions:checks,deferredScripts:lazy.length,protectedFlows:[
   'saved reports','browser-native print/PDF','Tamil font','approved report-cover artwork',
   'authentication/dashboard/Admin rules and Firebase prediction-rule loading'
