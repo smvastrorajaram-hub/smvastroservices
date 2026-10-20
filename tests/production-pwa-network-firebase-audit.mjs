@@ -333,7 +333,7 @@ async function run() {
     headless: chromium.headless,
     defaultViewport: chromium.defaultViewport,
     dumpio: true,
-    protocolTimeout: 360000
+    protocolTimeout: 30000
   });
   report.environment.browserVersion=await browser.version();
   console.log('[audit] browser:ready',report.environment.browserVersion);
