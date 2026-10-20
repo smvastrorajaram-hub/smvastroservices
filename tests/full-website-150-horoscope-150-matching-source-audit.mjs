@@ -165,6 +165,8 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   const result = await full(input);
   ok(result?.ok === true && result.meta?.complete === true && result.meta?.version === 'SMV-full-1',
     'full Horoscope calculation succeeds for '+birth.name);
+  ok(result.birthPanchang&&result.dailyPanchang&&result.transit&&result.phase4,
+    'full Horoscope includes birth/daily Panchang, transit and Dasa phase for '+birth.name);
   const chart = result.chart;
   ok(Array.isArray(chart?.planets) && chart.planets.length >= 9,
     'actual calculated planetary positions exist for '+birth.name);
@@ -194,6 +196,16 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   chart.birthTimezone = birth.timezone;
   chart.birthChartStyle = 'south';
   chartSignatures.add(longitudeSignature(chart));
+  const liveD1=narrativeInputFromChart(chart);
+  for(const language of ['ta','en']){
+    const narrative=renderD1HumanNarrative(liveD1,language);
+    eq(narrative?.topics?.length,12,language+' live D1 narrative covers all 12 houses for '+birth.name);
+    ok(narrative.topics.every(topic=>topic.paragraphs?.length>0&&
+      topic.paragraphs.every(p=>typeof p.text==='string'&&p.text.length>=20)),
+      language+' live D1 narrative contains readable paragraphs for '+birth.name);
+    d1NarrativeSignatures[language].add(narrative.topics.map(topic=>
+      topic.paragraphs.map(p=>p.text).join(' ')).join('\\n'));
+  }
 
   const pindaPanel = result.advanced?.v5?.sodhyaPinda;
   ok(Array.isArray(pindaPanel?.planetPindas) && pindaPanel.planetPindas.length === 7,
