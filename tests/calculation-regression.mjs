@@ -60,7 +60,7 @@ const vimContext={
  DASHA_ORDER:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
  norm360:n=>{const x=Number(n)%360;return x<0?x+360:x;}
 };
-vm.runInNewContext(vimRuntime+'\\nglobalThis.__vimshottariAudit=dashaAtBirth;',vimContext,{timeout:10000});
+vm.runInNewContext(vimRuntime+'\nglobalThis.__vimshottariAudit=dashaAtBirth;',vimContext,{timeout:10000});
 const vimshottariExample50=vimContext.__vimshottariAudit(302+23/60,new Date('2000-04-28T00:00:00Z'),'2026-10-20',330);
 const vimBirthMd=vimshottariExample50.periods[0];
 ok(Math.abs(vimshottariExample50.balanceYears-2.24875)<1e-8&&Math.abs(vimBirthMd.years-2.24875)<1e-8&&vimBirthMd.fullYears===7,'PVR §16.2 Example 50: Dhanishtha Moon at 2°23 Aquarius leaves 2.24875 Mars Dasa years');
@@ -104,7 +104,7 @@ const strengthEnd=dasaSource.indexOf('function narayanaLengthDetail(',strengthMi
 ok(strengthStart>=0&&strengthMid>strengthStart&&strengthEnd>strengthMid,'Found source strength hierarchy and Rasi aspect helpers');
 const strengthContext={EXALT:{Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6},DEBIL:{Sun:6,Moon:7,Mars:3,Mercury:11,Jupiter:9,Venus:5,Saturn:0},mod12:n=>((n%12)+12)%12,oddSign:i=>[0,2,4,6,8,10].includes(i),oddFootedSign:i=>[0,1,2,6,7,8].includes(((i%12)+12)%12)};
 const strengthRuntime=dasaSource.slice(strengthStart,strengthMid)+dasaSource.slice(strengthMid,strengthEnd);
-vm.runInNewContext(strengthRuntime+'\\nglobalThis.__strengthAudit={strongerSign,ownLord};',strengthContext,{timeout:10000});
+vm.runInNewContext(strengthRuntime+'\nglobalThis.__strengthAudit={strongerSign,ownLord};',strengthContext,{timeout:10000});
 const strength=strengthContext.__strengthAudit;
 ok(strength.strongerSign(0,6,{Sun:{sign:0},Moon:{sign:0},Mars:{sign:4},Mercury:{sign:2},Jupiter:{sign:0},Venus:{sign:6},Saturn:{sign:8},Rahu:{sign:10},Ketu:{sign:4}})===0,'PVR §15.5.2 rule 1: occupied-planet count outranks later strength tie-breakers');
 ok(strength.strongerSign(0,6,{Moon:{sign:0,degree:10},Rahu:{sign:6,degree:10},Mars:{sign:4,degree:23},Venus:{sign:4,degree:19}})===0,'PVR §15.5.2 tie-break sequence reaches lord advancement only after the earlier rules tie');
