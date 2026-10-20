@@ -23,6 +23,7 @@ import {
 } from '../public/horoscope/offline/bv-raman-ayurdaya-report.browser.mjs';
 import { renderBasicMatching } from '../public/horoscope/marriage-basic-report.mjs';
 import { transit } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { pvrLongevitySodhyaTiming } from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
 
 const TA_TO_EN = Object.freeze({
   'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury',
@@ -183,6 +184,24 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'nine Vimshottari Mahadasha periods are present for '+birth.name);
   ok(Array.isArray(result.advanced?.vargas) && result.advanced.vargas.length===16,
     'all 16 configured divisional charts exist in Advanced Analysis for '+birth.name);
+  const requiredAdvancedSections=['ashtakavarga','vargas','avastha','avastha154','avakhada','kota',
+    'sudarshana','sarvatobhadra','v5','planetRelations','remedies','phase2','tajaka'];
+  const missingAdvancedSections=requiredAdvancedSections.filter(key=>
+    !Object.hasOwn(result.advanced||{},key)||result.advanced[key]===null||result.advanced[key]===undefined);
+  deep(missingAdvancedSections,[],'all Advanced Analysis output sections are present for '+birth.name);
+  const expectedBavTotals={'சூரியன்':48,'சந்திரன்':49,'செவ்வாய்':39,'புதன்':54,'குரு':56,'சுக்கிரன்':52,'சனி':39};
+  for(const row of result.advanced.ashtakavarga.bhinna||[]){
+    eq(row.total,expectedBavTotals[row.planet],'independent fixed BAV total '+row.planet+' for '+birth.name);
+  }
+  eq(result.advanced.ashtakavarga.sarvaTotal,337,'SAV fixed total 337 for '+birth.name);
+  ok(result.advanced.ashtakavarga.validation?.ok===true,'Advanced Analysis reports validated BAV/SAV totals for '+birth.name);
+  ok(Array.isArray(result.advanced.planetRelations.rows)&&result.advanced.planetRelations.rows.length>0,
+    'planet relationship analysis has calculated rows for '+birth.name);
+  ok(Array.isArray(result.advanced.remedies.rows)&&result.advanced.remedies.rows.length===9,
+    'remedy evidence table retains all nine grahas for '+birth.name);
+  ok(Array.isArray(result.advanced.phase2?.yogas?.items)&&Array.isArray(result.advanced.phase2?.charaKarakas),
+    'Phase-2 Yoga/Jaimini output exposes computed yoga and Chara Karaka rows for '+birth.name);
+
   ok(result.advanced.vargas.every(v=>v.planets?.length===9 && v.planets.every(p=>Number.isFinite(Number(p.longitude)))),
     'all 16 divisional charts contain nine finite graha longitudes for '+birth.name);
   chart.advanced = result.advanced;
