@@ -74,7 +74,7 @@ await activatePromise;
 ok(deleted.includes('smv-calendar-source-clean-20261016'),
    'Activation evicts the old cache that bulk-preloaded all place shards');
 
-const shardUrl = 'https://example.test/horoscope/offline/places/india/k.json';
+const shardUrl = 'https://example.test/horoscope/offline/places/india/k-00.json';
 let responsePromise;
 listeners.fetch({
   request: new FakeRequest(shardUrl, {method:'GET',mode:'cors'}),
@@ -83,6 +83,6 @@ listeners.fetch({
 });
 const response = await responsePromise;
 ok(response.status === 200 && stored.has(shardUrl),
-   'First online search caches that requested shard for later offline reuse');
+   'First online search caches the requested split part for later offline reuse');
 console.log(JSON.stringify({pass:true,assertions:checks,installFetches:fetches.length,
   preloadedPlaceShards:0,onDemandShardCached:stored.has(shardUrl)}));
