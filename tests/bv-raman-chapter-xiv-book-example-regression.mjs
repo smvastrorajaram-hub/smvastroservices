@@ -143,8 +143,26 @@ statuses('XIV-BAL-15',[
   chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Mars'}},
  {label:'both known periods are unrelated to Lagna/eighth lord',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Venus',birthAntardasaLord:'Mercury'}},
- {label:'birth Dasa and Antardasa unavailable',expected:'UNKNOWN',evidence:{}}
+ {label:'birth Dasa and Antardasa unavailable because Moon longitude is absent',expected:'UNKNOWN',chart:{omit:['Moon']},evidence:{}}
+
 ],'HPA p.65 Balarishta 15');
+const autoDerivedFixture=bvRamanChapterXIVLongevityRules({
+ chart:makeChart({lagnaLongitude:15,houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}})
+});
+const autoEvidence=autoDerivedFixture.autoDerivedEvidence||{};
+eq(autoEvidence.navamsaLagnaLord,'Sun',
+  'D9 Lagna lord is derived from Aries 15 degrees instead of requiring duplicate external input');
+eq(autoEvidence.birthDasaLord,'Saturn',
+  'birth Vimshottari Mahadasha lord derives from the natal Moon Nakshatra');
+eq(autoEvidence.birthAntardasaLord,'Saturn',
+  'birth Antardasa derives from elapsed Mahadasha balance');
+eq(autoEvidence.moonDrekkanaBenefic,false,
+  'even-sign Pisces Moon in first Drekkana derives Scorpio/Mars instead of Pisces/Jupiter');
+ok(autoDerivedFixture.autoDerivedEvidenceKeys.includes('navamsaLagnaLord')&&
+   autoDerivedFixture.autoDerivedEvidenceKeys.includes('birthDasaLord')&&
+   autoDerivedFixture.autoDerivedEvidenceKeys.includes('moonDrekkanaBenefic'),
+  'audit trace lists automatically derived natal evidence fields');
+
 statuses('XIV-BAL-28',[
  {label:'weak Lagna lord and poor placement expressly supported',expected:'MATCHED',
   chart:{lagnaLongitude:0},evidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:true}},
@@ -211,7 +229,7 @@ statuses('XIV-ANT-02',[
 statuses('XIV-ANT-03',[
  {label:'Moon 8 in a stated benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:true}},
  {label:'Drekkana explicitly not benefic',expected:'NOT_MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:false}},
- {label:'Drekkana not supplied',expected:'UNKNOWN',chart:{houses:{Moon:8}},evidence:{}}
+ {label:'Mars-ruled D3 for calculated Scorpio Moon is not a benefic Drekkana',expected:'NOT_MATCHED',chart:{houses:{Moon:8}},evidence:{}}
 ],'HPA p.67 Antidote 3');
 statuses('XIV-ANT-04',[
  {label:'source full-Moon/benefic/aspect condition true',expected:'MATCHED',evidence:{fullMoonInBeneficSignAndWellAspected:true}},
@@ -226,7 +244,7 @@ statuses('XIV-ANT-05',[
 statuses('XIV-ANT-06',[
  {label:'Moon 6 and benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:6},},evidence:{moonDrekkanaBenefic:true}},
  {label:'Moon not in 6',expected:'NOT_MATCHED',chart:{houses:{Moon:5}},evidence:{moonDrekkanaBenefic:true}},
- {label:'Drekkana unknown',expected:'UNKNOWN',chart:{houses:{Moon:6}},evidence:{}}
+ {label:'Drekkana derives from the calculated Pisces Moon placement',expected:'NOT_MATCHED',chart:{houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}},evidence:{}}
 ],'HPA p.67 Antidote 6');
 statuses('XIV-ANT-07',[
  {label:'Full Moon between benefics fact true',expected:'MATCHED',evidence:{fullMoonBetweenBenefics:true}},
@@ -507,7 +525,7 @@ statuses('XIV-BAL-16',[
   chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
  {label:'Lagna lord is not in Sun sign',expected:'NOT_MATCHED',
   chart:{houses:{Sun:2,Moon:1,Mars:1},signs:{Sun:1,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
- {label:'Navamsa Lagna lord not supplied',expected:'UNKNOWN',chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}}}
+ {label:'Navamsa Lagna lord remains unknown when birth Lagna longitude is absent',expected:'UNKNOWN',chart:{lagnaLongitude:null,houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}}}
 ],'HPA p.65 Balarishta 16');
 statuses('XIV-BAL-17',[
  {label:'malefics aspect Lagna and the eighth from Moon sign',expected:'MATCHED',
