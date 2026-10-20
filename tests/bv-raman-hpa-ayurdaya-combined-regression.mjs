@@ -1153,7 +1153,8 @@ checkXivRuleThreeStates({
  id:'XIV-BAL-15',page:65,number:15,
  chart:makeXivSourceFixture({lagnaLongitude:30}),
  matchedEvidence:{birthDasaLord:'Venus',birthAntardasaLord:'Jupiter'},
- notMatchedEvidence:{birthDasaLord:'Saturn',birthAntardasaLord:'Mercury'}
+ notMatchedEvidence:{birthDasaLord:'Saturn',birthAntardasaLord:'Mercury'},
+ unknownChart:makeXivSourceFixture({lagnaLongitude:30,omit:['Moon']})
 });
 checkXivRuleThreeStates({
  id:'XIV-BAL-28',page:66,number:28,
@@ -1221,7 +1222,11 @@ checkXivRuleThreeStates({
 checkXivRuleThreeStates({
  id:'XIV-MAD-04',page:70,number:4,
  matchedEvidence:{allPlanetsMiddleFourHouses:true},
- notMatchedEvidence:{allPlanetsMiddleFourHouses:false}
+ notMatchedEvidence:{allPlanetsMiddleFourHouses:false},
+ unknownChart:makeXivSourceFixture({
+  houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4},
+  omit:['Ketu']
+ })
 });
 checkXivRuleThreeStates({
  id:'XIV-MAD-15',page:71,number:15,
