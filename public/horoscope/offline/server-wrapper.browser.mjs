@@ -131,7 +131,11 @@ function nakshatraInfo(lon){
   const span=360/27, padaSpan=span/4, idx=Math.floor(norm360(lon)/span), within=norm360(lon)-idx*span;
   return {index:idx,name:NAKSHATRAS[idx],pada:Math.floor(within/padaSpan)+1,lord:NAK_LORDS[idx%9]};
 }
-function addDays(date, days){ return new Date(date.getTime()+days*365.2425*86400000); }
+const DAY_MS=86400000;
+const SAVANA_YEAR_DAYS=360;
+// PVR §16.2 explicitly uses 360-day Savana years for all Nakshatra Dasa date calculations.
+function addSavanaYears(date, years){ return new Date(date.getTime()+Number(years||0)*SAVANA_YEAR_DAYS*DAY_MS); }
+function savanaYearsBetween(start,end){ return (end.getTime()-start.getTime())/(SAVANA_YEAR_DAYS*DAY_MS); }
 function isoDate(date){ return date.toISOString().slice(0,10); }
 function sequenceFromLord(lord){
   const i=DASHA_ORDER.indexOf(lord);
@@ -139,70 +143,61 @@ function sequenceFromLord(lord){
   return DASHA_ORDER.slice(i).concat(DASHA_ORDER.slice(0,i));
 }
 function buildSubPeriods(parentLord, parentStart, parentEnd, level){
-  const seq=sequenceFromLord(parentLord), parentDays=(parentEnd.getTime()-parentStart.getTime())/86400000;
+  const seq=sequenceFromLord(parentLord), parentYears=savanaYearsBetween(parentStart,parentEnd);
   return seq.map(lord=>{
-    const years=DASHA_YEARS[lord];
-    // Proportional rule: sub-period = full parent duration * lord years / 120.
-    const durationDays=parentDays*(years/120);
-    return {lord, years:Number((durationDays/365.2425).toFixed(4)), startDate:null, endDate:null, durationDays};
+    const years=parentYears*(DASHA_YEARS[lord]/120);
+    const durationDays=years*SAVANA_YEAR_DAYS;
+    return {lord,years,fullYears:years,startDate:null,endDate:null,durationDays};
   }).reduce((acc,x)=>{
     const prev=acc.length?acc[acc.length-1].endDate:parentStart;
-    const start=prev, end=new Date(start.getTime()+x.durationDays*86400000);
+    const start=prev, end=new Date(start.getTime()+x.durationDays*DAY_MS);
     acc.push({...x,startDate:start,endDate:end}); return acc;
   },[]).map(x=>({...x,start:isoDate(x.startDate),end:isoDate(x.endDate)}));
 }
-function buildPratyantar(antarLord, startDate, endDate){
-  return buildSubPeriods(antarLord,startDate,endDate,3).map(x=>({lord:x.lord,years:x.years,start:x.start,end:x.end}));
+function buildPratyantar(antarLord, startDate, endDate, birthDate){
+  return buildSubPeriods(antarLord,startDate,endDate,3)
+    .filter(p=>!birthDate||p.endDate>birthDate)
+    .map(p=>{
+      const visibleStart=birthDate&&p.startDate<birthDate?birthDate:p.startDate;
+      return {...p,years:savanaYearsBetween(visibleStart,p.endDate),start:isoDate(visibleStart),end:isoDate(p.endDate)};
+    })
+    .map(p=>({lord:p.lord,years:p.years,fullYears:p.fullYears,start:p.start,end:p.end}));
 }
 function buildAntardasha(mdLord, fullStart, fullEnd, birthDate){
-  return buildSubPeriods(mdLord,fullStart,fullEnd,2).map(x=>{
-    const visibleStart=x.startDate<birthDate?birthDate:x.startDate;
-    const visibleEnd=x.endDate;
-    return {
-      lord:x.lord,
-      years:x.years,
-      start:isoDate(visibleStart),
-      end:isoDate(visibleEnd),
-      hiddenBeforeBirth:x.endDate<=birthDate,
-      pratyantars: buildPratyantar(x.lord,x.startDate,x.endDate)
-        .filter(p=>new Date(p.end+'T23:59:59')>=birthDate)
-        .map(p=>({...p,start:p.start<isoDate(birthDate)?isoDate(birthDate):p.start}))
-    };
-  }).filter(x=>!x.hiddenBeforeBirth);
+  return buildSubPeriods(mdLord,fullStart,fullEnd,2)
+    .filter(x=>x.endDate>birthDate)
+    .map(x=>{
+      const visibleStart=x.startDate<birthDate?birthDate:x.startDate;
+      const visibleEnd=x.endDate;
+      return {
+        lord:x.lord,
+        years:savanaYearsBetween(visibleStart,visibleEnd),
+        fullYears:x.fullYears,
+        start:isoDate(visibleStart),
+        end:isoDate(visibleEnd),
+        pratyantars:buildPratyantar(x.lord,x.startDate,x.endDate,birthDate)
+      };
+    });
 }
 function dashaAtBirth(moonSiderealLon,date,referenceDate,offsetMinutes=330){
-  const n=nakshatraInfo(moonSiderealLon), span=360/27, progressed=(norm360(moonSiderealLon)%span)/span;
-  const lord=n.lord, total=DASHA_YEARS[lord], balance=total*(1-progressed);
-  if (!lord || !Number.isFinite(total) || !Number.isFinite(balance)) throw new Error("Unable to calculate Vimshottari Dasha from Moon longitude.");
-  const idx=DASHA_ORDER.indexOf(lord), elapsed=total-balance;
-  let fullStart=addDays(date,-elapsed), start=fullStart;
+  const n=nakshatraInfo(moonSiderealLon),span=360/27,progressed=(norm360(moonSiderealLon)%span)/span;
+  const lord=n.lord,total=DASHA_YEARS[lord],balance=total*(1-progressed);
+  if(!lord||!Number.isFinite(total)||!Number.isFinite(balance))throw new Error("Unable to calculate Vimshottari Dasha from Moon longitude.");
+  const idx=DASHA_ORDER.indexOf(lord),elapsed=total-balance;
+  let start=addSavanaYears(date,-elapsed);
   const periods=[];
   for(let i=0;i<9;i++){
-    const name=DASHA_ORDER[(idx+i)%9], years=DASHA_YEARS[name];
-    const end=addDays(start,years);
-    if(end>date){
-      const visibleStart=start<date?date:start;
-      periods.push({lord:name,years:Number(years.toFixed(2)),start:isoDate(visibleStart),end:isoDate(end),antardashas:buildAntardasha(name,start,end,date)});
-    }
-    start=end;
+   const name=DASHA_ORDER[(idx+i)%9],fullYears=DASHA_YEARS[name],end=addSavanaYears(start,fullYears);
+   if(end>date){
+    const visibleStart=start<date?date:start;
+    periods.push({lord:name,years:savanaYearsBetween(visibleStart,end),fullYears,start:isoDate(visibleStart),end:isoDate(end),antardashas:buildAntardasha(name,start,end,date)});
+   }
+   start=end;
   }
-  // A current period is always relative to the report reference date, never the birth date.
-  // The last boundary is exclusive. Do not manufacture a lord outside the computed range.
-  const asOf = /^\d{4}-\d{2}-\d{2}$/.test(String(referenceDate||''))
-    ? String(referenceDate) : isoDate(new Date(Date.now()+Number(offsetMinutes||330)*60000));
-  const inRange = row => row && row.start <= asOf && asOf < row.end;
-  const md = periods.find(inRange);
-  const ad = md?.antardashas?.find(inRange);
-  const pd = ad?.pratyantars?.find(inRange);
-  return {
-    balanceYears:Number(balance.toFixed(2)),
-    order:DASHA_ORDER,
-    periods,
-    current:{referenceDate:asOf,
-      mahadasha: md ? {lord:md.lord,start:md.start,end:md.end} : null,
-      antardasha: ad ? {lord:ad.lord,start:ad.start,end:ad.end} : null,
-      pratyantardasha: pd ? {lord:pd.lord,start:pd.start,end:pd.end} : null}
-  };
+  const asOf=/^\d{4}-\d{2}-\d{2}$/.test(String(referenceDate||''))?String(referenceDate):isoDate(new Date(Date.now()+Number(offsetMinutes??330)*60000));
+  const inRange=row=>row&&row.start<=asOf&&asOf<row.end;
+  const md=periods.find(inRange),ad=md?.antardashas?.find(inRange),pd=ad?.pratyantars?.find(inRange);
+  return {balanceYears:Number(balance.toFixed(5)),order:DASHA_ORDER,periods,current:{referenceDate:asOf,mahadasha:md?{lord:md.lord,start:md.start,end:md.end}:null,antardasha:ad?{lord:ad.lord,start:ad.start,end:ad.end}:null,pratyantardasha:pd?{lord:pd.lord,start:pd.start,end:pd.end}:null}};
 }
 
 function circularLonDiff(a,b){ return ((Number(a)-Number(b)+540)%360)-180; }
@@ -236,4 +231,4 @@ export async function calculateVedicChart(input){
   chart.dashas=dashaAtBirth(moon.longitude,new Date(chart.birth.utc_jd?(chart.birth.utc_jd-2440587.5)*86400000:Date.parse(chart.birth.date+'T'+chart.birth.time+':00+05:30')),input?.referenceDate||input?.reportDate,input?.utcOffsetMinutes);
   return chart;
 }
-export {findTajakaAnnualChart};
+export {findTajakaAnnualChart,dashaAtBirth};
