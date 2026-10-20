@@ -237,6 +237,19 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     bavRows:result.advanced.ashtakavarga.bhinna,
     language:'ta'
   });
+  const pvr=pvrLongevitySodhyaTiming(chart,result.advanced);
+  ok(pvr?.longevity?.available===true&&pvr.longevity.pairs.length===3,
+    'PVR longevity category computes all three evidence pairs for '+birth.name);
+  ok(pvr.longevity.specialIndicators?.available===true&&
+     Array.isArray(pvr.longevity.specialIndicators.rudra)&&
+     Array.isArray(pvr.longevity.specialIndicators.trishoola)&&pvr.longevity.specialIndicators.maheswara,
+    'PVR Rudra/Trishoola/Maheswara source indicators calculate from live chart positions for '+birth.name);
+  ok(pvr?.sodhyaPindaEventTiming?.available===true&&pvr.sodhyaPindaEventTiming.rows.length===7&&
+     pvr.sodhyaPindaEventTiming.pindaRows.length===7,
+    'PVR Sodhya-Pinda research timing emits seven graha rows for '+birth.name);
+  eq(pvr.longevity.certified,false,'PVR longevity remains clearly uncertified for '+birth.name);
+  eq(pvr.sodhyaPindaEventTiming.certified,false,'PVR Sodhya-Pinda event timing remains research-only for '+birth.name);
+
   ok(bvr?.shodhana && bvr?.chapterXXVI?.planets,
     'new Ashtakavarga Ayurdaya calculation consumes this natal chart for '+birth.name);
   eq(bvr.finalLifespan,null,'B.V. Raman engine does not claim final lifespan for '+birth.name);
