@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const calendarHtml = fs.readFileSync(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 let checks = 0;
 const ok = (value, message) => { assert.ok(value, message); checks++; };
 const cacheMatch = source.match(/^const CACHE='([^']+)'/m);
@@ -16,6 +17,8 @@ ok(!source.includes('PLACE_SHARDS') && !source.includes('...PLACE_SHARDS.map'),
 ok(source.includes("'../offline/places/place-search.mjs'") &&
    source.includes("'../offline/places/india-manifest.json'"),
    'Place-search code and shard manifest remain in the install core');
+ok(!source.includes("'../horoscope.js'") && !/script\\s+src=[\"'][^\"']*horoscope\\.js/i.test(calendarHtml),
+   'Calendar does not load or pre-cache the unrelated Horoscope page bundle');
 ok(source.includes('await c.put(e.request,r.clone())') && source.includes("fetch(e.request,{cache:'no-store'})"),
    'The runtime network-miss path still caches a shard on demand');
 
