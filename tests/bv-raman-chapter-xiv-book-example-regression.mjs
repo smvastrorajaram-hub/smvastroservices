@@ -683,7 +683,7 @@ statuses('XIV-MAD-07',[
   chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:true}},
  {label:'other-graha eleventh condition false',expected:'NOT_MATCHED',
   chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:false}},
- {label:'other-graha eleventh condition absent',expected:'UNKNOWN',
+ {label:'chart-derived other grahas do not all occupy the eleventh house',expected:'NOT_MATCHED',
   chart:{houses:{Saturn:1,Moon:8}},evidence:{}}
 ],'HPA p.71 Madhyayu 7');
 statuses('XIV-MAD-08',[
