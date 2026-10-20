@@ -245,6 +245,8 @@ renderContext.runRenderer({
 ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
 ok(mockSlot.innerHTML.includes('ருத்ரன்')&&mockSlot.innerHTML.includes('திரிசூல ராசிகள்')&&mockSlot.innerHTML.includes('மகேஸ்வரன்')&&mockSlot.innerHTML.includes('பொருந்தும் நிர்யாண சூல தசைக் காலங்கள்'),'Phase-4 shows computed three-part longevity results');
 ok(!mockSlot.innerHTML.includes('P.V.R. நரசிம்ம ராவ் — ஆயுள் விதிகள்')&&!mockSlot.innerHTML.includes('நூல் பக்கங்கள் 180–185')&&!mockSlot.innerHTML.includes('நூலாசிரியர் இந்த சோத்ய'),'Phase-4 omits copied author/page/rule text');
+renderContext.runRenderer({narayana:{sourceWarnings:[{rasi:5,lord:'Mercury',uncappedYears:13,firstCycleYears:12,secondCycleYears:0,resolution:'The printed PVR rule sequence would produce more than 12 years (Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42. This is an inter-source reconciliation, not stated in the supplied PVR passage.'}]},pvrResearch:{longevity:{pairs:[]},sodhyaPindaEventTiming:{rows:[]}}},'en',mockSlot);
+ok(mockSlot.innerHTML.includes('The printed PVR rule sequence would produce more than 12 years')&&!mockSlot.innerHTML.includes('undefined'),'Narayana English renderer shows the explicit PVR/Sanjay Rath reconciliation instead of undefined');
 
 const charts=[];
 let pvrTransitFixtureRows=null;
