@@ -11,18 +11,32 @@ const insertTop=(list,item,max)=>{
  if(list.length>max)list.pop();
 };
 
-export function createPlaceSearchEngine({fetchImpl=fetch}={}){
+export function createPlaceSearchEngine({fetchImpl=fetch,cacheStorage=globalThis.caches}={}){
+ const PLACE_CACHE='smv-horoscope-offline';
  let manifest=null,manifestFlight=null;
+ async function readJson(url,errorMessage){
+  let cache=null;
+  try{if(cacheStorage?.open)cache=await cacheStorage.open(PLACE_CACHE);}catch(_){}
+  try{
+   const response=await fetchImpl(url,{cache:'no-store'});
+   if(!response.ok)throw new Error(errorMessage);
+   if(cache)try{await cache.put(url,response.clone());}catch(_){}
+   return await response.json();
+  }catch(error){
+   try{
+    const saved=await cacheStorage?.match?.(url,{ignoreSearch:true})||await cache?.match?.(url,{ignoreSearch:true});
+    if(saved)return await saved.json();
+   }catch(_){}
+   throw error;
+  }
+ }
  const shards=new Map(),shardFlights=new Map(),resultCache=new Map(),prefixCandidates=new Map(),aliasCache=new WeakMap();
  const aliases=row=>{let a=aliasCache.get(row);if(!a){a=(row[8]||[]).map(norm).filter(Boolean);aliasCache.set(row,a);}return a;};
  async function getManifest(){
   if(manifest)return manifest;
   if(manifestFlight)return manifestFlight;
-  manifestFlight=(async()=>{
-   const r=await fetchImpl(new URL('./india-manifest.json',import.meta.url));
-   if(!r.ok)throw new Error('Offline India place database unavailable');
-   return manifest=await r.json();
-  })();
+  manifestFlight=readJson(new URL('./india-manifest.json',import.meta.url),'Offline India place database unavailable')
+   .then(value=>(manifest=value));
   try{return await manifestFlight;}finally{manifestFlight=null;}
  }
  async function getShard(key){
@@ -31,11 +45,8 @@ export function createPlaceSearchEngine({fetchImpl=fetch}={}){
   const flight=(async()=>{
    const m=await getManifest(),info=m.shards[key];
    if(!info)return [];
-   const loadPart=async part=>{
-    const r=await fetchImpl(new URL('./india/'+part.file,import.meta.url));
-    if(!r.ok)throw new Error('Offline India place shard unavailable: '+part.file);
-    return r.json();
-   };
+   const loadPart=async part=>
+    readJson(new URL('./india/'+part.file,import.meta.url),'Offline India place shard unavailable: '+part.file);
    const groups=Array.isArray(info.parts)?await Promise.all(info.parts.map(loadPart)):[await loadPart(info)];
    shards.set(key,groups);
    return groups;
