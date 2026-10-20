@@ -203,6 +203,7 @@ function countRpc(items, prefix) {
   return {requests:rows.length,byClass,rows:rows.map(cleanRequest).slice(0,20)};
 }
 async function navigate(page, url, collector, label) {
+  setPhase(label + ': navigate');
   const mark = collector.mark();
   const started = Date.now();
   console.log('[audit] navigate:start',label,safeUrl(url).path);
@@ -214,20 +215,25 @@ async function navigate(page, url, collector, label) {
   const pageLoadWallClockMs = Date.now()-started;
   await sleep(1200);
   setPhase(label + ': read navigation timing');
-  const timing = await page.evaluate(() => {
-    const n = performance.getEntriesByType('navigation')[0];
-    if (!n) return null;
-    const delta = k => Number.isFinite(n[k]) && n[k] > 0 ? +(n[k] - n.startTime).toFixed(1) : null;
-    return {
-      protocol: n.nextHopProtocol || '',
-      transferSize: Number(n.transferSize || 0),
-      encodedBodySize: Number(n.encodedBodySize || 0),
-      decodedBodySize: Number(n.decodedBodySize || 0),
-      responseStartMs: delta('responseStart'),
-      domContentLoadedMs: delta('domContentLoadedEventEnd'),
-      loadEventMs: delta('loadEventEnd')
-    };
-  });
+  let timing = null;
+  try {
+    timing = await page.evaluate(() => {
+      const n = performance.getEntriesByType('navigation')[0];
+      if (!n) return null;
+      const delta = k => Number.isFinite(n[k]) && n[k] > 0 ? +(n[k] - n.startTime).toFixed(1) : null;
+      return {
+        protocol: n.nextHopProtocol || '',
+        transferSize: Number(n.transferSize || 0),
+        encodedBodySize: Number(n.encodedBodySize || 0),
+        decodedBodySize: Number(n.decodedBodySize || 0),
+        responseStartMs: delta('responseStart'),
+        domContentLoadedMs: delta('domContentLoadedEventEnd'),
+        loadEventMs: delta('loadEventEnd')
+      };
+    });
+  } catch (e) {
+    console.warn('[audit] page navigation timing unavailable; collecting CDP transfers only:', String(e?.message || e).slice(0,180));
+  }
   const rec = {
     label,url: safeUrl(url),httpStatus:response?.status() ?? null,
     pageLoadWallClockMs, browserNavigation:timing,
@@ -332,9 +338,10 @@ async function run() {
   report.environment.browserVersion=await browser.version();
   console.log('[audit] browser:ready',report.environment.browserVersion);
   const collector=networkCollector(browser);
+  activeCollector=collector;
   try {
     const context=browser.defaultBrowserContext();
-    const page=await browser.newPage();
+    const page=instrumentPage(await browser.newPage());
     await page.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await page.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(page.target());
@@ -433,7 +440,7 @@ async function run() {
     // Start Calendar in a new page after clearing the anonymous origin state.
     // The Calendar service-worker scope itself has not yet been registered in this context.
     console.log('[audit] phase:calendar-cold-start');
-    const calPage=await browser.newPage();
+    const calPage=instrumentPage(await browser.newPage());
     await calPage.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await calPage.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(calPage.target());
