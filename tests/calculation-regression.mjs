@@ -56,7 +56,7 @@ ok(vimBirthMd.start==='2000-04-28'&&['2002-07-15','2002-07-16'].includes(vimBirt
 ok(vimBirthMd.antardashas[0].lord==='கேது'&&vimBirthMd.antardashas[0].years>0&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: antardasas are split across the full 7-year Mars Mahadasa; the running birth Antardasa is shown as only its remaining balance');
 ok(Math.abs(vimBirthMd.antardashas.reduce((sum,x)=>sum+x.years,0)-vimBirthMd.years)<1e-8,'Vimshottari visible Antardasa balances sum to the Mahadasa remaining balance at birth');
 const currentVimAd=vimBirthMd.antardashas[0];
-ok(currentVimAd.pratyantars?.length===9&&currentVimAd.pratyantars[0].years<currentVimAd.pratyantars[0].fullYears,'Vimshottari Pratyantardasa nesting clips the birth-running sub-sub-period without changing full-period weights');
+ok(currentVimAd.pratyantars?.length>0&&currentVimAd.pratyantars.length<9&&currentVimAd.pratyantars[0].years<currentVimAd.pratyantars[0].fullYears,'Vimshottari Pratyantardasa nesting hides pre-birth sub-sub-periods and clips the running one without changing full-period weights');
 const specialRuleChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:29},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
  {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
