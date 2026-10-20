@@ -95,7 +95,6 @@ async function run(){
     resolvePaused();
    })();
   });
-  cdp.on('Debugger.scriptParsed',e=>{if(!frames.has(String(e.scriptId)))frames.set(String(e.scriptId),{url:String(e.url||''),hash:e.hash||null,executionContextId:e.executionContextId??null,startLine:e.startLine??0,startColumn:e.startColumn??0,endLine:e.endLine??null,endColumn:e.endColumn??null});});
   let navError=null;
   const started=Date.now();
   try{
