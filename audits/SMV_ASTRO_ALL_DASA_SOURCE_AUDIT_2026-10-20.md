@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-20  
 **Branch:** `fix/dasa-source-audit-20261020-r2`  
-**Disposition:** Source corrections and new regression oracles are on the audit branch; CI pending. This is not a claim that every school/variant of every Dasa system is certified.
+**Disposition:** PR #75 merged at \`3b84ae691d532271c1c52a38a8e8db00a86691a1\`. The source-regression workflow (#876) and browser-PDF smoke workflow (#281) both passed before merge. This is not a claim that every school/variant of every Dasa system is certified.
 
 ## Scope
 
@@ -51,9 +51,9 @@ The prior shared helper applied Narayana/Kendradi Saturn-in-seed and Ketu-in-see
 
 ## Merge gate
 
-- [ ] JavaScript syntax and the full calculation-regression workflow pass with these changes.
-- [ ] Example 50 Savana-year balance, Example 77 Sudasa direction/balance and sign-strength/co-lord oracles pass.
-- [ ] Existing Ashtottari, Kalachakra and Drigdasa source oracles remain green.
-- [ ] Check browser wrapper and duplicate server calculation for parity.
+- [x] JavaScript syntax and the full calculation-regression workflow passed (Horoscope Matching DST Source QA #876).
+- [x] Example 50 Savana-year balance, Example 77 Sudasa direction/balance and sign-strength/co-lord oracles passed in calculation regression.
+- [x] Existing Ashtottari, Kalachakra and Drigdasa example/boundary oracles remained green; this does not certify every lineage variant.
+- [x] Manually compare the shared Savana-year/Antardasa/Pratyantardasa helper block in browser wrapper and duplicate server; the core block matches exactly.
 
 Until these gates are green, this branch must not be described as fully textbook-certified.
