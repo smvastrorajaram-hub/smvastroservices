@@ -41,6 +41,7 @@ async function run(){
   const cdp=await page.target().createCDPSession();
   await Promise.all([cdp.send('Page.enable'),cdp.send('Runtime.enable'),cdp.send('Debugger.enable'),cdp.send('Network.enable')]);
   const pending=new Map(),durations=[],frames=new Map();
+  cdp.on('Debugger.scriptParsed',e=>frames.set(String(e.scriptId),{url:String(e.url||''),hash:e.hash||null,executionContextId:e.executionContextId??null,startLine:e.startLine??0,startColumn:e.startColumn??0,endLine:e.endLine??null,endColumn:e.endColumn??null}));
   let resolvePaused;
   const pausedPromise=new Promise(resolve=>{resolvePaused=resolve;});
   cdp.on('Page.frameNavigated',e=>{
@@ -66,19 +67,35 @@ async function run(){
    if(r.type==='Document')report.navigation.failedDocuments.push({url:safeUrl(r.url),error:String(e.errorText||'').slice(0,100)});
    pending.delete(e.requestId);
   });
-  cdp.on('Debugger.paused',async event=>{
+  cdp.on('Debugger.paused',event=>{
    report.debugger.paused=true;
    report.debugger.reason=event.reason||'unknown';
-   report.debugger.topFrames=(event.callFrames||[]).slice(0,20).map(f=>({
-    functionName:(f.functionName||'(anonymous)').slice(0,120),
-    url:safeUrl(f.url||''),
-    lineNumber:Number(f.location?.lineNumber??-1)+1,
-    columnNumber:Number(f.location?.columnNumber??-1)+1,
-    scriptId:f.location?.scriptId||null
-   }));
    report.debugger.hitBreakpoints=event.hitBreakpoints||[];
-   resolvePaused();
+   report.debugger.topFrames=(event.callFrames||[]).slice(0,12).map(f=>{
+    const id=String(f.location?.scriptId||'');
+    const meta=frames.get(id)||{};
+    return {functionName:(f.functionName||'(anonymous)').slice(0,120),url:safeUrl(f.url||meta.url||''),sourceUrl:meta.url||'(inline-or-eval)',scriptHash:meta.hash||null,scriptId:id,lineNumber:Number(f.location?.lineNumber??-1)+1,columnNumber:Number(f.location?.columnNumber??-1)+1,scriptLength:null,sourceExcerpt:null};
+   });
+   void (async()=>{
+    for(const frame of report.debugger.topFrames.slice(0,4)){
+     if(!frame.scriptId)continue;
+     try{
+      const result=await cdp.send('Debugger.getScriptSource',{scriptId:frame.scriptId});
+      const source=String(result.scriptSource||'');
+      const lines=source.split(/\r?\n/);
+      const line=Math.max(0,frame.lineNumber-1);
+      const lineText=lines[line]||'';
+      const pos=Math.min(Math.max(0,frame.columnNumber-1),lineText.length);
+      let excerpt=lineText.slice(Math.max(0,pos-350),Math.min(lineText.length,pos+350));
+      excerpt=excerpt.replace(/AIza[0-9A-Za-z_-]{20,}/g,'[redacted-api-key]').replace(/Bearer\s+[A-Za-z0-9._~-]{12,}/g,'Bearer [redacted]');
+      frame.scriptLength=source.length;
+      frame.sourceExcerpt=excerpt;
+     }catch(e){frame.sourceFetchError=String(e?.message||e).slice(0,120);}
+    }
+    resolvePaused();
+   })();
   });
+  cdp.on('Debugger.scriptParsed',e=>{if(!frames.has(String(e.scriptId)))frames.set(String(e.scriptId),{url:String(e.url||''),hash:e.hash||null,executionContextId:e.executionContextId??null,startLine:e.startLine??0,startColumn:e.startColumn??0,endLine:e.endLine??null,endColumn:e.endColumn??null});});
   let navError=null;
   const started=Date.now();
   try{
