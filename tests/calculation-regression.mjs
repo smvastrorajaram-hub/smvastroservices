@@ -101,6 +101,7 @@ const occupancyStrengthFixture={lagna:{longitude:0},planets:[
 ok(strongerSign(0,6,{Sun:{sign:0},Moon:{sign:0},Mars:{sign:4},Mercury:{sign:2},Jupiter:{sign:0},Venus:{sign:6},Saturn:{sign:8},Rahu:{sign:10},Ketu:{sign:4}})===0,'PVR §15.5.2 rule 1: the sign with more occupied planets wins before any weighted score');
 ok(strongerSign(0,6,{Moon:{sign:0,degree:10},Rahu:{sign:6,degree:10},Mars:{sign:4,degree:23},Venus:{sign:4,degree:19}})===0,'PVR §15.5.2 rules 2–6: tie is resolved by the sign lord with greater advancement after equal occupancy, support, exaltation, parity and modality');
 ok(strongerSign(0,6,{Venus:{sign:0,degree:10},Saturn:{sign:6,degree:10}})===6,'PVR §15.5.2 rule 3: an exalted Saturn in Libra breaks an otherwise tied Aries/Libra comparison');
+ok(strongerSign(4,10,{Rahu:{sign:0,degree:10},Saturn:{sign:2,degree:10}})===10,'PVR §15.5.2 Exercise 26(5): the Aquarius comparison counts Rahu co-lord aspect even when Saturn is selected as primary co-lord');
 ok(ownLord(7,{Mars:{sign:7,degree:5},Ketu:{sign:0,degree:5}})==='Ketu','PVR §15.5.1 basic co-lord rule: if Mars occupies Scorpio, choose Ketu for Scorpio');
 ok(ownLord(10,{Saturn:{sign:2,degree:6},Rahu:{sign:5,degree:10}},'dasa')==='Saturn','PVR §15.5.1 rule 5a: Saturn in Gemini gives 8 Narayana years versus Rahu in Virgo gives 5 for Aquarius Dasa duration');
 const ashtBoundaries=[
