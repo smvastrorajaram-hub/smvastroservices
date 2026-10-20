@@ -29,6 +29,31 @@ const fixtureManifest={version:1,source:'fixture',records:4,license:'CC BY 4.0',
 }};
 const fetched=[];
 const oldFetch=globalThis.fetch;
+const oldCaches=globalThis.caches;
+const cachedResources=new Map(),openedCaches=new Set();
+const cacheKey=input=>{
+ if(input instanceof URL)return input.href;
+ if(typeof input==='string')return new URL(input,root).href;
+ if(input&&typeof input.url==='string')return new URL(input.url,root).href;
+ return new URL(String(input),root).href;
+};
+const findCached=(input,{ignoreSearch=false}={})=>{
+ const target=new URL(cacheKey(input));
+ for(const [key,response] of cachedResources){
+  const candidate=new URL(key);
+  if(ignoreSearch?candidate.origin===target.origin&&candidate.pathname===target.pathname:key===target.href)return response.clone();
+ }
+ return null;
+};
+const mockCache={
+ async put(input,response){cachedResources.set(cacheKey(input),response.clone());},
+ async match(input,options){return findCached(input,options);}
+};
+const mockCaches={
+ async open(name){openedCaches.add(name);return mockCache;},
+ async match(input,options){return findCached(input,options);}
+};
+globalThis.caches=mockCaches;
 globalThis.fetch=async input=>{
  const url=String(input);fetched.push(url);
  if(url.endsWith('/india-manifest.json'))return new Response(JSON.stringify(fixtureManifest),{status:200,headers:{'Content-Type':'application/json'}});
@@ -51,7 +76,25 @@ try{
  const broad=await searchPlaces('per',2);
  ok(broad.length===2&&broad[0].population>=broad[1].population,
   'Prefix search respects result limits and the population tie-breaker');
-}finally{globalThis.fetch=oldFetch;}
+
+ const {createPlaceSearchEngine}=await import('../public/horoscope/offline/places/place-search-worker.mjs');
+ const offlineEngine=createPlaceSearchEngine({
+  fetchImpl:async()=>{throw new Error('simulated offline network');},
+  cacheStorage:mockCaches
+ });
+ const offline=await offlineEngine.searchPlaces('perambalur',12,'en');
+ ok(offline.length===2&&offline[0].geonameId===100&&offline[1].geonameId===103,
+  'A new search engine can reuse selected manifest and place parts after going offline');
+ ok(openedCaches.has('smv-horoscope-offline'),
+  'Place Worker persists selected data using the Horoscope offline cache');
+ ok([...cachedResources.keys()].some(url=>url.endsWith('/india-manifest.json'))&&
+    [...cachedResources.keys()].some(url=>url.endsWith('/india/p-00.json'))&&
+    [...cachedResources.keys()].some(url=>url.endsWith('/india/p-01.json')),
+  'Manifest and every fetched part are cached independently for offline fallback');
+}finally{
+ globalThis.fetch=oldFetch;
+ if(oldCaches===undefined)delete globalThis.caches;else globalThis.caches=oldCaches;
+}
 
 const main=fs.readFileSync(new URL('../public/horoscope/offline/places/place-search.mjs',import.meta.url),'utf8');
 const engine=fs.readFileSync(new URL('../public/horoscope/offline/places/place-search-worker.mjs',import.meta.url),'utf8');
