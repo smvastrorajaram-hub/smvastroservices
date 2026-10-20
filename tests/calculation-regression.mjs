@@ -202,6 +202,7 @@ const drigExample80=phase4Dasa(dasaFixture(45,180)).drigdasa;
 ok(drigExample80.groups.join(',')==='2,3,4','PVR §21.2 Example 80: Libra Lagna seeds 9th/10th/11th houses in Gemini/Cancer/Leo');
 ok(drigExample80.groupSequences.map(g=>g.join(',')).join('|')==='2,5,8,11|3,1,10,7|4,0,9,6','PVR Example 80: complete 4-rasi aspect-group order matches Ge-Vi-Sg-Pi / Cn-Ta-Aq-Sc / Le-Ar-Cp-Li');
 ok(drigExample80.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')===drigExpected,'PVR Example 80: full Drigdasa sequence matches source oracle');
+ok(drigExample80.sourceLineage==='PVR/Parashara §21.2, Example 80'&&drigExample80.variantPolicy.includes('Do not merge it with alternate Jaimini-commentary'),'Drigdasa explicitly selects Parashara-style lineage without mixing Jaimini commentary variants');
 let drigdasaOverlapCases=0;
 for(let lagnaSign=0;lagnaSign<12;lagnaSign++){
  const d=phase4Dasa(dasaFixture(45,lagnaSign*30)).drigdasa;
