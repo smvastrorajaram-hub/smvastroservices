@@ -98,6 +98,20 @@ eq((advancedTail.match(/ashtakavarga\(chart,lang\)/g)||[]).length,1,
   'advanced() invokes Ashtakavarga once and shares the result');
 ok(advancedTail.includes('v5:v5Extras(chart,lang,av)'),
   'precomputed BAV/SAV result is reused by the Sodhya Pinda panel');
+
+const phase2Start=advancedSource.indexOf('function p2YogaEngine');
+const phase2End=advancedSource.indexOf('function phase2StrengthAndJaimini',phase2Start);
+const phase2Source=advancedSource.slice(phase2Start,phase2End);
+const advancedEntry=advancedSource.slice(advancedSource.indexOf('function advanced(chart'),advancedSource.indexOf('export {advanced'));
+ok(phase2Source.includes('calculatedVargas')&&phase2Source.includes('vargaSet.find(x=>x.division===\'D-9\')'),
+  'Karakamsha derives D9 from a supplied precomputed Varga list');
+ok(!phase2Source.includes("buildVargas(chart,'en')")&&
+   phase2Source.includes('Array.isArray(calculatedVargas)?calculatedVargas:buildVargas(chart,\'en\')'),
+  'Karakamsha retains a defensive fallback but does not rebuild D9 when the Advanced Varga list is supplied');
+ok((advancedEntry.match(/buildVargas\(chart,lang\)/g)||[]).length===1&&
+   advancedEntry.includes('phase2StrengthAndJaimini(chart,lang,vargas)'),
+  'production advanced() builds the Varga list once and passes it to Phase-2 / Karakamsha');
+
 const pindaStart=advancedSource.indexOf('function sodhyaPinda(chart,lang,calculatedAv)');
 const pindaEnd=advancedSource.indexOf('function sahams(chart,lang)',pindaStart);
 const pindaSource=advancedSource.slice(pindaStart,pindaEnd);
@@ -223,6 +237,16 @@ for (const birth of [...maleBirths,...femaleBirths]) {
   chart.birthTimezone = birth.timezone;
   chart.birthChartStyle = 'south';
   chartSignatures.add(longitudeSignature(chart));
+
+  const d9=result.advanced.vargas.find(v=>v.division==='D-9');
+  const atmakaraka=result.advanced.phase2?.charaKarakas?.[0]?.planet;
+  const d9Atmakaraka=d9?.planets?.find(p=>p.planet===atmakaraka);
+  const d9SignIndex=d9Atmakaraka&&Number.isFinite(Number(d9Atmakaraka.longitude))
+    ?Math.floor((((Number(d9Atmakaraka.longitude)%360)+360)%360)/30):null;
+  const englishSigns=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  eq(result.advanced.phase2?.karakamsha,d9SignIndex===null?null:englishSigns[d9SignIndex],
+    'Karakamsha exactly matches the existing D9 position of the calculated Atmakaraka for '+birth.name);
+
   const liveD1=narrativeInputFromChart(chart);
   for(const language of ['ta','en']){
     const narrative=renderD1HumanNarrative(liveD1,language);
