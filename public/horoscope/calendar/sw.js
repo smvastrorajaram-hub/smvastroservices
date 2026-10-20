@@ -8,7 +8,7 @@ const CORE=[
  '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
- '../offline/places/place-search.mjs','../offline/places/india-manifest.json'
+ '../offline/places/place-search.mjs','../offline/places/place-search-worker.mjs','../offline/places/india-manifest.json'
 ];
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
 async function cacheCore(concurrency=6){const c=await caches.open(CACHE);let i=0;const job=async()=>{while(i<CORE.length){const u=CORE[i++];try{const r=await fetch(new Request(u,{cache:'reload'}));if(r.ok)await c.put(u,fixed(u,r));}catch(_){}}};await Promise.all(Array.from({length:Math.min(concurrency,CORE.length)},job));}
