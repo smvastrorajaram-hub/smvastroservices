@@ -11,8 +11,11 @@ const printCss=fs.readFileSync(url('public/horoscope/report-print.css'),'utf8');
 ok(horoscopeHtml.includes('v358-result-layout.css'),'Horoscope loads the consolidated geometry stylesheet');
 ok(!horoscopeHtml.includes('v359-symmetric-gutters.css'),'Retired second geometry stylesheet is not separately loaded');
 ok(!fs.existsSync(url('public/horoscope/v359-symmetric-gutters.css')),'Old geometry stylesheet is removed from deployment');
-ok(geometry.includes('main > #smvMarriageMatching')&&geometry.includes('padding-inline:6px!important'),
- 'Migrated symmetric-gutter rules are owned by v358');
+ok(geometry.includes('main > #smvMarriageMatching')&&geometry.includes('padding:clamp(8px,1.3vw,16px) 6px!important'),
+ 'The matching host owns its horizontal gutter in the original frame declaration');
+ok(!geometry.includes('/* V359 symmetric-gutter rules consolidated under the result-layout stylesheet owner. */')&&
+   !geometry.includes('padding-inline:6px!important'),
+ 'The second symmetric-gutter override block is removed rather than stacked at the end');
 ok(fs.existsSync(url('tests/v358-result-layout-browser-smoke.mjs'))&&
    fs.existsSync(url('tests/v359-symmetric-gutters-browser-smoke.mjs')),
  'Chromium geometry smoke tests remain available after CSS owner merge');
