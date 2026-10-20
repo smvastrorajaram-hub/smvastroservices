@@ -5,7 +5,9 @@
 **Audit branch:** `audit/full-website-150-horoscope-150-matching`  
 **Regression:** `tests/full-website-150-horoscope-150-matching-source-audit.mjs`  
 **CI workflow:** `.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml`  
-**Status:** awaiting execution of the new CI run; do not call the 150/150 regression PASS until its run and artifact are inspected.
+**Baseline verification:** PASS on GitHub Actions run [39417147999](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39417147999), audit commit `8529661d9b5889f12bda1e719724a672a3ab6c9d`.
+**Baseline evidence:** 11,361 assertions PASS; 150 full Horoscope charts; 150 distinct Matching pair reports; 1,050/1,050 Rasi/Graha/Sodhya Pinda parity rows matched; zero parity mismatches. The downloadable per-run JSON artifact is retained in that run.
+**Follow-up status:** D9/Karakamsha reuse change is in progress on this PR branch and requires its own regression run before acceptance.
 
 ## Population and execution design
 
