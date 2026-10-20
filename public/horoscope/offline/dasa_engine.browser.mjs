@@ -47,14 +47,106 @@ function signCode(i){return SHORT_BY_INDEX[mod12(i)];}
 function parseSign(v){if(typeof v==='number'&&v>=0&&v<12)return v;const s=String(v||'').trim().toLowerCase();const m={ar:0,aries:0,மேஷம்:0,ta:1,taurus:1,ரிஷபம்:1,ge:2,gemini:2,மிதுனம்:2,cn:3,cancer:3,கடகம்:3,le:4,leo:4,சிம்மம்:4,vi:5,virgo:5,கன்னி:5,li:6,libra:6,துலாம்:6,sc:7,scorpio:7,விருச்சிகம்:7,sg:8,sagittarius:8,தனுசு:8,cp:9,capricorn:9,மகரம்:9,aq:10,aquarius:10,கும்பம்:10,pi:11,pisces:11,மீனம்:11};return m[s]??-1;}
 function planetKey(v){const s=String(v||'').trim();const m={'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu'};return m[s]||s;}
 function getPlanets(chart){const out={};for(const p of (chart?.planets||[])){const k=planetKey(p.name);out[k]={...p,sign:rasiIndex(p.longitude),degree:degInSign(p.longitude)};}return out;}
-function ownLord(sign, planets){const owners=sign===0?['Mars']:sign===1?['Venus']:sign===2?['Mercury']:sign===3?['Moon']:sign===4?['Sun']:sign===5?['Mercury']:sign===6?['Venus']:sign===7?['Mars','Ketu']:sign===8?['Jupiter']:sign===9?['Saturn']:sign===10?['Saturn','Rahu']:['Jupiter'];
+const SIGN_LORDS=[['Mars'],['Venus'],['Mercury'],['Moon'],['Sun'],['Mercury'],['Venus'],['Mars','Ketu'],['Jupiter'],['Saturn'],['Saturn','Rahu'],['Jupiter']];
+function modality(sign){return [2,5,8,11].includes(mod12(sign))?2:[1,4,7,10].includes(mod12(sign))?1:0;}
+function nodeAwareAdvancement(name,planets){
+ const p=planets[name];if(!p)return -1;
+ const degree=Number(p.degree);
+ if(!Number.isFinite(degree))return -1;
+ return name==='Rahu'||name==='Ketu'?30-degree:degree;
+}
+function coLordConjunctionCount(name,planets){
+ const p=planets[name];if(!p)return -1;
+ return Object.entries(planets).filter(([other,x])=>other!==name&&x.sign===p.sign).length;
+}
+function planetConjoinedOrAspectedBy(subject,source,planets){
+ const a=planets[subject],b=planets[source];
+ return subject!==source&&!!a&&!!b&&(a.sign===b.sign||rasiAspects(b.sign).includes(a.sign));
+}
+function primaryDispositor(sign,planets,depth=0){
+ const owners=SIGN_LORDS[mod12(sign)];
  if(owners.length===1)return owners[0];
- const scores=owners.map(pl=>{const p=planets[pl];let s=p?1:0;if(p&&EXALT[pl]===p.sign)s+=3;if(p&&DEBIL[pl]===p.sign)s-=2;if(p&&[0,2,4,6,8,10].includes(p.sign))s+=0.25;return {pl,s};}).sort((a,b)=>b.s-a.s);return scores[0]?.pl||owners[0];}
-function occupiedCount(sign,planets){return Object.values(planets).filter(p=>p.sign===sign).length;}
-function signStrength(sign,planets){let s=occupiedCount(sign,planets)*10;const l=ownLord(sign,planets),p=planets[l];if(p){s+=5;if(EXALT[l]===p.sign)s+=20;if(DEBIL[l]===p.sign)s-=10;s+=Math.max(0,15-p.degree)/15;}return s+(sign===4?1:0);}
-function strongerSign(a,b,planets){if(a<0)return b;if(b<0)return a;const sa=signStrength(a,planets),sb=signStrength(b,planets);if(Math.abs(sa-sb)>1e-9)return sa>sb?a:b;return occupiedCount(a,planets)>=occupiedCount(b,planets)?a:b;}
+ if(planets[owners[0]]?.sign===sign)return owners[1];
+ if(planets[owners[1]]?.sign===sign)return owners[0];
+ if(depth>=2)return owners[0];
+ return chooseCoLord(sign,planets,'rasi',depth+1);
+}
+function narayanaYearsForLord(sign,owner,planets){
+ const p=planets[owner];if(!p)return 1;
+ const si=mod12(sign);
+ const count=(oddFootedSign(si)?mod12(p.sign-si):mod12(si-p.sign))+1;
+ let years=(count===1?12:count-1);
+ if(EXALT[owner]===p.sign)years+=1;
+ if(DEBIL[owner]===p.sign)years-=1;
+ return Math.min(12,Math.max(0,years));
+}
+function chooseCoLord(sign,planets,purpose='rasi',depth=0){
+ const owners=SIGN_LORDS[mod12(sign)];
+ if(owners.length===1)return owners[0];
+ if(planets[owners[0]]?.sign===mod12(sign))return owners[1];
+ if(planets[owners[1]]?.sign===mod12(sign))return owners[0];
+ const a=owners[0],b=owners[1],pa=planets[a],pb=planets[b];
+ if(!pa&&!pb)return a;
+ if(!pa)return b;
+ if(!pb)return a;
+ const joinsA=coLordConjunctionCount(a,planets),joinsB=coLordConjunctionCount(b,planets);
+ if(joinsA!==joinsB)return joinsA>joinsB?a:b;
+ const support=(name)=>{
+  const p=planets[name],dispositor=primaryDispositor(p.sign,planets,depth);
+  return ['Jupiter','Mercury',dispositor].filter(source=>planetConjoinedOrAspectedBy(name,source,planets)).length;
+ };
+ const supportA=support(a),supportB=support(b);
+ if(supportA!==supportB)return supportA>supportB?a:b;
+ const exaltA=EXALT[a]===pa.sign,exaltB=EXALT[b]===pb.sign;
+ if(exaltA!==exaltB)return exaltA?a:b;
+ const modalityA=modality(pa.sign),modalityB=modality(pb.sign);
+ if(modalityA!==modalityB)return modalityA>modalityB?a:b;
+ if(purpose==='dasa'&&depth<2){
+  const yearsA=narayanaYearsForLord(sign,a,planets),yearsB=narayanaYearsForLord(sign,b,planets);
+  if(yearsA!==yearsB)return yearsA>yearsB?a:b;
+ }
+ const advancementA=nodeAwareAdvancement(a,planets),advancementB=nodeAwareAdvancement(b,planets);
+ if(advancementA!==advancementB)return advancementA>advancementB?a:b;
+ return a;
+}
+function ownLord(sign,planets,purpose='rasi'){return chooseCoLord(mod12(sign),planets,purpose);}
+function occupiedCount(sign,planets){return Object.values(planets).filter(p=>p.sign===mod12(sign)).length;}
+function hasExaltedPlanet(sign,planets){return Object.entries(planets).some(([name,p])=>p.sign===mod12(sign)&&EXALT[name]===p.sign);}
+function strongerSign(a,b,planets,purpose='rasi'){
+ if(a<0)return b;
+ if(b<0)return a;
+ const aa=mod12(a),bb=mod12(b);
+ if(aa===bb)return aa;
+ const countA=occupiedCount(aa,planets),countB=occupiedCount(bb,planets);
+ if(countA!==countB)return countA>countB?aa:bb;
+ const ruleTwo=(sign)=>{
+  const lord=ownLord(sign,planets,purpose==='dasa'?'dasa':'rasi');
+  if(purpose==='ayur'){
+   const allLords=SIGN_LORDS[mod12(sign)];
+   return Object.entries(planets).filter(([name,p])=>!allLords.includes(name)&&(p.sign===sign||rasiAspects(p.sign).includes(sign))).length;
+  }
+  // PVR Exercise 26 explicitly counts the non-primary co-lord's rasi aspect too.
+  const roles=['Jupiter','Mercury',...SIGN_LORDS[mod12(sign)]];
+  return roles.filter(name=>{
+   const p=planets[name];return !!p&&(p.sign===sign||rasiAspects(p.sign).includes(sign));
+  }).length;
+ };
+ const r2a=ruleTwo(aa),r2b=ruleTwo(bb);
+ if(r2a!==r2b)return r2a>r2b?aa:bb;
+ const exaltA=hasExaltedPlanet(aa,planets),exaltB=hasExaltedPlanet(bb,planets);
+ if(exaltA!==exaltB)return exaltA?aa:bb;
+ const lordA=ownLord(aa,planets,purpose==='dasa'?'dasa':'rasi'),lordB=ownLord(bb,planets,purpose==='dasa'?'dasa':'rasi');
+ const pA=planets[lordA],pB=planets[lordB];
+ const parityA=!!pA&&oddSign(pA.sign)!==oddSign(aa),parityB=!!pB&&oddSign(pB.sign)!==oddSign(bb);
+ if(parityA!==parityB)return parityA?aa:bb;
+ const modalA=modality(aa),modalB=modality(bb);
+ if(modalA!==modalB)return modalA>modalB?aa:bb;
+ const advA=nodeAwareAdvancement(lordA,planets),advB=nodeAwareAdvancement(lordB,planets);
+ if(advA!==advB)return advA>advB?aa:bb;
+ return aa;
+}
 function rasiAspects(sign){const movable=[0,3,6,9],fixed=[1,4,7,10],dual=[2,5,8,11];if(movable.includes(sign))return fixed.filter(x=>x!==mod12(sign+1));if(fixed.includes(sign))return movable.filter(x=>x!==mod12(sign-1));return dual.filter(x=>x!==sign);}
-function narayanaLengthDetail(sign,planets){const si=parseSign(sign);if(si<0)throw new RangeError('Invalid Narayana Dasa sign: '+sign);const lord=ownLord(si,planets),p=planets[lord];if(!p)return {sign:si,lord:null,count:null,baseYears:1,adjustedYears:1,years:1,capped:false};let count;if(oddFootedSign(si))count=mod12(p.sign-si)+1;else count=mod12(si-p.sign)+1;let base=count-1;if(count===1)base=12;let adjusted=base;if(EXALT[lord]===p.sign)adjusted+=1;if(DEBIL[lord]===p.sign)adjusted-=1;const years=Math.min(12,Math.max(0,adjusted));return {sign:si,lord,count,baseYears:base,adjustedYears:adjusted,years,capped:years!==adjusted};}
+function narayanaLengthDetail(sign,planets){const si=parseSign(sign);if(si<0)throw new RangeError('Invalid Narayana Dasa sign: '+sign);const lord=ownLord(si,planets,'dasa'),p=planets[lord];if(!p)return {sign:si,lord:null,count:null,baseYears:1,adjustedYears:1,years:1,capped:false};let count;if(oddFootedSign(si))count=mod12(p.sign-si)+1;else count=mod12(si-p.sign)+1;let base=count-1;if(count===1)base=12;let adjusted=base;if(EXALT[lord]===p.sign)adjusted+=1;if(DEBIL[lord]===p.sign)adjusted-=1;const years=Math.min(12,Math.max(0,adjusted));return {sign:si,lord,count,baseYears:base,adjustedYears:adjusted,years,capped:years!==adjusted};}
 function narayanaLength(sign,planets){return narayanaLengthDetail(sign,planets).years;}
 function progressionByTable(seed,planets){const s=signCode(seed);let mode=0;if(planets.Saturn?.sign===seed)mode=1;else if(planets.Ketu?.sign===seed)mode=2;const row=NAR_TABLE[seed][mode];return row.map(x=>SHORT[x]);}
 function addYears(date,years){return new Date(date.getTime()+Number(years||0)*365.2425*86400000);}
@@ -64,7 +156,7 @@ function addNakshatraDasaYears(date,years){return new Date(date.getTime()+Number
 function fmt(d){return isNaN(d?.getTime?.())?'—':d.toISOString().slice(0,10);}
 function periodRows(order,lengthFn,startDate,firstFraction=1,cycles=1){let cur=new Date(startDate),rows=[];for(let c=0;c<cycles;c++){for(let i=0;i<order.length;i++){const sign=order[i],full=Number(lengthFn(sign,i,c)||0),years=(c===0&&i===0)?full*firstFraction:full;const st=new Date(cur),en=addYears(st,years);rows.push({rasi:sign,years,start:fmt(st),end:fmt(en),fullYears:full,cycle:c+1});cur=en;}}return rows;}
 function equalRasiSubs(md,order,lengthFn){const each=md.years/12;let cur=new Date(md.start+'T00:00:00Z');return order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});}
-function narayanaSubOrder(dasaRasi,planets){const ds=parseSign(dasaRasi);if(ds<0)throw new RangeError('Invalid Narayana Antardasa Dasa sign: '+dasaRasi);const seed=strongerSign(ds,mod12(ds+6),planets);const lord=ownLord(seed,planets),p=planets[lord];let start=p?.sign??seed;let dir=oddSign(start)?1:-1;if(planets.Saturn?.sign===seed)dir=1;if(planets.Ketu?.sign===seed)dir*=-1;return Array.from({length:12},(_,i)=>mod12(start+i*dir));}
+function narayanaSubOrder(dasaRasi,planets){const ds=parseSign(dasaRasi);if(ds<0)throw new RangeError('Invalid Narayana Antardasa Dasa sign: '+dasaRasi);const seed=strongerSign(ds,mod12(ds+6),planets,'rasi');const lord=ownLord(seed,planets,'dasa'),p=planets[lord];let start=p?.sign??seed;let dir=oddSign(start)?1:-1;if(planets.Saturn?.sign===seed)dir=1;if(planets.Ketu?.sign===seed)dir*=-1;return Array.from({length:12},(_,i)=>mod12(start+i*dir));}
 function addSubperiods(rows,orderFn,count){return rows.map(md=>{const order=orderFn(md.rasi).slice(0,count);let cur=new Date(md.start+'T00:00:00Z');const each=md.years/count;const subs=order.map(r=>{const st=new Date(cur),en=addYears(st,each);cur=en;return {rasi:r,years:each,start:fmt(st),end:fmt(en)};});return {...md,antardasas:subs};});}
 function ashtottariApplicabilityAudit(chart,planets,advancedContext=null){
  const lagna=Number.isFinite(Number(chart?.lagna?.longitude))?rasiIndex(chart.lagna.longitude):-1;
@@ -140,8 +232,8 @@ function ashtottari(chart,startDate,advancedContext=null){
  });
  return {available:true,title:'Ashtottari Dasa',cycleYears:108,firstLord:arc.planet,birthBalanceFraction:frac,elapsedBeforeBirthYears:elapsedYears,sequence:subs,applicability:'Unresolved: §17.2.3 presents three different interpretations; this is a reference calculation, not a certified applicability decision.',applicabilityAudit:ashtottariApplicabilityAudit(chart,p,advancedContext),sourceOracle:{section:'§17.2.1–17.2.3',printedPages:'196–198',table:'Table 39',example:'Example 59'}};
 }
-function narayana(chart,startDate){const p=getPlanets(chart),lagna=Number.isFinite(chart?.lagna?.longitude)?rasiIndex(chart.lagna.longitude):-1;if(lagna<0)return {available:false,reason:'Lagna unavailable'};const seed=strongerSign(lagna,mod12(lagna+6),p);const order=progressionByTable(seed,p);const details=order.map(code=>narayanaLengthDetail(code,p));let rows=periodRows(order,(s,_i,cycle)=>{const first=narayanaLengthDetail(s,p).years;return cycle===0?first:12-first;},startDate,1,2);const sourceWarnings=details.filter(d=>d.capped).map(d=>({rasi:d.sign,lord:d.lord,baseYears:d.baseYears,uncappedYears:d.adjustedYears,firstCycleYears:d.years,secondCycleYears:12-d.years,resolution:'The printed PVR rule sequence would produce more than 12 years (most clearly Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42, which explicitly discusses this exact Mercury-in-Virgo case. This is an inter-source reconciliation; it is not stated in the supplied PVR page itself.',sourceUrl:'https://scienceoflight.net/wp-content/uploads/extra/Narayana%20Dasa%20by%20Sanjay%20Rath.pdf'}));rows=addSubperiods(rows,r=>narayanaSubOrder(r,p),12);return {available:true,title:'Narayana Dasa',seed,sequence:rows,sourceWarnings,method:'PVR Table 40 sequence and §18.2.2 second-cycle rule; sign duration capped at 12 years using the explicit alternative Narayana Dasa source rule (Sanjay Rath, printed p. 42) for PVR’s contradictory 13-year case.'};}
-function kendradi(chart,startDate,seedOverride,sree=false){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude);const seed=seedOverride>=0?seedOverride:strongerSign(lagna,mod12(lagna+6),p);let dir=oddSign(sree?seed:lagna)?1:-1;if(p.Saturn?.sign===seed)dir=1;if(p.Ketu?.sign===seed)dir*=-1;const offs=[0,3,6,9,1,4,7,10,2,5,8,11];const order=offs.map(o=>mod12(seed+o*dir));const slDeg=degInSign(chart.__sreeLagnaLongitude||0);const frac=sree?Math.max(0,(30-slDeg)/30):1;const rows=periodRows(order,(sg,_i,cycle)=>{const first=narayanaLength(sg,p);return cycle===0?first:12-first;},startDate,frac,2);return {available:true,title:sree?'Sudasa':'Lagna Kendradi Rasi Dasa',seed,sequence:rows,firstFraction:frac,method:'Rasi durations use Narayana Dasa rules; second-cycle sign length is 12 minus first-cycle length (§19.2/§20.2).'};}
+function narayana(chart,startDate){const p=getPlanets(chart),lagna=Number.isFinite(chart?.lagna?.longitude)?rasiIndex(chart.lagna.longitude):-1;if(lagna<0)return {available:false,reason:'Lagna unavailable'};const seed=strongerSign(lagna,mod12(lagna+6),p,'rasi');const order=progressionByTable(seed,p);const details=order.map(code=>narayanaLengthDetail(code,p));let rows=periodRows(order,(s,_i,cycle)=>{const first=narayanaLengthDetail(s,p).years;return cycle===0?first:12-first;},startDate,1,2);const sourceWarnings=details.filter(d=>d.capped).map(d=>({rasi:d.sign,lord:d.lord,baseYears:d.baseYears,uncappedYears:d.adjustedYears,firstCycleYears:d.years,secondCycleYears:12-d.years,resolution:'The printed PVR rule sequence would produce more than 12 years (most clearly Mercury in Virgo: 12 + 1). A 12-year maximum is applied from Sanjay Rath, Narayana Dasa, printed p. 42, which explicitly discusses this exact Mercury-in-Virgo case. This is an inter-source reconciliation; it is not stated in the supplied PVR page itself.',sourceUrl:'https://scienceoflight.net/wp-content/uploads/extra/Narayana%20Dasa%20by%20Sanjay%20Rath.pdf'}));rows=addSubperiods(rows,r=>narayanaSubOrder(r,p),12);return {available:true,title:'Narayana Dasa',seed,sequence:rows,sourceWarnings,method:'PVR Table 40 sequence and §18.2.2 second-cycle rule; sign duration capped at 12 years using the explicit alternative Narayana Dasa source rule (Sanjay Rath, printed p. 42) for PVR’s contradictory 13-year case.'};}
+function kendradi(chart,startDate,seedOverride,sree=false){const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude);const seed=seedOverride>=0?seedOverride:strongerSign(lagna,mod12(lagna+6),p);let dir=oddSign(sree?seed:lagna)?1:-1;if(!sree){if(p.Saturn?.sign===seed)dir=1;if(p.Ketu?.sign===seed)dir*=-1;}const offs=[0,3,6,9,1,4,7,10,2,5,8,11];const order=offs.map(o=>mod12(seed+o*dir));const slDeg=degInSign(chart.__sreeLagnaLongitude||0);const frac=sree?Math.max(0,(30-slDeg)/30):1;const rows=periodRows(order,(sg,_i,cycle)=>{const first=narayanaLength(sg,p);return cycle===0?first:12-first;},startDate,frac,2);return {available:true,title:sree?'Sudasa':'Lagna Kendradi Rasi Dasa',seed,sequence:rows,firstFraction:frac,method:'Rasi durations use Narayana Dasa rules; second-cycle sign length is 12 minus first-cycle length (§19.2/§20.2).'};}
 function drigdasa(chart,startDate){
  const p=getPlanets(chart),lagna=rasiIndex(chart.lagna?.longitude);
  const groups=[mod12(lagna+8),mod12(lagna+9),mod12(lagna+10)],groupSequences=[],order=[];
