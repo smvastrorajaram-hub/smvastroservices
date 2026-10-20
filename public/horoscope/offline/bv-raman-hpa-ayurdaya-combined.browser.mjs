@@ -89,7 +89,7 @@ function navamsaSignIndex(longitude) {
  * Shadbala judgement and source-ambiguous wording remain caller evidence or
  * UNKNOWN; they are never guessed from unrelated fields.
  */
-function deriveChapterXIVEvidence(chart,map) {
+function deriveChapterXIVEvidence(chart,map,evidence={}) {
   const out={};
   const lagnaLongitude=map.lagnaLongitude;
   if(finite(lagnaLongitude)){
@@ -119,6 +119,14 @@ function deriveChapterXIVEvidence(chart,map) {
     }
     out.birthAntardasaLord=adLord;
   }
+  const houses=CHART_GRAHAS.map(name=>houseOf(map,name));
+  const outsideMiddle=houses.some(house=>house!==null&&![4,5,6,7].includes(house));
+  out.allPlanetsMiddleFourHouses=outsideMiddle?false:houses.every(house=>house!==null)?true:null;
+  const others=CHART_GRAHAS.filter(name=>!['Saturn','Moon'].includes(name)).map(name=>houseOf(map,name));
+  const otherOutsideEleventh=others.some(house=>house!==null&&house!==11);
+  out.otherGrahasInEleventh=otherOutsideEleventh?false:others.every(house=>house!==null)?true:null;
+  out.beneficsInHouses3_6_9_12=triAll(...[3,6,9,12].map(house=>beneficInHouseState(map,evidence,house)));
+  out.beneficsOccupyKendras=beneficInAnyKendra(map,evidence);
   return out;
 }
 
@@ -209,6 +217,21 @@ function planetInNaturalEnemySign(map, name) {
   return NATURAL_ENEMIES[name].includes(SIGN_LORDS[sign]);
 }
 function isKendra(house) { return inList(house, [1, 4, 7, 10]); }
+
+function beneficInHouseState(map,evidence,house) {
+  if(!houseValid(house))return null;
+  let unknownNature=false;
+  for(const [name,planet] of map.planets.entries()){
+    if(planet.house!==house)continue;
+    const nature=planetNature(map,evidence,name);
+    if(nature==='benefic')return true;
+    if(nature===null)unknownNature=true;
+  }
+  if(unknownNature)return null;
+  const complete=CHART_GRAHAS.every(name=>map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  return complete?false:null;
+}
+
 function planetInHouseState(map, house) {
   if (!houseValid(house)) return null;
   if (CHART_GRAHAS.some(name => houseOf(map, name) === house)) return true;
@@ -471,7 +494,7 @@ export const BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY = Object.freeze(
  */
 export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
   const map = normalizeChart(chart), suppliedEvidence = evidence || {};
-  const autoDerivedEvidence = deriveChapterXIVEvidence(chart,map);
+  const autoDerivedEvidence = deriveChapterXIVEvidence(chart,map,suppliedEvidence);
   const e = { ...autoDerivedEvidence, ...suppliedEvidence };
   const isStrong = name => strengthFlag(e, name, 'strong');
   const isWeak = name => strengthFlag(e, name, 'weak');
