@@ -30,8 +30,18 @@ export function createPlaceSearchEngine({fetchImpl=fetch,cacheStorage=globalThis
    throw error;
   }
  }
+ const MAX_SHARD_CACHE=2;
  const shards=new Map(),shardFlights=new Map(),resultCache=new Map(),prefixCandidates=new Map(),aliasCache=new WeakMap();
  const aliases=row=>{let a=aliasCache.get(row);if(!a){a=(row[8]||[]).map(norm).filter(Boolean);aliasCache.set(row,a);}return a;};
+ function rememberShard(key,groups){
+  if(shards.has(key))shards.delete(key);
+  shards.set(key,groups);
+  while(shards.size>MAX_SHARD_CACHE){
+   const oldest=shards.keys().next().value;
+   shards.delete(oldest);
+   prefixCandidates.delete(oldest);
+  }
+ }
  async function getManifest(){
   if(manifest)return manifest;
   if(manifestFlight)return manifestFlight;
@@ -40,7 +50,7 @@ export function createPlaceSearchEngine({fetchImpl=fetch,cacheStorage=globalThis
   try{return await manifestFlight;}finally{manifestFlight=null;}
  }
  async function getShard(key){
-  if(shards.has(key))return shards.get(key);
+  if(shards.has(key)){const hit=shards.get(key);shards.delete(key);shards.set(key,hit);return hit;}
   if(shardFlights.has(key))return shardFlights.get(key);
   const flight=(async()=>{
    const m=await getManifest(),info=m.shards[key];
@@ -48,7 +58,7 @@ export function createPlaceSearchEngine({fetchImpl=fetch,cacheStorage=globalThis
    const loadPart=async part=>
     readJson(new URL('./india/'+part.file,import.meta.url),'Offline India place shard unavailable: '+part.file);
    const groups=Array.isArray(info.parts)?await Promise.all(info.parts.map(loadPart)):[await loadPart(info)];
-   shards.set(key,groups);
+   rememberShard(key,groups);
    return groups;
   })();
   shardFlights.set(key,flight);
@@ -80,7 +90,8 @@ export function createPlaceSearchEngine({fetchImpl=fetch,cacheStorage=globalThis
     }
    }
   }
-  prefixCandidates.set(shardKey,{q:n,rows:matched});
+  if(shards.has(shardKey))prefixCandidates.set(shardKey,{q:n,rows:matched});
+  else prefixCandidates.delete(shardKey);
   const result=top.map(({x})=>{
    const display=formatOfflineIndiaPlace(x,language);
    return {...display,latitude:x[4],longitude:x[5],timezone:x[6]||'Asia/Kolkata',population:x[7],geonameId:x[0]};
