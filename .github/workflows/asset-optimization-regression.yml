@@ -5,6 +5,10 @@ on:
     paths:
       - 'public/horoscope/index.html'
       - 'public/horoscope/calendar/sw.js'
+      - 'public/horoscope/offline/places/place-search.mjs'
+      - 'public/horoscope/offline/places/place-search-worker.mjs'
+      - 'public/horoscope/offline/places/india-manifest.json'
+      - 'public/horoscope/offline/places/india/*.json'
       - 'tests/asset-optimization-horoscope-lazy-load-regression.mjs'
       - 'tests/asset-optimization-calendar-cache-regression.mjs'
       - 'tests/place-search-regression.mjs'
@@ -39,6 +43,7 @@ jobs:
           set -euo pipefail
           node --check tests/asset-optimization-horoscope-lazy-load-regression.mjs
           node --check tests/asset-optimization-calendar-cache-regression.mjs
+          node --check tests/place-search-regression.mjs
       - name: Horoscope deferred-load, matching dependency and protected-flow gate
         run: node tests/asset-optimization-horoscope-lazy-load-regression.mjs
       - name: Calendar PWA no-bulk-place-shard install and on-demand cache gate
