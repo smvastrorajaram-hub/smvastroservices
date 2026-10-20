@@ -7,7 +7,7 @@
 **CI workflow:** `.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml`  
 **Baseline verification:** PASS on GitHub Actions run [39417147999](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/39417147999), audit commit `8529661d9b5889f12bda1e719724a672a3ab6c9d`.
 **Baseline evidence:** 11,361 assertions PASS; 150 full Horoscope charts; 150 distinct Matching pair reports; 1,050/1,050 Rasi/Graha/Sodhya Pinda parity rows matched; zero parity mismatches. The downloadable per-run JSON artifact is retained in that run.
-**Follow-up status:** D9/Karakamsha reuse change is in progress on this PR branch and requires its own regression run before acceptance.
+**Follow-up status:** D9/Karakamsha reuse and Chart-Derived Chapter XIV evidence wiring are implemented on this PR branch; new dedicated CI regressions are required before acceptance. The 11,361-assertion result above is the immutable pre-follow-up baseline, not proof that the follow-up is already passing.
 
 ## Population and execution design
 
@@ -24,8 +24,8 @@
 
 | Area | Finding | Classification |
 |---|---|---|
-| Published admin prediction rules | `public/horoscope/prediction-rules-published.js` currently publishes `window.SMVPUBLISHED_PREDICTION_RULES = []`. Book-derived administrator-reviewed rules are not populated through this channel. | ROOT CAUSE — BLOCKED |
-| B.V. Raman Chapter XIV longevity type | Some rule predicates remain `UNKNOWN` on normal charts when sunrise/hora, birth Dasa, varga or strength evidence is absent. A category cannot be certified by choosing one of multiple partial candidates. | PARTIAL — EVIDENCE REQUIRED |
+| Published Admin prediction rules | The versioned static file now contains 24 conservative bilingual house-lord placement modifiers. It is a fallback/context layer, not a full five-book rule set. The live Firestore rule document remains explicitly Admin-published; empty/malformed remote sets fall back to the static snapshot, and the Admin editor blocks publishing an empty rule set. | PARTIAL — ADMIN REVIEW/PUBLISH REQUIRED |
+| B.V. Raman Chapter XIV longevity type | The evaluator now derives D9 Lagna lord, Vimshottari birth MD/AD, Moon Drekkana and malefic aspects to houses 5/8/12 from available natal chart data. Sunrise/hora, full-Moon observations, strength judgements and other source-sensitive inputs remain unknown when the needed evidence is absent. Multiple candidate categories still block a final selection. | PARTIAL — EVIDENCE REQUIRED |
 | Ayurdaya final output | The research path intentionally returns `finalLifespan: null` and `certified: false`; no lifespan/death-age prediction is allowed. | SAFETY / SOURCE-CERTIFICATION GUARD |
 | C.G. Rajan Ayurdaya selection | Tied or unavailable Shadbala reference selection must keep method alternatives visible; do not manufacture a winner or averaged final lifespan. | EVIDENCE-GATED |
 | Classical Shadbala | Production Phase 3 is labelled “classical-style” and is not certified as a complete exact Parashari six-Bala engine by the existing source audit. | PARTIAL |
