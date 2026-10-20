@@ -5,13 +5,12 @@
  * I / Chart Analysis content at the end (and never have print suppression).
  */
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {cgRajanAyurdayaReportHtml as html}
  from '../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs';
 let count=0;
 const check=(cond,msg)=>{assert.ok(cond,msg);count++};
 const horoscope=readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
-const predictions=readFileSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url),'utf8');
 const saver=readFileSync(new URL('../public/horoscope/report-store.mjs',import.meta.url),'utf8');
 const printer=readFileSync(new URL('../public/horoscope/report-print.js',import.meta.url),'utf8');
 const form=readFileSync(new URL('../public/horoscope/horoscope-form.js',import.meta.url),'utf8');
@@ -27,8 +26,8 @@ check(/await import\('\.\/offline\/cg-rajan-ayurdaya-pinda\.browser\.mjs\?v=[^']
  'Main renderer waits for source-specific arithmetic before report-ready event');
 check(horoscope.includes("sectionI.querySelectorAll('[data-smv-cg-rajan-ayurdaya]').forEach(node=>node.remove())"),
  'Duplicate report append prevented');
-check(!predictions.includes("predictionSection.insertAdjacentHTML('afterend',"),
- 'Retired predictions insertion is not re-enabled');
+check(!existsSync(new URL('../public/horoscope/horoscope-predictions.js',import.meta.url)),
+ 'Retired horoscope-predictions.js bundle is absent from the deployed public directory');
 check(form.includes("const buildViews=async()=>"),'Bilingual save snapshot handler present');
 const chart=[
  ['சூரியன்',167+2/60],['சந்திரன்',118+10/60],
