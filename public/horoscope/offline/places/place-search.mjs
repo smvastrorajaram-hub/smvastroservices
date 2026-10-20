@@ -41,7 +41,7 @@ function workerSearch(query,limit,language,signal){
     try{active.postMessage({kind:'cancel',id});}catch(_){}
     reject(new DOMException('Aborted','AbortError'));
    };
-   if(signal.aborted){item.abort();return;}
+   if(signal.aborted){reject(new DOMException('Aborted','AbortError'));return;}
    signal.addEventListener('abort',item.abort,{once:true});
   }
   pending.set(id,item);
