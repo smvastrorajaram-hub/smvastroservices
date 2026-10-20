@@ -61,7 +61,7 @@ function coLordConjunctionCount(name,planets){
 }
 function planetConjoinedOrAspectedBy(subject,source,planets){
  const a=planets[subject],b=planets[source];
- return !!a&&!!b&&(a.sign===b.sign||rasiAspects(b.sign).includes(a.sign));
+ return subject!==source&&!!a&&!!b&&(a.sign===b.sign||rasiAspects(b.sign).includes(a.sign));
 }
 function primaryDispositor(sign,planets,depth=0){
  const owners=SIGN_LORDS[mod12(sign)];
@@ -122,9 +122,12 @@ function strongerSign(a,b,planets,purpose='rasi'){
  const ruleTwo=(sign)=>{
   const lord=ownLord(sign,planets,purpose==='dasa'?'dasa':'rasi');
   if(purpose==='ayur'){
-   return Object.entries(planets).filter(([name,p])=>name!==lord&&(p.sign===sign||rasiAspects(p.sign).includes(sign))).length;
+   const allLords=SIGN_LORDS[mod12(sign)];
+   return Object.entries(planets).filter(([name,p])=>!allLords.includes(name)&&(p.sign===sign||rasiAspects(p.sign).includes(sign))).length;
   }
-  return ['Jupiter','Mercury',lord].filter(name=>{
+  // PVR Exercise 26 explicitly counts the non-primary co-lord's rasi aspect too.
+  const roles=['Jupiter','Mercury',...SIGN_LORDS[mod12(sign)]];
+  return roles.filter(name=>{
    const p=planets[name];return !!p&&(p.sign===sign||rasiAspects(p.sign).includes(sign));
   }).length;
  };
