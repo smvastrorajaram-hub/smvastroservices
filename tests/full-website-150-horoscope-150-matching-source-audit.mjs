@@ -183,7 +183,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'nine Vimshottari Mahadasha periods are present for '+birth.name);
   ok(Array.isArray(result.advanced?.vargas) && result.advanced.vargas.length===16,
     'all 16 configured divisional charts exist in Advanced Analysis for '+birth.name);
-  ok(result.advanced.vargas.every(v=>v.planets?.length===9 && v.planets.every(p=>Number.isFinite(Number(p.longitude))),
+  ok(result.advanced.vargas.every(v=>v.planets?.length===9 && v.planets.every(p=>Number.isFinite(Number(p.longitude)))),
     'all 16 divisional charts contain nine finite graha longitudes for '+birth.name);
   chart.advanced = result.advanced;
   chart.birthName = birth.name;
