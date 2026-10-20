@@ -50,7 +50,7 @@
 
 ### 5. CSS consolidation and PWA icons
 
-- Moved the symmetric-gutter rules from `v359-symmetric-gutters.css` into the existing `v358-result-layout.css` owner and removed the separate stylesheet/link. Browser smoke tests/workflows remain available.
+- Integrated symmetric gutters into the existing `v358-result-layout.css` owner declarations, removed the separate stylesheet/link, and eliminated the copied late V359 override block. The Horoscope/Maching parent frame owns the gutter; inner panels use the existing result rules instead of another appended reset stack. Browser smoke tests/workflows remain available.
 - Removed the byte-identical duplicate `icon-512-maskable.png` copies; manifests use the same existing 512px PNG for `any` and `maskable` purposes.
 - Added assertions for CSS ownership, responsive browser smoke presence, native print CSS/JS/HTML presence, and PWA manifest icon references.
 
