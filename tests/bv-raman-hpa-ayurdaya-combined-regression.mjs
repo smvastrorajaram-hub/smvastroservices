@@ -727,9 +727,8 @@ eq(madhyayu13BeneficsAndMaleficAspect.rules.find(rule => rule.id === 'XIV-MAD-13
 
 const madhyayu13MissingBeneficEvidence = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
-    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Sun',longitude:0,bhava:1},
     {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:30,bhava:2},
-    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:270,bhava:10},
     {name:'Saturn',longitude:150,bhava:6},{name:'Rahu',longitude:240,bhava:9},
     {name:'Ketu',longitude:300,bhava:11}
   ]}
