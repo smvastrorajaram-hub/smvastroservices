@@ -97,7 +97,7 @@ statuses('XIV-BAL-08',[
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:true}},
  {label:'placement matches but the aspect condition is false',expected:'NOT_MATCHED',
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:false}},
- {label:'required aspect observation missing',expected:'UNKNOWN',
+ {label:'chart-computable malefic aspects derive from all supplied graha positions',expected:'NOT_MATCHED',
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon']}}
 ],'HPA p.64 Balarishta 8');
 statuses('XIV-BAL-04',[
