@@ -72,7 +72,13 @@ if(access&&host&&E){
    try{await initFirebase();await firebase.authM.signInWithEmailAndPassword(auth,$('smvAdminEmail').value.trim(),$('smvAdminPass').value);
     if(!await verifyAdmin()){await firebase.authM.signOut(auth);throw Error('இந்தக் கணக்கிற்கு Admin அனுமதி இல்லை.');}
     await window.SMVPredictionRulesSync?.ensureReady?.();
-    verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது. Draft-ஐ Publish செய்த பிறகே அனைவருக்கும் பலன் மாறும்.');
+    // Seed the owner-only Draft editor from the reviewed static fallback only
+    // when no local draft exists. This does not publish or write to Firestore.
+    if(!E.getLocalRules().length){
+     const baseline=E.getPublishedRules();
+     if(baseline.length)E.setLocalRules(baseline);
+    }
+    verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது. Static fallback விதிகள் Draft-இல் தயாராக உள்ளன; பரிசீலித்து Publish செய்த பிறகே Online பயனாளர்களுக்கு மாறும்.');
    }catch(e){status(e?.message||String(e),true);}
    finally{btn.disabled=false;}
   };
