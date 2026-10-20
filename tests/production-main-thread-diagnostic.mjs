@@ -94,20 +94,27 @@ async function run(){
   await sleep(2500);
   report.debugger.pauseRequested=true;
   let pauseError=null;
-  try{
-   await cdp.send('Debugger.pause');
-   await Promise.race([pausedPromise,sleep(8000)]);
-  }catch(e){pauseError=String(e?.message||e).slice(0,250);}
+  const pauseSend=cdp.send('Debugger.pause').then(()=>({sent:true}),e=>({error:String(e?.message||e).slice(0,250)}));
+  const pauseDispatch=await Promise.race([pauseSend,sleep(6500).then(()=>({timeout:true}))]);
+  if(pauseDispatch.timeout)pauseError='Debugger.pause command did not return within 6500ms';
+  else if(pauseDispatch.error)pauseError=pauseDispatch.error;
+  if(!report.debugger.paused){
+   const pauseResult=await Promise.race([pausedPromise.then(()=>({paused:true})),sleep(6500).then(()=>({timeout:true}))]);
+   if(pauseResult.timeout)report.debugger.pauseWaitTimedOut=true;
+  }
   report.debugger.pauseCommandError=pauseError;
   report.debugger.waitedAfterNavigationMs=Date.now()-started;
   report.navigation.failedDocuments=report.navigation.failedDocuments.slice(-10);
-  report.network.p50DurationMs=durations.length?+durations.sort((a,b)=>a-b)[Math.floor((durations.length-1)*.5)].toFixed(1):null;
-  report.network.p95DurationMs=durations.length?+durations[Math.min(durations.length-1,Math.ceil(durations.length*.95)-1)].toFixed(1):null;
+  const sortedDurations=durations.slice().sort((a,b)=>a-b);
+  report.network.p50DurationMs=sortedDurations.length?+sortedDurations[Math.floor((sortedDurations.length-1)*.5)].toFixed(1):null;
+  report.network.p95DurationMs=sortedDurations.length?+sortedDurations[Math.min(sortedDurations.length-1,Math.ceil(sortedDurations.length*.95)-1)].toFixed(1):null;
   if(report.debugger.paused){
    const top=report.debugger.topFrames[0];
    report.verdict=top&&top.url.path!=='/'?'PAUSED_IN_JAVASCRIPT':'PAUSED_WITHOUT_SOURCE_FRAME';
   }else if(navError){
    report.verdict='NAVIGATION_DID_NOT_REACH_DOM_CONTENT_LOADED';
+  }else if(pauseError||report.debugger.pauseWaitTimedOut){
+   report.verdict='DEBUGGER_UNRESPONSIVE_OR_RENDERER_BUSY';
   }else{
    report.verdict='NO_DEBUGGER_PAUSE_CAPTURED';
   }
