@@ -206,16 +206,38 @@ async function navigate(page, url, collector, label) {
   setPhase(label + ': navigate');
   const mark = collector.mark();
   const started = Date.now();
+  const navState={mainFrameNavigations:0,lastNavigationAt:started,lastLoadAt:0};
+  const onFrameNavigated=frame=>{
+    if(frame!==page.mainFrame())return;
+    navState.mainFrameNavigations++;
+    navState.lastNavigationAt=Date.now();
+  };
+  const onLoad=()=>{navState.lastLoadAt=Date.now();};
+  // On first service-worker activation, the Horoscope worker deliberately
+  // navigates currently open clients once. Observe that protocol-level reload
+  // before evaluating the page, otherwise Runtime.callFunctionOn can race with
+  // destruction of the old execution context.
+  page.on('framenavigated',onFrameNavigated);
+  page.on('load',onLoad);
   console.log('[audit] navigate:start',label,safeUrl(url).path);
-  const response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-  console.log('[audit] navigate:domcontentloaded',label,'status',response?.status()??null,'ms',Date.now()-started);
-  // Listen to the Chromium-level load event, not a page.evaluate timer. A busy
-  // or frozen page main thread must not block this harness's diagnostic timeout.
-  await Promise.race([new Promise(resolve=>page.once('load',resolve)),sleep(12000)]);
+  let response;
+  try {
+    response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+    console.log('[audit] navigate:domcontentloaded',label,'status',response?.status()??null,'ms',Date.now()-started);
+    const settleDeadline=Date.now()+15000;
+    while(Date.now()<settleDeadline){
+      const navigationStable=navState.mainFrameNavigations>=1&&Date.now()-navState.lastNavigationAt>=1800;
+      const loadStable=navState.lastLoadAt>=started&&Date.now()-navState.lastLoadAt>=700;
+      if(navigationStable&&loadStable)break;
+      await sleep(150);
+    }
+  } finally {
+    page.off('framenavigated',onFrameNavigated);
+    page.off('load',onLoad);
+  }
   const pageLoadWallClockMs = Date.now()-started;
-  await sleep(1200);
   setPhase(label + ': read navigation timing');
-  let timing = null;
+  let timing = null, pageJavaScriptResponsive=true, pageJavaScriptError=null;
   try {
     timing = await page.evaluate(() => {
       const n = performance.getEntriesByType('navigation')[0];
@@ -232,11 +254,17 @@ async function navigate(page, url, collector, label) {
       };
     });
   } catch (e) {
-    console.warn('[audit] page navigation timing unavailable; collecting CDP transfers only:', String(e?.message || e).slice(0,180));
+    pageJavaScriptResponsive=false;
+    pageJavaScriptError=String(e?.message || e).slice(0,180);
+    console.warn('[audit] page timing probe failed after stable navigation; using CDP timings:',pageJavaScriptError);
   }
+  const documents=collector.since(mark).filter(x=>x.resourceType==='Document');
   const rec = {
     label,url: safeUrl(url),httpStatus:response?.status() ?? null,
-    pageLoadWallClockMs, browserNavigation:timing,
+    pageLoadWallClockMs, mainFrameNavigations:navState.mainFrameNavigations,
+    loadEventCount:navState.lastLoadAt>=started?1:0,
+    serviceWorkerActivationReloadObserved:documents.length>1,
+    browserNavigation:timing,pageJavaScriptResponsive,pageJavaScriptError,
     network:summarizeNetwork(collector.since(mark))
   };
   assert.equal(rec.httpStatus,200,label+' production document must return HTTP 200');
