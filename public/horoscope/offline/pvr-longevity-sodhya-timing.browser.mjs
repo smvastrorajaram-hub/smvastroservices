@@ -89,7 +89,7 @@ function maleficAfflicts(name,ps){
  return MALefics.some(m=>m!==name&&ps[m]&&(ps[m].sign===s||rasiAspects(ps[m].sign,s)));
 }
 function specialLord(signIndex,ps){return sourceLord(signIndex,ps);}
-function computeRudraTrishoolaMaheswara(chart){
+export function computeRudraTrishoolaMaheswara(chart){
  const ps=getPlanets(chart),lagna=sign(chart?.lagna?.longitude);
  const required=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
  const missing=required.filter(n=>!ps[n]);
