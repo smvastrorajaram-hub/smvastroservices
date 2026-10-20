@@ -16,7 +16,7 @@ ok(!source.includes('PLACE_SHARDS') && !source.includes('...PLACE_SHARDS.map'),
 ok(source.includes("'../offline/places/place-search.mjs'") &&
    source.includes("'../offline/places/india-manifest.json'"),
    'Place-search code and shard manifest remain in the install core');
-ok(source.includes('await c.put(e.request,fixed(u.href,r))'),
+ok(source.includes('await c.put(e.request,r.clone())') && source.includes("fetch(e.request,{cache:'no-store'})"),
    'The runtime network-miss path still caches a shard on demand');
 
 const listeners = Object.create(null);
