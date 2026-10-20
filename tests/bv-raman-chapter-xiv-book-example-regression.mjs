@@ -572,7 +572,7 @@ statuses('XIV-ALP-09',[
   chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
  {label:'Venus-owned Lagna cannot satisfy malefic ownership',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:30,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
- {label:'benefics-in-houses evidence absent',expected:'UNKNOWN',
+ {label:'chart-derived placements do not satisfy every benefic house 3/6/9/12',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{}}
 ],'HPA p.70 Alpayu 9');
 statuses('XIV-ALP-10',[
