@@ -49,8 +49,96 @@ export function resolveSodhyaPindaTarget(product){
   relatedVimshottariNakshatras:Object.freeze([((ni+9)%27),((ni+18)%27)].map(i=>({number:i+1,name:NAK_EN[i],nameTamil:NAK_TA[i]})))});
 }
 
+
+const OWN_SIGNS={Sun:[4],Moon:[3],Mars:[0,7],Mercury:[2,5],Jupiter:[8,11],Venus:[1,6],Saturn:[9,10]};
+const SIGN_RULER=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
+const FRIENDS={Sun:['Moon','Mars','Jupiter'],Moon:['Sun','Mercury'],Mars:['Sun','Moon','Jupiter'],Mercury:['Sun','Venus'],Jupiter:['Sun','Moon','Mars'],Venus:['Mercury','Saturn'],Saturn:['Mercury','Venus']};
+const ENEMIES={Sun:['Venus','Saturn'],Moon:[],Mars:['Mercury'],Mercury:['Moon'],Jupiter:['Mercury','Venus'],Venus:['Sun','Moon'],Saturn:['Sun','Moon','Mars']};
+const MALefics=['Mars','Saturn','Rahu','Ketu'];
+function ownsOrExalted(name,ps){const s=ps[name]?.sign;return s!=null&&((OWN_SIGNS[name]||[]).includes(s)||EXALT[name]===s);}
+function planetStrengthVector(name,ps){
+ const p=ps[name];if(!p)return [-1,-1,-1,-1,-1];
+ const same=Object.values(ps).filter(x=>x!==p&&x.sign===p.sign).length;
+ const exaltedJoiners=Object.entries(ps).filter(([other,x])=>other!==name&&x.sign===p.sign&&EXALT[other]===x.sign).length;
+ const aspectors=Object.entries(ps).filter(([other,x])=>other!==name&&x.sign!==p.sign&&rasiAspects(x.sign,p.sign)).length;
+ return [same,ownsOrExalted(name,ps)?1:0,exaltedJoiners,aspectors,Number(p.degree)||0];
+}
+function comparePlanetStrength(a,b,ps){
+ const aa=planetStrengthVector(a,ps),bb=planetStrengthVector(b,ps);
+ for(let i=0;i<aa.length;i++){if(aa[i]!==bb[i])return aa[i]>bb[i]?1:-1;}
+ return 0;
+}
+function rasiAspects(from,to){
+ if(from==null||to==null||from===to)return false;
+ const distance=mod(to-from,12);
+ if(KIND[from]==='dual')return KIND[to]==='dual';
+ if(KIND[from]==='movable')return KIND[to]==='fixed'&&distance!==1&&distance!==11;
+ if(KIND[from]==='fixed')return KIND[to]==='movable'&&distance!==1&&distance!==11;
+ return false;
+}
+function sourceLord(s,ps){
+ const owners=LORDS[mod(s,12)];
+ return owners.slice(1).reduce((best,n)=>comparePlanetStrength(n,best,ps)>0?n:best,owners[0]);
+}
+function inEnemySign(name,ps){
+ const s=ps[name]?.sign,owner=s==null?null:SIGN_RULER[s];
+ return !!owner&&((ENEMIES[name]||[]).includes(owner)||(ENEMIES[owner]||[]).includes(name));
+}
+function maleficAfflicts(name,ps){
+ const s=ps[name]?.sign;if(s==null)return false;
+ return MALefics.some(m=>m!==name&&ps[m]&&(ps[m].sign===s||rasiAspects(ps[m].sign,s)));
+}
+function specialLord(signIndex,ps){return sourceLord(signIndex,ps);}
+export function computeRudraTrishoolaMaheswara(chart){
+ const ps=getPlanets(chart),lagna=sign(chart?.lagna?.longitude);
+ const required=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+ const missing=required.filter(n=>!ps[n]);
+ if(lagna==null||missing.length)return {available:false,missingInputs:[...(lagna==null?['Lagna']:[]),...missing.map(n=>n+' longitude')]};
+ const seventh=mod(lagna+6,12),useNormalEighth=ps.Saturn?.sign===3;
+ const specialEighth=(s)=>useNormalEighth?mod(s+7,12):TABLE32[mod(s,12)];
+ const signA=specialEighth(lagna),signB=specialEighth(seventh);
+ const candidateA=specialLord(signA,ps),candidateB=specialLord(signB,ps);
+ const comparison=comparePlanetStrength(candidateA,candidateB,ps);
+ const stronger=comparison>=0?candidateA:candidateB;
+ const weaker=comparison>=0?candidateB:candidateA;
+ const exceptionWeak=weaker!==stronger&&(DEBIL[weaker]===ps[weaker]?.sign||inEnemySign(weaker,ps))&&maleficAfflicts(weaker,ps);
+ const rudraNames=exceptionWeak?[weaker]:[stronger];
+ if(!exceptionWeak&&weaker!==stronger&&maleficAfflicts(weaker,ps))rudraNames.push(weaker);
+ const rudra=rudraNames.map(planet=>({planet,signIndex:ps[planet]?.sign,sign:EN[ps[planet]?.sign]||null,signTamil:TA[ps[planet]?.sign]||null}));
+ const trishoola=rudra.map(x=>({rudraPlanet:x.planet,rudraSignIndex:x.signIndex,signIndices:[x.signIndex,mod(x.signIndex+4,12),mod(x.signIndex+8,12)],signs:[x.signIndex,mod(x.signIndex+4,12),mod(x.signIndex+8,12)].map(i=>EN[i]),signsTamil:[x.signIndex,mod(x.signIndex+4,12),mod(x.signIndex+8,12)].map(i=>TA[i])}));
+ const karakaPlanets=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu'];
+ const atmakaraka=[...karakaPlanets].sort((a,b)=>{
+  const adv=x=>x==='Rahu'?30-(Number(ps[x]?.degree)||0):(Number(ps[x]?.degree)||0);
+  return adv(b)-adv(a);
+ })[0];
+ const akSign=ps[atmakaraka].sign,normalEighth=mod(akSign+7,12);
+ const nodeInAkOrEighth=['Rahu','Ketu'].some(n=>ps[n]&&(ps[n].sign===akSign||ps[n].sign===normalEighth));
+ const mahTarget=nodeInAkOrEighth?mod(akSign+5,12):normalEighth;
+ let maheswara=specialLord(mahTarget,ps),mahReason=nodeInAkOrEighth?'sixth-lord-exception':'eighth-lord';
+ let usedOwnExaltException=false;
+ if(!nodeInAkOrEighth&&ownsOrExalted(maheswara,ps)){
+  const occupantSign=ps[maheswara]?.sign;
+  if(occupantSign!=null){
+   const lord8=specialLord(mod(occupantSign+7,12),ps),lord12=specialLord(mod(occupantSign+11,12),ps);
+   maheswara=comparePlanetStrength(lord8,lord12,ps)>=0?lord8:lord12;
+   mahReason='own-or-exalted-lord-stronger-of-eighth-and-twelfth';
+   usedOwnExaltException=true;
+  }
+ }
+ const substitution=maheswara==='Rahu'?'Mercury':maheswara==='Ketu'?'Jupiter':null;
+ if(substitution)maheswara=substitution;
+ return {
+  available:true,
+  rudra,
+  rudraCandidates:{lagnaEighthLord:candidateA,lagnaEighthSign:EN[signA],seventhEighthLord:candidateB,seventhEighthSign:EN[signB],usedNormalEighthRule:useNormalEighth,selectedWeakerByAffliction:exceptionWeak,comparison:comparison>0?'lagna-candidate-stronger':comparison<0?'seventh-candidate-stronger':'tie'},
+  trishoola,
+  atmakaraka:{planet:atmakaraka,signIndex:akSign,sign:EN[akSign],signTamil:TA[akSign]},
+  maheswara:{planet:maheswara,signIndex:ps[maheswara]?.sign,sign:EN[ps[maheswara]?.sign]||null,signTamil:TA[ps[maheswara]?.sign]||null,atmakaraka,atmakarakaSignIndex:akSign,usedSixthLordException:nodeInAkOrEighth,usedOwnExaltException,ruleApplied:mahReason,nodeSubstitution:substitution}
+ };
+}
+
 export function pvrLongevitySodhyaTiming(chart,adv){
- const ps=getPlanets(chart),lagna=sign(chart?.lagna?.longitude),moon=ps.Moon?.sign,saturn=ps.Saturn?.sign,hora=horaSign(adv);
+ const ps=getPlanets(chart),lagna=sign(chart?.lagna?.longitude),moon=ps.Moon?.sign,saturn=ps.Saturn?.sign,hora=horaSign(adv),specialIndicators=computeRudraTrishoolaMaheswara(chart);
  const bav=adv?.ashtakavarga?.bhinna,raw={};
  if(Array.isArray(bav))for(const p of P){const r=bav.find(x=>x?.planet===p.ta||ALIAS[String(x?.planet||'')]===p.en);if(Array.isArray(r?.bindus)&&r.bindus.length===12&&r.bindus.every(n=>Number.isSafeInteger(n)&&n>=0&&n<=8))raw[p.en]=r.bindus.slice();}
  const grahaSigns={},occupied=[...new Set(Object.values(ps).map(x=>x.sign))],pindaRows=[],timingRows=[],missing=[];
@@ -85,12 +173,7 @@ export function pvrLongevitySodhyaTiming(chart,adv){
  return Object.freeze({
   source:{book:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach',longevityPages:'180–185',dasaPages:'226–289',sodhyaPindaPages:'337–341'},
   longevity:{available:pairRows.length===3,pairs:pairRows,combinedCategory:combined,paramaayushYears:parama,selectionRule:selection,eighthLordMethod,
-   additionalRules:[
-    'Maraka houses: 2nd and 7th; vitality/longevity houses: 3rd and 8th. Check relevant lords and Dasa/transit links only as corroborating indicators.',
-    'Rudra: compare lords of the special 8th houses from Lagna and 7th using Table 32 and source-specific strength/affliction exceptions.',
-    'Trishoola: three signs trinal to Rudra; compare with the provisional longevity category in Niryaana Shoola Dasa.',
-    'Maheswara: 8th lord from Atmakaraka, subject to the exceptions in §14.3.'
-   ],researchOnly:true,certified:false,caution:'The book says longevity-category methods are not infallible; no life-span age or death date is produced.'},
+   specialIndicators,researchOnly:true,certified:false,caution:'The book says longevity-category methods are not infallible; no life-span age or death date is produced.'},
   sodhyaPindaEventTiming:{available:timingRows.length===7,method:'Raw BAV rekhas in the specified house from the planet × that planet’s PVR/Parasara Sodhya Pinda. Divide by 27 for nakshatra and by 12 for rasi; zero remainder means 27th nakshatra/12th rasi.',rows:timingRows,pindaRows,missingInputs:missing,researchOnly:true,certified:false,caution:'The author says this timing method is inconsistent and open to research. Transit indications are not certain event dates.'}
  });
 }

@@ -2,13 +2,13 @@
 
 **Date:** 2026-10-20  
 **Repository baseline audited:** `main` at the time the feature branch was created  
-**Working branch:** `audit/pvr-narasimha-rao-dasa-longevity`  
+**Working branch:** `fix/longevity-chart-results-only`  
 **Source file:** *Vedic Astrology: An Integrated Approach*, P.V.R. Narasimha Rao  
 **Page mapping:** the supplied PDF's printed page labels differ from the PDF page index by 12 pages: printed pp. 180–185 = PDF pp. 192–197; printed pp. 226–289 = PDF pp. 238–301; printed pp. 337–341 = PDF pp. 349–353.
 
 ## Current disposition
 
-The source text has been compared with the current Dasa engine and a limited set of source-backed discrepancies have been corrected on the working branch. This is **not** a certification of all Dasa algorithms or of any method for predicting life span or death.
+The source text has been compared with the Dasa engine and source-backed discrepancies have been corrected where implemented and covered by regression. PR #73 adds natal-chart computations for Rudra, Trishoola and Maheswara, then displays only calculated results rather than copied rule descriptions. This is **not** a certification of every lineage variant or a method for predicting life span or death.
 
 ## Printed pp. 180–185 — longevity rules
 
@@ -19,7 +19,7 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 - When two pairs agree and the third differs, Table 34 is used for Paramaayush. In the three-way tie, pair 3 is preferred except when Moon is in Lagna or the 7th, when pair 2 is preferred.
 - The Eighth Lord Method is displayed separately: select the stronger of Lagna and the 7th, use Table 32 for the special 8th house, and classify the 8th lord's placement as quadrant / panaphara / apoklima.
 
-**Caveat:** the existing sign-strength helper is an SMV approximation; it is not a complete reimplementation of every PVR strength rule and exception. Therefore the Eighth Lord comparison is flagged research-only. Maraka, Rudra, Trishoola and Maheswara definitions are listed as corroborating rule families, not passed off as fully computed/certified judgements. PVR explicitly says these longevity-category methods are not infallible and warns against frightening clients with death predictions.
+**Result scope:** Rudra now compares the two chart-derived special eighth-house lords, scores conjunctions, own/exaltation, conjunction with exalted planets, rasi-aspect count and degree advancement, and applies the weaker-candidate affliction condition. The Saturn-in-Cancer exception from Example 86 is represented explicitly. Trishoola signs are calculated from the selected Rudra placement and matched against Niryaana Shoola periods overlapping the selected category band. Maheswara calculates Chara Atmakaraka (including reverse degree for Rahu), applies the node/6th-lord exception and own/exalted 8th-lord exception, and substitutes Mercury/Jupiter for Rahu/Ketu results. These are explicit source-derived calculation branches, not a guarantee of a real-world event; the heuristic used to choose between co-lords of Scorpio/Aquarius remains an approximation. No life-span age or death date is produced.
 
 ## Printed pp. 226–289 — Dasa source audit
 
@@ -36,7 +36,7 @@ Added the PVR research output alongside the existing chart/Sodhya-Pinda results:
 ### Longevity category → Dasa timing
 
 The printed pp. 273–284 distinguish the two systems:
-- **Niryaana Shoola Dasa:** the selected short/middle/long category corresponds to the 0–36 / 36–72 / 72–108 age interval. Its Mahadasa durations are variable (7/8/9 years), so the matching intervals are derived from cumulative Dasa years, not by blindly taking the same four row indices. Those intervals must then be cross-checked against the three Trishoola signs; Rudra/Trishoola derivation is not yet a fully certified automated result here.
+- **Niryaana Shoola Dasa:** the selected short/middle/long category corresponds to the 0–36 / 36–72 / 72–108 age interval. Its Mahadasa durations are variable (7/8/9 years), so the matching intervals are derived from cumulative Dasa years, not by blindly taking the same four row indices. Those intervals are now cross-checked against chart-derived Trishoola signs, and only matching Niryaana Shoola periods in the selected category band are shown as result rows.
 - **Shoola Dasa:** every Mahadasa is 9 years, so the category interval selects exactly the first, middle or last four of the 12 Mahadasas. The added display shows the overlapping Dasa periods and dates in both systems, while explicitly warning that these are timing reference windows, not a death prediction.
 
 Regression checks now assert that the selected category maps to its age band, the four Shoola periods fit that band, and Niryaana Shoola periods have cumulative-age intervals overlapping the band. A follow-on source audit also corrected second-cycle durations for Lagna Kendradi, Sudasa and Drigdasa and added assertions that each cycle-2 rasi period uses `12 − cycle-1 period`.
@@ -53,7 +53,7 @@ Added a separate PVR/Parasara research module, deliberately independent from B.V
 4. derives the nakshatra target from remainder modulo 27 and the rasi target from remainder modulo 12; zero remainder is mapped to the 27th nakshatra (Revati) and 12th rasi (Pisces);
 5. shows the seven source topics: Sun/father/9th; Moon/mother/4th; Mars/siblings/3rd; Mercury/profession/10th; Jupiter/children/5th; Venus/marriage/7th; Saturn/longevity/8th.
 
-The UI places these targets and the added longevity rules after the existing Sodhya Pinda report in Chart Analysis. A local Swiss Ephemeris WASM transit scanner now calculates actual sidereal-Lahiri ingress windows for Saturn and Jupiter across the next 15 years, in IST by default. It returns start/end timestamps for (a) the main product-derived nakshatra, (b) the optional 10th/19th nakshatra alternatives mentioned in §25.6, and (c) the product-derived rasi. Sampling is daily, then each detected entry/exit is refined with bisection. The report labels the period, timezone and ephemeris source. This is transit arithmetic, not a claim that an event will occur in those windows. PVR states that this method is inconsistent and open to research. No final life-span/death date is produced. The existing B.V. Raman report remains a distinct formula/source track and is not used to substitute for PVR's Sodhya Pinda. Regression includes PVR Example 111’s historical Saturn/Revati/Pisces reference around 31 August 1997.
+The UI places the calculated longevity results and Sodhya Pinda timing table after the existing Sodhya Pinda report in Chart Analysis. It no longer prints the author's name, the cited page-range note, the copied rule paragraphs, or the author-specific research warning in the visible heading/body. A local Swiss Ephemeris WASM transit scanner now calculates actual sidereal-Lahiri ingress windows for Saturn and Jupiter across the next 15 years, in IST by default. It returns start/end timestamps for (a) the main product-derived nakshatra, (b) the optional 10th/19th nakshatra alternatives mentioned in §25.6, and (c) the product-derived rasi. Sampling is daily, then each detected entry/exit is refined with bisection. The report labels the period, timezone and ephemeris source. This is transit arithmetic, not a claim that an event will occur in those windows. PVR states that this method is inconsistent and open to research. No final life-span/death date is produced. The existing B.V. Raman report remains a distinct formula/source track and is not used to substitute for PVR's Sodhya Pinda. Regression includes PVR Example 111’s historical Saturn/Revati/Pisces reference around 31 August 1997.
 
 ## Regression coverage added on this branch
 
@@ -61,6 +61,7 @@ The UI places these targets and the added longevity rules after the existing Sod
 - Niryaana Shoola: Saturn-in-seed fixture verifies the documented forward exception and movable/fixed/dual durations.
 - Shoola: antardasa starts from the stronger of Dasa sign/7th and proceeds in regular zodiacal order.
 - PVR Sodhya target: zero remainder maps to Revati/Pisces, and each source event product is raw BAV rekhas multiplied by that planet's Sodhya Pinda.
+- Rudra / Trishoola / Maheswara: Table 32 special eighth-house signs; Saturn-in-Cancer Example 86 fallback; three-sign trines; Atmakaraka node conjunct exception; own/exalted Maheswara-lord exception; Rahu/Ketu final substitutions; renderer output only shows computed values and matching Niryaana Shoola periods.
 - Transit-calendar regression: Swiss Ephemeris target ingress windows cover the historical Example 111 reference; all windows have positive duration; timezone is IST and results remain research-only.
 - Narayana Mercury-in-Virgo: uncapped 13 years is preserved in an audit warning, a separately sourced 12-year cap is applied, and the second cycle becomes 0 rather than −1.
 - Every new result explicitly reports `researchOnly: true` / `certified: false`.

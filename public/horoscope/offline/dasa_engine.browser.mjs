@@ -226,8 +226,15 @@ function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
    niryaanaShoola:{periods:periodsInBand(ayurDasa.sequence),rule:'Find the Trishoola sign among Niryaana Shoola Mahadasas whose elapsed-age interval intersects the category band. Rudra/Trishoola selection remains a separate, not fully automated check.'},
    shoola:{periods:periodsInBand(shoolaDasa.sequence),rule:'Use the first/middle/last four fixed 9-year Shoola Mahadasas for short/middle/long category respectively.'},
    researchOnly:true,certified:false,
-   caution:'These are age-band/Dasa timing references, not a death prediction. The required Trishoola/AL/maraka corroboration is not automatically certified.'
+   caution:'These are age-band/Dasa timing references, not a death prediction.'
   };
+  const special=pvrResearch.longevity.specialIndicators;
+  if(special?.available){
+   const trishoolaSigns=new Set((special.trishoola||[]).flatMap(item=>item.signIndices||[]));
+   special.niryaanaShoolaMatches=periodsInBand(ayurDasa.sequence)
+    .filter(row=>trishoolaSigns.has(row.rasi))
+    .map(row=>({...row,rasiName:RASI_EN[row.rasi]||null,rasiTamil:RASI_TA[row.rasi]||null}));
+  }
  }
  return {ashtottari:ashtottari(chart,start,{birthPanchang:birthPanchang||advancedContext?.birthPanchang}),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
 }
