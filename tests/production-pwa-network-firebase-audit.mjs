@@ -207,7 +207,7 @@ async function navigate(page, url, collector, label) {
   const mark = collector.mark();
   const started = Date.now();
   console.log('[audit] navigate:start',label,safeUrl(url).path);
-  const response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000});
+  const response = await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
   console.log('[audit] navigate:domcontentloaded',label,'status',response?.status()??null,'ms',Date.now()-started);
   // Listen to the Chromium-level load event, not a page.evaluate timer. A busy
   // or frozen page main thread must not block this harness's diagnostic timeout.
