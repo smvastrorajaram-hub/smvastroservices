@@ -264,9 +264,9 @@ function kalachakra(chart,startDate){
  const moon=Number(chart.planets?.find(x=>planetKey(x.name)==='Moon')?.longitude);
  if(!Number.isFinite(moon))return {available:false,reason:'Moon longitude unavailable'};
  const L=norm360(moon),nak=Math.floor(L/(13+1/3)),pada=Math.floor((L%(13+1/3))/(3+1/3));
- // Selected Kalachakra lineage: the complete 15-star Savya / 12-star Apasavya taxonomy, corroborated by a parallel Kalachakra Dasa table (Revati in Savya-1; Uttarabhadrapada in Savya-2). PVR Tables 44–45 appear to have an incomplete/swapped star-label list here; KC_GROUPS retains PVR's printed nine-rasi pada sequences.
+ // Selected Kalachakra lineage: the complete 15-star Savya / 12-star Apasavya taxonomy, corroborated by a parallel Kalachakra Dasa table. Savya-1 has 9 stars; Savya-2 has 6, including both Uttarabhadrapada and Revati. PVR Table 45's printed list appears to omit Uttarabhadrapada; KC_GROUPS retains PVR's nine-rasi pada sequences.
  const savya=[0,1,2,6,7,8,12,13,14,18,19,20,24,25,26].includes(nak);
- const savya1=[0,2,6,8,12,14,18,20,24,26].includes(nak);
+ const savya1=[0,2,6,8,12,14,18,20,24].includes(nak);
  const group=savya?(savya1?'savya1':'savya2'):([3,9,15,21].includes(nak)?'apasavya1':'apasavya2');
  const initialPadaSigns=KC_GROUPS[group][pada],param=KC_META[group][pada];
  const posInPada=(L%(13+1/3))%(3+1/3),elapsed=(posInPada/(3+1/3))*param;
@@ -303,7 +303,7 @@ function kalachakra(chart,startDate){
   });
   return {...md,antardasas};
  });
- return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continuous pada-row progression and nine-token Antardasa weighting. For subgroup labels, selected lineage uses the complete 15 Savya / 12 Apasavya distribution (Revati in Savya-1; Uttarabhadrapada in Savya-2), rather than the apparent omission/swap in the printed PVR Table 44–45 star lists.'};
+ return {available:true,title:'Kalachakra Dasa',nakshatraIndex:nak+1,pada:pada+1,group,sequence:withSubs,dehaRasi:savya?rows[0].rasi:rows[8].rasi,jeevaRasi:savya?rows[8].rasi:rows[0].rasi,paramayush:param,elapsedYearsBeforeBirth:elapsed,birthDasaRemainingYears:remaining,yearConvention:'Savana year = 360 days (PVR §16.2; Examples 95–97)',method:'PVR §24.2, Tables 43–48, Examples 95–97: continuous pada-row progression and nine-token Antardasa weighting. For subgroup labels, selected lineage uses the complete 15 Savya / 12 Apasavya distribution (Uttarabhadrapada and Revati in Savya-2), correcting the omission in the printed PVR Table 45 star list.'};
 }
 function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
  const rawDate=chart?.birthDate||chart?.birth?.date||chart?.date;
