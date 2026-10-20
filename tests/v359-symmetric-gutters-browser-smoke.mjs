@@ -10,7 +10,7 @@ const fixture=new URL('../public/horoscope/__v359_symmetric_gutters_fixture.html
 const html=[
 '<!doctype html><html lang="ta"><head><meta charset="utf-8">',
 '<meta name="viewport" content="width=device-width,initial-scale=1">',
-...['horoscope.css','chart-style.css','marriage-basic-report.css','horoscope-readings.css','smv-ui.css','header-layout.css','v358-result-layout.css','v359-symmetric-gutters.css'].map(x=>'<link rel="stylesheet" href="'+x+'">'),
+...['horoscope.css','chart-style.css','marriage-basic-report.css','horoscope-readings.css','smv-ui.css','header-layout.css','v358-result-layout.css'].map(x=>'<link rel="stylesheet" href="'+x+'">'),
 '</head><body class="smv-v12-theme"><main>',
 '<section class="feature-section" id="english-horoscope"><div class="card">',
 '<h2>ஜாதகம் கணித்தல்</h2><div class="grid"><label>பெயர்<input value="Perambalur"></label></div>',
