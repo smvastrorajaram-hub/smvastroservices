@@ -8,6 +8,7 @@ on:
       - 'public/horoscope/**/*.cjs'
       - 'tests/horoscope-generation-progress-regression.mjs'
       - 'tests/calculation-regression.mjs'
+      - 'tests/prediction-rules-published-regression.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
@@ -40,6 +41,7 @@ on:
       - 'public/horoscope/**/*.cjs'
       - 'tests/horoscope-generation-progress-regression.mjs'
       - 'tests/calculation-regression.mjs'
+      - 'tests/prediction-rules-published-regression.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
@@ -93,6 +95,8 @@ jobs:
         run: node tests/horoscope-generation-progress-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
+      - name: Published Admin Prediction Rules and offline fallback regression
+        run: node tests/prediction-rules-published-regression.mjs
       - name: V358 unified result layer source regression
         run: node tests/v358-unified-result-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
