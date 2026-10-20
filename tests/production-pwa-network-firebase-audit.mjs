@@ -243,23 +243,28 @@ async function navigate(page, url, collector, label) {
   assert.ok(rec.network.completedRequests>0,label+' should contain measurable network resources');
   return rec;
 }
-async function registrationState(page) {
-  return page.evaluate(async () => {
-    if (!('serviceWorker' in navigator)) return {supported:false};
-    const ready = await Promise.race([
-      navigator.serviceWorker.ready.then(r => ({reg:r})),
-      new Promise(resolve => setTimeout(() => resolve({reg:null,timeout:true}),35000))
-    ]);
-    let reg = ready.reg || await navigator.serviceWorker.getRegistration().catch(()=>null);
-    return {
-      supported:true, ready:!!ready.reg, timeout:!!ready.timeout,
-      scope:reg?.scope||null,
-      activeScript:reg?.active?.scriptURL||null,
-      state:reg?.active?.state||null,
-      controlled:!!navigator.serviceWorker.controller,
-      controllerScript:navigator.serviceWorker.controller?.scriptURL||null
-    };
-  });
+async function registrationState(page, timeoutMs=60000) {
+  const started=Date.now();
+  let last={supported:true,ready:false,timeout:false,scope:null,activeScript:null,state:null,controlled:false,controllerScript:null};
+  while(Date.now()-started<timeoutMs){
+    last=await page.evaluate(async () => {
+      if (!('serviceWorker' in navigator)) return {supported:false};
+      const reg=await navigator.serviceWorker.getRegistration().catch(()=>null);
+      return {
+        supported:true,ready:!!reg?.active&&reg.active.state==='activated',timeout:false,
+        scope:reg?.scope||null,
+        activeScript:reg?.active?.scriptURL||null,
+        state:reg?.active?.state||reg?.installing?.state||reg?.waiting?.state||null,
+        installingScript:reg?.installing?.scriptURL||null,
+        waitingScript:reg?.waiting?.scriptURL||null,
+        controlled:!!navigator.serviceWorker.controller,
+        controllerScript:navigator.serviceWorker.controller?.scriptURL||null
+      };
+    });
+    if(!last.supported||last.ready)return {...last,waitedMs:Date.now()-started};
+    await sleep(750);
+  }
+  return {...last,timeout:true,waitedMs:Date.now()-started};
 }
 async function manifestInfo(page) {
   return page.evaluate(async () => {
@@ -333,7 +338,7 @@ async function run() {
     headless: chromium.headless,
     defaultViewport: chromium.defaultViewport,
     dumpio: true,
-    protocolTimeout: 30000
+    protocolTimeout: 60000
   });
   report.environment.browserVersion=await browser.version();
   console.log('[audit] browser:ready',report.environment.browserVersion);
