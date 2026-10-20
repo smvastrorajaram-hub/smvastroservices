@@ -9,10 +9,15 @@ const E=window.SMVPredictionRules;
 const FIREBASE_CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
 const COLLECTION='smv_content',DOC_ID='prediction_rules_v1',CACHE='smv-global-prediction-rules-cache-v1';
 let settled=false,initial=null;
-const cached=()=>{try{const c=JSON.parse(localStorage.getItem(CACHE)||'null');if(c?.published===true&&c?.schemaVersion===1&&Array.isArray(c.rules)){const parsed=E?.normalizeRules(c.rules);if(parsed?.length===c.rules.length)E.setPublishedRules(parsed);}}catch{}};
+const staticFallback=()=>{
+ const rules=E?.normalizeRules(window.SMVPUBLISHED_PREDICTION_RULES||[])||[];
+ E?.setPublishedRules(rules);
+ return rules.length;
+};
+const cached=()=>{try{const c=JSON.parse(localStorage.getItem(CACHE)||'null');if(c?.published===true&&c?.schemaVersion===1&&Array.isArray(c.rules)&&c.rules.length>0){const parsed=E?.normalizeRules(c.rules);if(parsed?.length===c.rules.length&&parsed.length>0)E.setPublishedRules(parsed);else localStorage.removeItem(CACHE);}else if(c?.published===true&&Array.isArray(c.rules)&&c.rules.length===0)localStorage.removeItem(CACHE);}catch{}};
 cached();
 export function acceptPublished(data,rebroadcast=true){
- if(!E||data?.published!==true||data?.schemaVersion!==1||!Array.isArray(data.rules))return false;
+ if(!E||data?.published!==true||data?.schemaVersion!==1||!Array.isArray(data.rules)||data.rules.length===0)return false;
  const accepted=E.normalizeRules(data.rules);
  if(accepted.length!==data.rules.length)return false;
  E.setPublishedRules(accepted);
@@ -29,12 +34,14 @@ async function fetchPublished(){
   ]);
   const app=getApps().find(x=>x.name==='smv-prediction-rules-public')||initializeApp(FIREBASE_CONFIG,'smv-prediction-rules-public');
   const snap=await getDocFromServer(doc(getFirestore(app),COLLECTION,DOC_ID));
-  if(snap.exists()&&snap.data()?.published===true){acceptPublished(snap.data());}
-  else{E.setPublishedRules([]);try{localStorage.removeItem(CACHE);}catch{}}
+  if(snap.exists()&&snap.data()?.published===true&&acceptPublished(snap.data()))return;
+  // Missing, empty or malformed publication falls back to the version-controlled
+  // static snapshot. Do not silently replace a non-empty reviewed baseline with [].
+  staticFallback();try{localStorage.removeItem(CACHE);}catch{}
  }catch(e){
   // Permission denied means this document is not currently public. Never
   // continue using an obsolete cached rule list as though still published.
-  if(e?.code==='permission-denied'){E?.setPublishedRules([]);try{localStorage.removeItem(CACHE);}catch{}}
+  if(e?.code==='permission-denied'){staticFallback();try{localStorage.removeItem(CACHE);}catch{}}
   console.info('SMV prediction rules: offline/static fallback',e?.code||e?.message||'unavailable');
  }
 }
