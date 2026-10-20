@@ -21,6 +21,20 @@ const CALENDAR_URL = BASE + '/horoscope/calendar/';
 const OUT_DIR = new URL('../artifacts/', import.meta.url);
 const REPORT_PATH = new URL('../artifacts/production-pwa-network-firebase-profile.json', import.meta.url);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+let currentPhase = 'startup';
+let activeCollector = null;
+function setPhase(name) { currentPhase = name; console.log('[profile-phase] ' + name); }
+function instrumentPage(page) {
+  const nativeEvaluate = page.evaluate.bind(page);
+  page.evaluate = (...args) => {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Page JavaScript did not answer within 12000ms; phase=' + currentPhase)), 12000);
+    });
+    return Promise.race([nativeEvaluate(...args), timeout]).finally(() => clearTimeout(timer));
+  };
+  return page;
+}
 const safeUrl = raw => {
   try { const u = new URL(raw); return { origin: u.origin, path: u.pathname }; }
   catch { return { origin: 'unparseable', path: '/' }; }
@@ -199,7 +213,7 @@ async function navigate(page, url, collector, label) {
   await Promise.race([new Promise(resolve=>page.once('load',resolve)),sleep(12000)]);
   const pageLoadWallClockMs = Date.now()-started;
   await sleep(1200);
-  const timing = await page.evaluate(() => {
+  setPhase(label + ': read navigation timing');\n  const timing = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0];
     if (!n) return null;
     const delta = k => Number.isFinite(n[k]) && n[k] > 0 ? +(n[k] - n.startTime).toFixed(1) : null;
@@ -340,7 +354,7 @@ async function run() {
     for(let i=2;i<=3;i++) report.networkTrials.push(await navigate(page,HOROSCOPE_URL,collector,'horoscope no-HTTP-cache navigation '+i));
     console.log('[audit] phase:idle-firestore-profile');
 
-    const baselineMark=collector.mark();
+    setPhase('measure idle scroll, DOM mutation, and language switching');\n    const baselineMark=collector.mark();
     const baselineFirestore=countRpc(collector.all(),'Firestore ');
     const baselineRender=countRpc(collector.all(),'SMV Render backend');
     await page.evaluate(async () => {
@@ -421,7 +435,7 @@ async function run() {
     await calPage.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await calPage.setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36');
     await collector.attach(calPage.target());
-    const calMark=collector.mark();
+    setPhase('measure Calendar PWA fresh install and lazy location cache');\n    const calMark=collector.mark();
     const calendarLoad=await navigate(calPage,CALENDAR_URL,collector,'calendar PWA cold profile / install cache');
     const calSw=await registrationState(calPage);
     const calManifest=await manifestInfo(calPage);
@@ -478,10 +492,14 @@ async function run() {
   }
 }
 run().catch(async error=>{
+  const captured = activeCollector?.all?.() || [];
   const failure = {
     generatedAt:new Date().toISOString(),
     status:'FAILED_BEFORE_PROFILE_COMPLETION',
-    error:{name:String(error?.name||'Error'),message:String(error?.message||error).slice(0,500),stack:String(error?.stack||'').split('\\n').slice(0,8).join('\\n')},
+    failedPhase:currentPhase,
+    partialNetworkSummary:captured.length ? summarizeNetwork(captured) : null,
+    recentRedactedRequests:captured.slice(-80).map(cleanRequest),
+    error:{name:String(error?.name||'Error'),message:String(error?.message||error).slice(0,500),stack:String(error?.stack||'').split(/\\r?\\n/).slice(0,10).join('\\n')},
     androidDeviceValidation:{status:'NOT_RUN',reason:'No attached Android device/ADB or launcher available in this run.'}
   };
   try{
