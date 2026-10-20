@@ -334,8 +334,9 @@ async function run() {
     });
     await sleep(1800);
     const afterInteraction=collector.all();
-    const interactionFirestore=countRpc(afterInteraction.slice(baselineMark.index),'Firestore ');
-    const interactionRender=countRpc(afterInteraction.slice(baselineMark.index),'SMV Render backend');
+    const interactionRequests=collector.since(baselineMark);
+    const interactionFirestore=countRpc(interactionRequests,'Firestore ');
+    const interactionRender=countRpc(interactionRequests,'SMV Render backend');
     assert.equal(interactionFirestore.requests,0,'scroll, DOM mutation and language switching must not trigger a Firestore request');
     assert.equal(interactionRender.requests,0,'idle UI changes must not call the Render backend');
     report.firebaseProfile.idleInteraction={
@@ -345,23 +346,22 @@ async function run() {
       pass:true
     };
 
-    const beforeRules=collector.all().length;
+    const rulesMark=collector.mark();
     const rulesReady=await page.evaluate(async () => {
       if(!window.SMVPredictionRulesSync?.ensureReady)return {available:false};
       try{await window.SMVPredictionRulesSync.ensureReady();return {available:true,settled:true};}
       catch(e){return {available:true,settled:false,error:String(e?.message||e).slice(0,120)};}
     });
     await sleep(1200);
-    const afterFirstRead=collector.all();
-    const firstReadSlice=afterFirstRead.slice(beforeRules);
+    const firstReadSlice=collector.since(rulesMark);
     const firstReadCount=countRpc(firstReadSlice,'Firestore ');
     assert.ok(rulesReady.available,'public prediction-rules lazy reader must be exposed after page load');
     assert.ok(firstReadCount.requests>0,'one explicit published-rules read should reach Firestore (or transport should be visible for diagnosis)');
     assert.ok(firstReadCount.requests<=8,'one logical read should not fan out to an unexpectedly large number of Firestore transports');
-    const afterFirstCount=collector.all().length;
+    const repeatMark=collector.mark();
     await page.evaluate(async () => { await window.SMVPredictionRulesSync.ensureReady(); });
     await sleep(900);
-    const secondReadSlice=collector.all().slice(afterFirstCount);
+    const secondReadSlice=collector.since(repeatMark);
     const secondReadCount=countRpc(secondReadSlice,'Firestore ');
     assert.equal(secondReadCount.requests,0,'a second ensureReady call must reuse the in-flight/settled single read');
     report.firebaseProfile.publishedRulesRead={
@@ -404,7 +404,10 @@ async function run() {
     await sleep(700);
     const beforeSearch=await cacheEntries(calPage);
     assert.equal(beforeSearch.placeShards.length,0,'fresh Calendar PWA install must not cache any India location JSON shard');
+    const installEventEnd=collector.all().length;
+    const installNetworkEvents=collector.all().slice(calMark.index,installEventEnd);
     const searchMark=collector.mark();
+    const searchStarted=Date.now();
     const search=await calPage.evaluate(async () => {
       const mod=await import('/horoscope/offline/places/place-search.mjs');
       const rows=await mod.searchPlaces('Perambalur',12);
@@ -416,16 +419,15 @@ async function run() {
     assert.ok(afterSearch.placeShards.length>0,'first search should cache selected letter-shard parts for offline reuse');
     const requestedParts=collector.since(searchMark).filter(x=>isPlaceShard(x.url));
     assert.ok(requestedParts.length>0,'first search should download selected location parts on demand');
-    const calMetrics=collector.since(calMark);
-    const initialShards=calMetrics.filter(x=>isPlaceShard(x.url));
+    const initialShards=installNetworkEvents.filter(x=>isPlaceShard(x.url));
     assert.equal(initialShards.length,0,'no India location parts may be downloaded before first search');
-    report.networkTrials.push({...calendarLoad,network:summarizeNetwork(collector.since(calMark))});
+    report.networkTrials.push({...calendarLoad,network:summarizeNetwork(installNetworkEvents)});
     report.checks.calendarPwa={
       pass:true,serviceWorker:calSw,manifest:calManifest,
       installCache:{cacheNamesBeforeSearch:beforeSearch.cacheNames,placeShardCountBeforeSearch:beforeSearch.placeShards.length,
         placeShardCountAfterSearch:afterSearch.placeShards.length,cachedParts:afterSearch.placeShards.map(x=>({cache:x.cache,path:x.path})),
         networkPartRequestsAtInstall:initialShards.length,networkPartRequestsOnFirstSearch:requestedParts.length},
-      firstSearch:{query:'Perambalur',resultCount:search.count,matched:true,searchElapsedMs:requestedParts.length?Math.max(...requestedParts.map(x=>x.durationMs||0)):null},
+      firstSearch:{query:'Perambalur',resultCount:search.count,matched:true,searchElapsedMs:Date.now()-searchStarted,partRequestCount:requestedParts.length},
       pass:true
     };
     await calContext.close();
