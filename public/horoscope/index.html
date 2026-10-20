@@ -127,7 +127,7 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
  window.__smvLoadHoroscopeAdvanced=ensure;
  document.addEventListener('click',event=>{
   if(replaying)return;
-  const button=event.target?.closest?.('#generateEnglishHoroscope, #generateTamilHoroscope');
+  const button=event.target?.closest?.('#generateEnglishHoroscope, #generateTamilHoroscope, #smvAdmPreview, [data-wb-calculate]');
   if(!button||ready)return;
   event.preventDefault();event.stopImmediatePropagation();
   if(waitingButton)return;
