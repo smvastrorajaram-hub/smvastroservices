@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import {calculateSwiss} from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {phase4Dasa} from '../public/horoscope/offline/dasa_engine.browser.mjs';
-import {resolveSodhyaPindaTarget,calculateSodhyaPindaTransitWindows} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
+import {resolveSodhyaPindaTarget,calculateSodhyaPindaTransitWindows,computeRudraTrishoolaMaheswara} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
 let checks=0;
 const ok=(condition,message)=>{assert.ok(condition,message);checks++};
 for(const sample of [
@@ -28,6 +28,8 @@ const sharedArrPos=horoscopeSource.indexOf(sharedArrDecls[0]||'__missing_shared_
 const advancedRendererPos=horoscopeSource.indexOf('function renderAdvancedAstrology(data, lang, rootId)');
 const phase4RendererPos=horoscopeSource.indexOf('function renderPhase4Dasa(data,lang,slot)');
 ok(sharedArrDecls.length===1&&sharedArrPos>=0&&sharedArrPos<advancedRendererPos&&sharedArrPos<phase4RendererPos,'Full-advanced regression: arr is shared by both Advanced Analysis and Phase-4 Dasa renderers');
+ok(horoscopeSource.includes('const special=longevity.specialIndicators')&&horoscopeSource.includes('Matching Niryaana Shoola Periods'),'Longevity panel renders chart-derived indicators and matching Dasa results');
+ok(!horoscopeSource.includes('P.V.R. நரசிம்ம ராவ் — ஆயுள் விதிகள்')&&!horoscopeSource.includes('நூல் பக்கங்கள் 180–185')&&!horoscopeSource.includes('நூலாசிரியர் இந்த சோத்ய')&&!horoscopeSource.includes('மாரக பாவங்கள்: 2 மற்றும் 7; உயிர்/ஆயுள் பாவங்கள்'),'Longevity panel omits copied heading, page note and static rule text');
 const offlineSource=fs.readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
 ok(!offlineSource.includes("import {advanced} from './astro_advanced.browser.mjs'")&&offlineSource.includes("import('./astro_advanced.browser.mjs')"),'Basic-only startup defers Advanced module loading');
 ok(!offlineSource.includes("import {phase4Dasa} from './dasa_engine.browser.mjs'")&&offlineSource.includes("import('./dasa_engine.browser.mjs')"),'Basic-only startup defers Dasa module loading');
@@ -46,6 +48,27 @@ for(let a=0;a<27;a++)for(let b=0;b<27;b++){
 let rejectMoon=false;try{m.porutham({planets:[{name:'சந்திரன்',longitude:null}]},sampleChart(3))}catch{rejectMoon=true}
 ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
+const specialRuleChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
+ {name:'Sun',longitude:29},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
+ {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
+ {name:'Saturn',longitude:202},{name:'Rahu',longitude:190},{name:'Ketu',longitude:10}
+]};
+const specialRuleResult=computeRudraTrishoolaMaheswara(specialRuleChart);
+ok(specialRuleResult.available===true&&specialRuleResult.rudra.length>=1&&specialRuleResult.rudra.length<=2,'Longevity source rules: calculate Rudra from complete natal positions');
+ok(specialRuleResult.rudraCandidates.lagnaEighthSign==='Scorpio'&&specialRuleResult.rudraCandidates.seventhEighthSign==='Taurus','PVR Table 32 oracle: Aries Lagna and Libra 7th use Scorpio/Taurus special eighth-house signs');
+ok(specialRuleResult.trishoola.length===specialRuleResult.rudra.length&&specialRuleResult.trishoola.every(x=>x.signIndices.length===3&&new Set(x.signIndices).size===3&&x.signIndices.every(n=>Number.isInteger(n)&&n>=0&&n<12)),'Each selected Rudra produces three valid Trishoola signs');
+ok(specialRuleResult.maheswara?.planet&&!['Rahu','Ketu'].includes(specialRuleResult.maheswara.planet),'Maheshwara applies Rahu/Ketu substitution');
+ok(specialRuleResult.maheswara.usedSixthLordException===true&&specialRuleResult.maheswara.planet==='Mercury','PVR §14.3: Ketu conjunct Atmakaraka uses 6th lord, Mercury');
+const exaltMaheswaraChart={...specialRuleChart,lagna:{longitude:30},planets:[
+ {name:'Sun',longitude:89},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
+ {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
+ {name:'Saturn',longitude:202},{name:'Rahu',longitude:10},{name:'Ketu',longitude:190}
+]};
+const exaltMaheswara=computeRudraTrishoolaMaheswara(exaltMaheswaraChart);
+ok(exaltMaheswara.atmakaraka.planet==='Sun'&&exaltMaheswara.maheswara.usedOwnExaltException===true&&['Mercury','Venus'].includes(exaltMaheswara.maheswara.planet),'PVR §14.3: exalted 8th lord compares the 8th and 12th lords from its sign');
+const saturnCancerChart={...specialRuleChart,lagna:{longitude:30},planets:specialRuleChart.planets.map(p=>p.name==='Saturn'?{...p,longitude:110}:p)};
+const saturnCancerResult=computeRudraTrishoolaMaheswara(saturnCancerChart);
+ok(saturnCancerResult.rudraCandidates.usedNormalEighthRule===true&&saturnCancerResult.rudraCandidates.lagnaEighthSign==='Sagittarius'&&saturnCancerResult.rudraCandidates.seventhEighthSign==='Gemini','PVR Example 86: when Saturn is in Cancer, use ordinary 8th houses for Rudra');
 const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04'],['2002-10-20','03:41']];
 const dasaSource=fs.readFileSync(new URL('../public/horoscope/offline/dasa_engine.browser.mjs',import.meta.url),'utf8');
 const dasaFixture=(moonLon,lagnaLon=180,rahuLon=300,marsLon=30)=>({birthDate:'2000-01-01',birth:{date:'2000-01-01',time:'12:00',latitude:11.232,longitude:78.88},lagna:{longitude:lagnaLon},planets:[
@@ -140,7 +163,13 @@ const mockSlot={isConnected:true,parentElement:mockReport,closest:()=>mockReport
 renderContext.runRenderer({
  ashtottari:{available:true,sequence:[{lord:'Moon',years:6,start:'2000-01-01',end:'2006-01-01',antardasas:[{lord:'Rahu',years:1,start:'2000-01-01',end:'2001-01-01'}]}]},
  pvrResearch:{
-  longevity:{dasaTiming:{
+  longevity:{specialIndicators:{
+   available:true,
+   rudra:[{planet:'Mars',signIndex:7}],
+   trishoola:[{rudraPlanet:'Mars',signIndices:[7,11,3]}],
+   maheswara:{planet:'Jupiter',signIndex:8},
+   niryaanaShoolaMatches:[{rasi:7,ageStartYears:1,ageEndYears:2,start:'2001-01-01',end:'2002-01-01'}]
+  },dasaTiming:{
    ageBandYears:{start:0,end:36},
    niryaanaShoola:{periods:[{rasi:7,ageStartYears:1,ageEndYears:2,years:1,start:'2001-01-01',end:'2002-01-01'}]},
    shoola:{periods:[]}
@@ -149,6 +178,8 @@ renderContext.runRenderer({
  }
 },'ta',mockSlot);
 ok(mockSlot.innerHTML.includes('ஆண்டுகள்')&&mockSlot.innerHTML.includes('விருச்சிகம்'),'Phase-4 Tamil renderer executes all report paths, including arr(block.periods), without ReferenceError');
+ok(mockSlot.innerHTML.includes('ருத்ரன்')&&mockSlot.innerHTML.includes('திரிசூல ராசிகள்')&&mockSlot.innerHTML.includes('மகேஸ்வரன்')&&mockSlot.innerHTML.includes('பொருந்தும் நிர்யாண சூல தசைக் காலங்கள்'),'Phase-4 shows computed three-part longevity results');
+ok(!mockSlot.innerHTML.includes('P.V.R. நரசிம்ம ராவ் — ஆயுள் விதிகள்')&&!mockSlot.innerHTML.includes('நூல் பக்கங்கள் 180–185')&&!mockSlot.innerHTML.includes('நூலாசிரியர் இந்த சோத்ய'),'Phase-4 omits copied author/page/rule text');
 
 const charts=[];
 let pvrTransitFixtureRows=null;
@@ -173,6 +204,10 @@ for(const [date,time] of birthCases){
  ok(result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.length===7&&result.phase4.pvrResearch.sodhyaPindaEventTiming.rows.every(x=>x.product===x.rawBavRekhas*x.sodhyaPinda),date+' PVR Sodhya Pinda event products follow raw BAV rekha × Yoga Pinda');
  if(!pvrTransitFixtureRows)pvrTransitFixtureRows=result.phase4.pvrResearch.sodhyaPindaEventTiming.rows;
  const longevity=result.phase4.pvrResearch.longevity;
+  const indicators=longevity.specialIndicators;
+  ok(indicators?.available===true&&indicators.rudra?.length>=1&&indicators.maheswara?.planet,date+' chart-based Rudra/Maheshwara results available');
+  ok(indicators.trishoola?.length===indicators.rudra.length&&indicators.trishoola.every(x=>x.signIndices?.length===3),date+' three Trishoola signs calculated for each Rudra result');
+  ok(Array.isArray(indicators.niryaanaShoolaMatches)&&indicators.niryaanaShoolaMatches.every(x=>(indicators.trishoola||[]).some(t=>t.signIndices.includes(x.rasi))),date+' Niryaana Shoola matches must be among computed Trishoola signs');
  ok(['short','middle','long'].includes(longevity.combinedCategory),date+' PVR method-of-three-pairs selects a longevity category with complete chart inputs');
  ok(longevity.dasaTiming?.category===longevity.combinedCategory&&longevity.dasaTiming.certified===false,date+' PVR longevity category exposes research-only Dasa timing bands');
  const focus=longevity.dasaTiming;
