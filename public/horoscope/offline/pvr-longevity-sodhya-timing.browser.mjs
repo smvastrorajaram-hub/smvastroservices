@@ -173,12 +173,7 @@ export function pvrLongevitySodhyaTiming(chart,adv){
  return Object.freeze({
   source:{book:'P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach',longevityPages:'180–185',dasaPages:'226–289',sodhyaPindaPages:'337–341'},
   longevity:{available:pairRows.length===3,pairs:pairRows,combinedCategory:combined,paramaayushYears:parama,selectionRule:selection,eighthLordMethod,
-   additionalRules:[
-    'Maraka houses: 2nd and 7th; vitality/longevity houses: 3rd and 8th. Check relevant lords and Dasa/transit links only as corroborating indicators.',
-    'Rudra: compare lords of the special 8th houses from Lagna and 7th using Table 32 and source-specific strength/affliction exceptions.',
-    'Trishoola: three signs trinal to Rudra; compare with the provisional longevity category in Niryaana Shoola Dasa.',
-    'Maheswara: 8th lord from Atmakaraka, subject to the exceptions in §14.3.'
-   ],researchOnly:true,certified:false,caution:'The book says longevity-category methods are not infallible; no life-span age or death date is produced.'},
+   specialIndicators,researchOnly:true,certified:false,caution:'The book says longevity-category methods are not infallible; no life-span age or death date is produced.'},
   sodhyaPindaEventTiming:{available:timingRows.length===7,method:'Raw BAV rekhas in the specified house from the planet × that planet’s PVR/Parasara Sodhya Pinda. Divide by 27 for nakshatra and by 12 for rasi; zero remainder means 27th nakshatra/12th rasi.',rows:timingRows,pindaRows,missingInputs:missing,researchOnly:true,certified:false,caution:'The author says this timing method is inconsistent and open to research. Transit indications are not certain event dates.'}
  });
 }
