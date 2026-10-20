@@ -31,11 +31,14 @@ export function createPlaceSearchEngine({fetchImpl=fetch}={}){
   const flight=(async()=>{
    const m=await getManifest(),info=m.shards[key];
    if(!info)return [];
-   const r=await fetchImpl(new URL('./india/'+info.file,import.meta.url));
-   if(!r.ok)throw new Error('Offline India place shard unavailable');
-   const rows=await r.json();
-   shards.set(key,rows);
-   return rows;
+   const loadPart=async part=>{
+    const r=await fetchImpl(new URL('./india/'+part.file,import.meta.url));
+    if(!r.ok)throw new Error('Offline India place shard unavailable: '+part.file);
+    return r.json();
+   };
+   const groups=Array.isArray(info.parts)?await Promise.all(info.parts.map(loadPart)):[await loadPart(info)];
+   shards.set(key,groups);
+   return groups;
   })();
   shardFlights.set(key,flight);
   try{return await flight;}finally{shardFlights.delete(key);}
@@ -45,23 +48,25 @@ export function createPlaceSearchEngine({fetchImpl=fetch}={}){
   const max=Math.max(1,Math.min(70,Number(limit)||12));
   const cacheKey=n+'|'+max+'|'+language;
   if(resultCache.has(cacheKey))return resultCache.get(cacheKey);
-  const shardKey=keyFor(n),rows=await getShard(shardKey),top=[],matched=[];
+  const shardKey=keyFor(n),groups=await getShard(shardKey),top=[],matched=[];
   const prev=prefixCandidates.get(shardKey);
-  const source=prev&&n.startsWith(prev.q)&&n.length>prev.q.length?prev.rows:rows;
+  const sourceGroups=prev&&n.startsWith(prev.q)&&n.length>prev.q.length?[prev.rows]:groups;
   let count=0;
-  for(const x of source){
-   if(isCancelled())throw new DOMException('Aborted','AbortError');
-   let best=99;
-   for(const a of aliases(x)){
-    if(a===n){best=0;break;}
-    if(a.startsWith(n))best=Math.min(best,1);
-    else if(a.includes(' '+n))best=Math.min(best,2);
-    else if(a.includes(n))best=Math.min(best,3);
-   }
-   if(best<99){matched.push(x);insertTop(top,{x,score:best},max);}
-   if(++count%1200===0){
-    await new Promise(resolve=>setTimeout(resolve,0));
+  for(const group of sourceGroups){
+   for(const x of group){
     if(isCancelled())throw new DOMException('Aborted','AbortError');
+    let best=99;
+    for(const a of aliases(x)){
+     if(a===n){best=0;break;}
+     if(a.startsWith(n))best=Math.min(best,1);
+     else if(a.includes(' '+n))best=Math.min(best,2);
+     else if(a.includes(n))best=Math.min(best,3);
+    }
+    if(best<99){matched.push(x);insertTop(top,{x,score:best},max);}
+    if(++count%1200===0){
+     await new Promise(resolve=>setTimeout(resolve,0));
+     if(isCancelled())throw new DOMException('Aborted','AbortError');
+    }
    }
   }
   prefixCandidates.set(shardKey,{q:n,rows:matched});
