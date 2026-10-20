@@ -48,6 +48,25 @@ for(let a=0;a<27;a++)for(let b=0;b<27;b++){
 let rejectMoon=false;try{m.porutham({planets:[{name:'சந்திரன்',longitude:null}]},sampleChart(3))}catch{rejectMoon=true}
 ok(rejectMoon,'Missing Moon position accepted');
 ok(m.kuja({lagna:{longitude:null},planets:[{name:'செவ்வாய்',longitude:100},{name:'சந்திரன்',longitude:null},{name:'சுக்கிரன்',longitude:0}]}).all.length===1,'Null Kuja reference became Aries');
+const vimWrapperSource=fs.readFileSync(new URL('../public/horoscope/offline/server-wrapper.browser.mjs',import.meta.url),'utf8');
+const vimRuntimeStart=vimWrapperSource.indexOf('function nakshatraInfo(lon)');
+const vimRuntimeEnd=vimWrapperSource.indexOf('function circularLonDiff(',vimRuntimeStart);
+ok(vimRuntimeStart>=0&&vimRuntimeEnd>vimRuntimeStart,'Found production Vimshottari Nakshatra Dasa source block');
+const vimRuntime=vimWrapperSource.slice(vimRuntimeStart,vimRuntimeEnd);
+const vimContext={
+ NAKSHATRAS:['அஸ்வினி','பரணி','கார்த்திகை','ரோகிணி','மிருகசீரிடம்','திருவாதிரை','புனர்பூசம்','பூசம்','ஆயில்யம்','மகம்','பூரம்','உத்திரம்','ஹஸ்தம்','சித்திரை','சுவாதி','விசாகம்','அனுஷம்','கேட்டை','மூலம்','பூராடம்','உத்திராடம்','திருவோணம்','அவிட்டம்','சதயம்','பூரட்டாதி','உத்திரட்டாதி','ரேவதி'],
+ NAK_LORDS:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
+ DASHA_YEARS:{'கேது':7,'சுக்கிரன்':20,'சூரியன்':6,'சந்திரன்':10,'செவ்வாய்':7,'ராகு':18,'குரு':16,'சனி':19,'புதன்':17},
+ DASHA_ORDER:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
+ norm360:n=>{const x=Number(n)%360;return x<0?x+360:x;}
+};
+vm.runInNewContext(vimRuntime+'\nglobalThis.__vimshottariAudit=dashaAtBirth;',vimContext,{timeout:10000});
+const vimshottariExample50=vimContext.__vimshottariAudit(302+23/60,new Date('2000-04-28T00:00:00Z'),'2026-10-20',330);
+const vimBirthMd=vimshottariExample50.periods[0];
+ok(Math.abs(vimshottariExample50.balanceYears-2.24875)<1e-8&&Math.abs(vimBirthMd.years-2.24875)<1e-8&&vimBirthMd.fullYears===7,'PVR §16.2 Example 50: Dhanishtha Moon at 2°23 Aquarius leaves 2.24875 Mars Dasa years');
+ok(vimBirthMd.start==='2000-04-28'&&['2002-07-15','2002-07-16'].includes(vimBirthMd.end),'PVR Example 50: Savana-year Mars balance ends at the source worked-example boundary');
+ok(vimBirthMd.antardashas[0].lord==='கேது'&&vimBirthMd.antardashas[0].years>0&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: birth Antardasa is clipped to the remaining balance from the full Mars Mahadasa');
+ok(Math.abs(vimBirthMd.antardashas.reduce((sum,x)=>sum+x.years,0)-vimBirthMd.years)<1e-8,'Vimshottari visible Antardasa balances sum to the Mahadasa remaining balance');
 const specialRuleChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:29},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
  {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
@@ -69,8 +88,30 @@ ok(exaltMaheswara.atmakaraka.planet==='Sun'&&exaltMaheswara.maheswara.usedOwnExa
 const saturnCancerChart={...specialRuleChart,lagna:{longitude:30},planets:specialRuleChart.planets.map(p=>p.name==='Saturn'?{...p,longitude:110}:p)};
 const saturnCancerResult=computeRudraTrishoolaMaheswara(saturnCancerChart);
 ok(saturnCancerResult.rudraCandidates.usedNormalEighthRule===true&&saturnCancerResult.rudraCandidates.lagnaEighthSign==='Sagittarius'&&saturnCancerResult.rudraCandidates.seventhEighthSign==='Gemini','PVR Example 86: when Saturn is in Cancer, use ordinary 8th houses for Rudra');
+const sudasaExample77Chart={birthDate:'2000-01-01',lagna:{longitude:270},planets:[
+ {name:'Sun',longitude:30},{name:'Moon',longitude:0.4574074074},{name:'Mars',longitude:120},
+ {name:'Mercury',longitude:60},{name:'Jupiter',longitude:180},{name:'Venus',longitude:210},
+ {name:'Saturn',longitude:275},{name:'Rahu',longitude:40},{name:'Ketu',longitude:220}
+]};
+const sudasaExample77=phase4Dasa(sudasaExample77Chart).sudasa;
+ok(sudasaExample77.seed===9&&sudasaExample77.sequence.filter(x=>x.cycle===1).map(x=>x.rasi).join(',')==='9,6,3,0,8,5,2,11,7,4,1,10','PVR §20.2 Example 77: even-sign Capricorn Sree Lagna gives backward Sudasa order despite Saturn occupying the seed sign');
+ok(Math.abs(sudasaExample77.firstFraction-(30-12.35)/30)<1e-4,'PVR §20.2 Example 77: first Sudasa balance uses (30° − 12°21′) / 30°');
 const birthCases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04'],['2002-10-20','03:41']];
 const dasaSource=fs.readFileSync(new URL('../public/horoscope/offline/dasa_engine.browser.mjs',import.meta.url),'utf8');
+const strengthStart=dasaSource.indexOf('const SIGN_LORDS=');
+const strengthMid=dasaSource.indexOf('function rasiAspects(sign){',strengthStart);
+const strengthEnd=dasaSource.indexOf('function narayanaLengthDetail(',strengthMid);
+ok(strengthStart>=0&&strengthMid>strengthStart&&strengthEnd>strengthMid,'Found source strength hierarchy and Rasi aspect helpers');
+const strengthContext={EXALT:{Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6},DEBIL:{Sun:6,Moon:7,Mars:3,Mercury:11,Jupiter:9,Venus:5,Saturn:0},mod12:n=>((n%12)+12)%12,oddSign:i=>[0,2,4,6,8,10].includes(i),oddFootedSign:i=>[0,1,2,6,7,8].includes(((i%12)+12)%12)};
+const strengthRuntime=dasaSource.slice(strengthStart,strengthMid)+dasaSource.slice(strengthMid,strengthEnd);
+vm.runInNewContext(strengthRuntime+'\nglobalThis.__strengthAudit={strongerSign,ownLord};',strengthContext,{timeout:10000});
+const strength=strengthContext.__strengthAudit;
+ok(strength.strongerSign(0,6,{Sun:{sign:0},Moon:{sign:0},Mars:{sign:4},Mercury:{sign:2},Jupiter:{sign:0},Venus:{sign:6},Saturn:{sign:8},Rahu:{sign:10},Ketu:{sign:4}})===0,'PVR §15.5.2 rule 1: occupied-planet count outranks later strength tie-breakers');
+ok(strength.strongerSign(0,6,{Moon:{sign:0,degree:10},Rahu:{sign:6,degree:10},Mars:{sign:4,degree:23},Venus:{sign:4,degree:19}})===0,'PVR §15.5.2 tie-break sequence reaches lord advancement only after the earlier rules tie');
+ok(strength.strongerSign(0,6,{Venus:{sign:0,degree:10},Saturn:{sign:6,degree:10}})===6,'PVR §15.5.2: exalted Saturn in Libra wins an otherwise tied Aries/Libra comparison');
+ok(strength.strongerSign(4,10,{Rahu:{sign:0,degree:10},Saturn:{sign:2,degree:10}})===10,'PVR §15.5.2 Exercise 26: Aquarius co-lord Rahu aspect is counted even with Saturn as primary co-lord');
+ok(strength.ownLord(7,{Mars:{sign:7,degree:5},Ketu:{sign:0,degree:5}})==='Ketu','PVR §15.5.1: co-lord in its own Scorpio sign selects the other co-lord');
+ok(strength.ownLord(10,{Saturn:{sign:2,degree:6},Rahu:{sign:5,degree:10}},'dasa')==='Saturn','PVR §15.5.1: Aquarius Dasa co-lord comparison uses calculated Narayana years');
 const dasaFixture=(moonLon,lagnaLon=180,rahuLon=300,marsLon=30)=>({birthDate:'2000-01-01',birth:{date:'2000-01-01',time:'12:00',latitude:11.232,longitude:78.88},lagna:{longitude:lagnaLon},planets:[
  {name:'Sun',longitude:0},{name:'Moon',longitude:moonLon},{name:'Mars',longitude:marsLon},
  {name:'Mercury',longitude:90},{name:'Jupiter',longitude:240},{name:'Venus',longitude:120},
