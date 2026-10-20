@@ -8,6 +8,8 @@
  * additionally require the user's 150 verified birth records.
  */
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
 import { readFileSync } from 'node:fs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
@@ -27,6 +29,30 @@ const TA_TO_EN = Object.freeze({
   'குரு':'Jupiter','சுக்கிரன்':'Venus','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu'
 });
 const CLASSICAL = Object.freeze(['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']);
+const require = createRequire(import.meta.url);
+const {render:renderD1HumanNarrative} = require('../public/horoscope/d1-human-narrative.js');
+const D1_LORDS = Object.freeze(['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter']);
+function narrativeInputFromChart(chart) {
+  const norm = value => ((Number(value)%360)+360)%360;
+  const lagnaLon=Number(chart?.lagna?.longitude);
+  if(!Number.isFinite(lagnaLon)) throw new Error('Actual calculated Lagna longitude is unavailable for D1 narrative audit');
+  const lagna=Math.floor(norm(lagnaLon)/30), planets={};
+  for(const raw of chart?.planets||[]) {
+    const name=TA_TO_EN[raw?.name], longitude=Number(raw?.longitude);
+    if(!name||!Number.isFinite(longitude)) continue;
+    const sign=Math.floor(norm(longitude)/30);
+    planets[name]={key:name,sign,house:((sign-lagna+12)%12)+1,
+      dignity:raw?.dignity||raw?.strength?.dignity||'neutral',
+      combust:raw?.combust===true||raw?.strength?.combustion===true,
+      retrograde:raw?.retrograde===true||raw?.strength?.retrograde===true};
+  }
+  const houses=Array.from({length:12},(_,idx)=>{
+    const sign=(lagna+idx)%12, no=idx+1;
+    return {no,sign,lord:D1_LORDS[sign],
+      occupants:Object.keys(planets).filter(name=>planets[name].house===no),aspects:[]};
+  });
+  return {lagna,planets,houses};
+}
 let assertions = 0;
 const ok = (value, message) => { assert.ok(value, message); assertions++; };
 const eq = (actual, expected, message) => { assert.equal(actual, expected, message); assertions++; };
@@ -87,6 +113,7 @@ const startedAt = Date.now();
 const computed = [];
 const chartSignatures = new Set();
 const pindaPanelSignatures = new Set();
+const d1NarrativeSignatures = {ta:new Set(),en:new Set()};
 const bvrPindaSignatures = new Set();
 const cgPindaSignatures = new Set();
 const cgMethodCounts = {};
