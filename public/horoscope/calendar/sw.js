@@ -4,7 +4,7 @@ const CACHE='smv-calendar-source-clean-20261020-lazy-place-shards';
 // so previously searched letters remain available offline.
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
- '../daily-calendar.mjs','../daily-calendar.css','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
+ '../daily-calendar.mjs','../daily-calendar.css','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.css','../location-search-online-offline.js',
  '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
