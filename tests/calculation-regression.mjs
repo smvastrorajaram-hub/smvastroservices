@@ -53,7 +53,7 @@ const vimshottariExample50=dashaAtBirth(302+23/60,new Date('2000-04-28T09:50:00Z
 const vimBirthMd=vimshottariExample50.periods[0];
 ok(Math.abs(vimshottariExample50.balanceYears-2.24875)<1e-8&&Math.abs(vimBirthMd.years-2.24875)<1e-8&&vimBirthMd.fullYears===7,'PVR §16.2 Example 50: Dhanishtha Moon at 2°23 Aquarius leaves 2.24875 of Mars Dasa years');
 ok(vimBirthMd.start==='2000-04-28'&&['2002-07-15','2002-07-16'].includes(vimBirthMd.end),'PVR Example 50: Mars balance ends at the source worked-example boundary (date granularity allows one day)');
-ok(vimBirthMd.antardashas[0].lord==='கேது'&&Math.abs(vimBirthMd.antardashas[0].years+0.0-(vimBirthMd.antardashas[0].years))<1e-12&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: antardasas are split across the full 7-year Mars Mahadasa; the running birth Antardasa is shown as only its remaining balance');
+ok(vimBirthMd.antardashas[0].lord==='கேது'&&vimBirthMd.antardashas[0].years>0&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: antardasas are split across the full 7-year Mars Mahadasa; the running birth Antardasa is shown as only its remaining balance');
 ok(Math.abs(vimBirthMd.antardashas.reduce((sum,x)=>sum+x.years,0)-vimBirthMd.years)<1e-8,'Vimshottari visible Antardasa balances sum to the Mahadasa remaining balance at birth');
 const currentVimAd=vimBirthMd.antardashas[0];
 ok(currentVimAd.pratyantars?.length===9&&currentVimAd.pratyantars[0].years<currentVimAd.pratyantars[0].fullYears,'Vimshottari Pratyantardasa nesting clips the birth-running sub-sub-period without changing full-period weights');
@@ -99,6 +99,10 @@ const occupancyStrengthFixture={lagna:{longitude:0},planets:[
  {name:'Saturn',longitude:240},{name:'Rahu',longitude:310},{name:'Ketu',longitude:130}
 ]};
 ok(strongerSign(0,6,{Sun:{sign:0},Moon:{sign:0},Mars:{sign:4},Mercury:{sign:2},Jupiter:{sign:0},Venus:{sign:6},Saturn:{sign:8},Rahu:{sign:10},Ketu:{sign:4}})===0,'PVR §15.5.2 rule 1: the sign with more occupied planets wins before any weighted score');
+ok(strongerSign(0,6,{Moon:{sign:0,degree:10},Rahu:{sign:6,degree:10},Mars:{sign:4,degree:23},Venus:{sign:4,degree:19}})===0,'PVR §15.5.2 rules 2–6: tie is resolved by the sign lord with greater advancement after equal occupancy, support, exaltation, parity and modality');
+ok(strongerSign(0,6,{Venus:{sign:0,degree:10},Saturn:{sign:6,degree:10}})===6,'PVR §15.5.2 rule 3: an exalted Saturn in Libra breaks an otherwise tied Aries/Libra comparison');
+ok(ownLord(7,{Mars:{sign:7,degree:5},Ketu:{sign:0,degree:5}})==='Ketu','PVR §15.5.1 basic co-lord rule: if Mars occupies Scorpio, choose Ketu for Scorpio');
+ok(ownLord(10,{Saturn:{sign:2,degree:6},Rahu:{sign:5,degree:10}},'dasa')==='Saturn','PVR §15.5.1 rule 5a: Saturn in Gemini gives 8 Narayana years versus Rahu in Virgo gives 5 for Aquarius Dasa duration');
 const ashtBoundaries=[
  [26+40/60,'Venus'],[66+40/60,'Sun'],[120,'Moon'],[160,'Mars'],
  [213+20/60,'Mercury'],[253+20/60,'Saturn'],[293+20/60,'Jupiter'],[333+20/60,'Rahu']
