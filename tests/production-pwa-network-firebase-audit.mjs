@@ -304,7 +304,13 @@ async function run() {
   assert.ok(!/\b(onSnapshot|setInterval|MutationObserver)\b/.test(storeCode),'saved report sync has no realtime listener, polling timer, or MutationObserver');
   report.checks.sourceQuotaGuard={pass:true,publishedRulesRead:'single-flight on first explicit calculation/admin entry',savedReports:'local IndexedDB-first; no periodic/listener/MutationObserver reads'};
   await mkdir(OUT_DIR,{recursive:true});
-  const browser = await puppeteer.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:true});
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
+    dumpio: true
+  });
   report.environment.browserVersion=await browser.version();
   const collector=networkCollector(browser);
   try {
@@ -454,4 +460,19 @@ async function run() {
     await browser.close();
   }
 }
-run().catch(error=>{console.error(error?.stack||String(error));process.exitCode=1;});
+run().catch(async error=>{
+  const failure = {
+    generatedAt:new Date().toISOString(),
+    status:'FAILED_BEFORE_PROFILE_COMPLETION',
+    error:{name:String(error?.name||'Error'),message:String(error?.message||error).slice(0,500),stack:String(error?.stack||'').split('\\n').slice(0,8).join('\\n')},
+    androidDeviceValidation:{status:'NOT_RUN',reason:'No attached Android device/ADB or launcher available in this run.'}
+  };
+  try{
+    await mkdir(OUT_DIR,{recursive:true});
+    await writeFile(REPORT_PATH,JSON.stringify(failure,null,2)+'\\n','utf8');
+  }catch(writeError){
+    console.error('Could not write failure report:',String(writeError?.message||writeError));
+  }
+  console.error(error?.stack||String(error));
+  process.exitCode=1;
+});
