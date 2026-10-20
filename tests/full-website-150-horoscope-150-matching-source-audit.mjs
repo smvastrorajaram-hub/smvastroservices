@@ -371,7 +371,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
 eq(computed.length,150,'150 actual full Horoscope chart-engine results completed');
 eq(haranaCompletenessCounts.COMPLETE,150,'all 150 computed charts have complete Chapter XXVI Harana inputs');
 eq(haranaCompletenessCounts.INCOMPLETE||0,0,'no numeric lifespan candidate is withheld for missing Harana inputs');
-eq(cgTieChartDetails.length>=8,'all eight historical tied Shadbala charts remain represented; extended cohort may add ties');
+ok(cgTieChartDetails.length>=8,'all eight historical tied Shadbala charts remain represented; extended cohort may add ties');
 for (const oldCase of [
   {fixtureId:'AUDIT-F-32',planet:'Moon'},
   {fixtureId:'AUDIT-F-39',planet:'Moon'},
