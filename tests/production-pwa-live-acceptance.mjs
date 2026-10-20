@@ -244,7 +244,7 @@ async function run(){
   const cdp=await first.page.target().createCDPSession();
   await cdp.send('Storage.clearDataForOrigin',{origin:BASE,storageTypes:'all'});
   await cdp.send('Network.clearBrowserCache').catch(()=>{});
-  await browser.defaultBrowserContext().clearCookies().catch(()=>{});
+  // Storage.clearDataForOrigin(storageTypes='all') also clears the origin cookies.
   const afterPurge=await capturePage(browser,net,HOROSCOPE,'Horoscope after origin storage purge / reinstall simulation');
   const restoredManifest=await fetchManifest('/horoscope/manifest-en.webmanifest');
   const restoredWorker=await serviceWorkerTargets(browser,'/horoscope/sw.js');
