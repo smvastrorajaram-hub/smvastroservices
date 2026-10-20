@@ -310,7 +310,7 @@ function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(rawDate||'')))throw new Error('Birth date missing for Phase-4 Rasi Dasa');
  const start=new Date(`${rawDate}T00:00:00Z`);
  if(!Number.isFinite(+start)||start.toISOString().slice(0,10)!==rawDate)throw new Error('Invalid birth date for Phase-4 Rasi Dasa');
- const sl=sreeLagnaLongitude(chart),c=JSON.parse(JSON.stringify(chart));c.__sreeLagnaLongitude=sl;
+ const sl=sreeLagnaLongitude(chart),c={...chart,__sreeLagnaLongitude:sl};
  const ayurDasa=niryaanaShoola(chart,start),shoolaDasa=shoola(chart,start);
  const pvrResearch=advancedContext?pvrLongevitySodhyaTiming(chart,advancedContext):null;
  const category=pvrResearch?.longevity?.combinedCategory;
