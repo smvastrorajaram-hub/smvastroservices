@@ -63,9 +63,9 @@ listeners.install({ waitUntil(p) { installPromise = p; } });
 await installPromise;
 ok(fetches.length > 0 && fetches.some(url => url.includes('india-manifest.json')),
    'Install still stores offline search metadata');
-ok(!fetches.some(url => /offline\/places\/india\/(?:[a-z]+|other)\.json(?:\?|$)/i.test(url)),
+ok(!fetches.some(url => /offline\/places\/india\/(?:[a-z]+(?:-\d+)?|other)\.json(?:\?|$)/i.test(url)),
    'Install downloads zero full GeoNames place shards');
-ok(![...stored.keys()].some(url => /offline\/places\/india\/(?:[a-z]+|other)\.json(?:\?|$)/i.test(url)),
+ok(![...stored.keys()].some(url => /offline\/places\/india\/(?:[a-z]+(?:-\d+)?|other)\.json(?:\?|$)/i.test(url)),
    'A fresh cache contains no complete place shard');
 
 let activatePromise;
