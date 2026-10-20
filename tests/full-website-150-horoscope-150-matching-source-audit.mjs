@@ -175,7 +175,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'nine actual graha longitudes are finite for '+birth.name);
   eq(chart.birthDate,birth.date,'source birth date preserved for '+birth.name);
   eq(chart.birthTime,birth.time,'source birth time preserved for '+birth.name);
-  ok(!!(chart.tajakaAnnual || chart.tajakaAnnualError),
+  ok(Object.hasOwn(chart,'tajakaAnnual') || Object.hasOwn(chart,'tajakaAnnualError'),
     'full Horoscope records Tajaka annual result or explicit error for '+birth.name);
   ok(Array.isArray(chart.bhavas) && chart.bhavas.length===12 && chart.bhavas.every(h=>Number.isFinite(Number(h.madhyaLongitude))),
     '12 calculated Sripati Bhava midpoints are present for '+birth.name);
@@ -397,16 +397,16 @@ for (const pair of pairs) {
     'pair-specific Marriage Strength Matrix evaluates both natal charts for pair '+pair.pairIndex);
   const tiedMethodCells=(html.match(/data-tied-method=/g)||[]).length;
   eq(cgSections,2,'both partners receive a C.G. Rajan report section for pair '+pair.pairIndex);
-  eq(bvSections,2,'both partners receive a B.V. Raman Ashtakavarga Ayurdaya section for pair '+pair.male.index);
+  eq(bvSections,2,'both partners receive a B.V. Raman Ashtakavarga Ayurdaya section for pair '+pair.pairIndex);
   ok(html.includes('Sodhya Pinda') && html.includes('Rasi Pinda') && html.includes('Graha Pinda'),
-    'pair report renders Rasi/Graha/Sodhya Pinda labels for pair '+pair.male.index);
+    'pair report renders Rasi/Graha/Sodhya Pinda labels for pair '+pair.pairIndex);
   ok(!/final lifespan|predicted death age|மரண வயது/i.test(html),
-    'pair report does not present final lifespan/death-age claim for pair '+pair.male.index);
+    'pair report does not present final lifespan/death-age claim for pair '+pair.pairIndex);
   eq(shadbalaTieSections,
     Number(male.selection.reasonCode==='shadbala-tie')+Number(female.selection.reasonCode==='shadbala-tie'),
-    'every tied partner and only tied partners receive side-by-side method output, pair '+pair.male.index);
+    'every tied partner and only tied partners receive side-by-side method output, pair '+pair.pairIndex);
   ok(tiedMethodCells>=shadbalaTieSections*14,
-    'each tied partner receives at least two seven-graha method columns, pair '+pair.male.index);
+    'each tied partner receives at least two seven-graha method columns, pair '+pair.pairIndex);
   pairReportAudit.push({
     pair:pair.pairIndex,
     poruthamScore:porutham.score,verdict:fullVerdict.k,qualified:fullVerdict.qualified,
