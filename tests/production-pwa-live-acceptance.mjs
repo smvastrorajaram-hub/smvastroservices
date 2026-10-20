@@ -142,9 +142,12 @@ async function installAndSearchCalendar(browser,net,report){
  const manifest=await fetchManifest('/horoscope/calendar/manifest-en.webmanifest');
  const preTargets=await serviceWorkerTargets(browser,'/horoscope/calendar/sw.js');
  const installShardRequests=pwa.requestEvents.filter(x=>isShard(x.url));
- report.checks.calendarColdStart={httpStatus:pwa.httpStatus,pageLoadMs:pwa.wallClockToDOMContentLoadedMs,network:pwa.network,manifest,serviceWorkerTarget:preTargets,shardRequestsDuringInstall:installShardRequests.length};
+ const calendarWorkerScriptRequests=pwa.requestEvents.filter(x=>safeUrl(x.url).path==='/horoscope/calendar/sw.js'&&x.status===200).length;
+ const calendarWorkerEvidence=preTargets.observed||calendarWorkerScriptRequests>0;
+ report.checks.calendarColdStart={httpStatus:pwa.httpStatus,pageLoadMs:pwa.wallClockToDOMContentLoadedMs,network:pwa.network,manifest,serviceWorkerTarget:preTargets,serviceWorkerScriptRequests200:calendarWorkerScriptRequests,shardRequestsDuringInstall:installShardRequests.length};
  assert.equal(pwa.httpStatus,200,'Calendar PWA homepage must return HTTP 200');
  assert.equal(manifest.status,200,'Calendar manifest HTTP 200');
+ assert.ok(calendarWorkerEvidence,'Calendar service worker target or successful sw.js network request must be observed');
  assert.equal(installShardRequests.length,0,'Calendar install must not download any location shard');
  assert.ok(manifest.icons.some(i=>i.sizes==='192x192')&&manifest.icons.some(i=>i.sizes==='512x512'),'Calendar manifest must list 192/512 icons');
  // Create an empty, same-origin document under the Calendar URL; do not load the
@@ -168,6 +171,7 @@ async function installAndSearchCalendar(browser,net,report){
  // Worker-target requests can race CDP session attachment; CacheStorage row deltas are the durable proof of on-demand fetch/cache.
  report.checks.calendarLazyPlaceCache={pass:true,beforeSearch:before,afterSearch:after,firstSearch:{query:search.query,results:search.count,matched:search.matched,elapsedMs:searchMs,networkShardEventsSeen:downloaded.length,cachedShardPaths:after.placeShards.map(x=>x.path)}};
  await page.close();
+ await pwa.page.close().catch(()=>{});
  return pwa;
 }
 async function firebaseQuotaProfile(browser,net,report){
@@ -244,10 +248,13 @@ async function run(){
   const afterPurge=await capturePage(browser,net,HOROSCOPE,'Horoscope after origin storage purge / reinstall simulation');
   const restoredManifest=await fetchManifest('/horoscope/manifest-en.webmanifest');
   const restoredWorker=await serviceWorkerTargets(browser,'/horoscope/sw.js');
-  report.checks.horoscopeReinstallSimulation={pass:afterPurge.httpStatus===200&&restoredManifest.status===200,storagePurgeCommandSucceeded:true,afterPurge:{httpStatus:afterPurge.httpStatus,manifestStatus:restoredManifest.status,serviceWorkerTarget:restoredWorker,network:afterPurge.network,mainFrameNavigationEvents:afterPurge.mainFrameNavigationEvents},note:'This is browser origin storage purge/reload. Android launcher shortcut removal/reinstallation remains physical-device NOT_RUN.'};
+  const reinstalledSwRequests=afterPurge.requestEvents.filter(x=>safeUrl(x.url).path==='/horoscope/sw.js'&&x.status===200).length;
+  const reinstallWorkerEvidence=restoredWorker.observed||reinstalledSwRequests>0;
+  report.checks.horoscopeReinstallSimulation={pass:afterPurge.httpStatus===200&&restoredManifest.status===200&&reinstallWorkerEvidence,storagePurgeCommandSucceeded:true,afterPurge:{httpStatus:afterPurge.httpStatus,manifestStatus:restoredManifest.status,serviceWorkerTarget:restoredWorker,serviceWorkerScriptRequests200:reinstalledSwRequests,network:afterPurge.network,mainFrameNavigationEvents:afterPurge.mainFrameNavigationEvents},note:'This is browser origin storage purge/reload. Android launcher shortcut removal/reinstallation remains physical-device NOT_RUN.'};
   report.networkTrials.push({label:'Horoscope after origin storage purge / reinstall simulation',httpStatus:afterPurge.httpStatus,wallClockToDOMContentLoadedMs:afterPurge.wallClockToDOMContentLoadedMs,network:afterPurge.network,mainFrameNavigationEvents:afterPurge.mainFrameNavigationEvents});
   assert.equal(afterPurge.httpStatus,200,'Horoscope remains online after simulated reinstall');
   assert.equal(restoredManifest.status,200,'Horoscope manifest must be restored after purge');
+  assert.ok(reinstallWorkerEvidence,'Horoscope service-worker activation or a new successful sw.js fetch must be observed after storage purge');
   await first.page.close().catch(()=>{});await afterPurge.page.close().catch(()=>{});
   console.log('[acceptance] Calendar lazy shard cache');
   await installAndSearchCalendar(browser,net,report);
