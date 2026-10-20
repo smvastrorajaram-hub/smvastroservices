@@ -13,6 +13,7 @@ import {createRequire} from 'node:module';
 import { readFileSync } from 'node:fs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
+import { phase4Dasa } from '../public/horoscope/offline/dasa_engine.browser.mjs';
 import {
   cgRajanSelectAyurdayaMethod,
   cgRajanCompareGrahas,
@@ -88,6 +89,7 @@ function pindaSignature(rows) {
 // Source-level guardrails for the two optimization fixes in this PR.
 const offlineSource=readFileSync(new URL('../public/horoscope/offline/offline-engine.mjs',import.meta.url),'utf8');
 const advancedSource=readFileSync(new URL('../public/horoscope/offline/astro_advanced.browser.mjs',import.meta.url),'utf8');
+const dasaSource=readFileSync(new URL('../public/horoscope/offline/dasa_engine.browser.mjs',import.meta.url),'utf8');
 const matchingGate=offlineSource.indexOf('if(body?.matchingOnly!==true){try{const targetYear');
 const annualCalc=offlineSource.indexOf('findTajakaAnnualChart(body,targetYear)');
 ok(matchingGate>=0 && annualCalc>matchingGate,
@@ -98,6 +100,9 @@ eq((advancedTail.match(/ashtakavarga\(chart,lang\)/g)||[]).length,1,
   'advanced() invokes Ashtakavarga once and shares the result');
 ok(advancedTail.includes('v5:v5Extras(chart,lang,av)'),
   'precomputed BAV/SAV result is reused by the Sodhya Pinda panel');
+ok(!dasaSource.includes('JSON.parse(JSON.stringify(chart))')&&
+   dasaSource.includes('const sl=sreeLagnaLongitude(chart),c={...chart,__sreeLagnaLongitude:sl};'),
+  'Phase-4 Dasa attaches Sree-Lagna metadata using a shallow top-level copy rather than JSON-deep-cloning the full natal chart');
 
 const phase2Start=advancedSource.indexOf('function p2YogaEngine');
 const phase2End=advancedSource.indexOf('function phase2StrengthAndJaimini',phase2Start);
@@ -194,6 +199,57 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     'full Horoscope calculation succeeds for '+birth.name);
   ok(result.birthPanchang&&result.dailyPanchang&&result.transit&&result.phase4,
     'full Horoscope includes birth/daily Panchang, transit and Dasa phase for '+birth.name);
+  // Source-level/runtime gate for every result newly shown in Phase-4 Dasa Analysis.
+  const phase4=result.phase4;
+  const dasaLengths={ashtottari:8,narayana:24,lagnaKendradi:24,sudasa:24,drigdasa:24,
+    niryaanaShoola:12,shoola:12,kalachakra:12};
+  for(const [key,expectedRows] of Object.entries(dasaLengths)){
+    const system=phase4?.[key],rows=system?.sequence;
+    ok(system?.available===true&&Array.isArray(rows)&&rows.length===expectedRows,
+      key+' provides the expected chart-derived Phase-4 period rows for '+birth.name);
+    ok(rows.every((row,i)=>Number.isFinite(Number(row.years))&&Number(row.years)>=-1e-9&&
+      /^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.start))&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.end))&&
+      String(row.end)>=String(row.start)),
+      key+' has finite non-negative durations and ISO period boundaries for '+birth.name);
+    ok(rows.every((row,i)=>i===0||String(rows[i-1].end)===String(row.start)),
+      key+' has no date gaps/overlaps between consecutive rendered Mahadasa rows for '+birth.name);
+    for(const row of rows){
+      if(Array.isArray(row.antardasas)&&row.antardasas.length){
+        ok(row.antardasas.every(ad=>Number.isFinite(Number(ad.years))&&Number(ad.years)>=-1e-9&&
+          /^\\d{4}-\\d{2}-\\d{2}$/.test(String(ad.start))&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(ad.end))),
+          key+' antardasas have finite durations and valid date boundaries for '+birth.name);
+        const adTotal=row.antardasas.reduce((sum,ad)=>sum+Number(ad.years),0);
+        ok(Math.abs(adTotal-Number(row.years))<1e-6,
+          key+' antardasa durations conserve their parent Mahadasa duration for '+birth.name+' '+row.rasi);
+        ok(row.antardasas.every((ad,i)=>i===0||String(row.antardasas[i-1].end)===String(ad.start)),
+          key+' antardasa boundaries are contiguous within each Mahadasa for '+birth.name);
+      }
+    }
+  }
+  const pairedCycles=['narayana','lagnaKendradi','sudasa','drigdasa'];
+  for(const key of pairedCycles){
+    const rows=phase4[key].sequence,cycle1=rows.filter(row=>row.cycle===1),cycle2=rows.filter(row=>row.cycle===2);
+    const violations=cycle1.map((row,i)=>Math.abs(Number(cycle2[i]?.fullYears)-(12-Number(row.fullYears))))
+      .filter(delta=>!Number.isFinite(delta)||delta>1e-8);
+    ok(cycle1.length===12&&cycle2.length===12&&violations.length===0,
+      key+' preserves the source-specific second-cycle complement 12 − first-cycle duration for '+birth.name);
+  }
+  ok(phase4.ashtottari.applicabilityAudit?.selectedInterpretation==='rahu_from_lagna_lord'&&
+     ['applicable','not_applicable','undetermined'].includes(phase4.ashtottari.applicability),
+    'Ashtottari sequence discloses selected applicability lineage and a three-state gate for '+birth.name);
+  ok(phase4.pvrResearch?.longevity?.researchOnly===true&&phase4.pvrResearch.longevity.certified===false&&
+     phase4.pvrResearch?.sodhyaPindaEventTiming?.researchOnly===true&&
+     phase4.pvrResearch.sodhyaPindaEventTiming.certified===false,
+    'PVR longevity/category/Dasa timing and Sodhya-Pinda event timing remain clearly research-only for '+birth.name);
+  ok(phase4.pvrResearch?.longevity?.specialIndicators?.available===true,
+    'PVR Rudra/Trishoola/Maheswara indicators are chart-derived when required natal data exists for '+birth.name);
+  ok(phase4.pvrResearch.sodhyaPindaEventTiming.rows.length===7&&
+     phase4.pvrResearch.sodhyaPindaEventTiming.rows.every(row=>row.product===row.rawBavRekhas*row.sodhyaPinda),
+    'PVR event-timing products match raw BAV rekha × computed Yoga Pinda for '+birth.name);
+  const immutableChartSnapshot=JSON.stringify({planets:chart?.planets,lagna:chart?.lagna,keys:Object.keys(chart||{})});
+  phase4Dasa(chart, result.advanced, result.birthPanchang);
+  eq(JSON.stringify({planets:chart?.planets,lagna:chart?.lagna,keys:Object.keys(chart||{})}),immutableChartSnapshot,
+    'running Phase-4 Dasa does not mutate input natal chart / nested planetary data for '+birth.name);
   const chart = result.chart;
   ok(Array.isArray(chart?.planets) && chart.planets.length >= 9,
     'actual calculated planetary positions exist for '+birth.name);
