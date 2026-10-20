@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-pwa-network-firebase-profile
+  group: production-pwa-network-firebase-profile-diagnostic-v2
   cancel-in-progress: true
 
 jobs:
