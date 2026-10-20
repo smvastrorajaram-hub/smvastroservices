@@ -105,7 +105,7 @@ const phase2Source=advancedSource.slice(phase2Start,phase2End);
 const advancedEntry=advancedSource.slice(advancedSource.indexOf('function advanced(chart'),advancedSource.indexOf('export {advanced'));
 ok(phase2Source.includes('calculatedVargas')&&phase2Source.includes('vargaSet.find(x=>x.division===\'D-9\')'),
   'Karakamsha derives D9 from a supplied precomputed Varga list');
-ok(!phase2Source.includes("buildVargas(chart,'en')")&&
+ok(!phase2Source.includes("const d9=buildVargas(chart,'en')")&&
    phase2Source.includes('Array.isArray(calculatedVargas)?calculatedVargas:buildVargas(chart,\'en\')'),
   'Karakamsha retains a defensive fallback but does not rebuild D9 when the Advanced Varga list is supplied');
 ok((advancedEntry.match(/buildVargas\(chart,lang\)/g)||[]).length===1&&
