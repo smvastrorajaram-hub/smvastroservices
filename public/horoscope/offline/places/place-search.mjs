@@ -3,7 +3,8 @@ import {createPlaceSearchEngine} from './place-search-worker.mjs';
 
 let worker=null,workerDisabled=false,nextId=0;
 const pending=new Map(),resultCache=new Map();
-const fallback=createPlaceSearchEngine();
+let fallback=null;
+const getFallback=()=>fallback||(fallback=createPlaceSearchEngine());
 const normalize=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 
 function settle(id,message){
@@ -66,7 +67,7 @@ export async function searchPlaces(query,limit=12,signal){
   try{result=await workerSearch(normalized,max,language,signal);}
   catch(error){if(!workerDisabled)throw error;}
  }
- if(!result)result=await fallback.searchPlaces(normalized,max,language,()=>signal?.aborted===true);
+ if(!result)result=await getFallback().searchPlaces(normalized,max,language,()=>signal?.aborted===true);
  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
  resultCache.set(cacheKey,result);
  if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
