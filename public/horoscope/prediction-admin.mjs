@@ -165,7 +165,7 @@ if(access&&host&&E){
   fillA(r);tab('A');$('smvAdmTA').focus();status('கணக்கீட்டு நிபந்தனை உருவாக்கப்பட்டது. புதிய தமிழ்/English வாழ்க்கைப் பலனை எழுதிச் Save Draft செய்யவும்.');
  }
  async function publish(){if(!verified||!auth?.currentUser){status('Admin login required.',true);return;}
-  const rules=E.getLocalRules();if(rules.length>200){status('அதிகபட்சம் 200 விதிகள்.',true);return;}
+  const rules=E.getLocalRules();if(!rules.length){status('வெளியிட விதிகள் இல்லை. முதலில் குறைந்தது ஒரு சரிபார்க்கப்பட்ட விதியை உருவாக்கி Save Draft செய்யவும்.',true);return;}if(rules.length>200){status('அதிகபட்சம் 200 விதிகள்.',true);return;}
   const body={published:true,schemaVersion:1,rules,updatedAt:firebase.fsM.serverTimestamp(),editorVersion:2};
   if(new TextEncoder().encode(JSON.stringify({...body,updatedAt:''})).length>700000){status('Firestore வரம்பு: விதிகளை 700 KB-க்குள் குறைக்கவும்.',true);return;}
   if(!rules.every(r=>r.effect.ta&&r.effect.en)){status('Publish செய்யும் முன் எல்லா விதிகளுக்கும் தமிழ் மற்றும் English பலன் இரண்டும் இருக்க வேண்டும்.',true);return;}
