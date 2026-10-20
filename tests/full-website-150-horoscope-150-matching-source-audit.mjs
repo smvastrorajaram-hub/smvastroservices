@@ -208,10 +208,11 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     const system=phase4?.[key],rows=system?.sequence;
     ok(system?.available===true&&Array.isArray(rows)&&rows.length===expectedRows,
       key+' provides the expected chart-derived Phase-4 period rows for '+birth.name);
-    ok(rows.every((row,i)=>Number.isFinite(Number(row.years))&&Number(row.years)>=-1e-9&&
+    const badPeriodRows=rows.filter(row=>!(Number.isFinite(Number(row.years))&&Number(row.years)>=-1e-9&&
       /^\d{4}-\d{2}-\d{2}$/.test(String(row.start))&&/^\d{4}-\d{2}-\d{2}$/.test(String(row.end))&&
-      String(row.end)>=String(row.start)),
-      key+' has finite non-negative durations and ISO period boundaries for '+birth.name);
+      String(row.end)>=String(row.start)));
+    ok(badPeriodRows.length===0,
+      key+' has finite non-negative durations and ISO period boundaries for '+birth.name+'; offending rows='+JSON.stringify(badPeriodRows));
     ok(rows.every((row,i)=>i===0||String(rows[i-1].end)===String(row.start)),
       key+' has no date gaps/overlaps between consecutive rendered Mahadasa rows for '+birth.name);
     for(const row of rows){
