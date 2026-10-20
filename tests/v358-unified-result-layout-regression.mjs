@@ -18,7 +18,7 @@ for(const selector of ['#mmNakshatraGate>.mm-person-result.mm-benefits','.mm-ful
 ok(matching.includes('<section class="mm-person-result mm-benefits">'), 'Matching Nakshatra benefits remain within main host, no content deleted');
 ok(css.includes('1180px')&&css.includes('calc(100% - 12px)'),'Matches Horoscope input outer width with narrow phone margins');
 ok(css.includes('background:transparent!important')&&css.includes('border:0!important'),'Nested visual boxes removed');
-ok(!/\\boverflow(?:-[a-z]+)?\\s*:\\s*(?:hidden|clip)\\b/i.test(css)&&css.includes('overflow-wrap:break-word;'),'Avoid clipping charts/tables while retaining safe wrapping for long prose');
+ok(!/\boverflow(?:-[a-z]+)?\s*:\s*(?:hidden|clip)\b/i.test(css)&&css.includes('overflow-wrap:break-word;'),'Avoid clipping charts/tables while retaining safe wrapping for long prose');
 ok(html.includes('id="englishHoroscopeResult"')&&html.includes('id="tamilHoroscopeResult"')&&html.includes('id="smvMarriageMatching"'),'Original output placeholders unchanged');
 for(const token of ['report-identity.js','report-store.mjs','horoscope.js','marriage-matching.js'])ok(html.includes(token),'Existing report/save/matching scripts preserved: '+token);
 console.log(JSON.stringify({pass:true,assertions:n,scope:'Live screen geometry structural invariants; not a browser pixel comparison',printUnaffected:true}));
