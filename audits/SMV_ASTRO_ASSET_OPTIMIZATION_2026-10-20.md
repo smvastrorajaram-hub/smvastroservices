@@ -1,56 +1,65 @@
-# SMV ASTRO — Asset Optimization Audit and Fixes
+# SMV ASTRO — Source-Level Asset Optimization Audit
 
 **Date:** 2026-10-20  
-**Baseline:** main branch before this change  
-**Status:** Source changes proposed on a feature branch. CI and browser/device validation must pass before merge.
+**Branch:** `perf/lazy-horoscope-engines-calendar-place-cache`  
+**Baseline:** `main` before this optimization set  
+**Status:** Source changes are prepared on a feature branch. CI/device results are not assumed until reported.
 
-## Measured source inventory
+## Inventory and measurable findings
 
-The tracked repository tree contained 390 files and about 120.75 MiB of raw blobs at the audit point. This includes source textbooks, screenshots and other repository-only material; it is not the website download size. The offline India GeoNames dataset has 28 logical letter shards, about 62.81 MiB of raw JSON, and 557,995 declared place records.
+- The branch tree measured about **118.82 MiB** of raw repository blobs. This is not the compressed transfer size users receive.
+- The location dataset has **557,995** records declared by the top-level manifest, with GeoNames attribution and CC BY 4.0 retained.
+- Large single JSON assets were up to **8.5 MiB** before splitting. Frequently queried letters now use split files of at most roughly **1.45 MiB** each; split parts are still the same source rows, in their original order.
+- The metadata inherited from the previous manifest has a discrepancy: top-level `records=557995`, whereas the sum of the per-letter `records` fields is **564,840**. The new regression reads every deployed location JSON, verifies each part's actual length, counts distinct GeoNames IDs, and requires the distinct ID count to match the published 557,995 dataset contract. CI must pass that assertion before merge; the metadata discrepancy is not silently hidden by changing the top-level number.
+- Six large Horoscope reading/prediction bundles previously fetched with the initial HTML total roughly **1,439 KiB raw**.
+- Duplicate 512×512 maskable PNG files were byte-identical to their ordinary 512×512 PNG counterparts in both app scopes: removing the duplicate copies eliminates about **842,221 raw bytes** while retaining the existing 512px files and both manifest purposes.
+- The prior public duplicate backend file and retired prediction bundle measured roughly **271 KiB** and **615 KiB** respectively, excluding compression. The required root `server.js` is preserved.
+- Large art assets remain candidates for lossless/loss-aware encoding work. Examples in the branch include Horoscope desktop/mobile heroes (about 596/517 KiB), Horoscope logo (about 498 KiB), temple frame (about 570 KiB), and the approved marriage cover (about 388 KiB). They were **not re-encoded in this change**; do not infer compression savings.
 
-The Horoscope HTML eagerly loaded six large reading/prediction bundles before the user asked to create a chart or open Marriage Matching: `horoscope-life-engine.js`, `d9-reading.js`, `horoscope-judgement-engine.js`, `integrated.js`, `d1-time-reading.js`, and `prediction-synthesis.js`. Their combined tracked raw size was about 1,439 KiB. Transfer size depends on host compression and browser caching.
+## Changes prepared
 
-## Gate A — Defer heavy Horoscope-reading engines until first use
+### 1. Calendar PWA install-time cache
 
-- Removed those six bundle tags from the initial HTML request list without deleting or renaming those six calculation/reading source files.
-- Added a single bootstrap that loads these scripts when the user first requests Horoscope generation or opens the Admin rules entry. Concurrent taps are coalesced and the original click is replayed after dependencies load.
-- The dependency manifest preserves the prior runtime execution order while requests may download concurrently; the lazy classic scripts set `async=false`.
-- Marriage Matching waits for the shared dependency loader before loading its own script.
-- Kept offline calculation boot, Horoscope form/renderer, auth/report store, published prediction-rule channel, rule engine/sync, Admin modules and PWA controller on their existing paths.
-- Added a runtime harness for initial script tags, order, first-click replay, Matching dependency readiness and retained Admin/auth/report assets.
+- Removed the auto-generated list that fetched every India location JSON during service-worker installation.
+- Kept the manifest and place-search entry points in the installation core.
+- The existing fetch/cache-miss path still caches a requested part on demand; an already searched letter's parts can be reused offline.
+- Rotated the Calendar cache name so activation deletes the previous large bulk-preloaded cache.
+- Added a service-worker test that checks zero place-part fetches during installation and verifies a shard gets cached when requested.
 
-## Gate B — Do not download all place data during Calendar PWA installation
+### 2. Place-search split files and Worker
 
-- Removed the generated list of all 28 GeoNames letter shards from the Calendar service-worker install core.
-- Kept the place-search modules, manifest, all underlying data records, and all split or unsplit data parts in the repository.
-- The Calendar worker continues to cache a missing requested resource on demand; the dedicated Horoscope offline worker also uses the existing lazy offline cache policy for `/horoscope/offline/` assets.
-- Rotated the Calendar cache name so activation evicts the old cache that had preloaded the bulk place data.
-- Updated the service-worker test to check both legacy full-shard filenames and split filenames, and to request a real split part (`k-00.json`) in its cache-on-demand fixture.
+- The large letter buckets in the manifest use bounded parts while preserving the original row order. The full repository location dataset and attribution notice remain present.
+- Consolidated the new work on the existing `place-search-worker.mjs` engine instead of retaining a second competing Worker implementation.
+- Worker search parses and scans the selected letter's parts off the UI thread, yields between batches, accepts cancellation messages, and keeps the prior deterministic matching/population sort.
+- Kept a local fallback for browsers where module Workers are unavailable.
+- Expanded `tests/place-search-regression.mjs` to load the full manifest/data, validate file/row counts and unique GeoNames IDs, check split-part loading, verify ranking/coordinates/timezone, and guard cancellation + Worker wiring.
 
-## Gate C — Split oversized place data and move scanning off the main thread
+### 3. Horoscope initial payload and dependency order
 
-- Split large letter datasets into physical parts of at most 12,000 records each while preserving the manifest's per-letter totals and the complete 557,995-record total. Small letters retain a single file.
-- Added `place-search-worker.mjs` as the main path for JSON parsing, alias normalization, candidate scanning, ranking and display formatting, so large-list scanning does not block the Horoscope/Calendar UI thread.
-- The worker loads only the selected letter's parts, coalesces concurrent part fetches, keeps bounded result caches, reuses matched candidates when the query extends a prefix, yields periodically during long scans, and accepts cancellation messages.
-- Retained deterministic exact/prefix/word-boundary/substring ranking, population tie-breaking, result limits, latitude/longitude, GeoNames identifiers and IANA timezone values.
-- Retained a non-Worker fallback using the same search engine. Added regressions for manifest totals, every declared data part, ranking, result caching, split-shard loading, Worker usage and fallback behavior.
-- Fixed the test harness to install its mocked `fetch` before dynamically importing the place-search module; the fallback engine captures its fetch dependency during module initialization.
+- Removed six large reading/prediction script tags from the eager HTML path. They load on the first Horoscope-generation interaction, then the original click is replayed once after dependencies resolve.
+- Marriage Matching shares the same dependency loader before its own lazy script is loaded.
+- The Admin button is not intercepted by the Horoscope generator's lazy-load guard; Admin remains independently reachable.
+- The base/offline calculation boot, `horoscope.js`, forms, authentication, saved-report store, prediction-rule content/sync and Admin modules retain their existing script paths.
+- Regression assertions check dependency order, one-time replay, protected eager modules, and saved-report/native print/PDF/font/approved-cover anchors.
 
-## Gate D — Remove dormant public duplicates only after consumer migration
+### 4. Dormant public duplicates
 
-- Removed `public/horoscope/server.js`, the browser-published copy of a Node backend. The real root `server.js` remains present; `package.json` still starts `node server.js`, and `render.yaml` still uses `npm start`.
-- Removed the stale `public/horoscope/horoscope-predictions.js` bundle only after confirming the current Horoscope entry point no longer loads it and the current `horoscope.js` renderer owns the live C.G. Rajan and B.V. Raman Ayurdaya appendix mounts through the offline report modules. The Ayurdaya placement and Save/Print guard tests now test this live source path and assert the retired bundle is absent.
-- Removed duplicate maskable icon files after manifests were checked to use the existing `icon-512.png` resource for both standard and maskable purposes.
-- Removed the retired `v359-symmetric-gutters.css` file; the current Horoscope page references `v358-result-layout.css`, which contains the live result-layout rules.
-- Expanded regression workflow path filters so changes to place-search modules/data, the Calendar cache, related manifests, deleted public duplicates and the Ayurdaya cleanup guards trigger relevant checks.
+- Removed `public/horoscope/server.js`; the production root `server.js` and `package.json` startup contract remain.
+- Removed `public/horoscope/horoscope-predictions.js` after confirming it was not loaded by the active Horoscope HTML and updating old regression checks to assert its absence.
+- Added a regression guard to prevent either retired public file from being accidentally reintroduced.
 
-## Preservation boundary
+### 5. CSS consolidation and PWA icons
 
-This change does not alter astrology calculation formulas or calculated values; matching factor rules; login/session or dashboard restoration; Admin feature gating; payment behavior; saved-report storage; browser-native Print/PDF implementation; report identity; Tamil fonts; approved cover art; Firebase request policy; or published rule contents. All India place records remain available as source assets. Only the Calendar install-time bulk download is removed; place data is fetched lazily by the selected letter.
+- Moved the symmetric-gutter rules from `v359-symmetric-gutters.css` into the existing `v358-result-layout.css` owner and removed the separate stylesheet/link. Browser smoke tests/workflows remain available.
+- Removed the byte-identical duplicate `icon-512-maskable.png` copies; manifests use the same existing 512px PNG for `any` and `maskable` purposes.
+- Added assertions for CSS ownership, responsive browser smoke presence, native print CSS/JS/HTML presence, and PWA manifest icon references.
 
-## Validation status and remaining work
+## Preserved without optimization edits
 
-- Added automated lazy-load/click-replay, Calendar install/cache, split-place-manifest and search-ranking regression gates.
-- CI must run on the pull request; **PASS has not yet been claimed** for these changes.
-- Browser network-waterfall measurement, fresh-install/reinstall checks on Android Chrome/PWA, offline search after a selected letter has been visited, actual Tamil/English chart generation, and production device profiling have not been performed by source inspection alone.
-- CI success certifies only the automated source/runtime harnesses. It does not substitute for browser/device validation or claim a measured real-device speedup.
+No calculation formula or Dasa/Marriage Matching calculation module was rewritten. No Swiss Ephemeris WASM/data, ephemeris `.se1` data or license/source notice was deleted. Saved report generation, browser-native print/PDF files, Tamil font files, and the approved report-cover artwork remain untouched. Login/session/dashboard restore semantics, Admin feature gating, published prediction-rule data and Firebase quota-safe rule loading are also outside the edit set.
+
+## Automated and manual validation
+
+The isolated CI workflow now includes source/runtime regression tests for lazy loading, Calendar cache behavior, location-data integrity and Worker ranking, dormant assets, CSS/PDF guardrails and PWA icon deduplication. The existing responsive Horoscope layout and Marriage Matching print workflows remain in place.
+
+**Not yet proven by source inventory alone:** browser network waterfall / compressed transfer size, physical Android/PWA reinstall and offline device tests, print-layout visual comparison on device, Firebase request/quota profiling, and before/after Web Vitals. Large hero/logo/cover re-encoding is intentionally left for a separate asset-by-asset visual and byte-size comparison.
