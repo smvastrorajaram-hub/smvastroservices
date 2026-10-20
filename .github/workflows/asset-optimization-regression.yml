@@ -12,6 +12,8 @@ on:
       - 'tests/asset-optimization-horoscope-lazy-load-regression.mjs'
       - 'tests/asset-optimization-calendar-cache-regression.mjs'
       - 'tests/place-search-regression.mjs'
+      - 'tests/asset-optimization-css-pwa-regression.mjs'
+      - 'tests/dormant-public-assets-regression.mjs'
       - 'public/horoscope/location-search-online-offline.js'
       - 'public/horoscope/offline/places/place-search.mjs'
       - 'public/horoscope/offline/places/place-search-worker.mjs'
@@ -78,9 +80,15 @@ jobs:
           node --check tests/asset-optimization-horoscope-lazy-load-regression.mjs
           node --check tests/asset-optimization-calendar-cache-regression.mjs
           node --check tests/place-search-regression.mjs
+          node --check tests/dormant-public-assets-regression.mjs
+          node --check tests/asset-optimization-css-pwa-regression.mjs
       - name: Horoscope deferred-load, matching dependency and protected-flow gate
         run: node tests/asset-optimization-horoscope-lazy-load-regression.mjs
       - name: Calendar PWA no-bulk-place-shard install and on-demand cache gate
         run: node tests/asset-optimization-calendar-cache-regression.mjs
-      - name: GeoNames place-search ranking and Worker fallback regression
+      - name: GeoNames place-search ranking and split-manifest integrity regression
         run: node tests/place-search-regression.mjs
+      - name: Retired public assets and root backend preservation gate
+        run: node tests/dormant-public-assets-regression.mjs
+      - name: CSS owner consolidation, native print and PWA icon dedup gate
+        run: node tests/asset-optimization-css-pwa-regression.mjs
