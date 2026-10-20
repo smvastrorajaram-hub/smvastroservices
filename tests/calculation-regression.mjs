@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {calculateSwiss} from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
-import {phase4Dasa,strongerSign} from '../public/horoscope/offline/dasa_engine.browser.mjs';
+import {phase4Dasa,strongerSign,ownLord} from '../public/horoscope/offline/dasa_engine.browser.mjs';
 import {dashaAtBirth} from '../public/horoscope/offline/server-wrapper.browser.mjs';
 import {resolveSodhyaPindaTarget,calculateSodhyaPindaTransitWindows,computeRudraTrishoolaMaheswara} from '../public/horoscope/offline/pvr-longevity-sodhya-timing.browser.mjs';
 let checks=0;
