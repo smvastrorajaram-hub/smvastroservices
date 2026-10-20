@@ -101,7 +101,10 @@ function deriveChapterXIVEvidence(chart,map) {
   const moon=map.planets.get('Moon');
   if(moon&&finite(moon.longitude)&&signValid(moon.sign)){
     const drekkanaSegment=Math.min(2,Math.floor(moon.degreeInSign/10));
-    const drekkanaSign=(moon.sign+4*drekkanaSegment)%12;
+    const drekkanaStarts=moon.sign%2===0
+      ? [moon.sign,(moon.sign+4)%12,(moon.sign+8)%12]
+      : [(moon.sign+8)%12,(moon.sign+4)%12,moon.sign];
+    const drekkanaSign=drekkanaStarts[drekkanaSegment];
     out.moonDrekkanaBenefic=['Mercury','Jupiter','Venus'].includes(SIGN_LORDS[drekkanaSign]);
     const starWidth=360/27,starIndex=Math.min(26,Math.floor(moon.longitude/starWidth));
     const mdIndex=starIndex%9,mdLord=VIMSHOTTARI_ORDER[mdIndex],mdYears=VIMSHOTTARI_YEARS[mdLord];
