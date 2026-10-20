@@ -329,4 +329,4 @@ function phase4Dasa(chart,advancedContext=null,birthPanchang=null){
  }
  return {ashtottari:ashtottari(chart,start,{birthPanchang:birthPanchang||advancedContext?.birthPanchang}),narayana:narayana(chart,start),lagnaKendradi:kendradi(chart,start,-1,false),sudasa:kendradi(c,start,rasiIndex(sl),true),drigdasa:drigdasa(chart,start),niryaanaShoola:ayurDasa,shoola:shoolaDasa,kalachakra:kalachakra(chart,start),pvrResearch,sreeLagnaLongitude:sl};
 }
-export {phase4Dasa};
+export {phase4Dasa,strongerSign,ownLord,narayanaLengthDetail};
