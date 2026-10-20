@@ -312,7 +312,7 @@ statuses('XIV-ALP-14',[
 statuses('XIV-MAD-04',[
  {label:'all planets in the printed middle four houses',expected:'MATCHED',evidence:{allPlanetsMiddleFourHouses:true}},
  {label:'not all planets in middle four',expected:'NOT_MATCHED',evidence:{allPlanetsMiddleFourHouses:false}},
- {label:'middle-house classification missing',expected:'UNKNOWN',evidence:{}}
+ {label:'complete default chart shows planets outside the middle four houses',expected:'NOT_MATCHED',evidence:{}}
 ],'HPA p.70 Madhyayu 4');
 statuses('XIV-MAD-15',[
  {label:'benefics in Kendra/Trikona and powerful Saturn',expected:'MATCHED',
