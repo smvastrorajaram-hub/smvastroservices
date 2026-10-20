@@ -379,7 +379,7 @@ for (const pair of pairs) {
   ok(Number.isInteger(porutham.score)&&porutham.score>=0&&porutham.score<=10,
     'porutham score remains within its defined 0–10 rule count for pair '+pair.pairIndex);
   const kuja=matchingAudit.kujaSamyam(female.chart,male.chart);
-  ok(kuja&&kuja.B&&kuja.G&&typeof kuja.balanced==='boolean'&&typeof kuja.severe==='boolean,
+  ok(kuja&&kuja.B&&kuja.G&&typeof kuja.balanced==='boolean'&&typeof kuja.severe==='boolean',
     'Kuja comparison returns both partners and explicit balance/severity for pair '+pair.pairIndex);
   const dashaSandhi=matchingAudit.dashaSandhi(female.chart,male.chart);
   ok(Array.isArray(dashaSandhi)&&dashaSandhi.every(row=>Number.isFinite(row.days)&&row.days>=0),
