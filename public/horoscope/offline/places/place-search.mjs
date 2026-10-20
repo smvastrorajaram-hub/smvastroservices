@@ -92,11 +92,9 @@ export async function searchPlaces(query,limit=12){
    if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
    return result;
   }catch(error){
-   if(!workerDisabled){
-    // A worker-side fetch/data error should surface via the same fallback path;
-    // do not conceal a failed local database by issuing network retries.
-    console.warn('Worker place search failed; using the local fallback.',error);
-   }
+   // A worker runtime failure (error event) enables the fallback. A shard/data
+   // error returned by the worker remains visible and is not fetched a second time.
+   if(!workerDisabled)throw error;
   }
  }
  const key=placeShardKeyFor(normalized),rows=await getShard(key);
