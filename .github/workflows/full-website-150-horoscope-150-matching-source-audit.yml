@@ -6,6 +6,9 @@ on:
       - 'public/horoscope/**'
       - 'tests/full-website-150-horoscope-150-matching-source-audit.mjs'
       - 'tests/prediction-rules-published-regression.mjs'
+      - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
+      - 'tests/five-book-structural-audit.mjs'
       - '.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
   workflow_dispatch:
 permissions:
