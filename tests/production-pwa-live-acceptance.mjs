@@ -122,7 +122,7 @@ async function serviceWorkerTargets(browser,needle){
 async function cleanSameOriginHarness(browser,net,path,label){
  const page=await browser.newPage();
  await net.attach(page.target());
- const response=await page.goto(BASE+path,{waitUntil:'domcontentloaded',timeout:30000});
+ const response=await page.goto(BASE+'/assets/smv-brand-logo.png',{waitUntil:'load',timeout:30000});
  // document.open() replaces the page contents while preserving the same origin.
  await page.setContent('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main id="audit-harness"></main></body></html>');
  return {page,status:response?.status()??null,label};
