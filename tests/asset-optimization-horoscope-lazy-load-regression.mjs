@@ -57,6 +57,20 @@ for (const path of [
   'public/horoscope/assets/vinayagar-cover.svg'
 ]) ok(fs.existsSync(new URL('../' + path, import.meta.url)), 'Protected report/font/art asset retained: ' + path);
 
+
+const appPackage = JSON.parse(read('package.json'));
+const renderConfig = read('render.yaml');
+ok(!fs.existsSync(new URL('../public/horoscope/server.js', import.meta.url)),
+   'Unused public-published backend copy is removed');
+ok(fs.existsSync(new URL('../server.js', import.meta.url)),
+   'Actual root backend source is preserved');
+ok(appPackage.scripts?.start === 'node server.js' && renderConfig.includes('startCommand: npm start'),
+   'Deployment still starts the retained root server.js');
+ok(!fs.existsSync(new URL('../public/horoscope/horoscope-predictions.js', import.meta.url)),
+   'Retired duplicate prediction bundle stays removed after consumer migration');
+ok(!/<script\\b[^>]*src=["'][^"']*(?:server|horoscope-predictions)\\.js/i.test(html),
+   'Horoscope page has no script dependency on deleted public server/prediction copies');
+
 const runtime = { appended: [], clickHandler: null, status: null };
 const document = {
   documentElement: { lang: 'ta' },
