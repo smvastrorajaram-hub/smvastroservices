@@ -352,6 +352,8 @@ eq(Object.values(cgTieMethodCombinationCounts).reduce((sum,n)=>sum+n,0),cgTieCha
   'each tied Shadbala chart has a complete method-combination audit');
 ok(chartSignatures.size >= 140,
   'natal longitude signatures vary across the 150 inputs; no static chart replay');
+ok(d1NarrativeSignatures.ta.size>=40&&d1NarrativeSignatures.en.size>=40,
+  '150 engine-calculated D1 profiles produce diverse Tamil and English narratives; this checks variability, not expert certification');
 ok(pindaPanelSignatures.size >= 80,
   'modified Sodhya Pinda outputs vary across inputs; not a static result');
 ok(bvrPindaSignatures.size >= 80,
@@ -558,9 +560,19 @@ const summary = {
   },
   marriageMatching:{
     pairReportsRendered:pairReportAudit.length, fullVerdictAndTenPoruthamChecked:pairReportAudit.length,
+    poruthamScoreDistribution:Object.fromEntries([...new Set(pairReportAudit.map(x=>x.poruthamScore))].sort((a,b)=>a-b).map(k=>[k,pairReportAudit.filter(x=>x.poruthamScore===k).length])),
+    finalVerdictCounts:pairReportAudit.reduce((a,x)=>(a[x.verdict]=(a[x.verdict]||0)+1,a),{}),
     shadbalaTieSectionsRendered:pairReportAudit.reduce((sum,row)=>sum+(row.shadbalaTieSections||0),0),
     bothAppendicesVerifiedPerReport:true,
     pairOutputSamples:pairReportAudit.slice(0,5)
+  },
+  predictionAndNarrativeAudit:{
+    publishedAdminRuleChannel:predictionRulesEmpty?'BLOCKED_EMPTY_RULESET':'NONEMPTY_REQUIRES_RULE_REVIEW',
+    publishedAdminRuleRootCause:predictionRulesEmpty?'public/horoscope/prediction-rules-published.js sets SMVPUBLISHED_PREDICTION_RULES to an empty array; reviewed owner-published rule content is absent from this channel.':null,
+    d1NarrativeLiveCharts:150,languages:['ta','en'],
+    distinctTamilNarratives:d1NarrativeSignatures.ta.size,distinctEnglishNarratives:d1NarrativeSignatures.en.size,
+    expertReviewedAstrologerQuality:'NOT_CERTIFIED_BY_AUTOMATED_VARIABILITY_TEST',
+    classicalSourceCertification:'PARTIAL: Chapter XIV UNKNOWN evidence and independent source numerical oracles remain documented blockers.'
   },
   sourceOptimization:{
     matchingOnlySkipsTajakaAnnual:true,
