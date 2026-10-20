@@ -97,7 +97,7 @@ statuses('XIV-BAL-08',[
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:true}},
  {label:'placement matches but the aspect condition is false',expected:'NOT_MATCHED',
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon'],maleficsAspectingHouses5_8_12:false}},
- {label:'required aspect observation missing',expected:'UNKNOWN',
+ {label:'chart-computable malefic aspects derive from all supplied graha positions',expected:'NOT_MATCHED',
   chart:{houses:{Moon:1}},evidence:{weakPlanets:['Moon']}}
 ],'HPA p.64 Balarishta 8');
 statuses('XIV-BAL-04',[
@@ -143,8 +143,26 @@ statuses('XIV-BAL-15',[
   chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Mars'}},
  {label:'both known periods are unrelated to Lagna/eighth lord',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:0},evidence:{birthDasaLord:'Venus',birthAntardasaLord:'Mercury'}},
- {label:'birth Dasa and Antardasa unavailable',expected:'UNKNOWN',evidence:{}}
+ {label:'birth Dasa and Antardasa unavailable because Moon longitude is absent',expected:'UNKNOWN',chart:{omit:['Moon']},evidence:{}}
+
 ],'HPA p.65 Balarishta 15');
+const autoDerivedFixture=bvRamanChapterXIVLongevityRules({
+ chart:makeChart({lagnaLongitude:15,houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}})
+});
+const autoEvidence=autoDerivedFixture.autoDerivedEvidence||{};
+eq(autoEvidence.navamsaLagnaLord,'Sun',
+  'D9 Lagna lord is derived from Aries 15 degrees instead of requiring duplicate external input');
+eq(autoEvidence.birthDasaLord,'Saturn',
+  'birth Vimshottari Mahadasha lord derives from the natal Moon Nakshatra');
+eq(autoEvidence.birthAntardasaLord,'Saturn',
+  'birth Antardasa derives from elapsed Mahadasha balance');
+eq(autoEvidence.moonDrekkanaBenefic,false,
+  'even-sign Pisces Moon in first Drekkana derives Scorpio/Mars instead of Pisces/Jupiter');
+ok(autoDerivedFixture.autoDerivedEvidenceKeys.includes('navamsaLagnaLord')&&
+   autoDerivedFixture.autoDerivedEvidenceKeys.includes('birthDasaLord')&&
+   autoDerivedFixture.autoDerivedEvidenceKeys.includes('moonDrekkanaBenefic'),
+  'audit trace lists automatically derived natal evidence fields');
+
 statuses('XIV-BAL-28',[
  {label:'weak Lagna lord and poor placement expressly supported',expected:'MATCHED',
   chart:{lagnaLongitude:0},evidence:{weakPlanets:['Mars'],lagnaLordBadlyPlaced:true}},
@@ -211,7 +229,7 @@ statuses('XIV-ANT-02',[
 statuses('XIV-ANT-03',[
  {label:'Moon 8 in a stated benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:true}},
  {label:'Drekkana explicitly not benefic',expected:'NOT_MATCHED',chart:{houses:{Moon:8}},evidence:{moonDrekkanaBenefic:false}},
- {label:'Drekkana not supplied',expected:'UNKNOWN',chart:{houses:{Moon:8}},evidence:{}}
+ {label:'Mars-ruled D3 for calculated Scorpio Moon is not a benefic Drekkana',expected:'NOT_MATCHED',chart:{houses:{Moon:8}},evidence:{}}
 ],'HPA p.67 Antidote 3');
 statuses('XIV-ANT-04',[
  {label:'source full-Moon/benefic/aspect condition true',expected:'MATCHED',evidence:{fullMoonInBeneficSignAndWellAspected:true}},
@@ -226,7 +244,7 @@ statuses('XIV-ANT-05',[
 statuses('XIV-ANT-06',[
  {label:'Moon 6 and benefic Drekkana',expected:'MATCHED',chart:{houses:{Moon:6},},evidence:{moonDrekkanaBenefic:true}},
  {label:'Moon not in 6',expected:'NOT_MATCHED',chart:{houses:{Moon:5}},evidence:{moonDrekkanaBenefic:true}},
- {label:'Drekkana unknown',expected:'UNKNOWN',chart:{houses:{Moon:6}},evidence:{}}
+ {label:'Drekkana derives from the calculated Pisces Moon placement',expected:'NOT_MATCHED',chart:{houses:{Moon:6,Sun:1},signs:{Moon:11},degrees:{Moon:5}},evidence:{}}
 ],'HPA p.67 Antidote 6');
 statuses('XIV-ANT-07',[
  {label:'Full Moon between benefics fact true',expected:'MATCHED',evidence:{fullMoonBetweenBenefics:true}},
@@ -294,7 +312,7 @@ statuses('XIV-ALP-14',[
 statuses('XIV-MAD-04',[
  {label:'all planets in the printed middle four houses',expected:'MATCHED',evidence:{allPlanetsMiddleFourHouses:true}},
  {label:'not all planets in middle four',expected:'NOT_MATCHED',evidence:{allPlanetsMiddleFourHouses:false}},
- {label:'middle-house classification missing',expected:'UNKNOWN',evidence:{}}
+ {label:'complete default chart shows planets outside the middle four houses',expected:'NOT_MATCHED',evidence:{}}
 ],'HPA p.70 Madhyayu 4');
 statuses('XIV-MAD-15',[
  {label:'benefics in Kendra/Trikona and powerful Saturn',expected:'MATCHED',
@@ -507,7 +525,7 @@ statuses('XIV-BAL-16',[
   chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
  {label:'Lagna lord is not in Sun sign',expected:'NOT_MATCHED',
   chart:{houses:{Sun:2,Moon:1,Mars:1},signs:{Sun:1,Moon:0,Mars:0}},evidence:{navamsaLagnaLord:'Mars'}},
- {label:'Navamsa Lagna lord not supplied',expected:'UNKNOWN',chart:{houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}}}
+ {label:'Navamsa Lagna lord remains unknown when birth Lagna longitude is absent',expected:'UNKNOWN',chart:{lagnaLongitude:null,houses:{Sun:1,Moon:1,Mars:1},signs:{Sun:0,Moon:0,Mars:0}}}
 ],'HPA p.65 Balarishta 16');
 statuses('XIV-BAL-17',[
  {label:'malefics aspect Lagna and the eighth from Moon sign',expected:'MATCHED',
@@ -554,7 +572,7 @@ statuses('XIV-ALP-09',[
   chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
  {label:'Venus-owned Lagna cannot satisfy malefic ownership',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:30,houses:{Saturn:1}},evidence:{beneficsInHouses3_6_9_12:true}},
- {label:'benefics-in-houses evidence absent',expected:'UNKNOWN',
+ {label:'chart-derived placements do not satisfy every benefic house 3/6/9/12',expected:'NOT_MATCHED',
   chart:{lagnaLongitude:210,houses:{Saturn:1}},evidence:{}}
 ],'HPA p.70 Alpayu 9');
 statuses('XIV-ALP-10',[
@@ -608,6 +626,39 @@ statuses('XIV-MAD-03',[
  {label:'Jupiter outside house 3',expected:'NOT_MATCHED',chart:{houses:{Mercury:2,Jupiter:4,Venus:11}}},
  {label:'Mercury position unavailable',expected:'UNKNOWN',chart:{omit:['Mercury']}}
 ],'HPA p.70 Madhyayu 3');
+statuses('XIV-MAD-04',[
+ {label:'all nine grahas fall in houses 4 through 7',expected:'MATCHED',
+  chart:{houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4}}},
+ {label:'a known graha falls outside the middle four houses',expected:'NOT_MATCHED',
+  chart:{houses:{Sun:3,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4}}},
+ {label:'a graha position is missing and no known graha violates the middle-house rule',expected:'UNKNOWN',
+  chart:{houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7},omit:['Ketu']}}
+],'HPA p.70 Madhyayu 4 — middle four houses are evaluated from the chart');
+statuses('XIV-MAD-07',[
+ {label:'Saturn in 1, Moon in 8 and all other grahas in 11',expected:'MATCHED',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:11,Mercury:11,Jupiter:11,Venus:11,Rahu:11,Ketu:11}}},
+ {label:'a non-Saturn/Moon graha is outside house 11',expected:'NOT_MATCHED',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:10,Mercury:11,Jupiter:11,Venus:11,Rahu:11,Ketu:11}}},
+ {label:'a remaining graha house is unavailable',expected:'UNKNOWN',
+  chart:{houses:{Saturn:1,Moon:8,Sun:11,Mars:11,Mercury:11,Jupiter:11,Venus:11,Rahu:11},omit:['Ketu']}}
+],'HPA p.71 Madhyayu 7 — remaining graha placement is evaluated from chart');
+statuses('XIV-ALP-09',[
+ {label:'Aries Lagna, Saturn in 1 and natural benefics in each of 3, 6, 9 and 12',expected:'MATCHED',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:6,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:5,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5}}},
+ {label:'the sixth house has no benefic occupant',expected:'NOT_MATCHED',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:5,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:4,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5}}},
+ {label:'Mercury missing from otherwise qualifying chart leaves the twelfth-house criterion UNKNOWN',expected:'UNKNOWN',
+  chart:{lagnaLongitude:0,
+   houses:{Saturn:1,Sun:3,Jupiter:3,Mars:2,Venus:6,Moon:9,Rahu:10,Ketu:4,Mercury:12},
+   signs:{Sun:2,Jupiter:2,Mars:1,Venus:5,Moon:8,Rahu:9,Ketu:3,Mercury:11,Saturn:0},
+   degrees:{Sun:10,Jupiter:25,Mars:5,Venus:5,Moon:5,Rahu:5,Ketu:5,Mercury:5,Saturn:5},omit:['Mercury']}}
+],'HPA p.70 Alpayu 9 — benefic occupants are evaluated from chart');
 statuses('XIV-MAD-05',[
  {label:'Sun Lagna enemy sign, between malefics, weak and no benefic aspect',expected:'MATCHED',
   chart:{lagnaLongitude:30,houses:{Sun:1,Mars:10,Saturn:4,Jupiter:6,Mercury:4,Venus:11,Moon:5}},
@@ -632,7 +683,7 @@ statuses('XIV-MAD-07',[
   chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:true}},
  {label:'other-graha eleventh condition false',expected:'NOT_MATCHED',
   chart:{houses:{Saturn:1,Moon:8}},evidence:{otherGrahasInEleventh:false}},
- {label:'other-graha eleventh condition absent',expected:'UNKNOWN',
+ {label:'chart-derived other grahas do not all occupy the eleventh house',expected:'NOT_MATCHED',
   chart:{houses:{Saturn:1,Moon:8}},evidence:{}}
 ],'HPA p.71 Madhyayu 7');
 statuses('XIV-MAD-08',[
@@ -672,8 +723,8 @@ statuses('XIV-MAD-13',[
   chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:true}},
  {label:'no benefic Kendra evidence',expected:'NOT_MATCHED',
   chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{beneficsOccupyKendras:false}},
- {label:'benefic-occupancy evidence absent',expected:'UNKNOWN',
-  chart:{houses:{Mars:10,Sun:4,Jupiter:4,Mercury:2,Venus:5,Moon:3,Saturn:7}},evidence:{}}
+ {label:'benefic Kendra occupancy remains unknown when all natural benefics are missing',expected:'UNKNOWN',
+  chart:{houses:{Mars:10,Sun:4,Moon:3,Saturn:7},omit:['Jupiter','Venus','Mercury']},evidence:{}}
 ],'HPA p.71 Madhyayu 13');
 statuses('XIV-MAD-14',[
  {label:'Mars 5, Sun 7, Saturn debilitated in Aries',expected:'MATCHED',

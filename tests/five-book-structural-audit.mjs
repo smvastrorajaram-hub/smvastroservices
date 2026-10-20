@@ -4,6 +4,7 @@
  // have been exhaustively validated, nor that astrological outcomes are factual.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 const sampleBirths=[
  ['1994-06-15','13:03'],['2015-09-06','09:30'],
@@ -56,5 +57,15 @@ for(const [date,time] of sampleBirths){
 }
 test(raw.includes('function ashtakavarga(')&&!raw.includes('function trikonaShodhana('),'Base Ashtakavarga is present; do not silently claim separate classical Shodhana is implemented here');
 const pub=fs.readFileSync(new URL('../public/horoscope/prediction-rules-published.js',import.meta.url),'utf8');
-test(pub.includes('window.SMVPUBLISHED_PREDICTION_RULES = []'),'Admin book-derived prediction-rule publication remains empty; never call it complete');
-console.log(JSON.stringify({pass:true,checks,scope:'classical calculation structure, NOT book rule accuracy',sampleCharts:summary,bookRuleCertification:false,publishedManualRules:0}));
+const publishedStart=pub.indexOf('window.SMVPUBLISHED_PREDICTION_RULES = ');
+const publishedEnd=publishedStart>=0?pub.lastIndexOf('];')+1:-1;
+let publishedRules=[];
+if(publishedStart>=0&&publishedEnd>publishedStart){
+ const literal=pub.slice(pub.indexOf('=',publishedStart)+1,publishedEnd).trim();
+ try{publishedRules=vm.runInNewContext('('+literal+')',{}, {timeout:5000});}catch{}
+}
+test(Array.isArray(publishedRules)&&publishedRules.length>=1,
+  'Admin/static offline prediction fallback contains reviewed contextual rules; this is not a complete classical rule publication');
+test(publishedRules.every(rule=>rule.channel==='natal'&&rule.effect?.ta&&rule.effect?.en&&rule.effect.mode==='append'),
+  'static fallback prediction rules remain bilingual and append-only');
+console.log(JSON.stringify({pass:true,checks,scope:'classical calculation structure, NOT book rule accuracy',sampleCharts:summary,bookRuleCertification:false,staticFallbackRules:publishedRules.length,fullClassicalCertification:false}));

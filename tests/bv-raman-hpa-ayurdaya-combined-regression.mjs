@@ -542,7 +542,7 @@ eq(bal16AllLordsWithSun.rules.find(rule => rule.id === 'XIV-BAL-16').status, 'MA
   'Balarishta rule 16 matches when Lagna, Navamsa Lagna and Moon-sign lords share the Sun sign');
 
 const bal16MissingNavamsaLagna = bvRamanChapterXIVLongevityRules({
-  chart:{lagna:{longitude:0},planets:[
+  chart:{lagna:{longitude:null},planets:[
     {name:'Sun',longitude:270,bhava:9},{name:'Moon',longitude:270,bhava:2},
     {name:'Mars',longitude:270,bhava:3},{name:'Mercury',longitude:60,bhava:4},
     {name:'Jupiter',longitude:90,bhava:5},{name:'Venus',longitude:270,bhava:6},
@@ -650,7 +650,7 @@ eq(madhyayu05SunEnemySignWeak.rules.find(rule => rule.id === 'XIV-MAD-05').statu
   'MATCHED', 'Madhyayu rule 5 matches the Lagna Sun with explicit enemy-sign, enclosure and weakness evidence');
 
 const madhyayu05MissingEvidence = bvRamanChapterXIVLongevityRules({
-  chart:{lagna:{longitude:0},planets:[{name:'Sun',longitude:0,bhava:1}]}
+  chart:{lagna:{longitude:0},planets:[{name:'Sun',longitude:null,bhava:1}]}
 });
 eq(madhyayu05MissingEvidence.rules.find(rule => rule.id === 'XIV-MAD-05').status, 'UNKNOWN',
   'Madhyayu rule 5 remains UNKNOWN without enemy-sign, enclosure and strength evidence');
@@ -727,9 +727,8 @@ eq(madhyayu13BeneficsAndMaleficAspect.rules.find(rule => rule.id === 'XIV-MAD-13
 
 const madhyayu13MissingBeneficEvidence = bvRamanChapterXIVLongevityRules({
   chart:{lagna:{longitude:0},planets:[
-    {name:'Sun',longitude:0,bhava:1},{name:'Moon',longitude:90,bhava:4},
+    {name:'Sun',longitude:0,bhava:1},
     {name:'Mars',longitude:210,bhava:8},{name:'Mercury',longitude:30,bhava:2},
-    {name:'Jupiter',longitude:90,bhava:4},{name:'Venus',longitude:270,bhava:10},
     {name:'Saturn',longitude:150,bhava:6},{name:'Rahu',longitude:240,bhava:9},
     {name:'Ketu',longitude:300,bhava:11}
   ]}
@@ -1154,7 +1153,8 @@ checkXivRuleThreeStates({
  id:'XIV-BAL-15',page:65,number:15,
  chart:makeXivSourceFixture({lagnaLongitude:30}),
  matchedEvidence:{birthDasaLord:'Venus',birthAntardasaLord:'Jupiter'},
- notMatchedEvidence:{birthDasaLord:'Saturn',birthAntardasaLord:'Mercury'}
+ notMatchedEvidence:{birthDasaLord:'Saturn',birthAntardasaLord:'Mercury'},
+ unknownChart:makeXivSourceFixture({lagnaLongitude:30,omit:['Moon']})
 });
 checkXivRuleThreeStates({
  id:'XIV-BAL-28',page:66,number:28,
@@ -1222,7 +1222,11 @@ checkXivRuleThreeStates({
 checkXivRuleThreeStates({
  id:'XIV-MAD-04',page:70,number:4,
  matchedEvidence:{allPlanetsMiddleFourHouses:true},
- notMatchedEvidence:{allPlanetsMiddleFourHouses:false}
+ notMatchedEvidence:{allPlanetsMiddleFourHouses:false},
+ unknownChart:makeXivSourceFixture({
+  houses:{Sun:4,Moon:5,Mars:6,Mercury:7,Jupiter:4,Venus:5,Saturn:6,Rahu:7,Ketu:4},
+  omit:['Ketu']
+ })
 });
 checkXivRuleThreeStates({
  id:'XIV-MAD-15',page:71,number:15,

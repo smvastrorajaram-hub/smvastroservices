@@ -72,6 +72,64 @@ const SIGN_KIND = Object.freeze([
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common',
   'movable', 'fixed', 'common', 'movable', 'fixed', 'common'
 ]);
+
+const VIMSHOTTARI_ORDER = Object.freeze(['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury']);
+const VIMSHOTTARI_YEARS = Object.freeze({Ketu:7,Venus:20,Sun:6,Moon:10,Mars:7,Rahu:18,Jupiter:16,Saturn:19,Mercury:17});
+function navamsaSignIndex(longitude) {
+  if (!finite(longitude)) return null;
+  const lon=norm360(longitude),sign=Math.floor(lon/30),degree=lon%30;
+  const segment=Math.min(8,Math.floor(degree/(30/9)));
+  const kind=SIGN_KIND[sign];
+  const first=kind==='movable'?sign:kind==='fixed'?(sign+8)%12:(sign+4)%12;
+  return (first+segment)%12;
+}
+/**
+ * Derive only Chapter XIV inputs that follow deterministically from available
+ * natal longitudes / chart structure. Sunrise, birth-night, full-Moon quality,
+ * Shadbala judgement and source-ambiguous wording remain caller evidence or
+ * UNKNOWN; they are never guessed from unrelated fields.
+ */
+function deriveChapterXIVEvidence(chart,map,evidence={}) {
+  const out={};
+  const lagnaLongitude=map.lagnaLongitude;
+  if(finite(lagnaLongitude)){
+    const navamsaLagna=navamsaSignIndex(lagnaLongitude);
+    if(signValid(navamsaLagna))out.navamsaLagnaLord=SIGN_LORDS[navamsaLagna];
+  }
+  const sun=map.planets.get('Sun');
+  if(sun&&signValid(sun.sign))out.sunInEnemySign=planetInNaturalEnemySign(map,'Sun');
+  const moon=map.planets.get('Moon');
+  if(moon&&finite(moon.longitude)&&signValid(moon.sign)){
+    const drekkanaSegment=Math.min(2,Math.floor(moon.degreeInSign/10));
+    const drekkanaStarts=moon.sign%2===0
+      ? [moon.sign,(moon.sign+4)%12,(moon.sign+8)%12]
+      : [(moon.sign+8)%12,(moon.sign+4)%12,moon.sign];
+    const drekkanaSign=drekkanaStarts[drekkanaSegment];
+    out.moonDrekkanaBenefic=['Mercury','Jupiter','Venus'].includes(SIGN_LORDS[drekkanaSign]);
+    const starWidth=360/27,starIndex=Math.min(26,Math.floor(moon.longitude/starWidth));
+    const mdIndex=starIndex%9,mdLord=VIMSHOTTARI_ORDER[mdIndex],mdYears=VIMSHOTTARI_YEARS[mdLord];
+    out.birthDasaLord=mdLord;
+    const elapsedYears=mdYears*((moon.longitude-starIndex*starWidth)/starWidth);
+    let cumulative=0,adLord=mdLord;
+    for(let step=0;step<9;step++){
+      const candidate=VIMSHOTTARI_ORDER[(mdIndex+step)%9];
+      const duration=mdYears*VIMSHOTTARI_YEARS[candidate]/120;
+      if(elapsedYears<cumulative+duration||step===8){adLord=candidate;break;}
+      cumulative+=duration;
+    }
+    out.birthAntardasaLord=adLord;
+  }
+  const houses=CHART_GRAHAS.map(name=>houseOf(map,name));
+  const outsideMiddle=houses.some(house=>house!==null&&![4,5,6,7].includes(house));
+  out.allPlanetsMiddleFourHouses=outsideMiddle?false:houses.every(house=>house!==null)?true:null;
+  const others=CHART_GRAHAS.filter(name=>!['Saturn','Moon'].includes(name)).map(name=>houseOf(map,name));
+  const otherOutsideEleventh=others.some(house=>house!==null&&house!==11);
+  out.otherGrahasInEleventh=otherOutsideEleventh?false:others.every(house=>house!==null)?true:null;
+  out.beneficsInHouses3_6_9_12=triAll(...[3,6,9,12].map(house=>beneficInHouseState(map,evidence,house)));
+  out.beneficsOccupyKendras=beneficInAnyKendra(map,evidence);
+  return out;
+}
+
 const MRITYUBHAGA_DEGREE = Object.freeze([26, 12, 13, 25, 24, 11, 26, 14, 13, 25, 5, 12]);
 const DEBILITATION_SIGN = Object.freeze({
   Sun: 6, Moon: 7, Mars: 3, Mercury: 11,
@@ -159,6 +217,21 @@ function planetInNaturalEnemySign(map, name) {
   return NATURAL_ENEMIES[name].includes(SIGN_LORDS[sign]);
 }
 function isKendra(house) { return inList(house, [1, 4, 7, 10]); }
+
+function beneficInHouseState(map,evidence,house) {
+  if(!houseValid(house))return null;
+  let unknownNature=false;
+  for(const [name,planet] of map.planets.entries()){
+    if(planet.house!==house)continue;
+    const nature=planetNature(map,evidence,name);
+    if(nature==='benefic')return true;
+    if(nature===null)unknownNature=true;
+  }
+  if(unknownNature)return null;
+  const complete=CHART_GRAHAS.every(name=>map.planets.has(name)&&houseValid(map.planets.get(name).house));
+  return complete?false:null;
+}
+
 function planetInHouseState(map, house) {
   if (!houseValid(house)) return null;
   if (CHART_GRAHAS.some(name => houseOf(map, name) === house)) return true;
@@ -420,7 +493,9 @@ export const BV_RAMAN_HPA_CHAPTER_XIV_SOURCE_RULE_INVENTORY = Object.freeze(
  * in the chapter and it does not select a life-span category.
  */
 export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
-  const map = normalizeChart(chart), e = evidence || {};
+  const map = normalizeChart(chart), suppliedEvidence = evidence || {};
+  const autoDerivedEvidence = deriveChapterXIVEvidence(chart,map,suppliedEvidence);
+  const e = { ...autoDerivedEvidence, ...suppliedEvidence };
   const isStrong = name => strengthFlag(e, name, 'strong');
   const isWeak = name => strengthFlag(e, name, 'weak');
   const moon = map.planets.get('Moon');
@@ -466,6 +541,16 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     const state = aspectState(map, e, name).benefic;
     return state === null ? null : !state;
   };
+
+  // The printed p.64 rule refers to malefic aspects on all three houses.
+  // Resolve this from actual planet-house data when callers have not supplied
+  // a separately reviewed observation.
+  if (!Object.prototype.hasOwnProperty.call(suppliedEvidence,'maleficsAspectingHouses5_8_12')) {
+    e.maleficsAspectingHouses5_8_12=triAll(
+      ...[5,8,12].map(house=>maleficAspectToHouse(house))
+    );
+  }
+
   const lagnaLord = houseLord(map, 1), eighthLord = houseLord(map, 8);
   const thirdLord = houseLord(map, 3), sixthLord = houseLord(map, 6);
   const tenthLord = houseLord(map, 10), eleventhLord = houseLord(map, 11);
@@ -982,6 +1067,9 @@ export function bvRamanChapterXIVLongevityRules({ chart, evidence = {} } = {}) {
     unknownRuleIds: Object.freeze(completeRuleSet.filter(rule => rule.status === 'UNKNOWN').map(rule => rule.id)),
     matchedAntidotes: Object.freeze(matchedAntidotes),
     rules: Object.freeze(completeRuleSet),
+    autoDerivedEvidence: Object.freeze({ ...autoDerivedEvidence }),
+    autoDerivedEvidenceKeys: Object.freeze(Object.keys(autoDerivedEvidence)),
+    callerEvidenceOverrides: Object.freeze(Object.keys(suppliedEvidence)),
     selectedCategory: null,
     finalLifespan: null,
     certified: false,
