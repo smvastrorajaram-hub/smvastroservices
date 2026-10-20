@@ -17,6 +17,8 @@ ok(!source.includes('PLACE_SHARDS') && !source.includes('...PLACE_SHARDS.map'),
 ok(source.includes("'../offline/places/place-search.mjs'") &&
    source.includes("'../offline/places/india-manifest.json'"),
    'Place-search code and shard manifest remain in the install core');
+ok(source.includes("'../offline/places/place-display.mjs'"),
+   'Place formatter dependency is pre-cached for first-use offline searches');
 ok(!source.includes("'../horoscope.js'") && !/script\s+src=["'][^"']*horoscope\.js/i.test(calendarHtml),
    'Calendar does not load or pre-cache the unrelated Horoscope page bundle');
 ok(source.includes('await c.put(e.request,r.clone())') && source.includes("fetch(e.request,{cache:'no-store'})"),
@@ -66,6 +68,9 @@ listeners.install({ waitUntil(p) { installPromise = p; } });
 await installPromise;
 ok(fetches.length > 0 && fetches.some(url => url.includes('india-manifest.json')),
    'Install still stores offline search metadata');
+ok(fetches.some(url => url.endsWith('../offline/places/place-display.mjs')) &&
+   [...stored.keys()].some(url => url.endsWith('../offline/places/place-display.mjs')),
+   'Fresh installs cache the place formatter needed by the search facade and Worker');
 ok(!fetches.some(url => /offline\/places\/india\/(?:[a-z]+(?:-\d+)?|other)\.json(?:\?|$)/i.test(url)),
    'Install downloads zero full GeoNames place shards');
 ok(![...stored.keys()].some(url => /offline\/places\/india\/(?:[a-z]+(?:-\d+)?|other)\.json(?:\?|$)/i.test(url)),
