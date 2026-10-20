@@ -30,7 +30,7 @@
 
 - The large letter buckets in the manifest use bounded parts while preserving the original row order. The full repository location dataset and attribution notice remain present.
 - Consolidated the new work on the existing `place-search-worker.mjs` engine instead of retaining a second competing Worker implementation.
-- Worker search parses and scans the selected letter's parts off the UI thread, yields between batches, accepts cancellation messages, and keeps the prior deterministic matching/population sort.
+- Worker search parses and scans the selected letter's parts off the UI thread, yields between batches, accepts cancellation messages, and keeps the prior deterministic matching/population sort. The parsed letter-shard and prefix-candidate caches use a two-letter LRU bound to cap retained row memory.
 - Kept a local fallback for browsers where module Workers are unavailable.
 - Expanded `tests/place-search-regression.mjs` to load the full manifest/data, validate file/row counts and unique GeoNames IDs, check split-part loading, verify ranking/coordinates/timezone, and guard cancellation + Worker wiring.
 
