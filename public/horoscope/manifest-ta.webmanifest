@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": "/horoscope/",
   "name": "SMV HOROSCOPE",
   "short_name": "SMV HOROSCOPE",
   "lang": "ta",
-  "start_url": "./?lang=ta&source=horoscope-pwa",
-  "scope": "./",
+  "start_url": "/horoscope/?lang=ta&source=horoscope-pwa",
+  "scope": "/horoscope/",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -26,7 +26,7 @@
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
