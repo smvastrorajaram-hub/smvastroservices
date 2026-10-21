@@ -33,3 +33,25 @@ jobs:
           check 'https://smvastroservices.pages.dev/horoscope/calendar/'
           check 'https://smvastroservices.in/'
           check 'https://smvastroservices.in/horoscope/'
+
+          check_contains() {
+            url="$1"
+            expected="$2"
+            body="$(mktemp)"
+            code="$(curl --location --retry 2 --connect-timeout 10 --max-time 35 --silent --show-error --output "$body" --write-out '%{http_code}' "$url")"
+            echo "$url => HTTP $code (checking expected AdSense marker)"
+            if [ "$code" != "200" ] || ! grep -Fq "$expected" "$body"; then
+              echo "::error::AdSense verification marker missing or unavailable at $url"
+              rm -f "$body"
+              return 1
+            fi
+            rm -f "$body"
+          }
+
+          check_contains 'https://smvastroservices.in/' 'google-adsense-account" content="ca-pub-8603281557754018"'
+          check_contains 'https://smvastroservices.in/astrology-services/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
+          check_contains 'https://smvastroservices.in/astrologer-registration/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
+          check_contains 'https://smvastroservices.in/customer-registration/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
+          check_contains 'https://smvastroservices.in/tamil-horoscope/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
+          check_contains 'https://smvastroservices.in/marriage-matching/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
+          check_contains 'https://smvastroservices.in/ads.txt' 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0'
