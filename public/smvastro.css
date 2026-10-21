@@ -2869,6 +2869,27 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-art{position:relative;min-height:520px;background:linear-gradient(90deg, rgba(255, 249, 242, 0.2), transparent 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center 24% / cover no-repeat}
 .smv-master-art::after{content:"";position:absolute;inset:0px;pointer-events:none;background:linear-gradient(90deg, rgba(255, 249, 242, 0.3), transparent 24%), linear-gradient(0deg, rgba(68, 28, 17, 0.08), transparent 28%)}
 .smv-master-services{max-width:1260px;margin:0px auto;padding:16px 24px 18px;display:grid;grid-template-columns:repeat(4, minmax(0px, 1fr));gap:13px}
+.smv-products-store-section{max-width:1260px;margin:18px auto 28px;padding:0 24px;scroll-margin-top:90px}
+.smv-products-store-card{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(240px,.8fr);align-items:center;gap:18px;min-height:250px;padding:clamp(26px,4vw,44px);overflow:hidden;border:1px solid rgba(216,180,103,.64);border-radius:20px;background:radial-gradient(circle at 82% 52%,rgba(224,183,95,.2),transparent 19rem),linear-gradient(118deg,#401228 0%,#661532 58%,#35112e 100%);box-shadow:0 14px 36px rgba(69,16,43,.13)}
+.smv-products-store-copy{position:relative;z-index:1;max-width:690px}
+.smv-products-store-kicker{margin:0 0 12px;color:#f0cf87;font:800 10px/1.6 Arial,sans-serif;letter-spacing:.19em;text-transform:uppercase}
+.smv-products-store-copy h2{margin:0 0 14px;color:#fff8eb;font:500 clamp(28px,3.5vw,42px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
+.smv-products-store-description{max-width:620px;margin:0 0 22px;color:rgba(255,248,235,.88);font:400 14px/1.75 Arial,sans-serif}
+.smv-products-store-button{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:46px;padding:12px 20px;border:1px solid #f0cf87;border-radius:999px;background:#f0cf87;color:#391126;text-decoration:none;font:800 13px/1.2 Arial,sans-serif;transition:transform .18s ease,background .18s ease}
+.smv-products-store-button:hover{transform:translateY(-2px);background:#f7dfaa}
+.smv-products-store-note{margin:13px 0 0;color:rgba(255,248,235,.68);font:400 11px/1.55 Arial,sans-serif}
+.smv-products-store-art{position:relative;display:grid;place-items:center;min-height:190px;overflow:hidden}
+.smv-products-store-orbit{position:absolute;border:1px solid rgba(242,210,142,.45);border-radius:50%;pointer-events:none}
+.smv-products-store-orbit-one{width:205px;height:205px;transform:rotate(-28deg)}
+.smv-products-store-orbit-two{width:158px;height:240px;transform:rotate(36deg)}
+.smv-products-store-seal{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;width:148px;height:148px;border:1px solid rgba(245,218,159,.8);border-radius:50%;background:radial-gradient(circle at 32% 25%,#f8e9bf,#d4a858 70%,#a77932);color:#49162f;box-shadow:0 0 42px rgba(240,207,135,.14),inset 0 0 0 7px rgba(79,25,49,.10)}
+.smv-products-store-seal span{font-size:30px;line-height:1}
+.smv-products-store-seal strong{margin-top:7px;font:900 13px/1 Arial,sans-serif;letter-spacing:.1em}
+.smv-products-store-seal small{margin-top:7px;font:800 9px/1 Arial,sans-serif;letter-spacing:.26em}
+.smv-products-store-star{position:absolute;color:#f4daa1}
+.smv-products-store-star-one{top:13px;right:23px;font-size:25px}
+.smv-products-store-star-two{bottom:16px;left:22px;font-size:28px}
+
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:1px solid var(--smv-line);border-radius:15px;text-align:center;box-shadow:var(--smv-shadow);transition:0.2s;text-decoration:none!important;color:var(--smv-navy)!important}
 .smv-master-service:nth-child(2n+1){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 240, 245))}
 .smv-master-service:nth-child(2n){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 243, 204))}
@@ -2920,6 +2941,19 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-art{min-height:390px;background-size:cover;background-position:center 21%}
 .smv-master-art::after{background:linear-gradient(0deg, rgba(255, 255, 255, 0.05), transparent)}
 .smv-master-services{grid-template-columns:repeat(2, minmax(0px, 1fr));padding:12px;gap:9px}
+.smv-products-store-section{margin:16px auto 22px;padding:0 12px}
+.smv-products-store-card{grid-template-columns:minmax(0,1fr);gap:0;padding:25px 20px;border-radius:16px}
+.smv-products-store-copy h2{font-size:clamp(28px,7vw,36px)}
+.smv-products-store-description{font-size:13px}
+.smv-products-store-art{min-height:154px;margin-top:10px}
+.smv-products-store-orbit-one{width:154px;height:154px}
+.smv-products-store-orbit-two{width:118px;height:180px}
+.smv-products-store-seal{width:116px;height:116px}
+.smv-products-store-seal span{font-size:24px}
+.smv-products-store-seal strong{font-size:11px}
+.smv-products-store-seal small{font-size:8px}
+.smv-products-store-star-one{right:calc(50% - 90px);top:7px}
+.smv-products-store-star-two{left:calc(50% - 88px);bottom:7px}
 .smv-master-service{min-height:155px;padding:17px 10px}
 .smv-master-service strong{font-size:0.92rem}
 .smv-master-service span{font-size:0.72rem}
@@ -2933,6 +2967,10 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 @media (max-width: 430px){
 .smv-master-art{min-height:350px;background-position:center 18%}
 .smv-master-services{padding:10px 9px}
+.smv-products-store-section{padding:0 9px}
+.smv-products-store-card{padding:22px 16px}
+.smv-products-store-button{width:100%}
+.smv-products-store-art{min-height:138px}
 .smv-master-service{min-height:150px}}
 @media (prefers-reduced-motion: reduce){
 :where(:not(.smv-css-island,.smv-css-island *)){transition:none!important;scroll-behavior:auto!important}}
