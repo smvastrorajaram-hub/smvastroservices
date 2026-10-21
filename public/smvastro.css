@@ -3904,27 +3904,29 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
     display:flex!important;align-items:center!important;justify-content:center!important;
     min-width:0!important;min-height:34px!important;margin:0!important;padding:7px 2px 8px!important;
-    border:1px solid rgba(184,137,53,.72)!important;border-radius:8px!important;
-    background:rgba(255,248,230,.88)!important;color:#ff0000!important;
-    -webkit-text-fill-color:#ff0000!important;-webkit-text-stroke:0 transparent!important;
-    box-shadow:none!important;font-family:Arial,Helvetica,sans-serif!important;
-    font-size:clamp(10px,2.7vw,13px)!important;line-height:1!important;font-weight:900!important;
+    border:1px solid #f2d48b!important;border-radius:8px!important;
+    background:#74172a!important;color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;-webkit-text-stroke:0 transparent!important;
+    box-shadow:0 2px 5px rgba(12,20,42,.18)!important;font-family:Arial,Helvetica,sans-serif!important;
+    font-size:clamp(10px,2.7vw,13px)!important;line-height:1!important;font-weight:850!important;
     text-align:center!important;white-space:nowrap!important;text-shadow:none!important;
   }
   #smvPremiumHeaderV9 .smv9-menu > .login,
   #smvPremiumHeaderV9 .smv9-menu > .register{
     margin:0!important;padding:7px 2px 8px!important;
-    border:1px solid rgba(184,137,53,.72)!important;border-radius:8px!important;
-    background:rgba(255,248,230,.88)!important;color:#ff0000!important;
-    -webkit-text-fill-color:#ff0000!important;-webkit-text-stroke:0 transparent!important;
-    font-weight:900!important;text-shadow:none!important;
+    border:1px solid #f2d48b!important;border-radius:8px!important;
+    background:#74172a!important;color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;-webkit-text-stroke:0 transparent!important;
+    font-weight:850!important;box-shadow:0 2px 5px rgba(12,20,42,.18)!important;text-shadow:none!important;
   }
   #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current,
   #smvPremiumHeaderV9 .smv9-menu > a.active{
-    color:#ff0000!important;
-    -webkit-text-fill-color:#ff0000!important;
+    background:#ffd66b!important;
+    border-color:#fff0b4!important;
+    color:#5c1122!important;
+    -webkit-text-fill-color:#5c1122!important;
     -webkit-text-stroke:0 transparent!important;
-    font-weight:900!important;text-shadow:none!important;
+    font-weight:900!important;box-shadow:0 2px 6px rgba(12,20,42,.22)!important;text-shadow:none!important;
   }
   #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current::after,
   #smvPremiumHeaderV9 .smv9-menu > a.active::after{
@@ -3936,7 +3938,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     bottom:1px!important;
     height:3px!important;
     border-radius:10px!important;
-    background:#e50055!important;
+    background:#ffd66b!important;
   }
 
   /* Responsive homepage hero: full image ratio, readable overlay copy. */
