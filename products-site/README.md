@@ -13,7 +13,7 @@ Create a **separate Pages project** connected to this same repository and config
 - Build command: leave blank for this plain static HTML/CSS site
 - Build output directory: `.` (the root of `products-site`)
 
-After the `pages.dev` preview has been checked, add `products.smvastroservices.in) as a custom domain in that separate Pages project and follow Cloudflare's DNS instructions. Do not change the apex `@` record or the existing `horoscope` / `calendar` records.
+After the `pages.dev` preview has been checked, add `products.smvastroservices.in` as a custom domain in that separate Pages project and follow Cloudflare's DNS instructions. Do not change the apex `@` record or the existing `horoscope` / `calendar` records.
 
 ## Before public launch
 1. Replace generic categories with the actual product categories.
