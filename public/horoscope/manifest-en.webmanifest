@@ -1,10 +1,10 @@
 {
-  "id": "/horoscope/",
+  "id": "./",
   "name": "SMV HOROSCOPE",
   "short_name": "SMV HOROSCOPE",
   "lang": "en",
-  "start_url": "/horoscope/?lang=en&source=horoscope-pwa",
-  "scope": "/horoscope/",
+  "start_url": "./?lang=en&source=horoscope-pwa",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
