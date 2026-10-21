@@ -1,14 +1,13 @@
-const CACHE='smv-calendar-source-clean-20261020-lazy-place-shards';
-// Keep GeoNames shards in the repository, but do not download ~58 MiB during install.
-// The existing cache-miss path stores a shard after its first online search,
-// so previously searched letters remain available offline.
+const CACHE='smv-calendar-source-clean-20261016';
+const PLACE_SHARDS=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z'];
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
- '../daily-calendar.mjs','../daily-calendar.css','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.css','../location-search-online-offline.js',
+ '../daily-calendar.mjs','../daily-calendar.css','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
  '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
- '../offline/places/place-search.mjs','../offline/places/place-search-worker.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json'
+ '../offline/places/place-search.mjs','../offline/places/india-manifest.json',
+ ...PLACE_SHARDS.map(x=>'../offline/places/india/'+x+'.json')
 ];
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
 async function cacheCore(concurrency=6){const c=await caches.open(CACHE);let i=0;const job=async()=>{while(i<CORE.length){const u=CORE[i++];try{const r=await fetch(new Request(u,{cache:'reload'}));if(r.ok)await c.put(u,fixed(u,r));}catch(_){}}};await Promise.all(Array.from({length:Math.min(concurrency,CORE.length)},job));}
