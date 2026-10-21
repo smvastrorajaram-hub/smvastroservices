@@ -3779,8 +3779,8 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     box-shadow:none!important;
     color:#2f1c17!important;
     background-image:url("photo/smv-mobile-premium-header.webp")!important;
-    background-size:100% 100%!important;
-    background-position:center top!important;
+    background-size:cover!important;
+    background-position:center center!important;
     background-repeat:no-repeat!important;
   }
   #smvPremiumHeaderV9 .smv9-nav{
