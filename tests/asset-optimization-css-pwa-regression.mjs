@@ -11,6 +11,8 @@ const printCss=fs.readFileSync(url('public/horoscope/report-print.css'),'utf8');
 const horoscopeFavicon=fs.readFileSync(url('public/horoscope/assets/icon-192.png'));
 ok(horoscopeHtml.includes('<link rel="icon" href="assets/icon-192.png" sizes="192x192" type="image/png">'),
  'Horoscope favicon points to the actual PNG app icon rather than the JPEG-encoded smvlogo.png file');
+ok(horoscopeHtml.includes('<img src="assets/icon-192.png" alt="SMV HOROSCOPE" width="72" height="72">') && !horoscopeHtml.includes('<img src="assets/smvlogo.png" alt="SMV HOROSCOPE"'),
+ 'Horoscope header uses a valid PNG logo asset rather than the JPEG-encoded .png file');
 ok(horoscopeFavicon.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])) &&
    horoscopeFavicon.readUInt32BE(16)===192 && horoscopeFavicon.readUInt32BE(20)===192,
  'The Horoscope favicon asset is a valid 192x192 PNG, matching its declared media type and size');
@@ -44,4 +46,35 @@ for(const [manifestPath,sharedPng,retiredPng] of pwaPairs){
  ok(!!any&&!!mask&&any.src===mask.src,'One identical 512px source serves any + maskable purposes in '+manifestPath);
  ok(fs.existsSync(url(sharedPng))&&!fs.existsSync(url(retiredPng)),'Duplicate maskable PNG is removed while shared icon remains: '+manifestPath);
 }
+
+/* Horoscope is deployed both at a dedicated host root and under /horoscope/.
+   The manifest must follow the directory containing itself, not hard-code one host path. */
+for(const manifestPath of [
+ 'public/horoscope/manifest-en.webmanifest',
+ 'public/horoscope/manifest-ta.webmanifest'
+]){
+ const manifest=JSON.parse(fs.readFileSync(url(manifestPath),'utf8'));
+ const deploymentBases=[
+  ['custom-domain-root',new URL('/manifest-'+(manifest.lang==='ta'?'ta':'en')+'.webmanifest','https://horoscope.example')],
+  ['pages-subpath',new URL('/horoscope/manifest-'+(manifest.lang==='ta'?'ta':'en')+'.webmanifest','https://smvastroservices.pages.dev')]
+ ];
+ for(const [deployment,manifestUrl] of deploymentBases){
+  const base=new URL('./',manifestUrl);
+  const id=new URL(manifest.id,manifestUrl);
+  const scope=new URL(manifest.scope,manifestUrl);
+  const start=new URL(manifest.start_url,manifestUrl);
+  ok(id.origin===base.origin&&id.pathname===base.pathname,
+   'Horoscope manifest id resolves to the current app base for '+deployment+': '+manifestPath);
+  ok(scope.origin===base.origin&&scope.pathname===base.pathname,
+   'Horoscope manifest scope matches the current app base for '+deployment+': '+manifestPath);
+  ok(start.origin===base.origin&&start.pathname===base.pathname,
+   'Horoscope manifest start_url stays inside the current app base for '+deployment+': '+manifestPath);
+  for(const icon of manifest.icons){
+   const iconUrl=new URL(icon.src,manifestUrl);
+   ok(iconUrl.origin===base.origin&&iconUrl.pathname===base.pathname+icon.src,
+    'Horoscope icon URL resolves relative to its manifest for '+deployment+': '+manifestPath);
+  }
+ }
+}
+
 console.log(JSON.stringify({pass:true,checks,cssOwner:'v358-result-layout.css',pwaIcons:'shared identical any/maskable PNG',printFlowPreserved:true}));
