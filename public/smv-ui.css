@@ -215,7 +215,7 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
 @media(max-width:899px){
   #smvPremiumHeaderV9:where(:not(.hidden)){background-color:transparent!important}
   #smvPremiumHeaderV9 .smv9-menu{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-  #smvPremiumHeaderV9 .smv9-brand,#smvPremiumHeaderV9 .smv9-brand-copy,#smvPremiumHeaderV9 .smv9-brand-title-link,#smvPremiumHeaderV9 .smv9-brand strong,#smvPremiumHeaderV9 .smv9-language-row .smv-site-subtitle{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
+  #smvPremiumHeaderV9 .smv9-brand,#smvPremiumHeaderV9 .smv9-brand>span,#smvPremiumHeaderV9 .smv9-brand strong,#smvPremiumHeaderV9 .smv9-brand small{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
   #smv24-footer .smv24-brand{width:100%!important;margin-inline:auto!important;align-items:center!important;text-align:center!important}
   #smv24-footer .smv24-brand :where(h2,p,small,em){width:100%!important;text-align:center!important;margin-inline:auto!important}
 }

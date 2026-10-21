@@ -40,13 +40,6 @@ jobs:
           grep -Fq 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0' public/ads.txt
           echo "PASS: publisher ID is preserved and the extra loader is host-restricted to smvastroservices.pages.dev"
 
-      - name: Validate SMV ASTRO Tamil and English switch
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check public/smv-language.js
-          node tests/smv-astro-language-switch-source.mjs
-
   production-smoke:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest

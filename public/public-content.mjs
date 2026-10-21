@@ -117,12 +117,7 @@
     try{await fb();const u=auth?.currentUser;if(!u)throw new Error('Please login as Admin.');const token=await u.getIdToken();const r=await fetch(BACKEND+'/admin/appointment-status',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({id,status}),cache:'no-store'});const d=await r.json().catch(()=>({}));window.__smvRecordTiming?.(path,performance.now()-started,r.ok);if(!r.ok)throw new Error(d.error||`Appointment update returned HTTP ${r.status}.`);await loadAdminAppointments();}catch(e){console.error('Appointment update error:',e);alert(e?.message||String(e));buttons.forEach(x=>x.disabled=false);}finally{appointmentUpdating=false;}
   }
 
-  window.__smvSetupLanguage=()=>{
-    let lang='en';
-    try{lang=localStorage.getItem('smv-astro-site-language-v1')==='ta'?'ta':'en';}catch(_e){}
-    if(typeof window.__smvApplyAstroLanguage==='function')window.__smvApplyAstroLanguage(lang,{persist:false});
-    else document.documentElement.lang=lang;
-  };
+  window.__smvSetupLanguage=()=>{document.documentElement.lang='en';};
   window.__smvNotifyQuestionUpdate=async function(questionId,event,reason){
     try{
       const u=auth?.currentUser;
