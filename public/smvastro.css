@@ -3120,7 +3120,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #smvPremiumHeaderV9 .smv9-brand img{width:40px;height:40px}
 #smvPremiumHeaderV9 .smv9-brand strong{font-size:20px}
 #smvPremiumHeaderV9 .smv9-brand small{font-size:8px}
-#smvPremiumHeaderV9 .smv9-menu{display:grid;grid-template-columns:repeat(5, minmax(0px, 1fr));gap:2px;width:100%}
+#smvPremiumHeaderV9 .smv9-menu{display:grid;grid-template-columns:repeat(6, minmax(0px, 1fr));gap:2px;width:100%}
 #smvPremiumHeaderV9 .smv9-menu a, #smvPremiumHeaderV9 .smv9-menu button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){min-width:0px;min-height:34px;padding:7px 2px;font-size:9px;text-align:center}
 #smvPremiumHeaderV9 .smv9-menu .login, #smvPremiumHeaderV9 .smv9-menu .register{margin:0px;padding:7px 2px}}
 @media (max-width: 600px){
@@ -3184,7 +3184,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-brand img{width:40px!important;height:40px!important;max-width:40px!important}
 #smvPremiumHeaderV9 .smv9-brand strong{font-size:24px!important}
 #smvPremiumHeaderV9 .smv9-brand small{font-size:9.5px!important}
-#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(5, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:rgb(255, 255, 255)!important}
+#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:rgb(255, 255, 255)!important}
 #smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){display:flex!important;min-height:38px!important;padding:8px 3px!important;font-size:11.5px!important;text-align:center!important;border-radius:0px!important}
 #smvPremiumHeaderV9 .smv9-menu > .hidden{display:none!important}
 #smvPremiumHeaderV9 .smv9-menu > .login{margin:0px!important;border:1.5px solid rgb(229, 0, 70)!important;border-radius:999px!important;background:rgb(255, 255, 255)!important;color:rgb(199, 0, 61)!important}
@@ -3192,7 +3192,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 @media (max-width: 600px){
 #smvPremiumHeaderV9 .smv9-nav{padding:9px 12px 10px!important}
 #smvPremiumHeaderV9 .smv9-brand{margin-bottom:8px!important}
-#smvPremiumHeaderV9 .smv9-menu{grid-template-columns:repeat(5, minmax(0px, 1fr))!important;gap:5px 4px!important}
+#smvPremiumHeaderV9 .smv9-menu{grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important}
 #smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){min-height:38px!important;padding:8px 2px!important;font-size:11px!important;color:rgb(23, 25, 39)!important;background:rgb(255, 255, 255)!important;border:0px!important}
 #smvPremiumHeaderV9 .smv9-menu > a.active{color:rgb(229, 0, 70)!important}
 #smvPremiumHeaderV9 .smv9-menu > .login{background:rgb(255, 255, 255)!important;border:1.5px solid rgb(229, 0, 70)!important;color:rgb(199, 0, 61)!important}
@@ -3890,7 +3890,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 
   #smvPremiumHeaderV9 .smv9-menu{
     display:grid!important;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
     align-items:end!important;
     width:100%!important;
     margin:0!important;
