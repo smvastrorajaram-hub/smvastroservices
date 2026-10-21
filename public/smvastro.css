@@ -1468,7 +1468,7 @@ section > h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:25px;line-he
 .container{padding-left:9px;padding-right:9px}
 .registration-option{padding:22px 15px}
 .registration-option .btn{width:100%;min-width:0px}}
-.smv-dialog-backdrop{position:fixed;inset:0px;width:100vw;height:100dvh;background:rgba(28, 25, 61, 0.7);display:grid;place-items:center;padding:14px;z-index:500;backdrop-filter:blur(3px)}
+.smv-dialog-backdrop{position:fixed;inset:0px;width:100vw;height:100dvh;background:rgba(28, 25, 61, 0.7);display:grid;place-items:center;padding:14px;z-index:500;backdrop-filter:none}
 .smv-dialog{width:min(430px, -28px + 100vw);max-width:430px;margin:0px auto;box-sizing:border-box;background:linear-gradient(rgb(255, 253, 248), rgb(255, 247, 232));border:1px solid rgb(216, 184, 102);border-radius:20px;box-shadow:rgba(28, 25, 61, 0.28) 0px 24px 65px;padding:24px 20px 18px;color:var(--text)}
 .smv-dialog-icon{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin:0px auto 12px;background:radial-gradient(circle, rgb(255, 248, 217), rgb(239, 210, 125));border:2px solid var(--gold);font-size:23px}
 .smv-dialog h3{margin:0px;text-align:center;color:rgb(126, 24, 24);font-family:Georgia, "Times New Roman", serif;font-size:24px}
@@ -2848,7 +2848,7 @@ html{scroll-behavior:smooth}
 body:where(:not(.smv-css-island,.smv-css-island *)){overflow-x:hidden;color:var(--smv-navy)!important}
 .smv-master-top{background:linear-gradient(90deg, rgb(239, 10, 70), rgb(195, 0, 57));color:rgb(255, 255, 255)}
 .smv-master-topin{max-width:1320px;margin:auto;padding:7px 24px;display:flex;justify-content:space-between;gap:18px;font-size:0.72rem}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:blur(18px);position:sticky!important;background:rgba(255, 255, 255, 0.97)!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:none;position:sticky!important;background:rgba(255, 255, 255, 0.97)!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:74px;margin:auto!important;gap:20px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){object-fit:contain;width:48px!important;height:48px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.22rem!important;color:var(--smv-red)!important;letter-spacing:0.025em!important}
@@ -3207,7 +3207,7 @@ html body.smv-v12-theme #home .smv33-copy h1{font-family:Georgia, serif;font-siz
 html body.smv-v12-theme #home .smv33-copy h1 span{color:rgb(237, 0, 85)}
 html body.smv-v12-theme #home .smv33-copy p{font:400 15px / 1.65 Arial, sans-serif;color:inherit;margin:0px 0px 16px;max-width:none;text-shadow:none}
 html body.smv-v12-theme #home .smv33-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
-html body.smv-v12-theme #home .smv33-actions a{display:flex;align-items:center;justify-content:center;gap:12px;flex:1 1 140px;min-height:48px;padding:12px 10px;background:rgb(233, 0, 84);color:rgb(255, 255, 255);font:700 14px / 1.4 Arial, sans-serif;text-decoration:none;border-radius:8px;box-sizing:border-box;text-align:center}
+html body.smv-v12-theme #home .smv33-actions a{display:flex;align-items:center;justify-content:center;gap:12px;flex:1 1 140px;min-height:48px;padding:12px 10px;background:rgb(233, 0, 84);color:rgb(255, 255, 255);font:700 14px / 1.4 Arial, sans-serif;text-decoration:none;border-radius:8px;box-sizing:border-box;text-align:center;text-shadow:none}
 html body.smv-v12-theme #home .smv33-trust{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;font:700 11px / 1.5 Arial, sans-serif;margin-top:22px;color:inherit}
 html body.smv-v12-theme #home .smv33-trust span{display:inline-flex;align-items:center;gap:5px}
 html body.smv-v12-theme #home .smv33-trust img{width:20px;height:20px;object-fit:contain}
@@ -3216,14 +3216,15 @@ html body.smv-v12-theme #home .smv33-scene{min-height:0;background:transparent}
 html body.smv-v12-theme #home .smv33-photo{display:block}
 html body.smv-v12-theme #home .smv33-mobile-head{display:none}
 html body.smv-v12-theme #home .smv33-desktop-head{display:block}
-html body.smv-v12-theme #home .smv33-copy{left:6%;right:auto;top:22%;bottom:auto;transform:none;width:40%;max-width:660px;min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;color:#17273f;text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(255,255,255,.58)}
+html body.smv-v12-theme #home .smv33-copy{left:6%;right:auto;top:6%;bottom:auto;transform:none;width:43%;max-width:640px;min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;color:#17273f;text-shadow:none}
 html body.smv-v12-theme #home .smv33-kicker{color:#7a2e31;text-shadow:0 1px 0 rgba(255,255,255,.92)}
-html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(30px,3.6vw,58px);line-height:1.2;color:#17273f;text-shadow:0 1px 0 rgba(255,255,255,.94),0 2px 6px rgba(255,255,255,.62)}
+html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(28px,3vw,44px);line-height:1.08;margin:0 0 12px;color:#17273f;text-shadow:0 1px 0 rgba(255,255,255,.94),0 2px 6px rgba(255,255,255,.62)}
 html body.smv-v12-theme #home .smv33-copy h1 span{color:#925017}
-html body.smv-v12-theme #home .smv33-copy p{font-size:clamp(13px,1.4vw,18px);line-height:1.65;color:#25364c;text-shadow:0 1px 0 rgba(255,255,255,.9)}
-html body.smv-v12-theme #home .smv33-actions a{background:rgb(237,0,84);color:#fff;font-size:13px}
+html body.smv-v12-theme #home .smv33-copy p{font-size:clamp(12px,1.15vw,15px);line-height:1.42;margin:0 0 8px;color:#25364c;text-shadow:none}
+html body.smv-v12-theme #home .smv33-actions{gap:10px;margin-top:12px}
+html body.smv-v12-theme #home .smv33-actions a{background:rgb(237,0,84);color:#fff;font-size:13px;min-height:44px;padding:10px 12px;text-shadow:none;box-shadow:none}
 html body.smv-v12-theme #home .smv33-actions .horoscope{background:rgba(255,250,240,.9);color:#20324a;border:1px solid #75461a}
-html body.smv-v12-theme #home .smv33-trust{color:#25364c;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.9)}
+html body.smv-v12-theme #home .smv33-trust{color:#25364c;font-size:10px;line-height:1.35;font-weight:700;margin-top:10px;gap:8px 12px;text-shadow:none}
 }
 .smv-location-wrap:where(:not(.smv-css-island,.smv-css-island *)){position:relative!important}
 .smv-location-suggestions:where(:not(.smv-css-island,.smv-css-island *)){display:none!important}
@@ -3877,11 +3878,11 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     margin:0!important;
     padding:0!important;
     gap:2px!important;
-    background:rgba(255,250,239,.32)!important;
+    background:transparent!important;
     border:0!important;
     border-radius:14px!important;
     overflow:visible!important;
-    backdrop-filter:blur(1.5px)!important;
+    backdrop-filter:none!important;
   }
   #smvPremiumHeaderV9 .smv9-menu > a,
   #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
@@ -3903,7 +3904,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     font-weight:750!important;
     text-align:center!important;
     white-space:nowrap!important;
-    text-shadow:0 1px 0 rgba(255,255,255,.65)!important;
+    text-shadow:none!important;
   }
   #smvPremiumHeaderV9 .smv9-menu > .login,
   #smvPremiumHeaderV9 .smv9-menu > .register{
