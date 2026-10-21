@@ -2524,10 +2524,14 @@ html body.smv-v12-theme .smv-master-footer :is(h3, h4, p, a):where(:not(.smv-css
 html body.smv-v12-theme .smv-master-footer .smv-master-links:where(:not(.smv-css-island,.smv-css-island *)){place-items:center!important;justify-content:center!important}
 html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){justify-content:center!important}
 .smv-footer-scenery img{width:100%;height:auto}}
+/* Legacy desktop header reset. Scoping it to desktop prevents this high-specificity
+   rule from cancelling the dedicated mobile burgundy/gold button design below. */
+@media (min-width: 900px){
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){background:none transparent!important;border-color:transparent!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:rgb(230, 0, 102)!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-role-green{color:rgb(24, 116, 66)!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-logout-btn{color:rgb(229, 34, 34)!important}
+}
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
 html body.smv-v12-theme .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;padding:10px!important}
 .password-toggle svg{display:block;width:24px;height:24px;flex:0 0 auto;fill:none;stroke:currentcolor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
