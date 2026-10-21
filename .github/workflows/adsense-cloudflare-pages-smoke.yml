@@ -2,10 +2,18 @@ name: AdSense Cloudflare Pages production smoke
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "public/ads.txt"
+      - "public/index.html"
+      - "public/horoscope/index.html"
+      - "public/horoscope/calendar/index.html"
+      - ".github/workflows/adsense-cloudflare-pages-smoke.yml"
   push:
     branches: [main]
     paths:
       - "public/ads.txt"
+      - "public/index.html"
       - "public/horoscope/ads.txt"
       - "public/horoscope/calendar/ads.txt"
       - "public/horoscope/index.html"
@@ -16,7 +24,24 @@ permissions:
   contents: read
 
 jobs:
+  source-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Pages-host-only AdSense configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '<meta name="google-adsense-account" content="ca-pub-8603281557754018">' public/index.html
+          grep -Fq 'smv-pages-dev-adsense-loader' public/index.html
+          grep -Fq "if(location.hostname!=='smvastroservices.pages.dev')return;" public/index.html
+          grep -Fq 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018' public/index.html
+          grep -Fq 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0' public/ads.txt
+          echo "PASS: publisher ID is preserved and the extra loader is host-restricted to smvastroservices.pages.dev"
+
   production-smoke:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -52,6 +77,9 @@ jobs:
             fi
           }
 
+          check_url "https://smvastroservices.pages.dev/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
+          check_url "https://smvastroservices.pages.dev/" "google-adsense-account\" content=\"ca-pub-8603281557754018"
+          check_url "https://smvastroservices.pages.dev/" "smv-pages-dev-adsense-loader"
           check_url "https://smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=horoscope.smvastroservices.in"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=calendar.smvastroservices.in"
