@@ -182,7 +182,7 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 
 /* Legal pages */
 body.smv-legal-page{margin:0;background:#fffdf9;color:var(--smv207-ink)}
-body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid var(--smv207-line);background:rgba(255,253,249,.96);backdrop-filter:blur(8px)}
+body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid var(--smv207-line);background:rgba(255,253,249,.96);backdrop-filter:none}
 body.smv-legal-page>header .brand{color:var(--smv207-red)!important;font-weight:900;text-decoration:none;letter-spacing:.03em}
 body.smv-legal-page>header nav{display:flex;gap:8px;flex-wrap:wrap}
 body.smv-legal-page>header nav a{color:#51443d;text-decoration:none;font-weight:700;padding:7px 9px;border-radius:7px}
