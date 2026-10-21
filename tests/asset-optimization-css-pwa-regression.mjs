@@ -11,6 +11,8 @@ const printCss=fs.readFileSync(url('public/horoscope/report-print.css'),'utf8');
 const horoscopeFavicon=fs.readFileSync(url('public/horoscope/assets/icon-192.png'));
 ok(horoscopeHtml.includes('<link rel="icon" href="assets/icon-192.png" sizes="192x192" type="image/png">'),
  'Horoscope favicon points to the actual PNG app icon rather than the JPEG-encoded smvlogo.png file');
+ok(horoscopeHtml.includes('<img src="assets/icon-192.png" alt="SMV HOROSCOPE" width="72" height="72">') && !horoscopeHtml.includes('<img src="assets/smvlogo.png" alt="SMV HOROSCOPE"'),
+ 'Horoscope header uses a valid PNG logo asset rather than the JPEG-encoded .png file');
 ok(horoscopeFavicon.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])) &&
    horoscopeFavicon.readUInt32BE(16)===192 && horoscopeFavicon.readUInt32BE(20)===192,
  'The Horoscope favicon asset is a valid 192x192 PNG, matching its declared media type and size');
