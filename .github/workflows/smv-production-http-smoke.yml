@@ -37,15 +37,20 @@ jobs:
           check_contains() {
             url="$1"
             expected="$2"
-            body="$(mktemp)"
-            code="$(curl --location --retry 2 --connect-timeout 10 --max-time 35 --silent --show-error --output "$body" --write-out '%{http_code}' "$url")"
-            echo "$url => HTTP $code (checking expected AdSense marker)"
-            if [ "$code" != "200" ] || ! grep -Fq "$expected" "$body"; then
-              echo "::error::AdSense verification marker missing or unavailable at $url"
+            for attempt in $(seq 1 12); do
+              body="$(mktemp)"
+              code="$(curl --location --retry 1 --connect-timeout 5 --max-time 15 --silent --show-error --output "$body" --write-out '%{http_code}' "$url" || true)"
+              if [ "$code" = "200" ] && grep -Fq "$expected" "$body"; then
+                echo "$url => HTTP $code (expected AdSense marker verified; attempt $attempt)"
+                rm -f "$body"
+                return 0
+              fi
+              echo "$url => HTTP ${code:-000} (AdSense marker not visible yet; attempt $attempt/12)"
               rm -f "$body"
-              return 1
-            fi
-            rm -f "$body"
+              if [ "$attempt" -lt 12 ]; then sleep 5; fi
+            done
+            echo "::error::AdSense verification marker missing or unavailable after deployment wait: $url"
+            return 1
           }
 
           check_contains 'https://smvastroservices.in/' 'google-adsense-account" content="ca-pub-8603281557754018"'
