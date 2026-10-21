@@ -46,4 +46,35 @@ for(const [manifestPath,sharedPng,retiredPng] of pwaPairs){
  ok(!!any&&!!mask&&any.src===mask.src,'One identical 512px source serves any + maskable purposes in '+manifestPath);
  ok(fs.existsSync(url(sharedPng))&&!fs.existsSync(url(retiredPng)),'Duplicate maskable PNG is removed while shared icon remains: '+manifestPath);
 }
+
+/* Horoscope is deployed both at a dedicated host root and under /horoscope/.
+   The manifest must follow the directory containing itself, not hard-code one host path. */
+for(const manifestPath of [
+ 'public/horoscope/manifest-en.webmanifest',
+ 'public/horoscope/manifest-ta.webmanifest'
+]){
+ const manifest=JSON.parse(fs.readFileSync(url(manifestPath),'utf8'));
+ const deploymentBases=[
+  ['custom-domain-root',new URL('/manifest-'+(manifest.lang==='ta'?'ta':'en')+'.webmanifest','https://horoscope.example')],
+  ['pages-subpath',new URL('/horoscope/manifest-'+(manifest.lang==='ta'?'ta':'en')+'.webmanifest','https://smvastroservices.pages.dev')]
+ ];
+ for(const [deployment,manifestUrl] of deploymentBases){
+  const base=new URL('./',manifestUrl);
+  const id=new URL(manifest.id,manifestUrl);
+  const scope=new URL(manifest.scope,manifestUrl);
+  const start=new URL(manifest.start_url,manifestUrl);
+  ok(id.origin===base.origin&&id.pathname===base.pathname,
+   'Horoscope manifest id resolves to the current app base for '+deployment+': '+manifestPath);
+  ok(scope.origin===base.origin&&scope.pathname===base.pathname,
+   'Horoscope manifest scope matches the current app base for '+deployment+': '+manifestPath);
+  ok(start.origin===base.origin&&start.pathname===base.pathname,
+   'Horoscope manifest start_url stays inside the current app base for '+deployment+': '+manifestPath);
+  for(const icon of manifest.icons){
+   const iconUrl=new URL(icon.src,manifestUrl);
+   ok(iconUrl.origin===base.origin&&iconUrl.pathname===base.pathname+icon.src,
+    'Horoscope icon URL resolves relative to its manifest for '+deployment+': '+manifestPath);
+  }
+ }
+}
+
 console.log(JSON.stringify({pass:true,checks,cssOwner:'v358-result-layout.css',pwaIcons:'shared identical any/maskable PNG',printFlowPreserved:true}));
