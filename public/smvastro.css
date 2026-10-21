@@ -3103,11 +3103,16 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #smvPremiumHeaderV9, #smvPremiumHeaderV9 *{box-sizing:border-box}
 #smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:linear-gradient(115deg, #fff6df 0%, #f5dfbb 42%, #f6e3dd 76%, #fffaf2 100%);color:rgb(23, 25, 39);border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
 #smvPremiumHeaderV9 .smv9-nav{max-width:1280px;min-height:78px;margin:auto;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-#smvPremiumHeaderV9 .smv9-brand{display:flex;align-items:center;gap:9px;flex:0 0 auto;text-decoration:none;color:inherit}
+#smvPremiumHeaderV9 .smv9-brand{display:flex;align-items:center;gap:9px;flex:0 0 auto;color:inherit}
+#smvPremiumHeaderV9 .smv9-brand-logo-link{display:block;flex:0 0 50px;width:50px;height:50px;text-decoration:none}
 #smvPremiumHeaderV9 .smv9-brand img{display:block;width:50px;height:50px;object-fit:contain}
-#smvPremiumHeaderV9 .smv9-brand span{display:flex;flex-direction:column;line-height:1}
+#smvPremiumHeaderV9 .smv9-brand-copy{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1}
+#smvPremiumHeaderV9 .smv9-brand-title-link{display:block;margin:0;color:inherit;text-decoration:none;line-height:1}
 #smvPremiumHeaderV9 .smv9-brand strong{color:rgb(216, 11, 69);font:900 25px / 1 Georgia, "Times New Roman", serif}
-#smvPremiumHeaderV9 .smv9-brand small{margin-top:5px;color:rgb(152, 36, 65);font:700 10px / 1.1 Arial, sans-serif}
+#smvPremiumHeaderV9 .smv9-language-row{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;align-items:center;gap:6px;width:100%;margin-top:5px}
+#smvPremiumHeaderV9 .smv9-language-row .smv-site-subtitle{display:block;min-width:0;margin:0;padding:4px 8px;border:1px solid #f2d48b;border-radius:6px;background:rgba(255,248,230,.92);color:#17273f;font:700 10px / 1.15 Arial,sans-serif;text-align:center;white-space:nowrap}
+#smvPremiumHeaderV9 .smv9-language-row > .smv-language-toggle{display:inline-flex;align-items:center;justify-content:center;min-width:38px;min-height:29px;margin:0;padding:5px 8px;border:1px solid #f2d48b;border-radius:7px;background:#74172a;color:#fff8e7;font:800 11px / 1 Arial,sans-serif;text-decoration:none;white-space:nowrap;cursor:pointer}
+#smvPremiumHeaderV9 .smv9-language-row > .smv-language-toggle[aria-pressed="true"]{border-color:#fff0b4;background:#ffd66b;color:#5c1122}
 #smvPremiumHeaderV9 .smv9-menu{display:flex;align-items:center;justify-content:flex-end;gap:2px}
 #smvPremiumHeaderV9 .smv9-menu a, #smvPremiumHeaderV9 .smv9-menu button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){appearance:none;border:0px;background:none;text-decoration:none;color:rgb(23, 25, 39);min-height:40px;padding:10px 9px;font:700 13px / 1 Arial, sans-serif;white-space:nowrap;cursor:pointer;position:relative}
 #smvPremiumHeaderV9 .smv9-menu a.active{color:rgb(229, 0, 70)}
@@ -3804,7 +3809,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     box-sizing:border-box!important;
   }
 
-  /* Entire identity is centred — logo, title and subtitle share one axis. */
+  /* Brand mark, title, and bilingual subtitle row remain distinct controls. */
   #smvPremiumHeaderV9 .smv9-brand{
     position:relative!important;
     display:flex!important;
@@ -3818,16 +3823,31 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     gap:2px!important;
     text-align:center!important;
     background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
     text-decoration:none!important;
   }
-  #smvPremiumHeaderV9 .smv9-brand > img{
+  #smvPremiumHeaderV9 .smv9-brand-logo-link{
     position:static!important;
     display:block!important;
+    flex:0 0 auto!important;
     box-sizing:border-box!important;
     width:clamp(50px,12vw,60px)!important;
     height:clamp(50px,12vw,60px)!important;
     max-width:none!important;
     margin:0 auto 2px!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    text-decoration:none!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand-logo-link > img{
+    display:block!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    height:100%!important;
+    max-width:none!important;
+    margin:0!important;
     padding:0!important;
     object-fit:cover!important;
     object-position:center!important;
@@ -3838,17 +3858,28 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     filter:none!important;
     transform:none!important;
   }
-  #smvPremiumHeaderV9 .smv9-brand > span{
+  #smvPremiumHeaderV9 .smv9-brand-copy{
     display:flex!important;
     flex-direction:column!important;
     align-items:center!important;
     justify-content:center!important;
     width:100%!important;
+    min-width:0!important;
     margin:0!important;
+    padding:0!important;
     line-height:1!important;
     text-align:center!important;
   }
-  #smvPremiumHeaderV9 .smv9-brand strong{
+  #smvPremiumHeaderV9 .smv9-brand-title-link{
+    display:block!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    color:inherit!important;
+    text-decoration:none!important;
+    text-align:center!important;
+  }
+  #smvPremiumHeaderV9 .smv9-brand-title-link strong{
     display:block!important;
     width:100%!important;
     margin:0!important;
@@ -3864,28 +3895,70 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     text-align:center!important;
     text-shadow:none!important;
   }
-  #smvPremiumHeaderV9 .smv9-brand small{
+  #smvPremiumHeaderV9 .smv9-language-row{
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr) max-content!important;
+    align-items:center!important;
+    gap:5px!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:5px 0 0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+  }
+  #smvPremiumHeaderV9 .smv9-language-row .smv-site-subtitle{
     display:block!important;
     width:100%!important;
-    margin-top:5px!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:4px 4px!important;
+    border:1px solid #f2d48b!important;
+    border-radius:6px!important;
+    background:rgba(255,248,230,.94)!important;
     color:#17273f!important;
     -webkit-text-fill-color:#17273f!important;
     -webkit-text-stroke:0 transparent!important;
     font-family:Arial,Helvetica,sans-serif!important;
-    font-size:clamp(10px,2.6vw,13px)!important;
+    font-size:clamp(8.5px,2.25vw,11px)!important;
     line-height:1.15!important;
     font-weight:800!important;
-    letter-spacing:.02px!important;
+    letter-spacing:0!important;
     white-space:nowrap!important;
-    width:auto!important;
-    max-width:100%!important;
-    margin:4px auto 0!important;
-    padding:4px 8px!important;
-    background:rgba(255,248,230,.92)!important;
-    border:1px solid rgba(184,137,53,.72)!important;
-    border-radius:6px!important;
     text-align:center!important;
     text-shadow:none!important;
+    overflow:hidden!important;
+  }
+  #smvPremiumHeaderV9 .smv9-language-row > .smv-language-toggle{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:36px!important;
+    min-height:30px!important;
+    margin:0!important;
+    padding:6px 7px!important;
+    border:1px solid #f2d48b!important;
+    border-radius:7px!important;
+    background:#74172a!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
+    -webkit-text-stroke:0 transparent!important;
+    box-shadow:0 2px 5px rgba(12,20,42,.18)!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    font-size:11px!important;
+    line-height:1!important;
+    font-weight:850!important;
+    text-align:center!important;
+    text-shadow:none!important;
+    cursor:pointer!important;
+  }
+  #smvPremiumHeaderV9 .smv9-language-row > .smv-language-toggle[aria-pressed="true"]{
+    background:#ffd66b!important;
+    border-color:#fff0b4!important;
+    color:#5c1122!important;
+    -webkit-text-fill-color:#5c1122!important;
+    box-shadow:0 2px 6px rgba(12,20,42,.22)!important;
+    font-weight:900!important;
   }
 
   #smvPremiumHeaderV9 .smv9-menu{
