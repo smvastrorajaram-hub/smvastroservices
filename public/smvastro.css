@@ -3778,7 +3778,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     box-shadow:none!important;
     color:#2f1c17!important;
     background-image:
-      linear-gradient(180deg,rgba(255,250,242,.64) 0%,rgba(255,248,238,.56) 52%,rgba(255,248,238,.66) 100%),
+      linear-gradient(180deg,rgba(255,250,242,.16) 0%,rgba(255,248,238,.08) 52%,rgba(255,248,238,.18) 100%),
       url("photo/smv-mobile-premium-header.webp")!important;
     background-size:100% 100%!important;
     background-position:center top!important;
