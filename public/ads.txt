@@ -1,1 +1,3 @@
 google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0
+subdomain=horoscope.smvastroservices.in
+subdomain=calendar.smvastroservices.in
