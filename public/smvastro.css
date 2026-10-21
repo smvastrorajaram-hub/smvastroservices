@@ -3764,8 +3764,8 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 @media (max-width: 899px){
   .smv-master-top{display:none!important;}
 
-  /* HEADER: use the top crop from the SAME devotional image as the hero,
-     so the header and hero read as one continuous premium scene. */
+  /* HEADER: use the coordinated landscape devotional crop. Preserve the source
+     aspect ratio so circular zodiac artwork stays round across mobile widths. */
   #smvPremiumHeaderV9:where(:not(.hidden)){
     position:relative!important;
     z-index:1000!important;
