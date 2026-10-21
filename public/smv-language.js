@@ -242,6 +242,8 @@
 
   let currentLanguage = "en";
   let observer = null;
+  const originalText = new WeakMap();
+  const originalAttributes = new WeakMap();
 
   function getSavedLanguage() {
     try {
@@ -251,15 +253,47 @@
     }
   }
 
-  function swapExact(value, language) {
-    if (typeof value !== "string") return value;
-    const key = value.trim();
-    if (!key) return value;
-    const replacement = language === "ta" ? EN_TO_TA[key] : TA_TO_EN.get(key);
-    if (typeof replacement !== "string" || replacement === key) return value;
-    const leading = value.match(/^\s*/)?.[0] || "";
-    const trailing = value.match(/\s*$/)?.[0] || "";
+  function preserveWhitespace(original, replacement) {
+    const leading = original.match(/^\s*/)?.[0] || "";
+    const trailing = original.match(/\s*$/)?.[0] || "";
     return leading + replacement + trailing;
+  }
+
+  function replaceFromEnglish(original, language) {
+    if (typeof original !== "string") return original;
+    const key = original.trim();
+    if (!key) return original;
+    const replacement = language === "ta" ? EN_TO_TA[key] : key;
+    return typeof replacement === "string" ? preserveWhitespace(original, replacement) : original;
+  }
+
+  function captureEnglishText(node) {
+    if (originalText.has(node)) return originalText.get(node);
+    const raw = node.nodeValue || "";
+    const key = raw.trim();
+    let base = raw;
+    if (currentLanguage === "ta" && TA_TO_EN.has(key)) {
+      base = preserveWhitespace(raw, TA_TO_EN.get(key));
+    }
+    originalText.set(node, base);
+    return base;
+  }
+
+  function captureEnglishAttribute(element, name) {
+    let values = originalAttributes.get(element);
+    if (!values) {
+      values = new Map();
+      originalAttributes.set(element, values);
+    }
+    if (values.has(name)) return values.get(name);
+    const raw = element.getAttribute(name) || "";
+    const key = raw.trim();
+    let base = raw;
+    if (currentLanguage === "ta" && TA_TO_EN.has(key)) {
+      base = preserveWhitespace(raw, TA_TO_EN.get(key));
+    }
+    values.set(name, base);
+    return base;
   }
 
   function blockedTextNode(node) {
@@ -269,7 +303,8 @@
 
   function translateTextNode(node) {
     if (!node || node.nodeType !== 3 || blockedTextNode(node)) return;
-    const next = swapExact(node.nodeValue || "", currentLanguage);
+    const base = captureEnglishText(node);
+    const next = replaceFromEnglish(base, currentLanguage);
     if (next !== node.nodeValue) node.nodeValue = next;
   }
 
@@ -277,15 +312,15 @@
     if (!element || element.nodeType !== 1) return;
     ["placeholder", "title", "aria-label", "aria-description", "alt"].forEach(function (name) {
       if (!element.hasAttribute(name)) return;
-      const oldValue = element.getAttribute(name);
-      const next = swapExact(oldValue, currentLanguage);
-      if (next !== oldValue) element.setAttribute(name, next);
+      const base = captureEnglishAttribute(element, name);
+      const next = replaceFromEnglish(base, currentLanguage);
+      if (next !== element.getAttribute(name)) element.setAttribute(name, next);
     });
     if (element instanceof HTMLInputElement && /^(button|submit|reset)$/i.test(element.type)) {
-      const oldValue = element.getAttribute("value");
-      if (oldValue !== null) {
-        const next = swapExact(oldValue, currentLanguage);
-        if (next !== oldValue) element.setAttribute("value", next);
+      if (element.hasAttribute("value")) {
+        const base = captureEnglishAttribute(element, "value");
+        const next = replaceFromEnglish(base, currentLanguage);
+        if (next !== element.getAttribute("value")) element.setAttribute("value", next);
       }
     }
   }
@@ -313,11 +348,6 @@
     document.querySelectorAll("[data-smv-site-language]").forEach(function (button) {
       const selected = button.dataset.smvSiteLanguage === currentLanguage;
       button.setAttribute("aria-pressed", selected ? "true" : "false");
-      button.title = button.dataset.smvSiteLanguage === "ta"
-        ? (currentLanguage === "ta" ? "தமிழ் தேர்ந்தெடுக்கப்பட்டுள்ளது" : "Switch to Tamil")
-        : (currentLanguage === "en" ? "English selected" : "Switch to English");
-      button.setAttribute("aria-label", button.dataset.smvSiteLanguage === "ta"
-        ? "Switch to Tamil" : "Switch to English");
     });
   }
 
