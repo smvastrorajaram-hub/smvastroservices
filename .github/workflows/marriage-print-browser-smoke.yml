@@ -1,0 +1,94 @@
+name: Marriage Matching Native Print Smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'public/horoscope/marriage-basic-report.css'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/chart-style.css'
+      - 'public/horoscope/horoscope-readings.css'
+      - 'public/horoscope/smv-ui.css'
+      - 'public/horoscope/header-layout.css'
+      - 'public/horoscope/v358-result-layout.css'
+      - 'public/horoscope/v359-symmetric-gutters.css'
+      - 'public/horoscope/report-print.css'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/report-print.html'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'public/horoscope/offline/dasa_engine.browser.mjs'
+      - 'public/horoscope/offline/offline-engine.mjs'
+      - 'public/horoscope/offline/server-wrapper.browser.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/transit_panchang.browser.mjs'
+      - 'public/horoscope/offline/places/timezone.mjs'
+      - 'public/horoscope/assets/smv-ganesha-approved.webp'
+      - 'public/horoscope/assets/smv-marriage-shiva-parvati.webp'
+      - 'public/horoscope/fonts/noto-sans-tamil.ttf'
+      - 'public/horoscope/fonts/noto-sans-tamil.woff2'
+      - 'tests/marriage-print-browser-smoke.mjs'
+      - '.github/workflows/marriage-print-browser-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'public/horoscope/marriage-basic-report.css'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/chart-style.css'
+      - 'public/horoscope/horoscope-readings.css'
+      - 'public/horoscope/smv-ui.css'
+      - 'public/horoscope/header-layout.css'
+      - 'public/horoscope/v358-result-layout.css'
+      - 'public/horoscope/v359-symmetric-gutters.css'
+      - 'public/horoscope/report-print.css'
+      - 'public/horoscope/report-print.js'
+      - 'public/horoscope/report-print.html'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
+      - 'public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs'
+      - 'public/horoscope/offline/astro_advanced.browser.mjs'
+      - 'public/horoscope/offline/dasa_engine.browser.mjs'
+      - 'public/horoscope/offline/offline-engine.mjs'
+      - 'public/horoscope/offline/server-wrapper.browser.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/transit_panchang.browser.mjs'
+      - 'public/horoscope/offline/places/timezone.mjs'
+      - 'public/horoscope/assets/smv-ganesha-approved.webp'
+      - 'public/horoscope/assets/smv-marriage-shiva-parvati.webp'
+      - 'public/horoscope/fonts/noto-sans-tamil.ttf'
+      - 'public/horoscope/fonts/noto-sans-tamil.woff2'
+      - 'tests/marriage-print-browser-smoke.mjs'
+      - '.github/workflows/marriage-print-browser-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing repository dependencies
+        run: npm install --no-save --package-lock=false --no-audit --no-fund
+      - name: Render both charts and save A4 PDF with Chromium
+        run: node tests/marriage-print-browser-smoke.mjs
+      - name: Preserve printable report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-MARRIAGE-BASIC-PRINT-SMOKE
+          path: marriage-print-smoke-output/
+          if-no-files-found: warn
+          retention-days: 14

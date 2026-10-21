@@ -1,0 +1,60 @@
+name: Classical Shadbala Source QA (C.G. Rajan + BPHS)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
+      - 'public/horoscope/offline/offline-engine.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/bphs-sputa-drishti.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
+      - '.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs'
+      - 'public/horoscope/offline/offline-engine.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/bphs-sputa-drishti.browser.mjs'
+      - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
+      - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
+      - '.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+concurrency:
+  group: cg-rajan-jathaka-kanitham-shadbala-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-natal-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check source and test syntax
+        run: |
+          node --check public/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+          node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+          node --check public/horoscope/offline/bphs-shadbala-rectification.browser.mjs
+          node --check tests/bphs-shadbala-combined-regression.mjs
+      - name: Reconcile C.G. Rajan printed Shadbala source arithmetic and blockers
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
+      - name: Check seven source-specific Shadbala rows across five natal charts
+        run: node tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
+      - name: Run consolidated BPHS positional, temporal, Drig and Yuddha oracle suite
+        run: node tests/bphs-shadbala-combined-regression.mjs

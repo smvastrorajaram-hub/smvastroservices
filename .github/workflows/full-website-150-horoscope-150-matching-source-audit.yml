@@ -1,0 +1,73 @@
+name: Full Website 150 Horoscope + 150 Marriage Matching Source Audit
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/**'
+      - 'tests/full-website-150-horoscope-150-matching-source-audit.mjs'
+      - 'tests/prediction-rules-published-regression.mjs'
+      - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
+      - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
+      - 'tests/five-book-structural-audit.mjs'
+      - 'tests/calculation-regression.mjs'
+      - 'tests/ayurdaya-100-chart-comparison-audit.mjs'
+      - 'tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs'
+      - 'tests/bv-raman-ayurdaya-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
+      - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
+      - '.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: full-website-150-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  full-site-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check source-level audit and calculation modules
+        run: |
+          set -euo pipefail
+          node --check tests/full-website-150-horoscope-150-matching-source-audit.mjs
+          node --check public/horoscope/offline/offline-engine.mjs
+          node --check public/horoscope/offline/astro_advanced.browser.mjs
+          node --check public/horoscope/offline/dasa_engine.browser.mjs
+          node --check public/horoscope/marriage-matching.js
+          node --check public/horoscope/marriage-basic-report.mjs
+      - name: Admin Prediction Rules published fallback regression
+        run: node tests/prediction-rules-published-regression.mjs
+      - name: B.V. Raman Chapter XIV source-rule positive/negative/unknown examples
+        run: node tests/bv-raman-chapter-xiv-book-example-regression.mjs
+      - name: B.V. Raman Chapters XIV/XXVI integrated Ayurdaya regression
+        run: node tests/bv-raman-hpa-ayurdaya-combined-regression.mjs
+      - name: Five-book natal structural audit
+        run: node tests/five-book-structural-audit.mjs
+
+      - name: Full Dasa source and chart-result calculation regression
+        run: node tests/calculation-regression.mjs
+      - name: 100-chart Ayurdaya / Harana / Pinda and 50-pair comparison audit
+        run: node tests/ayurdaya-100-chart-comparison-audit.mjs
+      - name: B.V. Raman Ashtakavarga Ayurdaya numeric oracle
+        run: node tests/bv-raman-ashtakavarga-ayurdaya-regression.mjs
+      - name: B.V. Raman Ayurdaya report result regression
+        run: node tests/bv-raman-ayurdaya-report-regression.mjs
+      - name: C.G. Rajan Pinda / Naisargika / Amsa Ayurdaya report regression
+        run: node tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs
+      - name: C.G. Rajan Advanced Part-I placement evidence audit
+        run: node tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs
+      - name: Calculate 150 full Horoscope profiles and 150 distinct Matching pair reports
+        run: node tests/full-website-150-horoscope-150-matching-source-audit.mjs
+      - name: Preserve per-chart and per-pair audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-Full-Site-150-Horoscope-150-Matching-Audit
+          path: artifacts/full-website-150-horoscope-150-matching-source-audit.json
+          if-no-files-found: warn
+          retention-days: 14
