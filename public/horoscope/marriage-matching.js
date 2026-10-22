@@ -1942,7 +1942,7 @@ function mm332RefineTimeline(markup,data){
    }
    // Rahu/Ketu have no conventional house ownership. Keep this essential explanation once per report,
    // not once for every timed window; the actual lord/house witnesses remain in each row.
-   const tamilNodeOwnership=/,\s+பாவங்களுக்கு அதிபதி\./g,englishNodeOwnership=/, ruling houses\s*\./gi;
+   const tamilNodeOwnership=/,\s+பாவங்களுக்கு அதிபதி\./,englishNodeOwnership=/, ruling houses\s*\./i;
    if(tamilNodeOwnership.test(t)){
     t=t.replace(tamilNodeOwnership,'.');
     if(!nodeOwnershipNoteSeen){t+=' ராகு/கேதுவிற்கு வழக்கமான தனிப் பாவாதிபத்தியம் இல்லாததால் இருப்பிடமும் ராசிநாதர் தொடர்பும் அடிப்படையாகும்.';nodeOwnershipNoteSeen=true;}
