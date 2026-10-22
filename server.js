@@ -810,7 +810,8 @@ app.post("/user/push/register", async (req, res) => {
     if (!["customer", "astrologer"].includes(role)) return res.status(403).json({ error: "Push notifications are available only for Customer and Astrologer accounts." });
     const token = String(req.body?.token || "").trim();
     if (token.length < 40 || token.length > 4096) return res.status(400).json({ error: "Invalid push registration token." });
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    // Scope the registration document to both account and browser token so the same phone can enable notifications for multiple SMV ASTRO roles independently.
+    const tokenHash = crypto.createHash("sha256").update(user.uid + ":" + token).digest("hex");
     const ref = db.collection("smv_user_push_tokens").doc(tokenHash);
     const prior = await ref.get();
     await ref.set({
