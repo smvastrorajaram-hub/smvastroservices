@@ -1,8 +1,8 @@
 /* SMV ASTRO V321 — owner-only calculated Prediction Review & Correction.
- * The existing A/B editor owns Draft/Publish. This module is strictly a preview:
- * no payment, no new Firestore rules, no chart edits, no background Firestore reads.
- * The SINGLE offline Swiss calculation/15-year timeline is reused for all rule revisions.
- * A published ruleset is never overwritten by a Draft Preview.
+ * The existing A/B editor owns global Draft/Publish rules. This module supports
+ * individual-chart prose in a local saved/printed preview only; it never publishes
+ * personal text to customers or Firestore, and never changes chart calculations.
+ * The SINGLE offline Swiss calculation/15-year timeline is reused for rule revisions.
  */
 (()=>{'use strict';
 const adminButton=document.getElementById('smvAdminRulesAccess');
@@ -14,10 +14,11 @@ const E=()=>window.SMVPredictionRules;
 const encode=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let accessUid='',auth=null,detach=null,connecting=null,calc=null,rawByLanguage=new Map(),views=null,selected='overview',busy=false,translationTimer=null,translationSeq=0;
+const personalEdits=new Map(),personalDrafts=new Map();
 let wb=null;
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 function canUse(){return Boolean(accessUid&&auth?.currentUser?.uid===accessUid&&wb?.isConnected&&!adminPanel.hidden);}
-function clean(){accessUid='';calc=null;views=null;rawByLanguage.clear();translationSeq++;wb?.remove();wb=null;}
+function clean(){accessUid='';calc=null;views=null;rawByLanguage.clear();personalEdits.clear();personalDrafts.clear();translationSeq++;wb?.remove();wb=null;}
 function message(value,bad=false){const box=wb?.querySelector('[data-wb-status]');if(box){box.textContent=value||'';box.dataset.error=bad?'1':'0';}}
 function validDate(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const d=new Date(value+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;}
 function value(sel){return wb?.querySelector(sel)?.value?.trim()||'';}
@@ -29,6 +30,7 @@ const css=`
 #smvAdminPredictionWorkbench .wb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 #smvAdminPredictionWorkbench label{font-weight:600;font-size:14px;display:block;margin:0 0 2px}
 #smvAdminPredictionWorkbench input,#smvAdminPredictionWorkbench select{width:100%;font:inherit;font-size:15px;min-height:42px;background:#fff;color:#232323;border:1px solid #ccb9a5;border-radius:6px;padding:7px}
+#smvAdminPredictionWorkbench textarea{display:block;width:100%;min-height:150px;font:inherit;font-size:15px;line-height:1.7;background:#fff;color:#232323;border:1px solid #ccb9a5;border-radius:6px;padding:9px;resize:vertical}
 #smvAdminPredictionWorkbench button{border:0;border-radius:7px;background:#7c1f35;color:#fff;font:inherit;padding:9px 12px;cursor:pointer}
 #smvAdminPredictionWorkbench button[disabled]{opacity:.6}
 #smvAdminPredictionWorkbench button.wb-secondary{background:#5e6262}
@@ -71,6 +73,16 @@ function shell(){
   <h3>கணிக்கப்பட்ட பலன்கள் / Calculated Predictions</h3><p data-wb-changes class="wb-diff-summary" role="status"></p>
   <div class="wb-grid"><div><label for="wbSection">பகுதி / Section</label><select id="wbSection"></select></div><div><label>Published Rules</label><span data-wb-published></span></div><div><label>Draft Rules</label><span data-wb-draft></span></div></div>
   <div class="wb-cols"><article class="wb-block"><h4>தற்போது வெளியான பலன் / Published</h4><div data-wb-before class="wb-prose"></div></article><article class="wb-block wb-changed"><h4>புதிய Draft பலன் / Preview</h4><div data-wb-after class="wb-prose"></div></article></div>
+  <section class="wb-block wb-personal-authoring">
+   <h4>தனிப்பட்ட ஜாதகப் பலன் எழுதுதல் / Personal Prediction Authoring</h4>
+   <p class="wb-note">இது தேர்ந்தெடுத்த இந்த ஜாதகத்தின் Save/Print Preview-க்கு மட்டும் சேரும். இது பொதுவான A/B Rule-ஐ மாற்றாது; கணக்கீடுகளையும் வாடிக்கையாளர் அறிக்கையையும் மாற்றாது. Save செய்தால் இந்த Admin browser-ன் IndexedDB-ல் மட்டும் சேமிக்கப்படும்.</p>
+   <div class="wb-grid"><div><label for="wbPersonalMode">எழுதிய உரையை எப்படிச் சேர்ப்பது? / Apply mode</label><select id="wbPersonalMode"><option value="replace">இந்தப் பகுதியின் கணினிப் பலனை மாற்று / Replace section</option><option value="append">கணிக்கப்பட்ட பலனுக்குப் பின் சேர் / Append to section</option></select></div></div>
+   <label for="wbPersonalText">நீங்கள் எழுதும் உண்மையான வாழ்க்கை பலன் / Your authored prediction</label>
+   <textarea id="wbPersonalText" maxlength="18000" rows="8" spellcheck="true" placeholder="இந்த ஜாதகரின் உண்மை வாழ்க்கை அனுபவம், நீங்கள் அறிந்த சம்பவங்கள், ஜாதக ஆதாரம், காலவரம்பு மற்றும் நடைமுறை வழிகாட்டலை உங்கள் சொற்களில் எழுதுங்கள்…"></textarea>
+   <div class="wb-actions"><button type="button" class="wb-secondary" data-wb-personal-copy>கணிக்கப்பட்ட Draft-ஐ தொடக்க உரையாக எடு / Copy Draft as Starting Text</button><button type="button" data-wb-personal-apply>இந்த ஜாதக Preview-ல் பயன்படுத்து / Apply to This Chart Preview</button><button type="button" class="wb-secondary" data-wb-personal-clear>என் உரையை நீக்கு / Clear My Text</button></div>
+   <p data-wb-personal-status class="wb-note" aria-live="polite">உங்கள் உரையை எழுதி Apply அழுத்திய பிறகே Save/Print Preview-ல் சேர்க்கப்படும்.</p>
+   <div class="wb-block"><h4>இந்த ஜாதகத்தின் இறுதி தனிப்பட்ட Preview / Final individual preview</h4><div data-wb-personal-preview class="wb-prose"></div></div>
+  </section>
   <div class="wb-actions"><button type="button" data-wb-create>இந்தப் பகுதிக்கான Rule-ஐ A-வில் உருவாக்கவும் / Create Rule</button></div>
   <details class="wb-block"><summary>கணிக்கப்பட்ட ஜாதக ஆதாரங்கள் / Real calculated evidence</summary><pre data-wb-evidence></pre></details>
   <p class="wb-note">Save Preview: Admin browser IndexedDB only. Publish uses the EXISTING A/B Publish button; previews never publish or trigger payment. Select an individual section to inspect what changed.</p>
@@ -81,6 +93,11 @@ function shell(){
  wb.querySelector('[data-wb-save]').addEventListener('click',save);
  wb.querySelector('[data-wb-print]').addEventListener('click',print);
  wb.querySelector('[data-wb-create]').addEventListener('click',createRule);
+ wb.querySelector('[data-wb-personal-copy]').addEventListener('click',copyDraftToPersonalEditor);
+ wb.querySelector('[data-wb-personal-apply]').addEventListener('click',applyPersonalEdit);
+ wb.querySelector('[data-wb-personal-clear]').addEventListener('click',clearPersonalEdit);
+ wb.querySelector('#wbPersonalText').addEventListener('input',capturePersonalDraft);
+ wb.querySelector('#wbPersonalMode').addEventListener('change',capturePersonalDraft);
  wb.querySelector('#wbSection').addEventListener('change',event=>{selected=event.target.value;renderSelected()});
  wb.querySelector('#wbLang').addEventListener('change',()=>{if(calc)compare()});
  // A new DOB/time/place must NEVER silently reuse an old chart. Draft edits,
@@ -94,7 +111,7 @@ function shell(){
 }
 function invalidateBirth(){
  if(!calc||busy)return;
- calc=null;views=null;rawByLanguage.clear();
+ calc=null;views=null;rawByLanguage.clear();personalEdits.clear();personalDrafts.clear();
  wb.querySelector('[data-wb-result]').hidden=true;
  for(const key of ['[data-wb-preview]','[data-wb-save]','[data-wb-print]'])wb.querySelector(key).disabled=true;
  message('பிறந்த விவரம் மாற்றப்பட்டது. புதிய ஜாதகத்திற்கு Calculate மீண்டும் அழுத்தவும்.');
@@ -122,7 +139,7 @@ function collect(){
  return input;
 }
 async function calculate(){if(!canUse()||busy)return;busy=true;const button=wb.querySelector('[data-wb-calculate]');button.disabled=true;
- calc=null;views=null;rawByLanguage.clear();wb.querySelector('[data-wb-result]').hidden=true;
+ calc=null;views=null;rawByLanguage.clear();personalEdits.clear();personalDrafts.clear();wb.querySelector('[data-wb-result]').hidden=true;
  for(const key of ['[data-wb-preview]','[data-wb-save]','[data-wb-print]'])wb.querySelector(key).disabled=true;
  try{
   const input=collect();message('Swiss Offline engine: birth chart, D1/D9, Dasha and 15-year transit calculation…');
@@ -211,7 +228,17 @@ function renderSelected(){if(!views||!canUse())return;
   dasha_period:a.period||null,computed_transit:a.transit||null,
   warning:'Calculated witnesses only. A matching house/planet condition is necessary. VII–IX are references, not independently calculated positions.'};
  wb.querySelector('[data-wb-evidence]').textContent=JSON.stringify(witness,(_,v)=>typeof v==='bigint'?String(v):v,2).slice(0,23000);
+ renderPersonalEditor(a,b);
 }
+function personalKey(lang,id){return `${lang}|${id}`}
+function authoredBody(section,lang){const edit=personalEdits.get(personalKey(lang,section.id));if(!edit)return section.body||'';return edit.mode==='append'?[section.body,edit.text].filter(Boolean).join('\n\n'):edit.text}
+function getPersonalSections(){if(!views)return[];return views.after.map(section=>({...section,body:authoredBody(section,views.lang)}))}
+function countPersonalEdits(lang){let count=0;for(const key of personalEdits.keys())if(key.startsWith(`${lang}|`))count++;return count}
+function capturePersonalDraft(){if(!views||!canUse())return;const key=personalKey(views.lang,selected),text=wb.querySelector('#wbPersonalText').value,mode=wb.querySelector('#wbPersonalMode').value;personalDrafts.set(key,{text,mode});const status=wb.querySelector('[data-wb-personal-status]');status.textContent=personalEdits.has(key)?'மாற்றிய உரை இன்னும் Apply செய்யப்படவில்லை. Save/Print பழைய Apply செய்யப்பட்ட உரையைத்தான் பயன்படுத்தும்.':'உங்கள் உரை இன்னும் Preview-க்கு Apply செய்யப்படவில்லை.'}
+function copyDraftToPersonalEditor(){if(!canUse()||!views)return;const section=views.after.find(x=>x.id===selected)||views.before.find(x=>x.id===selected);const key=personalKey(views.lang,selected),editor=wb.querySelector('#wbPersonalText'),mode=wb.querySelector('#wbPersonalMode');editor.value=String(section?.body||'').slice(0,18000);if(!personalDrafts.has(key)&&!personalEdits.has(key))mode.value='replace';personalDrafts.set(key,{text:editor.value,mode:mode.value});wb.querySelector('[data-wb-personal-status]').textContent='கணிக்கப்பட்ட உரை தொடக்க உரையாக நகலெடுக்கப்பட்டது. உங்கள் சொற்களில் திருத்தி Apply செய்யவும்.'}
+function applyPersonalEdit(){if(!canUse()||!views)return;const key=personalKey(views.lang,selected),text=wb.querySelector('#wbPersonalText').value.trim(),mode=wb.querySelector('#wbPersonalMode').value;if(!text){message('தனிப்பட்ட பலன் உரையை எழுதவும் அல்லது Draft-ஐ தொடக்க உரையாக எடுத்து திருத்தவும்.',true);return}if(text.length>18000){message('ஒரு பிரிவின் தனிப்பட்ட உரை 18,000 எழுத்துகளுக்குள் இருக்க வேண்டும்.',true);return}const edit={text,mode};personalEdits.set(key,edit);personalDrafts.set(key,edit);renderSelected();message('தனிப்பட்ட உரை இந்த ஜாதகத்தின் local Save/Print Preview-க்கு சேர்க்கப்பட்டது. பொதுப் பயனாளர்களுக்கு வெளியிடப்படவில்லை.')}
+function clearPersonalEdit(){if(!canUse()||!views)return;const key=personalKey(views.lang,selected);personalEdits.delete(key);personalDrafts.delete(key);renderSelected();message('இந்தப் பகுதியின் தனிப்பட்ட உரை நீக்கப்பட்டது; கணிக்கப்பட்ட Draft மீண்டும் காட்டப்படுகிறது.')}
+function renderPersonalEditor(a,b){const key=personalKey(views.lang,selected),saved=personalEdits.get(key),draft=personalDrafts.get(key)||saved||{text:'',mode:'replace'},editor=wb.querySelector('#wbPersonalText'),mode=wb.querySelector('#wbPersonalMode');editor.value=draft.text;mode.value=draft.mode;wb.querySelector('[data-wb-personal-preview]').textContent=authoredBody(b||a,views.lang)||'இந்தப் பகுதியில் தனிப்பட்ட பலனோ கணிக்கப்பட்ட உரையோ இல்லை.';wb.querySelector('[data-wb-personal-status]').textContent=saved?'தனிப்பட்ட உரை Apply செய்யப்பட்டுள்ளது. Save Preview அல்லது Print Preview பயன்படுத்தவும்.':'தனிப்பட்ட உரை இன்னும் Apply செய்யப்படவில்லை.'}
 function createRule(){if(!canUse()||!views)return;
  const active=views.after.find(s=>s.id===selected);if(!active||active.readOnly){message('கணிக்கப்பட்ட நிகழ்வு ஆதாரம் இல்லாத பகுதிக்கு விதியை உருவாக்க முடியாது.',true);return;}
  const area=adminPanel.querySelector('#smvAdminEditorArea');if(!area||area.hidden)return;
@@ -253,15 +280,15 @@ function createRule(){if(!canUse()||!views)return;
  message('A-வில் ஆதார நிபந்தனை நிரப்பப்பட்டது. தமிழ்/English உரையைச் சரிபார்த்து Save Draft; பின்னர் Compare மூலம் மாற்றத்தைப் பார்க்கவும்.');
 }
 function asyncIDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('smv-admin-prediction-review',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('snapshots'))req.result.createObjectStore('snapshots',{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-async function save(){if(!canUse()||!views)return;try{const db=await asyncIDB();const record={id:`${Date.now()}-${crypto.getRandomValues(new Uint32Array(1))[0]}`,at:new Date().toISOString(),uid:accessUid,name:calc.input.name,date:calc.input.date,lang:views.lang,birthPlace:calc.input.birthPlace,sections:views.after};await new Promise((yes,no)=>{const tx=db.transaction('snapshots','readwrite');tx.objectStore('snapshots').put(record);tx.oncomplete=yes;tx.onerror=()=>no(tx.error);});db.close();message('Admin Preview IndexedDB-ல் சேமிக்கப்பட்டது. பொதுப் பயனாளர்களுக்கும் Firebase-க்கும் அனுப்பப்படவில்லை.');listSaved().catch(()=>{});}catch(e){message('Save தோல்வி: '+String(e?.message||e),true);}}
-async function listSaved(){if(!canUse())return;try{const db=await asyncIDB(),all=await new Promise((yes,no)=>{const req=db.transaction('snapshots','readonly').objectStore('snapshots').getAll();req.onsuccess=()=>yes(req.result);req.onerror=()=>no(req.error)});db.close();const place=wb.querySelector('[data-wb-saved]');if(!place)return;place.replaceChildren();for(const x of all.filter(x=>x.uid===accessUid).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,15)){const entry=document.createElement('p'),b=document.createElement('button');b.textContent='Print';b.type='button';b.onclick=()=>printSections(x.name,x.date,x.lang,x.sections);entry.append(document.createTextNode(`${x.at.slice(0,16)} · ${x.name||'Chart'} · ${x.date} · ${x.lang} `),b);place.appendChild(entry);}if(!place.children.length)place.textContent='No saved previews.';}catch(e){message(String(e?.message||e),true);}}
-function printSections(name,date,lang,parts){if(!canUse())return;
+async function save(){if(!canUse()||!views)return;try{const db=await asyncIDB(),parts=getPersonalSections(),hasPersonalText=countPersonalEdits(views.lang)>0;const record={id:`${Date.now()}-${crypto.getRandomValues(new Uint32Array(1))[0]}`,at:new Date().toISOString(),uid:accessUid,name:calc.input.name,date:calc.input.date,lang:views.lang,birthPlace:calc.input.birthPlace,sections:parts,personalTextApplied:hasPersonalText};await new Promise((yes,no)=>{const tx=db.transaction('snapshots','readwrite');tx.objectStore('snapshots').put(record);tx.oncomplete=yes;tx.onerror=()=>no(tx.error);});db.close();message(hasPersonalText?'தனிப்பட்ட ஜாதகப் பலன் இந்த Admin browser-ல் மட்டும் சேமிக்கப்பட்டது; பொதுப் பயனாளர்களுக்கும் Firebase-க்கும் வெளியிடப்படவில்லை.':'Admin Preview IndexedDB-ல் சேமிக்கப்பட்டது. பொதுப் பயனாளர்களுக்கும் Firebase-க்கும் அனுப்பப்படவில்லை.');listSaved().catch(()=>{});}catch(e){message('Save தோல்வி: '+String(e?.message||e),true);}}
+async function listSaved(){if(!canUse())return;try{const db=await asyncIDB(),all=await new Promise((yes,no)=>{const req=db.transaction('snapshots','readonly').objectStore('snapshots').getAll();req.onsuccess=()=>yes(req.result);req.onerror=()=>no(req.error)});db.close();const place=wb.querySelector('[data-wb-saved]');if(!place)return;place.replaceChildren();for(const x of all.filter(x=>x.uid===accessUid).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,15)){const entry=document.createElement('p'),b=document.createElement('button');b.textContent='Print';b.type='button';b.onclick=()=>printSections(x.name,x.date,x.lang,x.sections,Boolean(x.personalTextApplied));entry.append(document.createTextNode(`${x.at.slice(0,16)} · ${x.name||'Chart'} · ${x.date} · ${x.lang} `),b);place.appendChild(entry);}if(!place.children.length)place.textContent='No saved previews.';}catch(e){message(String(e?.message||e),true);}}
+function printSections(name,date,lang,parts,personalTextApplied=false){if(!canUse())return;
  // Open directly inside a trusted click handler (mobile popup blockers).
  const printable=window.open('','_blank');if(!printable){message('Popup blocked. Allow printing popup for this site.',true);return;}
- const html=`<!doctype html><html lang="${lang}"><head><meta charset="UTF-8"><title>SMV Admin Prediction Review</title><style>body{font:15px/1.8 system-ui,'Noto Sans Tamil',sans-serif;margin:18mm;color:#222}h1{text-align:center;color:#7f1e36}h2{font-size:18px;break-after:avoid;border-bottom:1px solid #bd9f7c}section{break-inside:auto;margin:18px 0}p{white-space:pre-wrap;overflow-wrap:anywhere;orphans:3;widows:3}.info{text-align:center;color:#666}@page{size:A4;margin:15mm}</style></head><body><h1>SMV ASTRO — Admin Prediction Preview</h1><div class="info">${encode(name)} · ${encode(date)} · ${lang.toUpperCase()} · Draft Preview (not published)</div>${parts.map(s=>`<section><h2>${encode(s.title)}</h2><p>${encode(s.body)}</p></section>`).join('')}</body></html>`;
+ const html=`<!doctype html><html lang="${lang}"><head><meta charset="UTF-8"><title>SMV Admin Prediction Review</title><style>body{font:15px/1.8 system-ui,'Noto Sans Tamil',sans-serif;margin:18mm;color:#222}h1{text-align:center;color:#7f1e36}h2{font-size:18px;break-after:avoid;border-bottom:1px solid #bd9f7c}section{break-inside:auto;margin:18px 0}p{white-space:pre-wrap;overflow-wrap:anywhere;orphans:3;widows:3}.info{text-align:center;color:#666}@page{size:A4;margin:15mm}</style></head><body><h1>SMV ASTRO — Admin Prediction Preview</h1><div class="info">${encode(name)} · ${encode(date)} · ${lang.toUpperCase()} · Draft Preview (not published)${personalTextApplied?' · Admin-authored personal text included':''}</div>${parts.map(s=>`<section><h2>${encode(s.title)}</h2><p>${encode(s.body)}</p></section>`).join('')}</body></html>`;
  printable.document.open();printable.document.write(html);printable.document.close();printable.focus();setTimeout(()=>printable.print(),200);
 }
-function print(){if(!canUse()||!views)return;printSections(calc.input.name,calc.input.date,views.lang,views.after)}
+function print(){if(!canUse()||!views)return;printSections(calc.input.name,calc.input.date,views.lang,getPersonalSections(),countPersonalEdits(views.lang)>0)}
 // Browsers with local Translator API can translate A/B rule paragraphs when the
 // author finishes one field. Never send private chart data to a third-party API.
 // If unsupported (or Tamil pair unavailable), ask for the missing language;
