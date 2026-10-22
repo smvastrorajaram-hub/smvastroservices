@@ -32,8 +32,8 @@ function cleanNarrativeParagraphs(paragraphs,state){
  return out;
 }
 function narrativeHtml(a,state){
- const paragraphs=cleanNarrativeParagraphs(a.paragraphs,state);
- return a.sections?.length?a.sections.map(s=>`<section class="smv-v254-subtopic"><h5>${esc(s.title)}</h5>${cleanNarrativeParagraphs(s.paragraphs,state).map(p).join('')}</section>`).join(''):paragraphs.map(p).join('')
+ if(a.sections?.length)return a.sections.map(s=>`<section class="smv-v254-subtopic"><h5>${esc(s.title)}</h5>${cleanNarrativeParagraphs(s.paragraphs,state).map(p).join('')}</section>`).join('');
+ return cleanNarrativeParagraphs(a.paragraphs,state).map(p).join('')
 }
 function placementHtml(x,lang){const q=x?.placements;if(!q?.rows?.length)return '';const ta=lang==='ta',heads=ta?['கிரகம்','ராசி','ராசிக்குள் பாகை','ராசி வீடு','பலனில் பயன்படுத்தும் பாவம்','பாவத்தின் அடிப்படை','அதிபத்திய பாவங்கள்','இயக்கம்']:['Planet','Sign','Degree in sign','Rasi house','Report house','House basis','Owned houses','Motion'];return `<section class="smv-v257-positions"><h4>${esc(q.title)}</h4>${p(q.note)}<div class="smv-v257-table-wrap"><table><thead><tr>${heads.map(h=>`<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${q.rows.map(r=>`<tr>${['planet','sign','degree','signHouse','house','basis','owned','motion'].map(k=>`<td>${esc(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${p(q.detail)}</section>`}
 function horoscopeLifeHtml(resp,lang,state={seen:new Set()}){const x=resp?.[lang]||resp?.en;if(!x)return'';let h=`<section class="smv-online-synthesis smv-v252-life"><p class="small">${lang==='ta'?'உங்கள் ஜாதக அமைப்புடன் இணைந்த விரிவான வாழ்க்கைப் பலன்கள்.':'A detailed life reading connected to your individual chart.'}</p>${p(x.intro)}${p(x.context)}${placementHtml(x,lang)}`;for(const a of x.life||[]){if(!(a.paragraphs||[]).filter(Boolean).length)continue;h+=`<article class="smv-v252-house"><h4>${esc(a.title)}</h4>${narrativeHtml(a,state)}</article>`}return h+'</section>'}
