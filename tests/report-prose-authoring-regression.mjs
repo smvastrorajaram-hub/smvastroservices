@@ -43,7 +43,7 @@ assert.ok(horoscopePredictions.includes('api.horoscopeTimingHtml?.(result,lang,n
 
 // Formatting is presentational only: the ephemeris keeps full precision.
 assert.ok(horoscope.includes('const formatAyanamsa='), 'display-only Ayanamsa formatter exists');
-assert.ok(horoscope.includes('Number(v).toFixed(6)'), 'display formatter uses six decimals');
+assert.ok(horoscope.includes('n.toFixed(6)'), 'display formatter uses six decimals');
 
 // Repeated birth Panchang summary is removed from the temporary print DOM only.
 assert.ok(print.includes("root.querySelectorAll('[data-smv-screen-only^=\"daily-\"],.panchang-card,.hora-card,.smv-birth-summary')"),
