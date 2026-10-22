@@ -57,7 +57,7 @@ jobs:
             echo "::error::PDF fixtures disappeared after the fixture check."
             exit 1
           fi
-          : > smv-output-pdf-audit/metadata.txt
+          : > smv-output-pdf-audit/metadata.log
           for pdf in "${pdfs[@]}"; do
             name="$(basename "${pdf%.pdf}")"
             {
@@ -66,7 +66,7 @@ jobs:
               echo "-- embedded fonts --"
               pdffonts "$pdf" | head -n 35 || true
               echo
-            } >> smv-output-pdf-audit/metadata.txt
+            } >> smv-output-pdf-audit/metadata.log
             pdftotext -layout "$pdf" "smv-output-pdf-audit/$name.txt"
             # High-resolution first four pages show cover + opening content.
             pdftoppm -f 1 -l 4 -scale-to 1400 -png "$pdf" "smv-output-pdf-audit/renders/$name-page" >/dev/null 2>&1
@@ -81,7 +81,7 @@ jobs:
           thumb_dir = root / "thumbs"
           out_dir = root / "renders"
           for pdf in sorted(Path("certificates").glob("*.pdf")) + sorted(Path("screenshot").glob("*.pdf")):
-              files = sorted(thumb_dir.glob(pdf.stem + "-page-*.png"))
+              files = sorted(thumb_dir.glob(pdf.stem + "-page-*.png"), key=lambda p: int(p.stem.rsplit('-', 1)[-1]))
               if not files:
                   continue
               for sheet_no, start in enumerate(range(0, len(files), 24), 1):
