@@ -19,6 +19,7 @@ Main public/service areas include:
 - SMV HOROSCOPE: birth-chart calculation, D1/Bhava/divisional analysis, Dasa, advanced astrology, transit, Panchang, numerology, remedial and programmed prediction sections.
 - Marriage Matching with Nakshatra Porutham and expanded rule-based compatibility analysis when enabled.
 - SMV CALENDAR with Panchang, Hora, transits, Moon-sign information, Chandrashtama/Tara Bala and supported festival/vrat/holiday references.
+- SMV PRODUCTS: a homepage single-layer product showcase linking to the official Shoopy storefront's SMV YANTRAS, SMV AMULETS and SMV ALL PRODUCTS collections.
 - PWA/offline support for supported Horoscope/Calendar assets and bundled India place search.
 - Saved browser reports and browser print / Save as PDF workflow.
 
@@ -70,6 +71,21 @@ Marriage Matching uses programmed compatibility checks. Depending on active acce
 ### SMV CALENDAR
 
 SMV CALENDAR uses programmed calendar/Panchang/transit computation. Its worker caches repeated month/day results and reuses calculated data for Tamil/English rendering instead of recalculating only because the display language changed.
+
+### SMV PRODUCTS / Shoopy storefront
+
+The SMV ASTRO homepage includes a **SMV ASTRO PRODUCTS** section. It is a product-discovery area, separate from Horoscope, Calendar, account dashboards and astrology consultation workflows.
+
+The section links to the official Shoopy storefront and its current collections:
+
+- **Store home:** https://smv-astro-services.store.shoopy.in/
+- **SMV YANTRAS:** https://smv-astro-services.store.shoopy.in/categories/smv-yantras-526219
+- **SMV AMULETS:** https://smv-astro-services.store.shoopy.in/categories/smv-amulets-526219
+- **SMV ALL PRODUCTS:** https://smv-astro-services.store.shoopy.in/categories/smv-all-products-526219
+
+On the website, one existing **Products** header link is retained. The single-layer homepage section presents three logo links to the corresponding collections; each opens the relevant Shoopy page in a new tab. The category marks are stored as scalable 512×512-viewBox SVG assets under `public/assets/smv-products-*.svg`, with versioned URLs in `public/index.html` to help browsers refresh cached logos.
+
+Product names, descriptions, prices, stock/availability and checkout details are presented by Shoopy and may change there. The SMV ASTRO site links to those store pages; do not hard-code product inventory or prices into the homepage or README. Before purchasing, customers should review the current details and terms shown in the Shoopy store.
 
 ## 4. Astronomy / ephemeris stack
 
@@ -189,6 +205,7 @@ Key production paths include:
 - `public/terms.html` — Terms & Conditions.
 - `public/privacy.html` — Privacy Policy.
 - `public/sitemap.html` / `public/sitemap.xml` — human-readable/XML sitemap.
+- `public/assets/smv-products-yantras.svg`, `smv-products-amulets.svg`, `smv-products-all-products.svg` — scalable SMV PRODUCTS category logos.
 - `smvastro.mjs` / `public/smvastro.mjs` — main frontend application workflows.
 - `server.js` — backend API, account/workflow/payment/email/admin logic.
 - `firestore.rules` / `firestore.indexes.json` — Firebase data access/index configuration.
@@ -223,7 +240,7 @@ After deployment, verify cache/service-worker versioning so the browser is loadi
 
 Before calling a release final, verify at minimum:
 
-- homepage/header/footer/navigation and FAQ;
+- homepage/header/footer/navigation and FAQ, including the SMV PRODUCTS section and its Shoopy category links;
 - Customer, Astrologer and Admin login/dashboard behavior;
 - Google and normal authentication where enabled;
 - Public Question and Private Consultation flows;
