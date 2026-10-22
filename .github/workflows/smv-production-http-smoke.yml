@@ -60,3 +60,10 @@ jobs:
           check_contains 'https://smvastroservices.in/tamil-horoscope/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
           check_contains 'https://smvastroservices.in/marriage-matching/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
           check_contains 'https://smvastroservices.in/ads.txt' 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0'
+
+          # Verify the actual production-served workbench module, not just its HTML entry page.
+          check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
+          check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
+          check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'pendingPersonalDraft={text,mode}'
+          check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
+          check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
