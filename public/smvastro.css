@@ -3811,10 +3811,24 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     border:0!important;
     box-shadow:none!important;
     color:#2f1c17!important;
+    background-image:none!important;
+    background-color:transparent!important;
+  }
+  /* Keep the shared mobile artwork in its own image layer so photo contrast can
+     be tuned without filtering or softening the header text and navigation. */
+  #smvPremiumHeaderV9::before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    z-index:0!important;
+    display:block!important;
+    pointer-events:none!important;
     background-image:url("https://raw.githubusercontent.com/smvastrorajaram-hub/smvastroservices/main/photo/Hero%20and%20Header%20Merged.jpg")!important;
     background-size:100vw auto!important;
     background-position:center top!important;
     background-repeat:no-repeat!important;
+    filter:contrast(1.16) saturate(1.08) brightness(1.015)!important;
+    image-rendering:-webkit-optimize-contrast;
   }
   #smvPremiumHeaderV9 .smv9-nav{
     position:relative!important;
