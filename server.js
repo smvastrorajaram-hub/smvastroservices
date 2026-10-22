@@ -231,6 +231,31 @@ async function sendAdminPushPayload(token, title, message, url = "/#dashboard", 
   });
 }
 
+async function sendRolePushNotification(userId, title, message, options = {}) {
+  const uid = String(userId || "").trim();
+  if (!uid) return { sent: 0, failed: 0 };
+  try {
+    const snap = await db.collection("smv_user_push_tokens").where("userId", "==", uid).get();
+    const devices = snap.docs.filter(d => d.data()?.enabled === true && String(d.data()?.token || "").trim());
+    let sent = 0, failed = 0;
+    await Promise.all(devices.map(async d => {
+      const data = d.data() || {};
+      try {
+        await sendAdminPushPayload(String(data.token), title, message, options.url || "/#dashboard", options.tag || ("smv-" + String(data.role || "user") + "-event"));
+        sent++;
+      } catch (e) {
+        failed++;
+        const code = String(e?.code || "");
+        if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await d.ref.delete().catch(() => {});
+        console.warn("Account mobile push failed:", code || e?.message || e);
+      }
+    }));
+    return { sent, failed, devices: devices.length };
+  } catch (e) {
+    console.warn("Account mobile push dispatch skipped:", e?.message || e);
+    return { sent: 0, failed: 1 };
+  }
+}
 async function sendAdminPushNotification(title, message, options = {}) {
   try {
     const snap = await db.collection("smv_admin_push_tokens").where("enabled", "==", true).get();
@@ -777,6 +802,31 @@ app.post("/admin/push/unregister", async (req, res) => {
   }
 });
 
+app.post("/user/push/register", async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  try {
+    const profileSnap = await db.collection("smv_users").doc(user.uid).get();
+    const role = String(profileSnap.data()?.role || "").toLowerCase();
+    if (!["customer", "astrologer"].includes(role)) return res.status(403).json({ error: "Push notifications are available only for Customer and Astrologer accounts." });
+    const token = String(req.body?.token || "").trim();
+    if (token.length < 40 || token.length > 4096) return res.status(400).json({ error: "Invalid push registration token." });
+    // Scope the registration document to both account and browser token so the same phone can enable notifications for multiple SMV ASTRO roles independently.
+    const tokenHash = crypto.createHash("sha256").update(user.uid + ":" + token).digest("hex");
+    const ref = db.collection("smv_user_push_tokens").doc(tokenHash);
+    const prior = await ref.get();
+    await ref.set({
+      userId: user.uid, role, token, enabled: true,
+      platform: String(req.body?.platform || "web").slice(0, 40),
+      userAgent: String(req.body?.userAgent || "").slice(0, 240),
+      createdAt: prior.exists ? (prior.data()?.createdAt || FieldValue.serverTimestamp()) : FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(), lastRegisteredAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+    return res.json({ success: true, registered: true, role });
+  } catch (e) {
+    console.error("Account push registration failed:", e?.message || e);
+    return res.status(500).json({ error: "Unable to enable push notifications for this device." });
+  }
+});
 app.post("/admin/push/test", async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
   if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
@@ -1146,6 +1196,8 @@ app.post("/submit-answer", async (req, res) => {
       })
     ]);
 
+    if (q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, bypassApproval ? "SMV ASTRO — Answer Ready" : "SMV ASTRO — Answer Submitted", bypassApproval ? "Your astrologer’s answer is ready to view. Sign in to your Customer Dashboard." : "Your astrologer submitted an answer. It is waiting for Admin approval.", { url: "/#dashboard", tag: "smv-customer-answer-" + questionId }));
+
     if (!bypassApproval) {
       await questionRef.set({
         answerEmailStatus: {
@@ -1279,6 +1331,12 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
     to = uniqueRecipients(to);
     if(!to.length) return res.status(400).json({error:"No recipient email address is available for this update."});
     await sendSystemEmail({to,replyTo:ADMIN_EMAIL,subject,text});
+    // Event-driven Web Push follows the same authenticated ownership/Admin checks as this notification endpoint.
+    if (event === "payment_verified" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Payment Successful", "Your question payment was verified. Sign in to view the latest status.", { url: "/#dashboard", tag: "smv-customer-payment-" + questionId }));
+    if (event === "question_approved" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Question Approved", "Your question has been approved by Admin. Sign in to view the update.", { url: "/#dashboard", tag: "smv-customer-approved-" + questionId }));
+    if (event === "question_rejected" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Question Update", "There is an update about your question. Sign in to your Customer Dashboard.", { url: "/#dashboard", tag: "smv-customer-rejected-" + questionId }));
+    if (event === "answer_approved" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Answer Ready", "Your astrology answer has been approved and is ready to view.", { url: "/#dashboard", tag: "smv-customer-answer-" + questionId }));
+    if (event === "answer_rejected" && q.astrologerId) setImmediate(() => sendRolePushNotification(q.astrologerId, "SMV ASTRO — Answer Revision Required", "Admin requested a revision to your submitted answer. Sign in to your Astrologer Dashboard.", { url: "/#dashboard", tag: "smv-astro-revision-" + questionId }));
     return res.json({ok:true,recipients:to.length,event});
   }catch(e){console.error("Question notification failed:",e);return res.status(500).json({error:"Unable to send question update email right now."});}
 });
@@ -1650,6 +1708,8 @@ app.post("/admin/approve-question", express.json({limit:"10kb"}), async (req,res
     });
     await writeAdminAudit("QUESTION_APPROVED",questionId,user.uid,{astrologerId,commissionPercent:pct,astrologerCommissionAmount:astroCommission,adminCommissionAmount:adminCommission});
     await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"New Question Assigned",message:"A paid question has been assigned to you by Admin.",questionId,commissionAmount:astroCommission,createdAt:FieldValue.serverTimestamp(),read:false});
+    setImmediate(() => sendRolePushNotification(astrologerId, "SMV ASTRO — New Question Assigned", "A paid astrology question has been assigned to you. Sign in to your Astrologer Dashboard.", { url: "/#dashboard", tag: "smv-astro-assigned-" + questionId }));
+    if (q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Question Approved", "Your paid question has been approved and assigned to an astrologer. Sign in to view the update.", { url: "/#dashboard", tag: "smv-customer-approved-" + questionId }));
     setImmediate(async()=>{
       const astrologerEmail=await resolveAstrologerEmail({astrologerId,astrologerEmail:a.email});
       const customerEmail=await resolveCustomerEmail(q);
@@ -1808,8 +1868,10 @@ app.post("/admin/reallocate-question", express.json({limit:"10kb"}), async (req,
     });
     if(oldAstrologerId && oldAstrologerId!==astrologerId){
       await db.collection("smv_notifications").add({userId:oldAstrologerId,type:"question_reallocated",title:"Question Re-allocated",message:"Admin has re-allocated this question to another astrologer. It is no longer assigned to you.",questionId,createdAt:FieldValue.serverTimestamp(),read:false});
+      setImmediate(() => sendRolePushNotification(oldAstrologerId, "SMV ASTRO — Question Re-allocated", "A question has been re-allocated to another astrologer and is no longer assigned to you.", { url: "/#dashboard", tag: "smv-astro-reallocated-" + questionId }));
     }
     await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"Question Re-allocated",message:"Admin has assigned a paid question to you. Please submit your answer.",questionId,commissionAmount:astroCommission,createdAt:FieldValue.serverTimestamp(),read:false});
+    setImmediate(() => sendRolePushNotification(astrologerId, "SMV ASTRO — Question Assigned", "Admin has assigned a paid question to you. Sign in to your Astrologer Dashboard.", { url: "/#dashboard", tag: "smv-astro-assigned-" + questionId }));
     return res.json({success:true,questionId,astrologerId,commissionPercent:pct,astrologerCommissionAmount:astroCommission,adminCommissionAmount:adminCommission});
   }catch(e){console.error("Admin reallocate question error:",e);return res.status(500).json({error:e?.message||"Unable to re-allocate question."});}
 });
@@ -1867,6 +1929,7 @@ app.post("/admin/takeover-answer", express.json({limit:"30kb"}), async (req,res)
       updatedAt:FieldValue.serverTimestamp()
     });
     await db.collection("smv_notifications").add({userId:q.customerId,type:"answer_approved",title:"Your astrology answer is ready",message:"SMV ASTRO Admin answered your question directly.",questionId,createdAt:FieldValue.serverTimestamp(),read:false});
+    setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Answer Ready", "Your astrology answer is ready to view in your Customer Dashboard.", { url: "/#dashboard", tag: "smv-customer-answer-" + questionId }));
     return res.json({success:true,questionId,answerAuthorType:"admin",adminRetained:true});
   }catch(e){console.error("Admin takeover answer error:",e);return res.status(500).json({error:e?.message||"Unable to save Admin answer."});}
 });
@@ -2561,6 +2624,7 @@ app.post("/astrologer/private-consultation/submit-answer",express.json({limit:"3
   if(!direct)await addAdminPrivateNotification("private_answer_waiting","Private Answer Waiting for Approval",`${c.astrologerName||"Selected astrologer"} submitted an answer for ${c.customerName||"Customer"}.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
   else await addAdminPrivateNotification("private_answer_auto_allowed","Private Answer Auto Allowed",`${c.astrologerName||"Selected astrologer"} submitted an answer for ${c.customerName||"Customer"}; Auto Allow released it directly.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
   await db.collection("smv_notifications").add({userId:c.customerId,type:direct?"private_answer_ready":"private_answer_submitted",title:direct?"Private consultation answer ready":"Astrologer answer submitted",message:direct?`${c.astrologerName||"Your astrologer"} submitted your private consultation answer. It is ready to view.`:`${c.astrologerName||"Your astrologer"} submitted an answer. It is waiting for Admin approval.`,consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
+   setImmediate(() => sendRolePushNotification(c.customerId, direct ? "SMV ASTRO — Private Answer Ready" : "SMV ASTRO — Answer Submitted", direct ? "Your private consultation answer is ready to view." : "Your astrologer submitted an answer. It is waiting for Admin approval.", { url: "/#dashboard", tag: "smv-customer-private-answer-" + id }));
   setImmediate(async()=>{
     const customerEmail=await resolveCustomerEmail(c), astrologerEmail=await resolveAstrologerEmail(c);
     if(direct){
@@ -2580,6 +2644,8 @@ app.post("/admin/private-consultation/approve-answer",express.json({limit:"10kb"
   await ref.update({status:"answered",answerStatus:"approved",answerAvailableAt:FieldValue.serverTimestamp(),answerApprovedAt:FieldValue.serverTimestamp(),answerApprovedBy:user.uid,commissionStatus:"pending_customer_view",updatedAt:FieldValue.serverTimestamp()});
   await db.collection("smv_notifications").add({userId:c.customerId,type:"private_answer_ready",title:"Private consultation answer ready",message:`Admin approved the answer from ${c.astrologerName||"your selected astrologer"}. Your answer is ready to view.`,consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
   await db.collection("smv_notifications").add({userId:c.astrologerId,type:"private_answer_approved",title:"Private consultation answer approved",message:"Admin approved your private consultation answer. Earnings remain pending until the customer views the answer.",consultationId:id,createdAt:FieldValue.serverTimestamp(),read:false});
+   setImmediate(() => sendRolePushNotification(c.customerId, "SMV ASTRO — Private Answer Ready", "Admin approved your private consultation answer. Sign in to read it.", { url: "/#dashboard", tag: "smv-customer-private-answer-" + id }));
+   setImmediate(() => sendRolePushNotification(c.astrologerId, "SMV ASTRO — Answer Approved", "Admin approved your private consultation answer.", { url: "/#dashboard", tag: "smv-astro-private-approved-" + id }));
   await addAdminPrivateNotification("private_answer_approved","Private Answer Approved",`Answer from ${c.astrologerName||"Selected astrologer"} for ${c.customerName||"Customer"} was approved.`,id,{customerId:c.customerId,astrologerId:c.astrologerId});
   setImmediate(async()=>{
     const customerEmail=await resolveCustomerEmail(c), astrologerEmail=await resolveAstrologerEmail(c);
