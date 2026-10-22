@@ -4,6 +4,57 @@
    Only offline place-search data may fall back to one stable cache. */
 const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
 
+// SMV ASTRO Web Push: reuse this existing root-scope service worker so the PWA
+// offline-place behavior and fetch policy stay intact. Messages are data-only;
+// this handler renders a single persistent system notification.
+try {
+  importScripts("https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js");
+  importScripts("https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-compat.js");
+  if (self.firebase && !self.firebase.apps.length) {
+    self.firebase.initializeApp({
+      apiKey: "AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",
+      authDomain: (self.location.hostname === "smvastroservices.pages.dev" || self.location.hostname.endsWith(".smvastroservices.pages.dev")) ? "smv-astro.firebaseapp.com" : "auth.smvastroservices.in",
+      projectId: "smv-astro",
+      storageBucket: "smv-astro.firebasestorage.app",
+      messagingSenderId: "299081899217",
+      appId: "1:299081899217:web:8d558df08e86037ea539f0"
+    });
+    const smvPushMessaging = self.firebase.messaging();
+    smvPushMessaging.onBackgroundMessage(payload => {
+      const data = payload && payload.data ? payload.data : {};
+      const title = String(data.title || (payload && payload.notification && payload.notification.title) || "SMV ASTRO");
+      const options = {
+        body: String(data.body || (payload && payload.notification && payload.notification.body) || "A new SMV ASTRO notification is available."),
+        icon: "/assets/icon-192.png",
+        badge: "/assets/favicon-64.png",
+        tag: String(data.tag || "smv-admin-notification"),
+        data: { url: String(data.url || "/#dashboard") }
+      };
+      return self.registration.showNotification(title, options);
+    });
+  }
+} catch (error) {
+  // Browsing, offline place search and normal PWA behavior remain available even
+  // if the Firebase Messaging SDK cannot load in a restricted network.
+  console.warn("SMV ASTRO background push initialization failed:", error && (error.message || error));
+}
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const rawTarget = event.notification && event.notification.data && event.notification.data.url || "/#dashboard";
+  const target = new URL(String(rawTarget).startsWith("/") ? String(rawTarget) : "/#dashboard", self.location.origin).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      if (client.url !== target && typeof client.navigate === "function") await client.navigate(target);
+      return client.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(target);
+  })());
+});
+
+
 function isOfflinePlaceAsset(url){
   if(url.origin!==self.location.origin)return false;
   const p=url.pathname.toLowerCase();

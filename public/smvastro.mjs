@@ -4064,3 +4064,111 @@ if(firebaseInitError){
 window.__SMV_APP_READY=true;
 window.dispatchEvent(new Event('smv:app-ready'));
 window.__smvSyncWorkspace?.();
+
+
+// Admin-only Web Push setup. Uses the existing root PWA service worker and
+// Firebase project; no extra service-worker scope or client-side server secret.
+let smvAdminPushForegroundHandlerAttached = false;
+function smvAdminPushSetStatus(message, state = "info") {
+  const el = document.getElementById("adminPushStatus");
+  if (!el) return;
+  el.textContent = String(message || "");
+  el.className = "small" + (state === "success" ? " success" : state === "error" ? " error" : "");
+}
+function smvAdminPushRequireAdminSession() {
+  if (!currentUser) throw new Error("Please log in with the Admin account first.");
+}
+async function smvAdminPushMessagingModule() {
+  const mod = await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js");
+  if (!(await mod.isSupported())) throw new Error("This browser does not support Firebase Web Push. Try the latest Chrome browser on Android.");
+  if (!app) throw new Error("Firebase has not initialized. Refresh the website and sign in again.");
+  return mod;
+}
+async function smvAdminPushConfig() {
+  const config = await renderPublicApi("/public/push-config");
+  const key = String(config?.vapidPublicKey || "").trim();
+  if (!key) throw new Error("Firebase Web Push public key is not configured on the backend. Set Render environment variable FCM_VAPID_PUBLIC_KEY using Firebase Console → Project settings → Cloud Messaging → Web Push certificates.");
+  return key;
+}
+async function smvAdminPushGetToken(mod, vapidKey) {
+  const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await navigator.serviceWorker.ready;
+  const messaging = mod.getMessaging(app);
+  const token = await mod.getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+  if (!token) throw new Error("Firebase did not return a registration token. Check notification permission and Web Push configuration.");
+  return { registration, messaging, token };
+}
+function smvAdminPushAttachForegroundListener(mod, messaging) {
+  if (smvAdminPushForegroundHandlerAttached) return;
+  mod.onMessage(messaging, async payload => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const data = payload?.data || {};
+      await registration.showNotification(String(data.title || "SMV ASTRO"), {
+        body: String(data.body || "A new SMV ASTRO Admin notification is available."),
+        icon: "/assets/icon-192.png",
+        badge: "/assets/favicon-64.png",
+        tag: String(data.tag || "smv-admin-notification"),
+        data: { url: String(data.url || "/#dashboard") }
+      });
+    } catch (e) { console.warn("SMV ASTRO foreground push display failed:", e?.message || e); }
+  });
+  smvAdminPushForegroundHandlerAttached = true;
+}
+const smvAdminPushEnableButton = document.getElementById("enableAdminPushBtn");
+if (smvAdminPushEnableButton) smvAdminPushEnableButton.addEventListener("click", async () => {
+  const button = smvAdminPushEnableButton;
+  const testButton = document.getElementById("testAdminPushBtn");
+  const disableButton = document.getElementById("disableAdminPushBtn");
+  button.disabled = true;
+  smvAdminPushSetStatus("Checking browser permission and registering this device…");
+  try {
+    smvAdminPushRequireAdminSession();
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) throw new Error("This browser does not support web push notifications. Use HTTPS and a supported browser.");
+    // Ask during this direct user click, never automatically on page load.
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission !== "granted") throw new Error(permission === "denied" ? "Notifications are blocked for this website. Allow them in your browser's Site settings, then try again." : "Notification permission was not granted.");
+    const vapidKey = await smvAdminPushConfig();
+    const mod = await smvAdminPushMessagingModule();
+    const result = await smvAdminPushGetToken(mod, vapidKey);
+    await renderApi("/admin/push/register", {
+      method: "POST",
+      body: JSON.stringify({ token: result.token, platform: /Android/i.test(navigator.userAgent) ? "android-web" : /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "ios-web" : "web", userAgent: navigator.userAgent })
+    });
+    smvAdminPushAttachForegroundListener(mod, result.messaging);
+    smvAdminPushSetStatus("Enabled on this device. Tap “Send Test Notification” to verify delivery. இந்த மொபைலில் அறிவிப்புகள் செயல்படுத்தப்பட்டுள்ளன.", "success");
+    if (testButton) testButton.disabled = false;
+    if (disableButton) disableButton.disabled = false;
+  } catch (e) {
+    smvAdminPushSetStatus(e?.message || String(e), "error");
+  } finally { button.disabled = false; }
+});
+const smvAdminPushTestButton = document.getElementById("testAdminPushBtn");
+if (smvAdminPushTestButton) smvAdminPushTestButton.addEventListener("click", async () => {
+  const button = smvAdminPushTestButton;
+  button.disabled = true;
+  smvAdminPushSetStatus("Sending a test notification to registered Admin device(s)…");
+  try {
+    smvAdminPushRequireAdminSession();
+    const result = await renderApi("/admin/push/test", { method: "POST", body: JSON.stringify({}) });
+    smvAdminPushSetStatus((result.message || "Firebase accepted the test push.") + " Accepted by Firebase: " + Number(result.acceptedByFirebase || 0) + ". Check the phone notification tray.", "success");
+  } catch (e) { smvAdminPushSetStatus(e?.message || String(e), "error"); }
+  finally { button.disabled = false; }
+});
+const smvAdminPushDisableButton = document.getElementById("disableAdminPushBtn");
+if (smvAdminPushDisableButton) smvAdminPushDisableButton.addEventListener("click", async () => {
+  const button = smvAdminPushDisableButton;
+  button.disabled = true;
+  smvAdminPushSetStatus("Turning off push notifications for this device…");
+  try {
+    smvAdminPushRequireAdminSession();
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) throw new Error("This browser does not support this action.");
+    const vapidKey = await smvAdminPushConfig();
+    const mod = await smvAdminPushMessagingModule();
+    const result = await smvAdminPushGetToken(mod, vapidKey);
+    await renderApi("/admin/push/unregister", { method: "POST", body: JSON.stringify({ token: result.token }) });
+    await mod.deleteToken(result.messaging).catch(() => {});
+    smvAdminPushSetStatus("Push delivery has been disabled for this device. To block all site notifications, also change this website's Notification permission in browser settings.", "success");
+  } catch (e) { smvAdminPushSetStatus(e?.message || String(e), "error"); }
+  finally { button.disabled = false; }
+});
