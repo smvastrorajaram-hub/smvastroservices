@@ -23,8 +23,12 @@ function cleanNarrativeParagraphs(paragraphs,state){
   for(const sentence of parts){
    const candidate=sentence.trim(),key=narrativeSentenceKey(candidate);
    const words=(candidate.match(/[\p{L}\p{N}]+/gu)||[]);
-   if(key.length>=36&&words.length>=5&&state?.seen?.has(key))continue;
-   if(key.length>=36&&words.length>=5)state?.seen?.add(key);
+   // Keep uncertainty, safety, medical, and life/death caveats with every
+   // relevant conclusion even when the wording happens to be identical.
+   const caution=/(?:உறுதி|உறுதியாக|மருத்துவ|மரண|பாதிப்பு|தீர்மான|கணக்கீட்டு மதிப்பீடு|guarantee|certain|medical|death|lifespan|should not|not establish|not predict|does not establish|not be treated)/i.test(candidate);
+   const eligible=!caution&&key.length>=36&&words.length>=5;
+   if(eligible&&state?.seen?.has(key))continue;
+   if(eligible)state?.seen?.add(key);
    keep.push(candidate);
   }
   if(keep.length)out.push(keep.join(' '));
