@@ -1427,11 +1427,11 @@ nav a, nav .btn{flex:0 0 auto}
 .service-card{min-height:210px}
 .service-icon{font-size:30px}
 .service-card h3{margin-bottom:7px}
-.faq-list{display:grid;gap:16px}
+.faq-list{display:grid;gap:13.5px}
 .faq-list details{background:transparent;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
-.faq-list summary{cursor:pointer;color:var(--maroon)}
+.faq-list summary{cursor:pointer;color:var(--maroon);display:list-item;margin:0 0 13.5px;padding:0}
 .faq-list summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:800}
-.faq-list p{color:var(--muted);margin:10px 0px 2px}
+.faq-list p{color:var(--muted);margin:0;padding:0}
 .faq-list p:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.6}
 .review-card{height:100%}
 .stars{letter-spacing:2px;color:var(--gold);font-size:18px}
@@ -1836,9 +1836,9 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 .smv-dialog-actions:where(:not(.smv-css-island,.smv-css-island *)){gap:5px!important}
 .smv-dialog-actions .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:34px!important}
 .faq-section:where(:not(.smv-css-island,.smv-css-island *)), .faq-list:where(:not(.smv-css-island,.smv-css-island *)){margin:5px 0px!important} details:where(:not(.smv-css-island,.smv-css-island *)):not(#faq > .faq-list > details){margin:5px 0px!important}
-details summary:where(:not(.smv-css-island,.smv-css-island *)){padding:7px!important}
+details summary:where(:not(.smv-css-island,.smv-css-island *)):not(#faq > .faq-list > details > summary){padding:7px!important}
 details summary:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:12px!important}
-details p:where(:not(.smv-css-island,.smv-css-island *)){padding:6px!important}
+details p:where(:not(.smv-css-island,.smv-css-island *)):not(#faq > .faq-list > details > p){padding:6px!important}
 details p:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:11px!important}
 footer:where(:not(.smv-css-island,.smv-css-island *)){padding:12px 8px!important;margin-top:10px!important;font-size:10.5px!important}
 .astrologer-card:where(:not(.smv-css-island,.smv-css-island *)), .astrologer-item:where(:not(.smv-css-island,.smv-css-island *)), .astro-card:where(:not(.smv-css-island,.smv-css-island *)){min-height:0px!important}
