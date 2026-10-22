@@ -370,6 +370,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
 <div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
+<div class="card" id="adminMobilePushCard">
+<h3>Mobile Push Notifications — மொபைல் அறிவிப்புகள்</h3>
+<p class="small">Receive SMV ASTRO Admin alerts on this mobile device, even when the website is in the background. Browser permission is required.</p>
+<div class="action-row"><button class="btn" id="enableAdminPushBtn" type="button">ENABLE MOBILE NOTIFICATIONS</button><button class="btn gray" id="testAdminPushBtn" type="button">SEND TEST NOTIFICATION</button><button class="btn gray" id="disableAdminPushBtn" type="button">DISABLE THIS DEVICE</button></div>
+<div class="small" id="adminPushStatus" aria-live="polite" role="status">Mobile notifications are not verified on this device yet.</div>
+</div>
 <div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
 </section></div>
 <section class="hidden" id="astro-register-form">
