@@ -3803,7 +3803,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     position:relative!important;
     z-index:1000!important;
     width:100%!important;
-    height:clamp(166px,42.507vw,235px)!important;
+    height:clamp(190px,42.507vw,235px)!important;
     min-height:0!important;
     margin:0!important;
     padding:0!important;
@@ -3822,7 +3822,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     display:flex!important;
     flex-direction:column!important;
     align-items:center!important;
-    justify-content:space-between!important;
+    justify-content:flex-start!important;
     width:100%!important;
     height:100%!important;
     min-height:0!important;
@@ -3922,7 +3922,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     grid-template-columns:repeat(6,minmax(0,1fr))!important;
     align-items:end!important;
     width:100%!important;
-    margin:0!important;
+    margin:clamp(22px,5.8vw,26px) 0 0!important;
     padding:0!important;
     gap:2px!important;
     background:transparent!important;
@@ -3975,11 +3975,11 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
 
   /* Responsive homepage hero: full image ratio, readable overlay copy. */
-  html body.smv-v12-theme #home.smv33-hero{position:relative;left:50%;width:100vw;max-width:100vw;height:calc(149.90234375vw - clamp(166px,42.507vw,235px))!important;min-height:0!important;margin:0 0 0 -50vw;padding:0;border:0;border-radius:0;background-color:transparent!important;background-image:url("https://raw.githubusercontent.com/smvastrorajaram-hub/smvastroservices/main/photo/Hero%20and%20Header%20Merged.jpg")!important;background-size:100vw auto!important;background-position:center calc(0px - clamp(166px,42.507vw,235px))!important;background-repeat:no-repeat!important;overflow:hidden;}
-  html body.smv-v12-theme #home .smv33-scene{display:block;width:100%;height:100%;min-height:0;margin:0;padding:0;background:transparent;}
+  html body.smv-v12-theme #home.smv33-hero{position:relative;left:50%;width:100vw;max-width:100vw;height:auto!important;min-height:0!important;margin:0 0 0 -50vw;padding:0;border:0;border-radius:0;background-color:transparent!important;background-image:url("https://raw.githubusercontent.com/smvastrorajaram-hub/smvastroservices/main/photo/Hero%20and%20Header%20Merged.jpg")!important;background-size:100vw auto!important;background-position:center calc(0px - clamp(190px,42.507vw,235px))!important;background-repeat:no-repeat!important;overflow:hidden;}
+  html body.smv-v12-theme #home .smv33-scene{display:block;width:100%;height:auto;min-height:0;margin:0;padding:0;background:transparent;}
   html body.smv-v12-theme #home .smv33-picture{display:none!important;width:100%;line-height:0;}
   html body.smv-v12-theme #home .smv33-photo{display:none!important;}
-  html body.smv-v12-theme #home .smv33-copy{position:absolute;z-index:3;left:12px;right:12px;top:clamp(22px,5.5vw,26px);bottom:auto;width:auto;min-height:0;margin:0;padding:0 clamp(14px,4vw,22px) clamp(12px,3vw,18px);box-sizing:border-box;color:#17273f;background:transparent;border:0;border-radius:0;box-shadow:none;transform:none;text-align:left;text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(255,255,255,.58);}
+  html body.smv-v12-theme #home .smv33-copy{position:relative;z-index:3;left:auto;right:auto;top:auto;bottom:auto;width:auto;min-height:0;margin:0 12px;padding:clamp(22px,5.5vw,26px) clamp(14px,4vw,22px) clamp(12px,3vw,16px);box-sizing:border-box;color:#17273f;background:transparent;border:0;border-radius:0;box-shadow:none;transform:none;text-align:left;text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(255,255,255,.58);}
   html body.smv-v12-theme #home .smv33-mobile-head{display:block;}
   html body.smv-v12-theme #home .smv33-desktop-head{display:none;}
   html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#7a2e31;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,2.7vw,13px);line-height:1.32;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.92);}
@@ -3997,7 +3997,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-trust b{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(122,75,22,.55);border-radius:50%;background:rgba(255,250,240,.82);color:#7a4b16;font-size:20px;line-height:1;}
   html body.smv-v12-theme #home .smv33-trust img{width:24px;height:24px;object-fit:contain;}
   @media(max-width:360px){
-    html body.smv-v12-theme #home .smv33-copy{left:8px;right:8px;top:22px;bottom:auto;padding:0 10px 8px;}
+    html body.smv-v12-theme #home .smv33-copy{margin:0 8px;padding:22px 10px 12px;}
     html body.smv-v12-theme #home .smv33-kicker{margin-bottom:6px;font-size:11px;line-height:1.3;}
     html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(26px,7.2vw,30px);line-height:1.1;margin-bottom:9px;}
     html body.smv-v12-theme #home .smv33-copy p{font-size:12.5px;line-height:1.42;margin-bottom:7px;}
