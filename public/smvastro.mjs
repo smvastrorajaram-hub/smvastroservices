@@ -2160,6 +2160,7 @@ const userStatus=String(
 
   $('astroRefreshApproval')?.addEventListener('click',()=>loadDashboard('astrologer',true));
   $('astroLogoutPending')?.addEventListener('click',()=>logoutToHome());
+  smvEnsureRolePushCard(role);
   dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();smvWatchQuestions(role);
   return;
 }
@@ -2759,6 +2760,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
 
   }
   if(!active()) return;
+  smvEnsureRolePushCard(role);
   const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note);
   // Notifications are supplementary. A Firestore permission/timeout issue in
   // this optional section must never turn a successfully loaded dashboard into
@@ -4065,6 +4067,64 @@ window.__SMV_APP_READY=true;
 window.dispatchEvent(new Event('smv:app-ready'));
 window.__smvSyncWorkspace?.();
 
+
+// Customer/Astrologer push panel: delivery is driven by real account events, not a test button.
+function smvEnsureRolePushCard(role) {
+  const normalizedRole = String(role || "").toLowerCase();
+  if (!["customer", "astrologer"].includes(normalizedRole)) return;
+  const host = document.getElementById("dashboardContent");
+  if (!host || host.querySelector("[data-smv-role-push-card]")) return;
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.smvRolePushCard = normalizedRole;
+  card.style.marginBottom = "16px";
+  card.innerHTML =
+    '<h3>Push Notifications — மொபைல் அறிவிப்புகள்</h3>' +
+    '<p class="small">Receive important SMV ASTRO account updates on this device, including when the website is in the background. Browser permission is required.</p>' +
+    '<div class="action-row"><button class="btn" type="button" data-smv-role-push-enable>ENABLE PUSH NOTIFICATIONS</button></div>' +
+    '<div class="small" data-smv-role-push-status aria-live="polite" role="status">Push notifications are not enabled on this device yet.</div>';
+  host.insertBefore(card, host.firstChild);
+}
+function smvRolePushSetStatus(button, message, state = "info") {
+  const card = button?.closest("[data-smv-role-push-card]");
+  const status = card?.querySelector("[data-smv-role-push-status]");
+  if (!status) return;
+  status.textContent = String(message || "");
+  status.className = "small" + (state === "success" ? " success" : state === "error" ? " error" : "");
+}
+document.addEventListener("click", async event => {
+  const button = event.target?.closest?.("[data-smv-role-push-enable]");
+  if (!button || button.disabled) return;
+  button.disabled = true;
+  try {
+    if (!currentUser) throw new Error("Please sign in to your Customer or Astrologer account first.");
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) throw new Error("This browser does not support push notifications. Use HTTPS and a supported browser.");
+    const card = button.closest("[data-smv-role-push-card]");
+    const role = String(card?.dataset?.smvRolePushCard || "").toLowerCase();
+    if (!["customer", "astrologer"].includes(role)) throw new Error("Your dashboard role could not be verified. Refresh and sign in again.");
+    // Request permission directly from this click before awaiting any network work.
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission !== "granted") throw new Error(permission === "denied" ? "Notifications are blocked for this website. Allow them in the browser Site settings, then try again." : "Notification permission was not granted.");
+    smvRolePushSetStatus(button, "Checking Firebase and registering this device…");
+    const vapidKey = await smvAdminPushConfig();
+    const messagingModule = await smvAdminPushMessagingModule();
+    const result = await smvAdminPushGetToken(messagingModule, vapidKey);
+    await renderApi("/user/push/register", {
+      method: "POST",
+      body: JSON.stringify({
+        token: result.token,
+        platform: /Android/i.test(navigator.userAgent) ? "android-web" : /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "ios-web" : "web",
+        userAgent: navigator.userAgent
+      })
+    });
+    smvAdminPushAttachForegroundListener(messagingModule, result.messaging);
+    smvRolePushSetStatus(button, "Push notifications are enabled on this device. SMV ASTRO will send alerts for new account activity. இந்தச் சாதனத்தில் அறிவிப்புகள் செயல்படுத்தப்பட்டுள்ளன.", "success");
+  } catch (e) {
+    smvRolePushSetStatus(button, e?.message || String(e), "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
 // Admin-only Web Push setup. Uses the existing root PWA service worker and
 // Firebase project; no extra service-worker scope or client-side server secret.
