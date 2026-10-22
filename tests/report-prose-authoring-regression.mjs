@@ -70,6 +70,17 @@ assert.ok(ayurdayaMarkup.indexOf('smv-ayurdaya-disclaimer') < ayurdayaMarkup.ind
   'Ayurdaya disclosure appears before the numerical table');
 
 assert.ok(workbench.includes('data-wb-personal-apply'), 'personal per-chart Apply action exists');
+assert.ok(workbench.indexOf('<section class="wb-block wb-personal-authoring"') < workbench.indexOf('<div data-wb-result hidden>'),
+  'personal authoring is visible outside the calculation-results container');
+assert.ok(workbench.includes('id="wbPersonalSection" disabled'), 'chart-section selector starts disabled until calculation completes');
+assert.ok(workbench.includes('data-wb-personal-copy disabled') && workbench.includes('data-wb-personal-apply disabled'),
+  'calculation-dependent personal actions start disabled');
+assert.ok(workbench.includes('function updatePersonalControls()') && workbench.includes('const ready=Boolean(canUse()&&calc&&views&&!busy)'),
+  'copy/apply are gated until a completed chart and preview are available');
+assert.ok(workbench.includes('pendingPersonalDraft={text,mode}') && workbench.includes('personalDrafts.set(personalKey(lang,selected)'),
+  'text entered before calculation is retained and attached to the selected chart section afterwards');
+assert.ok(workbench.includes("pendingPersonalDraft={text:'',mode:'replace'}"),
+  'chart changes and sign-out clear unbound personal drafts');
 assert.ok(workbench.includes('sections:parts,personalTextApplied'), 'saved admin preview includes applied prose');
 assert.ok(workbench.includes('asyncIDB()'), 'personal report preview is saved locally');
 assert.ok(!workbench.includes('setDoc('), 'per-chart authored prose does not publish to Firestore');
