@@ -584,13 +584,13 @@
         <div class="smv-prayer-title">🕉️ NAVAGRAHA STOTRAM</div>
         <div class="smv-prayer-mantra">Om Namah Suryaya Chandraya<br/>Mangalaya Budhaya Cha |<br/>Guru Shukra Shanibhyashcha<br/>Rahave Ketave Namah ||</div>
       </div>
-      <h3 style="margin-top:22px">🗺️ Rasi Chart (D-1)</h3>
+      <h3 style="margin-top:22px">Rasi Chart (D-1)</h3>
       <div id="rasiChart" class="south-indian-chart" aria-label="ராசி கட்டம்"></div>
-      <h3 style="margin-top:22px">🪷 Navamsa Chart ( D-9)</h3>
+      <h3 style="margin-top:22px">Navamsa Chart (D-9)</h3>
       <p class="small">ஒவ்வொரு கிரகத்தின் D9 நவாம்ச ராசி, லக்ன நவாம்சம் உட்பட.</p>
       <div id="navamsaChart" class="south-indian-chart" aria-label="நவாம்ச கட்டம்"></div>
       <div id="specialLagnasNextToNavamsa"></div>
-      <h3 style="margin-top:22px" class="bhava-chart-title">📐 Bhava Chart</h3>
+      <h3 style="margin-top:22px" class="bhava-chart-title">Bhava Chart</h3>
       <div id="bhavaChart" class="south-indian-chart bhava-chart" aria-label="Bhava Chart"></div>
       <h3 style="margin-top:22px" class="bhava-table-title">📋 Bhava Table</h3>
       <div class="data-table-wrap bhava-table-wrap"><table class="data-table bhava-table"><thead><tr><th>பாவம்</th><th>ஆரம்பம்</th><th>மத்தியம்</th><th>முடிவு</th><th>ராசி</th><th>கிரகங்கள்</th></tr></thead><tbody>${(d.bhavas||[]).map(b=>{const ps=(d.planets||[]).filter(p=>p.bhava===b.house).map(p=>p.name).join(', ');return `<tr><td><b>${b.house}</b></td><td>${esc(b.arambha||'—')}</td><td><b>${esc(b.madhya||b.degree||'—')}</b></td><td>${esc(b.antya||'—')}</td><td>${esc(b.rasi||'—')}</td><td>${esc(ps||'—')}</td></tr>`}).join('')}</tbody></table></div>
