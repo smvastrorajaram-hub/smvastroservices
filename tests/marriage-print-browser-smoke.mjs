@@ -4,9 +4,25 @@ import {mkdir,writeFile,stat,readFile} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 const cgMethodTable=section=>section.match(/<table class="smv-ayurdaya-table(?: smv-css-island)?">[\s\S]*?<\/table>/)?.[0]||'';
+function assertNoSparsePrintPages(pdfPath,label){
+ // A disclaimer-only page is technically valid PDF, but a layout regression.
+ // Inspect text from the actual Chromium PDF, not just the source DOM.
+ const extracted=execFileSync('pdftotext',['-layout',pdfPath,'-'],{encoding:'utf8',maxBuffer:64*1024*1024});
+ const pages=extracted.split('\f');
+ if(pages.length && !pages.at(-1).trim()) pages.pop();
+ const sparse=[];
+ for(let i=1;i<pages.length;i++){
+  const compact=pages[i].replace(/\s/gu,'');
+  if(compact.length<140)sparse.push({page:i+1,characters:compact.length,preview:pages[i].trim().replace(/\s+/gu,' ').slice(0,180)});
+ }
+ assert.equal(sparse.length,0,label+': near-empty/orphaned PDF page(s): '+JSON.stringify(sparse));
+ return pages.length;
+}
+
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
@@ -156,6 +172,8 @@ try{
   await page.pdf({path:fileURLToPath(pdfPath),format:'A4',printBackground:true,preferCSSPageSize:true});
   const {size}=await stat(pdfPath);
   assert.ok(size>25000,'PDF is not empty: '+style);
+  const pageCount=assertNoSparsePrintPages(fileURLToPath(pdfPath),'Matching '+testName);
+  assert.ok(pageCount>=2,'Matching report should paginate to multiple pages: '+testName);
   const print=await page.evaluate(async()=>{
    const first=document.querySelector('.mm-base-chart'),groom=document.querySelectorAll('.mm-base-chart')[4],css=getComputedStyle(first),rect=first.getBoundingClientRect();
    const methodSelections=[...document.querySelectorAll('.smv-ayurdaya-method-selection')].map(node=>({display:getComputedStyle(node).display,fontSize:parseFloat(getComputedStyle(node).fontSize),fontWeight:parseInt(getComputedStyle(node).fontWeight,10)||400,backgroundColor:getComputedStyle(node).backgroundColor,visibility:getComputedStyle(node).visibility,text:node.textContent.trim()}));
@@ -342,6 +360,8 @@ try{
  const horoscopePdf=new URL('horoscope-print-strength6.pdf',output);
  await page.pdf({path:fileURLToPath(horoscopePdf),format:'A4',printBackground:true,preferCSSPageSize:true});
  assert.ok((await stat(horoscopePdf)).size>25000,'Standalone Horoscope Shadbala PDF is generated');
+ const horoscopePdfPages=assertNoSparsePrintPages(fileURLToPath(horoscopePdf),'Standalone Horoscope');
+ assert.ok(horoscopePdfPages>=2,'Standalone Horoscope should paginate to multiple pages');
  await page.screenshot({path:fileURLToPath(new URL('horoscope-print-strength6.png',output)),fullPage:false});
 
  console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length,horoscopePdf:true,horoscopePdfRows:horoscopePrint.rows.length,horoscopePdfHeaders:horoscopePrint.headers,tamilFontReady:horoscopePrint.tamilFontReady}));
