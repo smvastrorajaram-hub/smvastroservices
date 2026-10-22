@@ -219,9 +219,59 @@ async function sendEventEmailOnce({ eventKey, to = [], subject, text, html, repl
   }
 }
 
+async function sendAdminPushPayload(token, title, message, url = "/#dashboard", tag = "smv-admin") {
+  const safeTitle = String(title || "SMV ASTRO").replace(/\s+/g, " ").trim().slice(0, 120) || "SMV ASTRO";
+  const safeBody = String(message || "A new SMV ASTRO Admin notification is available.").replace(/\s+/g, " ").trim().slice(0, 360);
+  const safeUrl = String(url || "/#dashboard").startsWith("/") ? String(url || "/#dashboard") : "/#dashboard";
+  const safeTag = String(tag || "smv-admin").replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 80) || "smv-admin";
+  return admin.messaging().send({
+    token,
+    data: { title: safeTitle, body: safeBody, url: safeUrl, tag: safeTag },
+    webpush: { headers: { TTL: "86400" } }
+  });
+}
+
+async function sendAdminPushNotification(title, message, options = {}) {
+  try {
+    const snap = await db.collection("smv_admin_push_tokens").where("enabled", "==", true).get();
+    const devices = snap.docs.filter(d => String(d.data()?.token || "").trim() && String(d.data()?.userId || "").trim());
+    if (!devices.length) return { sent: 0, failed: 0, skipped: true };
+    let sent = 0;
+    let failed = 0;
+    await Promise.all(devices.map(async d => {
+      const data = d.data() || {};
+      try {
+        await sendAdminPushPayload(
+          String(data.token),
+          title,
+          message,
+          options.url || "/#dashboard",
+          options.tag || "smv-admin-" + String(options.type || "event")
+        );
+        sent++;
+      } catch (e) {
+        failed++;
+        const code = String(e?.code || "");
+        if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") {
+          await d.ref.delete().catch(() => {});
+        }
+        console.warn("Admin mobile push failed:", code || e?.message || e);
+      }
+    }));
+    return { sent, failed };
+  } catch (e) {
+    console.warn("Admin mobile push dispatch skipped:", e?.message || e);
+    return { sent: 0, failed: 1 };
+  }
+}
+
 async function addAdminEventNotification(type, title, message, extra = {}) {
   try {
     await db.collection("smv_notifications").add({userId:"admin",audience:"admin",type,title,message,...extra,createdAt:FieldValue.serverTimestamp(),read:false});
+    setImmediate(() => {
+      sendAdminPushNotification(title, message, { type, url: "/#dashboard" })
+        .catch(e => console.warn("Admin mobile push dispatch failed:", e?.message || e));
+    });
   } catch (e) { console.error("Admin notification write failed:", type, e?.message || e); }
 }
 
@@ -660,6 +710,107 @@ app.get("/public/registration-config", (req,res)=>res.set("Cache-Control","no-st
   whatsappOtpEnabled: PHONE_VERIFICATION_MODE === "whatsapp",
   whatsappProviderConfigured: !!WHATSAPP_OTP_PROVIDER
 }));
+
+app.get("/public/push-config", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  return res.json({ success: true, vapidPublicKey: String(process.env.FCM_VAPID_PUBLIC_KEY || "").trim() });
+});
+
+app.get("/admin/push/status", async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
+  try {
+    const snap = await db.collection("smv_admin_push_tokens").where("userId", "==", user.uid).get();
+    const active = snap.docs.filter(d => d.data()?.enabled === true && String(d.data()?.token || "").trim()).length;
+    return res.set("Cache-Control", "no-store").json({
+      success: true,
+      registeredDevices: active,
+      vapidConfigured: !!String(process.env.FCM_VAPID_PUBLIC_KEY || "").trim()
+    });
+  } catch (e) {
+    console.error("Admin push status failed:", e?.message || e);
+    return res.status(500).json({ error: "Unable to check mobile notification status." });
+  }
+});
+
+app.post("/admin/push/register", async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
+  const token = String(req.body?.token || "").trim();
+  if (token.length < 40 || token.length > 4096) return res.status(400).json({ error: "Invalid push registration token." });
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const ref = db.collection("smv_admin_push_tokens").doc(tokenHash);
+  try {
+    const prior = await ref.get();
+    await ref.set({
+      userId: user.uid,
+      token,
+      enabled: true,
+      platform: String(req.body?.platform || "web").slice(0, 40),
+      userAgent: String(req.body?.userAgent || "").slice(0, 240),
+      createdAt: prior.exists ? (prior.data()?.createdAt || FieldValue.serverTimestamp()) : FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      lastRegisteredAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+    return res.json({ success: true, registered: true });
+  } catch (e) {
+    console.error("Admin push registration failed:", e?.message || e);
+    return res.status(500).json({ error: "Unable to save this device for mobile notifications." });
+  }
+});
+
+app.post("/admin/push/unregister", async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
+  const token = String(req.body?.token || "").trim();
+  if (!token) return res.status(400).json({ error: "Push registration token is required." });
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  try {
+    const ref = db.collection("smv_admin_push_tokens").doc(tokenHash);
+    const snap = await ref.get();
+    if (snap.exists && String(snap.data()?.userId || "") !== user.uid) return res.status(403).json({ error: "This device belongs to another account." });
+    if (snap.exists) await ref.delete();
+    return res.json({ success: true, unregistered: true });
+  } catch (e) {
+    console.error("Admin push unregistration failed:", e?.message || e);
+    return res.status(500).json({ error: "Unable to turn off mobile notifications for this device." });
+  }
+});
+
+app.post("/admin/push/test", async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access denied." });
+  try {
+    const snap = await db.collection("smv_admin_push_tokens").where("userId", "==", user.uid).get();
+    const devices = snap.docs.filter(d => d.data()?.enabled === true && String(d.data()?.token || "").trim());
+    if (!devices.length) return res.status(409).json({ error: "No mobile device is registered. Tap Enable Mobile Notifications on the device first." });
+    const results = await Promise.all(devices.map(async d => {
+      try {
+        await sendAdminPushPayload(
+          String(d.data().token),
+          "SMV ASTRO — Test Notification",
+          "Mobile notifications are connected. இந்த மொபைலில் SMV ASTRO அறிவிப்புகள் செயல்படுத்தப்பட்டுள்ளன.",
+          "/#dashboard",
+          "smv-admin-push-test"
+        );
+        return true;
+      } catch (e) {
+        const code = String(e?.code || "");
+        if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") {
+          await d.ref.delete().catch(() => {});
+        }
+        console.warn("Admin test push failed:", code || e?.message || e);
+        return false;
+      }
+    }));
+    const sent = results.filter(Boolean).length;
+    if (!sent) return res.status(502).json({ error: "Firebase could not accept the test notification. Check Firebase Cloud Messaging configuration and the device token." });
+    return res.json({ success: true, acceptedByFirebase: sent, deviceCount: devices.length, message: "Firebase accepted the test push. Check the device notification tray." });
+  } catch (e) {
+    console.error("Admin test push failed:", e?.message || e);
+    return res.status(500).json({ error: "Unable to send the mobile test notification." });
+  }
+});
 
 app.get('/api/smv-mode', (req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:'https://smvastroservices.onrender.com'}));
 
