@@ -1427,8 +1427,8 @@ nav a, nav .btn{flex:0 0 auto}
 .service-card{min-height:210px}
 .service-icon{font-size:30px}
 .service-card h3{margin-bottom:7px}
-.faq-list{display:grid;gap:10px}
-.faq-list details{background:rgb(255, 255, 255);border:1px solid var(--line);border-radius:11px;padding:13px 15px;box-shadow:rgba(111, 21, 21, 0.04) 0px 4px 12px}
+.faq-list{display:grid;gap:16px}
+.faq-list details{background:transparent;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
 .faq-list summary{cursor:pointer;color:var(--maroon)}
 .faq-list summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:800}
 .faq-list p{color:var(--muted);margin:10px 0px 2px}
@@ -1713,8 +1713,8 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(138, 
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(135deg, rgb(156, 34, 32), rgb(113, 18, 18))!important;color:rgb(255, 253, 247)!important;border:1px solid rgb(209, 166, 76)!important;box-shadow:rgba(101, 16, 16, 0.2) 0px 4px 12px!important;font-weight:900!important;letter-spacing:0.25px!important;text-shadow:rgba(0, 0, 0, 0.28) 0px 1px 1px!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):hover:where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:hover:where(:not(.smv-css-island,.smv-css-island *)){transform:translateY(-1px);background:linear-gradient(135deg, rgb(179, 50, 39), rgb(122, 17, 17))!important;border-color:rgb(240, 204, 112)!important}
 header nav #authBtn.smv-logout-btn{background:linear-gradient(135deg, rgb(181, 47, 47), rgb(127, 21, 21))!important;border-color:rgb(214, 173, 85)!important}
-.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section details:where(:not(.smv-css-island,.smv-css-island *)), .faq-list details:where(:not(.smv-css-island,.smv-css-island *)), section .card:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.96)!important;border:1.5px solid var(--smv-border)!important;border-radius:18px!important;box-shadow:var(--smv-shadow)!important}
-.card:hover:where(:not(.smv-css-island,.smv-css-island *)), .feature-section details:hover:where(:not(.smv-css-island,.smv-css-island *)), .faq-list details:hover:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.72)!important;box-shadow:rgba(101, 16, 16, 0.15) 0px 14px 34px!important}
+.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:where(:not(.smv-css-island,.smv-css-island *)), section .card:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.96)!important;border:1.5px solid var(--smv-border)!important;border-radius:18px!important;box-shadow:var(--smv-shadow)!important}
+.card:hover:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:hover:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.72)!important;box-shadow:rgba(101, 16, 16, 0.15) 0px 14px 34px!important}
 #faq h2{color:var(--smv-red)!important}
 #faq h2:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
 #faq summary{color:var(--smv-red-dark)!important}
@@ -1763,7 +1763,7 @@ h1:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(34px, 9vw, 44p
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:clamp(28px, 7vw, 36px)!important;line-height:1.25!important;font-weight:900!important}
 h3:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:22px!important;line-height:1.3!important;font-weight:900!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important}
-.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section details:where(:not(.smv-css-island,.smv-css-island *)), .faq-list details:where(:not(.smv-css-island,.smv-css-island *)){border-radius:17px!important}}
+.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:where(:not(.smv-css-island,.smv-css-island *)){border-radius:17px!important}}
 @media (min-width: 768px){
 body:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important}
 li:where(:not(.smv-css-island,.smv-css-island *)),
@@ -1835,7 +1835,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 .smv-dialog p:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important;line-height:1.35!important;margin:5px 0px 9px!important}
 .smv-dialog-actions:where(:not(.smv-css-island,.smv-css-island *)){gap:5px!important}
 .smv-dialog-actions .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:34px!important}
-.faq-section:where(:not(.smv-css-island,.smv-css-island *)), .faq-list:where(:not(.smv-css-island,.smv-css-island *)), details:where(:not(.smv-css-island,.smv-css-island *)){margin:5px 0px!important}
+.faq-section:where(:not(.smv-css-island,.smv-css-island *)), .faq-list:where(:not(.smv-css-island,.smv-css-island *)){margin:5px 0px!important} details:where(:not(.smv-css-island,.smv-css-island *)):not(#faq > .faq-list > details){margin:5px 0px!important}
 details summary:where(:not(.smv-css-island,.smv-css-island *)){padding:7px!important}
 details summary:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:12px!important}
 details p:where(:not(.smv-css-island,.smv-css-island *)){padding:6px!important}
