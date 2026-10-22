@@ -3,13 +3,19 @@ on:
   push:
     branches: [main]
     paths:
-      - 'screenshot/*.pdf'
+      - 'screenshot/SMVHS-*.pdf'
+      - 'screenshot/SMVMM-*.pdf'
+      - 'certificates/SMVHS-*.pdf'
+      - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'screenshot/*.pdf'
+      - 'screenshot/SMVHS-*.pdf'
+      - 'screenshot/SMVMM-*.pdf'
+      - 'certificates/SMVHS-*.pdf'
+      - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   workflow_dispatch:
@@ -30,35 +36,71 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          pdfs=(screenshot/*.pdf)
+          pdfs=(certificates/SMVHS-*.pdf certificates/SMVMM-*.pdf screenshot/SMVHS-*.pdf screenshot/SMVMM-*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping stored-PDF text audit: fewer than two PDF fixtures are present under screenshot/. This does not certify PDF output; browser/HTML regression tests still run separately."
+            echo "::notice::Skipping stored-PDF text audit: fewer than two PDF fixtures are present under `certificates/` and `screenshot/`. This does not certify PDF output; browser/HTML regression tests still run separately."
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Found ${#pdfs[@]} PDF fixture(s) under screenshot/."
+            echo "Found ${#pdfs[@]} report PDF fixture(s) under certificates/ and screenshot/; primary-source book PDFs are excluded."
           fi
       - name: Install PDF text extraction utility
         if: steps.pdf_fixtures.outputs.found == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils
+          sudo apt-get install -y poppler-utils python3-pil
       - name: Extract searchable text from stored Horoscope and Matching PDFs
         if: steps.pdf_fixtures.outputs.found == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p smv-output-pdf-audit
+          mkdir -p smv-output-pdf-audit/renders smv-output-pdf-audit/thumbs
           shopt -s nullglob
-          pdfs=(screenshot/*.pdf)
+          pdfs=(certificates/SMVHS-*.pdf certificates/SMVMM-*.pdf screenshot/SMVHS-*.pdf screenshot/SMVMM-*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "::error::PDF fixtures disappeared after the fixture check."
             exit 1
           fi
+          : > smv-output-pdf-audit/metadata.log
           for pdf in "${pdfs[@]}"; do
             name="$(basename "${pdf%.pdf}")"
+            {
+              echo "===== $pdf ====="
+              pdfinfo "$pdf" | grep -E '^(Pages|Page size|File size|PDF version|Encrypted):' || true
+              echo "-- embedded fonts --"
+              pdffonts "$pdf" | head -n 35 || true
+              echo
+            } >> smv-output-pdf-audit/metadata.log
             pdftotext -layout "$pdf" "smv-output-pdf-audit/$name.txt"
+            # High-resolution first four pages show cover + opening content.
+            pdftoppm -f 1 -l 4 -scale-to 1400 -png "$pdf" "smv-output-pdf-audit/renders/$name-page" >/dev/null 2>&1
+            # Every-page thumbnails provide a whole-report pagination/blank-page overview.
+            pdftoppm -scale-to 350 -png "$pdf" "smv-output-pdf-audit/thumbs/$name-page" >/dev/null 2>&1
           done
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          import math
+          root = Path("smv-output-pdf-audit")
+          thumb_dir = root / "thumbs"
+          out_dir = root / "renders"
+          for pdf in sorted(Path("certificates").glob("SMVHS-*.pdf")) + sorted(Path("certificates").glob("SMVMM-*.pdf")) + sorted(Path("screenshot").glob("SMVHS-*.pdf")) + sorted(Path("screenshot").glob("SMVMM-*.pdf")):
+              files = sorted(thumb_dir.glob(pdf.stem + "-page-*.png"), key=lambda p: int(p.stem.rsplit('-', 1)[-1]))
+              if not files:
+                  continue
+              for sheet_no, start in enumerate(range(0, len(files), 24), 1):
+                  batch = files[start:start + 24]
+                  cell_w, cell_h, cols = 270, 390, 4
+                  sheet = Image.new("RGB", (cols * cell_w, math.ceil(len(batch) / cols) * cell_h), "white")
+                  draw = ImageDraw.Draw(sheet)
+                  for idx, filename in enumerate(batch):
+                      im = Image.open(filename).convert("RGB")
+                      im.thumbnail((cell_w - 12, cell_h - 32))
+                      x, y = (idx % cols) * cell_w, (idx // cols) * cell_h
+                      sheet.paste(im, (x + (cell_w - im.width) // 2, y + 4))
+                      draw.text((x + 6, y + cell_h - 24), f"Page {start + idx + 1}", fill="black")
+                  sheet.save(out_dir / f"{pdf.stem}-contact-{sheet_no:02d}.jpg", quality=82)
+          PY
       - name: Summarize Horoscope, Ayurdaya, Shadbala, and Matching output
         if: steps.pdf_fixtures.outputs.found == 'true'
         run: node tests/smv-output-result-pdf-audit.mjs smv-output-pdf-audit
