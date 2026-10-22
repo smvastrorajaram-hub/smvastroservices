@@ -1331,6 +1331,12 @@ app.post("/question-notify", express.json({limit:"20kb"}), async(req,res)=>{
     to = uniqueRecipients(to);
     if(!to.length) return res.status(400).json({error:"No recipient email address is available for this update."});
     await sendSystemEmail({to,replyTo:ADMIN_EMAIL,subject,text});
+    // Event-driven Web Push follows the same authenticated ownership/Admin checks as this notification endpoint.
+    if (event === "payment_verified" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Payment Successful", "Your question payment was verified. Sign in to view the latest status.", { url: "/#dashboard", tag: "smv-customer-payment-" + questionId }));
+    if (event === "question_approved" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Question Approved", "Your question has been approved by Admin. Sign in to view the update.", { url: "/#dashboard", tag: "smv-customer-approved-" + questionId }));
+    if (event === "question_rejected" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Question Update", "There is an update about your question. Sign in to your Customer Dashboard.", { url: "/#dashboard", tag: "smv-customer-rejected-" + questionId }));
+    if (event === "answer_approved" && q.customerId) setImmediate(() => sendRolePushNotification(q.customerId, "SMV ASTRO — Answer Ready", "Your astrology answer has been approved and is ready to view.", { url: "/#dashboard", tag: "smv-customer-answer-" + questionId }));
+    if (event === "answer_rejected" && q.astrologerId) setImmediate(() => sendRolePushNotification(q.astrologerId, "SMV ASTRO — Answer Revision Required", "Admin requested a revision to your submitted answer. Sign in to your Astrologer Dashboard.", { url: "/#dashboard", tag: "smv-astro-revision-" + questionId }));
     return res.json({ok:true,recipients:to.length,event});
   }catch(e){console.error("Question notification failed:",e);return res.status(500).json({error:"Unable to send question update email right now."});}
 });
