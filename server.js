@@ -2419,6 +2419,10 @@ async function addAdminPrivateNotification(type,title,message,consultationId,ext
       type,title,message,consultationId:String(consultationId||""),read:false,
       source:"private_consultation",...extra,createdAt:FieldValue.serverTimestamp()
     });
+    setImmediate(()=>{
+      sendAdminPushNotification(title,message,{type,url:"/#admin"})
+        .catch(e=>console.warn("Admin private mobile push failed:",e?.message||e));
+    });
   }catch(e){console.warn("Admin private notification write skipped:",e?.message||e);}
 }
 async function getPrivateConsultWorkflow(){
