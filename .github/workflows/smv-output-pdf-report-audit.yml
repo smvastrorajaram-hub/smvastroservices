@@ -4,14 +4,16 @@ on:
     branches: [main]
     paths:
       - 'screenshot/*.pdf'
-      - 'certificates/*.pdf'
+      - 'certificates/SMVHS-*.pdf'
+      - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   pull_request:
     branches: [main]
     paths:
       - 'screenshot/*.pdf'
-      - 'certificates/*.pdf'
+      - 'certificates/SMVHS-*.pdf'
+      - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
       - '.github/workflows/smv-output-pdf-report-audit.yml'
   workflow_dispatch:
@@ -32,13 +34,13 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          pdfs=(certificates/*.pdf screenshot/*.pdf)
+          pdfs=(certificates/SMVHS-*.pdf certificates/SMVMM-*.pdf screenshot/SMVHS-*.pdf screenshot/SMVMM-*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping stored-PDF text audit: fewer than two PDF fixtures are present under certificates/ and screenshot/. This does not certify PDF output; browser/HTML regression tests still run separately."
+            echo "::notice::Skipping stored-PDF text audit: fewer than two PDF fixtures are present under `certificates/` and `screenshot/`. This does not certify PDF output; browser/HTML regression tests still run separately."
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Found ${#pdfs[@]} PDF fixture(s) under certificates/ and screenshot/."
+            echo "Found ${#pdfs[@]} report PDF fixture(s) under certificates/ and screenshot/; primary-source book PDFs are excluded."
           fi
       - name: Install PDF text extraction utility
         if: steps.pdf_fixtures.outputs.found == 'true'
@@ -80,7 +82,7 @@ jobs:
           root = Path("smv-output-pdf-audit")
           thumb_dir = root / "thumbs"
           out_dir = root / "renders"
-          for pdf in sorted(Path("certificates").glob("*.pdf")) + sorted(Path("screenshot").glob("*.pdf")):
+          for pdf in sorted(Path("certificates").glob("SMVHS-*.pdf")) + sorted(Path("certificates").glob("SMVMM-*.pdf")) + sorted(Path("screenshot").glob("SMVHS-*.pdf")) + sorted(Path("screenshot").glob("SMVMM-*.pdf")):
               files = sorted(thumb_dir.glob(pdf.stem + "-page-*.png"), key=lambda p: int(p.stem.rsplit('-', 1)[-1]))
               if not files:
                   continue
