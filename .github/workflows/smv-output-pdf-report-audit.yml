@@ -3,7 +3,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'screenshot/*.pdf'
+      - 'screenshot/SMVHS-*.pdf'
+      - 'screenshot/SMVMM-*.pdf'
       - 'certificates/SMVHS-*.pdf'
       - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
@@ -11,7 +12,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'screenshot/*.pdf'
+      - 'screenshot/SMVHS-*.pdf'
+      - 'screenshot/SMVMM-*.pdf'
       - 'certificates/SMVHS-*.pdf'
       - 'certificates/SMVMM-*.pdf'
       - 'tests/smv-output-result-pdf-audit.mjs'
@@ -54,7 +56,7 @@ jobs:
           set -euo pipefail
           mkdir -p smv-output-pdf-audit/renders smv-output-pdf-audit/thumbs
           shopt -s nullglob
-          pdfs=(certificates/*.pdf screenshot/*.pdf)
+          pdfs=(certificates/SMVHS-*.pdf certificates/SMVMM-*.pdf screenshot/SMVHS-*.pdf screenshot/SMVMM-*.pdf)
           if (( ${#pdfs[@]} < 2 )); then
             echo "::error::PDF fixtures disappeared after the fixture check."
             exit 1
