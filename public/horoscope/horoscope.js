@@ -6,6 +6,8 @@
   // Keep it in the enclosing horoscope module scope; Phase-4 renders in a separate function.
   const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Keep full numeric precision in the ephemeris; format only the value shown in the report.
+  const formatAyanamsa=v=>{if(v==null||String(v).trim()==='')return '—';const n=Number(v);return Number.isFinite(n)?n.toFixed(6):String(v)};
   const rasiList=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
   const rasiIndex=r=>rasiList.indexOf(r);
   const signIcon=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
@@ -582,13 +584,13 @@
         <div class="smv-prayer-title">🕉️ NAVAGRAHA STOTRAM</div>
         <div class="smv-prayer-mantra">Om Namah Suryaya Chandraya<br/>Mangalaya Budhaya Cha |<br/>Guru Shukra Shanibhyashcha<br/>Rahave Ketave Namah ||</div>
       </div>
-      <h3 style="margin-top:22px">🗺️ Rasi Chart (D-1)</h3>
+      <h3 style="margin-top:22px">Rasi Chart (D-1)</h3>
       <div id="rasiChart" class="south-indian-chart" aria-label="ராசி கட்டம்"></div>
-      <h3 style="margin-top:22px">🪷 Navamsa Chart ( D-9)</h3>
+      <h3 style="margin-top:22px">Navamsa Chart (D-9)</h3>
       <p class="small">ஒவ்வொரு கிரகத்தின் D9 நவாம்ச ராசி, லக்ன நவாம்சம் உட்பட.</p>
       <div id="navamsaChart" class="south-indian-chart" aria-label="நவாம்ச கட்டம்"></div>
       <div id="specialLagnasNextToNavamsa"></div>
-      <h3 style="margin-top:22px" class="bhava-chart-title">📐 Bhava Chart</h3>
+      <h3 style="margin-top:22px" class="bhava-chart-title">Bhava Chart</h3>
       <div id="bhavaChart" class="south-indian-chart bhava-chart" aria-label="Bhava Chart"></div>
       <h3 style="margin-top:22px" class="bhava-table-title">📋 Bhava Table</h3>
       <div class="data-table-wrap bhava-table-wrap"><table class="data-table bhava-table"><thead><tr><th>பாவம்</th><th>ஆரம்பம்</th><th>மத்தியம்</th><th>முடிவு</th><th>ராசி</th><th>கிரகங்கள்</th></tr></thead><tbody>${(d.bhavas||[]).map(b=>{const ps=(d.planets||[]).filter(p=>p.bhava===b.house).map(p=>p.name).join(', ');return `<tr><td><b>${b.house}</b></td><td>${esc(b.arambha||'—')}</td><td><b>${esc(b.madhya||b.degree||'—')}</b></td><td>${esc(b.antya||'—')}</td><td>${esc(b.rasi||'—')}</td><td>${esc(ps||'—')}</td></tr>`}).join('')}</tbody></table></div>
@@ -1777,7 +1779,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
       await window.SMVEngineReady;const td=window.SMVOffline.transit(payload),pd=window.SMVOffline.panchang(payload);if(!td?.planets)throw new Error('Transit calculation failed');
       let h=`<div class="adv-section"><h3>🪐 ${ta?'கிரக கோச்சாரம்':'Planetary Transit'}</h3><div class="adv-scroll"><table class="adv-wide"><thead><tr><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'பாகை':'Degree'}</th><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><th>${ta?'பாதம்':'Pada'}</th><th>${ta?'நிலை':'Status'}</th></tr></thead><tbody>`;
       (td.planets||[]).forEach(x=>h+=`<tr><td>${esc(x.name)}</td><td>${S(x.rasi)}</td><td>${esc(x.degree)}</td><td>${esc(x.nakshatra)}</td><td>${esc(x.pada)}</td><td>${x.retrograde?'↶ Retrograde':'Direct'}</td></tr>`); h+=`</tbody></table></div></div>`;
-      h+=`<div class="adv-section"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="adv-scroll"><table class="adv-wide"><tbody><tr><th>${ta?'சூரிய ராசி':'Sun Sign'}</th><td>${S(pd.solarSign)}</td><th>${ta?'சந்திர ராசி':'Moon Sign'}</th><td>${S(pd.moonSign)}</td></tr><tr><th>${ta?'திதி':'Tithi'}</th><td>${esc(pd.tithi?.number)} — ${esc(pd.tithi?.name)}</td><th>${ta?'பக்ஷம்':'Paksha'}</th><td>${esc(pd.tithi?.half)}</td></tr><tr><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><td>${esc(pd.nakshatra?.number)} — ${esc(pd.nakshatra?.name)} / ${esc(pd.nakshatra?.pada)}</td><th>${ta?'யோகம்':'Yoga'}</th><td>${esc(pd.yoga?.number)} — ${esc(pd.yoga?.name)}</td></tr><tr><th>${ta?'கரணம்':'Karana'}</th><td>${esc(pd.karana?.name)}</td><th>${ta?'சூரிய உதயம்':'Sunrise'}</th><td>${esc(pd.sunrise)}</td></tr><tr><th>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</th><td>${esc(pd.sunset)}</td><th>${ta?'அயனாம்சம்':'Ayanamsa'}</th><td>${esc(pd.ayanamsa)}</td></tr></tbody></table></div></div>`;
+      h+=`<div class="adv-section"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="adv-scroll"><table class="adv-wide"><tbody><tr><th>${ta?'சூரிய ராசி':'Sun Sign'}</th><td>${S(pd.solarSign)}</td><th>${ta?'சந்திர ராசி':'Moon Sign'}</th><td>${S(pd.moonSign)}</td></tr><tr><th>${ta?'திதி':'Tithi'}</th><td>${esc(pd.tithi?.number)} — ${esc(pd.tithi?.name)}</td><th>${ta?'பக்ஷம்':'Paksha'}</th><td>${esc(pd.tithi?.half)}</td></tr><tr><th>${ta?'நட்சத்திரம்':'Nakshatra'}</th><td>${esc(pd.nakshatra?.number)} — ${esc(pd.nakshatra?.name)} / ${esc(pd.nakshatra?.pada)}</td><th>${ta?'யோகம்':'Yoga'}</th><td>${esc(pd.yoga?.number)} — ${esc(pd.yoga?.name)}</td></tr><tr><th>${ta?'கரணம்':'Karana'}</th><td>${esc(pd.karana?.name)}</td><th>${ta?'சூரிய உதயம்':'Sunrise'}</th><td>${esc(pd.sunrise)}</td></tr><tr><th>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</th><td>${esc(pd.sunset)}</td><th>${ta?'அயனாம்சம்':'Ayanamsa'}</th><td>${esc(formatAyanamsa(pd.ayanamsa))}</td></tr></tbody></table></div></div>`;
       root.insertAdjacentHTML('beforeend',h);
     }catch(e){root.insertAdjacentHTML('beforeend',`<div class="error"><b>${ta?'கோச்சாரம் / பஞ்சாங்கம் உருவாக்க முடியவில்லை.':'Transit / Panchang could not be calculated.'}</b><p class="small">${esc(e?.message||e)}</p></div>`);}
   }
@@ -2311,7 +2313,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
           <div><b>${ta?'சந்திர ராசி':'Moon Sign'}</b><span>${e(moonSign)}</span></div>
           <div><b>${ta?'சூரிய உதயம்':'Sunrise'}</b><span class="panchang-time-result">${e(p?.sunrise)}</span></div>
           <div><b>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</b><span class="panchang-time-result">${e(p?.sunset)}</span></div>
-          <div><b>${ta?'அயனாம்சம்':'Ayanamsa'}</b><span>${e(p?.ayanamsa)}</span></div>
+          <div><b>${ta?'அயனாம்சம்':'Ayanamsa'}</b><span>${e(formatAyanamsa(p?.ayanamsa))}</span></div>
         </div>
         <p class="smv-panchang-sentence">${summarySentence}</p>
       </div>
@@ -2328,7 +2330,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
       [ta?'கரணம்':'Karana',`${f(p?.karana?.name)}${eventRangeHtml(p?.karana)}`],
       [ta?'சூரிய உதயம்':'Sunrise',`<span class="panchang-time-result">${e(p?.sunrise)}</span>`],
       [ta?'சூரிய அஸ்தமனம்':'Sunset',`<span class="panchang-time-result">${e(p?.sunset)}</span>`],
-      [ta?'அயனாம்சம்':'Ayanamsa',e(p?.ayanamsa)],
+      [ta?'அயனாம்சம்':'Ayanamsa',e(formatAyanamsa(p?.ayanamsa))],
       [ta?'ராகு காலம்':'Rahu Kalam',`<span class="panchang-time-result">${e(p?.rahuKalam)}</span>`],
       [ta?'எமகண்டம்':'Yamagandam',`<span class="panchang-time-result">${e(p?.yamagandam)}</span>`],
       [ta?'குளிகை':'Gulikai',`<span class="panchang-time-result">${e(p?.gulikai)}</span>`],
@@ -2384,7 +2386,7 @@ function renderTransitPanchang(t,p,lang,rootId){
       [ta?'நட்சத்திரம்':'Nakshatra',`${fmt(p?.nakshatra?.name)} · ${esc2(p?.nakshatra?.pada||'')}${eventRangeHtml(p?.nakshatra)}`],
       [ta?'யோகம்':'Yoga',`${fmt(p?.yoga?.name||'—')}${eventRangeHtml(p?.yoga)}`], [ta?'கரணம்':'Karana',`${fmt(p?.karana?.name||'—')}${eventRangeHtml(p?.karana)}`],
       [ta?'சூரிய உதயம்':'Sunrise',`<span class="panchang-time-result">${esc2(p?.sunrise||'—')}</span>`], [ta?'சூரிய அஸ்தமனம்':'Sunset',`<span class="panchang-time-result">${esc2(p?.sunset||'—')}</span>`],
-      [ta?'அயனாம்சம்':'Ayanamsa',esc2(p?.ayanamsa||'—')], [ta?'ராகு காலம்':'Rahu Kalam',`<span class="panchang-time-result">${esc2(p?.rahuKalam||'—')}</span>`],
+      [ta?'அயனாம்சம்':'Ayanamsa',esc2(formatAyanamsa(p?.ayanamsa))], [ta?'ராகு காலம்':'Rahu Kalam',`<span class="panchang-time-result">${esc2(p?.rahuKalam||'—')}</span>`],
       [ta?'எமகண்டம்':'Yamagandam',`<span class="panchang-time-result">${esc2(p?.yamagandam||'—')}</span>`], [ta?'குளிகை':'Gulikai',`<span class="panchang-time-result">${esc2(p?.gulikai||'—')}</span>`],
       [ta?'நல்ல நேரம்':'Nalla Neram',`<span class="nalla-neram-time">${Array.isArray(p?.nallaNeram)?p.nallaNeram.map(esc2).join(' · '):esc2(p?.nallaNeram||'—')}</span>`]
     ];

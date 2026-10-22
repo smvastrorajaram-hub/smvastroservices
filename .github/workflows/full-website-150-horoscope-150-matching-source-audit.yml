@@ -40,6 +40,14 @@ jobs:
           node --check public/horoscope/offline/dasa_engine.browser.mjs
           node --check public/horoscope/marriage-matching.js
           node --check public/horoscope/marriage-basic-report.mjs
+      - name: Syntax-check report renderers and Admin workbench
+        run: |
+          node --check public/horoscope/prediction-online.js
+          node --check public/horoscope/horoscope-predictions.js
+          node --check public/horoscope/prediction-admin-workbench.mjs
+          node --check tests/report-prose-authoring-regression.mjs
+      - name: Report prose, print layout and per-chart authoring regression
+        run: node tests/report-prose-authoring-regression.mjs
       - name: Admin Prediction Rules published fallback regression
         run: node tests/prediction-rules-published-regression.mjs
       - name: B.V. Raman Chapter XIV source-rule positive/negative/unknown examples

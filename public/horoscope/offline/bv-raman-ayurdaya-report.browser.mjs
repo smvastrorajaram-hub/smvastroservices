@@ -425,10 +425,10 @@ export function bvRamanAyurdayaReportHtml(options={}) {
   return '<div class="smv-cg-rajan-ayurdaya smv-bv-raman-ayurdaya-skin" data-smv-bv-raman-ayurdaya-section="1">'+
     '<section class="smv-bv-raman-ayurdaya" data-smv-bv-raman-ayurdaya="1">'+
     '<h3>'+esc(ta?'அஷ்டகவர்க்க ஆயுர்த்தாயம்':'Ashtakavarga Ayurdaya')+'</h3>'+
+    '<p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>'+
     numericTable+
     '<h4>'+esc(ta?'ஆயுள் வகைக்கான பொருந்திய ஜோதிட விதிகள்':'Matched horoscope rules for longevity categories')+'</h4>'+
     categoryTable+
     '</section>'+
-    '<p class="small smv-ayurdaya-disclaimer">'+esc(disclaimer)+'</p>'+
     '</div>';
 }

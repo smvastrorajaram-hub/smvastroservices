@@ -15,7 +15,7 @@ for(const [zone,date,time] of [['America/New_York','2025-03-09','02:30'],['Europ
 }
 assert.throws(()=>offsetMinutesAt('Invalid/Timezone','2026-10-16','12:00'),RangeError);checks++;
 const file=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
-includes(file('public/horoscope/report-print.js'),"root.querySelectorAll('[data-smv-screen-only^=\"daily-\"],.panchang-card,.hora-card')");
+includes(file('public/horoscope/report-print.js'),"root.querySelectorAll('[data-smv-screen-only^=\"daily-\"],.panchang-card,.hora-card,.smv-birth-summary')");
 includes(file('public/horoscope/report-print.js'),"return 'SMVHS-'+safePdfFilenamePart");
 includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-panchang"');
 includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-hora"');

@@ -113,7 +113,7 @@
   // Transit chart/table remain in saved Horoscope PDF and print reports.
   // This changes only the disposable print DOM, never the saved report HTML.
   if(report.feature==='advanced_analysis'){
-    root.querySelectorAll('[data-smv-screen-only^="daily-"],.panchang-card,.hora-card').forEach(e=>e.remove());
+    root.querySelectorAll('[data-smv-screen-only^="daily-"],.panchang-card,.hora-card,.smv-birth-summary').forEach(e=>e.remove());
     root.querySelectorAll('.transit-panchang-grid').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.transit-card'))e.remove();});
   }
   populatePremiumCover(report,root,tamil);
