@@ -1905,7 +1905,7 @@ function mm332RefineTimeline(markup,data){
  if(!Array.isArray(years)||years.length<2)return markup;
  const tmp=document.createElement('template');tmp.innerHTML=markup;
  const nodes=[...tmp.content.querySelectorAll('.mm-v308-year')],planetKey={'குரு':'Jupiter','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','Jupiter':'Jupiter','Saturn':'Saturn','Rahu':'Rahu','Ketu':'Ketu'};
- let warningSeen=false;
+ let warningSeen=false;const unchangedBySide=new Map();
  // Reused human-language templates are not separate predictions. Keep every
  // dated MD/AD window and its natal evidence; suppress only an identical
  // generic explanatory sentence after its first occurrence for each side.
@@ -1929,7 +1929,7 @@ function mm332RefineTimeline(markup,data){
     if(i>0&&key&&prev?.pos?.[key]?.sign===curr?.pos?.[key]?.sign){removed.push(match[1]);p.remove();}
     p=next;
    }
-   if(removed.length){const marker=document.createElement('p');marker.className='mm-v332-unchanged';marker.textContent=T('No change from the previous year’s calculated midpoint sign for ','முந்தைய ஆண்டின் இடைத்தேதியுடன் ஒப்பிடும்போது ராசி மாறாத கிரகங்கள்: ')+[...new Set(removed)].join(', ')+T('. Their detailed natal-house interpretation is not repeated; actual ingress dates remain in the calculated transitions below.','. ஏற்கெனவே விளக்கிய அதே பாவப் பலனை மீண்டும் அச்சிடவில்லை; பெயர்ச்சி தேதிகள் கீழுள்ள கணக்குப் பட்டியலில் தொடரும்.');h.after(marker);}
+   const unchanged=[...new Set(removed)],unchangedKey=unchanged.map(p=>planetKey[p]||p).sort().join('|'),previousUnchanged=unchangedBySide.get(title)||'';if(unchangedKey&&unchangedKey!==previousUnchanged){const marker=document.createElement('p');marker.className='mm-v332-unchanged';marker.textContent=T('No change from the previous year’s calculated midpoint sign for ','முந்தைய ஆண்டின் இடைத்தேதியுடன் ஒப்பிடும்போது ராசி மாறாத கிரகங்கள்: ')+unchanged.join(', ')+T('.','.');h.after(marker);}unchangedBySide.set(title,unchangedKey);
   }
   for(const p of year.querySelectorAll('p')){
    let t=p.textContent||'';
