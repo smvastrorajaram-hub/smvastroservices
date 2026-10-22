@@ -35,6 +35,18 @@ assert.equal(occurrences(caution), 2, 'important uncertainty/caution is preserve
 assert.equal(occurrences(datedA), 1, 'first dated prediction remains');
 assert.equal(occurrences(datedB), 1, 'different dated prediction remains');
 
+const matchingHtml = api.matchingHtml({ ta: {
+  intro: '', ageNote: '', verdict: '', clusters: [],
+  topics: [
+    { index: 1, title: 'உரையாடல்', paragraphs: [repeated, caution] },
+    { index: 2, title: 'குடும்ப முடிவு', paragraphs: [repeated, caution] }
+  ],
+  timing: [repeated]
+}}, 'ta');
+const matchingOccurrences = value => matchingHtml.split(value).length - 1;
+assert.equal(matchingOccurrences(repeated), 1, 'an exact repeated long prediction sentence is displayed once in Matching too');
+assert.equal(matchingOccurrences(caution), 2, 'Matching preserves the caution for both distinct topics');
+
 // Confirm the active report path shares the same sentence set across both
 // halves, not only the helper used by a standalone caller.
 assert.ok(horoscopePredictions.includes('narrativeState={seen:new Set()}'), 'active renderer creates one report-scoped state');
@@ -64,4 +76,4 @@ assert.ok(!workbench.includes('setDoc('), 'per-chart authored prose does not pub
 assert.ok(workbench.includes('never publishes') && workbench.includes('global Draft/Publish rules'),
   'individual authoring is explicitly isolated from global A/B publishing');
 
-console.log('PASS — repeat prose removed, cautions/date-specific wording preserved, print-only duplicate trimmed, Ayanamsa formatting, Ayurdaya disclosure and local per-chart authoring guards.');
+console.log('PASS — repeat prose removed in Horoscope and Matching, cautions/date-specific wording preserved, print-only duplicate trimmed, Ayanamsa formatting, Ayurdaya disclosure and local per-chart authoring guards.');
