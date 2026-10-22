@@ -1905,7 +1905,7 @@ function mm332RefineTimeline(markup,data){
  if(!Array.isArray(years)||years.length<2)return markup;
  const tmp=document.createElement('template');tmp.innerHTML=markup;
  const nodes=[...tmp.content.querySelectorAll('.mm-v308-year')],planetKey={'குரு':'Jupiter','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','Jupiter':'Jupiter','Saturn':'Saturn','Rahu':'Rahu','Ketu':'Ketu'};
- let warningSeen=false;const unchangedBySide=new Map();
+ let warningSeen=false,nodeOwnershipNoteSeen=false;const unchangedBySide=new Map();
  // Reused human-language templates are not separate predictions. Keep every
  // dated MD/AD window and its natal evidence; suppress only an identical
  // generic explanatory sentence after its first occurrence for each side.
@@ -1914,7 +1914,8 @@ function mm332RefineTimeline(markup,data){
   'கூட்டு முடிவை முன்னெடுக்க பேசுவதற்கான இடம் உள்ளது; D1–D9 ஆதரவும் பிற தோஷ ஆய்வும் இணங்கினால் குடும்பத் திட்டங்களை நடைமுறைப்படுத்த பரிசீலிக்கலாம்.',
   'The partner-related decision may move directly into focus; married partners should include each other’s needs in their plans.',
   'ஒரு பக்கச் சிரமத்தால் முழுக் காலத்தையும் எதிர்மறையாகக் கருத வேண்டாம்.',
-  'One challenging division should not be treated as evidence that the whole period is negative.'
+  'One challenging division should not be treated as evidence that the whole period is negative.',
+  'இருவரின் தேவையும் ஒரே மாதிரியாக இருக்கும் என்று எதிர்பார்க்க வேண்டாம்.'
  ];
  for(let i=0;i<nodes.length;i++){
   const year=nodes[i],curr=years[i],prev=years[i-1],heads=[...year.querySelectorAll('h4')];
@@ -1935,12 +1936,21 @@ function mm332RefineTimeline(markup,data){
    let t=p.textContent||'';
    const who=(()=>{let q=p.previousElementSibling;while(q&&q.tagName!=='H4')q=q.previousElementSibling;return q?.textContent||'period';})();
    for(const phrase of genericPhrases){if(!t.includes(phrase))continue;
-     const key=who+'|'+phrase;
+     const key=phrase;
      if(genericUsed.has(key))t=t.replace(phrase,'').replace(/\s{2,}/g,' ').trim();
      else genericUsed.add(key);
    }
-   // Rahu/Ketu do not own conventional houses. Empty ownership lists must not leak into the PDF.
-   t=t.replace(/,\s+பாவங்களுக்கு அதிபதி\./g,'. ராகு/கேதுவிற்கு வழக்கமான தனிப் பாவாதிபத்தியம் இல்லாததால் இருப்பிடமும் ராசிநாதர் தொடர்பும் அடிப்படையாகும்.').replace(/, ruling houses\s*\./gi,'. The lunar nodes have no conventional house ownership; their sign-lord and placements provide context.');
+   // Rahu/Ketu have no conventional house ownership. Keep this essential explanation once per report,
+   // not once for every timed window; the actual lord/house witnesses remain in each row.
+   const tamilNodeOwnership=/,\s+பாவங்களுக்கு அதிபதி\./g,englishNodeOwnership=/, ruling houses\s*\./gi;
+   if(tamilNodeOwnership.test(t)){
+    t=t.replace(tamilNodeOwnership,'.');
+    if(!nodeOwnershipNoteSeen){t+=' ராகு/கேதுவிற்கு வழக்கமான தனிப் பாவாதிபத்தியம் இல்லாததால் இருப்பிடமும் ராசிநாதர் தொடர்பும் அடிப்படையாகும்.';nodeOwnershipNoteSeen=true;}
+   }
+   if(englishNodeOwnership.test(t)){
+    t=t.replace(englishNodeOwnership,'.');
+    if(!nodeOwnershipNoteSeen){t+=' The lunar nodes have no conventional house ownership; their sign-lord and placements provide context.';nodeOwnershipNoteSeen=true;}
+   }
    const warn='இருவருக்கும் ஒரே நேரத்தில் குரு கோச்சார ஆதரவு உறுதியாகவில்லை; தசைப் பலனின் நல்ல அம்சங்களை மட்டும் வைத்து நிகழ்வு உறுதி செய்ய வேண்டாம்.';
    const warnEn='Jupiter does not simultaneously confirm support for both; a favourable period alone should not be treated as an assured event.';
    if(t.includes(warn)||t.includes(warnEn)){
