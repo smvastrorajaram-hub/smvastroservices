@@ -524,23 +524,24 @@ body.smv-v12-theme .smv-dialog-actions .btn.danger{
   color:#fff!important;
   -webkit-text-fill-color:#fff!important;
 }
-/* Fit the Blog Cover Image picker button fully inside its input on mobile. */
+/* Blog cover picker: let the native file-input line box size itself so its gold
+   button stays vertically centred and is not clipped by a fixed line-height. */
 body.smv-v12-theme #blogCoverFile{
   display:block!important;
   box-sizing:border-box!important;
-  height:48px!important;
-  min-height:48px!important;
-  padding:5px 8px!important;
-  line-height:32px!important;
-  overflow:hidden!important;
+  min-height:56px!important;
+  height:auto!important;
+  padding:6px 10px!important;
+  line-height:normal!important;
+  vertical-align:middle!important;
+  overflow:visible!important;
 }
 body.smv-v12-theme #blogCoverFile::file-selector-button,
 body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
-  display:inline-block!important;
   box-sizing:border-box!important;
-  height:32px!important;
-  min-height:32px!important;
-  padding:0 12px!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:8px 12px!important;
   margin:0 10px 0 0!important;
   border:1px solid #dfbd73!important;
   border-radius:3px!important;
@@ -549,7 +550,7 @@ body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
   -webkit-text-fill-color:#24103f!important;
   font:inherit!important;
   font-weight:800!important;
-  line-height:1!important;
+  line-height:normal!important;
   vertical-align:middle!important;
   cursor:pointer!important;
 }
