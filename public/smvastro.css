@@ -3982,7 +3982,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-copy{position:absolute;z-index:3;left:12px;right:12px;top:auto;bottom:12px;width:auto;min-height:0;margin:0;padding:clamp(8px,3vw,12px) clamp(14px,4vw,22px) clamp(12px,3vw,16px);box-sizing:border-box;color:#fff8e7;background:transparent;border:0;border-radius:0;box-shadow:none;transform:none;text-align:left;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-mobile-head{display:block;}
   html body.smv-v12-theme #home .smv33-desktop-head{display:none;}
-  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#7a2e31;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,2.7vw,13px);line-height:1.32;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-shadow:none;}
+  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#f3d99b;-webkit-text-fill-color:#f3d99b;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,2.7vw,13px);line-height:1.32;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1{margin:0 0 15px;color:#fff8e7;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,8vw,38px);line-height:1.12;font-weight:800;letter-spacing:-.15px;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1 span{color:#ffd56a;font-weight:800;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy p{margin:0 0 10px;color:#fff8e7;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3.6vw,16px);line-height:1.53;font-weight:500;text-shadow:none;}
