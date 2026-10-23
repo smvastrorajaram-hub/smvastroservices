@@ -4210,10 +4210,10 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a:not(.hidden),
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.hidden){
     display:inline-flex!important;
-    flex:1 1 0!important;
-    width:0!important;
-    min-width:0!important;
-    max-width:none!important;
+    flex:0 0 clamp(82px,8vw,108px)!important;
+    width:clamp(82px,8vw,108px)!important;
+    min-width:clamp(82px,8vw,108px)!important;
+    max-width:clamp(82px,8vw,108px)!important;
     min-height:40px!important;
     height:40px!important;
     max-height:40px!important;
