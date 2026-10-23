@@ -41,17 +41,20 @@ export function sundayOf(dateString) {
   return d.toISOString().slice(0, 10);
 }
 
-export function currentWeek(dateString) {
-  const start = new Date(sundayOf(String(dateString).slice(0, 10)) + 'T12:00:00Z');
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 6);
+export function lastCompletedWeek(dateString) {
+  const anchor = new Date(String(dateString) + 'T12:00:00Z');
+  const daysSinceLastSaturday = (anchor.getUTCDay() + 1) % 7 || 7;
+  const end = new Date(anchor);
+  end.setUTCDate(end.getUTCDate() - daysSinceLastSaturday);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 6);
   return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
 export function periodReference(period, dateString) {
   const d = String(dateString).slice(0, 10);
   if (period === 'weekly') {
-    const range = currentWeek(d);
+    const range = lastCompletedWeek(d);
     return { date: range.start, key: range.start, start: range.start, end: range.end };
   }
   if (period === 'monthly') {
