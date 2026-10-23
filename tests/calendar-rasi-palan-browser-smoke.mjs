@@ -68,6 +68,8 @@ try {
   await page.screenshot({ path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname, fullPage: true });
 
   // Validate the requested Tamil New Year label and 12 × 8 render.
+  await page.click('#calTamil');
+  await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 });
   await page.click('#calRasiPalan [data-section="tamilNewYear"]');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
