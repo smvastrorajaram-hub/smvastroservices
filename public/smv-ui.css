@@ -152,7 +152,7 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #smv-content-hub :where(.feature-tile,.card){height:100%}
 .faq-list details{border-color:var(--smv207-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important;}
 .faq-list summary{font-weight:750;cursor:pointer;color:#f3d99b}
-.faq-list details[open] summary{color:#f3d99b}
+.faq-list details[open] summary{color:#FF2D93!important;-webkit-text-fill-color:#FF2D93!important;font-weight:900!important}
 
 /* Private consultation — V190 layout migrated out of inline page CSS. */
 #privateConsultationQuestionCard{position:relative}
@@ -261,8 +261,8 @@ body.smv-v12-theme .smv-withdraw-btn.is-green{background:#16a34a!important;borde
 body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn.is-red:disabled{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;opacity:1!important}
 
 /* Accessible heading level without changing the compact install-card appearance. */
-.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-weight:800!important}
-@media(max-width:760px){.smv-install-app-copy h2{font-size:16px!important}}
+.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-weight:800!important;text-transform:uppercase!important}
+@media(max-width:760px){.smv-install-app-copy h2{font-size:clamp(12px,4.5vw,16px)!important;white-space:nowrap!important;text-align:center!important}}
 
 /* Remaining structural presentation migrated from inline homepage markup. */
 #smv-content-hub .smv-v173-subregion+.smv-v173-subregion,#adminBlogsMedia{margin-top:14px}
