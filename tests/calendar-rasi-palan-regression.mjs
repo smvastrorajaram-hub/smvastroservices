@@ -15,6 +15,7 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const rulesSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan-rules.mjs', import.meta.url), 'utf8');
 const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan.mjs', import.meta.url), 'utf8');
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
