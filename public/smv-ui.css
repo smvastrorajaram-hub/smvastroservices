@@ -524,36 +524,6 @@ body.smv-v12-theme .smv-dialog-actions .btn.danger{
   color:#fff!important;
   -webkit-text-fill-color:#fff!important;
 }
-/* Blog cover picker: let the native file-input line box size itself so its gold
-   button stays vertically centred and is not clipped by a fixed line-height. */
-body.smv-v12-theme #blogCoverFile{
-  display:block!important;
-  box-sizing:border-box!important;
-  min-height:56px!important;
-  height:auto!important;
-  padding:6px 10px!important;
-  line-height:normal!important;
-  vertical-align:middle!important;
-  overflow:visible!important;
-}
-body.smv-v12-theme #blogCoverFile::file-selector-button,
-body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
-  box-sizing:border-box!important;
-  height:auto!important;
-  min-height:0!important;
-  padding:8px 12px!important;
-  margin:0 10px 0 0!important;
-  border:1px solid #dfbd73!important;
-  border-radius:3px!important;
-  background:linear-gradient(135deg,#dfbd73,#f2d79a)!important;
-  color:#24103f!important;
-  -webkit-text-fill-color:#24103f!important;
-  font:inherit!important;
-  font-weight:800!important;
-  line-height:normal!important;
-  vertical-align:middle!important;
-  cursor:pointer!important;
-}
 /* Mobile hero kicker only; desktop hero and header colours stay unchanged. */
 @media(max-width:899px){
   html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{
