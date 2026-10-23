@@ -82,6 +82,22 @@ try {
     return h && /Weekly|வாரம்/.test(h.textContent) && p && /Week:|வாரம்:/.test(p.textContent);
   }, { timeout: 90000 });
   assert.equal(await page.$$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 12, 'Weekly output should cover all 12 Rasis');
+  // Capture the mobile layout before rendering 96 detailed prediction cards.
+  // This keeps screenshot rasterization independent of the heavier result DOM.
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
+  await page.screenshot({
+    path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+  await page.screenshot({
+    path: new URL('calendar-rasi-palan-desktop.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+
   await page.select('#calRasiPalan #rpPeriod', 'monthly');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
@@ -89,15 +105,6 @@ try {
     const p = document.querySelector('#calRasiPalan .rp-results-title p');
     return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
   }, { timeout: 90000 });
-  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-  await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
-  // Capture the first viewport only. Full-page capture of 12 × 8 result cards
-  // rasterized an extremely tall document and timed out in Chromium.
-  await page.screenshot({
-    path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname,
-    fullPage: false,
-    captureBeyondViewport: false
-  });
 
   // Validate the requested Tamil New Year label and 12 × 8 render.
   await page.click('#calTamil');
