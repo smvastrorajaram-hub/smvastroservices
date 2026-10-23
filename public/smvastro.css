@@ -3996,7 +3996,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-trust span{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;min-width:0;padding:0 5px;text-align:center;text-shadow:none!important;}
   html body.smv-v12-theme #home .smv33-trust span + span::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:1px;background:rgba(122,75,22,.42);}
   html body.smv-v12-theme #home .smv33-trust b{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;overflow:hidden;border:1px solid rgba(122,75,22,.55);border-radius:50%;background:rgba(255,250,240,.82);color:#7a4b16;font-size:20px;line-height:1;}
-  html body.smv-v12-theme #home .smv33-trust img{display:block;width:24px;height:24px;object-fit:cover;border-radius:50%;}
+  html body.smv-v12-theme #home .smv33-trust img{width:24px;height:24px;object-fit:contain;}
   @media(max-width:360px){
     html body.smv-v12-theme #home .smv33-copy{margin:0 8px;padding:clamp(8px,3vw,12px) 10px 12px;}
     html body.smv-v12-theme #home .smv33-kicker{margin-bottom:6px;font-size:11px;line-height:1.3;}
