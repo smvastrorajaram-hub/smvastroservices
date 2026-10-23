@@ -1,26 +1,26 @@
 /* SMV ASTRO V207 — consolidated visual system.
    Presentation only: no display-state, auth, payment, Firebase, calculation or data-flow logic. */
 :root{
-  --smv207-red:#8b1717;
-  --smv207-red-strong:#701010;
-  --smv207-red-soft:#a52a23;
-  --smv207-gold:#b88935;
-  --smv207-gold-text:#806022;
-  --smv207-gold-soft:#d8bd78;
-  --smv207-ivory:#fffaf0;
-  --smv207-paper:#fffdf8;
-  --smv207-surface:#ffffff;
-  --smv207-ink:#2d2522;
-  --smv207-muted:#6e625b;
-  --smv207-line:#e4d7bf;
-  --smv207-success:#247241;
-  --smv207-danger:#9c2525;
-  --smv207-info:#365d7a;
-  --smv207-radius-sm:8px;
-  --smv207-radius:12px;
-  --smv207-radius-lg:16px;
-  --smv207-shadow-sm:0 4px 14px rgba(69,38,22,.06);
-  --smv207-shadow:0 10px 28px rgba(69,38,22,.085);
+  --smv207-red:#dfbd73;
+  --smv207-red-strong:#b28a48;
+  --smv207-red-soft:#f2d79a;
+  --smv207-gold:#e5c37d;
+  --smv207-gold-text:#e5c77d;
+  --smv207-gold-soft:#ae8b50;
+  --smv207-ivory:#0a1227;
+  --smv207-paper:#111c33;
+  --smv207-surface:transparent;
+  --smv207-ink:#f2eddf;
+  --smv207-muted:#c4ccdc;
+  --smv207-line:rgba(223,189,115,.18);
+  --smv207-success:#74d7a5;
+  --smv207-danger:#ff8994;
+  --smv207-info:#a0bce8;
+  --smv207-radius-sm:0;
+  --smv207-radius:0;
+  --smv207-radius-lg:0;
+  --smv207-shadow-sm:none;
+  --smv207-shadow:none;
   --smv207-content:1180px;
   --smv207-reading:840px;
   --smv207-space-1:4px;
@@ -96,13 +96,13 @@ body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#ast
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
 }
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) textarea{min-height:92px;resize:vertical}
-body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#91867e;opacity:1}
+body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#c4ccdc!important;opacity:1;-webkit-text-fill-color:#c4ccdc!important;}
 body.smv-v12-theme :where(input,select,textarea):focus-visible{
   outline:0!important;
   border-color:var(--smv207-red)!important;
   box-shadow:0 0 0 3px rgba(139,23,23,.13)!important;
 }
-body.smv-v12-theme :where(input,select,textarea):disabled{background:#f5f1ea!important;color:#857b73!important;cursor:not-allowed}
+body.smv-v12-theme :where(input,select,textarea):disabled{background:#1b2740!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
 
 /* Buttons */
@@ -249,8 +249,8 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
 }
 
 /* Registration choices retain semantic distinction inside the unified system. */
-body.smv-v12-theme .registration-option.customer-option{background:linear-gradient(180deg,#fff 0,#fff7f5 100%)!important;border-color:#e4c1bc!important}
-body.smv-v12-theme .registration-option.astrologer-option{background:linear-gradient(180deg,#fffdf5 0,#fff3c9 100%)!important;border-color:#d5b35b!important}
+body.smv-v12-theme .registration-option.customer-option{background:transparent!important;border-color:transparent!important;border:0!important;box-shadow:none!important;color:var(--smv207-ink)!important;-webkit-text-fill-color:var(--smv207-ink)!important;}
+body.smv-v12-theme .registration-option.astrologer-option{background:transparent!important;border-color:transparent!important;border:0!important;box-shadow:none!important;color:var(--smv207-ink)!important;-webkit-text-fill-color:var(--smv207-ink)!important;}
 
 /* Semantic button variants — preserve meaning and the official Google-style control. */
 body.smv-v12-theme .btn.alt{background:#fff!important;color:var(--smv207-red)!important;border-color:var(--smv207-red)!important;box-shadow:none!important}
