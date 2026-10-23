@@ -8,7 +8,7 @@
   if(document.querySelector('link[data-smv-dashboard-typography]')) return;
   const link=document.createElement('link');
   link.rel='stylesheet';
-  link.href='dashboard-typography.css';
+  link.href='dashboard-typography.css?v=20261024-admin-blog-filepicker-gold-v2';
   link.dataset.smvDashboardTypography='true';
   document.head.appendChild(link);
 })();
