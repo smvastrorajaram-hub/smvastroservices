@@ -51,7 +51,7 @@ body.smv-legal-page,
   -webkit-font-smoothing:antialiased;
 }
 html[lang="ta"] body{font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.68}
-body.smv-v12-theme{background:linear-gradient(180deg,#fffdf9 0,#fff 28%,#fffdf8 100%)}
+body.smv-v12-theme{background:linear-gradient(180deg,#fffdf9 0,#fff 28%,#fffdf8 100%);background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%);}
 
 /* Content rhythm — intentionally excludes premium photographic header/hero typography. */
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation,.smv-consult-dedicated-shell) :where(h1,h2,h3,h4),
@@ -76,36 +76,23 @@ body.smv-v12-theme :where(#askNowSection,#about,#faq,#smv-content-hub){margin-bl
 body.smv-v12-theme :where(#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact){max-width:var(--smv207-content);margin-inline:auto;padding-inline:clamp(10px,2.4vw,24px)}
 
 /* Cards / panels */
-body.smv-v12-theme :where(.card,.stat,.registration-option,.feature-tile,.admin-content-row,.admin-blog-row,.astro-public-card){
-  border-color:var(--smv207-line)!important;
-  border-radius:var(--smv207-radius)!important;
-  box-shadow:var(--smv207-shadow-sm)!important;
-}
-body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:var(--smv207-surface)!important}
+body.smv-v12-theme :where(.card,.stat,.registration-option,.feature-tile,.admin-content-row,.admin-blog-row,.astro-public-card){border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:transparent!important}
 body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card) :where(p,li,.small){overflow-wrap:anywhere}
-body.smv-v12-theme .card::before{height:3px!important;width:54px!important;background:linear-gradient(90deg,var(--smv207-red),var(--smv207-gold))!important;margin-bottom:var(--smv207-space-3)!important}
-body.smv-v12-theme .stat{background:linear-gradient(180deg,#fff 0,#fffaf2 100%)!important;padding:clamp(12px,1.5vw,18px)!important}
-body.smv-v12-theme .stat b{color:var(--smv207-red)!important;font-size:clamp(22px,2.4vw,29px)!important;line-height:1.15!important}
+body.smv-v12-theme .card::before{content:none!important;display:none!important}
+body.smv-v12-theme .stat{background:transparent!important;padding:18px 0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+body.smv-v12-theme .stat b{color:#f3d99b!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
 
 /* Forms */
-body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{
-  color:#463b35;
-  font-weight:650;
-  line-height:1.35;
-}
+body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:#f2eddf;font-weight:650;line-height:1.4}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
   width:100%;
   max-width:100%;
   min-height:44px;
   box-sizing:border-box;
-  padding:10px 12px;
-  border:1px solid #d8cbb8!important;
-  border-radius:var(--smv207-radius-sm)!important;
-  background:#fff!important;
-  color:var(--smv207-ink)!important;
+  padding:10px 12px;border:1px solid rgba(223,189,115,.28)!important;border-radius:0!important;background:#17243d!important;color:#f2eddf!important;
   font:inherit;
-  line-height:1.35;
-  box-shadow:0 1px 2px rgba(60,35,20,.025) inset;
+  line-height:1.35;box-shadow:none;
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
 }
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) textarea{min-height:92px;resize:vertical}
@@ -130,15 +117,15 @@ body.smv-v12-theme .btn,
   text-decoration:none;
   transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
 }
-body.smv-v12-theme .btn{border-color:var(--smv207-red-strong)!important;background:linear-gradient(135deg,var(--smv207-red),var(--smv207-red-soft))!important;color:#fff!important;box-shadow:0 5px 14px rgba(112,16,16,.15)!important}
-body.smv-v12-theme .btn.gray{background:#fff!important;color:var(--smv207-red)!important;border:1px solid #cdaaaa!important;box-shadow:none!important}
+body.smv-v12-theme .btn{border:1px solid #dfbd73!important;border-radius:0!important;background:#dfbd73!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;box-shadow:none!important;font-weight:800!important}
+body.smv-v12-theme .btn.gray{background:transparent!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
 body.smv-v12-theme .btn:where(:hover,:focus-visible),.seo-page :where(.seo-action,.related-links a):where(:hover,:focus-visible){filter:brightness(.97);transform:translateY(-1px)}
 body.smv-v12-theme .btn:focus-visible,.seo-page a:focus-visible,body.smv-legal-page a:focus-visible{outline:3px solid rgba(184,137,53,.35)!important;outline-offset:2px}
 body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow:none!important;cursor:not-allowed}
 body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:center;flex-wrap:wrap}
 
 /* Dashboard — preserve compact information hierarchy while making it consistent. */
-#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:var(--smv207-red)!important;letter-spacing:.02em!important}
+#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:#f3d99b!important;letter-spacing:.015em!important;font-family:Georgia,"Noto Sans Tamil",serif!important;font-weight:750!important}
 #dashboardContent :where(.card,.stat),#admin :where(.card,.stat,.admin-content-row){min-width:0}
 #dashboardContent :where(.small,label){font-size:14px!important;font-weight:600!important}
 #dashboardContent :where(.result,.meta,.timestamp,.status-text){font-size:12px!important;font-weight:400!important}
@@ -147,7 +134,7 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #dashboardContent :where(.badge,[class*="status-"]),#admin :where(.badge,[class*="status-"]){border-radius:999px!important;font-weight:800!important;line-height:1.2!important}
 #admin > :where(.card,.admin-content-row){margin-block:10px}
 #adminSummary{margin-top:16px}
-#admin :where(h3){padding-bottom:7px;border-bottom:1px solid #eee3d1}
+#admin :where(h3){padding-bottom:0;border-bottom:0}
 #admin .action-row[style*="space-between"]{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 #astroRegistrationForm :where(input,select,textarea){width:100%;box-sizing:border-box;padding:10px 12px;margin:5px 0;border:1px solid #d8cbb8;border-radius:var(--smv207-radius-sm)}
 
@@ -163,7 +150,7 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 /* Public content / FAQ */
 #smv-content-hub .home-rule,#about .home-rule,#faq .home-rule{margin-bottom:var(--smv207-space-4)}
 #smv-content-hub :where(.feature-tile,.card){height:100%}
-.faq-list details{border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius)!important;background:#fff!important;box-shadow:none!important}
+.faq-list details{border-color:var(--smv207-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important;}
 .faq-list summary{font-weight:750;cursor:pointer;color:#49362f}
 .faq-list details[open] summary{color:var(--smv207-red)}
 
@@ -241,7 +228,7 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
 @media(max-width:760px){
   :root{--smv207-h2:clamp(21px,5.8vw,26px);--smv207-h3:clamp(17px,4.6vw,21px)}
   body.smv-v12-theme :where(#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact){padding-inline:8px}
-  body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){padding:clamp(11px,3.6vw,16px)!important}
+  body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:transparent!important}
   body.smv-v12-theme .action-row>.btn{flex:1 1 auto;min-width:min(140px,100%)}
   #smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important}
   body.smv-legal-page>header{position:static;align-items:flex-start;flex-direction:column}
