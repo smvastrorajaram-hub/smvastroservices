@@ -180,9 +180,9 @@ body.smv-v12-theme #smvPublicQuestionWindow #askNowBackBtn{
   box-shadow:none!important;
 }
 body.smv-v12-theme #modal.auth-modal-active .auth-shell .btn:not(.auth-google),
-body.smv-v12-theme #astro-register-form #astroRegistrationForm button[type="submit"],
-body.smv-v12-theme #smvPublicQuestionWindow #ask-flow button[type="submit"],
-body.smv-v12-theme #privateConsultationQuestionCard button[type="submit"],
+body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(button[type="submit"],.btn),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(button[type="submit"],.btn),
+body.smv-v12-theme #privateConsultationQuestionCard :where(button[type="submit"],.btn),
 body.smv-v12-theme #modal.auth-modal-active #googleAuthBtn{
   background:var(--smv207-form-magenta-deep)!important;
   color:var(--smv207-form-white)!important;
