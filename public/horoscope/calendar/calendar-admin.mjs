@@ -210,8 +210,8 @@ async function publish() {
   const button = $('publish');
   button.disabled = true;
   try {
-    // Publishing also saves the text currently being edited.
-    commitCurrentPrediction(false);
+    // Include the text currently being edited when present; mode-only publishing is also allowed.
+    if (String($('prediction').value || '').trim()) commitCurrentPrediction(false);
     const type = $('type').value;
     const payload = {
       schemaVersion: 1,
