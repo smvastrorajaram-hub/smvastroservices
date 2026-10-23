@@ -486,19 +486,30 @@ body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn
 #smv-content-hub .smv-v173-subregion+.smv-v173-subregion,#adminBlogsMedia{margin-top:14px}
 #dashboard,#admin{margin-top:45px}
 #dashboard>div:first-child,#admin>.card:first-child>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
- 
-/* SMV ASTRO dialog branding and accessible native file-picker controls. */
+
+/* SMV ASTRO dialogs: keep the logo inside the existing small circular badge. */
+body.smv-v12-theme .smv-dialog-icon-brand{
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+  min-height:52px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
 body.smv-v12-theme .smv-dialog-brand{
   display:block!important;
-  width:64px!important;
-  height:64px!important;
-  max-width:64px!important;
-  margin:0 auto 12px!important;
-  object-fit:contain!important;
-  border:1px solid #dfbd73!important;
+  width:44px!important;
+  height:44px!important;
+  max-width:44px!important;
+  max-height:44px!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:cover!important;
+  border:0!important;
   border-radius:50%!important;
   background:#24103f!important;
-  box-shadow:0 3px 12px rgba(0,0,0,.18)!important;
+  box-shadow:none!important;
 }
 body.smv-v12-theme .smv-dialog-actions .btn.gray{
   background:#fffaf0!important;
@@ -513,13 +524,24 @@ body.smv-v12-theme .smv-dialog-actions .btn.danger{
   color:#fff!important;
   -webkit-text-fill-color:#fff!important;
 }
-/* Native Chromium/WebKit file buttons previously inherited light text on white. */
-body.smv-v12-theme #arPhoto::file-selector-button,
+/* Fit the Blog Cover Image picker button fully inside its input on mobile. */
+body.smv-v12-theme #blogCoverFile{
+  display:block!important;
+  box-sizing:border-box!important;
+  height:48px!important;
+  min-height:48px!important;
+  padding:5px 8px!important;
+  line-height:32px!important;
+  overflow:hidden!important;
+}
 body.smv-v12-theme #blogCoverFile::file-selector-button,
-body.smv-v12-theme #arPhoto::-webkit-file-upload-button,
 body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
-  padding:9px 12px!important;
-  margin-right:10px!important;
+  display:inline-block!important;
+  box-sizing:border-box!important;
+  height:32px!important;
+  min-height:32px!important;
+  padding:0 12px!important;
+  margin:0 10px 0 0!important;
   border:1px solid #dfbd73!important;
   border-radius:3px!important;
   background:linear-gradient(135deg,#dfbd73,#f2d79a)!important;
@@ -527,6 +549,14 @@ body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
   -webkit-text-fill-color:#24103f!important;
   font:inherit!important;
   font-weight:800!important;
-  line-height:1.2!important;
+  line-height:1!important;
+  vertical-align:middle!important;
   cursor:pointer!important;
+}
+/* Mobile hero kicker only; desktop hero and header colours stay unchanged. */
+@media(max-width:899px){
+  html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{
+    color:#f3d99b!important;
+    -webkit-text-fill-color:#f3d99b!important;
+  }
 }
