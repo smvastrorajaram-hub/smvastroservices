@@ -2917,7 +2917,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #approved-astrologers h2,
 #smv-content-hub h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
-#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:1px solid rgb(238, 228, 224)!important;border-radius:15px!important;background:rgb(255, 255, 255)!important;box-shadow:rgba(42, 27, 34, 0.08) 0px 7px 22px!important}
+#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:24px!important}
 .smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 242, 246), rgb(255, 249, 222))!important;border:1px solid rgb(243, 221, 228)!important;border-radius:12px!important}
 .smv-master-proof{max-width:1260px;margin:auto;padding:12px 24px 42px;display:grid;grid-template-columns:repeat(4, 1fr)}
@@ -3431,21 +3431,15 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 #private-consultation .smv-private-consult-meta h4{margin:0px 0px 1px!important}
 #private-consultation .smv-private-consult-description{margin:4px 0px!important}}
 #smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffaf2 100%)!important;
-  border:1px solid rgba(184,134,45,.30)!important;
-  border-radius:16px!important;
-  box-shadow:0 12px 30px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06)!important;
-  outline:0px!important;
-  padding-left:18px!important;
-  padding-right:18px!important;
+  background:transparent!important;
+  border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;
+  border-radius:0!important;box-shadow:none!important;outline:0px!important;
+  padding-left:0!important;padding-right:0!important;
 }
 #smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffdf9 100%)!important;
-  border:1px solid rgba(184,134,45,.20)!important;
-  border-radius:13px!important;
-  box-shadow:0 5px 15px rgba(53,26,26,.055)!important;
-  padding-left:14px!important;
-  padding-right:14px!important;
+  background:transparent!important;
+  border:0!important;border-bottom:1px solid rgba(122,84,43,.16)!important;
+  border-radius:0!important;box-shadow:none!important;padding-left:0!important;padding-right:0!important;
 }
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
 #admin .smv-admin-nav, #admin .action-row{background:transparent!important;border:0px!important;box-shadow:none!important}
@@ -3804,21 +3798,15 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 #dashboardContent .smv-astrologer-dashboard > .astro-dashboard-summary > .card,
 #admin > .card,
 #admin .admin-workgroup > .card{
-  box-shadow:0 12px 30px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06);
-  border:1px solid rgba(184,134,45,.30);
-  border-radius:16px;
-  background:linear-gradient(145deg,#fff 0%,#fffaf2 100%);
-  padding-left:20px;
-  padding-right:20px;
+  box-shadow:none;
+  border:0;border-bottom:1px solid rgba(122,84,43,.24);
+  border-radius:0;background:transparent;
+  padding-left:0;padding-right:0;
 }
 #dashboardContent .card .card,
 #admin .card .card{
-  box-shadow:0 5px 15px rgba(53,26,26,.055);
-  border:1px solid rgba(184,134,45,.20);
-  border-radius:13px;
-  background:linear-gradient(145deg,#fff 0%,#fffdf9 100%);
-  padding-left:14px;
-  padding-right:14px;
+  box-shadow:none;border:0;border-bottom:1px solid rgba(122,84,43,.16);
+  border-radius:0;background:transparent;padding-left:0;padding-right:0;
 }
 #dashboardContent h2::before,#dashboardContent h2::after,#dashboardContent h3::before,#dashboardContent h3::after,#admin h2::before,#admin h2::after,#admin h3::before,#admin h3::after{content:none}
 #dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#e00000;margin:18px 0 14px}
