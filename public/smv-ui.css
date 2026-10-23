@@ -16,6 +16,9 @@
   --smv207-success:#74d7a5;
   --smv207-danger:#ff8994;
   --smv207-info:#a0bce8;
+  --smv207-form-magenta:#d40063;
+  --smv207-form-magenta-deep:#8f0043;
+  --smv207-form-white:#ffffff;
   --smv207-radius-sm:0;
   --smv207-radius:0;
   --smv207-radius-lg:0;
@@ -105,6 +108,107 @@ body.smv-v12-theme :where(input,select,textarea):focus-visible{
 body.smv-v12-theme :where(input,select,textarea):disabled{background:#1b2740!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
 
+/* Registration, login and question forms — high-contrast magenta presentation. */
+body.smv-v12-theme #modal.auth-modal-active .modalbox,
+body.smv-v12-theme #modal.auth-modal-active .auth-shell,
+body.smv-v12-theme #astro-register-form > .card,
+body.smv-v12-theme #smvPublicQuestionWindow,
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow > .card,
+body.smv-v12-theme #privateConsultationQuestionCard{
+  background:var(--smv207-form-magenta)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:1px solid rgba(255,255,255,.76)!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-shell :where(h2,h3,p,label,.small,.auth-note,.auth-divider),
+body.smv-v12-theme #astro-register-form > .card :where(h2,h3,p,label,.small),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(h2,h3,p,label,.small),
+body.smv-v12-theme #privateConsultationQuestionCard :where(h3,p,label,.small,.success,.error){
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-field,
+body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+body.smv-v12-theme #privateConsultationQuestionCard :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  caret-color:var(--smv207-form-white)!important;
+  border:1px solid rgba(255,255,255,.78)!important;
+}
+body.smv-v12-theme #modal.auth-modal-active :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #astro-register-form :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #smvPublicQuestionWindow :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #privateConsultationQuestionCard :where(input,select,textarea)::placeholder{
+  color:#fff0f6!important;
+  -webkit-text-fill-color:#fff0f6!important;
+  opacity:1!important;
+}
+/* Chromium autofill paints a pale field unless its inset fill and text are set explicitly. */
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill,
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill:hover,
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill:focus,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill:hover,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill:focus,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill:hover,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill:focus,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:hover,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
+  box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  caret-color:var(--smv207-form-white)!important;
+}
+/* Keep the Astrologer and Ask Now back-navigation controls visible on the magenta surface. */
+body.smv-v12-theme #astro-register-form #astroRegBackBtn,
+body.smv-v12-theme #smvPublicQuestionWindow #askNowBackBtn{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:40px!important;
+  margin:0 0 14px!important;
+  padding:9px 14px!important;
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:1px solid var(--smv207-form-white)!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-shell .btn:not(.auth-google),
+body.smv-v12-theme #astro-register-form #astroRegistrationForm button[type="submit"],
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow button[type="submit"],
+body.smv-v12-theme #privateConsultationQuestionCard button[type="submit"],
+body.smv-v12-theme #modal.auth-modal-active #googleAuthBtn{
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:1px solid var(--smv207-form-white)!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #astro-register-form #astroRegistrationForm input[type="file"]{
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  max-width:100%!important;
+}
+html body.smv-v12-theme #modal.auth-modal-active .modalbox > button[aria-label="Close"]{
+  width:40px!important;
+  min-width:40px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  font:700 24px/1 Arial,sans-serif!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
 /* Buttons */
 body.smv-v12-theme .btn,
 .seo-page :where(.seo-action,.related-links a){
@@ -153,6 +257,114 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 .faq-list details{border-color:var(--smv207-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important;}
 .faq-list summary{font-weight:750;cursor:pointer;color:#f3d99b}
 .faq-list details[open] summary{color:#FF2D93!important;-webkit-text-fill-color:#FF2D93!important;font-weight:900!important}
+
+/* Keep Astrology Insights & Media on the same content width and rhythm as About/FAQ. */
+html body.smv-v12-theme #smv-content-hub{
+  width:calc(100% - 32px)!important;
+  max-width:1160px!important;
+  margin:34px auto!important;
+  padding:clamp(20px,3vw,32px) 0!important;
+  box-sizing:border-box!important;
+  scroll-margin-top:16px!important;
+}
+html body.smv-v12-theme #smv-content-hub .home-rule{
+  display:flex!important;
+  margin-bottom:var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub > .feature-shell.card{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top{
+  display:block!important;
+  margin:0 0 var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top > div:first-child{
+  min-width:0!important;
+  width:100%!important;
+  flex:none!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top h2{
+  margin:0 0 var(--smv207-space-3)!important;
+  font-family:inherit!important;
+  font-size:var(--smv207-h2)!important;
+  line-height:1.22!important;
+  font-weight:850!important;
+  letter-spacing:-.018em!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subregion{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subregion + .smv-v173-subregion{
+  margin-top:var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{
+  min-height:30px!important;
+  margin:0 0 var(--smv207-space-3)!important;
+  padding:2px 0!important;
+  font-family:inherit!important;
+  font-size:var(--smv207-body)!important;
+  line-height:1.6!important;
+  font-weight:800!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+  border:0!important;
+  border-bottom:1px solid var(--smv207-line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-sub-collapse{
+  flex:0 0 30px!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:0!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html body.smv-v12-theme #smv-content-hub .blog-card h3,
+html body.smv-v12-theme #smv-content-hub .media-card h3{
+  font-family:inherit!important;
+  font-size:var(--smv207-h3)!important;
+  line-height:1.3!important;
+  font-weight:800!important;
+}
+html body.smv-v12-theme #smv-content-hub :where(.blog-content,.blog-card p,.blog-card li,.media-card p,.media-card li,.media-card .small){
+  font-family:inherit!important;
+  font-size:var(--smv207-body)!important;
+  line-height:1.75!important;
+  letter-spacing:normal!important;
+  color:var(--smv207-ink)!important;
+  -webkit-text-fill-color:var(--smv207-ink)!important;
+}
+@media(max-width:760px){
+  html body.smv-v12-theme #smv-content-hub{
+    width:calc(100% - 32px)!important;
+    max-width:1160px!important;
+    margin:34px auto!important;
+    padding:clamp(20px,3vw,32px) 0!important;
+  }
+}
 
 /* Private consultation — V190 layout migrated out of inline page CSS. */
 #privateConsultationQuestionCard{position:relative}
