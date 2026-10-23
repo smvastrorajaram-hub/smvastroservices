@@ -30,12 +30,11 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     period: 'daily',
     date: defaultDate(),
     year: Number(defaultDate().slice(0, 4)),
-    mode: 'automatic',
     lastResult: null
   };
   let publishedEntries = {};
   let publishedLoadError = false;
-  let localDrafts = loadDrafts();
+  let publishedMode = 'hybrid';
   const ingressCache = new Map();
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -63,16 +62,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       try { return offsetMinutesAt(cfg.timezone, date, '12:00'); } catch (_) {}
     }
     return Number.isFinite(Number(cfg.offset)) ? Number(cfg.offset) : 330;
-  }
-  function loadDrafts() {
-    try {
-      const data = JSON.parse(localStorage.getItem('smv-calendar-rasi-palan-drafts-v1') || '{}');
-      return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-    } catch (_) { return {}; }
-  }
-  function saveDrafts() {
-    try { localStorage.setItem('smv-calendar-rasi-palan-drafts-v1', JSON.stringify(localDrafts)); return true; }
-    catch (_) { return false; }
   }
   function dateInput(date, time, cfg) {
     return {
@@ -260,13 +249,13 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   function sourceLabel(source) {
     if (source === 'manual') return L('Published manual', 'நிர்வாகி வெளியிட்ட கையேடு');
-    if (source === 'draft') return L('Local draft', 'இந்தச் சாதனத்தின் வரைவு');
     if (source === 'automatic-fallback') return L('Automatic fallback', 'தானியங்கி மாற்று பலன்');
     if (source === 'automatic') return L('Swiss Ephemeris · programmed rules', 'Swiss Ephemeris · நிரலாக்கப்பட்ட விதிகள்');
     return L('Manual reading not published', 'கையேடு பலன் இன்னும் வெளியிடப்படவில்லை');
   }
-  function modeText(auto, key) {
-    return selectReading(state.mode, auto, publishedEntries[key], localDrafts[key]);
+  function modeText(auto, key, type) {
+    const supportsPublishedManual = ['tamilNewYear', 'englishNewYear', 'jupiterTransit', 'saturnTransit', 'rahuKetuTransit'].includes(type);
+    return selectReading(supportsPublishedManual ? publishedMode : 'automatic', auto, publishedEntries[key], '');
   }
   function renderPlanetCard(result, rasiIndex, body) {
     const key = body.key;
@@ -274,7 +263,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const house = houseFromRasi(bodySign, rasiIndex);
     const entryKey = entryFor(result, rasiIndex, key, isTamil() ? 'ta' : 'en');
     const auto = autoText(key, bodySign, rasiIndex, isTamil());
-    const selectedReading = modeText(auto, entryKey);
+    const selectedReading = modeText(auto, entryKey, result.type);
     const signText = bodySign == null ? L('Position unavailable', 'கிரக நிலை கிடைக்கவில்லை') : rasiLabel(bodySign);
     const reading = selectedReading.text || L('No manual text for this sign, planet and language.', 'இந்த ராசி, கிரகம், மொழிக்கான கையேடு பலன் இல்லை.');
     return '<article class="rp-planet"><h5>' + esc(planetLabel(key)) + '</h5><p class="rp-position">' +
@@ -295,7 +284,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       ' · ' + getLocation().place;
     if (result.fallbackSunrise) context += ' · ' + L('Sunrise unavailable; local noon used as fallback.', 'சூரிய உதயம் கிடைக்காததால் உள்ளூர் நண்பகல் மாற்றாகப் பயன்படுத்தப்பட்டது.');
     if (result.moonSign != null) context += ' · ' + L('Moon sign at sunrise: ', 'சூரிய உதயச் சந்திர ராசி: ') + rasiLabel(result.moonSign);
-    return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div><span class="rp-mode-chip">' + esc(state.mode.toUpperCase()) + '</span></div>' + cards;
+    return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div></div>' + cards;
   }
   function ingressType(body) {
     return body === 'Jupiter' ? 'jupiterTransit' : body === 'Saturn' ? 'saturnTransit' : 'rahuKetuTransit';
@@ -332,7 +321,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     ];
     return '<div class="rp-results-title"><div><h3>' + esc(L('Jupiter, Saturn and Rahu–Ketu Transit Predictions', 'குரு, சனி, ராகு–கேது பெயர்ச்சி பலன்கள்')) + ' · ' + result.year + '</h3><p>' +
       esc(L('Each ingress date, previous/new sign and effective interval are computed from local Swiss Ephemeris positions.', 'ஒவ்வொரு பெயர்ச்சி தேதியும் முந்தைய/புதிய ராசியும் பொருந்தும் காலமும் உள்ளூர் Swiss Ephemeris கிரக நிலைகளிலிருந்து கணக்கிடப்படுகின்றன.')) +
-      '</p></div><span class="rp-mode-chip">' + esc(state.mode.toUpperCase()) + '</span></div>' +
+      '</p></div></div>' +
       config.map(group => {
         const events = result.byBody[group.key] || [];
         if (!events.length) return '<section class="rp-ingress-group"><h4>' + esc(isTamil() ? group.ta : group.en) + '</h4><p>' +
@@ -347,29 +336,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     el.textContent = message || '';
     el.classList.toggle('is-error', !!error);
   }
-  function activeDraftKey() {
-    const current = state.lastResult;
-    if (!current) return null;
-    const lang = $('#rpEditLanguage') ? $('#rpEditLanguage').value : (isTamil() ? 'ta' : 'en');
-    const rasi = $('#rpEditRasi') ? Number($('#rpEditRasi').value) : 0;
-    const planet = $('#rpEditPlanet') ? $('#rpEditPlanet').value : 'Sun';
-    if (current.kind === 'ingress') {
-      const selectedBody = $('#rpEditTransitGroup') ? $('#rpEditTransitGroup').value : 'Jupiter';
-      const events = current.byBody[selectedBody] || [];
-      const eventDate = $('#rpEditEventDate') ? $('#rpEditEventDate').value : (events[0] && events[0].date);
-      return eventDate ? readingKey(ingressType(selectedBody), eventDate, rasi, planet, lang) : null;
-    }
-    return readingKey(current.type, current.periodKey, rasi, planet, lang);
-  }
-  function refreshEditorText() {
-    const key = activeDraftKey();
-    const textArea = $('#rpManualText');
-    if (textArea) textArea.value = key ? String(localDrafts[key] || publishedEntries[key] || '') : '';
-    const hint = $('#rpEditorHint');
-    if (hint) hint.textContent = key && publishedEntries[key]
-      ? L('A published entry already exists. Saving edits creates a local draft until it is exported and deployed.', 'வெளியிடப்பட்ட பலன் ஏற்கெனவே உள்ளது. திருத்தி சேமித்தால் JSON ஏற்றுமதி செய்து வெளியிடும் வரை இந்தச் சாதனத்தில் வரைவு மட்டுமே இருக்கும்.')
-      : L('Drafts remain on this device until exported and included in the published manual JSON file.', 'JSON ஆக ஏற்றுமதி செய்து வெளியிடப்பட்ட manual கோப்பில் சேர்க்கும் வரை வரைவு இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.');
-  }
   function renderControls() {
     const date = state.date;
     root.innerHTML = '<div class="rp-heading"><div><p class="rp-eyebrow">SMV CALENDAR</p><h2>' + esc(L('Rasi Palan & Planetary Transits', 'ராசி பலன்கள் & கிரக கோச்சாரம்')) + '</h2><p>' +
@@ -380,25 +346,12 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       '<button type="button" data-section="englishNewYear" class="' + (state.section === 'englishNewYear' ? 'is-active' : '') + '">' + esc(annualLabels.englishNewYear[isTamil() ? 1 : 0]) + '</button>' +
       '<button type="button" data-section="ingress" class="' + (state.section === 'ingress' ? 'is-active' : '') + '">' + esc(L('Jupiter / Saturn / Rahu–Ketu', 'குரு / சனி / ராகு–கேது')) + '</button></div>' +
       '<div class="rp-toolbar">' +
-      '<label>' + esc(L('Prediction mode', 'பலன் முறை')) + '<select id="rpMode"><option value="automatic">' + esc(L('Automatic · Swiss Ephemeris', 'தானியங்கி · Swiss Ephemeris')) + '</option><option value="manual">' + esc(L('Manual Entry', 'கையேடு பதிவு')) + '</option><option value="hybrid">' + esc(L('Hybrid · Manual first', 'கலப்பு · கையேடு முன்னுரிமை')) + '</option></select></label>' +
       '<label class="rp-period-control">' + esc(L('Period', 'கால அளவு')) + '<select id="rpPeriod"><option value="daily">' + esc(L('Daily', 'தினசரி')) + '</option><option value="weekly">' + esc(L('Weekly', 'வாரம்')) + '</option><option value="monthly">' + esc(L('Monthly', 'மாதம்')) + '</option></select></label>' +
       '<label>' + esc(L('Date', 'தேதி')) + '<input id="rpDate" type="date" min="1800-01-01" max="2399-12-31" value="' + esc(date) + '"></label>' +
       '<label class="rp-year-control">' + esc(L('Year', 'ஆண்டு')) + '<input id="rpYear" type="number" min="1800" max="2399" step="1" value="' + state.year + '"></label>' +
       '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Calculate / Show', 'கணக்கிட்டு காண்பி')) + '</button></div>' +
-      '<p class="rp-method-note">' + esc(L('Automatic uses local Swiss Ephemeris sidereal positions and programmed transit rules. Moon is used only as the New Year reference sign; no separate Moon transit prediction is shown.', 'தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும் நிரலாக்கப்பட்ட கோச்சார விதிகளும் பயன்படுத்தப்படும். வருடப் பிறப்பில் சந்திர ராசி அடிப்படையாக மட்டும் பயன்படும்; சந்திரனுக்குத் தனி கோச்சார பலன் காட்டப்படாது.')) + '</p>' +
       '<p id="rpStatus" class="rp-status" role="status"></p>' +
-      '<details class="rp-manual-editor"><summary>' + esc(L('Manual Entry editor & publish export', 'கையேடு பதிவு திருத்தி & வெளியீட்டு ஏற்றுமதி')) + '</summary>' +
-      '<p id="rpEditorHint" class="rp-method-note"></p><div class="rp-editor-grid">' +
-      '<label>' + esc(L('Rasi', 'ராசி')) + '<select id="rpEditRasi">' + rasiLabels.map((r, i) => '<option value="' + i + '">' + esc(r[isTamil() ? 1 : 0]) + '</option>').join('') + '</select></label>' +
-      '<label>' + esc(L('Planet', 'கிரகம்')) + '<select id="rpEditPlanet">' + RASI_PALAN_PLANETS.map(p => '<option value="' + p.key + '">' + esc(planetLabel(p.key)) + '</option>').join('') + '</select></label>' +
-      '<label>' + esc(L('Content language', 'உள்ளடக்க மொழி')) + '<select id="rpEditLanguage"><option value="ta">தமிழ்</option><option value="en">English</option></select></label>' +
-      '<label class="rp-edit-event-control">' + esc(L('Transit group', 'பெயர்ச்சி')) + '<select id="rpEditTransitGroup"><option value="Jupiter">Jupiter / குரு</option><option value="Saturn">Saturn / சனி</option><option value="Rahu">Rahu–Ketu / ராகு–கேது</option></select></label>' +
-      '<label class="rp-edit-event-control">' + esc(L('Ingress date', 'பெயர்ச்சி தேதி')) + '<input id="rpEditEventDate" type="date" value="' + esc(date) + '"></label>' +
-      '</div><label class="rp-manual-text-label">' + esc(L('Manual prediction text', 'கையேடு பலன்')) + '<textarea id="rpManualText" rows="4" maxlength="4000" placeholder="' + esc(L('Enter a distinct prediction for this Rasi, planet, period and language.', 'இந்த ராசி, கிரகம், கால அளவு மற்றும் மொழிக்கான தனிப்பட்ட பலனை உள்ளிடவும்.')) + '"></textarea></label>' +
-      '<div class="rp-editor-actions"><button type="button" id="rpSaveDraft">' + esc(L('Save local draft', 'உள்ளூர் வரைவைச் சேமி')) + '</button><button type="button" id="rpExport">' + esc(L('Export manual JSON for publishing', 'வெளியீட்டிற்கான Manual JSON ஏற்றுமதி')) + '</button></div>' +
-      '<p class="rp-method-note">' + esc(L('Draft saving is device-local, not an administrator login or a server publish. Export the JSON and deploy it as calendar-rasi-palan-manual.json to make manual readings available to all visitors.', 'வரைவு இந்தச் சாதனத்தில் மட்டுமே சேமிக்கப்படும்; இது நிர்வாகி உள்நுழைவு அல்லது server publish அல்ல. அனைவருக்கும் பலன்கள் கிடைக்க JSON-ஐ ஏற்றுமதி செய்து calendar-rasi-palan-manual.json ஆக deploy செய்ய வேண்டும்.')) + '</p></details>' +
       '<div id="rpResults" aria-live="polite"></div>';
-    $('#rpMode').value = state.mode;
     $('#rpPeriod').value = state.period;
     const periodControl = $('.rp-period-control');
     const dateControl = $('#rpDate').parentElement;
@@ -411,42 +364,19 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       renderControls();
       if (state.lastResult) renderLastResult();
     }));
-    $('#rpMode').addEventListener('change', () => {
-      state.mode = $('#rpMode').value;
-      if (state.lastResult) renderLastResult();
-      refreshEditorText();
-    });
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
-    $('#rpDate').addEventListener('change', () => { state.date = $('#rpDate').value; state.year = Number(state.date.slice(0, 4)); $('#rpYear').value = state.year; });
-    $('#rpYear').addEventListener('change', () => { state.year = Math.max(1800, Math.min(2399, Number($('#rpYear').value) || new Date().getUTCFullYear())); $('#rpYear').value = state.year; });
-    $('#rpRun').addEventListener('click', run);
-    ['rpEditRasi', 'rpEditPlanet', 'rpEditLanguage', 'rpEditTransitGroup', 'rpEditEventDate'].forEach(id => $('#' + id).addEventListener('change', refreshEditorText));
-    $('#rpSaveDraft').addEventListener('click', () => {
-      const key = activeDraftKey();
-      const value = String($('#rpManualText').value || '').trim();
-      if (!key) return setStatus(L('Calculate or select a forecast first.', 'முதலில் ஒரு பலனைக் கணக்கிடவும் அல்லது தேர்ந்தெடுக்கவும்.'), true);
-      if (!value) return setStatus(L('Enter manual prediction text before saving.', 'சேமிக்கும் முன் கையேடு பலனை உள்ளிடவும்.'), true);
-      localDrafts[key] = value;
-      if (!saveDrafts()) return setStatus(L('Could not save the local draft. Browser storage may be full.', 'உள்ளூர் வரைவைச் சேமிக்க முடியவில்லை. சேமிப்பிடம் நிரம்பியிருக்கலாம்.'), true);
-      setStatus(L('Draft saved on this device. Export it to publish.', 'இந்தச் சாதனத்தில் வரைவு சேமிக்கப்பட்டது. வெளியிட ஏற்றுமதி செய்யவும்.'), false);
-      if (state.lastResult) renderLastResult();
-      refreshEditorText();
+    $('#rpDate').addEventListener('change', () => {
+      state.date = $('#rpDate').value;
+      if (state.date) {
+        state.year = Number(state.date.slice(0, 4));
+        $('#rpYear').value = state.year;
+      }
     });
-    $('#rpExport').addEventListener('click', exportManualJson);
-    refreshEditorText();
-  }
-  function exportManualJson() {
-    const merged = { schemaVersion: 1, generatedAt: new Date().toISOString(), entries: { ...publishedEntries, ...localDrafts } };
-    const blob = new Blob([JSON.stringify(merged, null, 2)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'calendar-rasi-palan-manual.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setStatus(L('Manual JSON exported. Deploy it at the Calendar manual-data path to publish entries.', 'Manual JSON ஏற்றுமதி செய்யப்பட்டது. பலன்களை வெளியிட Calendar manual-data பாதையில் deploy செய்யவும்.'), false);
+    $('#rpYear').addEventListener('change', () => {
+      state.year = Math.max(1800, Math.min(2399, Number($('#rpYear').value) || new Date().getUTCFullYear()));
+      $('#rpYear').value = state.year;
+    });
+    $('#rpRun').addEventListener('click', run);
   }
   function renderLastResult() {
     const target = $('#rpResults');
@@ -454,7 +384,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const result = state.lastResult;
     if (result.kind === 'rasi') target.innerHTML = renderRasiGrid(result);
     else target.innerHTML = renderIngress(result);
-    refreshEditorText();
   }
   async function run() {
     state.date = $('#rpDate') ? $('#rpDate').value : state.date;
@@ -479,28 +408,60 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     }
   }
   async function loadPublishedManual() {
+    const accept = data => {
+      publishedEntries = data && data.entries && typeof data.entries === 'object' ? data.entries : {};
+      publishedMode = ['automatic', 'manual', 'hybrid'].includes(data && data.mode) ? data.mode : 'hybrid';
+    };
+    if (navigator.onLine) {
+      try {
+        const CONFIG = {
+          apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
+          authDomain: 'smv-astro.firebaseapp.com',
+          projectId: 'smv-astro',
+          storageBucket: 'smv-astro.firebasestorage.app',
+          messagingSenderId: '299081899217',
+          appId: '1:299081899217:web:8d558df08e86037ea539f0'
+        };
+        const [appM, fsM] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js')
+        ]);
+        const app = appM.getApps().find(x => x.name === 'smv-calendar-public-content') ||
+          appM.initializeApp(CONFIG, 'smv-calendar-public-content');
+        const db = fsM.getFirestore(app);
+        const snap = await fsM.getDocFromServer(fsM.doc(db, 'smv_content', 'calendar_rasi_palan_v1'));
+        if (snap.exists() && snap.data().published === true) {
+          accept(snap.data());
+          publishedLoadError = false;
+          return;
+        }
+      } catch (error) {
+        console.warn('SMV Calendar online Admin readings are unavailable; trying the bundled published copy.', error);
+      }
+    }
     try {
       const url = new URL('./calendar-rasi-palan-manual.json', import.meta.url);
-      url.searchParams.set('v', '1');
+      url.searchParams.set('v', '2');
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      const data = await response.json();
-      publishedEntries = data && data.entries && typeof data.entries === 'object' ? data.entries : {};
+      accept(await response.json());
+      publishedLoadError = false;
     } catch (error) {
       publishedLoadError = true;
       publishedEntries = {};
+      publishedMode = 'hybrid';
       console.warn('SMV Calendar published manual readings are unavailable.', error);
     }
   }
   const languageObserver = new MutationObserver(() => {
-    const selected = $('#rpMode') ? $('#rpMode').value : state.mode;
-    state.mode = selected;
     renderControls();
     if (state.lastResult) renderLastResult();
   });
   languageObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   renderControls();
-  loadPublishedManual().then(() => {
-    if (publishedLoadError) setStatus(L('Published manual data could not be loaded; Automatic mode remains available.', 'வெளியிடப்பட்ட கையேடு தரவை ஏற்ற முடியவில்லை; தானியங்கி முறை தொடர்ந்து கிடைக்கும்.'), false);
+  const publishedManualReady = loadPublishedManual().then(() => {
+    if (publishedLoadError) console.warn('Calendar remains usable with automatic predictions only.');
   });
+  const originalRun = run;
+  run = async function runAfterPublishedLoad() { await publishedManualReady; return originalRun(); };
 }
