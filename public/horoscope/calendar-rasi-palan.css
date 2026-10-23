@@ -1,0 +1,56 @@
+#calRasiPalan{max-width:1180px;margin:28px auto;padding:20px;border:1px solid #d8e5db;border-radius:16px;background:#f8fbf7;color:#173e3a;font-family:'Noto Sans Tamil',Arial,sans-serif;box-sizing:border-box}
+#calRasiPalan *{box-sizing:border-box}
+#calRasiPalan h2,#calRasiPalan h3,#calRasiPalan h4,#calRasiPalan h5{color:#155a52;line-height:1.5}
+#calRasiPalan .rp-heading{padding:8px 2px 18px;border-bottom:2px solid #d8bd75}
+#calRasiPalan .rp-eyebrow{margin:0;color:#a5681c;letter-spacing:2px;font-weight:800;font-size:12px}
+#calRasiPalan .rp-heading h2{font-size:clamp(22px,3vw,32px);margin:5px 0}
+#calRasiPalan .rp-heading p,.rp-method-note{font-size:13px;line-height:1.7;color:#587069}
+#calRasiPalan .rp-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 16px}
+#calRasiPalan button{min-height:42px;padding:9px 13px;border:1px solid #b8cdc2;border-radius:9px;background:#fff;color:#15554e;font:inherit;cursor:pointer}
+#calRasiPalan button:focus-visible,#calRasiPalan input:focus-visible,#calRasiPalan select:focus-visible,#calRasiPalan textarea:focus-visible{outline:3px solid #bd9144;outline-offset:2px}
+#calRasiPalan .rp-tabs button.is-active,#calRasiPalan .rp-primary{background:#155a52;color:#fff7dc;border-color:#155a52}
+#calRasiPalan .rp-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px}
+#calRasiPalan .rp-toolbar label,#calRasiPalan .rp-editor-grid label{display:grid;gap:7px;min-width:145px;flex:1;font-size:13px;font-weight:650}
+#calRasiPalan input,#calRasiPalan select,#calRasiPalan textarea{width:100%;min-height:42px;padding:9px 10px;border:1px solid #b6c9bf;border-radius:8px;background:#fff;color:#173e3a;font:inherit}
+#calRasiPalan [hidden]{display:none!important}
+#calRasiPalan .rp-method-note{margin:12px 0}
+#calRasiPalan .rp-status{min-height:20px;font-size:13px;line-height:1.6;color:#37665a}
+#calRasiPalan .rp-status.is-error{color:#9a2f2f}
+#calRasiPalan .rp-manual-editor{margin:16px 0 20px;padding:12px 14px;border:1px solid #d4e0d7;border-radius:10px;background:#fff}
+#calRasiPalan .rp-manual-editor summary{cursor:pointer;font-weight:750;color:#155a52;padding:4px}
+#calRasiPalan .rp-editor-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#calRasiPalan .rp-manual-text-label{display:grid;gap:8px;margin-top:14px;font-size:13px;font-weight:700}
+#calRasiPalan .rp-editor-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#calRasiPalan .rp-results-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:24px 0 14px;padding:0 0 12px;border-bottom:1px solid #d9e5dc}
+#calRasiPalan .rp-results-title h3{font-size:21px;margin:0 0 5px}
+#calRasiPalan .rp-results-title p{margin:0;color:#587069;font-size:13px;line-height:1.7}
+#calRasiPalan .rp-mode-chip{flex:0 0 auto;border:1px solid #d8bd75;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:800;color:#725222;background:#fff8e8}
+#calRasiPalan .rp-rasi-card{margin:16px 0 20px;padding:14px 0;border:0;border-top:1px solid #d6e2d9;background:transparent}
+#calRasiPalan .rp-rasi-card h4{font-size:19px;margin:0 0 10px}
+#calRasiPalan .rp-planets-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#calRasiPalan .rp-planet{min-width:0;padding:12px;border:1px solid #d9e5dc;border-radius:10px;background:#fff}
+#calRasiPalan .rp-planet h5{font-size:14px;margin:0 0 3px}
+#calRasiPalan .rp-position{margin:0 0 8px;font-size:12px;color:#86652b;font-weight:700}
+#calRasiPalan .rp-reading{margin:0;font-size:13px;line-height:1.75;overflow-wrap:anywhere;color:#244a42}
+#calRasiPalan .rp-source{display:block;margin-top:7px;font-size:10px;line-height:1.4;color:#73847a}
+#calRasiPalan .rp-ingress-group{margin:22px 0}
+#calRasiPalan .rp-ingress-group>h4{font-size:20px;border-bottom:1px solid #d9e5dc;padding-bottom:8px}
+#calRasiPalan .rp-ingress-event{padding:10px 0 20px;border-bottom:1px dashed #cadacf}
+#calRasiPalan .rp-event-heading h4{font-size:17px;margin:8px 0}
+#calRasiPalan .rp-event-heading p{font-size:13px;line-height:1.7;color:#587069}
+#calRasiPalan .rp-rasi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#calRasiPalan .rp-rasi-grid .rp-rasi-card{margin:8px 0}
+@media(max-width:680px){
+ #calRasiPalan{margin:18px 8px;padding:12px 10px;border-radius:12px}
+ #calRasiPalan .rp-tabs{display:grid;grid-template-columns:1fr 1fr}
+ #calRasiPalan .rp-tabs button{padding:8px 6px;font-size:12px}
+ #calRasiPalan .rp-toolbar{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:10px}
+ #calRasiPalan .rp-toolbar label{min-width:0}
+ #calRasiPalan .rp-toolbar button{grid-column:1/-1;width:100%}
+ #calRasiPalan .rp-editor-grid{grid-template-columns:1fr 1fr}
+ #calRasiPalan .rp-planets-grid{grid-template-columns:1fr}
+ #calRasiPalan .rp-rasi-grid{grid-template-columns:1fr}
+ #calRasiPalan .rp-results-title{display:block}
+ #calRasiPalan .rp-mode-chip{display:inline-block;margin-top:10px}
+ #calRasiPalan .rp-planet{padding:10px}
+}
