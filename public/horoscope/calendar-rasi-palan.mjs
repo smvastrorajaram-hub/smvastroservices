@@ -372,7 +372,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     else target.innerHTML = renderIngress(result);
   }
   async function run() {
-    await publishedManualReady;
     state.date = defaultDate();
     state.year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     setStatus(L('Calculating with the local Swiss Ephemeris engine…', 'உள்ளூர் Swiss Ephemeris மூலம் கணக்கிடப்படுகிறது…'), false);
@@ -453,5 +452,16 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   renderControls();
   publishedManualReady = loadPublishedManual().then(() => {
     if (publishedLoadError) console.warn('Calendar remains usable with automatic predictions only.');
+    if (!state.lastResult) return;
+    const result = state.lastResult;
+    const today = defaultDate();
+    const adminAsOfDate = publishedTargetEventDate && publishedTargetEventDate <= today
+      ? publishedTargetEventDate : today;
+    const annualResult = result.type === 'tamilNewYear' || result.type === 'englishNewYear';
+    const selectedType = result.type === 'ingress' ? 'ingress' : result.type;
+    const targetChanged = (annualResult && result.periodKey !== String(publishedTargetYear)) ||
+      (result.type === 'ingress' && (result.year !== publishedTargetYear || result.asOfDate !== adminAsOfDate));
+    if (targetChanged && state.section === selectedType) run();
+    else renderLastResult();
   });
 }

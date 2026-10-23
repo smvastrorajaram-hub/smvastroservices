@@ -112,6 +112,12 @@ test('Planetary ingress section computes only the latest past transit per planet
   assert.doesNotMatch(publicRasiPalanSource, /events\.filter\(e => e\.date >= start/);
 });
 
+test('Public forecast rendering does not block on the asynchronous Admin content read', () => {
+  assert.doesNotMatch(publicRasiPalanSource, /await publishedManualReady/);
+  assert.match(publicRasiPalanSource, /publishedManualReady = loadPublishedManual\(\)\.then\(\(\) => \{/);
+  assert.match(publicRasiPalanSource, /else renderLastResult\(\)/);
+});
+
 test('Public calendar takes published mode/data from Firestore online and uses bundled JSON offline', () => {
   assert.match(publicRasiPalanSource, /smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(publicRasiPalanSource, /if \(navigator\.onLine\)/);
