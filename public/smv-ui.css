@@ -93,7 +93,7 @@ body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#ast
   max-width:100%;
   min-height:44px;
   box-sizing:border-box;
-  padding:10px 12px;border:1px solid rgba(223,189,115,.28)!important;border-radius:0!important;background:#17243d!important;color:#f2eddf!important;
+  padding:10px 12px;border:1px solid rgba(223,189,115,.32)!important;border-radius:0!important;background:var(--smv207-form-surface)!important;color:#f2eddf!important;
   font:inherit;
   line-height:1.35;box-shadow:none;
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
@@ -105,7 +105,7 @@ body.smv-v12-theme :where(input,select,textarea):focus-visible{
   border-color:var(--smv207-red)!important;
   box-shadow:0 0 0 3px rgba(139,23,23,.13)!important;
 }
-body.smv-v12-theme :where(input,select,textarea):disabled{background:#1b2740!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
+body.smv-v12-theme :where(input,select,textarea):disabled{background:var(--smv207-form-surface)!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
 
 /* Registration, login and question forms — use the existing Cosmic Violet theme. */
@@ -132,11 +132,11 @@ body.smv-v12-theme #modal.auth-modal-active .auth-field,
 body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
 body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
 body.smv-v12-theme #privateConsultationQuestionCard :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
-  background:var(--smv207-form-magenta-deep)!important;
+  background:var(--smv207-form-surface)!important;
   color:var(--smv207-form-white)!important;
   -webkit-text-fill-color:var(--smv207-form-white)!important;
   caret-color:var(--smv207-form-white)!important;
-  border:0!important;
+  border:1px solid rgba(223,189,115,.32)!important;
 }
 body.smv-v12-theme #modal.auth-modal-active :where(input,select,textarea)::placeholder,
 body.smv-v12-theme #astro-register-form :where(input,select,textarea)::placeholder,
@@ -159,8 +159,8 @@ body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill:focus,
 body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill,
 body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:hover,
 body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:focus{
-  -webkit-box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
-  box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
+  -webkit-box-shadow:0 0 0 1000px var(--smv207-form-surface) inset!important;
+  box-shadow:0 0 0 1000px var(--smv207-form-surface) inset!important;
   -webkit-text-fill-color:var(--smv207-form-white)!important;
   caret-color:var(--smv207-form-white)!important;
 }
