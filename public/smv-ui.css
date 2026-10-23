@@ -151,8 +151,8 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #smv-content-hub .home-rule,#about .home-rule,#faq .home-rule{margin-bottom:var(--smv207-space-4)}
 #smv-content-hub :where(.feature-tile,.card){height:100%}
 .faq-list details{border-color:var(--smv207-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important;}
-.faq-list summary{font-weight:750;cursor:pointer;color:#49362f}
-.faq-list details[open] summary{color:var(--smv207-red)}
+.faq-list summary{font-weight:750;cursor:pointer;color:#f3d99b}
+.faq-list details[open] summary{color:#f3d99b}
 
 /* Private consultation — V190 layout migrated out of inline page CSS. */
 #privateConsultationQuestionCard{position:relative}
