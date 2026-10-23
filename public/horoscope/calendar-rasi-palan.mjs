@@ -35,6 +35,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   let publishedEntries = {};
   let publishedLoadError = false;
   let publishedMode = 'hybrid';
+  let publishedManualReady = Promise.resolve();
   const ingressCache = new Map();
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -386,6 +387,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     else target.innerHTML = renderIngress(result);
   }
   async function run() {
+    await publishedManualReady;
     state.date = $('#rpDate') ? $('#rpDate').value : state.date;
     state.year = $('#rpYear') ? Number($('#rpYear').value) : state.year;
     if (state.section === 'period' && !state.date) return setStatus(L('Choose a date first.', 'முதலில் தேதியைத் தேர்வு செய்யவும்.'), true);
@@ -459,9 +461,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   });
   languageObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   renderControls();
-  const publishedManualReady = loadPublishedManual().then(() => {
+  publishedManualReady = loadPublishedManual().then(() => {
     if (publishedLoadError) console.warn('Calendar remains usable with automatic predictions only.');
   });
-  const originalRun = run;
-  run = async function runAfterPublishedLoad() { await publishedManualReady; return originalRun(); };
 }
