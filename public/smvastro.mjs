@@ -352,14 +352,14 @@ function openModal(html){$("modalContent").innerHTML=html;$("modal").classList.r
 function smvNotice(title,message,icon="✓"){
   const id="smvNoticeDialog"; let el=document.getElementById(id); if(el)el.remove();
   el=document.createElement("div"); el.id=id; el.className="smv-dialog-backdrop";
-  el.innerHTML=`<div class="smv-dialog"><div class="smv-dialog-icon">${icon}</div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p><div class="smv-dialog-actions single"><button type="button" class="btn">OK</button></div></div>`;
+  el.innerHTML=`<div class="smv-dialog"><div class="smv-dialog-icon smv-dialog-icon-brand" aria-hidden="true"><img class="smv-dialog-brand" src="./assets/smv-brand-logo.png" alt="" width="44" height="44" decoding="async"></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p><div class="smv-dialog-actions single"><button type="button" class="btn">OK</button></div></div>`;
   document.body.appendChild(el); el.querySelector(".btn").onclick=()=>el.remove(); return el;
 }
 function smvConfirm(title,message,okText="OK",cancelText="CANCEL",danger=false){
   return new Promise(resolve=>{
     const id="smvConfirmDialog"; let el=document.getElementById(id); if(el)el.remove();
     el=document.createElement("div"); el.id=id; el.className="smv-dialog-backdrop";
-    el.innerHTML=`<div class="smv-dialog"><div class="smv-dialog-icon">${danger?"!":"?"}</div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p><div class="smv-dialog-actions"><button type="button" class="btn gray" data-cancel>${escapeHtml(cancelText)}</button><button type="button" class="btn ${danger?"danger":""}" data-ok>${escapeHtml(okText)}</button></div></div>`;
+    el.innerHTML=`<div class="smv-dialog"><div class="smv-dialog-icon smv-dialog-icon-brand" aria-hidden="true"><img class="smv-dialog-brand" src="./assets/smv-brand-logo.png" alt="" width="44" height="44" decoding="async"></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p><div class="smv-dialog-actions"><button type="button" class="btn gray" data-cancel>${escapeHtml(cancelText)}</button><button type="button" class="btn ${danger?"danger":""}" data-ok>${escapeHtml(okText)}</button></div></div>`;
     document.body.appendChild(el); const finish=value=>{el.remove();resolve(value)};
     el.querySelector("[data-cancel]").onclick=()=>finish(false); el.querySelector("[data-ok]").onclick=()=>finish(true);
   });

@@ -1196,6 +1196,25 @@ input:where(:not(.smv-type-root,.smv-type-root *)),
 select:where(:not(.smv-type-root,.smv-type-root *)),
 textarea:where(:not(.smv-type-root,.smv-type-root *)){font-size:15px}
 input:focus, select:focus, textarea:focus{outline:rgba(184, 134, 11, 0.22) solid 2px;border-color:var(--gold)}
+/* Astrologer Registration profile-photo picker: retain its original gold button. */
+#astro-register-form #arPhoto::file-selector-button,
+#astro-register-form #arPhoto::-webkit-file-upload-button{
+  display:inline-block;
+  box-sizing:border-box;
+  min-height:36px;
+  padding:8px 12px;
+  margin:0 10px 0 0;
+  border:1px solid #dfbd73;
+  border-radius:3px;
+  background:linear-gradient(135deg,#dfbd73,#f2d79a);
+  color:#24103f;
+  -webkit-text-fill-color:#24103f;
+  font:inherit;
+  font-weight:800;
+  line-height:normal;
+  vertical-align:middle;
+  cursor:pointer;
+}
 textarea{min-height:110px;resize:vertical;overflow-wrap:anywhere;word-break:break-word}
 textarea:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.6}
 .hidden{display:none!important}

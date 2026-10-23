@@ -226,7 +226,40 @@
   color:#111!important;
 }
 #admin label>b{font-size:13px!important;font-weight:600!important;}
-#admin input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+
+/* The Blog cover picker is a native file input, not a compact text field.
+   Do not apply the 36px text-input height/line-height to its browser button. */
+#admin #blogCoverFile{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-height:56px!important;
+  height:auto!important;
+  padding:6px 10px!important;
+  margin:4px 0 8px!important;
+  line-height:normal!important;
+  overflow:visible!important;
+}
+#admin #blogCoverFile::file-selector-button,
+#admin #blogCoverFile::-webkit-file-upload-button{
+  box-sizing:border-box!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:8px 12px!important;
+  margin:0 10px 0 0!important;
+  border:1px solid #dfbd73!important;
+  border-radius:3px!important;
+  background:linear-gradient(135deg,#dfbd73,#f2d79a)!important;
+  color:#24103f!important;
+  -webkit-text-fill-color:#24103f!important;
+  font:inherit!important;
+  font-weight:800!important;
+  line-height:normal!important;
+  vertical-align:middle!important;
+  cursor:pointer!important;
+}
+#admin input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 #admin select{
   min-height:36px!important;
   height:36px!important;
