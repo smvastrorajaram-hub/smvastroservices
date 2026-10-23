@@ -73,7 +73,47 @@ if(host){
  if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');const walker=document.createTreeWalker($('#calDaily'),NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}
  updateHora();renderExtra();renderMonth();
  }
- function updateHora(){if(!daily)return;const now=localNow(),min=+now.slice(11,13)*60+ +now.slice(14,16);const p=daily.en.p;$('#calPriorHora')?.remove();if(selected===now.slice(0,10)&&daily.en.previousNight){const prev=daily.en.previousNight;const h=prev.hora.slice(12).find(h=>{let end=h.end;if(end<=h.start)end+=1440;return min>=h.start&&min<end});if(h){const row=document.createElement('p');row.id='calPriorHora';row.className='cal-tags';row.textContent=L('Current Hora · previous night: ','தற்போதைய ஹோரை · முந்தைய இரவு: ')+(planets.find(x=>x[0]===h.planetEn)?.[ta()?1:0]||h.planetEn)+' · '+h.range;$('#calDaily').prepend(row);}}const lord={Sunday:'Sun',Monday:'Moon',Tuesday:'Mars',Wednesday:'Mercury',Thursday:'Jupiter',Friday:'Venus',Saturday:'Saturn'}[p.vara];$('#calDaily').querySelectorAll('.hora-time').forEach((td,i)=>{const h=p.hora[i];if(!h)return;let a=h.start,b=h.end;const sunset=+p.sunset.slice(0,2)*60+ +p.sunset.slice(3,5);if(i>=12&&a<sunset)a+=1440;if(b<=a)b+=1440;const n=(Date.now()-(Date.parse(selected+'T00:00:00Z')-Number(cfg.offset)*60000))/60000;const current=n>=a&&n<b;const green=['Mercury','Jupiter','Venus'].includes(h.planetEn)||(h.planetEn==='Moon'&&p.tithi.number<=15);td.className='hora-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');td.closest('tr').classList.toggle('cal-current-hora',current);td.setAttribute('aria-label',`${h.range}${current?L(' · Current Hora',' · தற்போதைய ஹோரை'):''}`);});}
+ function updateHora(){
+  if(!daily)return;
+  const now=localNow(),today=now.slice(0,10),min=+now.slice(11,13)*60+ +now.slice(14,16);
+  const p=daily.en.p;
+  const minuteOf=value=>{const m=String(value??'').match(/^(\\d{1,2}):(\\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
+  $('#calPriorHora')?.remove();
+  const sunrise=minuteOf(p.sunrise);
+  const beforeSunrise=selected===today&&sunrise!==null&&min<sunrise;
+  if(beforeSunrise&&daily.en.previousNight){
+   const prev=daily.en.previousNight,sunset=minuteOf(prev.sunset),timelineMinute=min+1440;
+   const h=prev.hora.slice(12).find(item=>{
+    let start=Number(item.start),end=Number(item.end);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||sunset===null)return false;
+    // A night-Hora that starts after midnight belongs to the previous sunrise cycle.
+    if(start<sunset){start+=1440;end+=1440;}
+    if(end<=start)end+=1440;
+    return timelineMinute>=start&&timelineMinute<end;
+   });
+   if(h){
+    const row=document.createElement('p');
+    row.id='calPriorHora';
+    row.className='cal-tags';
+    row.textContent=L('Current Hora · previous sunrise cycle: ','தற்போதைய ஹோரை · முந்தைய சூரிய உதயச் சுற்று: ')+L('Hora ','ஹோரை ')+h.number+' · '+(planets.find(x=>x[0]===h.planetEn)?.[ta()?1:0]||h.planetEn)+' · '+h.range;
+    $('#calDaily').prepend(row);
+   }
+  }
+  const lord={Sunday:'Sun',Monday:'Moon',Tuesday:'Mars',Wednesday:'Mercury',Thursday:'Jupiter',Friday:'Venus',Saturday:'Saturn'}[p.vara];
+  const sunset=minuteOf(p.sunset)??0;
+  $('#calDaily').querySelectorAll('.hora-time').forEach((td,i)=>{
+   const h=p.hora[i];if(!h)return;
+   let a=Number(h.start),b=Number(h.end);
+   if(i>=12&&a<sunset)a+=1440;
+   if(b<=a)b+=1440;
+   // Before today's sunrise, the active Hora belongs to the previous sunrise cycle.
+   const current=selected===today&&!beforeSunrise&&min>=a&&min<b;
+   const green=['Mercury','Jupiter','Venus'].includes(h.planetEn)||(h.planetEn==='Moon'&&p.tithi.number<=15);
+   td.className='hora-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');
+   td.closest('tr').classList.toggle('cal-current-hora',current);
+   td.setAttribute('aria-label',`${h.range}${current?L(' · Current Hora',' · தற்போதைய ஹோரை'):''}`);
+  });
+ }
  async function load(anchor=null){const request=++dayRequest;daily=null;host.setAttribute('aria-busy','true');$('#calStatus').textContent=L('Calculating Panchang, Hora and transits…','பஞ்சாங்கம், ஹோரை மற்றும் கோச்சாரக் கணக்கீடு நடைபெறுகிறது…');try{const resultDay=await workerCall('day',input(selected));if(request!==dayRequest)return;daily=resultDay;$('#calStatus').textContent=`${cfg.place} · ${selected} · ${daily.en.t.requested.time} · UTC ${+cfg.offset/60}`;renderDaily();const key=selected.slice(0,7);if(!month||monthKey!==key){const mr=++monthRequest,hadMonth=!!month;if(!hadMonth)$('#calMonth').textContent=L('Loading monthly calendar…','மாத நாட்காட்டி தயாராகிறது…');const ck=monthCacheKey(key);let result=monthCache.get(ck);if(!result){result=await workerCall('month',input(key+'-01'));rememberMonth(ck,result);}if(request!==dayRequest||mr!==monthRequest)return;monthKey=key;month=result;renderMonth();}if(request===dayRequest){host.removeAttribute('aria-busy');restoreViewport(anchor)}}catch(e){if(request===dayRequest){host.removeAttribute('aria-busy');$('#calStatus').textContent=L('Unable to calculate. Check the location and retry.','கணக்கிட முடியவில்லை. இட விவரங்களைச் சரிபார்த்து மீண்டும் முயலவும்.');const b=document.createElement('button');b.textContent=L('Retry','மீண்டும் முயல்க');b.onclick=()=>load(anchor);$('#calStatus').append(b);restoreViewport(anchor);console.error(e)}}}
  shell();load();window.addEventListener('smv-language',()=>{shell();renderDaily();renderMonth()});
  let lastDate=localNow().slice(0,10);setInterval(()=>{if(document.hidden)return;const date=localNow().slice(0,10);if(lastDate!==date&&selected===lastDate){selected=date;$('#calDate').value=date;lastDate=date;load()}else updateHora()},60000);
