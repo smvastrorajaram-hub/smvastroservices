@@ -896,8 +896,8 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 .smv-part-chevron:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}}
 .smv-install-app-section{width:100%;box-sizing:border-box;margin:22px auto 10px;padding:0px 16px}
 .smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:linear-gradient(rgb(255, 250, 240), rgb(255, 253, 248));box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
-.smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:15px;overflow:hidden;border:1px solid rgb(216, 199, 167);background:rgb(255, 255, 255);display:grid;place-items:center}
-.smv-install-app-icon{width:64px;height:64px;display:block;object-fit:cover}
+.smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:50%;overflow:hidden;border:0;background:#24103F;display:grid;place-items:center}
+.smv-install-app-icon{width:64px;height:64px;display:block;object-fit:contain;border-radius:50%;background:#24103F}
 .smv-install-app-copy{min-width:0px;flex:1 1 0%}
 .smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 .smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:13px!important;line-height:1.45!important;color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important}
@@ -908,7 +908,7 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 @media (max-width: 650px){
 .smv-install-app-section{padding:0px 10px;margin-top:16px}
 .smv-install-app-card{display:grid;grid-template-columns:56px minmax(0px, 1fr);gap:10px;padding:13px 12px}
-.smv-install-app-icon-wrap, .smv-install-app-icon{width:56px;height:56px;border-radius:0}
+.smv-install-app-icon-wrap, .smv-install-app-icon{width:56px;height:56px;border-radius:50%}
 .smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){font-size:16px!important}
 .smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
 .smv-install-app-btn{grid-column:1 / -1;width:100%}}
@@ -2880,7 +2880,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 #smv-products-store-section .smv-products-item:hover{transform:translateY(-2px)}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}.smv-products-logo{display:block;width:100%;height:100%;max-width:none;min-width:0;aspect-ratio:1/1;object-fit:contain;object-position:center;padding:0;border:0;border-radius:0;background:transparent;clip-path:none}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}.smv-products-logo{display:block;width:100%;height:100%;max-width:none;min-width:0;aspect-ratio:1/1;object-fit:contain;object-position:center;padding:0;border:0;border-radius:50%;background:transparent;clip-path:none}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
 #smv-products-store-section .smv-products-item-copy>strong{color:#f3d99b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
 #smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#c4ccdc;font:700 11px/1.4 Arial,sans-serif}
@@ -2942,7 +2942,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
 #smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:15px}
 .smv-master-service{min-height:155px;padding:17px 10px}
 .smv-master-service strong{font-size:0.92rem}
@@ -2960,7 +2960,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-products-store-section{padding:20px 13px;border:0;border-radius:0;box-shadow:none;background:#24103F;}
 .smv-products-store-links{margin-top:16px}
 #smv-products-store-section .smv-products-item{gap:12px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:14px}
 .smv-master-service{min-height:150px}}
 @media (prefers-reduced-motion: reduce){
@@ -3881,9 +3881,9 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     display:block!important;
     width:100%!important;
     margin:0!important;
-    color:#ff0000!important;
-    -webkit-text-fill-color:#ff0000!important;
-    -webkit-text-stroke:.55px #fff0c9!important;
+    color:#FFE2A0!important;
+    -webkit-text-fill-color:#FFE2A0!important;
+    -webkit-text-stroke:0 transparent!important;
     font-family:Georgia,"Times New Roman",serif!important;
     font-size:clamp(20px,6.7vw,31px)!important;
     line-height:.98!important;
@@ -3897,8 +3897,8 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     display:block!important;
     width:100%!important;
     margin-top:5px!important;
-    color:#17273f!important;
-    -webkit-text-fill-color:#17273f!important;
+    color:#FFF8E7!important;
+    -webkit-text-fill-color:#FFF8E7!important;
     -webkit-text-stroke:0 transparent!important;
     font-family:Arial,Helvetica,sans-serif!important;
     font-size:clamp(10px,2.6vw,13px)!important;
@@ -3991,7 +3991,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-actions a{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:42px;padding:9px 7px;border:1px solid #efcf86;border-radius:12px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,3vw,14px);line-height:1.15;font-weight:800;text-align:center;text-decoration:none;box-shadow:0 5px 14px rgba(0,0,0,.12);}
   html body.smv-v12-theme #home .smv33-actions .ask{color:#fff;border-color:#e50055;background:linear-gradient(135deg,#e90058,#d90048);}
   html body.smv-v12-theme #home .smv33-actions .horoscope{color:#20324a;border-color:#75461a;background:rgba(255,250,240,.9);}
-  html body.smv-v12-theme #home .smv33-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;margin-top:16px;color:#17273f;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,2.5vw,12px);line-height:1.2;font-weight:800;text-shadow:none;}
+  html body.smv-v12-theme #home .smv33-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;margin-top:16px;color:#FFF8E7;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,2.5vw,12px);line-height:1.2;font-weight:800;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-trust > span{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;min-width:0;min-height:76px;padding:0 4px;box-sizing:border-box;text-align:center;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-trust span + span::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:1px;background:rgba(122,75,22,.42);}
   html body.smv-v12-theme #home .smv33-trust b{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;overflow:hidden;border:1px solid #b98c43;border-radius:50%;background:#fffaf0;color:#704017;font-size:20px;line-height:1;text-shadow:none;}
