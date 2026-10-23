@@ -2528,8 +2528,8 @@ html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-cs
 /* Legacy desktop header reset. Scoping it to desktop prevents this high-specificity
    rule from cancelling the dedicated mobile burgundy/gold button design below. */
 @media (min-width: 900px){
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){background:none transparent!important;border-color:transparent!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important}
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:rgb(230, 0, 102)!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){background:#fff!important;border-color:rgba(255, 214, 107, .9)!important;color:#541327!important;-webkit-text-fill-color:#541327!important;box-shadow:none!important;border-radius:999px!important;text-shadow:none!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{background:#fff!important;border-color:rgba(255, 214, 107, .9)!important;color:#541327!important;-webkit-text-fill-color:#541327!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-role-green{color:rgb(24, 116, 66)!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-logout-btn{color:rgb(229, 34, 34)!important}
 }
@@ -4217,11 +4217,11 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     margin:0!important;
     padding:9px clamp(6px,.72vw,12px)!important;
     box-sizing:border-box!important;
-    border:1px solid rgba(255,214,107,.82)!important;
+    border:1px solid rgba(255,214,107,.9)!important;
     border-radius:999px!important;
-    background:rgba(5,20,54,.72)!important;
-    color:#fff8e7!important;
-    -webkit-text-fill-color:#fff8e7!important;
+    background:#fff!important;
+    color:#541327!important;
+    -webkit-text-fill-color:#541327!important;
     font:800 clamp(10px,1.02vw,13px)/1 Arial,Helvetica,sans-serif!important;
     white-space:nowrap!important;
     text-align:center!important;
@@ -4230,14 +4230,14 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a.active,
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{
-    background:#ffd66b!important;
-    border-color:#fff0b4!important;
+    background:#fff!important;
+    border-color:rgba(255,214,107,.9)!important;
     color:#541327!important;
     -webkit-text-fill-color:#541327!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:#ffd66b!important;
-    border-color:#ffd66b!important;
+    background:#fff!important;
+    border-color:rgba(255,214,107,.9)!important;
     color:#541327!important;
     -webkit-text-fill-color:#541327!important;
     font-weight:900!important;
@@ -4286,31 +4286,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-repeat:no-repeat,no-repeat!important;
   }
 }
-/* Desktop-only interaction colors. Keep the original gold Register button at rest. */
-@media (min-width:900px){
-  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:#ffd66b!important;
-    border-color:#ffd66b!important;
-    color:#541327!important;
-    -webkit-text-fill-color:#541327!important;
-    font-weight:900!important;
-    text-shadow:none!important;
-    transition:background-color .12s ease,color .12s ease,border-color .12s ease!important;
-  }
-  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
-    background:#ed0054!important;
-    border-color:#ffffff!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900!important;
-    text-shadow:none!important;
-    box-shadow:0 0 0 3px rgba(237,0,84,.22)!important;
-  }
-  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:focus-visible{
-    outline:3px solid #ffffff!important;
-    outline-offset:3px!important;
-  }
-}
+
 /* Footer brand title: force the same high-contrast foreground as the translucent footer. */
 html body #smv24-footer .smv24-footer-top .smv24-brand h2{
   color:#fff8e7!important;
