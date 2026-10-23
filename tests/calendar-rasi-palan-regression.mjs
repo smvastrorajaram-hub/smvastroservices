@@ -8,14 +8,14 @@ import {
   houseFromRasi,
   mondayOf,
   sundayOf,
-  currentWeek,
-  periodReference,
+  
   readingKey,
   selectReading
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
+import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
-const rulesSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan-rules.mjs', import.meta.url), 'utf8');
+const periodsSource = await readFile(new URL('../public/horoscope/calendar/rasi-palan-periods.mjs', import.meta.url), 'utf8');
 const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan.mjs', import.meta.url), 'utf8');
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
@@ -73,7 +73,7 @@ test('Calendar daily Rasi Palan has no separate Moon transit prediction and show
 test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
   assert.doesNotMatch(publicRasiPalanSource, /id="rpDate"|#rpDate|id="rpYear"|#rpYear|Choose a date first/);
   assert.match(publicRasiPalanSource, /periodReference/);
-  assert.match(rulesSource, /currentWeek/);
+  assert.match(periodsSource, /currentWeek/);
   assert.match(publicRasiPalanSource, /Day: |நாள்: /);
   assert.match(publicRasiPalanSource, /Week: |வாரம்: /);
   assert.match(publicRasiPalanSource, /Month: |மாதம்: /);
