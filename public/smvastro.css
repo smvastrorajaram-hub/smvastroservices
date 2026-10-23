@@ -4286,26 +4286,63 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-repeat:no-repeat,no-repeat!important;
   }
 }
-/* Desktop Register: white label at rest, bright red label when focused/clicked/current. */
+/* Desktop-only Register state. Match the legacy header-reset selector specificity,
+   so this rule wins on the actual page rather than only in an isolated preview. */
 @media (min-width:900px){
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:rgba(5,20,54,.76)!important;
-    border:1px solid rgba(255,214,107,.9)!important;
+  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register{
+    background:rgba(5,20,54,.88)!important;
+    border:2px solid #ffd66b!important;
     color:#fff!important;
     -webkit-text-fill-color:#fff!important;
     font-weight:900!important;
     text-shadow:none!important;
+    transition:background-color .12s ease,color .12s ease,border-color .12s ease!important;
   }
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
-    background:#ffd66b!important;
-    border-color:#fff0b4!important;
-    color:#541327!important;
-    -webkit-text-fill-color:#541327!important;
+  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
+    background:#ffe66d!important;
+    border-color:#ffffff!important;
+    color:#081c43!important;
+    -webkit-text-fill-color:#081c43!important;
     font-weight:900!important;
     text-shadow:none!important;
   }
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:focus-visible{
-    outline:3px solid #fff8e7!important;
-    outline-offset:2px!important;
+  html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:focus-visible{
+    outline:3px solid #ffffff!important;
+    outline-offset:3px!important;
+  }
+}
+/* Footer brand title: force the same high-contrast foreground as the translucent footer. */
+html body #smv24-footer .smv24-footer-top .smv24-brand h2{
+  color:#fff8e7!important;
+  -webkit-text-fill-color:#fff8e7!important;
+  font-size:clamp(30px,4vw,48px)!important;
+  font-weight:900!important;
+  line-height:1.12!important;
+  text-shadow:0 1px 2px rgba(3,12,32,.72)!important;
+}
+/* Mobile-only hanging-indent bullets: wrapped words remain aligned with the link text. */
+@media (max-width:760px){
+  html body #smv24-footer .smv24-columns .smv26-links a{
+    display:block!important;
+    position:relative!important;
+    padding:5px 0 5px 16px!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    white-space:normal!important;
+    overflow-wrap:normal!important;
+    word-break:normal!important;
+  }
+  html body #smv24-footer .smv24-columns .smv26-links a::before{
+    content:""!important;
+    position:absolute!important;
+    left:1px!important;
+    top:14px!important;
+    display:block!important;
+    width:5px!important;
+    height:5px!important;
+    margin:0!important;
+    border-top:2px solid #ffd66b!important;
+    border-right:2px solid #ffd66b!important;
+    transform:rotate(45deg)!important;
   }
 }
