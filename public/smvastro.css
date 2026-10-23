@@ -3016,7 +3016,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #askNowSection p, #askNowSection .smv-new-asknow-note{text-shadow:none!important}
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){background:linear-gradient(135deg, rgb(255, 216, 61), rgb(255, 197, 27))!important;color:rgb(23, 18, 11)!important}
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(circle at 90% 15%, rgba(255, 193, 34, 0.18), transparent 20rem), linear-gradient(125deg, rgb(184, 0, 53) 0%, rgb(142, 10, 25) 58%, rgb(111, 9, 13) 100%)!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:#001860!important}
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 220, 63)!important;opacity:1!important;text-shadow:rgba(0, 0, 0, 0.08) 0px 1px 0px!important}
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){opacity:1!important;text-shadow:none!important}
 @media (max-width: 900px){
@@ -3052,15 +3052,15 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 #askNowSection .smv-new-asknow-kicker{color:#f3d99b!important;opacity:1!important}
 #askNowSection #askNowHeading, #askNowSection h2{color:#f3d99b!important;text-shadow:none!important}
 #askNowSection p, #askNowSection .smv-new-asknow-note{opacity:1!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21)!important;}
-.smv-master-footer::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:35%;background:linear-gradient(90deg, rgb(133, 11, 20) 0%, rgba(133, 11, 20, 0.18) 38%, rgba(133, 11, 20, 0.02)), url("assets/footer.png") center center / cover no-repeat;opacity:0.92;pointer-events:none}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;background:#001860!important;}
+.smv-master-footer::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:35%;background:none!important;opacity:0!important;pointer-events:none}
 .smv-master-footer-in{position:relative;z-index:2}
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 221, 63)!important}
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 77, 154)!important}
 @media (max-width: 900px){
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:330px!important;background:linear-gradient(90deg, rgba(255, 246, 232, 0.06), transparent 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{bottom:0px!important;height:150px!important;background:linear-gradient(rgb(121, 12, 18) 0%, rgba(121, 12, 18, 0.28) 35%, rgba(121, 12, 18, 0.05)), url("assets/footer.png") center center / cover no-repeat!important;opacity:0.75!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{bottom:0px!important;height:150px!important;background:none!important;opacity:0!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){padding-bottom:165px!important}}
 :root{--smv-r:#e90046;--smv-r2:#b90036;--smv-y:#ffd238;--smv-p:#ff3f91;--smv-ink:#f2eddf;--smv-cream:#001860}
 body:where(:not(.smv-css-island,.smv-css-island *)){background:#001860!important;color:#f2eddf!important}
@@ -3081,8 +3081,8 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{display:none!important}
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){max-width:1100px!important;padding:10px 18px 16px!important;gap:12px!important}
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:0;border-radius:0;box-shadow:none;min-height:150px!important;background:transparent;color:#f2eddf!important;}
-.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 240, 245))!important}
-.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 242, 200))!important}
+.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:#001860!important}
+.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:#001860!important}
 #smvInstallAppSection{max-width:760px!important;margin:0px auto 10px!important}
 .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
 #askNowSection.smv-new-asknow{background:#001860!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
@@ -3097,7 +3097,7 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){max-width:800px!important;margin:auto!important}
 .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-cat b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:#001860!important;position:relative!important;overflow:hidden!important;color:#f2eddf!important;}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:34%;background:linear-gradient(90deg, rgb(133, 9, 22) 0%, rgba(133, 9, 22, 0.12) 42%, rgba(133, 9, 22, 0.02)), url("assets/footer.png") center center / cover no-repeat!important;opacity:0.95!important;pointer-events:none!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:34%;background:none!important;opacity:0!important;pointer-events:none!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;grid-template-columns:1.25fr 0.75fr 0.8fr 1.15fr!important;gap:26px!important;padding:34px 24px 28px!important;position:relative!important;z-index:2!important}
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 223, 62)!important;font-size:1.55rem!important}
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 74, 154)!important;font-weight:900!important}
@@ -3115,7 +3115,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(2, minmax(0px, 1fr))!important;padding:10px!important;gap:9px!important}
 #askNowSection .smv-new-asknow-inner{margin:0px 10px!important;padding:25px 15px 20px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(4, 1fr)!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{top:auto!important;width:100%!important;height:145px!important;opacity:0.68!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{top:auto!important;width:100%!important;height:145px!important;opacity:0!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:1fr 1fr!important;gap:20px 16px!important;padding:28px 18px 160px!important;text-align:left!important}
 .smv-master-footer-in > div:first-child:where(:not(.smv-css-island,.smv-css-island *)){grid-column:1 / -1!important;text-align:center!important}
 .smv-master-footer-in > div:nth-child(2):where(:not(.smv-css-island,.smv-css-island *)){grid-column:1!important}
