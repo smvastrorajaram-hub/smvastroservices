@@ -2623,11 +2623,11 @@ html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-i
 #smv24-footer *{box-sizing:border-box}
 .smv24-footer-top{max-width:1160px;margin:auto;padding:32px 24px 0px}
 #smv24-footer .smv24-brand{text-align:center}
-#smv24-footer h2{font:700 clamp(32px, 5vw, 54px) / 1.15 Georgia, serif;color:rgb(133, 10, 32);margin:0px 0px 12px}
+#smv24-footer h2{font:700 clamp(32px, 5vw, 54px) / 1.15 Georgia, serif;color:#fff8e7;margin:0px 0px 12px;text-shadow:none}
 #smv24-footer h2 span{color:rgb(194, 141, 37)}
 #smv24-footer .smv24-brand p{font:22px / 1.4 Georgia, serif;margin:0px auto 10px;color:rgb(33, 29, 36)}
 .smv24-brand small{letter-spacing:0.22em;font-size:12px}
-.smv24-brand em{display:block;font:italic 25px / 1.5 Georgia, serif;color:rgb(133, 10, 32);margin:14px auto 28px}
+.smv24-brand em{display:block;font:italic 25px / 1.5 Georgia, serif;color:#ffe2a0;margin:14px auto 28px;text-shadow:none}
 .smv24-columns{display:grid;grid-template-columns:repeat(3, 1fr);gap:32px;padding:20px 0px 28px}
 #smv24-footer h3{color:rgb(133, 10, 32);font-size:22px;margin:0px 0px 14px}
 #smv24-footer a{color:rgb(33, 29, 36);text-decoration:none}
@@ -3434,22 +3434,22 @@ nn #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(
 @media (max-width: 600px){
 #admin .smv-admin-nav{display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:8px!important;width:100%!important}
 #admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{width:100%!important;min-width:0px!important;max-width:none!important;height:42px!important;min-height:42px!important;max-height:42px!important;margin:0px!important;padding:4px 5px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow:hidden!important;aspect-ratio:auto!important}}
-html body #smv24-footer:where(:not(.hidden)){display:block!important;background:rgb(255, 255, 255)!important;color:rgb(35, 28, 33)!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
+html body #smv24-footer:where(:not(.hidden)){display:block!important;background-color:#081c43!important;background-image:linear-gradient(125deg,rgba(4,16,45,.76),rgba(9,24,52,.66)),url("./photo/smv-home-desktop-hero.webp")!important;background-size:cover,cover!important;background-position:center top,center top!important;background-repeat:no-repeat,no-repeat!important;color:#fff8e7!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
 html body #smv24-footer::before, html body #smv24-footer::after{content:none!important;display:none!important}
-html body #smv24-footer .smv24-footer-top{background:rgb(255, 255, 255)!important;max-width:1160px!important;margin:0px auto!important;padding:36px 24px 0px!important}
-html body #smv24-footer .smv24-brand{text-align:center!important;color:rgb(33, 29, 36)!important}
-html body #smv24-footer .smv24-brand p{color:rgb(33, 29, 36)!important;font-weight:400!important}
-html body #smv24-footer .smv24-brand small{color:rgb(64, 54, 58)!important}
+html body #smv24-footer .smv24-footer-top{background:transparent!important;max-width:1160px!important;margin:0px auto!important;padding:36px 24px 0px!important}
+html body #smv24-footer .smv24-brand{text-align:center!important;color:#fff8e7!important;text-shadow:none!important}
+html body #smv24-footer .smv24-brand p{color:rgba(255,248,231,.96)!important;font-weight:500!important}
+html body #smv24-footer .smv24-brand small{color:#ffe2a0!important}
 html body #smv24-footer .smv24-columns{display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:30px!important;text-align:left!important;padding:20px 0px 28px!important;background:transparent!important}
 html body #smv24-footer .smv26-links{display:block!important;background:transparent!important;padding:0px 20px!important;border:0px!important;min-width:0px!important}
-html body #smv24-footer .smv26-links h3{font:700 22px / 1.3 Arial, sans-serif!important;color:rgb(133, 10, 32)!important;background:transparent!important;margin:0px 0px 12px!important}
-html body #smv24-footer .smv26-links a{display:block!important;position:static!important;width:auto!important;min-width:0px!important;min-height:0px!important;padding:5px 0px!important;margin:0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:transparent!important;color:rgb(39, 33, 41)!important;font:400 16px / 1.5 Arial, sans-serif!important;text-decoration:none!important;transform:none!important;white-space:normal!important;overflow-wrap:break-word!important}
-html body #smv24-footer .smv26-links a::before{content:"›";color:rgb(133, 10, 32);margin-right:10px}
-html body #smv24-footer .smv26-links a:hover{text-decoration:underline!important}
-html body #smv24-footer .smv24-contact{color:rgb(39, 33, 41)!important}
-html body #smv24-footer .smv24-contact a{display:inline-flex!important;align-items:center!important;gap:8px!important;color:rgb(39, 33, 41)!important;background:transparent!important;border:0px!important;box-shadow:none!important}
+html body #smv24-footer .smv26-links h3{font:700 22px / 1.3 Arial, sans-serif!important;color:#ffd66b!important;background:transparent!important;margin:0px 0px 12px!important;text-shadow:none!important}
+html body #smv24-footer .smv26-links a{display:block!important;position:static!important;width:auto!important;min-width:0px!important;min-height:0px!important;padding:5px 0px!important;margin:0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:transparent!important;color:rgba(255,248,231,.94)!important;font:500 16px / 1.5 Arial, sans-serif!important;text-decoration:none!important;transform:none!important;white-space:normal!important;overflow-wrap:break-word!important;text-shadow:none!important}
+html body #smv24-footer .smv26-links a::before{content:"›";color:#ffd66b!important;margin-right:10px}
+html body #smv24-footer .smv26-links a:hover{text-decoration:underline!important;color:#ffd66b!important}
+html body #smv24-footer .smv24-contact{color:rgba(255,248,231,.96)!important;border-top-color:rgba(255,214,107,.55)!important}
+html body #smv24-footer .smv24-contact a{display:inline-flex!important;align-items:center!important;gap:8px!important;color:rgba(255,248,231,.96)!important;background:transparent!important;border:0px!important;box-shadow:none!important;text-shadow:none!important}
 html body #smv24-footer .smv24-social{display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;gap:22px!important}
-html body #smv24-footer .smv24-social a{display:flex!important;flex-direction:column!important;align-items:center!important;gap:7px!important;color:rgb(39, 33, 41)!important;background:transparent!important;border:0px!important;padding:0px!important;box-shadow:none!important;font:400 13px / 1.4 Arial, sans-serif!important}
+html body #smv24-footer .smv24-social a{display:flex!important;flex-direction:column!important;align-items:center!important;gap:7px!important;color:rgba(255,248,231,.96)!important;background:transparent!important;border:0px!important;padding:0px!important;box-shadow:none!important;font:500 13px / 1.4 Arial, sans-serif!important;text-shadow:none!important}
 html body #smv24-footer .smv24-scenery{margin:20px 0px 0px!important;padding:0px!important;height:390px!important;background:url("assets/footer.png") center bottom / cover no-repeat!important}
 html body #smv24-footer .smv24-scenery p{color:rgb(56, 32, 11)!important;font:italic 24px / 1.4 Georgia, serif!important;text-shadow:white 0px 1px 3px!important}
 html body #smv24-footer .smv24-copyright{background:rgb(133, 10, 32)!important;color:rgb(255, 255, 255)!important;padding:24px 16px!important;text-align:center!important;border-top:5px solid rgb(203, 163, 66)!important;font:400 14px / 1.6 Arial, sans-serif!important}
@@ -4273,5 +4273,34 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-picture,
   html body.smv-v12-theme #home .smv33-photo{
     display:none!important;
+  }
+}
+
+/* Footer content floats over the same celestial-style photograph as the Hero. */
+@media (max-width:760px){
+  html body #smv24-footer:where(:not(.hidden)){
+    background-color:#081c43!important;
+    background-image:linear-gradient(145deg,rgba(4,16,45,.76),rgba(9,24,52,.66)),url("./photo/smv-home-mobile-hero.webp")!important;
+    background-size:cover,cover!important;
+    background-position:center center,center center!important;
+    background-repeat:no-repeat,no-repeat!important;
+  }
+}
+/* Desktop Register: white label at rest, bright red label when focused/clicked/current. */
+@media (min-width:900px){
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
+    background:rgba(5,20,54,.76)!important;
+    border:1px solid rgba(255,214,107,.9)!important;
+    color:#fff!important;
+    -webkit-text-fill-color:#fff!important;
+    font-weight:900!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
+    background:rgba(255,248,231,.96)!important;
+    border-color:#ff003b!important;
+    color:#ff003b!important;
+    -webkit-text-fill-color:#ff003b!important;
+    font-weight:900!important;
   }
 }
