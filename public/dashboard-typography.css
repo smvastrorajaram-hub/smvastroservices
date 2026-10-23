@@ -381,3 +381,44 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
     margin-bottom:12px;
   }
 }
+
+
+/* ---------- Customer and Astrologer Dashboard workgroup headings ---------- */
+#dashboardContent .smv-dashboard-workgroup-heading{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  margin:24px 0 12px;
+  padding:12px 0 8px;
+  border-top:2px solid #e4c98f;
+  color:#861b28;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+#dashboardContent .smv-dashboard-workgroup-heading:first-child{
+  margin-top:10px;
+}
+#dashboardContent .smv-dashboard-workgroup-number{
+  flex:0 0 auto;
+  font-size:12px;
+  font-weight:800;
+  color:#805b1a;
+  letter-spacing:.03em;
+}
+#dashboardContent .smv-dashboard-workgroup-text{
+  min-width:0;
+}
+@media(max-width:700px){
+  #dashboardContent .smv-dashboard-workgroup-heading{
+    gap:7px;
+    margin:20px 0 10px;
+    padding:10px 0 7px;
+    font-size:16px;
+    line-height:1.45;
+  }
+  #dashboardContent .smv-dashboard-workgroup-number{
+    font-size:11px;
+  }
+}
