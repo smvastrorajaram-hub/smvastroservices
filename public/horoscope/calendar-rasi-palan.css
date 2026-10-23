@@ -16,15 +16,9 @@
 #calRasiPalan .rp-method-note{margin:12px 0}
 #calRasiPalan .rp-status{min-height:20px;font-size:13px;line-height:1.6;color:#37665a}
 #calRasiPalan .rp-status.is-error{color:#9a2f2f}
-#calRasiPalan .rp-manual-editor{margin:16px 0 20px;padding:12px 14px;border:1px solid #d4e0d7;border-radius:10px;background:#fff}
-#calRasiPalan .rp-manual-editor summary{cursor:pointer;font-weight:750;color:#155a52;padding:4px}
-#calRasiPalan .rp-editor-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-#calRasiPalan .rp-manual-text-label{display:grid;gap:8px;margin-top:14px;font-size:13px;font-weight:700}
-#calRasiPalan .rp-editor-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 #calRasiPalan .rp-results-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:24px 0 14px;padding:0 0 12px;border-bottom:1px solid #d9e5dc}
 #calRasiPalan .rp-results-title h3{font-size:21px;margin:0 0 5px}
 #calRasiPalan .rp-results-title p{margin:0;color:#587069;font-size:13px;line-height:1.7}
-#calRasiPalan .rp-mode-chip{flex:0 0 auto;border:1px solid #d8bd75;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:800;color:#725222;background:#fff8e8}
 #calRasiPalan .rp-rasi-card{margin:16px 0 20px;padding:14px 0;border:0;border-top:1px solid #d6e2d9;background:transparent}
 #calRasiPalan .rp-rasi-card h4{font-size:19px;margin:0 0 10px}
 #calRasiPalan .rp-planets-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -51,6 +45,5 @@
  #calRasiPalan .rp-planets-grid{grid-template-columns:1fr}
  #calRasiPalan .rp-rasi-grid{grid-template-columns:1fr}
  #calRasiPalan .rp-results-title{display:block}
- #calRasiPalan .rp-mode-chip{display:inline-block;margin-top:10px}
  #calRasiPalan .rp-planet{padding:10px}
 }
