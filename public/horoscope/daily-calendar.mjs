@@ -94,7 +94,7 @@ if(host){
    if(h){
     const row=document.createElement('p');
     row.id='calPriorHora';
-    row.className='cal-tags';
+    row.className='cal-tags cal-current-hora';
     row.textContent=L('Current Hora · previous sunrise cycle: ','தற்போதைய ஹோரை · முந்தைய சூரிய உதயச் சுற்று: ')+L('Hora ','ஹோரை ')+h.number+' · '+(planets.find(x=>x[0]===h.planetEn)?.[ta()?1:0]||h.planetEn)+' · '+h.range;
     $('#calDaily').prepend(row);
    }
