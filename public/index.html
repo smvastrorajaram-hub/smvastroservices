@@ -317,7 +317,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="dashboardContent"></div>
 </section><section class="hidden smv-type-root" id="admin">
 <div class="card"><div><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg"></div><div class="stats-grid admin-summary-grid" id="adminSummary"></div></div>
-<div class="card"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div><div class="card" id="adminPrivateConsultationCard">
+<section class="admin-workgroup" id="adminGroupPublicQuestions" aria-labelledby="adminGroupPublicQuestionsTitle">
+<h2 class="admin-workgroup-title" id="adminGroupPublicQuestionsTitle">01 · Public Questions & Answers / பொது கேள்விகள் மற்றும் பதில்கள்</h2>
+<p class="admin-workgroup-description">Approve public questions and submitted answers; review recent questions and response-length rules. / பொது கேள்விகள் மற்றும் பதில்களை ஒப்புதல் அளித்து, சமீபத்திய கேள்விகளையும் பதில் சொல் வரம்பையும் நிர்வகிக்கவும்.</p>
+<div class="card"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div>
+<div class="card"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
+<div class="card"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
+<div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
+</section>
+<section class="admin-workgroup" id="adminGroupPrivateConsultation" aria-labelledby="adminGroupPrivateConsultationTitle">
+<h2 class="admin-workgroup-title" id="adminGroupPrivateConsultationTitle">02 · Private Consultation / தனிப்பட்ட ஆலோசனை</h2>
+<p class="admin-workgroup-description">Manage private consultation questions, answer approvals, answer length, commission and alerts. / தனிப்பட்ட ஆலோசனைக் கேள்விகள், பதில் ஒப்புதல், சொல் வரம்பு, கமிஷன் மற்றும் அறிவிப்புகளை நிர்வகிக்கவும்.</p>
+<div class="card" id="adminPrivateConsultationCard">
 <h3>Private Consultation — Question Approval</h3>
 <p class="small">Separate from Ask Now. Paid private questions are handled only with the customer-selected astrologer.</p>
 <div id="privateConsultWorkflowControl"></div>
@@ -333,19 +344,39 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="action-row"><input id="privateMinimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="savePrivateMinimumAnswerWords" type="button">SAVE WORD COUNT</button></div>
 <div class="small" id="privateMinimumAnswerWordsMsg"></div>
 </div>
+<div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
+<div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+</section>
+<section class="admin-workgroup" id="adminGroupAstrologers" aria-labelledby="adminGroupAstrologersTitle">
+<h2 class="admin-workgroup-title" id="adminGroupAstrologersTitle">03 · Astrologer Management / ஜோதிடர் நிர்வாகம்</h2>
+<p class="admin-workgroup-description">Review astrologer applications and manage approved public profile descriptions. / ஜோதிடர் விண்ணப்பங்களை ஆய்வு செய்து, பொது சுயவிவர விவரங்களை நிர்வகிக்கவும்.</p>
 <div class="card"><h3>Astrologer Applications</h3><div id="pendingAstros"><div class="empty">Loading applications...</div></div></div>
 <div class="card" id="adminAstrologerProfileManagementCard"><div><h3>Astrologer Profile Management</h3><button aria-label="Collapse Astrologer Profile Management" class="smv-v170-collapse-btn" id="adminAstrologerProfileManagementToggle" title="Collapse" type="button">▼</button></div><div id="adminAstrologerProfileManagementBody"><p class="small">Allow or block profile-description editing, review submitted descriptions, or update an approved public description directly.</p><div id="adminAstrologerProfiles"><div class="empty">Loading approved astrologer profiles...</div></div></div></div>
-<div class="card"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
-<div class="card"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
-<div class="card"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
-<div class="card"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
-<div class="card"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"/><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></div>
-<div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
-<div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
+</section>
+<section class="admin-workgroup" id="adminGroupPricing" aria-labelledby="adminGroupPricingTitle">
+<h2 class="admin-workgroup-title" id="adminGroupPricingTitle">04 · Service Pricing, Access & Commission / சேவை கட்டணம், அணுகல் & கமிஷன்</h2>
+<p class="admin-workgroup-description">Set public-question pricing, Horoscope and Matching access, and standard Ask Now commission. / பொது கேள்விக் கட்டணம், Horoscope/Matching அணுகல் மற்றும் வழக்கமான Ask Now கமிஷனை அமைக்கவும்.</p>
 <div class="card"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"/><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></div><div class="small" id="questionPriceMsg"></div></div>
 <div class="card" id="adminHoroscopePriceSet"><h3>Horoscope Price Set</h3><p class="small">Set access and price for Advanced Horoscope Analysis and Marriage Matching. When enabled with ₹0, the feature remains free.</p><div class="grid"><div><label class="small" for="advancedAnalysisPaymentEnabled"><b>Advanced Analysis</b></label><select id="advancedAnalysisPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="advancedAnalysisPrice"><b>Advanced Analysis Price ₹</b></label><input id="advancedAnalysisPrice" min="0" placeholder="Advanced Analysis price" step="0.01" type="number"/></div><div><label class="small" for="marriageMatchingPaymentEnabled"><b>Marriage Matching</b></label><select id="marriageMatchingPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="marriageMatchingPrice"><b>Marriage Matching Price ₹</b></label><input id="marriageMatchingPrice" min="0" placeholder="Marriage Matching price" step="0.01" type="number"/></div></div><div class="action-row"><button class="btn" id="saveHoroscopePaymentSettings" type="button">SAVE HOROSCOPE SETTINGS</button></div><div class="small" id="horoscopePaymentSettingsMsg"></div></div>
-<div class="card"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div><div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
-<div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
+<div class="card" id="adminCommissionSettings"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div>
+</section>
+<section class="admin-workgroup" id="adminGroupPayments" aria-labelledby="adminGroupPaymentsTitle">
+<h2 class="admin-workgroup-title" id="adminGroupPaymentsTitle">05 · Payments, Refunds & Payouts / பணப்பரிவர்த்தனை, Refunds & Payouts</h2>
+<p class="admin-workgroup-description">Review payment-method changes, rejected-question refunds, astrologer withdrawals, earnings and Razorpay connectivity. / கட்டண முறையின் மாற்றங்கள், கேள்வி refund-கள், ஜோதிடர் withdrawals, வருமானம் மற்றும் Razorpay இணைப்பை ஆய்வு செய்யவும்.</p>
+<div class="card"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
+<div class="card"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
+<div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
+<div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
+<div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
+</section>
+<section class="admin-workgroup" id="adminGroupReviews" aria-labelledby="adminGroupReviewsTitle">
+<h2 class="admin-workgroup-title" id="adminGroupReviewsTitle">06 · Customer Reviews / வாடிக்கையாளர் மதிப்புரைகள்</h2>
+<p class="admin-workgroup-description">Manage the customer review displayed on the website. / இணையதளத்தில் காட்டப்படும் வாடிக்கையாளர் மதிப்புரையை நிர்வகிக்கவும்.</p>
+<div class="card"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"/><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></div>
+</section>
+<section class="admin-workgroup" id="adminGroupContent" aria-labelledby="adminGroupContentTitle">
+<h2 class="admin-workgroup-title" id="adminGroupContentTitle">07 · Website Content & Media / இணையதள உள்ளடக்கம் & மீடியா</h2>
+<p class="admin-workgroup-description">Create and publish blog posts; manage downloadable documents, images, videos and music. / வலைப்பதிவுகளை உருவாக்கி வெளியிட்டு, பதிவிறக்க ஆவணங்கள், படங்கள், வீடியோக்கள் மற்றும் இசையை நிர்வகிக்கவும்.</p>
 <div class="card" id="adminContentManager">
 <h3>Blogs &amp; Downloadable Content</h3>
 <p class="small">Create, edit and publish blogs. Upload PDF documents, images and videos for customers to view or download.</p>
@@ -381,8 +412,8 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
-<div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
-<div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+</section>
+
 </section></div>
 <section class="hidden" id="astro-register-form">
 <div class="card">
