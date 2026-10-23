@@ -201,7 +201,10 @@ body.smv-v12-theme #astro-register-form #astroRegistrationForm input[type="file"
   background:#f3d99b!important;
   border:1px solid #dfbd73!important;
   border-radius:0!important;
-  font:700 13px/1.3 inherit!important;
+  font-family:inherit!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  line-height:1.3!important;
   padding:8px 12px!important;
   margin-inline-end:10px!important;
   cursor:pointer!important;
