@@ -2434,7 +2434,7 @@ html body :is(#admin, #dashboard) label{display:block}
 .smv-workflow-card [data-workflow="reject-question"]:where(:not(.smv-css-island,.smv-css-island *)), .smv-workflow-card [data-workflow="reject-answer"]:where(:not(.smv-css-island,.smv-css-island *)){border-style:dashed!important}
 .smv-refresh:where(:not(.smv-css-island,.smv-css-island *)){margin:8px 0px 16px!important}
 #adminPendingQuestions, #adminAnswers, #adminRefunds{scroll-margin-top:100px}
-html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;box-shadow:none!important;border:1px solid rgb(221, 221, 221)!important}
+html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;box-shadow:none!important;border:1px solid rgb(221, 221, 221)!important;border:0!important;border-radius:0!important;}
 @media (max-width: 650px){
 html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){padding:14px!important}
 .smv-workflow-card .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){flex:0 0 auto}
@@ -2612,9 +2612,9 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 html body.smv-v12-theme #askNowSection{background:none rgb(255, 255, 255)!important;color:rgb(39, 32, 37)!important}
 html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowSection::after{display:none!important}
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important}
-html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:rgb(113, 18, 40)!important;text-align:center!important;display:block!important}
+html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:#f2eddf!important;text-align:center!important;display:block!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:14px!important;line-height:1.4!important}
-html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important;background:transparent!important;border:0px!important;box-shadow:none!important;padding:0px!important}
 .registration-icon .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important}
 #smv24-footer{width:100%;background:rgb(255, 255, 255);color:rgb(33, 29, 36);font:16px / 1.6 Arial, sans-serif;overflow:hidden;margin-top:32px}
@@ -2891,7 +2891,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:rgb(255, 255, 255);color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
 .smv-master-service strong{display:block;font-size:1rem;margin-bottom:7px}
 .smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116);color:#b7c2d5;}
-#askNowSection.smv-new-asknow{margin:0px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:radial-gradient(circle at 92% 70%, rgba(255, 207, 45, 0.32), transparent 18rem), linear-gradient(100deg, rgb(174, 0, 50), rgb(239, 10, 70))!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;}
+#askNowSection.smv-new-asknow{margin:0px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;}
 #askNowSection .smv-new-asknow-inner{max-width:1320px!important;padding:38px 24px 22px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .smv-new-asknow-kicker:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 219, 118)!important}
 .smv-new-asknow h2:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
@@ -2910,7 +2910,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
 #astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:24px!important}
-.smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 242, 246), rgb(255, 249, 222))!important;border:1px solid rgb(243, 221, 228)!important;border-radius:12px!important}
+.smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:12px!important;border-radius:0!important;box-shadow:none!important;color:#dfbd73!important;}
 .smv-master-proof{max-width:1260px;margin:auto;padding:12px 24px 42px;display:grid;grid-template-columns:repeat(4, 1fr)}
 .smv-master-proof div{text-align:center;padding:18px;border-right:1px solid rgb(238, 238, 238)}
 .smv-master-proof div:last-child{border:0px}
@@ -3083,7 +3083,7 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 242, 200))!important}
 #smvInstallAppSection{max-width:760px!important;margin:0px auto 10px!important}
 .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
-#askNowSection.smv-new-asknow{background:radial-gradient(circle at 4% 50%, rgba(255, 255, 255, 0.07), transparent 16rem), linear-gradient(100deg, rgb(173, 0, 52), rgb(232, 5, 70) 72%, rgb(255, 41, 62))!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+#askNowSection.smv-new-asknow{background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:transparent!important;border-radius:0!important;padding:27px 24px 20px!important;border:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 10, 119)!important}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
@@ -3094,7 +3094,7 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){background:linear-gradient(rgb(255, 219, 67), rgb(255, 197, 26))!important;color:rgb(37, 26, 0)!important}
 .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){max-width:800px!important;margin:auto!important}
 .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-cat b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(105deg, rgb(183, 0, 54) 0%, rgb(144, 0, 28) 58%, rgb(123, 11, 14) 100%)!important;position:relative!important;overflow:hidden!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21 100%)!important;position:relative!important;overflow:hidden!important;color:#f2eddf!important;}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:34%;background:linear-gradient(90deg, rgb(133, 9, 22) 0%, rgba(133, 9, 22, 0.12) 42%, rgba(133, 9, 22, 0.02)), url("assets/footer.png") center center / cover no-repeat!important;opacity:0.95!important;pointer-events:none!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;grid-template-columns:1.25fr 0.75fr 0.8fr 1.15fr!important;gap:26px!important;padding:34px 24px 28px!important;position:relative!important;z-index:2!important}
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 223, 62)!important;font-size:1.55rem!important}
