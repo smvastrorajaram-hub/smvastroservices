@@ -4203,8 +4203,8 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     border:0!important;
     box-shadow:none!important;
   }
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a,
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a:not(.hidden),
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.hidden){
     display:inline-flex!important;
     flex:1 1 0!important;
     width:0!important;
@@ -4236,9 +4236,10 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     color:#fff8e7!important;
     -webkit-text-fill-color:#fff8e7!important;
   }
-  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:#ffd66b!important;
-    border-color:#ffd66b!important;
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register,
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
+    background:rgba(5,20,54,.72)!important;
+    border-color:rgba(255,214,107,.82)!important;
     color:#fff8e7!important;
     -webkit-text-fill-color:#fff8e7!important;
     font-weight:900!important;
