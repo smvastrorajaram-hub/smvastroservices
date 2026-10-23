@@ -3197,7 +3197,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:none rgb(255, 255, 255)!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:rgb(23, 25, 39)!important;overflow:visible!important;position:relative!important;z-index:1000!important}
 #smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:rgb(255, 255, 255)!important}
 #smvPremiumHeaderV9 .smv9-brand{display:flex!important;align-items:center!important;gap:9px!important;min-width:max-content!important;margin:0px!important;padding:0px!important;background:transparent!important;border:0px!important;text-decoration:none!important}
-#smvPremiumHeaderV9 .smv9-brand img{display:block!important;width:72px!important;height:72px!important;max-width:72px!important;object-fit:contain!important;object-position:center!important;padding:3px!important;box-sizing:border-box!important;overflow:hidden!important;border:1px solid rgb(213, 178, 101)!important;border-radius:50%!important;background:rgb(255, 250, 240)!important}
+#smvPremiumHeaderV9 .smv9-brand img{display:block!important;width:72px!important;height:72px!important;max-width:72px!important;object-fit:cover!important;object-position:center!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;border:0!important;border-radius:50%!important;background:transparent!important}
 #smvPremiumHeaderV9 .smv9-brand span{display:flex!important;flex-direction:column!important;align-items:flex-start!important;line-height:1!important}
 #smvPremiumHeaderV9 .smv9-brand strong{display:block!important;color:rgb(213, 10, 69)!important;font:900 29px / 1 Georgia, "Times New Roman", serif!important;white-space:nowrap!important}
 #smvPremiumHeaderV9 .smv9-brand small{display:block!important;margin-top:5px!important;color:rgb(111, 82, 96)!important;font:650 10.5px / 1.15 Arial, sans-serif!important;white-space:nowrap!important}
@@ -4101,3 +4101,177 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 }
 .smv-main-place-note.smv-error{color:#9a1b1b;}
 
+
+
+/* SMV ASTRO: share the desktop celestial artwork continuously across Header + Hero.
+   The same landscape WebP is positioned against the same viewport-wide coordinate system. */
+@media (min-width: 900px){
+  html body.smv-v12-theme #smvPremiumHeaderV9:where(:not(.hidden)){
+    width:100%!important;
+    height:112px!important;
+    min-height:112px!important;
+    max-height:112px!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    background-color:#081c43!important;
+    background-image:url("./photo/smv-home-desktop-hero.webp")!important;
+    background-size:100vw auto!important;
+    background-position:center top!important;
+    background-repeat:no-repeat!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-nav{
+    display:flex!important;
+    width:100%!important;
+    max-width:1280px!important;
+    height:112px!important;
+    min-height:112px!important;
+    max-height:112px!important;
+    margin:0 auto!important;
+    padding:8px clamp(12px,2vw,24px)!important;
+    box-sizing:border-box!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:clamp(10px,1.5vw,20px)!important;
+    background:transparent!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand{
+    flex:0 1 auto!important;
+    min-width:0!important;
+    gap:9px!important;
+    align-items:center!important;
+    background:transparent!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand > img{
+    display:block!important;
+    flex:0 0 72px!important;
+    width:72px!important;
+    height:72px!important;
+    max-width:none!important;
+    max-height:72px!important;
+    margin:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+    object-fit:cover!important;
+    object-position:center!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    filter:none!important;
+    transform:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand > span{
+    min-width:0!important;
+    align-items:flex-start!important;
+    background:transparent!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand strong{
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
+    font-size:clamp(20px,2.25vw,29px)!important;
+    line-height:1.02!important;
+    white-space:nowrap!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand small{
+    margin:5px 0 0!important;
+    padding:0!important;
+    color:#ffe2a0!important;
+    -webkit-text-fill-color:#ffe2a0!important;
+    font-size:clamp(9px,.82vw,11px)!important;
+    line-height:1.15!important;
+    white-space:nowrap!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu{
+    display:flex!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    width:auto!important;
+    margin:0!important;
+    padding:0!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:clamp(1px,.35vw,6px)!important;
+    overflow:visible!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a,
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
+    display:inline-flex!important;
+    flex:0 0 auto!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:0!important;
+    min-height:38px!important;
+    height:auto!important;
+    margin:0!important;
+    padding:9px clamp(6px,.72vw,12px)!important;
+    box-sizing:border-box!important;
+    border:1px solid rgba(255,214,107,.82)!important;
+    border-radius:999px!important;
+    background:rgba(5,20,54,.72)!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
+    font:800 clamp(10px,1.02vw,13px)/1 Arial,Helvetica,sans-serif!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+    text-shadow:none!important;
+    box-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a.active,
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{
+    background:#ffd66b!important;
+    border-color:#fff0b4!important;
+    color:#541327!important;
+    -webkit-text-fill-color:#541327!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
+    background:#ffd66b!important;
+    border-color:#ffd66b!important;
+    color:#541327!important;
+    -webkit-text-fill-color:#541327!important;
+    font-weight:900!important;
+  }
+  html body.smv-v12-theme #home.smv33-hero{
+    position:relative!important;
+    left:50%!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    height:calc(66.66666667vw - 112px)!important;
+    min-height:488px!important;
+    margin:0 0 0 -50vw!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background-color:#081c43!important;
+    background-image:url("./photo/smv-home-desktop-hero.webp")!important;
+    background-size:100vw auto!important;
+    background-position:center calc(0px - 112px)!important;
+    background-repeat:no-repeat!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+  }
+  html body.smv-v12-theme #home .smv33-scene{
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    background:transparent!important;
+  }
+  html body.smv-v12-theme #home .smv33-picture,
+  html body.smv-v12-theme #home .smv33-photo{
+    display:none!important;
+  }
+}
