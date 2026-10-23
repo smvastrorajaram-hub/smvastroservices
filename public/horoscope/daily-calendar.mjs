@@ -77,7 +77,7 @@ if(host){
   if(!daily)return;
   const now=localNow(),today=now.slice(0,10),min=+now.slice(11,13)*60+ +now.slice(14,16);
   const p=daily.en.p;
-  const minuteOf=value=>{const m=String(value??'').match(/^(\\d{1,2}):(\\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
+  const minuteOf=value=>{const m=String(value??'').match(/^(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;};
   $('#calPriorHora')?.remove();
   const sunrise=minuteOf(p.sunrise);
   const beforeSunrise=selected===today&&sunrise!==null&&min<sunrise;
