@@ -1,0 +1,68 @@
+name: SMV CALENDAR Rasi Palan Scoped QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/calendar/**'
+      - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/daily-calendar.mjs'
+      - 'public/horoscope/daily-calendar.css'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - '.github/workflows/calendar-rasi-palan-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/calendar/**'
+      - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/daily-calendar.mjs'
+      - 'public/horoscope/daily-calendar.css'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - '.github/workflows/calendar-rasi-palan-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: calendar-rasi-palan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check only Calendar Rasi Palan source and tests
+        run: |
+          set -euo pipefail
+          node --check public/horoscope/calendar-rasi-palan.mjs
+          node --check public/horoscope/calendar/calendar-admin.mjs
+          node --check tests/calendar-rasi-palan-regression.mjs
+          node --check tests/calendar-rasi-palan-browser-smoke.mjs
+      - name: Run scoped Calendar Rasi Palan regression
+        run: node tests/calendar-rasi-palan-regression.mjs
+  browser-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing Chromium and Puppeteer dependencies
+        run: npm install --no-save --package-lock=false --no-audit --no-fund
+      - name: Test the active Cloudflare Calendar branch preview
+        env:
+          SMV_CALENDAR_PREVIEW_URL: https://feature-calendar-rasi-palan.smvastroservices.pages.dev/horoscope/calendar/
+        run: node tests/calendar-rasi-palan-browser-smoke.mjs
+      - name: Preserve Calendar preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-CALENDAR-RASI-PALAN-PREVIEW
+          path: calendar-rasi-palan-smoke-output/
+          if-no-files-found: warn
+          retention-days: 14
