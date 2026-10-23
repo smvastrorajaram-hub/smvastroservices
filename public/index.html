@@ -555,9 +555,9 @@ document.addEventListener("click",function(e){
     if(!b||!r)return;
     const hasUser = window.__SMV_LOGGED_OUT===true ? false : !!(window.__smvCurrentUserPresent===true);
     b.textContent = hasUser ? 'Logout' : 'Login';
-    /* Desktop only: show Logout while signed in, Register while signed out. */
+    /* Desktop only: keep Login/Logout visible; hide Register only after login. */
     if(window.matchMedia('(min-width: 900px)').matches){
-      b.classList.toggle('smv-auth-hidden',!hasUser);
+      b.classList.remove('smv-auth-hidden');
       r.classList.toggle('smv-auth-hidden',hasUser);
     }else{
       b.classList.remove('smv-auth-hidden');
