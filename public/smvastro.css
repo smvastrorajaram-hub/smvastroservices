@@ -4286,25 +4286,25 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-repeat:no-repeat,no-repeat!important;
   }
 }
-/* Desktop-only Register state. Match the legacy header-reset selector specificity,
-   so this rule wins on the actual page rather than only in an isolated preview. */
+/* Desktop-only interaction colors. Keep the original gold Register button at rest. */
 @media (min-width:900px){
   html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:rgba(5,20,54,.88)!important;
-    border:2px solid #ffd66b!important;
-    color:#fff!important;
-    -webkit-text-fill-color:#fff!important;
+    background:#ffd66b!important;
+    border-color:#ffd66b!important;
+    color:#541327!important;
+    -webkit-text-fill-color:#541327!important;
     font-weight:900!important;
     text-shadow:none!important;
     transition:background-color .12s ease,color .12s ease,border-color .12s ease!important;
   }
   html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
-    background:#ffe66d!important;
+    background:#ed0054!important;
     border-color:#ffffff!important;
-    color:#081c43!important;
-    -webkit-text-fill-color:#081c43!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
     font-weight:900!important;
     text-shadow:none!important;
+    box-shadow:0 0 0 3px rgba(237,0,84,.22)!important;
   }
   html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .register:focus-visible{
     outline:3px solid #ffffff!important;
