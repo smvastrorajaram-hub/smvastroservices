@@ -94,7 +94,7 @@ body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#ast
   font:inherit;
   line-height:1.35;box-shadow:none;
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
-}
+-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) textarea{min-height:92px;resize:vertical}
 body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#c4ccdc!important;opacity:1;-webkit-text-fill-color:#c4ccdc!important;}
 body.smv-v12-theme :where(input,select,textarea):focus-visible{
@@ -168,33 +168,33 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #questionText{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word}
 
 /* Legal pages */
-body.smv-legal-page{margin:0;background:#fffdf9;color:var(--smv207-ink)}
-body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid var(--smv207-line);background:rgba(255,253,249,.96);backdrop-filter:none}
+body.smv-legal-page{margin:0;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),linear-gradient(155deg,#070d1e,#101b32 52%,#0a1124);color:#f2eddf}
+body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid rgba(223,189,115,.18);background:rgba(9,16,34,.96);backdrop-filter:none}
 body.smv-legal-page>header .brand{color:var(--smv207-red)!important;font-weight:900;text-decoration:none;letter-spacing:.03em}
 body.smv-legal-page>header nav{display:flex;gap:8px;flex-wrap:wrap}
-body.smv-legal-page>header nav a{color:#51443d;text-decoration:none;font-weight:700;padding:7px 9px;border-radius:7px}
+body.smv-legal-page>header nav a{color:#f2eddf;text-decoration:none;font-weight:700;padding:7px 9px;border-radius:0}
 body.smv-legal-page>main{max-width:var(--smv207-reading);margin:0 auto;padding:clamp(28px,5vw,54px) clamp(16px,4vw,32px)}
 body.smv-legal-page h1{font-size:var(--smv207-h1);line-height:1.08;margin:.18em 0 .25em}
 body.smv-legal-page h2{font-size:var(--smv207-h3);line-height:1.3;color:var(--smv207-red);margin:1.7em 0 .5em}
 body.smv-legal-page p,body.smv-legal-page li{line-height:1.75}
 body.smv-legal-page .eyebrow{color:var(--smv207-gold-text);font-weight:850;letter-spacing:.09em;text-transform:uppercase}
 body.smv-legal-page .updated{color:var(--smv207-muted)}
-body.smv-legal-page .contents{margin:24px 0 30px;padding:16px 18px;border:1px solid var(--smv207-line);border-radius:var(--smv207-radius);background:#fffaf1}
+body.smv-legal-page .contents{margin:24px 0 30px;padding:16px 18px;border:0;border-radius:0;background:transparent;border-top:1px solid rgba(223,189,115,.22);border-bottom:1px solid rgba(223,189,115,.22);}
 body.smv-legal-page .contents ol{columns:2;column-gap:28px;padding-left:22px}
 body.smv-legal-page a{color:var(--smv207-red-strong);text-underline-offset:3px}
-body.smv-legal-page .contact{margin-top:34px;padding:20px;border:1px solid var(--smv207-line);border-radius:var(--smv207-radius-lg);background:#fffaf2}
-body.smv-legal-page>footer{text-align:center;padding:24px 16px;border-top:1px solid var(--smv207-line);color:var(--smv207-muted);background:#fffaf2}
+body.smv-legal-page .contact{margin-top:34px;padding:20px;border:0;border-radius:0;background:transparent;border-top:1px solid rgba(223,189,115,.22);}
+body.smv-legal-page>footer{text-align:center;padding:24px 16px;border-top:1px solid rgba(223,189,115,.22);color:#c4ccdc;background:transparent}
 
 /* SEO landing pages */
-body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px);color:var(--smv207-ink)}
+body.smv-seo-page{margin:0;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),linear-gradient(155deg,#070d1e,#101b32 52%,#0a1124);color:#f2eddf}
 .seo-page{max-width:920px!important;padding:clamp(26px,5vw,54px) clamp(16px,4vw,28px)!important;line-height:1.68!important}
-.seo-page header{padding:clamp(20px,4vw,34px);border:1px solid var(--smv207-line);border-radius:var(--smv207-radius-lg);background:#fff;box-shadow:var(--smv207-shadow-sm)}
+.seo-page header{padding:clamp(20px,4vw,34px);border:0;border-radius:0;background:transparent;box-shadow:none}
 .seo-page .brand{color:var(--smv207-red)!important;font-weight:900!important;letter-spacing:.09em!important}
 .seo-page h1{font-size:var(--smv207-h1)!important;line-height:1.08!important;margin:.3em 0 .4em!important}
 .seo-page h2{font-size:var(--smv207-h3)!important;color:var(--smv207-red)!important;margin-bottom:.4em!important}
 .seo-page section{padding:0 4px;margin-block:30px!important}
-.seo-page :where(.seo-action,.related-links a){display:inline-flex!important;align-items:center;justify-content:center;padding:10px 14px!important;border:1px solid #c99898!important;color:var(--smv207-red)!important;background:#fff!important}
-.seo-page .seo-action:first-child{background:var(--smv207-red)!important;color:#fff!important;border-color:var(--smv207-red)!important}
+.seo-page :where(.seo-action,.related-links a){display:inline-flex!important;align-items:center;justify-content:center;padding:10px 14px!important;border:1px solid rgba(223,189,115,.40)!important;color:#f2eddf!important;background:transparent!important;border-radius:0!important;}
+.seo-page .seo-action:first-child{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 .seo-page footer{border-top-color:var(--smv207-line)!important;color:var(--smv207-muted)}
 .seo-page a{color:var(--smv207-red-strong)!important}
 
@@ -231,7 +231,7 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
   body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:transparent!important}
   body.smv-v12-theme .action-row>.btn{flex:1 1 auto;min-width:min(140px,100%)}
   #smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important}
-  body.smv-legal-page>header{position:static;align-items:flex-start;flex-direction:column}
+  body.smv-legal-page>header{position:static;align-items:flex-start;flex-direction:column;background:rgba(9,16,34,.96);border-bottom:1px solid rgba(223,189,115,.18);backdrop-filter:none;}
   body.smv-legal-page .contents ol{columns:1}
   .seo-page .seo-actions{display:grid!important;grid-template-columns:1fr!important}
 }
