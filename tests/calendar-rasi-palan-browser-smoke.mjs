@@ -79,10 +79,10 @@ try {
   await page.screenshot({ path: new URL('calendar-rasi-palan-desktop-tamil-new-year.png', outputDir).pathname, fullPage: true });
 
   // Check the distinct English New Year label, without exposing edit controls.
-  const tamilButton = await page.$('#calTamil');
-  if (tamilButton) {
-    await tamilButton.click();
-    await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 }).catch(() => {});
+  const englishButton = await page.$('#calEnglish');
+  if (englishButton) {
+    await englishButton.click();
+    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
   }
   await page.click('#calRasiPalan [data-section="englishNewYear"]');
   await page.click('#calRasiPalan #rpRun');
