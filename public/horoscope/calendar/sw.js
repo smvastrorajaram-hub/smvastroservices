@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-source-clean-20261016';
+const CACHE='smv-calendar-source-clean-20261024-sunrise-hora-v1';
 const PLACE_SHARDS=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','other','p','q','r','s','t','ta','u','v','w','x','y','z'];
 const CORE=[
  './','./index.html','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',

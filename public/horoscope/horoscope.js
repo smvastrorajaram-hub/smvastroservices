@@ -2341,7 +2341,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
   }
 
 window.SMVRenderDaily=renderTransitPanchang;
-function renderTransitPanchang(t,p,lang,rootId){
+function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const box=document.getElementById(rootId); if(!box)return;
     const ta=lang==='ta';
     const rmap={மேஷம்:'Aries',ரிஷபம்:'Taurus',மிதுனம்:'Gemini',கடகம்:'Cancer',சிம்மம்:'Leo',கன்னி:'Virgo',துலாம்:'Libra',விருச்சிகம்:'Scorpio',தனுசு:'Sagittarius',மகரம்:'Capricorn',கும்பம்:'Aquarius',மீனம்:'Pisces'};
@@ -2368,15 +2368,16 @@ function renderTransitPanchang(t,p,lang,rootId){
     const isCurrentHora=h=>{const parts=String(h?.range||'').split('-').map(x=>clockMinutes(x.trim()));if(parts.length!==2||parts.some(x=>x==null)||nowMinutes==null)return false;let [a,b]=parts,n=nowMinutes;if(b<=a)b+=1440;if(n<a)n+=1440;return n>=a&&n<b;};
     // Hora indication: waxing Moon/Mercury/Jupiter/Venus = green; waning Moon/Sun/Mars/Saturn = red.
     // The weekday's own Hora is shown brighter. Only the TIME result is coloured.
-    const phaseText=String(p?.tithi?.half||p?.tithi?.paksha||p?.tithi?.group||'').toLowerCase();
+    const horaP=horaOverride&&Array.isArray(horaOverride.hora)&&horaOverride.hora.length?horaOverride:p;
+    const phaseText=String(horaP?.tithi?.half||horaP?.tithi?.paksha||horaP?.tithi?.group||'').toLowerCase();
     const waxingMoon=/shukla|waxing|வளர்பிறை|சுக்ல/.test(phaseText);
     const waningMoon=/krishna|waning|தேய்பிறை|கிருஷ்ண/.test(phaseText);
-    const varaEn=varamap[p?.vara]||String(p?.vara||'');
+    const varaEn=varamap[horaP?.vara]||String(horaP?.vara||'');
     const weekdayLord={Sunday:'Sun',Monday:'Moon',Tuesday:'Mars',Wednesday:'Mercury',Thursday:'Jupiter',Friday:'Venus',Saturday:'Saturn'}[varaEn]||'';
     const horaNature=planet=>planet==='Moon'?(waxingMoon?'green':(waningMoon?'red':'')):(['Mercury','Jupiter','Venus'].includes(planet)?'green':(['Sun','Mars','Saturn'].includes(planet)?'red':''));
     const horaTimeClass=h=>{const nature=horaNature(h?.planetEn);if(!nature)return '';const own=h?.planetEn===weekdayLord;const current=isCurrentHora(h);if(own)return nature==='green'?' smv-hora-bright-green':' smv-hora-bright-red';if(current)return nature==='green'?' smv-hora-current-green':' smv-hora-current-red';return '';};
     const horaBlock=(items,title)=>`<div class="hora-vertical-block"><div class="hora-band">${title}</div><div class="hora-table-wrap"><table class="data-table hora-table hora-vertical"><thead><tr><th>${ta?'எண்':'No.'}</th><th>${ta?'கிரகம்':'Planet'}</th><th>${ta?'நேரம்':'Time'}</th></tr></thead><tbody>${items.map(h=>`<tr><td>${esc2(h.number)}</td><td class="${horaClass[h.planetEn]||''}"><b>${esc2(horaNames[h.planetEn]||h.planetEn||'—')}</b></td><td class="hora-time${horaTimeClass(h)}">${esc2(h.range||'—')}</td></tr>`).join('')}</tbody></table></div></div>`;
-    const horaHtml=Array.isArray(p?.hora)&&p.hora.length?`${horaBlock(p.hora.slice(0,12),ta?'பகல் ஹோரா (1 - 12)':'Day Hora (1 - 12)')}${horaBlock(p.hora.slice(12,24),ta?'இரவு ஹோரா (13 - 24)':'Night Hora (13 - 24)')}`:'—';
+    const horaHtml=Array.isArray(horaP?.hora)&&horaP.hora.length?`${horaBlock(horaP.hora.slice(0,12),ta?'பகல் ஹோரா (1 - 12)':'Day Hora (1 - 12)')}${horaBlock(horaP.hora.slice(12,24),ta?'இரவு ஹோரா (13 - 24)':'Night Hora (13 - 24)')}`:'—';
     const planets=Array.isArray(t?.planets)?t.planets:[];
     const dailyTamilDate=(()=>{const v=String(p?.requested?.date||t?.requested?.date||'');const m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '—';const y=+m[1],mi=+m[2]-1,d=+m[3];const en=['January','February','March','April','May','June','July','August','September','October','November','December'];const taM=['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];const ts=p?.tamilSolar;if(ts?.monthTa&&Number.isFinite(Number(ts.day)))return ta?`${ts.monthTa} - ${ts.day}, ${taM[mi]} ${d}, ${y}`:`${ts.monthEn}-${ts.day}, ${en[mi]} ${d}, ${y}`;return `${ta?'தமிழ் தேதி':'Tamil date'}, ${ta?taM[mi]:en[mi]} ${d}, ${y}`;})();
     const dailyRows=[
