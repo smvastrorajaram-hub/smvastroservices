@@ -23,12 +23,12 @@
 #dashboard.hidden, #admin.hidden, #register-flow.hidden, #astro-register-form.hidden, #astro-flow.hidden, #ask-flow.hidden, #appointment.hidden, #contact.hidden{display:none!important}
 html[lang="ta"] body{font-family:"Noto Sans Tamil", Inter, Arial, Helvetica, sans-serif}
 html[lang="hi"] body{font-family:"Noto Sans Devanagari", "Noto Sans", Inter, Arial, Helvetica, sans-serif}
-#registerNav{margin-left:2px}
+#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 @media (min-width: 761px){
 #dashboardContent > .grid:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:16px!important;width:100%!important;align-items:stretch!important}
 #dashboardContent > .grid > .card:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid > .card:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!important;width:100%!important;box-sizing:border-box!important}
 #adminSummary{display:grid!important;grid-template-columns:repeat(4, minmax(0px, 1fr))!important;gap:14px!important;width:100%!important}
-#adminSummary .stat{min-width:0px!important;width:100%!important;box-sizing:border-box!important;background:transparent!important;border:0!important;border-right:1px solid rgba(122,84,43,.22)!important;border-radius:0!important;box-shadow:none!important;padding:10px 14px!important}
+#adminSummary .stat{min-width:0px!important;width:100%!important;box-sizing:border-box!important}
 #astroCards .astro-public-card{box-sizing:border-box!important}}
 @media (max-width: 760px){
 #astroCards, #dashboardContent > .grid, #adminSummary{width:100%;min-width:0px}}
@@ -74,8 +74,8 @@ html[lang="hi"] body{font-family:"Noto Sans Devanagari", "Noto Sans", Inter, Ari
 #dashboardContent > .card .action-row .btn:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-height:40px!important;padding:9px 12px!important}
 #astroCards .astro-public-card{border-radius:12px!important}
 #admin{margin-top:24px!important}
-#admin > .card{box-sizing:border-box!important;padding:14px 12px!important;margin:0px 0px 12px!important;border-radius:16px!important;overflow:hidden!important}
-#adminSummary .stat{box-sizing:border-box!important;border-right:0!important;border-bottom:1px solid rgba(122,84,43,.22)!important;padding:10px 0!important}
+#admin > .card{box-sizing:border-box!important;padding:14px 12px!important;margin:0px 0px 12px!important;border-radius:12px!important;overflow:hidden!important}
+#adminSummary .stat{box-sizing:border-box!important}
 #admin table{max-width:100%!important}
 #ask-flow{margin-top:20px!important}
 #ask-flow > .card{width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:14px 12px!important;border-radius:12px!important;overflow:hidden!important}
@@ -298,7 +298,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box}
 .nav nav #dashLink.smv-role-green, .nav nav #adminLink.smv-role-green{height:40px!important;min-height:40px!important}}
 @media (max-width: 380px){
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){width:86px!important;min-width:86px!important;max-width:86px!important;flex-basis:86px!important;height:38px!important;min-height:38px!important;max-height:38px!important;font-size:10.5px!important}}
-header:where(:not(.smv-css-island,.smv-css-island *)){text-align:center!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:1180px!important;margin:0px auto!important;padding:14px 10px 12px!important;box-sizing:border-box!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:12px!important}
 header .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:64px!important;height:64px!important}
@@ -408,7 +408,7 @@ h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 .faq-section h3:where(:not(.smv-css-island,.smv-css-island *)), .faq-section summary:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(20px, 2.5vw, 28px)!important;line-height:1.4!important}
 .faq-section p:where(:not(.smv-css-island,.smv-css-island *)), .faq-section .faq-answer:where(:not(.smv-css-island,.smv-css-island *)), .faq-section li:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important;line-height:1.7!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:28px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){font-size:15px!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:16px!important;line-height:1.3!important}
 input:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
@@ -441,7 +441,7 @@ h1:where(:not(.smv-css-island,.smv-css-island *)){font-size:34px!important}
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:29px!important}
 h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:19px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:24px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){font-size:14px!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:15px!important}
 input:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
@@ -483,7 +483,7 @@ header nav #authBtn.smv-logout-btn, #authBtn.smv-logout-btn{background:none rgb(
 header nav #authBtn.smv-logout-btn:hover, #authBtn.smv-logout-btn:hover{background:none rgb(147, 51, 234)!important;border-color:rgb(107, 33, 168)!important;color:rgb(255, 255, 255)!important}
 #dashboardContent button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .btn:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent a.btn:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent input[type="button"]:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent input[type="submit"]:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(56, 189, 248)!important;border-color:rgb(2, 132, 199)!important;color:rgb(255, 255, 255)!important}
 #dashboardContent button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):hover:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .btn:hover:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent a.btn:hover:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent input[type="button"]:hover:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent input[type="submit"]:hover:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(14, 165, 233)!important;border-color:rgb(3, 105, 161)!important;color:rgb(255, 255, 255)!important}
-#admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin a.btn, #admin input[type="button"], #admin input[type="submit"]{background:none rgb(56, 189, 248)!important;border-color:rgb(2, 132, 199)!important;color:rgb(255, 255, 255)!important}
+#admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin a.btn, #admin input[type="button"], #admin input[type="submit"]{background:#dfbd73!important;border-color:rgb(2, 132, 199)!important;color:rgb(255, 255, 255)!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;border:1px solid #dfbd73!important;border-radius:0!important;}
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):hover, #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):hover, #admin a.btn:hover, #admin input[type="button"]:hover, #admin input[type="submit"]:hover{background:none rgb(14, 165, 233)!important;border-color:rgb(3, 105, 161)!important;color:rgb(255, 255, 255)!important}
 .withdrawal-history-title{color:rgb(143, 29, 29);font-size:22px;font-weight:800;margin:0px 0px 8px}
 header .nav nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;display:grid!important;grid-template-columns:repeat(3, 96px)!important;grid-auto-rows:44px!important;justify-content:center!important;place-items:center!important;gap:7px 5px!important;box-sizing:border-box!important}
@@ -734,7 +734,7 @@ html, body{max-width:100%;overflow-x:hidden}
 .smv-advanced-part-title h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:16px!important;line-height:1.3!important}
 .smv-advanced-part > .adv-section:where(:not(.smv-css-island,.smv-css-island *)){margin:10px 0px!important;padding:9px!important;border-radius:10px!important}}
 #askNowSection{width:100%;max-width:1040px;margin:28px auto 36px;padding:0px 12px;box-sizing:border-box;text-align:center}
-#askNowSection .smv-new-asknow-inner{width:100%;max-width:860px;margin:0px auto;padding:28px 20px 30px;box-sizing:border-box;border:1px solid rgba(184, 134, 45, 0.35);border-radius:16px;background:linear-gradient(rgb(255, 253, 247) 0%, rgb(255, 248, 232) 100%);box-shadow:rgba(70, 20, 20, 0.08) 0px 8px 24px}
+#askNowSection .smv-new-asknow-inner{width:100%;max-width:860px;margin:0px auto;padding:28px 20px 30px;box-sizing:border-box;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:rgba(70, 20, 20, 0.08) 0px 8px 24px;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker{color:rgb(154, 114, 42);margin-bottom:8px}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-size:12px;font-weight:800;letter-spacing:2px}
 #askNowSection h2{margin:0px auto 10px;color:rgb(143, 0, 0)}
@@ -751,7 +751,7 @@ html, body{max-width:100%;overflow-x:hidden}
 #askNowButton:focus-visible{outline:rgba(199, 154, 61, 0.35) solid 3px;outline-offset:3px}
 @media (max-width: 767px){
 #askNowSection{margin:20px auto 28px;padding:0px 10px}
-#askNowSection .smv-new-asknow-inner{padding:22px 14px 24px;border-radius:13px}
+#askNowSection .smv-new-asknow-inner{padding:22px 14px 24px;border-radius:0!important;background:transparent!important;border:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-size:10px;letter-spacing:1.4px}
 #askNowSection h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:24px}
 #askNowSection p:where(:not(.smv-type-root,.smv-type-root *)){font-size:14px;line-height:1.55}
@@ -1156,11 +1156,11 @@ header .nav > nav > a:not(.hidden), header .nav > nav > button:where(:not(.smv-c
 @media (max-width: 767px){
 #dashboardContent .card:has(> .smv-history-row) > h3:where(:not(.smv-css-island,.smv-css-island *)){margin:4px 0px 8px!important}
 #dashboardContent #astroAnsweredBox .astro-answer-item > h3:where(:not(.smv-css-island,.smv-css-island *)){margin-top:8px!important}}
-:root{--primary:#302b68;--primary2:#51478f;--gold:#b7793c;--gold2:#d8a060;--cream:#f8f5ed;--bg:#f6f3eb;--text:#2d2a35;--card:#ffffff;--muted:#6d6674;--line:#d9d2c4;--soft:#eee9f8;--success:#176b45;--danger:#a53b3b;--maroon:#292452;--deep:#1c193d}
+:root{--primary:#302b68;--primary2:#51478f;--gold:#dfbd73;--gold2:#f3d99b;--cream:#0a1227;--bg:#0b1429;--text:#f2eddf;--card:transparent;--muted:#b7c2d5;--line:rgba(223,189,115,.18);--soft:#17233d;--success:#76d7a5;--danger:#ff8c98;--maroon:#f0d49a;--deep:#070d1e}
 *{box-sizing:border-box}
 html{overflow-x:hidden}
-body{margin:0px;font-family:Inter, Arial, Helvetica, sans-serif;color:var(--text);overflow-x:hidden;background:radial-gradient(circle at 10% 8%, rgba(183, 121, 60, 0.07) 0px, rgba(183, 121, 60, 0.07) 2px, transparent 3px) 0% 0% / 34px 34px, radial-gradient(circle at 90% 15%, rgba(48, 43, 104, 0.043) 0px, rgba(48, 43, 104, 0.043) 2px, transparent 3px) 0% 0% / 42px 42px, linear-gradient(rgb(251, 250, 246) 0%, rgb(243, 240, 232) 52%, rgb(251, 250, 247) 100%) 0% 0% / auto}
-header{position:sticky;top:0px;background:rgba(255, 250, 240, 0.97);border-bottom:3px double var(--gold);z-index:100;box-shadow:rgba(111, 21, 21, 0.1) 0px 5px 20px}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#f2eddf;overflow-x:hidden;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)}
+header{position:sticky;top:0;background:rgba(9,16,34,.96);border-bottom:1px solid rgba(223,189,115,.18);z-index:100;box-shadow:0 10px 32px rgba(0,0,0,.22)}
 header::after{content:"✦  ॐ  ✦";display:block;text-align:center;color:var(--gold);font-size:10px;letter-spacing:8px;height:13px;line-height:10px;background:rgb(255, 250, 240)}
 .nav{max-width:1160px;margin:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0px}
 .brand{display:flex;align-items:center;gap:11px;min-width:0px}
@@ -1415,33 +1415,31 @@ nav a, nav .btn{flex:0 0 auto}
 .homepage-registration:where(:not(.smv-css-island,.smv-css-island *)){margin-bottom:28px!important}
 .homepage-registration .registration-option{min-height:0px}}
 .feature-section{max-width:1160px;margin:34px auto;padding:0px 16px;scroll-margin-top:90px}
-.feature-shell{padding:24px 0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.feature-shell{padding:clamp(28px,4vw,52px) 0;background:transparent;border:0;border-radius:0;box-shadow:none}
 .feature-top{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
 .feature-top > div:first-child{min-width:240px;flex:1 1 0%}
-.feature-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:0 20px}
-.feature-tile{position:relative;display:flex;flex-direction:column;gap:6px;padding:19px 10px 17px;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;text-decoration:none;color:var(--text);box-shadow:none;transition:color .18s ease,border-color .18s ease}
-.feature-tile:hover{transform:none;border-color:rgba(122,84,43,.55);box-shadow:none;background:transparent;color:var(--maroon)}
-.feature-tile::after{content:"";position:absolute;left:10px;bottom:-1px;width:0;height:2px;background:var(--gold);transition:width .18s ease}
-.feature-tile:hover::after,.feature-tile:focus-visible::after{width:42px}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:10px}
+.feature-tile{display:flex;flex-direction:column;gap:10px;padding:22px 8px;background:transparent;border:0;border-radius:0;text-decoration:none;color:#f2eddf;box-shadow:none;transition:color .18s ease,transform .18s ease}
+.feature-tile:hover{transform:translateY(-2px);border-color:rgb(212, 179, 106)}
 .feature-tile span{font-size:24px}
-.feature-tile b{color:var(--maroon);font-size:14px}
+.feature-tile b{color:#e6c782;font-size:15px;font-weight:800;letter-spacing:.01em}
 .feature-tile small{color:var(--muted)}
-.service-card{min-height:210px;background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;box-shadow:none;padding:19px 10px}
+.service-card{min-height:210px;background:transparent;border:0;border-radius:0;box-shadow:none;}
 .service-icon{font-size:30px}
 .service-card h3{margin-bottom:7px}
 .faq-list{display:grid;gap:13.5px}
-.faq-list details{background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.26);border-radius:0;padding:0 0 12px;margin:0;box-shadow:none;transition:border-color .18s ease}
+.faq-list details{background:transparent;border:0;border-radius:0;padding:0;margin:0;box-shadow:none;box-shadow:none;}
 .faq-list summary{cursor:pointer;color:var(--maroon);display:list-item;margin:0;padding:0}
 #faq .faq-list details[open] > summary{margin-bottom:13.5px}
 .faq-list summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:800}
 .faq-list p{color:var(--muted);margin:0;padding:0}
 .faq-list p:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.6}
-.review-card{height:100%;background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;box-shadow:none;padding:19px 0}
+.review-card{height:100%;background:transparent;border:0;border-radius:0;box-shadow:none;}
 .stars{letter-spacing:2px;color:var(--gold);font-size:18px}
 .lang-tamil{font-family:"Noto Sans Tamil", Arial, sans-serif}
 @media (max-width: 700px){
 .feature-section{padding:0px 10px}
-.feature-shell{padding:16px 0;border:0;border-radius:0;background:transparent;box-shadow:none}}
+.feature-shell{padding:clamp(28px,4vw,52px) 0;background:transparent;border:0;border-radius:0;box-shadow:none}}
 #blogList .blog-card{min-width:0px}
 .blog-content{white-space:pre-wrap;line-height:1.75}
 .admin-blog-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:rgb(255, 253, 248)}
@@ -1586,7 +1584,7 @@ section:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-
 .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important;max-width:55%!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:38px!important;height:38px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important;letter-spacing:0.6px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:7px!important;letter-spacing:1px!important;margin-top:2px!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important;padding:7px 6px!important}
 nav .btn:where(:not(.smv-css-island,.smv-css-island *)), .nav .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:38px!important;padding:8px 10px!important;font-size:11px!important}
@@ -1691,16 +1689,16 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:9px!i
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:6px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){min-width:96px!important;height:42px!important;min-height:42px!important;padding:8px 12px!important;font-size:12px!important}}
 :root{--smv-red:#8f1717;--smv-red-dark:#651010;--smv-red-soft:#a82b22;--smv-gold:#b8862d;--smv-gold-light:#d7b45a;--smv-cream:#fffdf7;--smv-white:#ffffff;--smv-ink:#351a1a;--smv-muted:#5f4c4c;--smv-border:rgba(184,134,45,.45);--smv-shadow:0 10px 28px rgba(101,16,16,.12)}
-html:where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-cream)!important}
-body:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(circle at 18% 12%, rgba(184, 134, 45, 0.07) 0px, rgba(184, 134, 45, 0.07) 2px, transparent 3px) 0% 0% / 34px 34px, radial-gradient(circle at 82% 28%, rgba(143, 23, 23, 0.043) 0px, rgba(143, 23, 23, 0.043) 2px, transparent 3px) 0% 0% / 42px 42px, linear-gradient(rgb(255, 253, 248) 0%, rgb(255, 250, 240) 48%, rgb(255, 253, 248) 100%) 0% 0% / 100% 100%!important;font-family:Georgia, "Times New Roman", serif!important;font-weight:600!important;line-height:1.65!important}
-p:where(:not(.smv-css-island,.smv-css-island *)), li:where(:not(.smv-css-island,.smv-css-island *)), dd:where(:not(.smv-css-island,.smv-css-island *)), dt:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)), legend:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-muted)!important}
-h1:where(:not(.smv-css-island,.smv-css-island *)), h2:where(:not(.smv-css-island,.smv-css-island *)), h3:where(:not(.smv-css-island,.smv-css-island *)), h4:where(:not(.smv-css-island,.smv-css-island *)), h5:where(:not(.smv-css-island,.smv-css-island *)), h6:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important;text-shadow:rgba(184, 134, 45, 0.12) 0px 1px 0px!important}
+html:where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-cream)!important;background:#080f21!important;}
+body:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;font-weight:400!important;line-height:1.65!important;color:#f2eddf!important}
+p:where(:not(.smv-css-island,.smv-css-island *)), li:where(:not(.smv-css-island,.smv-css-island *)), dd:where(:not(.smv-css-island,.smv-css-island *)), dt:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)), legend:where(:not(.smv-css-island,.smv-css-island *)){color:#c1cbe0!important}
+h1:where(:not(.smv-css-island,.smv-css-island *)), h2:where(:not(.smv-css-island,.smv-css-island *)), h3:where(:not(.smv-css-island,.smv-css-island *)), h4:where(:not(.smv-css-island,.smv-css-island *)), h5:where(:not(.smv-css-island,.smv-css-island *)), h6:where(:not(.smv-css-island,.smv-css-island *)){color:#f0d9a4!important;text-shadow:none!important}
 h1:where(:not(.smv-css-island,.smv-css-island *)),
 h5:where(:not(.smv-css-island,.smv-css-island *)),
 h6:where(:not(.smv-css-island,.smv-css-island *)),
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 h3:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
-h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Georgia, "Times New Roman", serif!important;font-weight:900!important;letter-spacing:0.3px!important}
+h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){color:#f0d9a4!important;text-shadow:none!important}
 h1:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important}
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
 h3:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
@@ -1710,7 +1708,7 @@ h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-gold)!important;text-shadow:rgba(255, 255, 255, 0.9) 0px 1px 0px!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important;letter-spacing:2.5px!important}
 .home-rule span:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(rgb(255, 254, 250) 0%, rgb(255, 248, 234) 100%)!important;border-bottom:2px solid var(--smv-gold)!important;box-shadow:rgba(101, 16, 16, 0.1) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important;font-weight:900!important;letter-spacing:1px!important}
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(138, 104, 38)!important;font-weight:800!important;letter-spacing:1.5px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(135deg, rgb(156, 34, 32), rgb(113, 18, 18))!important;color:rgb(255, 253, 247)!important;border:1px solid rgb(209, 166, 76)!important;box-shadow:rgba(101, 16, 16, 0.2) 0px 4px 12px!important;font-weight:900!important;letter-spacing:0.25px!important;text-shadow:rgba(0, 0, 0, 0.28) 0px 1px 1px!important}
@@ -1781,7 +1779,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){width:100%;overflow-x:hidden!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;line-height:1.38!important}
 .container:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:none!important;padding-left:8px!important;padding-right:8px!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){padding:5px 8px!important;min-height:0px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
 header .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand:where(:not(.smv-css-island,.smv-css-island *)), header h1:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important;line-height:1.05!important;margin:0px!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important;margin:4px 0px 0px!important}
@@ -1872,13 +1870,13 @@ footer:where(:not(.smv-css-island,.smv-css-island *)){padding:12px 8px!important
 :root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#980000!important;--primary2:#c20b0b!important;--maroon:#850000!important;--gold:#b88935!important;--gold2:#d5b15a!important;--cream:#fff!important;--text:#242424!important;--line:#dedede!important;--deep:#650000!important}
 html:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(36, 36, 36)!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0px!important;z-index:1000!important;background:rgb(143, 0, 0)!important;border-bottom:3px solid rgb(184, 137, 53)!important;box-shadow:rgba(0, 0, 0, 0.18) 0px 3px 12px!important}
-header:where(:not(.smv-css-island,.smv-css-island *))::after{content:"✦  ॐ  ✦"!important;height:10px!important;line-height:8px!important;background:rgb(120, 0, 0)!important;color:rgb(229, 199, 124)!important;font-size:8px!important;letter-spacing:6px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *))::after{top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1180px!important;padding:9px 16px!important;gap:14px!important}
 .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:10px!important;min-width:190px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:46px!important;height:46px!important;border-radius:50%!important;background:rgb(255, 255, 255)!important;border:2px solid rgb(229, 199, 124)!important;box-shadow:rgba(255, 255, 255, 0.16) 0px 0px 0px 2px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important;font-family:Arial, Helvetica, sans-serif!important;font-size:23px!important;font-weight:900!important;letter-spacing:1px!important;text-shadow:rgba(0, 0, 0, 0.25) 0px 1px 2px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(240, 215, 141)!important;font-size:9px!important;letter-spacing:1.4px!important;font-weight:800!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border:1px solid rgb(228, 199, 126)!important;border-radius:6px!important;box-shadow:none!important;font-weight:800!important}
 nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 248, 232)!important;color:rgb(112, 0, 0)!important;transform:none!important;box-shadow:rgba(0, 0, 0, 0.16) 0px 2px 7px!important}
 #authBtn.smv-logout-btn{background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border-color:rgb(228, 199, 126)!important}
@@ -1916,12 +1914,12 @@ th:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(152, 0, 0)!impo
 a{color:rgb(143, 0, 0)}
 a:hover{color:rgb(176, 0, 0)}
 @media (max-width: 767px){
-header:where(:not(.smv-css-island,.smv-css-island *)){position:sticky!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 8px 7px!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:7px!important}
 .brand:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:none!important;min-width:0px!important;justify-content:center!important;margin-bottom:3px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:42px!important;height:42px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:8px!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 .nav nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;display:grid!important;grid-template-columns:repeat(3, 1fr)!important;gap:6px!important;justify-content:center!important}
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;min-width:0px!important;max-width:none!important;height:40px!important;min-height:40px!important;padding:0px 4px!important;font-size:11px!important;border-radius:6px!important}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:12px 8px!important}
@@ -1932,7 +1930,7 @@ section > h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type
 .nav nav:where(:not(.smv-css-island,.smv-css-island *)){gap:5px!important}
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important}}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text:where(:not(.smv-css-island,.smv-css-island *)){position:relative!important;z-index:20!important;opacity:1!important;visibility:visible!important}
 header .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)), header .logo:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;visibility:visible!important;opacity:1!important;color:rgb(255, 242, 0)!important;-webkit-text-fill-color:rgb(255, 242, 0)!important;text-shadow:rgba(0, 0, 0, 0.45) 0px 1px 2px!important;font-weight:900!important}
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;visibility:visible!important;opacity:1!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;text-shadow:rgba(0, 0, 0, 0.35) 0px 1px 2px!important}
@@ -2262,14 +2260,14 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 :root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#8b0000!important;--primary2:#b22222!important;--gold:#8b0000!important;--maroon:#8b0000!important;--text:#222!important;--muted:#666!important;--line:#d9d9d9!important;--bg:#fff!important;--card:#fff!important;--success:#287a3e!important;--danger:#a00000!important}
 html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(34, 34, 34)!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){font-family:Arial, Helvetica, sans-serif!important;line-height:1.5!important;font-weight:400!important}
-h1:where(:not(.smv-css-island,.smv-css-island *)), h2:where(:not(.smv-css-island,.smv-css-island *)), h3:where(:not(.smv-css-island,.smv-css-island *)), h4:where(:not(.smv-css-island,.smv-css-island *)), h5:where(:not(.smv-css-island,.smv-css-island *)), h6:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(139, 0, 0)!important}
+h1:where(:not(.smv-css-island,.smv-css-island *)), h2:where(:not(.smv-css-island,.smv-css-island *)), h3:where(:not(.smv-css-island,.smv-css-island *)), h4:where(:not(.smv-css-island,.smv-css-island *)), h5:where(:not(.smv-css-island,.smv-css-island *)), h6:where(:not(.smv-css-island,.smv-css-island *)){color:#f0d9a4!important;text-shadow:none!important}
 h1:where(:not(.smv-css-island,.smv-css-island *)),
 h5:where(:not(.smv-css-island,.smv-css-island *)),
 h6:where(:not(.smv-css-island,.smv-css-island *)),
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 h3:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
-h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Arial, Helvetica, sans-serif!important;font-weight:700!important}
-p:where(:not(.smv-css-island,.smv-css-island *)), li:where(:not(.smv-css-island,.smv-css-island *)), dd:where(:not(.smv-css-island,.smv-css-island *)), dt:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)), legend:where(:not(.smv-css-island,.smv-css-island *)), small:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(68, 68, 68)!important}
+h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){color:#f0d9a4!important;text-shadow:none!important}
+p:where(:not(.smv-css-island,.smv-css-island *)), li:where(:not(.smv-css-island,.smv-css-island *)), dd:where(:not(.smv-css-island,.smv-css-island *)), dt:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)), legend:where(:not(.smv-css-island,.smv-css-island *)), small:where(:not(.smv-css-island,.smv-css-island *)){color:#c1cbe0!important}
 li:where(:not(.smv-css-island,.smv-css-island *)),
 legend:where(:not(.smv-css-island,.smv-css-island *)),
 small:where(:not(.smv-css-island,.smv-css-island *)),
@@ -2278,7 +2276,7 @@ dd:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 dt:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Arial, Helvetica, sans-serif!important;font-weight:400!important}
 main:where(:not(.smv-css-island,.smv-css-island *)), section:where(:not(.smv-css-island,.smv-css-island *)), article:where(:not(.smv-css-island,.smv-css-island *)), .container:where(:not(.smv-css-island,.smv-css-island *)), #faq:where(:not(.smv-css-island,.smv-css-island *)), #contact:where(:not(.smv-css-island,.smv-css-island *)), #content:where(:not(.smv-css-island,.smv-css-island *)), #about:where(:not(.smv-css-island,.smv-css-island *)), #dashboard:where(:not(.smv-css-island,.smv-css-island *)), #admin:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent:where(:not(.smv-css-island,.smv-css-island *)), #adminContent:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
-header:where(:not(.smv-css-island,.smv-css-island *)), nav:where(:not(.smv-css-island,.smv-css-island *)), .navbar:where(:not(.smv-css-island,.smv-css-island *)), .topbar:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border-color:rgb(139, 0, 0)!important;box-shadow:none!important}
+header:where(:not(.smv-css-island,.smv-css-island *)), nav:where(:not(.smv-css-island,.smv-css-island *)), .navbar:where(:not(.smv-css-island,.smv-css-island *)), .topbar:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header a:where(:not(.smv-css-island,.smv-css-island *)), nav a:where(:not(.smv-css-island,.smv-css-island *)), .navbar a:where(:not(.smv-css-island,.smv-css-island *)), .topbar a:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border:1px solid rgb(139, 0, 0)!important;border-radius:6px!important;box-shadow:none!important;text-shadow:none!important}
 .btn:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(178, 34, 34)!important;color:rgb(255, 255, 255)!important;border-color:rgb(178, 34, 34)!important;box-shadow:none!important}
@@ -2420,20 +2418,13 @@ html[lang="en"] #tamil-horoscope, html[lang="ta"] #english-horoscope{display:non
 #smvInstallAppSection{display:none!important}}
 @media (display-mode: fullscreen){
 #smvInstallAppSection{display:none!important}}
-html body:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.6;background:rgb(255, 255, 255)!important;color:rgb(36, 36, 36)!important}
-html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:transparent!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;
-  border-radius:0!important;box-shadow:none!important;padding:22px 0!important;margin-bottom:2px!important;
-}
-html body :is(#admin, #dashboard) .card .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:transparent!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.16)!important;
-  border-radius:0!important;box-shadow:none!important;padding:14px 0!important;
-}
-html body :is(#admin, #dashboard) :is(h2, h3):not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(163, 25, 32)!important}
+html body:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.65;background:linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#f2eddf!important}
+html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:22px 0!important;margin-bottom:10px!important}
+html body :is(#admin, #dashboard) :is(h2, h3):not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)){color:#e6c782!important;font-family:Georgia,"Noto Sans Tamil",serif!important;letter-spacing:-.015em!important}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) :is(input, select, textarea):where(:not(.smv-css-island,.smv-css-island *)){min-height:44px!important;border-radius:6px!important}
-html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(163, 25, 32)!important;color:rgb(255, 255, 255)!important;border:1px solid rgb(163, 25, 32)!important;box-shadow:none!important;white-space:normal!important}
+html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)){background:#dfbd73!important;color:#10172b!important;border:0!important;box-shadow:none!important;white-space:normal!important;border-radius:0!important;}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):disabled:where(:not(.smv-css-island,.smv-css-island *)){opacity:0.6!important;cursor:wait}
-html body :is(#admin, #dashboard) input:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) select:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) textarea:where(:not(.smv-css-island,.smv-css-island *)){width:100%;box-sizing:border-box;background:rgb(255, 255, 255)!important;color:rgb(36, 36, 36)!important;border:1px solid rgb(170, 170, 170)!important;padding:10px!important}
+html body :is(#admin, #dashboard) input:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) select:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) textarea:where(:not(.smv-css-island,.smv-css-island *)){width:100%;box-sizing:border-box;background:#17243d!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.24)!important;padding:10px!important;border-radius:0!important;}
 html body :is(#admin, #dashboard) label{display:block}
 .smv-workflow-card{scroll-margin-top:100px;overflow-wrap:anywhere}
 .smv-workflow-card .action-row:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-wrap:wrap!important;gap:10px!important;align-items:end!important;margin:12px 0px!important}
@@ -2443,7 +2434,7 @@ html body :is(#admin, #dashboard) label{display:block}
 .smv-workflow-card [data-workflow="reject-question"]:where(:not(.smv-css-island,.smv-css-island *)), .smv-workflow-card [data-workflow="reject-answer"]:where(:not(.smv-css-island,.smv-css-island *)){border-style:dashed!important}
 .smv-refresh:where(:not(.smv-css-island,.smv-css-island *)){margin:8px 0px 16px!important}
 #adminPendingQuestions, #adminAnswers, #adminRefunds{scroll-margin-top:100px}
-html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;box-shadow:none!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important}
+html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;box-shadow:none!important;border:1px solid rgb(221, 221, 221)!important}
 @media (max-width: 650px){
 html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){padding:14px!important}
 .smv-workflow-card .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){flex:0 0 auto}
@@ -2543,7 +2534,7 @@ html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-men
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
 html body.smv-v12-theme .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;padding:10px!important}
 .password-toggle svg{display:block;width:24px;height:24px;flex:0 0 auto;fill:none;stroke:currentcolor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#about{scroll-margin-top:16px;box-sizing:border-box;width:calc(100% - 32px);max-width:1160px;margin:34px auto;padding:clamp(20px,3vw,32px) 0;border-top:1px solid rgba(122,84,43,.24);border-bottom:1px solid rgba(122,84,43,.24);border-left:0;border-right:0;border-radius:0;background:transparent;box-shadow:none}
+#about{scroll-margin-top:16px}
 #about p{max-width:850px}
 #about p:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.75}
 html body.smv-v12-theme #modal #modalContent .auth-shell button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn{background:none rgb(229, 34, 34)!important;color:rgb(255, 255, 255)!important;border-color:rgb(229, 34, 34)!important;font-weight:700!important;box-shadow:none!important}
@@ -2623,7 +2614,7 @@ html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowS
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:rgb(113, 18, 40)!important;text-align:center!important;display:block!important}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:14px!important;line-height:1.4!important}
-html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
+html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important;background:transparent!important;border:0px!important;box-shadow:none!important;padding:0px!important}
 .registration-icon .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important}
 #smv24-footer{width:100%;background:rgb(255, 255, 255);color:rgb(33, 29, 36);font:16px / 1.6 Arial, sans-serif;overflow:hidden;margin-top:32px}
@@ -2668,7 +2659,7 @@ html body.smv-v12-theme #register-flow .registration-kicker{position:relative!im
 @media (max-width: 760px){
 html body.smv-v12-theme #register-flow .registration-icon{width:76px!important;height:76px!important;min-width:76px!important;min-height:76px!important;flex-basis:76px!important;margin-bottom:20px!important}
 html body.smv-v12-theme #smv-content-hub{min-width:0px!important;padding-left:0px!important;padding-right:0px!important}
-html body.smv-v12-theme #smv-content-hub > .feature-shell.card{width:100%!important;min-width:0px!important;margin:0px!important;padding:16px 0!important;border:0!important;border-top:1px solid rgba(122,84,43,.24)!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+html body.smv-v12-theme #smv-content-hub > .feature-shell.card{width:100%!important;min-width:0px!important;margin:0px!important;padding:12px 0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:transparent!important}
 html body.smv-v12-theme #smv-content-hub .smv-v173-subregion{padding:0px!important;border:0px!important;box-shadow:none!important;min-width:0px!important;width:100%!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid{scroll-padding-inline:4px;overscroll-behavior-x:contain;scrollbar-width:thin;display:flex!important;flex-flow:row!important;gap:12px!important;min-width:0px!important;overflow:auto hidden!important;scroll-snap-type:x!important;padding:6px 4px 16px!important;box-sizing:border-box!important;align-items:flex-start!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs > .blog-card, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid > .media-card{scroll-snap-align:start;flex:0 0 90%!important;width:90%!important;min-width:0px!important;max-width:none!important;margin:0px!important;padding:16px!important;box-sizing:border-box!important;border:1px solid rgb(231, 222, 216)!important;border-radius:12px!important;box-shadow:none!important;overflow-wrap:anywhere!important}
@@ -2842,7 +2833,7 @@ html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHo
 .transit-panchang-grid > .transit-card:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;box-sizing:border-box!important;margin-top:12px!important}}
 @media (min-width: 641px){
 #askNowSection.smv-new-asknow, #horoscope-tools.feature-section, #tamil-horoscope.feature-section, #english-horoscope.feature-section{width:100%!important;max-width:none!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}
-#askNowSection .smv-new-asknow-inner{width:100%!important;max-width:none!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
+#askNowSection .smv-new-asknow-inner{width:100%!important;max-width:none!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}}
 @media (max-width: 640px){
 main.container:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!important;padding-left:8px!important;padding-right:8px!important}
 .feature-section:where(:not(.smv-css-island,.smv-css-island *)), .smv-new-asknow:where(:not(.smv-css-island,.smv-css-island *)){padding-left:10px!important;padding-right:10px!important}
@@ -2858,18 +2849,18 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!impo
 :root{--smv-red:#ef0a46;--smv-deep:#b90036;--smv-gold:#ffb400;--smv-yellow:#ffd22e;--smv-navy:#15213b;--smv-text:#333b4b;--smv-muted:#687080;--smv-cream:#fff8ef;--smv-pink:#fff0f5;--smv-line:#eee2df;--smv-white:#fff;--smv-shadow:0 12px 32px rgba(43,28,35,.09)}
 html{scroll-behavior:smooth}
 body:where(:not(.smv-css-island,.smv-css-island *)){overflow-x:hidden;color:var(--smv-navy)!important}
-.smv-master-top{background:linear-gradient(90deg, rgb(239, 10, 70), rgb(195, 0, 57));color:rgb(255, 255, 255)}
+.smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
 .smv-master-topin{max-width:1320px;margin:auto;padding:7px 24px;display:flex;justify-content:space-between;gap:18px;font-size:0.72rem}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:none;position:sticky!important;background:rgba(255, 255, 255, 0.97)!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:74px;margin:auto!important;gap:20px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){object-fit:contain;width:48px!important;height:48px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.22rem!important;color:var(--smv-red)!important;letter-spacing:0.025em!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.61rem!important;color:rgb(163, 38, 71)!important;font-weight:700!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:39px!important;padding:8px 12px!important;color:rgb(32, 40, 56)!important;font-size:0.81rem!important;font-weight:700!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:hover:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important}
-#authBtn{border:1px solid rgb(255, 140, 172)!important;color:rgb(198, 0, 59)!important}
-#registerNav{background:var(--smv-yellow)!important;color:rgb(56, 37, 0)!important}
+#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
+#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!important;margin:0px!important;padding:0px!important}
 .smv-master-trust{display:flex;flex-wrap:wrap;gap:22px;color:rgb(51, 60, 75);font-size:0.77rem;font-weight:700}
 .smv-master-trust span{display:flex;align-items:center;gap:7px}
@@ -2877,15 +2868,15 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-art{position:relative;min-height:520px;background:linear-gradient(90deg, rgba(255, 249, 242, 0.2), transparent 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center 24% / cover no-repeat}
 .smv-master-art::after{content:"";position:absolute;inset:0px;pointer-events:none;background:linear-gradient(90deg, rgba(255, 249, 242, 0.3), transparent 24%), linear-gradient(0deg, rgba(68, 28, 17, 0.08), transparent 28%)}
 .smv-master-services{max-width:1260px;margin:0px auto;padding:16px 24px 18px;display:grid;grid-template-columns:repeat(4, minmax(0px, 1fr));gap:13px}
-.smv-products-store-section{max-width:1260px;margin:clamp(22px,3vw,38px) auto 44px;padding:clamp(24px,3.5vw,42px);scroll-margin-top:90px;box-sizing:border-box;border:1px solid rgba(190,145,65,.45);border-radius:26px;background:radial-gradient(ellipse at 8% 0%,rgba(255,226,168,.56),transparent 34%),radial-gradient(ellipse at 100% 92%,rgba(244,203,218,.5),transparent 38%),linear-gradient(135deg,#fffaf0 0%,#ffffff 48%,#fff5f7 100%);box-shadow:0 14px 34px rgba(69,16,43,.08);text-align:center}
+.smv-products-store-section{max-width:1260px;margin:clamp(22px,3vw,38px) auto 44px;padding:clamp(24px,3.5vw,42px);scroll-margin-top:90px;box-sizing:border-box;border:0;border-radius:0;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);box-shadow:none;text-align:center}
 .smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#9b2640;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
 .smv-products-store-kicker::before,.smv-products-store-kicker::after{width:20px;height:1px;content:"";background:#c6a45c}
-#smv-products-store-section h2{margin:0 0 12px;color:#351d2a;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
-.smv-products-store-description{max-width:700px;margin:0 auto;color:#665761;font:400 14px/1.8 Arial,sans-serif}
-.smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;max-width:1080px;margin:24px auto 18px}
-#smv-products-store-section .smv-products-item{position:relative;display:flex;min-width:0;align-items:center;justify-content:flex-start;gap:14px;padding:18px clamp(12px,1.6vw,22px);border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;box-shadow:none;color:#33232b;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:color .18s ease}
-
-#smv-products-store-section .smv-products-item:hover{transform:none;border-bottom-color:rgba(122,84,43,.55);box-shadow:none;background:transparent;color:#8b1c37}
+#smv-products-store-section h2{margin:0 0 12px;color:#f3ecdd;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
+.smv-products-store-description{max-width:700px;margin:0 auto;color:#b8c3d4;font:400 14px/1.8 Arial,sans-serif}
+.smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;max-width:1080px;margin:24px auto 18px}
+#smv-products-store-section .smv-products-item{display:flex;min-width:0;align-items:center;justify-content:center;gap:14px;padding:12px clamp(5px,1.2vw,20px);color:#f2eddf;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:transform .18s ease;background:transparent;border:0;border-radius:0;box-shadow:none;}
+#smv-products-store-section .smv-products-item+.smv-products-item{border:0}
+#smv-products-store-section .smv-products-item:hover{transform:translateY(-2px)}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
 .smv-products-logo{display:block;flex:0 0 auto;width:clamp(64px,7.2vw,92px);height:clamp(64px,7.2vw,92px);object-fit:contain;object-position:center;border-radius:50%}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
@@ -2893,22 +2884,22 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#8b1c37;font:700 11px/1.4 Arial,sans-serif}
 #smv-products-store-section .smv-products-item-copy>span span{font-size:16px}
 .smv-products-store-note{margin:12px 0 0;color:#80757d;font:400 11px/1.6 Arial,sans-serif}
-.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;box-shadow:none;transition:color .2s ease,border-color .2s ease;text-decoration:none!important;color:var(--smv-navy)!important}
+.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-radius:0;text-align:center;box-shadow:none;transition:0.2s;text-decoration:none!important;color:#f2eddf!important;background:transparent;}
 .smv-master-service:nth-child(2n+1){background:transparent}
 .smv-master-service:nth-child(2n){background:transparent}
-.smv-master-service:hover{transform:none;border-bottom-color:rgba(122,84,43,.55);box-shadow:none;color:var(--smv-red)!important}
+.smv-master-service:hover{transform:translateY(-3px)}
 .smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:rgb(255, 255, 255);color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
 .smv-master-service strong{display:block;font-size:1rem;margin-bottom:7px}
-.smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116)}
-#askNowSection.smv-new-asknow{margin:0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:radial-gradient(circle at 92% 70%, rgba(255, 207, 45, 0.32), transparent 18rem), linear-gradient(100deg, rgb(174, 0, 50), rgb(239, 10, 70))!important}
-#askNowSection .smv-new-asknow-inner{max-width:1320px!important;padding:38px 24px 22px!important}
+.smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116);color:#b7c2d5;}
+#askNowSection.smv-new-asknow{margin:0px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:radial-gradient(circle at 92% 70%, rgba(255, 207, 45, 0.32), transparent 18rem), linear-gradient(100deg, rgb(174, 0, 50), rgb(239, 10, 70))!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;}
+#askNowSection .smv-new-asknow-inner{max-width:1320px!important;padding:38px 24px 22px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .smv-new-asknow-kicker:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 219, 118)!important}
 .smv-new-asknow h2:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
 .smv-new-asknow h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Georgia, serif!important;font-size:clamp(1.85rem, 3vw, 2.7rem)!important}
 .smv-new-asknow p:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 241, 245)!important;max-width:650px}
 .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-yellow)!important;color:rgb(64, 38, 0)!important;border:0px!important;border-radius:999px!important;padding:13px 25px!important}
 .smv-master-cats{max-width:1320px;margin:auto;padding:0px 24px 30px;display:grid;grid-template-columns:repeat(7, 1fr);gap:12px}
-.smv-master-cat{text-align:center;color:rgb(255, 255, 255);padding:10px 6px;border:0;border-right:1px solid rgba(255,226,160,.24);border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.smv-master-cat{text-align:center;color:rgb(255, 255, 255)}
 .smv-master-cat:where(:not(.smv-type-root,.smv-type-root *)){font-size:0.72rem}
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers, #smv-content-hub{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important}
@@ -2917,7 +2908,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #approved-astrologers h2,
 #smv-content-hub h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
-#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:24px!important}
 .smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 242, 246), rgb(255, 249, 222))!important;border:1px solid rgb(243, 221, 228)!important;border-radius:12px!important}
 .smv-master-proof{max-width:1260px;margin:auto;padding:12px 24px 42px;display:grid;grid-template-columns:repeat(4, 1fr)}
@@ -2926,8 +2917,8 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-proof strong{display:block;font-size:1rem;color:var(--smv-navy)}
 .smv-master-proof span{font-size:0.74rem;color:rgb(108, 114, 128)}
 #smvInstallAppSection{max-width:1260px!important;margin:15px auto!important;padding:0px 24px!important}
-.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
-.smv-master-footer{margin-top:45px;background:linear-gradient(105deg, rgb(212, 0, 61), rgb(166, 0, 48) 62%, rgb(239, 77, 57));color:rgb(255, 255, 255)}
+.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-radius:0!important;background:transparent!important;box-shadow:rgba(45, 28, 37, 0.07) 0px 7px 20px!important;box-shadow:none!important;}
+.smv-master-footer{margin-top:45px;background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21 100%);color:rgb(255, 255, 255);color:#f2eddf;}
 .smv-master-footer-in{max-width:1320px;margin:auto;padding:40px 24px;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:38px}
 .smv-master-footer h3{font-size:1.45rem;margin:0px 0px 5px}
 .smv-master-footer h4{color:rgb(255, 243, 174);margin:0px 0px 10px}
@@ -2935,7 +2926,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-links{display:grid;gap:3px}
 footer:not(.smv-master-footer):not(#smv24-footer){display:none!important}
 @media (max-width: 900px){
-.smv-master-top{display:none}
+.smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important}
 .brand{width:100%;justify-content:center}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:42px!important;height:42px!important}
@@ -2944,18 +2935,18 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-art{min-height:390px;background-size:cover;background-position:center 21%}
 .smv-master-art::after{background:linear-gradient(0deg, rgba(255, 255, 255, 0.05), transparent)}
 .smv-master-services{grid-template-columns:repeat(2, minmax(0px, 1fr));padding:12px;gap:9px}
-.smv-products-store-section{margin:18px auto 24px;padding:22px 16px;border-radius:20px}
-#smv-products-store-section h2{font-size:clamp(27px,7vw,34px)}
-.smv-products-store-description{font-size:13px;line-height:1.75}
+.smv-products-store-section{margin:18px auto 24px;padding:22px 16px;border-radius:0;border:0;box-shadow:none;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);}
+#smv-products-store-section h2{font-size:clamp(27px,7vw,34px);color:#f3ecdd;font-family:Georgia,"Noto Sans Tamil",serif;letter-spacing:-.035em;}
+.smv-products-store-description{font-size:13px;line-height:1.75;color:#b8c3d4;}
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
-#smv-products-store-section .smv-products-item{justify-content:flex-start;padding:15px 13px}
-#smv-products-store-section .smv-products-item+.smv-products-item{border:0;border-bottom:1px solid rgba(122,84,43,.24)}
+#smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
+#smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 .smv-products-logo{width:78px;height:78px}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:15px}
 .smv-master-service{min-height:155px;padding:17px 10px}
 .smv-master-service strong{font-size:0.92rem}
-.smv-master-service span{font-size:0.72rem}
-#askNowSection .smv-new-asknow-inner{padding:31px 16px 18px!important}
+.smv-master-service span{font-size:0.72rem;color:#b7c2d5;}
+#askNowSection .smv-new-asknow-inner{padding:31px 16px 18px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .smv-master-cats{grid-template-columns:repeat(4, 1fr);padding:0px 12px 26px;gap:10px}
 #approved-astrologers, #smv-content-hub{padding:32px 13px!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:15px!important}
@@ -2965,9 +2956,9 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 @media (max-width: 430px){
 .smv-master-art{min-height:350px;background-position:center 18%}
 .smv-master-services{padding:10px 9px}
-.smv-products-store-section{padding:20px 13px}
+.smv-products-store-section{padding:20px 13px;border:0;border-radius:0;box-shadow:none;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);}
 .smv-products-store-links{margin-top:16px}
-#smv-products-store-section .smv-products-item{gap:12px}
+#smv-products-store-section .smv-products-item{gap:12px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
 .smv-products-logo{width:68px;height:68px}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:14px}
 .smv-master-service{min-height:150px}}
@@ -2975,29 +2966,29 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 :where(:not(.smv-css-island,.smv-css-island *)){transition:none!important;scroll-behavior:auto!important}}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(238, 7, 80) 0%, rgb(207, 0, 61) 100%)!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){letter-spacing:0.01em;max-width:1360px!important;padding:6px 28px!important;font-size:0.7rem!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.984)!important;border-bottom:1px solid rgb(240, 229, 226)!important;box-shadow:rgba(40, 22, 30, 0.067) 0px 7px 24px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1360px!important;min-height:82px!important;padding:10px 28px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:26px!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){flex:0 0 auto!important;width:auto!important;justify-content:flex-start!important;gap:10px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(233, 9, 73)!important;line-height:1!important;letter-spacing:0.01em!important;font-weight:900!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;margin-top:4px!important;color:rgb(155, 35, 67)!important;font-size:0.58rem!important;letter-spacing:0.02em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){flex:1 1 auto!important;width:auto!important;display:flex!important;justify-content:flex-end!important;align-items:center!important;gap:3px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){position:relative;width:auto!important;min-width:auto!important;padding:10px 13px!important;border-radius:9px!important;color:rgb(29, 35, 48)!important;font-size:0.82rem!important;font-weight:750!important;line-height:1!important;white-space:nowrap!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 241, 245)!important;color:rgb(217, 0, 64)!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(217, 0, 64)!important}
 header nav .smv-demo-active::after{content:"";position:absolute;left:13px;right:13px;bottom:3px;height:2px;border-radius:10px;background:rgb(233, 8, 73)}
-#authBtn{border:1.5px solid rgb(239, 111, 152)!important}
-#registerNav{padding-left:21px!important;padding-right:21px!important;border:0px!important;background:linear-gradient(rgb(255, 216, 63), rgb(255, 197, 21))!important;color:rgb(52, 35, 0)!important;box-shadow:rgba(231, 172, 0, 0.18) 0px 7px 18px!important}
+#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
+#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 .smv-master-trust:where(:not(.smv-css-island,.smv-css-island *)){gap:24px!important;color:rgb(51, 59, 75)!important;font-size:0.74rem!important}
 .smv-master-trust b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(232, 7, 71)!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:535px!important;background:linear-gradient(90deg, rgb(255, 250, 245) 0%, rgba(255, 250, 245, 0.2) 14%, transparent 32%), url("assets/smv-desktop-hero-rooted-final.jpg") center 22% / cover no-repeat!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{background:linear-gradient(90deg, rgba(255, 250, 245, 0.28), transparent 23%), linear-gradient(0deg, rgba(80, 32, 17, 0.06), transparent 25%)!important}
 @media (max-width: 900px){
-header:where(:not(.smv-css-island,.smv-css-island *)){position:sticky!important;top:0px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:auto!important;padding:9px 11px 10px!important;display:block!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;justify-content:center!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:43px!important;height:43px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.16rem!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.52rem!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;grid-template-columns:repeat(5, minmax(0px, 1fr))!important}
 header nav > a[href="#home"]{grid-area:1 / 1}
 header nav > #horoscopeNav{grid-area:1 / 2}
@@ -3017,7 +3008,7 @@ header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding-left:8px!impo
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:5px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.64rem!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:330px!important;background-position:center 15%!important}}
-#askNowSection.smv-new-asknow{background:linear-gradient(110deg, rgb(201, 0, 61) 0%, rgb(239, 7, 73) 68%, rgb(255, 73, 61) 100%)!important}
+#askNowSection.smv-new-asknow{background:linear-gradient(110deg, rgb(201, 0, 61) 0%, rgb(239, 7, 73) 68%, rgb(255, 73, 61) 100%)!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker{text-shadow:none!important}
 #askNowSection #askNowHeading, #askNowSection h2{opacity:1!important}
 #askNowSection p, #askNowSection .smv-new-asknow-note{text-shadow:none!important}
@@ -3027,7 +3018,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 220, 63)!important;opacity:1!important;text-shadow:rgba(0, 0, 0, 0.08) 0px 1px 0px!important}
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){opacity:1!important;text-shadow:none!important}
 @media (max-width: 900px){
-#askNowSection .smv-new-asknow-inner{padding:28px 18px 24px!important}
+#askNowSection .smv-new-asknow-inner{padding:28px 18px 24px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-size:0.74rem!important;letter-spacing:0.11em!important}
 #askNowSection #askNowHeading, #askNowSection h2{margin-bottom:15px!important}
 #askNowSection #askNowHeading:where(:not(.smv-type-root,.smv-type-root *)),
@@ -3048,13 +3039,13 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.84rem!important}}
 :root{--smv-pink:#ed0750;--smv-red:#c9003e;--smv-yellow:#ffd236;--smv-ink:#101a31}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(233, 0, 75), rgb(199, 0, 59))!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){border-bottom:1px solid rgb(242, 229, 225)!important;box-shadow:rgba(44, 23, 32, 0.07) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:72px!important;padding:8px 24px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(157, 38, 69)!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
-#authBtn{border:1.5px solid rgb(237, 111, 153)!important;color:rgb(192, 0, 58)!important}
-#registerNav{background:linear-gradient(rgb(255, 218, 61), rgb(255, 197, 27))!important}
+#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
+#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 249, 239) 0%, rgba(255, 249, 239, 0.04) 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 8, 112)!important;opacity:1!important}
 #askNowSection #askNowHeading, #askNowSection h2{color:rgb(217, 9, 47)!important;text-shadow:none!important}
@@ -3073,27 +3064,27 @@ header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!impo
 body:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:var(--smv-ink)!important}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(231, 7, 73), rgb(201, 0, 61))!important;color:rgb(255, 255, 255)!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;padding:7px 24px!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;border-bottom:1px solid rgb(240, 228, 224)!important;box-shadow:rgba(46, 23, 32, 0.06) 0px 5px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;min-height:78px!important;padding:9px 24px!important;gap:18px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:52px!important;height:52px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(230, 7, 72)!important;font-size:1.42rem!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(162, 37, 69)!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:2px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:42px!important;padding:10px 12px!important;background:transparent!important;color:rgb(21, 27, 41)!important;border:0px!important;border-radius:8px!important;box-shadow:none!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(230, 7, 72)!important}
-#authBtn{margin-left:7px!important;padding-left:20px!important;padding-right:20px!important;border:1.5px solid rgb(239, 113, 154)!important;border-radius:999px!important;background:rgb(255, 255, 255)!important;color:rgb(189, 0, 56)!important}
-#registerNav{margin-left:4px!important;padding-left:22px!important;padding-right:22px!important;border-radius:999px!important;background:linear-gradient(rgb(255, 220, 69), rgb(255, 197, 27))!important;color:rgb(51, 35, 0)!important}
+#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
+#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 .smv-master-trust:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(37, 45, 58)!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:430px!important;background:linear-gradient(90deg, rgb(255, 247, 232) 0%, rgba(255, 247, 232, 0.03) 18%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{display:none!important}
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){max-width:1100px!important;padding:10px 18px 16px!important;gap:12px!important}
-.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;box-shadow:none!important;min-height:150px!important}
-.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
-.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
+.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:0;border-radius:0;box-shadow:none;min-height:150px!important;background:transparent;color:#f2eddf!important;}
+.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 240, 245))!important}
+.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 242, 200))!important}
 #smvInstallAppSection{max-width:760px!important;margin:0px auto 10px!important}
-.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;box-shadow:none!important;background:transparent!important}
-#askNowSection.smv-new-asknow{background:radial-gradient(circle at 4% 50%, rgba(255, 255, 255, 0.07), transparent 16rem), linear-gradient(100deg, rgb(173, 0, 52), rgb(232, 5, 70) 72%, rgb(255, 41, 62))!important}
-#askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:rgb(255, 250, 240)!important;border-radius:16px!important;padding:27px 24px 20px!important}
+.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
+#askNowSection.smv-new-asknow{background:radial-gradient(circle at 4% 50%, rgba(255, 255, 255, 0.07), transparent 16rem), linear-gradient(100deg, rgb(173, 0, 52), rgb(232, 5, 70) 72%, rgb(255, 41, 62))!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+#askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:transparent!important;border-radius:0!important;padding:27px 24px 20px!important;border:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 10, 119)!important}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
 #askNowSection #askNowHeading, #askNowSection h2{color:rgb(223, 7, 60)!important}
@@ -3120,7 +3111,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #authBtn, #registerNav{margin-left:0px!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:320px!important;background-position:center center!important}
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(2, minmax(0px, 1fr))!important;padding:10px!important;gap:9px!important}
-#askNowSection .smv-new-asknow-inner{margin:0px 10px!important;padding:25px 15px 20px!important}
+#askNowSection .smv-new-asknow-inner{margin:0px 10px!important;padding:25px 15px 20px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(4, 1fr)!important}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{top:auto!important;width:100%!important;height:145px!important;opacity:0.68!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:1fr 1fr!important;gap:20px 16px!important;padding:28px 18px 160px!important;text-align:left!important}
@@ -3135,7 +3126,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){text-align:left!important}}
 @media (max-width: 430px){
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(2, minmax(0px, 1fr))!important}
-.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){padding:15px 8px!important;min-height:145px!important}
+.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){padding:15px 8px!important;min-height:145px!important;border:0;border-radius:0;box-shadow:none;background:transparent;color:#f2eddf!important;}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:285px!important}}
 #smvPremiumHeaderV9, #smvPremiumHeaderV9 *{box-sizing:border-box}
 #smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:linear-gradient(115deg, #fff6df 0%, #f5dfbb 42%, #f6e3dd 76%, #fffaf2 100%);color:rgb(23, 25, 39);border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
@@ -3430,24 +3421,14 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 #private-consultation .smv-private-consult-photo{width:44px!important;height:44px!important;flex:0 0 44px!important}
 #private-consultation .smv-private-consult-meta h4{margin:0px 0px 1px!important}
 #private-consultation .smv-private-consult-description{margin:4px 0px!important}}
-#smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:transparent!important;
-  border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;
-  border-radius:0!important;box-shadow:none!important;outline:0px!important;
-  padding-left:0!important;padding-right:0!important;
-}
-#smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:transparent!important;
-  border:0!important;border-bottom:1px solid rgba(122,84,43,.16)!important;
-  border-radius:0!important;box-shadow:none!important;padding-left:0!important;padding-right:0!important;
-}
+#smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0px!important;padding-left:0px!important;padding-right:0px!important}
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
 #admin .smv-admin-nav, #admin .action-row{background:transparent!important;border:0px!important;box-shadow:none!important}
 #admin #astrologerQuizQuestionManager h3, #admin #astrologerQuizQuestionManagerCard h3, #admin [id*="QuizQuestionManager"] h3{color:rgb(230, 0, 0)!important;-webkit-text-fill-color:rgb(230, 0, 0)!important}
 nn #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(#adminAstrologerProfileManagementToggle):not(#astrologerQuizQuestionManagerToggle), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:none rgb(56, 189, 248)!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;border:1px solid rgb(2, 132, 199)!important;border-radius:7px!important;box-shadow:none!important;width:auto!important;min-width:0px!important;min-height:36px!important;height:auto!important;padding:6px 10px!important}
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(#adminAstrologerProfileManagementToggle):not(#astrologerQuizQuestionManagerToggle):hover, #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):hover, #admin input[type="button"]:hover, #admin input[type="submit"]:hover{background:rgb(14, 165, 233)!important;border-color:rgb(3, 105, 161)!important}
 #admin .smv-admin-nav{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;padding:6px 0px!important;margin-bottom:10px!important}
-#admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{background:rgb(176, 24, 34)!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;border:1px solid rgb(148, 19, 27)!important;border-radius:7px!important;box-sizing:border-box!important}
+#admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{background:rgba(223,189,115,.10)!important;color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;border:0!important;border-bottom:1px solid rgba(223,189,115,.28)!important;border-radius:0!important;box-shadow:none!important}
 @media (max-width: 600px){
 #admin .smv-admin-nav{display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:8px!important;width:100%!important}
 #admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{width:100%!important;min-width:0px!important;max-width:none!important;height:42px!important;min-height:42px!important;max-height:42px!important;margin:0px!important;padding:4px 5px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow:hidden!important;aspect-ratio:auto!important}}
@@ -3792,22 +3773,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 #paymentSuccessDetails dd{margin:0 0 14px;overflow-wrap:anywhere}
 #paymentReceiptStatus{min-height:3em}
 [data-smv-question-id]:focus{outline:2px solid #b8860b;outline-offset:5px}
-#dashboardContent > .card,
-#dashboardContent > .grid > .card,
-#dashboardContent .smv-astrologer-dashboard > .card,
-#dashboardContent .smv-astrologer-dashboard > .astro-dashboard-summary > .card,
-#admin > .card,
-#admin .admin-workgroup > .card{
-  box-shadow:none;
-  border:0;border-bottom:1px solid rgba(122,84,43,.24);
-  border-radius:0;background:transparent;
-  padding-left:0;padding-right:0;
-}
-#dashboardContent .card .card,
-#admin .card .card{
-  box-shadow:none;border:0;border-bottom:1px solid rgba(122,84,43,.16);
-  border-radius:0;background:transparent;padding-left:0;padding-right:0;
-}
+#dashboardContent .card,#admin .card{box-shadow:none;border:0;background:#fff;padding-left:0;padding-right:0}
 #dashboardContent h2::before,#dashboardContent h2::after,#dashboardContent h3::before,#dashboardContent h3::after,#admin h2::before,#admin h2::after,#admin h3::before,#admin h3::after{content:none}
 #dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#e00000;margin:18px 0 14px}
 #dashboardContent .smv-profile-expertise{font-size:15px;font-weight:600;letter-spacing:.01em;margin:7px 0}
@@ -3828,7 +3794,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 /* SMV ASTRO V185 — mobile premium merged header + hero reference.
    Mobile only. Desktop remains unchanged. */
 @media (max-width: 899px){
-  .smv-master-top{display:none!important;}
+  .smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
 
   /* Use the dedicated mobile header artwork here. The Hero image is rendered
      by its own responsive picture below; neither asset should be hidden. */
