@@ -4206,21 +4206,24 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a,
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){
     display:inline-flex!important;
-    flex:0 0 auto!important;
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+    max-width:none!important;
+    min-height:40px!important;
+    height:40px!important;
+    max-height:40px!important;
+    margin:0!important;
+    padding:0 4px!important;
+    box-sizing:border-box!important;
     align-items:center!important;
     justify-content:center!important;
-    min-width:0!important;
-    min-height:38px!important;
-    height:auto!important;
-    margin:0!important;
-    padding:9px clamp(6px,.72vw,12px)!important;
-    box-sizing:border-box!important;
     border:1px solid rgba(255,214,107,.82)!important;
     border-radius:999px!important;
     background:rgba(5,20,54,.72)!important;
     color:#fff8e7!important;
     -webkit-text-fill-color:#fff8e7!important;
-    font:800 clamp(10px,1.02vw,13px)/1 Arial,Helvetica,sans-serif!important;
+    font:800 clamp(9px,.95vw,12px)/1 Arial,Helvetica,sans-serif!important;
     white-space:nowrap!important;
     text-align:center!important;
     text-shadow:none!important;
