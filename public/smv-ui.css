@@ -486,3 +486,47 @@ body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn
 #smv-content-hub .smv-v173-subregion+.smv-v173-subregion,#adminBlogsMedia{margin-top:14px}
 #dashboard,#admin{margin-top:45px}
 #dashboard>div:first-child,#admin>.card:first-child>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+ 
+/* SMV ASTRO dialog branding and accessible native file-picker controls. */
+body.smv-v12-theme .smv-dialog-brand{
+  display:block!important;
+  width:64px!important;
+  height:64px!important;
+  max-width:64px!important;
+  margin:0 auto 12px!important;
+  object-fit:contain!important;
+  border:1px solid #dfbd73!important;
+  border-radius:50%!important;
+  background:#24103f!important;
+  box-shadow:0 3px 12px rgba(0,0,0,.18)!important;
+}
+body.smv-v12-theme .smv-dialog-actions .btn.gray{
+  background:#fffaf0!important;
+  border:1px solid #dfbd73!important;
+  color:#701a32!important;
+  -webkit-text-fill-color:#701a32!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme .smv-dialog-actions .btn.danger{
+  background:linear-gradient(135deg,#8d2020,#b43d3d)!important;
+  border:1px solid #761818!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
+/* Native Chromium/WebKit file buttons previously inherited light text on white. */
+body.smv-v12-theme #arPhoto::file-selector-button,
+body.smv-v12-theme #blogCoverFile::file-selector-button,
+body.smv-v12-theme #arPhoto::-webkit-file-upload-button,
+body.smv-v12-theme #blogCoverFile::-webkit-file-upload-button{
+  padding:9px 12px!important;
+  margin-right:10px!important;
+  border:1px solid #dfbd73!important;
+  border-radius:3px!important;
+  background:linear-gradient(135deg,#dfbd73,#f2d79a)!important;
+  color:#24103f!important;
+  -webkit-text-fill-color:#24103f!important;
+  font:inherit!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  cursor:pointer!important;
+}
