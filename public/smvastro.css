@@ -2611,7 +2611,7 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 .smv24-icon img:where(:not(.smv-css-island,.smv-css-island *)){position:absolute!important;max-width:none!important;height:auto!important;transform:none!important;border:0px!important;border-radius:0px!important;margin:0px!important;padding:0px!important}
 html body.smv-v12-theme #askNowSection{background:none rgb(255, 255, 255)!important;color:rgb(39, 32, 37)!important}
 html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowSection::after{display:none!important}
-html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important}
+html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important;background:transparent!important;}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:#f2eddf!important;text-align:center!important;display:block!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:14px!important;line-height:1.4!important}
 html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
@@ -3050,7 +3050,7 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 8, 112)!important;opacity:1!important}
 #askNowSection #askNowHeading, #askNowSection h2{color:rgb(217, 9, 47)!important;text-shadow:none!important}
 #askNowSection p, #askNowSection .smv-new-asknow-note{opacity:1!important}
-.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(100deg, rgb(189, 0, 56) 0%, rgb(146, 0, 25) 56%, rgb(125, 12, 16) 100%)!important}
+.smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(100deg, rgb(189, 0, 56) 0%, rgb(146, 0, 25) 56%, rgb(125, 12, 16) 100%)!important;background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21) !important;color:#f2eddf!important;}
 .smv-master-footer::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:35%;background:linear-gradient(90deg, rgb(133, 11, 20) 0%, rgba(133, 11, 20, 0.18) 38%, rgba(133, 11, 20, 0.02)), url("assets/footer.png") center center / cover no-repeat;opacity:0.92;pointer-events:none}
 .smv-master-footer-in{position:relative;z-index:2}
 .smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 221, 63)!important}
