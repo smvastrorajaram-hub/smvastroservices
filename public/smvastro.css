@@ -4286,7 +4286,7 @@ color:#f2eddf;-webkit-text-fill-color:#f2eddf;}
   }
 }
 
-/* Footer content floats over the same celestial-style photograph as the Hero. */
+/* Footer uses the same midnight-indigo celestial gradient as the site canvas. */
 @media (max-width:760px){
   html body #smv24-footer:where(:not(.hidden)){background-color:#0a1227!important;background-image:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;
   }
