@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Published bilingual SMV CALENDAR Rasi Palan entries. Keys use type|periodKey|rasiIndex|planetKey|language.",
-  "entries": {}
+  "description": "Offline fallback for SMV CALENDAR published bilingual New Year and planetary-ingress manual readings. Keys use type|periodKey|rasiIndex|planetKey|language. Live Admin publishes to the authorized Firestore smv_content/calendar_rasi_palan_v1 document.",
+  "entries": {},
+  "mode": "hybrid"
 }

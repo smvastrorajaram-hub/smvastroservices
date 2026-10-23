@@ -37,6 +37,13 @@ on:
       - 'tests/timezone-boundary-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
       - 'audits/SMV_ASTRO_BV_RAMAN_ASHTAKAVARGA_AYURDAYA_SOURCE_GAP_AUDIT.md'
+      # Calendar-only changes are tested by calendar-rasi-palan-qa.yml.
+      - '!public/horoscope/calendar/**'
+      - '!public/horoscope/calendar-rasi-palan.*'
+      - '!public/horoscope/daily-calendar.mjs'
+      - '!public/horoscope/daily-calendar.css'
+      - '!tests/calendar-rasi-palan-regression.mjs'
+      - '!.github/workflows/horoscope-matching-dst-qa.yml'
   pull_request:
     branches: [main]
     paths:
@@ -73,6 +80,13 @@ on:
       - 'tests/dst-seasonal-regression.mjs'
       - 'tests/timezone-boundary-audit.mjs'
       - '.github/workflows/horoscope-matching-dst-qa.yml'
+      # Calendar-only changes are tested by calendar-rasi-palan-qa.yml.
+      - '!public/horoscope/calendar/**'
+      - '!public/horoscope/calendar-rasi-palan.*'
+      - '!public/horoscope/daily-calendar.mjs'
+      - '!public/horoscope/daily-calendar.css'
+      - '!tests/calendar-rasi-palan-regression.mjs'
+      - '!.github/workflows/horoscope-matching-dst-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read

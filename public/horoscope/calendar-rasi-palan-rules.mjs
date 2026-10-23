@@ -35,11 +35,34 @@ export function mondayOf(dateString) {
   return d.toISOString().slice(0, 10);
 }
 
+export function sundayOf(dateString) {
+  const d = new Date(String(dateString) + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  return d.toISOString().slice(0, 10);
+}
+
+export function lastCompletedWeek(dateString) {
+  const anchor = new Date(String(dateString) + 'T12:00:00Z');
+  const daysSinceLastSaturday = (anchor.getUTCDay() + 1) % 7 || 7;
+  const end = new Date(anchor);
+  end.setUTCDate(end.getUTCDate() - daysSinceLastSaturday);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 6);
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
+
 export function periodReference(period, dateString) {
-  const d = String(dateString);
-  if (period === 'weekly') return { date: mondayOf(d), key: mondayOf(d) };
-  if (period === 'monthly') return { date: d.slice(0, 7) + '-01', key: d.slice(0, 7) };
-  return { date: d, key: d };
+  const d = String(dateString).slice(0, 10);
+  if (period === 'weekly') {
+    const range = lastCompletedWeek(d);
+    return { date: range.start, key: range.start, start: range.start, end: range.end };
+  }
+  if (period === 'monthly') {
+    const yearMonth = d.slice(0, 7);
+    const monthEnd = new Date(Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)), 0, 12)).toISOString().slice(0, 10);
+    return { date: yearMonth + '-01', key: yearMonth, start: yearMonth + '-01', end: monthEnd };
+  }
+  return { date: d, key: d, start: d, end: d };
 }
 
 export function readingKey(type, periodKey, rasiIndex, planetKey, language) {

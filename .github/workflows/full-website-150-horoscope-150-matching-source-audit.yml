@@ -16,6 +16,13 @@ on:
       - 'tests/cg-rajan-ayurdaya-pinda-customer-report-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-advanced-part-i-placement-qa.mjs'
       - '.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
+      # Calendar Rasi Palan has a dedicated, limited-scope regression workflow.
+      - '!public/horoscope/calendar/**'
+      - '!public/horoscope/calendar-rasi-palan.*'
+      - '!public/horoscope/daily-calendar.mjs'
+      - '!public/horoscope/daily-calendar.css'
+      - '!tests/calendar-rasi-palan-regression.mjs'
+      - '!.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
   workflow_dispatch:
 permissions:
   contents: read
