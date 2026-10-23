@@ -8,13 +8,14 @@ import {
   houseFromRasi,
   mondayOf,
   sundayOf,
-  lastCompletedWeek,
-  periodReference,
+  
   readingKey,
   selectReading
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
+import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const periodsSource = await readFile(new URL('../public/horoscope/calendar/rasi-palan-periods.mjs', import.meta.url), 'utf8');
 const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan.mjs', import.meta.url), 'utf8');
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
@@ -34,13 +35,13 @@ test('Sidereal longitudes normalize and house counting from the selected Rasi is
   assert.equal(houseFromRasi(11, 0), 12);
 });
 
-test('Daily is fixed to the supplied current date; weekly uses the last complete Sunday–Saturday and monthly uses the full current month', () => {
+test('Daily is fixed to the supplied current date; weekly uses the current Sunday–Saturday and monthly uses the full current month', () => {
   assert.deepEqual(periodReference('daily', '2026-10-24'), {date:'2026-10-24',key:'2026-10-24',start:'2026-10-24',end:'2026-10-24'});
   assert.equal(mondayOf('2026-10-24'), '2026-10-19');
   assert.equal(sundayOf('2026-10-24'), '2026-10-18');
-  assert.deepEqual(lastCompletedWeek('2026-10-24'), {start:'2026-10-11',end:'2026-10-17'});
-  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-11',key:'2026-10-11',start:'2026-10-11',end:'2026-10-17'});
-  assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-18',key:'2026-10-18',start:'2026-10-18',end:'2026-10-24'});
+  assert.deepEqual(currentWeek('2026-10-24'), {start:'2026-10-18',end:'2026-10-24'});
+  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-18',key:'2026-10-18',start:'2026-10-18',end:'2026-10-24'});
+  assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-25',key:'2026-10-25',start:'2026-10-25',end:'2026-10-31'});
   assert.deepEqual(periodReference('monthly', '2026-10-24'), {date:'2026-10-01',key:'2026-10',start:'2026-10-01',end:'2026-10-31'});
 });
 
@@ -71,7 +72,8 @@ test('Calendar daily Rasi Palan has no separate Moon transit prediction and show
 
 test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
   assert.doesNotMatch(publicRasiPalanSource, /id="rpDate"|#rpDate|id="rpYear"|#rpYear|Choose a date first/);
-  assert.match(publicRasiPalanSource, /lastCompletedWeek|periodReference/);
+  assert.match(publicRasiPalanSource, /periodReference/);
+  assert.match(periodsSource, /currentWeek/);
   assert.match(publicRasiPalanSource, /Day: |நாள்: /);
   assert.match(publicRasiPalanSource, /Week: |வாரம்: /);
   assert.match(publicRasiPalanSource, /Month: |மாதம்: /);
@@ -86,6 +88,7 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
   assert.doesNotMatch(publicRasiPalanSource, /Export manual JSON|exportManualJson/);
   assert.doesNotMatch(publicRasiPalanSource, /Automatic uses local Swiss Ephemeris/);
   assert.doesNotMatch(publicRasiPalanSource, /தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்/);
+  assert.doesNotMatch(dailyCalendarSource, /cal-engine-note|Calculation & prediction method|கணக்கீடு & பலன் முறை/);
   assert.doesNotMatch(publicRasiPalanSource, /rp-mode-chip|rp-manual-editor/);
 });
 
@@ -96,6 +99,8 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminPageSource, /id="mode"/);
   assert.match(adminPageSource, /id="publish"/);
   assert.match(adminModuleSource, /signInWithEmailAndPassword/);
+  assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
+  assert.match(adminModuleSource, /auth\/invalid-credential/);
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
   assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(adminModuleSource, /tamilNewYear/);

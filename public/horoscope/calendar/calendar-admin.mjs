@@ -12,7 +12,7 @@ const types = {
 };
 const firebaseConfig = {
   apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-  authDomain: 'smv-astro.firebaseapp.com',
+  // Match the existing SMV ASTRO Admin setup: use the Firebase hosted auth domain on Pages previews,\n  // and the production custom auth domain on SMV production domains.\n  authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))\n    ? 'smv-astro.firebaseapp.com'\n    : 'auth.smvastroservices.in',
   projectId: 'smv-astro',
   storageBucket: 'smv-astro.firebasestorage.app',
   messagingSenderId: '299081899217',
@@ -32,6 +32,23 @@ const todayLocal = () => new Date(Date.now() + 330 * 60000).toISOString().slice(
 $('year').value = Number(todayLocal().slice(0, 4));
 $('eventDate').value = todayLocal();
 
+function loginErrorMessage(error) {
+  const code = String(error?.code || '');
+  const known = {
+    'auth/invalid-credential': 'Email அல்லது password தவறாக உள்ளது. சரியான Admin account-ஐப் பயன்படுத்தவும்.',
+    'auth/invalid-login-credentials': 'Email அல்லது password தவறாக உள்ளது. சரியான Admin account-ஐப் பயன்படுத்தவும்.',
+    'auth/user-not-found': 'இந்த email Firebase Authentication-ல் இல்லை.',
+    'auth/wrong-password': 'Password தவறாக உள்ளது.',
+    'auth/operation-not-allowed': 'Firebase Authentication-ல் Email/Password login enable செய்யப்படவில்லை.',
+    'auth/unauthorized-domain': 'இந்த domain Firebase Authentication authorized domains பட்டியலில் இல்லை.',
+    'auth/network-request-failed': 'Firebase connection தோல்வியடைந்தது. Internet connection-ஐச் சரிபார்க்கவும்.',
+    'auth/too-many-requests': 'பல login முயற்சிகள். சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.',
+    'permission-denied': 'இந்தக் கணக்கிற்கு Firestore Admin அனுமதி இல்லை. Admin-role access-ஐச் சரிபார்க்கவும்.'
+  };
+  if (known[code]) return known[code] + ' (' + code + ')';
+  const message = String(error?.message || error || 'Unknown error');
+  return code && !message.includes(code) ? message + ' (' + code + ')' : message;
+}
 function status(message, bad = false, id = 'status') {
   const el = $(id);
   if (!el) return;
@@ -188,7 +205,7 @@ async function login(event) {
     $('editor').hidden = false;
     status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது.', false, 'publishStatus');
   } catch (error) {
-    status(error?.message || String(error), true);
+    status(loginErrorMessage(error), true);
   } finally {
     button.disabled = false;
   }

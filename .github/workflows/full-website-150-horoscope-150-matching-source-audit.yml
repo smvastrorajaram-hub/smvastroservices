@@ -22,6 +22,7 @@ on:
       - '!public/horoscope/daily-calendar.mjs'
       - '!public/horoscope/daily-calendar.css'
       - '!tests/calendar-rasi-palan-regression.mjs'
+      - '!tests/calendar-rasi-palan-browser-smoke.mjs'
       - '!.github/workflows/full-website-150-horoscope-150-matching-source-audit.yml'
   workflow_dispatch:
 permissions:
