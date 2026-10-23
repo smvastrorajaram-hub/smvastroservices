@@ -4106,9 +4106,9 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 @media (min-width: 900px){
   html body.smv-v12-theme #smvPremiumHeaderV9:where(:not(.hidden)){
     width:100%!important;
-    height:112px!important;
-    min-height:112px!important;
-    max-height:112px!important;
+    height:152px!important;
+    min-height:152px!important;
+    max-height:152px!important;
     margin:0!important;
     padding:0!important;
     overflow:hidden!important;
@@ -4124,22 +4124,26 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     display:flex!important;
     width:100%!important;
     max-width:1280px!important;
-    height:112px!important;
-    min-height:112px!important;
-    max-height:112px!important;
+    height:152px!important;
+    min-height:152px!important;
+    max-height:152px!important;
     margin:0 auto!important;
     padding:8px clamp(12px,2vw,24px)!important;
     box-sizing:border-box!important;
+    flex-direction:column!important;
     align-items:center!important;
-    justify-content:space-between!important;
-    gap:clamp(10px,1.5vw,20px)!important;
+    justify-content:center!important;
+    gap:8px!important;
     background:transparent!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand{
-    flex:0 1 auto!important;
+    flex:0 0 auto!important;
     min-width:0!important;
+    width:auto!important;
+    margin:0 auto!important;
     gap:9px!important;
     align-items:center!important;
+    justify-content:center!important;
     background:transparent!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-brand > img{
@@ -4190,14 +4194,14 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu{
     display:flex!important;
-    flex:1 1 auto!important;
+    flex:0 0 auto!important;
     min-width:0!important;
-    width:auto!important;
+    width:100%!important;
     margin:0!important;
     padding:0!important;
     align-items:center!important;
-    justify-content:flex-end!important;
-    gap:clamp(1px,.35vw,6px)!important;
+    justify-content:center!important;
+    gap:clamp(4px,.6vw,10px)!important;
     overflow:visible!important;
     background:transparent!important;
     border:0!important;
@@ -4249,7 +4253,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     left:50%!important;
     width:100vw!important;
     max-width:100vw!important;
-    height:calc(66.66666667vw - 112px)!important;
+    height:calc(66.66666667vw - 152px)!important;
     min-height:488px!important;
     margin:0 0 0 -50vw!important;
     padding:0!important;
@@ -4258,7 +4262,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-color:#081c43!important;
     background-image:url("./photo/smv-home-desktop-hero.webp")!important;
     background-size:100vw auto!important;
-    background-position:center calc(0px - 112px)!important;
+    background-position:center calc(0px - 152px)!important;
     background-repeat:no-repeat!important;
     box-shadow:none!important;
     overflow:hidden!important;
