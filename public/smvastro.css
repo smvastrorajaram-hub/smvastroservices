@@ -5,7 +5,7 @@
 @keyframes smvHoroscopeSpin{
 100%{transform:rotate(360deg)}}
 #tamilHoroscopeResult[aria-busy="true"], #englishHoroscopeResult[aria-busy="true"]{opacity:0.98}
-.registration-option.astrologer-option{background:linear-gradient(rgb(255, 243, 166) 0%, rgb(255, 227, 106) 48%, rgb(255, 211, 77) 100%);border-color:rgb(200, 149, 18);box-shadow:rgba(184, 134, 11, 0.16) 0px 12px 30px}
+.registration-option.astrologer-option{background:transparent!important;border-color:rgb(200, 149, 18);box-shadow:none!important;border:0!important;border-radius:0!important;}
 .registration-option.astrologer-option .registration-icon{color:rgb(138, 91, 0);background:radial-gradient(circle, rgb(255, 251, 224) 0%, rgb(255, 233, 138) 62%, rgb(244, 207, 85) 100%);border-color:rgb(184, 134, 11)}
 .registration-option.astrologer-option .registration-kicker{color:rgb(122, 82, 0)}
 .registration-option.astrologer-option h3{color:rgb(111, 23, 23)}
@@ -23,7 +23,7 @@
 #dashboard.hidden, #admin.hidden, #register-flow.hidden, #astro-register-form.hidden, #astro-flow.hidden, #ask-flow.hidden, #appointment.hidden, #contact.hidden{display:none!important}
 html[lang="ta"] body{font-family:"Noto Sans Tamil", Inter, Arial, Helvetica, sans-serif}
 html[lang="hi"] body{font-family:"Noto Sans Devanagari", "Noto Sans", Inter, Arial, Helvetica, sans-serif}
-#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
+#registerNav{margin-left:2px}
 @media (min-width: 761px){
 #dashboardContent > .grid:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:16px!important;width:100%!important;align-items:stretch!important}
 #dashboardContent > .grid > .card:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid > .card:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!important;width:100%!important;box-sizing:border-box!important}
@@ -273,8 +273,8 @@ form input, form select, form textarea{width:100%;box-sizing:border-box}
 #tamilHoroscopeResult, #englishHoroscopeResult{max-width:980px;margin:0px auto}
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:min(700px, 88vw)!important}
 #tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:16px!important}}
-#astroQuestionQueue .astro-question-item.pending-approval textarea{border:2px solid rgb(199, 155, 82);background:rgb(255, 253, 248)}
-#astroQuestionQueue .astro-question-item.pending-approval .pending-note{color:rgb(122, 90, 34)}
+#astroQuestionQueue .astro-question-item.pending-approval textarea{border:2px solid rgb(199, 155, 82);background:#17243d!important;color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
+#astroQuestionQueue .astro-question-item.pending-approval .pending-note{color:#f3d99b}
 .astro-question-item, .astro-answer-item{overflow:hidden}
 .astro-question-item textarea{min-height:180px;resize:vertical}
 #astroQuestionQueue, #astroAnsweredBox{scroll-margin-top:90px}
@@ -298,7 +298,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box}
 .nav nav #dashLink.smv-role-green, .nav nav #adminLink.smv-role-green{height:40px!important;min-height:40px!important}}
 @media (max-width: 380px){
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){width:86px!important;min-width:86px!important;max-width:86px!important;flex-basis:86px!important;height:38px!important;min-height:38px!important;max-height:38px!important;font-size:10.5px!important}}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){text-align:center!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:1180px!important;margin:0px auto!important;padding:14px 10px 12px!important;box-sizing:border-box!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:12px!important}
 header .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:64px!important;height:64px!important}
@@ -408,13 +408,13 @@ h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 .faq-section h3:where(:not(.smv-css-island,.smv-css-island *)), .faq-section summary:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(20px, 2.5vw, 28px)!important;line-height:1.4!important}
 .faq-section p:where(:not(.smv-css-island,.smv-css-island *)), .faq-section .faq-answer:where(:not(.smv-css-island,.smv-css-island *)), .faq-section li:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important;line-height:1.7!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:28px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){font-size:15px!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:16px!important;line-height:1.3!important}
 input:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 select:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 textarea:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:17px!important;line-height:1.5!important}
-input::placeholder:where(), textarea::placeholder:where(){font-size:16px!important}
+input::placeholder:where(), textarea::placeholder:where(){font-size:16px!important;color:#687386!important;-webkit-text-fill-color:#687386!important;}
 .card:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:18px!important}
 .card .small:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 .small:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:16px!important;line-height:1.6!important}
@@ -441,7 +441,7 @@ h1:where(:not(.smv-css-island,.smv-css-island *)){font-size:34px!important}
 h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:29px!important}
 h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:19px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:24px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){font-size:14px!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:15px!important}
 input:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
@@ -558,7 +558,7 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #modal.modal{visibility:visible;position:fixed!important;inset:0px!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;display:grid!important;place-items:center!important}
 #modal.modal.hidden{display:none!important}
 #modal .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(-20px + 100dvh)!important;overflow:auto!important}
-#modal .modalbox > button[aria-label="Close"]{position:absolute!important;top:8px!important;right:10px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;margin:0!important;padding:0!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:600 34px/1 Arial,sans-serif!important;cursor:pointer!important;z-index:20!important}
+#modal .modalbox > button[aria-label="Close"]{position:absolute!important;top:4px!important;right:8px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:46px!important;min-width:46px!important;height:46px!important;min-height:46px!important;margin:0!important;padding:0!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:800 38px/1 Arial,sans-serif!important;cursor:pointer!important;z-index:20!important}
 
 #modal.profile-modal-active{padding:12px!important;place-items:center!important}
 #modal.profile-modal-active .modalbox{width:min(560px, -24px + 100vw)!important;max-width:560px!important;max-height:min(76dvh, 640px)!important;overflow:hidden!important;padding:14px!important;border-radius:16px!important}
@@ -1162,7 +1162,7 @@ header .nav > nav > a:not(.hidden), header .nav > nav > button:where(:not(.smv-c
 *{box-sizing:border-box}
 html{overflow-x:hidden}
 body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#f2eddf;overflow-x:hidden;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)}
-header{position:sticky;top:0;background:rgba(9,16,34,.96);border-bottom:1px solid rgba(223,189,115,.18);z-index:100;box-shadow:0 10px 32px rgba(0,0,0,.22)}
+header{position:sticky;top:0px;background:rgba(255, 250, 240, 0.97);border-bottom:3px double var(--gold);z-index:100;box-shadow:rgba(111, 21, 21, 0.1) 0px 5px 20px}
 header::after{content:"✦  ॐ  ✦";display:block;text-align:center;color:var(--gold);font-size:10px;letter-spacing:8px;height:13px;line-height:10px;background:rgb(255, 250, 240)}
 .nav{max-width:1160px;margin:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0px}
 .brand{display:flex;align-items:center;gap:11px;min-width:0px}
@@ -1344,7 +1344,7 @@ footer{text-align:center;padding:35px 16px;color:var(--muted);border-top:3px dou
 .registration-intro h2{margin-bottom:7px}
 .registration-intro p{color:var(--muted);line-height:1.7}
 .registration-options{display:grid;grid-template-columns:repeat(2, minmax(0px, 1fr));gap:18px;max-width:900px;margin:0px auto}
-.registration-option{position:relative;background:rgba(255, 255, 255, 0.82);padding:24px 22px;border:1px solid rgb(228, 207, 157);border-radius:12px;box-shadow:rgba(111, 21, 21, 0.06) 0px 10px 25px;text-align:center;overflow:hidden}
+.registration-option{position:relative;background:transparent!important;padding:24px 22px;border:0!important;border-radius:0!important;box-shadow:none!important;text-align:center;overflow:hidden}
 .registration-option::before{content:"";display:block;width:70px;height:2px;margin:0px auto 14px;background:linear-gradient(90deg,var(--gold),var(--primary),var(--gold))}
 .registration-option h3{margin:8px 0px 7px;color:var(--maroon);font-family:Georgia, "Times New Roman", serif;font-size:24px}
 .registration-option p{min-height:48px;color:var(--muted);line-height:1.6;margin:0px auto 17px;max-width:340px}
@@ -1360,7 +1360,7 @@ footer{text-align:center;padding:35px 16px;color:var(--muted);border-top:3px dou
 .registration-intro h2{font-size:clamp(28px, 4vw, 38px);margin:12px 0px 8px;color:rgb(126, 24, 24)}
 .registration-intro p{max-width:680px;margin:0px auto;color:rgb(106, 90, 80);line-height:1.75}
 .registration-options{max-width:960px;gap:20px}
-.registration-option{min-height:320px;padding:28px 24px 26px;border-radius:14px;background:rgba(255, 255, 255, 0.9);box-shadow:rgba(86, 37, 16, 0.07) 0px 9px 24px;border:1px solid rgb(225, 207, 159)}
+.registration-option{min-height:320px;padding:28px 24px 26px;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important}
 .registration-option::after{inset:6px;border-radius:10px}
 .registration-icon{width:70px;height:70px;margin-bottom:13px}
 .registration-option h3{font-size:23px;margin:6px 0px 8px}
@@ -1369,9 +1369,9 @@ footer{text-align:center;padding:35px 16px;color:var(--muted);border-top:3px dou
 .astrologer-option{border-top:3px solid rgb(184, 134, 11)}
 @media (max-width: 760px){
 .home-rule::before, .home-rule::after{width:18vw}
-.registration-option{min-height:0px}}
+.registration-option{min-height:0px;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}}
 .registration-options{gap:24px;max-width:940px}
-.registration-option{padding:30px 24px 28px;border-radius:18px;background:linear-gradient(rgba(255, 255, 255, 0.96), rgba(255, 249, 235, 0.96));border:1px solid rgb(216, 184, 102);box-shadow:rgba(111, 21, 21, 0.08) 0px 12px 30px}
+.registration-option{padding:30px 24px 28px;border-radius:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .registration-option::before{display:none}
 .registration-option::after{content:"";position:absolute;inset:8px;border:1px solid rgba(184, 134, 11, 0.18);border-radius:13px;pointer-events:none}
 .registration-icon{position:relative;z-index:1;width:78px;height:78px;margin:0px auto 15px;display:grid;place-items:center;border-radius:50%;color:var(--gold);background:radial-gradient(circle, rgb(255, 247, 216) 0%, rgb(247, 223, 155) 65%, rgb(234, 208, 131) 100%);border:2px solid var(--gold);box-shadow:rgba(184, 134, 11, 0.18) 0px 5px 15px}
@@ -1385,7 +1385,7 @@ footer{text-align:center;padding:35px 16px;color:var(--muted);border-top:3px dou
 .astrologer-option{border-top:3px solid var(--gold)}
 @media (max-width: 760px){
 .registration-options{gap:16px}
-.registration-option{padding:26px 18px}
+.registration-option{padding:26px 18px;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .registration-option p{min-height:0px}
 .registration-icon{width:70px;height:70px}
 .registration-icon svg{width:48px;height:48px}}
@@ -1469,7 +1469,7 @@ section > h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:25px;line-he
 .stat b{font-size:25px}}
 @media (max-width: 520px){
 .container{padding-left:9px;padding-right:9px}
-.registration-option{padding:22px 15px}
+.registration-option{padding:22px 15px;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 .registration-option .btn{width:100%;min-width:0px}}
 .smv-dialog-backdrop{position:fixed;inset:0px;width:100vw;height:100dvh;background:rgba(28, 25, 61, 0.7);display:grid;place-items:center;padding:14px;z-index:500;backdrop-filter:none}
 .smv-dialog{width:min(430px, -28px + 100vw);max-width:430px;margin:0px auto;box-sizing:border-box;background:linear-gradient(rgb(255, 253, 248), rgb(255, 247, 232));border:1px solid rgb(216, 184, 102);border-radius:20px;box-shadow:rgba(28, 25, 61, 0.28) 0px 24px 65px;padding:24px 20px 18px;color:var(--text)}
@@ -1586,7 +1586,7 @@ section:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-
 .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important;max-width:55%!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:38px!important;height:38px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important;letter-spacing:0.6px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:7px!important;letter-spacing:1px!important;margin-top:2px!important}
 nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important;padding:7px 6px!important}
 nav .btn:where(:not(.smv-css-island,.smv-css-island *)), .nav .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:38px!important;padding:8px 10px!important;font-size:11px!important}
@@ -1656,12 +1656,12 @@ table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-wi
 img:where(:not(.smv-css-island,.smv-css-island *)), video:where(:not(.smv-css-island,.smv-css-island *)), iframe:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 .modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
 @media print{
-body:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+body:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#f2eddf!important;}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
 .feature-section:where(:not(.smv-css-island,.smv-css-island *)){display:none!important}
 #english-horoscope{display:block!important;visibility:visible!important;break-before:auto!important}
 #english-horoscope > .home-rule{display:block!important;visibility:visible!important}
-#english-horoscope > .card{display:block!important;visibility:visible!important;max-width:none!important;margin:0px!important;box-shadow:none!important;border:0px!important;padding:0px!important;background:rgb(255, 255, 255)!important}
+#english-horoscope > .card{display:block!important;visibility:visible!important;max-width:none!important;margin:0px!important;box-shadow:none!important;border:0px!important;padding:0px!important;background:transparent!important;color:#f2eddf!important;}
 #english-horoscope > .card > h2, #english-horoscope > .card > p, #english-horoscope > .card > .grid{display:grid!important;visibility:visible!important}
 #english-horoscope > .card > h2{display:block!important}
 #english-horoscope > .card > p{display:block!important}
@@ -1690,7 +1690,7 @@ header .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:34px!impor
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:9px!important;letter-spacing:2px!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:6px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){min-width:96px!important;height:42px!important;min-height:42px!important;padding:8px 12px!important;font-size:12px!important}}
-:root{--smv-red:#8f1717;--smv-red-dark:#651010;--smv-red-soft:#a82b22;--smv-gold:#b8862d;--smv-gold-light:#d7b45a;--smv-cream:#fffdf7;--smv-white:#ffffff;--smv-ink:#351a1a;--smv-muted:#5f4c4c;--smv-border:rgba(184,134,45,.45);--smv-shadow:0 10px 28px rgba(101,16,16,.12)}
+:root{--smv-red:#dfbd73;--smv-red-dark:#a77d38;--smv-red-soft:#f1d394;--smv-gold:#dfbd73;--smv-gold-light:#f3d99b;--smv-cream:#0a1227;--smv-white:#f5eedf;--smv-ink:#f2eddf;--smv-muted:#c4ccdc;--smv-border:rgba(223,189,115,.20);--smv-shadow:none}
 html:where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-cream)!important;background:#080f21!important;}
 body:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;font-weight:400!important;line-height:1.65!important;color:#f2eddf!important}
 p:where(:not(.smv-css-island,.smv-css-island *)), li:where(:not(.smv-css-island,.smv-css-island *)), dd:where(:not(.smv-css-island,.smv-css-island *)), dt:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)), legend:where(:not(.smv-css-island,.smv-css-island *)){color:#c1cbe0!important}
@@ -1710,7 +1710,7 @@ h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-gold)!important;text-shadow:rgba(255, 255, 255, 0.9) 0px 1px 0px!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important;letter-spacing:2.5px!important}
 .home-rule span:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(rgb(255, 254, 250) 0%, rgb(255, 248, 234) 100%)!important;border-bottom:2px solid var(--smv-gold)!important;box-shadow:rgba(101, 16, 16, 0.1) 0px 4px 18px!important}
 header .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important;font-weight:900!important;letter-spacing:1px!important}
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(138, 104, 38)!important;font-weight:800!important;letter-spacing:1.5px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(135deg, rgb(156, 34, 32), rgb(113, 18, 18))!important;color:rgb(255, 253, 247)!important;border:1px solid rgb(209, 166, 76)!important;box-shadow:rgba(101, 16, 16, 0.2) 0px 4px 12px!important;font-weight:900!important;letter-spacing:0.25px!important;text-shadow:rgba(0, 0, 0, 0.28) 0px 1px 1px!important}
@@ -1735,7 +1735,7 @@ input:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 textarea:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 select:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:600!important}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)){border-color:var(--smv-red)!important;box-shadow:rgba(184, 134, 45, 0.16) 0px 0px 0px 3px!important;outline:none!important}
-input::placeholder:where(), textarea::placeholder:where(){color:rgb(136, 119, 119)!important;font-weight:600!important}
+input::placeholder:where(), textarea::placeholder:where(){color:#687386!important;font-weight:600!important;-webkit-text-fill-color:#687386!important;}
 .badge:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important}
 .status:where(:not(.smv-css-island,.smv-css-island *)), .badge:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.55)!important}
 #dashboard:where(:not(.smv-css-island,.smv-css-island *)), #admin:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent:where(:not(.smv-css-island,.smv-css-island *)), #adminContent:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-ink)!important}
@@ -1781,7 +1781,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){width:100%;overflow-x:hidden!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;line-height:1.38!important}
 .container:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:none!important;padding-left:8px!important;padding-right:8px!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){padding:5px 8px!important;min-height:0px!important}
 header .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
 header .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand:where(:not(.smv-css-island,.smv-css-island *)), header h1:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important;line-height:1.05!important;margin:0px!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important;margin:4px 0px 0px!important}
@@ -1869,22 +1869,22 @@ footer:where(:not(.smv-css-island,.smv-css-island *)){padding:12px 8px!important
 .bhava-table th:nth-child(5):where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:nth-child(5):where(:not(.smv-css-island,.smv-css-island *)){width:14%!important}
 .bhava-table th:nth-child(6):where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:nth-child(6):where(:not(.smv-css-island,.smv-css-island *)){width:22%!important}
 .bhava-table th:nth-child(5):where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:nth-child(5):where(:not(.smv-css-island,.smv-css-island *)), .bhava-table th:nth-child(6):where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:nth-child(6):where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}}
-:root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#980000!important;--primary2:#c20b0b!important;--maroon:#850000!important;--gold:#b88935!important;--gold2:#d5b15a!important;--cream:#fff!important;--text:#242424!important;--line:#dedede!important;--deep:#650000!important}
-html:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+:root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#302b68!important;--primary2:#51478f!important;--maroon:#f0d49a!important;--gold:#dfbd73!important;--gold2:#f3d99b!important;--cream:#0a1227!important;--text:#f2eddf!important;--line:rgba(223,189,115,.18)!important;--deep:#070d1e!important}
+html:where(:not(.smv-css-island,.smv-css-island *)){background:#080f21!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(36, 36, 36)!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0px!important;z-index:1000!important;background:rgb(143, 0, 0)!important;border-bottom:3px solid rgb(184, 137, 53)!important;box-shadow:rgba(0, 0, 0, 0.18) 0px 3px 12px!important}
 header:where(:not(.smv-css-island,.smv-css-island *))::after{top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1180px!important;padding:9px 16px!important;gap:14px!important}
 .brand:where(:not(.smv-css-island,.smv-css-island *)){gap:10px!important;min-width:190px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:46px!important;height:46px!important;border-radius:50%!important;background:rgb(255, 255, 255)!important;border:2px solid rgb(229, 199, 124)!important;box-shadow:rgba(255, 255, 255, 0.16) 0px 0px 0px 2px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important;font-family:Arial, Helvetica, sans-serif!important;font-size:23px!important;font-weight:900!important;letter-spacing:1px!important;text-shadow:rgba(0, 0, 0, 0.25) 0px 1px 2px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(240, 215, 141)!important;font-size:9px!important;letter-spacing:1.4px!important;font-weight:800!important}
 nav a:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border:1px solid rgb(228, 199, 126)!important;border-radius:6px!important;box-shadow:none!important;font-weight:800!important}
 nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 248, 232)!important;color:rgb(112, 0, 0)!important;transform:none!important;box-shadow:rgba(0, 0, 0, 0.16) 0px 2px 7px!important}
 #authBtn.smv-logout-btn{background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border-color:rgb(228, 199, 126)!important}
 #dashLink.smv-role-green, #adminLink.smv-role-green{background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border-color:rgb(228, 199, 126)!important}
-.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:1180px!important;background:rgb(255, 255, 255)!important;padding-top:20px!important}
-.feature-section:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:1180px!important;background:transparent!important;padding-top:20px!important}
+.feature-section:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 .smv-ask-section:where(:not(.smv-css-island,.smv-css-island *)){padding-top:8px!important;padding-bottom:10px!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(168, 121, 36)!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){letter-spacing:2px!important}
@@ -1897,7 +1897,7 @@ section > h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type
 .btn:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(176, 0, 0)!important;transform:none!important;box-shadow:rgba(120, 0, 0, 0.18) 0px 2px 7px!important}
 .btn.alt:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border-color:rgb(143, 0, 0)!important}
 .btn.gray:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(245, 245, 245)!important;color:rgb(68, 68, 68)!important;border-color:rgb(204, 204, 204)!important}
-input:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(34, 34, 34)!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important}
+input:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)){outline:rgba(152, 0, 0, 0.1) solid 2px!important;border-color:rgb(152, 0, 0)!important}
 .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 .password-toggle:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
@@ -1916,12 +1916,12 @@ th:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(152, 0, 0)!impo
 a{color:rgb(143, 0, 0)}
 a:hover{color:rgb(176, 0, 0)}
 @media (max-width: 767px){
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){position:sticky!important}
 .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 8px 7px!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:7px!important}
 .brand:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:none!important;min-width:0px!important;justify-content:center!important;margin-bottom:3px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:42px!important;height:42px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:8px!important}
 .nav nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;display:grid!important;grid-template-columns:repeat(3, 1fr)!important;gap:6px!important;justify-content:center!important}
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;min-width:0px!important;max-width:none!important;height:40px!important;min-height:40px!important;padding:0px 4px!important;font-size:11px!important;border-radius:6px!important}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:12px 8px!important}
@@ -1932,7 +1932,7 @@ section > h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type
 .nav nav:where(:not(.smv-css-island,.smv-css-island *)){gap:5px!important}
 .nav nav a:where(:not(.smv-css-island,.smv-css-island *)), .nav nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), .nav nav .btn:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}
 .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important}}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text:where(:not(.smv-css-island,.smv-css-island *)){position:relative!important;z-index:20!important;opacity:1!important;visibility:visible!important}
 header .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)), header .logo:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;visibility:visible!important;opacity:1!important;color:rgb(255, 242, 0)!important;-webkit-text-fill-color:rgb(255, 242, 0)!important;text-shadow:rgba(0, 0, 0, 0.45) 0px 1px 2px!important;font-weight:900!important}
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;visibility:visible!important;opacity:1!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;text-shadow:rgba(0, 0, 0, 0.35) 0px 1px 2px!important}
@@ -2006,7 +2006,7 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 #dashboardContent .profile-status-pending:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
 #dashboardContent, #admin{color:rgb(0, 0, 0)}
 #dashboardContent .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent .card p:not(:has(> .customer-profile-result)):not(.smv-customer-answer-text):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .small:not(.customer-meta):not(.smv-customer-meta-line):not(.smv-customer-viewed-status):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card p:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .small:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card label:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
+#dashboardContent .card p:not(:has(> .customer-profile-result)):not(.smv-customer-answer-text):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .small:not(.customer-meta):not(.smv-customer-meta-line):not(.smv-customer-viewed-status):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card p:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .small:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #dashboardContent .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)), #admin .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
 #dashboardContent .astro-profile-info .profile-status-approved:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .profile-status-approved:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 230, 118)!important;-webkit-text-fill-color:rgb(0, 230, 118)!important}
 #dashboardContent .customer-profile-verified:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 230, 118)!important;-webkit-text-fill-color:rgb(0, 230, 118)!important}
@@ -2259,8 +2259,8 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 .sbc-edge-east:where(:not(.smv-css-island,.smv-css-island *)){right:2px!important}
 .sbc-edge-west:where(:not(.smv-css-island,.smv-css-island *)){left:2px!important}
 .kota-source-grid{grid-template-columns:1fr}}
-:root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#8b0000!important;--primary2:#b22222!important;--gold:#8b0000!important;--maroon:#8b0000!important;--text:#222!important;--muted:#666!important;--line:#d9d9d9!important;--bg:#fff!important;--card:#fff!important;--success:#287a3e!important;--danger:#a00000!important}
-html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(34, 34, 34)!important}
+:root:where(:not(.smv-css-island,.smv-css-island *)){--primary:#302b68!important;--primary2:#51478f!important;--gold:#dfbd73!important;--maroon:#f0d49a!important;--text:#f2eddf!important;--muted:#c4ccdc!important;--line:rgba(223,189,115,.18)!important;--bg:#0b1429!important;--card:transparent!important;--success:#74d7a5!important;--danger:#ff8994!important}
+html:where(:not(.smv-css-island,.smv-css-island *)), body:where(:not(.smv-css-island,.smv-css-island *)){background:#080f21!important;color:#f2eddf!important}
 body:where(:not(.smv-css-island,.smv-css-island *)){font-family:Arial, Helvetica, sans-serif!important;line-height:1.5!important;font-weight:400!important}
 h1:where(:not(.smv-css-island,.smv-css-island *)), h2:where(:not(.smv-css-island,.smv-css-island *)), h3:where(:not(.smv-css-island,.smv-css-island *)), h4:where(:not(.smv-css-island,.smv-css-island *)), h5:where(:not(.smv-css-island,.smv-css-island *)), h6:where(:not(.smv-css-island,.smv-css-island *)){color:#f0d9a4!important;text-shadow:none!important}
 h1:where(:not(.smv-css-island,.smv-css-island *)),
@@ -2277,7 +2277,7 @@ p:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-
 dd:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 dt:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Arial, Helvetica, sans-serif!important;font-weight:400!important}
-main:where(:not(.smv-css-island,.smv-css-island *)), section:where(:not(.smv-css-island,.smv-css-island *)), article:where(:not(.smv-css-island,.smv-css-island *)), .container:where(:not(.smv-css-island,.smv-css-island *)), #faq:where(:not(.smv-css-island,.smv-css-island *)), #contact:where(:not(.smv-css-island,.smv-css-island *)), #content:where(:not(.smv-css-island,.smv-css-island *)), #about:where(:not(.smv-css-island,.smv-css-island *)), #dashboard:where(:not(.smv-css-island,.smv-css-island *)), #admin:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent:where(:not(.smv-css-island,.smv-css-island *)), #adminContent:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+main:where(:not(.smv-css-island,.smv-css-island *)), section:where(:not(.smv-css-island,.smv-css-island *)), article:where(:not(.smv-css-island,.smv-css-island *)), .container:where(:not(.smv-css-island,.smv-css-island *)), #faq:where(:not(.smv-css-island,.smv-css-island *)), #contact:where(:not(.smv-css-island,.smv-css-island *)), #content:where(:not(.smv-css-island,.smv-css-island *)), #about:where(:not(.smv-css-island,.smv-css-island *)), #dashboard:where(:not(.smv-css-island,.smv-css-island *)), #admin:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent:where(:not(.smv-css-island,.smv-css-island *)), #adminContent:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 header:where(:not(.smv-css-island,.smv-css-island *)), nav:where(:not(.smv-css-island,.smv-css-island *)), .navbar:where(:not(.smv-css-island,.smv-css-island *)), .topbar:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header a:where(:not(.smv-css-island,.smv-css-island *)), nav a:where(:not(.smv-css-island,.smv-css-island *)), .navbar a:where(:not(.smv-css-island,.smv-css-island *)), .topbar a:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
 .btn:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border:1px solid rgb(139, 0, 0)!important;border-radius:6px!important;box-shadow:none!important;text-shadow:none!important}
@@ -2285,9 +2285,9 @@ header a:where(:not(.smv-css-island,.smv-css-island *)), nav a:where(:not(.smv-c
 .btn:active:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(112, 0, 0)!important;border-color:rgb(112, 0, 0)!important}
 .btn.active:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border-color:rgb(139, 0, 0)!important;box-shadow:none!important}
 .btn.danger:where(:not(.smv-css-island,.smv-css-island *)), .smv-dialog-actions .btn.danger:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(160, 0, 0)!important;border-color:rgb(160, 0, 0)!important;color:rgb(255, 255, 255)!important}
-input:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(34, 34, 34)!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important}
+input:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgb(139, 0, 0)!important;outline:rgba(139, 0, 0, 0.1) solid 2px!important;box-shadow:none!important}
-input::placeholder:where(), textarea::placeholder:where(){color:rgb(136, 136, 136)!important}
+input::placeholder:where(), textarea::placeholder:where(){color:#687386!important;-webkit-text-fill-color:#687386!important;}
 .auth-field-label:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(68, 68, 68)!important}
 .auth-shell:where(:not(.smv-css-island,.smv-css-island *)), .auth-hero:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 .auth-hero h2:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;}
@@ -2426,7 +2426,7 @@ html body :is(#admin, #dashboard) :is(h2, h3):not(.admin-dashboard-title):where(
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) :is(input, select, textarea):where(:not(.smv-css-island,.smv-css-island *)){min-height:44px!important;border-radius:6px!important}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)){background:#dfbd73!important;color:#10172b!important;border:0!important;box-shadow:none!important;white-space:normal!important;border-radius:0!important;}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):disabled:where(:not(.smv-css-island,.smv-css-island *)){opacity:0.6!important;cursor:wait}
-html body :is(#admin, #dashboard) input:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) select:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) textarea:where(:not(.smv-css-island,.smv-css-island *)){width:100%;box-sizing:border-box;background:#17243d!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.24)!important;padding:10px!important;border-radius:0!important;}
+html body :is(#admin, #dashboard) input:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) select:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) textarea:where(:not(.smv-css-island,.smv-css-island *)){width:100%;box-sizing:border-box;background:#17243d!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.35)!important;padding:10px!important;border-radius:0!important;-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
 html body :is(#admin, #dashboard) label{display:block}
 .smv-workflow-card{scroll-margin-top:100px;overflow-wrap:anywhere}
 .smv-workflow-card .action-row:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-wrap:wrap!important;gap:10px!important;align-items:end!important;margin:12px 0px!important}
@@ -2568,9 +2568,9 @@ html body.smv-v12-theme #modal #modalContent .auth-hero-icon img{display:block!i
 .smv-brand-symbol:where(:not(.smv-css-island,.smv-css-island *)){display:inline-block!important;width:20px!important;height:20px!important;object-fit:contain!important;vertical-align:middle!important;border:0px!important;border-radius:50%!important}
 html body.smv-v12-theme .feature-section:where(:not(.smv-css-island,.smv-css-island *))::before{content:""!important;display:block!important;width:22px!important;height:22px!important;margin:0px auto 6px!important;background:url("./assets/smv-brand-logo.png") center center / contain no-repeat!important}
 html body.smv-v12-theme .feature-section:where(:not(.smv-css-island,.smv-css-island *))::before{border-radius:50%!important;overflow:hidden!important}
-html body.smv-v12-theme #faq#faq > h2, html body.smv-v12-theme #english-horoscope#english-horoscope > .card > h2, html body.smv-v12-theme #about #aboutTitle, html body.smv-v12-theme :is(#smv-heading-v18, .smv-new-asknow-kicker), html body.smv-v12-theme .smv-master-service[href="#english-horoscope"] strong{color:rgb(0, 0, 0)!important}
-html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead{background:linear-gradient(90deg, rgb(255, 242, 246), rgb(255, 249, 222))!important;border-color:rgb(243, 221, 228)!important;color:var(--maroon)!important;text-shadow:none!important;filter:none!important}
-html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead > span{color:var(--maroon)!important}
+html body.smv-v12-theme #faq#faq > h2, html body.smv-v12-theme #english-horoscope#english-horoscope > .card > h2, html body.smv-v12-theme #about #aboutTitle, html body.smv-v12-theme :is(#smv-heading-v18, .smv-new-asknow-kicker), html body.smv-v12-theme .smv-master-service[href="#english-horoscope"] strong{color:#f3d99b!important}
+html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead{background:transparent!important;border-color:rgb(243, 221, 228)!important;color:#dfbd73!important;text-shadow:none!important;filter:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead > span{color:#dfbd73!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #generateEnglishHoroscope::before, #generateTamilHoroscope::before{content:"";display:inline-block;width:22px;height:22px;flex:0 0 22px;vertical-align:middle;margin-right:7px;border-radius:50%;background:url("./assets/smv-brand-logo.png") center center / contain no-repeat;overflow:hidden}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult){--smv-action-pink:#a80000;--smv-action-yellow:#a80000}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult) :is(button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)), .btn, .dasha-head, .smv-advanced-part-title, .smv-advanced-quick-card){background:none rgb(168, 0, 0)!important;border-color:rgb(168, 0, 0)!important;font-weight:800!important}
@@ -2611,7 +2611,7 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.adv-section, .card, .panchang-card, .transit-card){margin-top:5px!important;margin-bottom:5px!important;padding-top:7px!important;padding-bottom:7px!important}}
 .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){box-shadow:rgba(110, 38, 20, 0.08) 0px 3px 12px;position:relative!important;display:block!important;width:88px!important;height:88px!important;flex:0 0 auto!important;overflow:hidden!important;border-radius:50%!important;background:rgb(255, 255, 255)!important;margin:0px auto 10px!important;padding:0px!important}
 .smv24-icon img:where(:not(.smv-css-island,.smv-css-island *)){position:absolute!important;max-width:none!important;height:auto!important;transform:none!important;border:0px!important;border-radius:0px!important;margin:0px!important;padding:0px!important}
-html body.smv-v12-theme #askNowSection{background:none rgb(255, 255, 255)!important;color:rgb(39, 32, 37)!important}
+html body.smv-v12-theme #askNowSection{background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#f2eddf!important}
 html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowSection::after{display:none!important}
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:transparent!important;}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:#f2eddf!important;text-align:center!important;display:block!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
@@ -2848,21 +2848,21 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!impo
 .smv-fixed-text-section:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;min-width:0px!important;margin-left:0px!important;margin-right:0px!important;padding-left:6px!important;padding-right:6px!important;box-sizing:border-box!important}
 .grid:where(:not(.smv-css-island,.smv-css-island *)), .form-grid:where(:not(.smv-css-island,.smv-css-island *)), .panchang-compact-grid:where(:not(.smv-css-island,.smv-css-island *)){gap:8px!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)){margin-left:0px!important;margin-right:0px!important}}
-:root{--smv-red:#ef0a46;--smv-deep:#b90036;--smv-gold:#ffb400;--smv-yellow:#ffd22e;--smv-navy:#15213b;--smv-text:#333b4b;--smv-muted:#687080;--smv-cream:#fff8ef;--smv-pink:#fff0f5;--smv-line:#eee2df;--smv-white:#fff;--smv-shadow:0 12px 32px rgba(43,28,35,.09)}
+:root{--smv-red:#dfbd73;--smv-deep:#8e6b3e;--smv-gold:#f0d493;--smv-yellow:#f0d493;--smv-navy:#f2eddf;--smv-text:#f2eddf;--smv-muted:#c4ccdc;--smv-cream:#0a1227;--smv-pink:#241f3b;--smv-line:rgba(223,189,115,.18);--smv-white:#f4eddf;--smv-shadow:none}
 html{scroll-behavior:smooth}
 body:where(:not(.smv-css-island,.smv-css-island *)){overflow-x:hidden;color:var(--smv-navy)!important}
-.smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
+.smv-master-top{background:linear-gradient(90deg, rgb(239, 10, 70), rgb(195, 0, 57));color:rgb(255, 255, 255)}
 .smv-master-topin{max-width:1320px;margin:auto;padding:7px 24px;display:flex;justify-content:space-between;gap:18px;font-size:0.72rem}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:none;position:sticky!important;background:rgba(255, 255, 255, 0.97)!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:74px;margin:auto!important;gap:20px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){object-fit:contain;width:48px!important;height:48px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.22rem!important;color:var(--smv-red)!important;letter-spacing:0.025em!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.61rem!important;color:rgb(163, 38, 71)!important;font-weight:700!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:4px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:39px!important;padding:8px 12px!important;color:rgb(32, 40, 56)!important;font-size:0.81rem!important;font-weight:700!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:hover:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important}
-#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
-#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
+#authBtn{border:1px solid rgb(255, 140, 172)!important;color:rgb(198, 0, 59)!important}
+#registerNav{background:var(--smv-yellow)!important;color:rgb(56, 37, 0)!important}
 main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!important;margin:0px!important;padding:0px!important}
 .smv-master-trust{display:flex;flex-wrap:wrap;gap:22px;color:rgb(51, 60, 75);font-size:0.77rem;font-weight:700}
 .smv-master-trust span{display:flex;align-items:center;gap:7px}
@@ -2928,7 +2928,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-links{display:grid;gap:3px}
 footer:not(.smv-master-footer):not(#smv24-footer){display:none!important}
 @media (max-width: 900px){
-.smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
+.smv-master-top{display:none}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important}
 .brand{width:100%;justify-content:center}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:42px!important;height:42px!important}
@@ -2968,29 +2968,29 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 :where(:not(.smv-css-island,.smv-css-island *)){transition:none!important;scroll-behavior:auto!important}}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(238, 7, 80) 0%, rgb(207, 0, 61) 100%)!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){letter-spacing:0.01em;max-width:1360px!important;padding:6px 28px!important;font-size:0.7rem!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.984)!important;border-bottom:1px solid rgb(240, 229, 226)!important;box-shadow:rgba(40, 22, 30, 0.067) 0px 7px 24px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1360px!important;min-height:82px!important;padding:10px 28px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:26px!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){flex:0 0 auto!important;width:auto!important;justify-content:flex-start!important;gap:10px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(233, 9, 73)!important;line-height:1!important;letter-spacing:0.01em!important;font-weight:900!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;margin-top:4px!important;color:rgb(155, 35, 67)!important;font-size:0.58rem!important;letter-spacing:0.02em!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){flex:1 1 auto!important;width:auto!important;display:flex!important;justify-content:flex-end!important;align-items:center!important;gap:3px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){position:relative;width:auto!important;min-width:auto!important;padding:10px 13px!important;border-radius:9px!important;color:rgb(29, 35, 48)!important;font-size:0.82rem!important;font-weight:750!important;line-height:1!important;white-space:nowrap!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 241, 245)!important;color:rgb(217, 0, 64)!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(217, 0, 64)!important}
 header nav .smv-demo-active::after{content:"";position:absolute;left:13px;right:13px;bottom:3px;height:2px;border-radius:10px;background:rgb(233, 8, 73)}
-#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
-#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
+#authBtn{border:1.5px solid rgb(239, 111, 152)!important}
+#registerNav{padding-left:21px!important;padding-right:21px!important;border:0px!important;background:linear-gradient(rgb(255, 216, 63), rgb(255, 197, 21))!important;color:rgb(52, 35, 0)!important;box-shadow:rgba(231, 172, 0, 0.18) 0px 7px 18px!important}
 .smv-master-trust:where(:not(.smv-css-island,.smv-css-island *)){gap:24px!important;color:rgb(51, 59, 75)!important;font-size:0.74rem!important}
 .smv-master-trust b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(232, 7, 71)!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:535px!important;background:linear-gradient(90deg, rgb(255, 250, 245) 0%, rgba(255, 250, 245, 0.2) 14%, transparent 32%), url("assets/smv-desktop-hero-rooted-final.jpg") center 22% / cover no-repeat!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{background:linear-gradient(90deg, rgba(255, 250, 245, 0.28), transparent 23%), linear-gradient(0deg, rgba(80, 32, 17, 0.06), transparent 25%)!important}
 @media (max-width: 900px){
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){position:sticky!important;top:0px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:auto!important;padding:9px 11px 10px!important;display:block!important}
 header .brand:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;justify-content:center!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:43px!important;height:43px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.16rem!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.52rem!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;grid-template-columns:repeat(5, minmax(0px, 1fr))!important}
 header nav > a[href="#home"]{grid-area:1 / 1}
 header nav > #horoscopeNav{grid-area:1 / 2}
@@ -3041,13 +3041,13 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.84rem!important}}
 :root{--smv-pink:#ed0750;--smv-red:#c9003e;--smv-yellow:#ffd236;--smv-ink:#101a31}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(233, 0, 75), rgb(199, 0, 59))!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){border-bottom:1px solid rgb(242, 229, 225)!important;box-shadow:rgba(44, 23, 32, 0.07) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:72px!important;padding:8px 24px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(157, 38, 69)!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
-#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
-#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
+#authBtn{border:1.5px solid rgb(237, 111, 153)!important;color:rgb(192, 0, 58)!important}
+#registerNav{background:linear-gradient(rgb(255, 218, 61), rgb(255, 197, 27))!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 249, 239) 0%, rgba(255, 249, 239, 0.04) 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 8, 112)!important;opacity:1!important}
 #askNowSection #askNowHeading, #askNowSection h2{color:rgb(217, 9, 47)!important;text-shadow:none!important}
@@ -3062,20 +3062,20 @@ header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!impo
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:330px!important;background:linear-gradient(90deg, rgba(255, 246, 232, 0.06), transparent 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{bottom:0px!important;height:150px!important;background:linear-gradient(rgb(121, 12, 18) 0%, rgba(121, 12, 18, 0.28) 35%, rgba(121, 12, 18, 0.05)), url("assets/footer.png") center center / cover no-repeat!important;opacity:0.75!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){padding-bottom:165px!important}}
-:root{--smv-r:#e90046;--smv-r2:#b90036;--smv-y:#ffd238;--smv-p:#ff3f91;--smv-ink:#10192d;--smv-cream:#fff8e9}
-body:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:var(--smv-ink)!important}
+:root{--smv-r:#e90046;--smv-r2:#b90036;--smv-y:#ffd238;--smv-p:#ff3f91;--smv-ink:#f2eddf;--smv-cream:#0a1227}
+body:where(:not(.smv-css-island,.smv-css-island *)){background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#f2eddf!important}
 .smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(231, 7, 73), rgb(201, 0, 61))!important;color:rgb(255, 255, 255)!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;padding:7px 24px!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;backdrop-filter:blur(16px);position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;border-bottom:1px solid rgb(240, 228, 224)!important;box-shadow:rgba(46, 23, 32, 0.06) 0px 5px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;min-height:78px!important;padding:9px 24px!important;gap:18px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:52px!important;height:52px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(230, 7, 72)!important;font-size:1.42rem!important}
-.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){font-size:.66rem!important;color:#c8d1e0!important;font-weight:600!important;letter-spacing:.06em!important}
+.brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(162, 37, 69)!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:2px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:42px!important;padding:10px 12px!important;background:transparent!important;color:rgb(21, 27, 41)!important;border:0px!important;border-radius:8px!important;box-shadow:none!important}
 header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(230, 7, 72)!important}
-#authBtn{border:1px solid rgba(223,189,115,.58)!important;color:#f2eddf!important;background:transparent!important}
-#registerNav{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
+#authBtn{margin-left:7px!important;padding-left:20px!important;padding-right:20px!important;border:1.5px solid rgb(239, 113, 154)!important;border-radius:999px!important;background:rgb(255, 255, 255)!important;color:rgb(189, 0, 56)!important}
+#registerNav{margin-left:4px!important;padding-left:22px!important;padding-right:22px!important;border-radius:999px!important;background:linear-gradient(rgb(255, 220, 69), rgb(255, 197, 27))!important;color:rgb(51, 35, 0)!important}
 .smv-master-trust:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(37, 45, 58)!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:430px!important;background:linear-gradient(90deg, rgb(255, 247, 232) 0%, rgba(255, 247, 232, 0.03) 18%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{display:none!important}
@@ -3489,9 +3489,9 @@ html body.smv-v12-theme #smv-content-hub .smv-v173-subregion.smv-v173-sub-collap
 #dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-approved-badge:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
 #dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-approved-badge > span:last-child:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
 #dashboardContent .smv-astrologer-dashboard .astro-profile-summary-card .smv-approved-badge .smv-check:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
-#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) > div > b:first-child{color:rgb(17, 17, 17)!important}
-#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:rgb(17, 17, 17)!important}
-#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small b{color:rgb(17, 17, 17)!important}
+#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) > div > b:first-child{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;}
+#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
+#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small b{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #admin .card:not(:has(.smv-notification-row)) .empty{color:rgb(0, 0, 0)!important}
 .smv-workspace-bar > a{text-decoration:none}
 #admin .admin-dashboard-title{margin:0px;color:rgb(255, 20, 147)}
@@ -3665,8 +3665,8 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 #dashboardContent .smv-astrologer-dashboard .smv-history-content:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
 #admin .card:not(:has(.smv-notification-row)) > h3, #admin .card:not(:has(.smv-notification-row)) > h4, #admin section:not(:has(.smv-notification-row)) > h3{color:rgb(255, 20, 147)!important}
 #admin .card:not(:has(.smv-notification-row)) > p, #admin .card:not(:has(.smv-notification-row)) > .small, #admin .card:not(:has(.smv-notification-row)) > label{color:rgb(0, 0, 0)!important}
-#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:rgb(0, 0, 0)!important}
-#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) p, #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .smv-customer-answer-text, #admin textarea{color:rgb(0, 0, 0)!important}
+#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
+#admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) p, #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .smv-customer-answer-text, #admin textarea{color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
 #admin label{color:rgb(17, 17, 17)!important}
 #admin input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), #admin select{min-height:36px!important;height:36px!important;padding:6px 9px!important;margin:4px 0px 8px!important;border-radius:6px!important}
 #admin textarea{min-height:82px!important;padding:7px 9px!important;margin:4px 0px 8px!important;border-radius:6px!important}
@@ -3775,7 +3775,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 #paymentSuccessDetails dd{margin:0 0 14px;overflow-wrap:anywhere}
 #paymentReceiptStatus{min-height:3em}
 [data-smv-question-id]:focus{outline:2px solid #b8860b;outline-offset:5px}
-#dashboardContent .card,#admin .card{box-shadow:none;border:0;background:#fff;padding-left:0;padding-right:0}
+#dashboardContent .card,#admin .card{box-shadow:none!important;border:0!important;background:transparent!important;padding-left:0;padding-right:0}
 #dashboardContent h2::before,#dashboardContent h2::after,#dashboardContent h3::before,#dashboardContent h3::after,#admin h2::before,#admin h2::after,#admin h3::before,#admin h3::after{content:none}
 #dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#e00000;margin:18px 0 14px}
 #dashboardContent .smv-profile-expertise{font-size:15px;font-weight:600;letter-spacing:.01em;margin:7px 0}
@@ -3796,7 +3796,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 /* SMV ASTRO V185 — mobile premium merged header + hero reference.
    Mobile only. Desktop remains unchanged. */
 @media (max-width: 899px){
-  .smv-master-top{background:linear-gradient(90deg,#101a32,#080f21);color:#e9d39d;border-bottom:1px solid rgba(223,189,115,.16)}
+  .smv-master-top{display:none!important;}
 
   /* Use the dedicated mobile header artwork here. The Hero image is rendered
      by its own responsive picture below; neither asset should be hidden. */
