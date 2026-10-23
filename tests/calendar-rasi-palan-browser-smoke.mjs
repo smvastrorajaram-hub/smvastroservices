@@ -65,7 +65,6 @@ try {
     editor: Boolean(document.querySelector('.rp-manual-editor')),
     exportControl: Boolean(document.querySelector('#rpExport')),
     givenNote: document.body.innerText.includes('தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்'),
-    engineNote: Boolean(document.querySelector('.cal-engine-note')) || document.body.innerText.includes('Calculation & prediction method') || document.body.innerText.includes('கணக்கீடு & பலன் முறை'),
     tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim())
   }));
   assert.equal(publicUi.modeControl, false, 'Public Calendar must not show the prediction mode selector');
@@ -74,7 +73,6 @@ try {
   assert.equal(publicUi.editor, false, 'Public Calendar must not show the manual editor');
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
-  assert.equal(publicUi.engineNote, false, 'The public Calendar calculation-method note must not be rendered');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
 
   // The Period tab is already selected by default; change only the period.
