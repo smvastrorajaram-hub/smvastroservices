@@ -28,7 +28,7 @@ html[lang="hi"] body{font-family:"Noto Sans Devanagari", "Noto Sans", Inter, Ari
 #dashboardContent > .grid:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:16px!important;width:100%!important;align-items:stretch!important}
 #dashboardContent > .grid > .card:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .grid > .card:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!important;width:100%!important;box-sizing:border-box!important}
 #adminSummary{display:grid!important;grid-template-columns:repeat(4, minmax(0px, 1fr))!important;gap:14px!important;width:100%!important}
-#adminSummary .stat{min-width:0px!important;width:100%!important;box-sizing:border-box!important}
+#adminSummary .stat{min-width:0px!important;width:100%!important;box-sizing:border-box!important;background:transparent!important;border:0!important;border-right:1px solid rgba(122,84,43,.22)!important;border-radius:0!important;box-shadow:none!important;padding:10px 14px!important}
 #astroCards .astro-public-card{box-sizing:border-box!important}}
 @media (max-width: 760px){
 #astroCards, #dashboardContent > .grid, #adminSummary{width:100%;min-width:0px}}
@@ -75,7 +75,7 @@ html[lang="hi"] body{font-family:"Noto Sans Devanagari", "Noto Sans", Inter, Ari
 #astroCards .astro-public-card{border-radius:12px!important}
 #admin{margin-top:24px!important}
 #admin > .card{box-sizing:border-box!important;padding:14px 12px!important;margin:0px 0px 12px!important;border-radius:16px!important;overflow:hidden!important}
-#adminSummary .stat{box-sizing:border-box!important}
+#adminSummary .stat{box-sizing:border-box!important;border-right:0!important;border-bottom:1px solid rgba(122,84,43,.22)!important;padding:10px 0!important}
 #admin table{max-width:100%!important}
 #ask-flow{margin-top:20px!important}
 #ask-flow > .card{width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:14px 12px!important;border-radius:12px!important;overflow:hidden!important}
@@ -1415,31 +1415,33 @@ nav a, nav .btn{flex:0 0 auto}
 .homepage-registration:where(:not(.smv-css-island,.smv-css-island *)){margin-bottom:28px!important}
 .homepage-registration .registration-option{min-height:0px}}
 .feature-section{max-width:1160px;margin:34px auto;padding:0px 16px;scroll-margin-top:90px}
-.feature-shell{padding:24px;border-radius:18px}
+.feature-shell{padding:24px 0;border:0;border-radius:0;background:transparent;box-shadow:none}
 .feature-top{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
 .feature-top > div:first-child{min-width:240px;flex:1 1 0%}
-.feature-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:10px}
-.feature-tile{display:flex;flex-direction:column;gap:6px;padding:17px;border:1px solid rgba(184,134,45,.28);border-radius:17px;background:linear-gradient(145deg,#fff 0%,#fffaf1 100%);text-decoration:none;color:var(--text);box-shadow:0 9px 22px rgba(53,26,26,.075),0 2px 6px rgba(184,134,45,.05);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.feature-tile:hover{transform:translateY(-3px);border-color:rgba(184,134,45,.60);box-shadow:0 14px 28px rgba(53,26,26,.11),0 3px 8px rgba(184,134,45,.08)}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:0 20px}
+.feature-tile{position:relative;display:flex;flex-direction:column;gap:6px;padding:19px 10px 17px;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;text-decoration:none;color:var(--text);box-shadow:none;transition:color .18s ease,border-color .18s ease}
+.feature-tile:hover{transform:none;border-color:rgba(122,84,43,.55);box-shadow:none;background:transparent;color:var(--maroon)}
+.feature-tile::after{content:"";position:absolute;left:10px;bottom:-1px;width:0;height:2px;background:var(--gold);transition:width .18s ease}
+.feature-tile:hover::after,.feature-tile:focus-visible::after{width:42px}
 .feature-tile span{font-size:24px}
 .feature-tile b{color:var(--maroon);font-size:14px}
 .feature-tile small{color:var(--muted)}
-.service-card{min-height:210px}
+.service-card{min-height:210px;background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;box-shadow:none;padding:19px 10px}
 .service-icon{font-size:30px}
 .service-card h3{margin-bottom:7px}
 .faq-list{display:grid;gap:13.5px}
-.faq-list details{background:linear-gradient(145deg,#fff 0%,#fffdf9 100%);border:1px solid rgba(184,134,45,.25);border-radius:15px;padding:16px 18px;margin:0;box-shadow:0 7px 18px rgba(53,26,26,.06);transition:border-color .18s ease,box-shadow .18s ease}
+.faq-list details{background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.26);border-radius:0;padding:0 0 12px;margin:0;box-shadow:none;transition:border-color .18s ease}
 .faq-list summary{cursor:pointer;color:var(--maroon);display:list-item;margin:0;padding:0}
 #faq .faq-list details[open] > summary{margin-bottom:13.5px}
 .faq-list summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:800}
 .faq-list p{color:var(--muted);margin:0;padding:0}
 .faq-list p:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.6}
-.review-card{height:100%}
+.review-card{height:100%;background:transparent;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;box-shadow:none;padding:19px 0}
 .stars{letter-spacing:2px;color:var(--gold);font-size:18px}
 .lang-tamil{font-family:"Noto Sans Tamil", Arial, sans-serif}
 @media (max-width: 700px){
 .feature-section{padding:0px 10px}
-.feature-shell{padding:16px;border-radius:16px}}
+.feature-shell{padding:16px 0;border:0;border-radius:0;background:transparent;box-shadow:none}}
 #blogList .blog-card{min-width:0px}
 .blog-content{white-space:pre-wrap;line-height:1.75}
 .admin-blog-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:rgb(255, 253, 248)}
@@ -2420,19 +2422,12 @@ html[lang="en"] #tamil-horoscope, html[lang="ta"] #english-horoscope{display:non
 #smvInstallAppSection{display:none!important}}
 html body:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.6;background:rgb(255, 255, 255)!important;color:rgb(36, 36, 36)!important}
 html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffaf2 100%)!important;
-  border:1px solid rgba(184,134,45,.30)!important;
-  border-radius:16px!important;
-  box-shadow:0 12px 30px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06)!important;
-  padding:18px!important;
-  margin-bottom:16px!important;
+  background:transparent!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;
+  border-radius:0!important;box-shadow:none!important;padding:22px 0!important;margin-bottom:2px!important;
 }
 html body :is(#admin, #dashboard) .card .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffdf9 100%)!important;
-  border:1px solid rgba(184,134,45,.20)!important;
-  border-radius:13px!important;
-  box-shadow:0 5px 15px rgba(53,26,26,.055)!important;
-  padding:14px!important;
+  background:transparent!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.16)!important;
+  border-radius:0!important;box-shadow:none!important;padding:14px 0!important;
 }
 html body :is(#admin, #dashboard) :is(h2, h3):not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(163, 25, 32)!important}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) :is(input, select, textarea):where(:not(.smv-css-island,.smv-css-island *)){min-height:44px!important;border-radius:6px!important}
@@ -2448,7 +2443,7 @@ html body :is(#admin, #dashboard) label{display:block}
 .smv-workflow-card [data-workflow="reject-question"]:where(:not(.smv-css-island,.smv-css-island *)), .smv-workflow-card [data-workflow="reject-answer"]:where(:not(.smv-css-island,.smv-css-island *)){border-style:dashed!important}
 .smv-refresh:where(:not(.smv-css-island,.smv-css-island *)){margin:8px 0px 16px!important}
 #adminPendingQuestions, #adminAnswers, #adminRefunds{scroll-margin-top:100px}
-html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;box-shadow:none!important;border:1px solid rgb(221, 221, 221)!important}
+html body .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;box-shadow:none!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important}
 @media (max-width: 650px){
 html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){padding:14px!important}
 .smv-workflow-card .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){flex:0 0 auto}
@@ -2548,7 +2543,7 @@ html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-men
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
 html body.smv-v12-theme .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;padding:10px!important}
 .password-toggle svg{display:block;width:24px;height:24px;flex:0 0 auto;fill:none;stroke:currentcolor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#about{scroll-margin-top:16px;box-sizing:border-box;width:calc(100% - 32px);max-width:1160px;margin:34px auto;padding:clamp(20px,3vw,32px);border:1px solid rgba(184,134,45,.30);border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fffaf1 100%);box-shadow:0 12px 30px rgba(53,26,26,.08),0 2px 6px rgba(184,134,45,.05)}
+#about{scroll-margin-top:16px;box-sizing:border-box;width:calc(100% - 32px);max-width:1160px;margin:34px auto;padding:clamp(20px,3vw,32px) 0;border-top:1px solid rgba(122,84,43,.24);border-bottom:1px solid rgba(122,84,43,.24);border-left:0;border-right:0;border-radius:0;background:transparent;box-shadow:none}
 #about p{max-width:850px}
 #about p:where(:not(.smv-type-root,.smv-type-root *)){line-height:1.75}
 html body.smv-v12-theme #modal #modalContent .auth-shell button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).btn{background:none rgb(229, 34, 34)!important;color:rgb(255, 255, 255)!important;border-color:rgb(229, 34, 34)!important;font-weight:700!important;box-shadow:none!important}
@@ -2628,7 +2623,7 @@ html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowS
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:rgb(113, 18, 40)!important;text-align:center!important;display:block!important}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:14px!important;line-height:1.4!important}
-html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
+html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important;background:transparent!important;border:0px!important;box-shadow:none!important;padding:0px!important}
 .registration-icon .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important}
 #smv24-footer{width:100%;background:rgb(255, 255, 255);color:rgb(33, 29, 36);font:16px / 1.6 Arial, sans-serif;overflow:hidden;margin-top:32px}
@@ -2673,7 +2668,7 @@ html body.smv-v12-theme #register-flow .registration-kicker{position:relative!im
 @media (max-width: 760px){
 html body.smv-v12-theme #register-flow .registration-icon{width:76px!important;height:76px!important;min-width:76px!important;min-height:76px!important;flex-basis:76px!important;margin-bottom:20px!important}
 html body.smv-v12-theme #smv-content-hub{min-width:0px!important;padding-left:0px!important;padding-right:0px!important}
-html body.smv-v12-theme #smv-content-hub > .feature-shell.card{width:100%!important;min-width:0px!important;margin:0px!important;padding:16px!important;border:1px solid rgba(184,134,45,.30)!important;border-radius:18px!important;box-shadow:0 10px 25px rgba(53,26,26,.075),0 2px 6px rgba(184,134,45,.05)!important;background:linear-gradient(145deg,#fff 0%,#fffaf1 100%)!important}
+html body.smv-v12-theme #smv-content-hub > .feature-shell.card{width:100%!important;min-width:0px!important;margin:0px!important;padding:16px 0!important;border:0!important;border-top:1px solid rgba(122,84,43,.24)!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
 html body.smv-v12-theme #smv-content-hub .smv-v173-subregion{padding:0px!important;border:0px!important;box-shadow:none!important;min-width:0px!important;width:100%!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid{scroll-padding-inline:4px;overscroll-behavior-x:contain;scrollbar-width:thin;display:flex!important;flex-flow:row!important;gap:12px!important;min-width:0px!important;overflow:auto hidden!important;scroll-snap-type:x!important;padding:6px 4px 16px!important;box-sizing:border-box!important;align-items:flex-start!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs > .blog-card, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid > .media-card{scroll-snap-align:start;flex:0 0 90%!important;width:90%!important;min-width:0px!important;max-width:none!important;margin:0px!important;padding:16px!important;box-sizing:border-box!important;border:1px solid rgb(231, 222, 216)!important;border-radius:12px!important;box-shadow:none!important;overflow-wrap:anywhere!important}
@@ -2887,10 +2882,10 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-products-store-kicker::before,.smv-products-store-kicker::after{width:20px;height:1px;content:"";background:#c6a45c}
 #smv-products-store-section h2{margin:0 0 12px;color:#351d2a;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
 .smv-products-store-description{max-width:700px;margin:0 auto;color:#665761;font:400 14px/1.8 Arial,sans-serif}
-.smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:14px;max-width:1080px;margin:24px auto 18px}
-#smv-products-store-section .smv-products-item{display:flex;min-width:0;align-items:center;justify-content:flex-start;gap:14px;padding:18px clamp(12px,1.6vw,22px);border:1px solid rgba(184,134,45,.30);border-radius:18px;background:linear-gradient(145deg,#fff 0%,#fffaf1 100%);box-shadow:0 9px 22px rgba(53,26,26,.075),0 2px 6px rgba(184,134,45,.05);color:#33232b;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;max-width:1080px;margin:24px auto 18px}
+#smv-products-store-section .smv-products-item{position:relative;display:flex;min-width:0;align-items:center;justify-content:flex-start;gap:14px;padding:18px clamp(12px,1.6vw,22px);border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;box-shadow:none;color:#33232b;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:color .18s ease}
 
-#smv-products-store-section .smv-products-item:hover{transform:translateY(-3px);border-color:rgba(184,134,45,.60);box-shadow:0 14px 28px rgba(53,26,26,.11),0 3px 8px rgba(184,134,45,.08)}
+#smv-products-store-section .smv-products-item:hover{transform:none;border-bottom-color:rgba(122,84,43,.55);box-shadow:none;background:transparent;color:#8b1c37}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
 .smv-products-logo{display:block;flex:0 0 auto;width:clamp(64px,7.2vw,92px);height:clamp(64px,7.2vw,92px);object-fit:contain;object-position:center;border-radius:50%}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
@@ -2898,10 +2893,10 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#8b1c37;font:700 11px/1.4 Arial,sans-serif}
 #smv-products-store-section .smv-products-item-copy>span span{font-size:16px}
 .smv-products-store-note{margin:12px 0 0;color:#80757d;font:400 11px/1.6 Arial,sans-serif}
-.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:1px solid rgba(184,134,45,.32);border-radius:19px;text-align:center;box-shadow:0 12px 28px rgba(53,26,26,.10),0 2px 6px rgba(184,134,45,.06);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;text-decoration:none!important;color:var(--smv-navy)!important}
-.smv-master-service:nth-child(2n+1){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 240, 245))}
-.smv-master-service:nth-child(2n){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 243, 204))}
-.smv-master-service:hover{transform:translateY(-4px);border-color:rgba(184,134,45,.62);box-shadow:0 17px 34px rgba(53,26,26,.13),0 4px 10px rgba(184,134,45,.09)}
+.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-bottom:1px solid rgba(122,84,43,.24);border-radius:0;background:transparent;box-shadow:none;transition:color .2s ease,border-color .2s ease;text-decoration:none!important;color:var(--smv-navy)!important}
+.smv-master-service:nth-child(2n+1){background:transparent}
+.smv-master-service:nth-child(2n){background:transparent}
+.smv-master-service:hover{transform:none;border-bottom-color:rgba(122,84,43,.55);box-shadow:none;color:var(--smv-red)!important}
 .smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:rgb(255, 255, 255);color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
 .smv-master-service strong{display:block;font-size:1rem;margin-bottom:7px}
 .smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116)}
@@ -2913,7 +2908,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-new-asknow p:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 241, 245)!important;max-width:650px}
 .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-yellow)!important;color:rgb(64, 38, 0)!important;border:0px!important;border-radius:999px!important;padding:13px 25px!important}
 .smv-master-cats{max-width:1320px;margin:auto;padding:0px 24px 30px;display:grid;grid-template-columns:repeat(7, 1fr);gap:12px}
-.smv-master-cat{text-align:center;color:rgb(255, 255, 255);padding:12px 8px;border:1px solid rgba(255,226,160,.24);border-radius:15px;background:rgba(255,255,255,.075);box-shadow:0 7px 18px rgba(62,0,21,.10);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.smv-master-cat{text-align:center;color:rgb(255, 255, 255);padding:10px 6px;border:0;border-right:1px solid rgba(255,226,160,.24);border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .smv-master-cat:where(:not(.smv-type-root,.smv-type-root *)){font-size:0.72rem}
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers, #smv-content-hub{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important}
@@ -2922,7 +2917,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #approved-astrologers h2,
 #smv-content-hub h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
-#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:1px solid rgb(238, 228, 224)!important;border-radius:15px!important;background:rgb(255, 255, 255)!important;box-shadow:rgba(42, 27, 34, 0.08) 0px 7px 22px!important}
+#astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:24px!important}
 .smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 242, 246), rgb(255, 249, 222))!important;border:1px solid rgb(243, 221, 228)!important;border-radius:12px!important}
 .smv-master-proof{max-width:1260px;margin:auto;padding:12px 24px 42px;display:grid;grid-template-columns:repeat(4, 1fr)}
@@ -2931,7 +2926,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-proof strong{display:block;font-size:1rem;color:var(--smv-navy)}
 .smv-master-proof span{font-size:0.74rem;color:rgb(108, 114, 128)}
 #smvInstallAppSection{max-width:1260px!important;margin:15px auto!important;padding:0px 24px!important}
-.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border:1px solid rgba(184,134,45,.34)!important;border-radius:18px!important;background:linear-gradient(145deg,#fff 0%,#fff8e9 100%)!important;box-shadow:0 12px 28px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06)!important}
+.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .smv-master-footer{margin-top:45px;background:linear-gradient(105deg, rgb(212, 0, 61), rgb(166, 0, 48) 62%, rgb(239, 77, 57));color:rgb(255, 255, 255)}
 .smv-master-footer-in{max-width:1320px;margin:auto;padding:40px 24px;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:38px}
 .smv-master-footer h3{font-size:1.45rem;margin:0px 0px 5px}
@@ -2954,7 +2949,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-products-store-description{font-size:13px;line-height:1.75}
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
 #smv-products-store-section .smv-products-item{justify-content:flex-start;padding:15px 13px}
-#smv-products-store-section .smv-products-item+.smv-products-item{border:1px solid rgba(184,134,45,.30)}
+#smv-products-store-section .smv-products-item+.smv-products-item{border:0;border-bottom:1px solid rgba(122,84,43,.24)}
 .smv-products-logo{width:78px;height:78px}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:15px}
 .smv-master-service{min-height:155px;padding:17px 10px}
@@ -3092,11 +3087,11 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:430px!important;background:linear-gradient(90deg, rgb(255, 247, 232) 0%, rgba(255, 247, 232, 0.03) 18%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *))::after{display:none!important}
 .smv-master-services:where(:not(.smv-css-island,.smv-css-island *)){max-width:1100px!important;padding:10px 18px 16px!important;gap:12px!important}
-.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:1px solid rgb(238, 225, 220)!important;border-radius:14px!important;box-shadow:rgba(49, 27, 36, 0.08) 0px 8px 23px!important;min-height:150px!important}
-.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 240, 245))!important}
-.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg, rgb(255, 255, 255), rgb(255, 242, 200))!important}
+.smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;border-radius:0!important;box-shadow:none!important;min-height:150px!important}
+.smv-master-service:nth-child(2n+1):where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
+.smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 #smvInstallAppSection{max-width:760px!important;margin:0px auto 10px!important}
-.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:10px!important;border:1px solid rgb(234, 223, 217)!important;box-shadow:rgba(40, 25, 31, 0.06) 0px 4px 14px!important}
+.smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;box-shadow:none!important;background:transparent!important}
 #askNowSection.smv-new-asknow{background:radial-gradient(circle at 4% 50%, rgba(255, 255, 255, 0.07), transparent 16rem), linear-gradient(100deg, rgb(173, 0, 52), rgb(232, 5, 70) 72%, rgb(255, 41, 62))!important}
 #askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:rgb(255, 250, 240)!important;border-radius:16px!important;padding:27px 24px 20px!important}
 #askNowSection .smv-new-asknow-kicker{color:rgb(255, 10, 119)!important}
@@ -3436,21 +3431,15 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 #private-consultation .smv-private-consult-meta h4{margin:0px 0px 1px!important}
 #private-consultation .smv-private-consult-description{margin:4px 0px!important}}
 #smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffaf2 100%)!important;
-  border:1px solid rgba(184,134,45,.30)!important;
-  border-radius:16px!important;
-  box-shadow:0 12px 30px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06)!important;
-  outline:0px!important;
-  padding-left:18px!important;
-  padding-right:18px!important;
+  background:transparent!important;
+  border:0!important;border-bottom:1px solid rgba(122,84,43,.24)!important;
+  border-radius:0!important;box-shadow:none!important;outline:0px!important;
+  padding-left:0!important;padding-right:0!important;
 }
 #smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){
-  background:linear-gradient(145deg,#ffffff 0%,#fffdf9 100%)!important;
-  border:1px solid rgba(184,134,45,.20)!important;
-  border-radius:13px!important;
-  box-shadow:0 5px 15px rgba(53,26,26,.055)!important;
-  padding-left:14px!important;
-  padding-right:14px!important;
+  background:transparent!important;
+  border:0!important;border-bottom:1px solid rgba(122,84,43,.16)!important;
+  border-radius:0!important;box-shadow:none!important;padding-left:0!important;padding-right:0!important;
 }
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
 #admin .smv-admin-nav, #admin .action-row{background:transparent!important;border:0px!important;box-shadow:none!important}
@@ -3809,21 +3798,15 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 #dashboardContent .smv-astrologer-dashboard > .astro-dashboard-summary > .card,
 #admin > .card,
 #admin .admin-workgroup > .card{
-  box-shadow:0 12px 30px rgba(53,26,26,.085),0 2px 6px rgba(184,134,45,.06);
-  border:1px solid rgba(184,134,45,.30);
-  border-radius:16px;
-  background:linear-gradient(145deg,#fff 0%,#fffaf2 100%);
-  padding-left:20px;
-  padding-right:20px;
+  box-shadow:none;
+  border:0;border-bottom:1px solid rgba(122,84,43,.24);
+  border-radius:0;background:transparent;
+  padding-left:0;padding-right:0;
 }
 #dashboardContent .card .card,
 #admin .card .card{
-  box-shadow:0 5px 15px rgba(53,26,26,.055);
-  border:1px solid rgba(184,134,45,.20);
-  border-radius:13px;
-  background:linear-gradient(145deg,#fff 0%,#fffdf9 100%);
-  padding-left:14px;
-  padding-right:14px;
+  box-shadow:none;border:0;border-bottom:1px solid rgba(122,84,43,.16);
+  border-radius:0;background:transparent;padding-left:0;padding-right:0;
 }
 #dashboardContent h2::before,#dashboardContent h2::after,#dashboardContent h3::before,#dashboardContent h3::after,#admin h2::before,#admin h2::after,#admin h3::before,#admin h3::after{content:none}
 #dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#e00000;margin:18px 0 14px}
