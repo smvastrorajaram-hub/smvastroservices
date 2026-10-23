@@ -116,6 +116,14 @@ test('Selecting the already-active public section does not rebuild the entire Ca
   assert.match(publicRasiPalanSource, /const nextSection = button\.dataset\.section;\s+if \(state\.section === nextSection\) return;/);
 });
 
+test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
+  assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
+  assert.match(publicRasiPalanSource, /async function chartAtLocalTime\(date, time, cfg\)/);
+  assert.match(publicRasiPalanSource, /swe\.siderealSpeedFlags\(\)/);
+  assert.match(publicRasiPalanSource, /transitChartCache/);
+  assert.doesNotMatch(publicRasiPalanSource, /calculateSwiss\(/);
+});
+
 test('Public forecast rendering does not block on the asynchronous Admin content read', () => {
   assert.doesNotMatch(publicRasiPalanSource, /await publishedManualReady/);
   assert.match(publicRasiPalanSource, /publishedManualReady = loadPublishedManual\(\)\.then\(\(\) => \{/);

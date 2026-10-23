@@ -1,4 +1,4 @@
-import { calculateSwiss } from './offline/swiss_vedic.browser.mjs';
+import { getSwe, C as SWE } from './offline/wasm-provider.mjs';
 import { solarNoaa } from './offline/transit_panchang.browser.mjs';
 import { offsetMinutesAt } from './offline/places/timezone.mjs';
 import { signs, transitReading } from './calendar-data.mjs';
@@ -72,18 +72,70 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     }
     return Number.isFinite(Number(cfg.offset)) ? Number(cfg.offset) : 330;
   }
-  function dateInput(date, time, cfg) {
-    return {
-      date: date,
-      time: time,
-      lat: cfg.lat,
-      lon: cfg.lon,
-      utcOffsetMinutes: offsetAt(cfg, date),
-      language: 'en'
-    };
-  }
+  const transitChartCache = new Map();
+  const transitBodies = [
+    ['Sun', SWE.SUN],
+    ['Moon', SWE.MOON],
+    ['Mars', SWE.MARS],
+    ['Mercury', SWE.MERCURY],
+    ['Jupiter', SWE.JUPITER],
+    ['Venus', SWE.VENUS],
+    ['Saturn', SWE.SATURN],
+    ['Rahu', SWE.MEAN_NODE]
+  ];
   async function chartAtLocalTime(date, time, cfg) {
-    return calculateSwiss(dateInput(date, time, cfg));
+    const timeMatch = String(time || '').match(/^(\d{1,2}):(\d{2})$/);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || !timeMatch) {
+      throw new Error('Transit date/time must use YYYY-MM-DD and HH:MM.');
+    }
+    const offset = offsetAt(cfg, date);
+    const key = [date, time, cfg.lat, cfg.lon, offset].join('|');
+    if (transitChartCache.has(key)) return transitChartCache.get(key);
+    const pending = (async () => {
+      const hour = Number(timeMatch[1]), minute = Number(timeMatch[2]);
+      const localTotal = hour * 60 + minute;
+      if (hour > 23 || minute > 59) throw new Error('Transit time must be within 00:00–23:59.');
+      const utcTotal = localTotal - offset;
+      const dayShift = Math.floor(utcTotal / 1440);
+      const normalized = ((utcTotal % 1440) + 1440) % 1440;
+      const utcDate = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))));
+      utcDate.setUTCDate(utcDate.getUTCDate() + dayShift);
+      const swe = await getSwe();
+      swe.setSiderealLahiri();
+      const jd = swe.utcToJd(
+        utcDate.getUTCFullYear(),
+        utcDate.getUTCMonth() + 1,
+        utcDate.getUTCDate(),
+        Math.floor(normalized / 60),
+        normalized % 60,
+        0
+      );
+      if (!jd || !Number.isFinite(Number(jd.et))) {
+        throw new Error('Swiss Ephemeris could not calculate the local transit Julian date.');
+      }
+      const flags = swe.siderealSpeedFlags();
+      const planets = transitBodies.map(([name, body]) => {
+        const result = swe.calc(jd.et, body, flags);
+        const longitude = Number(result && result.longitude);
+        if (!Number.isFinite(longitude)) throw new Error('Swiss Ephemeris returned an invalid transit longitude for ' + name + '.');
+        return { name, longitude: ((longitude % 360) + 360) % 360, speed: Number(result.speed) || 0 };
+      });
+      const rahu = planets.find(p => p.name === 'Rahu');
+      if (rahu) planets.push({ name: 'Ketu', longitude: (rahu.longitude + 180) % 360, speed: -(Number(rahu.speed) || 0) });
+      return { ok: true, planets, birth: { date, time, utcOffsetMinutes: offset } };
+    })();
+    transitChartCache.set(key, pending);
+    try {
+      const chart = await pending;
+      if (transitChartCache.size > 512) {
+        const oldest = transitChartCache.keys().next().value;
+        if (oldest !== key) transitChartCache.delete(oldest);
+      }
+      return chart;
+    } catch (error) {
+      transitChartCache.delete(key);
+      throw error;
+    }
   }
   async function sunriseFor(date, cfg) {
     const offset = offsetAt(cfg, date);
