@@ -12,9 +12,15 @@
     "minimal-ui"
   ],
   "orientation": "portrait-primary",
-  "theme_color": "#8b1717",
-  "background_color": "#fffaf0",
+  "theme_color": "#24103F",
+  "background_color": "#24103F",
   "icons": [
+    {
+      "src": "/assets/icon-512-transparent.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/assets/icon-192.png",
       "sizes": "192x192",
@@ -26,12 +32,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/assets/icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
   "categories": [

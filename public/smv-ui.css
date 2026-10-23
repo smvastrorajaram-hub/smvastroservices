@@ -1,26 +1,29 @@
 /* SMV ASTRO V207 — consolidated visual system.
    Presentation only: no display-state, auth, payment, Firebase, calculation or data-flow logic. */
 :root{
-  --smv207-red:#8b1717;
-  --smv207-red-strong:#701010;
-  --smv207-red-soft:#a52a23;
-  --smv207-gold:#b88935;
-  --smv207-gold-text:#806022;
-  --smv207-gold-soft:#d8bd78;
-  --smv207-ivory:#fffaf0;
-  --smv207-paper:#fffdf8;
-  --smv207-surface:#ffffff;
-  --smv207-ink:#2d2522;
-  --smv207-muted:#6e625b;
-  --smv207-line:#e4d7bf;
-  --smv207-success:#247241;
-  --smv207-danger:#9c2525;
-  --smv207-info:#365d7a;
-  --smv207-radius-sm:8px;
-  --smv207-radius:12px;
-  --smv207-radius-lg:16px;
-  --smv207-shadow-sm:0 4px 14px rgba(69,38,22,.06);
-  --smv207-shadow:0 10px 28px rgba(69,38,22,.085);
+  --smv207-red:#dfbd73;
+  --smv207-red-strong:#b28a48;
+  --smv207-red-soft:#f2d79a;
+  --smv207-gold:#e5c37d;
+  --smv207-gold-text:#e5c77d;
+  --smv207-gold-soft:#ae8b50;
+  --smv207-ivory:#0a1227;
+  --smv207-paper:#111c33;
+  --smv207-surface:transparent;
+  --smv207-ink:#f2eddf;
+  --smv207-muted:#c4ccdc;
+  --smv207-line:rgba(223,189,115,.18);
+  --smv207-success:#74d7a5;
+  --smv207-danger:#ff8994;
+  --smv207-info:#a0bce8;
+  --smv207-form-surface:#24103F;
+  --smv207-form-magenta-deep:#8f0043;
+  --smv207-form-white:#ffffff;
+  --smv207-radius-sm:0;
+  --smv207-radius:0;
+  --smv207-radius-lg:0;
+  --smv207-shadow-sm:none;
+  --smv207-shadow:none;
   --smv207-content:1180px;
   --smv207-reading:840px;
   --smv207-space-1:4px;
@@ -51,7 +54,7 @@ body.smv-legal-page,
   -webkit-font-smoothing:antialiased;
 }
 html[lang="ta"] body{font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.68}
-body.smv-v12-theme{background:linear-gradient(180deg,#fffdf9 0,#fff 28%,#fffdf8 100%)}
+body.smv-v12-theme{background:linear-gradient(180deg,#fffdf9 0,#fff 28%,#fffdf8 100%);background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%);}
 
 /* Content rhythm — intentionally excludes premium photographic header/hero typography. */
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation,.smv-consult-dedicated-shell) :where(h1,h2,h3,h4),
@@ -76,47 +79,135 @@ body.smv-v12-theme :where(#askNowSection,#about,#faq,#smv-content-hub){margin-bl
 body.smv-v12-theme :where(#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact){max-width:var(--smv207-content);margin-inline:auto;padding-inline:clamp(10px,2.4vw,24px)}
 
 /* Cards / panels */
-body.smv-v12-theme :where(.card,.stat,.registration-option,.feature-tile,.admin-content-row,.admin-blog-row,.astro-public-card){
-  border-color:var(--smv207-line)!important;
-  border-radius:var(--smv207-radius)!important;
-  box-shadow:var(--smv207-shadow-sm)!important;
-}
-body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:var(--smv207-surface)!important}
+body.smv-v12-theme :where(.card,.stat,.registration-option,.feature-tile,.admin-content-row,.admin-blog-row,.astro-public-card){border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:transparent!important}
 body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card) :where(p,li,.small){overflow-wrap:anywhere}
-body.smv-v12-theme .card::before{height:3px!important;width:54px!important;background:linear-gradient(90deg,var(--smv207-red),var(--smv207-gold))!important;margin-bottom:var(--smv207-space-3)!important}
-body.smv-v12-theme .stat{background:linear-gradient(180deg,#fff 0,#fffaf2 100%)!important;padding:clamp(12px,1.5vw,18px)!important}
-body.smv-v12-theme .stat b{color:var(--smv207-red)!important;font-size:clamp(22px,2.4vw,29px)!important;line-height:1.15!important}
+body.smv-v12-theme .card::before{content:none!important;display:none!important}
+body.smv-v12-theme .stat{background:transparent!important;padding:18px 0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+body.smv-v12-theme .stat b{color:#f3d99b!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
 
 /* Forms */
-body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{
-  color:#463b35;
-  font-weight:650;
-  line-height:1.35;
-}
+body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:#f2eddf;font-weight:650;line-height:1.4}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
   width:100%;
   max-width:100%;
   min-height:44px;
   box-sizing:border-box;
-  padding:10px 12px;
-  border:1px solid #d8cbb8!important;
-  border-radius:var(--smv207-radius-sm)!important;
-  background:#fff!important;
-  color:var(--smv207-ink)!important;
+  padding:10px 12px;border:1px solid rgba(223,189,115,.28)!important;border-radius:0!important;background:#17243d!important;color:#f2eddf!important;
   font:inherit;
-  line-height:1.35;
-  box-shadow:0 1px 2px rgba(60,35,20,.025) inset;
+  line-height:1.35;box-shadow:none;
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
-}
+-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) textarea{min-height:92px;resize:vertical}
-body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#91867e;opacity:1}
+body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#c4ccdc!important;opacity:1;-webkit-text-fill-color:#c4ccdc!important;}
 body.smv-v12-theme :where(input,select,textarea):focus-visible{
   outline:0!important;
   border-color:var(--smv207-red)!important;
   box-shadow:0 0 0 3px rgba(139,23,23,.13)!important;
 }
-body.smv-v12-theme :where(input,select,textarea):disabled{background:#f5f1ea!important;color:#857b73!important;cursor:not-allowed}
+body.smv-v12-theme :where(input,select,textarea):disabled{background:#1b2740!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
+
+/* Registration, login and question forms — use the existing Cosmic Violet theme. */
+body.smv-v12-theme #modal.auth-modal-active .modalbox,
+body.smv-v12-theme #modal.auth-modal-active .auth-shell,
+body.smv-v12-theme #astro-register-form > .card,
+body.smv-v12-theme #smvPublicQuestionWindow,
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow > .card,
+body.smv-v12-theme #privateConsultationQuestionCard{
+  background:var(--smv207-form-surface)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-shell :where(h2,h3,p,label,.small,.auth-note,.auth-divider),
+body.smv-v12-theme #astro-register-form > .card :where(h2,h3,p,label,.small),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(h2,h3,p,label,.small),
+body.smv-v12-theme #privateConsultationQuestionCard :where(h3,p,label,.small,.success,.error){
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-field,
+body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+body.smv-v12-theme #privateConsultationQuestionCard :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  caret-color:var(--smv207-form-white)!important;
+  border:0!important;
+}
+body.smv-v12-theme #modal.auth-modal-active :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #astro-register-form :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #smvPublicQuestionWindow :where(input,select,textarea)::placeholder,
+body.smv-v12-theme #privateConsultationQuestionCard :where(input,select,textarea)::placeholder{
+  color:#fff0f6!important;
+  -webkit-text-fill-color:#fff0f6!important;
+  opacity:1!important;
+}
+/* Chromium autofill paints a pale field unless its inset fill and text are set explicitly. */
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill,
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill:hover,
+body.smv-v12-theme #modal.auth-modal-active input:-webkit-autofill:focus,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill:hover,
+body.smv-v12-theme #astro-register-form input:-webkit-autofill:focus,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill:hover,
+body.smv-v12-theme #smvPublicQuestionWindow input:-webkit-autofill:focus,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:hover,
+body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
+  box-shadow:0 0 0 1000px var(--smv207-form-magenta-deep) inset!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  caret-color:var(--smv207-form-white)!important;
+}
+/* Keep the Astrologer and Ask Now back-navigation controls visible on the theme surface. */
+body.smv-v12-theme #astro-register-form #astroRegBackBtn,
+body.smv-v12-theme #smvPublicQuestionWindow #askNowBackBtn{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:40px!important;
+  margin:0 0 14px!important;
+  padding:9px 14px!important;
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #modal.auth-modal-active .auth-shell .btn:not(.auth-google),
+body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(button[type="submit"],.btn),
+body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(button[type="submit"],.btn),
+body.smv-v12-theme #privateConsultationQuestionCard :where(button[type="submit"],.btn),
+body.smv-v12-theme #modal.auth-modal-active #googleAuthBtn{
+  background:var(--smv207-form-magenta-deep)!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+body.smv-v12-theme #astro-register-form #astroRegistrationForm input[type="file"]{
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  max-width:100%!important;
+}
+html body.smv-v12-theme #modal.auth-modal-active .modalbox > button[aria-label="Close"]{
+  width:40px!important;
+  min-width:40px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  font:700 24px/1 Arial,sans-serif!important;
+  color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
 
 /* Buttons */
 body.smv-v12-theme .btn,
@@ -130,15 +221,15 @@ body.smv-v12-theme .btn,
   text-decoration:none;
   transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
 }
-body.smv-v12-theme .btn{border-color:var(--smv207-red-strong)!important;background:linear-gradient(135deg,var(--smv207-red),var(--smv207-red-soft))!important;color:#fff!important;box-shadow:0 5px 14px rgba(112,16,16,.15)!important}
-body.smv-v12-theme .btn.gray{background:#fff!important;color:var(--smv207-red)!important;border:1px solid #cdaaaa!important;box-shadow:none!important}
+body.smv-v12-theme .btn{border:1px solid #dfbd73!important;border-radius:0!important;background:#dfbd73!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;box-shadow:none!important;font-weight:800!important}
+body.smv-v12-theme .btn.gray{background:transparent!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
 body.smv-v12-theme .btn:where(:hover,:focus-visible),.seo-page :where(.seo-action,.related-links a):where(:hover,:focus-visible){filter:brightness(.97);transform:translateY(-1px)}
 body.smv-v12-theme .btn:focus-visible,.seo-page a:focus-visible,body.smv-legal-page a:focus-visible{outline:3px solid rgba(184,137,53,.35)!important;outline-offset:2px}
 body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow:none!important;cursor:not-allowed}
 body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:center;flex-wrap:wrap}
 
 /* Dashboard — preserve compact information hierarchy while making it consistent. */
-#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:var(--smv207-red)!important;letter-spacing:.02em!important}
+#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:#f3d99b!important;letter-spacing:.015em!important;font-family:Georgia,"Noto Sans Tamil",serif!important;font-weight:750!important}
 #dashboardContent :where(.card,.stat),#admin :where(.card,.stat,.admin-content-row){min-width:0}
 #dashboardContent :where(.small,label){font-size:14px!important;font-weight:600!important}
 #dashboardContent :where(.result,.meta,.timestamp,.status-text){font-size:12px!important;font-weight:400!important}
@@ -147,7 +238,7 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #dashboardContent :where(.badge,[class*="status-"]),#admin :where(.badge,[class*="status-"]){border-radius:999px!important;font-weight:800!important;line-height:1.2!important}
 #admin > :where(.card,.admin-content-row){margin-block:10px}
 #adminSummary{margin-top:16px}
-#admin :where(h3){padding-bottom:7px;border-bottom:1px solid #eee3d1}
+#admin :where(h3){padding-bottom:0;border-bottom:0}
 #admin .action-row[style*="space-between"]{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 #astroRegistrationForm :where(input,select,textarea){width:100%;box-sizing:border-box;padding:10px 12px;margin:5px 0;border:1px solid #d8cbb8;border-radius:var(--smv207-radius-sm)}
 
@@ -163,9 +254,123 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 /* Public content / FAQ */
 #smv-content-hub .home-rule,#about .home-rule,#faq .home-rule{margin-bottom:var(--smv207-space-4)}
 #smv-content-hub :where(.feature-tile,.card){height:100%}
-.faq-list details{border-color:var(--smv207-line)!important;border-radius:var(--smv207-radius)!important;background:#fff!important;box-shadow:none!important}
-.faq-list summary{font-weight:750;cursor:pointer;color:#49362f}
-.faq-list details[open] summary{color:var(--smv207-red)}
+.faq-list details{border-color:var(--smv207-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important;}
+.faq-list summary{font-weight:750;cursor:pointer;color:#f3d99b}
+.faq-list details[open] summary{color:#FF2D93!important;-webkit-text-fill-color:#FF2D93!important;font-weight:900!important}
+
+/* Keep Astrology Insights & Media on the same content width and rhythm as About/FAQ. */
+html body.smv-v12-theme #smv-content-hub{
+  width:100%!important;
+  max-width:1160px!important;
+  margin:34px auto!important;
+  padding:0 16px!important;
+  box-sizing:border-box!important;
+  scroll-margin-top:16px!important;
+}
+html body.smv-v12-theme #smv-content-hub .home-rule{
+  display:flex!important;
+  margin-bottom:var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub > .feature-shell.card{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top{
+  display:block!important;
+  margin:0 0 var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top > div:first-child{
+  min-width:0!important;
+  width:100%!important;
+  flex:none!important;
+}
+html body.smv-v12-theme #smv-content-hub .feature-top h2{
+  margin:0 0 var(--smv207-space-3)!important;
+  font-family:inherit!important;
+  font-size:var(--smv207-h2)!important;
+  line-height:1.22!important;
+  font-weight:850!important;
+  letter-spacing:-.018em!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subregion{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subregion + .smv-v173-subregion{
+  margin-top:var(--smv207-space-4)!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{
+  min-height:30px!important;
+  margin:0 0 var(--smv207-space-3)!important;
+  padding:2px 0!important;
+  font-family:inherit!important;
+  font-size:var(--smv207-body)!important;
+  line-height:1.6!important;
+  font-weight:800!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+  border:0!important;
+  border-bottom:1px solid var(--smv207-line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+html body.smv-v12-theme #smv-content-hub .smv-v173-sub-collapse{
+  flex:0 0 30px!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:0!important;
+  color:#f3d99b!important;
+  -webkit-text-fill-color:#f3d99b!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html body.smv-v12-theme #smv-content-hub .blog-card h3,
+html body.smv-v12-theme #smv-content-hub .media-card h3{
+  font-family:inherit!important;
+  font-size:var(--smv207-h3)!important;
+  line-height:1.3!important;
+  font-weight:800!important;
+}
+html body.smv-v12-theme #smv-content-hub :where(.blog-content,.blog-card p,.blog-card li,.media-card p,.media-card li,.media-card .small){
+  font-family:inherit!important;
+  font-size:var(--smv207-body)!important;
+  line-height:1.75!important;
+  letter-spacing:normal!important;
+  color:var(--smv207-ink)!important;
+  -webkit-text-fill-color:var(--smv207-ink)!important;
+}
+@media(max-width:760px){
+  html body.smv-v12-theme #smv-content-hub{
+    width:100%!important;
+    max-width:1160px!important;
+    margin:34px auto!important;
+    padding:0 16px!important;
+  }
+}
+@media(max-width:640px){
+  html body.smv-v12-theme #smv-content-hub{
+    padding-left:4px!important;
+    padding-right:4px!important;
+  }
+}
 
 /* Private consultation — V190 layout migrated out of inline page CSS. */
 #privateConsultationQuestionCard{position:relative}
@@ -181,33 +386,33 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 #questionText{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word}
 
 /* Legal pages */
-body.smv-legal-page{margin:0;background:#fffdf9;color:var(--smv207-ink)}
-body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid var(--smv207-line);background:rgba(255,253,249,.96);backdrop-filter:none}
+body.smv-legal-page{margin:0;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),linear-gradient(155deg,#070d1e,#101b32 52%,#0a1124);color:#f2eddf}
+body.smv-legal-page>header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(14px,4vw,36px);border-bottom:1px solid rgba(223,189,115,.18);background:rgba(9,16,34,.96);backdrop-filter:none}
 body.smv-legal-page>header .brand{color:var(--smv207-red)!important;font-weight:900;text-decoration:none;letter-spacing:.03em}
 body.smv-legal-page>header nav{display:flex;gap:8px;flex-wrap:wrap}
-body.smv-legal-page>header nav a{color:#51443d;text-decoration:none;font-weight:700;padding:7px 9px;border-radius:7px}
+body.smv-legal-page>header nav a{color:#f2eddf;text-decoration:none;font-weight:700;padding:7px 9px;border-radius:0}
 body.smv-legal-page>main{max-width:var(--smv207-reading);margin:0 auto;padding:clamp(28px,5vw,54px) clamp(16px,4vw,32px)}
 body.smv-legal-page h1{font-size:var(--smv207-h1);line-height:1.08;margin:.18em 0 .25em}
 body.smv-legal-page h2{font-size:var(--smv207-h3);line-height:1.3;color:var(--smv207-red);margin:1.7em 0 .5em}
 body.smv-legal-page p,body.smv-legal-page li{line-height:1.75}
 body.smv-legal-page .eyebrow{color:var(--smv207-gold-text);font-weight:850;letter-spacing:.09em;text-transform:uppercase}
 body.smv-legal-page .updated{color:var(--smv207-muted)}
-body.smv-legal-page .contents{margin:24px 0 30px;padding:16px 18px;border:1px solid var(--smv207-line);border-radius:var(--smv207-radius);background:#fffaf1}
+body.smv-legal-page .contents{margin:24px 0 30px;padding:16px 18px;border:0;border-radius:0;background:transparent;border-top:1px solid rgba(223,189,115,.22);border-bottom:1px solid rgba(223,189,115,.22);}
 body.smv-legal-page .contents ol{columns:2;column-gap:28px;padding-left:22px}
 body.smv-legal-page a{color:var(--smv207-red-strong);text-underline-offset:3px}
-body.smv-legal-page .contact{margin-top:34px;padding:20px;border:1px solid var(--smv207-line);border-radius:var(--smv207-radius-lg);background:#fffaf2}
-body.smv-legal-page>footer{text-align:center;padding:24px 16px;border-top:1px solid var(--smv207-line);color:var(--smv207-muted);background:#fffaf2}
+body.smv-legal-page .contact{margin-top:34px;padding:20px;border:0;border-radius:0;background:transparent;border-top:1px solid rgba(223,189,115,.22);}
+body.smv-legal-page>footer{text-align:center;padding:24px 16px;border-top:1px solid rgba(223,189,115,.22);color:#c4ccdc;background:transparent}
 
 /* SEO landing pages */
-body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px);color:var(--smv207-ink)}
+body.smv-seo-page{margin:0;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),linear-gradient(155deg,#070d1e,#101b32 52%,#0a1124);color:#f2eddf}
 .seo-page{max-width:920px!important;padding:clamp(26px,5vw,54px) clamp(16px,4vw,28px)!important;line-height:1.68!important}
-.seo-page header{padding:clamp(20px,4vw,34px);border:1px solid var(--smv207-line);border-radius:var(--smv207-radius-lg);background:#fff;box-shadow:var(--smv207-shadow-sm)}
+.seo-page header{padding:clamp(20px,4vw,34px);border:0;border-radius:0;background:transparent;box-shadow:none}
 .seo-page .brand{color:var(--smv207-red)!important;font-weight:900!important;letter-spacing:.09em!important}
 .seo-page h1{font-size:var(--smv207-h1)!important;line-height:1.08!important;margin:.3em 0 .4em!important}
 .seo-page h2{font-size:var(--smv207-h3)!important;color:var(--smv207-red)!important;margin-bottom:.4em!important}
 .seo-page section{padding:0 4px;margin-block:30px!important}
-.seo-page :where(.seo-action,.related-links a){display:inline-flex!important;align-items:center;justify-content:center;padding:10px 14px!important;border:1px solid #c99898!important;color:var(--smv207-red)!important;background:#fff!important}
-.seo-page .seo-action:first-child{background:var(--smv207-red)!important;color:#fff!important;border-color:var(--smv207-red)!important}
+.seo-page :where(.seo-action,.related-links a){display:inline-flex!important;align-items:center;justify-content:center;padding:10px 14px!important;border:1px solid rgba(223,189,115,.40)!important;color:#f2eddf!important;background:transparent!important;border-radius:0!important;}
+.seo-page .seo-action:first-child{background:#dfbd73!important;color:#10172b!important;border-color:#dfbd73!important}
 .seo-page footer{border-top-color:var(--smv207-line)!important;color:var(--smv207-muted)}
 .seo-page a{color:var(--smv207-red-strong)!important}
 
@@ -241,10 +446,10 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
 @media(max-width:760px){
   :root{--smv207-h2:clamp(21px,5.8vw,26px);--smv207-h3:clamp(17px,4.6vw,21px)}
   body.smv-v12-theme :where(#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact){padding-inline:8px}
-  body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){padding:clamp(11px,3.6vw,16px)!important}
+  body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card){background:transparent!important}
   body.smv-v12-theme .action-row>.btn{flex:1 1 auto;min-width:min(140px,100%)}
   #smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important}
-  body.smv-legal-page>header{position:static;align-items:flex-start;flex-direction:column}
+  body.smv-legal-page>header{position:static;align-items:flex-start;flex-direction:column;background:rgba(9,16,34,.96);border-bottom:1px solid rgba(223,189,115,.18);backdrop-filter:none;}
   body.smv-legal-page .contents ol{columns:1}
   .seo-page .seo-actions{display:grid!important;grid-template-columns:1fr!important}
 }
@@ -262,8 +467,8 @@ body.smv-seo-page{margin:0;background:linear-gradient(180deg,#fffaf1,#fff 300px)
 }
 
 /* Registration choices retain semantic distinction inside the unified system. */
-body.smv-v12-theme .registration-option.customer-option{background:linear-gradient(180deg,#fff 0,#fff7f5 100%)!important;border-color:#e4c1bc!important}
-body.smv-v12-theme .registration-option.astrologer-option{background:linear-gradient(180deg,#fffdf5 0,#fff3c9 100%)!important;border-color:#d5b35b!important}
+body.smv-v12-theme .registration-option.customer-option{background:transparent!important;border-color:transparent!important;border:0!important;box-shadow:none!important;color:var(--smv207-ink)!important;-webkit-text-fill-color:var(--smv207-ink)!important;}
+body.smv-v12-theme .registration-option.astrologer-option{background:transparent!important;border-color:transparent!important;border:0!important;box-shadow:none!important;color:var(--smv207-ink)!important;-webkit-text-fill-color:var(--smv207-ink)!important;}
 
 /* Semantic button variants — preserve meaning and the official Google-style control. */
 body.smv-v12-theme .btn.alt{background:#fff!important;color:var(--smv207-red)!important;border-color:var(--smv207-red)!important;box-shadow:none!important}
@@ -274,8 +479,8 @@ body.smv-v12-theme .smv-withdraw-btn.is-green{background:#16a34a!important;borde
 body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn.is-red:disabled{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;opacity:1!important}
 
 /* Accessible heading level without changing the compact install-card appearance. */
-.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#7a2a1c!important;font-weight:800!important}
-@media(max-width:760px){.smv-install-app-copy h2{font-size:16px!important}}
+.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-weight:800!important;text-transform:uppercase!important}
+@media(max-width:760px){.smv-install-app-copy h2{font-size:clamp(12px,4.5vw,16px)!important;white-space:nowrap!important;text-align:center!important;width:calc(100% + 66px)!important;margin-left:-66px!important}}
 
 /* Remaining structural presentation migrated from inline homepage markup. */
 #smv-content-hub .smv-v173-subregion+.smv-v173-subregion,#adminBlogsMedia{margin-top:14px}
