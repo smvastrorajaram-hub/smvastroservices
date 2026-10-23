@@ -551,19 +551,27 @@ document.addEventListener("click",function(e){
 
   function forceAuthButtonSync(){
     const b=document.getElementById('authBtn');
-    if(!b)return;
-    if(window.__SMV_LOGGED_OUT===true){b.textContent='Login';return;}
-    const hasUser = !!(window.__smvCurrentUserPresent===true);
-    if(!hasUser && (b.textContent||'').trim().toLowerCase()==='logout') b.textContent='Login';
+    const r=document.getElementById('registerNav');
+    if(!b||!r)return;
+    const hasUser = window.__SMV_LOGGED_OUT===true ? false : !!(window.__smvCurrentUserPresent===true);
+    b.textContent = hasUser ? 'Logout' : 'Login';
+    /* Desktop only: show Logout while signed in, Register while signed out. */
+    if(window.matchMedia('(min-width: 900px)').matches){
+      b.classList.toggle('smv-auth-hidden',!hasUser);
+      r.classList.toggle('smv-auth-hidden',hasUser);
+    }else{
+      b.classList.remove('smv-auth-hidden');
+      r.classList.remove('smv-auth-hidden');
+    }
   }
   window.addEventListener('smv:auth-user',()=>{window.__SMV_LOGGED_OUT=false;forceAuthButtonSync();});
   window.addEventListener('smv:logged-out',function(){
-    const b=document.getElementById('authBtn');
-    if(b)b.textContent='Login';
+    window.__SMV_LOGGED_OUT=true;
+    forceAuthButtonSync();
   });
-  setInterval(function(){
-    if(window.__SMV_LOGGED_OUT===true){const b=document.getElementById('authBtn');if(b)b.textContent='Login';}
-  },500);
+  window.addEventListener('resize',forceAuthButtonSync);
+  document.addEventListener('DOMContentLoaded',forceAuthButtonSync,{once:true});
+  setInterval(forceAuthButtonSync,500);
 })();
 </script>
 <script>window.__SMV_V158_PATCH="Phase 3 classical-style Parashari Shadbala: Sthana, Dig, Kala, Cheshta, Naisargika and Drik components with required-strength comparison; Phase 2 layer retained for compatibility.";</script>
