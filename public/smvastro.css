@@ -7,8 +7,8 @@
 #tamilHoroscopeResult[aria-busy="true"], #englishHoroscopeResult[aria-busy="true"]{opacity:0.98}
 .registration-option.astrologer-option{background:transparent!important;border-color:rgb(200, 149, 18);box-shadow:none!important;border:0!important;border-radius:0!important;}
 .registration-option.astrologer-option .registration-icon{color:rgb(138, 91, 0);background:radial-gradient(circle, rgb(255, 251, 224) 0%, rgb(255, 233, 138) 62%, rgb(244, 207, 85) 100%);border-color:rgb(184, 134, 11)}
-.registration-option.astrologer-option .registration-kicker{color:rgb(122, 82, 0)}
-.registration-option.astrologer-option h3{color:rgb(111, 23, 23)}
+.registration-option.astrologer-option .registration-kicker{color:#f3d99b}
+.registration-option.astrologer-option h3{color:#f3d99b}
 .astro-public-profile .small{overflow-wrap:anywhere;word-break:break-word}
 .private-field:where(:not(.smv-css-island,.smv-css-island *)){display:none!important}
 .astro-public-profile{overflow:hidden}
@@ -737,13 +737,13 @@ html, body{max-width:100%;overflow-x:hidden}
 .smv-advanced-part > .adv-section:where(:not(.smv-css-island,.smv-css-island *)){margin:10px 0px!important;padding:9px!important;border-radius:10px!important}}
 #askNowSection{width:100%;max-width:1040px;margin:28px auto 36px;padding:0px 12px;box-sizing:border-box;text-align:center}
 #askNowSection .smv-new-asknow-inner{width:100%;max-width:860px;margin:0px auto;padding:28px 20px 30px;box-sizing:border-box;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:rgba(70, 20, 20, 0.08) 0px 8px 24px;box-shadow:none!important;}
-#askNowSection .smv-new-asknow-kicker{color:rgb(154, 114, 42);margin-bottom:8px}
+#askNowSection .smv-new-asknow-kicker{color:#f3d99b;margin-bottom:8px}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-size:12px;font-weight:800;letter-spacing:2px}
-#askNowSection h2{margin:0px auto 10px;color:rgb(143, 0, 0)}
+#askNowSection h2{margin:0px auto 10px;color:#f3d99b}
 #askNowSection h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:clamp(24px, 4vw, 34px);line-height:1.2}
-#askNowSection p{max-width:720px;margin:0px auto 10px;color:rgb(53, 26, 26)}
+#askNowSection p{max-width:720px;margin:0px auto 10px;color:#c4ccdc}
 #askNowSection p:where(:not(.smv-type-root,.smv-type-root *)){font-size:16px;line-height:1.65}
-#askNowSection .smv-new-asknow-note{color:rgb(111, 90, 72);margin-bottom:22px}
+#askNowSection .smv-new-asknow-note{color:#c4ccdc;margin-bottom:22px}
 #askNowSection .smv-new-asknow-note:where(:not(.smv-type-root,.smv-type-root *)){font-size:13px}
 #askNowSection .smv-new-asknow-action{width:100%;display:flex;justify-content:center;align-items:center}
 #askNowButton{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:14px;width:min(300px, 100%);min-height:52px;padding:12px 22px;border:2px solid rgb(199, 154, 61);border-radius:10px;background:linear-gradient(135deg, rgb(156, 34, 32), rgb(113, 18, 18));color:rgb(255, 255, 255);cursor:pointer;box-shadow:rgba(101, 16, 16, 0.2) 0px 7px 18px;text-align:center;box-sizing:border-box}
@@ -794,10 +794,10 @@ html body header .nav nav > #horoscopeNav, html body header .nav nav > #contentN
 html body header .nav nav > #dashLink.smv-role-green{background:none rgb(56, 189, 248)!important;color:rgb(255, 255, 255)!important;border:2px solid rgb(255, 215, 0)!important;font-weight:900!important}
 html body header .nav nav > #authBtn.smv-logout-btn{background:none rgb(214, 0, 0)!important;color:rgb(255, 255, 255)!important;border:2px solid rgb(255, 215, 0)!important;font-weight:900!important}
 html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), html body header .brand .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 0, 0)!important;-webkit-text-fill-color:rgb(255, 0, 0)!important;font-size:42px!important;font-weight:900!important;-webkit-text-stroke:2px rgb(255, 215, 0)!important}
-#dashboardContent h1:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h4:where(:not(.smv-css-island,.smv-css-island *)), #admin h1:where(:not(.smv-css-island,.smv-css-island *)), #admin h2:not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)), #admin h3:where(:not(.smv-css-island,.smv-css-island *)), #admin h4:not(.smv-notification-title):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 0, 0)!important;-webkit-text-fill-color:rgb(255, 0, 0)!important}
-#dashboardTitle{color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
+#dashboardContent h1:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent h4:where(:not(.smv-css-island,.smv-css-island *)), #admin h1:where(:not(.smv-css-island,.smv-css-island *)), #admin h2:not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)), #admin h3:where(:not(.smv-css-island,.smv-css-island *)), #admin h4:not(.smv-notification-title):where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
+#dashboardTitle{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 #dashboardTitle:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-#dashboardContent .withdrawal-history-title:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 0, 0)!important;-webkit-text-fill-color:rgb(255, 0, 0)!important}
+#dashboardContent .withdrawal-history-title:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 @media (min-width: 701px){
 #smv-content-hub #publicBlogs .blog-card:not(:has(.content-thumb)) > h3, #smv-content-hub #publicBlogs .blog-card:not(:has(.content-thumb)) > p.small, #smv-content-hub #publicBlogs .blog-card:not(:has(.content-thumb)) > .blog-content, #smv-content-hub #publicBlogs .blog-card:not(:has(.content-thumb)) > .small:last-child{grid-column:1}}
 @media (min-width: 701px){
@@ -1431,7 +1431,7 @@ nav a, nav .btn{flex:0 0 auto}
 .service-card h3{margin-bottom:7px}
 .faq-list{display:grid;gap:13.5px}
 .faq-list details{background:transparent;border:0;border-radius:0;padding:0;margin:0;box-shadow:none;box-shadow:none;}
-.faq-list summary{cursor:pointer;color:var(--maroon);display:list-item;margin:0;padding:0}
+.faq-list summary{cursor:pointer;color:#f3d99b;display:list-item;margin:0;padding:0}
 #faq .faq-list details[open] > summary{margin-bottom:13.5px}
 .faq-list summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:800}
 .faq-list p{color:var(--muted);margin:0;padding:0}
@@ -1720,10 +1720,10 @@ header nav #authBtn.smv-logout-btn{background:linear-gradient(135deg, rgb(181, 4
 .card:hover:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:hover:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.72)!important;box-shadow:rgba(101, 16, 16, 0.15) 0px 14px 34px!important}
 #faq h2{color:var(--smv-red)!important}
 #faq h2:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-#faq summary{color:var(--smv-red-dark)!important}
+#faq summary{color:#f3d99b!important}
 #faq summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-#faq details[open] summary{color:var(--smv-red)!important}
-#faq details p{color:rgb(85, 68, 68)!important}
+#faq details[open] summary{color:#f3d99b!important}
+#faq details p{color:#c4ccdc!important}
 #faq details p:where(:not(.smv-type-root,.smv-type-root *)){font-weight:600!important}
 input[type="button"]:where(:not(.smv-css-island,.smv-css-island *)),
 input[type="submit"]:where(:not(.smv-css-island,.smv-css-island *)),
@@ -1743,7 +1743,7 @@ input::placeholder:where(), textarea::placeholder:where(){color:#687386!importan
 #dashboardContent [style*="border-bottom"]:where(:not(.smv-css-island,.smv-css-island *)), #admin [style*="border-bottom"]:where(:not(.smv-css-island,.smv-css-island *)){border-bottom-color:rgba(184, 134, 45, 0.32)!important}
 #dashboardContent table:where(:not(.smv-css-island,.smv-css-island *)), #admin table:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.4)!important}
 #dashboardContent th:where(:not(.smv-css-island,.smv-css-island *)), #admin th:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(135deg, rgb(143, 23, 23), rgb(114, 17, 17))!important;color:rgb(255, 255, 255)!important}
-#dashboardContent td:where(:not(.smv-css-island,.smv-css-island *)), #admin td:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(79, 59, 59)!important}
+#dashboardContent td:where(:not(.smv-css-island,.smv-css-island *)), #admin td:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important}
 #login-flow, #register-flow, #astro-register-flow, .registration-panel{background:transparent!important}
 #login-flow h2, #register-flow h2, #astro-register-flow h2{color:var(--smv-red)!important;font-weight:900!important}
 a:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important}
@@ -1982,51 +1982,51 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 #dashboardContent #astroQuestionQueue > h3:where(:not(.smv-css-island,.smv-css-island *)){color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
 #dashboardContent #astroAnsweredBox .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
 #dashboardContent #astroQuestionQueue .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
-#dashboardContent .withdrawal-history-section .withdrawal-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(224, 0, 0)!important}
-#dashboardContent .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(224, 0, 0)!important}
-#dashboardContent .smv-notification-meta > b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
+#dashboardContent .withdrawal-history-section .withdrawal-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent .smv-notification-meta > b:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important}
 #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroQuestionQueue > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroAnsweredBox > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .withdrawal-history-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#userNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astroNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astrologerNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
-#dashboardContent .public-inbox-description:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .no-paid-public-questions:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent .card:has(#changePayoutBtn2) > p.small:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
+#dashboardContent .public-inbox-description:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .no-paid-public-questions:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important}
+#dashboardContent .card:has(#changePayoutBtn2) > p.small:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important}
 #dashboardContent #astroAnsweredBox .answer-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #dashboardContent #astroAnsweredBox .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
 #dashboardContent #astroQuestionQueue .answer-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #dashboardContent #astroQuestionQueue .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
-#dashboardContent .withdrawal-history-section .withdrawal-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent .withdrawal-history-section .withdrawal-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
-#dashboardContent #userNotifications .smv-notification-label:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent #userNotifications .smv-notification-result:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent #userNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
-#dashboardContent #astroNotifications .smv-notification-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-title b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-content:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-content b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-meta:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-meta b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-title b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-content:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-content b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-meta:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-meta b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent #astroNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
-#dashboardContent .available-withdraw-amount.withdraw-red:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
-#dashboardContent .available-withdraw-amount.withdraw-green:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(25, 135, 84)!important}
+#dashboardContent .withdrawal-history-section .withdrawal-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important}
+#dashboardContent .withdrawal-history-section .withdrawal-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent #userNotifications .smv-notification-label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important}
+#dashboardContent #userNotifications .smv-notification-result:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important}
+#dashboardContent #userNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent #astroNotifications .smv-notification-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-title b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-content:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-content b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-meta:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroNotifications .smv-notification-meta b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-title b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-content:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-content b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-meta:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .smv-notification-meta b:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important}
+#dashboardContent #astroNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astrologerNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent .available-withdraw-amount.withdraw-red:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent .available-withdraw-amount.withdraw-green:where(:not(.smv-css-island,.smv-css-island *)){color:#74d7a5!important}
 #dashboardContent .profile-status-approved:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(22, 163, 74)!important}
-#dashboardContent .profile-status-rejected:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
-#dashboardContent .profile-status-pending:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent, #admin{color:rgb(0, 0, 0)}
-#dashboardContent .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
+#dashboardContent .profile-status-rejected:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
+#dashboardContent .profile-status-pending:where(:not(.smv-css-island,.smv-css-island *)){color:#e5c37d!important}
+#dashboardContent, #admin{color:#f2eddf}
+#dashboardContent .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h2:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #admin .card > h4:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important}
 #dashboardContent .card p:not(:has(> .customer-profile-result)):not(.smv-customer-answer-text):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .small:not(.customer-meta):not(.smv-customer-meta-line):not(.smv-customer-viewed-status):not(.smv-private-payment-note):where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card p:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .small:where(:not(.smv-css-island,.smv-css-island *)), #admin .card .empty:where(:not(.smv-css-island,.smv-css-island *)), #admin .card label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
-#dashboardContent .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)), #admin .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(176, 0, 0)!important}
+#dashboardContent .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)), #admin .dashboard-value-red:where(:not(.smv-css-island,.smv-css-island *)){color:#ff8994!important}
 #dashboardContent .astro-profile-info .profile-status-approved:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .profile-status-approved:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 230, 118)!important;-webkit-text-fill-color:rgb(0, 230, 118)!important}
 #dashboardContent .customer-profile-verified:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 230, 118)!important;-webkit-text-fill-color:rgb(0, 230, 118)!important}
-#dashboardContent .customer-profile-result:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .customer-meta > span:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-customer-meta-line > span:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
-#dashboardContent .card p:has(> .customer-profile-result) > b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .customer-meta > b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-customer-meta-line > b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important}
+#dashboardContent .customer-profile-result:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .customer-meta > span:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-customer-meta-line > span:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important}
+#dashboardContent .card p:has(> .customer-profile-result) > b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .customer-meta > b:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-customer-meta-line > b:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important}
 .profile-status-approved-tick:where(:not(.smv-css-island,.smv-css-island *)), .customer-profile-verified-tick:where(:not(.smv-css-island,.smv-css-island *)){white-space:nowrap;color:rgb(25, 135, 84)!important;-webkit-text-fill-color:rgb(25, 135, 84)!important}
 .profile-status-approved-tick:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important;font-size:1.05em!important}
 .profile-status-approved-tick:where(:not(.smv-css-island,.smv-css-island *))::first-letter, .customer-profile-verified-tick:where(:not(.smv-css-island,.smv-css-island *))::first-letter{color:rgb(25, 135, 84)!important}
-#dashboardContent h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroQuestionQueue > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroAnsweredBox > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .withdrawal-history-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#userNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astroNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astrologerNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(138, 31, 93)!important}
-#dashboardContent .total-earnings-card > h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(139, 0, 0)!important}
-#dashboardContent .astro-dashboard-summary > .card:nth-child(3) > h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(139, 0, 0)!important}
-#admin h1, #admin h2:not(.admin-dashboard-title), #admin h3, #admin h4:not(.smv-notification-title), #admin h5, #admin h6, #admin .section-title, #admin .home-rule, #admin .home-rule span{color:rgb(230, 0, 0)!important;-webkit-text-fill-color:rgb(230, 0, 0)!important}
-#admin p, #admin li, #admin label, #admin .small, #admin .empty, #admin .stat, #admin .stat b, #admin .card, #admin .card p, #admin .card li, #admin .card label, #admin .card span, #admin .card div, #admin .action-row, #admin .action-row span, #admin .action-row label, #admin input, #admin select, #admin textarea{color:rgb(0, 0, 0)!important;-webkit-text-fill-color:rgb(0, 0, 0)!important}
-#admin .error, #admin .danger, #admin .dashboard-value-red, #admin .notification-red-value, #admin .answer-meta-value, #admin .withdrawal-meta-value, #admin .profile-status-rejected, #admin [style*="color:red"], #admin [style*="color: red"], #admin [style*="color:#e00000"], #admin [style*="color: #e00000"], #admin [style*="color:#b00000"], #admin [style*="color: #b00000"], #admin [style*="color:#c00000"], #admin [style*="color: #c00000"], #admin [style*="color:#8b0000"], #admin [style*="color: #8b0000"]{color:rgb(139, 0, 0)!important;-webkit-text-fill-color:rgb(139, 0, 0)!important}
-#admin .stats-grid .success{color:rgb(0, 0, 0)!important;-webkit-text-fill-color:rgb(0, 0, 0)!important}
+#dashboardContent h2:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroQuestionQueue > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent #astroAnsweredBox > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .withdrawal-history-title:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#userNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astroNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .card:has(#astrologerNotifications) > h3:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important}
+#dashboardContent .total-earnings-card > h3:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important}
+#dashboardContent .astro-dashboard-summary > .card:nth-child(3) > h3:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important}
+#admin h1, #admin h2:not(.admin-dashboard-title), #admin h3, #admin h4:not(.smv-notification-title), #admin h5, #admin h6, #admin .section-title, #admin .home-rule, #admin .home-rule span{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
+#admin p, #admin li, #admin label, #admin .small, #admin .empty, #admin .stat, #admin .stat b, #admin .card, #admin .card p, #admin .card li, #admin .card label, #admin .card span, #admin .card div, #admin .action-row, #admin .action-row span, #admin .action-row label, #admin input, #admin select, #admin textarea{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important}
+#admin .error, #admin .danger, #admin .dashboard-value-red, #admin .notification-red-value, #admin .answer-meta-value, #admin .withdrawal-meta-value, #admin .profile-status-rejected, #admin [style*="color:red"], #admin [style*="color: red"], #admin [style*="color:#e00000"], #admin [style*="color: #e00000"], #admin [style*="color:#b00000"], #admin [style*="color: #b00000"], #admin [style*="color:#c00000"], #admin [style*="color: #c00000"], #admin [style*="color:#8b0000"], #admin [style*="color: #8b0000"]{color:#ff8994!important;-webkit-text-fill-color:#ff8994!important}
+#admin .stats-grid .success{color:#74d7a5!important;-webkit-text-fill-color:#74d7a5!important}
 #admin > .card > div:first-child > div > h2, #admin > .card > h3{margin-top:0px!important}
 #adminQuestions > div > b:first-child{margin-bottom:3px!important}
 #publicBlogs .blog-card > h3, #blogs .blog-card > h3, #blogList .blog-card > h3{font-size:24px!important;line-height:1.25!important;font-weight:800!important;margin:0px 0px 10px!important}
-#publicBlogs .blog-card > p.small, #blogs .blog-card > p.small, #blogList .blog-card > p.small{font-size:16px!important;line-height:1.55!important;font-weight:400!important;color:rgb(34, 34, 34)!important;margin:8px 0px 12px!important}
-#publicBlogs .blog-card .blog-content, #blogs .blog-card .blog-content, #blogList .blog-card .blog-content{font-size:13px!important;line-height:1.65!important;font-weight:400!important;color:rgb(34, 34, 34)!important;white-space:pre-wrap!important}
+#publicBlogs .blog-card > p.small, #blogs .blog-card > p.small, #blogList .blog-card > p.small{font-size:16px!important;line-height:1.55!important;font-weight:400!important;color:#c4ccdc77;margin:8px 0px 12px!important}
+#publicBlogs .blog-card .blog-content, #blogs .blog-card .blog-content, #blogList .blog-card .blog-content{font-size:13px!important;line-height:1.65!important;font-weight:400!important;color:#c4ccdc77;white-space:pre-wrap!important}
 #publicBlogs .blog-card > .small:last-child, #blogs .blog-card > .small:last-child, #blogList .blog-card > .small:last-child{font-size:11px!important;line-height:1.4!important;font-weight:400!important}
 #publicMedia .media-card > h3{font-size:22px!important;line-height:1.3!important;font-weight:800!important}
 #publicMedia .media-card > p.small{font-size:13px!important;line-height:1.5!important;font-weight:400!important}
@@ -2533,7 +2533,7 @@ html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-cs
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;text-shadow:none!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important}
 }
-html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
+html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:#dfbd73!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
 html body.smv-v12-theme .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;padding:10px!important}
 .password-toggle svg{display:block;width:24px;height:24px;flex:0 0 auto;fill:none;stroke:currentcolor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #about{scroll-margin-top:16px}
@@ -2543,7 +2543,7 @@ html body.smv-v12-theme #modal #modalContent .auth-shell button:where(:not(.smv-
 html body.smv-v12-theme #modal #modalContent .auth-shell[data-auth-mode="login"] #submitAuth{background:rgb(230, 0, 102)!important;border-color:rgb(230, 0, 102)!important}
 html body.smv-v12-theme #modal #modalContent #googleAuthBtn{background:rgb(255, 220, 36)!important;color:rgb(48, 34, 0)!important;border-color:rgb(255, 220, 36)!important;width:100%!important;justify-content:center!important}
 html body.smv-v12-theme #modal #modalContent #googleAuthBtn span{color:rgb(48, 34, 0)!important}
-html body.smv-v12-theme #modal #modalContent #passwordToggle, html body.smv-v12-theme #modal #modalContent #passwordToggle:hover, html body.smv-v12-theme #modal #modalContent #passwordToggle:focus, html body.smv-v12-theme #modal #modalContent #passwordToggle:active{background:none transparent!important;border:0px!important;box-shadow:none!important;color:rgb(48, 37, 44)!important;filter:none!important}
+html body.smv-v12-theme #modal #modalContent #passwordToggle, html body.smv-v12-theme #modal #modalContent #passwordToggle:hover, html body.smv-v12-theme #modal #modalContent #passwordToggle:focus, html body.smv-v12-theme #modal #modalContent #passwordToggle:active{background:none transparent!important;border:0px!important;box-shadow:none!important;color:#dfbd73!important;filter:none!important}
 html body.smv-v12-theme #modal #modalContent #passwordToggle:focus-visible{outline:rgb(135, 36, 60) solid 2px!important;outline-offset:1px!important}
 html body.smv-v12-theme #modal #modalContent #passwordToggle svg{background:transparent!important;fill:none!important;stroke:currentcolor!important}
 html body.smv-v12-theme .smv-master-footer-in > div:first-child:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important}
@@ -2611,7 +2611,7 @@ html body.smv-v12-theme :is(#smv-v22-scope, .smv-advanced-shell):is(#smv-v22-sco
 :is(#tamilHoroscopeResult, #englishHoroscopeResult) :is(.adv-section, .card, .panchang-card, .transit-card){margin-top:5px!important;margin-bottom:5px!important;padding-top:7px!important;padding-bottom:7px!important}}
 .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){box-shadow:rgba(110, 38, 20, 0.08) 0px 3px 12px;position:relative!important;display:block!important;width:88px!important;height:88px!important;flex:0 0 auto!important;overflow:hidden!important;border-radius:50%!important;background:rgb(255, 255, 255)!important;margin:0px auto 10px!important;padding:0px!important}
 .smv24-icon img:where(:not(.smv-css-island,.smv-css-island *)){position:absolute!important;max-width:none!important;height:auto!important;transform:none!important;border:0px!important;border-radius:0px!important;margin:0px!important;padding:0px!important}
-html body.smv-v12-theme #askNowSection{background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#f2eddf!important}
+html body.smv-v12-theme #askNowSection{background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;color:#c4ccdc!important}
 html body.smv-v12-theme #askNowSection::before, html body.smv-v12-theme #askNowSection::after{display:none!important}
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(8, minmax(0px, 1fr))!important;gap:18px 10px!important;width:100%!important;max-width:1100px!important;margin:24px auto!important;padding:0px 16px!important;box-sizing:border-box!important;background:transparent!important;}
 html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;min-width:0px!important;color:#f2eddf!important;text-align:center!important;display:block!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
@@ -2871,7 +2871,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-art::after{content:"";position:absolute;inset:0px;pointer-events:none;background:linear-gradient(90deg, rgba(255, 249, 242, 0.3), transparent 24%), linear-gradient(0deg, rgba(68, 28, 17, 0.08), transparent 28%)}
 .smv-master-services{max-width:1260px;margin:0px auto;padding:16px 24px 18px;display:grid;grid-template-columns:repeat(4, minmax(0px, 1fr));gap:13px}
 .smv-products-store-section{max-width:1260px;margin:clamp(22px,3vw,38px) auto 44px;padding:clamp(24px,3.5vw,42px);scroll-margin-top:90px;box-sizing:border-box;border:0;border-radius:0;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);box-shadow:none;text-align:center}
-.smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#9b2640;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+.smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#f3d99b;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
 .smv-products-store-kicker::before,.smv-products-store-kicker::after{width:20px;height:1px;content:"";background:#c6a45c}
 #smv-products-store-section h2{margin:0 0 12px;color:#f3ecdd;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
 .smv-products-store-description{max-width:700px;margin:0 auto;color:#b8c3d4;font:400 14px/1.8 Arial,sans-serif}
@@ -2882,8 +2882,8 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
 .smv-products-logo{display:block;flex:0 0 auto;width:clamp(64px,7.2vw,92px);height:clamp(64px,7.2vw,92px);object-fit:contain;object-position:center;border-radius:50%}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
-#smv-products-store-section .smv-products-item-copy>strong{color:#33232b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
-#smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#8b1c37;font:700 11px/1.4 Arial,sans-serif}
+#smv-products-store-section .smv-products-item-copy>strong{color:#f3d99b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
+#smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#c4ccdc;font:700 11px/1.4 Arial,sans-serif}
 #smv-products-store-section .smv-products-item-copy>span span{font-size:16px}
 .smv-products-store-note{margin:12px 0 0;color:#80757d;font:400 11px/1.6 Arial,sans-serif}
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-radius:0;text-align:center;box-shadow:none;transition:0.2s;text-decoration:none!important;color:#f2eddf!important;background:transparent;}
@@ -3049,8 +3049,8 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 #authBtn{border:1.5px solid rgb(237, 111, 153)!important;color:rgb(192, 0, 58)!important}
 #registerNav{background:linear-gradient(rgb(255, 218, 61), rgb(255, 197, 27))!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(255, 249, 239) 0%, rgba(255, 249, 239, 0.04) 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
-#askNowSection .smv-new-asknow-kicker{color:rgb(255, 8, 112)!important;opacity:1!important}
-#askNowSection #askNowHeading, #askNowSection h2{color:rgb(217, 9, 47)!important;text-shadow:none!important}
+#askNowSection .smv-new-asknow-kicker{color:#f3d99b!important;opacity:1!important}
+#askNowSection #askNowHeading, #askNowSection h2{color:#f3d99b!important;text-shadow:none!important}
 #askNowSection p, #askNowSection .smv-new-asknow-note{opacity:1!important}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21)!important;}
 .smv-master-footer::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:35%;background:linear-gradient(90deg, rgb(133, 11, 20) 0%, rgba(133, 11, 20, 0.18) 38%, rgba(133, 11, 20, 0.02)), url("assets/footer.png") center center / cover no-repeat;opacity:0.92;pointer-events:none}
@@ -3087,12 +3087,12 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
 #askNowSection.smv-new-asknow{background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;background:radial-gradient(ellipse at 8% 38%,rgba(91,102,171,.20),transparent 25rem),linear-gradient(115deg,#101a32,#0b1429 64%,#141a34)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:transparent!important;border-radius:0!important;padding:27px 24px 20px!important;border:0!important;box-shadow:none!important;}
-#askNowSection .smv-new-asknow-kicker{color:rgb(255, 10, 119)!important}
+#askNowSection .smv-new-asknow-kicker{color:#f3d99b!important}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-#askNowSection #askNowHeading, #askNowSection h2{color:rgb(223, 7, 60)!important}
+#askNowSection #askNowHeading, #askNowSection h2{color:#f3d99b!important}
 #askNowSection #askNowHeading:where(:not(.smv-type-root,.smv-type-root *)),
 #askNowSection h2:where(:not(.smv-type-root,.smv-type-root *)){font-family:Georgia, "Times New Roman", serif!important}
-#askNowSection p, #askNowSection .smv-new-asknow-note{color:rgb(23, 23, 23)!important}
+#askNowSection p, #askNowSection .smv-new-asknow-note{color:#c4ccdc!important}
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){background:linear-gradient(rgb(255, 219, 67), rgb(255, 197, 26))!important;color:rgb(37, 26, 0)!important}
 .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){max-width:800px!important;margin:auto!important}
 .smv-master-cat:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-cat b:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
@@ -3424,9 +3424,9 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 #private-consultation .smv-private-consult-meta h4{margin:0px 0px 1px!important}
 #private-consultation .smv-private-consult-description{margin:4px 0px!important}}
 #smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0px!important;padding-left:0px!important;padding-right:0px!important}
-#admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
+#admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
 #admin .smv-admin-nav, #admin .action-row{background:transparent!important;border:0px!important;box-shadow:none!important}
-#admin #astrologerQuizQuestionManager h3, #admin #astrologerQuizQuestionManagerCard h3, #admin [id*="QuizQuestionManager"] h3{color:rgb(230, 0, 0)!important;-webkit-text-fill-color:rgb(230, 0, 0)!important}
+#admin #astrologerQuizQuestionManager h3, #admin #astrologerQuizQuestionManagerCard h3, #admin [id*="QuizQuestionManager"] h3{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 nn #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(#adminAstrologerProfileManagementToggle):not(#astrologerQuizQuestionManagerToggle), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:none rgb(56, 189, 248)!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;border:1px solid rgb(2, 132, 199)!important;border-radius:7px!important;box-shadow:none!important;width:auto!important;min-width:0px!important;min-height:36px!important;height:auto!important;padding:6px 10px!important}
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(#adminAstrologerProfileManagementToggle):not(#astrologerQuizQuestionManagerToggle):hover, #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):hover, #admin input[type="button"]:hover, #admin input[type="submit"]:hover{background:rgb(14, 165, 233)!important;border-color:rgb(3, 105, 161)!important}
 #admin .smv-admin-nav{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;padding:6px 0px!important;margin-bottom:10px!important}
@@ -3492,11 +3492,11 @@ html body.smv-v12-theme #smv-content-hub .smv-v173-subregion.smv-v173-sub-collap
 #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) > div > b:first-child{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;}
 #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small b{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
-#admin .card:not(:has(.smv-notification-row)) .empty{color:rgb(0, 0, 0)!important}
+#admin .card:not(:has(.smv-notification-row)) .empty{color:#c4ccdc!important}
 .smv-workspace-bar > a{text-decoration:none}
-#admin .admin-dashboard-title{margin:0px;color:rgb(255, 20, 147)}
+#admin .admin-dashboard-title{margin:0px;color:#f3d99b}
 #admin .admin-dashboard-subtitle{margin:6px 0px 0px}
-#admin > .card > h3, #admin > .card > h4, #admin > .card > div > h3, #admin > .card > div > h4, #admin #adminContentManager > h3, #admin #adminContentManager .card > h4, #admin #smvOpenWorkflowControl > h3, #admin #adminPrivateRefundMonitor > h3{color:rgb(230, 0, 0)}
+#admin > .card > h3, #admin > .card > h4, #admin > .card > div > h3, #admin > .card > div > h4, #admin #adminContentManager > h3, #admin #adminContentManager .card > h4, #admin #smvOpenWorkflowControl > h3, #admin #adminPrivateRefundMonitor > h3{color:#f3d99b}
 .smv-notification-row{padding:10px 0px;border-bottom:1px solid rgb(232, 225, 215)}
 .smv-notification-row:last-child{border-bottom:0px}
 .smv-notification-title{margin:0px 0px 3px;font-size:1rem;line-height:1.3;font-weight:700;color:rgb(21, 21, 21)}
@@ -3578,7 +3578,7 @@ html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-chi
 @media (max-width: 760px){
 html body.smv-v12-theme #smv-content-hub{width:100%!important;max-width:100%!important;margin-left:auto!important;margin-right:auto!important;padding-left:16px!important;padding-right:16px!important;box-sizing:border-box!important}
 html body.smv-v12-theme #smv-content-hub > .feature-shell.card, html body.smv-v12-theme #smv-content-hub .smv-v173-subregion, html body.smv-v12-theme #smv-content-hub #publicBlogs, html body.smv-v12-theme #smv-content-hub #publicMedia, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid{width:100%!important;max-width:100%!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
-#admin .admin-dashboard-title{color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
+#admin .admin-dashboard-title{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 @media (max-width: 650px){
 html body #admin #quizQuestionList [data-qcard] > .action-row{display:grid!important;grid-template-columns:minmax(0px, 1fr) minmax(0px, 1fr)!important;gap:10px!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:0px!important;margin-left:0px!important;margin-right:0px!important}
 html body #admin #quizQuestionList [data-qcard] > .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[data-qsave], html body #admin #quizQuestionList [data-qcard] > .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[data-qdelete]{width:100%!important;min-width:0px!important;max-width:100%!important;margin:0px!important;box-sizing:border-box!important;justify-self:stretch!important}}
@@ -3663,16 +3663,16 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 #dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-subheading:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-description-body > p:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-edit-disabled:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
 #dashboardContent .smv-astrologer-dashboard .smv-history-content:where(:not(.smv-css-island,.smv-css-island *)){color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
-#admin .card:not(:has(.smv-notification-row)) > h3, #admin .card:not(:has(.smv-notification-row)) > h4, #admin section:not(:has(.smv-notification-row)) > h3{color:rgb(255, 20, 147)!important}
-#admin .card:not(:has(.smv-notification-row)) > p, #admin .card:not(:has(.smv-notification-row)) > .small, #admin .card:not(:has(.smv-notification-row)) > label{color:rgb(0, 0, 0)!important}
+#admin .card:not(:has(.smv-notification-row)) > h3, #admin .card:not(:has(.smv-notification-row)) > h4, #admin section:not(:has(.smv-notification-row)) > h3{color:#f3d99b!important}
+#admin .card:not(:has(.smv-notification-row)) > p, #admin .card:not(:has(.smv-notification-row)) > .small, #admin .card:not(:has(.smv-notification-row)) > label{color:#c4ccdc!important}
 #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .small{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) p, #admin :is(#adminPendingQuestions, #adminAnswers, #adminRefunds, #adminQuestions) .smv-customer-answer-text, #admin textarea{color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
-#admin label{color:rgb(17, 17, 17)!important}
+#admin label{color:#f2eddf!important}
 #admin input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), #admin select{min-height:36px!important;height:36px!important;padding:6px 9px!important;margin:4px 0px 8px!important;border-radius:6px!important}
 #admin textarea{min-height:82px!important;padding:7px 9px!important;margin:4px 0px 8px!important;border-radius:6px!important}
 #admin .action-row{gap:6px!important;margin:6px 0px!important}
 #admin .grid{gap:8px!important}
-#admin .card:has(#adminPrivateNotifications) > p.small{color:rgb(0, 0, 0)!important}
+#admin .card:has(#adminPrivateNotifications) > p.small{color:#c4ccdc!important}
 #adminPrivateNotifications .smv-notification-title{color:rgb(176, 0, 0)!important}
 #adminPrivateNotifications .smv-notification-content{color:rgb(0, 0, 0)!important}
 #adminPrivateNotifications .smv-notification-meta{color:rgb(32, 32, 32)!important}
@@ -3737,7 +3737,7 @@ html body #private-consultation button.smv-compact-control:disabled{opacity:0.5;
 #admin .admin-dashboard-title{width:100%!important;margin:0 auto!important;text-align:center!important}
 #admin .admin-dashboard-subtitle{width:100%!important;max-width:760px!important;margin:6px auto 0!important;text-align:center!important}
 #admin .smv-admin-shortcuts{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px 10px!important;width:min(100%,760px)!important;max-width:760px!important;margin:12px auto 16px!important;padding:0 8px!important;box-sizing:border-box!important;align-items:stretch!important;justify-items:stretch!important;justify-content:center!important}
-html body #admin button.smv-admin-shortcut{display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;height:44px!important;min-height:44px!important;max-height:none!important;margin:0!important;padding:4px 2px!important;border:0!important;border-bottom:2px solid rgb(224,196,137)!important;border-radius:0!important;background:transparent!important;color:rgb(158,20,31)!important;-webkit-text-fill-color:rgb(158,20,31)!important;font-size:clamp(10px,1.05vw,12px)!important;font-weight:700!important;line-height:1.12!important;text-align:center!important;white-space:normal!important;overflow:visible!important;overflow-wrap:normal!important;word-break:normal!important;text-wrap:balance;aspect-ratio:auto!important;box-shadow:none!important;cursor:pointer!important;flex:none!important}
+html body #admin button.smv-admin-shortcut{display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;height:44px!important;min-height:44px!important;max-height:none!important;margin:0!important;padding:4px 2px!important;border:0!important;border-bottom:2px solid rgb(224,196,137)!important;border-radius:0!important;background:transparent!important;color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;font-size:clamp(10px,1.05vw,12px)!important;font-weight:700!important;line-height:1.12!important;text-align:center!important;white-space:normal!important;overflow:visible!important;overflow-wrap:normal!important;word-break:normal!important;text-wrap:balance;aspect-ratio:auto!important;box-shadow:none!important;cursor:pointer!important;flex:none!important}
 html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-admin-shortcut:focus-visible{background:rgb(255,250,240)!important;color:rgb(123,12,23)!important;-webkit-text-fill-color:rgb(123,12,23)!important;border-bottom-color:rgb(158,20,31)!important;outline:0!important}
 #admin :is(#adminPendingQuestions,#adminPrivatePending,#adminAnswers,#adminRefunds,#adminOffersPromotions,#adminWithdrawals,#adminHoroscopePriceSet,#adminCommissionSettings){scroll-margin-top:100px}
 @media (max-width:700px){#admin > .card:first-child > div:first-child > div{max-width:100%!important}#admin .admin-dashboard-title,#admin .admin-dashboard-subtitle{text-align:center!important}#admin .smv-admin-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 8px!important;width:min(100%,520px)!important;max-width:520px!important;margin:10px auto 15px!important;padding:0 8px!important}html body #admin button.smv-admin-shortcut{height:48px!important;min-height:48px!important;padding:4px 1px!important;font-size:clamp(8.5px,2.42vw,10.25px)!important;line-height:1.08!important;letter-spacing:-0.08px!important}}
@@ -3777,11 +3777,11 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 [data-smv-question-id]:focus{outline:2px solid #b8860b;outline-offset:5px}
 #dashboardContent .card,#admin .card{box-shadow:none!important;border:0!important;background:transparent!important;padding-left:0;padding-right:0}
 #dashboardContent h2::before,#dashboardContent h2::after,#dashboardContent h3::before,#dashboardContent h3::after,#admin h2::before,#admin h2::after,#admin h3::before,#admin h3::after{content:none}
-#dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#e00000;margin:18px 0 14px}
+#dashboardContent .withdrawal-history-title{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.15;color:#f3d99b;margin:18px 0 14px}
 #dashboardContent .smv-profile-expertise{font-size:15px;font-weight:600;letter-spacing:.01em;margin:7px 0}
-#dashboardContent .smv-profile-experience{font-size:14px;font-weight:500;color:#333;margin:7px 0}
-#dashboardContent .smv-profile-main-description{font-size:13px;line-height:1.65;color:#454545;max-width:70ch;margin:8px 0}
-#dashboardContent .smv-profile-edit-disabled{font-size:12px;line-height:1.5;color:#666;margin:10px 0 0}
+#dashboardContent .smv-profile-experience{font-size:14px;font-weight:500;color:#f2eddf;margin:7px 0}
+#dashboardContent .smv-profile-main-description{font-size:13px;line-height:1.65;color:#f2eddf;max-width:70ch;margin:8px 0}
+#dashboardContent .smv-profile-edit-disabled{font-size:12px;line-height:1.5;color:#c4ccdc;margin:10px 0 0}
 #dashboardContent .smv-inline-profile-editor{margin-top:14px;max-width:720px}
 #dashboardContent .smv-inline-profile-editor textarea{width:100%;box-sizing:border-box;margin:7px 0 8px}
 #admin .card,#admin .grid>*{min-width:0;overflow-wrap:anywhere;word-break:break-word}
