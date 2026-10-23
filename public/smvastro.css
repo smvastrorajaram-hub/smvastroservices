@@ -3858,12 +3858,12 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     height:72px!important;
     max-width:none!important;
     margin:0 auto 2px!important;
-    padding:0!important;
-    object-fit:cover!important;
+    padding:3px!important;
+    object-fit:contain!important;
     object-position:center!important;
     border:2px solid #f2d48b!important;
     border-radius:50%!important;
-    background:transparent!important;
+    background:#fffaf0!important;
     box-shadow:none!important;
     filter:none!important;
     transform:none!important;
