@@ -75,7 +75,8 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
 
 test('Manual authoring and mode selection are isolated to a Firebase-admin-protected Calendar page', () => {
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
-  assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs|calendar\/admin\.html/);
+  assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
+  assert.match(calendarIndexSource, /href="\.\/admin\.html"/);
   assert.match(adminPageSource, /id="mode"/);
   assert.match(adminPageSource, /id="publish"/);
   assert.match(adminModuleSource, /signInWithEmailAndPassword/);
