@@ -2,7 +2,8 @@ import { getSwe, C as SWE } from './offline/wasm-provider.mjs';
 import { solarNoaa } from './offline/transit_panchang.browser.mjs';
 import { offsetMinutesAt } from './offline/places/timezone.mjs';
 import { signs, transitReading } from './calendar-data.mjs';
-import { RASI_PALAN_PLANETS, RASI_PALAN_TITLES, signIndex, houseFromRasi, periodReference, readingKey, selectReading } from './calendar-rasi-palan-rules.mjs?v=20261024-current-week-v2';
+import { RASI_PALAN_PLANETS, RASI_PALAN_TITLES, signIndex, houseFromRasi, readingKey, selectReading } from './calendar-rasi-palan-rules.mjs';
+import { periodReference } from './calendar/rasi-palan-periods.mjs?v=20261024-current-week-v2';
 
 const calendarHost = document.getElementById('smvDailyCalendar');
 if (calendarHost && calendarHost.parentElement && !document.getElementById('calRasiPalan')) {
