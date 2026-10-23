@@ -7,6 +7,8 @@ import {
   signIndex,
   houseFromRasi,
   mondayOf,
+  sundayOf,
+  lastCompletedWeek,
   periodReference,
   readingKey,
   selectReading
@@ -32,11 +34,14 @@ test('Sidereal longitudes normalize and house counting from the selected Rasi is
   assert.equal(houseFromRasi(11, 0), 12);
 });
 
-test('Selected daily, weekly and monthly dates normalize to the intended period anchor', () => {
-  assert.deepEqual(periodReference('daily', '2026-10-24'), {date:'2026-10-24',key:'2026-10-24'});
+test('Daily is fixed to the supplied current date; weekly uses the last complete Sunday–Saturday and monthly uses the full current month', () => {
+  assert.deepEqual(periodReference('daily', '2026-10-24'), {date:'2026-10-24',key:'2026-10-24',start:'2026-10-24',end:'2026-10-24'});
   assert.equal(mondayOf('2026-10-24'), '2026-10-19');
-  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-19',key:'2026-10-19'});
-  assert.deepEqual(periodReference('monthly', '2026-10-24'), {date:'2026-10-01',key:'2026-10'});
+  assert.equal(sundayOf('2026-10-24'), '2026-10-18');
+  assert.deepEqual(lastCompletedWeek('2026-10-24'), {start:'2026-10-11',end:'2026-10-17'});
+  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-11',key:'2026-10-11',start:'2026-10-11',end:'2026-10-17'});
+  assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-18',key:'2026-10-18',start:'2026-10-18',end:'2026-10-24'});
+  assert.deepEqual(periodReference('monthly', '2026-10-24'), {date:'2026-10-01',key:'2026-10',start:'2026-10-01',end:'2026-10-31'});
 });
 
 test('Published bilingual text is keyed separately, and Hybrid prefers published manual then automatic fallback', () => {
@@ -64,6 +69,17 @@ test('Calendar daily Rasi Palan has no separate Moon transit prediction and show
   assert.match(dailyCalendarSource, /ps\.filter\(x=>x\.name!=='Moon'\)\.map\(x=>/);
 });
 
+test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
+  assert.doesNotMatch(publicRasiPalanSource, /id="rpDate"|#rpDate|id="rpYear"|#rpYear|Choose a date first/);
+  assert.match(publicRasiPalanSource, /lastCompletedWeek|periodReference/);
+  assert.match(publicRasiPalanSource, /Day: |நாள்: /);
+  assert.match(publicRasiPalanSource, /Week: |வாரம்: /);
+  assert.match(publicRasiPalanSource, /Month: |மாதம்: /);
+  assert.match(publicRasiPalanSource, /publishedTargetYear/);
+  assert.match(adminModuleSource, /targetYear/);
+  assert.match(adminModuleSource, /targetEventDate/);
+});
+
 test('Public Calendar does not expose prediction mode, editor/export, or the removed calculation note', () => {
   assert.doesNotMatch(publicRasiPalanSource, /Prediction mode|பலன் முறை/);
   assert.doesNotMatch(publicRasiPalanSource, /Manual Entry editor|கையேடு பதிவு திருத்தி/);
@@ -88,6 +104,12 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /saturnTransit/);
   assert.match(adminModuleSource, /rahuKetuTransit/);
   assert.doesNotMatch(adminModuleSource, /daily:|weekly:|monthly:/);
+});
+
+test('Planetary ingress section computes only the latest past transit per planet group, never a future ingress list', () => {
+  assert.match(publicRasiPalanSource, /async function findLastIngress\(body, asOfDate, cfg\)/);
+  assert.match(publicRasiPalanSource, /Showing only the latest past ingress for each group/);
+  assert.doesNotMatch(publicRasiPalanSource, /events\.filter\(e => e\.date >= start/);
 });
 
 test('Public calendar takes published mode/data from Firestore online and uses bundled JSON offline', () => {

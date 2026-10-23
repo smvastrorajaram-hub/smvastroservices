@@ -35,6 +35,9 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   let publishedEntries = {};
   let publishedLoadError = false;
   let publishedMode = 'hybrid';
+  let publishedTargetYear = Number(defaultDate().slice(0, 4));
+  let publishedTargetType = '';
+  let publishedTargetEventDate = '';
   let publishedManualReady = Promise.resolve();
   const ingressCache = new Map();
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
@@ -49,6 +52,11 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const parts = String(date).slice(0, 10).split('-').map(Number);
     if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return String(date);
     return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  };
+  const weekdayName = date => {
+    const parts = String(date).slice(0, 10).split('-').map(Number);
+    if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return '';
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { weekday: 'long', timeZone: 'UTC' });
   };
   function getLocation() {
     try {
@@ -138,16 +146,26 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   async function runPeriodForecast() {
     const cfg = getLocation();
-    const dateRef = periodReference(state.period, state.date);
-    const periodKey = dateRef.key;
+    const anchorDate = defaultDate();
+    const dateRef = periodReference(state.period, anchorDate);
     const calc = await chartAtSunrise(dateRef.date, cfg);
     const positions = positionsFromChart(calc.chart);
     if (positions.planets.some(p => p.sign == null)) throw new Error(L('Swiss Ephemeris did not return all eight required transit planets.', 'Swiss Ephemeris எட்டு கோச்சார கிரகங்களின் நிலைகளையும் வழங்கவில்லை.'));
-    return { type: state.period, periodKey, referenceDate: dateRef.date, sunrise: calc.sunrise, fallbackSunrise: calc.fallback, positions, kind: 'rasi' };
+    return {
+      type: state.period,
+      periodKey: dateRef.key,
+      referenceDate: dateRef.date,
+      periodStart: dateRef.start || dateRef.date,
+      periodEnd: dateRef.end || dateRef.date,
+      sunrise: calc.sunrise,
+      fallbackSunrise: calc.fallback,
+      positions,
+      kind: 'rasi'
+    };
   }
   async function runNewYearForecast(which) {
     const cfg = getLocation();
-    const year = Number(state.year);
+    const year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     let result;
     if (which === 'tamilNewYear') result = await tamilNewYearSunrise(year, cfg);
     else {
@@ -167,79 +185,58 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const d = new Date(ms);
     return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
   };
-  async function findIngresses(year, cfg) {
-    const cacheKey = [year, cfg.lat, cfg.lon, cfg.offset, cfg.timezone].join('|');
-    if (ingressCache.has(cacheKey)) return ingressCache.get(cacheKey);
-    const start = year <= 1800 ? '1800-01-01' : String(year - 1) + '-12-01';
-    const end = year >= 2399 ? '2399-12-31' : String(year + 1) + '-02-01';
-    const startMs = dateSerial(start);
-    const endMs = dateSerial(end);
-    const stepMs = 5 * 86400000;
-    const result = [];
-    for (const body of ['Jupiter', 'Saturn', 'Rahu']) {
-      let previousMs = startMs;
-      let previousChart = await chartAtLocalTime(serialDate(previousMs), '12:00', cfg);
-      let previousPositions = positionsFromChart(previousChart);
-      let previousSign = previousPositions.planets.find(p => p.key === body).sign;
-      for (let sampleMs = startMs + stepMs; sampleMs <= endMs + stepMs; sampleMs += stepMs) {
-        const boundedMs = Math.min(sampleMs, endMs);
-        const sampleDate = serialDate(boundedMs);
-        const sampleChart = await chartAtLocalTime(sampleDate, '12:00', cfg);
-        const samplePositions = positionsFromChart(sampleChart);
-        const sampleSign = samplePositions.planets.find(p => p.key === body).sign;
-        if (sampleSign != null && previousSign != null && sampleSign !== previousSign) {
-          let lo = previousMs, hi = boundedMs;
-          for (let iter = 0; iter < 18 && hi - lo > 60000; iter++) {
-            const mid = Math.floor((lo + hi) / 2);
-            const midChart = await chartAtLocalTime(serialDate(mid), serialTime(mid), cfg);
-            const midPositions = positionsFromChart(midChart);
-            const midSign = midPositions.planets.find(p => p.key === body).sign;
-            if (midSign === previousSign) lo = mid; else hi = mid;
-          }
-          const eventDate = serialDate(hi);
-          const eventTime = serialTime(hi);
-          const eventChart = await chartAtLocalTime(eventDate, eventTime, cfg);
-          const eventPositions = positionsFromChart(eventChart);
-          const newSign = eventPositions.planets.find(p => p.key === body).sign;
-          const dedupe = body + '|' + eventDate + '|' + previousSign + '|' + newSign;
-          if (newSign != null && !result.some(x => x.id === dedupe)) {
-            result.push({ id: dedupe, body, date: eventDate, time: eventTime, previousSign, newSign, chart: eventChart, positions: eventPositions });
-          }
-          previousSign = sampleSign;
-        } else if (sampleSign != null) {
-          previousSign = sampleSign;
+  async function findLastIngress(body, asOfDate, cfg) {
+    const lookbackDays = body === 'Saturn' ? 1600 : body === 'Jupiter' ? 950 : 900;
+    const stepMs = 10 * 86400000;
+    const asOfMs = dateSerial(asOfDate);
+    const asOfChart = await chartAtLocalTime(asOfDate, '12:00', cfg);
+    let newerMs = asOfMs;
+    let newerSign = positionsFromChart(asOfChart).planets.find(p => p.key === body)?.sign;
+    if (newerSign == null) return null;
+    const earliestMs = Math.max(dateSerial('1800-01-01'), asOfMs - lookbackDays * 86400000);
+    for (let olderMs = asOfMs - stepMs; olderMs >= earliestMs; olderMs -= stepMs) {
+      const olderChart = await chartAtLocalTime(serialDate(olderMs), '12:00', cfg);
+      const olderSign = positionsFromChart(olderChart).planets.find(p => p.key === body)?.sign;
+      if (olderSign == null) continue;
+      if (olderSign !== newerSign) {
+        let lo = olderMs, hi = newerMs;
+        for (let iter = 0; iter < 18 && hi - lo > 60000; iter++) {
+          const mid = Math.floor((lo + hi) / 2);
+          const midChart = await chartAtLocalTime(serialDate(mid), serialTime(mid), cfg);
+          const midSign = positionsFromChart(midChart).planets.find(p => p.key === body)?.sign;
+          if (midSign === olderSign) lo = mid;
+          else hi = mid;
         }
-        previousMs = boundedMs;
-        previousChart = sampleChart;
-        previousPositions = samplePositions;
-        if (boundedMs === endMs) break;
+        const eventDate = serialDate(hi);
+        const eventTime = serialTime(hi);
+        const eventChart = await chartAtLocalTime(eventDate, eventTime, cfg);
+        const eventPositions = positionsFromChart(eventChart);
+        const newSign = eventPositions.planets.find(p => p.key === body)?.sign;
+        if (newSign == null) return null;
+        return { id: body + '|' + eventDate + '|' + olderSign + '|' + newSign, body, date: eventDate, time: eventTime, previousSign: olderSign, newSign, positions: eventPositions };
       }
+      newerMs = olderMs;
+      newerSign = olderSign;
     }
-    result.sort((a, b) => a.date.localeCompare(b.date) || a.body.localeCompare(b.body));
-    for (let i = 0; i < result.length; i++) {
-      const next = result.slice(i + 1).find(x => x.body === result[i].body);
-      result[i].ends = next ? next.date : end;
-    }
-    ingressCache.set(cacheKey, result);
-    return result;
+    return null;
   }
   async function runIngressForecast() {
     const cfg = getLocation();
-    const year = Number(state.year);
-    const events = await findIngresses(year, cfg);
-    const start = String(year) + '-01-01';
-    const end = String(year) + '-12-31';
-    const byBody = {};
-    for (const body of ['Jupiter', 'Saturn', 'Rahu']) {
-      const rows = events.filter(e => e.body === body);
-      const previous = rows.filter(e => e.date < start).slice(-1)[0];
-      const within = rows.filter(e => e.date >= start && e.date <= end);
-      byBody[body] = [...(previous ? [previous] : []), ...within].map(e => {
-        const next = rows.find(n => n.date > e.date);
-        return { ...e, ends: next ? next.date : e.ends || end };
-      });
-    }
-    return { type: 'ingress', year, byBody, kind: 'ingress' };
+    const today = defaultDate();
+    // The Admin can pin an earlier reference date; future transit dates are never shown.
+    const asOfDate = publishedTargetEventDate && publishedTargetEventDate <= today ? publishedTargetEventDate : today;
+    const [jupiter, saturn, rahu] = await Promise.all([
+      findLastIngress('Jupiter', asOfDate, cfg),
+      findLastIngress('Saturn', asOfDate, cfg),
+      findLastIngress('Rahu', asOfDate, cfg)
+    ]);
+    return {
+      type: 'ingress',
+      year: publishedTargetYear,
+      asOfDate,
+      byBody: { Jupiter: jupiter ? [jupiter] : [], Saturn: saturn ? [saturn] : [], Rahu: rahu ? [rahu] : [] },
+      kind: 'ingress'
+    };
   }
   function entryFor(result, rasiIndex, planetKey, language) {
     return readingKey(result.type, result.periodKey, rasiIndex, planetKey, language);
@@ -279,10 +276,17 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     }).join('');
     const title = result.type === 'tamilNewYear' ? RASI_PALAN_TITLES.tamilNewYear[language]
       : result.type === 'englishNewYear' ? RASI_PALAN_TITLES.englishNewYear[language]
+      : result.type === 'daily' ? L('Daily Rasi Palan', 'தினசரி ராசி பலன்கள்')
+      : result.type === 'weekly' ? L('Weekly Rasi Palan', 'வாரம் பலன்கள்')
+      : result.type === 'monthly' ? L('Monthly Rasi Palan', 'மாத ராசி பலன்கள்')
       : L('Rasi Palan', 'ராசி பலன்கள்');
-    let context = L('Reference: ', 'கணக்கீட்டு அடிப்படை: ') + fmtDate(result.referenceDate) +
-      ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise +
-      ' · ' + getLocation().place;
+    let context;
+    if (result.type === 'daily') context = L('Day: ', 'நாள்: ') + weekdayName(result.referenceDate) + ' · ' + fmtDate(result.referenceDate);
+    else if (result.type === 'weekly') context = L('Week: ', 'வாரம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+    else if (result.type === 'monthly') context = L('Month: ', 'மாதம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+    else context = L('Reference: ', 'கணக்கீட்டு அடிப்படை: ') + fmtDate(result.referenceDate) +
+      (result.type === 'tamilNewYear' ? ' · ' + L('Chithirai 1', 'சித்திரை 1') : result.type === 'englishNewYear' ? ' · ' + L('January 1', 'ஜனவரி 1') : '');
+    context += ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
     if (result.fallbackSunrise) context += ' · ' + L('Sunrise unavailable; local noon used as fallback.', 'சூரிய உதயம் கிடைக்காததால் உள்ளூர் நண்பகல் மாற்றாகப் பயன்படுத்தப்பட்டது.');
     if (result.moonSign != null) context += ' · ' + L('Moon sign at sunrise: ', 'சூரிய உதயச் சந்திர ராசி: ') + rasiLabel(result.moonSign);
     return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div></div>' + cards;
@@ -290,20 +294,19 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   function ingressType(body) {
     return body === 'Jupiter' ? 'jupiterTransit' : body === 'Saturn' ? 'saturnTransit' : 'rahuKetuTransit';
   }
-  function renderIngressEvent(event, groupBody) {
+  function renderIngressEvent(event, groupBody, asOfDate) {
     const positions = event.positions;
     const bodies = groupBody === 'Rahu' ? ['Rahu', 'Ketu'] : [groupBody];
     const res = { type: ingressType(groupBody), periodKey: event.date, positions };
-    const rangeEnd = event.ends || '—';
     const oldSigns = groupBody === 'Rahu'
       ? L('Rahu ', 'ராகு ') + rasiLabel(event.previousSign) + ' / ' + L('Ketu ', 'கேது ') + rasiLabel((event.previousSign + 6) % 12)
       : rasiLabel(event.previousSign);
     const newSigns = groupBody === 'Rahu'
       ? L('Rahu ', 'ராகு ') + rasiLabel(event.newSign) + ' / ' + L('Ketu ', 'கேது ') + rasiLabel((event.newSign + 6) % 12)
       : rasiLabel(event.newSign);
-    const eventMeta = L('Calculated ingress: ', 'கணக்கிடப்பட்ட பெயர்ச்சி: ') + fmtDate(event.date) + ' · ' + esc(event.time) +
+    const eventMeta = L('Last ingress: ', 'கடைசியாக நடந்த பெயர்ச்சி: ') + fmtDate(event.date) + ' · ' + esc(event.time) +
       ' · ' + L('From ', 'முந்தைய ராசி ') + oldSigns + ' ' + L('to ', '→ புதிய ராசி ') + newSigns +
-      ' · ' + L('Applicable until ', 'பொருந்தும் காலம் ') + fmtDate(rangeEnd);
+      ' · ' + L('As of ', 'கணக்கீட்டு நாள் ') + fmtDate(asOfDate);
     const cards = rasiLabels.map((rasi, rasiIndex) => {
       const items = bodies.map(body => {
         const p = positions.planets.find(x => x.key === body);
@@ -320,15 +323,15 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       { key: 'Saturn', ta: 'சனி', en: 'Saturn' },
       { key: 'Rahu', ta: 'ராகு–கேது', en: 'Rahu–Ketu' }
     ];
-    return '<div class="rp-results-title"><div><h3>' + esc(L('Jupiter, Saturn and Rahu–Ketu Transit Predictions', 'குரு, சனி, ராகு–கேது பெயர்ச்சி பலன்கள்')) + ' · ' + result.year + '</h3><p>' +
-      esc(L('Each ingress date, previous/new sign and effective interval are computed from local Swiss Ephemeris positions.', 'ஒவ்வொரு பெயர்ச்சி தேதியும் முந்தைய/புதிய ராசியும் பொருந்தும் காலமும் உள்ளூர் Swiss Ephemeris கிரக நிலைகளிலிருந்து கணக்கிடப்படுகின்றன.')) +
+    return '<div class="rp-results-title"><div><h3>' + esc(L('Jupiter, Saturn and Rahu–Ketu Transit Predictions', 'குரு, சனி, ராகு–கேது பெயர்ச்சி பலன்கள்')) + '</h3><p>' +
+      esc(L('Showing only the latest past ingress for each group; future transits are not displayed. ', 'ஒவ்வொரு பிரிவிலும் கடைசியாக நடந்த பெயர்ச்சி மட்டும் காட்டப்படும்; எதிர்கால பெயர்ச்சிகள் காட்டப்படாது. ') + L('As of ', 'கணக்கீட்டு நாள்: ') + fmtDate(result.asOfDate)) +
       '</p></div></div>' +
       config.map(group => {
         const events = result.byBody[group.key] || [];
         if (!events.length) return '<section class="rp-ingress-group"><h4>' + esc(isTamil() ? group.ta : group.en) + '</h4><p>' +
-          esc(L('No calculated ingress intersects this year window.', 'இந்த ஆண்டு கால வரம்பில் கணக்கிடப்பட்ட பெயர்ச்சி இல்லை.')) + '</p></section>';
+          esc(L('No earlier ingress could be calculated in the supported range.', 'கணக்கீட்டு வரம்பில் முந்தைய பெயர்ச்சியைக் கணக்கிட முடியவில்லை.')) + '</p></section>';
         return '<section class="rp-ingress-group"><h4>' + esc(isTamil() ? group.ta : group.en) + '</h4>' +
-          events.map(e => renderIngressEvent(e, group.key)).join('') + '</section>';
+          events.map(e => renderIngressEvent(e, group.key, result.asOfDate)).join('') + '</section>';
       }).join('');
   }
   function setStatus(message, error) {
@@ -338,7 +341,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     el.classList.toggle('is-error', !!error);
   }
   function renderControls() {
-    const date = state.date;
     root.innerHTML = '<div class="rp-heading"><div><p class="rp-eyebrow">SMV CALENDAR</p><h2>' + esc(L('Rasi Palan & Planetary Transits', 'ராசி பலன்கள் & கிரக கோச்சாரம்')) + '</h2><p>' +
       esc(L('Daily, weekly, monthly, Tamil New Year, English New Year and dedicated ingress predictions.', 'தினசரி, வார, மாத, தமிழ் வருடப் பிறப்பு, ஆங்கில வருடப் பிறப்பு மற்றும் தனிப்பட்ட பெயர்ச்சி பலன்கள்.')) + '</p></div></div>' +
       '<div class="rp-tabs" role="tablist" aria-label="Rasi Palan type">' +
@@ -348,35 +350,18 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       '<button type="button" data-section="ingress" class="' + (state.section === 'ingress' ? 'is-active' : '') + '">' + esc(L('Jupiter / Saturn / Rahu–Ketu', 'குரு / சனி / ராகு–கேது')) + '</button></div>' +
       '<div class="rp-toolbar">' +
       '<label class="rp-period-control">' + esc(L('Period', 'கால அளவு')) + '<select id="rpPeriod"><option value="daily">' + esc(L('Daily', 'தினசரி')) + '</option><option value="weekly">' + esc(L('Weekly', 'வாரம்')) + '</option><option value="monthly">' + esc(L('Monthly', 'மாதம்')) + '</option></select></label>' +
-      '<label>' + esc(L('Date', 'தேதி')) + '<input id="rpDate" type="date" min="1800-01-01" max="2399-12-31" value="' + esc(date) + '"></label>' +
-      '<label class="rp-year-control">' + esc(L('Year', 'ஆண்டு')) + '<input id="rpYear" type="number" min="1800" max="2399" step="1" value="' + state.year + '"></label>' +
-      '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Calculate / Show', 'கணக்கிட்டு காண்பி')) + '</button></div>' +
+      '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Show predictions', 'பலன்களைக் காண்பி')) + '</button></div>' +
       '<p id="rpStatus" class="rp-status" role="status"></p>' +
       '<div id="rpResults" aria-live="polite"></div>';
     $('#rpPeriod').value = state.period;
     const periodControl = $('.rp-period-control');
-    const dateControl = $('#rpDate').parentElement;
-    const yearControl = $('.rp-year-control');
     periodControl.hidden = state.section !== 'period';
-    dateControl.hidden = state.section !== 'period';
-    yearControl.hidden = state.section === 'period';
     root.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => {
       state.section = button.dataset.section;
       renderControls();
       if (state.lastResult) renderLastResult();
     }));
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
-    $('#rpDate').addEventListener('change', () => {
-      state.date = $('#rpDate').value;
-      if (state.date) {
-        state.year = Number(state.date.slice(0, 4));
-        $('#rpYear').value = state.year;
-      }
-    });
-    $('#rpYear').addEventListener('change', () => {
-      state.year = Math.max(1800, Math.min(2399, Number($('#rpYear').value) || new Date().getUTCFullYear()));
-      $('#rpYear').value = state.year;
-    });
     $('#rpRun').addEventListener('click', run);
   }
   function renderLastResult() {
@@ -388,9 +373,8 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   async function run() {
     await publishedManualReady;
-    state.date = $('#rpDate') ? $('#rpDate').value : state.date;
-    state.year = $('#rpYear') ? Number($('#rpYear').value) : state.year;
-    if (state.section === 'period' && !state.date) return setStatus(L('Choose a date first.', 'முதலில் தேதியைத் தேர்வு செய்யவும்.'), true);
+    state.date = defaultDate();
+    state.year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     setStatus(L('Calculating with the local Swiss Ephemeris engine…', 'உள்ளூர் Swiss Ephemeris மூலம் கணக்கிடப்படுகிறது…'), false);
     $('#rpRun').disabled = true;
     try {
@@ -413,6 +397,12 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const accept = data => {
       publishedEntries = data && data.entries && typeof data.entries === 'object' ? data.entries : {};
       publishedMode = ['automatic', 'manual', 'hybrid'].includes(data && data.mode) ? data.mode : 'hybrid';
+      const candidateYear = Number(data && data.targetYear);
+      publishedTargetYear = Number.isInteger(candidateYear) && candidateYear >= 1800 && candidateYear <= 2399
+        ? candidateYear : Number(defaultDate().slice(0, 4));
+      publishedTargetType = String(data && data.targetType || '');
+      const candidateDate = String(data && data.targetEventDate || '');
+      publishedTargetEventDate = /^\d{4}-\d{2}-\d{2}$/.test(candidateDate) ? candidateDate : '';
     };
     if (navigator.onLine) {
       try {

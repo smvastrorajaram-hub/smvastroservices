@@ -41,22 +41,26 @@ try {
     title: document.title,
     lang: document.documentElement.lang,
     modeControl: Boolean(document.querySelector('#rpMode')),
+    dateControl: Boolean(document.querySelector('#rpDate')),
+    yearControl: Boolean(document.querySelector('#rpYear')),
     editor: Boolean(document.querySelector('.rp-manual-editor')),
     exportControl: Boolean(document.querySelector('#rpExport')),
     givenNote: document.body.innerText.includes('தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்'),
     tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim())
   }));
   assert.equal(publicUi.modeControl, false, 'Public Calendar must not show the prediction mode selector');
+  assert.equal(publicUi.dateControl, false, 'Customers must not be able to change the Rasi Palan date');
+  assert.equal(publicUi.yearControl, false, 'Customers must not be able to change the Rasi Palan year');
   assert.equal(publicUi.editor, false, 'Public Calendar must not show the manual editor');
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
 
-  // Validate public Daily mode first.
+  // Daily is fixed to the current day and includes its weekday.
   await page.click('#calRasiPalan [data-section="period"]');
   await page.select('#calRasiPalan #rpPeriod', 'daily');
-  const periodControl = await page.$eval('#calRasiPalan #rpDate', el => !el.parentElement.hidden);
-  assert.equal(periodControl, true, 'Daily date picker should be visible');
+  assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'There must be no customer date picker');
+  assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'There must be no customer year control');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 12, { timeout: 30000 });
@@ -64,6 +68,23 @@ try {
   const dailyReadings = await page.$$eval('#calRasiPalan .rp-planet h5', nodes => nodes.map(n => n.textContent.trim()));
   assert.equal(dailyReadings.length, 96, 'Daily output should be 12 Rasis × eight planets');
   assert.ok(!dailyReadings.some(x => /Moon|சந்திரன்/i.test(x)), 'Daily predictions must not show Moon as a transit planet');
+  const dailyContext = await page.$eval('#calRasiPalan .rp-results-title p', el => el.textContent);
+  assert.ok(/Day:|நாள்:/.test(dailyContext), 'Daily reading should display its fixed weekday and date');
+  await page.select('#calRasiPalan #rpPeriod', 'weekly');
+  await page.click('#calRasiPalan #rpRun');
+  await page.waitForFunction(() => {
+    const h = document.querySelector('#calRasiPalan .rp-results-title h3');
+    const p = document.querySelector('#calRasiPalan .rp-results-title p');
+    return h && /Weekly|வாரம்/.test(h.textContent) && p && /Week:|வாரம்:/.test(p.textContent);
+  }, { timeout: 90000 });
+  assert.equal(await page.$$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 12, 'Weekly output should cover all 12 Rasis');
+  await page.select('#calRasiPalan #rpPeriod', 'monthly');
+  await page.click('#calRasiPalan #rpRun');
+  await page.waitForFunction(() => {
+    const h = document.querySelector('#calRasiPalan .rp-results-title h3');
+    const p = document.querySelector('#calRasiPalan .rp-results-title p');
+    return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
+  }, { timeout: 90000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.screenshot({ path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname, fullPage: true });
 
