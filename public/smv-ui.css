@@ -108,7 +108,7 @@ body.smv-v12-theme :where(input,select,textarea):focus-visible{
 body.smv-v12-theme :where(input,select,textarea):disabled{background:#1b2740!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
 
-/* Registration, login and question forms — high-contrast magenta presentation. */
+/* Registration, login and question forms — use the existing Cosmic Violet theme. */
 body.smv-v12-theme #modal.auth-modal-active .modalbox,
 body.smv-v12-theme #modal.auth-modal-active .auth-shell,
 body.smv-v12-theme #astro-register-form > .card,
@@ -164,7 +164,7 @@ body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:focus
   -webkit-text-fill-color:var(--smv207-form-white)!important;
   caret-color:var(--smv207-form-white)!important;
 }
-/* Keep the Astrologer and Ask Now back-navigation controls visible on the magenta surface. */
+/* Keep the Astrologer and Ask Now back-navigation controls visible on the theme surface. */
 body.smv-v12-theme #astro-register-form #astroRegBackBtn,
 body.smv-v12-theme #smvPublicQuestionWindow #askNowBackBtn{
   display:inline-flex!important;
