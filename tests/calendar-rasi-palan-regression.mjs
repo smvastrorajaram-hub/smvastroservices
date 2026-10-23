@@ -93,6 +93,6 @@ test('Public calendar takes published mode/data from Firestore online and uses b
   assert.match(publicRasiPalanSource, /smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(publicRasiPalanSource, /if \(navigator\.onLine\)/);
   assert.match(publicRasiPalanSource, /calendar-rasi-palan-manual\.json/);
-  assert.match(publicRasiPalanSource, /publishedMode = '\''hybrid'\''/);
+  assert.match(publicRasiPalanSource, /publishedMode = 'hybrid'/);
   assert.match(publicRasiPalanSource, /supportsPublishedManual/);
 });
