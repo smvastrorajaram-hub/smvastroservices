@@ -908,7 +908,7 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 @media (max-width: 650px){
 .smv-install-app-section{padding:0px 10px;margin-top:16px}
 .smv-install-app-card{display:grid;grid-template-columns:56px minmax(0px, 1fr);gap:10px;padding:13px 12px}
-.smv-install-app-icon-wrap, .smv-install-app-icon{width:56px;height:56px;border-radius:50%}
+.smv-install-app-icon-wrap, .smv-install-app-icon{width:56px;height:56px;border-radius:0}
 .smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){font-size:16px!important}
 .smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
 .smv-install-app-btn{grid-column:1 / -1;width:100%}}
