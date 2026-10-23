@@ -365,6 +365,12 @@ html body.smv-v12-theme #smv-content-hub :where(.blog-content,.blog-card p,.blog
     padding:0 16px!important;
   }
 }
+@media(max-width:640px){
+  html body.smv-v12-theme #smv-content-hub{
+    padding-left:4px!important;
+    padding-right:4px!important;
+  }
+}
 
 /* Private consultation — V190 layout migrated out of inline page CSS. */
 #privateConsultationQuestionCard{position:relative}
