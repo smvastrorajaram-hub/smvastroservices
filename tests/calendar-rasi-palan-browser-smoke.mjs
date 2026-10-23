@@ -90,7 +90,14 @@ try {
     return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
   }, { timeout: 90000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-  await page.screenshot({ path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname, fullPage: true });
+  await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
+  // Capture the first viewport only. Full-page capture of 12 × 8 result cards
+  // rasterized an extremely tall document and timed out in Chromium.
+  await page.screenshot({
+    path: new URL('calendar-rasi-palan-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
 
   // Validate the requested Tamil New Year label and 12 × 8 render.
   await page.click('#calTamil');
@@ -103,7 +110,12 @@ try {
   }, { timeout: 120000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 12, { timeout: 30000 });
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
-  await page.screenshot({ path: new URL('calendar-rasi-palan-desktop-tamil-new-year.png', outputDir).pathname, fullPage: true });
+  await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
+  await page.screenshot({
+    path: new URL('calendar-rasi-palan-desktop-tamil-new-year.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
 
   // Check the distinct English New Year label, without exposing edit controls.
   const englishButton = await page.$('#calEnglish');
@@ -126,8 +138,8 @@ try {
     dailyPlanetCards: 96,
     moonExcluded: true,
     publicEditorHidden: true,
-    mobileScreenshot: 'calendar-rasi-palan-mobile.png',
-    desktopScreenshot: 'calendar-rasi-palan-desktop-tamil-new-year.png'
+    mobileScreenshot: 'calendar-rasi-palan-mobile.png (viewport capture)',
+    desktopScreenshot: 'calendar-rasi-palan-desktop-tamil-new-year.png (viewport capture)'
   }));
 } finally {
   await browser.close();
