@@ -2528,10 +2528,8 @@ html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-cs
 /* Legacy desktop header reset. Scoping it to desktop prevents this high-specificity
    rule from cancelling the dedicated mobile burgundy/gold button design below. */
 @media (min-width: 900px){
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){background:#fff!important;border-color:rgba(255, 214, 107, .9)!important;color:#541327!important;-webkit-text-fill-color:#541327!important;box-shadow:none!important;border-radius:999px!important;text-shadow:none!important}
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{background:#fff!important;border-color:rgba(255, 214, 107, .9)!important;color:#541327!important;-webkit-text-fill-color:#541327!important}
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-role-green{color:rgb(24, 116, 66)!important}
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-logout-btn{color:rgb(229, 34, 34)!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;text-shadow:none!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important}
 }
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:rgb(48, 37, 44)!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
 html body.smv-v12-theme .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;padding:10px!important}
@@ -4217,11 +4215,11 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     margin:0!important;
     padding:9px clamp(6px,.72vw,12px)!important;
     box-sizing:border-box!important;
-    border:1px solid rgba(255,214,107,.9)!important;
+    border:1px solid rgba(255,214,107,.82)!important;
     border-radius:999px!important;
-    background:#fff!important;
-    color:#541327!important;
-    -webkit-text-fill-color:#541327!important;
+    background:rgba(5,20,54,.72)!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
     font:800 clamp(10px,1.02vw,13px)/1 Arial,Helvetica,sans-serif!important;
     white-space:nowrap!important;
     text-align:center!important;
@@ -4230,16 +4228,16 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > a.active,
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{
-    background:#fff!important;
-    border-color:rgba(255,214,107,.9)!important;
-    color:#541327!important;
-    -webkit-text-fill-color:#541327!important;
+    background:#ffd66b!important;
+    border-color:#fff0b4!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register{
-    background:#fff!important;
-    border-color:rgba(255,214,107,.9)!important;
-    color:#541327!important;
-    -webkit-text-fill-color:#541327!important;
+    background:#ffd66b!important;
+    border-color:#ffd66b!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
     font-weight:900!important;
   }
   html body.smv-v12-theme #home.smv33-hero{
