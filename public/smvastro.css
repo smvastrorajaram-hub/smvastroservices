@@ -896,8 +896,8 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 .smv-part-chevron:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}}
 .smv-install-app-section{width:100%;box-sizing:border-box;margin:22px auto 10px;padding:0px 16px}
 .smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:linear-gradient(rgb(255, 250, 240), rgb(255, 253, 248));box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
-.smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:50%;overflow:hidden;border:0;background:#24103F;display:grid;place-items:center}
-.smv-install-app-icon{width:64px;height:64px;display:block;object-fit:contain;border-radius:50%;background:#24103F}
+.smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:0;overflow:visible;border:0;background:transparent;display:grid;place-items:center}
+.smv-install-app-icon{width:64px;height:64px;display:block;object-fit:contain;border-radius:0;background:transparent}
 .smv-install-app-copy{min-width:0px;flex:1 1 0%}
 .smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 .smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:13px!important;line-height:1.45!important;color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important}
@@ -2880,7 +2880,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 #smv-products-store-section .smv-products-item:hover{transform:translateY(-2px)}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}.smv-products-logo{display:block;width:100%;height:100%;max-width:none;min-width:0;aspect-ratio:1/1;object-fit:contain;object-position:center;padding:0;border:0;border-radius:50%;background:transparent;clip-path:none}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}.smv-products-logo{display:block;width:100%;height:100%;max-width:none;min-width:0;aspect-ratio:1/1;object-fit:contain;object-position:center;padding:0;border:0;border-radius:0;background:transparent;clip-path:none}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
 #smv-products-store-section .smv-products-item-copy>strong{color:#f3d99b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
 #smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#c4ccdc;font:700 11px/1.4 Arial,sans-serif}
@@ -2942,7 +2942,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
 #smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:15px}
 .smv-master-service{min-height:155px;padding:17px 10px}
 .smv-master-service strong{font-size:0.92rem}
@@ -2960,7 +2960,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-products-store-section{padding:20px 13px;border:0;border-radius:0;box-shadow:none;background:#24103F;}
 .smv-products-store-links{margin-top:16px}
 #smv-products-store-section .smv-products-item{gap:12px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
-.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:hidden;border:0;border-radius:50%;background:#24103F}
+.smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:14px}
 .smv-master-service{min-height:150px}}
 @media (prefers-reduced-motion: reduce){
