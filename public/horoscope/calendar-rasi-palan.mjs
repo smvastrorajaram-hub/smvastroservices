@@ -126,7 +126,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   async function tamilNewYearSunrise(year, cfg) {
     const dates = [];
-    for (let day = 11; day <= 18; day++) dates.push(String(year) + '-04-' + String(day).padStart(2, '0'));
+    for (let day = 8; day <= 20; day++) dates.push(String(year) + '-04-' + String(day).padStart(2, '0'));
     let firstAries = null;
     for (const date of dates) {
       const res = await chartAtSunrise(date, cfg);
@@ -180,8 +180,8 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   async function findIngresses(year, cfg) {
     const cacheKey = [year, cfg.lat, cfg.lon, cfg.offset, cfg.timezone].join('|');
     if (ingressCache.has(cacheKey)) return ingressCache.get(cacheKey);
-    const start = String(year - 1) + '-12-01';
-    const end = String(year + 1) + '-02-01';
+    const start = year <= 1800 ? '1800-01-01' : String(year - 1) + '-12-01';
+    const end = year >= 2399 ? '2399-12-31' : String(year + 1) + '-02-01';
     const startMs = dateSerial(start);
     const endMs = dateSerial(end);
     const stepMs = 5 * 86400000;
@@ -191,7 +191,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       let previousChart = await chartAtLocalTime(serialDate(previousMs), '12:00', cfg);
       let previousPositions = positionsFromChart(previousChart);
       let previousSign = previousPositions.planets.find(p => p.key === body).sign;
-      for (let sampleMs = startMs + stepMs; sampleMs <= endMs; sampleMs += stepMs) {
+      for (let sampleMs = startMs + stepMs; sampleMs <= endMs + stepMs; sampleMs += stepMs) {
         const boundedMs = Math.min(sampleMs, endMs);
         const sampleDate = serialDate(boundedMs);
         const sampleChart = await chartAtLocalTime(sampleDate, '12:00', cfg);
