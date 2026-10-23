@@ -305,8 +305,14 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const bodies = groupBody === 'Rahu' ? ['Rahu', 'Ketu'] : [groupBody];
     const res = { type: ingressType(groupBody), periodKey: event.date, positions };
     const rangeEnd = event.ends || '—';
+    const oldSigns = groupBody === 'Rahu'
+      ? L('Rahu ', 'ராகு ') + rasiLabel(event.previousSign) + ' / ' + L('Ketu ', 'கேது ') + rasiLabel((event.previousSign + 6) % 12)
+      : rasiLabel(event.previousSign);
+    const newSigns = groupBody === 'Rahu'
+      ? L('Rahu ', 'ராகு ') + rasiLabel(event.newSign) + ' / ' + L('Ketu ', 'கேது ') + rasiLabel((event.newSign + 6) % 12)
+      : rasiLabel(event.newSign);
     const eventMeta = L('Calculated ingress: ', 'கணக்கிடப்பட்ட பெயர்ச்சி: ') + fmtDate(event.date) + ' · ' + esc(event.time) +
-      ' · ' + L('From ', 'முந்தைய ராசி ') + rasiLabel(event.previousSign) + ' ' + L('to ', '→ புதிய ராசி ') + rasiLabel(event.newSign) +
+      ' · ' + L('From ', 'முந்தைய ராசி ') + oldSigns + ' ' + L('to ', '→ புதிய ராசி ') + newSigns +
       ' · ' + L('Applicable until ', 'பொருந்தும் காலம் ') + fmtDate(rangeEnd);
     const cards = rasiLabels.map((rasi, rasiIndex) => {
       const items = bodies.map(body => {
