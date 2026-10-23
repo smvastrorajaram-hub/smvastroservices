@@ -2035,6 +2035,62 @@ window.__smvRefreshDashboard=()=>{
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)smvLiveQueue?.resume();});
 document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0));
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
+function smvInsertDashboardWorkgroupHeading(target,key,number,title){
+  if(!target?.parentNode)return;
+  const previous=target.previousElementSibling;
+  if(previous?.classList?.contains('smv-dashboard-workgroup-heading')&&previous.dataset.smvWorkgroupKey===key)return;
+  const heading=document.createElement('div');
+  heading.className='smv-dashboard-workgroup-heading';
+  heading.dataset.smvWorkgroupKey=key;
+  heading.setAttribute('role','heading');
+  heading.setAttribute('aria-level','3');
+  const numberNode=document.createElement('span');
+  numberNode.className='smv-dashboard-workgroup-number';
+  numberNode.textContent=number;
+  const titleNode=document.createElement('span');
+  titleNode.className='smv-dashboard-workgroup-text';
+  titleNode.textContent=title;
+  heading.append(numberNode,titleNode);
+  target.parentNode.insertBefore(heading,target);
+}
+function smvDashboardDirectCardByHeading(host,phrase){
+  if(!host)return null;
+  return Array.from(host.children).find(child=>{
+    if(!child.classList?.contains('card'))return false;
+    const headings=Array.from(child.children).filter(el=>/^H[1-6]$/.test(el.tagName));
+    return headings.some(el=>String(el.textContent||'').trim().toLowerCase().startsWith(phrase.toLowerCase()));
+  })||null;
+}
+function smvAddDashboardWorkgroupHeadings(box,role,notificationCard){
+  if(!box)return;
+  const normalized=String(role||'').toLowerCase();
+  if(normalized==='customer'){
+    const overview=box.querySelector(':scope > .grid');
+    const publicConsultations=box.querySelector('.customer-consultations-title')?.closest('.card');
+    const privateConsultations=box.querySelector('.customer-private-consultations-title')?.closest('.card');
+    smvInsertDashboardWorkgroupHeading(overview,'customer-overview','01','Dashboard Overview / கணக்கு நிலவரம்');
+    smvInsertDashboardWorkgroupHeading(publicConsultations,'customer-public','02','Public Questions & Answers / பொது கேள்விகள் மற்றும் பதில்கள்');
+    smvInsertDashboardWorkgroupHeading(privateConsultations,'customer-private','03','Private Consultations / தனிப்பட்ட ஆலோசனைகள்');
+    smvInsertDashboardWorkgroupHeading(notificationCard,'customer-notifications','04','Notifications / அறிவிப்புகள்');
+    return;
+  }
+  if(normalized==='astrologer'){
+    const host=box.querySelector('.smv-astrologer-dashboard');
+    if(!host)return;
+    const overview=host.querySelector(':scope > .astro-dashboard-summary');
+    const profile=host.querySelector(':scope > #astroProfileDescriptionCard');
+    const openQuestions=smvDashboardDirectCardByHeading(host,'Open Questions');
+    const earningsHistory=smvDashboardDirectCardByHeading(host,'Earnings History');
+    const privateConsultations=host.querySelector(':scope > #astroPrivateConsultations');
+    smvInsertDashboardWorkgroupHeading(overview,'astro-overview','01','Dashboard Overview / கணக்கு நிலவரம்');
+    smvInsertDashboardWorkgroupHeading(profile,'astro-profile','02','Profile Management / சுயவிவர மேலாண்மை');
+    smvInsertDashboardWorkgroupHeading(openQuestions,'astro-public-questions','03','Public Questions & Answers / பொது கேள்விகள் மற்றும் பதில்கள்');
+    smvInsertDashboardWorkgroupHeading(earningsHistory,'astro-earnings','04','Earnings & Payouts / வருமானம் மற்றும் பணப்பெறுதல்');
+    smvInsertDashboardWorkgroupHeading(privateConsultations,'astro-private','05','Private Consultations / தனிப்பட்ட ஆலோசனைகள்');
+    smvInsertDashboardWorkgroupHeading(notificationCard,'astro-notifications','06','Notifications / அறிவிப்புகள்');
+  }
+}
+
 async function loadDashboard(expectedRole=null,force=false,background=false){
  const box=$('dashboardContent');
  if(!currentUser){ if(box) box.innerHTML='<div class="card">Please login to continue.</div>'; return; }
@@ -2759,7 +2815,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
 
   }
   if(!active()) return;
-  const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note);
+  const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note); smvAddDashboardWorkgroupHeadings(box,role,note);
   // Notifications are supplementary. A Firestore permission/timeout issue in
   // this optional section must never turn a successfully loaded dashboard into
   // a false "Unable to load dashboard" state.
