@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import {
   RASI_PALAN_PLANETS,
   RASI_PALAN_TITLES,
@@ -10,6 +11,8 @@ import {
   readingKey,
   selectReading
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
+
+const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
 
 test('Daily/weekly/monthly and New Year rules include exactly eight transiting planets, never a Moon prediction', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
@@ -49,4 +52,10 @@ test('New Year labels are the exact requested names and avoid an annual-transit 
   assert.match(RASI_PALAN_TITLES.tamilNewYear.en, /Tamil New Year Rasi Palan/);
   assert.match(RASI_PALAN_TITLES.englishNewYear.en, /English New Year Rasi Palan/);
   assert.doesNotMatch(RASI_PALAN_TITLES.tamilNewYear.en, /Annual Transit/i);
+});
+
+test('Calendar daily Rasi Palan has no separate Moon transit prediction and shows only eight transit planets', () => {
+  assert.doesNotMatch(dailyCalendarSource, /L\('Moon transit'/);
+  assert.match(dailyCalendarSource, /All eight transit planets/);
+  assert.match(dailyCalendarSource, /ps\.filter\(x=>x\.name!=='Moon'\)\.map\(x=>/);
 });
