@@ -819,7 +819,7 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 #smv-content-hub #publicMedia > .grid > .media-card > img, #smv-content-hub #publicMedia > .grid > .media-card > video{display:block!important;width:100%!important;max-width:100%!important;height:auto!important;max-height:360px!important;object-fit:contain!important;box-sizing:border-box!important}
 #smv-content-hub #publicMedia > .grid > .media-card:not(:has(img)):not(:has(video)):not(:has(audio)){align-self:start!important}
 @media (min-width: 768px){
-#smv-content-hub{width:calc(100% - 32px)!important;max-width:1160px!important;margin:34px auto!important;padding:clamp(20px,3vw,32px) 0!important;box-sizing:border-box!important}
+#smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 #smv-content-hub .feature-shell{width:100%!important;max-width:none!important;box-sizing:border-box!important}}
 @media (max-width: 700px){
 #smv-content-hub #publicMedia > .grid{grid-template-columns:1fr!important;gap:7px!important;margin-top:7px!important}
@@ -2904,7 +2904,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-cat{text-align:center;color:rgb(255, 255, 255)}
 .smv-master-cat:where(:not(.smv-type-root,.smv-type-root *)){font-size:0.72rem}
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
-#approved-astrologers{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important} #smv-content-hub{width:calc(100% - 32px)!important;max-width:1160px!important;margin:34px auto!important;padding:clamp(20px,3vw,32px) 0!important;box-sizing:border-box!important}
+#approved-astrologers{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important} #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 #approved-astrologers > .home-rule{display:none!important}
 #approved-astrologers h2, #smv-content-hub h2{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 #approved-astrologers h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
@@ -3468,7 +3468,7 @@ html body #smv24-footer .smv24-social{gap:16px!important}
 html body #smv24-footer .smv24-social a{font-size:11px!important}
 html body #smv24-footer .smv24-scenery{height:auto!important;min-height:0!important;max-height:none!important;background:transparent!important;background-image:none!important;background-size:auto!important;aspect-ratio:auto!important}
 html body #smv24-footer .smv24-scenery p{font-size:18px!important}
-html body.smv-v12-theme #smv-content-hub{width:calc(100% - 32px)!important;max-width:1160px!important;margin:34px auto!important;padding:clamp(20px,3vw,32px) 0!important;box-sizing:border-box!important}
+html body.smv-v12-theme #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 html body.smv-v12-theme #smv-content-hub .feature-shell.card, html body.smv-v12-theme #smv-content-hub .smv-v173-subregion, html body.smv-v12-theme #smv-content-hub #publicBlogs > .blog-card, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid > .media-card{display:block!important;flex:0 0 auto!important;width:100%!important;min-width:0px!important;max-width:100%!important;margin:0px 0px 20px!important;padding:0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:transparent!important;box-sizing:border-box!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid{display:block!important;width:100%!important;max-width:100%!important;padding:0px!important;margin:14px 0px!important;overflow:visible!important;scroll-snap-type:none!important}
 html body.smv-v12-theme #smv-content-hub .blog-content{width:100%!important;max-width:none!important;font-size:15px!important;line-height:1.6!important;letter-spacing:normal!important;overflow-wrap:break-word!important;word-break:normal!important}
@@ -3575,7 +3575,7 @@ html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-chi
 .smv-sitemap-page h1, .smv-sitemap-page h2, .smv-sitemap-page > a{color:rgb(133, 10, 32)}
 .smv-sitemap-page > a{display:block;padding:8px;border-bottom:1px solid rgb(238, 238, 238)}
 @media (max-width: 760px){
-html body.smv-v12-theme #smv-content-hub{width:calc(100% - 32px)!important;max-width:1160px!important;margin:34px auto!important;padding:clamp(20px,3vw,32px) 0!important;box-sizing:border-box!important}
+html body.smv-v12-theme #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 html body.smv-v12-theme #smv-content-hub > .feature-shell.card, html body.smv-v12-theme #smv-content-hub .smv-v173-subregion, html body.smv-v12-theme #smv-content-hub #publicBlogs, html body.smv-v12-theme #smv-content-hub #publicMedia, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid{width:100%!important;max-width:100%!important;margin-left:0px!important;margin-right:0px!important;box-sizing:border-box!important}}
 #admin .admin-dashboard-title{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 @media (max-width: 650px){
