@@ -261,7 +261,7 @@ body.smv-v12-theme .smv-withdraw-btn.is-green{background:#16a34a!important;borde
 body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn.is-red:disabled{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;opacity:1!important}
 
 /* Accessible heading level without changing the compact install-card appearance. */
-.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#7a2a1c!important;font-weight:800!important}
+.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-weight:800!important}
 @media(max-width:760px){.smv-install-app-copy h2{font-size:16px!important}}
 
 /* Remaining structural presentation migrated from inline homepage markup. */
