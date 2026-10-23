@@ -8,6 +8,10 @@ on:
       - 'tests/v358-result-layout-browser-smoke.mjs'
       - 'tests/v359-symmetric-gutters-browser-smoke.mjs'
       - '.github/workflows/horoscope-result-layout-browser-smoke.yml'
+      - '!public/horoscope/calendar/**'
+      - '!public/horoscope/calendar-rasi-palan.css'
+      - '!public/horoscope/daily-calendar.css'
+      - '!.github/workflows/horoscope-result-layout-browser-smoke.yml'
   pull_request:
     branches: [main]
     paths:
@@ -16,6 +20,10 @@ on:
       - 'tests/v358-result-layout-browser-smoke.mjs'
       - 'tests/v359-symmetric-gutters-browser-smoke.mjs'
       - '.github/workflows/horoscope-result-layout-browser-smoke.yml'
+      - '!public/horoscope/calendar/**'
+      - '!public/horoscope/calendar-rasi-palan.css'
+      - '!public/horoscope/daily-calendar.css'
+      - '!.github/workflows/horoscope-result-layout-browser-smoke.yml'
   workflow_dispatch:
 permissions:
   contents: read
