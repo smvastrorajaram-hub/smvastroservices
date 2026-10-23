@@ -20,6 +20,22 @@ try {
   const page = await browser.newPage();
   // Test the deployed current source, not an installed/stale PWA service-worker shell.
   await page.setBypassServiceWorker(true);
+  // Keep the deployed source test independent from the Calendar PWA's one-time
+  // service-worker controllerchange reload. That reload is covered separately;
+  // this smoke test must inspect the current network-delivered DOM without races.
+  await page.evaluateOnNewDocument(() => {
+    const smokeServiceWorker = {
+      controller: null,
+      addEventListener() {},
+      register: () => Promise.reject(new Error('Service worker is disabled in the Calendar browser smoke test'))
+    };
+    try {
+      Object.defineProperty(Navigator.prototype, 'serviceWorker', {
+        configurable: true,
+        get: () => smokeServiceWorker
+      });
+    } catch (_) {}
+  });
   await page.setCacheEnabled(false);
   page.setDefaultTimeout(90000);
   page.on('pageerror', error => runtimeErrors.push(error.message));
