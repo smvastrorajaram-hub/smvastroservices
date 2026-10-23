@@ -3858,12 +3858,12 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     height:72px!important;
     max-width:none!important;
     margin:0 auto 2px!important;
-    padding:3px!important;
-    object-fit:contain!important;
+    padding:0!important;
+    object-fit:cover!important;
     object-position:center!important;
-    border:2px solid #f2d48b!important;
+    border:0!important;
     border-radius:50%!important;
-    background:#fffaf0!important;
+    background:transparent!important;
     box-shadow:none!important;
     filter:none!important;
     transform:none!important;
@@ -3886,7 +3886,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     -webkit-text-fill-color:#ff0000!important;
     -webkit-text-stroke:.55px #fff0c9!important;
     font-family:Georgia,"Times New Roman",serif!important;
-    font-size:clamp(30px,7.8vw,40px)!important;
+    font-size:clamp(20px,6.7vw,31px)!important;
     line-height:.98!important;
     font-weight:900!important;
     letter-spacing:.15px!important;
@@ -3910,10 +3910,10 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     width:auto!important;
     max-width:100%!important;
     margin:4px auto 0!important;
-    padding:4px 8px!important;
-    background:rgba(255,248,230,.92)!important;
-    border:1px solid rgba(184,137,53,.72)!important;
-    border-radius:6px!important;
+    padding:0!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
     text-align:center!important;
     text-shadow:none!important;
   }
