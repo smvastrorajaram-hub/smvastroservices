@@ -2288,7 +2288,7 @@ header a:where(:not(.smv-css-island,.smv-css-island *)), .navbar a:where(:not(.s
 input:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgb(139, 0, 0)!important;outline:rgba(139, 0, 0, 0.1) solid 2px!important;box-shadow:none!important}
 input::placeholder:where(), textarea::placeholder:where(){color:#687386!important;-webkit-text-fill-color:#687386!important;}
-.auth-field-label:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(68, 68, 68)!important}
+.auth-field-label:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)){color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important}
 .auth-shell:where(:not(.smv-css-island,.smv-css-island *)), .auth-hero:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
 .auth-hero h2:where(:not(.smv-css-island,.smv-css-island *)){color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;}
 .auth-tabs .btn:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(139, 0, 0)!important;border-color:rgb(139, 0, 0)!important}
