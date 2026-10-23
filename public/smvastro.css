@@ -2619,19 +2619,19 @@ html body.smv-v12-theme .smv-master-cat:where(:not(.smv-css-island,.smv-css-isla
 html body.smv-v12-theme .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;}
 html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important;background:transparent!important;border:0px!important;box-shadow:none!important;padding:0px!important}
 .registration-icon .smv24-icon:where(:not(.smv-css-island,.smv-css-island *)){width:100px!important;height:100px!important}
-#smv24-footer{width:100%;background:rgb(255, 255, 255);color:rgb(33, 29, 36);font:16px / 1.6 Arial, sans-serif;overflow:hidden;margin-top:32px}
+#smv24-footer{width:100%;background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%);color:#f2eddf;font:16px / 1.6 Arial, sans-serif;overflow:hidden;margin-top:32px}
 #smv24-footer *{box-sizing:border-box}
 .smv24-footer-top{max-width:1160px;margin:auto;padding:32px 24px 0px}
 #smv24-footer .smv24-brand{text-align:center}
 #smv24-footer h2{font:700 clamp(32px, 5vw, 54px) / 1.15 Georgia, serif;color:#fff8e7;margin:0px 0px 12px;text-shadow:none}
-#smv24-footer h2 span{color:rgb(194, 141, 37)}
-#smv24-footer .smv24-brand p{font:22px / 1.4 Georgia, serif;margin:0px auto 10px;color:rgb(33, 29, 36)}
+#smv24-footer h2 span{color:#ffd66b}
+#smv24-footer .smv24-brand p{font:22px / 1.4 Georgia, serif;margin:0px auto 10px;color:#f2eddf}
 .smv24-brand small{letter-spacing:0.22em;font-size:12px}
 .smv24-brand em{display:block;font:italic 25px / 1.5 Georgia, serif;color:#ffe2a0;margin:14px auto 28px;text-shadow:none}
 .smv24-columns{display:grid;grid-template-columns:repeat(3, 1fr);gap:32px;padding:20px 0px 28px}
-#smv24-footer h3{color:rgb(133, 10, 32);font-size:22px;margin:0px 0px 14px}
-#smv24-footer a{color:rgb(33, 29, 36);text-decoration:none}
-#smv24-footer a:hover{text-decoration:underline;color:rgb(133, 10, 32)}
+#smv24-footer h3{color:#ffd66b;font-size:22px;margin:0px 0px 14px}
+#smv24-footer a{color:rgba(255,248,231,.94);text-decoration:none}
+#smv24-footer a:hover{text-decoration:underline;color:#ffd66b}
 .smv24-columns nav + nav{border-left:1px solid rgb(222, 206, 175);padding-left:30px}
 .smv24-columns a{display:block;margin:6px 0px}
 .smv24-columns a::before{content:"›";color:rgb(133, 10, 32);margin-right:12px;font-weight:bold}
@@ -2640,8 +2640,8 @@ html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-i
 .smv24-social a{display:flex;align-items:center;flex-direction:column;font-size:12px}
 .smv24-social b{background:rgb(133, 10, 32);color:white;border-radius:50%;width:44px;height:44px;display:grid;place-items:center;font:700 27px Georgia}
 .smv24-scenery{height:auto;background:transparent;position:relative;margin-top:18px}
-.smv24-scenery p{text-align:center;position:absolute;top:12px;left:24%;width:52%;font:italic 24px / 1.4 Georgia;color:rgb(59, 33, 10);margin:0px;text-shadow:white 0px 1px 4px}
-.smv24-copyright{background:rgb(133, 10, 32);border-top:5px solid rgb(203, 163, 66);color:white;text-align:center;padding:24px 16px;font-size:14px}
+.smv24-scenery p{text-align:center;position:absolute;top:12px;left:24%;width:52%;font:italic 24px / 1.4 Georgia;color:#ffe2a0;margin:0px;text-shadow:white 0px 1px 4px}
+.smv24-copyright{background:#0a1227;border-top:1px solid rgba(223,189,115,.28);color:#f2eddf;text-align:center;padding:24px 16px;font-size:14px}
 .smv24-copyright small{display:block;color:rgb(249, 221, 156);letter-spacing:0.2em;font-size:11px;margin-top:10px}
 @media (max-width: 700px){
 html body.smv-v12-theme .smv-master-cats:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:repeat(4, minmax(0px, 1fr))!important;gap:20px 6px!important}
@@ -3434,7 +3434,7 @@ nn #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(
 @media (max-width: 600px){
 #admin .smv-admin-nav{display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:8px!important;width:100%!important}
 #admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{width:100%!important;min-width:0px!important;max-width:none!important;height:42px!important;min-height:42px!important;max-height:42px!important;margin:0px!important;padding:4px 5px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow:hidden!important;aspect-ratio:auto!important}}
-html body #smv24-footer:where(:not(.hidden)){display:block!important;background-color:#081c43!important;background-image:linear-gradient(125deg,rgba(4,16,45,.76),rgba(9,24,52,.66)),url("./photo/smv-home-desktop-hero.webp")!important;background-size:cover,cover!important;background-position:center top,center top!important;background-repeat:no-repeat,no-repeat!important;color:#fff8e7!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
+html body #smv24-footer:where(:not(.hidden)){display:block!important;background-color:#0a1227!important;background-image:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;color:#fff8e7!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
 html body #smv24-footer::before, html body #smv24-footer::after{content:none!important;display:none!important}
 html body #smv24-footer .smv24-footer-top{background:transparent!important;max-width:1160px!important;margin:0px auto!important;padding:36px 24px 0px!important}
 html body #smv24-footer .smv24-brand{text-align:center!important;color:#fff8e7!important;text-shadow:none!important}
@@ -3452,8 +3452,8 @@ html body #smv24-footer .smv24-social{display:flex!important;flex-wrap:nowrap!im
 html body #smv24-footer .smv24-social a{display:flex!important;flex-direction:column!important;align-items:center!important;gap:7px!important;color:rgba(255,248,231,.96)!important;background:transparent!important;border:0px!important;padding:0px!important;box-shadow:none!important;font:500 13px / 1.4 Arial, sans-serif!important;text-shadow:none!important}
 html body #smv24-footer .smv24-scenery{position:relative!important;display:block!important;margin:20px 0px 0px!important;padding:0px!important;height:auto!important;min-height:0!important;max-height:none!important;background:transparent!important;aspect-ratio:auto!important}
 html body #smv24-footer .smv24-scenery p{position:static!important;top:auto!important;left:auto!important;width:auto!important;max-width:100%!important;margin:0 auto!important;padding:30px 16px!important;box-sizing:border-box!important;color:#ffe2a0!important;font:italic clamp(18px,2vw,24px)/1.4 Georgia,serif!important;text-align:center!important;text-shadow:none!important}
-html body #smv24-footer .smv24-copyright{background:rgb(133, 10, 32)!important;color:rgb(255, 255, 255)!important;padding:24px 16px!important;text-align:center!important;border-top:5px solid rgb(203, 163, 66)!important;font:400 14px / 1.6 Arial, sans-serif!important}
-html body #smv24-footer .smv24-copyright small{color:rgb(249, 221, 156)!important}
+html body #smv24-footer .smv24-copyright{background:#0a1227!important;color:#f2eddf!important;padding:24px 16px!important;text-align:center!important;border-top:1px solid rgba(223,189,115,.28)!important;font:400 14px / 1.6 Arial, sans-serif!important}
+html body #smv24-footer .smv24-copyright small{color:#f2eddf!important}
 html body .smv26-social-icon:where(:not(.smv-css-island,.smv-css-island *)){display:inline-block!important;width:28px!important;height:28px!important;min-width:28px!important;max-width:28px!important;object-fit:contain!important;border:0px!important;border-radius:5px!important;margin:0px!important;padding:0px!important;vertical-align:middle!important}
 html body .smv26-channels:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-wrap:wrap!important;gap:12px 20px!important;margin:16px 0px!important;padding:0px!important}
 html body .smv26-channels a:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;gap:8px!important;width:auto!important;background:transparent!important;border:0px!important;box-shadow:none!important;color:rgb(41, 33, 38)!important;text-decoration:none!important;padding:4px 0px!important}
@@ -4288,12 +4288,7 @@ color:#f2eddf;-webkit-text-fill-color:#f2eddf;}
 
 /* Footer content floats over the same celestial-style photograph as the Hero. */
 @media (max-width:760px){
-  html body #smv24-footer:where(:not(.hidden)){
-    background-color:#081c43!important;
-    background-image:linear-gradient(145deg,rgba(4,16,45,.76),rgba(9,24,52,.66)),url("./photo/smv-home-mobile-hero.webp")!important;
-    background-size:cover,cover!important;
-    background-position:center center,center center!important;
-    background-repeat:no-repeat,no-repeat!important;
+  html body #smv24-footer:where(:not(.hidden)){background-color:#0a1227!important;background-image:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%)!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;
   }
 }
 
