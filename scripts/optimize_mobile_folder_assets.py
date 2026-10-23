@@ -67,7 +67,7 @@ mobile_dim = dimensions["Mobile Header + Hero"]
 height_vw = 100 * mobile_dim["height"] / mobile_dim["width"]
 css_path = ROOT / "public/smvastro.css"
 css = css_path.read_text(encoding="utf-8")
-pattern = r"height:calc((?:SMV_HOME_MOBILE_IMAGE_HEIGHT_VW|[0-9]+(?:\.[0-9]+)?vw) - clamp\(190px,42\.507vw,235px\))!important;"
+pattern = r"height:calc\((?:SMV_HOME_MOBILE_IMAGE_HEIGHT_VW|[0-9]+(?:\.[0-9]+)?vw) - clamp\(190px,42\.507vw,235px\)\)!important;"
 css, count = re.subn(pattern, f"height:calc({height_vw:.8f}vw - clamp(190px,42.507vw,235px))!important;", css, count=1)
 if count != 1:
     raise SystemExit("Could not update the shared mobile Hero height ratio in public/smvastro.css")
