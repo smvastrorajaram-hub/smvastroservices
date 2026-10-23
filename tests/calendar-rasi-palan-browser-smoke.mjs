@@ -18,6 +18,9 @@ const browser = await puppeteer.launch({
 const runtimeErrors = [];
 try {
   const page = await browser.newPage();
+  // Test the deployed current source, not an installed/stale PWA service-worker shell.
+  await page.setBypassServiceWorker(true);
+  await page.setCacheEnabled(false);
   page.setDefaultTimeout(90000);
   page.on('pageerror', error => runtimeErrors.push(error.message));
   let ready = false;
@@ -65,11 +68,13 @@ try {
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 12, { timeout: 30000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-planet').length === 96, { timeout: 30000 });
-  const dailyReadings = await page.$$eval('#calRasiPalan .rp-planet h5', nodes => nodes.map(n => n.textContent.trim()));
-  assert.equal(dailyReadings.length, 96, 'Daily output should be 12 Rasis × eight planets');
-  assert.ok(!dailyReadings.some(x => /Moon|சந்திரன்/i.test(x)), 'Daily predictions must not show Moon as a transit planet');
-  const dailyContext = await page.$eval('#calRasiPalan .rp-results-title p', el => el.textContent);
-  assert.ok(/Day:|நாள்:/.test(dailyContext), 'Daily reading should display its fixed weekday and date');
+  const dailyState = await page.$eval('#calRasiPalan', el => ({
+    readings: [...el.querySelectorAll('.rp-planet h5')].map(n => n.textContent.trim()),
+    context: el.querySelector('.rp-results-title p')?.textContent || ''
+  }));
+  assert.equal(dailyState.readings.length, 96, 'Daily output should be 12 Rasis × eight planets');
+  assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Daily predictions must not show Moon as a transit planet');
+  assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its fixed weekday and date');
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
