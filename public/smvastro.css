@@ -899,9 +899,9 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 .smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:15px;overflow:hidden;border:1px solid rgb(216, 199, 167);background:rgb(255, 255, 255);display:grid;place-items:center}
 .smv-install-app-icon{width:64px;height:64px;display:block;object-fit:cover}
 .smv-install-app-copy{min-width:0px;flex:1 1 0%}
-.smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 4px!important;font-size:18px!important;line-height:1.25!important;color:rgb(122, 42, 28)!important}
-.smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:13px!important;line-height:1.45!important;color:rgb(68, 68, 68)!important}
-.smv-install-app-help{margin-top:5px;font-size:12px;line-height:1.4;color:rgb(122, 42, 28)}
+.smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
+.smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:13px!important;line-height:1.45!important;color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important}
+.smv-install-app-help{margin-top:5px;font-size:12px;line-height:1.4;color:#f3d99b;-webkit-text-fill-color:#f3d99b}
 .smv-install-app-btn{flex:0 0 auto;border:1px solid rgb(139, 0, 0);border-radius:10px;padding:11px 16px;min-height:44px;background:rgb(139, 0, 0);color:rgb(255, 255, 255);font-weight:900;letter-spacing:0.3px;cursor:pointer;white-space:nowrap}
 .smv-install-app-btn:hover{filter:brightness(1.08)}
 .smv-install-app-btn:disabled{opacity:0.6;cursor:default}
@@ -1971,7 +1971,7 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 #tamilHoroscopeResult table.data-table thead th, #englishHoroscopeResult table.data-table thead th, #tamilHoroscopeResult .data-table th, #englishHoroscopeResult .data-table th, #tamilHoroscopeResult .bhava-table th, #englishHoroscopeResult .bhava-table th{background:rgb(192, 0, 0)!important;color:rgb(255, 255, 0)!important;font-weight:900!important;text-shadow:none!important}
 #tamilHoroscopeResult .data-table tbody td, #englishHoroscopeResult .data-table tbody td{background:rgb(255, 255, 255)!important}
 .astro-dashboard-summary, .astro-dashboard-summary .card, .astro-dashboard-summary .card h3, .astro-dashboard-summary .card p, .astro-dashboard-summary .card .small, .astro-dashboard-summary .card b, .astro-dashboard-summary .card span, .astro-dashboard-summary .card div, #astroQuestionQueue, #astroQuestionQueue h3, #astroQuestionQueue p, #astroQuestionQueue .small, #astroQuestionQueue b, #astroQuestionQueue span, #astroQuestionQueue div{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
-.astro-dashboard-summary .btn, #astroQuestionQueue .btn{color:rgb(0, 0, 0)!important}
+
 #astroAnsweredBox > p{color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;}
 #astroAnsweredBox .answer-meta-label{color:#c4ccdc!important;-webkit-text-fill-color:#c4ccdc!important;}
 #astroAnsweredBox .answer-meta-value{color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;}
@@ -2672,7 +2672,7 @@ html body.smv-v12-theme #smv-content-hub .blog-card h3{font-size:21px!important;
 html body.smv-v12-theme #smv-content-hub #publicMedia .media-card video, html body.smv-v12-theme #smv-content-hub #publicMedia .media-card img{width:100%!important;height:auto!important;max-height:260px!important;object-fit:contain!important}
 html body.smv-v12-theme #smv-content-hub #publicBlogs > .empty{flex:1 0 100%;box-sizing:border-box}}
 html body.smv-v12-theme #smv-content-hub .smv-v173-subregion.smv-v173-sub-collapsed #publicBlogs, html body.smv-v12-theme #smv-content-hub .smv-v173-subregion.smv-v173-sub-collapsed #publicMedia{display:none!important}
-html body #smv24-footer .smv26-links a::before{content:""!important;display:inline-block!important;width:5px!important;height:5px!important;border-top:2px solid rgb(133, 10, 32)!important;border-right:2px solid rgb(133, 10, 32)!important;transform:rotate(45deg)!important;margin-right:10px!important;vertical-align:2px!important}
+html body #smv24-footer .smv26-links a::before{content:""!important;display:inline-block!important;width:5px!important;height:5px!important;border-top:2px solid #ffd66b!important;border-right:2px solid #ffd66b!important;transform:rotate(45deg)!important;margin-right:10px!important;vertical-align:2px!important}
 @media (min-width: 1024px){
 html body #smv24-footer .smv24-scenery{height:auto!important;min-height:0px!important;max-height:none!important;aspect-ratio:3 / 2!important;background-size:contain!important;background-position:center center!important;background-repeat:no-repeat!important}
 html body #smv24-footer .smv24-scenery p{top:24%!important}}
@@ -2873,19 +2873,19 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-products-store-section{max-width:1260px;margin:clamp(22px,3vw,38px) auto 44px;padding:clamp(24px,3.5vw,42px);scroll-margin-top:90px;box-sizing:border-box;border:0;border-radius:0;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);box-shadow:none;text-align:center}
 .smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#f3d99b;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
 .smv-products-store-kicker::before,.smv-products-store-kicker::after{width:20px;height:1px;content:"";background:#c6a45c}
-#smv-products-store-section h2{margin:0 0 12px;color:#f3ecdd;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
+#smv-products-store-section h2{margin:0 0 12px;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
 .smv-products-store-description{max-width:700px;margin:0 auto;color:#b8c3d4;font:400 14px/1.8 Arial,sans-serif}
 .smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;max-width:1080px;margin:24px auto 18px}
 #smv-products-store-section .smv-products-item{display:flex;min-width:0;align-items:center;justify-content:center;gap:14px;padding:12px clamp(5px,1.2vw,20px);color:#f2eddf;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:transform .18s ease;background:transparent;border:0;border-radius:0;box-shadow:none;}
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 #smv-products-store-section .smv-products-item:hover{transform:translateY(-2px)}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
-.smv-products-logo{display:block;flex:0 0 auto;width:clamp(64px,7.2vw,92px);height:clamp(64px,7.2vw,92px);object-fit:contain;object-position:center;border-radius:50%}
+.smv-products-logo{display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;object-fit:cover;object-position:center;padding:0;border:1px solid rgba(223,189,115,.85);border-radius:50%;background:#fffaf0;overflow:hidden}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
 #smv-products-store-section .smv-products-item-copy>strong{color:#f3d99b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
 #smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#c4ccdc;font:700 11px/1.4 Arial,sans-serif}
 #smv-products-store-section .smv-products-item-copy>span span{font-size:16px}
-.smv-products-store-note{margin:12px 0 0;color:#80757d;font:400 11px/1.6 Arial,sans-serif}
+.smv-products-store-note{margin:12px 0 0;color:#c4ccdc;-webkit-text-fill-color:#c4ccdc;font:400 11px/1.6 Arial,sans-serif}
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-radius:0;text-align:center;box-shadow:none;transition:0.2s;text-decoration:none!important;color:#f2eddf!important;background:transparent;}
 .smv-master-service:nth-child(2n+1){background:transparent}
 .smv-master-service:nth-child(2n){background:transparent}
@@ -2906,7 +2906,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers, #smv-content-hub{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important}
 #approved-astrologers > .home-rule, #smv-content-hub .home-rule{display:none!important}
-#approved-astrologers h2, #smv-content-hub h2{color:var(--smv-navy)!important}
+#approved-astrologers h2, #smv-content-hub h2{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
 #approved-astrologers h2,
 #smv-content-hub h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
@@ -2917,7 +2917,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-proof div{text-align:center;padding:18px;border-right:1px solid rgb(238, 238, 238)}
 .smv-master-proof div:last-child{border:0px}
 .smv-master-proof strong{display:block;font-size:1rem;color:var(--smv-navy)}
-.smv-master-proof span{font-size:0.74rem;color:rgb(108, 114, 128)}
+.smv-master-proof span{font-size:0.74rem;color:#c4ccdc;-webkit-text-fill-color:#c4ccdc}
 #smvInstallAppSection{max-width:1260px!important;margin:15px auto!important;padding:0px 24px!important}
 .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border:0!important;border-radius:0!important;background:transparent!important;box-shadow:rgba(45, 28, 37, 0.07) 0px 7px 20px!important;box-shadow:none!important;}
 .smv-master-footer{margin-top:45px;background:linear-gradient(140deg,#121d36 0%,#0b1327 62%,#090f21 100%);color:rgb(255, 255, 255);color:#f2eddf;}
@@ -2938,7 +2938,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-art::after{background:linear-gradient(0deg, rgba(255, 255, 255, 0.05), transparent)}
 .smv-master-services{grid-template-columns:repeat(2, minmax(0px, 1fr));padding:12px;gap:9px}
 .smv-products-store-section{margin:18px auto 24px;padding:22px 16px;border-radius:0;border:0;box-shadow:none;background:radial-gradient(ellipse at 10% 0%,rgba(87,99,168,.20),transparent 36%),linear-gradient(135deg,#121d36 0%,#0d162c 56%,#11172d 100%);}
-#smv-products-store-section h2{font-size:clamp(27px,7vw,34px);color:#f3ecdd;font-family:Georgia,"Noto Sans Tamil",serif;letter-spacing:-.035em;}
+#smv-products-store-section h2{font-size:clamp(27px,7vw,34px);color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-family:Georgia,"Noto Sans Tamil",serif;letter-spacing:-.035em;}
 .smv-products-store-description{font-size:13px;line-height:1.75;color:#b8c3d4;}
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
 #smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
@@ -4264,10 +4264,10 @@ color:#f2eddf;-webkit-text-fill-color:#f2eddf;}
     border:0!important;
     border-radius:0!important;
     background-color:#081c43!important;
-    background-image:url("./photo/smv-home-desktop-hero.webp")!important;
-    background-size:100vw auto!important;
-    background-position:center calc(0px - 152px)!important;
-    background-repeat:no-repeat!important;
+    background-image:linear-gradient(180deg,rgba(8,28,67,0) 0%,rgba(8,28,67,0) 56%,rgba(8,28,67,.04) 60%,rgba(8,28,67,.13) 64%,rgba(8,28,67,.18) 68%,rgba(8,28,67,.10) 73%,rgba(8,28,67,.03) 78%,rgba(8,28,67,0) 83%),url("./photo/smv-home-desktop-hero.webp")!important;
+    background-size:100% 100%,100vw auto!important;
+    background-position:center top,center calc(0px - 152px)!important;
+    background-repeat:no-repeat,no-repeat!important;
     box-shadow:none!important;
     overflow:hidden!important;
   }
