@@ -357,7 +357,9 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const periodControl = $('.rp-period-control');
     periodControl.hidden = state.section !== 'period';
     root.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => {
-      state.section = button.dataset.section;
+      const nextSection = button.dataset.section;
+      if (state.section === nextSection) return;
+      state.section = nextSection;
       renderControls();
       if (state.lastResult) renderLastResult();
     }));

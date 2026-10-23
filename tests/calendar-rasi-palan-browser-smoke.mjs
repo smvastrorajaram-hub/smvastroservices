@@ -59,8 +59,7 @@ try {
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
 
-  // Daily is fixed to the current day and includes its weekday.
-  await page.click('#calRasiPalan [data-section="period"]');
+  // The Period tab is already selected by default; change only the period.
   await page.select('#calRasiPalan #rpPeriod', 'daily');
   assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'There must be no customer date picker');
   assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'There must be no customer year control');

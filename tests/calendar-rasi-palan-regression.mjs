@@ -112,6 +112,10 @@ test('Planetary ingress section computes only the latest past transit per planet
   assert.doesNotMatch(publicRasiPalanSource, /events\.filter\(e => e\.date >= start/);
 });
 
+test('Selecting the already-active public section does not rebuild the entire Calendar UI', () => {
+  assert.match(publicRasiPalanSource, /const nextSection = button\.dataset\.section;\s+if \(state\.section === nextSection\) return;/);
+});
+
 test('Public forecast rendering does not block on the asynchronous Admin content read', () => {
   assert.doesNotMatch(publicRasiPalanSource, /await publishedManualReady/);
   assert.match(publicRasiPalanSource, /publishedManualReady = loadPublishedManual\(\)\.then\(\(\) => \{/);
