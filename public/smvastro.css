@@ -3525,7 +3525,7 @@ html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-chi
 html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-child(3) .small:where(:not(.smv-css-island,.smv-css-island *)){margin:3px 0px!important}
 html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-child(3) .smv-withdraw-locked:where(:not(.smv-css-island,.smv-css-island *)), html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-child(3) .smv-withdraw-ready:where(:not(.smv-css-island,.smv-css-island *)){margin:4px 0px!important}
 html.smv-desktop-site #dashboardContent .astro-dashboard-summary > .card:nth-child(3) #withdrawBtn:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;position:static!important;width:100%!important;min-height:30px!important;height:30px!important;max-height:30px!important;margin:5px 0px 0px!important;padding:4px 8px!important;box-sizing:border-box!important;transform:none!important}
-#smvPublicQuestionWindow{position:fixed;inset:0px;z-index:2147483000;background:#101b32;color:#fff;overflow-y:auto;overscroll-behavior:contain;padding:16px 12px 32px;box-sizing:border-box}
+#smvPublicQuestionWindow{position:fixed;inset:0px;z-index:2147483000;background:#24103F;color:#fff;overflow-y:auto;overscroll-behavior:contain;padding:16px 12px 32px;box-sizing:border-box}
 #smvPublicQuestionWindow.hidden{display:none!important}
 #smvPublicQuestionWindow .smv-public-question-window-shell{width:min(920px, 100%);margin:0px auto}
 #smvPublicQuestionWindow #ask-flow{display:block}
