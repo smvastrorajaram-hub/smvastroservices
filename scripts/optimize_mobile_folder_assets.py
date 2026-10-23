@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""Optimize the three original PNGs in mobile/ into the SMV ASTRO assets used by the website.
+"""Optimize the supplied brand logo for the website.
 
-Original uploads are retained as backups. The square-ish image becomes the logo;
-of the remaining two, the portrait becomes the shared mobile Header/Hero image,
-and the wider one becomes the desktop Hero. Every active WebP must be <500 KB.
+The Header and Hero use the solid #24103F canvas and do not generate photo
+assets. The original PNG files in mobile/ remain available as source backups.
 """
 from pathlib import Path
 from io import BytesIO
 import math
-import re
 
 from PIL import Image, ImageOps
 
@@ -26,14 +24,8 @@ for path in sources:
     images.append({"path": path, "image": image, "ratio": image.width / image.height})
 
 logo = min(images, key=lambda item: abs(math.log(max(item["ratio"], 1e-6))))
-others = [item for item in images if item is not logo]
-mobile = min(others, key=lambda item: item["ratio"])
-desktop = max(others, key=lambda item: item["ratio"])
-
 jobs = [
     (logo, ROOT / "public/assets/smv-home-logo.webp", (900, 900), "Logo"),
-    (mobile, ROOT / "public/photo/smv-home-mobile-hero.webp", (1440, 2200), "Mobile Header + Hero"),
-    (desktop, ROOT / "public/photo/smv-home-desktop-hero.webp", (1920, 1200), "Desktop Hero"),
 ]
 
 def optimized_webp(image, destination, bounds, label):
@@ -62,14 +54,4 @@ for source, destination, bounds, label in jobs:
         raise SystemExit(f"{destination.name} exceeds 500 KB")
     dimensions[label] = {"width": w, "height": h, "bytes": size}
 
-# Update the existing canonical CSS with the exact pixel ratio of the optimized mobile image.
-mobile_dim = dimensions["Mobile Header + Hero"]
-height_vw = 100 * mobile_dim["height"] / mobile_dim["width"]
-css_path = ROOT / "public/smvastro.css"
-css = css_path.read_text(encoding="utf-8")
-pattern = r"height:calc\((?:SMV_HOME_MOBILE_IMAGE_HEIGHT_VW|[0-9]+(?:\.[0-9]+)?vw) - (clamp\([^)]*\))\)!important;"
-css, count = re.subn(pattern, lambda match: f"height:calc({height_vw:.8f}vw - {match.group(1)})!important;", css, count=1)
-if count != 1:
-    raise SystemExit("Could not update the shared mobile Hero height ratio in public/smvastro.css")
-css_path.write_text(css, encoding="utf-8")
-print("PASS: all three active WebP assets are under 500 KB; shared mobile image offset/height matches its actual ratio.")
+print("PASS: the generated brand-logo WebP is below 500 KB; no Header/Hero photo assets are generated.")
