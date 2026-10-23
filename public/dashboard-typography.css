@@ -335,3 +335,49 @@ html body :is(#dashboard#dashboard,#admin#admin) .card{padding:8px 0!important;m
 html body :is(#dashboard#dashboard,#admin#admin) .card:last-child{margin-bottom:0!important;}
 html body #dashboardContent .grid,html body #admin .grid{gap:12px!important;}
 html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin:0!important;}
+
+
+/* ---------- Admin Dashboard functional workgroups ---------- */
+#admin .admin-workgroup{
+  margin:26px 0 28px;
+  padding:17px 0 0;
+  border-top:2px solid #e4c98f;
+  scroll-margin-top:18px;
+}
+#admin .admin-workgroup-title{
+  margin:0 0 7px;
+  color:#861b28;
+  font-size:20px;
+  line-height:1.35;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+#admin .admin-workgroup-description{
+  margin:0 0 14px;
+  color:#343434;
+  font-size:13px;
+  line-height:1.6;
+  font-weight:400;
+}
+#admin .admin-workgroup>.card{
+  margin:10px 0 0;
+}
+#admin .admin-workgroup>.card:first-of-type{
+  margin-top:0;
+}
+@media(max-width:700px){
+  #admin .admin-workgroup{
+    margin:22px 0 24px;
+    padding-top:14px;
+    scroll-margin-top:12px;
+  }
+  #admin .admin-workgroup-title{
+    font-size:18px;
+    line-height:1.4;
+  }
+  #admin .admin-workgroup-description{
+    font-size:12px;
+    line-height:1.6;
+    margin-bottom:12px;
+  }
+}
