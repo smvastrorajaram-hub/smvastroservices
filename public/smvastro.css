@@ -3450,8 +3450,8 @@ html body #smv24-footer .smv24-contact{color:rgba(255,248,231,.96)!important;bor
 html body #smv24-footer .smv24-contact a{display:inline-flex!important;align-items:center!important;gap:8px!important;color:rgba(255,248,231,.96)!important;background:transparent!important;border:0px!important;box-shadow:none!important;text-shadow:none!important}
 html body #smv24-footer .smv24-social{display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;gap:22px!important}
 html body #smv24-footer .smv24-social a{display:flex!important;flex-direction:column!important;align-items:center!important;gap:7px!important;color:rgba(255,248,231,.96)!important;background:transparent!important;border:0px!important;padding:0px!important;box-shadow:none!important;font:500 13px / 1.4 Arial, sans-serif!important;text-shadow:none!important}
-html body #smv24-footer .smv24-scenery{margin:20px 0px 0px!important;padding:0px!important;height:390px!important;background:url("assets/footer.png") center bottom / cover no-repeat!important}
-html body #smv24-footer .smv24-scenery p{color:rgb(56, 32, 11)!important;font:italic 24px / 1.4 Georgia, serif!important;text-shadow:white 0px 1px 3px!important}
+html body #smv24-footer .smv24-scenery{position:relative!important;display:block!important;margin:20px 0px 0px!important;padding:0px!important;height:auto!important;min-height:0!important;max-height:none!important;background:transparent!important;aspect-ratio:auto!important}
+html body #smv24-footer .smv24-scenery p{position:static!important;top:auto!important;left:auto!important;width:auto!important;max-width:100%!important;margin:0 auto!important;padding:30px 16px!important;box-sizing:border-box!important;color:#ffe2a0!important;font:italic clamp(18px,2vw,24px)/1.4 Georgia,serif!important;text-align:center!important;text-shadow:none!important}
 html body #smv24-footer .smv24-copyright{background:rgb(133, 10, 32)!important;color:rgb(255, 255, 255)!important;padding:24px 16px!important;text-align:center!important;border-top:5px solid rgb(203, 163, 66)!important;font:400 14px / 1.6 Arial, sans-serif!important}
 html body #smv24-footer .smv24-copyright small{color:rgb(249, 221, 156)!important}
 html body .smv26-social-icon:where(:not(.smv-css-island,.smv-css-island *)){display:inline-block!important;width:28px!important;height:28px!important;min-width:28px!important;max-width:28px!important;object-fit:contain!important;border:0px!important;border-radius:5px!important;margin:0px!important;padding:0px!important;vertical-align:middle!important}
@@ -3467,7 +3467,7 @@ html body #smv24-footer .smv26-links h3{font-size:19px!important}
 html body #smv24-footer .smv26-links a{font-size:15px!important}
 html body #smv24-footer .smv24-social{gap:16px!important}
 html body #smv24-footer .smv24-social a{font-size:11px!important}
-html body #smv24-footer .smv24-scenery{height:270px!important;background-size:auto 100%!important}
+html body #smv24-footer .smv24-scenery{height:auto!important;min-height:0!important;max-height:none!important;background:transparent!important;background-image:none!important;background-size:auto!important;aspect-ratio:auto!important}
 html body #smv24-footer .smv24-scenery p{font-size:18px!important}
 html body.smv-v12-theme #smv-content-hub{max-width:none!important;margin-left:0px!important;margin-right:0px!important;padding:0px!important}
 html body.smv-v12-theme #smv-content-hub .feature-shell.card, html body.smv-v12-theme #smv-content-hub .smv-v173-subregion, html body.smv-v12-theme #smv-content-hub #publicBlogs > .blog-card, html body.smv-v12-theme #smv-content-hub #publicMedia .smv-media-type-grid > .media-card{display:block!important;flex:0 0 auto!important;width:100%!important;min-width:0px!important;max-width:100%!important;margin:0px 0px 20px!important;padding:0px!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;background:transparent!important;box-sizing:border-box!important}
@@ -4297,10 +4297,15 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     text-shadow:none!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
-    background:rgba(255,248,231,.96)!important;
-    border-color:#ff003b!important;
-    color:#ff003b!important;
-    -webkit-text-fill-color:#ff003b!important;
+    background:#ffd66b!important;
+    border-color:#fff0b4!important;
+    color:#541327!important;
+    -webkit-text-fill-color:#541327!important;
     font-weight:900!important;
+    text-shadow:none!important;
+  }
+  html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:focus-visible{
+    outline:3px solid #fff8e7!important;
+    outline-offset:2px!important;
   }
 }
