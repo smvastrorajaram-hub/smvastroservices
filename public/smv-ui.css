@@ -260,10 +260,10 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
 
 /* Keep Astrology Insights & Media on the same content width and rhythm as About/FAQ. */
 html body.smv-v12-theme #smv-content-hub{
-  width:calc(100% - 32px)!important;
+  width:100%!important;
   max-width:1160px!important;
   margin:34px auto!important;
-  padding:clamp(20px,3vw,32px) 0!important;
+  padding:0 16px!important;
   box-sizing:border-box!important;
   scroll-margin-top:16px!important;
 }
@@ -359,10 +359,10 @@ html body.smv-v12-theme #smv-content-hub :where(.blog-content,.blog-card p,.blog
 }
 @media(max-width:760px){
   html body.smv-v12-theme #smv-content-hub{
-    width:calc(100% - 32px)!important;
+    width:100%!important;
     max-width:1160px!important;
     margin:34px auto!important;
-    padding:clamp(20px,3vw,32px) 0!important;
+    padding:0 16px!important;
   }
 }
 
