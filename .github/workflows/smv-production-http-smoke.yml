@@ -80,15 +80,15 @@ jobs:
             url="$1"
             header_pattern="$2"
             headers="$(curl --location --retry 1 --connect-timeout 5 --max-time 15 --silent --show-error --dump-header - --output /dev/null "$url" || true)"
-            if printf '%s\\n' "$headers" | grep -Eiq "$header_pattern"; then
+            if printf '%s\n' "$headers" | grep -Eiq "$header_pattern"; then
               echo "$url => CORS header verified"
               return 0
             fi
             echo "::error::Expected CORS header not found for $url: $header_pattern"
-            printf '%s\\n' "$headers"
+            printf '%s\n' "$headers"
             return 1
           }
-          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs' '^access-control-allow-origin:[[:space:]]*\\*'
-          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css' '^access-control-allow-origin:[[:space:]]*\\*'
+          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs' '^access-control-allow-origin:[[:space:]]*\*'
+          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css' '^access-control-allow-origin:[[:space:]]*\*'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
