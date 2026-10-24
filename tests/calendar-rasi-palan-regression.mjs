@@ -37,6 +37,13 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
 
+test('The Horoscope Admin control refreshes its language after dynamic Admin panel updates', () => {
+  assert.match(horoscopeAdminSource, /const updateAccessLabel=\(lang=document\.documentElement\.lang\)=>\{access\.textContent=lang==='ta'\?'நிர்வாகி':'Admin';\}/);
+  assert.match(horoscopeAdminSource, /addEventListener\('smv-language',event=>updateAccessLabel\(event\.detail\)\)/);
+  assert.match(horoscopeAdminSource, /function loginForm\(\)\{verified=false;updateAccessLabel\(\);/);
+  assert.match(horoscopeAdminSource, /function editor\(\)[\s\S]*?updateAccessLabel\(\);/);
+});
+
 test('The Horoscope Admin header control has concise bilingual labels without resizing the header', () => {
   assert.ok(horoscopeIndexSource.includes('id="smvAdminRulesAccess" type="button" class="smv-admin-access" hidden aria-controls="smvAdminRulesPanel" aria-expanded="false">Admin</button>'));
   assert.ok(horoscopeLanguageSource.includes("'Admin':'நிர்வாகி'"));
