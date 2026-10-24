@@ -75,6 +75,10 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return String(date);
     return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   };
+  const fmtDateRange = date => {
+    const match = String(date || '').slice(0, 10).match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    return match ? match[3] + '/' + match[2] + '/' + match[1] : fmtDate(date);
+  };
   const weekdayName = date => {
     const parts = String(date).slice(0, 10).split('-').map(Number);
     if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return '';
@@ -460,12 +464,12 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       : L('Rasi Palan', 'ராசி பலன்கள்');
     let context;
     if (result.type === 'daily') context = L('Day: ', 'நாள்: ') + weekdayName(result.referenceDate) + ' · ' + fmtDate(result.referenceDate);
-    else if (result.type === 'weekly') context = L('Week: ', 'வாரம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+    else if (result.type === 'weekly') context = L('Week: ', 'வாரம்: ') + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
     else if (result.type === 'monthly' && result.monthKind === 'tamil') {
       const monthName = tamilSolarMonthLabels[result.tamilMonthSign] || tamilSolarMonthLabels[0];
-      context = L('Tamil solar month: ', 'தமிழ் மாதம்: ') + monthName[isTamil() ? 1 : 0] + ' · ' + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+      context = L('Tamil solar month: ', 'தமிழ் மாதம்: ') + monthName[isTamil() ? 1 : 0] + ' · ' + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
     }
-    else if (result.type === 'monthly') context = L('English calendar month: ', 'ஆங்கில மாதம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+    else if (result.type === 'monthly') context = L('English calendar month: ', 'ஆங்கில மாதம்: ') + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
     else context = L('Reference: ', 'கணக்கீட்டு அடிப்படை: ') + fmtDate(result.referenceDate) +
       (result.type === 'tamilNewYear' ? ' · ' + L('Chithirai 1', 'சித்திரை 1') : result.type === 'englishNewYear' ? ' · ' + L('January 1', 'ஜனவரி 1') : '');
     context += ' · ' + L('Count the other eight planetary houses from your selected Moon Rasi.', 'மற்ற எட்டு கிரகங்களின் பாவங்களைத் தேர்ந்தெடுத்த உங்கள் சந்திர ராசியிலிருந்து எண்ணவும்.') + ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
