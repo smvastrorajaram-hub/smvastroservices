@@ -138,6 +138,10 @@ try {
       '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
   }
   assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
+  await page.waitForFunction(
+    () => document.querySelector('#loginForm')?.dataset.adminModuleReady === 'true',
+    { timeout: 15000 }
+  );
 
   // Probe the LIVE permanent Pages Firebase Auth endpoint with fake credentials
   // only. This detects the exact API-key error after redirects without ever
