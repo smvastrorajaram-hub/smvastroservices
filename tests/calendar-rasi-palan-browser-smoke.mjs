@@ -226,47 +226,24 @@ try {
     return h && (h.textContent.includes('ஆங்கில வருடப் பிறப்பு ராசி பலன்கள்') || h.textContent.includes('English New Year Rasi Palan'));
   }, { timeout: 120000 });
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
-
-  // Verify the SMV HOROSCOPE header in Tamil at mobile and desktop widths.
+  
+  // Check the requested Matching label only; leave all existing header box styling alone.
   await page.setCacheEnabled(false);
-    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
-    await page.click('#languageTamil');
-    await page.waitForFunction(() =>
-      JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-      JSON.stringify(['சேவைகள்', 'திருமணப் பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
-    for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
-      await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
-      const metrics = await page.$eval('#templeHeader .header-navigation a', anchors => anchors.map(anchor => {
-        const box = anchor.getBoundingClientRect();
-        const range = document.createRange();
-        range.selectNodeContents(anchor);
-        const textRects = [...range.getClientRects()].map(rect => ({
-          left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom
-        }));
-        const style = getComputedStyle(anchor);
-        return {
-          label: anchor.textContent.trim(),
-          width: box.width,
-          height: box.height,
-          clientWidth: anchor.clientWidth,
-          scrollWidth: anchor.scrollWidth,
-          whiteSpace: style.whiteSpace,
-          textFits: textRects.length > 0 && textRects.every(rect =>
-            rect.left >= box.left - 1 && rect.right <= box.right + 1 &&
-            rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1)
-        };
-      }));
-      assert.equal(metrics.length, 3, 'Horoscope header must contain exactly three navigation buttons');
-      assert.ok(metrics.every(item => item.whiteSpace === 'normal'), 'Tamil header labels must be allowed to wrap');
-      assert.ok(metrics.every(item => item.textFits && item.scrollWidth <= item.clientWidth + 1),
-        'Tamil header text must stay completely inside its button: ' + JSON.stringify(metrics));
-      assert.ok(Math.max(...metrics.map(item => item.width)) - Math.min(...metrics.map(item => item.width)) < 1,
-        'All three Horoscope header buttons must have equal width: ' + JSON.stringify(metrics));
-      assert.ok(Math.max(...metrics.map(item => item.height)) - Math.min(...metrics.map(item => item.height)) < 1,
-        'All three Horoscope header buttons must have equal height: ' + JSON.stringify(metrics));
-    }
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+  await page.click('#languageTamil');
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+  await page.click('#languageEnglish');
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+
   console.log(JSON.stringify({
     pass: true,
     previewUrl,

@@ -19,7 +19,7 @@
  'Automatically calculates historical DST from your birth date and local birth time. For multi-zone countries, verify the IANA zone.':'பிறந்த தேதி மற்றும் உள்ளூர் பிறந்த நேரத்துக்கு ஏற்ப அந்தக் காலத்தில் நடைமுறையிலிருந்த கோடைக்கால நேர மாற்றம் (DST) தானாகக் கணக்கிடப்படும். ஒன்றுக்கும் மேற்பட்ட நேர மண்டலங்களைக் கொண்ட நாடுகளில் சரியான IANA நேர மண்டலத்தை உறுதிப்படுத்தவும்.',
  'Calculated automatically for a valid IANA zone. During a repeated DST hour, verify the recorded offset.':'சரியான IANA நேர மண்டலத்தின் அடிப்படையில் UTC நேர வேறுபாடு தானாகக் கணக்கிடப்படும். DST முடிவின்போது ஒரு மணி நேரம் இருமுறை நிகழ்ந்தால் பிறப்புப் பதிவில் உள்ள நேர வேறுபாட்டைச் சரிபார்க்கவும்.',
  'Birth Time Zone (UTC Offset)':'பிறந்த இட நேர மண்டலம் (UTC வேறுபாடு)','Use the UTC offset that was in effect at the birth place on the birth date, including daylight saving when relevant.':'பிறந்த நாளில் அந்த இடத்தில் அமலில் இருந்த UTC நேர வேறுபாட்டை உள்ளிடவும்; தேவையானால் கோடைக்கால நேர மாற்றத்தையும் சேர்க்கவும்.',
-  'SERVICES':'சேவைகள்','Services':'சேவைகள்','Matching':'திருமணப் பொருத்தம்','Calendar':'நாட்காட்டி','Horoscope':'ஜாதகம்','Login':'உள்நுழை','Register':'பதிவு செய்க','Logout':'வெளியேறு','Admin Login':'நிர்வாக உள்நுழைவு',
+  'SERVICES':'சேவைகள்','Services':'சேவைகள்','Matching':'பொருத்தம்','Calendar':'நாட்காட்டி','Horoscope':'ஜாதகம்','Login':'உள்நுழை','Register':'பதிவு செய்க','Logout':'வெளியேறு','Admin Login':'நிர்வாக உள்நுழைவு',
   'Create Horoscope':'ஜாதகம் உருவாக்குக','ENGLISH HOROSCOPE':'தமிழ் ஜாதகம்',
   'Enter birth date, birth time and select the exact birth place.':'பிறந்த தேதி, நேரம் மற்றும் சரியான பிறந்த இடத்தை உள்ளிடவும்.',
   'Chart Style':'ஜாதகக் கட்ட அமைப்பு',

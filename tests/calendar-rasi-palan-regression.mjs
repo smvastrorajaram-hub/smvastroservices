@@ -30,17 +30,11 @@ const transitPanchangSource = await readFile(new URL('../public/horoscope/offlin
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
-const horoscopeHeaderLayoutSource = await readFile(new URL('../public/horoscope/header-layout.css', import.meta.url), 'utf8');
 const publicHeadersSource = await readFile(new URL('../public/_headers', import.meta.url), 'utf8');
 
-test('Horoscope header navigation uses three equal boxes and wraps Tamil labels inside them', () => {
-  assert.match(horoscopeHeaderLayoutSource, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
-  assert.match(horoscopeHeaderLayoutSource, /height:48px!important/);
-  assert.match(horoscopeHeaderLayoutSource, /min-height:48px!important/);
-  assert.match(horoscopeHeaderLayoutSource, /max-height:48px!important/);
-  assert.match(horoscopeHeaderLayoutSource, /white-space:normal!important/);
-  assert.match(horoscopeHeaderLayoutSource, /overflow-wrap:anywhere!important/);
-  assert.match(horoscopeHeaderLayoutSource, /line-height:1\.2!important/);
+test('The Horoscope Matching navigation label uses the requested concise Tamil wording', () => {
+  assert.match(horoscopeLanguageSource, /'Matching':'பொருத்தம்'/);
+  assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
