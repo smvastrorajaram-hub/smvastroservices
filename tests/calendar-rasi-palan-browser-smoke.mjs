@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import { periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 
 const previewUrl = process.env.SMV_CALENDAR_PREVIEW_URL ||
   'https://fix-calendar-rasi-palan-admi.smvastroservices.pages.dev/horoscope/calendar/';
@@ -77,7 +78,7 @@ try {
     separateAdminLink: Boolean(document.querySelector('.calendar-product-nav a[href=\"./admin.html\"]'))
   }));
   assert.equal(publicUi.modeControl, false, 'Public Calendar must not show the prediction mode selector');
-  assert.equal(publicUi.dateControl, true, 'Customers should be able to choose the reference date for daily, weekly, and monthly forecasts');
+  assert.equal(publicUi.dateControl, false, 'Public Calendar must not show a customer reference-date selector');
   assert.equal(publicUi.yearControl, false, 'Customers must not be able to change the Rasi Palan year');
   assert.equal(publicUi.editor, false, 'Public Calendar must not show the manual editor');
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
@@ -99,9 +100,9 @@ try {
   // The Period tab is already selected by default; change only the period.
   await page.select('#calRasiPalan #rpRasi', '5');
   await page.select('#calRasiPalan #rpPeriod', 'daily');
-  assert.ok(await page.$('#calRasiPalan #rpDate'), 'Public forecast should provide a reference-date picker');
+  assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'Public forecast must not expose a reference-date picker');
   assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'No separate public year selector should be exposed');
-  await page.$eval('#calRasiPalan #rpDate', el => { el.value = '2026-10-24'; el.dispatchEvent(new Event('change', { bubbles: true })); });
+  const calendarDate = await page.$eval('#calDate', el => el.value);
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
@@ -116,8 +117,12 @@ try {
   assert.ok(/Moon|சந்திரன்/i.test(dailyState.moonHeading), 'Moon transit should have its own separate heading');
   assert.deepEqual(dailyState.outputOrder, ['moon', 'rasi'], 'Moon transit must appear before the eight other planets');
   assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Moon must not be duplicated in the eight-planet list');
-  assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its weekday and selected reference date');
-  assert.ok(dailyState.context.includes('2026') && /24/.test(dailyState.context), 'Daily reading must honor the selected reference date 24 October 2026');
+  assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its weekday and current local date');
+  const expectedDailyLabel = await page.evaluate(date => {
+    const [y,m,d]=date.split('-').map(Number);
+    return new Date(Date.UTC(y,m-1,d,12)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  }, calendarDate);
+  assert.ok(dailyState.context.includes(expectedDailyLabel), 'Daily reading must automatically use the current Calendar local date ('+expectedDailyLabel+').');
   await page.waitForFunction(() => /Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(document.querySelector('#calReadings')?.textContent || ''), { timeout: 60000 });
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
@@ -134,6 +139,13 @@ try {
   assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Weekly output should show eight planets for the selected Rasi');
   assert.equal(await page.$eval('#calRasiPalan .rp-moon-transit', el => el.dataset.transitPlanet), 'Moon', 'Weekly output should include a separate Moon transit prediction');
   assert.equal(await page.$eval('#calRasiPalan .rp-rasi-card', el => el.dataset.rasiIndex), '5', 'Selected Rasi must remain fixed when changing period');
+  const weeklyContext = await page.$eval('#calRasiPalan .rp-results-title p', el => el.textContent || '');
+  const weeklyRef = periodReference('weekly', calendarDate);
+  const formatWeekDate = date => {
+    const [y,m,d]=date.split('-').map(Number);
+    return new Date(Date.UTC(y,m-1,d,12)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  };
+  assert.ok(weeklyContext.includes(formatWeekDate(weeklyRef.start)) && weeklyContext.includes(formatWeekDate(weeklyRef.end)), 'Weekly output must use its automatic current weekly window.');
   // Capture the mobile layout before additional forecast sections.
   // This keeps screenshot rasterization independent of the heavier result DOM.
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
@@ -153,13 +165,16 @@ try {
   await page.select('#calRasiPalan #rpPeriod', 'monthly');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
-    const h = document.querySelector('#calRasiPalan .rp-results-title h3');
-    const p = document.querySelector('#calRasiPalan .rp-results-title p');
-    return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
-  }, { timeout: 90000 });
-  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 1, 'Monthly output should keep the selected Rasi');
-  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Monthly output should show eight planets for the selected Rasi');
-  assert.equal(await page.$eval('#calRasiPalan .rp-moon-transit', el => el.dataset.transitPlanet), 'Moon', 'Monthly output should include a separate Moon transit prediction');
+    const titles = [...document.querySelectorAll('#calRasiPalan .rp-results-title h3')].map(h => h.textContent);
+    const contexts = [...document.querySelectorAll('#calRasiPalan .rp-results-title p')].map(p => p.textContent);
+    return titles.some(h => /English Month|ஆங்கில மாத/.test(h)) &&
+      titles.some(h => /Tamil Month|தமிழ் மாத/.test(h)) &&
+      contexts.some(p => /English calendar month:|ஆங்கில மாதம்:/.test(p)) &&
+      contexts.some(p => /Tamil solar month:|தமிழ் மாதம்:/.test(p));
+  }, { timeout: 120000 });
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 2, 'Monthly output must show both Tamil solar-month and English calendar-month forecasts for the selected Rasi');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 16, 'Both monthly outputs should each show eight non-Moon planets');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-moon-transit').length), 2, 'Each monthly forecast should include its own separate Moon transit prediction');
 
   // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
