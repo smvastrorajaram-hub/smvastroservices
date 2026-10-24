@@ -239,6 +239,19 @@ try {
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
     JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+  await page.waitForSelector('#smvAdminOpenTools', { timeout: 20000 });
+  const unauthenticatedAdminState = await page.evaluate(() => ({
+    fixedHeaderAdminButton: Boolean(document.querySelector('#smvAdminRulesAccess')),
+    adminEntryVisible: !document.querySelector('#smvAdminToolsEntry')?.hidden,
+    normalLoginPresent: Boolean(document.querySelector('#smvHoroscopeAuth [data-login]')),
+    adminPanelVisible: !document.querySelector('#smvAdminRulesPanel')?.hidden
+  }));
+  assert.deepEqual(unauthenticatedAdminState, {
+    fixedHeaderAdminButton: false,
+    adminEntryVisible: false,
+    normalLoginPresent: true,
+    adminPanelVisible: false
+  }, 'Admin Rules and Calendar must remain hidden until the normal Horoscope login confirms Admin authorization');
   await page.click('#languageEnglish');
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===

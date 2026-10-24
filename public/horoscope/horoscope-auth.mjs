@@ -18,19 +18,49 @@ async function initLocalAuth(){
  })();return state.authReady;
 }
 async function refreshLocalUser(u,verifyRole=true){
- if(!u){state.token='';state.user=null;renderAuthStatus();return false}
+ if(!u){
+  state.token='';state.user=null;renderAuthStatus();
+  window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:false,isAdmin:false,role:null}}));
+  return false;
+ }
  await u.reload();
  if(!u.emailVerified){state.token='';state.user=null;state.epoch++;renderAuthStatus(ta()?'மின்னஞ்சல் சரிபார்ப்பு முடிந்த பிறகு Login செய்யவும்.':'Verify your email before logging in.');return false}
  const token=await u.getIdToken(true);
- if(verifyRole){const app=state.auth.app;const fsMod=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');const fs=fsMod.getFirestore(app);const snap=await fsMod.getDoc(fsMod.doc(fs,'smv_users',u.uid));const role=String(snap.data()?.role||'customer').toLowerCase();if(role!=='customer')throw Error('Customer account is required.');}
+ let role='customer',isAdmin=false;
+ if(verifyRole){
+  const app=state.auth.app;
+  const fsMod=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+  const fs=fsMod.getFirestore(app);
+  const snap=await fsMod.getDoc(fsMod.doc(fs,'smv_users',u.uid));
+  role=String(snap.data()?.role||'customer').toLowerCase();
+  isAdmin=role==='admin';
+  try{
+   // The existing protected Firestore read is the server-enforced Admin test.
+   await fsMod.getDocFromServer(fsMod.doc(fs,'smv_settings','prediction_editor_access'));
+   isAdmin=true;
+  }catch(error){
+   // A denied/unavailable Admin probe must not block ordinary Customer login.
+   if(role!=='customer'&&role!=='admin')throw Error('Customer account is required.');
+  }
+  if(role!=='customer'&&!isAdmin)throw Error('Customer account is required.');
+  if(isAdmin)role='admin';
+ }else if(state.user?.uid===u.uid){
+  role=state.user.role||'customer';isAdmin=state.user.isAdmin===true;
+ }
  if(state.user?.uid!==u.uid)state.epoch++;
- state.token=token;state.user={uid:u.uid,email:u.email||''};try{sessionStorage.setItem('smv-offline-owner',JSON.stringify(state.user));}catch{}renderAuthStatus();window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:true,uid:u.uid}}));return true;
+ state.token=token;state.user={uid:u.uid,email:u.email||'',role,isAdmin};
+ try{sessionStorage.setItem('smv-offline-owner',JSON.stringify({uid:u.uid,email:u.email||''}));}catch{}
+ renderAuthStatus();
+ window.dispatchEvent(new CustomEvent('smv:horoscope-local-auth',{detail:{loggedIn:true,uid:u.uid,role,isAdmin}}));
+ return true;
 }
 function renderAuthStatus(message=''){
  const host=document.getElementById('smvHoroscopeAuth');if(!host)return;
  const status=host.querySelector('[data-auth-status]');if(status){status.textContent=message||'';status.hidden=!message;}
  if(state.user){host.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());document.querySelectorAll('.smv-login-required-note').forEach(e=>e.remove());}
  host.classList.toggle('is-logged-in',!!state.user);
+ const adminEntry=document.getElementById('smvAdminToolsEntry');
+ if(adminEntry)adminEntry.hidden=!(state.user?.isAdmin===true&&state.auth?.currentUser?.uid===state.user.uid);
 }
 function showAuthForm(mode='login'){const host=document.getElementById('smvHoroscopeAuth');if(!host)return;host.dataset.mode=mode;host.querySelector('[data-auth-form]')?.removeAttribute('hidden');host.querySelector('[data-name-row]')?.toggleAttribute('hidden',mode==='login');host.querySelector('[data-phone-row]')?.toggleAttribute('hidden',mode==='login');const submit=host.querySelector('[data-auth-submit]');if(submit)submit.textContent=mode==='login'?(ta()?'LOGIN':'LOGIN'):(ta()?'REGISTER':'REGISTER');host.scrollIntoView({behavior:'auto',block:'center'});}
 async function loginLocal(){const host=document.getElementById('smvHoroscopeAuth'),email=host.querySelector('[data-email]')?.value.trim(),password=host.querySelector('[data-password]')?.value||'';if(!email||!password)throw Error(ta()?'Email மற்றும் Password தேவை.':'Email and password are required.');const {auth,authMod}=await initLocalAuth();const c=await authMod.signInWithEmailAndPassword(auth,email,password);await refreshLocalUser(c.user,true);host.querySelector('[data-auth-form]')?.setAttribute('hidden','');}
@@ -144,7 +174,7 @@ window.__smvRequireHoroscopeFeatureAccess=async(feature,gateRoot,onUnlock)=>{con
  renderFeatureLock(feature,gateRoot,f,onUnlock);return false;};
 window.__smvFeatureState=async feature=>{const cfg=await getFeatureConfig(true),f=cfg?.[feature]||FREE_CONFIG[feature],loggedIn=!!state.user,price=Number(f.price??0);let entitled=false;if(loggedIn&&f.enabled){entitled=price<=0||(await hasPaidAccess(feature));}return {loggedIn,enabled:!!f.enabled,price,free:!!f.enabled&&price<=0,entitled};};
 window.__smvHoroscopeLoggedIn=()=>!!state.user;
-window.__smvHoroscopeOwner=()=>state.user?{...state.user}:null;
+window.__smvHoroscopeOwner=()=>state.user?{uid:state.user.uid,email:state.user.email}:null;
 window.__smvEnsureHoroscopeAuthReady=async()=>{await initLocalAuth();if(state.auth?.currentUser&&!state.user)await refreshLocalUser(state.auth.currentUser,false);return !!state.user;};
 window.addEventListener('smv:report-ready',e=>{if(paymentFeature&&e.detail?.feature===paymentFeature){setTimeout(()=>{closePaymentWindow();e.detail?.root?.scrollIntoView?.({behavior:'auto',block:'start'});},350);}});
 window.addEventListener('DOMContentLoaded',bindAuthUI);

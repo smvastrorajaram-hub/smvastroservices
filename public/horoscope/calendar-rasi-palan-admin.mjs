@@ -199,7 +199,7 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
         import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js')
       ]);
-      const app = appModule.getApps().find(x => x.name === 'smv-prediction-admin-auth');
+      const app = appModule.getApps().find(x => x.name === 'smv-horoscope-local');
       if (!app) throw new Error('ஏற்கெனவே உள்ள SMV HOROSCOPE Admin Firebase session கிடைக்கவில்லை.');
       fsApi = firestoreModule;
       db = firestoreModule.getFirestore(app);

@@ -5,9 +5,8 @@
  * The SINGLE offline Swiss calculation/15-year timeline is reused for rule revisions.
  */
 (()=>{'use strict';
-const adminButton=document.getElementById('smvAdminRulesAccess');
 const adminPanel=document.getElementById('smvAdminRulesPanel');
-if(!adminButton||!adminPanel)return;
+if(!adminPanel)return;
 const rootPath=new URL('./',import.meta.url);
 const by=id=>document.getElementById(id);
 const E=()=>window.SMVPredictionRules;
@@ -406,7 +405,8 @@ function bindAutoTranslation(){const area=adminPanel.querySelector('#smvAdminEdi
 }
 async function start(){if(connecting)return connecting;connecting=(async()=>{
  try{const [apps,authMod,fsM]=await Promise.all([import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js'),import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js')]);
-  let app;for(let i=0;i<50;i++){app=apps.getApps().find(x=>x.name==='smv-prediction-admin-auth');if(app)break;await sleep(110);}if(!app)return;
+  await window.__smvEnsureHoroscopeAuthReady?.();
+  const app=apps.getApps().find(x=>x.name==='smv-horoscope-local');if(!app)return;
   auth=authMod.getAuth(app);
   if(detach)return;
   detach=authMod.onAuthStateChanged(auth,async user=>{
@@ -435,12 +435,7 @@ async function restoreAfterOpen(){
   await sleep(120);
  }
 }
-adminButton.addEventListener('click',()=>{start().then(restoreAfterOpen).catch(()=>{});},false);
-// Admin password submission can finish well after the access button click.
-// Listen only to the existing form submission; do not insert any auth/Firebase read.
-adminPanel.addEventListener('submit',e=>{
- if(e.target?.id==='smvAdminLoginForm')start().then(restoreAfterOpen).catch(()=>{});
-},true);
+window.addEventListener('smv:admin-console-open',()=>{start().then(restoreAfterOpen).catch(()=>{});},false);
 adminPanel.addEventListener('click',e=>{
  if(e.target?.closest?.('#smvAdminTabA,#smvAdminTabB')){if(canUse())shell();else if(auth?.currentUser)start().catch(()=>{});}
 });

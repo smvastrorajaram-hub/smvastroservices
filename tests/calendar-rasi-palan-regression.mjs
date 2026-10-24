@@ -21,6 +21,7 @@ const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
 const calendarForecastAdminSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan-admin.mjs', import.meta.url), 'utf8');
+const horoscopeAuthSource = await readFile(new URL('../public/horoscope/horoscope-auth.mjs', import.meta.url), 'utf8');
 const horoscopeAdminWorkbenchSource = await readFile(new URL('../public/horoscope/prediction-admin-workbench.mjs', import.meta.url), 'utf8');
 const horoscopeAdminSource = await readFile(new URL('../public/horoscope/prediction-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
@@ -37,12 +38,21 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
 
-test('The Horoscope Admin header control has concise bilingual labels without resizing the header', () => {
-  assert.ok(horoscopeIndexSource.includes('id="smvAdminRulesAccess" type="button" class="smv-admin-access" hidden aria-controls="smvAdminRulesPanel" aria-expanded="false">Admin</button>'));
-  assert.ok(horoscopeLanguageSource.includes("'Admin':'நிர்வாகி'"));
-  assert.ok(horoscopeAdminSource.includes("access.textContent='Admin'"));
-  assert.ok(!horoscopeAdminSource.includes("access.textContent='Admin Login'"));
-  assert.ok(!horoscopeAdminSource.includes("access.textContent='Admin Rules'"));
+test('Horoscope Admin Rules and Calendar use the existing login without a separate header Admin button', () => {
+  assert.equal(horoscopeIndexSource.includes('id="smvAdminRulesAccess"'), false, 'The fixed/header Admin button must be removed');
+  assert.ok(horoscopeIndexSource.includes('id="smvAdminToolsEntry" hidden'), 'Admin tools stay hidden until the Horoscope login validates an Admin account');
+  assert.ok(horoscopeIndexSource.includes('id="smvAdminOpenTools"'), 'Authenticated admins have a page-level entry to reopen the console');
+  assert.match(horoscopeAuthSource, /getDocFromServer\(fsMod\.doc\(fs,'smv_settings','prediction_editor_access'\)\)/);
+  assert.match(horoscopeAuthSource, /detail:\{loggedIn:true,uid:u\.uid,role,isAdmin\}/);
+  assert.match(horoscopeAuthSource, /state\.user\?\.isAdmin===true/);
+  assert.match(horoscopeAdminSource, /smv-horoscope-local/);
+  assert.doesNotMatch(horoscopeAdminSource, /smv-prediction-admin-auth|smvAdminLoginForm|signInWithEmailAndPassword/);
+  assert.match(horoscopeAdminSource, /window\.addEventListener\('smv:horoscope-local-auth'/);
+  assert.match(horoscopeAdminWorkbenchSource, /smv-horoscope-local/);
+  assert.doesNotMatch(horoscopeAdminWorkbenchSource, /smv-prediction-admin-auth|smvAdminRulesAccess|smvAdminLoginForm/);
+  assert.ok(horoscopeAdminWorkbenchSource.includes("window.addEventListener('smv:admin-console-open'"), 'Workbench starts only after authenticated Admin console opens');
+  assert.match(calendarForecastAdminSource, /smv-horoscope-local/);
+  assert.doesNotMatch(calendarForecastAdminSource, /smv-prediction-admin-auth/);
 });
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
@@ -147,7 +157,7 @@ test('Calendar manual predictions are managed inside the existing Horoscope Admi
   assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
   assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
   assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
-  assert.match(horoscopeAdminWorkbenchSource, /smv-prediction-admin-auth/);
+  assert.match(horoscopeAdminWorkbenchSource, /smv-horoscope-local/);
   assert.match(horoscopeAdminSource, /smv_settings','prediction_editor_access/);
   assert.match(calendarForecastAdminSource, /smv_content', 'calendar_rasi_palan_v1/);
   for (const type of ['daily','weekly','monthly','tamilNewYear','englishNewYear','jupiterTransit','saturnTransit','rahuKetuTransit']) {
