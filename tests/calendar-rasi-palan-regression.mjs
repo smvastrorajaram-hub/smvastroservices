@@ -20,6 +20,7 @@ const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calend
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
+const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
 
 test('Daily/weekly/monthly and New Year rules include exactly eight transiting planets, never a Moon prediction', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
@@ -101,6 +102,8 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /signInWithEmailAndPassword/);
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
+  assert.ok(adminModuleSource.includes('authDomain: (location.hostname'), 'Admin Firebase config must contain a real authDomain property');
+  assert.ok(!adminModuleSource.includes('\\n  authDomain:'), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
   assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(adminModuleSource, /tamilNewYear/);
@@ -119,7 +122,28 @@ test('Planetary ingress section computes only the latest past transit per planet
 
 test('Selecting the already-active public section does not rebuild the entire Calendar UI', () => {
   assert.match(publicRasiPalanSource, /const nextSection = button\.dataset\.section;\s+if \(state\.section === nextSection\) return;/);
+})
+ 
+test('Selected Rasi controls all forecast periods and is preserved across sections', () => {
+   assert.ok(publicRasiPalanSource.includes('id="rpRasi"'));
+   assert.ok(publicRasiPalanSource.includes('selectedRasiStorageKey'));
+   assert.ok(publicRasiPalanSource.includes('state.rasiIndex = value'));
+   assert.ok(publicRasiPalanSource.includes('data-rasi-index'));
+   assert.ok(publicRasiPalanSource.includes('const rasi = rasiLabels[rasiIndex];'));
 });
+
+test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin.html as its own route', () => {
+   assert.ok(calendarIndexSource.includes('<a class="is-current" href="./admin.html" aria-current="page">Admin</a>'));
+   assert.ok(!calendarIndexSource.includes('<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>'));
+   assert.ok(adminPageSource.includes('href="https://smvastroservices.in/">SMV ASTRO</a>'));
+   assert.ok(adminPageSource.includes('href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>'));
+   assert.ok(adminPageSource.includes('class="admin-product-nav"'));
+   assert.ok(calendarWorkerSource.includes("'./admin.html'"));
+   assert.ok(calendarWorkerSource.includes("const cacheKey='./'+relativePath;"));
+   assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
+   assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
+});
+;
 
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
