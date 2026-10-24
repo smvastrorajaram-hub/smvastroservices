@@ -105,6 +105,16 @@ try {
   assert.ok(adminUi.loginVisible, 'Admin page should display the Firebase login form');
   assert.ok(adminUi.title.includes('Admin'), 'Admin page header must identify the Admin screen');
 
+  // Never send Firebase auth requests from a temporary branch-preview origin.
+  // Deliberately fake credentials prove the redirect happens before authentication.
+  await page.$eval('#loginForm #adminEmail', el => { el.value = 'preview-probe@example.invalid'; });
+  await page.$eval('#loginForm #adminPassword', el => { el.value = 'not-a-real-password'; });
+  await page.click('#loginForm #loginButton');
+  await page.waitForFunction(() =>
+    location.hostname === 'smvastroservices.pages.dev' &&
+    location.pathname.endsWith('/horoscope/calendar/admin.html'),
+  { timeout: 30000 });
+  assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
   await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
