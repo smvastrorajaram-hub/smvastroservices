@@ -21,8 +21,9 @@ const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
-test('Daily/weekly/monthly and New Year rules include exactly eight transiting planets, never a Moon prediction', () => {
+test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
   assert.equal(RASI_PALAN_PLANETS.some(p => p.key === 'Moon'), false);
 });
@@ -65,10 +66,15 @@ test('New Year labels are the exact requested names and avoid an annual-transit 
   assert.doesNotMatch(RASI_PALAN_TITLES.tamilNewYear.en, /Annual Transit/i);
 });
 
-test('Calendar daily Rasi Palan has no separate Moon transit prediction and shows only eight transit planets', () => {
-  assert.doesNotMatch(dailyCalendarSource, /L\('Moon transit'/);
-  assert.match(dailyCalendarSource, /All eight transit planets/);
-  assert.match(dailyCalendarSource, /ps\.filter\(x=>x\.name!=='Moon'\)\.map\(x=>/);
+test('Moon transit appears first, the eight other planets remain separate, and old duplicate forecast blocks are removed', () => {
+  assert.match(publicRasiPalanSource, /function renderMoonTransit/);
+  assert.ok(publicRasiPalanSource.includes('renderMoonTransit(result, rasiIndex) + cards'));
+  assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
+  assert.match(dailyCalendarSource, /Birth Star, Tara Bala & Chandrashtama/);
+  assert.match(dailyCalendarSource, /Tara Bala/);
+  assert.match(dailyCalendarSource, /Chandrashtama/);
+  assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
+  assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
 });
 
 test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
@@ -102,6 +108,8 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /signInWithEmailAndPassword/);
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
+  assert.match(adminModuleSource, /auth\/api-key-not-valid/);
+  assert.match(adminModuleSource, /Google Cloud Console/);
   assert.ok(adminModuleSource.includes('authDomain: (location.hostname'), 'Admin Firebase config must contain a real authDomain property');
   assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
@@ -130,6 +138,8 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
    assert.ok(publicRasiPalanSource.includes('state.rasiIndex = value'));
    assert.ok(publicRasiPalanSource.includes('data-rasi-index'));
    assert.ok(publicRasiPalanSource.includes('const rasi = rasiLabels[rasiIndex];'));
+   assert.ok(publicRasiPalanSource.includes("calendarHost.insertAdjacentElement('afterend', root)"));
+   assert.ok(publicRasiPalanSource.includes("document.getElementById('calRasi')"));
 });
 
 test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin.html as its own route', () => {
@@ -142,6 +152,9 @@ test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin
    assert.ok(calendarWorkerSource.includes("const cacheKey='./'+relativePath;"));
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
+   assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
+   assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
+   assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc')));
 });
 ;
 
