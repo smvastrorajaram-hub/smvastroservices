@@ -243,3 +243,9 @@ test('Public calendar takes published mode/data from Firestore online and uses b
   assert.match(publicRasiPalanSource, /selectReading\(supportsPublishedManual \? publishedMode : 'automatic'/);
   assert.match(publicRasiPalanSource, /Swiss Ephemeris · programmed rules/);
 });
+
+test('Weekly and monthly date ranges use valid digit classes for DD/MM/YYYY formatting', () => {
+  const dateMatcher = String.raw`match(/^(\d{4})-(\d{2})-(\d{2})$/)`;
+  assert.ok(publicRasiPalanSource.includes(dateMatcher), 'ISO dates must parse before formatting weekly/monthly period ranges');
+  assert.doesNotMatch(publicRasiPalanSource, /match\(\/\^\(\\\\d\{4\}\)/, 'Date-range regex must not match literal backslash-d');
+});
