@@ -10,12 +10,16 @@ const types = {
   saturnTransit: { label: 'சனி பெயர்ச்சி பலன்கள்', kind: 'transit', planets: ['Saturn'] },
   rahuKetuTransit: { label: 'ராகு–கேது பெயர்ச்சி பலன்கள்', kind: 'transit', planets: ['Rahu', 'Ketu'] }
 };
+const calendarHost = location.hostname.toLowerCase();
+const isPermanentPagesHost = calendarHost === 'smvastroservices.pages.dev';
+const isProductionCalendarHost = calendarHost === 'calendar.smvastroservices.in';
+const isTemporaryPagesPreview = calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost;
 const firebaseConfig = {
   apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-  // Match SMV ASTRO's authentication domain on production and Pages previews.
-  authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))
-    ? 'smv-astro.firebaseapp.com'
-    : 'auth.smvastroservices.in',
+  // Keep the two permanent hosting/authentication pairs separate.
+  // Custom domain: calendar.smvastroservices.in -> auth.smvastroservices.in
+  // Cloudflare Pages fallback: smvastroservices.pages.dev -> smv-astro.firebaseapp.com
+  authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com',
   projectId: 'smv-astro',
   storageBucket: 'smv-astro.firebasestorage.app',
   messagingSenderId: '299081899217',
@@ -196,6 +200,18 @@ function commitCurrentPrediction(remove = false) {
 }
 async function login(event) {
   event.preventDefault();
+  // Google API-key HTTP-referrer restrictions should cover the permanent Pages host,
+  // not every temporary PR branch hostname. Never attempt Admin auth from a branch preview.
+  if (isTemporaryPagesPreview) {
+    const target = new URL('/horoscope/calendar/admin.html', 'https://smvastroservices.pages.dev');
+    status('இது தற்காலிக Preview முகவரி. Admin Login-ஐ நிரந்தர Cloudflare Pages முகவரியில் தொடர்கிறோம்: smvastroservices.pages.dev');
+    location.replace(target.href);
+    return;
+  }
+  if (!isPermanentPagesHost && !isProductionCalendarHost) {
+    status('Admin Login-க்கு calendar.smvastroservices.in அல்லது smvastroservices.pages.dev முகவரியைப் பயன்படுத்தவும்.', true);
+    return;
+  }
   const button = $('loginButton');
   button.disabled = true;
   status('Admin உரிமை சரிபார்க்கப்படுகிறது…');
