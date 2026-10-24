@@ -24,6 +24,9 @@ const calendarForecastAdminSource = await readFile(new URL('../public/horoscope/
 const horoscopeAdminWorkbenchSource = await readFile(new URL('../public/horoscope/prediction-admin-workbench.mjs', import.meta.url), 'utf8');
 const horoscopeAdminSource = await readFile(new URL('../public/horoscope/prediction-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const calendarCalculationWorkerSource = await readFile(new URL('../public/horoscope/calendar-worker.mjs', import.meta.url), 'utf8');
+const swissVedicBrowserSource = await readFile(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs', import.meta.url), 'utf8');
+const transitPanchangBrowserSource = await readFile(new URL('../public/horoscope/offline/transit_panchang.browser.mjs', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
@@ -173,6 +176,24 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
    assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
 });
+test('Calendar Panchang boundary scans and event checks use Sun/Moon-only Swiss calculations', () => {
+  assert.ok(swissVedicBrowserSource.includes('export async function initializeSwissEphemeris'));
+  assert.ok(swissVedicBrowserSource.includes('export function calculateSunMoonLongitudesSync'));
+  assert.ok(swissVedicBrowserSource.includes('const sunMoonLongitudeCache = new Map()'));
+  assert.ok(transitPanchangBrowserSource.includes('function cachedSwissChart(input)'));
+  assert.ok(transitPanchangBrowserSource.includes('calculateSunMoonLongitudesSync({...input,date,time})'));
+  const eventState = transitPanchangBrowserSource.slice(
+    transitPanchangBrowserSource.indexOf('function panchangEventState'),
+    transitPanchangBrowserSource.indexOf('function panchangBoundary')
+  );
+  assert.ok(!eventState.includes('SwissVedic.calculateSwiss'), 'Boundary scans must not invoke the complete horoscope engine');
+  assert.ok(eventState.includes('calculateSunMoonLongitudesSync'));
+  assert.ok(calendarCalculationWorkerSource.includes('function sample(input,time){const {sun,moon}=calculateSunMoonLongitudesSync'));
+  assert.ok(!calendarCalculationWorkerSource.includes('await calculateSwiss(input)'), 'Calendar worker must not calculate a throwaway full chart to warm WASM');
+  assert.ok(calendarCalculationWorkerSource.includes('await initializeSwissEphemeris()'));
+  assert.ok(calendarCalculationWorkerSource.includes('const p=panchang(input),t=transit(input)'));
+});
+
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
   assert.match(publicRasiPalanSource, /async function chartAtLocalTime\(date, time, cfg\)/);

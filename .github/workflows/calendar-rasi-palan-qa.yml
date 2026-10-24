@@ -9,6 +9,9 @@ on:
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
+      - 'public/horoscope/calendar-worker.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
@@ -21,6 +24,9 @@ on:
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
+      - 'public/horoscope/calendar-worker.mjs'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
@@ -42,15 +48,21 @@ jobs:
       - name: Syntax-check only Calendar Rasi Palan source and tests
         run: |
           set -euo pipefail
+          node --check public/horoscope/calendar-worker.mjs
+          node --check public/horoscope/offline/swiss_vedic.browser.mjs
+          node --check public/horoscope/offline/transit_panchang.browser.mjs
           node --check public/horoscope/calendar-rasi-palan.mjs
           node --check public/horoscope/calendar-rasi-palan-admin.mjs
           node --check public/horoscope/prediction-admin-workbench.mjs
           node --check public/horoscope/calendar/sw.js
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
+          node --check tests/calendar-ephemeris-fast-path.mjs
           node --check tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Run scoped Calendar Rasi Palan regression
         run: node tests/calendar-rasi-palan-regression.mjs
+      - name: Verify fast Calendar calculations match full Swiss Ephemeris
+        run: node tests/calendar-ephemeris-fast-path.mjs
   browser-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -63,7 +75,7 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Test the active Cloudflare Calendar branch preview
         env:
-          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-rasi-palan-admi.smvastroservices.pages.dev/horoscope/calendar/
+          SMV_CALENDAR_PREVIEW_URL: https://perf-calendar-ephemeris-reus.smvastroservices.pages.dev/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Preserve Calendar preview screenshots
         if: always()

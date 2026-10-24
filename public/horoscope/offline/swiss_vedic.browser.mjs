@@ -819,3 +819,65 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
 
 export async function calculateSwiss(input){ await ensureSwe(); return calculateSwissReady(input); }
 export function calculateSwissSync(input){ return calculateSwissReady(input); }
+
+const sunMoonLongitudeCache = new Map();
+
+/** Initialize only the local Swiss Ephemeris WASM boundary without a full chart. */
+export async function initializeSwissEphemeris(){
+  await ensureSwe();
+  return true;
+}
+
+/**
+ * Fast path for Panchang boundary scans and calendar-event checks.
+ * Uses the same Julian-date conversion, Lahiri settings, flags and fallback
+ * as the full engine. Values use the same 8-decimal rounding as its chart.
+ */
+export function calculateSunMoonLongitudesSync(input={}){
+  if(!swe) throw new Error('Swiss Ephemeris WASM is not initialized.');
+  const ds=String(input.date||''), ts=String(input.time||'');
+  const m=ts.match(/^(\d{1,2}):(\d{2})$/);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m) throw new Error('பிறந்த தேதி / நேரம் சரியாக உள்ளிடவும்.');
+  const hh=Number(m[1]), mm=Number(m[2]);
+  if(hh>23||mm>59) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும்.');
+  const latitude=Number(input.lat), longitude=Number(input.lon);
+  if(input.lat===null||input.lat===undefined||String(input.lat).trim()===''||
+     input.lon===null||input.lon===undefined||String(input.lon).trim()===''||
+     !Number.isFinite(latitude)||latitude < -90||latitude > 90||
+     !Number.isFinite(longitude)||longitude < -180||longitude > 180){
+    throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
+  }
+  const [y,mo,d]=ds.split('-').map(Number);
+  const civilDate=new Date(0); civilDate.setUTCFullYear(y,mo-1,d);
+  if(y<1||y>9999||!Number.isFinite(+civilDate)||civilDate.getUTCFullYear()!==y||
+     civilDate.getUTCMonth()!==mo-1||civilDate.getUTCDate()!==d){
+    throw new Error('பிறந்த தேதி சரியாக உள்ளிடவும்.');
+  }
+  const offsetMinutes=Number(input.utcOffsetMinutes??330);
+  if(!Number.isFinite(offsetMinutes)||offsetMinutes < -720||offsetMinutes > 840){
+    throw new Error('UTC offset சரியாக உள்ளிடவும்.');
+  }
+  const cacheKey=JSON.stringify([ds,ts,latitude,longitude,offsetMinutes]);
+  const cached=sunMoonLongitudeCache.get(cacheKey);
+  if(cached)return cached;
+  const localTotal=hh*60+mm, utcTotal=localTotal-offsetMinutes;
+  const dayShift=Math.floor(utcTotal/1440), normalized=((utcTotal%1440)+1440)%1440;
+  const utcBase=new Date(Date.UTC(y,mo-1,d)); utcBase.setUTCDate(utcBase.getUTCDate()+dayShift);
+  const utc=swe.utc_to_jd(
+    utcBase.getUTCFullYear(),utcBase.getUTCMonth()+1,utcBase.getUTCDate(),
+    Math.floor(normalized/60),normalized%60,0,C.SE_GREG_CAL
+  );
+  fail(utc,'UTC/JD');
+  const jdEt=utc.data[0], ephePath=setEphe();
+  if(typeof swe.set_sid_mode==='function'&&C.SE_SIDM_LAHIRI!==undefined) swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
+  const useSwissFiles=hasSwissEpheFiles(ephePath);
+  const flags=(useSwissFiles?C.SEFLG_SWIEPH:C.SEFLG_MOSEPH)|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+  const moshierFlags=C.SEFLG_MOSEPH|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+  const sun=calcPlanetSafe(jdEt,C.SE_SUN,flags,moshierFlags,'சூரியன்',useSwissFiles).result.data[0];
+  const moon=calcPlanetSafe(jdEt,C.SE_MOON,flags,moshierFlags,'சந்திரன்',useSwissFiles).result.data[0];
+  const result={sun:Number(norm360(Number(sun)).toFixed(8)),moon:Number(norm360(Number(moon)).toFixed(8))};
+  sunMoonLongitudeCache.set(cacheKey,result);
+  if(sunMoonLongitudeCache.size>512)sunMoonLongitudeCache.delete(sunMoonLongitudeCache.keys().next().value);
+  return result;
+}
+
