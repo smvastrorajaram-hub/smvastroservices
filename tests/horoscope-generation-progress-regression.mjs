@@ -19,6 +19,10 @@ yes(form.includes('const generationId=(window.__smvHoroscopeGenerationId=Number(
 no(form.includes('ensureLongPredictionComplete'),'obsolete whole-report timeline wait was removed');
 const accessPrelude=form.slice(form.indexOf('// Keep the result hidden through access checking'),form.indexOf('const runEnglishAdvanced=async()=>{'));
 no(accessPrelude.includes("target.classList.remove('hidden')"),'result is not released before access resolution');
+yes(horoscope.includes("window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess)"),'Tamil Horoscope uses the shared Admin ON/OFF and payment access policy before Advanced calculation');
+yes(horoscope.includes('if(advancedAllowed)await runAdvancedAfterAccess()')&&horoscope.includes('else releaseBasicResult()'),'a Basic-only or locked result releases the already-calculated D1 chart');
+yes(horoscope.includes('if(coreChart&&resultBox)')&&horoscope.includes("resultBox.classList.remove('hidden')"),'an Advanced-stage error cannot keep a successful Basic Rasi/Nakshatra result hidden');
+yes(horoscope.includes("advRoot.querySelector('.smv-horoscope-pay-gate')"),'the relevant payment/status gate stays visible with the Basic result when applicable');
 yes(horoscope.includes('data-smv-long-pending-message'),'Section X shows that its 15-year refinement is in progress');
 yes(horoscope.includes("advancedRoot.dataset.smvLongPending!=='1'")&&horoscope.includes("integrated.getAttribute('data-smv-15-year-ready')==='1'"),'Save/Print remain gated until all 12 topics are ready');
 yes(horoscope.includes("document.addEventListener('click',async event=>")&&horoscope.includes("button.closest('#englishHoroscopeResult, #tamilHoroscopeResult')"),'Save/Print gate listens at the outer report host where controls are attached');
