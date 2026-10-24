@@ -590,6 +590,11 @@ function renderPublicPorutham(b,g,out){
  out.innerHTML=`<section class="mm-person-result mm-public-porutham-only"><h3>${T('Nakshatra Porutham','நட்சத்திரப் பொருத்தம்')} · ${pr.score}/10</h3>${mmNakshatraHumanReading(pr)}${mmV253PublicFactors(pr)}${mmPoruthamEvidence(pr)}</section>`;
  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);
  window.__smvLocalizeTamilResult?.(out,lang());
+ // The shared auth/config startup can clear and hide #mmResult asynchronously.
+ // A successful Basic Nakshatra render must explicitly release that container.
+ out.hidden=false;
+ out.classList.remove('hidden');
+ out.setAttribute('aria-busy','false');
  out.dataset.resultLanguage=lang();
 }
 async function matchingViews(b,g,out){
