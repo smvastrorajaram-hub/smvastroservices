@@ -228,8 +228,18 @@ try {
   const englishButton = await page.$('#calEnglish');
   if (englishButton) {
     await englishButton.click();
-    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
   }
+  // Language selection changes the document lang first; the Calendar forecast
+  // MutationObserver then replaces its controls. Wait for the rebuilt English
+  // control itself, not only the earlier lang attribute, before clicking it.
+  await page.waitForFunction(() => {
+    const button = document.querySelector('#calRasiPalan [data-section="englishNewYear"]');
+    return document.documentElement.lang === 'en' &&
+      button && button.isConnected &&
+      button.textContent.includes('English New Year Rasi Palan') &&
+      button.getClientRects().length > 0;
+  }, { timeout: 15000 });
+  await page.$eval('#calRasiPalan [data-section="englishNewYear"]', el => el.scrollIntoView({ block: 'center', inline: 'center' }));
   await page.click('#calRasiPalan [data-section="englishNewYear"]');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
