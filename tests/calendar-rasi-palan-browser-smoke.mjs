@@ -143,7 +143,7 @@ try {
   const weeklyRef = periodReference('weekly', calendarDate);
   const formatWeekDate = date => {
     const [y,m,d]=date.split('-').map(Number);
-    return new Date(Date.UTC(y,m-1,d,12)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+    return String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
   };
   assert.ok(weeklyContext.includes(formatWeekDate(weeklyRef.start)) && weeklyContext.includes(formatWeekDate(weeklyRef.end)), 'Weekly output must use its automatic current weekly window.');
   // Capture the mobile layout before additional forecast sections.
