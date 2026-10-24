@@ -186,7 +186,7 @@ test('Panchang boundary searches use cached lightweight Sun/Moon calculations an
   assert.match(transitPanchangSource, /calculateSunMoonSync/);
   assert.match(transitPanchangSource, /const panchangLongitudeCache = new Map\(\)/);
   assert.match(transitPanchangSource, /preCalculatedChart=null/);
-  assert.match(calendarCalculationWorkerSource, /calculateSunMoonSync/);
+  assert.match(calendarCalculationWorkerSource, /calculateSunMoon/);
   assert.match(calendarCalculationWorkerSource, /const chart=await calculateSwiss\(input\);const p=panchang\(input,chart\),t=transit\(input,chart\)/);
 });
 
