@@ -215,7 +215,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   async function runPeriodForecast() {
     const cfg = getLocation();
-    const anchorDate = defaultDate();
+    const anchorDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
     const dateRef = periodReference(state.period, anchorDate);
     const calc = await chartAtSunrise(dateRef.date, cfg);
     const positions = positionsFromChart(calc.chart);
@@ -322,7 +322,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     return L('Manual reading not published', 'கையேடு பலன் இன்னும் வெளியிடப்படவில்லை');
   }
   function modeText(auto, key, type) {
-    const supportsPublishedManual = ['tamilNewYear', 'englishNewYear', 'jupiterTransit', 'saturnTransit', 'rahuKetuTransit'].includes(type);
+    const supportsPublishedManual = ['daily', 'weekly', 'monthly', 'tamilNewYear', 'englishNewYear', 'jupiterTransit', 'saturnTransit', 'rahuKetuTransit'].includes(type);
     return selectReading(supportsPublishedManual ? publishedMode : 'automatic', auto, publishedEntries[key], '');
   }
   function renderPlanetCard(result, rasiIndex, body) {
@@ -345,11 +345,14 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       throw new Error(L('The transit Moon sign could not be calculated.', 'கோச்சார சந்திர ராசியைக் கணக்கிட முடியவில்லை.'));
     }
     const house = houseFromRasi(moonSign, rasiIndex);
-    const reading = autoText('Moon', moonSign, rasiIndex, isTamil());
+    const moonKey = entryFor(result, rasiIndex, 'Moon', isTamil() ? 'ta' : 'en');
+    const automatic = autoText('Moon', moonSign, rasiIndex, isTamil());
+    const selected = modeText(automatic, moonKey, result.type);
+    const reading = selected.text || L('No manual text for this Moon-sign and language; please publish a reading or use Automatic / Hybrid mode.', 'இந்தச் சந்திர ராசி மற்றும் மொழிக்கான கையேடு பலன் இல்லை; பலனை வெளியிடவும் அல்லது Automatic / Hybrid முறையைத் தேர்ந்தெடுக்கவும்.');
     return '<section class="rp-moon-transit" data-transit-planet="Moon"><h4>' +
       esc(L('Moon Transit Prediction', 'சந்திரன் கோச்சார பலன்')) + '</h4><p class="rp-position">' +
       esc(L('House ', 'பாவம் ') + house + ' · ' + rasiLabel(moonSign)) +
-      '</p><p class="rp-reading">' + esc(reading) + '</p></section>';
+      '</p><p class="rp-reading">' + esc(reading) + '</p><small class="rp-source">' + esc(sourceLabel(selected.source)) + '</small></section>';
   }
   function renderRasiGrid(result) {
     const language = isTamil() ? 'ta' : 'en';
@@ -369,7 +372,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     else if (result.type === 'monthly') context = L('Month: ', 'மாதம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
     else context = L('Reference: ', 'கணக்கீட்டு அடிப்படை: ') + fmtDate(result.referenceDate) +
       (result.type === 'tamilNewYear' ? ' · ' + L('Chithirai 1', 'சித்திரை 1') : result.type === 'englishNewYear' ? ' · ' + L('January 1', 'ஜனவரி 1') : '');
-    context += ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
+    context += ' · ' + L('Count the other eight planetary houses from your selected Moon Rasi.', 'மற்ற எட்டு கிரகங்களின் பாவங்களைத் தேர்ந்தெடுத்த உங்கள் சந்திர ராசியிலிருந்து எண்ணவும்.') + ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
     if (result.fallbackSunrise) context += ' · ' + L('Sunrise unavailable; local noon used as fallback.', 'சூரிய உதயம் கிடைக்காததால் உள்ளூர் நண்பகல் மாற்றாகப் பயன்படுத்தப்பட்டது.');
     if (result.moonSign != null) context += ' · ' + L('Moon sign at sunrise: ', 'சூரிய உதயச் சந்திர ராசி: ') + rasiLabel(result.moonSign);
     return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div></div>' +
@@ -433,15 +436,18 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       '<button type="button" data-section="englishNewYear" class="' + (state.section === 'englishNewYear' ? 'is-active' : '') + '">' + esc(annualLabels.englishNewYear[isTamil() ? 1 : 0]) + '</button>' +
       '<button type="button" data-section="ingress" class="' + (state.section === 'ingress' ? 'is-active' : '') + '">' + esc(L('Jupiter / Saturn / Rahu–Ketu', 'குரு / சனி / ராகு–கேது')) + '</button></div>' +
       '<div class="rp-toolbar">' +
-      '<label class="rp-rasi-control">' + esc(L('Rasi', 'ராசி')) + '<select id="rpRasi">' + rasiLabels.map((rasi, index) => '<option value="' + index + '">' + esc(rasi[isTamil() ? 1 : 0]) + '</option>').join('') + '</select></label>' +
+      '<label class="rp-date-control">' + esc(L('Reference date', 'குறிப்பிட்ட தேதி')) + '<input id="rpDate" type="date" min="1800-01-01" max="2399-12-31"></label>' +
+      '<label class="rp-rasi-control">' + esc(L('Your Moon Rasi', 'உங்கள் சந்திர ராசி')) + '<select id="rpRasi">' + rasiLabels.map((rasi, index) => '<option value="' + index + '">' + esc(rasi[isTamil() ? 1 : 0]) + '</option>').join('') + '</select></label>' +
       '<label class="rp-period-control">' + esc(L('Period', 'கால அளவு')) + '<select id="rpPeriod"><option value="daily">' + esc(L('Daily', 'தினசரி')) + '</option><option value="weekly">' + esc(L('Weekly', 'வாரம்')) + '</option><option value="monthly">' + esc(L('Monthly', 'மாதம்')) + '</option></select></label>' +
       '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Show predictions', 'பலன்களைக் காண்பி')) + '</button></div>' +
       '<p id="rpStatus" class="rp-status" role="status"></p>' +
       '<div id="rpResults" aria-live="polite"></div>';
     $('#rpPeriod').value = state.period;
+    $('#rpDate').value = state.date || defaultDate();
     $('#rpRasi').value = String(state.rasiIndex);
     const periodControl = $('.rp-period-control');
     periodControl.hidden = state.section !== 'period';
+    $('.rp-date-control').hidden = state.section !== 'period';
     root.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => {
       const nextSection = button.dataset.section;
       if (state.section === nextSection) return;
@@ -450,6 +456,10 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       if (state.lastResult) renderLastResult();
     }));
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
+    $('#rpDate').addEventListener('change', () => {
+      const value = $('#rpDate').value;
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) state.date = value;
+    });
     $('#rpRasi').addEventListener('change', () => {
       const value = Number($('#rpRasi').value);
       if (!Number.isInteger(value) || value < 0 || value >= rasiLabels.length) return;
@@ -473,7 +483,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     else target.innerHTML = renderIngress(result);
   }
   async function run() {
-    state.date = defaultDate();
+    state.date = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
     state.year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     setStatus(L('Calculating with the local Swiss Ephemeris engine…', 'உள்ளூர் Swiss Ephemeris மூலம் கணக்கிடப்படுகிறது…'), false);
     $('#rpRun').disabled = true;
