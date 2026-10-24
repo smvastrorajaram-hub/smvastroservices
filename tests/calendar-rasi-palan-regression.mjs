@@ -155,8 +155,9 @@ test('Calendar manual predictions are managed inside the existing Horoscope Admi
   assert.ok(publicHeadersSource.includes('Cross-Origin-Resource-Policy: cross-origin'));
   assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
   assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
-  assert.match(horoscopeAdminWorkbenchSource, /async function loadCalendarRasiPalanAdminModule\\(\\)/, 'Calendar Admin must have a recoverable module loader');
-  assert.match(horoscopeAdminWorkbenchSource, /calendar-rasi-palan-admin\\.mjs\\?v=\\/);
+  assert.ok(horoscopeAdminWorkbenchSource.includes('async function loadCalendarRasiPalanAdminModule()'), 'Calendar Admin must have a recoverable module loader');
+  assert.ok(horoscopeAdminWorkbenchSource.includes("new URL('./calendar-rasi-palan-admin.mjs?v='"), 'Local module request must carry a cache-version marker');
+  assert.ok(horoscopeAdminWorkbenchSource.includes("const canonical='https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs?v='"), 'Canonical Pages source is used if the Horoscope-host module cannot load');
   assert.ok(horoscopeAdminWorkbenchSource.includes('https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs?v='), 'Canonical Pages source is used if the Horoscope-host module cannot load');
   assert.ok(horoscopeAdminWorkbenchSource.includes('loadCalendarRasiPalanAdminModule().then'), 'Calendar editor loads through the recoverable loader');
   assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
