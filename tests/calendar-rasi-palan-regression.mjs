@@ -114,7 +114,7 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
   assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
   assert.ok(publicRasiPalanSource.includes("location.hostname.toLowerCase() === 'calendar.smvastroservices.in'"), 'Public Calendar Firebase config must keep the custom-domain path explicit');
-  assert.ok(publicRasiPalanSource.includes("? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Public Calendar must use the matching auth domain for each permanent host');
+  assert.match(publicRasiPalanSource, /\?\s*'auth\.smvastroservices\.in'\s*:\s*'smv-astro\.firebaseapp\.com'/, 'Public Calendar must use the matching auth domain for each permanent host');
   assert.ok(adminModuleSource.includes("calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost"), 'Temporary branch previews must be recognized separately');
   assert.ok(adminModuleSource.includes("location.replace(target.href)"), 'Temporary branch Admin login must open the permanent Pages login');
   assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
