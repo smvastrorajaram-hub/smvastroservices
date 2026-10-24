@@ -51,7 +51,7 @@ try {
       await page.waitForFunction(() => {
         const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
         return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
-          JSON.stringify(nav) === JSON.stringify(['SERVICES', 'HOROSCOPE']);
+          JSON.stringify(nav) === JSON.stringify(['Services', 'Horoscope']);
       }, { timeout: 45000 });
       ready = true;
     } catch (error) {
@@ -91,7 +91,7 @@ try {
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
-  assert.deepEqual(publicUi.navLabels, ['SERVICES', 'HOROSCOPE'], 'Calendar navigation should contain only Services and Horoscope');
+  assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
@@ -195,6 +195,7 @@ try {
   // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
   await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 });
+  await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('.calendar-product-nav a')].map(a=>a.textContent.trim())) === JSON.stringify(['சேவைகள்','ஜாதகம்']), { timeout: 15000 });
   await page.click('#calRasiPalan [data-section="tamilNewYear"]');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
@@ -216,6 +217,7 @@ try {
   if (englishButton) {
     await englishButton.click();
     await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
+    await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('.calendar-product-nav a')].map(a=>a.textContent.trim())) === JSON.stringify(['Services','Horoscope']), { timeout: 15000 });
   }
   await page.click('#calRasiPalan [data-section="englishNewYear"]');
   await page.click('#calRasiPalan #rpRun');

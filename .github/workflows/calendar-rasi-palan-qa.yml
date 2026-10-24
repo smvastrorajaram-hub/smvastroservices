@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/calendar-rasi-palan-admin.mjs'
       - 'public/horoscope/prediction-admin-workbench.mjs'
@@ -20,6 +21,7 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/calendar-rasi-palan-admin.mjs'
       - 'public/horoscope/prediction-admin-workbench.mjs'
