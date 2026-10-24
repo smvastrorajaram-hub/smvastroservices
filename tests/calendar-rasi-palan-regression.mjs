@@ -110,7 +110,10 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
   assert.match(adminModuleSource, /auth\/api-key-not-valid/);
-  assert.match(adminModuleSource, /Google Cloud Console/);
+  assert.match(adminModuleSource, /Firebase Authentication இந்த API key-ஐ நிராகரித்தது/);
+  assert.match(adminModuleSource, /இந்த code மட்டும் hostname restriction தவறு என்பதை நிரூபிக்காது/);
+  assert.match(adminModuleSource, /overlapping Websites application restrictions/);
+  assert.doesNotMatch(adminModuleSource, /Preview domain-க்கு அனுமதி இல்லை/);
   assert.ok(adminModuleSource.includes("calendarHost === 'smvastroservices.pages.dev'"), 'Admin config must identify the permanent Pages host explicitly');
   assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
   assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
