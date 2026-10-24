@@ -202,7 +202,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(!calendarIndexSource.includes('href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">SMV HOROSCOPE</a>'));
    assert.ok(rasiPalanCss.includes('width:100%;max-width:960px;margin:24px auto'));
    assert.ok(horoscopeIndexSource.includes('<a href="https://smvastroservices.in/" data-horoscope-nav>Services</a>'));
-   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'திருமணப் பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
+   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
    assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>SERVICES</a>'));
    assert.ok(!horoscopeIndexSource.includes('<a href="#english-horoscope" data-horoscope-nav>'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));
