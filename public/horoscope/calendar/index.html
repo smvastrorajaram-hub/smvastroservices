@@ -40,9 +40,17 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <body class="calendar-only">
 <header class="calendar-topbar">
 <nav class="calendar-product-nav" aria-label="SMV services">
-<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>
-<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>
+<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>
+<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>
 </nav>
+<script id="smv-calendar-header-language">
+(()=>{
+  const links=[...document.querySelectorAll('.calendar-product-nav [data-en][data-ta]')];
+  const apply=lang=>links.forEach(link=>{link.textContent=link.dataset[lang==='ta'?'ta':'en'];});
+  window.addEventListener('smv-language',event=>apply(event.detail));
+  apply(document.documentElement.lang);
+})();
+</script>
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </header>
 <main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
@@ -56,9 +64,13 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <script type="module" id="smv-calendar-rasi-palan-loader">
 (async()=>{
   const host=location.hostname.toLowerCase();
-  const version='20261024-rootcause-flat-ui-v1';
+  const version='20261025-cross-host-assets-header-ta-v1';
   const candidates=host==='calendar.smvastroservices.in'
     ? [
+        // The Calendar custom host is a separate deployment and does not reliably serve
+        // the shared Horoscope source tree. Load the canonical public assets from the
+        // primary Pages deployment; the exact module imports its dependencies there.
+        {module:'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs',css:'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css'},
         {module:'/calendar-rasi-palan.mjs',css:'/calendar-rasi-palan.css'},
         {module:'/horoscope/calendar-rasi-palan.mjs',css:'/horoscope/calendar-rasi-palan.css'}
       ]
