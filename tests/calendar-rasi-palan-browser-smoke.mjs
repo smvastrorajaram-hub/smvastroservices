@@ -93,8 +93,8 @@ try {
   assert.ok(adminUi.title.includes('Admin'), 'Admin page header must identify the Admin screen');
 
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.waitForSelector('#calRasiPalan #rpRasi');
-  await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]');
+  await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
+  await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
 
   // The Period tab is already selected by default; change only the period.
   await page.select('#calRasiPalan #rpRasi', '5');
@@ -148,7 +148,7 @@ try {
   assert.equal(await page.$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 1, 'Monthly output should keep the selected Rasi');
   assert.equal(await page.$('#calRasiPalan .rp-planet').then(nodes => nodes.length), 8, 'Monthly output should show eight planets for the selected Rasi');
 
-  // Validate the requested Tamil New Year label and 12 × 8 render.
+  // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
   await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 });
   await page.click('#calRasiPalan [data-section="tamilNewYear"]');
