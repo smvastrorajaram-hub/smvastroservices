@@ -57,7 +57,7 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Test the active Cloudflare Calendar branch preview
         env:
-          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-admin-sw-refresh.smvastroservices.pages.dev/horoscope/calendar/
+          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-admin-sw-refres.smvastroservices.pages.dev/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Preserve Calendar preview screenshots
         if: always()
