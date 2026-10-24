@@ -718,7 +718,7 @@ function specialLagnaSunriseReference(date,time,lat,lon,offsetMinutes,flags,mosh
 function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='Asia/Kolkata',utcOffsetMinutes=330}){
   if(!swe) throw new Error('Swiss Ephemeris WASM is not initialized.');
   const ds=String(date||''); const ts=String(time||'');
-  const m=ts.match(/^(\d{1,2}):(\d{2})$/); if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m) throw new Error('பிறந்த தேதி / நேரம் சரியாக உள்ளிடவும்.');
+  const m=ts.match(/^(\d{1,2}):(\d{2})$/);
   const hh=Number(m[1]), mm=Number(m[2]); if(hh>23||mm>59) throw new Error('பிறந்த நேரம் சரியாக உள்ளிடவும்.');
   const rawLatitude=lat, rawLongitude=lon;
   if(rawLatitude===null||rawLatitude===undefined||String(rawLatitude).trim()===''||rawLongitude===null||rawLongitude===undefined||String(rawLongitude).trim()==='') throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
