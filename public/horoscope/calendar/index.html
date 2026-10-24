@@ -40,9 +40,8 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <body class="calendar-only">
 <header class="calendar-topbar">
 <nav class="calendar-product-nav" aria-label="SMV services">
-<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SMV ASTRO</a>
-<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">SMV HOROSCOPE</a>
-<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>
+<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>
+<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>
 </nav>
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </header>
@@ -52,28 +51,39 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </footer>
 <script src="../location-search-online-offline.js"></script>
 <script src="../horoscope.js"></script>
-<script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v6"></script>
-<script type="module" src="../daily-calendar.mjs?v=20261024-panchang-optimized-v2"></script>
+<script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v7"></script>
+<script type="module" src="../daily-calendar.mjs?v=20261024-sunmoon-regex-fix-v3"></script>
 <script type="module" id="smv-calendar-rasi-palan-loader">
 (async()=>{
   const host=location.hostname.toLowerCase();
-  const version='20261024-periods-domain-v2';
+  const version='20261024-rootcause-flat-ui-v1';
   const candidates=host==='calendar.smvastroservices.in'
     ? [
         {module:'/calendar-rasi-palan.mjs',css:'/calendar-rasi-palan.css'},
         {module:'/horoscope/calendar-rasi-palan.mjs',css:'/horoscope/calendar-rasi-palan.css'}
       ]
     : [{module:'../calendar-rasi-palan.mjs',css:'../calendar-rasi-palan.css'}];
+  const diagnostics=[];
   let loaded=false;
   for(const candidate of candidates){
     let style=null;
     try{
       const moduleUrl=new URL(candidate.module,document.baseURI);
       const moduleCheck=await fetch(moduleUrl.href,{cache:'no-store'});
-      if(!moduleCheck.ok)continue;
+      if(!moduleCheck.ok)throw new Error('Module HTTP '+moduleCheck.status);
+      const moduleText=await moduleCheck.text();
+      if(/^\s*(?:<!doctype\s+html|<html\b)/i.test(moduleText) ||
+         !moduleText.includes('function renderControls') ||
+         !moduleText.includes('runPeriodForecast')) {
+        throw new Error('The response is not the deployed Calendar Rasi Palan JavaScript asset.');
+      }
       const cssUrl=new URL(candidate.css,document.baseURI);
       const cssCheck=await fetch(cssUrl.href,{cache:'no-store'});
-      if(!cssCheck.ok)continue;
+      if(!cssCheck.ok)throw new Error('CSS HTTP '+cssCheck.status);
+      const cssText=await cssCheck.text();
+      if(/^\s*(?:<!doctype\s+html|<html\b)/i.test(cssText) || !cssText.includes('#calRasiPalan')) {
+        throw new Error('The response is not the deployed Calendar Rasi Palan stylesheet.');
+      }
       cssUrl.searchParams.set('v',version);
       style=document.createElement('link');
       style.rel='stylesheet';
@@ -86,14 +96,28 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
       });
       moduleUrl.searchParams.set('v',version);
       await import(moduleUrl.href);
-      loaded=true;
+      loaded=Boolean(document.getElementById('calRasiPalan'));
+      if(!loaded)throw new Error('The module executed but did not mount #calRasiPalan.');
       break;
     }catch(error){
       style?.remove();
+      diagnostics.push(candidate.module+': '+String(error?.message||error));
       console.warn('SMV Calendar forecast asset candidate unavailable.',candidate.module,error);
     }
   }
-  if(!loaded)console.error('SMV Calendar Rasi Palan and Planetary Transits could not load from the deployed Calendar assets.');
+  if(!loaded){
+    let target=document.getElementById('calRasiPalan');
+    if(!target){
+      target=document.createElement('section');
+      target.id='calRasiPalan';
+      target.className='cal-rasi-palan';
+      document.getElementById('smvDailyCalendar')?.insertAdjacentElement('afterend',target);
+    }
+    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சாரம் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
+    const detail=target.querySelector('pre');
+    if(detail)detail.textContent=diagnostics.join('\n')||'No compatible candidate was found.';
+    console.error('SMV Calendar Rasi Palan and Planetary Transits could not load.',diagnostics);
+  }
 })();
 </script>
 <script id="smv-v352-pages-calendar-install-guard">
