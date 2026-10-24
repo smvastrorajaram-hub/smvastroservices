@@ -30,6 +30,7 @@ const transitPanchangSource = await readFile(new URL('../public/horoscope/offlin
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
+const publicHeadersSource = await readFile(new URL('../public/_headers', import.meta.url), 'utf8');
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
@@ -120,8 +121,14 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
 test('Calendar manual predictions are managed inside the existing Horoscope Admin session', () => {
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
-  assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>'));
-  assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>'));
+  assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>'));
+  assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>'));
+  assert.ok(calendarIndexSource.includes('smv-calendar-header-language'));
+  assert.ok(calendarIndexSource.includes('https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs'));
+  assert.ok(publicHeadersSource.includes('/horoscope/calendar-rasi-palan.mjs'));
+  assert.ok(publicHeadersSource.includes('/horoscope/calendar-rasi-palan.css'));
+  assert.ok(publicHeadersSource.includes('Access-Control-Allow-Origin: *'));
+  assert.ok(publicHeadersSource.includes('Cross-Origin-Resource-Policy: cross-origin'));
   assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
   assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
   assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
@@ -159,8 +166,8 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
 });
 
 test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horoscope Admin and remains safely cached', () => {
-   assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>'));
-   assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>'));
+   assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>'));
+   assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>'));
    assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
    assert.ok(!calendarIndexSource.includes('href="./admin.html"'));
    assert.ok(adminPageSource.includes('<title>SMV HOROSCOPE · Admin</title>'));
@@ -189,9 +196,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
    assert.ok(!calendarIndexSource.includes('href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">SMV HOROSCOPE</a>'));
    assert.ok(rasiPalanCss.includes('width:100%;max-width:960px;margin:24px auto'));
-   assert.match(horoscopeIndexSource, /data-horoscope-nav>SERVICES<\/a>/);
-   assert.ok(horoscopeLanguageSource.includes("'SERVICES':'சேவைகள்'"));
-   assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>Horoscope</a>'));
+   assert.ok(horoscopeIndexSource.includes('<a href="https://smvastroservices.in/" data-horoscope-nav>Services</a>'));
+   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'திருமணப் பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
+   assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>SERVICES</a>'));
+   assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>#english-horoscope</a>'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #e5d8c2'));
    assert.ok(calendarForecastAdminSource.includes("root.className = 'wb-inline-section'"));
