@@ -150,12 +150,15 @@ test('Calendar manual predictions are managed inside the existing Horoscope Admi
   assert.ok(calendarIndexSource.includes('https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs'));
   assert.ok(publicHeadersSource.includes('/horoscope/calendar-rasi-palan.mjs'));
   assert.ok(publicHeadersSource.includes('/horoscope/calendar-rasi-palan.css'));
+  assert.ok(publicHeadersSource.includes('/horoscope/calendar-rasi-palan-admin.mjs'), 'Canonical Calendar Admin module needs an explicit cross-origin response rule');
   assert.ok(publicHeadersSource.includes('Access-Control-Allow-Origin: *'));
   assert.ok(publicHeadersSource.includes('Cross-Origin-Resource-Policy: cross-origin'));
   assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
   assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
-  assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
-  assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
+  assert.match(horoscopeAdminWorkbenchSource, /async function loadCalendarRasiPalanAdminModule\\(\\)/, 'Calendar Admin must have a recoverable module loader');
+  assert.match(horoscopeAdminWorkbenchSource, /calendar-rasi-palan-admin\\.mjs\\?v=\\/);
+  assert.ok(horoscopeAdminWorkbenchSource.includes('https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs?v='), 'Canonical Pages source is used if the Horoscope-host module cannot load');
+  assert.ok(horoscopeAdminWorkbenchSource.includes('loadCalendarRasiPalanAdminModule().then'), 'Calendar editor loads through the recoverable loader');
   assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
   assert.match(horoscopeAdminWorkbenchSource, /smv-horoscope-local/);
   assert.match(horoscopeAdminSource, /smv_settings','prediction_editor_access/);
