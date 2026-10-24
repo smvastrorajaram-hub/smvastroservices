@@ -6,7 +6,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const previewUrl = process.env.SMV_CALENDAR_PREVIEW_URL ||
-  'https://feature-calendar-rasi-palan.smvastroservices.pages.dev/horoscope/calendar/';
+  'https://fix-calendar-admin-navigatio.smvastroservices.pages.dev/horoscope/calendar/';
 const outputDir = new URL('../calendar-rasi-palan-smoke-output/', import.meta.url);
 await mkdir(outputDir, { recursive: true });
 
@@ -46,6 +46,11 @@ try {
       await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.waitForSelector('#smvDailyCalendar', { timeout: 20000 });
       await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
+      await page.waitForFunction(() => {
+        const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
+        return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
+          JSON.stringify(nav) === JSON.stringify(['SMV ASTRO', 'SMV HOROSCOPE', 'Admin']);
+      }, { timeout: 45000 });
       ready = true;
     } catch (error) {
       lastError = error;
