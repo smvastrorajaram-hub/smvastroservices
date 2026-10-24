@@ -228,19 +228,18 @@ try {
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
 
   // Verify the SMV HOROSCOPE header in Tamil at mobile and desktop widths.
-  const headerPage = await browser.newPage();
-  try {
-    await headerPage.setCacheEnabled(false);
-    await headerPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await headerPage.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await headerPage.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
-    await headerPage.click('#languageTamil');
-    await headerPage.waitForFunction(() =>
+  await page.setCacheEnabled(false);
+    await page.setCacheEnabled(false);
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
+    await page.click('#languageTamil');
+    await page.waitForFunction(() =>
       JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
       JSON.stringify(['சேவைகள்', 'திருமணப் பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
     for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
-      await headerPage.setViewport({ ...viewport, deviceScaleFactor: 1 });
-      const metrics = await headerPage.$eval('#templeHeader .header-navigation a', anchors => anchors.map(anchor => {
+      await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
+      const metrics = await page.$eval('#templeHeader .header-navigation a', anchors => anchors.map(anchor => {
         const box = anchor.getBoundingClientRect();
         const range = document.createRange();
         range.selectNodeContents(anchor);
@@ -269,10 +268,6 @@ try {
       assert.ok(Math.max(...metrics.map(item => item.height)) - Math.min(...metrics.map(item => item.height)) < 1,
         'All three Horoscope header buttons must have equal height: ' + JSON.stringify(metrics));
     }
-  } finally {
-    await headerPage.close();
-  }
-
   console.log(JSON.stringify({
     pass: true,
     previewUrl,
