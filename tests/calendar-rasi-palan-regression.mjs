@@ -110,7 +110,7 @@ test('Calendar manual predictions are managed inside the existing Horoscope Admi
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
   assert.match(calendarIndexSource, /href="\.\/" aria-current="page">SMV CALENDAR/);
-  assert.match(horoscopeIndexAdminSafe ? horoscopeIndexAdminSafe : horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
+  assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
   assert.match(horoscopeAdminWorkbenchSource, /import \{ mountCalendarRasiPalanAdmin \} from '\.\/calendar-rasi-palan-admin\.mjs'/);
   assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
   assert.match(horoscopeAdminWorkbenchSource, /smv-prediction-admin-auth/);
