@@ -306,3 +306,5 @@ $('publish').addEventListener('click', publish);
 setSignOptions();
 setPlanetOptions(false);
 refreshEntry();
+// Non-visual initialization marker used by the Calendar browser smoke test.
+$('loginForm').dataset.adminModuleReady = 'true';
