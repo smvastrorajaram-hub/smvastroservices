@@ -65,7 +65,9 @@ try {
     editor: Boolean(document.querySelector('.rp-manual-editor')),
     exportControl: Boolean(document.querySelector('#rpExport')),
     givenNote: document.body.innerText.includes('தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்'),
-    tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim())
+    tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim()),
+    navLabels: [...document.querySelectorAll('.calendar-product-nav a')].map(x => x.textContent.trim()),
+    hasRasiPicker: Boolean(document.querySelector('#calRasiPalan #rpRasi'))
   }));
   assert.equal(publicUi.modeControl, false, 'Public Calendar must not show the prediction mode selector');
   assert.equal(publicUi.dateControl, false, 'Customers must not be able to change the Rasi Palan date');
@@ -74,20 +76,40 @@ try {
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
+  assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Header should preserve ASTRO/HOROSCOPE and replace Calendar nav label with Admin');
+  assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
+
+  // Clicking Admin must open the separate login page, not resolve to Calendar home.
+  await page.click('.calendar-product-nav a[aria-current="page"]');
+  await page.waitForFunction(() => location.pathname.endsWith('/admin.html'), { timeout: 20000 });
+  await page.waitForSelector('#loginForm #adminEmail');
+  const adminUi = await page.evaluate(() => ({
+    nav: [...document.querySelectorAll('.admin-product-nav a')].map(x => x.textContent.trim()),
+    title: document.querySelector('header h1')?.textContent || '',
+    loginVisible: Boolean(document.querySelector('#loginForm #adminEmail')) && !document.querySelector('#loginForm').hidden
+  }));
+  assert.deepEqual(adminUi.nav, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Admin page should retain the two product links and show Admin in the third position');
+  assert.ok(adminUi.loginVisible, 'Admin page should display the Firebase login form');
+  assert.ok(adminUi.title.includes('Admin'), 'Admin page header must identify the Admin screen');
+
+  await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForSelector('#calRasiPalan #rpRasi');
+  await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]');
 
   // The Period tab is already selected by default; change only the period.
+  await page.select('#calRasiPalan #rpRasi', '5');
   await page.select('#calRasiPalan #rpPeriod', 'daily');
   assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'There must be no customer date picker');
   assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'There must be no customer year control');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
-  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 12, { timeout: 30000 });
-  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-planet').length === 96, { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-planet').length === 8, { timeout: 30000 });
   const dailyState = await page.$eval('#calRasiPalan', el => ({
     readings: [...el.querySelectorAll('.rp-planet h5')].map(n => n.textContent.trim()),
     context: el.querySelector('.rp-results-title p')?.textContent || ''
   }));
-  assert.equal(dailyState.readings.length, 96, 'Daily output should be 12 Rasis × eight planets');
+  assert.equal(dailyState.readings.length, 8, 'Daily output should be the selected Rasi × eight planets');
   assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Daily predictions must not show Moon as a transit planet');
   assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its fixed weekday and date');
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
@@ -97,8 +119,10 @@ try {
     const p = document.querySelector('#calRasiPalan .rp-results-title p');
     return h && /Weekly|வாரம்/.test(h.textContent) && p && /Week:|வாரம்:/.test(p.textContent);
   }, { timeout: 90000 });
-  assert.equal(await page.$$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 12, 'Weekly output should cover all 12 Rasis');
-  // Capture the mobile layout before rendering 96 detailed prediction cards.
+  assert.equal(await page.$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 1, 'Weekly output should be limited to the selected Rasi');
+  assert.equal(await page.$('#calRasiPalan .rp-planet').then(nodes => nodes.length), 8, 'Weekly output should show eight planets for the selected Rasi');
+  assert.equal(await page.$eval('#calRasiPalan .rp-rasi-card', el => el.dataset.rasiIndex), '5', 'Selected Rasi must remain fixed when changing period');
+  // Capture the mobile layout before additional forecast sections.
   // This keeps screenshot rasterization independent of the heavier result DOM.
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
@@ -121,6 +145,8 @@ try {
     const p = document.querySelector('#calRasiPalan .rp-results-title p');
     return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
   }, { timeout: 90000 });
+  assert.equal(await page.$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 1, 'Monthly output should keep the selected Rasi');
+  assert.equal(await page.$('#calRasiPalan .rp-planet').then(nodes => nodes.length), 8, 'Monthly output should show eight planets for the selected Rasi');
 
   // Validate the requested Tamil New Year label and 12 × 8 render.
   await page.click('#calTamil');
@@ -131,7 +157,7 @@ try {
     const h = document.querySelector('#calRasiPalan .rp-results-title h3');
     return h && h.textContent.includes('தமிழ் வருடப் பிறப்பு ராசி பலன்கள்');
   }, { timeout: 120000 });
-  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 12, { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
@@ -157,8 +183,9 @@ try {
     pass: true,
     previewUrl,
     sections: publicUi.tabs,
-    dailyRasiCount: 12,
-    dailyPlanetCards: 96,
+    dailyRasiCount: 1,
+    selectedRasiIndex: 5,
+    dailyPlanetCards: 8,
     moonExcluded: true,
     publicEditorHidden: true,
     mobileScreenshot: 'calendar-rasi-palan-mobile.png (viewport capture)',
