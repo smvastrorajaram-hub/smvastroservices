@@ -18,6 +18,7 @@ const browser = await puppeteer.launch({
 const runtimeErrors = [];
 try {
   const page = await browser.newPage();
+  page.on('console', message => { if (message.type() === 'error') runtimeErrors.push('console: ' + message.text()); });
   // Test the deployed current source, not an installed/stale PWA service-worker shell.
   await page.setBypassServiceWorker(true);
   // Keep the deployed source test independent from the Calendar PWA's one-time
@@ -104,6 +105,15 @@ try {
   assert.deepEqual(adminUi.nav, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Admin page should retain the two product links and show Admin in the third position');
   assert.ok(adminUi.loginVisible, 'Admin page should display the Firebase login form');
   assert.ok(adminUi.title.includes('Admin'), 'Admin page header must identify the Admin screen');
+  await page.waitForFunction(() => document.querySelector('#loginForm')?.dataset.adminModuleReady === 'true', { timeout: 10000 })
+    .catch(async error => {
+      const state = await page.evaluate(() => ({
+        href: location.href,
+        moduleScripts: [...document.scripts].map(script => script.src).filter(src => src.includes('calendar-admin.mjs'))
+      })).catch(() => ({ href: 'document unavailable' }));
+      throw new Error('Calendar Admin module did not initialize. state=' + JSON.stringify(state) +
+        '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
+    });
 
   // Never send Firebase auth requests from a temporary branch-preview origin.
   // Deliberately fake credentials prove the redirect happens before authentication.
@@ -111,14 +121,11 @@ try {
   await page.$eval('#loginForm #adminPassword', el => { el.value = 'not-a-real-password'; });
   const formValidity = await page.$eval('#loginForm', form => form.checkValidity());
   assert.equal(formValidity, true, 'Preview redirect check must submit a validly shaped form without real credentials');
-  const browserErrors = [];
-  page.on('pageerror', error => browserErrors.push(String(error)));
-  page.on('console', message => { if (message.type() === 'error') browserErrors.push(message.text()); });
   await page.$eval('#loginForm', form => form.requestSubmit());
   try {
     await page.waitForFunction(() =>
       location.hostname === 'smvastroservices.pages.dev' &&
-      location.pathname.endsWith('/horoscope/calendar/admin.html'),
+      (location.pathname.endsWith('/horoscope/calendar/admin.html') || location.pathname.endsWith('/horoscope/calendar/admin')),
     { timeout: 30000 });
   } catch (error) {
     const observed = await page.evaluate(() => ({
@@ -128,7 +135,7 @@ try {
       moduleScripts: [...document.scripts].map(script => script.src).filter(src => src.includes('calendar-admin.mjs'))
     })).catch(() => ({ href: 'document unavailable' }));
     throw new Error('Temporary Admin preview did not redirect to permanent Pages. state=' + JSON.stringify(observed) +
-      '; browserErrors=' + JSON.stringify(browserErrors) + '; cause=' + error.message);
+      '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
   }
   assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
