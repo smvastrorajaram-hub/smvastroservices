@@ -32,6 +32,11 @@ const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.h
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
 const publicHeadersSource = await readFile(new URL('../public/_headers', import.meta.url), 'utf8');
 
+test('The Horoscope Matching navigation label uses the requested concise Tamil wording', () => {
+  assert.match(horoscopeLanguageSource, /'Matching':'பொருத்தம்'/);
+  assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
+});
+
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
   assert.equal(RASI_PALAN_PLANETS.some(p => p.key === 'Moon'), false);
@@ -197,7 +202,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(!calendarIndexSource.includes('href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">SMV HOROSCOPE</a>'));
    assert.ok(rasiPalanCss.includes('width:100%;max-width:960px;margin:24px auto'));
    assert.ok(horoscopeIndexSource.includes('<a href="https://smvastroservices.in/" data-horoscope-nav>Services</a>'));
-   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'திருமணப் பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
+   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
    assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>SERVICES</a>'));
    assert.ok(!horoscopeIndexSource.includes('<a href="#english-horoscope" data-horoscope-nav>'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));

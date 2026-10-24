@@ -226,6 +226,24 @@ try {
     return h && (h.textContent.includes('ஆங்கில வருடப் பிறப்பு ராசி பலன்கள்') || h.textContent.includes('English New Year Rasi Palan'));
   }, { timeout: 120000 });
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
+  
+  // Check the requested Matching label only; leave all existing header box styling alone.
+  await page.setCacheEnabled(false);
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+  await page.click('#languageTamil');
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+  await page.click('#languageEnglish');
+  await page.waitForFunction(() =>
+    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
+    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+
   console.log(JSON.stringify({
     pass: true,
     previewUrl,
