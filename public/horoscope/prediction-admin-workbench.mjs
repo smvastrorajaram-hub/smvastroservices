@@ -25,7 +25,7 @@ function validDate(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;con
 function value(sel){return wb?.querySelector(sel)?.value?.trim()||'';}
 function label(en,ta){return document.documentElement.lang==='ta'?ta:en;}
 const css=`
-#smvAdminPredictionWorkbench{font:inherit;line-height:1.55;background:#fffdf9;border:1px solid #dcc59e;border-radius:10px;padding:14px;margin:14px 0;color:#292328}
+#smvAdminPredictionWorkbench{font:inherit;line-height:1.65;background:transparent;border:0;border-radius:0;padding:0;margin:14px 0;color:#292328}
 #smvAdminPredictionWorkbench *{box-sizing:border-box}
 #smvAdminPredictionWorkbench h3{margin:5px 0 10px;color:#7c1936}
 #smvAdminPredictionWorkbench .wb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -41,11 +41,11 @@ const css=`
 #smvAdminPredictionWorkbench [data-wb-status]{font-weight:650;min-height:1.5em}
 #smvAdminPredictionWorkbench .wb-place-results{display:grid;gap:4px;max-height:190px;overflow-y:auto}
 #smvAdminPredictionWorkbench .wb-place-results button{background:#fff;text-align:left;border:1px solid #ddd;color:#222;font-size:13px}
-#smvAdminPredictionWorkbench .wb-block{padding:12px;border:1px solid #e5d8c2;border-radius:8px;margin:10px 0;background:#fff}
-#smvAdminPredictionWorkbench .wb-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#smvAdminPredictionWorkbench .wb-block{padding:10px 0;border:0;border-top:1px solid #e5d8c2;border-radius:0;margin:14px 0;background:transparent}
+#smvAdminPredictionWorkbench .wb-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 #smvAdminPredictionWorkbench .wb-prose{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:15px;margin:0}
-#smvAdminPredictionWorkbench .wb-changed{border-color:#8d264c;background:#fffafa}
-#smvAdminPredictionWorkbench .wb-diff-summary{border-left:3px solid #7c1f35;padding:6px 10px;margin:8px 0;background:#fff2ed;font-weight:650;font-size:13px}
+#smvAdminPredictionWorkbench .wb-cols article{padding:0;margin:0;border:0;border-radius:0;background:transparent}#smvAdminPredictionWorkbench .wb-cols article h4{padding-bottom:5px;border-bottom:1px solid #e5d8c2}#smvAdminPredictionWorkbench .wb-changed{border:0;background:transparent}
+#smvAdminPredictionWorkbench .wb-diff-summary{margin:8px 0;font-weight:650;font-size:13px}
 #smvAdminPredictionWorkbench pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;max-height:340px;overflow:auto}
 #smvAdminPredictionWorkbench .wb-pill{display:inline-block;border:1px solid #bd8b78;border-radius:12px;padding:1px 8px;margin:4px;color:#662035}
 #smvAdminPredictionWorkbench [hidden]{display:none!important}
@@ -58,7 +58,7 @@ function shell(){
  wb=document.createElement('section');wb.id='smvAdminPredictionWorkbench';
  wb.innerHTML=`<style>${css}</style><h3>Admin · Prediction Rule Review & Correction / பலன் ஆய்வு</h3>
  <p class="wb-note">Admin-only: Existing Offline Swiss D1, I–IX evidence, real 15-year Dasha/Pratyantara/Transit. One calculation; Draft / Published comparison; no payment or customer report editing.</p>
- <section class="wb-block wb-personal-authoring" aria-labelledby="wbPersonalAuthoringTitle">
+ <section class="wb-personal-authoring" aria-labelledby="wbPersonalAuthoringTitle">
   <h4 id="wbPersonalAuthoringTitle">தனிப்பட்ட ஜாதகப் பலன் எழுதுதல் / Personal Prediction Authoring</h4>
   <p class="wb-note">Admin அனுமதி கிடைத்தவுடன் இங்கு உங்கள் உரையை எழுதலாம். ஜாதகக் கணிப்பு முடிந்த பிறகு ஒரு பகுதியைத் தேர்ந்தெடுத்து Apply செய்யலாம். இது இந்த Admin preview-க்கு மட்டும்; பொதுவான A/B Rule, customer report அல்லது Firebase-ஐ மாற்றாது.</p>
   <div class="wb-grid">
@@ -69,7 +69,7 @@ function shell(){
   <textarea id="wbPersonalText" maxlength="18000" rows="8" spellcheck="true" placeholder="இந்த ஜாதகரின் உண்மை வாழ்க்கை அனுபவம், ஜாதக ஆதாரம், காலவரம்பு மற்றும் நடைமுறை வழிகாட்டலை உங்கள் சொற்களில் எழுதுங்கள்…"></textarea>
   <div class="wb-actions"><button type="button" class="wb-secondary" data-wb-personal-copy disabled>கணிக்கப்பட்ட Draft-ஐ தொடக்க உரையாக எடு / Copy Draft as Starting Text</button><button type="button" data-wb-personal-apply disabled>இந்த ஜாதக Preview-ல் பயன்படுத்து / Apply to This Chart Preview</button><button type="button" class="wb-secondary" data-wb-personal-clear>என் உரையை நீக்கு / Clear My Text</button></div>
   <p data-wb-personal-status class="wb-note" aria-live="polite">உரையை இப்போதே எழுதலாம். Calculate முடியும் வரை Copy/Apply செயல்கள் முடக்கப்பட்டுள்ளன.</p>
-  <div class="wb-block"><h4>இந்த ஜாதகத்தின் இறுதி தனிப்பட்ட Preview / Final individual preview</h4><div data-wb-personal-preview class="wb-prose">ஜாதக விவரங்களை Calculate செய்து, மேலே ஒரு பகுதியைத் தேர்ந்தெடுத்து உங்கள் உரையை இணைக்கவும் / Calculate a chart and select a section to attach your authored text.</div></div>
+  <div class="wb-personal-preview"><h4>இந்த ஜாதகத்தின் இறுதி தனிப்பட்ட Preview / Final individual preview</h4><div data-wb-personal-preview class="wb-prose">ஜாதக விவரங்களை Calculate செய்து, மேலே ஒரு பகுதியைத் தேர்ந்தெடுத்து உங்கள் உரையை இணைக்கவும் / Calculate a chart and select a section to attach your authored text.</div></div>
  </section>
  <div class="wb-grid">
   <div><label for="wbName">ஜாதகர் பெயர் / Name</label><input id="wbName" maxlength="80" autocomplete="off"></div>
@@ -88,9 +88,9 @@ function shell(){
   <div class="wb-grid"><div><label for="wbSection">பகுதி / Section</label><select id="wbSection"></select></div><div><label>Published Rules</label><span data-wb-published></span></div><div><label>Draft Rules</label><span data-wb-draft></span></div></div>
   <div class="wb-cols"><article class="wb-block"><h4>தற்போது வெளியான பலன் / Published</h4><div data-wb-before class="wb-prose"></div></article><article class="wb-block wb-changed"><h4>புதிய Draft பலன் / Preview</h4><div data-wb-after class="wb-prose"></div></article></div>
   <div class="wb-actions"><button type="button" data-wb-create>இந்தப் பகுதிக்கான Rule-ஐ A-வில் உருவாக்கவும் / Create Rule</button></div>
-  <details class="wb-block"><summary>கணிக்கப்பட்ட ஜாதக ஆதாரங்கள் / Real calculated evidence</summary><pre data-wb-evidence></pre></details>
+  <details class="wb-evidence"><summary>கணிக்கப்பட்ட ஜாதக ஆதாரங்கள் / Real calculated evidence</summary><pre data-wb-evidence></pre></details>
   <p class="wb-note">Save Preview: Admin browser IndexedDB only. Publish uses the EXISTING A/B Publish button; previews never publish or trigger payment. Select an individual section to inspect what changed.</p>
- </div><details class="wb-block"><summary>Saved local Admin snapshots / சேமித்த பலன்கள்</summary><div data-wb-saved></div></details>`;
+ </div><details class="wb-saved"><summary>Saved local Admin snapshots / சேமித்த பலன்கள்</summary><div data-wb-saved></div></details>`;
  area.appendChild(wb);
  // Load Calendar editor assets only after the existing Horoscope Admin role gate has opened the workbench.
  import('./calendar-rasi-palan-admin.mjs').then(({ mountCalendarRasiPalanAdmin }) => {
