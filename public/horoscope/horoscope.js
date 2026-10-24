@@ -2923,6 +2923,7 @@ if(lat===''||lon===''){
     const generationId=(window.__smvHoroscopeGenerationId=Number(window.__smvHoroscopeGenerationId||0)+1);
     const btn=$('generateTamilHoroscope');
     const resultBox=$('tamilHoroscopeResult');
+    let coreChart=null;
     // FINAL HOROSCOPE RELEASE RULE: while calculating, keep the entire horoscope
     // result (chart + all advanced/new features) hidden. Only the Create Horoscope
     // button shows the loading state. Nothing is revealed until every calculation
@@ -2934,6 +2935,7 @@ if(lat===''||lon===''){
     }
     if(btn){btn.disabled=true;btn.textContent='⏳ ஜாதகம் உருவாக்கப்படுகிறது…';}
     let progress=$('tamilHoroscopeProgress'); if(!progress&&btn){progress=document.createElement('div');progress.id='tamilHoroscopeProgress';progress.className='smv-horoscope-progress';progress.innerHTML='<span class="spin"></span><span>ஜாதகம் உருவாக்கப்படுகிறது…<br>அனைத்து கணக்கீடுகளும் தயார் செய்யப்படுகின்றன…</span>';btn.insertAdjacentElement('afterend',progress);}
+    window.__smvLastFullReport=null;
     try{
       // Let the browser paint the progress indicator before the calculation task.
       await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
@@ -2958,22 +2960,63 @@ if(lat===''||lon===''){
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang()});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
       // are calculated once later, after access/gating is resolved.
-      await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');
+      await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');coreChart=d;
       // Render the core horoscope into the hidden result container first.
       render(d);
       const advRoot=$('tamilAdvancedAstrology');
-      if(loadAdvanced && advRoot && typeof window.__smvLoadAdvancedAstrology==='function'){
-        const runAdvancedAfterAccess=async()=>{
+      const reportName=String($('tamilAstroName')?.value||'').trim();
+      const releaseBasicResult=()=>{
+        if(advRoot)advRoot.classList.add('hidden');
+        if(!resultBox)return;
+        resultBox.classList.remove('hidden');
+        resultBox.setAttribute('aria-busy','false');
+        resultBox.dataset.resultLanguage=getHoroscopeLang();
+        resultBox.dataset.generationLanguage=getHoroscopeLang();
+        window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{
+          feature:'advanced_analysis',root:resultBox,generationLanguage:getHoroscopeLang(),
+          birthIdentity:window.__smvGetReportContext?.('advanced_analysis'),
+          name:reportName,calculation:d,basicOnly:true
+        }}));
+      };
+      const runAdvancedAfterAccess=async()=>{
+        try{
           resultBox?.classList.add('hidden');
           resultBox?.setAttribute('aria-busy','true');
-          advRoot.innerHTML='';
-          await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId,birthPlace:placeValue,currentWork,maritalStatus,currentResidence});
-          resultBox?.classList.remove('hidden');
-          resultBox?.setAttribute('aria-busy','false');
-        };
-        await runAdvancedAfterAccess();
+          if(advRoot){advRoot.classList.remove('hidden');advRoot.innerHTML='';}
+          await window.__smvLoadAdvancedAstrology({
+            date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),
+            rootId:'tamilAdvancedAstrology',name:reportName,chart:d,generationId,
+            birthPlace:placeValue,currentWork,maritalStatus,currentResidence
+          });
+          if(advRoot)advRoot.classList.remove('hidden');
+          if(resultBox){
+            resultBox.classList.remove('hidden');
+            resultBox.setAttribute('aria-busy','false');
+            resultBox.dataset.resultLanguage=getHoroscopeLang();
+            resultBox.dataset.generationLanguage=getHoroscopeLang();
+            window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{
+              feature:'advanced_analysis',root:resultBox,generationLanguage:getHoroscopeLang(),
+              birthIdentity:window.__smvGetReportContext?.('advanced_analysis'),
+              name:reportName,calculation:window.__smvLastFullReport||d
+            }}));
+          }
+        }catch(error){
+          if(advRoot){advRoot.replaceChildren();advRoot.classList.add('hidden');}
+          // A failed Full stage must not leave the already-calculated D1 invisible.
+          if(resultBox){resultBox.classList.remove('hidden');resultBox.setAttribute('aria-busy','false');}
+          throw error;
+        }
+      };
+      let advancedAllowed=false;
+      if(loadAdvanced&&advRoot&&typeof window.__smvLoadAdvancedAstrology==='function'&&typeof window.__smvRequireHoroscopeFeatureAccess==='function'){
+        advancedAllowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
+        if(advancedAllowed)await runAdvancedAfterAccess();
+        else releaseBasicResult();
+      }else{
+        if(advRoot)advRoot.classList.add('hidden');
+        releaseBasicResult();
       }
-      // SINGLE RELEASE: chart + all new features become visible together.
+      // The central access policy owns whether this is Basic-only or Full.
       if(resultBox){
         resultBox.classList.remove('hidden');
         resultBox.setAttribute('aria-busy','false');
@@ -2981,6 +3024,14 @@ if(lat===''||lon===''){
       }
       return d;
     }catch(e){
+      if(coreChart&&resultBox){
+        const advRoot=$('tamilAdvancedAstrology');
+        if(advRoot){advRoot.replaceChildren();advRoot.classList.add('hidden');}
+        // Preserve the successful Basic chart when only an optional/paid
+        // Advanced stage fails during the first site visit.
+        resultBox.classList.remove('hidden');
+        resultBox.setAttribute('aria-busy','false');
+      }
       if(e?.name==='AbortError') alert('Horoscope calculation timed out after 120 seconds. Please check the Render server and try again.');
       else alert(e?.message||String(e));
     }
