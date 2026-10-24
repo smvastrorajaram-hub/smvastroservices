@@ -3,75 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="application-name" content="SMV CALENDAR Admin">
-<title>SMV CALENDAR · Admin</title>
+<meta name="color-scheme" content="light">
+<title>SMV HOROSCOPE · Admin</title>
 <style>
-:root{color-scheme:light;--green:#155a52;--gold:#d8bd75;--ink:#173e3a;--muted:#587069;--line:#d9e5dc}
-*{box-sizing:border-box}body{margin:0;background:#eef3eb;color:var(--ink);font:16px/1.65 "Noto Sans Tamil",Arial,sans-serif}
-main{max-width:1000px;margin:24px auto;padding:16px}
-header,.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
-header{background:var(--green);color:#fff8df;border:0}header h1{font-size:clamp(23px,3vw,32px);margin:0}header p{margin:4px 0 0;color:#f0dfb3}
-.admin-product-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none}
-.admin-product-nav a{display:inline-flex;align-items:center;min-height:40px;padding:7px 12px;border:1px solid rgba(255,248,223,.55);border-radius:8px;color:#fff8df;text-decoration:none;font-weight:700}
-.admin-product-nav a[aria-current="page"]{background:#fff8df;color:var(--green);border-color:#fff8df}
-a{color:inherit}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #b8cdc2;border-radius:8px;background:#fff;color:var(--green);padding:10px 14px;min-height:42px}button.primary{background:var(--green);color:#fff8df;border-color:var(--green)}button:disabled{opacity:.55;cursor:wait}
-label{display:grid;gap:5px;font-weight:700;font-size:14px}input,select,textarea{width:100%;min-width:0;border:1px solid #b8cdc2;border-radius:8px;background:#fff;color:var(--ink);padding:10px;min-height:43px}textarea{min-height:135px;line-height:1.7;resize:vertical}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:14px 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.hint,.status{font-size:13px;line-height:1.75;color:var(--muted)}.status{min-height:1.5em;font-weight:700}.status.error{color:#a32a35}.badge{display:inline-block;padding:4px 10px;border:1px solid var(--gold);border-radius:999px;color:#765b24;font-size:12px;font-weight:800}
-.panel h2{font-size:20px;margin:0 0 10px;color:var(--green)}[hidden]{display:none!important}
-@media(max-width:680px){main{margin:12px auto;padding:10px}header,.panel{padding:14px}.grid,.two{grid-template-columns:1fr}.actions button{flex:1 1 100%}}
+:root{color-scheme:light;--green:#155a52;--gold:#d8bd75;--ink:#173e3a}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#eef3eb;color:var(--ink);font:16px/1.7 "Noto Sans Tamil",Arial,sans-serif}
+main{width:min(100%,620px);padding:24px;border:1px solid #d9e5dc;border-radius:14px;background:#fff;text-align:center}
+h1{margin:0 0 10px;color:var(--green);font-size:clamp(22px,4vw,30px)}p{margin:0 0 18px}
+a{display:inline-block;padding:10px 16px;border-radius:8px;background:var(--green);color:#fff8df;text-decoration:none;font-weight:700}
 </style>
+<script>
+(()=> {
+  const h=location.hostname.toLowerCase();
+  const target=h==='smvastroservices.pages.dev'
+    ? location.origin+'/horoscope/?admin=1'
+    : h.endsWith('.smvastroservices.pages.dev')
+      ? 'https://smvastroservices.pages.dev/horoscope/?admin=1'
+      : 'https://horoscope.smvastroservices.in/?admin=1';
+  location.replace(target);
+})();
+</script>
 </head>
 <body>
 <main>
-<nav class="admin-product-nav" aria-label="SMV services">
-<a href="https://smvastroservices.in/">SMV ASTRO</a>
-<a href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>
-<a href="./admin.html" aria-current="page">Admin</a>
-</nav>
-<header><h1>SMV CALENDAR · Admin</h1><p>ஆண்டு ராசி பலன்கள் மற்றும் குரு / சனி / ராகு–கேது பெயர்ச்சி பலன்கள்</p></header>
-<section class="panel">
-<p><a href="./">← SMV CALENDAR-க்கு திரும்பு</a></p>
-<h2>நிர்வாகி உள்நுழைவு / Admin Login</h2>
-<p class="hint">Admin உரிமை Firebase மூலம் சரிபார்க்கப்படும். இந்தப் பக்கத்தில் கையேடு பலன் எழுதுதல் மற்றும் வெளியிடுதல் மட்டுமே உள்ளது; பொதுப் Calendar-ல் இந்தக் கட்டுப்பாடுகள் காட்டப்படாது.</p>
-<form id="loginForm">
-<div class="two"><label>Admin Email<input id="adminEmail" type="email" autocomplete="username" required></label><label>Password<input id="adminPassword" type="password" autocomplete="current-password" required></label></div>
-<div class="actions"><button class="primary" type="submit" id="loginButton">Admin Login</button></div>
-</form>
-<div id="status" class="status" role="status" aria-live="polite"></div>
-</section>
-<section id="editor" class="panel" hidden>
-<div class="actions" style="justify-content:space-between;align-items:center;margin-top:0"><h2 style="margin:0">Admin Manual Prediction Editor</h2><button type="button" id="logoutButton">Admin Logout</button></div>
-<p class="hint">தமிழ் / ஆங்கில உரைகள் தனித்தனியாகச் சேமிக்கப்படும். Calendar-ல் குரு, சனி, ராகு–கேது பெயர்ச்சி நிகழ்வு தேதியுடன் உள்ள பதிவுகள் அந்த நிகழ்வு பலனுக்கே பொருந்தும். ஆண்டு ராசி பலன்கள் தமிழ் அல்லது ஆங்கில வருடப் பிறப்பு பிரிவுக்கே பொருந்தும்.</p>
-<div class="grid">
-<label>பலன் முறை / Prediction mode<select id="mode"><option value="automatic">Automatic · Swiss Ephemeris</option><option value="manual">Manual Entry only</option><option value="hybrid">Hybrid · Manual first, Automatic fallback</option></select></label>
-<label>பலன் பிரிவு / Prediction type<select id="type"><option value="tamilNewYear">தமிழ் வருடப் பிறப்பு ராசி பலன்கள்</option><option value="englishNewYear">ஆங்கில வருடப் பிறப்பு ராசி பலன்கள்</option><option value="jupiterTransit">குரு பெயர்ச்சி பலன்கள்</option><option value="saturnTransit">சனி பெயர்ச்சி பலன்கள்</option><option value="rahuKetuTransit">ராகு–கேது பெயர்ச்சி பலன்கள்</option></select></label>
-<label>தேர்ந்தெடுத்த வருடம் / Year<input id="year" type="number" min="1800" max="2399" step="1" required></label>
-</div>
-<div id="eventDateWrap" class="grid" hidden>
-<label>கணக்கிடப்பட்ட பெயர்ச்சி தேதி / Ingress date<input id="eventDate" type="date" min="1800-01-01" max="2399-12-31"></label>
-<div><p class="hint">Calendar-ல் கணக்கிடப்பட்ட அதே பெயர்ச்சி நிகழ்வின் தேதியைத் தேர்ந்தெடுக்கவும்.</p></div><div></div>
-</div>
-<div class="grid">
-<label>ராசி / Rasi<select id="rasi"></select></label>
-<label>கிரகம் / Planet<select id="planet"></select></label>
-<label>உள்ளடக்க மொழி / Language<select id="language"><option value="ta">தமிழ்</option><option value="en">English</option></select></label>
-</div>
-<label>கையேடு பலன் / Manual prediction<textarea id="prediction" maxlength="4000" placeholder="தேர்ந்தெடுத்த பிரிவு, வருடம்/பெயர்ச்சி, ராசி, கிரகம், மொழி ஆகியவற்றுக்கான பலனை உள்ளிடவும்."></textarea></label>
-<p id="entryKey" class="hint"></p>
-<div class="actions"><button type="button" id="saveDraft">Save local draft</button><button type="button" id="removeEntry">Remove selected entry</button><button type="button" class="primary" id="publish">Publish to SMV CALENDAR</button></div>
-<p class="hint">Publish செய்கையில் Admin அனுமதி உள்ள Firebase கணக்கிலிருந்து பதிவுகள் வெளியிடப்படும். Public Calendar online-ல் வெளியிடப்பட்ட பதிவைப் படிக்கும்; offline நேரத்தில் bundle செய்யப்பட்ட manual-data கோப்பை fallback ஆகப் பயன்படுத்தும். கையேடு உரை எழுதப்படாத இடங்களில் Hybrid முறை தானியங்கி பலனைத் தொடரும்.</p>
-<div id="publishStatus" class="status" role="status" aria-live="polite"></div>
-</section>
+<h1>SMV HOROSCOPE Admin</h1>
+<p>Calendar ராசி பலன்கள் மற்றும் கிரக கோச்சார நிர்வாகம், SMV HOROSCOPE-இன் ஏற்கெனவே உள்ள Admin பகுதியில் மட்டுமே கிடைக்கும்.</p>
+<a href="https://horoscope.smvastroservices.in/?admin=1">SMV HOROSCOPE Admin-ஐ திறக்கவும்</a>
 </main>
-<script>
-(()=>{const h=location.hostname.toLowerCase();if(h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev'))return;const nav=document.querySelector('.admin-product-nav');if(!nav)return;const links=nav.querySelectorAll('a');if(links[0])links[0].href='/';if(links[1])links[1].href='/horoscope/';})();
-</script>
-<script>
-(()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.pages.dev'||!h.endsWith('.smvastroservices.pages.dev'))return;document.getElementById('loginForm')?.addEventListener('submit',event=>{event.preventDefault();location.replace('https://smvastroservices.pages.dev/horoscope/calendar/admin.html');});})();
-</script>
-<script type="module" src="./calendar-admin.mjs?v=20261024-host-separation-v2"></script>
 </body>
 </html>
