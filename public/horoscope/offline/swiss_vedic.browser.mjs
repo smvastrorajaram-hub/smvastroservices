@@ -827,8 +827,8 @@ export function calculateSwissSync(input){ return calculateSwissReady(input); }
 export function calculateSunMoonSync({date,time,lat,lon,utcOffsetMinutes=330}){
   if(!swe) throw new Error('Swiss Ephemeris WASM is not initialized.');
   const ds=String(date||''), ts=String(time||'');
-  const m=ts.match(/^(\\d{1,2}):(\\d{2})$/);
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!m) throw new Error('பஞ்சாங்க தேதி / நேரம் சரியாக உள்ளிடவும்.');
+  const m=ts.match(/^(\d{1,2}):(\d{2})$/);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m) throw new Error('பஞ்சாங்க தேதி / நேரம் சரியாக உள்ளிடவும்.');
   const hh=Number(m[1]), mm=Number(m[2]);
   if(hh>23||mm>59) throw new Error('பஞ்சாங்க நேரம் சரியாக உள்ளிடவும்.');
   const latitude=Number(lat), longitude=Number(lon);
