@@ -2966,7 +2966,13 @@ if(lat===''||lon===''){
       const advRoot=$('tamilAdvancedAstrology');
       const reportName=String($('tamilAstroName')?.value||'').trim();
       const releaseBasicResult=()=>{
-        if(advRoot)advRoot.classList.add('hidden');
+        // If the Admin policy rendered a paid gate or online-status message,
+        // keep that current UI beside the Basic result. An empty/off-mode gate
+        // stays hidden.
+        if(advRoot){
+          const hasCurrentGate=Boolean(advRoot.querySelector('.smv-horoscope-pay-gate'));
+          advRoot.classList.toggle('hidden',!hasCurrentGate);
+        }
         if(!resultBox)return;
         resultBox.classList.remove('hidden');
         resultBox.setAttribute('aria-busy','false');
