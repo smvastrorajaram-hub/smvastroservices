@@ -51,7 +51,7 @@ try {
       await page.waitForFunction(() => {
         const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
         return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
-          JSON.stringify(nav) === JSON.stringify(['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR']);
+          JSON.stringify(nav) === JSON.stringify(['SERVICES', 'HOROSCOPE']);
       }, { timeout: 45000 });
       ready = true;
     } catch (error) {
