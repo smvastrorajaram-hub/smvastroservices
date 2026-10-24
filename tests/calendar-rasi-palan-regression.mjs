@@ -78,6 +78,8 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
   assert.match(dailyCalendarSource, /Birth Star, Tara Bala & Chandrashtama/);
   assert.match(dailyCalendarSource, /Tara Bala/);
+  assert.match(dailyCalendarSource, /Transit Moon Rasi/);
+  assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
   assert.match(dailyCalendarSource, /Chandrashtama/);
   assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
@@ -164,7 +166,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India shards continue to cache lazily');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v5'));
-   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v4'));
+   assert.ok(calendarIndexSource.includes('20261024-tarabala-rasi-v1'));
    assert.ok(calendarIndexSource.includes('20261024-moon-transit-admin-v1'));
    assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
