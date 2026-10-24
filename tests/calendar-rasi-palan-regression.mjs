@@ -103,7 +103,7 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
   assert.ok(adminModuleSource.includes('authDomain: (location.hostname'), 'Admin Firebase config must contain a real authDomain property');
-  assert.ok(!adminModuleSource.includes('\\n  authDomain:'), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
+  assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
   assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(adminModuleSource, /tamilNewYear/);
