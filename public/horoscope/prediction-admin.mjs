@@ -5,20 +5,11 @@
  * are isAdmin() only. Admin session uses a SECONDARY Firebase app, isolated
  * from the customer-only Horoscope Auth instance.
  */
-const access=document.getElementById('smvAdminRulesAccess');
 const host=document.getElementById('smvAdminRulesPanel');
 const E=window.SMVPredictionRules;
-// Login entry is visible on the normal Horoscope page; the A/B editor is NOT.
-// Role verification and Firestore write rules protect the editor and Publish.
-// Legacy ?admin=1 / #admin-rules deep links continue to work.
-const adminEntry=new URLSearchParams(location.search).get('admin')==='1' || location.hash==='#admin-rules';
-if(access&&host&&E){
- const updateAccessLabel=(lang=document.documentElement.lang)=>{access.textContent=lang==='ta'?'நிர்வாகி':'Admin';};
- window.addEventListener('smv-language',event=>updateAccessLabel(event.detail));
- updateAccessLabel();
- access.hidden=false;
- access.setAttribute('aria-expanded','false');
- const CONFIG={apiKey:'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:'smv-astro',storageBucket:'smv-astro.firebasestorage.app',messagingSenderId:'299081899217',appId:'1:299081899217:web:8d558df08e86037ea539f0'};
+const entry=document.getElementById('smvAdminToolsEntry');
+const openButton=document.getElementById('smvAdminOpenTools');
+if(host&&E&&entry&&openButton){
  const $=id=>host.querySelector('#'+id);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const OPS=['eq','ne','gt','gte','lt','lte','in','contains','exists'];
@@ -26,6 +17,7 @@ if(access&&host&&E){
  const ta={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};
  let firebase=null,auth=null,fs=null,verified=false,opening=null,currentId='';
  const status=(msg,bad=false)=>{const el=$('smvAdminMessage');if(el){el.textContent=msg;el.style.color=bad?'#a41020':'#13592f';}};
+ const entryStatus=msg=>{const el=document.getElementById('smvAdminToolsStatus');if(el)el.textContent=msg||'';};
  const parse=x=>{let s=String(x??'').trim();if(s==='true')return true;if(s==='false')return false;if(s!==''&&Number.isFinite(Number(s)))return Number(s);return s;};
  const download=(name,data,type='application/json')=>{const blob=new Blob([data],{type:type+';charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);};
  function shell(){host.hidden=false;host.innerHTML=`<style>
@@ -44,20 +36,21 @@ if(access&&host&&E){
   #smvAdminRulesPanel .condition{display:grid;grid-template-columns:2fr 1fr 1.4fr auto;gap:6px;margin:7px 0}
   #smvAdminRulesPanel .rules{max-height:270px;overflow:auto}#smvAdminRulesPanel .rule-row{padding:8px;border-bottom:1px solid #eee}
   #smvAdminRulesPanel #smvAdminMessage{font-weight:650;min-height:1.4em}
+  #smvAdminRulesPanel #smvAdminClose{width:40px;min-width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
   #smvAdminRulesPanel [hidden]{display:none!important}
   @media(max-width:700px){#smvAdminRulesPanel .cols,#smvAdminRulesPanel .cols3,#smvAdminRulesPanel .condition{grid-template-columns:1fr}}
   @media print{#smvAdminRulesPanel{display:none!important}}
- </style><div class="row" style="align-items:center;justify-content:space-between"><h2>SMV HOROSCOPE · Admin Prediction Rules</h2><button id="smvAdminClose" type="button" class="secondary">மூடு</button></div><div id="smvAdminMessage" role="status"></div><div id="smvAdminAuthArea"></div><div id="smvAdminEditorArea" hidden></div>`;
-  $('smvAdminClose').onclick=()=>{host.hidden=true;access.setAttribute('aria-expanded','false');access.focus({preventScroll:true});};
+ </style><div class="row" style="align-items:center;justify-content:flex-start;margin:0"><button id="smvAdminClose" type="button" class="secondary" aria-label="Close Admin tools">×</button></div><div id="smvAdminMessage" role="status"></div><div id="smvAdminAuthArea" hidden></div><div id="smvAdminEditorArea" hidden></div>`;
+  $('smvAdminClose').onclick=()=>{host.hidden=true;openButton.setAttribute('aria-expanded','false');entryStatus('Admin tools மூடப்பட்டுள்ளன. மீண்டும் திறக்க Admin Tools-ஐ அழுத்தவும்.');openButton.focus({preventScroll:true});};
  }
- async function initFirebase(){if(firebase)return firebase;
+ async function initFirebase(){if(firebase&&auth?.currentUser)return firebase;
   const [appM,authM,fsM]=await Promise.all([
    import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),
    import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js'),
    import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js')]);
-  const app=appM.getApps().find(x=>x.name==='smv-prediction-admin-auth')||appM.initializeApp(CONFIG,'smv-prediction-admin-auth');
-  auth=authM.getAuth(app);await authM.setPersistence(auth,authM.browserSessionPersistence);
-  if(auth.authStateReady)await auth.authStateReady();fs=fsM.getFirestore(app);
+  const app=appM.getApps().find(x=>x.name==='smv-horoscope-local');
+  if(!app)throw Error('முதலில் SMV HOROSCOPE Login மூலம் உள்நுழையவும்.');
+  auth=authM.getAuth(app);if(auth.authStateReady)await auth.authStateReady();fs=fsM.getFirestore(app);
   firebase={authM,fsM};return firebase;
  }
  async function verifyAdmin(){
@@ -68,23 +61,6 @@ if(access&&host&&E){
   try{await firebase.fsM.getDocFromServer(firebase.fsM.doc(fs,'smv_settings','prediction_editor_access'));
    return true;
   }catch(e){if(e?.code==='permission-denied')return false;throw e;}
- }
- function loginForm(){verified=false;updateAccessLabel();$('smvAdminEditorArea').hidden=true;
-  $('smvAdminAuthArea').innerHTML=`<div class="box"><h3>Admin Login மட்டும்</h3><p class="hint">Customer/Astrologer accounts இங்கு Editor திறக்க முடியாது. இது SMV ASTRO Firebase Admin கணக்கு மட்டுமே. உங்களுடைய Horoscope Customer Login பாதிக்கப்படாது.</p><form id="smvAdminLoginForm"><label>Admin Email</label><input type="email" id="smvAdminEmail" required autocomplete="username"><label>Password</label><input type="password" id="smvAdminPass" required autocomplete="current-password"><div class="row"><button type="submit" id="smvAdminSignIn">Admin Login</button></div></form></div>`;
-  $('smvAdminLoginForm').onsubmit=async ev=>{ev.preventDefault();const btn=$('smvAdminSignIn');btn.disabled=true;status('Admin அனுமதி சரிபார்க்கப்படுகிறது…');
-   try{await initFirebase();await firebase.authM.signInWithEmailAndPassword(auth,$('smvAdminEmail').value.trim(),$('smvAdminPass').value);
-    if(!await verifyAdmin()){await firebase.authM.signOut(auth);throw Error('இந்தக் கணக்கிற்கு Admin அனுமதி இல்லை.');}
-    await window.SMVPredictionRulesSync?.ensureReady?.();
-    // Seed the owner-only Draft editor from the reviewed static fallback only
-    // when no local draft exists. This does not publish or write to Firestore.
-    if(!E.getLocalRules().length){
-     const baseline=E.getPublishedRules();
-     if(baseline.length)E.setLocalRules(baseline);
-    }
-    verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது. Static fallback விதிகள் Draft-இல் தயாராக உள்ளன; பரிசீலித்து Publish செய்த பிறகே Online பயனாளர்களுக்கு மாறும்.');
-   }catch(e){status(e?.message||String(e),true);}
-   finally{btn.disabled=false;}
-  };
  }
  function fieldSuggestions(){const fields=['lagna.sign','lagna.nakshatra','lagna.pada','lagna.starLord','moon.sign','moon.nakshatra','moon.pada','moon.starLord','dasha.md','dasha.ad','dasha.pd','dasha.from','dasha.to','transit.planet','transit.signal','tajaka.yearLord','tajaka.munthaHouse','numerology.bodyNumber','numerology.lifeNumber','matching.porutham.score','matching.verdict'];
   for(const n of ['I','II','III','IV','V','VI'])fields.push('section.'+n+'.available');
@@ -100,8 +76,8 @@ if(access&&host&&E){
  const channelOps='<option value="natal">D1/வாழ்க்கைப் பலன்</option><option value="mdad">மகாதசை/புக்தி</option><option value="pd">அந்தரம்</option><option value="transit">கோச்சாரம்</option><option value="remedy">பரிகாரம்</option><option value="matching">திருமணப் பொருத்தம் (முழு)</option>';
  const areas='<option value="I">I · D1/வற்கம்</option><option value="II">II · தசை</option><option value="III">III · தாஜக</option><option value="IV">IV · கோச்சாரம்</option><option value="V">V · பரிகாரம்</option><option value="VI">VI · Numerology</option><option value="VII">VII · மந்திரம் Reference</option><option value="VIII">VIII · அதிதேவதை Reference</option><option value="IX">IX · தெய்வம் Reference</option>';
  function editor(){if(!verified||!auth?.currentUser)return;
-  updateAccessLabel();$('smvAdminAuthArea').innerHTML='';$('smvAdminEditorArea').hidden=false;
-  $('smvAdminEditorArea').innerHTML=`<div class="row"><button type="button" id="smvAdminLogout" class="secondary">Admin Logout</button><button type="button" id="smvAdminLoadPublished" class="secondary">Published Rules-ஐ Draft ஆக ஏற்றவும்</button><button type="button" id="smvAdminPublish">Publish — எல்லா Online பயனாளர்களுக்கும்</button></div><p class="hint"><b>கணக்கீடுகள் I–IX மாறாது.</b> கணிக்கப்பட்ட கிரகம்/பாவம்/நட்சத்திரம்/பார்வை/தசை/கோச்சாரம் பொருந்தும் போது மட்டுமே Manual Prediction வருகிறது. Draft உங்கள் Browser-ல் மட்டும் இருக்கும்; Firestore Publish செய்த பிறகு புதிய Horoscope மற்றும் Matching முடிவுகளில் அனைவருக்கும் கிடைக்கும். Offline பயன்பாட்டிற்கு முன்பே Cache செய்யப்பட்ட விதிகள் தேவை. VII–IX துணை Reference மட்டுமே; அவற்றைக் கணக்கீடு என்று காட்ட வேண்டாம்.</p>
+  $('smvAdminAuthArea').innerHTML='';$('smvAdminEditorArea').hidden=false;
+  $('smvAdminEditorArea').innerHTML=`<div class="row"><button type="button" id="smvAdminLoadPublished" class="secondary">Published Rules-ஐ Draft ஆக ஏற்றவும்</button><button type="button" id="smvAdminPublish">Publish — எல்லா Online பயனாளர்களுக்கும்</button></div><p class="hint"><b>கணக்கீடுகள் I–IX மாறாது.</b> கணிக்கப்பட்ட கிரகம்/பாவம்/நட்சத்திரம்/பார்வை/தசை/கோச்சாரம் பொருந்தும் போது மட்டுமே Manual Prediction வருகிறது. Draft உங்கள் Browser-ல் மட்டும் இருக்கும்; Firestore Publish செய்த பிறகு புதிய Horoscope மற்றும் Matching முடிவுகளில் அனைவருக்கும் கிடைக்கும். Offline பயன்பாட்டிற்கு முன்பே Cache செய்யப்பட்ட விதிகள் தேவை. VII–IX துணை Reference மட்டுமே; அவற்றைக் கணக்கீடு என்று காட்ட வேண்டாம்.</p>
   <div class="row"><button type="button" id="smvAdminTabA">A — எல்லா கிரகங்களுக்கும் Rules</button><button type="button" id="smvAdminTabB" class="secondary">B — பொதுப் பலன் உரைத் திருத்தம்</button></div>
   <div id="smvAdminA"><div class="box"><h3>A · Astrology Conditions → Prediction Rule</h3>
   <div class="cols"><div><label>Rule ID</label><input id="smvAdmRuleId" maxlength="64" placeholder="saturn_jupiter_house_10"></div><div><label>விதியின் தலைப்பு</label><input id="smvAdmTitle" maxlength="130" placeholder="10ஆம் பாவ தொழில் பலன்"></div></div>
@@ -118,7 +94,6 @@ if(access&&host&&E){
   <label>திருத்த வேண்டிய பொது Rule</label><select id="smvAdmBRule"></select><label>தமிழில் திருத்தப்பட்ட பலன்</label><textarea id="smvAdmBTA" rows="8"></textarea><label>English Updated Prediction</label><textarea id="smvAdmBEN" rows="8"></textarea><label>Output Mode</label><select id="smvAdmBMode"><option value="replace">Replace the entire matched house/period interpretation</option><option value="append">Add an evidenced paragraph</option></select><div class="row"><button type="button" id="smvAdmBSave">இந்தப் பொதுவிதியின் பலனை Save Draft செய்யவும்</button></div>
   <hr><h3>புதிய பொதுப் பலன் (12 பாவங்கள் / 9 கிரகங்கள்)</h3><p class="hint">இந்தப் படிவம் A-வில் ஒரு புதிய ஆதார நிபந்தனை விதியை உருவாக்குகிறது; B போல எல்லா பயனாளர்களுக்கும் பொருந்தும். ஜாதக நிபந்தனை இல்லாமல் பொதுப் பலன் உருவாக்காது.</p><div class="cols3"><div><label>பாவம்</label><select id="smvAdmBHouse">${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div><div><label>அந்தப் பாவத்தின் அதிபதி</label><select id="smvAdmBPlanet">${pf.filter(p=>!['Rahu','Ketu'].includes(p)).map(p=>`<option value="${p}">${ta[p]} / ${p}</option>`).join('')}</select></div><div><label>பலன் வகை</label><select id="smvAdmBType"><option value="natal">வாழ்க்கை</option><option value="remedy">பரிகாரம்</option></select></div></div><div class="row"><button type="button" id="smvAdmBCreate">A-வில் இந்த ஆதார நிபந்தனை உருவாக்கவும்</button></div></div></div>
   <div class="box"><div class="row"><button type="button" id="smvAdmExport" class="secondary">Rules JSON Backup</button><button type="button" id="smvAdmExportStatic" class="secondary">Offline Snapshot JS (optional)</button><label style="display:inline-block" for="smvAdmImport">Rules JSON Restore</label><input type="file" id="smvAdmImport" accept=".json,application/json" style="max-width:220px"></div><p class="hint">Publish கோரிக்கை Firebase Admin Permission மூலம் பாதுகாக்கப்படுகிறது. Preview / Save Draft-க்கு எந்த Firestore Writes-மும் இல்லை. நடப்புக் கணக்கீடுகள் மாற்றப்படவில்லை.</p></div>`;
-  $('smvAdminLogout').onclick=async()=>{await firebase.authM.signOut(auth);loginForm();status('Admin Logged out.');};
   $('smvAdminLoadPublished').onclick=()=>{if(!confirm('Draft-ல் உள்ள மாற்றங்களை Published Rules கொண்டு மாற்றவா?'))return;E.setLocalRules(E.getPublishedRules());list();status('தற்போது வெளியிடப்பட்ட Rules Draft ஆக ஏற்றப்பட்டன.');};
   $('smvAdminPublish').onclick=publish;
   $('smvAdminTabA').onclick=()=>tab('A');$('smvAdminTabB').onclick=()=>tab('B');
@@ -195,22 +170,29 @@ if(access&&host&&E){
   }
   out.textContent=JSON.stringify({matchedRules:results,knownFacts:Object.keys(facts).length},null,2);
  }catch(e){out.textContent='Preview: '+(e.message||e);}}
+ window.addEventListener('smv:horoscope-local-auth',event=>{
+  const detail=event?.detail||{};
+  if(detail.loggedIn!==true||detail.isAdmin!==true){
+   verified=false;host.hidden=true;host.replaceChildren();firebase=null;auth=null;fs=null;
+   openButton.setAttribute('aria-expanded','false');entryStatus('');
+  }
+ });
  async function open(){if(opening)return opening;opening=(async()=>{
-  if(!host.hidden){host.hidden=true;access.setAttribute('aria-expanded','false');return;}
-  // Show the form immediately; do not keep it hidden while Firebase modules load.
-  shell();loginForm();access.setAttribute('aria-expanded','true');
-  status('Admin Login தயாராகிறது…');
-  // Panel is before the hero, not after all Horoscope and Matching results.
-  // Without this scroll, a click on the header looked as if nothing opened.
-  try{host.scrollIntoView({behavior:'smooth',block:'start'});}catch{}
-  try{await initFirebase();if(auth.currentUser){
-    if(await verifyAdmin()){await window.SMVPredictionRulesSync?.ensureReady?.();verified=true;editor();status('Admin login சரிபார்க்கப்பட்டது.');return;}
-    await firebase.authM.signOut(auth);
-   }
-   status('Admin Email மற்றும் Password உள்ளிடவும்.');
-  }catch(e){status('Firebase இணைப்பு: '+(e.code||e.message||e),true);}
+  if(!host.hidden){host.hidden=true;openButton.setAttribute('aria-expanded','false');entryStatus('Admin tools மூடப்பட்டுள்ளன. மீண்டும் திறக்க Admin Tools-ஐ அழுத்தவும்.');return;}
+  try{
+   entryStatus('Admin அனுமதி சரிபார்க்கப்படுகிறது…');
+   await initFirebase();
+   if(!auth?.currentUser||!await verifyAdmin())throw Error('இந்தக் கணக்கிற்கு Admin அனுமதி இல்லை. மீண்டும் சரியான Admin account மூலம் Login செய்யவும்.');
+   await window.SMVPredictionRulesSync?.ensureReady?.();
+   if(!auth?.currentUser)throw Error('Login session முடிந்துவிட்டது. மீண்டும் Login செய்யவும்.');
+   shell();verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது.');entryStatus('');
+   openButton.setAttribute('aria-expanded','true');
+   window.dispatchEvent(new CustomEvent('smv:admin-console-open',{detail:{uid:auth.currentUser.uid}}));
+   try{host.scrollIntoView({behavior:'smooth',block:'start'});}catch{}
+  }catch(e){
+   verified=false;host.hidden=true;openButton.setAttribute('aria-expanded','false');
+   entryStatus(e?.message||String(e));
+  }
  })();try{await opening;}finally{opening=null;}}
- access.addEventListener('click',open);
- // The query/hash is an optional shortcut, never a prerequisite for login.
- if(adminEntry)queueMicrotask(()=>{if(host.hidden)open();});
+ openButton.addEventListener('click',open);
 }
