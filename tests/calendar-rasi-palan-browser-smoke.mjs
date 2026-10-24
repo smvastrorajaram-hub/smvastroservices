@@ -108,6 +108,11 @@ try {
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
   await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
+  assert.ok(await page.evaluate(() => {
+    const daily = document.querySelector('#smvDailyCalendar');
+    const forecasts = document.querySelector('#calRasiPalan');
+    return Boolean(daily && forecasts && (daily.compareDocumentPosition(forecasts) & Node.DOCUMENT_POSITION_FOLLOWING));
+  }), 'Rasi Palan and transit section must appear after the complete Daily Calendar');
 
   // The Period tab is already selected by default; change only the period.
   await page.select('#calRasiPalan #rpRasi', '5');
@@ -120,10 +125,14 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-planet').length === 8, { timeout: 30000 });
   const dailyState = await page.$eval('#calRasiPalan', el => ({
     readings: [...el.querySelectorAll('.rp-planet h5')].map(n => n.textContent.trim()),
+    moonHeading: el.querySelector('.rp-moon-transit h4')?.textContent.trim() || '',
+    outputOrder: [...el.querySelectorAll('.rp-moon-transit, .rp-rasi-card')].map(node => node.classList.contains('rp-moon-transit') ? 'moon' : 'rasi'),
     context: el.querySelector('.rp-results-title p')?.textContent || ''
   }));
-  assert.equal(dailyState.readings.length, 8, 'Daily output should be the selected Rasi × eight planets');
-  assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Daily predictions must not show Moon as a transit planet');
+  assert.equal(dailyState.readings.length, 8, 'Daily output should show the eight non-Moon planets for the selected Rasi');
+  assert.ok(/Moon|சந்திரன்/i.test(dailyState.moonHeading), 'Moon transit should have its own separate heading');
+  assert.deepEqual(dailyState.outputOrder, ['moon', 'rasi'], 'Moon transit must appear before the eight other planets');
+  assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Moon must not be duplicated in the eight-planet list');
   assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its fixed weekday and date');
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
@@ -134,6 +143,7 @@ try {
   }, { timeout: 90000 });
   assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 1, 'Weekly output should be limited to the selected Rasi');
   assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Weekly output should show eight planets for the selected Rasi');
+  assert.equal(await page.$eval('#calRasiPalan .rp-moon-transit', el => el.dataset.transitPlanet), 'Moon', 'Weekly output should include a separate Moon transit prediction');
   assert.equal(await page.$eval('#calRasiPalan .rp-rasi-card', el => el.dataset.rasiIndex), '5', 'Selected Rasi must remain fixed when changing period');
   // Capture the mobile layout before additional forecast sections.
   // This keeps screenshot rasterization independent of the heavier result DOM.
@@ -160,6 +170,7 @@ try {
   }, { timeout: 90000 });
   assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 1, 'Monthly output should keep the selected Rasi');
   assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Monthly output should show eight planets for the selected Rasi');
+  assert.equal(await page.$eval('#calRasiPalan .rp-moon-transit', el => el.dataset.transitPlanet), 'Moon', 'Monthly output should include a separate Moon transit prediction');
 
   // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
@@ -171,6 +182,7 @@ try {
     return h && h.textContent.includes('தமிழ் வருடப் பிறப்பு ராசி பலன்கள்');
   }, { timeout: 120000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
+  assert.equal(await page.$eval('#calRasiPalan .rp-moon-transit', el => el.dataset.transitPlanet), 'Moon', 'Tamil New Year output should include the separate Moon transit card');
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   await page.$eval('#calRasiPalan', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
@@ -199,7 +211,8 @@ try {
     dailyRasiCount: 1,
     selectedRasiIndex: 5,
     dailyPlanetCards: 8,
-    moonExcluded: true,
+    moonTransitCards: 1,
+    moonSeparateFirst: true,
     publicEditorHidden: true,
     mobileScreenshot: 'calendar-rasi-palan-mobile.png (viewport capture)',
     desktopScreenshot: 'calendar-rasi-palan-desktop-tamil-new-year.png (viewport capture)'
