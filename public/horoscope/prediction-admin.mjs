@@ -66,7 +66,7 @@ if(access&&host&&E){
    return true;
   }catch(e){if(e?.code==='permission-denied')return false;throw e;}
  }
- function loginForm(){verified=false;access.textContent='Admin Login';$('smvAdminEditorArea').hidden=true;
+ function loginForm(){verified=false;access.textContent='Admin';$('smvAdminEditorArea').hidden=true;
   $('smvAdminAuthArea').innerHTML=`<div class="box"><h3>Admin Login மட்டும்</h3><p class="hint">Customer/Astrologer accounts இங்கு Editor திறக்க முடியாது. இது SMV ASTRO Firebase Admin கணக்கு மட்டுமே. உங்களுடைய Horoscope Customer Login பாதிக்கப்படாது.</p><form id="smvAdminLoginForm"><label>Admin Email</label><input type="email" id="smvAdminEmail" required autocomplete="username"><label>Password</label><input type="password" id="smvAdminPass" required autocomplete="current-password"><div class="row"><button type="submit" id="smvAdminSignIn">Admin Login</button></div></form></div>`;
   $('smvAdminLoginForm').onsubmit=async ev=>{ev.preventDefault();const btn=$('smvAdminSignIn');btn.disabled=true;status('Admin அனுமதி சரிபார்க்கப்படுகிறது…');
    try{await initFirebase();await firebase.authM.signInWithEmailAndPassword(auth,$('smvAdminEmail').value.trim(),$('smvAdminPass').value);
@@ -97,7 +97,7 @@ if(access&&host&&E){
  const channelOps='<option value="natal">D1/வாழ்க்கைப் பலன்</option><option value="mdad">மகாதசை/புக்தி</option><option value="pd">அந்தரம்</option><option value="transit">கோச்சாரம்</option><option value="remedy">பரிகாரம்</option><option value="matching">திருமணப் பொருத்தம் (முழு)</option>';
  const areas='<option value="I">I · D1/வற்கம்</option><option value="II">II · தசை</option><option value="III">III · தாஜக</option><option value="IV">IV · கோச்சாரம்</option><option value="V">V · பரிகாரம்</option><option value="VI">VI · Numerology</option><option value="VII">VII · மந்திரம் Reference</option><option value="VIII">VIII · அதிதேவதை Reference</option><option value="IX">IX · தெய்வம் Reference</option>';
  function editor(){if(!verified||!auth?.currentUser)return;
-  access.textContent='Admin Rules';$('smvAdminAuthArea').innerHTML='';$('smvAdminEditorArea').hidden=false;
+  access.textContent='Admin';$('smvAdminAuthArea').innerHTML='';$('smvAdminEditorArea').hidden=false;
   $('smvAdminEditorArea').innerHTML=`<div class="row"><button type="button" id="smvAdminLogout" class="secondary">Admin Logout</button><button type="button" id="smvAdminLoadPublished" class="secondary">Published Rules-ஐ Draft ஆக ஏற்றவும்</button><button type="button" id="smvAdminPublish">Publish — எல்லா Online பயனாளர்களுக்கும்</button></div><p class="hint"><b>கணக்கீடுகள் I–IX மாறாது.</b> கணிக்கப்பட்ட கிரகம்/பாவம்/நட்சத்திரம்/பார்வை/தசை/கோச்சாரம் பொருந்தும் போது மட்டுமே Manual Prediction வருகிறது. Draft உங்கள் Browser-ல் மட்டும் இருக்கும்; Firestore Publish செய்த பிறகு புதிய Horoscope மற்றும் Matching முடிவுகளில் அனைவருக்கும் கிடைக்கும். Offline பயன்பாட்டிற்கு முன்பே Cache செய்யப்பட்ட விதிகள் தேவை. VII–IX துணை Reference மட்டுமே; அவற்றைக் கணக்கீடு என்று காட்ட வேண்டாம்.</p>
   <div class="row"><button type="button" id="smvAdminTabA">A — எல்லா கிரகங்களுக்கும் Rules</button><button type="button" id="smvAdminTabB" class="secondary">B — பொதுப் பலன் உரைத் திருத்தம்</button></div>
   <div id="smvAdminA"><div class="box"><h3>A · Astrology Conditions → Prediction Rule</h3>
