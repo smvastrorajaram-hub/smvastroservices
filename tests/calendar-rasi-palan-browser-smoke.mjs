@@ -107,13 +107,29 @@ try {
 
   // Never send Firebase auth requests from a temporary branch-preview origin.
   // Deliberately fake credentials prove the redirect happens before authentication.
-  await page.$eval('#loginForm #adminEmail', el => { el.value = 'preview-probe@example.invalid'; });
+  await page.$eval('#loginForm #adminEmail', el => { el.value = 'preview-probe@example.com'; });
   await page.$eval('#loginForm #adminPassword', el => { el.value = 'not-a-real-password'; });
-  await page.click('#loginForm #loginButton');
-  await page.waitForFunction(() =>
-    location.hostname === 'smvastroservices.pages.dev' &&
-    location.pathname.endsWith('/horoscope/calendar/admin.html'),
-  { timeout: 30000 });
+  const formValidity = await page.$eval('#loginForm', form => form.checkValidity());
+  assert.equal(formValidity, true, 'Preview redirect check must submit a validly shaped form without real credentials');
+  const browserErrors = [];
+  page.on('pageerror', error => browserErrors.push(String(error)));
+  page.on('console', message => { if (message.type() === 'error') browserErrors.push(message.text()); });
+  await page.$eval('#loginForm', form => form.requestSubmit());
+  try {
+    await page.waitForFunction(() =>
+      location.hostname === 'smvastroservices.pages.dev' &&
+      location.pathname.endsWith('/horoscope/calendar/admin.html'),
+    { timeout: 30000 });
+  } catch (error) {
+    const observed = await page.evaluate(() => ({
+      href: location.href,
+      hostname: location.hostname,
+      formStatus: document.querySelector('#status')?.textContent || '',
+      moduleScripts: [...document.scripts].map(script => script.src).filter(src => src.includes('calendar-admin.mjs'))
+    })).catch(() => ({ href: 'document unavailable' }));
+    throw new Error('Temporary Admin preview did not redirect to permanent Pages. state=' + JSON.stringify(observed) +
+      '; browserErrors=' + JSON.stringify(browserErrors) + '; cause=' + error.message);
+  }
   assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
