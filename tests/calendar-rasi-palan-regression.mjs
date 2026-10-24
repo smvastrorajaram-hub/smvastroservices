@@ -205,8 +205,8 @@ test('The lightweight Sun/Moon path accepts ordinary Calendar date/time formats 
   const end = swissCalculationSource.indexOf('export async function calculateSunMoon', start);
   assert.ok(start >= 0 && end > start, 'Lightweight calculation must remain available');
   const validation = swissCalculationSource.slice(start, end);
-  assert.ok(validation.includes(String.raw`ts.match(/^(\d{1,2}):(\d{2})$/);`));
-  assert.ok(validation.includes(String.raw`!/^\d{4}-\d{2}-\d{2}$/.test(ds)`));
+  assert.ok(validation.includes("ts.match(/^(\d{1,2}):(\d{2})$/);"));
+  assert.ok(validation.includes("if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m)"));
   assert.doesNotMatch(validation, /\\\\d/, 'Regexes must not match literal backslash-d sequences');
 });
 
