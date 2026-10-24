@@ -90,7 +90,7 @@ jobs:
             return 1
           }
           check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs' '^access-control-allow-origin:[[:space:]]*\*'
-          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs' '^access-control-allow-origin:[[:space:]]*\\*'
+          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs' '^access-control-allow-origin:[[:space:]]*\*'
           check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css' '^access-control-allow-origin:[[:space:]]*\*'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
