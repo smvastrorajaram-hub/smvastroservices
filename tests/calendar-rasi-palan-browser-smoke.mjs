@@ -229,7 +229,6 @@ try {
 
   // Verify the SMV HOROSCOPE header in Tamil at mobile and desktop widths.
   await page.setCacheEnabled(false);
-    await page.setCacheEnabled(false);
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
