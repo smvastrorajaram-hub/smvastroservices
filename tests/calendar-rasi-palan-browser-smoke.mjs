@@ -63,6 +63,13 @@ try {
   }
   assert.ok(ready, 'Calendar branch preview did not become ready: ' + (lastError?.message || 'unknown error'));
 
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    return status && !/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status);
+  }, { timeout: 90000 });
+  const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
+
   const publicUi = await page.evaluate(() => ({
     title: document.title,
     lang: document.documentElement.lang,
@@ -84,7 +91,7 @@ try {
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
-  assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR'], 'Calendar navigation should not expose a separate Admin section');
+  assert.deepEqual(publicUi.navLabels, ['SERVICES', 'HOROSCOPE'], 'Calendar navigation should contain only Services and Horoscope');
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
