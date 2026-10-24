@@ -197,6 +197,7 @@ function clearGate(root){
   root.replaceChildren();
   root.classList.add('hidden');
   delete root.dataset.smvPaidPrice;
+  delete root.dataset.smvPaidFeature;
 }
 
 function renderOnlineUnavailable(root){
@@ -217,8 +218,11 @@ function syncPaidButton(root,price){
   if(!button)return;
 
   const loggedIn=!!window.__smvHoroscopeLoggedIn?.();
+  const amount=Number(price||0).toFixed(2);
   button.textContent=loggedIn
-    ? `${T('Unlock Full Report — ₹','முழு அறிக்கை திறக்க — ₹')}${Number(price||0).toFixed(2)}`
+    ? root.dataset.smvPaidFeature==='marriage_matching'
+      ? `${T('Full Marriage Matching ₹','முழு திருமணப் பொருத்தம் ₹')}${amount}`
+      : `${T('Unlock Full Report — ₹','முழு அறிக்கை திறக்க — ₹')}${amount}`
     : T('Login to Continue','தொடர Login செய்யவும்');
 }
 
@@ -228,8 +232,8 @@ function syncAllPaidButtons(){
   });
 }
 
-async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
-  const state=await stateFor(feature);
+async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay,stateOverride=null){
+  const state=stateOverride||await stateFor(feature);
 
   if(state.mode==='online_unavailable'){
     renderOnlineUnavailable(root);
@@ -256,6 +260,7 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay){
   }
 
   // Admin ON + Rs.1+: reuse the existing benefits/index + Razorpay flow.
+  root.dataset.smvPaidFeature=feature;
   legacyRenderLock(
     feature,
     root,
