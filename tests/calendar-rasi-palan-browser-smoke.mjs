@@ -118,6 +118,7 @@ try {
   assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Moon must not be duplicated in the eight-planet list');
   assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its weekday and selected reference date');
   assert.ok(dailyState.context.includes('2026') && /24/.test(dailyState.context), 'Daily reading must honor the selected reference date 24 October 2026');
+  await page.waitForFunction(() => /Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(document.querySelector('#calReadings')?.textContent || ''), { timeout: 60000 });
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
   assert.ok(/Chandrashtama Rasi|சந்திராஷ்டம ராசி/.test(birthStarState), 'Existing Chandrashtama card must display its Rasi');
