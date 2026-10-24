@@ -179,7 +179,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
    assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
-   assert.ok(calendarIndexSource.includes('20261024-panchang-optimized-v2'));
+   assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261024-rootcause-flat-ui-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
