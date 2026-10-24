@@ -28,6 +28,8 @@ const calendarCalculationWorkerSource = await readFile(new URL('../public/horosc
 const swissCalculationSource = await readFile(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs', import.meta.url), 'utf8');
 const transitPanchangSource = await readFile(new URL('../public/horoscope/offline/transit_panchang.browser.mjs', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
+const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
+const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
@@ -155,7 +157,9 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
 });
 
 test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horoscope Admin and remains safely cached', () => {
-   assert.ok(calendarIndexSource.includes('<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>'));
+   assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>'));
+   assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>'));
+   assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
    assert.ok(!calendarIndexSource.includes('href="./admin.html"'));
    assert.ok(adminPageSource.includes('<title>SMV HOROSCOPE · Admin</title>'));
    assert.ok(adminPageSource.includes('location.replace(target)'));
@@ -166,21 +170,44 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-v5'"), 'Cache version updates existing PWA installs');
+   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-v6'"), 'Cache version updates existing PWA installs');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
    assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'PWA must not download every India location shard during install');
    assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India shards continue to cache lazily');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
-   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v6'));
+   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
+   assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
    assert.ok(calendarIndexSource.includes('20261024-panchang-optimized-v2'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261024-periods-domain-v2'));
-   assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
+   assert.ok(calendarIndexSource.includes('20261024-rootcause-flat-ui-v1'));
+   assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
+   assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
+   assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
+   assert.ok(!calendarIndexSource.includes('href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">SMV HOROSCOPE</a>'));
+   assert.ok(rasiPalanCss.includes('width:100%;max-width:960px;margin:24px auto'));
+   assert.match(horoscopeIndexSource, /data-horoscope-nav>SERVICES<\/a>/);
+   assert.ok(horoscopeLanguageSource.includes("'SERVICES':'சேவைகள்'"));
+   assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>Horoscope</a>'));
+   assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));
+   assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #e5d8c2'));
+   assert.ok(calendarForecastAdminSource.includes("root.className = 'wb-inline-section'"));
+   assert.ok(calendarForecastAdminSource.includes('padding:0;border:0;border-radius:0;background:transparent'));
+   assert.ok(!calendarForecastAdminSource.includes('SMV CALENDAR · ராசி பலன்கள்'));
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
    assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
 });
+test('The lightweight Sun/Moon path accepts ordinary Calendar date/time formats without double-escaped digit classes', () => {
+  const start = swissCalculationSource.indexOf('export function calculateSunMoonSync');
+  const end = swissCalculationSource.indexOf('export async function calculateSunMoon', start);
+  assert.ok(start >= 0 && end > start, 'Lightweight calculation must remain available');
+  const validation = swissCalculationSource.slice(start, end);
+  assert.ok(validation.includes(String.raw`ts.match(/^(\d{1,2}):(\d{2})$/);`));
+  assert.ok(validation.includes(String.raw`!/^\d{4}-\d{2}-\d{2}$/.test(ds)`));
+  assert.doesNotMatch(validation, /\\\\d/, 'Regexes must not match literal backslash-d sequences');
+});
+
 test('Panchang boundary searches use cached lightweight Sun/Moon calculations and share one full daily chart', () => {
   assert.match(swissCalculationSource, /export function calculateSunMoonSync/);
   assert.match(transitPanchangSource, /calculateSunMoonSync/);
