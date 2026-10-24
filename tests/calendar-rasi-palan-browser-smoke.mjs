@@ -7,7 +7,7 @@ import chromium from '@sparticuz/chromium';
 import { periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 
 const previewUrl = process.env.SMV_CALENDAR_PREVIEW_URL ||
-  'https://fix-calendar-rasi-palan-admi.smvastroservices.pages.dev/horoscope/calendar/';
+  'https://fix-calendar-periods-months.smvastroservices.pages.dev/horoscope/calendar/';
 const outputDir = new URL('../calendar-rasi-palan-smoke-output/', import.meta.url);
 await mkdir(outputDir, { recursive: true });
 
