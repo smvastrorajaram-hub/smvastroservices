@@ -7,9 +7,21 @@ export function sundayOf(dateString) {
 }
 
 export function currentWeek(dateString) {
-  const start = new Date(sundayOf(dateString) + 'T12:00:00Z');
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 6);
+  const anchor = new Date(String(dateString).slice(0, 10) + 'T12:00:00Z');
+  const weekday = anchor.getUTCDay();
+  let start, end;
+  if (weekday === 0) {
+    // Sunday starts the next weekly window; include the following Sunday as requested.
+    start = new Date(anchor);
+    end = new Date(anchor);
+    end.setUTCDate(end.getUTCDate() + 7);
+  } else {
+    // Through Saturday, show the previous Saturday to the current/upcoming Saturday.
+    end = new Date(anchor);
+    end.setUTCDate(end.getUTCDate() + ((6 - weekday + 7) % 7));
+    start = new Date(end);
+    start.setUTCDate(start.getUTCDate() - 7);
+  }
   return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
