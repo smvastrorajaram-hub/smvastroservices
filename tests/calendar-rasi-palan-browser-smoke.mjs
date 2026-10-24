@@ -1,5 +1,5 @@
-// Focused Chromium smoke test against the active Cloudflare branch preview.
-// It exercises only SMV CALENDAR's new Rasi Palan area and saves visual evidence.
+// Focused Chromium smoke test against the exact public source checked out for this commit.
+// It exercises SMV CALENDAR's Rasi Palan and daily calculation path and saves visual evidence.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import puppeteer from 'puppeteer-core';
@@ -7,7 +7,7 @@ import chromium from '@sparticuz/chromium';
 import { periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 
 const previewUrl = process.env.SMV_CALENDAR_PREVIEW_URL ||
-  'https://fix-calendar-periods-months.smvastroservices.pages.dev/horoscope/calendar/';
+  'http://127.0.0.1:4173/horoscope/calendar/';
 const outputDir = new URL('../calendar-rasi-palan-smoke-output/', import.meta.url);
 await mkdir(outputDir, { recursive: true });
 
@@ -51,7 +51,7 @@ try {
       await page.waitForFunction(() => {
         const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
         return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
-          JSON.stringify(nav) === JSON.stringify(['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR']);
+          JSON.stringify(nav) === JSON.stringify(['SERVICES', 'HOROSCOPE']);
       }, { timeout: 45000 });
       ready = true;
     } catch (error) {
@@ -61,7 +61,14 @@ try {
       }
     }
   }
-  assert.ok(ready, 'Calendar branch preview did not become ready: ' + (lastError?.message || 'unknown error'));
+  assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
+
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
+  }, { timeout: 90000 });
+  const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
   const publicUi = await page.evaluate(() => ({
     title: document.title,
@@ -84,7 +91,7 @@ try {
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
-  assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR'], 'Calendar navigation should not expose a separate Admin section');
+  assert.deepEqual(publicUi.navLabels, ['SERVICES', 'HOROSCOPE'], 'Calendar navigation should contain only Services and Horoscope');
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 

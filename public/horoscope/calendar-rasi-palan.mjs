@@ -76,7 +76,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   };
   const fmtDateRange = date => {
-    const match = String(date || '').slice(0, 10).match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    const match = String(date || '').slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? match[3] + '/' + match[2] + '/' + match[1] : fmtDate(date);
   };
   const weekdayName = date => {
@@ -528,7 +528,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     el.classList.toggle('is-error', !!error);
   }
   function renderControls() {
-    root.innerHTML = '<div class="rp-heading"><div><p class="rp-eyebrow">SMV CALENDAR</p><h2>' + esc(L('Rasi Palan & Planetary Transits', 'ராசி பலன்கள் & கிரக கோச்சாரம்')) + '</h2><p>' +
+    root.innerHTML = '<div class="rp-heading"><div><h2>' + esc(L('Rasi Palan & Planetary Transits', 'ராசி பலன்கள் & கிரக கோச்சாரம்')) + '</h2><p>' +
       esc(L('Daily, weekly, monthly, Tamil New Year, English New Year and dedicated ingress predictions.', 'தினசரி, வார, மாத, தமிழ் வருடப் பிறப்பு, ஆங்கில வருடப் பிறப்பு மற்றும் தனிப்பட்ட பெயர்ச்சி பலன்கள்.')) + '</p></div></div>' +
       '<div class="rp-tabs" role="tablist" aria-label="Rasi Palan type">' +
       '<button type="button" data-section="period" class="' + (state.section === 'period' ? 'is-active' : '') + '">' + esc(L('Daily / Weekly / Monthly', 'தினசரி / வார / மாத')) + '</button>' +

@@ -48,10 +48,10 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
   if (!container || container.querySelector('#smvCalendarRasiPalanAdmin')) return;
   const root = document.createElement('section');
   root.id = 'smvCalendarRasiPalanAdmin';
-  root.className = 'wb-block';
+  root.className = 'wb-inline-section';
   root.innerHTML = `
     <style>
-      #smvCalendarRasiPalanAdmin{margin:18px 0;padding:14px;border:1px solid #d7c18f;border-radius:9px;background:#fffdf8;color:#292328}
+      #smvCalendarRasiPalanAdmin{margin:18px 0;padding:0;border:0;border-radius:0;background:transparent;color:#292328}
       #smvCalendarRasiPalanAdmin *{box-sizing:border-box}
       #smvCalendarRasiPalanAdmin h4{margin:0 0 7px;color:#7c1936}
       #smvCalendarRasiPalanAdmin .crpa-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -66,10 +66,10 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
       #smvCalendarRasiPalanAdmin .crpa-status{min-height:24px;margin:8px 0 0;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#155a37}
       #smvCalendarRasiPalanAdmin .crpa-status[data-error="1"]{color:#a41020}
       #smvCalendarRasiPalanAdmin [hidden]{display:none}
-      @media(max-width:680px){#smvCalendarRasiPalanAdmin{padding:10px}#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr 1fr}#smvCalendarRasiPalanAdmin .crpa-actions button{flex:1 1 100%}}
+      @media(max-width:680px){#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr 1fr}#smvCalendarRasiPalanAdmin .crpa-actions button{flex:1 1 100%}}
       @media(max-width:380px){#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr}}
     </style>
-    <h4>SMV CALENDAR · ராசி பலன்கள் & கிரக கோச்சார நிர்வாகம்</h4>
+    <h4>ராசி பலன்கள் & கிரக கோச்சார நிர்வாகம்</h4>
     <p class="crpa-hint">இது SMV HOROSCOPE-இன் ஏற்கெனவே உள்ள Admin அனுமதிக்குள் இணைக்கப்பட்டுள்ளது. தினசரி / வார / மாத / தமிழ் வருட / ஆங்கில வருட பலன்களுக்கு சந்திரன் உட்பட ஒன்பது கிரகங்களின் தமிழ், ஆங்கில உரைகளைத் திருத்தலாம். குரு, சனி, ராகு–கேது பெயர்ச்சி பதிவுகளும் இதே இடத்தில் நிர்வகிக்கப்படும்.</p>
     <div class="crpa-grid">
       <label>பலன் வகை / Prediction type<select id="crpaType"></select></label>
@@ -86,7 +86,7 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
     <div class="crpa-actions">
       <button type="button" class="crpa-secondary" id="crpaSaveDraft">Save local draft</button>
       <button type="button" class="crpa-secondary" id="crpaRemoveEntry">Remove selected entry</button>
-      <button type="button" id="crpaPublish">Publish to SMV CALENDAR</button>
+      <button type="button" id="crpaPublish">Publish forecasts</button>
     </div>
     <p class="crpa-hint">கையேடு உரை கிடைக்கும் இடங்களில் Hybrid முறை அதை முதலில் காட்டும்; உரை இல்லாத இடங்களில் தானியங்கி Swiss Ephemeris பலன் தொடரும். Publish செய்வது பொதுக் Calendar-ல் ஆன்லைனில் கிடைக்கும் பதிவை மட்டும் புதுப்பிக்கும்.</p>
     <p id="crpaStatus" class="crpa-status" role="status" aria-live="polite">Admin உரிமைச் சரிபார்ப்பு தயாராகிறது…</p>`;
