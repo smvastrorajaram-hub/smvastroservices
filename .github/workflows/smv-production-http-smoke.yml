@@ -71,6 +71,7 @@ jobs:
           # Calendar is deployed on a separate custom host. Its UI must load the
           # shared forecast module from the canonical Pages source, not paths that
           # return 404/503 on calendar.smvastroservices.in.
+          check_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs' 'export function mountCalendarRasiPalanAdmin'
           check_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs' 'function renderControls'
           check_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css' '#calRasiPalan'
           check_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-rules.mjs' 'RASI_PALAN_PLANETS'
@@ -89,6 +90,7 @@ jobs:
             return 1
           }
           check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs' '^access-control-allow-origin:[[:space:]]*\*'
+          check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs' '^access-control-allow-origin:[[:space:]]*\\*'
           check_header_contains 'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css' '^access-control-allow-origin:[[:space:]]*\*'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
