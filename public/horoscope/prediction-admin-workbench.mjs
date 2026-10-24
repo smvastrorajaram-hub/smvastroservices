@@ -1,3 +1,4 @@
+import { mountCalendarRasiPalanAdmin } from './calendar-rasi-palan-admin.mjs';
 /* SMV ASTRO V321 — owner-only calculated Prediction Review & Correction.
  * The existing A/B editor owns global Draft/Publish rules. This module supports
  * individual-chart prose in a local saved/printed preview only; it never publishes
@@ -92,6 +93,7 @@ function shell(){
   <p class="wb-note">Save Preview: Admin browser IndexedDB only. Publish uses the EXISTING A/B Publish button; previews never publish or trigger payment. Select an individual section to inspect what changed.</p>
  </div><details class="wb-block"><summary>Saved local Admin snapshots / சேமித்த பலன்கள்</summary><div data-wb-saved></div></details>`;
  area.appendChild(wb);
+ mountCalendarRasiPalanAdmin(wb, auth);
  wb.querySelector('[data-wb-calculate]').addEventListener('click',calculate);
  wb.querySelector('[data-wb-preview]').addEventListener('click',compare);
  wb.querySelector('[data-wb-save]').addEventListener('click',save);
