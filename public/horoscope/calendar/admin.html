@@ -66,6 +66,9 @@ label{display:grid;gap:5px;font-weight:700;font-size:14px}input,select,textarea{
 <div id="publishStatus" class="status" role="status" aria-live="polite"></div>
 </section>
 </main>
-<script type="module" src="./calendar-admin.mjs?v=20261024-admin-navigation-v3"></script>
+<script>
+(()=>{const h=location.hostname.toLowerCase();if(h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev'))return;const nav=document.querySelector('.admin-product-nav');if(!nav)return;const links=nav.querySelectorAll('a');if(links[0])links[0].href='/';if(links[1])links[1].href='/horoscope/';})();
+</script>
+<script type="module" src="./calendar-admin.mjs?v=20261024-host-separation-v1"></script>
 </body>
 </html>
