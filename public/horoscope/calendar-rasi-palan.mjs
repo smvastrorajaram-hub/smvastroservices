@@ -76,7 +76,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   };
   const fmtDateRange = date => {
-    const match = String(date || '').slice(0, 10).match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    const match = String(date || '').slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? match[3] + '/' + match[2] + '/' + match[1] : fmtDate(date);
   };
   const weekdayName = date => {
