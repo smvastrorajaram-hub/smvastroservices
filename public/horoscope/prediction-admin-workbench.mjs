@@ -51,6 +51,16 @@ const css=`
 @media(max-width:700px){#smvAdminPredictionWorkbench .wb-grid,#smvAdminPredictionWorkbench .wb-cols{grid-template-columns:1fr}#smvAdminPredictionWorkbench{padding:0}#smvAdminPredictionWorkbench button{font-size:14px}}
 @media print{#smvAdminPredictionWorkbench .wb-actions,#smvAdminPredictionWorkbench .wb-grid{display:none}}
 `;
+async function loadCalendarRasiPalanAdminModule(){
+ const version='20261025-calendar-admin-load-recovery';
+ const local=new URL('./calendar-rasi-palan-admin.mjs?v='+version,import.meta.url).href;
+ const canonical='https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan-admin.mjs?v='+version;
+ const failures=[];
+ for(const source of [local,canonical]){
+  try{return await import(source)}catch(error){failures.push(source+': '+(error?.message||String(error)));}
+ }
+ throw new Error('Calendar Admin module could not load from either the Horoscope host or canonical Pages host. '+failures.join(' | '));
+}
 function shell(){
  const area=adminPanel.querySelector('#smvAdminEditorArea');if(!area||area.hidden||!accessUid)return;
  if(wb?.isConnected)return;
@@ -92,7 +102,7 @@ function shell(){
  </div><details class="wb-saved"><summary>Saved local Admin snapshots / சேமித்த பலன்கள்</summary><div data-wb-saved></div></details>`;
  area.appendChild(wb);
  // Load Calendar editor assets only after the existing Horoscope Admin role gate has opened the workbench.
- import('./calendar-rasi-palan-admin.mjs').then(({ mountCalendarRasiPalanAdmin }) => {
+ loadCalendarRasiPalanAdminModule().then(({ mountCalendarRasiPalanAdmin }) => {
   if(accessUid && auth?.currentUser?.uid===accessUid && wb?.isConnected) mountCalendarRasiPalanAdmin(wb, auth);
  }).catch(error => {
   const box=wb?.querySelector('[data-wb-status]');
