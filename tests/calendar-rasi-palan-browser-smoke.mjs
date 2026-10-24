@@ -119,8 +119,8 @@ try {
     const p = document.querySelector('#calRasiPalan .rp-results-title p');
     return h && /Weekly|வாரம்/.test(h.textContent) && p && /Week:|வாரம்:/.test(p.textContent);
   }, { timeout: 90000 });
-  assert.equal(await page.$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 1, 'Weekly output should be limited to the selected Rasi');
-  assert.equal(await page.$('#calRasiPalan .rp-planet').then(nodes => nodes.length), 8, 'Weekly output should show eight planets for the selected Rasi');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 1, 'Weekly output should be limited to the selected Rasi');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Weekly output should show eight planets for the selected Rasi');
   assert.equal(await page.$eval('#calRasiPalan .rp-rasi-card', el => el.dataset.rasiIndex), '5', 'Selected Rasi must remain fixed when changing period');
   // Capture the mobile layout before additional forecast sections.
   // This keeps screenshot rasterization independent of the heavier result DOM.
@@ -145,8 +145,8 @@ try {
     const p = document.querySelector('#calRasiPalan .rp-results-title p');
     return h && /Monthly|மாத/.test(h.textContent) && p && /Month:|மாதம்:/.test(p.textContent);
   }, { timeout: 90000 });
-  assert.equal(await page.$('#calRasiPalan .rp-rasi-card').then(nodes => nodes.length), 1, 'Monthly output should keep the selected Rasi');
-  assert.equal(await page.$('#calRasiPalan .rp-planet').then(nodes => nodes.length), 8, 'Monthly output should show eight planets for the selected Rasi');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length), 1, 'Monthly output should keep the selected Rasi');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#calRasiPalan .rp-planet').length), 8, 'Monthly output should show eight planets for the selected Rasi');
 
   // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
