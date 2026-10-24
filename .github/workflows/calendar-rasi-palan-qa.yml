@@ -5,6 +5,8 @@ on:
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/calendar-rasi-palan-admin.mjs'
+      - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/calendar-rasi-palan-admin.mjs'
+      - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -39,6 +43,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check public/horoscope/calendar-rasi-palan.mjs
+          node --check public/horoscope/calendar-rasi-palan-admin.mjs
+          node --check public/horoscope/prediction-admin-workbench.mjs
           node --check public/horoscope/calendar/sw.js
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
@@ -57,7 +63,7 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Test the active Cloudflare Calendar branch preview
         env:
-          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-admin-cache-and.smvastroservices.pages.dev/horoscope/calendar/
+          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-rasi-palan-admi.smvastroservices.pages.dev/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Preserve Calendar preview screenshots
         if: always()
