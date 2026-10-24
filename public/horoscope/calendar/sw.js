@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-admin-cache-and-forecast-assets-v3';
+const CACHE='smv-calendar-admin-cache-and-forecast-assets-v4';
 const CORE=[
  './','./index.html','./admin.html','./calendar-admin.mjs','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
@@ -66,8 +66,14 @@ self.addEventListener('fetch',e=>{
   e.respondWith((async()=>{
    const c=await caches.open(CACHE);
    try{
-    const r=await fetch(e.request,{cache:'no-store'});
-    if(r?.ok){await c.put(cacheKey,fixed(u.href,r));return fixed(u.href,r);}
+    // Fetch the canonical cache URL so /admin and /admin/ cannot make the
+    // online request miss even though both map to the cached admin.html page.
+    const networkRequest=new Request(cacheKey,{
+     method:'GET',headers:e.request.headers,mode:'same-origin',
+     credentials:'same-origin',redirect:'follow',cache:'no-store'
+    });
+    const r=await fetch(networkRequest);
+    if(r?.ok){await c.put(cacheKey,fixed(cacheKey,r));return fixed(u.href,r);}
    }catch(_){}
    const hit=await c.match(cacheKey);
    return hit?fixed(u.href,hit):new Response(relativePath==='admin.html'?'SMV CALENDAR Admin page is not cached. Reconnect once to update Calendar offline files.':'SMV CALENDAR offline page is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});

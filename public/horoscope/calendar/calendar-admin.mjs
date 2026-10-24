@@ -53,8 +53,12 @@ function loginErrorMessage(error) {
     'permission-denied': 'இந்தக் கணக்கிற்கு Firestore Admin அனுமதி இல்லை. Admin-role access-ஐச் சரிபார்க்கவும்.'
   };
   if (code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || code === 'auth/invalid-api-key') {
-    return 'Firebase API key ஏற்கப்படவில்லை அல்லது ' + location.hostname +
-      ' Preview domain-க்கு அனுமதி இல்லை. Google Cloud Console → APIs & Services → Credentials-ல் API key enabled நிலை, Identity Toolkit API restriction, மற்றும் இந்த hostname-க்கான HTTP referrer restriction-ஐச் சரிபார்க்கவும். (' + code + ')';
+    // This code does not prove that the current hostname is blocked. Google has
+    // documented a Firebase Auth key-selection issue when a project contains
+    // multiple API keys with None or overlapping Websites application restrictions.
+    return 'Firebase Authentication இந்த API key-ஐ நிராகரித்தது. இந்த code மட்டும் hostname restriction தவறு என்பதை நிரூபிக்காது. ' +
+      'Project smv-astro-வில் இந்த Web App-க்கு பொருந்தும் Browser key, அதன் API restrictions, மற்றும் மற்ற API keys-ல் None அல்லது அதே Websites restrictions உள்ளதா என்பதைச் சரிபார்க்கவும். ' +
+      'தற்போதைய hostname: ' + location.hostname + ' (' + code + ')';
   }
   if (known[code]) return known[code] + ' (' + code + ')';
   const message = String(error?.message || error || 'Unknown error');

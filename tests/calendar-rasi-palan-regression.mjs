@@ -21,6 +21,7 @@ const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const calendarPwaSource = await readFile(new URL('../public/horoscope/calendar/calendar-pwa.mjs', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
@@ -109,7 +110,10 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
   assert.match(adminModuleSource, /auth\/api-key-not-valid/);
-  assert.match(adminModuleSource, /Google Cloud Console/);
+  assert.match(adminModuleSource, /Firebase Authentication இந்த API key-ஐ நிராகரித்தது/);
+  assert.match(adminModuleSource, /இந்த code மட்டும் hostname restriction தவறு என்பதை நிரூபிக்காது/);
+  assert.match(adminModuleSource, /overlapping Websites application restrictions/);
+  assert.doesNotMatch(adminModuleSource, /Preview domain-க்கு அனுமதி இல்லை/);
   assert.ok(adminModuleSource.includes("calendarHost === 'smvastroservices.pages.dev'"), 'Admin config must identify the permanent Pages host explicitly');
   assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
   assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
@@ -160,14 +164,19 @@ test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Cloudflare /admin route must alias to the independently cached admin.html document');
-   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-admin-cache-and-forecast-assets-v3'"), 'Cache version must change so installed PWA clients migrate to corrected keys');
+   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-admin-cache-and-forecast-assets-v4'"), 'Cache version must change so installed PWA clients migrate to corrected keys');
+   assert.ok(calendarWorkerSource.includes('const networkRequest=new Request(cacheKey,'), 'Admin navigation must fetch the canonical admin.html URL rather than a potentially normalized alias');
+   assert.ok(calendarPwaSource.includes('function waitForWorkerActivation(reg,worker,timeout=18000)'), 'Admin navigation must wait for the updated Calendar Service Worker to activate');
+   assert.ok(calendarPwaSource.includes('await reg.update();'), 'Admin navigation must trigger a fresh Service Worker update check');
+   assert.ok(calendarPwaSource.includes('location.assign(target.href)'), 'After the update is active, Admin navigation must continue to the login page');
+   assert.ok(calendarPwaSource.includes('Admin navigation must not race a stale offline worker'), 'The stale-worker-before-login regression must remain explicitly guarded');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['), 'The new worker must verify that critical offline pages and forecast assets were cached');
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
    assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'The PWA must not download every India location shard during installation');
    assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India place shards should continue to cache lazily on demand');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
-   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v5'));
+   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v6'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v4'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v2'));
    assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));

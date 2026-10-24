@@ -138,6 +138,48 @@ try {
       '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
   }
   assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
+  await page.waitForFunction(
+    () => document.querySelector('#loginForm')?.dataset.adminModuleReady === 'true',
+    { timeout: 15000 }
+  );
+
+  // Probe the LIVE permanent Pages Firebase Auth endpoint with fake credentials
+  // only. This detects the exact API-key error after redirects without ever
+  // using the owner's Admin credentials or creating an account.
+  const authProbeStartErrors = runtimeErrors.length;
+  await page.$eval('#loginForm #adminEmail', el => { el.value = 'calendar-auth-probe@example.invalid'; });
+  await page.$eval('#loginForm #adminPassword', el => { el.value = 'not-a-real-password-991'; });
+  await page.$eval('#loginForm', form => form.requestSubmit());
+  await page.waitForFunction(() => {
+    const button = document.querySelector('#loginButton');
+    const message = document.querySelector('#status')?.textContent?.trim() || '';
+    return button && !button.disabled && message.length > 0 &&
+      !message.includes('Admin உரிமை சரிபார்க்கப்படுகிறது');
+  }, { timeout: 30000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      hostname: location.hostname,
+      status: document.querySelector('#status')?.textContent || '',
+      buttonDisabled: Boolean(document.querySelector('#loginButton')?.disabled)
+    }));
+    throw new Error('Live Pages Firebase Auth probe did not complete. state=' + JSON.stringify(state) + '; cause=' + error.message);
+  });
+  const authProbe = await page.evaluate(() => ({
+    hostname: location.hostname,
+    status: document.querySelector('#status')?.textContent || '',
+    buttonDisabled: Boolean(document.querySelector('#loginButton')?.disabled)
+  }));
+  runtimeErrors.splice(authProbeStartErrors); // expected auth failure console output is diagnosed separately below
+  assert.doesNotMatch(
+    authProbe.status,
+    /auth\/api-key-not-valid|auth\/invalid-api-key|Firebase Authentication இந்த API key-ஐ நிராகரித்தது|Firebase API key/,
+    'Live smvastroservices.pages.dev still rejects the Firebase API key: ' + JSON.stringify(authProbe)
+  );
+  assert.match(
+    authProbe.status,
+    /invalid-credential|invalid-login-credentials|wrong-password|தவறாக|Firebase Authentication-ல் இல்லை|Admin அனுமதி இல்லை|unauthorized-domain|too-many-requests|network-request-failed/i,
+    'The live probe should reach a post-API-key authentication result; actual status: ' + JSON.stringify(authProbe)
+  );
+
   await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
   await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
@@ -228,8 +270,18 @@ try {
   const englishButton = await page.$('#calEnglish');
   if (englishButton) {
     await englishButton.click();
-    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
   }
+  // Language selection changes the document lang first; the Calendar forecast
+  // MutationObserver then replaces its controls. Wait for the rebuilt English
+  // control itself, not only the earlier lang attribute, before clicking it.
+  await page.waitForFunction(() => {
+    const button = document.querySelector('#calRasiPalan [data-section="englishNewYear"]');
+    return document.documentElement.lang === 'en' &&
+      button && button.isConnected &&
+      button.textContent.includes('English New Year Rasi Palan') &&
+      button.getClientRects().length > 0;
+  }, { timeout: 15000 });
+  await page.$eval('#calRasiPalan [data-section="englishNewYear"]', el => el.scrollIntoView({ block: 'center', inline: 'center' }));
   await page.click('#calRasiPalan [data-section="englishNewYear"]');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
