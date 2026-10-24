@@ -37,6 +37,14 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
 
+test('The Horoscope Admin header control has concise bilingual labels without resizing the header', () => {
+  assert.match(horoscopeIndexSource, /id="smvAdminRulesAccess"[^>]*>Admin<\\/button>/);
+  assert.match(horoscopeLanguageSource, /'Admin':'நிர்வாகி'/);
+  assert.match(horoscopeAdminSource, /access\\.textContent='Admin'/);
+  assert.doesNotMatch(horoscopeAdminSource, /access\\.textContent='Admin Login'|access\\.textContent='Admin Rules'/);
+  assert.doesNotMatch(horoscopeHeaderLayoutSource, /#templeHeader>\\.smv-admin-access[^}]*font-size:[^}]*!important/);
+});
+
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
   assert.equal(RASI_PALAN_PLANETS.some(p => p.key === 'Moon'), false);
