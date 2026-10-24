@@ -110,7 +110,11 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /auth\/invalid-credential/);
   assert.match(adminModuleSource, /auth\/api-key-not-valid/);
   assert.match(adminModuleSource, /Google Cloud Console/);
-  assert.ok(adminModuleSource.includes('authDomain: (location.hostname'), 'Admin Firebase config must contain a real authDomain property');
+  assert.ok(adminModuleSource.includes("calendarHost === 'smvastroservices.pages.dev'"), 'Admin config must identify the permanent Pages host explicitly');
+  assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
+  assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
+  assert.ok(adminModuleSource.includes("calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost"), 'Temporary branch previews must be recognized separately');
+  assert.ok(adminModuleSource.includes("location.replace(target.href)"), 'Temporary branch Admin login must open the permanent Pages login');
   assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
   assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
@@ -148,6 +152,8 @@ test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin
    assert.ok(adminPageSource.includes('href="https://smvastroservices.in/">SMV ASTRO</a>'));
    assert.ok(adminPageSource.includes('href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>'));
    assert.ok(adminPageSource.includes('class="admin-product-nav"'));
+   assert.ok(adminPageSource.includes("h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev')"));
+   assert.ok(calendarIndexSource.includes("!h.endsWith('.smvastroservices.pages.dev')"));
    assert.ok(calendarWorkerSource.includes("'./admin.html'"));
    assert.ok(calendarWorkerSource.includes("const cacheKey='./'+relativePath;"));
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
