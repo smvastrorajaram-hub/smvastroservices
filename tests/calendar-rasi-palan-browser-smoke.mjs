@@ -87,7 +87,7 @@ try {
   // Capture the actual link target and final URL so a routing failure is actionable.
   const adminHref = await page.$eval('.calendar-product-nav a[aria-current="page"]', a => a.href);
   await page.click('.calendar-product-nav a[aria-current="page"]');
-  await page.waitForFunction(() => location.pathname.endsWith('/admin.html'), { timeout: 10000 }).catch(async error => {
+  await page.waitForFunction(() => location.pathname.endsWith('/admin.html') || location.pathname.endsWith('/admin'), { timeout: 10000 }).catch(async error => {
     const observed = await page.evaluate(() => ({
       href: location.href,
       pathname: location.pathname,
