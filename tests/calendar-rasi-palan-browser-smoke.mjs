@@ -65,7 +65,7 @@ try {
 
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
-    return status && !/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status);
+    return status && !/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'');
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
