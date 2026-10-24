@@ -164,7 +164,7 @@ test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['), 'The new worker must verify that critical offline pages and forecast assets were cached');
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
    assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'The PWA must not download every India location shard during installation');
-   assert.ok(calendarWorkerSource.includes('future missing shards are cached lazily'), 'Missing India place shards should continue to cache lazily on demand');
+   assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India place shards should continue to cache lazily on demand');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v5'));
