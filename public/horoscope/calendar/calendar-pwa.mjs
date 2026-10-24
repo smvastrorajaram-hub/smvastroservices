@@ -58,10 +58,55 @@ if(location.hostname==='smvastroservices.pages.dev'){
   flag(true);hide();statusText('','');
  });
  if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
-   .then(reg=>reg.update().catch(()=>{})).catch(()=>{
-    statusText('Offline files could not be saved. Reopen while online.','இணையமில்லா சேமிப்பு முடியவில்லை; இணையத்துடன் மீண்டும் திறக்கவும்.');
+  function waitForWorkerActivation(reg,worker,timeout=18000){
+   return new Promise((resolve,reject)=>{
+    let timer;
+    const finish=error=>{
+     clearTimeout(timer);
+     worker.removeEventListener('statechange',check);
+     if(error)reject(error);else resolve();
+    };
+    const check=()=>{
+     if(worker.state==='activated'&&reg.active===worker)finish();
+     else if(worker.state==='redundant')finish(new Error('Calendar Service Worker update failed to install.'));
+    };
+    worker.addEventListener('statechange',check);
+    timer=setTimeout(()=>finish(new Error('Calendar Service Worker update timed out.')),timeout);
+    check();
    });
+  }
+  // Admin navigation must not race a stale offline worker and show the
+  // cache-miss response before admin.html can load and initialize its login.
+  const calendarRegistrationPromise=navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
+   .then(async reg=>{try{await reg.update();}catch(_){}return reg;})
+   .catch(()=>{
+    statusText('Offline files could not be saved. Reopen while online.','இணையமில்லா சேமிப்பு முடியவில்லை; இணையத்துடன் மீண்டும் திறக்கவும்.');
+    return null;
+   });
+  document.addEventListener('click',async event=>{
+   const anchor=event.target?.closest?.('a[href]');
+   if(!anchor)return;
+   let target;
+   try{target=new URL(anchor.href,location.href);}catch(_){return;}
+   const adminPath=new URL('./admin.html',location.href).pathname;
+   if(target.origin!==location.origin||target.pathname!==adminPath||(anchor.target&&anchor.target!=='_self'))return;
+   if(!navigator.onLine)return;
+   event.preventDefault();
+   try{
+    const reg=await calendarRegistrationPromise;
+    if(!reg)throw new Error('Calendar Service Worker registration is unavailable.');
+    await reg.update();
+    const worker=reg.installing||reg.waiting;
+    if(worker)await waitForWorkerActivation(reg,worker);
+    if(reg.installing||reg.waiting)throw new Error('Calendar Service Worker is still updating.');
+    await navigator.serviceWorker.ready;
+    if(!reg.active||reg.active.state!=='activated')throw new Error('Calendar Service Worker is not active.');
+    location.assign(target.href);
+   }catch(error){
+    console.warn('Calendar Admin navigation was held until its offline cache could be refreshed.',error);
+    window.alert('Calendar Admin திறப்பதற்கு முன் offline cache update முடியவில்லை. இணைய இணைப்பைத் தொடரவும்; Calendar Home-ஐ மீண்டும் திறந்து Admin-ஐ மீண்டும் அழுத்தவும்.');
+   }
+  },true);
  }
  async function runInstall(){
   if(standalone()){hide();return;}
