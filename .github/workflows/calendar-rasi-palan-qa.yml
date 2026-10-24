@@ -14,6 +14,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
   pull_request:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
   workflow_dispatch:
 permissions:
@@ -58,6 +60,7 @@ jobs:
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
           node --check tests/calendar-rasi-palan-browser-smoke.mjs
+          node --check tests/serve-public.mjs
       - name: Run scoped Calendar Rasi Palan regression
         run: node tests/calendar-rasi-palan-regression.mjs
   browser-preview:
@@ -70,9 +73,23 @@ jobs:
           node-version: '22'
       - name: Install existing Chromium and Puppeteer dependencies
         run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: Test the active Cloudflare Calendar branch preview
+      - name: Serve the exact PR checkout used by the browser smoke test
+        run: |
+          node tests/serve-public.mjs > /tmp/smv-calendar-preview-server.log 2>&1 &
+          echo $! > /tmp/smv-calendar-preview-server.pid
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/horoscope/calendar/ > /dev/null; then
+              echo "Local Calendar source server ready at http://127.0.0.1:4173/horoscope/calendar/"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/smv-calendar-preview-server.log
+          echo "Local Calendar source server failed to start" >&2
+          exit 1
+      - name: Run Chromium browser smoke against the current PR source
         env:
-          SMV_CALENDAR_PREVIEW_URL: https://fix-calendar-periods-months.smvastroservices.pages.dev/horoscope/calendar/
+          SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Preserve Calendar preview screenshots
         if: always()
