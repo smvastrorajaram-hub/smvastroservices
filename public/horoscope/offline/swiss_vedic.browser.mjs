@@ -862,3 +862,9 @@ export function calculateSunMoonSync({date,time,lat,lon,utcOffsetMinutes=330}){
   };
 }
 
+
+// Async entry point initializes the local WASM provider once, then uses the light path.
+export async function calculateSunMoon(input){
+  await ensureSwe();
+  return calculateSunMoonSync(input);
+}
