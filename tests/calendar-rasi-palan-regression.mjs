@@ -120,7 +120,9 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
 test('Calendar manual predictions are managed inside the existing Horoscope Admin session', () => {
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
-  assert.match(calendarIndexSource, /href="\.\/" aria-current="page">SMV CALENDAR/);
+  assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener">SERVICES</a>'));
+  assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener">HOROSCOPE</a>'));
+  assert.doesNotMatch(calendarIndexSource, /class="is-current" href="\.\/" aria-current="page">SMV CALENDAR/);
   assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
   assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
   assert.ok(horoscopeAdminWorkbenchSource.includes("import('./calendar-rasi-palan-admin.mjs').then"), 'Calendar admin editor must load lazily inside the existing Admin workbench');
