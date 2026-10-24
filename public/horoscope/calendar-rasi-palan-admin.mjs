@@ -109,9 +109,13 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         mode: $('crpaMode').value,
+        targetDate: $('crpaDate').value,
         targetYear: Number($('crpaYear').value),
         targetType: selectedType(),
         targetEventDate: $('crpaEventDate').value,
+        rasiIndex: Number($('crpaRasi').value),
+        planet: $('crpaPlanet').value,
+        language: $('crpaLanguage').value,
         entries: workingEntries
       }));
       return true;
