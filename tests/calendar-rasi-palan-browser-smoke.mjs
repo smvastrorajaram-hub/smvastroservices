@@ -239,10 +239,17 @@ try {
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
     JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+  await page.waitForSelector('#smvAdminRulesAccess:not([hidden])', { timeout: 20000 });
+  await page.waitForFunction(() =>
+    document.querySelector('#smvAdminRulesAccess')?.textContent.trim() === 'நிர்வாகி',
+    { timeout: 20000 });
   await page.click('#languageEnglish');
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
     JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+  await page.waitForFunction(() =>
+    document.querySelector('#smvAdminRulesAccess')?.textContent.trim() === 'Admin',
+    { timeout: 20000 });
 
   console.log(JSON.stringify({
     pass: true,

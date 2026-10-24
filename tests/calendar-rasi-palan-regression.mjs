@@ -40,7 +40,10 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
 test('The Horoscope Admin header control has concise bilingual labels without resizing the header', () => {
   assert.ok(horoscopeIndexSource.includes('id="smvAdminRulesAccess" type="button" class="smv-admin-access" hidden aria-controls="smvAdminRulesPanel" aria-expanded="false">Admin</button>'));
   assert.ok(horoscopeLanguageSource.includes("'Admin':'நிர்வாகி'"));
-  assert.ok(horoscopeAdminSource.includes("access.textContent='Admin'"));
+  assert.match(horoscopeAdminSource, /const updateAccessLabel=\(lang=document\.documentElement\.lang\)=>\{access\.textContent=lang==='ta'\?'நிர்வாகி':'Admin';\}/);
+  assert.match(horoscopeAdminSource, /addEventListener\('smv-language',event=>updateAccessLabel\(event\.detail\)\)/);
+  assert.match(horoscopeAdminSource, /function loginForm\(\)\{verified=false;updateAccessLabel\(\);/);
+  assert.match(horoscopeAdminSource, /function editor\(\)[\s\S]*?updateAccessLabel\(\);/);
   assert.ok(!horoscopeAdminSource.includes("access.textContent='Admin Login'"));
   assert.ok(!horoscopeAdminSource.includes("access.textContent='Admin Rules'"));
 });
