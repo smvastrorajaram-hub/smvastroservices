@@ -10,9 +10,16 @@ const types = {
   saturnTransit: { label: 'சனி பெயர்ச்சி பலன்கள்', kind: 'transit', planets: ['Saturn'] },
   rahuKetuTransit: { label: 'ராகு–கேது பெயர்ச்சி பலன்கள்', kind: 'transit', planets: ['Rahu', 'Ketu'] }
 };
+const calendarHost = location.hostname.toLowerCase();
+const isPermanentPagesHost = calendarHost === 'smvastroservices.pages.dev';
+const isProductionCalendarHost = calendarHost === 'calendar.smvastroservices.in';
+const isTemporaryPagesPreview = calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost;
 const firebaseConfig = {
   apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-  // Match the existing SMV ASTRO Admin setup: use the Firebase hosted auth domain on Pages previews,\n  // and the production custom auth domain on SMV production domains.\n  authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))\n    ? 'smv-astro.firebaseapp.com'\n    : 'auth.smvastroservices.in',
+  // Keep the two permanent hosting/authentication pairs separate.
+  // Custom domain: calendar.smvastroservices.in -> auth.smvastroservices.in
+  // Cloudflare Pages fallback: smvastroservices.pages.dev -> smv-astro.firebaseapp.com
+  authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com',
   projectId: 'smv-astro',
   storageBucket: 'smv-astro.firebasestorage.app',
   messagingSenderId: '299081899217',
@@ -45,6 +52,10 @@ function loginErrorMessage(error) {
     'auth/too-many-requests': 'பல login முயற்சிகள். சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.',
     'permission-denied': 'இந்தக் கணக்கிற்கு Firestore Admin அனுமதி இல்லை. Admin-role access-ஐச் சரிபார்க்கவும்.'
   };
+  if (code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || code === 'auth/invalid-api-key') {
+    return 'Firebase API key ஏற்கப்படவில்லை அல்லது ' + location.hostname +
+      ' Preview domain-க்கு அனுமதி இல்லை. Google Cloud Console → APIs & Services → Credentials-ல் API key enabled நிலை, Identity Toolkit API restriction, மற்றும் இந்த hostname-க்கான HTTP referrer restriction-ஐச் சரிபார்க்கவும். (' + code + ')';
+  }
   if (known[code]) return known[code] + ' (' + code + ')';
   const message = String(error?.message || error || 'Unknown error');
   return code && !message.includes(code) ? message + ' (' + code + ')' : message;
@@ -189,6 +200,18 @@ function commitCurrentPrediction(remove = false) {
 }
 async function login(event) {
   event.preventDefault();
+  // Google API-key HTTP-referrer restrictions should cover the permanent Pages host,
+  // not every temporary PR branch hostname. Never attempt Admin auth from a branch preview.
+  if (isTemporaryPagesPreview) {
+    const target = new URL('/horoscope/calendar/admin.html', 'https://smvastroservices.pages.dev');
+    status('இது தற்காலிக Preview முகவரி. Admin Login-ஐ நிரந்தர Cloudflare Pages முகவரியில் தொடர்கிறோம்: smvastroservices.pages.dev');
+    location.replace(target.href);
+    return;
+  }
+  if (!isPermanentPagesHost && !isProductionCalendarHost) {
+    status('Admin Login-க்கு calendar.smvastroservices.in அல்லது smvastroservices.pages.dev முகவரியைப் பயன்படுத்தவும்.', true);
+    return;
+  }
   const button = $('loginButton');
   button.disabled = true;
   status('Admin உரிமை சரிபார்க்கப்படுகிறது…');
@@ -283,3 +306,5 @@ $('publish').addEventListener('click', publish);
 setSignOptions();
 setPlanetOptions(false);
 refreshEntry();
+// Non-visual initialization marker used by the Calendar browser smoke test.
+$('loginForm').dataset.adminModuleReady = 'true';

@@ -13,6 +13,9 @@
 main{max-width:1000px;margin:24px auto;padding:16px}
 header,.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
 header{background:var(--green);color:#fff8df;border:0}header h1{font-size:clamp(23px,3vw,32px);margin:0}header p{margin:4px 0 0;color:#f0dfb3}
+.admin-product-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+.admin-product-nav a{display:inline-flex;align-items:center;min-height:40px;padding:7px 12px;border:1px solid rgba(255,248,223,.55);border-radius:8px;color:#fff8df;text-decoration:none;font-weight:700}
+.admin-product-nav a[aria-current="page"]{background:#fff8df;color:var(--green);border-color:#fff8df}
 a{color:inherit}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #b8cdc2;border-radius:8px;background:#fff;color:var(--green);padding:10px 14px;min-height:42px}button.primary{background:var(--green);color:#fff8df;border-color:var(--green)}button:disabled{opacity:.55;cursor:wait}
 label{display:grid;gap:5px;font-weight:700;font-size:14px}input,select,textarea{width:100%;min-width:0;border:1px solid #b8cdc2;border-radius:8px;background:#fff;color:var(--ink);padding:10px;min-height:43px}textarea{min-height:135px;line-height:1.7;resize:vertical}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:14px 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}
@@ -23,6 +26,11 @@ label{display:grid;gap:5px;font-weight:700;font-size:14px}input,select,textarea{
 </head>
 <body>
 <main>
+<nav class="admin-product-nav" aria-label="SMV services">
+<a href="https://smvastroservices.in/">SMV ASTRO</a>
+<a href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>
+<a href="./admin.html" aria-current="page">Admin</a>
+</nav>
 <header><h1>SMV CALENDAR · Admin</h1><p>ஆண்டு ராசி பலன்கள் மற்றும் குரு / சனி / ராகு–கேது பெயர்ச்சி பலன்கள்</p></header>
 <section class="panel">
 <p><a href="./">← SMV CALENDAR-க்கு திரும்பு</a></p>
@@ -58,6 +66,12 @@ label{display:grid;gap:5px;font-weight:700;font-size:14px}input,select,textarea{
 <div id="publishStatus" class="status" role="status" aria-live="polite"></div>
 </section>
 </main>
-<script type="module" src="./calendar-admin.mjs"></script>
+<script>
+(()=>{const h=location.hostname.toLowerCase();if(h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev'))return;const nav=document.querySelector('.admin-product-nav');if(!nav)return;const links=nav.querySelectorAll('a');if(links[0])links[0].href='/';if(links[1])links[1].href='/horoscope/';})();
+</script>
+<script>
+(()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.pages.dev'||!h.endsWith('.smvastroservices.pages.dev'))return;document.getElementById('loginForm')?.addEventListener('submit',event=>{event.preventDefault();location.replace('https://smvastroservices.pages.dev/horoscope/calendar/admin.html');});})();
+</script>
+<script type="module" src="./calendar-admin.mjs?v=20261024-host-separation-v2"></script>
 </body>
 </html>

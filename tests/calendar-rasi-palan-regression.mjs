@@ -20,8 +20,10 @@ const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calend
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
+const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
-test('Daily/weekly/monthly and New Year rules include exactly eight transiting planets, never a Moon prediction', () => {
+test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
   assert.equal(RASI_PALAN_PLANETS.some(p => p.key === 'Moon'), false);
 });
@@ -64,10 +66,15 @@ test('New Year labels are the exact requested names and avoid an annual-transit 
   assert.doesNotMatch(RASI_PALAN_TITLES.tamilNewYear.en, /Annual Transit/i);
 });
 
-test('Calendar daily Rasi Palan has no separate Moon transit prediction and shows only eight transit planets', () => {
-  assert.doesNotMatch(dailyCalendarSource, /L\('Moon transit'/);
-  assert.match(dailyCalendarSource, /All eight transit planets/);
-  assert.match(dailyCalendarSource, /ps\.filter\(x=>x\.name!=='Moon'\)\.map\(x=>/);
+test('Moon transit appears first, the eight other planets remain separate, and old duplicate forecast blocks are removed', () => {
+  assert.match(publicRasiPalanSource, /function renderMoonTransit/);
+  assert.ok(publicRasiPalanSource.includes('renderMoonTransit(result, rasiIndex) + cards'));
+  assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
+  assert.match(dailyCalendarSource, /Birth Star, Tara Bala & Chandrashtama/);
+  assert.match(dailyCalendarSource, /Tara Bala/);
+  assert.match(dailyCalendarSource, /Chandrashtama/);
+  assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
+  assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
 });
 
 test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
@@ -101,6 +108,16 @@ test('Manual authoring and mode selection are isolated to a Firebase-admin-prote
   assert.match(adminModuleSource, /signInWithEmailAndPassword/);
   assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
   assert.match(adminModuleSource, /auth\/invalid-credential/);
+  assert.match(adminModuleSource, /auth\/api-key-not-valid/);
+  assert.match(adminModuleSource, /Google Cloud Console/);
+  assert.ok(adminModuleSource.includes("calendarHost === 'smvastroservices.pages.dev'"), 'Admin config must identify the permanent Pages host explicitly');
+  assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
+  assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
+  assert.ok(publicRasiPalanSource.includes("location.hostname.toLowerCase() === 'calendar.smvastroservices.in'"), 'Public Calendar Firebase config must keep the custom-domain path explicit');
+  assert.match(publicRasiPalanSource, /\?\s*'auth\.smvastroservices\.in'\s*:\s*'smv-astro\.firebaseapp\.com'/, 'Public Calendar must use the matching auth domain for each permanent host');
+  assert.ok(adminModuleSource.includes("calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost"), 'Temporary branch previews must be recognized separately');
+  assert.ok(adminModuleSource.includes("location.replace(target.href)"), 'Temporary branch Admin login must open the permanent Pages login');
+  assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
   assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
   assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(adminModuleSource, /tamilNewYear/);
@@ -119,7 +136,35 @@ test('Planetary ingress section computes only the latest past transit per planet
 
 test('Selecting the already-active public section does not rebuild the entire Calendar UI', () => {
   assert.match(publicRasiPalanSource, /const nextSection = button\.dataset\.section;\s+if \(state\.section === nextSection\) return;/);
+})
+ 
+test('Selected Rasi controls all forecast periods and is preserved across sections', () => {
+   assert.ok(publicRasiPalanSource.includes('id="rpRasi"'));
+   assert.ok(publicRasiPalanSource.includes('selectedRasiStorageKey'));
+   assert.ok(publicRasiPalanSource.includes('state.rasiIndex = value'));
+   assert.ok(publicRasiPalanSource.includes('data-rasi-index'));
+   assert.ok(publicRasiPalanSource.includes('const rasi = rasiLabels[rasiIndex];'));
+   assert.ok(publicRasiPalanSource.includes("calendarHost.insertAdjacentElement('afterend', root)"));
+   assert.ok(publicRasiPalanSource.includes("document.getElementById('calRasi')"));
 });
+
+test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin.html as its own route', () => {
+   assert.ok(calendarIndexSource.includes('<a class="is-current" href="./admin.html" aria-current="page">Admin</a>'));
+   assert.ok(!calendarIndexSource.includes('<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>'));
+   assert.ok(adminPageSource.includes('href="https://smvastroservices.in/">SMV ASTRO</a>'));
+   assert.ok(adminPageSource.includes('href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>'));
+   assert.ok(adminPageSource.includes('class="admin-product-nav"'));
+   assert.ok(adminPageSource.includes("h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev')"));
+   assert.ok(calendarIndexSource.includes("!h.endsWith('.smvastroservices.pages.dev')"));
+   assert.ok(calendarWorkerSource.includes("'./admin.html'"));
+   assert.ok(calendarWorkerSource.includes("const cacheKey='./'+relativePath;"));
+   assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
+   assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
+   assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
+   assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
+   assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
+});
+;
 
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);

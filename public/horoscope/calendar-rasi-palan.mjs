@@ -11,7 +11,8 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   root.id = 'calRasiPalan';
   root.className = 'cal-rasi-palan';
   root.setAttribute('aria-label', 'Daily, weekly, monthly and New Year Rasi Palan');
-  calendarHost.parentElement.insertBefore(root, calendarHost);
+  // The forecasts belong after the complete Daily Calendar, never above it.
+  calendarHost.insertAdjacentElement('afterend', root);
 
   const $ = selector => root.querySelector(selector);
   const enNames = Object.fromEntries(RASI_PALAN_PLANETS.map(p => [p.key, p.key]));
@@ -26,11 +27,26 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const offset = Number.isFinite(Number(cfg.offset)) ? Number(cfg.offset) : 330;
     return new Date(Date.now() + offset * 60000).toISOString().slice(0, 10);
   };
+  const selectedRasiStorageKey = 'smv-calendar-rasi-palan-selected-rasi-v1';
+  function readSelectedRasi() {
+    try {
+      const stored = localStorage.getItem(selectedRasiStorageKey);
+      const value = stored === null ? NaN : Number(stored);
+      if (Number.isInteger(value) && value >= 0 && value < signs.length) return value;
+    } catch (_) {}
+    try {
+      const settings = JSON.parse(localStorage.getItem('smv-calendar-settings') || '{}');
+      const value = Number(settings.rasi);
+      if (Number.isInteger(value) && value >= 0 && value < signs.length) return value;
+    } catch (_) {}
+    return 0;
+  }
   let state = {
     section: 'period',
     period: 'daily',
     date: defaultDate(),
     year: Number(defaultDate().slice(0, 4)),
+    rasiIndex: readSelectedRasi(),
     lastResult: null
   };
   let publishedEntries = {};
@@ -204,6 +220,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const calc = await chartAtSunrise(dateRef.date, cfg);
     const positions = positionsFromChart(calc.chart);
     if (positions.planets.some(p => p.sign == null)) throw new Error(L('Swiss Ephemeris did not return all eight required transit planets.', 'Swiss Ephemeris எட்டு கோச்சார கிரகங்களின் நிலைகளையும் வழங்கவில்லை.'));
+    if (positions.moonSign == null) throw new Error(L('The transit Moon sign could not be calculated.', 'கோச்சார சந்திர ராசியைக் கணக்கிட முடியவில்லை.'));
     return {
       type: state.period,
       periodKey: dateRef.key,
@@ -321,12 +338,25 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       esc(L('House ', 'பாவம் ') + house + ' · ' + signText) + '</p><p class="rp-reading">' + esc(reading) +
       '</p><small class="rp-source">' + esc(sourceLabel(selectedReading.source)) + '</small></article>';
   }
+  function renderMoonTransit(result, rasiIndex) {
+    const moonSign = Number.isInteger(result.positions && result.positions.moonSign)
+      ? result.positions.moonSign : result.moonSign;
+    if (!Number.isInteger(moonSign) || moonSign < 0 || moonSign >= rasiLabels.length) {
+      throw new Error(L('The transit Moon sign could not be calculated.', 'கோச்சார சந்திர ராசியைக் கணக்கிட முடியவில்லை.'));
+    }
+    const house = houseFromRasi(moonSign, rasiIndex);
+    const reading = autoText('Moon', moonSign, rasiIndex, isTamil());
+    return '<section class="rp-moon-transit" data-transit-planet="Moon"><h4>' +
+      esc(L('Moon Transit Prediction', 'சந்திரன் கோச்சார பலன்')) + '</h4><p class="rp-position">' +
+      esc(L('House ', 'பாவம் ') + house + ' · ' + rasiLabel(moonSign)) +
+      '</p><p class="rp-reading">' + esc(reading) + '</p></section>';
+  }
   function renderRasiGrid(result) {
     const language = isTamil() ? 'ta' : 'en';
-    const cards = rasiLabels.map((rasi, rasiIndex) => {
-      const bodyCards = result.positions.planets.map(p => renderPlanetCard(result, rasiIndex, p)).join('');
-      return '<article class="rp-rasi-card"><h4>' + esc(rasi[isTamil() ? 1 : 0]) + '</h4><div class="rp-planets-grid">' + bodyCards + '</div></article>';
-    }).join('');
+    const rasiIndex = Number.isInteger(state.rasiIndex) && state.rasiIndex >= 0 && state.rasiIndex < rasiLabels.length ? state.rasiIndex : 0;
+    const rasi = rasiLabels[rasiIndex];
+    const bodyCards = result.positions.planets.map(p => renderPlanetCard(result, rasiIndex, p)).join('');
+    const cards = '<article class="rp-rasi-card" data-rasi-index="' + rasiIndex + '"><h4>' + esc(rasi[isTamil() ? 1 : 0]) + '</h4><div class="rp-planets-grid">' + bodyCards + '</div></article>';
     const title = result.type === 'tamilNewYear' ? RASI_PALAN_TITLES.tamilNewYear[language]
       : result.type === 'englishNewYear' ? RASI_PALAN_TITLES.englishNewYear[language]
       : result.type === 'daily' ? L('Daily Rasi Palan', 'தினசரி ராசி பலன்கள்')
@@ -342,7 +372,8 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     context += ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
     if (result.fallbackSunrise) context += ' · ' + L('Sunrise unavailable; local noon used as fallback.', 'சூரிய உதயம் கிடைக்காததால் உள்ளூர் நண்பகல் மாற்றாகப் பயன்படுத்தப்பட்டது.');
     if (result.moonSign != null) context += ' · ' + L('Moon sign at sunrise: ', 'சூரிய உதயச் சந்திர ராசி: ') + rasiLabel(result.moonSign);
-    return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div></div>' + cards;
+    return '<div class="rp-results-title"><div><h3>' + esc(title) + '</h3><p>' + esc(context) + '</p></div></div>' +
+      renderMoonTransit(result, rasiIndex) + cards;
   }
   function ingressType(body) {
     return body === 'Jupiter' ? 'jupiterTransit' : body === 'Saturn' ? 'saturnTransit' : 'rahuKetuTransit';
@@ -360,14 +391,14 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const eventMeta = L('Last ingress: ', 'கடைசியாக நடந்த பெயர்ச்சி: ') + fmtDate(event.date) + ' · ' + esc(event.time) +
       ' · ' + L('From ', 'முந்தைய ராசி ') + oldSigns + ' ' + L('to ', '→ புதிய ராசி ') + newSigns +
       ' · ' + L('As of ', 'கணக்கீட்டு நாள் ') + fmtDate(asOfDate);
-    const cards = rasiLabels.map((rasi, rasiIndex) => {
-      const items = bodies.map(body => {
-        const p = positions.planets.find(x => x.key === body);
-        if (!p || p.sign == null) return '';
-        return renderPlanetCard(res, rasiIndex, p);
-      }).join('');
-      return '<article class="rp-rasi-card"><h4>' + esc(rasi[isTamil() ? 1 : 0]) + '</h4><div class="rp-planets-grid">' + items + '</div></article>';
+    const rasiIndex = Number.isInteger(state.rasiIndex) && state.rasiIndex >= 0 && state.rasiIndex < rasiLabels.length ? state.rasiIndex : 0;
+    const rasi = rasiLabels[rasiIndex];
+    const items = bodies.map(body => {
+      const p = positions.planets.find(x => x.key === body);
+      if (!p || p.sign == null) return '';
+      return renderPlanetCard(res, rasiIndex, p);
     }).join('');
+    const cards = '<article class="rp-rasi-card" data-rasi-index="' + rasiIndex + '"><h4>' + esc(rasi[isTamil() ? 1 : 0]) + '</h4><div class="rp-planets-grid">' + items + '</div></article>';
     return '<section class="rp-ingress-event"><div class="rp-event-heading"><h4>' + esc(planetLabel(groupBody === 'Rahu' ? 'Rahu' : groupBody)) + '</h4><p>' + esc(eventMeta) + '</p></div><div class="rp-rasi-grid">' + cards + '</div></section>';
   }
   function renderIngress(result) {
@@ -402,11 +433,13 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       '<button type="button" data-section="englishNewYear" class="' + (state.section === 'englishNewYear' ? 'is-active' : '') + '">' + esc(annualLabels.englishNewYear[isTamil() ? 1 : 0]) + '</button>' +
       '<button type="button" data-section="ingress" class="' + (state.section === 'ingress' ? 'is-active' : '') + '">' + esc(L('Jupiter / Saturn / Rahu–Ketu', 'குரு / சனி / ராகு–கேது')) + '</button></div>' +
       '<div class="rp-toolbar">' +
+      '<label class="rp-rasi-control">' + esc(L('Rasi', 'ராசி')) + '<select id="rpRasi">' + rasiLabels.map((rasi, index) => '<option value="' + index + '">' + esc(rasi[isTamil() ? 1 : 0]) + '</option>').join('') + '</select></label>' +
       '<label class="rp-period-control">' + esc(L('Period', 'கால அளவு')) + '<select id="rpPeriod"><option value="daily">' + esc(L('Daily', 'தினசரி')) + '</option><option value="weekly">' + esc(L('Weekly', 'வாரம்')) + '</option><option value="monthly">' + esc(L('Monthly', 'மாதம்')) + '</option></select></label>' +
       '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Show predictions', 'பலன்களைக் காண்பி')) + '</button></div>' +
       '<p id="rpStatus" class="rp-status" role="status"></p>' +
       '<div id="rpResults" aria-live="polite"></div>';
     $('#rpPeriod').value = state.period;
+    $('#rpRasi').value = String(state.rasiIndex);
     const periodControl = $('.rp-period-control');
     periodControl.hidden = state.section !== 'period';
     root.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => {
@@ -417,6 +450,19 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       if (state.lastResult) renderLastResult();
     }));
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
+    $('#rpRasi').addEventListener('change', () => {
+      const value = Number($('#rpRasi').value);
+      if (!Number.isInteger(value) || value < 0 || value >= rasiLabels.length) return;
+      state.rasiIndex = value;
+      try { localStorage.setItem(selectedRasiStorageKey, String(value)); } catch (_) {}
+      const calendarRasi = document.getElementById('calRasi');
+      if (calendarRasi && calendarRasi.value !== String(value)) {
+        calendarRasi.value = String(value);
+        calendarRasi.dispatchEvent(new Event('change', { bubbles: true }));
+      } else if (state.lastResult) {
+        renderLastResult();
+      }
+    });
     $('#rpRun').addEventListener('click', run);
   }
   function renderLastResult() {
@@ -462,7 +508,9 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       try {
         const CONFIG = {
           apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-          authDomain: 'smv-astro.firebaseapp.com',
+          authDomain: location.hostname.toLowerCase() === 'calendar.smvastroservices.in'
+            ? 'auth.smvastroservices.in'
+            : 'smv-astro.firebaseapp.com',
           projectId: 'smv-astro',
           storageBucket: 'smv-astro.firebasestorage.app',
           messagingSenderId: '299081899217',
@@ -505,6 +553,17 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   });
   languageObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   renderControls();
+  // Keep the Calendar's existing Rasi selector and the forecast selector in sync.
+  document.addEventListener('change', event => {
+    if (event.target?.id !== 'calRasi') return;
+    const value = Number(event.target.value);
+    if (!Number.isInteger(value) || value < 0 || value >= rasiLabels.length) return;
+    state.rasiIndex = value;
+    try { localStorage.setItem(selectedRasiStorageKey, String(value)); } catch (_) {}
+    const control = $('#rpRasi');
+    if (control && control.value !== String(value)) control.value = String(value);
+    if (state.lastResult) renderLastResult();
+  });
   publishedManualReady = loadPublishedManual().then(() => {
     if (publishedLoadError) console.warn('Calendar remains usable with automatic predictions only.');
     if (!state.lastResult) return;
