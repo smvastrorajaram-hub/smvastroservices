@@ -5,6 +5,8 @@ on:
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/calendar-rasi-palan-admin.mjs'
+      - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/horoscope/calendar-rasi-palan.*'
+      - 'public/horoscope/calendar-rasi-palan-admin.mjs'
+      - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -39,6 +43,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check public/horoscope/calendar-rasi-palan.mjs
+          node --check public/horoscope/calendar-rasi-palan-admin.mjs
+          node --check public/horoscope/prediction-admin-workbench.mjs
           node --check public/horoscope/calendar/sw.js
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
