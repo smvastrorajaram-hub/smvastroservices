@@ -48,6 +48,10 @@ function loginErrorMessage(error) {
     'auth/too-many-requests': 'பல login முயற்சிகள். சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.',
     'permission-denied': 'இந்தக் கணக்கிற்கு Firestore Admin அனுமதி இல்லை. Admin-role access-ஐச் சரிபார்க்கவும்.'
   };
+  if (code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || code === 'auth/invalid-api-key') {
+    return 'Firebase API key ஏற்கப்படவில்லை அல்லது ' + location.hostname +
+      ' Preview domain-க்கு அனுமதி இல்லை. Google Cloud Console → APIs & Services → Credentials-ல் API key enabled நிலை, Identity Toolkit API restriction, மற்றும் இந்த hostname-க்கான HTTP referrer restriction-ஐச் சரிபார்க்கவும். (' + code + ')';
+  }
   if (known[code]) return known[code] + ' (' + code + ')';
   const message = String(error?.message || error || 'Unknown error');
   return code && !message.includes(code) ? message + ' (' + code + ')' : message;
