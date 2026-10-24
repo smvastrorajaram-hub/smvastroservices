@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-forecast-assets-v6';
+const CACHE='smv-calendar-forecast-assets-v7';
 const CORE=[
  './','./index.html','./admin.html','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
