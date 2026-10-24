@@ -50,7 +50,7 @@ try {
       await page.waitForFunction(() => {
         const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
         return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
-          JSON.stringify(nav) === JSON.stringify(['SMV ASTRO', 'SMV HOROSCOPE', 'Admin']);
+          JSON.stringify(nav) === JSON.stringify(['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR']);
       }, { timeout: 45000 });
       ready = true;
     } catch (error) {
@@ -73,72 +73,21 @@ try {
     givenNote: document.body.innerText.includes('தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்'),
     tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim()),
     navLabels: [...document.querySelectorAll('.calendar-product-nav a')].map(x => x.textContent.trim()),
-    hasRasiPicker: Boolean(document.querySelector('#calRasiPalan #rpRasi'))
+    hasRasiPicker: Boolean(document.querySelector('#calRasiPalan #rpRasi')),
+    separateAdminLink: Boolean(document.querySelector('.calendar-product-nav a[href=\"./admin.html\"]'))
   }));
   assert.equal(publicUi.modeControl, false, 'Public Calendar must not show the prediction mode selector');
-  assert.equal(publicUi.dateControl, false, 'Customers must not be able to change the Rasi Palan date');
+  assert.equal(publicUi.dateControl, true, 'Customers should be able to choose the reference date for daily, weekly, and monthly forecasts');
   assert.equal(publicUi.yearControl, false, 'Customers must not be able to change the Rasi Palan year');
   assert.equal(publicUi.editor, false, 'Public Calendar must not show the manual editor');
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
-  assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Header should preserve ASTRO/HOROSCOPE and replace Calendar nav label with Admin');
+  assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'SMV CALENDAR'], 'Calendar navigation should not expose a separate Admin section');
+  assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
-  // Capture the actual link target and final URL so a routing failure is actionable.
-  const adminHref = await page.$eval('.calendar-product-nav a[aria-current="page"]', a => a.href);
-  await page.click('.calendar-product-nav a[aria-current="page"]');
-  await page.waitForFunction(() => location.pathname.endsWith('/admin.html') || location.pathname.endsWith('/admin'), { timeout: 10000 }).catch(async error => {
-    const observed = await page.evaluate(() => ({
-      href: location.href,
-      pathname: location.pathname,
-      nav: [...document.querySelectorAll('.calendar-product-nav a')].map(a => ({ text: a.textContent.trim(), href: a.href }))
-    })).catch(() => ({ href: 'document unavailable during navigation' }));
-    throw new Error('Admin link did not open the login page. target=' + adminHref + '; afterClick=' + JSON.stringify(observed) + '; cause=' + error.message);
-  });
-  await page.waitForSelector('#loginForm #adminEmail');
-  const adminUi = await page.evaluate(() => ({
-    nav: [...document.querySelectorAll('.admin-product-nav a')].map(x => x.textContent.trim()),
-    title: document.querySelector('header h1')?.textContent || '',
-    loginVisible: Boolean(document.querySelector('#loginForm #adminEmail')) && !document.querySelector('#loginForm').hidden
-  }));
-  assert.deepEqual(adminUi.nav, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Admin page should retain the two product links and show Admin in the third position');
-  assert.ok(adminUi.loginVisible, 'Admin page should display the Firebase login form');
-  assert.ok(adminUi.title.includes('Admin'), 'Admin page header must identify the Admin screen');
-  await page.waitForFunction(() => document.querySelector('#loginForm')?.dataset.adminModuleReady === 'true', { timeout: 10000 })
-    .catch(async error => {
-      const state = await page.evaluate(() => ({
-        href: location.href,
-        moduleScripts: [...document.scripts].map(script => script.src).filter(src => src.includes('calendar-admin.mjs'))
-      })).catch(() => ({ href: 'document unavailable' }));
-      throw new Error('Calendar Admin module did not initialize. state=' + JSON.stringify(state) +
-        '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
-    });
-
-  // Never send Firebase auth requests from a temporary branch-preview origin.
-  // Deliberately fake credentials prove the redirect happens before authentication.
-  await page.$eval('#loginForm #adminEmail', el => { el.value = 'preview-probe@example.com'; });
-  await page.$eval('#loginForm #adminPassword', el => { el.value = 'not-a-real-password'; });
-  const formValidity = await page.$eval('#loginForm', form => form.checkValidity());
-  assert.equal(formValidity, true, 'Preview redirect check must submit a validly shaped form without real credentials');
-  await page.$eval('#loginForm', form => form.requestSubmit());
-  try {
-    await page.waitForFunction(() =>
-      location.hostname === 'smvastroservices.pages.dev' &&
-      (location.pathname.endsWith('/horoscope/calendar/admin.html') || location.pathname.endsWith('/horoscope/calendar/admin')),
-    { timeout: 30000 });
-  } catch (error) {
-    const observed = await page.evaluate(() => ({
-      href: location.href,
-      hostname: location.hostname,
-      formStatus: document.querySelector('#status')?.textContent || '',
-      moduleScripts: [...document.scripts].map(script => script.src).filter(src => src.includes('calendar-admin.mjs'))
-    })).catch(() => ({ href: 'document unavailable' }));
-    throw new Error('Temporary Admin preview did not redirect to permanent Pages. state=' + JSON.stringify(observed) +
-      '; runtimeErrors=' + JSON.stringify(runtimeErrors) + '; cause=' + error.message);
-  }
-  assert.equal(await page.$eval('#loginForm #adminEmail', el => el.value), '', 'Branch-preview credentials must not be carried to the stable Pages login');
-  await page.goto(previewUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  // Calendar Admin is intentionally not a separate Calendar route. The legacy admin.html redirect is covered by source regressions.
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
   await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
   assert.ok(await page.evaluate(() => {
@@ -150,8 +99,9 @@ try {
   // The Period tab is already selected by default; change only the period.
   await page.select('#calRasiPalan #rpRasi', '5');
   await page.select('#calRasiPalan #rpPeriod', 'daily');
-  assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'There must be no customer date picker');
-  assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'There must be no customer year control');
+  assert.ok(await page.$('#calRasiPalan #rpDate'), 'Public forecast should provide a reference-date picker');
+  assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'No separate public year selector should be exposed');
+  await page.$eval('#calRasiPalan #rpDate', el => { el.value = '2026-10-24'; el.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
@@ -166,7 +116,8 @@ try {
   assert.ok(/Moon|சந்திரன்/i.test(dailyState.moonHeading), 'Moon transit should have its own separate heading');
   assert.deepEqual(dailyState.outputOrder, ['moon', 'rasi'], 'Moon transit must appear before the eight other planets');
   assert.ok(!dailyState.readings.some(x => /Moon|சந்திரன்/i.test(x)), 'Moon must not be duplicated in the eight-planet list');
-  assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its fixed weekday and date');
+  assert.ok(/Day:|நாள்:/.test(dailyState.context), 'Daily reading should display its weekday and selected reference date');
+  assert.ok(dailyState.context.includes('2026') && /24/.test(dailyState.context), 'Daily reading must honor the selected reference date 24 October 2026');
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
