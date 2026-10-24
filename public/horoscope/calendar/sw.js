@@ -18,7 +18,7 @@ self.addEventListener('fetch',e=>{
  if(e.request.mode==='navigate'){
   const scopePath=new URL(self.registration.scope).pathname;
   if(!u.pathname.startsWith(scopePath))return;
-  const relativePath=u.pathname.slice(scopePath.length).replace(/^\\/+/, '')||'index.html';
+  const relativePath=u.pathname.slice(scopePath.length).replace(/^\/+/, '')||'index.html';
   // Cache/fallback by the actual URL. In particular, admin.html must never
   // resolve to index.html when an installed PWA is offline.
   const cacheKey='./'+relativePath;
@@ -29,5 +29,5 @@ self.addEventListener('fetch',e=>{
    return hit?fixed(u.href,hit):new Response(relativePath==='admin.html'?'SMV CALENDAR Admin page is not cached. Open it once while online.':'SMV CALENDAR offline page is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
   })());return;
  }
- e.respondWith((async()=>{const c=await caches.open(CACHE);const critical=/\/(?:calendar-pwa\.mjs|daily-calendar\.mjs|daily-calendar\.css|calendar-theme\.css|location-search-online-offline\.js|manifest-(?:en|ta)\.webmanifest)$/.test(u.pathname);if(critical){try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}}const hit=await c.match(e.request,{ignoreSearch:true})||await caches.match(e.request,{ignoreSearch:true});if(hit){if(!/\/offline\/places\/india\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));return fixed(u.href,hit);}try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}return new Response('SMV CALENDAR offline asset is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});})());
+ e.respondWith((async()=>{const c=await caches.open(CACHE);const critical=/\/(?:calendar-pwa\.mjs|calendar-admin\.mjs|rasi-palan-periods\.mjs|calendar-rasi-palan\.mjs|calendar-rasi-palan\.css|calendar-rasi-palan-rules\.mjs|daily-calendar\.mjs|daily-calendar\.css|calendar-theme\.css|location-search-online-offline\.js|manifest-(?:en|ta)\.webmanifest)$/.test(u.pathname);if(critical){try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}}const hit=await c.match(e.request,{ignoreSearch:true})||await caches.match(e.request,{ignoreSearch:true});if(hit){if(!/\/offline\/places\/india\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));return fixed(u.href,hit);}try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}return new Response('SMV CALENDAR offline asset is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});})());
 });
