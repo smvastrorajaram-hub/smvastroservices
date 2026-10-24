@@ -68,8 +68,33 @@ jobs:
           check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'pendingPersonalDraft={text,mode}'
           # Catch a stale independent deployment on the public Calendar hostname.
           check_contains 'https://calendar.smvastroservices.in/' 'smv-calendar-rasi-palan-loader'
-          check_contains 'https://calendar.smvastroservices.in/calendar-rasi-palan.mjs' 'function renderControls'
-          check_contains 'https://calendar.smvastroservices.in/calendar-rasi-palan.css' '#calRasiPalan'
-          check_contains 'https://calendar.smvastroservices.in/offline/swiss_vedic.browser.mjs' 'calculateSunMoonSync'
+          check_any_asset_contains() {
+            expected="$1"
+            shift
+            for url in "$@"; do
+              body="$(mktemp)"
+              code="$(curl --location --retry 1 --connect-timeout 5 --max-time 15 --silent --show-error --output "$body" --write-out '%{http_code}' "$url" || true)"
+              if [ "$code" = "200" ] && grep -Fq "$expected" "$body"; then
+                echo "$url => HTTP $code (forecast asset verified)"
+                rm -f "$body"
+                return 0
+              fi
+              echo "$url => HTTP ${code:-000} (forecast asset marker missing)"
+              rm -f "$body"
+            done
+            echo "::error::No deployed Calendar asset candidate contained the expected marker: $expected"
+            return 1
+          }
+          # The custom host may expose the shared horoscope assets from its own root
+          # or under /horoscope. Verify that at least one complete path really exists.
+          check_any_asset_contains 'function renderControls' \
+            'https://calendar.smvastroservices.in/calendar-rasi-palan.mjs' \
+            'https://calendar.smvastroservices.in/horoscope/calendar-rasi-palan.mjs'
+          check_any_asset_contains '#calRasiPalan' \
+            'https://calendar.smvastroservices.in/calendar-rasi-palan.css' \
+            'https://calendar.smvastroservices.in/horoscope/calendar-rasi-palan.css'
+          check_any_asset_contains 'calculateSunMoonSync' \
+            'https://calendar.smvastroservices.in/offline/swiss_vedic.browser.mjs' \
+            'https://calendar.smvastroservices.in/horoscope/offline/swiss_vedic.browser.mjs'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
