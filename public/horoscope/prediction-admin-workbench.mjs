@@ -1,4 +1,3 @@
-import { mountCalendarRasiPalanAdmin } from './calendar-rasi-palan-admin.mjs';
 /* SMV ASTRO V321 — owner-only calculated Prediction Review & Correction.
  * The existing A/B editor owns global Draft/Publish rules. This module supports
  * individual-chart prose in a local saved/printed preview only; it never publishes
@@ -93,7 +92,14 @@ function shell(){
   <p class="wb-note">Save Preview: Admin browser IndexedDB only. Publish uses the EXISTING A/B Publish button; previews never publish or trigger payment. Select an individual section to inspect what changed.</p>
  </div><details class="wb-block"><summary>Saved local Admin snapshots / சேமித்த பலன்கள்</summary><div data-wb-saved></div></details>`;
  area.appendChild(wb);
- mountCalendarRasiPalanAdmin(wb, auth);
+ // Load Calendar editor assets only after the existing Horoscope Admin role gate has opened the workbench.
+ import('./calendar-rasi-palan-admin.mjs').then(({ mountCalendarRasiPalanAdmin }) => {
+  if(accessUid && auth?.currentUser?.uid===accessUid && wb?.isConnected) mountCalendarRasiPalanAdmin(wb, auth);
+ }).catch(error => {
+  const box=wb?.querySelector('[data-wb-status]');
+  if(box){box.textContent='SMV CALENDAR Admin editor could not load: '+String(error?.message||error);box.dataset.error='1';}
+  console.error('SMV CALENDAR Admin editor failed to load',error);
+ });
  wb.querySelector('[data-wb-calculate]').addEventListener('click',calculate);
  wb.querySelector('[data-wb-preview]').addEventListener('click',compare);
  wb.querySelector('[data-wb-save]').addEventListener('click',save);
