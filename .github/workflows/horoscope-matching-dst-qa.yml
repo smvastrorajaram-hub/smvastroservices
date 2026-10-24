@@ -7,6 +7,7 @@ on:
       - 'public/horoscope/**/*.mjs'
       - 'public/horoscope/**/*.cjs'
       - 'tests/horoscope-generation-progress-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
       - 'tests/calculation-regression.mjs'
       - 'tests/prediction-rules-published-regression.mjs'
       - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
@@ -51,6 +52,7 @@ on:
       - 'public/horoscope/**/*.mjs'
       - 'public/horoscope/**/*.cjs'
       - 'tests/horoscope-generation-progress-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
       - 'tests/calculation-regression.mjs'
       - 'tests/prediction-rules-published-regression.mjs'
       - 'public/horoscope/offline/bv-raman-hpa-ayurdaya-combined.browser.mjs'
@@ -115,6 +117,8 @@ jobs:
           done < <(find public/horoscope -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort)
       - name: Horoscope single-release and responsive full-report regression
         run: node tests/horoscope-generation-progress-regression.mjs
+      - name: Matching mode race and payment label regression
+        run: node tests/marriage-matching-feature-mode-regression.mjs
       - name: Horoscope and Marriage Matching calculation regression
         run: node tests/calculation-regression.mjs
       - name: Published Admin Prediction Rules and offline fallback regression
