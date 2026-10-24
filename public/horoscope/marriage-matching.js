@@ -2168,6 +2168,7 @@ function mount(){
   console.error('Marriage feature mode',e);
   // A setting-read failure must not strand users with a hidden CTA or show a
   // stale paid mode. Keep the public Basic Nakshatra route available.
+  const btn=document.getElementById('mmCheck'),paidRoot=document.getElementById('mmPaidFeatureIndex');
   host.hidden=false;host.removeAttribute('aria-busy');chooser.hidden=false;
   if(btn){
    btn.hidden=false;btn.disabled=false;btn.removeAttribute('aria-busy');
