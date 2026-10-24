@@ -141,11 +141,21 @@ function waitForInstallPrompt(timeout=6000){
 
 let swReady=Promise.resolve(null);
 if('serviceWorker'in navigator){
- let reloading=false;
+ let reloading=false,adminNavigationPending=false;
+ // A controllerchange-triggered reload must not cancel the user's Admin link navigation.
+ document.addEventListener('click',event=>{
+  const anchor=event.target?.closest?.('a[href]');
+  if(!anchor)return;
+  try{
+   const targetPath=new URL(anchor.href,location.href).pathname;
+   const adminPath=new URL('./admin.html',location.href).pathname;
+   if(targetPath===adminPath)adminNavigationPending=true;
+  }catch(_){}
+ },true);
  const reloadKey='smv-calendar-controller-reload-v217';
  navigator.serviceWorker.addEventListener('controllerchange',()=>{
   const url=navigator.serviceWorker.controller?.scriptURL||'';
-  if(reloading||!url.includes('/horoscope/calendar/sw.js'))return;
+  if(reloading||adminNavigationPending||!url.includes('/horoscope/calendar/sw.js'))return;
   try{if(sessionStorage.getItem(reloadKey)==='1')return;sessionStorage.setItem(reloadKey,'1')}catch{}
   reloading=true;location.reload();
  });
