@@ -20,6 +20,9 @@ const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calend
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const adminPageSource = await readFile(new URL('../public/horoscope/calendar/admin.html', import.meta.url), 'utf8');
 const adminModuleSource = await readFile(new URL('../public/horoscope/calendar/calendar-admin.mjs', import.meta.url), 'utf8');
+const calendarForecastAdminSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan-admin.mjs', import.meta.url), 'utf8');
+const horoscopeAdminWorkbenchSource = await readFile(new URL('../public/horoscope/prediction-admin-workbench.mjs', import.meta.url), 'utf8');
+const horoscopeAdminSource = await readFile(new URL('../public/horoscope/prediction-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
@@ -69,6 +72,9 @@ test('New Year labels are the exact requested names and avoid an annual-transit 
 test('Moon transit appears first, the eight other planets remain separate, and old duplicate forecast blocks are removed', () => {
   assert.match(publicRasiPalanSource, /function renderMoonTransit/);
   assert.ok(publicRasiPalanSource.includes('renderMoonTransit(result, rasiIndex) + cards'));
+  assert.match(publicRasiPalanSource, /const moonKey = entryFor\(result, rasiIndex, 'Moon'/);
+  assert.match(publicRasiPalanSource, /const selected = modeText\(automatic, moonKey, result\.type\)/);
+  assert.match(publicRasiPalanSource, /'daily', 'weekly', 'monthly', 'tamilNewYear', 'englishNewYear'/);
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
   assert.match(dailyCalendarSource, /Birth Star, Tara Bala & Chandrashtama/);
   assert.match(dailyCalendarSource, /Tara Bala/);
@@ -77,18 +83,19 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
 });
 
-test('Public Calendar fixes dates and year choices; only the daily/weekly/monthly period selector remains public', () => {
-  assert.doesNotMatch(publicRasiPalanSource, /id="rpDate"|#rpDate|id="rpYear"|#rpYear|Choose a date first/);
+test('Public Calendar supports a selected reference date and period keys for daily, weekly, and monthly readings', () => {
+  assert.match(publicRasiPalanSource, /id="rpDate"/);
+  assert.match(publicRasiPalanSource, /state\.date = value/);
+  assert.doesNotMatch(publicRasiPalanSource, /id="rpYear"|#rpYear|Choose a date first/);
   assert.match(publicRasiPalanSource, /periodReference/);
   assert.match(periodsSource, /currentWeek/);
   assert.match(publicRasiPalanSource, /Day: |நாள்: /);
   assert.match(publicRasiPalanSource, /Week: |வாரம்: /);
   assert.match(publicRasiPalanSource, /Month: |மாதம்: /);
   assert.match(publicRasiPalanSource, /publishedTargetYear/);
-  assert.match(adminModuleSource, /targetYear/);
-  assert.match(adminModuleSource, /targetEventDate/);
+  assert.match(calendarForecastAdminSource, /targetYear/);
+  assert.match(calendarForecastAdminSource, /targetEventDate/);
 });
-
 test('Public Calendar does not expose prediction mode, editor/export, or the removed calculation note', () => {
   assert.doesNotMatch(publicRasiPalanSource, /Prediction mode|பலன் முறை/);
   assert.doesNotMatch(publicRasiPalanSource, /Manual Entry editor|கையேடு பதிவு திருத்தி/);
@@ -99,35 +106,24 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
   assert.doesNotMatch(publicRasiPalanSource, /rp-mode-chip|rp-manual-editor/);
 });
 
-test('Manual authoring and mode selection are isolated to a Firebase-admin-protected Calendar page', () => {
+test('Calendar manual predictions are managed inside the existing Horoscope Admin session', () => {
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
-  assert.match(calendarIndexSource, /href="\.\/admin\.html"/);
-  assert.match(adminPageSource, /id="mode"/);
-  assert.match(adminPageSource, /id="publish"/);
-  assert.match(adminModuleSource, /signInWithEmailAndPassword/);
-  assert.match(adminModuleSource, /auth\.smvastroservices\.in/);
-  assert.match(adminModuleSource, /auth\/invalid-credential/);
-  assert.match(adminModuleSource, /auth\/api-key-not-valid/);
-  assert.match(adminModuleSource, /Google Cloud Console/);
-  assert.ok(adminModuleSource.includes("calendarHost === 'smvastroservices.pages.dev'"), 'Admin config must identify the permanent Pages host explicitly');
-  assert.ok(adminModuleSource.includes("calendarHost === 'calendar.smvastroservices.in'"), 'Admin config must identify the custom Calendar host explicitly');
-  assert.ok(adminModuleSource.includes("authDomain: isProductionCalendarHost ? 'auth.smvastroservices.in' : 'smv-astro.firebaseapp.com'"), 'Custom Domain and Pages must use their separate auth domains');
-  assert.ok(publicRasiPalanSource.includes("location.hostname.toLowerCase() === 'calendar.smvastroservices.in'"), 'Public Calendar Firebase config must keep the custom-domain path explicit');
-  assert.match(publicRasiPalanSource, /\?\s*'auth\.smvastroservices\.in'\s*:\s*'smv-astro\.firebaseapp\.com'/, 'Public Calendar must use the matching auth domain for each permanent host');
-  assert.ok(adminModuleSource.includes("calendarHost.endsWith('.smvastroservices.pages.dev') && !isPermanentPagesHost"), 'Temporary branch previews must be recognized separately');
-  assert.ok(adminModuleSource.includes("location.replace(target.href)"), 'Temporary branch Admin login must open the permanent Pages login');
-  assert.ok(!/\\n\s+authDomain/.test(adminModuleSource), 'authDomain must not be swallowed by a malformed literal backslash-n comment');
-  assert.match(adminModuleSource, /getDocFromServer\(fsApi\.doc\(db, 'smv_settings', 'prediction_editor_access'\)\)/);
-  assert.match(adminModuleSource, /'smv_content', 'calendar_rasi_palan_v1'/);
-  assert.match(adminModuleSource, /tamilNewYear/);
-  assert.match(adminModuleSource, /englishNewYear/);
-  assert.match(adminModuleSource, /jupiterTransit/);
-  assert.match(adminModuleSource, /saturnTransit/);
-  assert.match(adminModuleSource, /rahuKetuTransit/);
-  assert.doesNotMatch(adminModuleSource, /daily:|weekly:|monthly:/);
+  assert.match(calendarIndexSource, /href="\.\/" aria-current="page">SMV CALENDAR/);
+  assert.match(horoscopeIndexAdminSafe ? horoscopeIndexAdminSafe : horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
+  assert.match(horoscopeAdminWorkbenchSource, /import \{ mountCalendarRasiPalanAdmin \} from '\.\/calendar-rasi-palan-admin\.mjs'/);
+  assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
+  assert.match(horoscopeAdminWorkbenchSource, /smv-prediction-admin-auth/);
+  assert.match(horoscopeAdminSource, /smv_settings', 'prediction_editor_access/);
+  assert.match(calendarForecastAdminSource, /smv_content', 'calendar_rasi_palan_v1/);
+  for (const type of ['daily','weekly','monthly','tamilNewYear','englishNewYear','jupiterTransit','saturnTransit','rahuKetuTransit']) {
+    assert.ok(calendarForecastAdminSource.includes(type), 'Calendar admin editor should support '+type);
+  }
+  assert.match(calendarForecastAdminSource, /\['Moon', \.\.\.RASI_PALAN_PLANETS\.map\(p => p\.key\)\]/);
+  assert.doesNotMatch(calendarForecastAdminSource, /signInWithEmailAndPassword|Admin Password|id="loginForm"/, 'Calendar editor must reuse Horoscope Admin authentication instead of adding another login');
+  assert.match(calendarForecastAdminSource, /getDocFromServer/);
+  assert.match(calendarForecastAdminSource, /setDoc/);
 });
-
 test('Planetary ingress section computes only the latest past transit per planet group, never a future ingress list', () => {
   assert.match(publicRasiPalanSource, /async function findLastIngress\(body, asOfDate, cfg\)/);
   assert.match(publicRasiPalanSource, /Showing only the latest past ingress for each group/);
@@ -148,34 +144,32 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
    assert.ok(publicRasiPalanSource.includes("document.getElementById('calRasi')"));
 });
 
-test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin.html as its own route', () => {
-   assert.ok(calendarIndexSource.includes('<a class="is-current" href="./admin.html" aria-current="page">Admin</a>'));
-   assert.ok(!calendarIndexSource.includes('<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>'));
-   assert.ok(adminPageSource.includes('href="https://smvastroservices.in/">SMV ASTRO</a>'));
-   assert.ok(adminPageSource.includes('href="https://horoscope.smvastroservices.in/">SMV HOROSCOPE</a>'));
-   assert.ok(adminPageSource.includes('class="admin-product-nav"'));
-   assert.ok(adminPageSource.includes("h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev')"));
-   assert.ok(calendarIndexSource.includes("!h.endsWith('.smvastroservices.pages.dev')"));
-   assert.ok(calendarWorkerSource.includes("'./admin.html'"));
+test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horoscope Admin and remains safely cached', () => {
+   assert.ok(calendarIndexSource.includes('<a class="is-current" href="./" aria-current="page">SMV CALENDAR</a>'));
+   assert.ok(!calendarIndexSource.includes('href="./admin.html"'));
+   assert.ok(adminPageSource.includes('<title>SMV HOROSCOPE · Admin</title>'));
+   assert.ok(adminPageSource.includes('location.replace(target)'));
+   assert.ok(adminPageSource.includes("location.origin+'/horoscope/?admin=1'"));
+   assert.ok(adminPageSource.includes('https://horoscope.smvastroservices.in/?admin=1'));
+   assert.doesNotMatch(adminPageSource, /id="loginForm"|id="adminPassword"|id="publish"/);
+   assert.ok(calendarWorkerSource.includes("'./admin.html'"), 'Legacy route remains cached for old bookmarks');
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
-   assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Cloudflare /admin route must alias to the independently cached admin.html document');
-   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-admin-cache-and-forecast-assets-v3'"), 'Cache version must change so installed PWA clients migrate to corrected keys');
-   assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['), 'The new worker must verify that critical offline pages and forecast assets were cached');
+   assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
+   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-v4'"), 'Cache version updates existing PWA installs');
+   assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
+   assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
-   assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'The PWA must not download every India location shard during installation');
-   assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India place shards should continue to cache lazily on demand');
+   assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'PWA must not download every India location shard during install');
+   assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India shards continue to cache lazily');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
-   assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v5'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v4'));
-   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v2'));
+   assert.ok(calendarIndexSource.includes('20261024-moon-transit-admin-v1'));
    assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
    assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
 });
-;
-
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
   assert.match(publicRasiPalanSource, /async function chartAtLocalTime\(date, time, cfg\)/);
