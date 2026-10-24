@@ -215,7 +215,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
   }
   async function runPeriodForecast() {
     const cfg = getLocation();
-    const anchorDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
+    const anchorDate = /^\d{4}-\d{2}-\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
     const dateRef = periodReference(state.period, anchorDate);
     const calc = await chartAtSunrise(dateRef.date, cfg);
     const positions = positionsFromChart(calc.chart);
@@ -458,7 +458,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
     $('#rpDate').addEventListener('change', () => {
       const value = $('#rpDate').value;
-      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) state.date = value;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) state.date = value;
     });
     $('#rpRasi').addEventListener('change', () => {
       const value = Number($('#rpRasi').value);
@@ -483,7 +483,7 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     else target.innerHTML = renderIngress(result);
   }
   async function run() {
-    state.date = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
+    state.date = /^\d{4}-\d{2}-\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
     state.year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     setStatus(L('Calculating with the local Swiss Ephemeris engine…', 'உள்ளூர் Swiss Ephemeris மூலம் கணக்கிடப்படுகிறது…'), false);
     $('#rpRun').disabled = true;
