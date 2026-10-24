@@ -1,4 +1,4 @@
-#calRasiPalan{max-width:1180px;margin:28px auto;padding:20px;border:1px solid #d8e5db;border-radius:16px;background:#f8fbf7;color:#173e3a;font-family:'Noto Sans Tamil',Arial,sans-serif;box-sizing:border-box}
+#calRasiPalan{width:calc(100% - 32px);max-width:960px;margin:24px auto;padding:20px;border:1px solid #d8e5db;border-radius:16px;background:#f8fbf7;color:#173e3a;font-family:'Noto Sans Tamil',Arial,sans-serif;box-sizing:border-box}
 #calRasiPalan *{box-sizing:border-box}
 #calRasiPalan h2,#calRasiPalan h3,#calRasiPalan h4,#calRasiPalan h5{color:#155a52;line-height:1.5}
 #calRasiPalan .rp-heading{padding:8px 2px 18px;border-bottom:2px solid #d8bd75}
@@ -21,8 +21,10 @@
 #calRasiPalan .rp-results-title p{margin:0;color:#587069;font-size:13px;line-height:1.7}
 #calRasiPalan .rp-rasi-card{margin:16px 0 20px;padding:14px 0;border:0;border-top:1px solid #d6e2d9;background:transparent}
 #calRasiPalan .rp-rasi-card h4{font-size:19px;margin:0 0 10px}
-#calRasiPalan .rp-planets-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-#calRasiPalan .rp-planet{min-width:0;padding:12px;border:1px solid #d9e5dc;border-radius:10px;background:#fff}
+#calRasiPalan .rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}
+#calRasiPalan .rp-moon-transit{margin:18px 0 8px;padding:0 0 14px;border-bottom:2px solid #d8bd75}
+#calRasiPalan .rp-moon-transit h4{font-size:18px;margin:0 0 7px}
+#calRasiPalan .rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc;border-radius:0;background:transparent}
 #calRasiPalan .rp-planet h5{font-size:14px;margin:0 0 3px}
 #calRasiPalan .rp-position{margin:0 0 8px;font-size:12px;color:#86652b;font-weight:700}
 #calRasiPalan .rp-reading{margin:0;font-size:13px;line-height:1.75;overflow-wrap:anywhere;color:#244a42}
