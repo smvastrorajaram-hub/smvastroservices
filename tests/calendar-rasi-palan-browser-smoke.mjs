@@ -84,9 +84,17 @@ try {
   assert.deepEqual(publicUi.navLabels, ['SMV ASTRO', 'SMV HOROSCOPE', 'Admin'], 'Header should preserve ASTRO/HOROSCOPE and replace Calendar nav label with Admin');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
-  // Clicking Admin must open the separate login page, not resolve to Calendar home.
+  // Capture the actual link target and final URL so a routing failure is actionable.
+  const adminHref = await page.$eval('.calendar-product-nav a[aria-current="page"]', a => a.href);
   await page.click('.calendar-product-nav a[aria-current="page"]');
-  await page.waitForFunction(() => location.pathname.endsWith('/admin.html'), { timeout: 20000 });
+  await page.waitForFunction(() => location.pathname.endsWith('/admin.html'), { timeout: 10000 }).catch(async error => {
+    const observed = await page.evaluate(() => ({
+      href: location.href,
+      pathname: location.pathname,
+      nav: [...document.querySelectorAll('.calendar-product-nav a')].map(a => ({ text: a.textContent.trim(), href: a.href }))
+    })).catch(() => ({ href: 'document unavailable during navigation' }));
+    throw new Error('Admin link did not open the login page. target=' + adminHref + '; afterClick=' + JSON.stringify(observed) + '; cause=' + error.message);
+  });
   await page.waitForSelector('#loginForm #adminEmail');
   const adminUi = await page.evaluate(() => ({
     nav: [...document.querySelectorAll('.admin-product-nav a')].map(x => x.textContent.trim()),
