@@ -1,9 +1,9 @@
 import {getSwe} from './offline/wasm-provider.mjs';
-import {calculateSwiss,calculateSunMoonSync} from './offline/swiss_vedic.browser.mjs';
+import {calculateSwiss,calculateSunMoon} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
-async function sample(input,time){const {sunLongitude:sun,moonLongitude:moon}=calculateSunMoonSync({...input,time});return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
+async function sample(input,time){const {sunLongitude:sun,moonLongitude:moon}=await calculateSunMoon({...input,time});return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
 function minute(t){return +t.slice(0,2)*60+ +t.slice(3,5)}
 function clock(n){n=(Math.round(n)%1440+1440)%1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
 // Geocentric lunar rise threshold (mean refraction + horizontal parallax).
