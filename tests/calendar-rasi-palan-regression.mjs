@@ -114,7 +114,7 @@ test('Calendar manual predictions are managed inside the existing Horoscope Admi
   assert.match(horoscopeAdminWorkbenchSource, /import \{ mountCalendarRasiPalanAdmin \} from '\.\/calendar-rasi-palan-admin\.mjs'/);
   assert.match(horoscopeAdminWorkbenchSource, /mountCalendarRasiPalanAdmin\(wb, auth\)/);
   assert.match(horoscopeAdminWorkbenchSource, /smv-prediction-admin-auth/);
-  assert.match(horoscopeAdminSource, /smv_settings', 'prediction_editor_access/);
+  assert.match(horoscopeAdminSource, /smv_settings','prediction_editor_access/);
   assert.match(calendarForecastAdminSource, /smv_content', 'calendar_rasi_palan_v1/);
   for (const type of ['daily','weekly','monthly','tamilNewYear','englishNewYear','jupiterTransit','saturnTransit','rahuKetuTransit']) {
     assert.ok(calendarForecastAdminSource.includes(type), 'Calendar admin editor should support '+type);
