@@ -1,6 +1,6 @@
 // Browser port of the exact V10.7 source logic.
 
-import {calculateSwissSync} from './swiss_vedic.browser.mjs';
+import {calculateSwissSync, calculateSunMoonSync} from './swiss_vedic.browser.mjs';
 const SwissVedic={calculateSwiss:calculateSwissSync};
 
 const RASIS_TA=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
@@ -14,8 +14,8 @@ const YOGA_EN=['Vishkambha','Priti','Ayushman','Saubhagya','Shobhana','Atiganda'
 function norm360(x){x=Number(x)%360;return x<0?x+360:x;}
 function localDateParts(date,time,offset=330){const [y,m,d]=String(date).split('-').map(Number);const [hh,mm]=String(time).split(':').map(Number);const u=new Date(Date.UTC(y,m-1,d,hh,mm)-offset*60000);return {y,m,d,hh,mm,u};}
 function degText(x){x=norm360(x)%30;const d=Math.floor(x), min=Math.floor((x-d)*60), sec=Math.round((((x-d)*60)-min)*60);return `${String(d).padStart(2,'0')}°${String(min%60).padStart(2,'0')}'${String(sec%60).padStart(2,'0')}"`;}
-function transit(input){
- const chart=SwissVedic.calculateSwiss(input); const lang=input.language==='en'?'en':'ta';
+function transit(input, preCalculatedChart=null){
+ const chart=preCalculatedChart || SwissVedic.calculateSwiss(input); const lang=input.language==='en'?'en':'ta';
  const pmap={சூரியன்:'Sun',சந்திரன்:'Moon',செவ்வாய்:'Mars',புதன்:'Mercury',குரு:'Jupiter',சுக்கிரன்:'Venus',சனி:'Saturn',ராகு:'Rahu',கேது:'Ketu'};
  const rmap=Object.fromEntries(RASIS_TA.map((x,i)=>[x,RASIS_EN[i]])); const nmap=Object.fromEntries(NAK.map((x,i)=>[x,NAK_EN[i]]));
  const out=v=>lang==='en'?(pmap[v]||rmap[v]||nmap[v]||String(v??'')):String(v??'');
@@ -233,14 +233,20 @@ if (
  };
 }
 
+const panchangLongitudeCache = new Map();
 function panchangEventState(input, ts, kind){
   const offset=Number(input.utcOffsetMinutes??330);
   const local=new Date(Number(ts)+offset*60000);
   const date=`${local.getUTCFullYear()}-${String(local.getUTCMonth()+1).padStart(2,'0')}-${String(local.getUTCDate()).padStart(2,'0')}`;
   const time=`${String(local.getUTCHours()).padStart(2,'0')}:${String(local.getUTCMinutes()).padStart(2,'0')}`;
-  const c=SwissVedic.calculateSwiss({...input,date,time});
-  const ps=Object.fromEntries((c.planets||[]).map(p=>[p.name,p]));
-  const sun=Number(ps['சூரியன்']?.longitude), moon=Number(ps['சந்திரன்']?.longitude);
+  const key=[date,time,input.lat,input.lon,offset].join('|');
+  let longitudes=panchangLongitudeCache.get(key);
+  if(!longitudes){
+    longitudes=calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset});
+    panchangLongitudeCache.set(key,longitudes);
+    if(panchangLongitudeCache.size>4096)panchangLongitudeCache.delete(panchangLongitudeCache.keys().next().value);
+  }
+  const sun=Number(longitudes.sunLongitude), moon=Number(longitudes.moonLongitude);
   if(!Number.isFinite(sun)||!Number.isFinite(moon)) return null;
   let value, size;
   if(kind==='tithi'){ value=Math.floor(norm360(moon-sun)/12); size=30; }
@@ -341,8 +347,8 @@ function standardNallaNeram(dow){
   ][dow]||[];
   const ranges=[]; for(let i=0;i<t.length;i+=2) ranges.push(formatLocalRange(t[i][0]*60+t[i][1],t[i+1][0]*60+t[i+1][1])); return ranges;
 }
-function panchang(input){
- const chart=SwissVedic.calculateSwiss(input); const ps=Object.fromEntries((chart.planets||[]).map(p=>[p.name,p])); const sun=Number(ps['சூரியன்']?.longitude||0), moon=Number(ps['சந்திரன்']?.longitude||0); const elong=norm360(moon-sun); const tno=Math.floor(elong/12)+1; const yogaNo=Math.floor(norm360(moon+sun)/13.333333333333334)+1; const nkNo=Math.floor(moon/(360/27)); const pada=Math.floor((moon%(360/27))/(360/108))+1; const lang=input.language==='en'?'en':'ta'; const offset=Number(input.utcOffsetMinutes??330); const rmap=Object.fromEntries(RASIS_TA.map((x,i)=>[x,RASIS_EN[i]])); const nmap=Object.fromEntries(NAK.map((x,i)=>[x,NAK_EN[i]])); const out=v=>lang==='en'?(rmap[v]||nmap[v]||String(v??'')):String(v??''); const dow=new Date(Date.UTC(Number(String(input.date).slice(0,4)),Number(String(input.date).slice(5,7))-1,Number(String(input.date).slice(8,10)))).getUTCDay(); const varaEn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dow]; const varaTa=['ஞாயிறு','திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி'][dow]; const times={tithi:panchangEventTimes(input,'tithi'),karana:panchangEventTimes(input,'karana'),yoga:panchangEventTimes(input,'yoga'),nakshatra:panchangEventTimes(input,'nakshatra')}; const periods=dayPartWindows(input.date,Number(input.lat),Number(input.lon),offset,dow); const horas=horaWindows(input.date,Number(input.lat),Number(input.lon),offset,dow); const nallaNeram=standardNallaNeram(dow); return {ok:true,engine:chart.engine,calculationSystem:'Thirukanitha / Swiss Ephemeris (sidereal Lahiri)',requested:{date:input.date,time:input.time,latitude:Number(input.lat),longitude:Number(input.lon)},solarSign:out(ps['சூரியன்']?.rasi||''),moonSign:out(ps['சந்திரன்']?.rasi||''),vara:lang==='en'?varaEn:varaTa,tithi:{number:tno,name:(lang==='en'?TITHI_NAMES_EN:TITHI_NAMES_TA)[tno-1],half:tno<=15?(lang==='en'?'Shukla Paksha':'சுக்ல பக்ஷம்'):(lang==='en'?'Krishna Paksha':'கிருஷ்ண பக்ஷம்'),group:tno===15||tno===30?(lang==='en'?'Full/New Moon':'பௌர்ணமி / அமாவாசை'):(lang==='en'?'Lunar Tithi':'சந்திர திதி'),start:times.tithi.start,end:times.tithi.end},nakshatra:{number:nkNo+1,name:(lang==='en'?NAK_EN:NAK)[nkNo],pada,start:times.nakshatra.start,end:times.nakshatra.end},yoga:{number:yogaNo,name:(lang==='en'?YOGA_EN:YOGA_TA)[Math.min(26,yogaNo-1)],start:times.yoga.start,end:times.yoga.end},karana:{number:Math.floor(elong/6)+1,name:(lang==='en'?KARANA60_EN:KARANA60_TA)[Math.min(59,Math.max(0,Math.floor(elong/6)))],start:times.karana.start,end:times.karana.end},sunrise:periods.sunrise,sunset:periods.sunset,rahuKalam:periods.rahu,yamagandam:periods.yamagandam,gulikai:periods.gulikai,nallaNeram:nallaNeram,hora:horas.map(h=>({...h,range:formatLocalRange(h.start,h.end),planetEn:h.planet})),ayanamsa:chart.ayanamsa,tamilSolar:tamilSolarDate(input)};
+function panchang(input, preCalculatedChart=null){
+ const chart=preCalculatedChart || SwissVedic.calculateSwiss(input); const ps=Object.fromEntries((chart.planets||[]).map(p=>[p.name,p])); const sun=Number(ps['சூரியன்']?.longitude||0), moon=Number(ps['சந்திரன்']?.longitude||0); const elong=norm360(moon-sun); const tno=Math.floor(elong/12)+1; const yogaNo=Math.floor(norm360(moon+sun)/13.333333333333334)+1; const nkNo=Math.floor(moon/(360/27)); const pada=Math.floor((moon%(360/27))/(360/108))+1; const lang=input.language==='en'?'en':'ta'; const offset=Number(input.utcOffsetMinutes??330); const rmap=Object.fromEntries(RASIS_TA.map((x,i)=>[x,RASIS_EN[i]])); const nmap=Object.fromEntries(NAK.map((x,i)=>[x,NAK_EN[i]])); const out=v=>lang==='en'?(rmap[v]||nmap[v]||String(v??'')):String(v??''); const dow=new Date(Date.UTC(Number(String(input.date).slice(0,4)),Number(String(input.date).slice(5,7))-1,Number(String(input.date).slice(8,10)))).getUTCDay(); const varaEn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dow]; const varaTa=['ஞாயிறு','திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி'][dow]; const times={tithi:panchangEventTimes(input,'tithi'),karana:panchangEventTimes(input,'karana'),yoga:panchangEventTimes(input,'yoga'),nakshatra:panchangEventTimes(input,'nakshatra')}; const periods=dayPartWindows(input.date,Number(input.lat),Number(input.lon),offset,dow); const horas=horaWindows(input.date,Number(input.lat),Number(input.lon),offset,dow); const nallaNeram=standardNallaNeram(dow); return {ok:true,engine:chart.engine,calculationSystem:'Thirukanitha / Swiss Ephemeris (sidereal Lahiri)',requested:{date:input.date,time:input.time,latitude:Number(input.lat),longitude:Number(input.lon)},solarSign:out(ps['சூரியன்']?.rasi||''),moonSign:out(ps['சந்திரன்']?.rasi||''),vara:lang==='en'?varaEn:varaTa,tithi:{number:tno,name:(lang==='en'?TITHI_NAMES_EN:TITHI_NAMES_TA)[tno-1],half:tno<=15?(lang==='en'?'Shukla Paksha':'சுக்ல பக்ஷம்'):(lang==='en'?'Krishna Paksha':'கிருஷ்ண பக்ஷம்'),group:tno===15||tno===30?(lang==='en'?'Full/New Moon':'பௌர்ணமி / அமாவாசை'):(lang==='en'?'Lunar Tithi':'சந்திர திதி'),start:times.tithi.start,end:times.tithi.end},nakshatra:{number:nkNo+1,name:(lang==='en'?NAK_EN:NAK)[nkNo],pada,start:times.nakshatra.start,end:times.nakshatra.end},yoga:{number:yogaNo,name:(lang==='en'?YOGA_EN:YOGA_TA)[Math.min(26,yogaNo-1)],start:times.yoga.start,end:times.yoga.end},karana:{number:Math.floor(elong/6)+1,name:(lang==='en'?KARANA60_EN:KARANA60_TA)[Math.min(59,Math.max(0,Math.floor(elong/6)))],start:times.karana.start,end:times.karana.end},sunrise:periods.sunrise,sunset:periods.sunset,rahuKalam:periods.rahu,yamagandam:periods.yamagandam,gulikai:periods.gulikai,nallaNeram:nallaNeram,hora:horas.map(h=>({...h,range:formatLocalRange(h.start,h.end),planetEn:h.planet})),ayanamsa:chart.ayanamsa,tamilSolar:tamilSolarDate(input)};
 }
 export {transit,panchang};
 

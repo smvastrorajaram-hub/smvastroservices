@@ -31,6 +31,7 @@ jobs:
           check 'https://smvastroservices.pages.dev/'
           check 'https://smvastroservices.pages.dev/horoscope/'
           check 'https://smvastroservices.pages.dev/horoscope/calendar/'
+          check 'https://calendar.smvastroservices.in/'
           check 'https://smvastroservices.in/'
           check 'https://smvastroservices.in/horoscope/'
 
@@ -65,5 +66,7 @@ jobs:
           check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'function updatePersonalControls()'
           check_contains 'https://smvastroservices.pages.dev/horoscope/prediction-admin-workbench.mjs' 'pendingPersonalDraft={text,mode}'
+          # Catch a stale independent deployment on the public Calendar hostname.
+          check_contains 'https://calendar.smvastroservices.in/' 'smv-calendar-rasi-palan-loader'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'id="wbPersonalSection" disabled'
           check_contains 'https://horoscope.smvastroservices.in/prediction-admin-workbench.mjs' 'function updatePersonalControls()'

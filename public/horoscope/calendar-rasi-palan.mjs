@@ -3,7 +3,7 @@ import { solarNoaa } from './offline/transit_panchang.browser.mjs';
 import { offsetMinutesAt } from './offline/places/timezone.mjs';
 import { signs, transitReading } from './calendar-data.mjs';
 import { RASI_PALAN_PLANETS, RASI_PALAN_TITLES, signIndex, houseFromRasi, readingKey, selectReading } from './calendar-rasi-palan-rules.mjs';
-import { periodReference } from './calendar/rasi-palan-periods.mjs?v=20261024-current-week-v2';
+import { periodReference } from './calendar/rasi-palan-periods.mjs?v=20261024-week-window-v3';
 
 const calendarHost = document.getElementById('smvDailyCalendar');
 if (calendarHost && calendarHost.parentElement && !document.getElementById('calRasiPalan')) {
@@ -22,6 +22,11 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     tamilNewYear: ['Tamil New Year Rasi Palan', 'தமிழ் வருடப் பிறப்பு ராசி பலன்கள்'],
     englishNewYear: ['English New Year Rasi Palan', 'ஆங்கில வருடப் பிறப்பு ராசி பலன்கள்']
   };
+  const tamilSolarMonthLabels = [
+    ['Chithirai', 'சித்திரை'], ['Vaikasi', 'வைகாசி'], ['Aani', 'ஆனி'], ['Aadi', 'ஆடி'],
+    ['Avani', 'ஆவணி'], ['Purattasi', 'புரட்டாசி'], ['Aippasi', 'ஐப்பசி'], ['Karthigai', 'கார்த்திகை'],
+    ['Margazhi', 'மார்கழி'], ['Thai', 'தை'], ['Maasi', 'மாசி'], ['Panguni', 'பங்குனி']
+  ];
   const defaultDate = () => {
     const cfg = getLocation();
     const offset = Number.isFinite(Number(cfg.offset)) ? Number(cfg.offset) : 330;
@@ -69,6 +74,10 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     const parts = String(date).slice(0, 10).split('-').map(Number);
     if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return String(date);
     return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).toLocaleDateString(isTamil() ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  };
+  const fmtDateRange = date => {
+    const match = String(date || '').slice(0, 10).match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    return match ? match[3] + '/' + match[2] + '/' + match[1] : fmtDate(date);
   };
   const weekdayName = date => {
     const parts = String(date).slice(0, 10).split('-').map(Number);
@@ -212,6 +221,92 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       return { ...firstAries, moonSign: p.moonSign };
     }
     throw new Error(L('Could not identify the local Tamil solar New Year sunrise from Swiss Ephemeris.', 'Swiss Ephemeris கணக்கீட்டில் உள்ளூர் தமிழ் வருடப் பிறப்பு சூரிய உதயத்தை அடையாளம் காண முடியவில்லை.'));
+  }
+  const solarSignCache = new Map();
+  function addCivilDays(date, days) {
+    const d = new Date(String(date).slice(0, 10) + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + Number(days));
+    return d.toISOString().slice(0, 10);
+  }
+  async function sunSignAtSunrise(date, cfg) {
+    const offset = offsetAt(cfg, date);
+    const cacheKey = [date, cfg.lat, cfg.lon, offset].join('|');
+    if (solarSignCache.has(cacheKey)) return solarSignCache.get(cacheKey);
+    const sunrise = await sunriseFor(date, cfg);
+    const match = String(sunrise.time).match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) throw new Error(L('A valid local sunrise is required to identify the Tamil month.', 'தமிழ் மாதத்தை அடையாளம் காணச் சரியான உள்ளூர் சூரிய உதயம் தேவை.'));
+    const hour = Number(match[1]), minute = Number(match[2]);
+    const utcTotal = hour * 60 + minute - offset;
+    const dayShift = Math.floor(utcTotal / 1440);
+    const normalized = ((utcTotal % 1440) + 1440) % 1440;
+    const utcDate = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))));
+    utcDate.setUTCDate(utcDate.getUTCDate() + dayShift);
+    const swe = await getSwe();
+    swe.setSiderealLahiri();
+    const jd = swe.utcToJd(utcDate.getUTCFullYear(), utcDate.getUTCMonth() + 1, utcDate.getUTCDate(), Math.floor(normalized / 60), normalized % 60, 0);
+    if (!jd || !Number.isFinite(Number(jd.et))) throw new Error('Swiss Ephemeris could not calculate the sunrise Julian date.');
+    const result = swe.calc(jd.et, SWE.SUN, swe.siderealSpeedFlags());
+    const longitude = Number(result && result.longitude);
+    if (!Number.isFinite(longitude)) throw new Error('Swiss Ephemeris returned an invalid solar longitude.');
+    const sign = signIndex(longitude);
+    solarSignCache.set(cacheKey, sign);
+    if (solarSignCache.size > 160) solarSignCache.delete(solarSignCache.keys().next().value);
+    return sign;
+  }
+  async function tamilSolarMonthRange(anchorDate, cfg) {
+    const sign = await sunSignAtSunrise(anchorDate, cfg);
+    let start = anchorDate, end = anchorDate, foundStart = false, foundEnd = false;
+    for (let day = 1; day <= 35; day++) {
+      const candidate = addCivilDays(anchorDate, -day);
+      if (await sunSignAtSunrise(candidate, cfg) !== sign) {
+        start = addCivilDays(candidate, 1);
+        foundStart = true;
+        break;
+      }
+    }
+    for (let day = 1; day <= 35; day++) {
+      const candidate = addCivilDays(anchorDate, day);
+      if (await sunSignAtSunrise(candidate, cfg) !== sign) {
+        end = addCivilDays(candidate, -1);
+        foundEnd = true;
+        break;
+      }
+    }
+    if (!foundStart || !foundEnd) throw new Error(L('Could not find the current Tamil solar-month boundaries.', 'தற்போதைய தமிழ் சூரிய மாதத்தின் தொடக்கம்/முடிவைக் கண்டறிய முடியவில்லை.'));
+    return { sign, start, end };
+  }
+  async function runMonthlyForecasts() {
+    const cfg = getLocation();
+    const today = defaultDate();
+    const englishRef = periodReference('monthly', today);
+    const tamilRef = await tamilSolarMonthRange(today, cfg);
+    const [englishCalc, tamilCalc] = await Promise.all([
+      chartAtSunrise(englishRef.date, cfg),
+      chartAtSunrise(tamilRef.start, cfg)
+    ]);
+    const makeResult = (calc, periodStart, periodEnd, referenceDate, monthKind) => {
+      const positions = positionsFromChart(calc.chart);
+      if (positions.planets.some(p => p.sign == null)) throw new Error(L('Swiss Ephemeris did not return all eight required transit planets.', 'Swiss Ephemeris எட்டு கோச்சார கிரகங்களின் நிலைகளையும் வழங்கவில்லை.'));
+      if (positions.moonSign == null) throw new Error(L('The transit Moon sign could not be calculated.', 'கோச்சார சந்திர ராசியைக் கணக்கிட முடியவில்லை.'));
+      return {
+        type: 'monthly',
+        periodKey: englishRef.key,
+        referenceDate,
+        periodStart,
+        periodEnd,
+        sunrise: calc.sunrise,
+        fallbackSunrise: calc.fallback,
+        positions,
+        kind: 'rasi',
+        monthKind,
+        tamilMonthSign: tamilRef.sign
+      };
+    };
+    return {
+      kind: 'monthly-pair',
+      tamil: makeResult(tamilCalc, tamilRef.start, tamilRef.end, tamilRef.start, 'tamil'),
+      english: makeResult(englishCalc, englishRef.start, englishRef.end, englishRef.date, 'english')
+    };
   }
   async function runPeriodForecast() {
     const cfg = getLocation();
@@ -364,12 +459,17 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       : result.type === 'englishNewYear' ? RASI_PALAN_TITLES.englishNewYear[language]
       : result.type === 'daily' ? L('Daily Rasi Palan', 'தினசரி ராசி பலன்கள்')
       : result.type === 'weekly' ? L('Weekly Rasi Palan', 'வாரம் பலன்கள்')
-      : result.type === 'monthly' ? L('Monthly Rasi Palan', 'மாத ராசி பலன்கள்')
+      : result.type === 'monthly' && result.monthKind === 'tamil' ? L('Tamil Month Rasi Palan', 'தமிழ் மாத ராசி பலன்கள்')
+      : result.type === 'monthly' ? L('English Month Rasi Palan', 'ஆங்கில மாத ராசி பலன்கள்')
       : L('Rasi Palan', 'ராசி பலன்கள்');
     let context;
     if (result.type === 'daily') context = L('Day: ', 'நாள்: ') + weekdayName(result.referenceDate) + ' · ' + fmtDate(result.referenceDate);
-    else if (result.type === 'weekly') context = L('Week: ', 'வாரம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
-    else if (result.type === 'monthly') context = L('Month: ', 'மாதம்: ') + fmtDate(result.periodStart) + ' – ' + fmtDate(result.periodEnd);
+    else if (result.type === 'weekly') context = L('Week: ', 'வாரம்: ') + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
+    else if (result.type === 'monthly' && result.monthKind === 'tamil') {
+      const monthName = tamilSolarMonthLabels[result.tamilMonthSign] || tamilSolarMonthLabels[0];
+      context = L('Tamil solar month: ', 'தமிழ் மாதம்: ') + monthName[isTamil() ? 1 : 0] + ' · ' + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
+    }
+    else if (result.type === 'monthly') context = L('English calendar month: ', 'ஆங்கில மாதம்: ') + fmtDateRange(result.periodStart) + ' – ' + fmtDateRange(result.periodEnd);
     else context = L('Reference: ', 'கணக்கீட்டு அடிப்படை: ') + fmtDate(result.referenceDate) +
       (result.type === 'tamilNewYear' ? ' · ' + L('Chithirai 1', 'சித்திரை 1') : result.type === 'englishNewYear' ? ' · ' + L('January 1', 'ஜனவரி 1') : '');
     context += ' · ' + L('Count the other eight planetary houses from your selected Moon Rasi.', 'மற்ற எட்டு கிரகங்களின் பாவங்களைத் தேர்ந்தெடுத்த உங்கள் சந்திர ராசியிலிருந்து எண்ணவும்.') + ' · ' + L('local sunrise', 'உள்ளூர் சூரிய உதயம்') + ' ' + result.sunrise + ' · ' + getLocation().place;
@@ -436,18 +536,15 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       '<button type="button" data-section="englishNewYear" class="' + (state.section === 'englishNewYear' ? 'is-active' : '') + '">' + esc(annualLabels.englishNewYear[isTamil() ? 1 : 0]) + '</button>' +
       '<button type="button" data-section="ingress" class="' + (state.section === 'ingress' ? 'is-active' : '') + '">' + esc(L('Jupiter / Saturn / Rahu–Ketu', 'குரு / சனி / ராகு–கேது')) + '</button></div>' +
       '<div class="rp-toolbar">' +
-      '<label class="rp-date-control">' + esc(L('Reference date', 'குறிப்பிட்ட தேதி')) + '<input id="rpDate" type="date" min="1800-01-01" max="2399-12-31"></label>' +
       '<label class="rp-rasi-control">' + esc(L('Your Moon Rasi', 'உங்கள் சந்திர ராசி')) + '<select id="rpRasi">' + rasiLabels.map((rasi, index) => '<option value="' + index + '">' + esc(rasi[isTamil() ? 1 : 0]) + '</option>').join('') + '</select></label>' +
       '<label class="rp-period-control">' + esc(L('Period', 'கால அளவு')) + '<select id="rpPeriod"><option value="daily">' + esc(L('Daily', 'தினசரி')) + '</option><option value="weekly">' + esc(L('Weekly', 'வாரம்')) + '</option><option value="monthly">' + esc(L('Monthly', 'மாதம்')) + '</option></select></label>' +
       '<button type="button" id="rpRun" class="rp-primary">' + esc(L('Show predictions', 'பலன்களைக் காண்பி')) + '</button></div>' +
       '<p id="rpStatus" class="rp-status" role="status"></p>' +
       '<div id="rpResults" aria-live="polite"></div>';
     $('#rpPeriod').value = state.period;
-    $('#rpDate').value = state.date || defaultDate();
     $('#rpRasi').value = String(state.rasiIndex);
     const periodControl = $('.rp-period-control');
     periodControl.hidden = state.section !== 'period';
-    $('.rp-date-control').hidden = state.section !== 'period';
     root.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => {
       const nextSection = button.dataset.section;
       if (state.section === nextSection) return;
@@ -456,10 +553,6 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       if (state.lastResult) renderLastResult();
     }));
     $('#rpPeriod').addEventListener('change', () => { state.period = $('#rpPeriod').value; });
-    $('#rpDate').addEventListener('change', () => {
-      const value = $('#rpDate').value;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) state.date = value;
-    });
     $('#rpRasi').addEventListener('change', () => {
       const value = Number($('#rpRasi').value);
       if (!Number.isInteger(value) || value < 0 || value >= rasiLabels.length) return;
@@ -480,15 +573,16 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
     if (!target || !state.lastResult) return;
     const result = state.lastResult;
     if (result.kind === 'rasi') target.innerHTML = renderRasiGrid(result);
+    else if (result.kind === 'monthly-pair') target.innerHTML = renderRasiGrid(result.tamil) + renderRasiGrid(result.english);
     else target.innerHTML = renderIngress(result);
   }
   async function run() {
-    state.date = /^\d{4}-\d{2}-\d{2}$/.test(String(state.date || '')) ? state.date : defaultDate();
+    state.date = defaultDate();
     state.year = publishedTargetYear || Number(defaultDate().slice(0, 4));
     setStatus(L('Calculating with the local Swiss Ephemeris engine…', 'உள்ளூர் Swiss Ephemeris மூலம் கணக்கிடப்படுகிறது…'), false);
     $('#rpRun').disabled = true;
     try {
-      if (state.section === 'period') state.lastResult = await runPeriodForecast();
+      if (state.section === 'period') state.lastResult = state.period === 'monthly' ? await runMonthlyForecasts() : await runPeriodForecast();
       else if (state.section === 'tamilNewYear' || state.section === 'englishNewYear') state.lastResult = await runNewYearForecast(state.section);
       else state.lastResult = await runIngressForecast();
       renderLastResult();

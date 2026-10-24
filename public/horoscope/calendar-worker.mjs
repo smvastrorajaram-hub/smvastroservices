@@ -1,9 +1,9 @@
 import {getSwe} from './offline/wasm-provider.mjs';
-import {calculateSwiss} from './offline/swiss_vedic.browser.mjs';
+import {calculateSwiss,calculateSunMoon} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
-async function sample(input,time){const c=await calculateSwiss({...input,time});const ps=c.planets;const moon=ps.find(x=>x.name==='சந்திரன்').longitude,sun=ps.find(x=>x.name==='சூரியன்').longitude;return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
+async function sample(input,time){const {sunLongitude:sun,moonLongitude:moon}=await calculateSunMoon({...input,time});return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
 function minute(t){return +t.slice(0,2)*60+ +t.slice(3,5)}
 function clock(n){n=(Math.round(n)%1440+1440)%1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
 // Geocentric lunar rise threshold (mean refraction + horizontal parallax).
@@ -41,6 +41,6 @@ async function events(input){
 }
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
  if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}}
- else {await calculateSwiss(input);const p=panchang(input),t=transit(input);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events};}
+ else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});
  }catch(e){self.postMessage({id,error:e.message})}};

@@ -24,6 +24,9 @@ const calendarForecastAdminSource = await readFile(new URL('../public/horoscope/
 const horoscopeAdminWorkbenchSource = await readFile(new URL('../public/horoscope/prediction-admin-workbench.mjs', import.meta.url), 'utf8');
 const horoscopeAdminSource = await readFile(new URL('../public/horoscope/prediction-admin.mjs', import.meta.url), 'utf8');
 const calendarWorkerSource = await readFile(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8');
+const calendarCalculationWorkerSource = await readFile(new URL('../public/horoscope/calendar-worker.mjs', import.meta.url), 'utf8');
+const swissCalculationSource = await readFile(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs', import.meta.url), 'utf8');
+const transitPanchangSource = await readFile(new URL('../public/horoscope/offline/transit_panchang.browser.mjs', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
@@ -44,9 +47,10 @@ test('Daily is fixed to the supplied current date; weekly uses the current Sunda
   assert.deepEqual(periodReference('daily', '2026-10-24'), {date:'2026-10-24',key:'2026-10-24',start:'2026-10-24',end:'2026-10-24'});
   assert.equal(mondayOf('2026-10-24'), '2026-10-19');
   assert.equal(sundayOf('2026-10-24'), '2026-10-18');
-  assert.deepEqual(currentWeek('2026-10-24'), {start:'2026-10-18',end:'2026-10-24'});
-  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-18',key:'2026-10-18',start:'2026-10-18',end:'2026-10-24'});
-  assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-25',key:'2026-10-25',start:'2026-10-25',end:'2026-10-31'});
+  assert.deepEqual(currentWeek('2026-10-24'), {start:'2026-10-17',end:'2026-10-24'});
+  assert.deepEqual(periodReference('weekly', '2026-10-24'), {date:'2026-10-17',key:'2026-10-17',start:'2026-10-17',end:'2026-10-24'});
+  assert.deepEqual(periodReference('weekly', '2026-10-21'), {date:'2026-10-17',key:'2026-10-17',start:'2026-10-17',end:'2026-10-24'});
+  assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-25',key:'2026-10-25',start:'2026-10-25',end:'2026-11-01'});
   assert.deepEqual(periodReference('monthly', '2026-10-24'), {date:'2026-10-01',key:'2026-10',start:'2026-10-01',end:'2026-10-31'});
 });
 
@@ -85,15 +89,18 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
 });
 
-test('Public Calendar supports a selected reference date and period keys for daily, weekly, and monthly readings', () => {
-  assert.match(publicRasiPalanSource, /id="rpDate"/);
-  assert.match(publicRasiPalanSource, /state\.date = value/);
+test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
+  assert.doesNotMatch(publicRasiPalanSource, /rpDate/);
+  assert.match(publicRasiPalanSource, /state\.date = defaultDate\(\)/);
   assert.doesNotMatch(publicRasiPalanSource, /id="rpYear"|#rpYear|Choose a date first/);
   assert.match(publicRasiPalanSource, /periodReference/);
   assert.match(periodsSource, /currentWeek/);
   assert.match(publicRasiPalanSource, /Day: |நாள்: /);
   assert.match(publicRasiPalanSource, /Week: |வாரம்: /);
-  assert.match(publicRasiPalanSource, /Month: |மாதம்: /);
+  assert.match(publicRasiPalanSource, /English calendar month: |ஆங்கில மாதம்: /);
+  assert.match(publicRasiPalanSource, /Tamil solar month: |தமிழ் மாதம்: /);
+  assert.match(publicRasiPalanSource, /runMonthlyForecasts\(\)/);
+  assert.match(publicRasiPalanSource, /tamilSolarMonthRange\(today, cfg\)/);
   assert.match(publicRasiPalanSource, /publishedTargetYear/);
   assert.match(calendarForecastAdminSource, /targetYear/);
   assert.match(calendarForecastAdminSource, /targetEventDate/);
@@ -159,20 +166,30 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-v4'"), 'Cache version updates existing PWA installs');
+   assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-v5'"), 'Cache version updates existing PWA installs');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
    assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'PWA must not download every India location shard during install');
    assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India shards continue to cache lazily');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
-   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v5'));
-   assert.ok(calendarIndexSource.includes('20261024-tarabala-rasi-v1'));
-   assert.ok(calendarIndexSource.includes('20261024-moon-transit-admin-v1'));
+   assert.ok(calendarIndexSource.includes('20261024-admin-cache-v6'));
+   assert.ok(calendarIndexSource.includes('20261024-panchang-optimized-v2'));
+   assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
+   assert.ok(calendarIndexSource.includes('20261024-periods-domain-v2'));
    assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
    assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
 });
+test('Panchang boundary searches use cached lightweight Sun/Moon calculations and share one full daily chart', () => {
+  assert.match(swissCalculationSource, /export function calculateSunMoonSync/);
+  assert.match(transitPanchangSource, /calculateSunMoonSync/);
+  assert.match(transitPanchangSource, /const panchangLongitudeCache = new Map\(\)/);
+  assert.match(transitPanchangSource, /preCalculatedChart=null/);
+  assert.match(calendarCalculationWorkerSource, /calculateSunMoon/);
+  assert.match(calendarCalculationWorkerSource, /const chart=await calculateSwiss\(input\);const p=panchang\(input,chart\),t=transit\(input,chart\)/);
+});
+
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
   assert.match(publicRasiPalanSource, /async function chartAtLocalTime\(date, time, cfg\)/);
@@ -193,4 +210,6 @@ test('Public calendar takes published mode/data from Firestore online and uses b
   assert.match(publicRasiPalanSource, /calendar-rasi-palan-manual\.json/);
   assert.match(publicRasiPalanSource, /publishedMode = 'hybrid'/);
   assert.match(publicRasiPalanSource, /supportsPublishedManual/);
+  assert.match(publicRasiPalanSource, /selectReading\(supportsPublishedManual \? publishedMode : 'automatic'/);
+  assert.match(publicRasiPalanSource, /Swiss Ephemeris · programmed rules/);
 });

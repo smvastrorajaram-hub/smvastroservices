@@ -819,3 +819,52 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
 
 export async function calculateSwiss(input){ await ensureSwe(); return calculateSwissReady(input); }
 export function calculateSwissSync(input){ return calculateSwissReady(input); }
+
+// Fast astronomical sample for Panchang boundary searches. It follows the same
+// UTC normalization, sidereal Lahiri flags, Swiss/Moshier fallback and longitude
+// precision as calculateSwissReady(), without computing/enriching the other
+// seven planets, houses, upagrahas, and vargas on hundreds of search samples.
+export function calculateSunMoonSync({date,time,lat,lon,utcOffsetMinutes=330}){
+  if(!swe) throw new Error('Swiss Ephemeris WASM is not initialized.');
+  const ds=String(date||''), ts=String(time||'');
+  const m=ts.match(/^(\\d{1,2}):(\\d{2})$/);
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!m) throw new Error('பஞ்சாங்க தேதி / நேரம் சரியாக உள்ளிடவும்.');
+  const hh=Number(m[1]), mm=Number(m[2]);
+  if(hh>23||mm>59) throw new Error('பஞ்சாங்க நேரம் சரியாக உள்ளிடவும்.');
+  const latitude=Number(lat), longitude=Number(lon);
+  if(!Number.isFinite(latitude)||latitude<-90||latitude>90||!Number.isFinite(longitude)||longitude<-180||longitude>180)
+    throw new Error('Latitude / Longitude சரியாக உள்ளிடவும்.');
+  const offsetMinutes=Number(utcOffsetMinutes);
+  if(!Number.isFinite(offsetMinutes)||offsetMinutes < -720||offsetMinutes > 840) throw new Error('UTC offset சரியாக உள்ளிடவும்.');
+  const [y,mo,d]=ds.split('-').map(Number);
+  const civilDate=new Date(0); civilDate.setUTCFullYear(y,mo-1,d);
+  if(y<1||y>9999||civilDate.getUTCFullYear()!==y||civilDate.getUTCMonth()!==mo-1||civilDate.getUTCDate()!==d)
+    throw new Error('பஞ்சாங்க தேதி சரியாக உள்ளிடவும்.');
+  const utcTotal=hh*60+mm-offsetMinutes;
+  const dayShift=Math.floor(utcTotal/1440);
+  const normalized=((utcTotal%1440)+1440)%1440;
+  const utcDate=new Date(Date.UTC(y,mo-1,d));
+  utcDate.setUTCDate(utcDate.getUTCDate()+dayShift);
+  const utc=swe.utc_to_jd(utcDate.getUTCFullYear(),utcDate.getUTCMonth()+1,utcDate.getUTCDate(),
+    Math.floor(normalized/60),normalized%60,0,C.SE_GREG_CAL);
+  fail(utc,'Panchang UTC/JD');
+  const [jdEt]=utc.data;
+  const ephePath=setEphe();
+  if(typeof swe.set_sid_mode==='function' && C.SE_SIDM_LAHIRI!==undefined) swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
+  const useSwissFiles=hasSwissEpheFiles(ephePath);
+  const flags=(useSwissFiles?C.SEFLG_SWIEPH:C.SEFLG_MOSEPH)|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+  const moshierFlags=C.SEFLG_MOSEPH|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+  const sun=calcPlanetSafe(jdEt,C.SE_SUN,flags,moshierFlags,'சூரியன்',useSwissFiles).result;
+  const moon=calcPlanetSafe(jdEt,C.SE_MOON,flags,moshierFlags,'சந்திரன்',useSwissFiles).result;
+  return {
+    sunLongitude:Number(norm360(Number(sun.data[0])).toFixed(8)),
+    moonLongitude:Number(norm360(Number(moon.data[0])).toFixed(8))
+  };
+}
+
+
+// Async entry point initializes the local WASM provider once, then uses the light path.
+export async function calculateSunMoon(input){
+  await ensureSwe();
+  return calculateSunMoonSync(input);
+}
