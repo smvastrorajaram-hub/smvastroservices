@@ -11,10 +11,19 @@
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
+  box-sizing:border-box!important;
   width:100%!important;
   min-width:0!important;
+  height:48px!important;
+  min-height:48px!important;
+  max-height:48px!important;
   margin:0!important;
+  padding:4px 5px!important;
   text-align:center!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  line-height:1.2!important;
 }
 #templeHeader .smv-horoscope-auth{
   width:min(100%,620px)!important;
