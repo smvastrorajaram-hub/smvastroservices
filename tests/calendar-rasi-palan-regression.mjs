@@ -154,7 +154,7 @@ test('Admin navigation retains SMV ASTRO and SMV HOROSCOPE, and PWA caches admin
    assert.ok(calendarWorkerSource.includes('calendar-admin.mjs'));
    assert.ok(rasiPalanCss.includes('max-width:960px;margin:24px auto'));
    assert.ok(rasiPalanCss.includes('.rp-planets-grid{display:grid;grid-template-columns:1fr;gap:0}'));
-   assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc')));
+   assert.ok(rasiPalanCss.includes('.rp-planet{min-width:0;padding:12px 0;border:0;border-bottom:1px solid #d9e5dc'));
 });
 ;
 
