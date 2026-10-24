@@ -12,7 +12,10 @@ const types = {
 };
 const firebaseConfig = {
   apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-  // Match the existing SMV ASTRO Admin setup: use the Firebase hosted auth domain on Pages previews,\n  // and the production custom auth domain on SMV production domains.\n  authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))\n    ? 'smv-astro.firebaseapp.com'\n    : 'auth.smvastroservices.in',
+  // Match SMV ASTRO's authentication domain on production and Pages previews.
+  authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))
+    ? 'smv-astro.firebaseapp.com'
+    : 'auth.smvastroservices.in',
   projectId: 'smv-astro',
   storageBucket: 'smv-astro.firebasestorage.app',
   messagingSenderId: '299081899217',
