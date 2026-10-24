@@ -41,7 +41,7 @@ const css=`
 #smvAdminPredictionWorkbench [data-wb-status]{font-weight:650;min-height:1.5em}
 #smvAdminPredictionWorkbench .wb-place-results{display:grid;gap:4px;max-height:190px;overflow-y:auto}
 #smvAdminPredictionWorkbench .wb-place-results button{background:#fff;text-align:left;border:1px solid #ddd;color:#222;font-size:13px}
-#smvAdminPredictionWorkbench .wb-block{padding:10px 0;border:0;border-top:1px solid #e5d8c2;border-radius:0;margin:14px 0;background:transparent}
+#smvAdminPredictionWorkbench .wb-block{padding:8px 0;border:0;border-radius:0;margin:14px 0;background:transparent}
 #smvAdminPredictionWorkbench .wb-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 #smvAdminPredictionWorkbench .wb-prose{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:15px;margin:0}
 #smvAdminPredictionWorkbench .wb-cols article{padding:0;margin:0;border:0;border-radius:0;background:transparent}#smvAdminPredictionWorkbench .wb-cols article h4{padding-bottom:5px;border-bottom:1px solid #e5d8c2}#smvAdminPredictionWorkbench .wb-changed{border:0;background:transparent}
@@ -49,7 +49,7 @@ const css=`
 #smvAdminPredictionWorkbench pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;max-height:340px;overflow:auto}
 #smvAdminPredictionWorkbench .wb-pill{display:inline-block;border:1px solid #bd8b78;border-radius:12px;padding:1px 8px;margin:4px;color:#662035}
 #smvAdminPredictionWorkbench [hidden]{display:none!important}
-@media(max-width:700px){#smvAdminPredictionWorkbench .wb-grid,#smvAdminPredictionWorkbench .wb-cols{grid-template-columns:1fr}#smvAdminPredictionWorkbench{padding:9px}#smvAdminPredictionWorkbench button{font-size:14px}}
+@media(max-width:700px){#smvAdminPredictionWorkbench .wb-grid,#smvAdminPredictionWorkbench .wb-cols{grid-template-columns:1fr}#smvAdminPredictionWorkbench{padding:0}#smvAdminPredictionWorkbench button{font-size:14px}}
 @media print{#smvAdminPredictionWorkbench .wb-actions,#smvAdminPredictionWorkbench .wb-grid{display:none}}
 `;
 function shell(){
