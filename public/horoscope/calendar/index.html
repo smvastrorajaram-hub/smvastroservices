@@ -35,7 +35,6 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <link rel="apple-touch-icon" href="../assets/calendar-192.png">
 <link rel="stylesheet" href="../horoscope.css">
 <link rel="stylesheet" href="../daily-calendar.css">
-<link rel="stylesheet" href="../calendar-rasi-palan.css">
 <link rel="stylesheet" href="../calendar-theme.css">
 </head>
 <body class="calendar-only">
@@ -53,9 +52,50 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </footer>
 <script src="../location-search-online-offline.js"></script>
 <script src="../horoscope.js"></script>
-<script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v5"></script>
-<script type="module" src="../daily-calendar.mjs?v=20261024-tarabala-rasi-v1"></script>
-<script type="module" src="../calendar-rasi-palan.mjs?v=20261024-moon-transit-admin-v1"></script>
+<script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v6"></script>
+<script type="module" src="../daily-calendar.mjs?v=20261024-panchang-optimized-v2"></script>
+<script type="module" id="smv-calendar-rasi-palan-loader">
+(async()=>{
+  const host=location.hostname.toLowerCase();
+  const version='20261024-periods-domain-v2';
+  const candidates=host==='calendar.smvastroservices.in'
+    ? [
+        {module:'/calendar-rasi-palan.mjs',css:'/calendar-rasi-palan.css'},
+        {module:'/horoscope/calendar-rasi-palan.mjs',css:'/horoscope/calendar-rasi-palan.css'}
+      ]
+    : [{module:'../calendar-rasi-palan.mjs',css:'../calendar-rasi-palan.css'}];
+  let loaded=false;
+  for(const candidate of candidates){
+    let style=null;
+    try{
+      const moduleUrl=new URL(candidate.module,document.baseURI);
+      const moduleCheck=await fetch(moduleUrl.href,{cache:'no-store'});
+      if(!moduleCheck.ok)continue;
+      const cssUrl=new URL(candidate.css,document.baseURI);
+      const cssCheck=await fetch(cssUrl.href,{cache:'no-store'});
+      if(!cssCheck.ok)continue;
+      cssUrl.searchParams.set('v',version);
+      style=document.createElement('link');
+      style.rel='stylesheet';
+      style.href=cssUrl.href;
+      style.dataset.smvRasiPalanStyle='1';
+      await new Promise((resolve,reject)=>{
+        style.addEventListener('load',resolve,{once:true});
+        style.addEventListener('error',reject,{once:true});
+        document.head.append(style);
+      });
+      moduleUrl.searchParams.set('v',version);
+      await import(moduleUrl.href);
+      loaded=true;
+      break;
+    }catch(error){
+      style?.remove();
+      console.warn('SMV Calendar forecast asset candidate unavailable.',candidate.module,error);
+    }
+  }
+  if(!loaded)console.error('SMV Calendar Rasi Palan and Planetary Transits could not load from the deployed Calendar assets.');
+})();
+</script>
 <script id="smv-v352-pages-calendar-install-guard">
 (()=>{
   if(location.hostname!=='smvastroservices.pages.dev')return;
