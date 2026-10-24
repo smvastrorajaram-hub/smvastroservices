@@ -66,7 +66,7 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
       #smvCalendarRasiPalanAdmin .crpa-status{min-height:24px;margin:8px 0 0;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#155a37}
       #smvCalendarRasiPalanAdmin .crpa-status[data-error="1"]{color:#a41020}
       #smvCalendarRasiPalanAdmin [hidden]{display:none}
-      @media(max-width:680px){#smvCalendarRasiPalanAdmin{padding:10px}#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr 1fr}#smvCalendarRasiPalanAdmin .crpa-actions button{flex:1 1 100%}}
+      @media(max-width:680px){#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr 1fr}#smvCalendarRasiPalanAdmin .crpa-actions button{flex:1 1 100%}}
       @media(max-width:380px){#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr}}
     </style>
     <h4>ராசி பலன்கள் & கிரக கோச்சார நிர்வாகம்</h4>
