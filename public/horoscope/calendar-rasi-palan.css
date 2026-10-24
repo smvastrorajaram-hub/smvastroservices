@@ -1,4 +1,4 @@
-#calRasiPalan{width:calc(100% - 32px);max-width:960px;margin:24px auto;padding:20px;border:1px solid #d8e5db;border-radius:16px;background:#f8fbf7;color:#173e3a;font-family:'Noto Sans Tamil',Arial,sans-serif;box-sizing:border-box}
+#calRasiPalan{width:100%;max-width:960px;margin:24px auto;padding:20px;border:1px solid #d8e5db;border-radius:16px;background:#f8fbf7;color:#173e3a;font-family:'Noto Sans Tamil',Arial,sans-serif;box-sizing:border-box}
 #calRasiPalan *{box-sizing:border-box}
 #calRasiPalan h2,#calRasiPalan h3,#calRasiPalan h4,#calRasiPalan h5{color:#155a52;line-height:1.5}
 #calRasiPalan .rp-heading{padding:8px 2px 18px;border-bottom:2px solid #d8bd75}
@@ -37,7 +37,7 @@
 #calRasiPalan .rp-rasi-grid{display:grid;grid-template-columns:1fr;gap:6px}
 #calRasiPalan .rp-rasi-grid .rp-rasi-card{margin:8px 0}
 @media(max-width:680px){
- #calRasiPalan{margin:18px 8px;padding:12px 10px;border-radius:12px}
+ #calRasiPalan{width:100%;margin:18px 0;padding:12px 10px;border-radius:12px}
  #calRasiPalan .rp-tabs{display:grid;grid-template-columns:1fr 1fr}
  #calRasiPalan .rp-tabs button{padding:8px 6px;font-size:12px}
  #calRasiPalan .rp-toolbar{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:10px}
