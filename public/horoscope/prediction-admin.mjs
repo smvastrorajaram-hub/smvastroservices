@@ -185,7 +185,13 @@ if(host&&E&&entry&&openButton){
    if(!auth?.currentUser||!await verifyAdmin())throw Error('இந்தக் கணக்கிற்கு Admin அனுமதி இல்லை. மீண்டும் சரியான Admin account மூலம் Login செய்யவும்.');
    await window.SMVPredictionRulesSync?.ensureReady?.();
    if(!auth?.currentUser)throw Error('Login session முடிந்துவிட்டது. மீண்டும் Login செய்யவும்.');
-   shell();verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது.');entryStatus('');
+   // Preserve verified-login behavior: seed an empty local Draft from reviewed
+   // static/published rules, without publishing or writing to Firestore.
+   if(!E.getLocalRules().length){
+    const baseline=E.getPublishedRules();
+    if(baseline.length)E.setLocalRules(baseline);
+   }
+   shell();verified=true;editor();status('Admin அணுகல் உறுதிப்படுத்தப்பட்டது. Static fallback விதிகள் Draft-இல் தயாராக உள்ளன; பரிசீலித்து Publish செய்த பிறகே Online பயனாளர்களுக்கு மாறும்.');entryStatus('');
    openButton.setAttribute('aria-expanded','true');
    window.dispatchEvent(new CustomEvent('smv:admin-console-open',{detail:{uid:auth.currentUser.uid}}));
    try{host.scrollIntoView({behavior:'smooth',block:'start'});}catch{}
