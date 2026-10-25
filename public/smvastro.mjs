@@ -3315,8 +3315,9 @@ function smvClearMediaForm(){
 async function loadAdminContent(){
   const box=$("adminBlogsMedia");if(!box)return;
   try{
-    const snap=await getDocs(query(collection(db,SMV_CONTENT_COLLECTION),where("language","==","en")));
-    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    const response=await renderApi('/admin/content',{method:'GET'});
+    if(!response?.success||!Array.isArray(response.items))throw new Error(response?.error||'Admin content list is unavailable.');
+    const items=response.items.sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
     box.innerHTML=items.length?items.map(x=>{
       const status=x.published?'<span class="success">PUBLISHED</span>':'<span class="small">DRAFT</span>';
       return `<div class="admin-content-row"><b>${escapeHtml(x.title||"Untitled")}</b> · ${escapeHtml(x.kind||"")} ${x.mediaType?`· ${escapeHtml(x.mediaType)}`:""} · ${status}<div class="small">${escapeHtml(x.summary||x.description||"")}</div><div class="admin-blog-actions">${x.kind==="blog"?`<button class="btn gray" data-content-edit="${x.id}">EDIT</button>`:""}<button class="btn gray" data-content-toggle="${x.id}">${x.published?"UNPUBLISH":"PUBLISH"}</button><button class="btn danger" data-content-delete="${x.id}">DELETE</button></div></div>`;
@@ -3325,11 +3326,11 @@ async function loadAdminContent(){
       const x=items.find(i=>i.id===b.dataset.contentEdit);if(!x)return;$("blogEditId").value=x.id;$("blogTitle").value=x.title||"";$("blogSummary").value=x.summary||"";$("blogBody").value=await smvFetchBlogBody(x.bodyUrl);if($("blogCoverFile"))$("blogCoverFile").value="";$("saveBlogBtn").textContent="SAVE & REPUBLISH";$("adminContentManager")?.scrollIntoView({behavior:"smooth",block:"start"});
     });
     box.querySelectorAll("[data-content-toggle]").forEach(b=>b.onclick=async()=>{
-      try{const item=items.find(x=>x.id===b.dataset.contentToggle);await updateDoc(doc(db,SMV_CONTENT_COLLECTION,b.dataset.contentToggle),{published:!item?.published,publishedAt:serverTimestamp(),updatedAt:serverTimestamp(),updatedBy:currentUser.uid});await loadAdminContent();smvInvalidatePublicContent();}catch(e){smvNotice("Unable to update",e.message||String(e),"!");}
+      try{const item=items.find(x=>x.id===b.dataset.contentToggle);const result=await renderApi('/admin/content/toggle',{method:'POST',body:JSON.stringify({id:b.dataset.contentToggle,published:!item?.published})});if(!result?.success)throw new Error(result?.error||'Content update was not confirmed.');await loadAdminContent();smvInvalidatePublicContent();}catch(e){smvNotice("Unable to update",e.message||String(e),"!");}
     });
     box.querySelectorAll("[data-content-delete]").forEach(b=>b.onclick=async()=>{
       if(!(await smvConfirm("Delete content","This will remove the content record from SMV ASTRO. The Cloudinary files remain stored for safety; automatic Cloudinary deletion requires a secure server-side API key.","DELETE","CANCEL",true)))return;
-      const x=items.find(i=>i.id===b.dataset.contentDelete);try{await deleteDoc(doc(db,SMV_CONTENT_COLLECTION,b.dataset.contentDelete));await loadAdminContent();smvInvalidatePublicContent();}catch(e){smvNotice("Unable to delete",e.message||String(e),"!");}
+      const x=items.find(i=>i.id===b.dataset.contentDelete);try{const result=await renderApi('/admin/content/delete',{method:'POST',body:JSON.stringify({id:b.dataset.contentDelete})});if(!result?.success)throw new Error(result?.error||'Content deletion was not confirmed.');await loadAdminContent();smvInvalidatePublicContent();}catch(e){smvNotice("Unable to delete",e.message||String(e),"!");}
     });
   }catch(e){box.innerHTML='<div class="empty error">Unable to load content: '+escapeHtml(e.message||String(e))+'</div>';}
 }
@@ -3344,11 +3345,12 @@ async function smvUploadBlogText(body,id){
 async function saveBlog(){
   const title=$("blogTitle")?.value.trim(),summary=$("blogSummary")?.value.trim(),body=$("blogBody")?.value.trim(),editId=$("blogEditId")?.value.trim();
   if(!title||!body){smvNotice("Blog Writer","Enter a title and blog content before publishing.","!");return;}const b=$("saveBlogBtn");b.disabled=true;b.textContent=editId?"SAVING...":"PUBLISHING...";
-  try{let id=editId,old=null;if(editId){const oldSnap=await getDoc(doc(db,SMV_CONTENT_COLLECTION,editId));if(!oldSnap.exists())throw new Error("Blog not found.");old=oldSnap.data()||{};}else id=doc(collection(db,SMV_CONTENT_COLLECTION)).id;
+  try{let id=editId,old=null;if(editId){const list=await renderApi('/admin/content',{method:'GET'});if(!list?.success)throw new Error(list?.error||"Unable to load current content.");old=(list.items||[]).find(x=>x.id===editId)||null;if(!old)throw new Error("Blog not found.");}else id=doc(collection(db,SMV_CONTENT_COLLECTION)).id;
     let coverUrl=old?.coverUrl||"",coverPath=old?.coverPath||"";const file=$("blogCoverFile")?.files?.[0];if(file){const up=await smvUploadFile(file,"image",id);coverUrl=up.url;coverPath=up.path;}
     const textUp=await smvUploadBlogText(body,id);
-    const data={kind:"blog",title,summary,language:"en",bodyUrl:textUp.url,bodyPublicId:textUp.publicId,bodySize:textUp.size,coverUrl,coverPath,published:true,updatedAt:serverTimestamp(),updatedBy:currentUser.uid};
-    if(editId)await updateDoc(doc(db,SMV_CONTENT_COLLECTION,editId),data);else await setDoc(doc(db,SMV_CONTENT_COLLECTION,id),{...data,createdAt:serverTimestamp(),publishedAt:serverTimestamp(),authorUid:currentUser.uid});
+    const data={kind:"blog",title,summary,language:"en",bodyUrl:textUp.url,bodyPublicId:textUp.publicId,bodySize:textUp.size,coverUrl,coverPath,published:true,updatedBy:currentUser.uid};
+    const saved=await renderApi('/admin/content/save',{method:'POST',body:JSON.stringify({id,data})});
+    if(!saved?.success)throw new Error(saved?.error||'Blog save was not confirmed.');
     smvClearBlogForm();await loadAdminContent();smvInvalidatePublicContent();$("blogManagerMsg").innerHTML='<span class="success">Blog published successfully. Blog text is stored on Cloudinary.</span>';
   }catch(e){$("blogManagerMsg").innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;if(!b.textContent.includes("PUBLISH"))b.textContent="PUBLISH BLOG";}
 }
@@ -3369,7 +3371,7 @@ async function uploadMedia(){
   }
 
   const b=$("uploadMediaBtn");b.disabled=true;b.textContent="UPLOADING...";
-  try{const id=doc(collection(db,SMV_CONTENT_COLLECTION)).id,up=await smvUploadFile(file,type,id);await setDoc(doc(db,SMV_CONTENT_COLLECTION,id),{kind:"media",title,description:desc,language:"en",mediaType:type,url:up.url,storagePath:up.path,cloudinaryPublicId:up.publicId,size:up.size,mimeType:up.mimeType,fileName:up.name,published:true,createdAt:serverTimestamp(),publishedAt:serverTimestamp(),authorUid:currentUser.uid});smvClearMediaForm();await loadAdminContent();smvInvalidatePublicContent();$("mediaManagerMsg").innerHTML='<span class="success">Content uploaded and published successfully.</span>';}catch(e){$("mediaManagerMsg").innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;b.textContent="UPLOAD & PUBLISH";}
+  try{const id=doc(collection(db,SMV_CONTENT_COLLECTION)).id,up=await smvUploadFile(file,type,id);const saved=await renderApi('/admin/content/save',{method:'POST',body:JSON.stringify({id,data:{kind:"media",title,description:desc,language:"en",mediaType:type,url:up.url,storagePath:up.path,cloudinaryPublicId:up.publicId,size:up.size,mimeType:up.mimeType,fileName:up.name,published:true}})});if(!saved?.success)throw new Error(saved?.error||'Content save was not confirmed.');smvClearMediaForm();await loadAdminContent();smvInvalidatePublicContent();$("mediaManagerMsg").innerHTML='<span class="success">Content uploaded and published successfully.</span>';catch(e){$("mediaManagerMsg").innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;b.textContent="UPLOAD & PUBLISH";}
 }
 function initContentManager(){
   $("saveBlogBtn")?.addEventListener("click",saveBlog);
