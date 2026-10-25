@@ -194,7 +194,12 @@
         for(const a of items){
           const row=document.createElement('article');row.className='smv-private-consult-row';
           const photo=a.photoData||a.photoURL||a.photoUrl||'',price=Number(a.chatPrice||0);
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p><b>Chat Price: ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</b></p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          const rawLanguages=a.languages??a.spokenLanguages??a.language??[];
+          const languages=Array.isArray(rawLanguages)?rawLanguages.map(v=>String(v||'').trim()).filter(Boolean):String(rawLanguages||'').split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
+          const availability=['online','busy','offline'].includes(String(a.availabilityStatus||'').toLowerCase())?String(a.availabilityStatus).toLowerCase():'offline';
+          const callPrice=Number(a.callPricePerMinute);
+          const availabilityLabel=availability==='online'?'Online':availability==='busy'?'Busy':'Offline';
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Private Consultation Chat Price:</b> ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</p><p><b>Call rate:</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+' / minute':'Not configured in existing profile'}</p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
           const select=row.querySelector('[data-private-consult-astro]');
           select.onclick=()=>selectPrivateAstrologer(a,select).catch(err=>{console.error('Private Consultation selection failed:',err);alert('Unable to open the consultation form. Please try again.');});
           const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
@@ -218,6 +223,12 @@
   function openPrivateList(){if(!$('private-consultation')?.classList.contains('hidden'))loadPrivateAstrologers();}
   window.addEventListener('smv:private-consultation-open',openPrivateList);
   window.addEventListener('smv:app-ready',openPrivateList);
+  window.addEventListener('smv:astrologer-availability-changed',()=>{
+    privateListLoadedAt=0;
+    if(!$('private-consultation')?.classList.contains('hidden')){
+      if(!privateListRequest)loadPrivateAstrologers();
+    }
+  });
   openPrivateList();
   window.addEventListener('smv:logged-out',()=>{
     window.__smvSelectedPrivateConsultAstrologer=null;
