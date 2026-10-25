@@ -38,7 +38,7 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
 
-test('Horoscope Admin Rules and Calendar use the existing login without a separate header Admin button', () => {
+test('Horoscope Rules Admin stays on the normal authorized Horoscope login', () => {
   assert.equal(horoscopeIndexSource.includes('id="smvAdminRulesAccess"'), false, 'The fixed/header Admin button must be removed');
   assert.ok(horoscopeIndexSource.includes('id="smvAdminToolsEntry" hidden'), 'Admin tools stay hidden until the Horoscope login validates an Admin account');
   assert.ok(horoscopeIndexSource.includes('id="smvAdminOpenTools"'), 'Authenticated admins have a page-level entry to reopen the console');
