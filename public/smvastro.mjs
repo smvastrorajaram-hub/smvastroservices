@@ -4734,19 +4734,21 @@ async function smvLivePollSessions(){
  try{
   const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
   for(const s of list.sessions||[]){if(['preparing','ringing'].includes(s.state)&&s.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==s.id)smvLiveOpenSession(s,null,true);else if(s.id===smvLivePanelSessionId)smvLiveApplySession(s);}
-  if(role==='astrologer'){const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);}
-  else{const b=await renderApi('/live/bookings/mine',{method:'GET',timeoutMs:12000});smvLiveRenderCustomerBookings(b.bookings||[]);}
+  if(role==='astrologer'){
+   const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);
+   const pendingSession=(list.sessions||[]).some(x=>x.astrologerUid===currentUser.uid&&['preparing','ringing'].includes(String(x.state||'')));
+   if((b.bookings||[]).length||pendingSession)smvLiveStartRingtone();else if(smvLiveRingActive)smvLiveStopRingtone();
+   if($('smvScheduledBookings')&&Date.now()-smvLiveScheduledPollAt>12000){smvLiveScheduledPollAt=Date.now();try{await smvLiveLoadScheduledAppointments();}catch(scheduleError){console.warn('Scheduled booking refresh skipped:',scheduleError?.message||scheduleError);}}
+  }else{const b=await renderApi('/live/bookings/mine',{method:'GET',timeoutMs:12000});smvLiveRenderCustomerBookings(b.bookings||[]);}
  }catch(e){if(!/403|role/i.test(String(e?.message||e)))console.warn('Live session polling skipped:',e?.message||e);}
  finally{smvLivePollBusy=false;}
 }
 function smvLiveRenderScheduledBookings(appointments){
  const host=$('smvScheduledBookings');if(!host)return;
  if(!appointments.length){host.innerHTML='<p class="small">No scheduled Call or Chat bookings yet.</p>';return;}
- const uid=String(currentUser?.uid||'');
- const fmt=raw=>{const d=String(raw||'').trim(),t=String(arguments[1]||'');return d+(t?' · '+t:'');};
  const bookingEpoch=a=>{
   const date=String(a.preferredDate||''),time=String(a.preferredTime||'');
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(time))return NaN;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time))return NaN;
   const [y,m,d]=date.split('-').map(Number),[hh,mm]=time.split(':').map(Number);
   const utc=Date.UTC(y,m-1,d,hh,mm);
   const check=new Date(utc);
@@ -4847,7 +4849,7 @@ function smvLiveRenderCustomerBookings(bookings){
 }
 function smvLiveDashboardHtml(role){
  return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
- (role==='astrologer'?'<div class="action-row"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button></div><p class="small" id="smvLiveAvailabilityMsg"></p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
+ (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><p class="small" id="smvLiveAvailabilityMsg">Enable ring sound once on this browser; you can mute or unmute incoming Call/Chat alerts here.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
  (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
@@ -4871,6 +4873,8 @@ async function smvLiveLoadDashboard(role){
  };
  const refresh=$('smvLiveRefreshDashboard');if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=reload;}
  const set=$('smvLiveSetAvailability');if(set&&!set.dataset.bound){set.dataset.bound='1';set.onclick=async()=>{const status=$('smvLiveAvailabilityMsg');set.disabled=true;try{const r=await renderApi('/astrologer/availability',{method:'POST',body:JSON.stringify({availabilityStatus:$('smvLiveAvailability')?.value||'offline'})});if($('smvLiveAvailability'))$('smvLiveAvailability').value=r.availabilityStatus||'offline';if(status)status.textContent='Availability saved: '+r.availabilityStatus+'.';await reload();}catch(e){if(status)status.textContent=e.message||String(e);}finally{set.disabled=false;}};}
+ const ring=$('smvLiveRingToggle');if(ring&&!ring.dataset.bound){ring.dataset.bound='1';ring.onclick=smvLiveToggleRingtone;}
+ smvLiveRingButtonSync();
  await reload();
 }
 function smvLiveBindDashboard(role){
