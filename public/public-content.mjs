@@ -12,13 +12,76 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let fbApi=null;
   function withTimeout(promise,ms=15000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firebase did not respond within 15 seconds.')),ms))]);}
-  let smvLivePriceCache=null;
-  async function smvGetLivePrices(){
-    if(smvLivePriceCache&&Date.now()-smvLivePriceCache.loadedAt<15000)return smvLivePriceCache;
-    const response=await fetch(BACKEND+'/live/pricing',{cache:'no-store'});
+  const SMV_MAX_LIVE_MINUTES=1440;
+  let smvLiveWalletCache=null;
+  function smvLiveRatePaise(astrologer,mode){
+    const astro=astrologer||{};
+    const value=mode==='call'
+      ? (astro.callPricePerMinute??astro.pricePerMinute??astro.callRatePerMinute)
+      : (astro.chatPricePerMinute??astro.liveChatPricePerMinute??astro.chatRatePerMinute);
+    const rupees=Number(value);
+    if(!Number.isFinite(rupees)||rupees<1||rupees>10000||Math.abs(rupees*100-Math.round(rupees*100))>1e-7)return null;
+    return Math.round(rupees*100);
+  }
+  async function smvFetchLiveWallet(force=false){
+    const user=auth?.currentUser;
+    if(!user)return null;
+    if(!force&&smvLiveWalletCache&&smvLiveWalletCache.userUid===user.uid&&Date.now()-smvLiveWalletCache.loadedAt<8000)return smvLiveWalletCache;
+    const token=await user.getIdToken();
+    const response=await fetch(BACKEND+'/wallet',{method:'GET',cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
     let data={};try{data=await response.json();}catch(_){}
-    if(!response.ok||data.success!==true)throw new Error(data.error||'Live Call / Chat prices are temporarily unavailable.');
-    smvLivePriceCache={...data,loadedAt:Date.now()};return smvLivePriceCache;
+    if(!response.ok||data.success!==true||!data.wallet)throw new Error(data.error||'Unable to read your current Wallet balance.');
+    if(auth?.currentUser?.uid!==user.uid)throw new Error('Login changed while checking Wallet. Please try again.');
+    smvLiveWalletCache={...data.wallet,userUid:user.uid,loadedAt:Date.now()};
+    return smvLiveWalletCache;
+  }
+  async function smvRefreshLiveMinuteLimits(force=true){
+    const rows=[...document.querySelectorAll('#privateConsultationAstrologers .smv-private-consult-row')];
+    if(!rows.length)return;
+    let wallet=null, walletError='';
+    try{await fb();if(auth?.currentUser)wallet=await smvFetchLiveWallet(force);}
+    catch(error){walletError=String(error?.message||error);}
+    const isCustomer=!!auth?.currentUser&&wallet?.ownerRole==='customer'&&wallet.userUid===auth.currentUser.uid;
+    for(const row of rows){
+      const balance=isCustomer?Number(wallet.availableBalancePaise||0):null;
+      for(const mode of ['call','chat']){
+        const input=row.querySelector('[data-live-minutes="'+mode+'"]');
+        const button=row.querySelector('[data-live-action="'+mode+'"]');
+        const note=row.querySelector('[data-live-limit="'+mode+'"]');
+        if(!input||!button||!note)continue;
+        const rate=Number(row.dataset[mode+'RatePaise']||0);
+        const goodRate=Number.isSafeInteger(rate)&&rate>=100&&rate<=1000000;
+        const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)):0;
+        input.max=String(isCustomer?Math.max(0,max):SMV_MAX_LIVE_MINUTES);
+        input.dataset.maximumMinutes=String(max);
+        if(isCustomer&&(!goodRate||max<1)){
+          input.disabled=true;
+          button.disabled=true;
+        }else{
+          input.disabled=!goodRate;
+          button.disabled=!goodRate;
+        }
+        if(!goodRate){
+          note.textContent=(mode==='call'?'Call':'Chat')+' price per minute is not configured for this Astrologer.';
+        }else if(!auth?.currentUser){
+          note.textContent='Login as a Customer to check Wallet balance and the maximum affordable minutes.';
+        }else if(!isCustomer){
+          note.textContent=walletError||'Customer login is required to calculate Live duration.';
+        }else if(max<1){
+          note.textContent='No balance for '+(mode==='call'?'Call':'Chat')+' at '+smvLiveMoney(rate)+'/minute. Available Wallet: '+smvLiveMoney(balance)+'.';
+        }else{
+          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
+          const entered=Number(input.value);
+          if(input.value!==''&&(!Number.isSafeInteger(entered)||entered<1||entered>max)){
+            note.textContent+=' Enter a whole number from 1 to '+max+'.';
+          }
+        }
+      }
+    }
+  }
+  function smvLiveMoney(paise){
+    const n=Number(paise);
+    return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
   async function smvCreateLiveRequest(astrologer,mode,minutes,button,feedback){
     if(!auth?.currentUser){
@@ -27,32 +90,44 @@
     }
     const user=auth.currentUser;
     try{
-      const [livePrices]=await Promise.all([smvGetLivePrices()]);
+      const kind=String(mode||'').toLowerCase();
+      const ratePaise=smvLiveRatePaise(astrologer,kind);
+      const length=Number(minutes);
+      if(!ratePaise)throw new Error((kind==='call'?'Call':'Chat')+' price per minute is not configured for this Astrologer.');
+      if(!Number.isSafeInteger(length)||length<1||length>SMV_MAX_LIVE_MINUTES){
+        throw new Error('Enter a whole number of minutes from 1 to '+SMV_MAX_LIVE_MINUTES+'.');
+      }
       if(button){button.disabled=true;button.textContent='CHECKING WALLET…';}
-      if(feedback)feedback.textContent='Checking server price and available Wallet balance…';
+      if(feedback)feedback.textContent='Checking this Astrologer’s rate and your current Wallet balance…';
+      const wallet=await smvFetchLiveWallet(true);
+      if(!wallet||wallet.ownerRole!=='customer'||wallet.userUid!==user.uid)throw new Error('Please sign in with a Customer account to use Live Call / Live Chat.');
+      const available=Number(wallet.availableBalancePaise||0);
+      const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(available/ratePaise));
+      if(max<1)throw new Error('No balance for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
+      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
       const token=await user.getIdToken();
       const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
       const response=await fetch(BACKEND+'/live/requests',{
         method:'POST',cache:'no-store',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
-        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode,minutes:Number(minutes),requestId})
+        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId})
       });
       let result={};try{result=await response.json();}catch(_){}
       if(!response.ok||result.success!==true){
         const details=result.details||{};
         if(result.code==='WALLET_INSUFFICIENT_BALANCE'){
-          const required=Number(details.requiredBalancePaise||0),available=Number(details.availableBalancePaise||0),shortfall=Number(details.shortfallPaise||Math.max(0,required-available));
-          throw new Error('Insufficient Wallet balance. Required '+(required/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'; available '+(available/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'; add '+(shortfall/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+' more.');
+          const required=Number(details.requiredBalancePaise||0),balance=Number(details.availableBalancePaise||0),shortfall=Number(details.shortfallPaise||Math.max(0,required-balance));
+          throw new Error('Insufficient Wallet balance for '+length+' minute(s). Required '+smvLiveMoney(required)+'; available '+smvLiveMoney(balance)+'; add '+smvLiveMoney(shortfall)+' more.');
         }
         throw new Error(result.error||'The server did not accept this Live request.');
       }
       if(result.kind==='session'&&result.session){
-        if(feedback)feedback.textContent='Live request sent. Reserved '+(Number(result.session.reservedAmountPaise||Number(minutes)*Number(mode==='call'?livePrices.callRatePaise:livePrices.chatRatePaise))/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'. Waiting for the Astrologer.';
+        if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Reserved '+smvLiveMoney(Number(result.session.reservedAmountPaise||length*ratePaise))+'. Waiting for the Astrologer.';
         window.__smvStartLiveEvents?.();
         window.__smvOpenLiveSession?.(result.session);
       }else if(result.kind==='booking'&&result.booking){
         if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. It will appear in the Astrologer Dashboard when they are Online.';
-        alert('Live '+mode.toUpperCase()+' booking created. The Astrologer is '+String(astrologer.availabilityStatus||'offline')+'. Your Wallet has not been reserved until the booking is accepted.');
+        alert('Live '+kind.toUpperCase()+' booking created. The Astrologer is '+String(astrologer.availabilityStatus||'offline')+'. Your Wallet has not been reserved until the booking is accepted.');
       }else{
         throw new Error('The backend returned an unknown Live request status. Please refresh the directory.');
       }
@@ -62,6 +137,7 @@
       else alert(error?.message||String(error));
     }finally{
       if(button){button.disabled=false;button.textContent=String(button.dataset.defaultLabel||button.textContent||'START');}
+      smvRefreshLiveMinuteLimits(true).catch(()=>{});
     }
   }
   async function fb(){
