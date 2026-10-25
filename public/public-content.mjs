@@ -208,13 +208,36 @@
     const contentEl=document.getElementById('modalContent');
     if(!modalEl||!contentEl) throw new Error('Profile dialog is unavailable.');
     contentEl.innerHTML=html;
+    modalEl.style.overflowY='auto';
+    modalEl.style.alignItems='center';
+    const modalBox=modalEl.querySelector('.modalbox');
+    if(modalBox){modalBox.style.maxHeight='calc(100dvh - 24px)';modalBox.style.overflowY='auto';modalBox.style.overflowX='hidden';modalBox.style.boxSizing='border-box';}
+    contentEl.style.minWidth='0';
     const dialogSurface=contentEl.querySelector('.profile-dialog');
     if(dialogSurface){
       dialogSurface.style.color='#2d1919';
       dialogSurface.style.webkitTextFillColor='#2d1919';
+      dialogSurface.style.opacity='1';
+      dialogSurface.style.maxHeight='calc(100dvh - 52px)';
+      dialogSurface.style.minHeight='0';
+      dialogSurface.style.overflowY='auto';
+      dialogSurface.style.overflowX='hidden';
+      dialogSurface.style.boxSizing='border-box';
+      dialogSurface.querySelectorAll('h1,h2,h3,h4,p,b,strong,label,small,.small,.empty').forEach(node=>{
+        node.style.opacity='1';
+        node.style.color=/^H[1-4]$/.test(node.tagName)?'#751515':'#2d1919';
+        node.style.webkitTextFillColor=node.style.color;
+      });
       dialogSurface.querySelectorAll('button,input,select,textarea').forEach(control=>{
-        const computedColor=window.getComputedStyle(control).color;
-        if(computedColor)control.style.webkitTextFillColor=computedColor;
+        control.style.opacity='1';
+        if(control.matches('input,select,textarea')){
+          control.style.color='#2d1919';
+          control.style.webkitTextFillColor='#2d1919';
+          control.style.caretColor='#2d1919';
+        } else {
+          const computedColor=window.getComputedStyle(control).color;
+          if(computedColor)control.style.webkitTextFillColor=computedColor;
+        }
       });
     }
     modalEl.classList.add('profile-modal-active');
@@ -284,8 +307,10 @@
         </div>
         ${notesOrQuestionField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
-        <button class="btn" id="smvCallBookingSubmit" type="submit">${bookingSubmitLabel}</button>
-        <button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button>
+        <div class="smv-booking-actions" style="position:sticky;bottom:-1px;z-index:5;display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;background:#fffaf0;border-top:1px solid #e1cf9a">
+          <button class="btn" id="smvCallBookingSubmit" type="submit" style="flex:1 1 180px;min-height:46px;white-space:normal;overflow-wrap:anywhere">${bookingSubmitLabel}</button>
+          <button class="btn gray" id="smvCallBookingClose" type="button" style="flex:0 1 120px;min-height:46px">CLOSE</button>
+        </div>
       </form>
     </div>`);
     $('smvCallBookingClose').onclick=closeModal;
