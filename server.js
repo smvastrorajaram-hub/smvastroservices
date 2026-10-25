@@ -14,7 +14,8 @@ app.use((req,res,next)=>{
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
 });
 const PORT = process.env.PORT || 10000;
-const ADMIN_UID = String(process.env.ADMIN_UID || "TwjeEIFS3Zcf1SxboLZoujm91Ky2").trim();
+const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
+const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -32,6 +33,9 @@ const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
 const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
+if (IS_STAGING_DEPLOYMENT && RAZORPAY_KEY_ID && !RAZORPAY_KEY_ID.startsWith("rzp_test_")) {
+  throw new Error("Staging deployment accepts Razorpay Test Mode keys only; Live Mode is blocked.");
+}
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "").trim();
 const RESEND_API_KEY = String(process.env.RESEND_API_KEY || "").trim();
 const RESEND_FROM = String(process.env.RESEND_FROM || "onboarding@resend.dev").trim();
@@ -721,7 +725,11 @@ app.get("/test-razorpay", async (req, res) => {
   try {
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return res.status(500).json({ ok: false, error: "Razorpay credentials are missing in Render." });
     const mode = RAZORPAY_KEY_ID.startsWith("rzp_test_") ? "test" : (RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "live" : "unknown");
-    if(mode!=='live')return res.status(503).json({ok:false,mode,error:'This deployed backend is using '+mode+' credentials. Live credentials are required.'});
+    if (IS_STAGING_DEPLOYMENT) {
+      if (mode !== 'test') return res.status(503).json({ok:false,mode,error:'Staging accepts Razorpay Test Mode credentials only.'});
+    } else if (mode !== 'live') {
+      return res.status(503).json({ok:false,mode,error:'This deployed backend is using '+mode+' credentials. Live credentials are required.'});
+    }
     await razorpay.orders.all({ count: 1 });
     return res.json({ ok: true, mode, keyPrefix: RAZORPAY_KEY_ID.slice(0, 9), message: `Razorpay ${mode} credentials accepted by Render.` });
   } catch (e) {
