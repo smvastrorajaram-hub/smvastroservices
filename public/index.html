@@ -31,7 +31,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261024-astro-photo-gold-v37" rel="stylesheet"/><link href="./smv-ui.css?v=20261024-blog-picker-source-fix-v21" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261025-phase1-theme-contrast-v38" rel="stylesheet"/><link href="./smv-ui.css?v=20261024-blog-picker-source-fix-v21" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -442,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <input accept="image/*" id="arPhoto" required="" type="file"/>
 <input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required=""/>
 <input id="arExperience" min="0" placeholder="Experience (years)" required="" type="number"/>
+<input id="arLanguages" maxlength="240" placeholder="Languages Spoken (comma-separated: Tamil, English)" required="" type="text"/>
 <textarea id="arBio" placeholder="Professional Bio" required="" rows="5"></textarea>
 <h3>Payment Method</h3>
 <input id="arBankName" placeholder="Bank Name" required=""/>
@@ -518,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js"></script>
-<script src="./smvastro.mjs?v=20261025-phase1-wallet-pricing-call-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261025-phase1-dashboard-live-v2" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -562,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261025-phase1-book-call-wallet-pricing-v1" type="module"></script>
+<script src="./public-content.mjs?v=20261025-phase1-book-call-theme-v2" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
