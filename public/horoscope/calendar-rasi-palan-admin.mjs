@@ -70,7 +70,7 @@ export function mountCalendarRasiPalanAdmin(container, adminAuth) {
       @media(max-width:380px){#smvCalendarRasiPalanAdmin .crpa-grid{grid-template-columns:1fr}}
     </style>
     <h4>ராசி பலன்கள் & கிரக கோச்சார நிர்வாகம்</h4>
-    <p class="crpa-hint">இது SMV HOROSCOPE-இன் ஏற்கெனவே உள்ள Admin அனுமதிக்குள் இணைக்கப்பட்டுள்ளது. தினசரி / வார / மாத / தமிழ் வருட / ஆங்கில வருட பலன்களுக்கு சந்திரன் உட்பட ஒன்பது கிரகங்களின் தமிழ், ஆங்கில உரைகளைத் திருத்தலாம். குரு, சனி, ராகு–கேது பெயர்ச்சி பதிவுகளும் இதே இடத்தில் நிர்வகிக்கப்படும்.</p>
+    <p class="crpa-hint">இது SMV CALENDAR-இன் தனி Calendar Admin பகுதியாகும். தினசரி / வார / மாத / தமிழ் வருட / ஆங்கில வருட பலன்களுக்கு சந்திரன் உட்பட ஒன்பது கிரகங்களின் தமிழ், ஆங்கில உரைகளைத் திருத்தலாம். குரு, சனி, ராகு–கேது பெயர்ச்சி பதிவுகளும் இதே இடத்தில் நிர்வகிக்கப்படும்.</p>
     <div class="crpa-grid">
       <label>பலன் வகை / Prediction type<select id="crpaType"></select></label>
       <label id="crpaDateWrap">தேதி / Week / Month reference date<input id="crpaDate" type="date" min="1800-01-01" max="2399-12-31"></label>
