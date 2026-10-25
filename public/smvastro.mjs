@@ -1709,8 +1709,8 @@ async function compressPhoto(file){
 }
 $("astroRegistrationForm")?.addEventListener("submit",async e=>{
  e.preventDefault();const form=e.target,btn=form.querySelector('button[type="submit"]');
- const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
- if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Please complete all required fields.</span>');return;}
+ const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),languages=String($("arLanguages")?.value||"").split(/[,;|]/).map(v=>v.trim().replace(/\s+/g," ")).filter(Boolean),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
+ if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Please complete all required fields.</span>');return;}
  btn.disabled=true;btn.textContent="CREATING ACCOUNT...";message("astroRegMsg",'<span class="small">Creating your account...</span>');
  smvRegistrationInProgress=true;
  try{
@@ -1731,7 +1731,7 @@ $("astroRegistrationForm")?.addEventListener("submit",async e=>{
   try {
     profileResponse=await withTimeout(renderApi("/register-astrologer-profile",{
       method:"POST",
-      body:JSON.stringify({name,mobile,specialization,experience,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
+      body:JSON.stringify({name,mobile,specialization,experience,languages,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
     },cred.user),30000);
   } catch(networkErr) {
     const raw=String(networkErr?.message||networkErr||"");
@@ -2611,24 +2611,18 @@ let userStatus=String(
    const availabilityStatus=["online","busy","offline"].includes(String(ad.availabilityStatus||"").toLowerCase())?String(ad.availabilityStatus).toLowerCase():"offline";
    const rawLanguages=ad.languages??ad.spokenLanguages??ad.language??[];
    const astrologerLanguages=(Array.isArray(rawLanguages)?rawLanguages:String(rawLanguages||"").split(/[,;|]/)).map(v=>String(v||"").trim()).filter(Boolean);
+   const astroDisplayName=String(ad.name||ad.fullName||ad.displayName||data.name||data.fullName||data.displayName||currentUser.displayName||"Astrologer").trim()||"Astrologer";
    box.innerHTML=`<div class="smv-astrologer-dashboard"><div class="grid astro-dashboard-summary">
     <div class="card astro-profile-summary-card">
-      <div class="astro-profile-photo">${ad.photoData?`<img src="${ad.photoData}" alt="${escapeHtml(data.name||'Astrologer')}" loading="lazy">`:''}</div>
+      <div class="astro-profile-photo">${ad.photoData?`<img src="${ad.photoData}" alt="${escapeHtml(astroDisplayName)}" loading="lazy">`:''}</div>
       <div class="astro-profile-info">
-        <h3><span class="smv-dashboard-name">${escapeHtml(data.name||'')}</span></h3>
+        <h3><span class="smv-dashboard-name">${escapeHtml(astroDisplayName)}</span></h3>
         <p>${['approved','active'].includes(String(ad.status||data.status||'').toLowerCase()) ? '<span class="smv-approved-badge"><span class="smv-check">✓</span><span>Approved</span></span>' : '<b>Status:</b> ' + escapeHtml(ad.status||'pending')}</p>
         <p class="smv-astro-profile-value">${escapeHtml(ad.expertise||ad.specialization||'Astrology')}</p>
         <p class="smv-astro-profile-value">${escapeHtml(ad.experience||0)} years experience</p>
         <p class="astro-profile-bio">${escapeHtml(ad.bio||ad.about||'')}</p>
         <p class="small"><b>Languages:</b> ${escapeHtml(astrologerLanguages.length?astrologerLanguages.join(', '):'Not specified in profile')}</p>
-        <div class="card" style="margin-top:12px">
-          <h4 style="margin:0 0 8px">Public Availability</h4>
-          <label for="astroAvailabilityStatus"><b>Current status</b></label>
-          <select id="astroAvailabilityStatus" style="width:100%;margin-top:6px"><option value="online">Online</option><option value="busy">Busy</option><option value="offline">Offline</option></select>
-          <div class="action-row"><button class="btn" id="astroAvailabilitySave" type="button">SAVE AVAILABILITY</button></div>
-          <div class="small" id="astroAvailabilityMsg" role="status"></div>
-          <p class="small">This updates your public directory status. It does not create or connect a live voice call or real-time chat session.</p>
-        </div>
+        <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
     <div class="card"><h3>My Questions</h3><p><span class="smv-summary-value">${activeQuestions.length}</span> active question(s)</p><p><span class="smv-summary-label">Approved profile:</span> <span class="smv-summary-value">${
@@ -2655,43 +2649,9 @@ ${ad.status === 'rejected' && ad.rejectionReason
           <div id="astroProfileDescriptionMsg" class="small"></div>`
        : `<div class="empty smv-profile-edit-disabled">Profile description editing is currently disabled by Admin.</div>`}
    </div>
-   <div class="card" style="margin-top:16px"><h3>Open Questions</h3><p class="small">Paid questions available for you to claim are shown here. When Admin Allow is ON, the same open questions are visible to all approved astrologers until one astrologer claims them.</p>${!approved?'<div class="empty">Your astrologer profile must be approved by Admin before you can claim questions.</div>':availableQuestions.length?availableQuestions.slice(0,50).map(q=>`<div class="card smv-astro-open-question" style="margin:10px 0"><div class="smv-astro-question-text">${escapeHtml(q.question||'Question')}</div><div class="small"><b>Birth Details:</b> ${escapeHtml(q.birthName||q.birthDetails?.name||'')} · ${escapeHtml(q.birthDate||q.birthDetails?.birthDate||'')} · ${escapeHtml(q.birthTime||q.birthDetails?.birthTime||'')} · ${escapeHtml(q.birthPlace||q.birthDetails?.birthPlace||'')} · ${escapeHtml(q.birthGender||q.birthDetails?.birthGender||'')}</div><div class="small"><b>Question ID:</b> ${escapeHtml(q.id||'')} · <b>Date & Time:</b> ${escapeHtml(smvDateTime(q.createdAt||q.paymentRecordedAt||q.updatedAt))}</div><div class="small"><b>Question Price:</b> ₹${Number(q.astrologerCommissionAmount||0).toFixed(2)}</div><button class="btn" data-claim-question="${q.id}">CLAIM & ANSWER</button></div>`).join(''):'<div class="empty">No paid public questions are available right now.</div>'}</div>
-<div class="card" id="astroQuestionQueue" style="margin-top:16px">
-  <h3>Questions — Unanswered Queue</h3>
-  <p class="small">Claimed questions waiting for your answer are kept here. Claiming another question will not hide previous questions.</p>
-  ${qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && ((String(q.status||'')==='admin_approved' && String(q.allocationStatus||'')==='claimed_by_astrologer') || ['revision_required','processing','admin_review'].includes(String(q.status||'')));}).length ? qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && ((String(q.status||'')==='admin_approved' && String(q.allocationStatus||'')==='claimed_by_astrologer') || ['revision_required','processing','admin_review'].includes(String(q.status||'')));}).map(d=>{const q=d.data()||{};const minWords=Number(q.answerMinWords||150);const birthName=q.birthName||q.birthDetails?.name||'';const birthDate=q.birthDate||q.birthDetails?.birthDate||'';const birthTime=q.birthTime||q.birthDetails?.birthTime||'';const birthPlace=q.birthPlace||q.birthDetails?.birthPlace||'';const birthGender=q.birthGender||q.birthDetails?.birthGender||'';const questionPrice=Number(q.astrologerCommissionAmount||0);const revision=q.status==='revision_required';const waiting=q.status==='processing'||q.status==='admin_review';const badge=waiting?'WAITING FOR ADMIN APPROVAL':(revision?'REVISION REQUIRED':'UNANSWERED');const buttonLabel=waiting?'EDIT & RESUBMIT':(revision?'RESUBMIT FOR ADMIN APPROVAL':'SUBMIT FOR ADMIN APPROVAL');return `<div class="card astro-question-item ${waiting?'pending-approval':''}" style="margin:10px 0" data-question-card="${escapeHtml(d.id)}"><div class="badge">${badge}</div>${waiting?'<div class="small pending-note" style="margin-top:6px">Your answer remains here and can be edited until Admin approval.</div>':''}<div class="smv-astro-question-text" style="margin-top:8px">${escapeHtml(q.question||'Question')}</div><div class="small"><b>Birth Details:</b> ${escapeHtml(birthName)} · ${escapeHtml(birthDate)} · ${escapeHtml(birthTime)} · ${escapeHtml(birthPlace)} · ${escapeHtml(birthGender)}</div><div class="small"><b>Question ID:</b> ${escapeHtml(d.id)} · <b>Date & Time:</b> ${escapeHtml(smvDateTime(q.updatedAt||q.adminQuestionApprovedAt||q.createdAt))} · <b>Question Price:</b> ₹${questionPrice.toFixed(2)} · <b>Minimum:</b> ${minWords} words</div><textarea id="ans_${d.id}" data-answer-protected="true" placeholder="${revision?'Revise with':'Write'} at least ${minWords} words...">${escapeHtml(q.answer||'')}</textarea><div class="small" id="count_${d.id}">${q.answer?Number(String(q.answer).trim().split(/\s+/).filter(Boolean).length):0} / ${minWords} words</div><button class="btn" data-answer="${d.id}">${buttonLabel}</button></div>`;}).join('') : '<div class="empty">No unanswered questions waiting.</div>'}
-</div>
-<div class="card" id="astroAnsweredBox" style="margin-top:16px">
-  <h3>Answers — Answered Questions</h3>
-  <p class="small">Submitted answers stay here and are marked with their current approval status.</p>
-  ${qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && !!q.answer && ['admin_review','answered'].includes(String(q.status||''));}).length ? qs.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid && !!q.answer && ['admin_review','answered'].includes(String(q.status||''));}).map(d=>{const q=d.data()||{};const status=q.status==='answered'?(q.commissionStatus==='credited'?'COMPLETED / EARNING CREDITED':q.customerAnswerViewedAt?'SUBMITTED / CUSTOMER VIEWED':'SUBMITTED / WAITING FOR CUSTOMER VIEW'):'SUBMITTED — WAITING FOR ADMIN APPROVAL';const canEdit=q.status==='answered'&&q.adminApprovalBypassed===true&&!q.customerAnswerViewedAt&&q.commissionStatus!=='credited';const birthName=q.birthName||q.birthDetails?.name||'';const birthDate=q.birthDate||q.birthDetails?.birthDate||'';const birthTime=q.birthTime||q.birthDetails?.birthTime||'';const birthPlace=q.birthPlace||q.birthDetails?.birthPlace||'';const birthGender=q.birthGender||q.birthDetails?.birthGender||'';return `<div class="card astro-answer-item" style="margin:10px 0"><div class="badge">${status}</div><div class="smv-astro-question-text" style="margin-top:8px">${escapeHtml(q.question||'Question')}</div><div class="small"><b>Birth Details:</b> ${escapeHtml(birthName)} · ${escapeHtml(birthDate)} · ${escapeHtml(birthTime)} · ${escapeHtml(birthPlace)} · ${escapeHtml(birthGender)}</div><div class="small"><b>Question ID:</b> ${escapeHtml(d.id)} · <b>Date & Time:</b> ${escapeHtml(smvDateTime(q.answerApprovedAt||q.updatedAt||q.answerSubmittedAt||q.createdAt))}</div><div class="smv-astro-answer-text" style="margin-top:10px;white-space:pre-wrap;line-height:1.65">${escapeHtml(q.answer||'')}</div><div class="small" style="margin-top:8px"><b>Status:</b> ${escapeHtml(status)}</div>${canEdit?`<button class="btn gray" data-edit-final-answer="${escapeHtml(d.id)}" type="button">EDIT ANSWER</button>`:''}</div>`;}).join('') : '<div class="empty">No answered questions yet.</div>'}
-</div>
-<div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
+   <div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
-  const availabilitySelect=$('astroAvailabilityStatus');
-  const availabilitySave=$('astroAvailabilitySave');
-  if(availabilitySelect)availabilitySelect.value=availabilityStatus;
-  if(availabilitySave){
-    availabilitySave.onclick=async()=>{
-      const status=String(availabilitySelect?.value||'offline').toLowerCase();
-      const message=$('astroAvailabilityMsg');
-      availabilitySave.disabled=true;availabilitySave.textContent='SAVING…';
-      if(message)message.textContent='';
-      try{
-        const result=await renderApi('/astrologer/availability',{method:'POST',body:JSON.stringify({availabilityStatus:status})});
-        if(!result?.success)throw new Error(result?.error||'Availability update was not confirmed.');
-        ad.availabilityStatus=result.availabilityStatus;
-        if(message)message.innerHTML='<span class="success">Public availability saved: '+escapeHtml(result.availabilityStatus.toUpperCase())+'.</span>';
-        window.__smvInvalidatePublicAstrologersOnce?.();
-        window.dispatchEvent(new Event('smv:astrologer-availability-changed'));
-      }catch(e){
-        if(message)message.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';
-      }finally{
-        availabilitySave.disabled=false;availabilitySave.textContent='SAVE AVAILABILITY';
-      }
-    };
-  }
-  const profileDescriptionSubmit=$('astroSubmitProfileDescription');
+    const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
     profileDescriptionSubmit.onclick=async()=>{
       const input=$('astroProfileDescriptionInput'),msg=$('astroProfileDescriptionMsg');
@@ -2900,33 +2860,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
     }).join(''):'<div class="empty">No private consultations assigned to you.</div>'}`;
     pcBox.querySelectorAll('[data-pc-edit]').forEach(b=>b.onclick=()=>{const id=b.dataset.pcEdit;$('pcview_'+id)?.classList.add('hidden');$('pcedit_'+id)?.classList.remove('hidden');b.classList.add('hidden');});
     pcBox.querySelectorAll('[data-pc-answer]').forEach(b=>b.onclick=async()=>{const id=b.dataset.pcAnswer,answer=$('pcans_'+id)?.value.trim()||'',count=answer.split(/\s+/).filter(Boolean).length;if(count<privateMinWords){$('pcwc_'+id).innerHTML='<span class="error">Need at least '+privateMinWords+' words. Current: '+count+'</span>';return;}b.disabled=true;try{await renderApi('/astrologer/private-consultation/submit-answer',{method:'POST',body:JSON.stringify({consultationId:id,answer})});await loadDashboard('astrologer',true);}catch(e){alert(e.message||String(e));b.disabled=false;}});
-    const historyItems=Array.isArray(pr?.history)?pr.history.slice():[];
-    const histBox=document.createElement('div');
-    histBox.className='card';
-    histBox.style.marginTop='16px';
-    histBox.id='privateConsultationHistoryCard';
-    const histStatus=c=>{
-      const st=String(c.status||'');
-      if(st==='question_rejected'||c.refundId)return 'REFUNDED / REJECTED';
-      if(String(c.commissionStatus||'')==='credited')return 'COMPLETED / EARNING CREDITED';
-      if(c.customerViewedAt)return 'COMPLETED / CUSTOMER VIEWED';
-      if(st==='answered')return 'ANSWERED / WAITING FOR CUSTOMER VIEW';
-      if(st==='answer_pending_admin_approval')return 'WAITING FOR ADMIN APPROVAL';
-      if(st==='revision_required')return 'REVISION REQUIRED';
-      if(st==='approved_for_astrologer')return 'PENDING';
-      return (st||'PENDING').replaceAll('_',' ').toUpperCase();
-    };
-    const histTime=c=>c.commissionCreditedAt||c.customerViewedAt||c.answerApprovedAt||c.answerSubmittedAt||c.questionApprovedAt||c.paidAt||c.updatedAt||c.createdAt;
-    historyItems.sort((a,b)=>smvDateSortMs(histTime(b))-smvDateSortMs(histTime(a)));
-    histBox.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h3 class="smv-astro-main-heading" style="margin:0">Private Consultation History</h3><button type="button" id="privateConsultHistoryToggle" class="smv-v170-collapse-btn" aria-label="Minimize or expand Private Consultation History">▼</button></div><div id="privateConsultHistoryBody" style="margin-top:12px">${historyItems.length?historyItems.map(c=>{
-      const chat=Number(c.chatPrice||c.amount||0);
-      const earning=Number(Number.isFinite(Number(c.astrologerCreditedAmount))?c.astrologerCreditedAmount:(Number.isFinite(Number(c.astrologerAmount))?c.astrologerAmount:(chat*privateAstroRate/100)));
-      return `<div style="padding:12px 0;border-bottom:1px solid #eee"><div class="badge">${escapeHtml(histStatus(c))}</div><p><b>Question:</b> ${escapeHtml(c.question||'Private Consultation')}</p><div class="small"><b>Customer:</b> ${escapeHtml(c.customerName||'Customer')}</div><div class="small"><b>Chat Price:</b> ₹${chat.toFixed(2)} · <b>Your Commission:</b> ₹${earning.toFixed(2)}</div><div class="small"><b>Consultation ID:</b> ${escapeHtml(c.id||c.consultationId||'—')}</div><div class="small"><b>Date & Time:</b> ${escapeHtml(smvDateTime(histTime(c)))}</div>${c.refundId?`<div class="small"><b>Refund:</b> ${escapeHtml(c.refundStatus||'Processing')} · <b>Refund ID:</b> ${escapeHtml(c.refundId)}</div>`:''}</div>`;
-    }).join(''):'<div class="empty">No Private Consultation history yet.</div>'}</div>`;
-    pcBox.insertAdjacentElement('afterend',histBox);
-    const ht=$('privateConsultHistoryToggle'),hb=$('privateConsultHistoryBody');
-    if(ht&&hb)ht.onclick=()=>{const hidden=hb.classList.toggle('hidden');ht.textContent=hidden?'▶':'▼';};
-  }catch(e){console.warn('Private consultation load skipped:',e);}
+    }catch(e){console.warn('Private consultation load skipped:',e);}
 
   if($('withdrawBtn')) $('withdrawBtn').onclick = async () => {
 
@@ -3117,10 +3051,11 @@ ${ad.status === 'rejected' && ad.rejectionReason
    const hasPendingRefund=false;
    const paid=consultationItems.filter(q=>q.status!=='awaiting_payment').length+privateConsultationItems.filter(q=>String(q.paymentStatus||'').toLowerCase()==='paid').length;
    const qCount=consultationItems.length+privateConsultationItems.length;
+   const customerDisplayName=String(data.name||data.fullName||data.displayName||currentUser.displayName||"Customer").trim()||"Customer";
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
-   box.innerHTML=`<div class="smv-customer-offer-banners hidden" aria-live="polite"></div><div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(data.name||currentUser.email||'Customer')}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
+   box.innerHTML=`<div class="smv-customer-offer-banners hidden" aria-live="polite"></div><div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
    ${smvCustomerBookingChatCardHtml()}
    ${smvWalletDashboardCardHtml()}
    <div class="card" style="margin-top:16px"><h3 class="customer-consultations-title">Previous Question History</h3>${!consultationItems.length?'<div class="empty">No previous question records. New bookings use Book a Chat.</div>':consultationItems.slice(0,20).map(q=>{const qid=String(q.questionId||q.id||''); const reviewButton=q.status==='answered'&&!q.reviewed?`<button class="btn" data-review="${escapeHtml(qid)}" data-astro="${escapeHtml(q.astrologerId||'')}">Rate & Review</button>`:''; const paymentRetryButton=["awaiting_payment","payment_failed"].includes(String(q.status||""))&&q.paymentStatus!=="paid"&&qid?`<button class="smv-customer-payment-btn" data-retry-payment="${escapeHtml(qid)}" type="button">Retry Payment · ₹${Number(q.amount||0).toFixed(2)}</button>`:""; const statusMap={awaiting_payment:'Payment Pending',payment_failed:'Payment Failed',pending_admin_approval:'Waiting for Admin Approval',assigned_to_astrologer:'Assigned to Astrologer',available_to_astrologers:'Available to Astrologers',claimed_by_astrologer:'Astrologer Answering',admin_approved:'Waiting for Answers',processing:'Processing',answer_draft:'Processing',admin_review:'Processing',revision_required:'Revision Required',answered:'Answer Ready',question_rejected:'Question Rejected',admin_rejected:'Question Rejected'}; const astroName=q.astrologerName||'Selected Astrologer'; const adminQuestionApproved=!!q.adminQuestionApprovedAt||['assigned_to_astrologer','reallocated','available_to_astrologers','claimed_by_astrologer','admin_approved','processing','answer_draft','admin_review','answered'].includes(String(q.status||'')); const statusText=q.status==='paid'&&!adminQuestionApproved?'Waiting for Admin Approval':adminQuestionApproved&&['paid','admin_approved'].includes(String(q.status||''))?`Waiting for Answers — ${astroName}`:q.status==='processing'||q.status==='answer_draft'||q.status==='admin_review'?`Processing — ${astroName} answer received and under Admin review`:q.status==='revision_required'?`Revision Required — ${astroName}`:q.status==='answered'?'Answer Ready':(statusMap[q.status]||q.status||'Processing'); const paymentReceived=!!q.customerPaymentId || !!q.paymentRecordedAt || !!q.paidAt || !!q.paymentDate || !['awaiting_payment','payment_failed'].includes(String(q.status||'')); const refundStatuses=['pending','created','initiated','processing']; const refundCompleted=['processed','completed']; const isQuestionRejected=['question_rejected','admin_rejected'].includes(String(q.status||'')); const refundAmount=Number(q.refundAmount||q.amount||q.paymentAmount||0); const refundStatus=String(q.refundStatus||'').toLowerCase(); const steps=isQuestionRejected?[['Payment Received',paymentReceived],['Question Rejected',true],['Refund Status',refundCompleted.includes(refundStatus)]]:[['Payment Received',paymentReceived],['Question Approved',adminQuestionApproved],['Astrologer Answer Submitted',['processing','answer_draft','admin_review','revision_required','answered'].includes(String(q.status||''))],['Admin Approval',['answered'].includes(String(q.status||''))],['Answer Ready',['answered'].includes(String(q.status||''))]]; const timeline=`<div class="timeline">${steps.map(x=>`<div class="timeline-step ${x[1]?'done':''}"><span>${x[1]?'✓':'○'}</span>${x[0]}</div>`).join('')}</div>`; const paymentLine=q.customerPaymentId?`<div class="small smv-customer-meta-line"><b>Customer Payment ID:</b> <span>${escapeHtml(q.customerPaymentId)}</span> · <b>Payment Date & Time:</b> <span>${escapeHtml(smvDateTime(q.paymentRecordedAt||q.paidAt||q.paymentUpdatedAt||q.paymentDate))}</span></div>`:''; const isRejected=isQuestionRejected; const refundLine='';; const questionIdLine=qid?`<div class="small smv-customer-meta-line"><b>Question ID:</b> <span>${escapeHtml(qid)}</span></div>`:''; return `<div class="smv-consultation-item" data-smv-question-id="${escapeHtml(qid)}" data-smv-service="public" style="padding:14px 0;border-bottom:1px solid #eee"><div class="smv-question-text">${escapeHtml(q.question||'Question')}</div>${questionIdLine}<div class="small customer-meta smv-customer-meta-line"><b>Astrologer:</b> <span>${escapeHtml(astroName)}</span> · <b>Status:</b> <span>${escapeHtml(statusText)}</span></div><div class="small smv-customer-meta-line"><b>Date & Time:</b> <span>${escapeHtml(smvDateTime(q.updatedAt||q.answerApprovedAt||q.adminQuestionApprovedAt||q.createdAt))}</span></div>${paymentLine}${refundLine}${isRejected&&refundAmount>0?`<div class="refund-summary" style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid #e6e6e6"><div><b>Question Status:</b> 🔴 Rejected</div><div style="margin-top:4px"><b>Payment:</b> ${paymentReceived?'✅ Payment Received':'⏳ Payment Pending'}</div><div class="small"><b>Paid Amount:</b> ₹${refundAmount.toFixed(2)}</div><div style="margin-top:8px"><b>Refund Status:</b> ${refundCompleted.includes(refundStatus)?'<span class="success">🟢 Refund Completed</span>':refundStatus==='waiting_balance'?'<span style="color:#b26a00">🟠 Waiting for Razorpay Balance — Admin Retry Required</span>':refundStatus==='failed'?'<span class="error">🔴 Refund Failed — Admin Review Required</span>':'<span style="color:#b26a00">🟠 Refund Pending</span>'}</div><div class="small"><b>Refund Amount:</b> ₹${refundAmount.toFixed(2)}</div>${q.refundId?`<div class="small"><b>Refund ID:</b> ${escapeHtml(q.refundId)}</div>`:''}<div class="small"><b>RRN:</b> ${escapeHtml(q.refundRrn||"Available after Razorpay processes the refund")}</div>${q.refundArn?`<div class="small"><b>ARN:</b> ${escapeHtml(q.refundArn)}</div>`:''}${q.refundUtr?`<div class="small"><b>UTR:</b> ${escapeHtml(q.refundUtr)}</div>`:''}${refundCompleted.includes(refundStatus)&&q.refundProcessedAt?`<div class="small"><b>Refund Date:</b> ${escapeHtml(smvDateTime(q.refundProcessedAt))}</div>`:''}<div class="small" style="margin-top:6px"><b>Refund Reason:</b> ${escapeHtml(q.refundReason||q.adminQuestionRejectionReason||'Question rejected by Admin')}</div>${q.adminQuestionRejectedAt?`<div class="small"><b>Rejected On:</b> ${escapeHtml(smvDateTime(q.adminQuestionRejectedAt))}</div>`:''}${refundCompleted.includes(refundStatus)?`<div class="small" style="margin-top:6px">Refund has been processed successfully.<br>The amount may take 5–7 working days to reflect in your bank account/card. You can use the RRN for bank tracking.</div>`:''}</div>`:''}${timeline}${q.answer&&q.status==='answered'?`<div class="card" style="margin-top:10px"><b>${q.answerAuthorType==='admin'||q.adminAnswered?'Admin Answer':'Astrologer Answer'}</b><div class="smv-customer-answer-text" style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${escapeHtml(q.answer)}</div><div class="small success smv-customer-viewed-status">SUBMITTED</div>${q.answerAuthorType==='admin'||q.adminAnswered?'<p class="small success"><b>Answered directly by SMV ASTRO Admin.</b></p>':''}</div>`:''}${paymentRetryButton?`<div style="margin-top:10px"><div class="smv-private-payment-note">Retry this saved question at its original price. Current price changes do not apply.</div>${paymentRetryButton}</div>`:""}${reviewButton}</div>`}).join('')}</div>
@@ -3634,20 +3569,16 @@ async function loadAdminPanelData(background=false){
   $('testRazorpayBtn').onclick=async()=>{const b=$('testRazorpayBtn');b.disabled=true;b.textContent='TESTING...';try{const r=await withTimeout(renderApi('/test-razorpay',{method:'GET'}),60000);$('razorpayTestMsg').innerHTML='<span class="success"><b>Razorpay connection OK.</b> '+escapeHtml(r?.message||'Render payment server and Razorpay API are working.')+'</span>';}catch(e){$('razorpayTestMsg').innerHTML='<span class="error"><b>Razorpay test failed:</b> '+escapeHtml(e.message||String(e))+'</span>';}b.disabled=false;b.textContent='TEST RAZORPAY CONNECTION';};
 
   const box=$('pendingAstros');
-  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(userMap.get(d.id)?.email||'')}</p><p><b>Mobile:</b> ${escapeHtml(userMap.get(d.id)?.mobile||userMap.get(d.id)?.phone||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><input id="price_${d.id}" type="number" min="1" step="0.01" placeholder="Private Consultation Chat Price ₹"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
+  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(userMap.get(d.id)?.email||'')}</p><p><b>Mobile:</b> ${escapeHtml(userMap.get(d.id)?.mobile||userMap.get(d.id)?.phone||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
   await smvMapLimit(pendingDocs,4,async d=>{try{const ps=await getDoc(doc(db,'smv_payouts',d.id));if(ps.exists()){const p=ps.data();const target=$('payout_'+d.id);if(target)target.innerHTML=`<b>PRIVATE BANK/UPI:</b> Bank: ${escapeHtml(p.bankName||'')} · Holder: ${escapeHtml(p.accountName||'')} · Account: ${escapeHtml(p.accountNumber||'')} · IFSC: ${escapeHtml(p.ifsc||'')} · UPI: ${escapeHtml(p.upi||'')} · Status: ${escapeHtml(p.status||'')}`;}}catch(e){const target=$('payout_'+d.id);if(target)target.textContent='Payout details unavailable.';}});
   box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
-    const id=b.dataset.approve,price=Number($('price_'+id)?.value);
+    const id=b.dataset.approve;
     const root=b.closest('.card'),msg=root?.querySelector('[id^="astroApprovalMsg_"]');
-    if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
-      if(msg)msg.innerHTML='<span class="error">Enter a valid Private Consultation Chat Price (₹1–₹100000, up to 2 decimal places).</span>';
-      return;
-    }
     root?.querySelectorAll('[data-approve],[data-reject]').forEach(btn=>btn.disabled=true);
     b.textContent='APPROVING…';
     if(msg)msg.textContent='Approving Astrologer securely…';
     try{
-      const result=await renderApi('/admin/approve-astrologer',{method:'POST',body:JSON.stringify({astrologerId:id,pricePerQuestion:price})});
+      const result=await renderApi('/admin/approve-astrologer',{method:'POST',body:JSON.stringify({astrologerId:id})});
       if(!result?.success)throw new Error(result?.error||'The backend did not confirm Astrologer approval.');
       if(msg)msg.innerHTML='<span class="success">Astrologer approved successfully.</span>';
       await loadAdminPanel();
@@ -3689,12 +3620,16 @@ async function loadAdminPanelData(background=false){
         <h3>${escapeHtml(a.name||'Astrologer')}</h3>
         <div class="small"><b>Astrologer ID:</b> ${escapeHtml(d.id)} · <b>Profile Edit:</b> ${allowed?'Allowed':'Blocked'}</div>
         <div style="margin:10px 0">
+          <label for="adminAstrologerLanguages_${d.id}"><b>Languages Spoken</b><input id="adminAstrologerLanguages_${d.id}" type="text" maxlength="240" value="${escapeHtml((()=>{const raw=a.languages??a.spokenLanguages??a.language??[];return (Array.isArray(raw)?raw:String(raw||'').split(/[,;|]/)).map(v=>String(v||'').trim()).filter(Boolean).join(', ');})())}" placeholder="Tamil, English"></label>
+          <div class="action-row"><button class="btn" data-languages-save="${d.id}" type="button">SAVE LANGUAGES</button></div>
+          <div class="small" id="adminAstrologerLanguagesMsg_${d.id}" role="status"></div>
+        </div>
+        <div style="margin:10px 0">
           <div class="grid" style="align-items:end;gap:10px">
-            <label for="adminChatPrice_${d.id}"><b>Private Consultation Question Price (₹)</b><input id="adminChatPrice_${d.id}" type="number" min="1" max="100000" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Question Price ₹"></label>
             <label for="adminCallPrice_${d.id}"><b>Live Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="10000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
             <label for="adminLiveChatPrice_${d.id}"><b>Live Chat Price per minute (₹)</b><input id="adminLiveChatPrice_${d.id}" type="number" min="0" max="10000" step="0.01" value="${escapeHtml(String(Number(a.chatPricePerMinute??a.liveChatPricePerMinute??a.chatRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
           </div>
-          <div class="action-row"><button class="btn" data-chat-price-save="${d.id}">SAVE PRICES</button></div>
+          <div class="action-row"><button class="btn" data-live-prices-save="${d.id}">SAVE LIVE RATES</button></div>
           <div class="small" id="adminChatPriceMsg_${d.id}"></div>
         </div>
         <p><b>Current Public Description</b></p>
@@ -3708,18 +3643,27 @@ async function loadAdminPanelData(background=false){
       </div>`;
     }).join(''):'<div class="empty">No approved astrologers available.</div>';
 
-    profileBox.querySelectorAll('[data-chat-price-save]').forEach(b=>b.onclick=async()=>{
-      const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),callInput=$('adminCallPrice_'+id),liveChatInput=$('adminLiveChatPrice_'+id),msg=$('adminChatPriceMsg_'+id);
-      const chatRaw=String(input?.value||'').trim();
-      const price=chatRaw===''?null:Number(chatRaw);
+    profileBox.querySelectorAll('[data-languages-save]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.languagesSave,input=$('adminAstrologerLanguages_'+id),msg=$('adminAstrologerLanguagesMsg_'+id);
+      const languages=String(input?.value||'').split(/[,;|]/).map(v=>v.trim().replace(/\s+/g,' ')).filter(Boolean);
+      if(!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(', ').length>240){if(msg)msg.innerHTML='<span class="error">Enter 1–12 languages, each up to 40 characters.</span>';return;}
+      b.disabled=true;b.textContent='SAVING…';
+      try{
+        const result=await renderApi('/admin/astrologer-languages',{method:'POST',body:JSON.stringify({astrologerId:id,languages})});
+        if(!result?.success)throw new Error(result?.error||'The backend did not confirm the language update.');
+        await smvAdminTouch();window.__smvInvalidatePublicAstrologersOnce?.();window.dispatchEvent(new Event('smv:astrologer-languages-changed'));
+        if(msg)msg.innerHTML='<span class="success">Languages saved.</span>';
+      }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
+      finally{b.disabled=false;b.textContent='SAVE LANGUAGES';}
+    });
+
+    profileBox.querySelectorAll('[data-live-prices-save]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.livePricesSave,callInput=$('adminCallPrice_'+id),liveChatInput=$('adminLiveChatPrice_'+id),msg=$('adminChatPriceMsg_'+id);
       const callRaw=String(callInput?.value||'').trim();
       const callPrice=callRaw===''?null:Number(callRaw);
       const liveChatRaw=String(liveChatInput?.value||'').trim();
       const liveChatPrice=liveChatRaw===''?null:Number(liveChatRaw);
-      if(chatRaw!==''&&(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7)){
-        if(msg)msg.innerHTML='<span class="error">Private Consultation question price must be ₹1–₹100000 (up to two decimals), or leave it blank to leave it unchanged.</span>';return;
-      }
-      if(chatRaw===''&&callRaw===''&&liveChatRaw===''){
+      if(callRaw===''&&liveChatRaw===''){
         if(msg)msg.innerHTML='<span class="error">Enter at least one price to save.</span>';return;
       }
       if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||(callPrice!==0&&callPrice<1)||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
@@ -3731,7 +3675,6 @@ async function loadAdminPanelData(background=false){
       b.disabled=true;b.textContent='SAVING…';
       try{
         const payload={astrologerId:id};
-        if(chatRaw!=='')payload.pricePerQuestion=Math.round(price*100)/100;
         if(callRaw!=='')payload.callPricePerMinute=callPrice;
         if(liveChatRaw!=='')payload.chatPricePerMinute=liveChatPrice;
         const result=await renderApi('/admin/astrologer-pricing',{method:'POST',body:JSON.stringify(payload)});
@@ -3739,7 +3682,7 @@ async function loadAdminPanelData(background=false){
         await smvAdminTouch();
         window.__smvInvalidatePublicAstrologersOnce?.();
         window.dispatchEvent(new Event('smv:astrologer-pricing-changed'));
-        const changed=[chatRaw!==''?'Private Consultation question price':'',callRaw!==''?'Live Call rate':'',liveChatRaw!==''?'Live Chat rate':''].filter(Boolean);
+        const changed=[callRaw!==''?'Live Call rate':'',liveChatRaw!==''?'Live Chat rate':''].filter(Boolean);
         if(msg)msg.innerHTML='<span class="success">'+escapeHtml(changed.join(', '))+' saved. Blank fields are unchanged; enter ₹0 in a per-minute field to unset that rate.</span>';
       }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
       finally{b.disabled=false;b.textContent='SAVE PRICES';}
@@ -4520,12 +4463,12 @@ function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeI
 function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');return ({ringing:'Ringing — waiting for Astrologer',connecting:'Connecting…',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
 function smvLivePanelHtml(s,incoming){
  const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
- const rootStyle='max-height:calc(100dvh - 28px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:clamp(12px,3vw,22px);background:#fffaf0;color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere;line-height:1.5';
- const primaryStyle='background:#8b1717;color:#fff;border:1px solid #d4af37;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
- const secondaryStyle='background:#f5e8c9;color:#321a1a;border:1px solid #a88a4a;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
- return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><span class="badge" style="display:inline-block;background:#8b1717;color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
- '<h2 style="color:#751515;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#2d1919"><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p style="color:#2d1919"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#2d1919"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#62483b;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#62483b"></p>'+
- '<div id="smvLiveCallArea" '+(call?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT MICROPHONE</button><button class="btn gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
+ const rootStyle='max-height:calc(100dvh - 28px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:clamp(12px,3vw,22px);background:#fffaf0;color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere;line-height:1.5';
+ const primaryStyle='background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
+ const secondaryStyle='background:#f5e8c9;color:#321a1a;-webkit-text-fill-color:#321a1a;border:1px solid #a88a4a;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
+ return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><span class="badge" style="display:inline-block;background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
+ '<h2 style="color:#751515;-webkit-text-fill-color:#751515;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#62483b;-webkit-text-fill-color:#62483b;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#62483b;-webkit-text-fill-color:#62483b"></p>'+
+ '<div id="smvLiveCallArea" '+(call?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT MICROPHONE</button><button class="btn gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv?'hidden':'')+' style="color:#62483b">'+(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.')+'</p>'+
  '<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:min(260px,35vh);overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fff;color:#241818;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="3" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:88px;padding:10px;border:1px solid #b9a17b;border-radius:8px;background:#fff;color:#241818;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
@@ -4538,18 +4481,20 @@ function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  smvLiveCurrentSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
  const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
+ const callArea=$('smvLiveCallArea');if(callArea)callArea.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));
  if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveSessionStatusLabel(s);
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
  const connectMic=$('smvLiveConnectMic');if(connectMic){connectMic.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));if(s.state==='ended')connectMic.disabled=true;}
- if($('smvLiveWaiting'))$('smvLiveWaiting').hidden=active||(ringing&&s.astrologerUid===currentUser?.uid);
+ if($('smvLiveWaiting'))$('smvLiveWaiting').hidden=active||(ringing&&s.astrologerUid===currentUser?.uid)||s.state==='ended';
  if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
  if($('smvLiveEndSession')){ $('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':(s.state==='ended'?'SESSION ENDED':'CANCEL / CLOSE SESSION');}
  if(s.state==='connecting'&&!call)smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
  // The Customer now starts WebRTC from the explicit microphone button, preserving the browser permission gesture.
  if(active)smvLiveStartClock(s);
  if(s.state==='ended'){
-  const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.';
+  const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Call session ended. Microphone is no longer in use.';
+  const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.' ;
   smvLiveCloseMedia();smvLiveClearTransport();
  }
 }
@@ -4756,7 +4701,8 @@ async function smvLiveLoadDashboard(role){
 }
 function smvLiveBindDashboard(role){
  if(!['customer','astrologer'].includes(role))return;const box=$('dashboardContent');if(!box||$('smvLiveDashboardCard'))return;
- box.insertAdjacentHTML('beforeend',smvLiveDashboardHtml(role));smvLiveLoadDashboard(role).catch(smvLiveShowError);smvLiveStartEventStream();
+ const host=role==='astrologer'?(box.querySelector('#smvLiveDashboardMount')||box):box;
+ host.insertAdjacentHTML('beforeend',smvLiveDashboardHtml(role));smvLiveLoadDashboard(role).catch(smvLiveShowError);smvLiveStartEventStream();
 }
 function smvLiveBindAdminPricing(){
  const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
