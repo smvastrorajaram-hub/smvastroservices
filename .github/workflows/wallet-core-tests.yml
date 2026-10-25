@@ -1,0 +1,40 @@
+name: Wallet core tests
+
+on:
+  pull_request:
+    paths:
+      - 'wallet-service.js'
+      - 'test/wallet-service.test.js'
+      - 'server.js'
+      - 'package.json'
+      - '.github/workflows/wallet-core-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'wallet-service.js'
+      - 'test/wallet-service.test.js'
+      - 'server.js'
+      - 'package.json'
+      - '.github/workflows/wallet-core-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check server.js
+          node --check wallet-service.js
+          node --check test/wallet-service.test.js
+      - name: Run Wallet unit tests
+        run: npm run test:wallet
