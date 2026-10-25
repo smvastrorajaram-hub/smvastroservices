@@ -975,12 +975,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (!auth) return;
     try {
       await ensurePricingDocument();
-      const callRate = parseRupeesToPaise(req.body?.callRatePerMinute);
-      const chatRate = parseRupeesToPaise(req.body?.chatRatePerMinute);
-      const maximum = Number(req.body?.maxConcurrentSessions ?? 1);
-      if (callRate === null || chatRate === null || callRate < 100 || chatRate < 100 ||
-          callRate > 1_000_000 || chatRate > 1_000_000) {
-        return res.status(400).json({ success: false, error: 'Enter Call and Chat prices from ₹1.00 to ₹10,000.00 per minute, with up to two decimal places.', code: 'LIVE_PRICE_INVALID' });
+      const body = req.body || {};
+      const currentSnap = await pricingRef().get();
+      const current = pricingFromSnapshot(currentSnap);
+      const hasCallRate = Object.prototype.hasOwnProperty.call(body, 'callRatePerMinute');
+      const hasChatRate = Object.prototype.hasOwnProperty.call(body, 'chatRatePerMinute');
+      const callRate = hasCallRate ? parseRupeesToPaise(body.callRatePerMinute) : current.callRatePaise;
+      const chatRate = hasChatRate ? parseRupeesToPaise(body.chatRatePerMinute) : current.chatRatePaise;
+      const maximum = Number(body.maxConcurrentSessions ?? current.maxConcurrentSessions);
+      if ((hasCallRate && (callRate === null || callRate < 100 || callRate > 1_000_000)) ||
+          (hasChatRate && (chatRate === null || chatRate < 100 || chatRate > 1_000_000))) {
+        return res.status(400).json({ success: false, error: 'Legacy global Call/Chat display rates must be from ₹1.00 to ₹10,000.00 per minute, with up to two decimal places.', code: 'LIVE_PRICE_INVALID' });
       }
       if (!Number.isSafeInteger(maximum) || maximum < 1 || maximum > 3) {
         return res.status(400).json({ success: false, error: 'Maximum concurrent sessions must be between 1 and 3.', code: 'LIVE_CONCURRENCY_INVALID' });
