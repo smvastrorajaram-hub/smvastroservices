@@ -2512,31 +2512,24 @@ function offerDateMs(v){
   const n=Date.parse(raw);
   return Number.isFinite(n)?n:null;
 }
-let builtinWelcomeReady=null;
-function ensureBuiltinWelcomeOffer(){
- if(!builtinWelcomeReady)builtinWelcomeReady=migrateBuiltinWelcomeOffer().catch(e=>{builtinWelcomeReady=null;throw e;});
- return builtinWelcomeReady;
-}
-async function migrateBuiltinWelcomeOffer(){
-  const ref=db.collection(OFFER_COLLECTION).doc(BUILTIN_WELCOME_ID), snap=await ref.get();
-  if(!snap.exists){
-    await ref.set({
-      id:BUILTIN_WELCOME_ID,name:"₹1 New Customer Welcome Offer",kind:"welcome",enabled:false,
-      automatic:true,promoCode:"",discountType:"fixed_price",offerPrice:1,eligibility:"new_customer",
-      appliesTo:["public_question","private_consultation"],usageRule:"first_paid_service",perCustomerLimit:1,totalUsageLimit:0,
-      minimumAmount:1,displayMode:"payment_only",bannerText:"Welcome Offer Applied — First Paid Service ₹1",
-      builtIn:true,priority:100,usedCount:0,successfulPayments:0,totalDiscountGiven:0,
-      createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
-    });
-  }else{
-    // Keep Admin ON/OFF state and statistics, but migrate the built-in offer to
-    // first-paid-service semantics across Ask Question OR Private Consultation.
-    await ref.set({
-      name:"₹1 New Customer Welcome Offer",kind:"welcome",automatic:true,promoCode:"",
-      discountType:"fixed_price",offerPrice:1,eligibility:"new_customer",
-      appliesTo:["public_question","private_consultation"],usageRule:"first_paid_service",
-      perCustomerLimit:1,totalUsageLimit:0,minimumAmount:1,builtIn:true,priority:100,
-      bannerText:"Welcome Offer Applied — First Paid Service ₹1",updatedAt:FieldValue.serverTimestamp()
+async function migrateLegacyOfferDocsToWalletMinuteBenefits(){
+  const snap=await db.collection(OFFER_COLLECTION).get();
+  for(const doc of snap.docs){
+    if(doc.id===BUILTIN_WELCOME_ID){
+      await doc.ref.delete().catch(e=>console.warn("Legacy Welcome Offer removal skipped:",e?.message||e));
+      continue;
+    }
+    const o=doc.data()||{};
+    const freeMinutes=Math.max(0,Math.min(100000,Math.floor(Number(o.freeMinutes)||0)));
+    const scopes=Array.isArray(o.appliesTo)?o.appliesTo.map(String):[String(o.appliesTo||"")];
+    const isMinuteOffer=String(o.benefitType||"")==="free_minutes"&&scopes.includes("wallet_recharge")&&(!o.enabled||freeMinutes>0);
+    if(isMinuteOffer)continue;
+    // Legacy money-discount offers cannot be translated into minutes without an Admin choice.
+    // Disable them, retain their records/history, and let Admin set the intended minute award.
+    await doc.ref.set({
+      benefitType:"free_minutes",kind:"wallet_recharge_minutes",appliesTo:["wallet_recharge"],
+      freeMinutes,minimumRechargeAmount:offerMoney(o.minimumRechargeAmount??o.minimumAmount)??1,
+      enabled:false,updatedAt:FieldValue.serverTimestamp()
     },{merge:true});
   }
 }
@@ -2569,53 +2562,106 @@ function computeOfferPrice(original, offer){
   return Math.max(1,Math.round(final*100)/100);
 }
 async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
-  const original=offerMoney(originalAmount), code=offerText(promoCode,40).toUpperCase();
-  if(original==null||original<1) throw new Error("Invalid original price.");
-  const now=Date.now();
-  const [snap,questionPaid,privatePaid]=await Promise.all([
-    db.collection(OFFER_COLLECTION).where("enabled","==",true).get(),
-    db.collection("smv_questions").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get(),
-    db.collection("smv_private_consultations").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get()
+  const original=offerMoney(originalAmount);
+  if(original==null||original<1)throw new Error("Invalid original price.");
+  // Offers are no longer monetary discounts on questions/private answers.
+  // Eligible seasonal offers are evaluated only during Wallet recharge.
+  return {originalAmount:original,finalAmount:original,discountAmount:0,offerId:null,offerName:null,automatic:false,promoCode:"",displayMode:"hidden",bannerText:"",kind:null};
+}
+function walletOfferUsageDocId(uid,offerId){
+  return crypto.createHash("sha256").update("offer_customer:"+String(uid)+":"+String(offerId)).digest("hex");
+}
+async function resolveWalletRechargeOffer({uid,rechargeId,rechargeAmountPaise,promoCode}){
+  const customerUid=String(uid||"").trim(), rechargeKey=String(rechargeId||"").trim();
+  const amountPaise=Number(rechargeAmountPaise), code=offerText(promoCode,40).toUpperCase();
+  if(!customerUid||!rechargeKey||!Number.isSafeInteger(amountPaise)||amountPaise<100)return null;
+  const [walletSnap,offersSnap]=await Promise.all([
+    db.collection("smv_wallets").doc(customerUid).get(),
+    db.collection(OFFER_COLLECTION).where("enabled","==",true).limit(100).get()
   ]);
-  const paidBefore=service==="private_consultation"?(privatePaid.empty?0:1):(questionPaid.empty?0:1);
-  const hasAnyPaidService=!questionPaid.empty||!privatePaid.empty;
-  const candidates=[];
-  for(const d of snap.docs){
-    const o={id:d.id,...d.data()};
-    const services=Array.isArray(o.appliesTo)?o.appliesTo:[String(o.appliesTo||"public_question")];
-    if(!services.includes(service)&&!services.includes("all")) continue;
-    const start=offerDateMs(o.startAt), end=offerDateMs(o.endAt);
-    if(start&&now<start)continue;if(end&&now>end)continue;
-    if(Number(o.minimumAmount||0)>original)continue;
-    if(Number(o.totalUsageLimit||0)>0&&Number(o.usedCount||0)>=Number(o.totalUsageLimit))continue;
+  const successfulRechargeCount=Math.max(0,Number(walletSnap.data()?.successfulRechargeCount||0));
+  const now=Date.now(), candidates=[];
+  for(const doc of offersSnap.docs){
+    const o={id:doc.id,...(doc.data()||{})};
+    if(o.id===BUILTIN_WELCOME_ID||o.benefitType!=="free_minutes")continue;
+    const scopes=Array.isArray(o.appliesTo)?o.appliesTo.map(String):[String(o.appliesTo||"")];
+    if(!scopes.includes("wallet_recharge")&&!scopes.includes("all"))continue;
+    const freeMinutes=Math.floor(Number(o.freeMinutes||0));
+    if(!Number.isSafeInteger(freeMinutes)||freeMinutes<1||freeMinutes>100000)continue;
+    const minRupees=offerMoney(o.minimumRechargeAmount??o.minimumAmount??1);
+    if(minRupees==null||amountPaise<Math.round(minRupees*100))continue;
+    const start=offerDateMs(o.startAt),end=offerDateMs(o.endAt);
+    if(start!=null&&now<start)continue;if(end!=null&&now>end)continue;
+    if(Number(o.totalUsageLimit||0)>0&&(Number(o.usedCount||0)+Number(o.reservedUsageCount||0))>=Number(o.totalUsageLimit))continue;
     const eligibility=String(o.eligibility||"all");
-    // Built-in ₹1 Welcome is available only before the customer's first successful
-    // paid service of either type. Other offers retain service-specific eligibility.
-    if(o.id===BUILTIN_WELCOME_ID){if(hasAnyPaidService)continue;}
-    else{
-      if(eligibility==="new_customer"&&paidBefore>0)continue;
-      if(eligibility==="existing_customer"&&paidBefore===0)continue;
-    }
-    const oCode=offerText(o.promoCode,40).toUpperCase();
-    // Automatic offers never require a promo code. A stale code saved on an
-    // older automatic offer is ignored. Manual offers always require an exact code.
-    if(o.automatic===true){ /* eligible automatically */ }
-    else { if(!oCode || !code || code!==oCode) continue; }
-    const final=computeOfferPrice(original,o);if(final==null||final>=original)continue;
-    candidates.push({...o,finalAmount:final,discountAmount:Math.round((original-final)*100)/100});
+    if(eligibility==="new_customer"&&successfulRechargeCount>0)continue;
+    if(eligibility==="existing_customer"&&successfulRechargeCount===0)continue;
+    const offerCode=offerText(o.promoCode,40).toUpperCase();
+    if(o.automatic!==true&&(!offerCode||!code||offerCode!==code))continue;
+    candidates.push({...o,freeMinutes,minimumRechargeAmount:minRupees,matchedCode:o.automatic===true?"":offerCode});
   }
-  // Strict priority: built-in ₹1 welcome -> explicit promo -> automatic seasonal -> normal price.
   candidates.sort((a,b)=>{
-    const rank=o=>o.id===BUILTIN_WELCOME_ID?300:(offerText(o.promoCode,40)?200:100)+Number(o.priority||0);
-    return rank(b)-rank(a) || a.finalAmount-b.finalAmount;
+    const rank=o=>(o.automatic===true?0:100000)+Number(o.priority||0);
+    return rank(b)-rank(a)||b.freeMinutes-a.freeMinutes;
   });
-  let best=null;
-  for(const candidate of candidates){
-    const limit=Number(candidate.perCustomerLimit||0);
-    if(limit>0 && await offerUsageCount(uid,candidate.id,limit)>=limit)continue;
-    best=candidate;break;
+  for(const o of candidates){
+    const offerRef=db.collection(OFFER_COLLECTION).doc(o.id);
+    const auditRef=db.collection(OFFER_AUDIT_COLLECTION).doc("wallet_recharge_"+rechargeKey);
+    const usageRef=db.collection("smv_offer_customer_usage").doc(walletOfferUsageDocId(customerUid,o.id));
+    try{
+      const quote=await db.runTransaction(async tx=>{
+        const [freshOfferSnap,auditSnap,usageSnap]=await Promise.all([tx.get(offerRef),tx.get(auditRef),tx.get(usageRef)]);
+        if(auditSnap.exists){
+          const previous=auditSnap.data()||{};
+          if(previous.status==="reserved"&&previous.offerId===o.id&&previous.walletRechargeId===rechargeKey){
+            return {offerId:o.id,offerName:String(previous.offerName||o.name||"Offer"),freeMinutes:Number(previous.freeMinutes||o.freeMinutes),promoCode:String(previous.promoCode||""),reserved:true};
+          }
+          throw Object.assign(new Error("A promotion reservation already exists for this recharge."),{code:"OFFER_RECHARGE_ALREADY_RESERVED"});
+        }
+        if(!freshOfferSnap.exists)throw Object.assign(new Error("Offer no longer exists."),{code:"OFFER_NOT_FOUND"});
+        const fresh=freshOfferSnap.data()||{};
+        if(fresh.enabled!==true||fresh.benefitType!=="free_minutes")throw Object.assign(new Error("Offer is no longer active."),{code:"OFFER_NOT_ACTIVE"});
+        const usage=usageSnap.exists?usageSnap.data()||{}:{};
+        const used= Math.max(0,Number(usage.usedCount||0)), reservedCount=Math.max(0,Number(usage.reservedCount||0));
+        const customerLimit=Math.max(0,Math.floor(Number(fresh.perCustomerLimit||0)));
+        const totalLimit=Math.max(0,Math.floor(Number(fresh.totalUsageLimit||0)));
+        if(customerLimit>0&&used+reservedCount>=customerLimit)throw Object.assign(new Error("Customer offer usage limit reached."),{code:"OFFER_CUSTOMER_LIMIT"});
+        const totalUsed=Math.max(0,Number(fresh.usedCount||0)), totalReserved=Math.max(0,Number(fresh.reservedUsageCount||0));
+        if(totalLimit>0&&totalUsed+totalReserved>=totalLimit)throw Object.assign(new Error("Offer usage limit reached."),{code:"OFFER_TOTAL_LIMIT"});
+        const freshMinutes=Math.floor(Number(fresh.freeMinutes||0));
+        if(!Number.isSafeInteger(freshMinutes)||freshMinutes<1||freshMinutes>100000)throw Object.assign(new Error("Offer free-minute amount is invalid."),{code:"OFFER_MINUTES_INVALID"});
+        const current=Date.now(),freshStart=offerDateMs(fresh.startAt),freshEnd=offerDateMs(fresh.endAt);
+        if((freshStart!=null&&current<freshStart)||(freshEnd!=null&&current>freshEnd))throw Object.assign(new Error("Offer is outside its active date range."),{code:"OFFER_DATE_INACTIVE"});
+        const nowStamp=FieldValue.serverTimestamp();
+        tx.set(offerRef,{reservedUsageCount:totalReserved+1,updatedAt:nowStamp},{merge:true});
+        tx.set(usageRef,{customerUid,offerId:o.id,usedCount:used,reservedCount:reservedCount+1,createdAt:usage.createdAt||nowStamp,updatedAt:nowStamp},{merge:true});
+        tx.create(auditRef,{customerId:customerUid,service:"wallet_recharge",referenceId:rechargeKey,walletRechargeId:rechargeKey,offerId:o.id,offerName:offerText(fresh.name,120),promoCode:fresh.automatic===true?"":offerCode,freeMinutes:freshMinutes,rechargeAmountPaise:amountPaise,status:"reserved",reservedAt:nowStamp,createdAt:nowStamp});
+        return {offerId:o.id,offerName:offerText(fresh.name,120)||"Offer",freeMinutes:freshMinutes,promoCode:fresh.automatic===true?"":offerCode,reserved:true};
+      });
+      return quote;
+    }catch(e){
+      if(["OFFER_RECHARGE_ALREADY_RESERVED","OFFER_CUSTOMER_LIMIT","OFFER_TOTAL_LIMIT","OFFER_NOT_FOUND","OFFER_NOT_ACTIVE","OFFER_MINUTES_INVALID","OFFER_DATE_INACTIVE"].includes(String(e?.code||"")))continue;
+      throw e;
+    }
   }
-  return best?{originalAmount:original,finalAmount:best.finalAmount,discountAmount:best.discountAmount,offerId:best.id,offerName:best.name||"Offer",automatic:best.automatic===true,promoCode:best.automatic===true?"":offerText(best.promoCode,40).toUpperCase(),displayMode:best.displayMode||"payment_only",bannerText:best.bannerText||"Offer applied",kind:best.kind||"promotion"}:{originalAmount:original,finalAmount:original,discountAmount:0,offerId:null,offerName:null,automatic:false,promoCode:code||"",displayMode:"hidden",bannerText:"",kind:null};
+  return null;
+}
+async function releaseWalletRechargeOffer({uid,rechargeId,offerId,reason}){
+  const customerUid=String(uid||"").trim(), rechargeKey=String(rechargeId||"").trim(), id=String(offerId||"").trim();
+  if(!customerUid||!rechargeKey||!id)return;
+  const auditRef=db.collection(OFFER_AUDIT_COLLECTION).doc("wallet_recharge_"+rechargeKey);
+  const offerRef=db.collection(OFFER_COLLECTION).doc(id);
+  const usageRef=db.collection("smv_offer_customer_usage").doc(walletOfferUsageDocId(customerUid,id));
+  return db.runTransaction(async tx=>{
+    const [auditSnap,offerSnap,usageSnap]=await Promise.all([tx.get(auditRef),tx.get(offerRef),tx.get(usageRef)]);
+    if(!auditSnap.exists)return;
+    const audit=auditSnap.data()||{};if(audit.status!=="reserved"||String(audit.customerId||"")!==customerUid||String(audit.offerId||"")!==id)return;
+    const usage=usageSnap.exists?usageSnap.data()||{}:{}, offer=offerSnap.exists?offerSnap.data()||{}:{};
+    const now=FieldValue.serverTimestamp();
+    tx.set(auditRef,{status:"released",releaseReason:offerText(reason,120),releasedAt:now,updatedAt:now},{merge:true});
+    if(offerSnap.exists)tx.set(offerRef,{reservedUsageCount:Math.max(0,Number(offer.reservedUsageCount||0)-1),updatedAt:now},{merge:true});
+    tx.set(usageRef,{customerUid,offerId:id,usedCount:Math.max(0,Number(usage.usedCount||0)),reservedCount:Math.max(0,Number(usage.reservedCount||0)-1),updatedAt:now,createdAt:usage.createdAt||now},{merge:true});
+  });
 }
 async function consumeOfferAfterPayment({uid,service,referenceId,paymentId,quote}){
   if(!quote?.offerId)return;
@@ -2666,7 +2712,7 @@ app.get("/offers/public-banners", async (req, res) => {
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(o => {
         const enabled = o.enabled === true || String(o.enabled).toLowerCase() === "true";
-        if (!enabled) return false;
+        if (!enabled || o.id===BUILTIN_WELCOME_ID || o.benefitType!=="free_minutes" || Number(o.freeMinutes||0)<1) return false;
         // Homepage banner follows the Admin enabled state + active date window.
         // displayMode is payment/UI metadata and must not silently suppress an enabled banner.
         const start = bannerDateMs(o.startAt), end = bannerDateMs(o.endAt);
@@ -2680,9 +2726,9 @@ app.get("/offers/public-banners", async (req, res) => {
         bannerText:offerText(o.bannerText||o.name,240),
         promoCode:o.automatic===true?"":offerText(o.promoCode,40),
         bannerTheme:offerText(o.bannerTheme||"auto",30),
-        discountType:offerText(o.discountType,24),
-        offerPrice:Number(o.offerPrice||0),
-        discountValue:Number(o.discountValue||0),
+        benefitType:"free_minutes",
+        freeMinutes:Math.floor(Number(o.freeMinutes||0)),
+        minimumRechargeAmount:Number(o.minimumRechargeAmount??o.minimumAmount??1),
         automatic:o.automatic===true,displayMode:offerText(o.displayMode||"payment_only",30),startAt:bannerDateIso(o.startAt),endAt:bannerDateIso(o.endAt)
       }));
     publicOfferBannerCache={expiresAt:now+60000,offers};
@@ -2696,40 +2742,57 @@ app.get("/offers/public-banners", async (req, res) => {
 
 app.get("/admin/offers",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  await ensureBuiltinWelcomeOffer();const s=await db.collection(OFFER_COLLECTION).get();
-  return res.json({success:true,offers:s.docs.map(d=>({id:d.id,...d.data()}))});
+  await migrateLegacyOfferDocsToWalletMinuteBenefits();
+  const s=await db.collection(OFFER_COLLECTION).get();
+  return res.set("Cache-Control","no-store").json({success:true,offers:s.docs.filter(d=>d.id!==BUILTIN_WELCOME_ID).map(d=>({id:d.id,...d.data()}))});
 });
 app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id, builtIn=id===BUILTIN_WELCOME_ID;
+    const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id;
+    if(id===BUILTIN_WELCOME_ID)return res.status(409).json({error:"The legacy Welcome Offer has been removed. Create a Wallet Recharge free-minute offer instead."});
     const promo=offerText(b.promoCode,40).toUpperCase().replace(/[^A-Z0-9_-]/g,"");
-    const discountType=["fixed_price","percentage","flat"].includes(String(b.discountType))?String(b.discountType):"fixed_price";
-    const applies=Array.isArray(b.appliesTo)?b.appliesTo.filter(x=>["public_question","private_consultation","all"].includes(String(x))):["public_question"];
-    const automatic=builtIn?true:b.automatic===true;
-    if(!builtIn && !automatic && !promo)return res.status(400).json({error:"Promo Code is required when Automatic Offer is NO."});
+    const automatic=b.automatic===true;
+    if(!automatic&&!promo)return res.status(400).json({error:"Promo Code is required when Automatic Offer is NO."});
+    const freeMinutes=Math.floor(Number(b.freeMinutes));
+    if(!Number.isSafeInteger(freeMinutes)||freeMinutes<1||freeMinutes>100000)return res.status(400).json({error:"Free minutes must be a whole number from 1 to 100000."});
+    const minimumRechargeAmount=offerMoney(b.minimumRechargeAmount??b.minimumAmount);
+    if(minimumRechargeAmount==null||minimumRechargeAmount<1||minimumRechargeAmount>10000000)return res.status(400).json({error:"Minimum Wallet Recharge must be ₹1 or higher."});
+    const limitNumber=(v)=>{const n=Number(v??0);return Number.isSafeInteger(n)&&n>=0?Math.min(n,100000000):null;};
+    const perCustomerLimit=limitNumber(b.perCustomerLimit),totalUsageLimit=limitNumber(b.totalUsageLimit);
+    if(perCustomerLimit===null||totalUsageLimit===null)return res.status(400).json({error:"Usage limits must be whole numbers of zero or greater."});
     const allowedThemes=["welcome","vinayagar_chaturthi","karthigai_deepam","thaipusam","new_year","onam","christmas","eid","auto","generic","pongal","diwali","navaratri","dasara","ayudha_pooja","shivaratri","tamil_new_year"];
     const bannerTheme=allowedThemes.includes(String(b.bannerTheme||"auto"))?String(b.bannerTheme||"auto"):"auto";
-    const data={name:offerText(b.name,120)||"Promotion",kind:builtIn?"welcome":offerText(b.kind,30)||"promotion",enabled:b.enabled===true,automatic,promoCode:(builtIn||automatic)?"":promo,bannerTheme,discountType,offerPrice:offerMoney(b.offerPrice),discountValue:offerMoney(b.discountValue)||0,eligibility:["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all",appliesTo:applies.length?applies:["public_question"],usageRule:offerText(b.usageRule,30)||"one_per_customer",perCustomerLimit:Math.max(0,Math.floor(Number(b.perCustomerLimit||0))),totalUsageLimit:Math.max(0,Math.floor(Number(b.totalUsageLimit||0))),minimumAmount:Math.max(0,Number(b.minimumAmount||0)),displayMode:["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only",bannerText:offerText(b.bannerText,240),startAt:b.startAt?String(b.startAt):null,endAt:b.endAt?String(b.endAt):null,priority:Number(b.priority||0),builtIn,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
-    if(discountType==="fixed_price"&&(!Number.isFinite(data.offerPrice)||data.offerPrice<1))return res.status(400).json({error:"Fixed offer price must be at least ₹1."});
-    const ref=db.collection(OFFER_COLLECTION).doc(id);
-    const before=await ref.get();
-    const writeData={...data};
-    if(!before.exists)writeData.createdAt=FieldValue.serverTimestamp();
-    await ref.set(writeData,{merge:true});
-    // Read back the exact persisted document. This prevents the Admin UI from
-    // reporting success when the values were not actually stored.
-    const savedSnap=await ref.get();
-    if(!savedSnap.exists)return res.status(500).json({error:"Offer save verification failed."});
+    const displayMode=["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only";
+    const eligibility=["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all";
+    const startAt=b.startAt?String(b.startAt):null,endAt=b.endAt?String(b.endAt):null;
+    if(startAt&&endAt&&offerDateMs(endAt)<offerDateMs(startAt))return res.status(400).json({error:"Offer end date must not be before its start date."});
+    const data={
+      name:offerText(b.name,120)||"Wallet Recharge Offer",kind:"wallet_recharge_minutes",benefitType:"free_minutes",
+      enabled:b.enabled===true,automatic,promoCode:automatic?"":promo,bannerTheme,
+      freeMinutes,minimumRechargeAmount,eligibility,appliesTo:["wallet_recharge"],
+      perCustomerLimit,totalUsageLimit,displayMode,bannerText:offerText(b.bannerText,240),
+      startAt,endAt,priority:Math.max(-100000,Math.min(100000,Number(b.priority||0))),
+      builtIn:false,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid
+    };
+    const ref=db.collection(OFFER_COLLECTION).doc(id),before=await ref.get();
+    if(!before.exists)data.createdAt=FieldValue.serverTimestamp();
+    const previous=before.exists?before.data()||{}:{};
+    // Keep the currently reserved count so edits cannot erase in-flight checkouts.
+    data.reservedUsageCount=Math.max(0,Number(previous.reservedUsageCount||0));
+    data.usedCount=Math.max(0,Number(previous.usedCount||0));
+    data.successfulPayments=Math.max(0,Number(previous.successfulPayments||0));
+    data.totalFreeMinutesGranted=Math.max(0,Number(previous.totalFreeMinutesGranted||0));
+    await ref.set(data,{merge:true});
+    const savedSnap=await ref.get();if(!savedSnap.exists)return res.status(500).json({error:"Offer save verification failed."});
     const saved={id:savedSnap.id,...savedSnap.data()};
     publicOfferBannerCache={expiresAt:0,offers:null};
     return res.json({success:true,id,saved});
-  }catch(e){return res.status(400).json({error:e?.message||"Unable to save offer."});}
+  }catch(e){return res.status(400).json({error:e?.message||"Unable to save free-minute offer."});}
 });
 app.post("/admin/offers/delete",express.json({limit:"10kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   const id=offerText(req.body?.id,80);if(!id)return res.status(400).json({error:"Offer ID required."});
-  if(id===BUILTIN_WELCOME_ID)return res.status(409).json({error:"Built-in ₹1 Welcome Offer cannot be deleted. Disable it instead."});
   await db.collection(OFFER_COLLECTION).doc(id).delete();
   publicOfferBannerCache={expiresAt:0,offers:null};
   return res.json({success:true});
@@ -3736,7 +3799,8 @@ registerGeoNamesRoutes(app);
 const walletService = registerWalletRoutes({
   app, db, FieldValue, crypto, razorpay,
   razorpayKeyId: RAZORPAY_KEY_ID, razorpayKeySecret: RAZORPAY_KEY_SECRET,
-  adminUid: ADMIN_UID, requireUser, isAdminUser
+  adminUid: ADMIN_UID, requireUser, isAdminUser,
+  resolveWalletRechargeOffer, releaseWalletRechargeOffer
 });
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
