@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>SMV CALENDAR</title>
-<link rel="canonical" href="https://calendar.smvastroservices.in/">
+<link rel="canonical" href="/">
 <meta name="google-adsense-account" content="ca-pub-8603281557754018">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018" crossorigin="anonymous"></script>
 <script id="smv-v352-pages-standalone-detection">
@@ -24,10 +24,6 @@
 html.smv-v352-pages-standalone #smvCalendarInstallArea,
 html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 </style>
-<script id="smv-v350-host-nav">(()=>{const h=location.hostname.toLowerCase();if(h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev'))return;const c=document.querySelector('link[rel="canonical"]');if(c&&h==='smvastroservices.pages.dev')c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a){a.href='/';a.removeAttribute('target');}if(b){b.href='/horoscope/';b.removeAttribute('target');}});})();</script>
-<script>
-(()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://calendar.smvastroservices.in/'+location.search+location.hash);}})();
-</script>
 <meta name="description" content="Tamil and English daily Panchang, Hora, planetary transit chart, Rasi Palan and Tamil calendar.">
 <link id="calendarManifest" rel="manifest" href="manifest-en.webmanifest">
 <script>window.__smvCalendarInstallPrompt=null;addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__smvCalendarInstallPrompt=e;window.dispatchEvent(new CustomEvent('smv:calendar-installable'));});</script>
@@ -36,102 +32,24 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <link rel="stylesheet" href="../horoscope.css">
 <link rel="stylesheet" href="../daily-calendar.css">
 <link rel="stylesheet" href="../calendar-theme.css">
+<link rel="stylesheet" href="../calendar-rasi-palan.css?v=20261025-local-calendar-forecast-v1">
 </head>
 <body class="calendar-only">
 <header class="calendar-topbar">
-<nav class="calendar-product-nav" aria-label="SMV services">
-<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>
-<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>
-</nav>
-<script id="smv-calendar-header-language">
-(()=>{
-  const links=[...document.querySelectorAll('.calendar-product-nav [data-en][data-ta]')];
-  const apply=lang=>links.forEach(link=>{link.textContent=link.dataset[lang==='ta'?'ta':'en'];});
-  window.addEventListener('smv-language',event=>apply(event.detail));
-  apply(document.documentElement.lang);
-})();
-</script>
+<button id="smvCalendarAdminToggle" class="calendar-admin-toggle" type="button" aria-controls="smvCalendarAdminArea" aria-expanded="false">Calendar Admin / காலண்டர் நிர்வாகம்</button>
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </header>
+<section id="smvCalendarAdminArea" class="calendar-admin-panel" hidden aria-label="Calendar Admin"><div id="smvCalendarAdminMount"></div></section>
 <main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
 <footer class="calendar-install" id="smvCalendarInstallArea" hidden>
 <div class="calendar-install-inner"><button id="calInstall" type="button"><img src="../assets/calendar-192.png" width="36" height="36" alt=""> <span>Install SMV CALENDAR</span></button><p id="calInstallStatus" role="status"></p></div>
 </footer>
 <script src="../location-search-online-offline.js"></script>
 <script src="../horoscope.js"></script>
-<script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v7"></script>
+<script type="module" src="calendar-pwa.mjs?v=20261025-calendar-admin-separation-v1"></script>
+<script type="module" src="calendar-admin-auth.mjs?v=20261025-calendar-admin-separation-v1"></script>
 <script type="module" src="../daily-calendar.mjs?v=20261024-sunmoon-regex-fix-v3"></script>
-<script type="module" id="smv-calendar-rasi-palan-loader">
-(async()=>{
-  const host=location.hostname.toLowerCase();
-  const version='20261025-cross-host-assets-header-ta-v1';
-  const candidates=host==='calendar.smvastroservices.in'
-    ? [
-        // The Calendar custom host is a separate deployment and does not reliably serve
-        // the shared Horoscope source tree. Load the canonical public assets from the
-        // primary Pages deployment; the exact module imports its dependencies there.
-        {module:'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.mjs',css:'https://smvastroservices.pages.dev/horoscope/calendar-rasi-palan.css'},
-        {module:'/calendar-rasi-palan.mjs',css:'/calendar-rasi-palan.css'},
-        {module:'/horoscope/calendar-rasi-palan.mjs',css:'/horoscope/calendar-rasi-palan.css'}
-      ]
-    : [{module:'../calendar-rasi-palan.mjs',css:'../calendar-rasi-palan.css'}];
-  const diagnostics=[];
-  let loaded=false;
-  for(const candidate of candidates){
-    let style=null;
-    try{
-      const moduleUrl=new URL(candidate.module,document.baseURI);
-      const moduleCheck=await fetch(moduleUrl.href,{cache:'no-store'});
-      if(!moduleCheck.ok)throw new Error('Module HTTP '+moduleCheck.status);
-      const moduleText=await moduleCheck.text();
-      if(/^\s*(?:<!doctype\s+html|<html\b)/i.test(moduleText) ||
-         !moduleText.includes('function renderControls') ||
-         !moduleText.includes('runPeriodForecast')) {
-        throw new Error('The response is not the deployed Calendar Rasi Palan JavaScript asset.');
-      }
-      const cssUrl=new URL(candidate.css,document.baseURI);
-      const cssCheck=await fetch(cssUrl.href,{cache:'no-store'});
-      if(!cssCheck.ok)throw new Error('CSS HTTP '+cssCheck.status);
-      const cssText=await cssCheck.text();
-      if(/^\s*(?:<!doctype\s+html|<html\b)/i.test(cssText) || !cssText.includes('#calRasiPalan')) {
-        throw new Error('The response is not the deployed Calendar Rasi Palan stylesheet.');
-      }
-      cssUrl.searchParams.set('v',version);
-      style=document.createElement('link');
-      style.rel='stylesheet';
-      style.href=cssUrl.href;
-      style.dataset.smvRasiPalanStyle='1';
-      await new Promise((resolve,reject)=>{
-        style.addEventListener('load',resolve,{once:true});
-        style.addEventListener('error',reject,{once:true});
-        document.head.append(style);
-      });
-      moduleUrl.searchParams.set('v',version);
-      await import(moduleUrl.href);
-      loaded=Boolean(document.getElementById('calRasiPalan'));
-      if(!loaded)throw new Error('The module executed but did not mount #calRasiPalan.');
-      break;
-    }catch(error){
-      style?.remove();
-      diagnostics.push(candidate.module+': '+String(error?.message||error));
-      console.warn('SMV Calendar forecast asset candidate unavailable.',candidate.module,error);
-    }
-  }
-  if(!loaded){
-    let target=document.getElementById('calRasiPalan');
-    if(!target){
-      target=document.createElement('section');
-      target.id='calRasiPalan';
-      target.className='cal-rasi-palan';
-      document.getElementById('smvDailyCalendar')?.insertAdjacentElement('afterend',target);
-    }
-    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சாரம் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
-    const detail=target.querySelector('pre');
-    if(detail)detail.textContent=diagnostics.join('\n')||'No compatible candidate was found.';
-    console.error('SMV Calendar Rasi Palan and Planetary Transits could not load.',diagnostics);
-  }
-})();
-</script>
+<script type="module" src="../calendar-rasi-palan.mjs?v=20261025-local-calendar-forecast-v1"></script>
 <script id="smv-v352-pages-calendar-install-guard">
 (()=>{
   if(location.hostname!=='smvastroservices.pages.dev')return;
