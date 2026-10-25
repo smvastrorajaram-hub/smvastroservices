@@ -12,6 +12,58 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let fbApi=null;
   function withTimeout(promise,ms=15000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firebase did not respond within 15 seconds.')),ms))]);}
+  let smvLivePriceCache=null;
+  async function smvGetLivePrices(){
+    if(smvLivePriceCache&&Date.now()-smvLivePriceCache.loadedAt<15000)return smvLivePriceCache;
+    const response=await fetch(BACKEND+'/live/pricing',{cache:'no-store'});
+    let data={};try{data=await response.json();}catch(_){}
+    if(!response.ok||data.success!==true)throw new Error(data.error||'Live Call / Chat prices are temporarily unavailable.');
+    smvLivePriceCache={...data,loadedAt:Date.now()};return smvLivePriceCache;
+  }
+  async function smvCreateLiveRequest(astrologer,mode,minutes,button,feedback){
+    if(!auth?.currentUser){
+      alert('Please login with a Customer account to use Live Call / Live Chat.');
+      document.getElementById('authBtn')?.click();return;
+    }
+    const user=auth.currentUser;
+    try{
+      const [livePrices]=await Promise.all([smvGetLivePrices()]);
+      if(button){button.disabled=true;button.textContent='CHECKING WALLET…';}
+      if(feedback)feedback.textContent='Checking server price and available Wallet balance…';
+      const token=await user.getIdToken();
+      const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+      const response=await fetch(BACKEND+'/live/requests',{
+        method:'POST',cache:'no-store',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
+        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode,minutes:Number(minutes),requestId})
+      });
+      let result={};try{result=await response.json();}catch(_){}
+      if(!response.ok||result.success!==true){
+        const details=result.details||{};
+        if(result.code==='WALLET_INSUFFICIENT_BALANCE'){
+          const required=Number(details.requiredBalancePaise||0),available=Number(details.availableBalancePaise||0),shortfall=Number(details.shortfallPaise||Math.max(0,required-available));
+          throw new Error('Insufficient Wallet balance. Required '+(required/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'; available '+(available/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'; add '+(shortfall/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+' more.');
+        }
+        throw new Error(result.error||'The server did not accept this Live request.');
+      }
+      if(result.kind==='session'&&result.session){
+        if(feedback)feedback.textContent='Live request sent. Reserved '+(Number(result.session.reservedAmountPaise||Number(minutes)*Number(mode==='call'?livePrices.callRatePaise:livePrices.chatRatePaise))/100).toLocaleString('en-IN',{style:'currency',currency:'INR'})+'. Waiting for the Astrologer.';
+        window.__smvStartLiveEvents?.();
+        window.__smvOpenLiveSession?.(result.session);
+      }else if(result.kind==='booking'&&result.booking){
+        if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. It will appear in the Astrologer Dashboard when they are Online.';
+        alert('Live '+mode.toUpperCase()+' booking created. The Astrologer is '+String(astrologer.availabilityStatus||'offline')+'. Your Wallet has not been reserved until the booking is accepted.');
+      }else{
+        throw new Error('The backend returned an unknown Live request status. Please refresh the directory.');
+      }
+    }catch(error){
+      console.error('Live request failed:',error);
+      if(feedback)feedback.textContent=error?.message||String(error);
+      else alert(error?.message||String(error));
+    }finally{
+      if(button){button.disabled=false;button.textContent=String(button.dataset.defaultLabel||button.textContent||'START');}
+    }
+  }
   async function fb(){
     if(db&&auth&&fbApi) return fbApi;
     const {getApps,initializeApp}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js');
@@ -256,6 +308,8 @@
     privateListRequest=(async()=>{
       try{
         const items=await window.__smvGetPublicAstrologersOnce();
+        let livePrices={callRatePerMinute:10,chatRatePerMinute:10,callRatePaise:1000,chatRatePaise:1000};
+        try{const p=await smvGetLivePrices();livePrices=p;}catch(priceError){console.warn('Live prices unavailable:',priceError?.message||priceError);}
         host.innerHTML='';
         for(const a of items){
           const row=document.createElement('article');row.className='smv-private-consult-row';
@@ -265,7 +319,21 @@
           const availability=['online','busy','offline'].includes(String(a.availabilityStatus||'').toLowerCase())?String(a.availabilityStatus).toLowerCase():'offline';
           const callPrice=Number(a.callPricePerMinute);
           const availabilityLabel=availability==='online'?'Online':availability==='busy'?'Busy':'Offline';
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Private Consultation Chat Price:</b> ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</p><p><b>Call rate:</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+' / minute':'Not configured in existing profile'}</p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-book-call>BOOK A CALL</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Private Consultation Chat Price:</b> ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</p><p><b>Call rate:</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+' / minute':'Not configured in existing profile'}</p><div class="smv-live-choice" style="margin:10px 0;padding:10px;border:1px solid #ddd;border-radius:8px"><label class="small"><b>Live session duration</b><select data-live-minutes aria-label="Live session duration" style="margin-left:8px"><option value="1">1 minute</option><option value="2">2 minutes</option><option value="3">3 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><p class="small" data-live-price-estimate>Call ₹${(Number(livePrices.callRatePerMinute)||10).toFixed(2)}/min · Chat ₹${(Number(livePrices.chatRatePerMinute)||10).toFixed(2)}/min</p><div class="action-row"><button type="button" class="smv-compact-control" data-live-action="call">${availability==='online'?'CALL NOW':'BOOK A CALL'}</button><button type="button" class="smv-compact-control" data-live-action="chat">${availability==='online'?'CHAT NOW':'BOOK A CHAT'}</button></div><p class="small" data-live-message role="status" aria-live="polite"></p></div><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-book-call>BOOK A CALL</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          const liveMinutes=row.querySelector('[data-live-minutes]');
+          const liveEstimate=row.querySelector('[data-live-price-estimate]');
+          const liveMessage=row.querySelector('[data-live-message]');
+          const updateLiveEstimate=()=>{
+            const chosen=Math.max(1,Number(liveMinutes?.value||1));
+            const callTotal=(chosen*Number(livePrices.callRatePerMinute||10)).toFixed(2);
+            const chatTotal=(chosen*Number(livePrices.chatRatePerMinute||10)).toFixed(2);
+            if(liveEstimate)liveEstimate.textContent='Call: ₹'+Number(livePrices.callRatePerMinute||10).toFixed(2)+'/min · Chat: ₹'+Number(livePrices.chatRatePerMinute||10).toFixed(2)+'/min · Selected maximum: Call ₹'+callTotal+' / Chat ₹'+chatTotal;
+          };
+          liveMinutes?.addEventListener('change',updateLiveEstimate);updateLiveEstimate();
+          row.querySelectorAll('[data-live-action]').forEach(liveButton=>{
+            liveButton.dataset.defaultLabel=liveButton.textContent;
+            liveButton.onclick=()=>smvCreateLiveRequest(a,liveButton.dataset.liveAction,Number(liveMinutes?.value||1),liveButton,liveMessage);
+          });
           const select=row.querySelector('[data-private-consult-astro]');
           select.onclick=()=>selectPrivateAstrologer(a,select).catch(err=>{console.error('Private Consultation selection failed:',err);alert('Unable to open the consultation form. Please try again.');});
           const bookCall=row.querySelector('[data-book-call]');
