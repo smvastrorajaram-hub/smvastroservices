@@ -400,6 +400,22 @@ async function isAdminUser(user) {
   }
 }
 
+// Return only the authenticated user's Admin status. The Admin SDK checks the
+// server-controlled allowlist, so the frontend does not depend on Firestore
+// client read rules to decide which dashboard to render.
+app.get("/admin/access", async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  try {
+    const isAdmin = await isAdminUser(user);
+    res.set("Cache-Control", "no-store");
+    return res.json({ success: true, isAdmin });
+  } catch (e) {
+    console.error("Admin access check failed:", e?.message || e);
+    return res.status(500).json({ success: false, error: "Unable to verify Admin access." });
+  }
+});
+
 function signatureEqual(expected, actual) {
   const a = Buffer.from(String(expected || ""));
   const b = Buffer.from(String(actual || ""));
