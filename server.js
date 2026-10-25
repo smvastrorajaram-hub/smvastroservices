@@ -3179,7 +3179,6 @@ async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
     db.collection("smv_private_consultations").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get()
   ]);
   const paidBefore=service==="private_consultation"?(privatePaid.empty?0:1):(questionPaid.empty?0:1);
-  const hasAnyPaidService=!questionPaid.empty||!privatePaid.empty;
   const candidates=[];
   for(const d of snap.docs){
     const o={id:d.id,...d.data()};
@@ -3316,7 +3315,7 @@ app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
     const allowedThemes=["vinayagar_chaturthi","karthigai_deepam","thaipusam","new_year","onam","christmas","eid","auto","generic","pongal","diwali","navaratri","dasara","ayudha_pooja","shivaratri","tamil_new_year"];
     const bannerTheme=allowedThemes.includes(String(b.bannerTheme||"auto"))?String(b.bannerTheme||"auto"):"auto";
     const data={name:offerText(b.name,120)||"Promotion",kind:offerText(b.kind,30)||"promotion",enabled:b.enabled===true,automatic,promoCode:automatic?"":promo,bannerTheme,discountType,offerPrice:offerMoney(b.offerPrice),discountValue:offerMoney(b.discountValue)||0,bonusFreeMinutes:applies.includes("wallet_recharge")?bonusFreeMinutes:0,eligibility:["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all",appliesTo:applies.length?applies:["public_question"],usageRule:offerText(b.usageRule,30)||"one_per_customer",perCustomerLimit:Math.max(0,Math.floor(Number(b.perCustomerLimit||0))),totalUsageLimit:Math.max(0,Math.floor(Number(b.totalUsageLimit||0))),minimumAmount:Math.max(0,Number(b.minimumAmount||0)),displayMode:["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only",bannerText:offerText(b.bannerText,240),startAt:b.startAt?String(b.startAt):null,endAt:b.endAt?String(b.endAt):null,priority:Number(b.priority||0),builtIn:false,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
-    if(discountType==="fixed_price"&&(!Number.isFinite(data.offerPrice)||data.offerPrice<1))return res.status(400).json({error:"Fixed offer price must be at least ₹1."});
+    if(!applies.includes("wallet_recharge")&&discountType==="fixed_price"&&(!Number.isFinite(data.offerPrice)||data.offerPrice<1))return res.status(400).json({error:"Fixed offer price must be at least ₹1."});
     const ref=db.collection(OFFER_COLLECTION).doc(id);
     const before=await ref.get();
     const writeData={...data};
