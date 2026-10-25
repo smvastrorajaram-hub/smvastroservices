@@ -4597,9 +4597,20 @@ async function smvLivePollSessions(){
  finally{smvLivePollBusy=false;}
 }
 function smvLiveRenderBookings(bookings){
- const host=$('smvLiveBookings');if(!host)return;if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
- host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+'</p><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button></article>').join('');
- host.querySelectorAll('[data-live-booking-accept]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{const r=await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingAccept)+'/accept',{method:'POST',body:JSON.stringify({})});if(r.session)smvLiveOpenSession(r.session,r.wallet,false);await smvLivePollSessions();}catch(e){smvLiveShowError(e);btn.disabled=false;}});
+ const host=$('smvLiveBookings');if(!host)return;
+ if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
+ host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+' · Maximum selected cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+'</p><div class="action-row"><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button><button class="btn gray" type="button" data-live-booking-reject="'+escapeHtml(b.id)+'">REJECT BOOKING</button></div></article>').join('');
+ host.querySelectorAll('[data-live-booking-accept]').forEach(btn=>btn.onclick=async()=>{
+  btn.disabled=true;
+  try{const r=await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingAccept)+'/accept',{method:'POST',body:JSON.stringify({})});if(r.session)smvLiveOpenSession(r.session,r.wallet,false);await smvLivePollSessions();}
+  catch(e){smvLiveShowError(e);btn.disabled=false;}
+ });
+ host.querySelectorAll('[data-live-booking-reject]').forEach(btn=>btn.onclick=async()=>{
+  if(!confirm('Reject this pending Live booking?'))return;
+  btn.disabled=true;
+  try{await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingReject)+'/reject',{method:'POST',body:JSON.stringify({})});await smvLivePollSessions();}
+  catch(e){smvLiveShowError(e);btn.disabled=false;}
+ });
 }
 function smvLiveRenderCustomerBookings(bookings){
  const host=$('smvLiveCustomerBookings');if(!host)return;
