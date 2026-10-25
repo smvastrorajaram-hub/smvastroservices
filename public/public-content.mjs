@@ -86,7 +86,43 @@
     const n=Number(paise);
     return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
-  async function smvCreateLiveRequest(astrologer,mode,minutes,button,feedback){
+  function smvOpenLiveBirthDetails(astrologer,mode,minutes,button,feedback){
+    if(!auth?.currentUser){alert('Please login with a Customer account to use Live Call / Live Chat.');document.getElementById('authBtn')?.click();return;}
+    const kind=String(mode||'').toLowerCase()==='chat'?'chat':'call';
+    const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
+    const maxDate=today.toISOString().slice(0,10);
+    const currentName=String(window.__smvCustomerProfileName||auth.currentUser.displayName||'').trim();
+    const customerName=currentName&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentName)?currentName:'';
+    showPublicProfileModal('<div class="profile-dialog smv-live-birth-dialog" style="width:100%;max-width:560px;max-height:calc(100dvh - 36px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;padding:14px 12px 18px;background:#fffaf0;color:#2d1919;-webkit-text-fill-color:#2d1919;text-align:left">'+
+      '<h2 style="color:#751515;-webkit-text-fill-color:#751515;padding-right:34px">Live '+(kind==='chat'?'Chat':'Call')+' — '+esc(astrologer?.name||'Astrologer')+'</h2>'+
+      '<p style="color:#2d1919;-webkit-text-fill-color:#2d1919">Enter the Customer birth details. The Astrologer gets 3 minutes to prepare the horoscope before the Call / Chat request continues.</p>'+
+      '<form id="smvLiveBirthForm" style="display:grid;gap:12px">'+
+      '<label style="display:grid;gap:6px;color:#2d1919"><b>Customer Name</b><input id="smvLiveBirthCustomerName" maxlength="100" required value="'+esc(customerName)+'" style="width:100%;box-sizing:border-box;min-height:44px;padding:10px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<label style="display:grid;gap:6px;color:#2d1919"><b>Date of Birth</b><input id="smvLiveBirthDate" type="date" max="'+maxDate+'" required style="width:100%;box-sizing:border-box;min-height:44px;padding:10px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<label style="display:grid;gap:6px;color:#2d1919"><b>Time of Birth</b><input id="smvLiveBirthTime" type="time" required style="width:100%;box-sizing:border-box;min-height:44px;padding:10px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<label style="display:grid;gap:6px;color:#2d1919"><b>Birth Place</b><input id="smvLiveBirthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="width:100%;box-sizing:border-box;min-height:44px;padding:10px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<input id="smvLiveBirthLatitude" type="hidden"><input id="smvLiveBirthLongitude" type="hidden">'+
+      '<p class="small" style="margin:0;color:#62483b;-webkit-text-fill-color:#62483b">Choose a place from the suggestions when available. If online search is unavailable, you can enter the place manually.</p>'+
+      '<div id="smvLiveBirthMessage" class="small" role="status" aria-live="polite"></div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:8px"><button id="smvLiveBirthSubmit" class="btn" type="submit" style="flex:1;min-height:44px;background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37">CONTINUE</button><button id="smvLiveBirthClose" class="btn gray" type="button" style="min-height:44px">CANCEL</button></div>'+
+      '</form></div>');
+    const place=$('smvLiveBirthPlace'),lat=$('smvLiveBirthLatitude'),lon=$('smvLiveBirthLongitude'),message=$('smvLiveBirthMessage'),submit=$('smvLiveBirthSubmit');
+    place?.addEventListener('input',()=>{if(lat)lat.value='';if(lon)lon.value='';if(place){delete place.dataset.latitude;delete place.dataset.longitude;delete place.dataset.timezone;}});
+    import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(place,{latId:'smvLiveBirthLatitude',lonId:'smvLiveBirthLongitude'})).catch(error=>console.warn('Live Session birth-place search is unavailable:',error));
+    $('smvLiveBirthClose').onclick=closeModal;
+    $('smvLiveBirthForm').onsubmit=async event=>{
+      event.preventDefault();
+      const birthDetails={birthDate:String($('smvLiveBirthDate')?.value||''),birthTime:String($('smvLiveBirthTime')?.value||''),birthPlace:String(place?.value||'').trim(),birthLatitude:String(lat?.value||place?.dataset.latitude||''),birthLongitude:String(lon?.value||place?.dataset.longitude||''),birthTimezone:String(place?.dataset.timezone||'')};
+      const customerName=String($('smvLiveBirthCustomerName')?.value||'').trim();
+      if(!customerName||!birthDetails.birthDate||!birthDetails.birthTime||!birthDetails.birthPlace){if(message)message.textContent='Enter Customer name, date/time of birth and birth place to continue.';return;}
+      if(birthDetails.birthDate>maxDate){if(message)message.textContent='Date of Birth cannot be in the future.';return;}
+      if(submit){submit.disabled=true;submit.textContent='SAVING DETAILS…';}
+      if(message)message.textContent='Saving birth details securely…';
+      closeModal();
+      await smvCreateLiveRequest(astrologer,kind,minutes,button,feedback,{...birthDetails,customerName});
+    };
+  }
+  async function smvCreateLiveRequest(astrologer,mode,minutes,button,feedback,birthDetails){
     if(!auth?.currentUser){
       alert('Please login with a Customer account to use Live Call / Live Chat.');
       document.getElementById('authBtn')?.click();return;
@@ -113,7 +149,7 @@
       const response=await fetch(BACKEND+'/live/requests',{
         method:'POST',cache:'no-store',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
-        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId})
+        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId,customerName:String(birthDetails?.customerName||user.displayName||'').trim(),birthDetails:{birthDate:String(birthDetails?.birthDate||''),birthTime:String(birthDetails?.birthTime||''),birthPlace:String(birthDetails?.birthPlace||'').trim(),birthLatitude:String(birthDetails?.birthLatitude||''),birthLongitude:String(birthDetails?.birthLongitude||''),birthTimezone:String(birthDetails?.birthTimezone||'')}})
       });
       let result={};try{result=await response.json();}catch(_){}
       if(!response.ok||result.success!==true){
@@ -446,7 +482,7 @@
           row.querySelectorAll('[data-live-action]').forEach(liveButton=>{
             liveButton.dataset.defaultLabel=liveButton.textContent;
             const mode=liveButton.dataset.liveAction,input=row.querySelector('[data-live-minutes="'+mode+'"]');
-            liveButton.onclick=()=>smvCreateLiveRequest(a,mode,input?.value,liveButton,liveMessage);
+            liveButton.onclick=()=>smvOpenLiveBirthDetails(a,mode,input?.value,liveButton,liveMessage);
           });
           const bookCall=row.querySelector('[data-book-call]'),bookChat=row.querySelector('[data-book-chat]');
           if(bookCall)bookCall.onclick=()=>openAstrologerCallBooking(a,'call').catch(err=>{console.error('Call booking request failed:',err);alert(err.message||String(err));});
