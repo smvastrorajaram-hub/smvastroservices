@@ -6,6 +6,8 @@ const {
   billableMinutesForElapsedMs,
   calculateLiveSessionCharge,
   pricingFromSnapshot,
+  commissionFromSnapshot,
+  frozenBookingCommission,
   astrologerRatePaise,
   maxAffordableMinutes,
   MAX_SESSION_MINUTES,
@@ -108,4 +110,20 @@ test('Live sessions require valid DOB/time/place before the three-minute horosco
   assert.throws(() => validateLiveBirthDetails({birthDate:'1990-02-31',birthTime:'10:00',birthPlace:'Chennai'}), /Date of Birth/i);
   assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'25:00',birthPlace:'Chennai'}), /Time of Birth/i);
   assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'10:00',birthPlace:'x'}), /Birth Place/i);
+});
+
+test('Live Call and Chat commission splits follow the Admin percentage and default safely', () => {
+  assert.deepEqual(commissionFromSnapshot({ exists: false }), { astroPercent: 20, adminPercent: 80 });
+  assert.deepEqual(commissionFromSnapshot({
+    exists: true, data: () => ({ astroPercent: 25, adminPercent: 75 })
+  }), { astroPercent: 25, adminPercent: 75 });
+  assert.deepEqual(commissionFromSnapshot({
+    exists: true, data: () => ({ astroPercent: 20, adminPercent: 60 })
+  }), { astroPercent: 20, adminPercent: 80 });
+  assert.deepEqual(frozenBookingCommission({
+    astrologerCommissionPercent: 30, adminCommissionPercent: 70
+  }, { astroPercent: 20, adminPercent: 80 }), { astroPercent: 30, adminPercent: 70 });
+  assert.deepEqual(frozenBookingCommission({
+    astrologerCommissionPercent: 55, adminCommissionPercent: 55
+  }, { astroPercent: 20, adminPercent: 80 }), { astroPercent: 20, adminPercent: 80 });
 });
