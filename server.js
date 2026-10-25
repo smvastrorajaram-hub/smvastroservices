@@ -432,34 +432,44 @@ app.get("/account/role", async (req, res) => {
 
     const userSnap = await db.collection("smv_users").doc(uid).get();
     const profile = userSnap.exists ? (userSnap.data() || {}) : {};
-    let astroProfile = null;
-
-    // Current registrations use UID as document ID. Also support migrated
-    // profiles stored under another ID, but only accept records linked to this UID.
-    const directAstro = await db.collection("smv_astrologers").doc(uid).get();
-    if (directAstro.exists) {
-      const candidate = directAstro.data() || {};
-      if (!candidate.uid || String(candidate.uid) === uid) astroProfile = candidate;
-    }
-
-    if (!astroProfile) {
-      const byUid = await db.collection("smv_astrologers").where("uid", "==", uid).limit(1).get();
-      if (!byUid.empty) {
-        const candidate = byUid.docs[0].data() || {};
-        if (!candidate.uid || String(candidate.uid) === uid) astroProfile = candidate;
-      }
-    }
-
-    // Older migrated records may lack uid on the astrologer document. The
-    // signed-in user's own profile must carry the same unique publicId.
     const publicId = String(profile.publicId || "").trim();
-    if (!astroProfile && publicId) {
-      const byPublicId = await db.collection("smv_astrologers").where("publicId", "==", publicId).limit(1).get();
-      if (!byPublicId.empty) {
-        const candidate = byPublicId.docs[0].data() || {};
-        if ((!candidate.uid || String(candidate.uid) === uid) &&
-            String(candidate.publicId || "") === publicId) {
+    let astroProfile = null;
+    let astroCollection = "";
+
+    // Canonical collection plus legacy singular spelling. Never identify an
+    // astrologer from collection membership alone unless the record is tied
+    // to this UID (or the UID's own unique publicId on a migrated legacy record).
+    for (const collectionName of ["smv_astrologers", "smv_astrologer"]) {
+      const directAstro = await db.collection(collectionName).doc(uid).get();
+      if (directAstro.exists) {
+        const candidate = directAstro.data() || {};
+        if (!candidate.uid || String(candidate.uid) === uid) {
           astroProfile = candidate;
+          astroCollection = collectionName;
+          break;
+        }
+      }
+      if (!astroProfile) {
+        const byUid = await db.collection(collectionName).where("uid", "==", uid).limit(1).get();
+        if (!byUid.empty) {
+          const candidate = byUid.docs[0].data() || {};
+          if (!candidate.uid || String(candidate.uid) === uid) {
+            astroProfile = candidate;
+            astroCollection = collectionName;
+            break;
+          }
+        }
+      }
+      if (!astroProfile && publicId) {
+        const byPublicId = await db.collection(collectionName).where("publicId", "==", publicId).limit(1).get();
+        if (!byPublicId.empty) {
+          const candidate = byPublicId.docs[0].data() || {};
+          if ((!candidate.uid || String(candidate.uid) === uid) &&
+              String(candidate.publicId || "") === publicId) {
+            astroProfile = candidate;
+            astroCollection = collectionName;
+            break;
+          }
         }
       }
     }
@@ -471,7 +481,8 @@ app.get("/account/role", async (req, res) => {
       success: true,
       role,
       profileFound: userSnap.exists,
-      astrologerProfileFound: !!astroProfile
+      astrologerProfileFound: !!astroProfile,
+      astrologerProfileCollection: astroCollection || null
     });
   } catch (e) {
     console.error("Authenticated role lookup failed:", e?.message || e);
