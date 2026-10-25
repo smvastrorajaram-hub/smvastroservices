@@ -322,7 +322,7 @@ app.use((req, res, next) => {
 const DASHBOARD_SIGNAL_PATHS=new Set([
   '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/submit-answer',
   '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
-  '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing',
+  '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing','/admin/astrologer-languages',
   '/admin/edit-question','/admin/takeover-answer','/astrologer/change-payout','/admin/payout-change-status',
   '/admin/set-open-workflow','/customer/mark-answer-viewed','/admin/astrologer-quiz/load-defaults',
   '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete','/admin/astrologer-auto-approval/settings',
@@ -748,6 +748,9 @@ app.post("/register-astrologer-profile", async (req, res) => {
     const b = req.body || {};
     const name=String(b.name||"").trim(), mobile=String(b.mobile||"").trim(), specialization=String(b.specialization||"").trim();
     const experience=Number(b.experience||0), bio=String(b.bio||"").trim();
+    const rawLanguages=Array.isArray(b.languages)?b.languages:String(b.languages||"").split(/[,;|]/);
+    const languages=[...new Set(rawLanguages.map(v=>String(v||"").trim().replace(/\s+/g," ")).filter(Boolean))];
+    if(!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240)return res.status(400).json({error:"Enter 1–12 spoken languages, each up to 40 characters."});
     const bankName=String(b.bankName||"").trim(), accountName=String(b.accountName||"").trim(), accountNumber=String(b.accountNumber||"").trim(), ifsc=String(b.ifsc||"").trim(), upi=String(b.upi||"").trim(), photoData=String(b.photoData||"");
     if(!name||!mobile||!specialization||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoData) return res.status(400).json({error:"Please complete all required astrologer registration details."});
     if(!Number.isFinite(experience)||experience<0) return res.status(400).json({error:"Invalid experience."});
@@ -772,8 +775,8 @@ app.post("/register-astrologer-profile", async (req, res) => {
           if(publicIdSnap.exists)throw publicIdCollisionError();
           await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "astrologer");
           tx.set(publicIdRef,{publicId,uid:user.uid,role:"astrologer",createdAt:FieldValue.serverTimestamp()});
-          tx.set(userRef,{uid:user.uid,name,phone:phoneNorm.e164,mobile:phoneNorm.e164,phoneNormalized:phoneNorm.e164,email:user.email||"",publicId,role:"astrologer",status:"pending",emailVerificationRequired:true,phoneVerificationRequired:PHONE_VERIFICATION_MODE === "whatsapp",phoneVerified:false,verificationMethod:PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
-          tx.set(astroRef,{uid:user.uid,name,publicId,specialization,expertise:specialization,experience,about:bio,bio,photoData,status:"pending",role:"astrologer",createdAt:FieldValue.serverTimestamp()},{merge:true});
+          tx.set(userRef,{uid:user.uid,name,phone:phoneNorm.e164,mobile:phoneNorm.e164,phoneNormalized:phoneNorm.e164,email:user.email||"",publicId,role:"astrologer",status:"pending",languages,spokenLanguages:languages,emailVerificationRequired:true,phoneVerificationRequired:PHONE_VERIFICATION_MODE === "whatsapp",phoneVerified:false,verificationMethod:PHONE_VERIFICATION_MODE === "whatsapp" ? "whatsapp" : "email",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+          tx.set(astroRef,{uid:user.uid,name,publicId,specialization,expertise:specialization,experience,languages,spokenLanguages:languages,about:bio,bio,photoData,status:"pending",role:"astrologer",createdAt:FieldValue.serverTimestamp()},{merge:true});
           tx.set(payoutRef,{uid:user.uid,bankName,accountName,accountNumber,ifsc,upi,updatedAt:FieldValue.serverTimestamp(),status:"pending_admin_review"},{merge:true});
           tx.set(notificationRef,{userId:user.uid,type:"registration",title:"Registration submitted",message:"Your astrologer application is pending Admin approval.",createdAt:FieldValue.serverTimestamp(),read:false});
         });
@@ -2384,11 +2387,7 @@ app.post("/admin/approve-astrologer", express.json({limit:"10kb"}), async (req,r
   if(!actor)return;
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   const astrologerId=String(req.body?.astrologerId||"").trim();
-  const price=Number(req.body?.pricePerQuestion);
   if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
-  if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
-    return res.status(400).json({success:false,error:"Enter a valid Private Consultation Chat Price between ₹1 and ₹100000, with up to two decimal places."});
-  }
   try{
     const astroRef=db.collection("smv_astrologers").doc(astrologerId);
     const astroSnap=await astroRef.get();
@@ -2409,7 +2408,7 @@ app.post("/admin/approve-astrologer", express.json({limit:"10kb"}), async (req,r
     const batch=db.batch();
     const approvedAt=FieldValue.serverTimestamp();
     batch.set(astroRef,{
-      uid,role:"astrologer",status:"approved",pricePerQuestion:price,
+      uid,role:"astrologer",status:"approved",
       approvedAt,approvedBy:actor.uid,updatedAt:FieldValue.serverTimestamp()
     },{merge:true});
     const userPatch={uid,role:"astrologer",status:"active",approvedAt,updatedAt:FieldValue.serverTimestamp()};
@@ -2423,7 +2422,7 @@ app.post("/admin/approve-astrologer", express.json({limit:"10kb"}), async (req,r
       createdAt:FieldValue.serverTimestamp(),read:false
     },{merge:true});
     await batch.commit();
-    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,status:"approved",pricePerQuestion:price});
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,status:"approved"});
   }catch(e){
     console.error("Admin Astrologer approval failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to approve the Astrologer application. The linked profile changes were not partially committed."});
@@ -2536,6 +2535,35 @@ app.post("/astrologer/sync-approval", express.json({limit:"5kb"}), async (req,re
   }
 });
 
+app.post("/admin/astrologer-languages", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res);
+  if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim();
+  const rawLanguages=Array.isArray(req.body?.languages)?req.body.languages:String(req.body?.languages||"").split(/[,;|]/);
+  const languages=[...new Set(rawLanguages.map(v=>String(v||"").trim().replace(/\s+/g," ")).filter(Boolean))];
+  if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
+  if(!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240)return res.status(400).json({success:false,error:"Enter 1–12 spoken languages, each up to 40 characters."});
+  try{
+    const collection=db.collection("smv_astrologers");
+    const selectedRef=collection.doc(astrologerId),selectedSnap=await selectedRef.get();
+    if(!selectedSnap.exists)return res.status(404).json({success:false,error:"Astrologer profile not found."});
+    const selected=selectedSnap.data()||{},uid=String(selected.uid||selectedSnap.id).trim();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"This Astrologer profile has no valid linked login UID."});
+    const canonicalRef=collection.doc(uid),linkedSnap=await collection.where("uid","==",uid).limit(25).get();
+    const refs=new Map([[selectedRef.path,selectedRef],[canonicalRef.path,canonicalRef]]);
+    for(const docSnap of linkedSnap.docs)refs.set(docSnap.ref.path,docSnap.ref);
+    const batch=db.batch(),patch={languages,spokenLanguages:languages,updatedAt:FieldValue.serverTimestamp()};
+    for(const ref of refs.values())batch.set(ref,patch,{merge:true});
+    batch.set(db.collection("smv_users").doc(uid),patch,{merge:true});
+    await batch.commit();
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,languages});
+  }catch(e){
+    console.error("Admin Astrologer language update failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to save Astrologer languages. No partial changes were committed."});
+  }
+});
+
 app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,res)=>{
   const actor=await requireUser(req,res);
   if(!actor)return;
@@ -2549,7 +2577,7 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
   const callPrice=Number(body.callPricePerMinute);
   const liveChatPrice=Number(body.chatPricePerMinute);
   if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
-  if(!hasChat&&!hasCall&&!hasLiveChat)return res.status(400).json({success:false,error:"Enter a Private Consultation price or a Live Call/Chat per-minute price before saving."});
+  if(!hasChat&&!hasCall&&!hasLiveChat)return res.status(400).json({success:false,error:"Enter a Live Call or Live Chat per-minute price before saving."});
   if(hasChat&&(!Number.isFinite(chatPrice)||chatPrice<1||chatPrice>100000||Math.abs(chatPrice*100-Math.round(chatPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Chat Price must be between ₹1 and ₹100000, with up to two decimal places."});
   }
