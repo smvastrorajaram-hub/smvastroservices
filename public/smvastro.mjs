@@ -4601,7 +4601,7 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
  if(smvLivePanelSessionId!==id){smvLiveCloseMedia();smvLiveClearTransport();}
  smvLivePanelSessionId=id;smvLiveCurrentSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
- if(incoming&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&['preparing','ringing'].includes(String(session.state||'')))smvLiveStartRingtone();
+ if(incoming&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&String(session.state||'')==='ringing')smvLiveStartRingtone(id);
  openModal(smvLivePanelHtml(smvLiveCurrentSession,!!incoming));
  const ringSession=$('smvLiveRingToggleSession');if(ringSession)ringSession.onclick=smvLiveToggleRingtone;smvLiveRingButtonSync();
  const accept=$('smvLiveAccept'),reject=$('smvLiveReject'),end=$('smvLiveEndSession'),close=$('smvLiveClosePanel'),receipt=$('smvLiveDownloadReceipt');
@@ -4649,7 +4649,7 @@ function smvLiveUpdatePreparationCountdown(session){
  const s=session||smvLiveCurrentSession;
  const uid=String(currentUser?.uid||'');
  const isCustomer=String(s?.customerUid||'')===uid,isAstrologer=String(s?.astrologerUid||'')===uid;
- if(!s||s.state!=='preparing'||(!isCustomer&&!isAstrologer)){smvLiveStopPreparationCountdown();return;}
+ if(!s||s.state!=='preparing'||(!isCustomer&&!isAstrologer)||$('modal')?.classList.contains('hidden')){smvLiveStopPreparationCountdown();return;}
  const id=String(s.id||s.sessionId||'');
  if(smvLivePreparationSessionId!==id){smvLiveStopPreparationCountdown();smvLivePreparationSessionId=id;}
  const tick=()=>{
