@@ -1386,7 +1386,10 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
       if(!["Call Consultation","Chat Consultation"].includes(type))return res.status(400).json({error:"Choose a Call or Chat booking type."});
       if(!Number.isSafeInteger(scheduledMinutes)||scheduledMinutes<1||scheduledMinutes>1440)return res.status(400).json({error:"Choose a session duration from 1 to 1440 minutes."});
       const scheduleEpoch=Date.parse(preferredDate+"T"+preferredTime+":00+05:30");
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(preferredDate)||!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(preferredTime)||!Number.isFinite(scheduleEpoch)||scheduleEpoch<=Date.now())return res.status(400).json({error:"Choose a future scheduled date and time."});
+      const dateParts=preferredDate.split("-").map(Number),timeParts=preferredTime.split(":").map(Number);
+      const validDateShape=/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(preferredDate)&&dateParts.length===3&&(()=>{const d=new Date(Date.UTC(dateParts[0],dateParts[1]-1,dateParts[2]));return d.getUTCFullYear()===dateParts[0]&&d.getUTCMonth()===dateParts[1]-1&&d.getUTCDate()===dateParts[2];})();
+      const validTimeShape=/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(preferredTime)&&timeParts.length===2;
+      if(!validDateShape||!validTimeShape||!Number.isFinite(scheduleEpoch)||scheduleEpoch<=Date.now())return res.status(400).json({error:"Choose a valid future scheduled date and time."});
       if(type==="Chat Consultation"&&!question)return res.status(400).json({error:"Enter the question or topic for your Chat Booking."});
       // Both booking types use the same contact/birth/schedule form. The Chat type additionally stores the Customer's question.
       // them in a structured field for the Admin booking view.
