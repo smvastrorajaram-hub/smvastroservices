@@ -4743,8 +4743,8 @@ function smvLiveHandleEvent(ev){
   const s=ev.session;if(!s)return;
   if(s.state==='ringing'&&s.astrologerUid===currentUser?.uid&&s.id!==smvLivePanelSessionId){smvLiveStartRingtone(s.id);smvLiveOpenSession(s,null,true);}
   else if(s.id===smvLivePanelSessionId){if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();smvLiveApplySession(s);}
-  else if(s.state==='preparing'&&s.astrologerUid===currentUser?.uid)smvLiveOpenSession(s,null,false);
-  else if(['preparing','ringing'].includes(s.state)&&s.customerUid===currentUser?.uid)smvLiveOpenSession(s,null,false);
+  else if(s.state==='preparing'&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
+  else if(['preparing','ringing'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
   const s=ev.session;if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId)smvLiveAppendMessage(ev.message);
@@ -4776,8 +4776,8 @@ async function smvLivePollSessions(){
   for(const session of list.sessions||[]){
    if(session.state==='ringing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==session.id){smvLiveStartRingtone(session.id);smvLiveOpenSession(session,null,true);}
    else if(session.id===smvLivePanelSessionId){if(session.state!=='ringing'&&smvLiveRingCurrentId===String(session.id||''))smvLiveStopRingtone();smvLiveApplySession(session);}
-   else if(session.state==='preparing'&&session.astrologerUid===currentUser.uid&&role==='astrologer')smvLiveOpenSession(session,null,false);
-   else if(['preparing','ringing'].includes(session.state)&&session.customerUid===currentUser.uid&&role==='customer')smvLiveOpenSession(session,null,false);
+   else if(session.state==='preparing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
+   else if(['preparing','ringing'].includes(session.state)&&session.customerUid===currentUser.uid&&role==='customer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
   }
   if(role==='astrologer'){
    const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);
