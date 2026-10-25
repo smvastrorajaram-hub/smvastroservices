@@ -1,7 +1,10 @@
 
 (function(){
-  const BACKEND="https://smvastroservices.onrender.com";
-  const FBCONFIG={apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
+  const IS_SMV_PHASE1_STAGING=["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname);
+  const BACKEND=IS_SMV_PHASE1_STAGING?"https://smv-astro-phase1-staging.onrender.com":"https://smvastroservices.onrender.com";
+  const FBCONFIG=IS_SMV_PHASE1_STAGING
+    ? {apiKey:"AIzaSyD9LzJ-7OKZMaVVf5kXa9aABBECS6kE8mA",authDomain:"smv-astro-staging.firebaseapp.com",projectId:"smv-astro-staging",storageBucket:"smv-astro-staging.firebasestorage.app",messagingSenderId:"73946216796",appId:"1:73946216796:web:09500761bec02699a4e999"}
+    : {apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
   let db=null,auth=null;
   const show=id=>document.getElementById(id)?.classList.remove('hidden');
   const closeModal=()=>document.getElementById('modal')?.classList.add('hidden');
@@ -15,7 +18,14 @@
     const fs=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
     const {getFirestore}=fs;
     const {getAuth}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js');
-    const app=getApps().length?getApps()[0]:initializeApp(FBCONFIG);
+    const defaultApp=getApps().find(candidate=>candidate.name==='[DEFAULT]');
+    if(defaultApp&&String(defaultApp.options?.projectId||'')!==String(FBCONFIG.projectId)){
+      throw new Error('Firebase project mismatch: this page is configured for '+FBCONFIG.projectId+' but the existing default app targets '+String(defaultApp.options?.projectId||'unknown')+'. Refusing to access another project.');
+    }
+    const app=defaultApp||initializeApp(FBCONFIG);
+    if(String(app.options?.projectId||'')!==String(FBCONFIG.projectId)){
+      throw new Error('Firebase project mismatch. Refusing to continue with a non-staging project on the staging website.');
+    }
     db=getFirestore(app);
     auth=getAuth(app); // Main app owns auth persistence; do not override it from this secondary module.
     fbApi={
