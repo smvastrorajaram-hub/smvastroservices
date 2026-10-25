@@ -598,7 +598,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         type: 'live.session.ended',
         session: liveSessionSafeView(id, result.session),
         wallet: { availableBalancePaise: result.wallet.availableBalancePaise, reservedBalancePaise: result.wallet.reservedBalancePaise },
-        message: 'Low Wallet Balance — Session ended'
+        message: String(result.session.endReason || '') === 'low_wallet_balance' ? 'Low Wallet Balance — Session ended' : (String(result.session.endReason || '') === 'duration_complete' ? 'Selected session duration completed.' : (String(result.session.endReason || '') === 'connection_failed' ? 'Connection failed. Unused Wallet reserve released.' : 'Session ended. Unused Wallet reserve released.'))
       });
     }
     return {
@@ -954,11 +954,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     try {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
-      const snap = await sessionRef(req.params.id).collection('signals').orderBy('createdAt', 'desc').limit(50).get();
+      const afterMs = Number(req.query?.afterMs || 0);
+      let signalQuery = sessionRef(req.params.id).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+      const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
       const signals = snap.docs.map(d => {
         const s = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: s.senderUid, type: s.type, payload: s.payload, createdAt: timestampMillis(s.createdAt) ? new Date(timestampMillis(s.createdAt)).toISOString() : null };
-      }).reverse();
+      }).sort((a, b) => Date.parse(a.createdAt || 0) - Date.parse(b.createdAt || 0));
       return res.set('Cache-Control', 'no-store').json({ success: true, signals });
     } catch (error) { return replyError(res, error, 'Unable to load WebRTC signals.'); }
   });
@@ -976,11 +979,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     try {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
-      const snap = await sessionRef(req.params.id).collection('messages').orderBy('createdAt', 'asc').limit(100).get();
+      const afterMs = Number(req.query?.afterMs || 0);
+      let messageQuery = sessionRef(req.params.id).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+      const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
       const messages = snap.docs.map(d => {
         const m = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: m.senderUid, text: m.text, createdAt: timestampMillis(m.createdAt) ? new Date(timestampMillis(m.createdAt)).toISOString() : null };
-      });
+      }).sort((a, b) => Date.parse(a.createdAt || 0) - Date.parse(b.createdAt || 0));
       return res.set('Cache-Control', 'no-store').json({ success: true, messages });
     } catch (error) { return replyError(res, error, 'Unable to load Live Chat messages.'); }
   });
