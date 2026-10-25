@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function(){
       e.preventDefault(); e.stopPropagation();
       const open=window.__smvOpenBookingChat||(()=>window.__smvNavigatePublic?.("private-consultation"));
       if(typeof open!=="function"){location.href="./?view=consult";return;}
-      Promise.resolve().then(()=>open()).catch(err=>console.error("Book a Chat navigation failed:",err));
+      Promise.resolve().then(()=>open()).catch(err=>console.error("Consult an Astrologer navigation failed:",err));
     });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="home-rule"><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo.png" width="20"/></span><span>FREQUENTLY ASKED QUESTIONS</span><span><img alt="" aria-hidden="true" class="smv-brand-symbol" height="20" src="./assets/smv-brand-logo.png" width="20"/></span></div>
 <h2>FAQ</h2>
 <div class="faq-list">
-<details><summary>How do I book an astrology chat?</summary><p>Login as a customer, choose Book a Chat, select an approved astrologer, enter the requested birth details and question, then pay using available Wallet balance or Razorpay.</p></details>
+<details><summary>How do I consult an astrologer?</summary><p>Login as a Customer, choose Consult an Astrologer, compare approved astrologers and their per-minute Call and Chat rates, enter the duration your Wallet can cover, and start a live consultation when the astrologer is online.</p></details>
 <details><summary>Are astrologers verified?</summary><p>All astrologers are carefully reviewed and verified by SMV ASTRO before being approved for consultation services.</p></details>
 <details><summary>How can I contact SMV ASTRO?</summary><p>Use the Contact Us form to send your query directly.</p></details>
 <details><summary>Do I need an account?</summary><p>An account is required for secure customer consultation features. You can create one from Customer Registration or the Login button.</p></details>
