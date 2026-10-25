@@ -773,11 +773,57 @@ const SMV_ADMIN_SHORTCUTS=[
  ['adminAnswers','Answers','parent'],
  ['adminPrivatePending','Private Questions','parent'],
  ['adminRefunds','Refunds','parent'],
+ ['adminWalletLedgerRows','Wallet Ledger','parent'],
  ['adminHoroscopePriceSet','Horoscope Settings','self'],
  ['adminOffersPromotions','Offers','self'],
  ['adminWithdrawals','Withdrawals','parent'],
  ['adminCommissionSettings','Commission','self']
 ];
+function smvWalletAuditMoney(paise){
+ const n=Number(paise);
+ return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+async function smvLoadAdminWalletLedger(){
+ const host=$('adminWalletLedgerRows');
+ if(!host||!currentUser)return;
+ const button=$('adminWalletLedgerRefresh'),filter=$('adminWalletLedgerOwnerUid'),msg=$('adminWalletLedgerMsg');
+ if(button&&!button.dataset.smvBound){
+  button.dataset.smvBound='1';
+  button.addEventListener('click',()=>smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger refresh failed:',e)));
+ }
+ if(button){button.disabled=true;button.textContent='LOADING…';}
+ if(msg)msg.textContent='Loading latest Wallet ledger entries…';
+ try{
+  const ownerUid=String(filter?.value||'').trim();
+  const url='/admin/wallet/transactions?limit=50'+(ownerUid?'&ownerUid='+encodeURIComponent(ownerUid):'');
+  const result=await renderApi(url,{method:'GET'});
+  if(!result?.success)throw new Error(result?.error||'Wallet audit could not be loaded.');
+  const rows=Array.isArray(result.transactions)?result.transactions:[];
+  const totals=result.pageTotals||{};
+  const summary=$('adminWalletLedgerSummary');
+  if(summary)summary.innerHTML='<div class="stat">Transactions in this result <b>'+escapeHtml(String(totals.transactionCount||0))+'</b></div><div class="stat">Credits in result <b>'+smvWalletAuditMoney(totals.creditPaise||0)+'</b></div><div class="stat">Debits in result <b>'+smvWalletAuditMoney(totals.debitPaise||0)+'</b></div>'+(result.wallet?'<div class="stat">Selected Wallet available <b>'+smvWalletAuditMoney(result.wallet.availableBalancePaise||0)+'</b></div><div class="stat">Selected Wallet reserved <b>'+smvWalletAuditMoney(result.wallet.reservedBalancePaise||0)+'</b></div>':'');
+  if(host){
+   host.innerHTML=rows.length?rows.map(t=>{
+    const credit=String(t.direction||'').toLowerCase()==='credit';
+    const ref=[t.referenceType,t.referenceId].filter(Boolean).join(' · ');
+    return '<article class="smv-history-row" style="padding:12px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="display:flex;gap:12px;justify-content:space-between;align-items:start;flex-wrap:wrap"><div><b>'+escapeHtml(String(t.type||'transaction').replace(/_/g,' '))+'</b><div class="small">'+escapeHtml(smvDateTime(t.createdAt))+' · '+escapeHtml(t.status||'')+'</div><div class="small">Owner: '+escapeHtml(t.ownerRole||'')+' · UID: '+escapeHtml(t.ownerUid||'')+'</div>'+(ref?'<div class="small">Reference: '+escapeHtml(ref)+'</div>':'')+(t.source?'<div class="small">Source: '+escapeHtml(t.source)+'</div>':'')+'<div class="small">Ledger ID: '+escapeHtml(t.id||'')+'</div></div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletAuditMoney(t.amountPaise)+'</b></div>'+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletAuditMoney(t.balanceAfterPaise)+' · Reserved after: '+smvWalletAuditMoney(t.reservedBalanceAfterPaise||0)+'</div>':'')+'</article>';
+   }).join(''):'<div class="empty">No Wallet ledger entries matched this filter.</div>';
+  }
+  if(msg)msg.textContent='Showing the latest '+rows.length+' transaction(s). Totals above describe this result only, not the complete account reconciliation.';
+ }catch(e){
+  if(host)host.innerHTML='<div class="empty error">'+escapeHtml(e?.message||String(e))+'</div>';
+  if(msg)msg.textContent='Wallet ledger unavailable. Use Refresh to try again.';
+ }finally{
+  if(button&&document.contains(button)){button.disabled=false;button.textContent='REFRESH WALLET LEDGER';}
+ }
+}
+function smvBindAdminWalletLedger(){
+ const button=$('adminWalletLedgerRefresh');
+ if(button&&!button.dataset.smvBound){
+  button.dataset.smvBound='1';
+  button.addEventListener('click',()=>smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger refresh failed:',e)));
+ }
+}
 function smvEnsureAdminQuickLinks(){
  const admin=$('admin'); if(!admin)return null;
  let nav=$('smvAdminQuickLinks')||admin.querySelector('.smv-admin-shortcuts');
@@ -1304,6 +1350,10 @@ window.__smvGetPublicAstrologersOnce=()=>{
   catch(e){const snap=await withTimeout(getDocs(query(collection(db,'smv_astrologers'),where('status','==','approved'))),12000);return snap.docs.map(d=>{const a=d.data();return {...a,id:d.id,chatPrice:Number(a.pricePerQuestion??a.chatPrice??0)};});}
  })().catch(e=>{smvPublicListPromise=null;throw e;});
  return smvPublicListPromise;
+};
+window.__smvInvalidatePublicAstrologersOnce=()=>{
+ smvPublicListPromise=null;
+ smvAstroListRequest=null;
 };
 window.__smvGetPublicReviewsOnce=a=>{
  const id=String(a.id||'');if(!id)return Promise.resolve([]);
@@ -2109,10 +2159,15 @@ document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
 function smvCustomerBookingChatCardHtml(){
  return '<section class="card smv-customer-book-chat" id="smvCustomerBookChatCard" style="margin-top:16px" aria-labelledby="smvCustomerBookChatTitle">'+
- '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Book a Chat</h3><p>Choose an approved astrologer, submit your question and pay securely using your Wallet balance or Razorpay.</p><p class="small">New Customer registrations receive a one-time ₹25 Wallet credit.</p></div>'+
- '<div><button class="btn" id="smvCustomerBookChat" type="button">BOOK A CHAT</button></div></div></section>';
+ '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Astrologer Directory &amp; Book a Chat</h3><p>Browse approved astrologer profiles and reviews first. Book a Chat uses the existing Private Consultation question-and-answer flow; it is not a live text-chat session.</p><p class="small">New Customer registrations receive a one-time ₹25 Wallet credit.</p></div>'+
+ '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gray" id="smvCustomerOpenAstrologerList" type="button">VIEW ASTROLOGER LIST</button><button class="btn" id="smvCustomerBookChat" type="button">BOOK A CHAT</button></div></div></section>';
 }
 function smvBindCustomerBookingChat(){
+ const viewButton=$('smvCustomerOpenAstrologerList');
+ if(viewButton)viewButton.onclick=()=>{
+  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('private-consultation');return;}
+  location.href='./?view=consult';
+ };
  const button=$('smvCustomerBookChat');
  if(!button)return;
  button.onclick=()=>{
@@ -3400,6 +3455,8 @@ async function loadAdminPanelData(background=false){
   renderAdminWorkflows({data:adminData,api:renderApi,refresh:smvRefreshWorkflowCards,lang:"en",escape:escapeHtml,date:smvDateTime});
   smvRenderOpenWorkflowControl(adminData);
   smvRenderPrivateConsultAdmin(adminData);
+  smvBindAdminWalletLedger();
+  if(!background)smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger unavailable:',e));
   smvWatchAdminQuestions();
   const adminReadErrors=adminData.errors||{};
   const readErrorText=Object.entries(adminReadErrors).filter(([,v])=>v).map(([k,v])=>k+': '+v).join(' | ');
