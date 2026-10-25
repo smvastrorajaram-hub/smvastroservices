@@ -245,13 +245,48 @@
       dialogSurface.style.webkitTextFillColor=foreground;
       if(purpleTheme){dialogSurface.style.background='#24103F';dialogSurface.style.border='1px solid #d4af37';dialogSurface.style.borderRadius='14px';}
       dialogSurface.style.opacity='1';
+      dialogSurface.style.height=purpleTheme?'calc(100dvh - 64px - env(safe-area-inset-bottom))':'auto';
       dialogSurface.style.maxHeight=purpleTheme?'calc(100dvh - 64px - env(safe-area-inset-bottom))':'calc(100dvh - 52px)';
       dialogSurface.style.minHeight='0';
       dialogSurface.style.flex='1 1 auto';
-      dialogSurface.style.overflowY='auto';
+      dialogSurface.style.display='flex';
+      dialogSurface.style.flexDirection='column';
+      dialogSurface.style.overflow=purpleTheme?'hidden':'auto';
       dialogSurface.style.overflowX='hidden';
       dialogSurface.style.overscrollBehavior='contain';
       dialogSurface.style.boxSizing='border-box';
+      const dialogForm=dialogSurface.querySelector('form');
+      if(purpleTheme&&dialogForm){
+        dialogForm.style.display='flex';
+        dialogForm.style.flexDirection='column';
+        dialogForm.style.flex='1 1 auto';
+        dialogForm.style.minHeight='0';
+        dialogForm.style.minWidth='0';
+        dialogForm.style.width='100%';
+        dialogForm.style.overflowY='auto';
+        dialogForm.style.overflowX='hidden';
+        dialogForm.style.overscrollBehavior='contain';
+        dialogForm.style.boxSizing='border-box';
+        dialogForm.querySelectorAll('label').forEach(label=>{
+          label.style.display='grid';
+          label.style.gap='6px';
+          label.style.width='100%';
+          label.style.minWidth='0';
+          label.style.margin='0';
+          label.style.boxSizing='border-box';
+        });
+        const actions=dialogForm.querySelector('.smv-booking-actions');
+        if(actions){
+          actions.style.position='sticky';
+          actions.style.bottom='0';
+          actions.style.zIndex='10';
+          actions.style.flex='0 0 auto';
+          actions.style.marginTop='auto';
+          actions.style.background='#24103F';
+          actions.style.borderTop='1px solid #d4af37';
+          actions.style.padding='10px 0 calc(10px + env(safe-area-inset-bottom))';
+        }
+      }
       dialogSurface.querySelectorAll('h1,h2,h3,h4,p,b,strong,label,small,.small,.empty').forEach(node=>{
         node.style.opacity='1';
         node.style.color=purpleTheme?'#ffffff':(/^H[1-4]$/.test(node.tagName)?'#751515':'#2d1919');
