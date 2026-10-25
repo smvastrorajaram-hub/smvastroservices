@@ -178,10 +178,19 @@ function createWalletService({ db, FieldValue }) {
     const walletRef = db.collection(WALLET_COLLECTION).doc(uid);
     const ledgerRef = db.collection(TRANSACTION_COLLECTION).doc(walletLedgerDocId('recharge', uid + ':' + pid));
     const orderRef = db.collection('razorpay_orders').doc(oid);
+    const quotedBonusMinutes = safeMinutes(initial.bonusFreeMinutes);
+    const quotedOfferId = String(initial.bonusOfferId || '').trim();
+    const bonusAuditRef = quotedBonusMinutes > 0 ? db.collection('smv_offer_audit').doc('wallet_recharge_' + rid) : null;
+    const bonusOfferRef = quotedBonusMinutes > 0 && quotedOfferId ? db.collection('smv_offers').doc(quotedOfferId) : null;
     return db.runTransaction(async tx => {
-      const [rechargeSnap, walletSnap, ledgerSnap, orderSnap] = await Promise.all([
-        tx.get(rechargeRef), tx.get(walletRef), tx.get(ledgerRef), tx.get(orderRef)
-      ]);
+      const refs = [rechargeRef, walletRef, ledgerRef, orderRef];
+      if (bonusAuditRef) refs.push(bonusAuditRef);
+      if (bonusOfferRef) refs.push(bonusOfferRef);
+      const snapshots = await Promise.all(refs.map(ref => tx.get(ref)));
+      const [rechargeSnap, walletSnap, ledgerSnap, orderSnap] = snapshots;
+      let snapshotIndex = 4;
+      const bonusAuditSnap = bonusAuditRef ? snapshots[snapshotIndex++] : null;
+      const bonusOfferSnap = bonusOfferRef ? snapshots[snapshotIndex] : null;
       if (!rechargeSnap.exists) throw httpError(404, 'Wallet recharge record was not found.', 'WALLET_RECHARGE_NOT_FOUND');
       const recharge = rechargeSnap.data() || {};
       if (String(recharge.razorpayOrderId || '') !== oid || String(recharge.customerUid || '') !== uid) {
@@ -191,7 +200,10 @@ function createWalletService({ db, FieldValue }) {
       if (String(recharge.status || '') === 'paid') {
         if (String(recharge.razorpayPaymentId || '') !== pid) throw httpError(409, 'This Wallet recharge was paid with a different payment.', 'WALLET_RECHARGE_ALREADY_PAID');
         const existingWallet = walletSnap.exists ? walletSnap.data() || {} : {};
-        return { success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount, availableBalancePaise: safePaise(existingWallet.availableBalancePaise) };
+        return { success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount,
+          availableBalancePaise: safePaise(existingWallet.availableBalancePaise),
+          bonusMinutesCredited: safeMinutes(recharge.bonusMinutesCredited),
+          bonusMinutesBalance: safeMinutes(existingWallet.bonusMinutesBalance) };
       }
       if (!['order_created', 'payment_pending'].includes(String(recharge.status || ''))) {
         throw httpError(409, 'This Wallet recharge is not ready to be credited.', 'WALLET_RECHARGE_NOT_READY');
@@ -202,27 +214,47 @@ function createWalletService({ db, FieldValue }) {
       const wallet = walletSnap.exists ? walletSnap.data() || {} : {};
       const available = safePaise(wallet.availableBalancePaise);
       const reserved = safePaise(wallet.reservedBalancePaise);
+      const bonusBalance = safeMinutes(wallet.bonusMinutesBalance);
+      const reservedBonus = safeMinutes(wallet.reservedBonusMinutes);
+      const awardBonus = quotedBonusMinutes > 0 && !(bonusAuditSnap && bonusAuditSnap.exists) ? quotedBonusMinutes : 0;
       const nextAvailable = available + amount;
-      if (!Number.isSafeInteger(nextAvailable)) throw httpError(409, 'Wallet balance exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
+      const nextBonusBalance = bonusBalance + awardBonus;
+      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextBonusBalance)) throw httpError(409, 'Wallet balance exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
       const now = FieldValue.serverTimestamp();
       tx.set(walletRef, {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR',
         availableBalancePaise: nextAvailable, reservedBalancePaise: reserved,
+        bonusMinutesBalance: nextBonusBalance, reservedBonusMinutes: reservedBonus,
         version: safePaise(wallet.version) + 1, createdAt: wallet.createdAt || now, updatedAt: now
       }, { merge: true });
       tx.create(ledgerRef, {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR', type: 'recharge', direction: 'credit',
         amountPaise: amount, balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: reserved,
+        bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
+        bonusOfferId: awardBonus ? quotedOfferId : null, bonusOfferName: awardBonus ? String(recharge.bonusOfferName || '') : null,
         idempotencyKey: 'recharge:' + pid, referenceType: 'razorpay_payment', referenceId: pid,
-        note: 'Wallet recharge successful', status: 'posted', source, razorpayOrderId: oid, razorpayPaymentId: pid,
-        createdAt: now
+        note: 'Wallet recharge successful' + (awardBonus ? '; +' + awardBonus + ' promotional free minutes' : ''),
+        status: 'posted', source, razorpayOrderId: oid, razorpayPaymentId: pid, createdAt: now
       });
+      if (awardBonus > 0 && bonusAuditRef && !(bonusAuditSnap && bonusAuditSnap.exists)) {
+        tx.create(bonusAuditRef, {
+          customerId: uid, service: 'wallet_recharge', referenceId: rid, paymentId: pid,
+          offerId: quotedOfferId, offerName: String(recharge.bonusOfferName || ''),
+          originalAmount: amount / 100, finalAmount: amount / 100, discountAmount: 0,
+          bonusFreeMinutes: awardBonus, status: 'used', usedAt: now, createdAt: now
+        });
+        if (bonusOfferRef && bonusOfferSnap && bonusOfferSnap.exists) {
+          tx.set(bonusOfferRef, { usedCount: FieldValue.increment(1), successfulPayments: FieldValue.increment(1), updatedAt: now }, { merge: true });
+        }
+      }
       tx.set(rechargeRef, {
         status: 'paid', razorpayPaymentId: pid, paidAmountPaise: amount, currency: 'INR',
+        bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
         paymentSource: source, paidAt: now, updatedAt: now
       }, { merge: true });
       tx.set(orderRef, { status: 'paid', razorpayPaymentId: pid, updatedAt: now }, { merge: true });
-      return { success: true, alreadyProcessed: false, rechargeId: rid, paymentId: pid, amountPaise: amount, availableBalancePaise: nextAvailable };
+      return { success: true, alreadyProcessed: false, rechargeId: rid, paymentId: pid, amountPaise: amount,
+        availableBalancePaise: nextAvailable, bonusMinutesCredited: awardBonus, bonusMinutesBalance: nextBonusBalance };
     });
   }
 
@@ -351,6 +383,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
           availableBalance: paiseToRupees(wallet.availableBalancePaise),
           reservedBalancePaise: wallet.reservedBalancePaise,
           reservedBalance: paiseToRupees(wallet.reservedBalancePaise),
+          bonusMinutesBalance: wallet.bonusMinutesBalance, reservedBonusMinutes: wallet.reservedBonusMinutes,
           totalBalancePaise: wallet.availableBalancePaise + wallet.reservedBalancePaise,
           totalBalance: paiseToRupees(wallet.availableBalancePaise + wallet.reservedBalancePaise),
           updatedAt: timestampIso(wallet.updatedAt)
@@ -369,7 +402,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
       const [wallet, transactions] = await Promise.all([service.ensureWallet(ownerUid, role), service.getTransactions(ownerUid, req.query?.limit)]);
       return res.set('Cache-Control', 'no-store').json({
         success: true,
-        wallet: { availableBalancePaise: wallet.availableBalancePaise, availableBalance: paiseToRupees(wallet.availableBalancePaise), reservedBalancePaise: wallet.reservedBalancePaise, reservedBalance: paiseToRupees(wallet.reservedBalancePaise) },
+        wallet: { availableBalancePaise: wallet.availableBalancePaise, availableBalance: paiseToRupees(wallet.availableBalancePaise), reservedBalancePaise: wallet.reservedBalancePaise, reservedBalance: paiseToRupees(wallet.reservedBalancePaise), bonusMinutesBalance: wallet.bonusMinutesBalance, reservedBonusMinutes: wallet.reservedBonusMinutes },
         transactions
       });
     } catch (e) { return sendWalletError(res, e, 'Unable to load Wallet transactions.'); }
@@ -461,7 +494,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
       }
       if (payment.status !== 'captured') return res.status(409).json({ error: 'Payment capture is pending. Reopen Wallet and verify the recharge again.' });
       const credited = await service.finalizeRecharge({ rechargeId, orderId, paymentId, amountPaise: Number(payment.amount), currency: payment.currency, source: 'payment_verification' });
-      return res.json({ success: true, verified: true, alreadyCredited: credited.alreadyProcessed, rechargeId, paymentId, amount: paiseToRupees(credited.amountPaise || Number(payment.amount)), availableBalance: paiseToRupees(credited.availableBalancePaise) });
+      return res.json({ success: true, verified: true, alreadyCredited: credited.alreadyProcessed, rechargeId, paymentId, amount: paiseToRupees(credited.amountPaise || Number(payment.amount)), availableBalance: paiseToRupees(credited.availableBalancePaise), bonusMinutesCredited: safeMinutes(credited.bonusMinutesCredited), bonusMinutesBalance: safeMinutes(credited.bonusMinutesBalance) });
     } catch (e) { return sendWalletError(res, e, 'Unable to verify Wallet recharge.'); }
   });
 
