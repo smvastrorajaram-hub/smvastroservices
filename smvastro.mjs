@@ -189,7 +189,7 @@ async function renderPublicApi(path, options={}){
   if(!response.ok) throw new Error(data?.error||`Render backend error (${response.status})`);
   return data;
 }
-const ADMIN_UID="TwjeEIFS3Zcf1SxboLZoujm91Ky2";
+const ADMIN_UID = IS_SMV_PHASE1_STAGING ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
 let currentUser=null, selectedAstro=null, pendingAfterLogin=null, questionServicePrice=5, pendingQuestionId="", pendingQuestionFingerprint="";
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
 // ASK NOW is a protected navigation transaction. Firebase auth callbacks must never
