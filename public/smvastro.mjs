@@ -2534,6 +2534,9 @@ const userStatus=String(
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
+   const availabilityStatus=["online","busy","offline"].includes(String(ad.availabilityStatus||"").toLowerCase())?String(ad.availabilityStatus).toLowerCase():"offline";
+   const rawLanguages=ad.languages??ad.spokenLanguages??ad.language??[];
+   const astrologerLanguages=(Array.isArray(rawLanguages)?rawLanguages:String(rawLanguages||"").split(/[,;|]/)).map(v=>String(v||"").trim()).filter(Boolean);
    box.innerHTML=`<div class="smv-astrologer-dashboard"><div class="grid astro-dashboard-summary">
     <div class="card astro-profile-summary-card">
       <div class="astro-profile-photo">${ad.photoData?`<img src="${ad.photoData}" alt="${escapeHtml(data.name||'Astrologer')}" loading="lazy">`:''}</div>
@@ -2543,6 +2546,15 @@ const userStatus=String(
         <p class="smv-astro-profile-value">${escapeHtml(ad.expertise||ad.specialization||'Astrology')}</p>
         <p class="smv-astro-profile-value">${escapeHtml(ad.experience||0)} years experience</p>
         <p class="astro-profile-bio">${escapeHtml(ad.bio||ad.about||'')}</p>
+        <p class="small"><b>Languages:</b> ${escapeHtml(astrologerLanguages.length?astrologerLanguages.join(', '):'Not specified in profile')}</p>
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin:0 0 8px">Public Availability</h4>
+          <label for="astroAvailabilityStatus"><b>Current status</b></label>
+          <select id="astroAvailabilityStatus" style="width:100%;margin-top:6px"><option value="online">Online</option><option value="busy">Busy</option><option value="offline">Offline</option></select>
+          <div class="action-row"><button class="btn" id="astroAvailabilitySave" type="button">SAVE AVAILABILITY</button></div>
+          <div class="small" id="astroAvailabilityMsg" role="status"></div>
+          <p class="small">This updates your public directory status. It does not create or connect a live voice call or real-time chat session.</p>
+        </div>
       </div>
     </div>
     <div class="card"><h3>My Questions</h3><p><span class="smv-summary-value">${activeQuestions.length}</span> active question(s)</p><p><span class="smv-summary-label">Approved profile:</span> <span class="smv-summary-value">${
@@ -2582,6 +2594,29 @@ ${ad.status === 'rejected' && ad.rejectionReason
 </div>
 <div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
+  const availabilitySelect=$('astroAvailabilityStatus');
+  const availabilitySave=$('astroAvailabilitySave');
+  if(availabilitySelect)availabilitySelect.value=availabilityStatus;
+  if(availabilitySave){
+    availabilitySave.onclick=async()=>{
+      const status=String(availabilitySelect?.value||'offline').toLowerCase();
+      const message=$('astroAvailabilityMsg');
+      availabilitySave.disabled=true;availabilitySave.textContent='SAVING…';
+      if(message)message.textContent='';
+      try{
+        const result=await renderApi('/astrologer/availability',{method:'POST',body:JSON.stringify({availabilityStatus:status})});
+        if(!result?.success)throw new Error(result?.error||'Availability update was not confirmed.');
+        ad.availabilityStatus=result.availabilityStatus;
+        if(message)message.innerHTML='<span class="success">Public availability saved: '+escapeHtml(result.availabilityStatus.toUpperCase())+'.</span>';
+        window.__smvInvalidatePublicAstrologersOnce?.();
+        window.dispatchEvent(new Event('smv:astrologer-availability-changed'));
+      }catch(e){
+        if(message)message.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';
+      }finally{
+        availabilitySave.disabled=false;availabilitySave.textContent='SAVE AVAILABILITY';
+      }
+    };
+  }
   const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
     profileDescriptionSubmit.onclick=async()=>{
