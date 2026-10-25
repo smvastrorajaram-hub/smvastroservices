@@ -582,7 +582,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
       // reuse the current view. Do not re-read the profile or dashboard merely
       // because the header button was touched again. Live change events and
       // explicit Refresh/data-changing actions remain the only refresh triggers.
-      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden')){
+      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden') && !(await isAdminAccount(user))){
         hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
         setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
         try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
@@ -593,15 +593,10 @@ $("contentNav")?.addEventListener("click",(e)=>{
         try{history.replaceState({smvView:'admin'},'', '#admin');}catch(_e){}
         touchSession(); armIdleTimer(); return;
       }
-      // Resolve the role once from the signed-in user's profile.  Do not call
-      // isCurrentAdmin() here because it performs another profile read and can
-      // race the Firebase auth listener during first dashboard load.
-      let roleProfile=null;
-      let adminUser=(user.uid===ADMIN_UID);
-      if(!adminUser){
-        roleProfile=await withTimeout(getUserProfile(user.uid),15000);
-        adminUser=String(roleProfile?.role||'').toLowerCase()==='admin';
-      }
+      // Resolve the server-authorized role before choosing a dashboard.
+      const roleProfile=await withTimeout(getUserProfile(user.uid),15000);
+      const resolvedRole=await resolveSmvRole(user,roleProfile);
+      const adminUser=resolvedRole==='admin';
       if(epoch!==smvNavigationEpoch) return;
       if(adminUser){
         hideHomeSurface();
@@ -612,8 +607,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
         if(epoch!==smvNavigationEpoch) return;
         setHeaderRoleLabel("admin"); smvShowRoleNav(); smvEnterInternalView("admin",true); go("admin");
       }else{
-        const profile=roleProfile||await getUserProfile(user.uid);
-        const role=String(profile?.role||"customer").toLowerCase();
+        const role=resolvedRole;
         if(epoch!==smvNavigationEpoch) return;
         if(role!=="customer" && role!=="astrologer"){ smvNotice("Dashboard Access","Your account role could not be verified. Please try again.","!"); return; }
         hideHomeSurface();
@@ -671,6 +665,42 @@ async function getUserProfile(uid){
   catch(e){console.warn("Profile lookup failed",e);return {};}
 }
 
+// Admin authorization must come from the backend's verified token/custom-claim
+// or server-controlled smv_admins/{uid} allowlist. The client profile role alone
+// is not authoritative, especially on the isolated Phase 1 staging project.
+const smvAdminAccessCache=new Map();
+async function isAdminAccount(user, profileHint=null){
+ if(!user)return false;
+ const uid=String(user.uid||"").trim();
+ if(!uid)return false;
+ if(ADMIN_UID&&uid===ADMIN_UID)return true;
+ const cached=smvAdminAccessCache.get(uid);
+ if(cached&&Date.now()-cached.at<15000)return cached.allowed;
+ try{
+  const result=await renderApi("/admin/access",{method:"GET",timeoutMs:10000},user);
+  const allowed=result?.isAdmin===true;
+  smvAdminAccessCache.set(uid,{allowed,at:Date.now()});
+  if(allowed)return true;
+ }catch(e){
+  console.warn("Server Admin access check failed:",e?.message||e);
+ }
+ // Preserve the existing production compatibility path for legacy Admin profiles.
+ // Phase 1 staging never grants Admin UI from smv_users.role alone.
+ if(!IS_SMV_PHASE1_STAGING){
+  const profile=profileHint||await getUserProfile(uid);
+  return String(profile?.role||"").toLowerCase()==="admin";
+ }
+ return false;
+}
+async function resolveSmvRole(user, profileHint=null){
+ if(!user)return "customer";
+ if(await isAdminAccount(user,profileHint))return "admin";
+ const profile=profileHint||await getUserProfile(user.uid);
+ const role=String(profile?.role||"customer").toLowerCase();
+ if(IS_SMV_PHASE1_STAGING&&role==="admin")return "customer";
+ return ["customer","astrologer"].includes(role)?role:"customer";
+}
+
 // V194 — A cold reopen deliberately stays on Home, so the initial auth callback
 // does not spend a Firestore read resolving the role. Protected customer actions
 // (for example Private Consultation -> SELECT ASTROLOGER) can lazily resolve the
@@ -684,11 +714,8 @@ async function smvEnsureCustomerSessionForProtectedAction(){
   window.__smvCurrentUserPresent=true;
   let role=String(window.__smvCurrentRole||'').toLowerCase();
   if(!role){
-    if(user.uid===ADMIN_UID) role='admin';
-    else {
-      const profile=await getUserProfile(user.uid);
-      role=String(profile?.role||'customer').toLowerCase();
-    }
+    const profile=await getUserProfile(user.uid);
+    role=await resolveSmvRole(user,profile);
     if(!['customer','astrologer','admin'].includes(role)) role='customer';
     window.__smvCurrentRole=role;
     setHeaderRoleLabel(role);
@@ -699,9 +726,7 @@ async function smvEnsureCustomerSessionForProtectedAction(){
 window.__smvEnsureCustomerSession=smvEnsureCustomerSessionForProtectedAction;
 async function isCurrentAdmin(){
   if(!currentUser) return false;
-  if(currentUser.uid===ADMIN_UID) return true;
-  const profile=await getUserProfile(currentUser.uid);
-  return String(profile.role||'').toLowerCase()==='admin';
+  return isAdminAccount(currentUser);
 }
 let smvBoardRequest=null;
 const SMV_ADMIN_SHORTCUTS=[
@@ -851,6 +876,7 @@ window.__smvRevealPaidDashboardItem=smvRevealPaidDashboardItem;
 async function finishGoogleRoleLogin(googleUser, askNowLogin){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
   currentUser=googleUser;
+  smvAdminAccessCache.delete(googleUser.uid);
   await googleUser.reload();
 
   // Google Sign-In is login-only. Never create a Customer profile here.
@@ -865,8 +891,9 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
     console.error("Google role lookup failed",profileErr);
     throw new Error("Unable to verify your registered account. Please try Google Login again.");
   }
-  let role=String(profile?.role||"").toLowerCase();
-  const adminUser=(googleUser.uid===ADMIN_UID || role==="admin");
+  const profileRole=String(profile?.role||"").toLowerCase();
+  const adminUser=await isAdminAccount(googleUser,profile);
+  const role=adminUser?"admin":(IS_SMV_PHASE1_STAGING&&profileRole==="admin"?"":profileRole);
 
   if(!adminUser && !["customer","astrologer"].includes(role)){
     try{await signOut(auth);}catch(_e){}
@@ -1017,6 +1044,7 @@ async function submitAuth(mode){
     const loginCred=await signInWithEmailAndPassword(auth,email,password);
     if(!loginCred?.user){throw new Error("Login did not return a Firebase user. Please try again.");}
     currentUser=loginCred.user;
+    smvAdminAccessCache.delete(loginCred.user.uid);
     // A successful signInWithEmailAndPassword credential already contains the
     // current verification state. Do not add a second reload network wait here.
     // That wait used to keep the Login modal visible even though Firebase had
@@ -1051,8 +1079,9 @@ async function submitAuth(mode){
       // below; protected consultation/earnings queries are skipped until approval.
 }
     const profile=await getUserProfile(loginCred.user.uid);
-    const role=String(profile.role||loginRole||"customer").toLowerCase();
-    const adminUser=(loginCred.user.uid===ADMIN_UID || role==="admin");
+    const profileRole=String(profile.role||loginRole||"customer").toLowerCase();
+    const adminUser=await isAdminAccount(loginCred.user,profile);
+    const role=adminUser?"admin":(IS_SMV_PHASE1_STAGING&&profileRole==="admin"?"customer":profileRole);
     setHeaderRoleLabel(adminUser?'admin':role);
     window.__smvCurrentRole=adminUser?'admin':role;
 
@@ -4162,9 +4191,8 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      }
      if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
      const listenerEpoch=smvNavigationEpoch;
-     const adminUser=await isCurrentAdmin();
-     const headerProfile=adminUser?{role:'admin'}:await getUserProfile(user.uid).catch(()=>({role:'customer'}));
-     const headerRole=adminUser?'admin':String(headerProfile?.role||'customer').toLowerCase();
+     const headerRole=await resolveSmvRole(user);
+     const adminUser=headerRole==='admin';
      setHeaderRoleLabel(headerRole);
      window.__smvCurrentRole=headerRole;
      // CRITICAL LATE-RACE GUARD: ASK NOW may have started while the auth
