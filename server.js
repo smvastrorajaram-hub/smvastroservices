@@ -3191,8 +3191,6 @@ async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
     if(Number(o.minimumAmount||0)>original)continue;
     if(Number(o.totalUsageLimit||0)>0&&Number(o.usedCount||0)>=Number(o.totalUsageLimit))continue;
     const eligibility=String(o.eligibility||"all");
-    // Built-in ₹1 Welcome is available only before the customer's first successful
-    // paid service of either type. Other offers retain service-specific eligibility.
     if(o.id===LEGACY_WELCOME_ID)continue;
     if(eligibility==="new_customer"&&paidBefore>0)continue;
     if(eligibility==="existing_customer"&&paidBefore===0)continue;
@@ -3204,7 +3202,7 @@ async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
     const final=computeOfferPrice(original,o);if(final==null||final>=original)continue;
     candidates.push({...o,finalAmount:final,discountAmount:Math.round((original-final)*100)/100});
   }
-  // Strict priority: built-in ₹1 welcome -> explicit promo -> automatic seasonal -> normal price.
+  // Explicit promo and automatic seasonal offers are ranked by Admin priority.
   candidates.sort((a,b)=>{
     const rank=o=>(offerText(o.promoCode,40)?200:100)+Number(o.priority||0);
     return rank(b)-rank(a) || a.finalAmount-b.finalAmount;
@@ -3305,18 +3303,17 @@ app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
   try{
     const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id;
     if(id===LEGACY_WELCOME_ID)return res.status(409).json({error:"The old Welcome Offer has been retired. Use Wallet Recharge Bonus offers instead."});
-    const builtIn=false;
     const promo=offerText(b.promoCode,40).toUpperCase().replace(/[^A-Z0-9_-]/g,"");
     const discountType=["fixed_price","percentage","flat"].includes(String(b.discountType))?String(b.discountType):"fixed_price";
     const applies=Array.isArray(b.appliesTo)?b.appliesTo.filter(x=>["public_question","private_consultation","wallet_recharge","all"].includes(String(x))):["public_question"];
-    const automatic=builtIn?true:b.automatic===true;
+    const automatic=b.automatic===true;
     const bonusFreeMinutes=Math.floor(Number(b.bonusFreeMinutes||0));
     if(applies.includes("wallet_recharge")&&(!Number.isSafeInteger(bonusFreeMinutes)||bonusFreeMinutes<1||bonusFreeMinutes>1440))return res.status(400).json({error:"Wallet Recharge offers must award 1–1440 free minutes."});
     if(applies.includes("wallet_recharge")&&Number(b.minimumAmount||0)<1)return res.status(400).json({error:"Wallet Recharge offers must have a minimum recharge of at least ₹1."});
-    if(!builtIn && !automatic && !promo)return res.status(400).json({error:"Promo Code is required when Automatic Offer is NO."});
-    const allowedThemes=["welcome","vinayagar_chaturthi","karthigai_deepam","thaipusam","new_year","onam","christmas","eid","auto","generic","pongal","diwali","navaratri","dasara","ayudha_pooja","shivaratri","tamil_new_year"];
+    if(!automatic && !promo)return res.status(400).json({error:"Promo Code is required when Automatic Offer is NO."});
+    const allowedThemes=["vinayagar_chaturthi","karthigai_deepam","thaipusam","new_year","onam","christmas","eid","auto","generic","pongal","diwali","navaratri","dasara","ayudha_pooja","shivaratri","tamil_new_year"];
     const bannerTheme=allowedThemes.includes(String(b.bannerTheme||"auto"))?String(b.bannerTheme||"auto"):"auto";
-    const data={name:offerText(b.name,120)||"Promotion",kind:builtIn?"welcome":offerText(b.kind,30)||"promotion",enabled:b.enabled===true,automatic,promoCode:(builtIn||automatic)?"":promo,bannerTheme,discountType,offerPrice:offerMoney(b.offerPrice),discountValue:offerMoney(b.discountValue)||0,bonusFreeMinutes:applies.includes("wallet_recharge")?bonusFreeMinutes:0,eligibility:["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all",appliesTo:applies.length?applies:["public_question"],usageRule:offerText(b.usageRule,30)||"one_per_customer",perCustomerLimit:Math.max(0,Math.floor(Number(b.perCustomerLimit||0))),totalUsageLimit:Math.max(0,Math.floor(Number(b.totalUsageLimit||0))),minimumAmount:Math.max(0,Number(b.minimumAmount||0)),displayMode:["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only",bannerText:offerText(b.bannerText,240),startAt:b.startAt?String(b.startAt):null,endAt:b.endAt?String(b.endAt):null,priority:Number(b.priority||0),builtIn,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
+    const data={name:offerText(b.name,120)||"Promotion",kind:offerText(b.kind,30)||"promotion",enabled:b.enabled===true,automatic,promoCode:automatic?"":promo,bannerTheme,discountType,offerPrice:offerMoney(b.offerPrice),discountValue:offerMoney(b.discountValue)||0,bonusFreeMinutes:applies.includes("wallet_recharge")?bonusFreeMinutes:0,eligibility:["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all",appliesTo:applies.length?applies:["public_question"],usageRule:offerText(b.usageRule,30)||"one_per_customer",perCustomerLimit:Math.max(0,Math.floor(Number(b.perCustomerLimit||0))),totalUsageLimit:Math.max(0,Math.floor(Number(b.totalUsageLimit||0))),minimumAmount:Math.max(0,Number(b.minimumAmount||0)),displayMode:["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only",bannerText:offerText(b.bannerText,240),startAt:b.startAt?String(b.startAt):null,endAt:b.endAt?String(b.endAt):null,priority:Number(b.priority||0),builtIn:false,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
     if(discountType==="fixed_price"&&(!Number.isFinite(data.offerPrice)||data.offerPrice<1))return res.status(400).json({error:"Fixed offer price must be at least ₹1."});
     const ref=db.collection(OFFER_COLLECTION).doc(id);
     const before=await ref.get();
