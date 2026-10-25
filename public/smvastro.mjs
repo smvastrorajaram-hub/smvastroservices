@@ -4445,6 +4445,198 @@ if(firebaseInitError){
   console.error("SMV ASTRO Firebase is unavailable. Basic navigation is still available.",firebaseInitError);
 }
 
+
+// Phase 1 Live Call / Chat client. Prices and settlement remain server-owned.
+let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='';
+let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
+let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='';
+function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function smvLiveStatus(session){const s=String(session?.state||session?.status||'');return ({ringing:'Ringing — waiting for Astrologer',connecting:'Connecting…',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
+function smvLivePanelHtml(s,incoming){
+ const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing;
+ return '<div id="smvLiveSessionPanel" data-live-session="'+escapeHtml(id)+'"><span class="badge">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span><h2>SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveStatus(s))+'</span></p><p class="small" id="smvLiveSessionBilling">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown"></p>'+
+ '<div id="smvLiveCallArea" '+(call?'':'hidden')+'><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small">Microphone not connected yet.</p><button class="btn gray" type="button" id="smvLiveMute" disabled>Mute microphone</button></div>'+
+ '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+'><button class="btn" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" id="smvLiveReject" type="button">REJECT</button></div>'+
+ '<p id="smvLiveWaiting" class="small" '+(active||inv?'hidden':'')+'>'+(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.')+'</p>'+
+ '<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+'><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:260px;overflow:auto;border:1px solid #ddd;border-radius:8px;padding:10px"><p class="small">Loading chat history…</p></div><form id="smvLiveMessageForm"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="width:100%;box-sizing:border-box"></textarea><button class="btn" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
+ '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite"></p><div class="action-row"><button class="btn gray" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'disabled':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn gray" id="smvLiveClosePanel" type="button">CLOSE WINDOW</button></div></div>';
+}
+function smvLiveClearTransport(){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);if(smvLiveClockTimer)clearInterval(smvLiveClockTimer);smvLiveSignalTimer=smvLiveMessageTimer=smvLiveClockTimer=null;smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();smvLiveQueuedIce=[];smvLiveReadySentKey='';smvLiveOfferStartedKey='';}
+function smvLiveCloseMedia(){try{smvLivePeer?.close();}catch(_){}smvLivePeer=null;for(const track of smvLiveLocalStream?.getTracks?.()||[])try{track.stop();}catch(_){}smvLiveLocalStream=null;smvLiveRemoteStream=null;}
+function smvLiveShowError(error){const el=$('smvLiveSessionResult');if(el)el.textContent=String(error?.message||error||'Live Session request failed.');}
+function smvLiveApplySession(session){
+ if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
+ smvLiveCurrentSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
+ const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
+ if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveStatus(s);
+ if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
+ if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
+ if($('smvLiveWaiting'))$('smvLiveWaiting').hidden=active||(ringing&&s.astrologerUid===currentUser?.uid);
+ if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
+ if($('smvLiveEndSession')){ $('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':(s.state==='ended'?'SESSION ENDED':'CANCEL / CLOSE SESSION');}
+ if(s.state==='connecting'&&!call)smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
+ if(s.state==='connecting'&&call&&s.customerUid===currentUser?.uid)smvLiveStartOffer(s.id).catch(e=>smvLiveHandleMediaFailure(s.id,e));
+ if(active)smvLiveStartClock(s);
+ if(s.state==='ended'){
+  const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.';
+  smvLiveCloseMedia();smvLiveClearTransport();
+ }
+}
+function smvLiveOpenSession(session,wallet,incoming){
+ if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
+ if(smvLivePanelSessionId!==id){smvLiveCloseMedia();smvLiveClearTransport();}
+ smvLivePanelSessionId=id;smvLiveCurrentSession={...session,id};smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
+ openModal(smvLivePanelHtml(smvLiveCurrentSession,!!incoming));
+ const accept=$('smvLiveAccept'),reject=$('smvLiveReject'),end=$('smvLiveEndSession'),close=$('smvLiveClosePanel');
+ if(accept)accept.onclick=async()=>{accept.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/accept',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'connecting'});}catch(e){smvLiveShowError(e);accept.disabled=false;}};
+ if(reject)reject.onclick=async()=>{reject.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'ended'});}catch(e){smvLiveShowError(e);reject.disabled=false;}};
+ if(end)end.onclick=async()=>{end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'ended'});if(r.wallet&&$('smvLiveSessionResult'))$('smvLiveSessionResult').textContent='Session ended. Available Wallet: '+smvLiveMoney(r.wallet.availableBalancePaise)+'.';}catch(e){smvLiveShowError(e);end.disabled=false;}};
+ if(close)close.onclick=()=>window.closeModal?.();
+ const form=$('smvLiveMessageForm');
+ if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});smvLiveAppendMessage(r.message);if(input)input.value='';}catch(err){smvLiveShowError(err);}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
+ const mute=$('smvLiveMute');if(mute)mute.onclick=()=>{const tracks=smvLiveLocalStream?.getAudioTracks?.()||[];if(!tracks.length)return;const enabled=tracks[0].enabled===false;tracks.forEach(t=>t.enabled=enabled);mute.textContent=enabled?'Mute microphone':'Unmute microphone';};
+ smvLiveApplySession(smvLiveCurrentSession);smvLiveStartTransport(id,smvLiveCurrentSession);
+}
+window.__smvOpenLiveSession=(session)=>smvLiveOpenSession(session,null,false);
+async function smvLiveMarkReady(id,mediaConnected){
+ const key=String(id)+':'+String(currentUser?.uid||'');if(smvLiveReadySentKey===key)return;smvLiveReadySentKey=key;
+ try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/ready',{method:'POST',body:JSON.stringify({mediaConnected:!!mediaConnected})});if(r.session)smvLiveApplySession(r.session);}
+ catch(e){smvLiveReadySentKey='';smvLiveShowError(e);}
+}
+function smvLiveStartClock(s){
+ if(smvLiveClockTimer)return;smvLiveClockTimer=setInterval(()=>{const current=smvLiveCurrentSession;if(!current||current.state!=='active')return;const start=Date.parse(current.startedAt||'');if(!Number.isFinite(start))return;const remaining=Math.max(0,Math.ceil((start+Math.max(1,Number(current.minutes||1))*60000-Date.now())/1000));const el=$('smvLiveSessionCountdown');if(el)el.textContent='Time remaining: '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');if(!remaining)smvLiveSetStatus('Time ended — waiting for server settlement…');},1000);
+}
+function smvLiveSetStatus(v){if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=String(v||'');}
+async function smvLiveHandleMediaFailure(id,error){console.warn('Live voice setup failed:',error);smvLiveShowError(error);try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'connection_failed'})});if(r.session)smvLiveApplySession(r.session);}catch(e){console.warn('Call settlement retry required:',e);}}
+async function smvLiveEnsurePeer(id){
+ if(smvLivePeer)return smvLivePeer;
+ if(!navigator.mediaDevices?.getUserMedia||typeof RTCPeerConnection!=='function')throw new Error('This browser does not support WebRTC microphone access.');
+ smvLiveLocalStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+ smvLiveRemoteStream=new MediaStream();const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});smvLivePeer=pc;
+ for(const track of smvLiveLocalStream.getAudioTracks())pc.addTrack(track,smvLiveLocalStream);
+ pc.ontrack=e=>{if(e.streams?.[0])smvLiveRemoteStream=e.streams[0];else if(e.track)smvLiveRemoteStream.addTrack(e.track);const audio=$('smvLiveRemoteAudio');if(audio){audio.srcObject=smvLiveRemoteStream;audio.play?.().catch(()=>{});}if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connected.';};
+ pc.onicecandidate=e=>{if(e.candidate)renderApi('/live/sessions/'+encodeURIComponent(id)+'/signal',{method:'POST',body:JSON.stringify({type:'ice',payload:{candidate:e.candidate.toJSON()}})}).catch(err=>console.warn('ICE relay failed:',err));};
+ pc.onconnectionstatechange=()=>{if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connection: '+pc.connectionState;if(pc.connectionState==='connected')smvLiveMarkReady(id,true).catch(()=>{});if(pc.connectionState==='failed')smvLiveHandleMediaFailure(id,new Error('Voice network connection failed. Unused Wallet reserve is being returned.'));};
+ const mute=$('smvLiveMute');if(mute)mute.disabled=false;return pc;
+}
+async function smvLiveStartOffer(id){
+ const key=String(id)+':'+String(currentUser?.uid||'');if(smvLiveOfferStartedKey===key)return;smvLiveOfferStartedKey=key;
+ try{const pc=await smvLiveEnsurePeer(id);if(pc.signalingState!=='stable')return;const offer=await pc.createOffer();await pc.setLocalDescription(offer);await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signal',{method:'POST',body:JSON.stringify({type:'offer',payload:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}})});}
+ catch(e){smvLiveOfferStartedKey='';throw e;}
+}
+async function smvLiveProcessSignal(sig){
+ if(!sig||!sig.id||smvLiveSignalSeen.has(sig.id)||sig.senderUid===currentUser?.uid)return;smvLiveSignalSeen.add(sig.id);
+ const s=smvLiveCurrentSession;if(!s||s.mode!=='call')return;const pc=await smvLiveEnsurePeer(sig.sessionId);
+ if(sig.type==='offer'){
+  await pc.setRemoteDescription(new RTCSessionDescription(sig.payload?.description||sig.payload));
+  for(const ice of smvLiveQueuedIce.splice(0))try{await pc.addIceCandidate(new RTCIceCandidate(ice));}catch(e){console.warn('Queued ICE candidate rejected:',e);}
+  const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await renderApi('/live/sessions/'+encodeURIComponent(sig.sessionId)+'/signal',{method:'POST',body:JSON.stringify({type:'answer',payload:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}})});
+ }else if(sig.type==='answer'){
+  if(pc.signalingState!=='stable')await pc.setRemoteDescription(new RTCSessionDescription(sig.payload?.description||sig.payload));
+  for(const ice of smvLiveQueuedIce.splice(0))try{await pc.addIceCandidate(new RTCIceCandidate(ice));}catch(e){console.warn('Queued ICE candidate rejected:',e);}
+ }else if(sig.type==='ice'){
+  const candidate=sig.payload?.candidate||sig.payload;if(candidate){if(!pc.remoteDescription)smvLiveQueuedIce.push(candidate);else try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn('ICE candidate rejected:',e);}}
+ }
+}
+function smvLiveAppendMessage(m){
+ if(!m||!m.id||smvLiveMessageSeen.has(m.id))return;smvLiveMessageSeen.add(m.id);
+ const host=$('smvLiveMessages');if(!host)return;
+ if(host.children.length===1&&/Loading chat history/.test(host.textContent))host.innerHTML='';
+ const row=document.createElement('div');row.style.cssText='padding:6px 0;border-bottom:1px solid #eee';
+ const who=document.createElement('b');who.textContent=(m.senderUid===currentUser?.uid?'You':'Other participant')+' · '+(m.createdAt?new Date(m.createdAt).toLocaleTimeString():new Date().toLocaleTimeString());
+ const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0';body.textContent=String(m.text||'');row.append(who,body);host.append(row);host.scrollTop=host.scrollHeight;
+}
+async function smvLivePollMessages(id){try{const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'GET',timeoutMs:10000});for(const m of d.messages||[])smvLiveAppendMessage({ ...m,id:m.id||m.messageId});}catch(e){if(!$('smvLiveSessionResult'))return;}}
+async function smvLivePollSignals(id){try{const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signals',{method:'GET',timeoutMs:10000});for(const s of d.signals||[])await smvLiveProcessSignal({...s,id:s.id||s.signalId});}catch(e){if(!$('smvLiveSessionResult'))return;}}
+function smvLiveStartTransport(id,s){
+ if(s.mode==='call'){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1200);smvLivePollSignals(id).catch(()=>{});}
+ if(s.mode==='chat'){if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},1800);smvLivePollMessages(id).catch(()=>{});}
+}
+function smvLiveHandleEvent(ev){
+ if(!ev||typeof ev!=='object')return;
+ if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
+  const s=ev.session;if(!s)return;
+  if(s.state==='ringing'&&s.astrologerUid===currentUser?.uid&&s.id!==smvLivePanelSessionId)smvLiveOpenSession(s,null,true);
+  else if(s.id===smvLivePanelSessionId)smvLiveApplySession(s);
+  else if(s.state==='ringing'&&s.customerUid===currentUser?.uid)smvLiveOpenSession(s,null,false);
+ }else if(ev.type==='live.session.ended'){
+  const s=ev.session;if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+ }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId)smvLiveAppendMessage(ev.message);
+ else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId)smvLiveProcessSignal(ev.signal).catch(smvLiveShowError);
+ else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated')smvLivePollSessions().catch(()=>{});
+}
+function smvLiveStopEventStream(){
+ if(smvLiveEventRetry){clearTimeout(smvLiveEventRetry);smvLiveEventRetry=null;}if(smvLiveEventController){smvLiveEventController.abort();smvLiveEventController=null;}smvLiveEventUid='';if(smvLiveDashboardTimer){clearInterval(smvLiveDashboardTimer);smvLiveDashboardTimer=null;}
+}
+function smvLiveStartEventStream(){
+ const user=auth?.currentUser;if(!user||!currentUser||currentUser.uid!==user.uid)return;if(smvLiveEventUid===user.uid&&smvLiveEventController)return;
+ smvLiveStopEventStream();smvLiveEventUid=user.uid;const uid=user.uid,controller=new AbortController();smvLiveEventController=controller;
+ (async()=>{
+  try{
+   const token=await user.getIdToken(),resp=await fetch(BACKEND+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
+   if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
+   const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
+   while(true){const item=await reader.read();if(item.done)break;buffer+=decoder.decode(item.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);const line=frame.split('\n').find(x=>x.startsWith('data:'));if(line)try{smvLiveHandleEvent(JSON.parse(line.slice(5).trim()));}catch(e){console.warn('Invalid Live Session event:',e);}}}
+  }catch(e){if(e?.name!=='AbortError')console.warn('Live events disconnected; fallback polling remains active.',e?.message||e);}
+  finally{if(smvLiveEventController===controller)smvLiveEventController=null;if(currentUser?.uid===uid&&auth?.currentUser?.uid===uid)smvLiveEventRetry=setTimeout(()=>{smvLiveEventRetry=null;smvLiveStartEventStream();},3000);}
+ })();
+ if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500);
+}
+async function smvLivePollSessions(){
+ if(smvLivePollBusy||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;const role=String(window.__smvCurrentRole||'').toLowerCase();if(!['customer','astrologer'].includes(role))return;smvLivePollBusy=true;
+ try{
+  const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
+  for(const s of list.sessions||[]){if(s.state==='ringing'&&s.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==s.id)smvLiveOpenSession(s,null,true);else if(s.id===smvLivePanelSessionId)smvLiveApplySession(s);}
+  if(role==='astrologer'){const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);}
+ }catch(e){if(!/403|role/i.test(String(e?.message||e)))console.warn('Live session polling skipped:',e?.message||e);}
+ finally{smvLivePollBusy=false;}
+}
+function smvLiveRenderBookings(bookings){
+ const host=$('smvLiveBookings');if(!host)return;if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
+ host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+'</p><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button></article>').join('');
+ host.querySelectorAll('[data-live-booking-accept]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{const r=await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingAccept)+'/accept',{method:'POST',body:JSON.stringify({})});if(r.session)smvLiveOpenSession(r.session,r.wallet,false);await smvLivePollSessions();}catch(e){smvLiveShowError(e);btn.disabled=false;}});
+}
+function smvLiveDashboardHtml(role){
+ return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
+ (role==='astrologer'?'<div class="action-row"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button></div><p class="small" id="smvLiveAvailabilityMsg"></p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'')+
+ '<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
+}
+async function smvLiveLoadDashboard(role){
+ const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
+ const reload=async()=>{
+  try{
+   const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];
+   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveStatus(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button class="btn" type="button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+   host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s)smvLiveOpenSession(s,null,false);});
+   if(role==='astrologer'){
+    const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
+    if(sel&&!sel.dataset.initialized){if(astro)sel.value=astro.availabilityStatus||'offline';sel.dataset.initialized='1';}
+    smvLiveRenderBookings((await renderApi('/live/bookings/pending',{method:'GET'})).bookings||[]);
+   }
+   if(msg)msg.textContent='Live session status refreshed.';
+  }catch(e){if(host)host.innerHTML='<p class="error">'+escapeHtml(e.message||String(e))+'</p>';if(msg)msg.textContent='Live Sessions unavailable: '+String(e.message||e);}
+ };
+ const refresh=$('smvLiveRefreshDashboard');if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=reload;}
+ const set=$('smvLiveSetAvailability');if(set&&!set.dataset.bound){set.dataset.bound='1';set.onclick=async()=>{const status=$('smvLiveAvailabilityMsg');set.disabled=true;try{const r=await renderApi('/astrologer/availability',{method:'POST',body:JSON.stringify({availabilityStatus:$('smvLiveAvailability')?.value||'offline'})});if($('smvLiveAvailability'))$('smvLiveAvailability').value=r.availabilityStatus||'offline';if(status)status.textContent='Availability saved: '+r.availabilityStatus+'.';await reload();}catch(e){if(status)status.textContent=e.message||String(e);}finally{set.disabled=false;}};}
+ await reload();
+}
+function smvLiveBindDashboard(role){
+ if(!['customer','astrologer'].includes(role))return;const box=$('dashboardContent');if(!box||$('smvLiveDashboardCard'))return;
+ box.insertAdjacentHTML('beforeend',smvLiveDashboardHtml(role));smvLiveLoadDashboard(role).catch(smvLiveShowError);smvLiveStartEventStream();
+}
+function smvLiveBindAdminPricing(){
+ const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
+ async function load(){
+  if(msg)msg.textContent='Loading server-owned prices…';
+  try{const r=await renderApi('/live/pricing',{method:'GET'});if($('liveCallRatePerMinute'))$('liveCallRatePerMinute').value=String(r.callRatePerMinute);if($('liveChatRatePerMinute'))$('liveChatRatePerMinute').value=String(r.chatRatePerMinute);if($('liveMaxConcurrentSessions'))$('liveMaxConcurrentSessions').value=String(r.maxConcurrentSessions||1);if(msg)msg.textContent='Server rates: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';}
+  catch(e){if(msg)msg.textContent='Pricing load failed: '+(e.message||String(e));}
+ }
+ if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=async()=>{save.disabled=true;if(msg)msg.textContent='Saving price settings on server…';try{const r=await renderApi('/admin/live/pricing',{method:'POST',body:JSON.stringify({callRatePerMinute:String($('liveCallRatePerMinute')?.value||''),chatRatePerMinute:String($('liveChatRatePerMinute')?.value||''),maxConcurrentSessions:Number($('liveMaxConcurrentSessions')?.value||1)})});if(msg)msg.textContent='Saved: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';}catch(e){if(msg)msg.textContent='Save failed: '+(e.message||String(e));}finally{save.disabled=false;}};}
+ if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=load;}load();
+}
+window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
+window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
+
 window.__SMV_APP_READY=true;
 window.dispatchEvent(new Event('smv:app-ready'));
 window.__smvSyncWorkspace?.();
