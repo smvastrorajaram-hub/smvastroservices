@@ -1498,6 +1498,56 @@ async function loadQuestionPrice(){
 function showAskFlow(a){openQuestionService();}
 // Customer dashboard retry for questions whose payment was not completed.
 // Reuses the existing server-side /create-order endpoint with the SAME questionId,
+// Shared checkout bootstrap for Wallet recharge and existing payment retries.
+// The Checkout script is loaded only on demand; Wallet credit still requires server signature verification.
+let smvRazorpayCheckoutPromise = null;
+function ensureRazorpayCheckout() {
+  if (typeof window.Razorpay === 'function') return Promise.resolve(window);
+  if (smvRazorpayCheckoutPromise) return smvRazorpayCheckoutPromise;
+  smvRazorpayCheckoutPromise = new Promise((resolve, reject) => {
+    let script = document.querySelector('script[data-smv-razorpay-checkout-loader]');
+    if (script && ['failed', 'loaded'].includes(script.dataset.smvRazorpayCheckoutState) && typeof window.Razorpay !== 'function') {
+      script.remove();
+      script = null;
+    }
+    let settled = false;
+    let timeoutId = null;
+    const finish = error => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      if (error) {
+        if (script) script.dataset.smvRazorpayCheckoutState = 'failed';
+        reject(error);
+        return;
+      }
+      resolve(window);
+    };
+    const onLoad = () => {
+      if (script) script.dataset.smvRazorpayCheckoutState = 'loaded';
+      if (typeof window.Razorpay === 'function') finish(null);
+      else finish(new Error('Razorpay Checkout loaded without the payment constructor. Refresh and retry.'));
+    };
+    const onError = () => finish(new Error('Razorpay Checkout could not load. Check your connection and retry.'));
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.dataset.smvRazorpayCheckoutLoader = '1';
+      script.dataset.smvRazorpayCheckoutState = 'loading';
+    }
+    script.addEventListener('load', onLoad, { once: true });
+    script.addEventListener('error', onError, { once: true });
+    timeoutId = setTimeout(() => finish(new Error('Razorpay Checkout did not respond within 15 seconds. Please retry.')), 15000);
+    if (!script.isConnected) document.head.appendChild(script);
+    if (typeof window.Razorpay === 'function') finish(null);
+  }).catch(error => {
+    smvRazorpayCheckoutPromise = null;
+    throw error;
+  });
+  return smvRazorpayCheckoutPromise;
+}
+
 // so retry never creates a duplicate question.
 async function retryCustomerPayment(questionId, triggerButton){
   if(!currentUser) return;
@@ -4469,13 +4519,17 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');return ({ringing:'Ringing — waiting for Astrologer',connecting:'Connecting…',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
 function smvLivePanelHtml(s,incoming){
- const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing;
- return '<div id="smvLiveSessionPanel" data-live-session="'+escapeHtml(id)+'"><span class="badge">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span><h2>SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown"></p>'+
- '<div id="smvLiveCallArea" '+(call?'':'hidden')+'><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small">Microphone not connected yet.</p><button class="btn gray" type="button" id="smvLiveMute" disabled>Mute microphone</button></div>'+
- '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+'><button class="btn" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" id="smvLiveReject" type="button">REJECT</button></div>'+
- '<p id="smvLiveWaiting" class="small" '+(active||inv?'hidden':'')+'>'+(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.')+'</p>'+
- '<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+'><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:260px;overflow:auto;border:1px solid #ddd;border-radius:8px;padding:10px"><p class="small">Loading chat history…</p></div><form id="smvLiveMessageForm"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="width:100%;box-sizing:border-box"></textarea><button class="btn" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
- '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite"></p><div class="action-row"><button class="btn gray" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'disabled':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn gray" id="smvLiveClosePanel" type="button">CLOSE WINDOW</button></div></div>';
+ const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
+ const rootStyle='max-height:calc(100dvh - 28px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:clamp(12px,3vw,22px);background:#fffaf0;color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere;line-height:1.5';
+ const primaryStyle='background:#8b1717;color:#fff;border:1px solid #d4af37;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
+ const secondaryStyle='background:#f5e8c9;color:#321a1a;border:1px solid #a88a4a;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
+ return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><span class="badge" style="display:inline-block;background:#8b1717;color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
+ '<h2 style="color:#751515;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#2d1919"><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p style="color:#2d1919"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#2d1919"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#62483b;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#62483b"></p>'+
+ '<div id="smvLiveCallArea" '+(call?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT MICROPHONE</button><button class="btn gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
+ '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
+ '<p id="smvLiveWaiting" class="small" '+(active||inv?'hidden':'')+' style="color:#62483b">'+(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.')+'</p>'+
+ '<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:min(260px,35vh);overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fff;color:#241818;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="3" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:88px;padding:10px;border:1px solid #b9a17b;border-radius:8px;background:#fff;color:#241818;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
+ '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite" style="color:#5a3026;overflow-wrap:anywhere"></p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn gray" style="'+secondaryStyle+'" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'disabled':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn gray" style="'+secondaryStyle+'" id="smvLiveClosePanel" type="button">CLOSE WINDOW</button></div></div>';
 }
 function smvLiveClearTransport(){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);if(smvLiveClockTimer)clearInterval(smvLiveClockTimer);smvLiveSignalTimer=smvLiveMessageTimer=smvLiveClockTimer=null;smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();smvLiveQueuedIce=[];smvLiveReadySentKey='';smvLiveOfferStartedKey='';smvLiveSignalSinceMs=0;smvLiveMessageSinceMs=0;}
 function smvLiveCloseMedia(){try{smvLivePeer?.close();}catch(_){}smvLivePeer=null;for(const track of smvLiveLocalStream?.getTracks?.()||[])try{track.stop();}catch(_){}smvLiveLocalStream=null;smvLiveRemoteStream=null;}
@@ -4487,11 +4541,12 @@ function smvLiveApplySession(session){
  if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveSessionStatusLabel(s);
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
+ const connectMic=$('smvLiveConnectMic');if(connectMic){connectMic.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));if(s.state==='ended')connectMic.disabled=true;}
  if($('smvLiveWaiting'))$('smvLiveWaiting').hidden=active||(ringing&&s.astrologerUid===currentUser?.uid);
  if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
  if($('smvLiveEndSession')){ $('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':(s.state==='ended'?'SESSION ENDED':'CANCEL / CLOSE SESSION');}
  if(s.state==='connecting'&&!call)smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
- if(s.state==='connecting'&&call&&s.customerUid===currentUser?.uid)smvLiveStartOffer(s.id).catch(e=>smvLiveHandleMediaFailure(s.id,e));
+ // The Customer now starts WebRTC from the explicit microphone button, preserving the browser permission gesture.
  if(active)smvLiveStartClock(s);
  if(s.state==='ended'){
   const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.';
@@ -4510,6 +4565,26 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(close)close.onclick=()=>window.closeModal?.();
  const form=$('smvLiveMessageForm');
  if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});smvLiveAppendMessage(r.message);if(input)input.value='';}catch(err){smvLiveShowError(err);}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
+ const connectMic=$('smvLiveConnectMic');
+ if(connectMic)connectMic.onclick=async()=>{
+  const current=smvLiveCurrentSession;
+  if(!current||!['connecting','active'].includes(String(current.state||'')))return;
+  const voice=$('smvLiveVoiceStatus');
+  connectMic.disabled=true;connectMic.textContent='CONNECTING MICROPHONE…';
+  if(voice)voice.textContent='Requesting microphone permission. Please allow access in your browser.';
+  try{
+   const pc=await smvLiveEnsurePeer(id);
+   if(smvLiveCurrentSession?.customerUid===currentUser?.uid)await smvLiveStartOffer(id);
+   if(voice&&pc.connectionState!=='connected')voice.textContent='Microphone ready. Waiting for the other participant…';
+   const muteButton=$('smvLiveMute');if(muteButton)muteButton.disabled=false;
+   connectMic.textContent='MICROPHONE READY';
+  }catch(error){
+   const message=smvLiveMediaErrorText(error);
+   if(voice)voice.textContent=message;
+   smvLiveShowError(new Error(message));
+   connectMic.textContent='RETRY MICROPHONE';
+  }finally{if(connectMic.isConnected)connectMic.disabled=false;}
+ };
  const mute=$('smvLiveMute');if(mute)mute.onclick=()=>{const tracks=smvLiveLocalStream?.getAudioTracks?.()||[];if(!tracks.length)return;const enabled=tracks[0].enabled===false;tracks.forEach(t=>t.enabled=enabled);mute.textContent=enabled?'Mute microphone':'Unmute microphone';};
  smvLiveApplySession(smvLiveCurrentSession);smvLiveStartTransport(id,smvLiveCurrentSession);
 }
@@ -4523,11 +4598,23 @@ function smvLiveStartClock(s){
  if(smvLiveClockTimer)return;smvLiveClockTimer=setInterval(()=>{const current=smvLiveCurrentSession;if(!current||current.state!=='active')return;const start=Date.parse(current.startedAt||'');if(!Number.isFinite(start))return;const remaining=Math.max(0,Math.ceil((start+Math.max(1,Number(current.minutes||1))*60000-Date.now())/1000));const el=$('smvLiveSessionCountdown');if(el)el.textContent='Time remaining: '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');if(!remaining)smvLiveSetStatus('Time ended — waiting for server settlement…');},1000);
 }
 function smvLiveSetStatus(v){if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=String(v||'');}
-async function smvLiveHandleMediaFailure(id,error){console.warn('Live voice setup failed:',error);smvLiveShowError(error);try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'connection_failed'})});if(r.session)smvLiveApplySession(r.session);}catch(e){console.warn('Call settlement retry required:',e);}}
+function smvLiveMediaErrorText(error){
+ const name=String(error?.name||'');
+ if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return 'Microphone access needs an HTTPS page and a browser with microphone support. Open the secure site in a supported browser.';
+ if(name==='NotAllowedError'||name==='PermissionDeniedError'||name==='SecurityError')return 'Microphone permission is blocked. Allow Microphone for this site in browser settings, then tap RETRY MICROPHONE.';
+ if(name==='NotFoundError'||name==='DevicesNotFoundError')return 'No microphone was detected. Connect or enable a microphone, then retry.';
+ if(name==='NotReadableError'||name==='TrackStartError')return 'The microphone is busy or unavailable. Close other apps using it, then retry.';
+ if(name==='OverconstrainedError'||name==='ConstraintNotSatisfiedError')return 'The microphone settings are unsupported by this device. Check the microphone and retry.';
+ return 'Microphone could not connect: '+String(error?.message||error||'Unknown browser error')+'. Check site permissions and retry.';
+}
+async function smvLiveHandleMediaFailure(id,error){const message=smvLiveMediaErrorText(error);console.warn('Live voice setup failed:',error);smvLiveShowError(new Error(message));const voice=$('smvLiveVoiceStatus');if(voice)voice.textContent=message;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'connection_failed'})});if(r.session)smvLiveApplySession(r.session);}catch(e){console.warn('Call settlement retry required:',e);}}
 async function smvLiveEnsurePeer(id){
  if(smvLivePeer)return smvLivePeer;
- if(!navigator.mediaDevices?.getUserMedia||typeof RTCPeerConnection!=='function')throw new Error('This browser does not support WebRTC microphone access.');
- smvLiveLocalStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+ if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia||typeof RTCPeerConnection!=='function')throw new Error('Microphone access requires HTTPS and a browser that supports WebRTC.');
+ const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Requesting microphone permission…';
+ try{smvLiveLocalStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});}
+ catch(error){if(voiceStatus)voiceStatus.textContent=smvLiveMediaErrorText(error);throw error;}
+ if(voiceStatus)voiceStatus.textContent='Microphone ready. Connecting to the other participant…';
  smvLiveRemoteStream=new MediaStream();let iceServers=[{urls:'stun:stun.l.google.com:19302'}];try{const ice=await renderApi('/live/ice-config',{method:'GET',timeoutMs:8000});if(Array.isArray(ice.iceServers)&&ice.iceServers.length)iceServers=ice.iceServers;}catch(iceError){console.warn('TURN relay is not configured/reachable; using STUN only:',iceError?.message||iceError);}const pc=new RTCPeerConnection({iceServers});smvLivePeer=pc;
  for(const track of smvLiveLocalStream.getAudioTracks())pc.addTrack(track,smvLiveLocalStream);
  pc.ontrack=e=>{if(e.streams?.[0])smvLiveRemoteStream=e.streams[0];else if(e.track)smvLiveRemoteStream.addTrack(e.track);const audio=$('smvLiveRemoteAudio');if(audio){audio.srcObject=smvLiveRemoteStream;audio.play?.().catch(()=>{});}if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connected.';};
