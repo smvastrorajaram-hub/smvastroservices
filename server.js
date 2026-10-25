@@ -2106,7 +2106,7 @@ app.get("/admin/settings-data", async (req, res) => {
     const val=snap=>snap.exists?snap.data():null;
     return res.json({success:true,settings:{
       commission:val(commissionSnap),question:val(questionSnap),workflow:val(workflowSnap),
-      privateCommission:val(privateCommissionSnap),privateConsultationWorkflow:val(privateWorkflowSnap),
+      privateCommission:val(commissionSnap),privateConsultationWorkflow:val(privateWorkflowSnap),
       astrologerAutoApproval:val(autoApprovalSnap),horoscopePayment:normalizeHoroscopeSettings(val(horoscopePaymentSnap)||horoscopeFeatureDefaults())
     }});
   }catch(e){
