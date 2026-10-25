@@ -318,6 +318,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       validateActiveAstrologer(astroUserSnap.data() || {}, astro);
       const pricing = pricingFromSnapshot(pricingSnap);
       const rate = kind === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
+      const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
+      const requiredBalancePaise = length * rate;
+      const availableBalancePaise = safePaise(walletData.availableBalancePaise);
+      if (!Number.isSafeInteger(requiredBalancePaise) || requiredBalancePaise < 1) {
+        throw httpError(409, 'Session cost is invalid.', 'LIVE_PRICE_INVALID');
+      }
+      if (availableBalancePaise < requiredBalancePaise) {
+        throw httpError(409, 'Insufficient Wallet balance for the selected duration.', 'WALLET_INSUFFICIENT_BALANCE', {
+          availableBalancePaise, requiredBalancePaise, shortfallPaise: requiredBalancePaise - availableBalancePaise
+        });
+      }
       const liveCount = safePaise(astro.activeSessionCount);
       const availability = String(astro.availabilityStatus || astro.onlineStatus || 'offline').toLowerCase();
       const canStartNow = availability === 'online' && liveCount < pricing.maxConcurrentSessions;
@@ -724,18 +735,61 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     return rows;
   }
 
+  async function expireStaleBookingRows(rows) {
+    for (const row of rows) {
+      const expiresAt = timestampMillis(row.expiresAt) || (timestampMillis(row.createdAt) + 7 * 24 * 60 * 60 * 1000);
+      if (row.status !== 'pending' || !expiresAt || Date.now() < expiresAt) continue;
+      try {
+        const ref = bookingRef(row.id);
+        row.status = await db.runTransaction(async tx => {
+          const snap = await tx.get(ref);
+          if (!snap.exists) return 'missing';
+          const current = snap.data() || {};
+          const expiry = timestampMillis(current.expiresAt) || (timestampMillis(current.createdAt) + 7 * 24 * 60 * 60 * 1000);
+          if (current.status === 'pending' && expiry && Date.now() >= expiry) {
+            tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
+            return 'expired';
+          }
+          return String(current.status || 'missing');
+        });
+      } catch (error) {
+        console.warn('[Live Session] Booking expiry check failed:', error?.message || error);
+      }
+    }
+    return rows;
+  }
+
+  function safeBookingView(id, d) {
+    return {
+      id: String(id), mode: String(d.mode || ''), minutes: Number(d.minutes || 0),
+      status: String(d.status || ''), astrologerName: String(d.astrologerName || 'Astrologer'),
+      ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
+      reservedAmountPaise: safePaise(d.reservedAmountPaise),
+      actualChargePaise: safePaise(d.actualChargePaise),
+      releasedAmountPaise: safePaise(d.releasedAmountPaise),
+      endReason: String(d.endReason || ''), sessionId: String(d.sessionId || ''),
+      createdAt: timestampMillis(d.createdAt) ? new Date(timestampMillis(d.createdAt)).toISOString() : null,
+      acceptedAt: timestampMillis(d.acceptedAt) ? new Date(timestampMillis(d.acceptedAt)).toISOString() : null,
+      expiresAt: timestampMillis(d.expiresAt) ? new Date(timestampMillis(d.expiresAt)).toISOString() : null,
+      endedAt: timestampMillis(d.endedAt) ? new Date(timestampMillis(d.endedAt)).toISOString() : null
+    };
+  }
+
   async function listBookings(astrologerUid) {
     const snap = await db.collection(BOOKINGS).where('astrologerUid', '==', astrologerUid).limit(100).get();
-    return snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
-      .filter(d => ['pending', 'accepted'].includes(String(d.status || '')))
+    const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+    await expireStaleBookingRows(rows);
+    return rows.filter(d => String(d.status || '') === 'pending')
       .sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt))
-      .map(d => ({
-        id: d.id, customerUid: d.customerUid, astrologerUid: d.astrologerUid,
-        astrologerName: d.astrologerName, mode: d.mode, minutes: d.minutes,
-        ratePerMinutePaise: safePaise(d.ratePerMinutePaise), status: d.status,
-        createdAt: timestampMillis(d.createdAt) ? new Date(timestampMillis(d.createdAt)).toISOString() : null,
-        expiresAt: timestampMillis(d.expiresAt) ? new Date(timestampMillis(d.expiresAt)).toISOString() : null
-      }));
+      .map(d => ({ ...safeBookingView(d.id, d), customerUid: String(d.customerUid || '') }));
+  }
+
+  async function listCustomerBookings(customerUid) {
+    const snap = await db.collection(BOOKINGS).where('customerUid', '==', customerUid).limit(100).get();
+    const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+    await expireStaleBookingRows(rows);
+    return rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt))
+      .slice(0, 30).map(d => safeBookingView(d.id, d));
   }
 
   function replyError(res, error, fallback) {
@@ -889,6 +943,15 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const bookings = await listBookings(auth.user.uid);
       return res.set('Cache-Control', 'no-store').json({ success: true, bookings });
     } catch (error) { return replyError(res, error, 'Unable to load pending Live bookings.'); }
+  });
+
+  app.get('/live/bookings/mine', async (req, res) => {
+    const auth = await requireRole(req, res, ['customer']);
+    if (!auth) return;
+    try {
+      const bookings = await listCustomerBookings(auth.user.uid);
+      return res.set('Cache-Control', 'no-store').json({ success: true, bookings });
+    } catch (error) { return replyError(res, error, 'Unable to load your Live bookings.'); }
   });
 
   app.post('/live/bookings/:id/accept', async (req, res) => {
