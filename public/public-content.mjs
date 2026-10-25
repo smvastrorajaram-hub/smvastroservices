@@ -283,13 +283,14 @@
     const bookingLabel=bookingMode==='chat'?'Chat':'Call';
     const rate=Number(bookingMode==='chat'?(a?.chatPricePerMinute??a?.liveChatPricePerMinute??a?.chatRatePerMinute):(a?.callPricePerMinute??a?.pricePerMinute??a?.callRatePerMinute));
     const user=window.__smvFirebaseCurrentUser||null;
+    const customerDisplayName=String(window.__smvCustomerProfileName||user?.displayName||'').trim();
     if(!user){
       alert('Customer Login Required — please log in with a Customer account to book a '+bookingLabel.toLowerCase()+'.');
       $('authBtn')?.click();
       return;
     }
     if(!Number.isFinite(rate)||rate<=0){
-      showPublicProfileModal(`<div class="profile-dialog"><h2>Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">${bookingLabel} Price per minute has not been configured for this Astrologer. Admin must set the ${bookingLabel} Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
+      showPublicProfileModal(`<div class="profile-dialog"><h2 style="padding-right:42px;line-height:1.35">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">${bookingLabel} Price per minute has not been configured for this Astrologer. Admin must set the ${bookingLabel} Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
       $('smvCallBookingClose').onclick=closeModal;
       return;
     }
@@ -299,12 +300,12 @@
       ? '<label style="display:block;min-width:0;color:#2d1919"><b>Question / Chat Topic</b><textarea id="smvCallBookingQuestion" name="question" maxlength="4000" rows="4" required placeholder="What would you like to discuss with the astrologer?" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:110px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>'
       : '<label style="display:block;min-width:0;color:#2d1919"><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>';
     const bookingSubmitLabel=bookingMode==='chat'?'REQUEST CHAT BOOKING':'REQUEST CALL BOOKING';
-    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:linear-gradient(145deg,#fffaf0 0%,#ffffff 100%);color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
-      <h2>Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2>
+    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:#24103F;color:#ffffff;-webkit-text-fill-color:#ffffff;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
+      <h2 style="padding-right:42px;line-height:1.35">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2>
       <p><b>${bookingLabel} rate:</b> ₹${rate.toFixed(2)} per minute</p>
       <p class="small">This sends a scheduled ${bookingLabel.toLowerCase()} booking request for confirmation. It does not start a live session or deduct Wallet funds.</p>
       <form id="smvCallBookingForm" style="display:grid;gap:12px;width:100%;min-width:0">
-        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(customerDisplayName)}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <label style="display:block;min-width:0;color:#2d1919"><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;min-width:0">
@@ -321,9 +322,9 @@
         </div>
         ${notesOrQuestionField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
-        <div class="smv-booking-actions" style="position:sticky;bottom:-1px;z-index:5;display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;background:#fffaf0;border-top:1px solid #e1cf9a">
-          <button class="btn" id="smvCallBookingSubmit" type="submit" style="flex:1 1 180px;min-height:46px;white-space:normal;overflow-wrap:anywhere">${bookingSubmitLabel}</button>
-          <button class="btn gray" id="smvCallBookingClose" type="button" style="flex:0 1 120px;min-height:46px">CLOSE</button>
+        <div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37">
+          <button class="btn" id="smvCallBookingSubmit" type="submit" style="flex:1 1 180px;min-width:0;min-height:46px;white-space:normal;overflow-wrap:anywhere;background:#5b2a86;color:#ffffff;-webkit-text-fill-color:#ffffff;border:1px solid #d4af37">${bookingSubmitLabel}</button>
+          <button class="btn gray" id="smvCallBookingClose" type="button" style="flex:0 1 120px;min-width:88px;min-height:44px;white-space:normal;overflow-wrap:anywhere;background:#ffffff;color:#24103F;-webkit-text-fill-color:#24103F;border:1px solid #c9b8e4">CLOSE</button>
         </div>
       </form>
     </div>`);
