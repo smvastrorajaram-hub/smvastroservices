@@ -1335,13 +1335,57 @@ app.get("/public/astrologers", async (req, res) => {
         const authUser=await admin.auth().getUser(d.id);
         if(authUser.emailVerified!==true)return null;
       }catch(authErr){console.warn("Unable to check email verification for astrologer:",d.id,authErr?.message||authErr);return null;}
-      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
+      const rawLanguages=x.languages??x.spokenLanguages??x.language??[];
+      const languages=Array.isArray(rawLanguages)?rawLanguages.map(v=>String(v||"").trim()).filter(Boolean):String(rawLanguages||"").split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
+      const rawAvailability=String(x.availabilityStatus||x.onlineStatus||"").trim().toLowerCase();
+      const availabilityStatus=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
+      const callRateCandidates=[x.callPricePerMinute,x.pricePerMinute,x.callRatePerMinute].map(Number);
+      const configuredCallRate=callRateCandidates.find(v=>Number.isFinite(v)&&v>0);
+      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,callPricePerMinute:configuredCallRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
     }));
     const astrologers=checked.filter(Boolean);
     publicAstrologersCache={expiresAt:now+60000,data:astrologers};
     res.set("Cache-Control","public, max-age=30, stale-while-revalidate=60");
     return res.json({success:true,astrologers});
   }catch(e){console.error("Public astrologers load failed:",e);return res.status(500).json({error:e?.message||"Unable to load approved astrologers."});}
+});
+
+// Astrologers may update only their own availability; approved profiles are
+// required before the status can become Online or Busy. Admin SDK is used so
+// client Firestore Rules remain restrictive and public directory cache is cleared.
+app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res)=>{
+  const user=await requireUser(req,res);
+  if(!user)return;
+  try{
+    const availabilityStatus=String(req.body?.availabilityStatus||"").trim().toLowerCase();
+    if(!["online","busy","offline"].includes(availabilityStatus)){
+      return res.status(400).json({success:false,error:"Choose Online, Busy, or Offline."});
+    }
+    const [userSnap,astroSnap]=await Promise.all([
+      db.collection("smv_users").doc(user.uid).get(),
+      db.collection("smv_astrologers").doc(user.uid).get()
+    ]);
+    const profile=userSnap.exists?(userSnap.data()||{}):{};
+    const astro=astroSnap.exists?(astroSnap.data()||{}):{};
+    if(!astroSnap.exists || (astro.uid && String(astro.uid)!==String(user.uid)) ||
+       String(profile.role||"").toLowerCase()!=="astrologer"){
+      return res.status(403).json({success:false,error:"This account does not own an Astrologer profile."});
+    }
+    if(!["approved","active"].includes(String(astro.status||"").toLowerCase())){
+      return res.status(409).json({success:false,error:"Only an approved Astrologer can change availability."});
+    }
+    await astroSnap.ref.set({
+      availabilityStatus,
+      availabilityUpdatedAt:FieldValue.serverTimestamp(),
+      availabilityUpdatedBy:user.uid
+    },{merge:true});
+    publicAstrologersCache={expiresAt:0,data:null};
+    res.set("Cache-Control","no-store");
+    return res.json({success:true,availabilityStatus});
+  }catch(e){
+    console.error("Astrologer availability update failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to update Astrologer availability."});
+  }
 });
 const publicReadFlights=new Map();
 function sharedPublicRead(key,read){
@@ -3950,6 +3994,56 @@ const walletService = registerWalletRoutes({
   app, db, FieldValue, crypto, razorpay,
   razorpayKeyId: RAZORPAY_KEY_ID, razorpayKeySecret: RAZORPAY_KEY_SECRET,
   adminUid: ADMIN_UID, requireUser, isAdminUser
+});
+
+// Admin-only, read-only Wallet ledger view. The result is explicitly a recent
+// sample, not a complete reconciliation report; no account mutation is exposed.
+app.get("/admin/wallet/transactions", async (req,res)=>{
+  const user=await requireUser(req,res);
+  if(!user)return;
+  try{
+    if(!(await isAdminUser(user)))return res.status(403).json({success:false,error:"Admin access required."});
+    const rawLimit=Number(req.query?.limit||50);
+    const limit=Number.isFinite(rawLimit)?Math.max(1,Math.min(100,Math.floor(rawLimit))):50;
+    const ownerUid=String(req.query?.ownerUid||"").trim().slice(0,160);
+    let query=db.collection("smv_wallet_transactions");
+    if(ownerUid)query=query.where("ownerUid","==",ownerUid);
+    const snap=await query.orderBy("createdAt","desc").limit(limit).get();
+    const transactions=snap.docs.map(docSnap=>{
+      const t=docSnap.data()||{};
+      let createdAt=null;
+      try{if(t.createdAt?.toDate)createdAt=t.createdAt.toDate().toISOString();else if(t.createdAt instanceof Date)createdAt=t.createdAt.toISOString();else if(typeof t.createdAt==="string")createdAt=new Date(t.createdAt).toISOString();}catch(_){}
+      return {
+        id:docSnap.id,ownerUid:String(t.ownerUid||""),ownerRole:String(t.ownerRole||""),
+        type:String(t.type||"transaction"),direction:String(t.direction||""),
+        amountPaise:Number.isSafeInteger(Number(t.amountPaise))?Number(t.amountPaise):0,
+        balanceAfterPaise:Number.isSafeInteger(Number(t.balanceAfterPaise))?Number(t.balanceAfterPaise):null,
+        reservedBalanceAfterPaise:Number.isSafeInteger(Number(t.reservedBalanceAfterPaise))?Number(t.reservedBalanceAfterPaise):null,
+        status:String(t.status||""),source:String(t.source||""),
+        referenceType:String(t.referenceType||""),referenceId:String(t.referenceId||""),
+        idempotencyKey:String(t.idempotencyKey||""),createdAt
+      };
+    });
+    const pageTotals=transactions.reduce((out,t)=>{
+      out.transactionCount++;
+      out[t.direction==="credit"?"creditPaise":t.direction==="debit"?"debitPaise":"otherPaise"]+=t.amountPaise;
+      out.byType[t.type]=(out.byType[t.type]||0)+1;
+      return out;
+    },{transactionCount:0,creditPaise:0,debitPaise:0,otherPaise:0,byType:{}});
+    let wallet=null;
+    if(ownerUid){
+      const ws=await db.collection("smv_wallets").doc(ownerUid).get();
+      if(ws.exists){
+        const w=ws.data()||{};
+        wallet={ownerUid,ownerRole:String(w.ownerRole||""),availableBalancePaise:Number(w.availableBalancePaise||0),reservedBalancePaise:Number(w.reservedBalancePaise||0),updatedAt:w.updatedAt?.toDate?w.updatedAt.toDate().toISOString():null};
+      }
+    }
+    res.set("Cache-Control","no-store");
+    return res.json({success:true,sampled:true,limit,ownerUid:ownerUid||null,transactions,pageTotals,wallet});
+  }catch(e){
+    console.error("Admin Wallet ledger read failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to load Wallet transaction audit."});
+  }
 });
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
