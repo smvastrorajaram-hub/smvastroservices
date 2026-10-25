@@ -65,6 +65,72 @@
       if(m&&c){c.innerHTML=`<h2>${esc(name)}</h2><div class="empty error">Unable to load this astrologer profile right now.</div><button class="btn gray" id="profileRetryBtn">TRY AGAIN</button><button class="btn gray" id="profileCloseBtn">CLOSE</button>`;m.classList.remove('hidden');document.getElementById('profileRetryBtn')?.addEventListener('click',()=>{m.classList.add('hidden');openPublicAstrologerProfile(a);},{once:true});document.getElementById('profileCloseBtn')?.addEventListener('click',closeModal,{once:true});}
     }
   }
+  async function openAstrologerCallBooking(a){
+    const rate=Number(a?.callPricePerMinute);
+    const user=window.__smvFirebaseCurrentUser||null;
+    if(!user){
+      alert('Customer Login Required — please log in with a Customer account to book a call.');
+      $('authBtn')?.click();
+      return;
+    }
+    if(!Number.isFinite(rate)||rate<=0){
+      showPublicProfileModal(`<div class="profile-dialog"><h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">Call Price per minute has not been configured for this Astrologer. Admin must set the Call Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
+      $('smvCallBookingClose').onclick=closeModal;
+      return;
+    }
+    const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
+    const minDate=today.toISOString().slice(0,10);
+    showPublicProfileModal(`<div class="profile-dialog">
+      <h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2>
+      <p><b>Call rate:</b> ₹${rate.toFixed(2)} per minute</p>
+      <p class="small">This creates a scheduled call request for Admin/Astrologer confirmation. It does not start a live voice call or deduct Wallet funds.</p>
+      <form id="smvCallBookingForm">
+        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required></label>
+        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required></label>
+        <label><b>Mobile</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" required></label>
+        <div class="grid" style="gap:10px">
+          <label><b>Preferred date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required></label>
+          <label><b>Preferred time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required></label>
+        </div>
+        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="3" placeholder="Preferred time window or brief details"></textarea></label>
+        <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
+        <button class="btn" id="smvCallBookingSubmit" type="submit">REQUEST CALL BOOKING</button>
+        <button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button>
+      </form>
+    </div>`);
+    $('smvCallBookingClose').onclick=closeModal;
+    const form=$('smvCallBookingForm');
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      const submit=$('smvCallBookingSubmit'),message=$('smvCallBookingMessage');
+      if(submit){submit.disabled=true;submit.textContent='SUBMITTING…';}
+      if(message)message.textContent='Submitting your Call Booking request…';
+      try{
+        const token=await user.getIdToken();
+        const response=await fetch(BACKEND+'/appointment-booking',{
+          method:'POST',cache:'no-store',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+          body:JSON.stringify({
+            name:String($('smvCallBookingName')?.value||'').trim(),
+            email:String($('smvCallBookingEmail')?.value||'').trim(),
+            mobile:String($('smvCallBookingMobile')?.value||'').trim(),
+            type:'Call Consultation',
+            preferredDate:String($('smvCallBookingDate')?.value||''),
+            preferredTime:String($('smvCallBookingTime')?.value||''),
+            notes:String($('smvCallBookingNotes')?.value||'').trim(),
+            astrologerId:String(a.id||'')
+          })
+        });
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok||result.ok!==true)throw new Error(result.error||'The backend did not confirm the Call Booking request.');
+        if(message)message.innerHTML='<span class="success">Call booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. The request is awaiting confirmation; no Wallet charge has been made.</span>';
+        if(submit){submit.textContent='REQUEST SUBMITTED';}
+      }catch(error){
+        if(message)message.innerHTML='<span class="error">'+esc(error?.message||String(error))+'</span>';
+        if(submit){submit.disabled=false;submit.textContent='REQUEST CALL BOOKING';}
+      }
+    };
+  }
   window.__smvOpenPublicAstrologerProfile=openPublicAstrologerProfile;
   let publicReviewsRequest=null,publicReviewsLoaded=false;
   async function loadReviews(){
@@ -199,9 +265,11 @@
           const availability=['online','busy','offline'].includes(String(a.availabilityStatus||'').toLowerCase())?String(a.availabilityStatus).toLowerCase():'offline';
           const callPrice=Number(a.callPricePerMinute);
           const availabilityLabel=availability==='online'?'Online':availability==='busy'?'Busy':'Offline';
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Private Consultation Chat Price:</b> ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</p><p><b>Call rate:</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+' / minute':'Not configured in existing profile'}</p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Private Consultation Chat Price:</b> ${price>=1?'₹'+price.toFixed(2):'Currently unavailable'}</p><p><b>Call rate:</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+' / minute':'Not configured in existing profile'}</p><button type="button" class="smv-compact-control smv-private-consult-select" data-private-consult-astro="${esc(a.id)}" ${price>=1?'':'disabled'}>SELECT ASTROLOGER</button> <button type="button" class="smv-compact-control" data-book-call>BOOK A CALL</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
           const select=row.querySelector('[data-private-consult-astro]');
           select.onclick=()=>selectPrivateAstrologer(a,select).catch(err=>{console.error('Private Consultation selection failed:',err);alert('Unable to open the consultation form. Please try again.');});
+          const bookCall=row.querySelector('[data-book-call]');
+          if(bookCall)bookCall.onclick=()=>openAstrologerCallBooking(a).catch(err=>{console.error('Call booking request failed:',err);alert(err.message||String(err));});
           const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
           button.onclick=async()=>{
             const open=reviews.classList.contains('hidden');reviews.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));

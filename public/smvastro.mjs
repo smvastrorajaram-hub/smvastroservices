@@ -2201,39 +2201,49 @@ function smvWalletSetMessage(message,kind='info'){
  el.textContent=String(message||'');
 }
 async function smvLoadCustomerWallet(){
- if(!$('smvCustomerWalletCard'))return;
- const refresh=$('smvWalletRefresh');
+ const card=$('smvCustomerWalletCard');
+ if(!card)return;
+ const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),host=$('smvWalletTransactions');
  if(refresh)refresh.disabled=true;
+ if(balance)balance.textContent='Loading…';
+ if(host)host.innerHTML='<div class="small">Loading transactions…</div>';
  try{
-  const [walletResult,transactionResult]=await Promise.all([
-   renderApi('/wallet',{method:'GET'}),
-   renderApi('/wallet/transactions?limit=10',{method:'GET'})
-  ]);
-  const wallet=walletResult?.wallet||transactionResult?.wallet||{};
+  // Load the actual balance first. A failed ledger query must never block it.
+  const walletResult=await renderApi('/wallet',{method:'GET'});
+  const wallet=walletResult?.wallet||{};
+  if(!walletResult?.success||!walletResult.wallet)throw new Error(walletResult?.error||'The backend did not return Wallet balance.');
   if(wallet.ownerRole&&String(wallet.ownerRole).toLowerCase()!=='customer')throw new Error('The signed-in account is not a Customer Wallet owner.');
   const availablePaise=Number.isSafeInteger(Number(wallet.availableBalancePaise))?Number(wallet.availableBalancePaise):Math.round(Number(wallet.availableBalance||0)*100);
   const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
-  const balance=$('smvWalletBalance'),reserved=$('smvWalletReserved');
   if(balance)balance.textContent=smvWalletMoney(availablePaise);
   if(reserved)reserved.textContent=smvWalletMoney(reservedPaise);
-  const host=$('smvWalletTransactions');
-  const transactions=Array.isArray(transactionResult?.transactions)?transactionResult.transactions:[];
-  if(host){
-   host.innerHTML=transactions.length?transactions.map(t=>{
-    const credit=String(t.direction||'').toLowerCase()==='credit';
-    const amount=Number.isSafeInteger(Number(t.amountPaise))?Number(t.amountPaise):Math.round(Number(t.amount||0)*100);
-    const label=String(t.type||'transaction').replace(/_/g,' ');
-    const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
-    const status=String(t.status||'posted');
-    return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
-   }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
+  let transactionError=null;
+  try{
+   const transactionResult=await renderApi('/wallet/transactions?limit=10',{method:'GET'});
+   const transactions=Array.isArray(transactionResult?.transactions)?transactionResult.transactions:[];
+   if(host){
+    host.innerHTML=transactions.length?transactions.map(t=>{
+     const credit=String(t.direction||'').toLowerCase()==='credit';
+     const amount=Number.isSafeInteger(Number(t.amountPaise))?Number(t.amountPaise):Math.round(Number(t.amount||0)*100);
+     const label=String(t.type||'transaction').replace(/_/g,' ');
+     const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
+     const status=String(t.status||'posted');
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+    }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
+   }
+  }catch(error){
+   transactionError=error;
+   console.warn('Customer Wallet balance loaded; transaction history unavailable:',error);
+   if(host)host.innerHTML='<div class="empty error">Wallet balance is available, but recent transactions could not be loaded. Use Refresh Wallet to retry.</div>';
   }
-  smvWalletSetMessage('Wallet balance and transaction history updated.','success');
+  if(transactionError)smvWalletSetMessage('Wallet balance loaded. Recent transaction history is temporarily unavailable.','info');
+  else smvWalletSetMessage('Wallet balance and transaction history updated.','success');
  }catch(error){
   console.error('Customer Wallet load failed:',error);
-  smvWalletSetMessage('Unable to load Wallet: '+(error?.message||String(error)), 'error');
-  const host=$('smvWalletTransactions');
-  if(host)host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to try again.</div>';
+  if(balance)balance.textContent='Unavailable';
+  if(reserved)reserved.textContent='—';
+  if(host)host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
+  smvWalletSetMessage('Unable to load Wallet balance: '+(error?.message||String(error)),'error');
  }finally{
   if(refresh&&document.contains(refresh))refresh.disabled=false;
  }
@@ -3626,11 +3636,11 @@ async function loadAdminPanelData(background=false){
         <h3>${escapeHtml(a.name||'Astrologer')}</h3>
         <div class="small"><b>Astrologer ID:</b> ${escapeHtml(d.id)} · <b>Profile Edit:</b> ${allowed?'Allowed':'Blocked'}</div>
         <div style="margin:10px 0">
-          <label for="adminChatPrice_${d.id}"><b>Private Consultation Chat Price (₹)</b></label>
-          <div class="action-row">
-            <input id="adminChatPrice_${d.id}" type="number" min="1" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Chat Price ₹">
-            <button class="btn" data-chat-price-save="${d.id}">SAVE CHAT PRICE</button>
+          <div class="grid" style="align-items:end;gap:10px">
+            <label for="adminChatPrice_${d.id}"><b>Private Consultation Chat Price (₹)</b><input id="adminChatPrice_${d.id}" type="number" min="1" max="100000" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Chat Price ₹"></label>
+            <label for="adminCallPrice_${d.id}"><b>Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured"></label>
           </div>
+          <div class="action-row"><button class="btn" data-chat-price-save="${d.id}">SAVE PRICES</button></div>
           <div class="small" id="adminChatPriceMsg_${d.id}"></div>
         </div>
         <p><b>Current Public Description</b></p>
@@ -3645,20 +3655,28 @@ async function loadAdminPanelData(background=false){
     }).join(''):'<div class="empty">No approved astrologers available.</div>';
 
     profileBox.querySelectorAll('[data-chat-price-save]').forEach(b=>b.onclick=async()=>{
-      const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),msg=$('adminChatPriceMsg_'+id);
+      const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),callInput=$('adminCallPrice_'+id),msg=$('adminChatPriceMsg_'+id);
       const price=Number(input?.value);
-      if(!Number.isFinite(price)||price<1){if(msg)msg.innerHTML='<span class="error">Enter a valid Chat Price of ₹1 or more.</span>';return;}
-      b.disabled=true;b.textContent='SAVING...';
+      const callRaw=String(callInput?.value||'').trim();
+      const callPrice=callRaw===''?null:Number(callRaw);
+      if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
+        if(msg)msg.innerHTML='<span class="error">Enter a valid Chat Price from ₹1 to ₹100000 (up to two decimals).</span>';return;
+      }
+      if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+        if(msg)msg.innerHTML='<span class="error">Call Price must be ₹0 (unset) or ₹1–₹100000 per minute, up to two decimals.</span>';return;
+      }
+      b.disabled=true;b.textContent='SAVING…';
       try{
-        await updateDoc(doc(db,'smv_astrologers',id),{
-          pricePerQuestion:Math.round(price*100)/100,
-          chatPriceUpdatedAt:serverTimestamp(),
-          chatPriceUpdatedBy:currentUser.uid
-        });
+        const payload={astrologerId:id,pricePerQuestion:Math.round(price*100)/100};
+        if(callRaw!=='')payload.callPricePerMinute=callPrice;
+        const result=await renderApi('/admin/astrologer-pricing',{method:'POST',body:JSON.stringify(payload)});
+        if(!result?.success)throw new Error(result?.error||'The backend did not confirm pricing changes.');
         await smvAdminTouch();
-        if(msg)msg.innerHTML='<span class="success">Private Consultation Chat Price updated.</span>';
-      }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}
-      finally{b.disabled=false;b.textContent='SAVE CHAT PRICE';}
+        window.__smvInvalidatePublicAstrologersOnce?.();
+        window.dispatchEvent(new Event('smv:astrologer-pricing-changed'));
+        if(msg)msg.innerHTML='<span class="success">'+(callRaw!==''?'Chat Price and Call Price saved.':'Chat Price saved; Call Price was left unchanged.')+'</span>';
+      }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
+      finally{b.disabled=false;b.textContent='SAVE PRICES';}
     });
 
     profileBox.querySelectorAll('[data-profile-permission]').forEach(b=>b.onclick=async()=>{

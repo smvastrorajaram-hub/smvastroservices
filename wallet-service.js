@@ -214,8 +214,29 @@ function createWalletService({ db, FieldValue }) {
       const uid = String(ownerUid || '').trim();
       if (!uid) throw httpError(400, 'Wallet owner is required.', 'WALLET_OWNER_INVALID');
       const max = Math.min(100, Math.max(1, Math.floor(Number(limit) || 30)));
-      const snap = await db.collection(TRANSACTION_COLLECTION).where('ownerUid', '==', uid).orderBy('createdAt', 'desc').limit(max).get();
-      return snap.docs.map(doc => {
+      const collection = db.collection(TRANSACTION_COLLECTION);
+      let snap;
+      try {
+        snap = await collection.where('ownerUid', '==', uid).orderBy('createdAt', 'desc').limit(max).get();
+      } catch (error) {
+        const code = String(error?.code || '').toLowerCase();
+        const missingCompositeIndex = code === '9' || code === 'failed-precondition' || /requires an index|create_composite/i.test(String(error?.message || ''));
+        if (!missingCompositeIndex) throw error;
+        // Staging indexes may not have been deployed yet. Keep Wallet balance usable
+        // and provide recent history from a bounded owner-only query until the index exists.
+        const fallbackLimit = Math.min(1000, Math.max(max, max * 20));
+        snap = await collection.where('ownerUid', '==', uid).limit(fallbackLimit).get();
+      }
+      const timestampMillis = value => {
+        if (value && typeof value.toMillis === 'function') return value.toMillis();
+        if (value && Number.isFinite(Number(value.seconds ?? value._seconds))) return Number(value.seconds ?? value._seconds) * 1000;
+        const parsed = Date.parse(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+      const docs = snap.docs.slice().sort((left, right) =>
+        timestampMillis(right.data()?.createdAt) - timestampMillis(left.data()?.createdAt)
+      ).slice(0, max);
+      return docs.map(doc => {
         const d = doc.data() || {};
         return {
           id: doc.id, type: d.type || '', direction: d.direction || '', status: d.status || '',

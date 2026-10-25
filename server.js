@@ -321,7 +321,7 @@ app.use((req, res, next) => {
 const DASHBOARD_SIGNAL_PATHS=new Set([
   '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/submit-answer',
   '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
-  '/admin/approve-astrologer','/admin/reject-astrologer',
+  '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing',
   '/admin/edit-question','/admin/takeover-answer','/astrologer/change-payout','/admin/payout-change-status',
   '/admin/set-open-workflow','/customer/mark-answer-viewed','/admin/astrologer-quiz/load-defaults',
   '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete','/admin/astrologer-auto-approval/settings',
@@ -352,7 +352,7 @@ function dashboardSignalCategory(path=''){
   if(p.includes('/astrologer-quiz/')||p.includes('/astrologer-auto-approval/'))return 'astrologer_settings';
   if(p.includes('/set-open-workflow')||p.includes('/set-commission')||p.includes('/set-word-count')||p.includes('/set-workflow'))return 'settings';
   if(p.includes('/approve-question')||p.includes('/reallocate-question')||p.includes('/reject-question')||p.includes('/retry-refund')||p.includes('/sync-refund')||p.includes('/edit-question')||p.includes('/takeover-answer')||p.includes('/approve-answer')||p.includes('/reject-answer')||p.includes('/submit-answer')||p.includes('/mark-answer-viewed'))return 'questions';
-  if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer'))return 'astrologers';
+  if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer')||p.includes('/astrologer-pricing'))return 'astrologers';
   if(p.includes('/verify-payment')||p.includes('/recover-payment')||p.includes('/razorpay/webhook')||p.includes('/credit-commission'))return 'financial';
   return 'unknown';
 }
@@ -1300,21 +1300,46 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
   try {
     const name=String(req.body?.name||"").trim(), email=String(req.body?.email||user.email||"").trim(), mobile=String(req.body?.mobile||"").trim();
     const type=String(req.body?.type||"").trim(), preferredDate=String(req.body?.preferredDate||"").trim(), preferredTime=String(req.body?.preferredTime||"").trim(), notes=String(req.body?.notes||"").trim();
+    const astrologerId=String(req.body?.astrologerId||"").trim();
     if(!name||!email||!mobile||!type||!preferredDate||!preferredTime) return res.status(400).json({error:"Please fill all required appointment fields."});
     if(!["Chat Consultation","Call Consultation"].includes(type)) return res.status(400).json({error:"Please choose Chat or Call consultation."});
     if(name.length>100||email.length>160||mobile.length>20||notes.length>2000) return res.status(400).json({error:"One or more fields are too long."});
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:"Please enter a valid email address."});
 
+    // A directory Book a Call request must be linked to a Customer, approved
+    // Astrologer and configured per-minute rate. It is a request, not a live call or Wallet debit.
+    let callBooking={};
+    if(astrologerId){
+      if(type!=="Call Consultation")return res.status(400).json({error:"An Astrologer can only be selected for a Call Consultation booking."});
+      const [astroSnap,customerSnap]=await Promise.all([
+        db.collection("smv_astrologers").doc(astrologerId).get(),
+        db.collection("smv_users").doc(user.uid).get()
+      ]);
+      const customer=customerSnap.exists?(customerSnap.data()||{}):{};
+      if(String(customer.role||"").toLowerCase()!=="customer")return res.status(403).json({error:"Please sign in with a Customer account to book a call."});
+      if(!astroSnap.exists)return res.status(404).json({error:"The selected Astrologer profile was not found."});
+      const astro=astroSnap.data()||{};
+      if(!["approved","active"].includes(String(astro.status||"").toLowerCase()))return res.status(409).json({error:"This Astrologer is not currently approved for bookings."});
+      const callRates=[astro.callPricePerMinute,astro.pricePerMinute,astro.callRatePerMinute].map(Number);
+      const callPricePerMinute=callRates.find(value=>Number.isFinite(value)&&value>0);
+      if(!callPricePerMinute)return res.status(409).json({error:"This Astrologer does not have a configured Call Price per minute yet."});
+      callBooking={
+        astrologerId:astroSnap.id,astrologerUid:String(astro.uid||astroSnap.id),
+        astrologerName:String(astro.name||"Astrologer"),
+        callPricePerMinute:Math.round(callPricePerMinute*100)/100,
+        priceUnit:"per_minute",bookingKind:"scheduled_call_request"
+      };
+    }
     const bookingId = await nextBookingId();
     const ref=db.collection("smv_appointments").doc();
-    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,preferredDate,preferredTime,notes,status:"new",paymentStatus:"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
+    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,notes,status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
 
     // Email notification is best-effort. Booking creation must not fail just because
     // the optional notification provider is unavailable.
     if(ADMIN_EMAIL && (RESEND_API_KEY || smtpTransport)){
       try {
-        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${mobile}`,`Type: ${type}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`].join("\n")});
+        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${mobile}`,`Type: ${type}`,`Astrologer: ${callBooking.astrologerName||"Not specified"}`,`Call rate: ${callBooking.callPricePerMinute?"₹"+callBooking.callPricePerMinute+" per minute":"Not applicable"}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`,`Payment: ${astrologerId?"Not collected; awaiting confirmation":"Not required"}`].join("\n")});
       } catch(emailErr) { console.warn("Booking notification email failed; booking remains created:", emailErr?.message||emailErr); }
     }
     return res.json({ok:true,bookingId,appointmentId:ref.id,status:"new",bookingStatus:"requested"});
@@ -2461,6 +2486,77 @@ app.post("/astrologer/sync-approval", express.json({limit:"5kb"}), async (req,re
   }catch(e){
     console.error("Astrologer approval state reconciliation failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to refresh the Astrologer approval state. Please try again."});
+  }
+});
+
+app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res);
+  if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim();
+  const body=req.body||{};
+  const hasChat=Object.prototype.hasOwnProperty.call(body,"pricePerQuestion");
+  const hasCall=Object.prototype.hasOwnProperty.call(body,"callPricePerMinute");
+  const chatPrice=Number(body.pricePerQuestion);
+  const callPrice=Number(body.callPricePerMinute);
+  if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
+  if(!hasChat&&!hasCall)return res.status(400).json({success:false,error:"Enter a Chat Price or Call Price before saving."});
+  if(hasChat&&(!Number.isFinite(chatPrice)||chatPrice<1||chatPrice>100000||Math.abs(chatPrice*100-Math.round(chatPrice*100))>1e-7)){
+    return res.status(400).json({success:false,error:"Chat Price must be between ₹1 and ₹100000, with up to two decimal places."});
+  }
+  if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+    return res.status(400).json({success:false,error:"Call Price must be ₹0 (unset) or between ₹1 and ₹100000 per minute, with up to two decimal places."});
+  }
+  try{
+    const collection=db.collection("smv_astrologers");
+    const selectedRef=collection.doc(astrologerId);
+    const selectedSnap=await selectedRef.get();
+    if(!selectedSnap.exists)return res.status(404).json({success:false,error:"Astrologer profile not found. Refresh the profile list and try again."});
+    const selected=selectedSnap.data()||{};
+    const uid=String(selected.uid||selectedSnap.id).trim();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"This Astrologer profile has no valid linked login UID."});
+    if(!["approved","active"].includes(String(selected.status||"").toLowerCase())){
+      return res.status(409).json({success:false,error:"Prices can only be changed for an approved Astrologer."});
+    }
+    const byUid=await collection.where("uid","==",uid).get();
+    const targets=new Map([[selectedSnap.id,selectedRef]]);
+    targets.set(uid,collection.doc(uid));
+    for(const docSnap of byUid.docs){
+      const record=docSnap.data()||{};
+      if(!record.uid||String(record.uid)===uid)targets.set(docSnap.id,docSnap.ref);
+    }
+    if(selected.publicId){
+      const byPublicId=await collection.where("publicId","==",String(selected.publicId)).get();
+      for(const docSnap of byPublicId.docs){
+        const record=docSnap.data()||{};
+        if((!record.uid||String(record.uid)===uid)&&String(record.publicId||"")===String(selected.publicId)){
+          targets.set(docSnap.id,docSnap.ref);
+        }
+      }
+    }
+    const patch={updatedAt:FieldValue.serverTimestamp()};
+    if(hasChat){
+      patch.pricePerQuestion=Math.round(chatPrice*100)/100;
+      patch.chatPriceUpdatedAt=FieldValue.serverTimestamp();
+      patch.chatPriceUpdatedBy=actor.uid;
+    }
+    if(hasCall){
+      patch.callPricePerMinute=callPrice===0?FieldValue.delete():Math.round(callPrice*100)/100;
+      patch.callPriceUpdatedAt=FieldValue.serverTimestamp();
+      patch.callPriceUpdatedBy=actor.uid;
+    }
+    const batch=db.batch();
+    for(const ref of targets.values())batch.set(ref,patch,{merge:true});
+    await batch.commit();
+    publicAstrologersCache={expiresAt:0,data:null};
+    return res.set("Cache-Control","no-store").json({
+      success:true,astrologerId,uid,updatedProfiles:targets.size,
+      pricePerQuestion:hasChat?Math.round(chatPrice*100)/100:Number(selected.pricePerQuestion||0),
+      callPricePerMinute:hasCall?(callPrice===0?null:Math.round(callPrice*100)/100):(selected.callPricePerMinute??null)
+    });
+  }catch(e){
+    console.error("Admin Astrologer pricing update failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to save Astrologer pricing. The related profiles were not partially updated."});
   }
 });
 
