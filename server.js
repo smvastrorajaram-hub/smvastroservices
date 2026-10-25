@@ -1870,11 +1870,17 @@ async function updateEditableAnswer(ref,viewKey,patch){
  if(current[viewKey]||current.commissionStatus==='credited')throw Object.assign(new Error('Answer is completed. Editing is closed.'),{httpStatus:409});
  tx.update(ref,patch);});
 }
-const answerCredit=require('./answer-credit')({db,FieldValue,adminUid:ADMIN_UID,privateAmounts:async c=>{
- // Unsettled consultations use the current single global rate. Already credited
- // earnings remain historical records and are not recalculated.
- return privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
-}});
+const answerCredit=require('./answer-credit')({db,FieldValue,adminUid:ADMIN_UID,
+ privateAmounts:async c=>{
+  // Unsettled consultations use the current single global rate. Already credited
+  // earnings remain historical records and are not recalculated.
+  return privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
+ },
+ publicAmounts:async q=>{
+  const amounts=privateCommissionSnapshot(Number(q.amount||q.paymentAmount||0),await getPrivateCommissionSettings());
+  return {astrologerAmount:amounts.astrologerAmount,adminAmount:amounts.adminAmount,commissionRate:amounts.privateAstrologerCommissionRate};
+ }
+});
 function markViewedRoute(kind,idKey){return async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  const id=String(req.body?.[idKey]||'').trim();if(!id)return res.status(400).json({error:'Answer ID is required.'});
