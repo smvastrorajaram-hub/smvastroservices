@@ -9,7 +9,9 @@ const {
   astrologerRatePaise,
   maxAffordableMinutes,
   MAX_SESSION_MINUTES,
-  DEFAULT_RATE_PAISE
+  DEFAULT_RATE_PAISE,
+  PREPARATION_DURATION_MS,
+  validateLiveBirthDetails
 } = require('../live-session-service');
 
 test('started-minute billing charges whole-minute boundaries without adding an extra minute', () => {
@@ -90,4 +92,20 @@ test('legacy global pricing defaults safely, but Customer rates come from the se
   assert.equal(maxAffordableMinutes(105000, 2000), 52);
   assert.equal(maxAffordableMinutes(1000, null), 0);
   assert.equal(MAX_SESSION_MINUTES, 1440);
+});
+
+
+test('Live sessions require valid DOB/time/place before the three-minute horoscope preparation', () => {
+  assert.equal(PREPARATION_DURATION_MS, 180_000);
+  assert.deepEqual(validateLiveBirthDetails({
+    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
+    birthLatitude: '13.0827', birthLongitude: '80.2707', birthTimezone: 'Asia/Kolkata'
+  }), {
+    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
+    birthLatitude: 13.0827, birthLongitude: 80.2707, birthTimezone: 'Asia/Kolkata'
+  });
+  assert.throws(() => validateLiveBirthDetails({birthDate:'2050-01-01',birthTime:'10:00',birthPlace:'Chennai'}), /future/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-02-31',birthTime:'10:00',birthPlace:'Chennai'}), /Date of Birth/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'25:00',birthPlace:'Chennai'}), /Time of Birth/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'10:00',birthPlace:'x'}), /Birth Place/i);
 });
