@@ -1872,7 +1872,7 @@ async function updateEditableAnswer(ref,viewKey,patch){
  if(current[viewKey]||current.commissionStatus==='credited')throw Object.assign(new Error('Answer is completed. Editing is closed.'),{httpStatus:409});
  tx.update(ref,patch);});
 }
-const answerCredit=require('./answer-credit')({db,FieldValue,privateAmounts:async c=>{
+const answerCredit=require('./answer-credit')({db,FieldValue,adminUid:ADMIN_UID,privateAmounts:async c=>{
  const saved={astrologerAmount:Number(c.astrologerAmount),adminAmount:Number(c.adminAmount),privateAstrologerCommissionRate:Number(c.privateAstrologerCommissionRate)};
  return Object.values(saved).every(Number.isFinite)?saved:privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
 }});
@@ -2080,7 +2080,7 @@ app.get("/admin/private-consultations-data", async (req, res) => {
       users:usersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
       astrologers:astrologersSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)),
       settings:{
-        privateCommission:privateCommissionSnap.exists?privateCommissionSnap.data():null,
+        privateCommission:commissionSnap.exists?commissionSnap.data():null,
         privateConsultationWorkflow:privateWorkflowSnap.exists?privateWorkflowSnap.data():null
       }
     });
@@ -2416,7 +2416,7 @@ app.get("/astrologer/private-consultations",async(req,res)=>{
     return st==="question_rejected" || st==="revision_required" || st==="answer_pending_admin_approval" || st==="answered" || !!c.customerViewedAt || String(c.commissionStatus||"")==="credited";
   });
   const privateWorkflow=await getPrivateConsultWorkflow();
-  return res.json({success:true,consultations:items,history,settings:{minimumAnswerWords:privateWorkflow.minimumAnswerWords,allowWithoutAdminApproval:privateWorkflow.allowWithoutAdminApproval,privateCommission:await getPrivateCommissionSettings()}});
+  return res.json({success:true,consultations:items,history,settings:{minimumAnswerWords:privateWorkflow.minimumAnswerWords,allowWithoutAdminApproval:privateWorkflow.allowWithoutAdminApproval}});
 });
 app.post("/astrologer/private-consultation/submit-answer",express.json({limit:"30kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;
