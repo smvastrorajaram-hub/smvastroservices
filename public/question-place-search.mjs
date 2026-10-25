@@ -1,4 +1,6 @@
 /* SMV shared online/offline place search for question forms.
+const SMV_QUESTION_BACKEND = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname)
+  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
    Online: existing Render GeoNames world-wide search proxy.
    Offline/failure: bundled India place-search database.
    This module performs no Firestore reads. */
@@ -10,7 +12,7 @@ async function offlineSearch(q,limit){
   return fn(q,limit);
 }
 async function onlineSearch(q,limit,signal){
-  const u=new URL('https://smvastroservices.onrender.com/api/locations/search');
+  const u=new URL('/api/locations/search',SMV_QUESTION_BACKEND);
   u.searchParams.set('q',q);
   u.searchParams.set('limit',String(Math.max(1,Math.min(70,Number(limit)||50))));
   u.searchParams.set('lang',/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en');
@@ -45,7 +47,7 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
     close();if(typeof onSelect==='function')onSelect(x);
     if(!x.timezone&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))){
       const chosen=input.value;
-      const url=new URL('https://smvastroservices.onrender.com/api/locations/timezone');
+      const url=new URL('/api/locations/timezone',SMV_QUESTION_BACKEND);
       url.searchParams.set('lat',String(x.latitude));url.searchParams.set('lng',String(x.longitude));
       fetch(url.toString(),{headers:{Accept:'application/json'}})
        .then(r=>r.ok?r.json():null).then(data=>{
