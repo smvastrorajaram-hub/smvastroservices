@@ -1,5 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
-const {registerWalletRoutes,CUSTOMER_WELCOME_CREDIT_PAISE}=require('./wallet-service');
+const {registerWalletRoutes,CUSTOMER_WELCOME_CREDIT_PAISE,walletLedgerDocId}=require('./wallet-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
 const crypto = require("crypto");
@@ -2751,6 +2751,8 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
     const customerProfileSnap=await db.collection("smv_users").doc(user.uid).get();
     const customerRole=String(customerProfileSnap.exists?(customerProfileSnap.data()?.role||"customer"):"customer").toLowerCase();
     if(customerRole!=="customer")return res.status(403).json({error:"Customer Login Required — Please login with a Customer account to start a private consultation."});
+    const paymentMethod=String(req.body?.paymentMethod||"razorpay").trim().toLowerCase();
+    if(!["wallet","razorpay"].includes(paymentMethod))return res.status(400).json({error:"Choose Wallet or Razorpay as the payment method."});
     const astrologerId=String(req.body?.astrologerId||"").trim();
     const customerName=String(req.body?.customerName||req.body?.birthDetails?.name||"").trim();
     const question=String(req.body?.question||"").trim();
@@ -2768,6 +2770,106 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
     const chatPrice=offerQuote.finalAmount;
     const commissionSnapshot=privateCommissionSnapshot(chatPrice,privateCommission);
     const {privateAstrologerCommissionRate,privateAdminCommissionRate,astrologerAmount,adminAmount}=commissionSnapshot;
+    if(paymentMethod==="wallet"){
+      const requestId=String(req.body?.requestId||"").trim();
+      if(!/^[A-Za-z0-9._:-]{8,128}$/.test(requestId))return res.status(400).json({error:"A valid Wallet booking request ID is required.",code:"WALLET_REQUEST_ID_INVALID"});
+      const amountPaise=Math.round(chatPrice*100);
+      if(!Number.isSafeInteger(amountPaise)||amountPaise<100)return res.status(409).json({error:"The selected chat price is not valid for Wallet payment.",code:"WALLET_CHAT_AMOUNT_INVALID"});
+      const consultationId=crypto.createHash("sha256").update("private-consultation-wallet:"+user.uid+":"+requestId).digest("hex");
+      const consultationRef=db.collection("smv_private_consultations").doc(consultationId);
+      const walletRef=db.collection("smv_wallets").doc(user.uid);
+      const ledgerId=walletLedgerDocId("private_consultation_payment",user.uid+":"+requestId);
+      const ledgerRef=db.collection("smv_wallet_transactions").doc(ledgerId);
+      const customerPaymentId=nextPaymentId();
+      const paymentRef=db.collection("smv_payments").doc(customerPaymentId);
+      const privateWorkflow=await getPrivateConsultWorkflow();
+      const autoAllow=privateWorkflow.allowWithoutAdminApproval===true;
+      const finalStatus=autoAllow?"approved_for_astrologer":"pending_admin_approval";
+      const paymentRecordedAt=new Date().toISOString();
+      const now=FieldValue.serverTimestamp();
+      const booking=await db.runTransaction(async tx=>{
+        const [consultationSnap,walletSnap,ledgerSnap,paymentSnap]=await Promise.all([
+          tx.get(consultationRef),tx.get(walletRef),tx.get(ledgerRef),tx.get(paymentRef)
+        ]);
+        if(consultationSnap.exists){
+          const prior=consultationSnap.data()||{};
+          if(String(prior.customerId||"")!==String(user.uid)||String(prior.walletRequestId||"")!==requestId||String(prior.paymentMethod||"")!=="wallet"||String(prior.paymentStatus||"")!=="paid"){
+            throw Object.assign(new Error("This Wallet booking request ID has already been used for another request."),{httpStatus:409,code:"WALLET_BOOKING_IDEMPOTENCY_CONFLICT"});
+          }
+          if(!walletSnap.exists)throw Object.assign(new Error("The existing Wallet booking has no Wallet document; reconciliation is required."),{httpStatus:409,code:"WALLET_BOOKING_RECONCILIATION_REQUIRED"});
+          const currentWallet=walletSnap.data()||{};
+          return {
+            alreadyProcessed:true,consultationId,customerPaymentId:String(prior.customerPaymentId||prior.paymentId||""),
+            paymentRecordedAt:String(prior.paymentRecordedAt||paymentRecordedAt),status:String(prior.status||finalStatus),
+            question:String(prior.question||question),amount:Number(prior.chatPrice||prior.amount||chatPrice),
+            availableBalancePaise:Number(currentWallet.availableBalancePaise||0)
+          };
+        }
+        if(ledgerSnap.exists)throw Object.assign(new Error("A Wallet ledger entry already exists for this booking request; manual reconciliation is required."),{httpStatus:409,code:"WALLET_BOOKING_LEDGER_CONFLICT"});
+        if(paymentSnap.exists)throw Object.assign(new Error("The payment reference is already in use. Please retry with a new booking request."),{httpStatus:409,code:"WALLET_PAYMENT_REFERENCE_CONFLICT"});
+        if(!walletSnap.exists)throw Object.assign(new Error("Wallet not found. Refresh your Wallet and try again."),{httpStatus:409,code:"WALLET_NOT_FOUND"});
+        const wallet=walletSnap.data()||{};
+        const available=Number(wallet.availableBalancePaise??0);
+        const reserved=Number(wallet.reservedBalancePaise??0);
+        const version=Number(wallet.version??0);
+        if(!Number.isSafeInteger(available)||available<0||!Number.isSafeInteger(reserved)||reserved<0||!Number.isSafeInteger(version)||version<0){
+          throw Object.assign(new Error("Wallet balance data is invalid. Please contact support before paying."),{httpStatus:409,code:"WALLET_BALANCE_INVALID"});
+        }
+        if(available<amountPaise)throw Object.assign(new Error("Insufficient Wallet balance. Recharge your Wallet or choose Razorpay."),{httpStatus:409,code:"WALLET_INSUFFICIENT_BALANCE"});
+        const nextAvailable=available-amountPaise;
+        const baseRecord={
+          consultationId,customerId:user.uid,customerEmail:user.email||null,customerName,question,
+          astrologerId,astrologerName:String(a.name||"Astrologer"),
+          chatPrice,originalChatPrice,offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,
+          offerPromoCode:offerQuote.promoCode||"",offerDiscountAmount:offerQuote.discountAmount||0,
+          offerBannerText:offerQuote.bannerText||"",offerDisplayMode:offerQuote.displayMode||"hidden",
+          privateAstrologerCommissionRate,privateAdminCommissionRate,adminAmount,astrologerAmount,
+          amount:chatPrice,status:finalStatus,paymentStatus:"paid",paymentMethod:"wallet",
+          walletRequestId:requestId,walletTransactionId:ledgerId,questionApprovalBypassed:autoAllow,
+          allocationStatus:"selected_astrologer",customerPaymentId,
+          paymentRecordedAt,paidAt:now,paymentCurrency:"INR",razorpayOrderId:null,razorpayPaymentId:null,
+          birthDetails:{name:customerName,birthDate:String(birth.birthDate),birthTime:String(birth.birthTime),birthPlace:String(birth.birthPlace).trim(),birthGender:String(birth.birthGender||""),timezone:"Asia/Kolkata",utcOffsetMinutes:330},
+          createdAt:now,updatedAt:now
+        };
+        tx.set(walletRef,{
+          ownerUid:user.uid,ownerRole:"customer",currency:"INR",
+          availableBalancePaise:nextAvailable,reservedBalancePaise:reserved,
+          version:version+1,createdAt:wallet.createdAt||now,updatedAt:now
+        },{merge:true});
+        tx.create(ledgerRef,{
+          ownerUid:user.uid,ownerRole:"customer",currency:"INR",type:"private_consultation_payment",
+          direction:"debit",amountPaise,balanceAfterPaise:nextAvailable,reservedBalanceAfterPaise:reserved,
+          idempotencyKey:"private-consultation-wallet:"+user.uid+":"+requestId,
+          referenceType:"private_consultation",referenceId:consultationId,
+          note:"Wallet payment for chat with "+String(a.name||"selected astrologer").slice(0,120),
+          metadata:{astrologerId,requestId},status:"posted",source:"wallet",createdAt:now
+        });
+        tx.create(consultationRef,baseRecord);
+        tx.create(paymentRef,{
+          paymentId:customerPaymentId,type:"customer_payment",customerId:user.uid,astrologerId,
+          consultationId,amount:chatPrice,status:"paid",paymentStatus:"paid",source:"wallet",
+          paymentMethod:"wallet",walletTransactionId:ledgerId,paymentRecordedAt,
+          createdAt:now,updatedAt:now
+        });
+        return {
+          alreadyProcessed:false,consultationId,customerPaymentId,paymentRecordedAt,status:finalStatus,
+          question,amount:chatPrice,availableBalancePaise:nextAvailable
+        };
+      });
+      if(!booking.alreadyProcessed){
+        setImmediate(async()=>{
+          const quote={offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,promoCode:offerQuote.promoCode||"",originalAmount:Number(offerQuote.originalAmount||originalChatPrice),finalAmount:Number(chatPrice),discountAmount:Number(offerQuote.discountAmount||0)};
+          await Promise.allSettled([
+            consumeOfferAfterPayment({uid:user.uid,service:"private_consultation",referenceId:consultationId,paymentId:customerPaymentId,quote}),
+            addAdminPrivateNotification("private_payment_received","Private Consultation Wallet Payment Received",customerName+" paid ₹"+Number(chatPrice).toFixed(2)+" from Wallet for "+(a.name||"the selected astrologer")+".",consultationId,{customerId:user.uid,astrologerId,paymentMethod:"wallet"}),
+            db.collection("smv_notifications").add({userId:user.uid,type:"private_consultation_payment",title:"Wallet payment successful",message:autoAllow?"Your private consultation is now visible to "+(a.name||"the selected astrologer")+".":"Your private consultation with "+(a.name||"the selected astrologer")+" is waiting for Admin approval.",consultationId,paymentId:customerPaymentId,createdAt:FieldValue.serverTimestamp(),read:false}),
+            sendEventEmailOnce({eventKey:"private:"+consultationId+":wallet_payment_success",to:[String(user.email||await getUserEmail(user.uid)||"")],subject:"SMV ASTRO — Wallet Consultation Payment Successful",text:"Your private consultation has been booked using Wallet.\n\nConsultation ID: "+consultationId+"\nAmount: ₹"+Number(chatPrice).toFixed(2)+"\nPayment ID: "+customerPaymentId,context:{consultationId,paymentId:customerPaymentId,event:"wallet_payment_success"}}),
+            sendEventEmailOnce({eventKey:"private:"+consultationId+":wallet_payment_admin",to:[ADMIN_EMAIL],subject:"SMV ASTRO — Wallet Consultation Payment Received",text:"A Customer booked a private consultation using Wallet.\n\nConsultation ID: "+consultationId+"\nCustomer: "+customerName+"\nAstrologer: "+(a.name||"Astrologer")+"\nAmount: ₹"+Number(chatPrice).toFixed(2)+"\nPayment ID: "+customerPaymentId,context:{consultationId,paymentId:customerPaymentId,event:"wallet_payment_admin"}})
+          ]);
+        });
+      }
+      return res.json({success:true,verified:true,walletPaid:true,alreadyProcessed:booking.alreadyProcessed,consultationId:booking.consultationId,paymentId:booking.customerPaymentId,customerPaymentId:booking.customerPaymentId,paymentRecordedAt:booking.paymentRecordedAt,status:booking.status,paymentStatus:"paid",question:booking.question,amount:booking.amount,amountPaise:Math.round(Number(booking.amount)*100),availableBalance:Number(booking.availableBalancePaise)/100});
+    }
     const ref=db.collection("smv_private_consultations").doc();
     const consultationId=ref.id;
     const order=await razorpay.orders.create({
