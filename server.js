@@ -1308,7 +1308,7 @@ app.get("/astrologer/appointments", async (req,res)=>{
         name:String(a.name||""),email:String(a.email||""),mobile:String(a.mobile||""),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         question:String(a.question||""),notes:String(a.notes||""),birthDetails:a.birthDetails||null,
-        status:String(a.status||"new"),bookingStatus:String(a.bookingStatus||"requested"),createdAt:a.createdAt||null
+        status:String(a.status||"new"),bookingStatus:String(a.bookingStatus||"requested"),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
       };
     }).sort((a,b)=>{
       const time=v=>typeof v?.toMillis==="function"?v.toMillis():Date.parse(v||"")||0;
@@ -1321,12 +1321,56 @@ app.get("/astrologer/appointments", async (req,res)=>{
   }
 });
 
+app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
+  const user=await requireUser(req,res);
+  if(!user)return;
+  try{
+    const uid=String(user.uid||"").trim();
+    const action=String(req.body?.action||"").trim().toLowerCase();
+    if(!["accept","reject"].includes(action))return res.status(400).json({success:false,error:"Choose Accept or Reject."});
+    const [userSnap,astroSnap]=await Promise.all([
+      db.collection("smv_users").doc(uid).get(),
+      db.collection("smv_astrologers").doc(uid).get()
+    ]);
+    const userProfile=userSnap.exists?(userSnap.data()||{}):{};
+    const astro=astroSnap.exists?(astroSnap.data()||{}):{};
+    if(String(userProfile.role||"").toLowerCase()!=="astrologer"&&String(astro.role||"").toLowerCase()!=="astrologer"){
+      return res.status(403).json({success:false,error:"Astrologer access required."});
+    }
+    const ref=db.collection("smv_appointments").doc(String(req.params.id||"").trim());
+    const outcome=await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists)return {errorStatus:404,error:"Scheduled booking not found."};
+      const a=snap.data()||{};
+      if(String(a.astrologerUid||"")!==uid)return {errorStatus:403,error:"This booking belongs to another Astrologer."};
+      if(!["scheduled_call_request","scheduled_chat_request"].includes(String(a.bookingKind||""))){
+        return {errorStatus:400,error:"This record is not a scheduled Call/Chat booking."};
+      }
+      const current=String(a.bookingStatus||"requested").toLowerCase();
+      const target=action==="accept"?"accepted":"rejected";
+      if(current===target)return {success:true,alreadyProcessed:true,appointmentId:ref.id,bookingStatus:target};
+      if(current!=="requested")return {errorStatus:409,error:"This booking is already "+current.replaceAll("_"," ")+".",bookingStatus:current};
+      tx.update(ref,{
+        bookingStatus:target,status:target,respondedAt:FieldValue.serverTimestamp(),
+        respondedBy:uid,updatedAt:FieldValue.serverTimestamp()
+      });
+      return {success:true,alreadyProcessed:false,appointmentId:ref.id,bookingStatus:target};
+    });
+    if(outcome.errorStatus)return res.status(outcome.errorStatus).json({success:false,error:outcome.error});
+    return res.set("Cache-Control","no-store").json(outcome);
+  }catch(e){
+    console.error("Astrologer scheduled booking response failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to update this scheduled booking."});
+  }
+});
+
 app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
   try {
     const name=String(req.body?.name||"").trim(), email=String(req.body?.email||user.email||"").trim(), mobile=String(req.body?.mobile||"").trim();
     const type=String(req.body?.type||"").trim(), preferredDate=String(req.body?.preferredDate||"").trim(), preferredTime=String(req.body?.preferredTime||"").trim(), notes=String(req.body?.notes||"").trim(), question=String(req.body?.question||"").trim();
+    const scheduledMinutes=Number(req.body?.scheduledMinutes||5);
     const astrologerId=String(req.body?.astrologerId||"").trim();
     const birthDate=String(req.body?.birthDate||"").trim(), birthTime=String(req.body?.birthTime||"").trim(), birthPlace=String(req.body?.birthPlace||"").trim();
     const birthLatitudeRaw=String(req.body?.birthLatitude||"").trim(), birthLongitudeRaw=String(req.body?.birthLongitude||"").trim(), birthTimezone=String(req.body?.birthTimezone||"").trim();
@@ -1340,6 +1384,9 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     let callBooking={};
     if(astrologerId){
       if(!["Call Consultation","Chat Consultation"].includes(type))return res.status(400).json({error:"Choose a Call or Chat booking type."});
+      if(!Number.isSafeInteger(scheduledMinutes)||scheduledMinutes<1||scheduledMinutes>1440)return res.status(400).json({error:"Choose a session duration from 1 to 1440 minutes."});
+      const scheduleEpoch=Date.parse(preferredDate+"T"+preferredTime+":00+05:30");
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(preferredDate)||!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(preferredTime)||!Number.isFinite(scheduleEpoch)||scheduleEpoch<=Date.now())return res.status(400).json({error:"Choose a future scheduled date and time."});
       if(type==="Chat Consultation"&&!question)return res.status(400).json({error:"Enter the question or topic for your Chat Booking."});
       // Both booking types use the same contact/birth/schedule form. The Chat type additionally stores the Customer's question.
       // them in a structured field for the Admin booking view.
@@ -1394,7 +1441,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     }
     const bookingId = await nextBookingId();
     const ref=db.collection("smv_appointments").doc();
-    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
+    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
 
     // Email notification is best-effort. Booking creation must not fail just because
