@@ -1,13 +1,13 @@
 /* Shared public presentation cache. Payment eligibility remains server-authoritative. */
 (function(){
  'use strict';
- const themes=['generic','welcome','pongal','diwali','navaratri','dasara','ayudha_pooja','shivaratri','tamil_new_year','vinayagar_chaturthi','karthigai_deepam','thaipusam','new_year','onam','christmas','eid'];
+ const themes=['generic','pongal','diwali','navaratri','dasara','ayudha_pooja','shivaratri','tamil_new_year','vinayagar_chaturthi','karthigai_deepam','thaipusam','new_year','onam','christmas','eid'];
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let cache=null,expires=0,flight=null,timer=null;
  function theme(o){
   if(themes.includes(o.bannerTheme))return o.bannerTheme;
   const text=[o.kind,o.name,o.bannerText].join(' ').toLowerCase();
-  const patterns=[['welcome',/welcome|first.*₹?1/],['pongal',/pongal/],['diwali',/diwali|deepavali/],['navaratri',/navara/],['dasara',/dasara|dussehra|vijayadashami/],['ayudha_pooja',/ayudha|ayutha/],['shivaratri',/shivaratri|sivarathri|maha shiva/],['tamil_new_year',/tamil new year|puthandu/],['vinayagar_chaturthi',/vinayag|ganesh/],['karthigai_deepam',/karthigai|deepam/],['thaipusam',/thaipusam|thaipoosam/],['onam',/onam/],['christmas',/christmas/],['eid',/eid|ramzan/],['new_year',/new year/]];
+  const patterns=[['pongal',/pongal/],['diwali',/diwali|deepavali/],['navaratri',/navara/],['dasara',/dasara|dussehra|vijayadashami/],['ayudha_pooja',/ayudha|ayutha/],['shivaratri',/shivaratri|sivarathri|maha shiva/],['tamil_new_year',/tamil new year|puthandu/],['vinayagar_chaturthi',/vinayag|ganesh/],['karthigai_deepam',/karthigai|deepam/],['thaipusam',/thaipusam|thaipoosam/],['onam',/onam/],['christmas',/christmas/],['eid',/eid|ramzan/],['new_year',/new year/]];
   return patterns.find(([,re])=>re.test(text))?.[0]||'generic';
  }
  const active=o=>(!o.startAt||Date.parse(o.startAt)<=Date.now())&&(!o.endAt||Date.parse(o.endAt)>Date.now());
