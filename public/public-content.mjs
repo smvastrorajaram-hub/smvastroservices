@@ -239,7 +239,13 @@
     </div>`);
     $('smvCallBookingClose').onclick=closeModal;
     const birthPlaceInput=$('smvCallBookingBirthPlace');
-    if(birthPlaceInput)import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(birthPlaceInput,{latId:'smvCallBookingBirthLatitude',lonId:'smvCallBookingBirthLongitude'})).catch(error=>console.warn('Book a Call birth-place search is unavailable:',error));
+    if(birthPlaceInput){
+      birthPlaceInput.addEventListener('input',()=>{
+        const lat=$('smvCallBookingBirthLatitude'),lon=$('smvCallBookingBirthLongitude');
+        if(lat)lat.value='';if(lon)lon.value='';
+      });
+      import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(birthPlaceInput,{latId:'smvCallBookingBirthLatitude',lonId:'smvCallBookingBirthLongitude'})).catch(error=>console.warn('Book a Call birth-place search is unavailable:',error));
+    }
     const form=$('smvCallBookingForm');
     form.onsubmit=async event=>{
       event.preventDefault();
