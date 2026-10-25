@@ -59,6 +59,24 @@ test('selected duration caps charge and an unstarted connection costs zero', () 
   }), null);
 });
 
+test('Wallet recharge promotional free minutes reduce cash billing and cap at selected duration', () => {
+  assert.deepEqual(calculateLiveSessionCharge({
+    elapsedMs: 0, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 2
+  }), { elapsedMs: 0, billableMinutes: 0, totalBillableMinutes: 0, freeMinutesUsed: 0, amountPaise: 0 });
+  assert.deepEqual(calculateLiveSessionCharge({
+    elapsedMs: 59_999, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 2
+  }), { elapsedMs: 59_999, billableMinutes: 0, totalBillableMinutes: 1, freeMinutesUsed: 1, amountPaise: 0 });
+  assert.deepEqual(calculateLiveSessionCharge({
+    elapsedMs: 60_001, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 1
+  }), { elapsedMs: 60_001, billableMinutes: 1, totalBillableMinutes: 2, freeMinutesUsed: 1, amountPaise: 1000 });
+  assert.deepEqual(calculateLiveSessionCharge({
+    elapsedMs: 600_000, ratePerMinutePaise: 1200, maximumMinutes: 3, freeMinutes: 1
+  }), { elapsedMs: 600_000, billableMinutes: 2, totalBillableMinutes: 3, freeMinutesUsed: 1, amountPaise: 2400 });
+  assert.equal(calculateLiveSessionCharge({
+    elapsedMs: 60_000, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: -1
+  }), null);
+});
+
 test('invalid durations and elapsed times fail closed', () => {
   for (const value of [-1, NaN, Infinity, 'not-a-duration']) {
     assert.equal(billableMinutesForElapsedMs(value, 2), null);
