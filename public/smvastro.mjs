@@ -3051,7 +3051,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
    const hasPendingRefund=false;
    const paid=consultationItems.filter(q=>q.status!=='awaiting_payment').length+privateConsultationItems.filter(q=>String(q.paymentStatus||'').toLowerCase()==='paid').length;
    const qCount=consultationItems.length+privateConsultationItems.length;
-   const customerDisplayName=[data.fullName,data.displayName,currentUser.displayName,data.name,data.firstName].map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';window.__smvCustomerProfileName=customerDisplayName;
+   const customerDisplayName=[data.name,data.fullName,data.displayName,data.firstName,currentUser.displayName].map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';window.__smvCustomerProfileName=customerDisplayName;
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
@@ -3692,7 +3692,8 @@ async function loadAdminPanelData(background=false){
       const id=b.dataset.profilePermission,allow=b.dataset.next==='allow';
       b.disabled=true;
       try{
-        await updateDoc(doc(db,'smv_astrologers',id),{profileEditAllowed:allow,profileEditPermissionUpdatedAt:serverTimestamp(),profileEditPermissionUpdatedBy:currentUser.uid});
+        const r=await renderApi('/admin/astrologer-profile-permission',{method:'POST',body:JSON.stringify({astrologerId:id,allow})});
+        if(!r?.success)throw new Error(r?.error||'The backend did not confirm profile permission changes.');
         await smvAdminTouch();
         await loadAdminPanel();
       }catch(e){alert(e.message||String(e));b.disabled=false;}
@@ -3705,7 +3706,8 @@ async function loadAdminPanelData(background=false){
       if(description.length>2000){if(msg)msg.innerHTML='<span class="error">Description must be 2000 characters or less.</span>';return;}
       b.disabled=true;b.textContent='SAVING...';
       try{
-        await updateDoc(doc(db,'smv_astrologers',id),{profileDescription:description,profileDescriptionStatus:'approved',profileDescriptionApprovedAt:serverTimestamp(),profileDescriptionApprovedBy:currentUser.uid});
+        const r=await renderApi('/admin/astrologer-profile-description',{method:'POST',body:JSON.stringify({astrologerId:id,action:'save',description})});
+        if(!r?.success)throw new Error(r?.error||'The backend did not confirm the description update.');
         await smvAdminTouch();
         if(msg)msg.innerHTML='<span class="success">Public description updated by Admin.</span>';
         loadAstroCards().catch(()=>{});
@@ -3717,17 +3719,8 @@ async function loadAdminPanelData(background=false){
       const id=b.dataset.profileApprove;
       b.disabled=true;
       try{
-        const snap=await getDoc(doc(db,'smv_astrologers',id)),a=snap.exists()?(snap.data()||{}):{};
-        const pending=String(a.profileDescriptionPending||'').trim();
-        if(!pending)throw new Error('No pending description to approve.');
-        await updateDoc(doc(db,'smv_astrologers',id),{
-          profileDescription:pending,
-          profileDescriptionPending:'',
-          profileDescriptionStatus:'approved',
-          profileDescriptionApprovedAt:serverTimestamp(),
-          profileDescriptionApprovedBy:currentUser.uid
-        });
-        await setDoc(doc(db,'smv_notifications',id+'_profile_approved_'+Date.now()),{userId:id,type:'profile_description',title:'Profile description approved',message:'Your updated profile description has been approved by Admin.',createdAt:serverTimestamp(),read:false});
+        const r=await renderApi('/admin/astrologer-profile-description',{method:'POST',body:JSON.stringify({astrologerId:id,action:'approve'})});
+        if(!r?.success)throw new Error(r?.error||'The backend did not confirm description approval.');
         await smvAdminTouch();
         await loadAdminPanel();
         loadAstroCards().catch(()=>{});
@@ -3740,7 +3733,8 @@ async function loadAdminPanelData(background=false){
       if(!ok)return;
       b.disabled=true;
       try{
-        await updateDoc(doc(db,'smv_astrologers',id),{profileDescriptionPending:'',profileDescriptionStatus:'rejected',profileDescriptionRejectedAt:serverTimestamp(),profileDescriptionRejectedBy:currentUser.uid});
+        const r=await renderApi('/admin/astrologer-profile-description',{method:'POST',body:JSON.stringify({astrologerId:id,action:'reject'})});
+        if(!r?.success)throw new Error(r?.error||'The backend did not confirm description rejection.');
         await setDoc(doc(db,'smv_notifications',id+'_profile_rejected_'+Date.now()),{userId:id,type:'profile_description',title:'Profile description not approved',message:'Your submitted profile description was not approved by Admin. Your existing public description remains unchanged.',createdAt:serverTimestamp(),read:false});
         await smvAdminTouch();
         await loadAdminPanel();
@@ -4460,7 +4454,8 @@ let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiv
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');if(s==='preparing')return 'Preparing horoscope · 3 minutes';if(s==='connecting')return session?.mode==='chat'?'Connecting Chat…':'Connecting Call…';return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
+function smvLiveOtherParticipantName(session=smvLiveCurrentSession){const s=session||{};const uid=String(currentUser?.uid||'');if(uid&&uid===String(s.customerUid||''))return String(s.astrologerName||'Astrologer');if(uid&&uid===String(s.astrologerUid||''))return String(s.customerName||'Customer');return String(s.astrologerName||s.customerName||'other participant');}
+function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');const mode=String(session?.mode||'').toLowerCase();if(s==='preparing')return 'Astrologer Generating Your Horoscope.... Please Wait....';if(s==='connecting')return /chat/.test(mode)?'Connecting Chat…':'Connecting Call…';return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
 function smvLivePanelHtml(s,incoming){
  const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
  const rootStyle='max-height:calc(100dvh - 28px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:clamp(12px,3vw,22px);background:#fffaf0;color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere;line-height:1.5';
@@ -4530,7 +4525,7 @@ function smvLiveOpenSession(session,wallet,incoming){
   try{
    const pc=await smvLiveEnsurePeer(id);
    if(smvLiveCurrentSession?.customerUid===currentUser?.uid)await smvLiveStartOffer(id);
-   if(voice&&pc.connectionState!=='connected')voice.textContent='Microphone ready. Waiting for the other participant…';
+   if(voice&&pc.connectionState!=='connected')voice.textContent='Microphone ready. Waiting for '+smvLiveOtherParticipantName()+ '…';
    const muteButton=$('smvLiveMute');if(muteButton)muteButton.disabled=false;
    connectMic.textContent='MICROPHONE READY';
   }catch(error){
@@ -4569,7 +4564,7 @@ async function smvLiveEnsurePeer(id){
  const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Requesting microphone permission…';
  try{smvLiveLocalStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});}
  catch(error){if(voiceStatus)voiceStatus.textContent=smvLiveMediaErrorText(error);throw error;}
- if(voiceStatus)voiceStatus.textContent='Microphone ready. Connecting to the other participant…';
+ if(voiceStatus)voiceStatus.textContent='Microphone ready. Connecting to '+smvLiveOtherParticipantName()+'…';
  smvLiveRemoteStream=new MediaStream();let iceServers=[{urls:'stun:stun.l.google.com:19302'}];try{const ice=await renderApi('/live/ice-config',{method:'GET',timeoutMs:8000});if(Array.isArray(ice.iceServers)&&ice.iceServers.length)iceServers=ice.iceServers;}catch(iceError){console.warn('TURN relay is not configured/reachable; using STUN only:',iceError?.message||iceError);}const pc=new RTCPeerConnection({iceServers});smvLivePeer=pc;
  for(const track of smvLiveLocalStream.getAudioTracks())pc.addTrack(track,smvLiveLocalStream);
  pc.ontrack=e=>{if(e.streams?.[0])smvLiveRemoteStream=e.streams[0];else if(e.track)smvLiveRemoteStream.addTrack(e.track);const audio=$('smvLiveRemoteAudio');if(audio){audio.srcObject=smvLiveRemoteStream;audio.play?.().catch(()=>{});}if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connected.';};
@@ -4589,7 +4584,7 @@ async function smvLiveProcessSignal(sig){
  // Do not trigger a microphone permission prompt from the polling timer. Let the
  // participant explicitly connect their microphone; leave this signal unconsumed
  // so it will be processed on the next poll after the peer is ready.
- if(!smvLivePeer){const voice=$('smvLiveVoiceStatus'),connect=$('smvLiveConnectMic');if(voice)voice.textContent='The other participant is connecting. Tap CONNECT MICROPHONE to allow voice access on this device.';if(connect&&['connecting','active'].includes(String(s.state||'')))connect.hidden=false;return;}
+ if(!smvLivePeer){const voice=$('smvLiveVoiceStatus'),connect=$('smvLiveConnectMic');if(voice)voice.textContent=smvLiveOtherParticipantName()+' is connecting. Tap CONNECT MICROPHONE to allow voice access on this device.';if(connect&&['connecting','active'].includes(String(s.state||'')))connect.hidden=false;return;}
  smvLiveSignalSeen.add(sig.id);
  try{
  const pc=await smvLiveEnsurePeer(sig.sessionId);
