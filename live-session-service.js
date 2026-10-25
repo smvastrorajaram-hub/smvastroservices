@@ -425,7 +425,11 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!customerSnap.exists || String(customerSnap.data()?.role || '').toLowerCase() !== 'customer') {
         throw httpError(403, 'The booking Customer account is not available.', 'LIVE_CUSTOMER_REQUIRED');
       }
-      const rate = booking.mode === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
+      const currentRate = booking.mode === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
+      // A queued booking keeps the server price shown when it was requested.
+      // This avoids a surprise price increase while the Customer waits offline.
+      const bookedRate = Number(booking.ratePerMinutePaise);
+      const rate = Number.isSafeInteger(bookedRate) && bookedRate >= 100 && bookedRate <= 1_000_000 ? bookedRate : currentRate;
       const minutes = Number(booking.minutes);
       if (!ALLOWED_MINUTES.has(minutes)) throw httpError(409, 'Booking duration is invalid.', 'LIVE_DURATION_INVALID');
       const fingerprint = String(booking.payloadFingerprint || hash(id));
@@ -674,12 +678,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const booking = snap.data() || {};
       if (booking.customerUid !== userUid) throw httpError(403, 'This booking belongs to another Customer.', 'LIVE_BOOKING_FORBIDDEN');
       if (booking.status !== 'pending') throw httpError(409, 'Only pending bookings can be cancelled.', 'LIVE_BOOKING_NOT_PENDING');
+      const expiresAt = timestampMillis(booking.expiresAt) || (timestampMillis(booking.createdAt) + 7 * 24 * 60 * 60 * 1000);
+      if (expiresAt && Date.now() >= expiresAt) {
+        tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
+        return { ...booking, status: 'expired', bookingId: id };
+      }
       tx.set(ref, { status: 'cancelled', cancelledAt: nowTimestamp(), updatedAt: nowTimestamp() }, { merge: true });
       return { ...booking, status: 'cancelled', bookingId: id };
     });
-    sendTo(result.astrologerUid, { type: 'live.booking.updated', booking: { id, status: 'cancelled' } });
-    sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: 'cancelled' } });
-    return { success: true, booking: result };
+    sendTo(result.astrologerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
+    sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
+    return { success: true, booking: safeBookingView(id, result) };
   }
 
   async function sendMessage(sessionId, senderUid, text) {
