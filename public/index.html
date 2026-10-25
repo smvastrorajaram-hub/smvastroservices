@@ -160,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div></div></div></div>
 <div aria-label="SMV ASTRO services" class="smv-master-services">
 <a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-286.6848%;top:-13.0435%"/></span><strong>Book a Chat</strong><span>Choose an approved astrologer and pay securely with Wallet or Razorpay.</span></a>
+<a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult" aria-label="Browse Astrologer List and profiles"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-157.6087%;top:-13.0435%"/></span><strong>Astrologer List</strong><span>Browse approved astrologer profiles, languages, availability, existing prices and Reviews &amp; Ratings.</span></a>
 <a class="smv-master-service" href="https://horoscope.smvastroservices.in/" rel="noopener" target="_blank"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-29.0761%;top:-138.8587%"/></span><strong>Create Horoscope</strong><span>Accurate Vedic calculations with detailed analysis.</span></a>
 <a class="smv-master-service" href="#publicBlogs"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-286.6848%;top:-138.8587%"/></span><strong>Read Our Blog</strong><span>Insights, remedies and astrology knowledge.</span></a>
 </div>
@@ -283,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <section aria-label="Private Consultation" class="section hidden smv-type-root" id="private-consultation">
 <div class="wrap"><button aria-label="Back to Home" class="smv-consult-back" id="privateConsultationBack" type="button">← BACK</button></div>
 <div class="wrap">
-<div class="section-title"><h2>Private Consultation</h2><p>Choose an approved astrologer for a private consultation. The Chat Price shown below is set by Admin.</p></div>
+<div class="section-title"><h2>Astrologer List &amp; Profiles</h2><p>Browse approved astrologers, profile details, languages, availability, the prices configured for their services, and Reviews &amp; Ratings. Select an astrologer to continue to the existing Private Consultation flow.</p></div>
 <div id="privateConsultationAstrologers"><div class="empty">Loading approved astrologers...</div></div>
 <div class="card hidden" id="privateConsultationQuestionCard">
 <button aria-label="Close Private Consultation Question" id="privateConsultationQuestionClose" title="Close" type="button">×</button>
@@ -367,6 +368,17 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
 <div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
 <div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
+<div class="card" id="adminWalletLedger">
+<h3>Wallet Transaction Audit</h3>
+<p class="small">Read-only view of recent server-posted Wallet ledger entries. Totals describe only the displayed result and are not a full reconciliation report.</p>
+<div class="action-row" style="align-items:end">
+<label style="flex:1;min-width:220px"><b>Filter by Customer/Astrologer UID (optional)</b><input id="adminWalletLedgerOwnerUid" autocomplete="off" maxlength="160" placeholder="Paste exact Firebase UID"></label>
+<button class="btn" id="adminWalletLedgerRefresh" type="button">REFRESH WALLET LEDGER</button>
+</div>
+<div class="stats-grid admin-summary-grid" id="adminWalletLedgerSummary"></div>
+<div class="small" id="adminWalletLedgerMsg" role="status">Wallet ledger not loaded yet.</div>
+<div id="adminWalletLedgerRows"><div class="empty">Wallet transaction audit loads when the Admin Dashboard opens.</div></div>
+</div>
 <div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupReviews" aria-labelledby="adminGroupReviewsTitle">
@@ -505,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js"></script>
-<script src="./smvastro.mjs?v=20261025-phase1-server-role-v3" type="module"></script>
+<script src="./smvastro.mjs?v=20261025-phase1-dashboard-audit-v4" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -549,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261025-phase1-admin-role-v1" type="module"></script>
+<script src="./public-content.mjs?v=20261025-phase1-directory-dashboard-v1" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
@@ -1213,7 +1225,7 @@ else initFAQ();
 })();
 </script>
 <script defer="" src="./interface.js"></script>
-<script src="./public-navigation.js?v=20261025-phase1-admin-role-v1"></script>
+<script src="./public-navigation.js?v=20261025-phase1-directory-dashboard-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{
  if(location.hostname!=='smvastroservices.pages.dev')return;
