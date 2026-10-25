@@ -180,7 +180,7 @@ function createWalletService({ db, FieldValue }) {
       if (String(recharge.status || '') === 'paid') {
         if (String(recharge.razorpayPaymentId || '') !== pid) throw httpError(409, 'This Wallet recharge was paid with a different payment.', 'WALLET_RECHARGE_ALREADY_PAID');
         const existingWallet = walletSnap.exists ? walletSnap.data() || {} : {};
-        return { success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount, availableBalancePaise: safePaise(existingWallet.availableBalancePaise) };
+        return { success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount, availableBalancePaise: safePaise(existingWallet.availableBalancePaise), freeMinutesGranted: safePaise(recharge.freeMinutesGranted), freeSecondsBalance: safePaise(existingWallet.freeSecondsBalance) };
       }
       if (!['order_created', 'payment_pending'].includes(String(recharge.status || ''))) {
         throw httpError(409, 'This Wallet recharge is not ready to be credited.', 'WALLET_RECHARGE_NOT_READY');
