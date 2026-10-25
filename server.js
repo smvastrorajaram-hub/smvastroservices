@@ -2094,11 +2094,10 @@ app.get("/admin/settings-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const [commissionSnap,questionSnap,workflowSnap,privateCommissionSnap,privateWorkflowSnap,autoApprovalSnap,horoscopePaymentSnap]=await Promise.all([
+    const [commissionSnap,questionSnap,workflowSnap,privateWorkflowSnap,autoApprovalSnap,horoscopePaymentSnap]=await Promise.all([
       db.collection("smv_settings").doc("commission").get(),
       db.collection("smv_settings").doc("question").get(),
       db.collection("smv_settings").doc("workflow").get(),
-      db.collection("smv_settings").doc("privateCommission").get(),
       db.collection("smv_settings").doc("privateConsultationWorkflow").get(),
       db.collection("smv_settings").doc("astrologerAutoApproval").get(),
       db.collection("smv_settings").doc("horoscopePayment").get()
