@@ -32,3 +32,23 @@
 /* V228 hardening: current date colour-only indicator. */
 #smvDailyCalendar .cal-month-grid button.cal-today,#smvDailyCalendar .cal-month-grid button.cal-today[aria-current="date"]{background:#f7d978!important;border:2px solid #a96d00!important;box-shadow:inset 0 0 0 2px #fff6cf!important}
 #smvDailyCalendar .cal-month-grid button.cal-today>strong{color:#572f00!important;font-weight:900!important}
+
+
+/* Calendar-only Admin entry and authenticated rule editor. */
+.calendar-admin-toggle{min-height:40px;padding:8px 12px;border:1px solid rgba(255,255,255,.38);border-radius:9px;background:#fffaf0;color:var(--cal-deep);font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.calendar-admin-toggle:focus-visible,.calendar-admin-panel button:focus-visible{outline:3px solid #e4bc59;outline-offset:2px}
+.calendar-admin-panel{width:min(calc(100% - 28px),1180px);margin:18px auto;padding:18px;border:1px solid #d8c99d;border-radius:14px;background:#fffdf8;color:#2a2b27;box-shadow:0 8px 22px rgba(23,59,52,.08)}
+.calendar-admin-panel[hidden]{display:none}
+.calendar-admin-panel h2{margin:0 0 8px;color:#0f514c;font-size:clamp(19px,3vw,26px)}
+.calendar-admin-panel p{line-height:1.7}
+.calendar-admin-panel label{display:block;margin:10px 0 5px;font-weight:700}
+.calendar-admin-panel input{display:block;width:100%;min-height:42px;padding:9px;border:1px solid #c3b9a3;border-radius:7px;background:#fff;color:#242424;font:inherit}
+.calendar-admin-panel button{min-height:40px;padding:9px 13px;border:0;border-radius:8px;background:#155a52;color:#fff;font:inherit;font-weight:750;cursor:pointer}
+.calendar-admin-panel button:disabled{opacity:.6;cursor:wait}
+.calendar-admin-actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.calendar-admin-session-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #e5dcc7;padding-bottom:8px;margin-bottom:12px}
+.calendar-admin-session-head p{margin:0}
+.calendar-admin-panel .calendar-admin-logout{background:#5f6262}
+.calendar-admin-panel [data-calendar-admin-status]{min-height:1.5em;white-space:pre-wrap;color:#185a37;font-size:14px}
+.calendar-admin-panel [data-calendar-admin-status][data-error="1"]{color:#a41020}
+@media(max-width:680px){.calendar-admin-panel{width:calc(100% - 16px);padding:13px}.calendar-admin-toggle{font-size:12px;padding:7px 9px}.calendar-admin-session-head{align-items:flex-start}}
