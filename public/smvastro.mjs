@@ -4636,6 +4636,7 @@ async function smvLiveProcessSignal(sig){
  // so it will be processed on the next poll after the peer is ready.
  if(!smvLivePeer){const voice=$('smvLiveVoiceStatus'),connect=$('smvLiveConnectMic');if(voice)voice.textContent='The other participant is connecting. Tap CONNECT MICROPHONE to allow voice access on this device.';if(connect&&['connecting','active'].includes(String(s.state||'')))connect.hidden=false;return;}
  smvLiveSignalSeen.add(sig.id);
+ try{
  const pc=await smvLiveEnsurePeer(sig.sessionId);
  if(sig.type==='offer'){
   await pc.setRemoteDescription(new RTCSessionDescription(sig.payload?.description||sig.payload));
@@ -4648,6 +4649,7 @@ async function smvLiveProcessSignal(sig){
   const candidate=sig.payload?.candidate||sig.payload;if(candidate){if(!pc.remoteDescription)smvLiveQueuedIce.push(candidate);else try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn('ICE candidate rejected:',e);}}
  }
  return true;
+ }catch(error){smvLiveSignalSeen.delete(sig.id);throw error;}
 }
 function smvLiveAppendMessage(m){
  if(!m||!m.id||smvLiveMessageSeen.has(m.id))return;smvLiveMessageSeen.add(m.id);
