@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'wallet-service.js'
+      - 'live-session-service.js'
+      - 'test/live-session-service.test.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
       - 'public/index.html'
@@ -49,6 +51,8 @@ jobs:
         run: |
           node --check server.js
           node --check wallet-service.js
+          node --check live-session-service.js
+          node --check test/live-session-service.test.js
           node --check test/wallet-service.test.js
           node --check public/smvastro.mjs
           node --check public/public-content.mjs
@@ -58,3 +62,5 @@ jobs:
           node --check public/public-navigation.js
       - name: Run Wallet unit tests
         run: npm run test:wallet
+      - name: Run Live Session billing tests
+        run: npm run test:live-session
