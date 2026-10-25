@@ -2606,9 +2606,9 @@ let userStatus=String(
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
    const availabilityStatus=["online","busy","offline"].includes(String(ad.availabilityStatus||"").toLowerCase())?String(ad.availabilityStatus).toLowerCase():"offline";
-   const rawLanguages=ad.languages??ad.spokenLanguages??ad.language??[];
+   const rawLanguages=ad.languages??ad.spokenLanguages??ad.language??data.languages??data.spokenLanguages??data.language??[];
    const astrologerLanguages=(Array.isArray(rawLanguages)?rawLanguages:String(rawLanguages||"").split(/[,;|]/)).map(v=>String(v||"").trim()).filter(Boolean);
-   const astroDisplayName=String(ad.name||ad.fullName||ad.displayName||data.name||data.fullName||data.displayName||currentUser.displayName||"Astrologer").trim()||"Astrologer";
+   const astroDisplayName=smvLiveName(ad.name,ad.fullName,ad.displayName,ad.astrologerName,data.name,data.fullName,data.displayName,data.astrologerName,currentUser.displayName)||"Astrologer";
    box.innerHTML=`<div class="smv-astrologer-dashboard"><div class="grid astro-dashboard-summary">
     <div class="card astro-profile-summary-card">
       <div class="astro-profile-photo">${ad.photoData?`<img src="${ad.photoData}" alt="${escapeHtml(astroDisplayName)}" loading="lazy">`:''}</div>
@@ -3010,7 +3010,7 @@ let userStatus=String(
    const hasPendingRefund=false;
    const paid=consultationItems.filter(q=>q.status!=='awaiting_payment').length+privateConsultationItems.filter(q=>String(q.paymentStatus||'').toLowerCase()==='paid').length;
    const qCount=consultationItems.length+privateConsultationItems.length;
-   const customerDisplayName=[data.name,data.fullName,data.displayName,data.firstName,currentUser.displayName].map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';window.__smvCustomerProfileName=customerDisplayName;
+   const customerDisplayName=[data.name,data.fullName,data.displayName,data.firstName,data.customerName,data.customer_name,data.profileName,currentUser.displayName].map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';window.__smvCustomerProfileName=customerDisplayName;
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
@@ -4415,15 +4415,33 @@ let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiv
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function smvLiveOtherParticipantName(session=smvLiveCurrentSession){const s=session||{};const uid=String(currentUser?.uid||'');if(uid&&uid===String(s.customerUid||''))return String(s.astrologerName||'Astrologer');if(uid&&uid===String(s.astrologerUid||''))return String(s.customerName||'Customer');return String(s.astrologerName||s.customerName||'other participant');}
-function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');const mode=String(session?.mode||'').toLowerCase();if(s==='preparing')return 'Astrologer Generating Your Horoscope.... Please Wait....';if(s==='connecting')return /chat/.test(mode)?'Connecting Chat…':'Connecting Call…';return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
+function smvLiveCanonicalMode(session,fallback=''){
+ const values=[session?.mode,session?.sessionMode,session?.consultationMode,session?.type,fallback];
+ for(const value of values){
+  const raw=String(value||'').toLowerCase().replace(/[^a-z]/g,'');
+  if(raw.includes('chat'))return 'chat';
+  if(raw.includes('call')||raw.includes('voice'))return 'call';
+ }
+ return '';
+}
+function smvLiveName(...values){
+ return values.map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'';
+}
+function smvLiveOtherParticipantName(session=smvLiveCurrentSession){
+ const s=session||{},uid=String(currentUser?.uid||'');
+ if(uid&&uid===String(s.customerUid||''))return smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer';
+ if(uid&&uid===String(s.astrologerUid||''))return smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer';
+ return smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName,s.customerName,s.customerFullName,s.customerDisplayName)||'Other participant';
+}
+function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');const mode=smvLiveCanonicalMode(session);if(s==='preparing')return 'Astrologer Generating Your Horoscope.... Please Wait....';if(s==='connecting')return mode==='chat'?'Connecting Chat…':mode==='call'?'Connecting Call…':'Connecting…';return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
 function smvLivePanelHtml(s,incoming){
- const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
+ const id=String(s.id||s.sessionId||''),call=smvLiveCanonicalMode(s)==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
+ const viewerIsCustomer=String(currentUser?.uid||'')===String(s.customerUid||''),youName=viewerIsCustomer?smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer':smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer',otherName=viewerIsCustomer?smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer':smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer';
  const rootStyle='max-height:calc(100dvh - 28px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:clamp(12px,3vw,22px);background:#fffaf0;color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere;line-height:1.5';
  const primaryStyle='background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
  const secondaryStyle='background:#f5e8c9;color:#321a1a;-webkit-text-fill-color:#321a1a;border:1px solid #a88a4a;border-radius:8px;padding:10px 14px;min-height:42px;max-width:100%;white-space:normal;font-weight:700';
  return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><span class="badge" style="display:inline-block;background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
- '<h2 style="color:#751515;-webkit-text-fill-color:#751515;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Customer:</b> '+escapeHtml(s.customerName||'Customer')+'</p>'+(s.birthDetails?'<p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Customer Birth Details:</b> '+escapeHtml([s.birthDetails.birthDate,s.birthDetails.birthTime,s.birthDetails.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+'<p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#62483b;-webkit-text-fill-color:#62483b;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#62483b;-webkit-text-fill-color:#62483b"></p>'+
+ '<h2 style="color:#751515;-webkit-text-fill-color:#751515;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Astrologer:</b> '+escapeHtml(smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer')+'</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Customer:</b> '+escapeHtml(smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer')+'</p><p style="color:#62483b;-webkit-text-fill-color:#62483b"><b>You:</b> '+escapeHtml(youName)+' · <b>Other participant:</b> '+escapeHtml(otherName)+'</p>'+(s.birthDetails?'<p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Customer Birth Details:</b> '+escapeHtml([s.birthDetails.birthDate,s.birthDetails.birthTime,s.birthDetails.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+'<p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#2d1919;-webkit-text-fill-color:#2d1919"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#62483b;-webkit-text-fill-color:#62483b;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#62483b;-webkit-text-fill-color:#62483b"></p>'+
  '<div id="smvLiveCallArea" '+(call&&['connecting','active'].includes(String(s.state||''))?'':'hidden')+' style="margin:12px 0;padding:12px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT MICROPHONE</button><button class="btn gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv||s.state==='ended'?'hidden':'')+' style="color:#62483b;-webkit-text-fill-color:#62483b">'+(s.state==='preparing'?'Astrologer Generating Your Horoscope.... Please Wait....':(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.'))+'</p>'+
@@ -4453,7 +4471,11 @@ function smvLiveCloseMedia(){try{smvLivePeer?.close();}catch(_){}smvLivePeer=nul
 function smvLiveShowError(error){const el=$('smvLiveSessionResult');if(el)el.textContent=String(error?.message||error||'Live Session request failed.');}
 function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
- smvLiveCurrentSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
+ const wasEnded=String(smvLiveCurrentSession?.state||'')==='ended';
+ const mergedSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
+ const canonicalMode=smvLiveCanonicalMode(session,smvLiveCurrentSession?.mode);
+ if(canonicalMode)mergedSession.mode=canonicalMode;
+ smvLiveCurrentSession=mergedSession;
  const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
  const callArea=$('smvLiveCallArea');if(callArea)callArea.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));
  if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveSessionStatusLabel(s);
@@ -4468,6 +4490,10 @@ function smvLiveApplySession(session){
  // The Customer now starts WebRTC from the explicit microphone button, preserving the browser permission gesture.
  if(active)smvLiveStartClock(s);
  if(s.state==='ended'){
+  if(!wasEnded&&String(s.astrologerUid||'')===String(currentUser?.uid||'')&&!s.__smvEarningsRefreshTriggered){
+   s.__smvEarningsRefreshTriggered=true;
+   setTimeout(()=>{if(typeof loadDashboard==='function')Promise.resolve(loadDashboard()).catch(error=>console.warn('Astrologer earnings refresh after Live Session was skipped:',error));},300);
+  }
   const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Call session ended. Microphone is no longer in use.';
   const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.' ;
   smvLiveCloseMedia();smvLiveClearTransport();
@@ -4476,7 +4502,7 @@ function smvLiveApplySession(session){
 function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
  if(smvLivePanelSessionId!==id){smvLiveCloseMedia();smvLiveClearTransport();}
- smvLivePanelSessionId=id;smvLiveCurrentSession={...session,id};smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
+ smvLivePanelSessionId=id;smvLiveCurrentSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
  openModal(smvLivePanelHtml(smvLiveCurrentSession,!!incoming));
  const accept=$('smvLiveAccept'),reject=$('smvLiveReject'),end=$('smvLiveEndSession'),close=$('smvLiveClosePanel'),receipt=$('smvLiveDownloadReceipt'),billFile=$('smvLiveDownloadBillFile');
  if(receipt)receipt.onclick=()=>{try{smvLivePrintReceipt(smvLiveCurrentSession);}catch(e){try{smvLiveDownloadBillFile(smvLiveCurrentSession);const out=$('smvLiveSessionResult');if(out)out.textContent='Bill downloaded as an HTML file. Open it and choose Print / Save as PDF for a PDF copy.';}catch(downloadError){smvLiveShowError(downloadError||e);}}};
