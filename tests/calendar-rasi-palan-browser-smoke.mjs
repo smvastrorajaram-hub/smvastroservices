@@ -51,7 +51,7 @@ try {
       await page.waitForFunction(() => {
         const nav = [...document.querySelectorAll('.calendar-product-nav a')].map(a => a.textContent.trim());
         return Boolean(document.querySelector('#calRasiPalan #rpRasi')) &&
-          JSON.stringify(nav) === JSON.stringify(['Services', 'Horoscope']);
+          nav.length === 0 && Boolean(document.querySelector('#smvCalendarAdminToggle'));
       }, { timeout: 45000 });
       ready = true;
     } catch (error) {
@@ -81,6 +81,8 @@ try {
     givenNote: document.body.innerText.includes('தானியங்கி முறையில் உள்ளூர் Swiss Ephemeris நிரயண கிரக நிலைகளும்'),
     tabs: [...document.querySelectorAll('#calRasiPalan [data-section]')].map(x => x.textContent.trim()),
     navLabels: [...document.querySelectorAll('.calendar-product-nav a')].map(x => x.textContent.trim()),
+    calendarAdminToggle: Boolean(document.querySelector('#smvCalendarAdminToggle')),
+    calendarAdminPanelHidden: Boolean(document.querySelector('#smvCalendarAdminArea')?.hidden),
     hasRasiPicker: Boolean(document.querySelector('#calRasiPalan #rpRasi')),
     separateAdminLink: Boolean(document.querySelector('.calendar-product-nav a[href=\"./admin.html\"]'))
   }));
@@ -92,7 +94,10 @@ try {
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
   assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
-  assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
+  assert.equal(publicUi.navLabels.length, 0, 'Calendar must not expose Services/Horoscope cross-app navigation');
+  assert.equal(publicUi.calendarAdminToggle, true, 'Calendar must expose its own Calendar Admin entry');
+  assert.equal(publicUi.calendarAdminPanelHidden, true, 'Calendar Admin area must stay closed until requested');
+  assert.equal(publicUi.separateAdminLink, false, 'Calendar must use its in-page Admin panel, not a cross-app admin link');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
   // Calendar Admin is intentionally not a separate Calendar route. The legacy admin.html redirect is covered by source regressions.
@@ -195,7 +200,7 @@ try {
   // Validate the requested Tamil New Year label for the selected Rasi.
   await page.click('#calTamil');
   await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 });
-  await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('.calendar-product-nav a')].map(a=>a.textContent.trim())) === JSON.stringify(['சேவைகள்','ஜாதகம்']), { timeout: 15000 });
+  await page.waitForFunction(() => document.documentElement.lang === 'ta' && document.querySelectorAll('.calendar-product-nav a').length === 0 && Boolean(document.querySelector('#smvCalendarAdminToggle')), { timeout: 15000 });
   await page.click('#calRasiPalan [data-section="tamilNewYear"]');
   await page.click('#calRasiPalan #rpRun');
   await page.waitForFunction(() => {
@@ -217,7 +222,7 @@ try {
   if (englishButton) {
     await englishButton.click();
     await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
-    await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('.calendar-product-nav a')].map(a=>a.textContent.trim())) === JSON.stringify(['Services','Horoscope']), { timeout: 15000 });
+    await page.waitForFunction(() => document.documentElement.lang === 'en' && document.querySelectorAll('.calendar-product-nav a').length === 0 && Boolean(document.querySelector('#smvCalendarAdminToggle')), { timeout: 15000 });
   }
   await page.click('#calRasiPalan [data-section="englishNewYear"]');
   await page.click('#calRasiPalan #rpRun');
@@ -234,11 +239,11 @@ try {
   await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+    JSON.stringify(['Matching']), { timeout: 20000 });
   await page.click('#languageTamil');
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+    JSON.stringify(['பொருத்தம்']), { timeout: 20000 });
   await page.waitForSelector('#smvAdminOpenTools', { timeout: 20000 });
   const unauthenticatedAdminState = await page.evaluate(() => ({
     fixedHeaderAdminButton: Boolean(document.querySelector('#smvAdminRulesAccess')),
@@ -251,11 +256,11 @@ try {
     adminEntryVisible: false,
     normalLoginPresent: true,
     adminPanelVisible: false
-  }, 'Admin Rules and Calendar must remain hidden until the normal Horoscope login confirms Admin authorization');
+  }, 'Horoscope Rules Admin must remain hidden until the normal Horoscope login confirms Admin authorization');
   await page.click('#languageEnglish');
   await page.waitForFunction(() =>
     JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+    JSON.stringify(['Matching']), { timeout: 20000 });
 
   console.log(JSON.stringify({
     pass: true,
