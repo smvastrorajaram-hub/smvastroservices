@@ -2523,11 +2523,11 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
   if(hasChat&&(!Number.isFinite(chatPrice)||chatPrice<1||chatPrice>100000||Math.abs(chatPrice*100-Math.round(chatPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Chat Price must be between ₹1 and ₹100000, with up to two decimal places."});
   }
-  if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
-    return res.status(400).json({success:false,error:"Call Price must be ₹0 (unset) or between ₹1 and ₹100000 per minute, with up to two decimal places."});
+  if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+    return res.status(400).json({success:false,error:"Live Call Price must be ₹0 (unset) or between ₹1 and ₹10000 per minute, with up to two decimal places."});
   }
-  if(hasLiveChat&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>100000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
-    return res.status(400).json({success:false,error:"Live Chat Price must be ₹0 (unset) or between ₹1 and ₹100000 per minute, with up to two decimal places."});
+  if(hasLiveChat&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+    return res.status(400).json({success:false,error:"Live Chat Price must be ₹0 (unset) or between ₹1 and ₹10000 per minute, with up to two decimal places."});
   }
   try{
     const collection=db.collection("smv_astrologers");
