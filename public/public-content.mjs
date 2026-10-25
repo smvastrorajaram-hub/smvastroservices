@@ -317,7 +317,7 @@
     if(privateConsultSubmitting)return;
     const astro=window.__smvSelectedPrivateConsultAstrologer;
     const paymentMethod=String(e.submitter?.value||'razorpay').toLowerCase()==='wallet'?'wallet':'razorpay';
-    const msg=$('privateConsultMsg'),btn=paymentMethod==='wallet'?$ ('privateConsultWalletPayBtn'):$('privateConsultPayBtn');
+    const msg=$('privateConsultMsg'),btn=paymentMethod==='wallet'? $('privateConsultWalletPayBtn'):$('privateConsultPayBtn');
     const actionButtons=[$('privateConsultWalletPayBtn'),$('privateConsultPayBtn')].filter(Boolean);
     const enableButtons=()=>actionButtons.forEach(button=>{button.disabled=false;});
     if(!astro?.id||Number(astro.chatPrice)<1){if(msg)msg.innerHTML='<span class="error">Please select an available astrologer first.</span>';return;}
@@ -378,8 +378,19 @@
         privateConsultSubmitting=false;
         if(msg)msg.textContent='';
         if(btn)btn.textContent='WALLET PAYMENT DONE ✓';
-        await window.__smvShowVerifiedPayment?.({...order,verified:true,paymentId},'private',null);
-        enableButtons();
+        try{
+          if(typeof window.__smvShowVerifiedPayment==='function'){
+            await window.__smvShowVerifiedPayment({...order,verified:true,paymentId},'private',null);
+          }else{
+            const dashboardButton=$('dashLink');
+            if(dashboardButton)dashboardButton.click();
+            if(msg){msg.className='small success';msg.textContent='Wallet payment confirmed. Your chat booking is saved. Open Customer Dashboard to view it. Do not pay again.';}
+          }
+        }catch(receiptError){
+          console.error('Wallet payment was confirmed, but receipt navigation failed:',receiptError);
+          if(msg){msg.className='small success';msg.textContent='Wallet payment confirmed and booking saved. Do not pay again. Open Customer Dashboard to view the booking.';}
+          $('dashLink')?.click();
+        }
         return;
       }
       paymentFlow?.status?.('Private Consultation ID created. Opening secure Payment Gateway…');
@@ -408,8 +419,13 @@
             if(msg)msg.innerHTML='';
             if(btn)btn.textContent='PAYMENT DONE ✓';
             privateConsultSubmitting=false;
-            enableButtons();
-            await window.__smvShowVerifiedPayment?.({...vr,verified:true,consultationId:vr.consultationId||order.consultationId,paymentId},'private',paymentFlow);
+            try{
+              await window.__smvShowVerifiedPayment?.({...vr,verified:true,consultationId:vr.consultationId||order.consultationId,paymentId},'private',paymentFlow);
+            }catch(receiptError){
+              console.error('Razorpay payment was verified, but receipt navigation failed:',receiptError);
+              if(msg)msg.innerHTML='<span class="success">Payment verified and booking saved. Do not pay again. Open Customer Dashboard to view the booking.</span>';
+              $('dashLink')?.click();
+            }
           }catch(err){paymentFlow?.error?.('Payment received, but verification could not finish: '+(err.message||String(err)));if(msg)msg.innerHTML='<span class="error">Payment received, but verification could not finish. Do not pay again; check Customer Dashboard / support.<br>'+esc(err.message||String(err))+'</span>';privateConsultSubmitting=false;if(btn)btn.textContent=originalLabel;enableButtons();}
         },
         modal:{ondismiss:()=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment window closed. No payment was confirmed.');setTimeout(()=>paymentFlow?.close?.(),1400);if(btn)btn.textContent=originalLabel;enableButtons();}}
