@@ -123,7 +123,16 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (await isAdminUser(user)) return 'admin';
     const snap = await userRef(user.uid).get();
     const role = String(snap.data()?.role || '').trim().toLowerCase();
-    return ['customer', 'astrologer'].includes(role) ? role : '';
+    if (role === 'astrologer') return 'astrologer';
+    // Some existing professional profiles retained an older Customer role during migration.
+    // A verified, approved Astrologer document owned by this Firebase UID is authoritative.
+    const astroSnap = await astroRef(user.uid).get();
+    if (astroSnap.exists) {
+      const astro = astroSnap.data() || {};
+      const status = String(astro.status || '').toLowerCase();
+      if ((!astro.uid || String(astro.uid) === String(user.uid)) && ['approved', 'active'].includes(status)) return 'astrologer';
+    }
+    return role === 'customer' ? 'customer' : '';
   }
 
   function sendTo(uid, payload) {
@@ -262,11 +271,11 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     return { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, reservedAmountPaise: needed };
   }
 
-  function validateActiveAstrologer(userProfile, astroProfile) {
-    const userRole = String(userProfile?.role || '').toLowerCase();
+  function validateActiveAstrologer(astroProfile, expectedUid) {
     const status = String(astroProfile?.status || '').toLowerCase();
-    if (userRole !== 'astrologer' || !['approved', 'active'].includes(status)) {
-      throw httpError(409, 'This Astrologer is not approved for Live Sessions.', 'LIVE_ASTROLOGER_NOT_APPROVED');
+    const ownerUid = String(astroProfile?.uid || expectedUid || '');
+    if (!['approved', 'active'].includes(status) || ownerUid !== String(expectedUid || '')) {
+      throw httpError(409, 'This Astrologer profile is not approved or does not belong to the requested account.', 'LIVE_ASTROLOGER_NOT_APPROVED');
     }
   }
 
@@ -315,7 +324,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       if (!astroSnap.exists) throw httpError(404, 'The selected Astrologer was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
       const astro = astroSnap.data() || {};
-      validateActiveAstrologer(astroUserSnap.data() || {}, astro);
+      validateActiveAstrologer(astro, astroId);
       const pricing = pricingFromSnapshot(pricingSnap);
       const rate = kind === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
       const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
@@ -402,7 +411,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       if (!astroSnap.exists) throw httpError(404, 'Astrologer profile was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
       const astro = astroSnap.data() || {};
-      validateActiveAstrologer(astroUserSnap.data() || {}, astro);
+      validateActiveAstrologer(astro, uid);
       const pricing = pricingFromSnapshot(pricingSnap);
       const liveCount = safePaise(astro.activeSessionCount);
       const availability = String(astro.availabilityStatus || astro.onlineStatus || 'offline').toLowerCase();
@@ -632,6 +641,30 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     return endSession(sessionId, user.uid, reason, false);
   }
 
+  async function rejectBooking(bookingId, astrologerUid) {
+    const id = String(bookingId || '').trim();
+    const uid = String(astrologerUid || '').trim();
+    if (!id || !uid) throw httpError(400, 'Booking ID is required.', 'LIVE_BOOKING_ID_REQUIRED');
+    const ref = bookingRef(id);
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw httpError(404, 'Live booking was not found.', 'LIVE_BOOKING_NOT_FOUND');
+      const booking = snap.data() || {};
+      if (booking.astrologerUid !== uid) throw httpError(403, 'This booking belongs to another Astrologer.', 'LIVE_BOOKING_FORBIDDEN');
+      if (booking.status !== 'pending') throw httpError(409, 'Only pending Live bookings can be rejected.', 'LIVE_BOOKING_NOT_PENDING');
+      const expiresAt = timestampMillis(booking.expiresAt) || (timestampMillis(booking.createdAt) + 7 * 24 * 60 * 60 * 1000);
+      if (expiresAt && Date.now() >= expiresAt) {
+        tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
+        return { ...booking, status: 'expired' };
+      }
+      tx.set(ref, { status: 'rejected', rejectedAt: nowTimestamp(), updatedAt: nowTimestamp(), endReason: 'rejected_by_astrologer' }, { merge: true });
+      return { ...booking, status: 'rejected' };
+    });
+    sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
+    sendTo(uid, { type: 'live.booking.updated', booking: { id, status: result.status } });
+    return { success: true, booking: safeBookingView(id, result) };
+  }
+
   async function cancelBooking(bookingId, userUid) {
     const id = String(bookingId || '').trim();
     const ref = bookingRef(id);
@@ -729,10 +762,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
     const due = rows.filter(row => row.state === 'active' && row.startedAt &&
       Date.now() >= Date.parse(row.startedAt) + row.minutes * 60_000);
+    const settled = new Map();
     for (const row of due) {
-      try { await endSession(row.id, '', 'duration_complete', true); } catch (e) { console.warn('[Live Session] Expiry check failed:', e?.message || e); }
+      try {
+        const result = await endSession(row.id, '', 'duration_complete', true);
+        if (result.session) settled.set(row.id, result.session);
+      } catch (e) { console.warn('[Live Session] Expiry check failed:', e?.message || e); }
     }
-    return rows;
+    return rows.map(row => settled.get(row.id) || row);
   }
 
   async function expireStaleBookingRows(rows) {
@@ -961,6 +998,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const result = await acceptBooking({ bookingId: req.params.id, astrologerUid: auth.user.uid });
       return res.set('Cache-Control', 'no-store').json(result);
     } catch (error) { return replyError(res, error, 'Unable to accept the Live booking.'); }
+  });
+
+  app.post('/live/bookings/:id/reject', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    try { return res.json(await rejectBooking(req.params.id, auth.user.uid)); }
+    catch (error) { return replyError(res, error, 'Unable to reject this Live booking.'); }
   });
 
   app.post('/live/bookings/:id/cancel', async (req, res) => {
