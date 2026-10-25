@@ -779,6 +779,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       if (current.mode !== 'call') throw httpError(409, 'WebRTC signals are only available for voice calls.', 'LIVE_MODE_MISMATCH');
       if (!['connecting', 'active'].includes(current.state)) throw httpError(409, 'The Live Call is not connecting.', 'LIVE_SESSION_NOT_CONNECTING');
+      if (signalType === 'offer' && current.customerUid !== senderUid) {
+        throw httpError(403, 'Only the Customer can initiate this WebRTC offer.', 'LIVE_SIGNAL_ROLE_FORBIDDEN');
+      }
+      if (signalType === 'answer' && current.astrologerUid !== senderUid) {
+        throw httpError(403, 'Only the Astrologer can answer this WebRTC offer.', 'LIVE_SIGNAL_ROLE_FORBIDDEN');
+      }
       const start = timestampMillis(current.startedAt);
       if (current.state === 'active' && start && Date.now() >= start + Number(current.minutes || 1) * 60_000) {
         throw httpError(409, 'The Live Call duration has ended.', 'LIVE_SESSION_ENDED');
