@@ -4628,8 +4628,9 @@ async function smvLiveStartOffer(id){
  catch(e){smvLiveOfferStartedKey='';throw e;}
 }
 async function smvLiveProcessSignal(sig){
- if(!sig||!sig.id||smvLiveSignalSeen.has(sig.id)||sig.senderUid===currentUser?.uid)return;
- const s=smvLiveCurrentSession;if(!s||s.mode!=='call')return;
+ if(!sig||!sig.id)return true;
+ if(smvLiveSignalSeen.has(sig.id)||sig.senderUid===currentUser?.uid)return true;
+ const s=smvLiveCurrentSession;if(!s||s.mode!=='call')return true;
  // Do not trigger a microphone permission prompt from the polling timer. Let the
  // participant explicitly connect their microphone; leave this signal unconsumed
  // so it will be processed on the next poll after the peer is ready.
@@ -4646,6 +4647,7 @@ async function smvLiveProcessSignal(sig){
  }else if(sig.type==='ice'){
   const candidate=sig.payload?.candidate||sig.payload;if(candidate){if(!pc.remoteDescription)smvLiveQueuedIce.push(candidate);else try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn('ICE candidate rejected:',e);}}
  }
+ return true;
 }
 function smvLiveAppendMessage(m){
  if(!m||!m.id||smvLiveMessageSeen.has(m.id))return;smvLiveMessageSeen.add(m.id);
@@ -4656,7 +4658,7 @@ function smvLiveAppendMessage(m){
  const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0';body.textContent=String(m.text||'');row.append(who,body);host.append(row);host.scrollTop=host.scrollHeight;
 }
 async function smvLivePollMessages(id){try{const suffix=smvLiveMessageSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveMessageSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages'+suffix,{method:'GET',timeoutMs:10000});for(const m of d.messages||[]){const ms=Date.parse(m.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage({ ...m,id:m.id||m.messageId});}}catch(e){if(!$('smvLiveSessionResult'))return;}}
-async function smvLivePollSignals(id){try{const suffix=smvLiveSignalSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveSignalSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signals'+suffix,{method:'GET',timeoutMs:10000});for(const s of d.signals||[]){const ms=Date.parse(s.createdAt||'');if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);await smvLiveProcessSignal({...s,id:s.id||s.signalId});}}catch(e){if(!$('smvLiveSessionResult'))return;}}
+async function smvLivePollSignals(id){try{const suffix=smvLiveSignalSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveSignalSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signals'+suffix,{method:'GET',timeoutMs:10000});for(const s of d.signals||[]){const ms=Date.parse(s.createdAt||'');const processed=await smvLiveProcessSignal({...s,id:s.id||s.signalId});if(processed&&Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);}}catch(e){if(!$('smvLiveSessionResult'))return;}}
 function smvLiveStartTransport(id,s){
  if(s.mode==='call'){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1200);smvLivePollSignals(id).catch(()=>{});}
  if(s.mode==='chat'){if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},1800);smvLivePollMessages(id).catch(()=>{});}
