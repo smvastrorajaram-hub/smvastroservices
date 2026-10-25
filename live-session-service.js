@@ -1402,6 +1402,20 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (Date.now() < scheduledAt && currentStatus !== 'in_progress') {
         return res.status(409).json({ success: false, error: 'The scheduled time has not arrived yet. The Start button becomes available at the booked time.' });
       }
+      const [astroStatusSnap, sessionPricingSnap] = await Promise.all([
+        db.collection(ASTROLOGERS).doc(uid).get(), pricingRef().get()
+      ]);
+      if (!astroStatusSnap.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
+      const astroStatusData = astroStatusSnap.data() || {};
+      const currentAvailability = String(astroStatusData.availabilityStatus || astroStatusData.onlineStatus || 'offline').toLowerCase();
+      if (currentAvailability !== 'online') {
+        return res.status(409).json({ success: false, error: 'Set your Astrologer Availability to Online before starting the scheduled Call/Chat. The Customer Wallet will not be reserved until you start.' });
+      }
+      const sessionPricing = pricingFromSnapshot(sessionPricingSnap);
+      const activeSessions = Number(astroStatusData.activeSessionCount || 0);
+      if (!Number.isSafeInteger(activeSessions) || activeSessions >= sessionPricing.maxConcurrentSessions) {
+        return res.status(409).json({ success: false, error: 'Your Live Session limit is currently full. Finish another session and retry the scheduled Start button.' });
+      }
       const minutes = Number(appointment.scheduledMinutes || 5);
       if (!Number.isSafeInteger(minutes) || minutes < 1 || minutes > MAX_SESSION_MINUTES) {
         return res.status(409).json({ success: false, error: 'The scheduled session duration is invalid. Ask the Customer to rebook.' });
