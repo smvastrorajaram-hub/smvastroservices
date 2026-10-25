@@ -1517,9 +1517,8 @@ app.post("/admin/approve-question", express.json({limit:"10kb"}), async (req,res
   try{
     const questionId=String(req.body?.questionId||"").trim();
     const astrologerId=String(req.body?.astrologerId||"").trim();
-    const pct=Number(req.body?.commissionPercent);
     if(!questionId||!astrologerId) return res.status(400).json({error:"Question ID and astrologer are required."});
-    if(!Number.isFinite(pct)||pct<0||pct>100) return res.status(400).json({error:"Commission percentage must be between 0 and 100."});
+    const pct=(await getPrivateCommissionSettings()).astrologerRate;
     const qRef=db.collection("smv_questions").doc(questionId);
     const aRef=db.collection("smv_astrologers").doc(astrologerId);
     const [qSnap,aSnap]=await Promise.all([qRef.get(),aRef.get()]);
@@ -1539,7 +1538,7 @@ app.post("/admin/approve-question", express.json({limit:"10kb"}), async (req,res
       adminQuestionApprovedBy:user.uid, commissionStatus:"allocated_pending_answer", updatedAt:FieldValue.serverTimestamp()
     });
     await writeAdminAudit("QUESTION_APPROVED",questionId,user.uid,{astrologerId,commissionPercent:pct,astrologerCommissionAmount:astroCommission,adminCommissionAmount:adminCommission});
-    await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"New Question Assigned",message:"A paid question has been assigned to you by Admin.",questionId,commissionAmount:astroCommission,createdAt:FieldValue.serverTimestamp(),read:false});
+    await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"New Question Assigned",message:"A paid question has been assigned to you by Admin.",questionId,createdAt:FieldValue.serverTimestamp(),read:false});
     setImmediate(async()=>{
       const astrologerEmail=await resolveAstrologerEmail({astrologerId,astrologerEmail:a.email});
       const customerEmail=await resolveCustomerEmail(q);
@@ -1671,9 +1670,8 @@ app.post("/admin/reallocate-question", express.json({limit:"10kb"}), async (req,
   try{
     const questionId=String(req.body?.questionId||"").trim();
     const astrologerId=String(req.body?.astrologerId||"").trim();
-    const pct=Number(req.body?.commissionPercent);
     if(!questionId||!astrologerId) return res.status(400).json({error:"Question ID and astrologer are required."});
-    if(!Number.isFinite(pct)||pct<0||pct>100) return res.status(400).json({error:"Commission percentage must be between 0 and 100."});
+    const pct=(await getPrivateCommissionSettings()).astrologerRate;
     const qRef=db.collection("smv_questions").doc(questionId);
     const aRef=db.collection("smv_astrologers").doc(astrologerId);
     const [qSnap,aSnap]=await Promise.all([qRef.get(),aRef.get()]);
@@ -1699,7 +1697,7 @@ app.post("/admin/reallocate-question", express.json({limit:"10kb"}), async (req,
     if(oldAstrologerId && oldAstrologerId!==astrologerId){
       await db.collection("smv_notifications").add({userId:oldAstrologerId,type:"question_reallocated",title:"Question Re-allocated",message:"Admin has re-allocated this question to another astrologer. It is no longer assigned to you.",questionId,createdAt:FieldValue.serverTimestamp(),read:false});
     }
-    await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"Question Re-allocated",message:"Admin has assigned a paid question to you. Please submit your answer.",questionId,commissionAmount:astroCommission,createdAt:FieldValue.serverTimestamp(),read:false});
+    await db.collection("smv_notifications").add({userId:astrologerId,type:"question_assigned",title:"Question Re-allocated",message:"Admin has assigned a paid question to you. Please submit your answer.",questionId,createdAt:FieldValue.serverTimestamp(),read:false});
     return res.json({success:true,questionId,astrologerId,commissionPercent:pct,astrologerCommissionAmount:astroCommission,adminCommissionAmount:adminCommission});
   }catch(e){console.error("Admin reallocate question error:",e);return res.status(500).json({error:e?.message||"Unable to re-allocate question."});}
 });
@@ -1873,8 +1871,9 @@ async function updateEditableAnswer(ref,viewKey,patch){
  tx.update(ref,patch);});
 }
 const answerCredit=require('./answer-credit')({db,FieldValue,adminUid:ADMIN_UID,privateAmounts:async c=>{
- const saved={astrologerAmount:Number(c.astrologerAmount),adminAmount:Number(c.adminAmount),privateAstrologerCommissionRate:Number(c.privateAstrologerCommissionRate)};
- return Object.values(saved).every(Number.isFinite)?saved:privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
+ // Unsettled consultations use the current single global rate. Already credited
+ // earnings remain historical records and are not recalculated.
+ return privateCommissionSnapshot(Number(c.chatPrice||c.amount||0),await getPrivateCommissionSettings());
 }});
 function markViewedRoute(kind,idKey){return async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
