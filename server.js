@@ -4033,17 +4033,25 @@ async function syncLiveSessionEarningsForAstrologer(astrologerUid) {
         if (paymentSnap.exists) tx.set(paymentRef, paymentData, { merge: true });
         else tx.create(paymentRef, paymentData);
       }
-      tx.set(docSnap.ref, {
-        commissionStatus: "credited",
-        astrologerCommissionPercent: split.astroPercent,
-        adminCommissionPercent: split.adminPercent,
-        astrologerCommissionPaise: astroPaise,
-        adminCommissionPaise: adminPaise,
-        astrologerCommissionAmount: astroPaise / 100,
-        adminCommissionAmount: adminPaise / 100,
-        commissionCreditedAt: now,
-        updatedAt: now
-      }, { merge: true });
+      const sessionMatchesEarning =
+        session.commissionStatus === "credited" &&
+        Number(session.astrologerCommissionPercent) === split.astroPercent &&
+        Number(session.adminCommissionPercent) === split.adminPercent &&
+        Math.round(Number(session.astrologerCommissionPaise ?? (Number(session.astrologerCommissionAmount || 0) * 100))) === astroPaise &&
+        Math.round(Number(session.adminCommissionPaise ?? (Number(session.adminCommissionAmount || 0) * 100))) === adminPaise;
+      if (!sessionMatchesEarning) {
+        tx.set(docSnap.ref, {
+          commissionStatus: "credited",
+          astrologerCommissionPercent: split.astroPercent,
+          adminCommissionPercent: split.adminPercent,
+          astrologerCommissionPaise: astroPaise,
+          adminCommissionPaise: adminPaise,
+          astrologerCommissionAmount: astroPaise / 100,
+          adminCommissionAmount: adminPaise / 100,
+          commissionCreditedAt: session.commissionCreditedAt || now,
+          updatedAt: now
+        }, { merge: true });
+      }
       return !paymentMatchesSession;
     });
     if (created) credited++;
