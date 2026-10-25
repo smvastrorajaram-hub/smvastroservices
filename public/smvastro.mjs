@@ -2366,6 +2366,11 @@ function smvBindCustomerWallet(){
  }
  smvLoadCustomerWallet();
 }
+window.addEventListener('smv:wallet-updated',()=>{
+ if(currentUser&&auth?.currentUser?.uid===currentUser.uid){
+  smvLoadCustomerWallet().catch(error=>smvWalletSetMessage('Wallet refresh failed after a Call/Chat action: '+(error?.message||String(error)),'error'));
+ }
+});
 async function loadDashboard(expectedRole=null,force=false,background=false){
  const box=$('dashboardContent');
  if(!currentUser){ if(box) box.innerHTML='<div class="card">Please login to continue.</div>'; return; }
@@ -4604,7 +4609,7 @@ function smvLiveHandleEvent(ev){
   else if(s.id===smvLivePanelSessionId)smvLiveApplySession(s);
   else if(['preparing','ringing'].includes(s.state)&&s.customerUid===currentUser?.uid)smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId)smvLiveAppendMessage(ev.message);
  else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId)smvLiveProcessSignal(ev.signal).catch(smvLiveShowError);
  else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated')smvLivePollSessions().catch(()=>{});

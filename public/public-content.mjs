@@ -45,6 +45,7 @@
     const knownNonCustomer=!!auth?.currentUser&&!!wallet&&wallet.userUid===auth.currentUser.uid&&wallet.ownerRole!=='customer';
     for(const row of rows){
       const balance=isCustomer?Number(wallet.availableBalancePaise||0):null;
+      const bonusMinutes=isCustomer?Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0))):0;
       for(const mode of ['call','chat']){
         const input=row.querySelector('[data-live-minutes="'+mode+'"]');
         const button=row.querySelector('[data-live-action="'+mode+'"]');
@@ -52,7 +53,7 @@
         if(!input||!button||!note)continue;
         const rate=Number(row.dataset[mode+'RatePaise']||0);
         const goodRate=Number.isSafeInteger(rate)&&rate>=100&&rate<=1000000;
-        const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)):0;
+        const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)+bonusMinutes):0;
         input.max=String(isCustomer?Math.max(0,max):SMV_MAX_LIVE_MINUTES);
         input.dataset.maximumMinutes=String(max);
         if(!goodRate||knownNonCustomer||(isCustomer&&max<1)){
@@ -73,7 +74,7 @@
         }else if(max<1){
           note.textContent='No balance for '+(mode==='call'?'Call':'Chat')+' at '+smvLiveMoney(rate)+'/minute. Available Wallet: '+smvLiveMoney(balance)+'.';
         }else{
-          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
+          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. '+(bonusMinutes?bonusMinutes+' promotional free minute(s). ':'')+'Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
           const entered=Number(input.value);
           if(input.value!==''&&(!Number.isSafeInteger(entered)||entered<1||entered>max)){
             note.textContent+=' Enter a whole number from 1 to '+max+'.';
@@ -141,9 +142,10 @@
       const wallet=await smvFetchLiveWallet(true);
       if(!wallet||wallet.ownerRole!=='customer'||wallet.userUid!==user.uid)throw new Error('Please sign in with a Customer account to use Live Call / Live Chat.');
       const available=Number(wallet.availableBalancePaise||0);
-      const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(available/ratePaise));
-      if(max<1)throw new Error('No balance for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
-      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
+      const bonusMinutes=Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0)));
+      const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(available/ratePaise)+bonusMinutes);
+      if(max<1)throw new Error('No cash or promotional minutes available for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
+      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s), including '+bonusMinutes+' promotional free minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
       const token=await user.getIdToken();
       const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
       const response=await fetch(BACKEND+'/live/requests',{
@@ -161,12 +163,14 @@
         throw new Error(result.error||'The server did not accept this Live request.');
       }
       if(result.kind==='session'&&result.session){
-        if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Reserved '+smvLiveMoney(Number(result.session.reservedAmountPaise||length*ratePaise))+'. Waiting for the Astrologer.';
+        if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Cash reserved: '+smvLiveMoney(Number(result.session.reservedAmountPaise??0))+'. Promotional minutes reserved: '+String(Number(result.session.reservedBonusMinutes||0))+'. Waiting for the Astrologer to accept.';
+        window.dispatchEvent(new Event('smv:wallet-updated'));
         window.__smvStartLiveEvents?.();
         window.__smvOpenLiveSession?.(result.session);
       }else if(result.kind==='booking'&&result.booking){
-        if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. It will appear in the Astrologer Dashboard when they are Online.';
-        alert('Live '+kind.toUpperCase()+' booking created. The Astrologer is '+String(astrologer.availabilityStatus||'offline')+'. Your Wallet has not been reserved until the booking is accepted.');
+        if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. Wallet cash and promotional minutes are reserved until the Astrologer accepts or the booking is cancelled, rejected, or expires.';
+        window.dispatchEvent(new Event('smv:wallet-updated'));
+        alert('Live '+kind.toUpperCase()+' booking created. Reserved cash: '+smvLiveMoney(Number(result.booking.reservedAmountPaise??0))+'. Promotional minutes reserved: '+String(Number(result.booking.reservedBonusMinutes||0))+'. Unused reserves are returned if the booking is cancelled, rejected, or expires.');
       }else{
         throw new Error('The backend returned an unknown Live request status. Please refresh the directory.');
       }

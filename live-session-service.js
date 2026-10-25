@@ -164,6 +164,28 @@ function maxAffordableMinutes(availableBalancePaise, ratePerMinutePaise) {
   return Math.min(MAX_SESSION_MINUTES, Math.floor(available / rate));
 }
 
+function calculateBookingReserveRelease({
+  availableBalancePaise, reservedBalancePaise, bonusMinutesBalance, reservedBonusMinutes,
+  releaseAmountPaise, releaseBonusMinutes
+}) {
+  const values = [availableBalancePaise, reservedBalancePaise, bonusMinutesBalance, reservedBonusMinutes, releaseAmountPaise, releaseBonusMinutes].map(Number);
+  if (!values.every(Number.isSafeInteger) || values.some(value => value < 0)) return null;
+  const [available, reserved, bonusAvailable, bonusReserved, amount, bonus] = values;
+  if (reserved < amount || bonusReserved < bonus) return null;
+  const nextAvailable = available + amount;
+  const nextReserved = reserved - amount;
+  const nextBonusAvailable = bonusAvailable + bonus;
+  const nextBonusReserved = bonusReserved - bonus;
+  if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextReserved) ||
+      !Number.isSafeInteger(nextBonusAvailable) || nextBonusAvailable > 1_000_000 ||
+      !Number.isSafeInteger(nextBonusReserved) || nextReserved < 0 || nextBonusReserved < 0) return null;
+  return {
+    availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved,
+    bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved,
+    releasedAmountPaise: amount, releasedBonusMinutes: bonus
+  };
+}
+
 function safePersonName(...values) {
   for (const value of values) {
     const name = String(value || '').trim().replace(/\s+/g, ' ');
@@ -411,7 +433,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     return { id: sessionId, data };
   }
 
-  async function reserveInTransaction(tx, { uid, mode, minutes, rate, walletSnapshot, sessionId }) {
+  async function reserveInTransaction(tx, { uid, mode, minutes, rate, walletSnapshot, sessionId, reservationType = 'live_session' }) {
     const wallet = walletSnapshot && walletSnapshot.exists ? (walletSnapshot.data() || {}) : {};
     const available = safePaise(wallet.availableBalancePaise);
     const reserved = safePaise(wallet.reservedBalancePaise);
@@ -432,7 +454,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const nextReservedBonus = reservedBonus + bonusMinutesReserved;
     if (!Number.isSafeInteger(nextReserved) || !Number.isSafeInteger(nextReservedBonus)) throw httpError(409, 'Wallet reserve exceeds the supported balance range.', 'WALLET_BALANCE_OVERFLOW');
     const ref = walletRef(uid);
-    const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId('live_session_reserve', sessionId));
+    const isBookingReserve = reservationType === 'live_booking';
+    const reserveEntryType = isBookingReserve ? 'live_booking_reserve' : 'live_session_reserve';
+    const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId(reserveEntryType, sessionId));
     const now = nowTimestamp();
     tx.set(ref, {
       ownerUid: uid, ownerRole: 'customer', currency: 'INR',
@@ -442,11 +466,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     }, { merge: true });
     tx.create(ledgerRef, {
       ownerUid: uid, ownerRole: 'customer', currency: 'INR',
-      type: 'live_session_reserve', direction: 'reserve', amountPaise: needed,
+      type: reserveEntryType, direction: 'reserve', amountPaise: needed,
       balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
       bonusMinutesReserved, bonusMinutesBalanceAfter: nextBonusBalance, reservedBonusMinutesAfter: nextReservedBonus,
-      idempotencyKey: 'live-session:' + sessionId, referenceType: 'live_session', referenceId: sessionId,
-      note: 'Wallet reserve for Live ' + mode + (bonusMinutesReserved ? '; ' + bonusMinutesReserved + ' promotional free minute(s)' : ''), status: 'posted', createdAt: now
+      idempotencyKey: (isBookingReserve ? 'live-booking:' : 'live-session:') + sessionId,
+      referenceType: isBookingReserve ? 'live_booking' : 'live_session', referenceId: sessionId,
+      note: 'Wallet reserve for ' + (isBookingReserve ? 'booked Live ' : 'Live ') + mode + (bonusMinutesReserved ? '; ' + bonusMinutesReserved + ' promotional free minute(s)' : ''), status: 'posted', createdAt: now
     });
     return { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, reservedAmountPaise: needed,
       bonusMinutesBalance: nextBonusBalance, reservedBonusMinutes: nextReservedBonus, reservedBonusMinutesForSession: bonusMinutesReserved };
@@ -547,11 +572,16 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const availability = String(astro.availabilityStatus || astro.onlineStatus || 'offline').toLowerCase();
       const canStartNow = availability === 'online' && liveCount < pricing.maxConcurrentSessions;
       if (!canStartNow) {
+        const reserve = await reserveInTransaction(tx, {
+          uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id, reservationType: 'live_booking'
+        });
         const booking = {
           bookingId: id, customerUid: uid, astrologerUid: astroId, astrologerId: astroId,
           astrologerName: astroName, customerName: sessionCustomerName,
           birthDetails: sessionBirthDetails, mode: kind, minutes: length,
-          ratePerMinutePaise: rate, astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
+          ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise,
+          reservedBonusMinutes: reserve.reservedBonusMinutesForSession, walletReservationState: 'reserved',
+          astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
           status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
           createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -560,7 +590,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         if (availability === 'online' && liveCount >= pricing.maxConcurrentSessions) {
           tx.set(aRef, { availabilityStatus: 'busy', liveSessionBusyManaged: true, updatedAt: nowTimestamp() }, { merge: true });
         }
-        return { kind: 'booking', id, data: booking, alreadyProcessed: false };
+        return { kind: 'booking', id, data: booking, alreadyProcessed: false, wallet: reserve };
       }
       const customer = customerSnap.data() || {};
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
@@ -621,7 +651,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (booking.status !== 'pending') throw httpError(409, 'This booking is no longer pending.', 'LIVE_BOOKING_NOT_PENDING');
       const created = timestampMillis(booking.createdAt);
       if (created && Date.now() - created > 7 * 24 * 60 * 60 * 1000) {
-        tx.set(bRef, { status: 'expired', updatedAt: nowTimestamp(), endReason: 'booking_expired' }, { merge: true });
+        await releaseBookingReserveInTransaction(tx, id, booking, 'expired', { endReason: 'booking_expired' });
         return { expired: true, id };
       }
       if (!astroSnap.exists) throw httpError(404, 'Astrologer profile was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
@@ -653,9 +683,32 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       if (!rate) throw httpError(409, 'This Astrologer no longer has a configured per-minute rate for this booking.', 'LIVE_PRICE_UNAVAILABLE');
       const fingerprint = String(booking.payloadFingerprint || hash(id));
-      const reserve = await reserveInTransaction(tx, {
-        uid: booking.customerUid, mode: booking.mode, minutes, rate, walletSnapshot: walletSnap, sessionId: id
-      });
+      let reserve;
+      if (String(booking.walletReservationState || '') === 'reserved') {
+        const wallet = walletSnap.exists ? (walletSnap.data() || {}) : {};
+        const reservedAmountPaise = Number(booking.reservedAmountPaise);
+        const reservedBonusMinutesForSession = Number(booking.reservedBonusMinutes);
+        if (!Number.isSafeInteger(reservedAmountPaise) || reservedAmountPaise < 0 ||
+            !Number.isSafeInteger(reservedBonusMinutesForSession) || reservedBonusMinutesForSession < 0 ||
+            safePaise(wallet.reservedBalancePaise) < reservedAmountPaise ||
+            safeMinutes(wallet.reservedBonusMinutes) < reservedBonusMinutesForSession) {
+          throw httpError(409, 'Wallet reserve for this booking does not reconcile. The booking was not accepted.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+        }
+        reserve = {
+          availableBalancePaise: safePaise(wallet.availableBalancePaise),
+          reservedBalancePaise: safePaise(wallet.reservedBalancePaise),
+          reservedAmountPaise,
+          bonusMinutesBalance: safeMinutes(wallet.bonusMinutesBalance),
+          reservedBonusMinutes: safeMinutes(wallet.reservedBonusMinutes),
+          reservedBonusMinutesForSession
+        };
+      } else {
+        // Backward compatibility: reserve legacy bookings created before prepayment was added.
+        reserve = await reserveInTransaction(tx, {
+          uid: booking.customerUid, mode: booking.mode, minutes, rate, walletSnapshot: walletSnap,
+          sessionId: id, reservationType: 'live_booking'
+        });
+      }
       const data = makeSession({
         id, customerUid: booking.customerUid, astrologerUid: uid, astroProfile: astro,
         customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
@@ -667,7 +720,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       tx.create(sRef, data);
       tx.set(bRef, {
         status: 'accepted', sessionId: id, acceptedAt: nowTimestamp(),
-        ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise, updatedAt: nowTimestamp()
+        ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise,
+        walletReservationState: 'transferred', updatedAt: nowTimestamp()
       }, { merge: true });
       const nextCount = liveCount + 1;
       tx.set(aRef, {
@@ -902,7 +956,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         tx.set(bRef, {
           status: startedAt ? 'completed' : (finalReason === 'rejected' ? 'rejected' : 'cancelled'),
           endedAt: nowServer, endReason: finalReason, actualChargePaise: charge,
-          releasedAmountPaise: release, updatedAt: nowServer
+          releasedAmountPaise: release, walletReservationState: 'settled', updatedAt: nowServer
         }, { merge: true });
       }
       return {
@@ -925,7 +979,55 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     };
   }
 
-  async function rejectOrCancel(sessionId, user, reason) {
+  async function releaseBookingReserveInTransaction(tx, id, booking, status, extra = {}) {
+  const patch = { status, updatedAt: nowTimestamp(), ...extra };
+  if (String(booking.walletReservationState || '') === 'reserved') {
+    const uid = String(booking.customerUid || '').trim();
+    if (!uid) throw httpError(409, 'This booking has no Wallet owner for its reservation.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+    const wRef = walletRef(uid);
+    const wSnap = await tx.get(wRef);
+    if (!wSnap.exists) throw httpError(409, 'Wallet reserve for this booking is missing. The booking was not silently cancelled.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+    const wallet = wSnap.data() || {};
+    const released = calculateBookingReserveRelease({
+      availableBalancePaise: wallet.availableBalancePaise,
+      reservedBalancePaise: wallet.reservedBalancePaise,
+      bonusMinutesBalance: wallet.bonusMinutesBalance,
+      reservedBonusMinutes: wallet.reservedBonusMinutes,
+      releaseAmountPaise: booking.reservedAmountPaise,
+      releaseBonusMinutes: booking.reservedBonusMinutes
+    });
+    if (!released) throw httpError(409, 'Wallet cash or promotional reserve for this booking does not reconcile. No cancellation or refund was silently recorded.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+    tx.set(wRef, {
+      availableBalancePaise: released.availableBalancePaise,
+      reservedBalancePaise: released.reservedBalancePaise,
+      bonusMinutesBalance: released.bonusMinutesBalance,
+      reservedBonusMinutes: released.reservedBonusMinutes,
+      version: safePaise(wallet.version) + 1, updatedAt: nowTimestamp()
+    }, { merge: true });
+    const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId('live_booking_unused_release', id));
+    tx.create(ledgerRef, {
+      ownerUid: uid, ownerRole: 'customer', currency: 'INR',
+      type: 'live_booking_unused_release', direction: 'credit',
+      amountPaise: released.releasedAmountPaise,
+      balanceAfterPaise: released.availableBalancePaise,
+      reservedBalanceAfterPaise: released.reservedBalancePaise,
+      bonusMinutes: released.releasedBonusMinutes,
+      bonusMinutesBalanceAfter: released.bonusMinutesBalance,
+      reservedBonusMinutesAfter: released.reservedBonusMinutes,
+      idempotencyKey: 'live-booking-release:' + id, referenceType: 'live_booking', referenceId: id,
+      note: 'Unused Wallet and promotional-minute reserve released for ' + String(booking.mode || 'Live') + ' booking',
+      status: 'posted', createdAt: nowTimestamp()
+    });
+    patch.walletReservationState = 'released';
+    patch.releasedAmountPaise = released.releasedAmountPaise;
+    patch.bonusMinutesReleased = released.releasedBonusMinutes;
+    patch.bonusMinutesBalanceAfter = released.bonusMinutesBalance;
+  }
+  tx.set(bookingRef(id), patch, { merge: true });
+  return { ...booking, ...patch };
+}
+
+async function rejectOrCancel(sessionId, user, reason) {
     const snap = await sessionRef(sessionId).get();
     if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
     const session = snap.data() || {};
@@ -953,11 +1055,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (booking.status !== 'pending') throw httpError(409, 'Only pending Live bookings can be rejected.', 'LIVE_BOOKING_NOT_PENDING');
       const expiresAt = timestampMillis(booking.expiresAt) || (timestampMillis(booking.createdAt) + 7 * 24 * 60 * 60 * 1000);
       if (expiresAt && Date.now() >= expiresAt) {
-        tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
-        return { ...booking, status: 'expired' };
+        return await releaseBookingReserveInTransaction(tx, id, booking, 'expired', { endReason: 'booking_expired' });
       }
-      tx.set(ref, { status: 'rejected', rejectedAt: nowTimestamp(), updatedAt: nowTimestamp(), endReason: 'rejected_by_astrologer' }, { merge: true });
-      return { ...booking, status: 'rejected' };
+      return await releaseBookingReserveInTransaction(tx, id, booking, 'rejected', { rejectedAt: nowTimestamp(), endReason: 'rejected_by_astrologer' });
     });
     sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
     sendTo(uid, { type: 'live.booking.updated', booking: { id, status: result.status } });
@@ -975,11 +1075,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (booking.status !== 'pending') throw httpError(409, 'Only pending bookings can be cancelled.', 'LIVE_BOOKING_NOT_PENDING');
       const expiresAt = timestampMillis(booking.expiresAt) || (timestampMillis(booking.createdAt) + 7 * 24 * 60 * 60 * 1000);
       if (expiresAt && Date.now() >= expiresAt) {
-        tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
-        return { ...booking, status: 'expired', bookingId: id };
+        return { ...(await releaseBookingReserveInTransaction(tx, id, booking, 'expired', { endReason: 'booking_expired' })), bookingId: id };
       }
-      tx.set(ref, { status: 'cancelled', cancelledAt: nowTimestamp(), updatedAt: nowTimestamp() }, { merge: true });
-      return { ...booking, status: 'cancelled', bookingId: id };
+      return { ...(await releaseBookingReserveInTransaction(tx, id, booking, 'cancelled', { cancelledAt: nowTimestamp() })), bookingId: id };
     });
     sendTo(result.astrologerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
     sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
@@ -1094,7 +1192,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
           const current = snap.data() || {};
           const expiry = timestampMillis(current.expiresAt) || (timestampMillis(current.createdAt) + 7 * 24 * 60 * 60 * 1000);
           if (current.status === 'pending' && expiry && Date.now() >= expiry) {
-            tx.set(ref, { status: 'expired', endReason: 'booking_expired', updatedAt: nowTimestamp() }, { merge: true });
+            await releaseBookingReserveInTransaction(tx, row.id, current, 'expired', { endReason: 'booking_expired' });
             return 'expired';
           }
           return String(current.status || 'missing');
@@ -1112,6 +1210,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       status: String(d.status || ''), astrologerName: String(d.astrologerName || 'Astrologer'),
       ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
       reservedAmountPaise: safePaise(d.reservedAmountPaise),
+      reservedBonusMinutes: safeMinutes(d.reservedBonusMinutes),
+      walletReservationState: String(d.walletReservationState || ''),
       actualChargePaise: safePaise(d.actualChargePaise),
       releasedAmountPaise: safePaise(d.releasedAmountPaise),
       endReason: String(d.endReason || ''), sessionId: String(d.sessionId || ''),
@@ -1449,6 +1549,7 @@ module.exports = {
   liveSessionSafeView,
   astrologerRatePaise,
   maxAffordableMinutes,
+  calculateBookingReserveRelease,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,

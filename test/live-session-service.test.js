@@ -10,6 +10,7 @@ const {
   frozenBookingCommission,
   astrologerRatePaise,
   maxAffordableMinutes,
+  calculateBookingReserveRelease,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
@@ -114,6 +115,35 @@ test('legacy global pricing defaults safely, but Customer rates come from the se
   assert.equal(MAX_SESSION_MINUTES, 1440);
 });
 
+
+test('pending-booking cancellation releases held cash and promotional minutes together', () => {
+  assert.deepEqual(calculateBookingReserveRelease({
+    availableBalancePaise: 500, reservedBalancePaise: 2000, bonusMinutesBalance: 3,
+    reservedBonusMinutes: 2, releaseAmountPaise: 1000, releaseBonusMinutes: 1
+  }), {
+    availableBalancePaise: 1500, reservedBalancePaise: 1000, bonusMinutesBalance: 4,
+    reservedBonusMinutes: 1, releasedAmountPaise: 1000, releasedBonusMinutes: 1
+  });
+});
+
+test('pending-booking reserve release fails closed on mismatched or unsafe balances', () => {
+  assert.equal(calculateBookingReserveRelease({
+    availableBalancePaise: 500, reservedBalancePaise: 900, bonusMinutesBalance: 0,
+    reservedBonusMinutes: 1, releaseAmountPaise: 1000, releaseBonusMinutes: 1
+  }), null);
+  assert.equal(calculateBookingReserveRelease({
+    availableBalancePaise: 500, reservedBalancePaise: 1000, bonusMinutesBalance: 0,
+    reservedBonusMinutes: 0, releaseAmountPaise: 1000, releaseBonusMinutes: 1
+  }), null);
+  assert.equal(calculateBookingReserveRelease({
+    availableBalancePaise: Number.MAX_SAFE_INTEGER, reservedBalancePaise: 1000,
+    bonusMinutesBalance: 0, reservedBonusMinutes: 0, releaseAmountPaise: 1000, releaseBonusMinutes: 0
+  }), null);
+  assert.equal(calculateBookingReserveRelease({
+    availableBalancePaise: 0, reservedBalancePaise: 1000, bonusMinutesBalance: 1000000,
+    reservedBonusMinutes: 1, releaseAmountPaise: 1000, releaseBonusMinutes: 1
+  }), null);
+});
 
 test('Live sessions require valid DOB/time/place before the three-minute horoscope preparation', () => {
   assert.equal(PREPARATION_DURATION_MS, 180_000);
