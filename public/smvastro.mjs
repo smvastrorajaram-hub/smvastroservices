@@ -3660,13 +3660,17 @@ async function loadAdminPanelData(background=false){
 
     profileBox.querySelectorAll('[data-chat-price-save]').forEach(b=>b.onclick=async()=>{
       const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),callInput=$('adminCallPrice_'+id),liveChatInput=$('adminLiveChatPrice_'+id),msg=$('adminChatPriceMsg_'+id);
-      const price=Number(input?.value);
+      const chatRaw=String(input?.value||'').trim();
+      const price=chatRaw===''?null:Number(chatRaw);
       const callRaw=String(callInput?.value||'').trim();
       const callPrice=callRaw===''?null:Number(callRaw);
       const liveChatRaw=String(liveChatInput?.value||'').trim();
       const liveChatPrice=liveChatRaw===''?null:Number(liveChatRaw);
-      if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
-        if(msg)msg.innerHTML='<span class="error">Enter a valid Chat Price from ₹1 to ₹100000 (up to two decimals).</span>';return;
+      if(chatRaw!==''&&(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7)){
+        if(msg)msg.innerHTML='<span class="error">Private Consultation question price must be ₹1–₹100000 (up to two decimals), or leave it blank to leave it unchanged.</span>';return;
+      }
+      if(chatRaw===''&&callRaw===''&&liveChatRaw===''){
+        if(msg)msg.innerHTML='<span class="error">Enter at least one price to save.</span>';return;
       }
       if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
         if(msg)msg.innerHTML='<span class="error">Live Call Price must be ₹0 (unset) or ₹1–₹10000 per minute, up to two decimals.</span>';return;
@@ -3676,7 +3680,8 @@ async function loadAdminPanelData(background=false){
       }
       b.disabled=true;b.textContent='SAVING…';
       try{
-        const payload={astrologerId:id,pricePerQuestion:Math.round(price*100)/100};
+        const payload={astrologerId:id};
+        if(chatRaw!=='')payload.pricePerQuestion=Math.round(price*100)/100;
         if(callRaw!=='')payload.callPricePerMinute=callPrice;
         if(liveChatRaw!=='')payload.chatPricePerMinute=liveChatPrice;
         const result=await renderApi('/admin/astrologer-pricing',{method:'POST',body:JSON.stringify(payload)});
@@ -3684,8 +3689,8 @@ async function loadAdminPanelData(background=false){
         await smvAdminTouch();
         window.__smvInvalidatePublicAstrologersOnce?.();
         window.dispatchEvent(new Event('smv:astrologer-pricing-changed'));
-        const changed=['Private Consultation question price',callRaw!==''?'Live Call rate':'',liveChatRaw!==''?'Live Chat rate':''].filter(Boolean);
-        if(msg)msg.innerHTML='<span class="success">'+escapeHtml(changed.join(', '))+' saved. A blank per-minute field is left unchanged; enter ₹0 to unset it.</span>';
+        const changed=[chatRaw!==''?'Private Consultation question price':'',callRaw!==''?'Live Call rate':'',liveChatRaw!==''?'Live Chat rate':''].filter(Boolean);
+        if(msg)msg.innerHTML='<span class="success">'+escapeHtml(changed.join(', '))+' saved. Blank fields are unchanged; enter ₹0 in a per-minute field to unset that rate.</span>';
       }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
       finally{b.disabled=false;b.textContent='SAVE PRICES';}
     });
