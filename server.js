@@ -2314,7 +2314,7 @@ app.post("/admin/approve-astrologer", express.json({limit:"10kb"}), async (req,r
   const astrologerId=String(req.body?.astrologerId||"").trim();
   const price=Number(req.body?.pricePerQuestion);
   if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
-  if(!Number.isFinite(price)||price<1||price>100000||Math.round(price*100)!==price*100){
+  if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
     return res.status(400).json({success:false,error:"Enter a valid Private Consultation Chat Price between ₹1 and ₹100000, with up to two decimal places."});
   }
   try{

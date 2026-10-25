@@ -3557,7 +3557,7 @@ async function loadAdminPanelData(background=false){
   box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
     const id=b.dataset.approve,price=Number($('price_'+id)?.value);
     const root=b.closest('.card'),msg=root?.querySelector('[id^="astroApprovalMsg_"]');
-    if(!Number.isFinite(price)||price<1||price>100000||Math.round(price*100)!==price*100){
+    if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
       if(msg)msg.innerHTML='<span class="error">Enter a valid Private Consultation Chat Price (₹1–₹100000, up to 2 decimal places).</span>';
       return;
     }
