@@ -3890,17 +3890,101 @@ app.post("/verify-payment", express.json(), async (req, res) => {
 // execute in the browser/offline runtime. server.js intentionally registers no Horoscope
 // feature/payment/access/saved-report/PDF/calculation endpoints and loads no astrology engine.
 
+// Idempotently reconcile finished paid Live Call / Chat sessions into the Astrologer earnings ledger.
+async function syncLiveSessionEarningsForAstrologer(astrologerUid) {
+  const uid = String(astrologerUid || "").trim();
+  if (!uid) return 0;
+  const [sessionsSnap, commissionSnap] = await Promise.all([
+    db.collection("smv_live_sessions").where("astrologerUid", "==", uid).get(),
+    db.collection("smv_settings").doc("commission").get()
+  ]);
+  const settings = commissionSnap.exists ? (commissionSnap.data() || {}) : {};
+  const fallbackAstro = Number(settings.astroPercent ?? 20);
+  const fallbackAdmin = Number(settings.adminPercent ?? (100 - fallbackAstro));
+  const fallback = Number.isFinite(fallbackAstro) && Number.isFinite(fallbackAdmin) &&
+    fallbackAstro >= 0 && fallbackAstro <= 100 && fallbackAdmin >= 0 && fallbackAdmin <= 100 &&
+    Math.abs(fallbackAstro + fallbackAdmin - 100) <= 0.001
+      ? { astroPercent: fallbackAstro, adminPercent: fallbackAdmin }
+      : { astroPercent: 20, adminPercent: 80 };
+  let credited = 0;
+  for (const docSnap of sessionsSnap.docs) {
+    const before = docSnap.data() || {};
+    if (String(before.state || "") !== "ended" || Math.round(Number(before.actualChargePaise || 0)) <= 0) continue;
+    const paymentRef = db.collection("smv_payments").doc("SMV-LIVE-EARN-" + docSnap.id);
+    const created = await db.runTransaction(async tx => {
+      const [freshSnap, paymentSnap] = await Promise.all([tx.get(docSnap.ref), tx.get(paymentRef)]);
+      if (!freshSnap.exists || paymentSnap.exists) return false;
+      const session = freshSnap.data() || {};
+      const grossPaise = Math.round(Number(session.actualChargePaise || 0));
+      if (String(session.state || "") !== "ended" || String(session.astrologerUid || "") !== uid || grossPaise <= 0) return false;
+      const savedAstro = Number(session.astrologerCommissionPercent);
+      const savedAdmin = Number(session.adminCommissionPercent);
+      const split = Number.isFinite(savedAstro) && Number.isFinite(savedAdmin) &&
+        savedAstro >= 0 && savedAstro <= 100 && savedAdmin >= 0 && savedAdmin <= 100 &&
+        Math.abs(savedAstro + savedAdmin - 100) <= 0.001
+          ? { astroPercent: savedAstro, adminPercent: savedAdmin } : fallback;
+      const astroPaise = Math.round(grossPaise * split.astroPercent / 100);
+      const adminPaise = grossPaise - astroPaise;
+      const now = FieldValue.serverTimestamp();
+      tx.create(paymentRef, {
+        paymentId: paymentRef.id,
+        type: "astrologer_earning",
+        source: "live_session",
+        sourceType: "live_session",
+        sessionId: docSnap.id,
+        bookingId: ["accepted_booking", "offline_queue"].includes(String(session.origin || "")) ? docSnap.id : null,
+        customerId: session.customerUid || null,
+        customerUid: session.customerUid || null,
+        customerName: session.customerName || "Customer",
+        astrologerId: uid,
+        astrologerName: session.astrologerName || "Astrologer",
+        mode: session.mode || "chat",
+        question: "Live " + String(session.mode || "chat").toUpperCase() + " with " + String(session.customerName || "Customer"),
+        grossAmount: grossPaise / 100,
+        grossAmountPaise: grossPaise,
+        commissionPercent: split.astroPercent,
+        commissionAmount: astroPaise / 100,
+        earningAmount: astroPaise / 100,
+        earningAmountPaise: astroPaise,
+        adminCommissionPercent: split.adminPercent,
+        adminCommissionAmount: adminPaise / 100,
+        status: "credited",
+        commissionStatus: "credited",
+        paymentStatus: "pending_withdrawal",
+        createdAt: now,
+        updatedAt: now
+      });
+      tx.set(docSnap.ref, {
+        commissionStatus: "credited",
+        astrologerCommissionPercent: split.astroPercent,
+        adminCommissionPercent: split.adminPercent,
+        astrologerCommissionPaise: astroPaise,
+        adminCommissionPaise: adminPaise,
+        astrologerCommissionAmount: astroPaise / 100,
+        adminCommissionAmount: adminPaise / 100,
+        commissionCreditedAt: now,
+        updatedAt: now
+      }, { merge: true });
+      return true;
+    });
+    if (created) credited++;
+  }
+  return credited;
+}
+
 app.get("/astrologer/earnings", async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
   try {
-    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, privateWorkflow, privateCommission] = await Promise.all([
+    await syncLiveSessionEarningsForAstrologer(user.uid);
+    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, privateWorkflow, privateCommission, liveEarningsSnap] = await Promise.all([
       db.collection("smv_users").doc(user.uid).get(),
       db.collection("smv_questions").where("astrologerId", "==", user.uid).get(),
       db.collection("smv_private_consultations").where("astrologerId", "==", user.uid).get(),
       db.collection("smv_withdrawals").where("astrologerId", "==", user.uid).get(),
       getPrivateConsultWorkflow(),
-      getPrivateCommissionSettings()
+      getPrivateCommissionSettings(),
+      db.collection("smv_payments").where("astrologerId", "==", user.uid).get()
     ]);
     const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
     const role = String(profile.role || user.role || "").toLowerCase();
@@ -3925,6 +4009,16 @@ app.get("/astrologer/earnings", async (req, res) => {
         id:c.id, question:c.question || "Private Consultation",
         commission:Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
         date:c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
+      });
+    }
+    for (const paymentDoc of liveEarningsSnap.docs) {
+      const payment = paymentDoc.data() || {};
+      if (payment.source !== "live_session" || payment.type !== "astrologer_earning" || payment.status !== "credited") continue;
+      ledger.push({
+        id: payment.sessionId || paymentDoc.id,
+        question: payment.question || ("Live " + String(payment.mode || "chat").toUpperCase()),
+        commission: Number(payment.earningAmount ?? payment.commissionAmount ?? 0),
+        date: payment.commissionCreditedAt || payment.createdAt || null
       });
     }
     const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
@@ -3962,6 +4056,7 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       return res.status(403).json({ error: "Only an astrologer account can request a withdrawal." });
     }
 
+    await syncLiveSessionEarningsForAstrologer(user.uid);
     const questionSnap = await db.collection("smv_questions")
       .where("astrologerId", "==", user.uid).get();
     let totalEarnings = 0;
@@ -3974,6 +4069,13 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
 
     const privateCreditSnap=await db.collection("smv_private_consultations").where("astrologerId","==",user.uid).get();
     privateCreditSnap.docs.forEach(d=>{const c=d.data()||{};if(c.commissionStatus==='credited')totalEarnings+=Number(c.astrologerCreditedAmount??c.astrologerAmount??0);});
+    const liveCreditSnap = await db.collection("smv_payments").where("astrologerId", "==", user.uid).get();
+    liveCreditSnap.docs.forEach(d => {
+      const payment = d.data() || {};
+      if (payment.source === "live_session" && payment.type === "astrologer_earning" && payment.status === "credited") {
+        totalEarnings += Number(payment.earningAmount ?? payment.commissionAmount ?? 0);
+      }
+    });
 
     const withdrawalSnap = await db.collection("smv_withdrawals")
       .where("astrologerId", "==", user.uid).get();
