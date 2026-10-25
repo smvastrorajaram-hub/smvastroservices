@@ -108,6 +108,25 @@ function pricingFromSnapshot(snapshot) {
   };
 }
 
+function commissionFromSnapshot(snapshot) {
+  const data = snapshot && snapshot.exists ? (snapshot.data() || {}) : {};
+  const astroPercent = Number(data.astroPercent ?? 20);
+  const adminPercent = Number(data.adminPercent ?? (100 - astroPercent));
+  if (!Number.isFinite(astroPercent) || !Number.isFinite(adminPercent) || astroPercent < 0 || astroPercent > 100 || adminPercent < 0 || adminPercent > 100 || Math.abs(astroPercent + adminPercent - 100) > 0.001) {
+    return { astroPercent: 20, adminPercent: 80 };
+  }
+  return { astroPercent, adminPercent };
+}
+
+function frozenBookingCommission(booking, fallback) {
+  const astroPercent = Number(booking?.astrologerCommissionPercent);
+  const adminPercent = Number(booking?.adminCommissionPercent);
+  if (Number.isFinite(astroPercent) && Number.isFinite(adminPercent) && astroPercent >= 0 && astroPercent <= 100 && adminPercent >= 0 && adminPercent <= 100 && Math.abs(astroPercent + adminPercent - 100) <= 0.001) {
+    return { astroPercent, adminPercent };
+  }
+  return fallback;
+}
+
 function astrologerRatePaise(astroProfile, mode) {
   const astro = astroProfile || {};
   const kind = String(mode || '').trim().toLowerCase();
@@ -189,6 +208,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   function astroRef(uid) { return db.collection(ASTROLOGERS).doc(String(uid)); }
   function userRef(uid) { return db.collection(USERS).doc(String(uid)); }
   function pricingRef() { return db.collection(SETTINGS).doc('liveSessionPricing'); }
+  function commissionRef() { return db.collection(SETTINGS).doc('commission'); }
+  function earningRef(id) { return db.collection('smv_payments').doc('SMV-LIVE-EARN-' + String(id)); }
   function nowTimestamp() { return FieldValue.serverTimestamp(); }
   function notifyAdmin(type, title, message, extra = {}) {
     return db.collection('smv_notifications').add({
@@ -406,7 +427,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     }
   }
 
-  function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate, reservedAmount, state, origin, fingerprint }) {
+  function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate, reservedAmount, state, origin, fingerprint, commission }) {
     const preparationStartedAt = state === 'preparing' ? new Date() : null;
     return {
       sessionId: id, customerUid, astrologerUid,
@@ -415,6 +436,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       preparationStartedAt, preparationUntil: preparationStartedAt ? new Date(preparationStartedAt.getTime() + PREPARATION_DURATION_MS) : null,
       preparationCompletedAt: null,
       mode, minutes, ratePerMinutePaise: rate, reservedAmountPaise: reservedAmount,
+      astrologerCommissionPercent: Number(commission?.astroPercent ?? 20),
+      adminCommissionPercent: Number(commission?.adminPercent ?? 80),
       state, customerReady: false, astrologerReady: false,
       origin: origin || 'direct', payloadFingerprint: fingerprint,
       createdAt: new Date(), updatedAt: nowTimestamp(),
@@ -447,11 +470,11 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     }));
     const sRef = sessionRef(id), bRef = bookingRef(id);
     const customerProfileRef = userRef(uid), astroProfileRef = userRef(astroId);
-    const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef();
+    const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef(), cRef = commissionRef();
     const txResult = await db.runTransaction(async tx => {
-      const [oldSession, oldBooking, customerSnap, astroUserSnap, astroSnap, walletSnap, pricingSnap] = await Promise.all([
+      const [oldSession, oldBooking, customerSnap, astroUserSnap, astroSnap, walletSnap, pricingSnap, commissionSnap] = await Promise.all([
         tx.get(sRef), tx.get(bRef), tx.get(customerProfileRef), tx.get(astroProfileRef),
-        tx.get(aRef), tx.get(wRef), tx.get(pRef)
+        tx.get(aRef), tx.get(wRef), tx.get(pRef), tx.get(cRef)
       ]);
       if (oldSession.exists || oldBooking.exists) {
         const old = oldSession.exists ? (oldSession.data() || {}) : (oldBooking.data() || {});
@@ -467,6 +490,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const astro = astroSnap.data() || {};
       validateActiveAstrologer(astro, astroId);
       const pricing = pricingFromSnapshot(pricingSnap);
+      const commission = commissionFromSnapshot(commissionSnap);
       const rate = astrologerRatePaise(astro, kind);
       if (!rate) {
         throw httpError(409, (kind === 'call' ? 'Call' : 'Chat') + ' price per minute is not configured for this Astrologer.', 'LIVE_PRICE_UNAVAILABLE');
@@ -490,8 +514,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
           bookingId: id, customerUid: uid, astrologerUid: astroId, astrologerId: astroId,
           astrologerName: String(astro.name || 'Astrologer'), customerName: sessionCustomerName,
           birthDetails: sessionBirthDetails, mode: kind, minutes: length,
-          ratePerMinutePaise: rate, status: 'pending', origin: 'offline_queue',
-          payloadFingerprint: fingerprint, createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
+          ratePerMinutePaise: rate, astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
+          status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
+          createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         };
         tx.create(bRef, booking);
@@ -506,7 +531,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         id, customerUid: uid, astrologerUid: astroId, astroProfile: astro,
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
-        state: 'preparing', origin: 'direct', fingerprint
+        state: 'preparing', origin: 'direct', fingerprint, commission
       });
       tx.create(sRef, data);
       const nextCount = liveCount + 1;
@@ -548,8 +573,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const bRef = bookingRef(id), sRef = sessionRef(id), aRef = astroRef(uid);
     const astroUserRef = userRef(uid);
     const txResult = await db.runTransaction(async tx => {
-      const [bSnap, sSnap, astroSnap, astroUserSnap, pricingSnap] = await Promise.all([
-        tx.get(bRef), tx.get(sRef), tx.get(aRef), tx.get(astroUserRef), tx.get(pricingRef())
+      const [bSnap, sSnap, astroSnap, astroUserSnap, pricingSnap, commissionSnap] = await Promise.all([
+        tx.get(bRef), tx.get(sRef), tx.get(aRef), tx.get(astroUserRef), tx.get(pricingRef()), tx.get(commissionRef())
       ]);
       if (!bSnap.exists) throw httpError(404, 'Pending Live booking was not found.', 'LIVE_BOOKING_NOT_FOUND');
       const booking = bSnap.data() || {};
@@ -565,6 +590,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const astro = astroSnap.data() || {};
       validateActiveAstrologer(astro, uid);
       const pricing = pricingFromSnapshot(pricingSnap);
+      const commission = frozenBookingCommission(booking, commissionFromSnapshot(commissionSnap));
       const liveCount = safePaise(astro.activeSessionCount);
       const availability = String(astro.availabilityStatus || astro.onlineStatus || 'offline').toLowerCase();
       if (availability !== 'online' || liveCount >= pricing.maxConcurrentSessions) {
@@ -597,7 +623,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
         birthDetails: booking.birthDetails || null,
         mode: booking.mode, minutes, rate, reservedAmount: reserve.reservedAmountPaise,
-        state: 'preparing', origin: 'accepted_booking', fingerprint
+        state: 'preparing', origin: 'accepted_booking', fingerprint, commission
       });
       tx.create(sRef, data);
       tx.set(bRef, {
@@ -690,7 +716,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         throw httpError(403, 'This Live Session belongs to another account.', 'LIVE_SESSION_FORBIDDEN');
       }
       const wRef = walletRef(session.customerUid), aRef = astroRef(session.astrologerUid), bRef = bookingRef(id);
-      const [wSnap, aSnap, bSnap, pricingSnap] = await Promise.all([tx.get(wRef), tx.get(aRef), tx.get(bRef), tx.get(pricingRef())]);
+      const commissionRefDoc = commissionRef(), earningRefDoc = earningRef(id);
+      const [wSnap, aSnap, bSnap, pricingSnap, commissionSnap, earningSnap] = await Promise.all([
+        tx.get(wRef), tx.get(aRef), tx.get(bRef), tx.get(pricingRef()), tx.get(commissionRefDoc), tx.get(earningRefDoc)
+      ]);
       const wallet = wSnap.exists ? (wSnap.data() || {}) : {};
       const astro = aSnap.exists ? (aSnap.data() || {}) : {};
       if (session.state === 'ended') {
@@ -710,6 +739,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const reservedAmount = safePaise(session.reservedAmountPaise);
       const charge = Math.min(reservedAmount, pricing.amountPaise);
       const release = reservedAmount - charge;
+      const currentCommission = commissionFromSnapshot(commissionSnap);
+      const savedAstroPercent = Number(session.astrologerCommissionPercent);
+      const savedAdminPercent = Number(session.adminCommissionPercent);
+      const commission = Number.isFinite(savedAstroPercent) && Number.isFinite(savedAdminPercent) && savedAstroPercent >= 0 && savedAstroPercent <= 100 && savedAdminPercent >= 0 && savedAdminPercent <= 100 && Math.abs(savedAstroPercent + savedAdminPercent - 100) <= 0.001
+        ? { astroPercent: savedAstroPercent, adminPercent: savedAdminPercent } : currentCommission;
+      const astrologerCommissionPaise = charge > 0 ? Math.round(charge * commission.astroPercent / 100) : 0;
+      const adminCommissionPaise = charge - astrologerCommissionPaise;
       const available = safePaise(wallet.availableBalancePaise);
       const reserved = safePaise(wallet.reservedBalancePaise);
       if (reserved < reservedAmount) {
@@ -767,8 +803,27 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         endedByUid: actor || 'server', endReason: finalReason,
         connectedDurationMs: elapsedMs, billableMinutes: pricing.billableMinutes,
         actualChargePaise: charge, releasedAmountPaise: release,
+        commissionStatus: charge > 0 ? 'credited' : 'not_applicable',
+        astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
+        astrologerCommissionPaise, adminCommissionPaise,
+        astrologerCommissionAmount: astrologerCommissionPaise / 100, adminCommissionAmount: adminCommissionPaise / 100,
         availableBalanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved
       };
+      if (charge > 0 && !earningSnap.exists) {
+        tx.create(earningRefDoc, {
+          paymentId: earningRefDoc.id, type: 'astrologer_earning', source: 'live_session', sourceType: 'live_session',
+          sessionId: id, bookingId: session.origin === 'accepted_booking' || session.origin === 'offline_queue' ? id : null,
+          customerId: session.customerUid, customerUid: session.customerUid, customerName: session.customerName || 'Customer',
+          astrologerId: session.astrologerUid, astrologerName: session.astrologerName || astro.name || 'Astrologer',
+          mode: session.mode || 'chat', question: 'Live ' + String(session.mode || 'chat').toUpperCase() + ' with ' + String(session.customerName || 'Customer'),
+          grossAmount: charge / 100, grossAmountPaise: charge,
+          commissionPercent: commission.astroPercent, commissionAmount: astrologerCommissionPaise / 100,
+          earningAmount: astrologerCommissionPaise / 100, earningAmountPaise: astrologerCommissionPaise,
+          adminCommissionPercent: commission.adminPercent, adminCommissionAmount: adminCommissionPaise / 100,
+          status: 'credited', commissionStatus: 'credited', paymentStatus: 'pending_withdrawal',
+          createdAt: nowServer, updatedAt: nowServer
+        });
+      }
       tx.set(sRef, finalState, { merge: true });
       if (bSnap.exists) {
         tx.set(bRef, {
