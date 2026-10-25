@@ -384,12 +384,14 @@ async function requireUser(req, res) {
 async function isAdminUser(user) {
   if (!user) return false;
   if (user.uid === ADMIN_UID) return true;
-  if (user.admin === true || user.role === "admin") return true;
+  // Firebase ID-token custom claims are signed by Firebase. Do not promote a
+  // user based only on the mutable smv_users profile document.
+  if (user.admin === true || String(user.role || "").toLowerCase() === "admin") return true;
   try {
-    const snap = await db.collection("smv_users").doc(user.uid).get();
-    return snap.exists && String(snap.data()?.role || "").toLowerCase() === "admin";
+    const snap = await db.collection("smv_admins").doc(user.uid).get();
+    return snap.exists;
   } catch (e) {
-    console.error("Admin role lookup failed:", e?.message || e);
+    console.error("Admin allowlist lookup failed:", e?.message || e);
     return false;
   }
 }

@@ -2,12 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    // Admin trust comes from the fixed owner UID, server-managed custom claims,
+    // or the server-controlled smv_admins allowlist. A mutable profile role is
+    // never an authorization source.
     function isAdmin() {
       return signedIn() && (
         request.auth.uid == "TwjeEIFS3Zcf1SxboLZoujm91Ky2" ||
         exists(/databases/$(database)/documents/smv_admins/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/smv_users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/smv_users/$(request.auth.uid)).data.role == "admin")
+        ("admin" in request.auth.token && request.auth.token.admin == true) ||
+        ("role" in request.auth.token && request.auth.token.role == "admin")
       );
     }
     function isApprovedAstrologer() {
