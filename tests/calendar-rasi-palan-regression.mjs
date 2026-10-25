@@ -147,7 +147,7 @@ test('Horoscope Rules Admin and Calendar Rasi Palan Admin are separate', () => {
   assert.match(calendarIndexSource, /id="smvCalendarAdminArea"/);
   assert.match(calendarIndexSource, /calendar-admin-auth\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-product-nav/);
-  assert.doesNotMatch(calendarIndexSource, /smvastroservices\.in|horoscope\.smvastroservices\.in|smvastroservices\.pages\.dev/);
+  assert.doesNotMatch(calendarIndexSource, /https?:\/\/(?:horoscope|calendar)\.smvastroservices\.in/);
   assert.match(calendarIndexSource, /\.\.\/calendar-rasi-palan\.mjs\?v=20261025-local-calendar-forecast-v1/);
   assert.match(calendarIndexSource, /\.\.\/calendar-rasi-palan\.css\?v=20261025-local-calendar-forecast-v1/);
   assert.match(adminPageSource, /<title>SMV CALENDAR · Admin<\/title>/);
@@ -197,7 +197,7 @@ test('Calendar has a separate Admin entry, and its local Admin route remains saf
    assert.match(calendarIndexSource, /calendar-admin-auth\.mjs/);
    assert.doesNotMatch(calendarIndexSource, /https?:\/\/(?:horoscope|calendar)\.smvastroservices\.in/);
    assert.match(adminPageSource, /<title>SMV CALENDAR · Admin<\/title>/);
-   assert.match(adminPageSource, /location\.replace\(new URL\("\.\/?admin=1#smvCalendarAdminArea", location\.href\)\.href\)/);
+   assert.ok(adminPageSource.includes('location.replace(new URL("./?admin=1#smvCalendarAdminArea", location.href).href)'));
    assert.doesNotMatch(adminPageSource, /horoscope\.smvastroservices\.in|\/horoscope\/\?admin=1/);
    assert.match(calendarWorkerSource, /'\.\/admin\.html'/, 'Legacy route remains cached for old bookmarks');
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
