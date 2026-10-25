@@ -347,7 +347,7 @@
       return;
     }
     if(!Number.isFinite(rate)||rate<=0){
-      showPublicProfileModal(`<div class="profile-dialog"><h2 style="padding-right:42px;line-height:1.35">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">${bookingLabel} Price per minute has not been configured for this Astrologer. Admin must set the ${bookingLabel} Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
+      showPublicProfileModal(`<div class="profile-dialog"><h2 style="padding-right:42px;line-height:1.35">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">${bookingLabel} Price per minute has not been configured for this Astrologer. Admin must set the ${bookingLabel} Price in Astrologer Profile Management before this booking request can be submitted.</div></div>`);
         return;
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
