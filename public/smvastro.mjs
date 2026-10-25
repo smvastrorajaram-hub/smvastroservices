@@ -2625,16 +2625,6 @@ let userStatus=String(
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
-    <div class="card"><h3>My Questions</h3><p><span class="smv-summary-value">${activeQuestions.length}</span> active question(s)</p><p><span class="smv-summary-label">Approved profile:</span> <span class="smv-summary-value">${
-  ad.status === 'approved'
-    ? 'Approved'
-    : ad.status === 'rejected'
-      ? 'Rejected'
-      : 'Waiting for Admin'
-}</span></p>
-${ad.status === 'rejected' && ad.rejectionReason
-  ? `<p class="error"><b>Rejection Reason:</b> ${escapeHtml(ad.rejectionReason)}</p>`
-  : ''}</div>
     <div class="card"><h3>Total Earnings</h3><p style="font-size:28px"><span class="smv-earnings-total ${Number(ep.totalEarnings||0)>=300?'is-green':''}">₹${Number(ep.totalEarnings||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span class="smv-summary-value">₹${Number(ep.totalWithdrawals||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span class="smv-summary-value">₹${Number(ep.availableToWithdraw||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span class="smv-summary-value">₹${Number(ep.minimumWithdrawal||300).toFixed(2)}</span></p>${ep.withdrawalCooldownActive ? `<p class="smv-withdraw-locked"><b>🔒 Withdrawal locked for 7 days after the last withdrawal request.</b><br><span class="small">Available again: ${escapeHtml(smvDateTime(new Date(ep.withdrawalCooldownEndsAt)))}</span></p><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" disabled>WITHDRAW</button>` : ep.withdrawalEligible ? '<p class="smv-withdraw-ready"><b>✓ You can withdraw</b></p><button class="btn smv-withdraw-btn is-green" id="withdrawBtn">WITHDRAW</button>' : '<p class="smv-withdraw-locked"><b>Reach ₹300 to request a withdrawal.</b></p><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" disabled>WITHDRAW</button>'}</div>
    </div>
    <div class="card" id="astroProfileDescriptionCard" style="margin-top:16px">
@@ -2832,35 +2822,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
      const updateCount=()=>{const n=t.value.trim()?t.value.trim().split(/\s+/).filter(Boolean).length:0;if(counter)counter.textContent=`${n} / ${min} words`;if(btn)btn.disabled=n<min;};
      t.addEventListener('input',updateCount);updateCount();
    });
-  // Private Consultation is deliberately separate from Ask Now/Open Questions.
-  try{
-    const pr=epRemote?.privateDashboard||await renderApi('/astrologer/private-consultations',{method:'GET'});
-    const pcs=smvSortDashboardDesc(Array.isArray(pr?.consultations)?pr.consultations:[]);
-    const privateMinWords=Math.max(1,Number(pr?.settings?.minimumAnswerWords||20));
-    const privateAuto=pr?.settings?.allowWithoutAdminApproval===true;
-    const privateAstroRate=Number(pr?.settings?.privateCommission?.astrologerRate??20);
-    let pcBox=$('astroPrivateConsultations');
-    if(!pcBox){pcBox=document.createElement('div');pcBox.id='astroPrivateConsultations';pcBox.className='card';pcBox.style.marginTop='16px';(box.querySelector('.smv-astrologer-dashboard')||box).appendChild(pcBox);}
-    const actionable=pcs.filter(c=>['approved_for_astrologer','revision_required','answer_pending_admin_approval','answered'].includes(String(c.status||'')));
-    const pcStatus=c=>{
-      if(c.commissionStatus==='credited')return 'COMPLETED / EARNING CREDITED';
-      if(c.customerViewedAt)return 'SUBMITTED / CUSTOMER VIEWED';
-      if(c.status==='revision_required')return 'REVISION REQUIRED';
-      if(c.status==='answer_pending_admin_approval')return 'WAITING FOR ADMIN APPROVAL';
-      if(c.status==='answered'&&String(c.answer||'').trim())return privateAuto?'ANSWER SUBMITTED — CUSTOMER NOT VIEWED':'ANSWER APPROVED — CUSTOMER NOT VIEWED';
-      return 'READY TO ANSWER';
-    };
-    pcBox.innerHTML=`<h3 class="smv-astro-main-heading">Private Consultations</h3><p class="small">Only customers who selected you are shown here. Minimum answer: <b>${privateMinWords} words</b>.</p>${actionable.length?actionable.map(c=>{
-      const hasAnswer=!!String(c.answer||'').trim(),locked=!!c.customerViewedAt||c.commissionStatus==='credited',editing=!hasAnswer||c.status==='revision_required';
-      return `<div class="card" style="margin:10px 0"><div class="badge">${escapeHtml(pcStatus(c))}</div><p><b>Question:</b> ${escapeHtml(c.question||'')}</p><div class="small"><b>Customer:</b> ${escapeHtml(c.customerName||'')} · <b>Birth:</b> ${escapeHtml(c.birthDetails?.birthDate||'')} ${escapeHtml(c.birthDetails?.birthTime||'')} · ${escapeHtml(c.birthDetails?.birthPlace||'')}</div><div class="small"><b>Chat Price:</b> ₹${Number(c.chatPrice||c.amount||0).toFixed(2)} · <b>Your Earning:</b> ₹${Number(Number.isFinite(Number(c.astrologerAmount))?c.astrologerAmount:(Number(c.chatPrice||c.amount||0)*privateAstroRate/100)).toFixed(2)}</div>
-      <div id="pcview_${c.id}" ${editing&&!locked?'class="hidden"':''}>${hasAnswer?`<p><b>Answer:</b> ${escapeHtml(c.answer||'')}</p>`:''}</div>
-      <div id="pcedit_${c.id}" ${editing&&!locked?'':'class="hidden"'}><textarea id="pcans_${c.id}" rows="5" placeholder="Write at least ${privateMinWords} words...">${escapeHtml(c.answer||'')}</textarea><div class="small" id="pcwc_${c.id}">Minimum ${privateMinWords} words</div><button class="btn" data-pc-answer="${c.id}">${hasAnswer?'RESUBMIT ANSWER':'SUBMIT ANSWER'}</button></div>
-      ${hasAnswer&&!locked&&!editing?`<button class="btn gray" data-pc-edit="${c.id}">EDIT ANSWER</button>`:''}
-      ${c.answerRejectionReason&&c.status==='revision_required'?`<div class="error">Admin reason: ${escapeHtml(c.answerRejectionReason)}</div>`:''}</div>`;
-    }).join(''):'<div class="empty">No private consultations assigned to you.</div>'}`;
-    pcBox.querySelectorAll('[data-pc-edit]').forEach(b=>b.onclick=()=>{const id=b.dataset.pcEdit;$('pcview_'+id)?.classList.add('hidden');$('pcedit_'+id)?.classList.remove('hidden');b.classList.add('hidden');});
-    pcBox.querySelectorAll('[data-pc-answer]').forEach(b=>b.onclick=async()=>{const id=b.dataset.pcAnswer,answer=$('pcans_'+id)?.value.trim()||'',count=answer.split(/\s+/).filter(Boolean).length;if(count<privateMinWords){$('pcwc_'+id).innerHTML='<span class="error">Need at least '+privateMinWords+' words. Current: '+count+'</span>';return;}b.disabled=true;try{await renderApi('/astrologer/private-consultation/submit-answer',{method:'POST',body:JSON.stringify({consultationId:id,answer})});await loadDashboard('astrologer',true);}catch(e){alert(e.message||String(e));b.disabled=false;}});
-    }catch(e){console.warn('Private consultation load skipped:',e);}
+  // Legacy Private Consultation panel removed from the Astrologer Dashboard; Live Call / Chat is the consultation entry point.
 
   if($('withdrawBtn')) $('withdrawBtn').onclick = async () => {
 
