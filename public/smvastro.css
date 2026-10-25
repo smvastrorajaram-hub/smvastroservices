@@ -555,26 +555,35 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #tamilHoroscopeResult .dasha-subtable th:nth-child(3), #tamilHoroscopeResult .dasha-subtable td:nth-child(3), #englishHoroscopeResult .dasha-subtable th:nth-child(3), #englishHoroscopeResult .dasha-subtable td:nth-child(3){width:28%!important;white-space:nowrap!important}
 #tamilHoroscopeResult .dasha-subtable th, #tamilHoroscopeResult .dasha-subtable td, #englishHoroscopeResult .dasha-subtable th, #englishHoroscopeResult .dasha-subtable td{padding:5px 4px!important;font-size:12px!important}}
 #englishHoroscopeResult .bhava-chart, #tamilHoroscopeResult .bhava-chart{display:grid!important;visibility:visible!important;opacity:1!important}
-#modal.modal{visibility:visible;position:fixed!important;inset:0px!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;display:grid!important;place-items:center!important}
+#modal.modal{visibility:visible;position:fixed!important;inset:0px!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;display:grid!important;place-items:center!important;overflow:hidden}
 #modal.modal.hidden{display:none!important}
-#modal .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(-20px + 100dvh)!important;overflow:auto!important}
+#modal .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:auto!important;overscroll-behavior:contain}
 #modal .modalbox > button[aria-label="Close"]{position:absolute!important;top:5px!important;right:7px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:700 23px/1 Arial,sans-serif!important;cursor:pointer!important;z-index:20!important}
 
-#modal .modalbox .smv-live-session-panel{opacity:1!important;color:#2d1919!important;-webkit-text-fill-color:#2d1919!important}
-#modal .modalbox .smv-live-session-panel :where(h2,h3,h4,p,b,strong,label,small,.small,#smvLiveWaiting,#smvLiveVoiceStatus,#smvLiveSessionStatus,#smvLiveSessionBilling,#smvLiveSessionCountdown,#smvLiveSessionResult){color:#2d1919!important;-webkit-text-fill-color:#2d1919!important;opacity:1!important}
-#modal .modalbox .smv-live-session-panel .badge{background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
-#modal .modalbox .smv-live-session-panel button:not(.gray){background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#d4af37!important}
-#modal .modalbox .smv-live-session-panel button.gray{background:#f5e8c9!important;color:#321a1a!important;-webkit-text-fill-color:#321a1a!important;border-color:#a88a4a!important}
-#modal .modalbox .smv-live-session-panel #smvLiveChatArea,#modal .modalbox .smv-live-session-panel #smvLiveCallArea{opacity:1!important}
+#modal .modalbox .smv-live-session-panel{opacity:1;color:#ffffff;-webkit-text-fill-color:#ffffff}
+#modal .modalbox .smv-live-session-panel :where(h2,h3,h4,p,b,strong,label,small,.small,#smvLiveWaiting,#smvLiveSessionStatus,#smvLiveSessionBilling,#smvLiveSessionCountdown,#smvLiveSessionResult){color:#ffffff;-webkit-text-fill-color:#ffffff;opacity:1}
+#modal .modalbox .smv-live-session-panel .badge{background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff}
+#modal .modalbox .smv-live-session-panel button:not(.gray){background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border-color:#d4af37}
+#modal .modalbox .smv-live-session-panel button.gray{background:#ffffff;color:#24103F;-webkit-text-fill-color:#24103F;border-color:#c9b8e4}
+#modal .modalbox .smv-live-session-panel #smvLiveChatArea,#modal .modalbox .smv-live-session-panel #smvLiveCallArea{opacity:1}
+#modal .modalbox .smv-live-session-panel #smvLiveChatArea :where(p,b,strong,label,small,.small),
+#modal .modalbox .smv-live-session-panel #smvLiveCallArea :where(p,b,strong,label,small,.small){color:#24103F;-webkit-text-fill-color:#24103F;opacity:1}
+#modal .modalbox .smv-live-session-panel #smvLiveVoiceStatus{color:#5a3026;-webkit-text-fill-color:#5a3026}
 
-#modal.profile-modal-active{padding:12px!important;place-items:center!important}
-#modal.profile-modal-active .modalbox{width:min(560px, -24px + 100vw)!important;max-width:560px!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;padding:14px!important;border-radius:16px!important}
+#modal.profile-modal-active{padding:12px!important;place-items:start center!important}
+#modal.smv-live-session-modal{place-items:center!important;overflow:hidden}
+#modal.smv-live-session-modal .modalbox{margin:0;min-width:0;overflow:hidden}
+#modal.smv-live-session-modal #modalContent{min-width:0;min-height:0;flex:1 1 auto}
+#modal.smv-live-session-modal .smv-live-session-panel{min-width:0;min-height:0;overscroll-behavior:contain}
+#modal.smv-live-session-modal .smv-live-session-actions{position:sticky;bottom:0;margin-top:10px;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37}
+#modal.smv-live-session-modal .smv-live-session-actions button{flex:1 1 145px;min-width:0;max-width:100%;min-height:44px;white-space:normal;overflow-wrap:anywhere}
+#modal.profile-modal-active .modalbox{width:min(560px, -24px + 100vw)!important;max-width:560px!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:hidden!important;padding:14px!important;border-radius:16px!important}
 #modal.profile-modal-active .profile-dialog{max-height:calc(100dvh - 52px);min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;display:flex;flex-direction:column;align-items:stretch;text-align:left;color:#2d1919!important;-webkit-text-fill-color:#2d1919!important}
-#modal.profile-modal-active .profile-dialog :where(h2,h3,h4,p,b,strong,label,.small){color:#2d1919!important;-webkit-text-fill-color:#2d1919!important;opacity:1!important}
-#modal.profile-modal-active .profile-dialog :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:#fff!important;color:#2d1919!important;-webkit-text-fill-color:#2d1919!important;caret-color:#2d1919!important;border-color:#b9a17b!important;max-width:100%;min-width:0;box-sizing:border-box}
-#modal.profile-modal-active .profile-dialog .btn:not(.gray){background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#d4af37!important}
-#modal.profile-modal-active .profile-dialog .btn.gray{background:#f5e8c9!important;color:#321a1a!important;-webkit-text-fill-color:#321a1a!important;border-color:#a88a4a!important}
-#modal.profile-modal-active .smv-live-birth-dialog{max-height:calc(100dvh - 52px)!important;overflow-y:auto!important;padding-top:28px!important}
+#modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) :where(h2,h3,h4,p,b,strong,label,.small){color:#2d1919!important;-webkit-text-fill-color:#2d1919!important;opacity:1!important}
+#modal.profile-modal-active .profile-dialog :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:#fff;color:#2d1919;-webkit-text-fill-color:#2d1919;caret-color:#2d1919;border-color:#b9a17b;max-width:100%;min-width:0;box-sizing:border-box}
+#modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) .btn:not(.gray){background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#d4af37!important}
+#modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) .btn.gray{background:#f5e8c9!important;color:#321a1a!important;-webkit-text-fill-color:#321a1a!important;border-color:#a88a4a!important}
+#modal.profile-modal-active .smv-live-birth-dialog{max-height:calc(100dvh - 40px);min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px 12px calc(16px + env(safe-area-inset-bottom));overscroll-behavior:contain}
 #modal.profile-modal-active .profile-dialog .profile-photo{width:72px;height:72px;min-height:72px;margin:0px auto 6px}
 #modal.profile-modal-active .profile-dialog .profile-title{line-height:1.15;font-size:21px!important;margin:0px 0px 2px!important}
 #modal.profile-modal-active .profile-dialog .profile-expertise, #modal.profile-modal-active .profile-dialog .profile-experience{line-height:1.25;margin:2px 0px;font-size:12px!important}
