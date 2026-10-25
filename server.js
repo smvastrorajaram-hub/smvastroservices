@@ -2773,6 +2773,12 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
     if(paymentMethod==="wallet"){
       const requestId=String(req.body?.requestId||"").trim();
       if(!/^[A-Za-z0-9._:-]{8,128}$/.test(requestId))return res.status(400).json({error:"A valid Wallet booking request ID is required.",code:"WALLET_REQUEST_ID_INVALID"});
+      const requestFingerprint=crypto.createHash("sha256").update(JSON.stringify({
+        astrologerId,customerName,question,
+        birthDate:String(birth.birthDate),birthTime:String(birth.birthTime),
+        birthPlace:String(birth.birthPlace).trim(),birthGender:String(birth.birthGender||""),
+        promoCode:String(req.body?.promoCode||"").trim()
+      })).digest("hex");
       const amountPaise=Math.round(chatPrice*100);
       if(!Number.isSafeInteger(amountPaise)||amountPaise<100)return res.status(409).json({error:"The selected chat price is not valid for Wallet payment.",code:"WALLET_CHAT_AMOUNT_INVALID"});
       const consultationId=crypto.createHash("sha256").update("private-consultation-wallet:"+user.uid+":"+requestId).digest("hex");
@@ -2793,7 +2799,7 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
         ]);
         if(consultationSnap.exists){
           const prior=consultationSnap.data()||{};
-          if(String(prior.customerId||"")!==String(user.uid)||String(prior.walletRequestId||"")!==requestId||String(prior.paymentMethod||"")!=="wallet"||String(prior.paymentStatus||"")!=="paid"){
+          if(String(prior.customerId||"")!==String(user.uid)||String(prior.walletRequestId||"")!==requestId||String(prior.walletRequestFingerprint||"")!==requestFingerprint||String(prior.paymentMethod||"")!=="wallet"||String(prior.paymentStatus||"")!=="paid"){
             throw Object.assign(new Error("This Wallet booking request ID has already been used for another request."),{httpStatus:409,code:"WALLET_BOOKING_IDEMPOTENCY_CONFLICT"});
           }
           if(!walletSnap.exists)throw Object.assign(new Error("The existing Wallet booking has no Wallet document; reconciliation is required."),{httpStatus:409,code:"WALLET_BOOKING_RECONCILIATION_REQUIRED"});
@@ -2825,7 +2831,7 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
           offerBannerText:offerQuote.bannerText||"",offerDisplayMode:offerQuote.displayMode||"hidden",
           privateAstrologerCommissionRate,privateAdminCommissionRate,adminAmount,astrologerAmount,
           amount:chatPrice,status:finalStatus,paymentStatus:"paid",paymentMethod:"wallet",
-          walletRequestId:requestId,walletTransactionId:ledgerId,questionApprovalBypassed:autoAllow,
+          walletRequestId:requestId,walletRequestFingerprint:requestFingerprint,walletTransactionId:ledgerId,questionApprovalBypassed:autoAllow,
           allocationStatus:"selected_astrologer",customerPaymentId,
           paymentRecordedAt,paidAt:now,paymentCurrency:"INR",razorpayOrderId:null,razorpayPaymentId:null,
           birthDetails:{name:customerName,birthDate:String(birth.birthDate),birthTime:String(birth.birthTime),birthPlace:String(birth.birthPlace).trim(),birthGender:String(birth.birthGender||""),timezone:"Asia/Kolkata",utcOffsetMinutes:330},
@@ -2900,7 +2906,7 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
       status:"created",createdAt:FieldValue.serverTimestamp()
     }).catch(e=>console.error("Private Razorpay order audit failed:",e)));
     return;
-  }catch(e){console.error("Private consultation create-order error:",e);return res.status(500).json({error:e?.error?.description||e?.message||"Unable to create private consultation payment."});}
+  }catch(e){console.error("Private consultation create-order error:",e);return res.status(Number(e?.httpStatus)||500).json({error:e?.httpStatus?(e?.message||"Wallet booking failed."): (e?.error?.description||e?.message||"Unable to create private consultation payment."),code:e?.code||null});}
 });
 
 app.post("/private-consultation/retry-payment",express.json({limit:"10kb"}),async(req,res)=>{
