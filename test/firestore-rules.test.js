@@ -31,7 +31,8 @@ before(async () => {
 
 beforeEach(async () => {
   await testEnv.clearFirestore();
-  await testEnv.withSecurityRulesDisabled(async ({ firestore }) => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const firestore = context.firestore();
     await setDoc(doc(firestore, "smv_users", "customer-a"), { role: "customer" });
     await setDoc(doc(firestore, "smv_users", "customer-b"), { role: "customer" });
     // Simulate an old/escalated profile created while the previously published
