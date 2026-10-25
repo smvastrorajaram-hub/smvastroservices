@@ -3672,10 +3672,10 @@ async function loadAdminPanelData(background=false){
       if(chatRaw===''&&callRaw===''&&liveChatRaw===''){
         if(msg)msg.innerHTML='<span class="error">Enter at least one price to save.</span>';return;
       }
-      if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+      if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||(callPrice!==0&&callPrice<1)||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
         if(msg)msg.innerHTML='<span class="error">Live Call Price must be ₹0 (unset) or ₹1–₹10000 per minute, up to two decimals.</span>';return;
       }
-      if(liveChatRaw!==''&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+      if(liveChatRaw!==''&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||(liveChatPrice!==0&&liveChatPrice<1)||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
         if(msg)msg.innerHTML='<span class="error">Live Chat Price must be ₹0 (unset) or ₹1–₹10000 per minute, up to two decimals.</span>';return;
       }
       b.disabled=true;b.textContent='SAVING…';
