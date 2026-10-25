@@ -376,7 +376,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!snap.exists) return null;
       const data = snap.data() || {};
       if (data.state !== 'preparing') return null;
-      const next = { state: 'ringing', preparationCompletedAt: new Date(), updatedAt: nowTimestamp() };
+      const next = { state: data.acceptedAt ? 'connecting' : 'ringing', preparationCompletedAt: new Date(), updatedAt: nowTimestamp() };
       tx.set(ref, next, { merge: true });
       return { ...data, ...next };
     });
@@ -599,7 +599,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
         reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
-        state: 'preparing', origin: 'direct', fingerprint, commission
+        state: 'ringing', origin: 'direct', fingerprint, commission
       });
       tx.create(sRef, data);
       const nextCount = liveCount + 1;
@@ -717,6 +717,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'preparing', origin: 'accepted_booking', fingerprint, commission
       });
+      data.acceptedAt = new Date();
       tx.create(sRef, data);
       tx.set(bRef, {
         status: 'accepted', sessionId: id, acceptedAt: nowTimestamp(),
@@ -754,10 +755,20 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
       const session = snap.data() || {};
       if (session.astrologerUid !== uid) throw httpError(403, 'This request belongs to another Astrologer.', 'LIVE_SESSION_FORBIDDEN');
-      if (session.state === 'connecting' || session.state === 'active') return { data: session, alreadyProcessed: true };
+      if (session.state === 'connecting' || session.state === 'active' || (session.state === 'preparing' && !!session.acceptedAt)) return { data: session, alreadyProcessed: true };
       if (session.state !== 'ringing') throw httpError(409, 'This request is no longer ringing.', 'LIVE_SESSION_NOT_RINGING');
-      const updated = { ...session, state: 'connecting', acceptedAt: new Date(), updatedAt: nowTimestamp() };
-      tx.set(ref, { state: 'connecting', acceptedAt: updated.acceptedAt, updatedAt: updated.updatedAt }, { merge: true });
+      const acceptedAt = new Date();
+      const preparationUntil = new Date(acceptedAt.getTime() + PREPARATION_DURATION_MS);
+      const updated = {
+        ...session, state: 'preparing', acceptedAt, preparationStartedAt: acceptedAt,
+        preparationUntil, preparationCompletedAt: null,
+        customerReady: false, astrologerReady: false, updatedAt: nowTimestamp()
+      };
+      tx.set(ref, {
+        state: 'preparing', acceptedAt, preparationStartedAt: acceptedAt,
+        preparationUntil, preparationCompletedAt: null,
+        customerReady: false, astrologerReady: false, updatedAt: updated.updatedAt
+      }, { merge: true });
       return { data: updated, alreadyProcessed: false };
     });
     scheduleSessionTimer(id, result.data);
@@ -1431,6 +1442,12 @@ async function rejectOrCancel(sessionId, user, reason) {
         customerName: String(appointment.name || ''),
         birthDetails: appointment.birthDetails || {}
       });
+      if (result.kind === 'session' && result.session) {
+        // This button is the Astrologer's explicit Start action for an accepted schedule.
+        // Move straight into the 3-minute preparation phase instead of showing a second Accept prompt.
+        const accepted = await acceptSession(result.session.id, uid);
+        result.session = accepted.session;
+      }
       const isSession = result.kind === 'session' && !!result.session;
       await appointmentRef.set({
         bookingStatus: isSession ? 'in_progress' : 'waiting_for_online',
