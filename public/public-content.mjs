@@ -42,6 +42,7 @@
     try{await fb();if(auth?.currentUser)wallet=await smvFetchLiveWallet(force);}
     catch(error){walletError=String(error?.message||error);}
     const isCustomer=!!auth?.currentUser&&wallet?.ownerRole==='customer'&&wallet.userUid===auth.currentUser.uid;
+    const knownNonCustomer=!!auth?.currentUser&&!!wallet&&wallet.userUid===auth.currentUser.uid&&wallet.ownerRole!=='customer';
     for(const row of rows){
       const balance=isCustomer?Number(wallet.availableBalancePaise||0):null;
       for(const mode of ['call','chat']){
@@ -54,15 +55,17 @@
         const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)):0;
         input.max=String(isCustomer?Math.max(0,max):SMV_MAX_LIVE_MINUTES);
         input.dataset.maximumMinutes=String(max);
-        if(isCustomer&&(!goodRate||max<1)){
+        if(!goodRate||knownNonCustomer||(isCustomer&&max<1)){
           input.disabled=true;
           button.disabled=true;
         }else{
-          input.disabled=!goodRate;
-          button.disabled=!goodRate;
+          input.disabled=false;
+          button.disabled=false;
         }
         if(!goodRate){
           note.textContent=(mode==='call'?'Call':'Chat')+' price per minute is not configured for this Astrologer.';
+        }else if(knownNonCustomer){
+          note.textContent='Please sign in with a Customer account to use Live Call / Live Chat.';
         }else if(!auth?.currentUser){
           note.textContent='Login as a Customer to check Wallet balance and the maximum affordable minutes.';
         }else if(!isCustomer){
