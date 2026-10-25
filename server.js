@@ -3264,6 +3264,9 @@ app.get("/offers/public-banners", async (req, res) => {
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(o => {
         if (o.id === LEGACY_WELCOME_ID) return false;
+        // Wallet recharge bonuses are shown in the Wallet checkout, not the public Book-a-Chat banner.
+        const appliesTo = Array.isArray(o.appliesTo) ? o.appliesTo : [String(o.appliesTo || "")];
+        if (appliesTo.includes("wallet_recharge")) return false;
         const enabled = o.enabled === true || String(o.enabled).toLowerCase() === "true";
         if (!enabled) return false;
         // Homepage banner follows the Admin enabled state + active date window.
