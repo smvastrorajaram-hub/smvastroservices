@@ -2288,10 +2288,12 @@ app.get("/admin-data", async (req, res) => {
 
 
 async function getPrivateCommissionSettings(){
+  // One source of truth for Ask Now, private consultations, live Call/Chat and bookings.
   try{
-    const s=await db.collection("smv_settings").doc("privateConsultationCommission").get();
-    const d=s.exists?s.data()||{}:{};
-    const astrologerRate=Math.max(0,Math.min(100,Number(d.astrologerRate??20)));
+    const snap=await db.collection("smv_settings").doc("commission").get();
+    const data=snap.exists?snap.data()||{}:{};
+    const raw=data.astroPercent??data.astrologerRate??20;
+    const astrologerRate=Math.max(0,Math.min(100,Number.isFinite(Number(raw))?Number(raw):20));
     return {astrologerRate,adminRate:Math.round((100-astrologerRate)*100)/100};
   }catch(_e){return {astrologerRate:20,adminRate:80};}
 }
@@ -2322,30 +2324,13 @@ app.post("/admin/private-consultation/set-commission",express.json({limit:"5kb"}
   const user=await requireUser(req,res);if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   const astrologerRate=Number(req.body?.astrologerRate);
-  if(!Number.isFinite(astrologerRate)||astrologerRate<0||astrologerRate>100)return res.status(400).json({error:"Astrologer commission must be between 0 and 100."});
+  if(!Number.isFinite(astrologerRate)||astrologerRate<0||astrologerRate>100)return res.status(400).json({error:"Astrologer percentage must be between 0 and 100."});
   const adminRate=Math.round((100-astrologerRate)*100)/100;
-  await db.collection("smv_settings").doc("privateConsultationCommission").set({astrologerRate,adminRate,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid},{merge:true});
-
-  // One-time backward credit/backfill: only paid, answered, approved, customer-viewed,
-  // non-refunded consultations that have not already been credited.
-  const snap=await db.collection("smv_private_consultations").get();
-  let backfilled=0,skipped=0;
-  for(const d of snap.docs){
-    const c=d.data()||{},id=d.id;
-    const eligible=c.paymentStatus==="paid"&&c.status==="answered"&&c.answerStatus==="approved"&&!!c.customerViewedAt&&!c.refundId&&String(c.commissionStatus||"")!=="credited";
-    if(!eligible){skipped++;continue;}
-    const amounts=privateCommissionSnapshot(c.chatPrice||c.amount,{astrologerRate});
-    const earningId="SMV-PC-EARN-"+id,earningRef=db.collection("smv_payments").doc(earningId);
-    await db.runTransaction(async tx=>{
-      const fresh=await tx.get(d.ref),e=await tx.get(earningRef);if(!fresh.exists)return;
-      const fc=fresh.data()||{};if(String(fc.commissionStatus||"")==="credited"||e.exists)return;
-      tx.set(earningRef,{paymentId:earningId,type:"astrologer_earning",source:"private_consultation_backfill",customerId:fc.customerId||null,astrologerId:fc.astrologerId,consultationId:id,questionId:null,question:fc.question||"Private Consultation",grossAmount:Number(fc.chatPrice||fc.amount||0),commissionPercent:amounts.privateAstrologerCommissionRate,commissionAmount:amounts.astrologerAmount,earningAmount:amounts.astrologerAmount,adminCommissionAmount:amounts.adminAmount,status:"credited",paymentStatus:"pending_withdrawal",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
-      tx.update(d.ref,{...amounts,commissionStatus:"credited",commissionCreditedAt:FieldValue.serverTimestamp(),astrologerPaymentId:earningId,astrologerCreditedAmount:amounts.astrologerAmount,adminCommissionStatus:"credited",adminCommissionCreditedAt:FieldValue.serverTimestamp(),adminCreditedAmount:amounts.adminAmount,commissionBackfilled:true,updatedAt:FieldValue.serverTimestamp()});
-    });
-    backfilled++;
-  }
-  await addAdminPrivateNotification("private_commission_setting","Private Consultation Commission Updated",`Global Private Consultation commission set to Astrologer ${astrologerRate}% / Admin ${adminRate}%. Eligible past viewed consultations backfilled: ${backfilled}.`,"",{astrologerRate,adminRate,backfilled});
-  return res.json({success:true,astrologerRate,adminRate,backfilled,skipped});
+  // Compatibility endpoint: writes the canonical global setting only. No legacy
+  // private-only rate and no historical earnings/withdrawal backfill is performed.
+  await db.collection("smv_settings").doc("commission").set({astroPercent:astrologerRate,adminPercent:adminRate,astrologerRate,adminRate,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid,appliesTo:["ask_now","call","chat","booked_call","booked_chat"]},{merge:true});
+  adminDataCache=null;
+  return res.json({success:true,astrologerRate,adminRate,source:"global_commission"});
 });
 app.post("/admin/private-consultation/set-word-count",express.json({limit:"5kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;
