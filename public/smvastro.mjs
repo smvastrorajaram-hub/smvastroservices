@@ -773,7 +773,7 @@ const SMV_ADMIN_SHORTCUTS=[
  ['adminAnswers','Answers','parent'],
  ['adminPrivatePending','Private Questions','parent'],
  ['adminRefunds','Refunds','parent'],
- ['adminWalletLedgerRows','Wallet Ledger','parent'],
+ ['adminWalletLedger','Wallet Ledger','self'],
  ['adminHoroscopePriceSet','Horoscope Settings','self'],
  ['adminOffersPromotions','Offers','self'],
  ['adminWithdrawals','Withdrawals','parent'],
