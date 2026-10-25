@@ -1,8 +1,9 @@
 'use strict';
 const DAY=24*60*60*1000;
+const {walletLedgerDocId}=require('./wallet-service');
 function millis(value){if(!value)return 0;if(typeof value.toMillis==='function')return value.toMillis();if(value.seconds||value._seconds)return Number(value.seconds||value._seconds)*1000;return new Date(value).getTime()||0;}
 function availableAt(q){return millis(q.answerAvailableAt||q.answerApprovedAt||q.adminAnswerApprovedAt||q.answerSubmittedAt);}
-module.exports=function createAnswerCredit({db,FieldValue,privateAmounts}){
+module.exports=function createAnswerCredit({db,FieldValue,privateAmounts,adminUid}){
  const error=(message,httpStatus=409)=>Object.assign(new Error(message),{httpStatus});
  async function settle(kind,id,{customerId,automatic=false,now=Date.now()}={}){
   const privateQuestion=kind==='private';
@@ -27,13 +28,44 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts}){
    if(!Number.isFinite(amount)||amount<0||!Number.isFinite(adminAmount)||adminAmount<0)throw error('Invalid saved commission amounts.');
    // Stable ledger key plus transaction prevents duplicate manual/automatic credits.
    const paymentId=q.astrologerPaymentId||(privateQuestion?'SMV-PC-EARN-':'SMV-Q-EARN-')+id;
-   const earning=db.collection('smv_payments').doc(paymentId);const prior=await tx.get(earning);
-   if(!prior.exists)tx.set(earning,{paymentId,type:'astrologer_earning',source:automatic?'answer_timeout_24h':(privateQuestion?'private_consultation_customer_view':'customer_answer_view'),customerId:q.customerId,astrologerId:q.astrologerId,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,question:q.question||'Consultation',grossAmount:Number(q.chatPrice??q.amount??0),commissionPercent:rate,commissionAmount:amount,earningAmount:amount,adminCommissionAmount:adminAmount,status:'credited',paymentStatus:'pending_withdrawal',createdAt:stamp(),updatedAt:stamp()});
+   const earning=db.collection('smv_payments').doc(paymentId),prior=await tx.get(earning);
+   let walletCredit={astro:false,admin:false};
+   if(!prior.exists){
+     const adminOwner=String(adminUid||'').trim();
+     if(!adminOwner)throw error('Admin Wallet owner is not configured; earning settlement was not posted.',503);
+     const astroUid=String(q.astrologerId||'').trim();
+     const astroPaise=Math.round(amount*100),adminPaise=Math.round(adminAmount*100);
+     const astroWalletRef=db.collection('smv_wallets').doc(astroUid);
+     const adminWalletRef=db.collection('smv_wallets').doc(adminOwner);
+     const astroLedgerRef=db.collection('smv_wallet_transactions').doc(walletLedgerDocId('consultation_earning',astroUid+':'+paymentId));
+     const adminLedgerRef=db.collection('smv_wallet_transactions').doc(walletLedgerDocId('service_revenue',adminOwner+':'+paymentId));
+     const [astroWalletSnap,adminWalletSnap,astroLedgerSnap,adminLedgerSnap]=await Promise.all([
+       tx.get(astroWalletRef),tx.get(adminWalletRef),tx.get(astroLedgerRef),tx.get(adminLedgerRef)
+     ]);
+     if(astroLedgerSnap.exists||adminLedgerSnap.exists)throw error('Wallet ledger is inconsistent with the earning record. Admin reconciliation is required.',503);
+     const astroWallet=astroWalletSnap.exists?astroWalletSnap.data()||{}:{};
+     const adminWallet=adminWalletSnap.exists?adminWalletSnap.data()||{}:{};
+     const astroAvailable=Math.max(0,Number(astroWallet.availableBalancePaise||0)),adminAvailable=Math.max(0,Number(adminWallet.availableBalancePaise||0));
+     const astroNext=astroAvailable+Math.max(0,astroPaise),adminNext=adminAvailable+Math.max(0,adminPaise);
+     if(!Number.isSafeInteger(astroNext)||!Number.isSafeInteger(adminNext))throw error('Wallet balance is outside the supported range.',503);
+     const now=stamp();
+     tx.set(earning,{paymentId,type:'astrologer_earning',source:automatic?'answer_timeout_24h':(privateQuestion?'private_consultation_customer_view':'customer_answer_view'),customerId:q.customerId,astrologerId:q.astrologerId,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,question:q.question||'Consultation',grossAmount:Number(q.chatPrice??q.amount??0),commissionPercent:rate,commissionAmount:amount,earningAmount:amount,adminCommissionAmount:adminAmount,status:'credited',paymentStatus:'pending_withdrawal',createdAt:now,updatedAt:now});
+     if(astroPaise>0){
+       tx.set(astroWalletRef,{ownerUid:astroUid,ownerRole:'astrologer',currency:'INR',availableBalancePaise:astroNext,reservedBalancePaise:Math.max(0,Number(astroWallet.reservedBalancePaise||0)),freeSecondsBalance:Math.max(0,Number(astroWallet.freeSecondsBalance||0)),version:Math.max(0,Number(astroWallet.version||0))+1,createdAt:astroWallet.createdAt||now,updatedAt:now},{merge:true});
+       tx.create(astroLedgerRef,{ownerUid:astroUid,ownerRole:'astrologer',currency:'INR',type:'consultation_earning',direction:'credit',amountPaise:astroPaise,balanceAfterPaise:astroNext,reservedBalanceAfterPaise:Math.max(0,Number(astroWallet.reservedBalancePaise||0)),idempotencyKey:paymentId,referenceType:privateQuestion?'private_consultation':'ask_now',referenceId:id,note:'Consultation earning credited to Wallet',status:'posted',createdAt:now});
+       walletCredit.astro=true;
+     }
+     if(adminPaise>0){
+       tx.set(adminWalletRef,{ownerUid:adminOwner,ownerRole:'admin',currency:'INR',availableBalancePaise:adminNext,reservedBalancePaise:Math.max(0,Number(adminWallet.reservedBalancePaise||0)),freeSecondsBalance:Math.max(0,Number(adminWallet.freeSecondsBalance||0)),version:Math.max(0,Number(adminWallet.version||0))+1,createdAt:adminWallet.createdAt||now,updatedAt:now},{merge:true});
+       tx.create(adminLedgerRef,{ownerUid:adminOwner,ownerRole:'admin',currency:'INR',type:'service_revenue',direction:'credit',amountPaise:adminPaise,balanceAfterPaise:adminNext,reservedBalanceAfterPaise:Math.max(0,Number(adminWallet.reservedBalancePaise||0)),idempotencyKey:paymentId,referenceType:privateQuestion?'private_consultation':'ask_now',referenceId:id,note:'Service revenue credited to Admin Wallet',status:'posted',createdAt:now});
+       walletCredit.admin=true;
+     }
+   }
    Object.assign(patch,{commissionStatus:'credited',commissionCreditedAt:stamp(),commissionCreditReason:automatic?'timeout_24h':'customer_view',astrologerPaymentId:paymentId,astrologerCreditedAmount:amount,adminCommissionStatus:'credited',adminCommissionCreditedAt:stamp(),adminCreditedAmount:adminAmount});
    if(privateQuestion)Object.assign(patch,{astrologerAmount:amount,adminAmount,privateAstrologerCommissionRate:rate});
    tx.update(ref,patch);
    if(!automatic)viewNotice(tx,q,kind,id,viewedKey);
-   if(!prior.exists)tx.set(db.collection('smv_notifications').doc('answer-credit-'+kind+'-'+id),{userId:q.astrologerId,type:privateQuestion?'private_earning_credited':'earning_credited',title:automatic?(privateQuestion?'Private Consultation Commission Credited':'Astrologer Commission Credited'):(privateQuestion?'Private Consultation Earning Credited':'Earning Credited'),message:automatic?`24-hour automatic settlement completed. ₹${amount.toFixed(2)} astrologer commission has been credited.`:`Customer viewed your answer. ₹${amount.toFixed(2)} has been credited.`,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,commissionAmount:amount,createdAt:stamp(),read:false});
+   if(!prior.exists)tx.set(db.collection('smv_notifications').doc('answer-credit-'+kind+'-'+id),{userId:q.astrologerId,type:privateQuestion?'private_earning_credited':'earning_credited',title:'Earning Added to Wallet',message:automatic?`The consultation was settled after the 24-hour review window. ₹${amount.toFixed(2)} has been credited to your Wallet.`:`₹${amount.toFixed(2)} has been credited to your Wallet.`,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,createdAt:stamp(),read:false});
    if(privateQuestion&&!prior.exists)tx.set(db.collection('smv_admin_notifications').doc('answer-credit-private-'+id),{type:'private_commission_credited',title:'Private Consultation Commission Credited',message:`${automatic?'24-hour automatic credit':'Customer viewed answer'}: Astrologer ₹${amount.toFixed(2)} / Admin ₹${adminAmount.toFixed(2)}.`,consultationId:id,source:'private_consultation',createdAt:stamp(),read:false});
    tx.set(db.collection('smv_settings').doc('dashboardChange'),{category:'answer_credit',path:ref.path,updatedAt:stamp()},{merge:true});
    return {credited:!prior.exists,commissionAmount:amount,astrologerAmount:amount,adminAmount};
