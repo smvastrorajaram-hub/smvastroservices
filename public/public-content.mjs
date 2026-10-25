@@ -209,14 +209,20 @@
     if(!modalEl||!contentEl) throw new Error('Profile dialog is unavailable.');
     contentEl.innerHTML=html;
     modalEl.style.overflowY='auto';
-    modalEl.style.alignItems='center';
+    const initialDialog=contentEl.querySelector('.profile-dialog');
+    const usesPurpleTheme=!!initialDialog&&(initialDialog.classList.contains('smv-call-booking-dialog')||initialDialog.classList.contains('smv-live-birth-dialog'));
+    modalEl.style.alignItems=usesPurpleTheme?'flex-start':'center';
+    if(usesPurpleTheme)modalEl.style.padding='12px 8px calc(12px + env(safe-area-inset-bottom))';
     const modalBox=modalEl.querySelector('.modalbox');
     if(modalBox){modalBox.style.maxHeight='calc(100dvh - 24px)';modalBox.style.overflowY='auto';modalBox.style.overflowX='hidden';modalBox.style.boxSizing='border-box';}
     contentEl.style.minWidth='0';
     const dialogSurface=contentEl.querySelector('.profile-dialog');
     if(dialogSurface){
-      dialogSurface.style.color='#2d1919';
-      dialogSurface.style.webkitTextFillColor='#2d1919';
+      const purpleTheme=dialogSurface.classList.contains('smv-call-booking-dialog')||dialogSurface.classList.contains('smv-live-birth-dialog');
+      const foreground=purpleTheme?'#ffffff':'#2d1919';
+      dialogSurface.style.color=foreground;
+      dialogSurface.style.webkitTextFillColor=foreground;
+      if(purpleTheme){dialogSurface.style.background='#24103F';dialogSurface.style.border='1px solid #d4af37';dialogSurface.style.borderRadius='14px';}
       dialogSurface.style.opacity='1';
       dialogSurface.style.maxHeight='calc(100dvh - 52px)';
       dialogSurface.style.minHeight='0';
@@ -225,7 +231,7 @@
       dialogSurface.style.boxSizing='border-box';
       dialogSurface.querySelectorAll('h1,h2,h3,h4,p,b,strong,label,small,.small,.empty').forEach(node=>{
         node.style.opacity='1';
-        node.style.color=/^H[1-4]$/.test(node.tagName)?'#751515':'#2d1919';
+        node.style.color=purpleTheme?'#ffffff':(/^H[1-4]$/.test(node.tagName)?'#751515':'#2d1919');
         node.style.webkitTextFillColor=node.style.color;
       });
       dialogSurface.querySelectorAll('button,input,select,textarea').forEach(control=>{
@@ -234,9 +240,17 @@
           control.style.color='#2d1919';
           control.style.webkitTextFillColor='#2d1919';
           control.style.caretColor='#2d1919';
+          control.style.background='#ffffff';
+          control.style.borderColor='#c9b8e4';
+          control.style.borderRadius='8px';
+          if(control.type!=='hidden')control.style.minHeight='44px';
         } else {
-          const computedColor=window.getComputedStyle(control).color;
-          if(computedColor)control.style.webkitTextFillColor=computedColor;
+          if(purpleTheme){
+            const primary=control.id==='smvCallBookingSubmit'||control.id==='smvLiveBirthSubmit';
+            control.style.minHeight='42px';control.style.whiteSpace='normal';control.style.overflowWrap='anywhere';control.style.borderRadius='8px';
+            if(primary){control.style.background='#5b2a86';control.style.color='#ffffff';control.style.webkitTextFillColor='#ffffff';control.style.border='1px solid #d4af37';}
+            else{control.style.background='#ffffff';control.style.color='#24103F';control.style.webkitTextFillColor='#24103F';control.style.border='1px solid #c9b8e4';}
+          }else{const computedColor=window.getComputedStyle(control).color;if(computedColor)control.style.webkitTextFillColor=computedColor;}
         }
       });
     }
