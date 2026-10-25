@@ -5,7 +5,6 @@ const crypto = require('node:crypto');
 const WALLET_COLLECTION = 'smv_wallets';
 const TRANSACTION_COLLECTION = 'smv_wallet_transactions';
 const RECHARGE_COLLECTION = 'smv_wallet_recharges';
-const CUSTOMER_WELCOME_CREDIT_PAISE = 2500;
 
 function parseRupeesToPaise(value, { allowZero = false } = {}) {
   const raw = String(value ?? '').trim();
@@ -39,7 +38,7 @@ function offerTimeMillis(value) {
     if (value instanceof Date) return value.getTime();
     const raw = String(value || '').trim();
     if (!raw) return null;
-    const local = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw);
+    const local = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw);
     const parsed = Date.parse(local ? raw + '+05:30' : raw);
     return Number.isFinite(parsed) ? parsed : null;
   } catch (_) { return null; }
@@ -83,9 +82,6 @@ function timestampIso(value) {
 function createWalletService({ db, FieldValue }) {
   if (!db || !FieldValue) throw new Error('Wallet service requires Firestore and FieldValue.');
 
-  function welcomeLedgerId(uid) {
-    return walletLedgerDocId('welcome_credit', uid);
-  }
 
   async function ensureWallet(ownerUid, ownerRole) {
     const uid = String(ownerUid || '').trim();
@@ -259,7 +255,6 @@ function createWalletService({ db, FieldValue }) {
   }
 
   return {
-    welcomeLedgerId,
     ensureWallet,
     postWalletEntry,
     finalizeRecharge,
@@ -507,7 +502,6 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
 }
 
 module.exports = {
-  CUSTOMER_WELCOME_CREDIT_PAISE,
   parseRupeesToPaise,
   paiseToRupees,
   calculateStartedMinuteCharge,
