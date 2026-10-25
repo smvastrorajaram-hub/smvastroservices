@@ -211,25 +211,35 @@
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
     const minDate=today.toISOString().slice(0,10);
-    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);padding:clamp(16px,4vw,28px)">
+    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:linear-gradient(145deg,#fffaf0 0%,#ffffff 100%);color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
       <h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2>
       <p><b>Call rate:</b> ₹${rate.toFixed(2)} per minute</p>
       <p class="small">This sends a scheduled call request for confirmation. It does not start a live voice call or deduct Wallet funds.</p>
-      <form id="smvCallBookingForm">
-        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
-        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
-        <label><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
-        <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px">
-          <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
-          <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
+      <form id="smvCallBookingForm" style="display:grid;gap:12px;width:100%;min-width:0">
+        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        <label style="display:block;min-width:0;color:#2d1919"><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;min-width:0">
+          <label style="display:block;min-width:0;color:#2d1919"><b>Date of Birth</b><input id="smvCallBookingBirthDate" name="birthDate" type="date" max="\${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+          <label style="display:block;min-width:0;color:#2d1919"><b>Time of Birth</b><input id="smvCallBookingBirthTime" name="birthTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
-        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="3" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></textarea></label>
+        <label style="display:block;min-width:0;color:#2d1919"><b>Birth Place (search and select)</b><input id="smvCallBookingBirthPlace" name="birthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        <input id="smvCallBookingBirthLatitude" type="hidden" value="">
+        <input id="smvCallBookingBirthLongitude" type="hidden" value="">
+        <p class="small" style="color:#62483b;margin:0">Type at least two characters and choose a place from the suggestions. If location search is unavailable, enter the place manually.</p>
+        <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;min-width:0">
+          <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+          <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
+        </div>
+        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
         <button class="btn" id="smvCallBookingSubmit" type="submit">REQUEST CALL BOOKING</button>
         <button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button>
       </form>
     </div>`);
     $('smvCallBookingClose').onclick=closeModal;
+    const birthPlaceInput=$('smvCallBookingBirthPlace');
+    if(birthPlaceInput)import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(birthPlaceInput,{latId:'smvCallBookingBirthLatitude',lonId:'smvCallBookingBirthLongitude'})).catch(error=>console.warn('Book a Call birth-place search is unavailable:',error));
     const form=$('smvCallBookingForm');
     form.onsubmit=async event=>{
       event.preventDefault();
@@ -245,6 +255,12 @@
             name:String($('smvCallBookingName')?.value||'').trim(),
             email:String($('smvCallBookingEmail')?.value||'').trim(),
             mobile:String($('smvCallBookingMobile')?.value||'').trim(),
+            birthDate:String($('smvCallBookingBirthDate')?.value||''),
+            birthTime:String($('smvCallBookingBirthTime')?.value||''),
+            birthPlace:String($('smvCallBookingBirthPlace')?.value||'').trim(),
+            birthLatitude:String($('smvCallBookingBirthLatitude')?.value||birthPlaceInput?.dataset.latitude||''),
+            birthLongitude:String($('smvCallBookingBirthLongitude')?.value||birthPlaceInput?.dataset.longitude||''),
+            birthTimezone:String(birthPlaceInput?.dataset.timezone||''),
             type:'Call Consultation',
             preferredDate:String($('smvCallBookingDate')?.value||''),
             preferredTime:String($('smvCallBookingTime')?.value||''),
