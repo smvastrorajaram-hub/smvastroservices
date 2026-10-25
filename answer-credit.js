@@ -3,7 +3,7 @@ const DAY=24*60*60*1000;
 const {walletLedgerDocId}=require('./wallet-service');
 function millis(value){if(!value)return 0;if(typeof value.toMillis==='function')return value.toMillis();if(value.seconds||value._seconds)return Number(value.seconds||value._seconds)*1000;return new Date(value).getTime()||0;}
 function availableAt(q){return millis(q.answerAvailableAt||q.answerApprovedAt||q.adminAnswerApprovedAt||q.answerSubmittedAt);}
-module.exports=function createAnswerCredit({db,FieldValue,privateAmounts,adminUid}){
+module.exports=function createAnswerCredit({db,FieldValue,privateAmounts,publicAmounts,adminUid}){
  const error=(message,httpStatus=409)=>Object.assign(new Error(message),{httpStatus});
  async function settle(kind,id,{customerId,automatic=false,now=Date.now()}={}){
   const privateQuestion=kind==='private';
@@ -23,8 +23,13 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts,adminUi
     if(!automatic){tx.update(ref,patch);viewNotice(tx,q,kind,id,viewedKey);}return {credited:false,already:true};
    }
    let amount,adminAmount,rate;
-   if(privateQuestion){const amounts=await privateAmounts(q);amount=amounts.astrologerAmount;adminAmount=amounts.adminAmount;rate=amounts.privateAstrologerCommissionRate;}
-   else {amount=Number(q.astrologerCommissionAmount??q.commissionAmount);adminAmount=Math.round((Number(q.amount)-amount)*100)/100;rate=Number(q.commissionPercent??q.commissionRate??0);}
+   if(privateQuestion){
+    const amounts=await privateAmounts(q);amount=amounts.astrologerAmount;adminAmount=amounts.adminAmount;rate=amounts.privateAstrologerCommissionRate;
+   }else if(typeof publicAmounts==='function'){
+    const amounts=await publicAmounts(q);amount=amounts.astrologerAmount;adminAmount=amounts.adminAmount;rate=amounts.commissionRate;
+   }else{
+    amount=Number(q.astrologerCommissionAmount??q.commissionAmount);adminAmount=Math.round((Number(q.amount)-amount)*100)/100;rate=Number(q.commissionPercent??q.commissionRate??0);
+   }
    if(!Number.isFinite(amount)||amount<0||!Number.isFinite(adminAmount)||adminAmount<0)throw error('Invalid saved commission amounts.');
    // Stable ledger key plus transaction prevents duplicate manual/automatic credits.
    const paymentId=q.astrologerPaymentId||(privateQuestion?'SMV-PC-EARN-':'SMV-Q-EARN-')+id;
@@ -63,6 +68,7 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts,adminUi
    }
    Object.assign(patch,{commissionStatus:'credited',commissionCreditedAt:stamp(),commissionCreditReason:automatic?'timeout_24h':'customer_view',astrologerPaymentId:paymentId,astrologerCreditedAmount:amount,adminCommissionStatus:'credited',adminCommissionCreditedAt:stamp(),adminCreditedAmount:adminAmount});
    if(privateQuestion)Object.assign(patch,{astrologerAmount:amount,adminAmount,privateAstrologerCommissionRate:rate});
+   else Object.assign(patch,{astrologerCommissionAmount:amount,commissionAmount:amount,adminCommissionAmount:adminAmount,commissionPercent:rate,commissionRate:rate});
    tx.update(ref,patch);
    if(!automatic)viewNotice(tx,q,kind,id,viewedKey);
    if(!prior.exists)tx.set(db.collection('smv_notifications').doc('answer-credit-'+kind+'-'+id),{userId:q.astrologerId,type:privateQuestion?'private_earning_credited':'earning_credited',title:'Earning Added to Wallet',message:automatic?`The consultation was settled after the 24-hour review window. ₹${amount.toFixed(2)} has been credited to your Wallet.`:`₹${amount.toFixed(2)} has been credited to your Wallet.`,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,createdAt:stamp(),read:false});
