@@ -321,6 +321,7 @@ app.use((req, res, next) => {
 const DASHBOARD_SIGNAL_PATHS=new Set([
   '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/submit-answer',
   '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
+  '/admin/approve-astrologer','/admin/reject-astrologer',
   '/admin/edit-question','/admin/takeover-answer','/astrologer/change-payout','/admin/payout-change-status',
   '/admin/set-open-workflow','/customer/mark-answer-viewed','/admin/astrologer-quiz/load-defaults',
   '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete','/admin/astrologer-auto-approval/settings',
@@ -351,7 +352,7 @@ function dashboardSignalCategory(path=''){
   if(p.includes('/astrologer-quiz/')||p.includes('/astrologer-auto-approval/'))return 'astrologer_settings';
   if(p.includes('/set-open-workflow')||p.includes('/set-commission')||p.includes('/set-word-count')||p.includes('/set-workflow'))return 'settings';
   if(p.includes('/approve-question')||p.includes('/reallocate-question')||p.includes('/reject-question')||p.includes('/retry-refund')||p.includes('/sync-refund')||p.includes('/edit-question')||p.includes('/takeover-answer')||p.includes('/approve-answer')||p.includes('/reject-answer')||p.includes('/submit-answer')||p.includes('/mark-answer-viewed'))return 'questions';
-  if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification'))return 'astrologers';
+  if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer'))return 'astrologers';
   if(p.includes('/verify-payment')||p.includes('/recover-payment')||p.includes('/razorpay/webhook')||p.includes('/credit-commission'))return 'financial';
   return 'unknown';
 }
@@ -2300,6 +2301,91 @@ app.get("/admin/reviews-data", async (req,res)=>{
   }catch(e){
     console.error("Admin reviews targeted load failed:",e);
     return res.status(500).json({error:e?.message||"Unable to load Admin reviews."});
+  }
+});
+
+// Admin-only Astrologer approval/rejection. Apply all linked profile, login-status,
+// price and notification writes atomically with the Admin SDK; do not depend on
+// whichever Firestore client rules happen to be deployed in the browser.
+app.post("/admin/approve-astrologer", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res);
+  if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim();
+  const price=Number(req.body?.pricePerQuestion);
+  if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
+  if(!Number.isFinite(price)||price<1||price>100000||Math.round(price*100)!==price*100){
+    return res.status(400).json({success:false,error:"Enter a valid Private Consultation Chat Price between ₹1 and ₹100000, with up to two decimal places."});
+  }
+  try{
+    const astroRef=db.collection("smv_astrologers").doc(astrologerId);
+    const astroSnap=await astroRef.get();
+    if(!astroSnap.exists)return res.status(404).json({success:false,error:"Astrologer application not found. Refresh the list and try again."});
+    const astro=astroSnap.data()||{};
+    const uid=String(astro.uid||astroSnap.id).trim();
+    const currentStatus=String(astro.status||"").trim().toLowerCase();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"This Astrologer profile has no valid linked login UID."});
+    if(!["pending","approved","active"].includes(currentStatus)){
+      return res.status(409).json({success:false,error:"This application is no longer pending. Refresh the applications list."});
+    }
+    let authAccount;
+    try{authAccount=await admin.auth().getUser(uid);}
+    catch(_authError){return res.status(409).json({success:false,error:"The linked Firebase login account could not be found. Verify the Astrologer UID before approving."});}
+    const userRef=db.collection("smv_users").doc(uid);
+    const userSnap=await userRef.get();
+    const userProfile=userSnap.exists?(userSnap.data()||{}):{};
+    const batch=db.batch();
+    const approvedAt=FieldValue.serverTimestamp();
+    batch.set(astroRef,{
+      uid,role:"astrologer",status:"approved",pricePerQuestion:price,
+      approvedAt,approvedBy:actor.uid,updatedAt:FieldValue.serverTimestamp()
+    },{merge:true});
+    const userPatch={uid,role:"astrologer",status:"active",approvedAt,updatedAt:FieldValue.serverTimestamp()};
+    if(!userProfile.name&&(astro.name||authAccount.displayName))userPatch.name=astro.name||authAccount.displayName;
+    if(!userProfile.email&&authAccount.email)userPatch.email=authAccount.email;
+    if(!userProfile.publicId&&astro.publicId)userPatch.publicId=astro.publicId;
+    batch.set(userRef,userPatch,{merge:true});
+    batch.set(db.collection("smv_notifications").doc("astro_approval_"+uid),{
+      userId:uid,type:"approval",title:"Astrologer application approved",
+      message:"Your profile has been approved by Admin.",astrologerId,
+      createdAt:FieldValue.serverTimestamp(),read:false
+    },{merge:true});
+    await batch.commit();
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,status:"approved",pricePerQuestion:price});
+  }catch(e){
+    console.error("Admin Astrologer approval failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to approve the Astrologer application. The linked profile changes were not partially committed."});
+  }
+});
+
+app.post("/admin/reject-astrologer", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res);
+  if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim();
+  const reason=String(req.body?.reason||"").trim();
+  if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
+  if(!reason||reason.length>2000)return res.status(400).json({success:false,error:"Enter a rejection reason of up to 2000 characters."});
+  try{
+    const astroRef=db.collection("smv_astrologers").doc(astrologerId);
+    const astroSnap=await astroRef.get();
+    if(!astroSnap.exists)return res.status(404).json({success:false,error:"Astrologer application not found. Refresh the list and try again."});
+    const astro=astroSnap.data()||{};
+    const uid=String(astro.uid||astroSnap.id).trim();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"This Astrologer profile has no valid linked login UID."});
+    if(String(astro.status||"").trim().toLowerCase()!=="pending")return res.status(409).json({success:false,error:"This application is no longer pending. Refresh the list and try again."});
+    const batch=db.batch();
+    batch.set(astroRef,{uid,role:"astrologer",status:"rejected",rejectionReason:reason,rejectedAt:FieldValue.serverTimestamp(),rejectedBy:actor.uid,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection("smv_users").doc(uid),{uid,role:"astrologer",status:"rejected",updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection("smv_notifications").doc("astro_rejection_"+uid),{
+      userId:uid,type:"rejection",title:"Astrologer application requires changes",message:reason,
+      astrologerId,createdAt:FieldValue.serverTimestamp(),read:false
+    },{merge:true});
+    await batch.commit();
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,status:"rejected"});
+  }catch(e){
+    console.error("Admin Astrologer rejection failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to reject the Astrologer application. No partial changes were committed."});
   }
 });
 
