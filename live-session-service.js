@@ -97,7 +97,7 @@ function liveSessionSafeView(id, data) {
   };
 }
 
-function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdminUser }) {
+function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser }) {
   if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser) {
     throw new Error('Live Session service requires Firestore, FieldValue, crypto and auth helpers.');
   }
@@ -203,7 +203,7 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
       dueAt = start + Math.max(1, Number(d.minutes || 1)) * 60_000;
       reason = 'duration_complete';
     } else if (d.state === 'ringing' || d.state === 'connecting') {
-      dueAt = timestampMillis(d.createdAt) + RING_TIMEOUT_MS;
+      dueAt = timestampMillis(d.acceptedAt || d.createdAt) + RING_TIMEOUT_MS;
       reason = d.state === 'connecting' ? 'connection_failed' : 'no_answer';
     } else return;
     const timer = setTimeout(() => {
@@ -277,7 +277,7 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
       mode, minutes, ratePerMinutePaise: rate, reservedAmountPaise: reservedAmount,
       state, customerReady: false, astrologerReady: false,
       origin: origin || 'direct', payloadFingerprint: fingerprint,
-      createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
+      createdAt: new Date(), updatedAt: nowTimestamp(),
       acceptedAt: null, startedAt: null, endedAt: null,
       actualChargePaise: 0, billableMinutes: 0, releasedAmountPaise: 0
     };
@@ -452,7 +452,7 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
       if (session.astrologerUid !== uid) throw httpError(403, 'This request belongs to another Astrologer.', 'LIVE_SESSION_FORBIDDEN');
       if (session.state === 'connecting' || session.state === 'active') return { data: session, alreadyProcessed: true };
       if (session.state !== 'ringing') throw httpError(409, 'This request is no longer ringing.', 'LIVE_SESSION_NOT_RINGING');
-      const updated = { ...session, state: 'connecting', acceptedAt: nowTimestamp(), updatedAt: nowTimestamp() };
+      const updated = { ...session, state: 'connecting', acceptedAt: new Date(), updatedAt: nowTimestamp() };
       tx.set(ref, { state: 'connecting', acceptedAt: updated.acceptedAt, updatedAt: updated.updatedAt }, { merge: true });
       return { data: updated, alreadyProcessed: false };
     });
@@ -479,7 +479,7 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
       const patch = { [field]: true, updatedAt: nowTimestamp() };
       if (start) {
         patch.state = 'active';
-        patch.startedAt = nowTimestamp();
+        patch.startedAt = new Date();
         patch.startConfirmedByServer = true;
       }
       tx.set(ref, patch, { merge: true });
@@ -572,7 +572,7 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
       tx.set(aRef, astroPatch, { merge: true });
       const finalReason = String(reason || 'participant_ended').slice(0, 80);
       const finalState = {
-        state: 'ended', endedAt: nowServer, updatedAt: nowServer,
+        state: 'ended', endedAt: new Date(now), updatedAt: nowServer,
         endedByUid: actor || 'server', endReason: finalReason,
         connectedDurationMs: elapsedMs, billableMinutes: pricing.billableMinutes,
         actualChargePaise: charge, releasedAmountPaise: release,
@@ -738,7 +738,6 @@ function createLiveSessionService({ db, FieldValue, crypto, requireUser, isAdmin
     }
   }
 
-  const app = arguments[0].app;
   if (!app) throw new Error('Live Session service requires Express app.');
 
   app.get('/live/pricing', async (_req, res) => {
