@@ -4450,7 +4450,7 @@ if(firebaseInitError){
 
 
 // Phase 1 Live Call / Chat client. Prices and settlement remain server-owned.
-let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='';
+let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='',smvLivePricingLoadedAt=0;
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -4629,13 +4629,14 @@ function smvLiveBindDashboard(role){
 }
 function smvLiveBindAdminPricing(){
  const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
- async function load(){
+ async function load(force=false){
+  if(!force&&smvLivePricingLoadedAt&&Date.now()-smvLivePricingLoadedAt<30000)return;
   if(msg)msg.textContent='Loading server-owned prices…';
-  try{const r=await renderApi('/live/pricing',{method:'GET'});if($('liveCallRatePerMinute'))$('liveCallRatePerMinute').value=String(r.callRatePerMinute);if($('liveChatRatePerMinute'))$('liveChatRatePerMinute').value=String(r.chatRatePerMinute);if($('liveMaxConcurrentSessions'))$('liveMaxConcurrentSessions').value=String(r.maxConcurrentSessions||1);if(msg)msg.textContent='Server rates: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';}
+  try{const r=await renderApi('/live/pricing',{method:'GET'});if($('liveCallRatePerMinute'))$('liveCallRatePerMinute').value=String(r.callRatePerMinute);if($('liveChatRatePerMinute'))$('liveChatRatePerMinute').value=String(r.chatRatePerMinute);if($('liveMaxConcurrentSessions'))$('liveMaxConcurrentSessions').value=String(r.maxConcurrentSessions||1);if(msg)msg.textContent='Server rates: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';smvLivePricingLoadedAt=Date.now();}
   catch(e){if(msg)msg.textContent='Pricing load failed: '+(e.message||String(e));}
  }
  if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=async()=>{save.disabled=true;if(msg)msg.textContent='Saving price settings on server…';try{const r=await renderApi('/admin/live/pricing',{method:'POST',body:JSON.stringify({callRatePerMinute:String($('liveCallRatePerMinute')?.value||''),chatRatePerMinute:String($('liveChatRatePerMinute')?.value||''),maxConcurrentSessions:Number($('liveMaxConcurrentSessions')?.value||1)})});if(msg)msg.textContent='Saved: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';}catch(e){if(msg)msg.textContent='Save failed: '+(e.message||String(e));}finally{save.disabled=false;}};}
- if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=load;}load();
+ if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=()=>load(true);}if(!smvLivePricingLoadedAt)load();
 }
 window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
 window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
