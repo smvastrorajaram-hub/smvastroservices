@@ -2497,25 +2497,43 @@ function offerDateMs(v){
   return Number.isFinite(n)?n:null;
 }
 async function migrateLegacyOfferDocsToWalletMinuteBenefits(){
+  const markerRef=db.collection("smv_settings").doc("offerWalletMinuteMigrationV1");
+  const marker=await markerRef.get();
+  if(marker.exists&&marker.data()?.status==="complete")return;
   const snap=await db.collection(OFFER_COLLECTION).get();
+  const pending=[];
   for(const doc of snap.docs){
     if(doc.id===BUILTIN_WELCOME_ID){
-      await doc.ref.delete().catch(e=>console.warn("Legacy Welcome Offer removal skipped:",e?.message||e));
+      pending.push({ref:doc.ref,delete:true});
       continue;
     }
     const o=doc.data()||{};
-    const freeMinutes=Math.max(0,Math.min(100000,Math.floor(Number(o.freeMinutes)||0)));
+    const existingMinutes=Math.floor(Number(o.freeMinutes)||0);
+    const freeMinutes=Number.isSafeInteger(existingMinutes)&&existingMinutes>0&&existingMinutes<=100000?existingMinutes:0;
     const scopes=Array.isArray(o.appliesTo)?o.appliesTo.map(String):[String(o.appliesTo||"")];
-    const isMinuteOffer=String(o.benefitType||"")==="free_minutes"&&scopes.includes("wallet_recharge")&&(!o.enabled||freeMinutes>0);
-    if(isMinuteOffer)continue;
-    // Legacy money-discount offers cannot be translated into minutes without an Admin choice.
-    // Disable them, retain their records/history, and let Admin set the intended minute award.
-    await doc.ref.set({
+    const alreadyMigrated=o.benefitType==="free_minutes"&&scopes.includes("wallet_recharge")&&freeMinutes>0;
+    if(alreadyMigrated)continue;
+    // Never guess the number of minutes from an old rupee discount. Preserve every
+    // seasonal offer's name, code, schedule and usage history; require Admin to set
+    // a real free-minute count before that legacy offer can be enabled again.
+    const next={
       benefitType:"free_minutes",kind:"wallet_recharge_minutes",appliesTo:["wallet_recharge"],
       freeMinutes,minimumRechargeAmount:offerMoney(o.minimumRechargeAmount??o.minimumAmount)??1,
-      enabled:false,updatedAt:FieldValue.serverTimestamp()
-    },{merge:true});
+      enabled:freeMinutes>0&&o.enabled===true,
+      discountType:FieldValue.delete(),offerPrice:FieldValue.delete(),discountValue:FieldValue.delete(),
+      minimumAmount:FieldValue.delete(),updatedAt:FieldValue.serverTimestamp()
+    };
+    pending.push({ref:doc.ref,data:next});
   }
+  // Keep every batch under Firestore's 500-write limit.
+  for(let offset=0;offset<pending.length;offset+=400){
+    const batch=db.batch();
+    for(const item of pending.slice(offset,offset+400)){
+      if(item.delete)batch.delete(item.ref);else batch.set(item.ref,item.data,{merge:true});
+    }
+    await batch.commit();
+  }
+  await markerRef.set({status:"complete",migratedOfferCount:pending.length,completedAt:FieldValue.serverTimestamp()},{merge:true});
 }
 async function customerPaidCount(uid, service){
   if(service==="private_consultation"){
