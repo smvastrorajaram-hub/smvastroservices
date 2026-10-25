@@ -275,7 +275,7 @@ function createWalletService({ db, FieldValue }) {
   };
 }
 
-function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayKeyId, razorpayKeySecret, adminUid, requireUser, isAdminUser, resolveWalletRechargeOffer }) {
+function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayKeyId, razorpayKeySecret, adminUid, requireUser, isAdminUser, resolveWalletRechargeOffer, releaseWalletRechargeOffer }) {
   const service = createWalletService({ db, FieldValue });
   async function readRole(user) {
     if (await isAdminUser(user)) return 'admin';
@@ -370,8 +370,9 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
         if (old.status === 'order_created') return res.json({ success: true, rechargeId, orderId: old.razorpayOrderId, keyId: razorpayKeyId, amount: amountPaise, currency: 'INR', amountRupees: paiseToRupees(amountPaise), freeMinutes: safePaise(old.offerFreeMinutes), offerName: old.appliedOfferName || '', reusedOrder: true });
         return res.status(409).json({ error: 'This recharge request is already being processed or failed. Retry with a new request key.', code: 'WALLET_RECHARGE_IN_PROGRESS' });
       }
+      let offerQuote = null;
       try {
-        const offerQuote = typeof resolveWalletRechargeOffer === 'function'
+        offerQuote = typeof resolveWalletRechargeOffer === 'function'
           ? await resolveWalletRechargeOffer({ uid: user.uid, rechargeId, rechargeAmountPaise: amountPaise, promoCode: String(intent.data?.promoCode || req.body?.promoCode || '').trim().toUpperCase() })
           : null;
         if (offerQuote?.offerId && Number.isSafeInteger(Number(offerQuote.freeMinutes)) && Number(offerQuote.freeMinutes) > 0) {
@@ -400,6 +401,9 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
         const storedOffer = (await rechargeRef.get()).data() || {};
         return res.json({ success: true, rechargeId, orderId: order.id, keyId: razorpayKeyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR', freeMinutes: safePaise(storedOffer.offerFreeMinutes), offerName: storedOffer.appliedOfferName || '' });
       } catch (e) {
+        if (offerQuote?.offerId && typeof releaseWalletRechargeOffer === 'function') {
+          await releaseWalletRechargeOffer({ uid: user.uid, rechargeId, offerId: offerQuote.offerId, reason: 'wallet_recharge_order_failed' }).catch(releaseError => console.error('[Wallet] Offer reservation release failed:', releaseError?.message || releaseError));
+        }
         await rechargeRef.set({ status: 'failed', failureReason: String(e?.message || 'Order creation failed').slice(0, 200), updatedAt: FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
         return sendWalletError(res, e, 'Unable to create Wallet recharge order.');
       }
