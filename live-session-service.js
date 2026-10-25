@@ -1369,6 +1369,68 @@ async function rejectOrCancel(sessionId, user, reason) {
     });
   });
 
+  app.post('/live/scheduled-appointments/:id/start', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    try {
+      const appointmentId = String(req.params.id || '').trim();
+      if (!appointmentId) return res.status(400).json({ success: false, error: 'Scheduled booking ID is required.' });
+      const appointmentRef = db.collection('smv_appointments').doc(appointmentId);
+      const appointmentSnap = await appointmentRef.get();
+      if (!appointmentSnap.exists) return res.status(404).json({ success: false, error: 'Scheduled Call/Chat booking was not found.' });
+      const appointment = appointmentSnap.data() || {};
+      const uid = String(auth.user.uid || '');
+      if (String(appointment.astrologerUid || '') !== uid) return res.status(403).json({ success: false, error: 'This scheduled booking belongs to another Astrologer.' });
+      if (!['scheduled_call_request', 'scheduled_chat_request'].includes(String(appointment.bookingKind || ''))) {
+        return res.status(400).json({ success: false, error: 'This record is not a scheduled Call/Chat booking.' });
+      }
+      const currentStatus = String(appointment.bookingStatus || 'requested').toLowerCase();
+      if (!['accepted', 'in_progress', 'waiting_for_online'].includes(currentStatus)) {
+        return res.status(409).json({ success: false, error: 'Accept this booking in the Astrologer dashboard before starting it.' });
+      }
+      const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(appointment.preferredDate || ''));
+      const timeMatch = /^(\d{2}):(\d{2})$/.exec(String(appointment.preferredTime || ''));
+      if (!dateMatch || !timeMatch) return res.status(409).json({ success: false, error: 'This booking has an invalid scheduled date/time. Ask the Customer to submit it again.' });
+      const year = Number(dateMatch[1]), month = Number(dateMatch[2]), day = Number(dateMatch[3]);
+      const hour = Number(timeMatch[1]), minute = Number(timeMatch[2]);
+      const utc = Date.UTC(year, month - 1, day, hour, minute);
+      const roundTrip = new Date(utc);
+      if (roundTrip.getUTCFullYear() !== year || roundTrip.getUTCMonth() !== month - 1 || roundTrip.getUTCDate() !== day || hour > 23 || minute > 59) {
+        return res.status(409).json({ success: false, error: 'This booking has an invalid scheduled date/time.' });
+      }
+      const scheduledAt = utc - 330 * 60 * 1000; // Scheduled appointment times are India local time (IST).
+      if (Date.now() < scheduledAt && currentStatus !== 'in_progress') {
+        return res.status(409).json({ success: false, error: 'The scheduled time has not arrived yet. The Start button becomes available at the booked time.' });
+      }
+      const minutes = Number(appointment.scheduledMinutes || 5);
+      if (!Number.isSafeInteger(minutes) || minutes < 1 || minutes > MAX_SESSION_MINUTES) {
+        return res.status(409).json({ success: false, error: 'The scheduled session duration is invalid. Ask the Customer to rebook.' });
+      }
+      const mode = appointment.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call';
+      const requestId = 'smv-scheduled-' + appointmentId;
+      const result = await createRequest({
+        customerUid: String(appointment.customerUid || ''),
+        astrologerId: uid,
+        mode,
+        minutes,
+        requestId,
+        customerName: String(appointment.name || ''),
+        birthDetails: appointment.birthDetails || {}
+      });
+      const isSession = result.kind === 'session' && !!result.session;
+      await appointmentRef.set({
+        bookingStatus: isSession ? 'in_progress' : 'waiting_for_online',
+        status: isSession ? 'in_progress' : 'accepted',
+        liveSessionId: String(result.session?.id || result.booking?.id || ''),
+        liveBookingId: String(result.booking?.id || ''),
+        liveRequestId: requestId,
+        scheduledStartedAt: isSession ? FieldValue.serverTimestamp() : null,
+        updatedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+      return res.set('Cache-Control', 'no-store').json(result);
+    } catch (error) { return replyError(res, error, 'Unable to start this scheduled Call/Chat.'); }
+  });
+
   app.post('/live/requests', async (req, res) => {
     const auth = await requireRole(req, res, ['customer']);
     if (!auth) return;
