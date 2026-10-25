@@ -582,13 +582,13 @@ $("contentNav")?.addEventListener("click",(e)=>{
       // reuse the current view. Do not re-read the profile or dashboard merely
       // because the header button was touched again. Live change events and
       // explicit Refresh/data-changing actions remain the only refresh triggers.
-      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden') && !(await isAdminAccount(user))){
+      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden') && dashboardReadyRole===await resolveSmvRole(user)){
         hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
         setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
         try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
         touchSession(); armIdleTimer(); return;
       }
-      if(smvInternalView==='admin' && !$("admin")?.classList.contains('hidden')){
+      if(smvInternalView==='admin' && !$("admin")?.classList.contains('hidden') && await isAdminAccount(user)){
         hideHomeSurface(); show('admin'); setHeaderRoleLabel('admin'); smvShowRoleNav();
         try{history.replaceState({smvView:'admin'},'', '#admin');}catch(_e){}
         touchSession(); armIdleTimer(); return;
@@ -696,7 +696,24 @@ async function resolveSmvRole(user, profileHint=null){
  if(!user)return "customer";
  if(await isAdminAccount(user,profileHint))return "admin";
  const profile=profileHint||await getUserProfile(user.uid);
- const role=String(profile?.role||"customer").toLowerCase();
+ const role=String(profile?.role||"").toLowerCase();
+
+ // On Phase 1 staging, verify the owner's own professional profile as a
+ // fallback. Older/migrated accounts can have a stale "customer" role in
+ // smv_users even though their server-created smv_astrologers profile exists.
+ if(IS_SMV_PHASE1_STAGING && role!=="astrologer"){
+  try{
+   const astroSnap=await withTimeout(getDoc(doc(db,"smv_astrologers",user.uid)),10000);
+   if(astroSnap.exists()){
+    const astro=astroSnap.data()||{};
+    if(String(astro.uid||user.uid)===String(user.uid) && String(astro.role||"").toLowerCase()==="astrologer"){
+     return "astrologer";
+    }
+   }
+  }catch(e){
+   console.warn("Astrologer role profile lookup failed:",e?.message||e);
+  }
+ }
  if(IS_SMV_PHASE1_STAGING&&role==="admin")return "customer";
  return ["customer","astrologer"].includes(role)?role:"customer";
 }
@@ -891,11 +908,10 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
     console.error("Google role lookup failed",profileErr);
     throw new Error("Unable to verify your registered account. Please try Google Login again.");
   }
-  const profileRole=String(profile?.role||"").toLowerCase();
-  const adminUser=await isAdminAccount(googleUser,profile);
-  const role=adminUser?"admin":(IS_SMV_PHASE1_STAGING&&profileRole==="admin"?"":profileRole);
+  const role=await resolveSmvRole(googleUser,profile);
+  const adminUser=role==="admin";
 
-  if(!adminUser && !["customer","astrologer"].includes(role)){
+  if(!["customer","astrologer","admin"].includes(role)){
     try{await signOut(auth);}catch(_e){}
     currentUser=null;
     throw new Error("No registered SMV ASTRO account was found for this Google email. Please register first.");
@@ -1045,6 +1061,8 @@ async function submitAuth(mode){
     if(!loginCred?.user){throw new Error("Login did not return a Firebase user. Please try again.");}
     currentUser=loginCred.user;
     smvAdminAccessCache.delete(loginCred.user.uid);
+    // Do not reuse a stale profile role from a previous login/session.
+    smvProfiles.delete(loginCred.user.uid);
     // A successful signInWithEmailAndPassword credential already contains the
     // current verification state. Do not add a second reload network wait here.
     // That wait used to keep the Login modal visible even though Firebase had
@@ -1080,8 +1098,8 @@ async function submitAuth(mode){
 }
     const profile=await getUserProfile(loginCred.user.uid);
     const profileRole=String(profile.role||loginRole||"customer").toLowerCase();
-    const adminUser=await isAdminAccount(loginCred.user,profile);
-    const role=adminUser?"admin":(IS_SMV_PHASE1_STAGING&&profileRole==="admin"?"customer":profileRole);
+    const role=await resolveSmvRole(loginCred.user,profile);
+    const adminUser=role==="admin";
     setHeaderRoleLabel(adminUser?'admin':role);
     window.__smvCurrentRole=adminUser?'admin':role;
 
