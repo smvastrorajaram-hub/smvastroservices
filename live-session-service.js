@@ -119,6 +119,30 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   function pricingRef() { return db.collection(SETTINGS).doc('liveSessionPricing'); }
   function nowTimestamp() { return FieldValue.serverTimestamp(); }
 
+  let pricingInitPromise = null;
+  async function ensurePricingDocument() {
+    if (!pricingInitPromise) {
+      pricingInitPromise = db.runTransaction(async tx => {
+        const ref = pricingRef();
+        const snap = await tx.get(ref);
+        if (!snap.exists) {
+          tx.create(ref, {
+            callRatePaise: DEFAULT_RATE_PAISE,
+            chatRatePaise: DEFAULT_RATE_PAISE,
+            maxConcurrentSessions: 1,
+            currency: 'INR',
+            updatedBy: 'system:default',
+            updatedAt: nowTimestamp()
+          });
+        }
+      }).catch(error => {
+        pricingInitPromise = null;
+        throw error;
+      });
+    }
+    return pricingInitPromise;
+  }
+
   async function roleFor(user) {
     if (await isAdminUser(user)) return 'admin';
     const snap = await userRef(user.uid).get();
@@ -869,6 +893,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
 
   app.get('/live/pricing', async (_req, res) => {
     try {
+      await ensurePricingDocument();
       const snap = await pricingRef().get();
       const p = pricingFromSnapshot(snap);
       return res.set('Cache-Control', 'no-store').json({
@@ -904,6 +929,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const auth = await requireRole(req, res, ['admin']);
     if (!auth) return;
     try {
+      await ensurePricingDocument();
       const callRate = parseRupeesToPaise(req.body?.callRatePerMinute);
       const chatRate = parseRupeesToPaise(req.body?.chatRatePerMinute);
       const maximum = Number(req.body?.maxConcurrentSessions ?? 1);
@@ -1119,9 +1145,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       console.warn('[Live Session] Active timer restore skipped:', error?.message || error);
     }
   }
+  ensurePricingDocument().catch(error => console.warn('[Live Session] Pricing defaults were not persisted yet:', error?.message || error));
   restoreTimers().catch(() => {});
 
-  return { createRequest, acceptBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, listBookings };
+  return { createRequest, acceptBooking, rejectBooking, cancelBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, listBookings, listCustomerBookings };
 }
 
 function registerLiveSessionRoutes(options) {
