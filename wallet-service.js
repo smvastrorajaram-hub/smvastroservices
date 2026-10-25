@@ -299,6 +299,43 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
     return res.status(status).json({ error: status >= 500 ? fallback : (error?.message || fallback), code: error?.code || 'WALLET_ERROR' });
   }
 
+  async function resolveRechargeBonus({ uid, amountPaise, promoCode }) {
+    const code = String(promoCode || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    const amount = Number(amountPaise) / 100;
+    const now = Date.now();
+    const offers = await db.collection('smv_offers').where('enabled', '==', true).limit(100).get();
+    const priorRecharges = await db.collection(RECHARGE_COLLECTION).where('customerUid', '==', String(uid)).where('status', '==', 'paid').limit(1).get();
+    const hasPriorRecharge = !priorRecharges.empty;
+    const eligible = [];
+    for (const doc of offers.docs) {
+      const offer = { id: doc.id, ...doc.data() };
+      const services = Array.isArray(offer.appliesTo) ? offer.appliesTo : [String(offer.appliesTo || '')];
+      if (!services.includes('wallet_recharge')) continue;
+      const minutes = safeMinutes(offer.bonusFreeMinutes);
+      if (minutes < 1) continue;
+      const start = offerTimeMillis(offer.startAt), end = offerTimeMillis(offer.endAt);
+      if (start !== null && now < start) continue;
+      if (end !== null && now > end) continue;
+      if (Number(offer.minimumAmount || 0) > amount) continue;
+      const totalLimit = Math.max(0, Math.floor(Number(offer.totalUsageLimit || 0)));
+      if (totalLimit > 0 && safeMinutes(offer.usedCount) >= totalLimit) continue;
+      const eligibility = String(offer.eligibility || 'all');
+      if (eligibility === 'new_customer' && hasPriorRecharge) continue;
+      if (eligibility === 'existing_customer' && !hasPriorRecharge) continue;
+      const automatic = offer.automatic === true;
+      const offerCode = String(offer.promoCode || '').trim().toUpperCase();
+      if (!automatic && (!offerCode || !code || code !== offerCode)) continue;
+      const perLimit = Math.max(0, Math.floor(Number(offer.perCustomerLimit || 0)));
+      if (perLimit > 0) {
+        const used = await db.collection('smv_offer_audit').where('customerId', '==', String(uid)).where('offerId', '==', offer.id).where('status', '==', 'used').limit(perLimit).get();
+        if (used.size >= perLimit) continue;
+      }
+      eligible.push({ id: offer.id, name: String(offer.name || 'Wallet Recharge Bonus'), minutes, priority: Number(offer.priority || 0) });
+    }
+    eligible.sort((a, b) => b.priority - a.priority || b.minutes - a.minutes);
+    return eligible[0] || { id: '', name: '', minutes: 0 };
+  }
+
   app.get('/wallet', async (req, res) => {
     const user = await requireUser(req, res);
     if (!user) return;
@@ -349,6 +386,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
       const clientKey = String(req.body?.idempotencyKey || '').trim();
       if (clientKey && (clientKey.length < 8 || clientKey.length > 128)) return res.status(400).json({ error: 'Invalid recharge request key.' });
       const idempotencyKey = clientKey || crypto.randomUUID();
+      const bonusQuote = await resolveRechargeBonus({ uid: user.uid, amountPaise, promoCode: req.body?.promoCode });
       const rechargeId = crypto.createHash('sha256').update('wallet-recharge:' + user.uid + ':' + idempotencyKey).digest('hex');
       const rechargeRef = db.collection(RECHARGE_COLLECTION).doc(rechargeId);
       const intent = await db.runTransaction(async tx => {
@@ -356,6 +394,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
         if (snap.exists) return { existing: true, data: snap.data() || {} };
         tx.create(rechargeRef, {
           customerUid: user.uid, amountPaise, currency: 'INR', idempotencyKey,
+          bonusFreeMinutes: safeMinutes(bonusQuote.minutes), bonusOfferId: bonusQuote.id || null, bonusOfferName: bonusQuote.name || null,
           status: 'creating', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
         });
         return { existing: false, data: null };
@@ -364,7 +403,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
         const old = intent.data || {};
         if (safePaise(old.amountPaise) !== amountPaise) return res.status(409).json({ error: 'This recharge request key was already used for a different amount. Start a new recharge.', code: 'WALLET_IDEMPOTENCY_CONFLICT' });
         if (old.status === 'paid') return res.json({ success: true, alreadyPaid: true, rechargeId, amount: paiseToRupees(amountPaise) });
-        if (old.status === 'order_created') return res.json({ success: true, rechargeId, orderId: old.razorpayOrderId, keyId: razorpayKeyId, amount: amountPaise, currency: 'INR', amountRupees: paiseToRupees(amountPaise), reusedOrder: true });
+        if (old.status === 'order_created') return res.json({ success: true, rechargeId, orderId: old.razorpayOrderId, keyId: razorpayKeyId, amount: amountPaise, currency: 'INR', amountRupees: paiseToRupees(amountPaise), bonusFreeMinutes: safeMinutes(old.bonusFreeMinutes), bonusOfferName: String(old.bonusOfferName || ''), reusedOrder: true });
         return res.status(409).json({ error: 'This recharge request is already being processed or failed. Retry with a new request key.', code: 'WALLET_RECHARGE_IN_PROGRESS' });
       }
       try {
@@ -383,7 +422,7 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
           createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
         await orderBatch.commit();
-        return res.json({ success: true, rechargeId, orderId: order.id, keyId: razorpayKeyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR' });
+        return res.json({ success: true, rechargeId, orderId: order.id, keyId: razorpayKeyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR', bonusFreeMinutes: safeMinutes(bonusQuote.minutes), bonusOfferName: String(bonusQuote.name || '') });
       } catch (e) {
         await rechargeRef.set({ status: 'failed', failureReason: String(e?.message || 'Order creation failed').slice(0, 200), updatedAt: FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
         return sendWalletError(res, e, 'Unable to create Wallet recharge order.');
