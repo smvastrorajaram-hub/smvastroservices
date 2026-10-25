@@ -282,6 +282,7 @@
     }
     if(window.__smvSelectedPrivateConsultAstrologer?.id===astro.id){$('privateConsultationQuestionCard')?.classList.remove('hidden');$('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
     $('smvPrivateAutomaticOffer')?.remove();
+    if(window.__smvSelectedPrivateConsultAstrologer?.id!==astro.id){walletBookingRequestId=null;walletBookingRequestOwner='';}
     window.__smvSelectedPrivateConsultAstrologer={id:astro.id,name:astro.name||'Astrologer',chatPrice:Number(astro.chatPrice||0)};
     document.querySelectorAll('.smv-private-consult-select').forEach(el=>{el.textContent=el===button?'SELECTED':'SELECT ASTROLOGER';});
     $('privateConsultationSelected').textContent='Selected Astrologer: '+astro.name;
@@ -309,11 +310,15 @@
     }).finally(()=>checkoutRequest=null);return checkoutRequest;
   }
   let privateConsultSubmitting=false;
+  let walletBookingRequestId=null,walletBookingRequestOwner='';
   async function submitPrivateConsultation(e){
     e.preventDefault();
     if(privateConsultSubmitting)return;
     const astro=window.__smvSelectedPrivateConsultAstrologer;
-    const msg=$('privateConsultMsg'),btn=$('privateConsultPayBtn');
+    const paymentMethod=String(e.submitter?.value||'razorpay').toLowerCase()==='wallet'?'wallet':'razorpay';
+    const msg=$('privateConsultMsg'),btn=paymentMethod==='wallet'?$ ('privateConsultWalletPayBtn'):$('privateConsultPayBtn');
+    const actionButtons=[$('privateConsultWalletPayBtn'),$('privateConsultPayBtn')].filter(Boolean);
+    const enableButtons=()=>actionButtons.forEach(button=>{button.disabled=false;});
     if(!astro?.id||Number(astro.chatPrice)<1){if(msg)msg.innerHTML='<span class="error">Please select an available astrologer first.</span>';return;}
     const payload={
       astrologerId:String(astro.id),
@@ -332,14 +337,18 @@
     if(!payload.customerName||!payload.question||!payload.birthDetails.birthDate||!payload.birthDetails.birthTime||!payload.birthDetails.birthPlace){
       if(msg)msg.innerHTML='<span class="error">Please complete all birth details and your question.</span>';return;
     }
-    const originalLabel=btn?.textContent||'PAY & SUBMIT';
-    const paymentFlow=window.__smvStartPaymentWindow?.('private')||null;
-    const checkoutReadyPromise=(paymentFlow
-      ? paymentFlow.ensureRazorpay()
-      : ensurePrivateCheckout().then(()=>window))
-      .then(value=>({value}),error=>({error}));
-    privateConsultSubmitting=true;if(btn){btn.disabled=true;btn.textContent=originalLabel;}
-    paymentFlow?.status?.('Preparing secure payment…');
+    const originalLabel=btn?.textContent||(paymentMethod==='wallet'?'PAY WITH WALLET':'PAY WITH RAZORPAY');
+    let paymentFlow=null,checkoutReadyPromise=null;
+    if(paymentMethod==='razorpay'){
+      paymentFlow=window.__smvStartPaymentWindow?.('private')||null;
+      checkoutReadyPromise=(paymentFlow
+        ? paymentFlow.ensureRazorpay()
+        : ensurePrivateCheckout().then(()=>window))
+        .then(value=>({value}),error=>({error}));
+    }
+    privateConsultSubmitting=true;actionButtons.forEach(button=>{button.disabled=true;});
+    if(btn)btn.textContent=paymentMethod==='wallet'?'PROCESSING WALLET PAYMENT…':'PREPARING PAYMENT…';
+    if(paymentMethod==='razorpay')paymentFlow?.status?.('Preparing secure payment…');
     try{
       const u=window.__smvFirebaseCurrentUser;
       if(!u || String(window.__smvCurrentRole||'').toLowerCase()!=='customer')throw new Error('Please login with your Customer account before payment.');
@@ -349,7 +358,29 @@
         const r=await fetch(BACKEND+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body),cache:'no-store'});
         const d=await r.json().catch(()=>({}));window.__smvRecordTiming?.(path,performance.now()-started,r.ok);if(!r.ok)throw new Error(d.error||`Service returned HTTP ${r.status}.`);return d;
       };
-      const order=await api('/private-consultation/create-order',payload);
+      const requestPayload={...payload,paymentMethod};
+      if(paymentMethod==='wallet'){
+        const owner=String(u.uid)+':'+String(astro.id);
+        if(walletBookingRequestOwner!==owner||!walletBookingRequestId){
+          walletBookingRequestOwner=owner;
+          walletBookingRequestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('pcw-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+        }
+        requestPayload.requestId=walletBookingRequestId;
+      }
+      const order=await api('/private-consultation/create-order',requestPayload);
+      if(paymentMethod==='wallet'){
+        if(!order?.verified||!order?.walletPaid||!order?.consultationId||!String(order?.customerPaymentId||order?.paymentId||'')){
+          throw new Error(order?.error||'The backend did not confirm the Wallet debit and consultation booking. No payment success is shown.');
+        }
+        const paymentId=String(order.customerPaymentId||order.paymentId);
+        walletBookingRequestId=null;walletBookingRequestOwner='';
+        privateConsultSubmitting=false;
+        if(msg)msg.textContent='';
+        if(btn)btn.textContent='WALLET PAYMENT DONE ✓';
+        await window.__smvShowVerifiedPayment?.({...order,verified:true,paymentId},'private',null);
+        enableButtons();
+        return;
+      }
       paymentFlow?.status?.('Private Consultation ID created. Opening secure Payment Gateway…');
       const checkoutReady=await checkoutReadyPromise;
       if(checkoutReady?.error)throw checkoutReady.error;
@@ -374,22 +405,24 @@
             const paymentId=String(vr.paymentId||vr.razorpayPaymentId||response.razorpay_payment_id||'').trim();
             if(!paymentId)throw new Error('Verified payment did not return Payment ID. Do not pay again; check Customer Dashboard.');
             if(msg)msg.innerHTML='';
-            if(btn){btn.textContent='PAYMENT DONE ✓';}
+            if(btn)btn.textContent='PAYMENT DONE ✓';
             privateConsultSubmitting=false;
+            enableButtons();
             await window.__smvShowVerifiedPayment?.({...vr,verified:true,consultationId:vr.consultationId||order.consultationId,paymentId},'private',paymentFlow);
-          }catch(err){paymentFlow?.error?.('Payment received, but verification could not finish: '+(err.message||String(err)));if(msg)msg.innerHTML='<span class="error">Payment received, but verification could not finish. Do not pay again; check Customer Dashboard / support.<br>'+esc(err.message||String(err))+'</span>';if(btn){btn.disabled=false;btn.textContent=originalLabel;}}
+          }catch(err){paymentFlow?.error?.('Payment received, but verification could not finish: '+(err.message||String(err)));if(msg)msg.innerHTML='<span class="error">Payment received, but verification could not finish. Do not pay again; check Customer Dashboard / support.<br>'+esc(err.message||String(err))+'</span>';privateConsultSubmitting=false;if(btn)btn.textContent=originalLabel;enableButtons();}
         },
-        modal:{ondismiss:()=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment window closed. No payment was confirmed.');setTimeout(()=>paymentFlow?.close?.(),1400);if(btn){btn.disabled=false;btn.textContent=originalLabel;}}}
+        modal:{ondismiss:()=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment window closed. No payment was confirmed.');setTimeout(()=>paymentFlow?.close?.(),1400);if(btn)btn.textContent=originalLabel;enableButtons();}}
       };
       const rzp=new RazorpayCtor(options);
-      rzp.on?.('payment.failed',resp=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment failed: '+(resp?.error?.description||'Please retry.'));setTimeout(()=>paymentFlow?.close?.(),1800);if(msg)msg.innerHTML='<span class="error">'+esc(resp?.error?.description||'Payment failed. Please retry.')+'</span>';if(btn){btn.disabled=false;btn.textContent=originalLabel;}});
-      if(btn){btn.disabled=true;btn.textContent=originalLabel;}
+      rzp.on?.('payment.failed',resp=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment failed: '+(resp?.error?.description||'Please retry.'));setTimeout(()=>paymentFlow?.close?.(),1800);if(msg)msg.innerHTML='<span class="error">'+esc(resp?.error?.description||'Payment failed. Please retry.')+'</span>';if(btn)btn.textContent=originalLabel;enableButtons();});
+      if(btn)btn.textContent='PAYMENT WINDOW OPEN';
       rzp.open();
     }catch(err){
       privateConsultSubmitting=false;
       paymentFlow?.error?.('Payment could not be started: '+(err.message||String(err)));setTimeout(()=>paymentFlow?.close?.(),1800);
       if(msg)msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';
-      if(btn){btn.disabled=false;btn.textContent=originalLabel;}
+      if(btn)btn.textContent=originalLabel;
+      enableButtons();
     }
   }
 
