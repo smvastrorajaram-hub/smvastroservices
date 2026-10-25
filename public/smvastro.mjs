@@ -4454,10 +4454,10 @@ let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiv
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='';
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function smvLiveStatus(session){const s=String(session?.state||session?.status||'');return ({ringing:'Ringing — waiting for Astrologer',connecting:'Connecting…',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
+function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');return ({ringing:'Ringing — waiting for Astrologer',connecting:'Connecting…',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
 function smvLivePanelHtml(s,incoming){
  const id=String(s.id||s.sessionId||''),call=s.mode==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing;
- return '<div id="smvLiveSessionPanel" data-live-session="'+escapeHtml(id)+'"><span class="badge">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span><h2>SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveStatus(s))+'</span></p><p class="small" id="smvLiveSessionBilling">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown"></p>'+
+ return '<div id="smvLiveSessionPanel" data-live-session="'+escapeHtml(id)+'"><span class="badge">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span><h2>SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p><b>Astrologer:</b> '+escapeHtml(s.astrologerName||'Astrologer')+'</p><p><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown"></p>'+
  '<div id="smvLiveCallArea" '+(call?'':'hidden')+'><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small">Microphone not connected yet.</p><button class="btn gray" type="button" id="smvLiveMute" disabled>Mute microphone</button></div>'+
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+'><button class="btn" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn gray" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv?'hidden':'')+'>'+(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.')+'</p>'+
@@ -4471,7 +4471,7 @@ function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  smvLiveCurrentSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
  const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
- if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveStatus(s);
+ if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveSessionStatusLabel(s);
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
  if($('smvLiveWaiting'))$('smvLiveWaiting').hidden=active||(ringing&&s.astrologerUid===currentUser?.uid);
@@ -4609,7 +4609,7 @@ async function smvLiveLoadDashboard(role){
  const reload=async()=>{
   try{
    const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];
-   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveStatus(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button class="btn" type="button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveSessionStatusLabel(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button class="btn" type="button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s)smvLiveOpenSession(s,null,false);});
    if(role==='astrologer'){
     const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
