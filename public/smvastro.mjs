@@ -4742,13 +4742,86 @@ async function smvLivePollSessions(){
 function smvLiveRenderScheduledBookings(appointments){
  const host=$('smvScheduledBookings');if(!host)return;
  if(!appointments.length){host.innerHTML='<p class="small">No scheduled Call or Chat bookings yet.</p>';return;}
+ const uid=String(currentUser?.uid||'');
+ const fmt=raw=>{const d=String(raw||'').trim(),t=String(arguments[1]||'');return d+(t?' · '+t:'');};
+ const bookingEpoch=a=>{
+  const date=String(a.preferredDate||''),time=String(a.preferredTime||'');
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(time))return NaN;
+  const [y,m,d]=date.split('-').map(Number),[hh,mm]=time.split(':').map(Number);
+  const utc=Date.UTC(y,m-1,d,hh,mm);
+  const check=new Date(utc);
+  if(check.getUTCFullYear()!==y||check.getUTCMonth()!==m-1||check.getUTCDate()!==d)return NaN;
+  return utc-330*60*1000;
+ };
+ const stateText=a=>{
+  const status=String(a.bookingStatus||a.status||'requested').toLowerCase();
+  if(status==='requested')return 'Awaiting your confirmation';
+  if(status==='accepted'){
+   const t=bookingEpoch(a);
+   if(!Number.isFinite(t))return 'Accepted · schedule needs correction';
+   return Date.now()<t?'Accepted · waiting for scheduled time':'Accepted · ready to start';
+  }
+  if(status==='in_progress')return 'Live session started';
+  if(status==='waiting_for_online')return 'Queued · set availability Online to continue';
+  if(status==='rejected')return 'Rejected';
+  if(status==='completed')return 'Completed';
+  return status.replaceAll('_',' ');
+ };
  host.innerHTML=appointments.map(a=>{
   const isChat=a.type==='Chat Consultation'||a.bookingKind==='scheduled_chat_request';
-  const label=isChat?'CHAT BOOKING':'CALL BOOKING';
-  const status=String(a.bookingStatus||a.status||'requested').replaceAll('_',' ').toUpperCase();
+  const modeLabel=isChat?'CHAT BOOKING':'CALL BOOKING';
+  const status=String(a.bookingStatus||a.status||'requested').toLowerCase();
   const birth=a.birthDetails||{};
-  return '<article class="card" style="margin:8px 0"><div class="badge">'+label+'</div><h4 style="margin:8px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small"><b>Email:</b> '+escapeHtml(a.email||'')+' · <b>Mobile:</b> '+escapeHtml(a.mobile||'')+'</p><p class="small"><b>Preferred:</b> '+escapeHtml(a.preferredDate||'')+' '+escapeHtml(a.preferredTime||'')+' · <b>Status:</b> '+escapeHtml(status)+'</p>'+(isChat?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Chat Question:</b> '+escapeHtml(a.question||'Not provided')+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small"><b>Birth details:</b> '+escapeHtml(birth.birthDate||'')+' · '+escapeHtml(birth.birthTime||'')+' · '+escapeHtml(birth.birthPlace||'')+'</p>':'')+(!isChat&&a.notes?'<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+'</article>';
+  const time=bookingEpoch(a);
+  const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time;
+  let buttons='';
+  if(status==='requested'){
+   buttons='<div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn" data-scheduled-respond="accept" data-appointment-id="'+escapeHtml(a.id)+'" type="button">ACCEPT BOOKING</button><button class="btn gray" data-scheduled-respond="reject" data-appointment-id="'+escapeHtml(a.id)+'" type="button">REJECT BOOKING</button></div>';
+  }else if(status==='accepted'){
+   buttons='<div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn" data-scheduled-start="'+escapeHtml(a.id)+'" type="button" '+(startReady?'':'disabled')+'>'+(startReady?'START SCHEDULED '+(isChat?'CHAT':'CALL'):'START AVAILABLE AT BOOKED TIME')+'</button></div>';
+  }else if(status==='in_progress'&&a.liveSessionId){
+   buttons='<div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn" data-scheduled-open="'+escapeHtml(a.liveSessionId)+'" type="button">OPEN LIVE '+(isChat?'CHAT':'CALL')+'</button></div>';
+  }else if(status==='waiting_for_online'){
+   buttons='<p class="small" style="margin-top:8px">This appointment was moved to the Live queue because the session could not start immediately. Check Pending Bookings above and accept the queued request after going Online.</p>';
+  }
+  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="badge">'+modeLabel+'</div><h4 style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(a.email?'<p class="small"><b>Email:</b> '+escapeHtml(a.email)+'</p>':'')+(a.mobile?'<p class="small"><b>Mobile:</b> '+escapeHtml(a.mobile)+'</p>':'')+(isChat?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Chat Question:</b> '+escapeHtml(a.question||'Not provided')+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(!isChat&&a.notes?'<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
  }).join('');
+ host.querySelectorAll('[data-scheduled-respond]').forEach(btn=>btn.onclick=async()=>{
+  const appointmentId=String(btn.dataset.appointmentId||''),action=String(btn.dataset.scheduledRespond||'');
+  if(!appointmentId||!['accept','reject'].includes(action))return;
+  if(action==='reject'&&!confirm('Reject this scheduled Call/Chat booking?'))return;
+  btn.disabled=true;
+  try{
+   const result=await renderApi('/astrologer/appointments/'+encodeURIComponent(appointmentId)+'/respond',{method:'POST',body:JSON.stringify({action})});
+   const msg=$('smvLiveDashboardMsg');if(msg)msg.textContent=action==='accept'?'Booking accepted. The Start button will be enabled at the booked time.':'Scheduled booking rejected.';
+   await smvLiveLoadScheduledAppointments();
+  }catch(error){smvLiveShowError(error);btn.disabled=false;}
+ });
+ host.querySelectorAll('[data-scheduled-start]').forEach(btn=>btn.onclick=async()=>{
+  const appointmentId=String(btn.dataset.scheduledStart||'');if(!appointmentId)return;
+  btn.disabled=true;btn.textContent='STARTING…';
+  try{
+   const result=await renderApi('/live/scheduled-appointments/'+encodeURIComponent(appointmentId)+'/start',{method:'POST',body:JSON.stringify({})});
+   if(result.session){
+    smvLiveOpenSession(result.session,result.wallet,false);
+    const msg=$('smvLiveDashboardMsg');if(msg)msg.textContent='Scheduled Live Session started. Customer will be invited automatically.';
+   }else if(result.booking){
+    const msg=$('smvLiveDashboardMsg');if(msg)msg.textContent='Scheduled request is queued. Set availability Online, then use Pending Bookings to accept it.';
+   }
+   await smvLivePollSessions();
+   await smvLiveLoadScheduledAppointments();
+  }catch(error){smvLiveShowError(error);btn.disabled=false;btn.textContent='START SCHEDULED '+(btn.closest('article')?.textContent.includes('CHAT BOOKING')?'CHAT':'CALL');}
+ });
+ host.querySelectorAll('[data-scheduled-open]').forEach(btn=>btn.onclick=async()=>{
+  const id=String(btn.dataset.scheduledOpen||'');if(!id)return;
+  try{const list=await renderApi('/live/sessions',{method:'GET'});const session=(list.sessions||[]).find(x=>String(x.id||'')===id);if(session)smvLiveOpenSession(session,null,false);else throw new Error('Live session is not available yet. Refresh the dashboard.');}
+  catch(error){smvLiveShowError(error);}
+ });
+}
+async function smvLiveLoadScheduledAppointments(){
+ const host=$('smvScheduledBookings');if(!host||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
+ const r=await renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000});
+ smvLiveRenderScheduledBookings(r.appointments||[]);
 }
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
