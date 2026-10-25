@@ -1411,13 +1411,15 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
       if(availabilityStatus==="offline"&&activeCount>0){
         throw Object.assign(new Error("You have an active Live Session. End it before going Offline."),{httpStatus:409});
       }
-      const finalStatus=availabilityStatus==="online"&&activeCount>=maxConcurrent?"busy":availabilityStatus;
+      const automaticallyBusy=availabilityStatus==="online"&&activeCount>=maxConcurrent;
+      const finalStatus=automaticallyBusy?"busy":availabilityStatus;
       tx.set(astroRef,{
         availabilityStatus:finalStatus,
         availabilityUpdatedAt:FieldValue.serverTimestamp(),
         availabilityUpdatedBy:user.uid,
-        liveSessionBusyManaged:finalStatus==="busy"&&activeCount>=maxConcurrent
-          ?true:(finalStatus==="busy"?false:false)
+        // Only a Busy state forced by the active-session ceiling may auto-return to Online.
+        // A Busy state explicitly selected by the Astrologer must remain Busy after a session ends.
+        liveSessionBusyManaged:automaticallyBusy
       },{merge:true});
       return {availabilityStatus:finalStatus,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
     });
