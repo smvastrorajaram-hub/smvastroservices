@@ -2,7 +2,7 @@
   "name": "smv-horoscope",
   "version": "1.0.0",
   "private": true,
-  "scripts": {"start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js"},
+  "scripts": {"start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js", "test:live-session": "node --test test/live-session-service.test.js"},
   "engines": {"node": ">=20 <27"},
   "dependencies": {
     "express": "^4.21.2",
