@@ -902,6 +902,7 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
     hidePrimarySections("admin"); show("admin"); show("adminLink");
     smvShowRoleNav(); smvEnterInternalView("admin",true); go("admin");
     await loadAdminPanel();
+    await renderWalletPanel($("admin"),"admin",{id:"smvAdminWalletPanel",after:$("adminSummary")?.closest(".card")||null});
     setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
     return;
   }
@@ -2836,6 +2837,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
 
   }
   if(!active()) return;
+  if(role==="customer"||role==="astrologer"){await renderWalletPanel(box,role);if(!active())return;}
   const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note);
   // Notifications are supplementary. A Firestore permission/timeout issue in
   // this optional section must never turn a successfully loaded dashboard into
