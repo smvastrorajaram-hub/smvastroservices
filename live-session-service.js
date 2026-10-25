@@ -505,7 +505,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         throw httpError(403, 'This Live Session belongs to another account.', 'LIVE_SESSION_FORBIDDEN');
       }
       const wRef = walletRef(session.customerUid), aRef = astroRef(session.astrologerUid), bRef = bookingRef(id);
-      const [wSnap, aSnap, bSnap] = await Promise.all([tx.get(wRef), tx.get(aRef), tx.get(bRef)]);
+      const [wSnap, aSnap, bSnap, pricingSnap] = await Promise.all([tx.get(wRef), tx.get(aRef), tx.get(bRef), tx.get(pricingRef())]);
       const wallet = wSnap.exists ? (wSnap.data() || {}) : {};
       const astro = aSnap.exists ? (aSnap.data() || {}) : {};
       if (session.state === 'ended') {
@@ -563,9 +563,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       const prevCount = safePaise(astro.activeSessionCount);
       const nextCount = Math.max(0, prevCount - 1);
+      const activeLimit = pricingFromSnapshot(pricingSnap).maxConcurrentSessions;
       const astroPatch = { activeSessionCount: nextCount, updatedAt: nowServer };
       if (String(astro.availabilityStatus || '').toLowerCase() === 'busy' &&
-          astro.liveSessionBusyManaged === true && nextCount < 1) {
+          astro.liveSessionBusyManaged === true && nextCount < activeLimit) {
         astroPatch.availabilityStatus = 'online';
         astroPatch.liveSessionBusyManaged = false;
       }
@@ -642,18 +643,31 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (!body || body.length > MAX_MESSAGE_CHARS) {
       throw httpError(400, 'Enter a message of up to 4,000 characters.', 'LIVE_MESSAGE_INVALID');
     }
-    const loaded = await loadSessionForParticipant(sessionId, senderUid);
-    const session = loaded.data;
-    if (session.mode !== 'chat') throw httpError(409, 'Text messages are available only in a Live Chat session.', 'LIVE_MODE_MISMATCH');
-    if (session.state !== 'active') throw httpError(409, 'Messages can only be sent during an active Live Chat.', 'LIVE_SESSION_NOT_ACTIVE');
-    const msgRef = sessionRef(sessionId).collection('messages').doc(crypto.randomUUID());
+    await loadSessionForParticipant(sessionId, senderUid);
+    const sRef = sessionRef(sessionId);
+    const msgRef = sRef.collection('messages').doc(crypto.randomUUID());
     const message = {
       messageId: msgRef.id, sessionId: String(sessionId), senderUid,
-      text: body, createdAt: nowTimestamp()
+      text: body, createdAt: new Date()
     };
-    await msgRef.create(message);
+    const session = await db.runTransaction(async tx => {
+      const snap = await tx.get(sRef);
+      if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
+      const current = snap.data() || {};
+      if (current.customerUid !== senderUid && current.astrologerUid !== senderUid) {
+        throw httpError(403, 'This Live Session belongs to another account.', 'LIVE_SESSION_FORBIDDEN');
+      }
+      if (current.mode !== 'chat') throw httpError(409, 'Text messages are available only in a Live Chat session.', 'LIVE_MODE_MISMATCH');
+      if (current.state !== 'active') throw httpError(409, 'Messages can only be sent during an active Live Chat.', 'LIVE_SESSION_NOT_ACTIVE');
+      const start = timestampMillis(current.startedAt);
+      if (!start || Date.now() >= start + Number(current.minutes || 1) * 60_000) {
+        throw httpError(409, 'The Live Chat duration has ended.', 'LIVE_SESSION_ENDED');
+      }
+      tx.create(msgRef, message);
+      return current;
+    });
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
-    const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: new Date().toISOString() };
+    const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: message.createdAt.toISOString() };
     sendTo(recipientUid, { type: 'live.chat.message', message: safe });
     return { success: true, message: safe };
   }
@@ -666,16 +680,29 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const serialized = JSON.stringify(payload ?? {});
     if (serialized.length > MAX_SIGNAL_BYTES) throw httpError(413, 'WebRTC signal is too large.', 'LIVE_SIGNAL_TOO_LARGE');
     if (!payload || typeof payload !== 'object') throw httpError(400, 'WebRTC signal payload is invalid.', 'LIVE_SIGNAL_INVALID');
-    const loaded = await loadSessionForParticipant(sessionId, senderUid);
-    const session = loaded.data;
-    if (session.mode !== 'call') throw httpError(409, 'WebRTC signals are only available for voice calls.', 'LIVE_MODE_MISMATCH');
-    if (!['connecting', 'active'].includes(session.state)) throw httpError(409, 'The Live Call is not connecting.', 'LIVE_SESSION_NOT_CONNECTING');
-    const signalRef = sessionRef(sessionId).collection('signals').doc(crypto.randomUUID());
+    await loadSessionForParticipant(sessionId, senderUid);
+    const sRef = sessionRef(sessionId);
+    const signalRef = sRef.collection('signals').doc(crypto.randomUUID());
     const data = {
       signalId: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType,
-      payload, createdAt: nowTimestamp()
+      payload, createdAt: new Date()
     };
-    await signalRef.create(data);
+    const session = await db.runTransaction(async tx => {
+      const snap = await tx.get(sRef);
+      if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
+      const current = snap.data() || {};
+      if (current.customerUid !== senderUid && current.astrologerUid !== senderUid) {
+        throw httpError(403, 'This Live Session belongs to another account.', 'LIVE_SESSION_FORBIDDEN');
+      }
+      if (current.mode !== 'call') throw httpError(409, 'WebRTC signals are only available for voice calls.', 'LIVE_MODE_MISMATCH');
+      if (!['connecting', 'active'].includes(current.state)) throw httpError(409, 'The Live Call is not connecting.', 'LIVE_SESSION_NOT_CONNECTING');
+      const start = timestampMillis(current.startedAt);
+      if (current.state === 'active' && start && Date.now() >= start + Number(current.minutes || 1) * 60_000) {
+        throw httpError(409, 'The Live Call duration has ended.', 'LIVE_SESSION_ENDED');
+      }
+      tx.create(signalRef, data);
+      return current;
+    });
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     sendTo(recipientUid, {
       type: 'live.call.signal',
