@@ -1,5 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
-const {registerWalletRoutes,CUSTOMER_WELCOME_CREDIT_PAISE,walletLedgerDocId}=require('./wallet-service');
+const {registerWalletRoutes,walletLedgerDocId}=require('./wallet-service');
 const {registerLiveSessionRoutes}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
@@ -674,11 +674,8 @@ app.post("/register-customer-profile", async (req, res) => {
         await db.runTransaction(async tx => {
           const publicIdRef = db.collection("smv_public_ids").doc(publicId);
           const walletRef = db.collection("smv_wallets").doc(user.uid);
-          const welcomeTxnRef = db.collection("smv_wallet_transactions").doc(walletService.welcomeLedgerId(user.uid));
-          // Read all Wallet and registration documents before the phone-claim helper begins writes.
-          const [publicIdSnap, walletSnap, welcomeTxnSnap] = await Promise.all([
-            tx.get(publicIdRef), tx.get(walletRef), tx.get(welcomeTxnRef)
-          ]);
+          // Read the Wallet and registration document before the phone-claim helper begins writes.
+          const [publicIdSnap, walletSnap] = await Promise.all([tx.get(publicIdRef), tx.get(walletRef)]);
           if (publicIdSnap.exists) throw publicIdCollisionError();
           // This helper performs the last transaction read and then claims the unique phone.
           await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
@@ -694,39 +691,16 @@ app.post("/register-customer-profile", async (req, res) => {
             updatedAt: FieldValue.serverTimestamp()
           }, { merge: true });
 
-          // Credit new Customer registrations once, in the same transaction as the profile.
-          // An established Customer with a publicId exits before this transaction.
-          const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
-          if (!welcomeTxnSnap.exists) {
-            const currentAvailable = Number(walletData.availableBalancePaise || 0);
-            const currentReserved = Number(walletData.reservedBalancePaise || 0);
-            const nextAvailable = currentAvailable + CUSTOMER_WELCOME_CREDIT_PAISE;
+          // New registrations start with a zero-cash, zero-bonus Wallet.
+          // Existing Wallet balances (including historical credits) are never clawed back.
+          if (!walletSnap.exists) {
             const now = FieldValue.serverTimestamp();
-            tx.set(walletRef, {
+            tx.create(walletRef, {
               ownerUid: user.uid, ownerRole: "customer", currency: "INR",
-              availableBalancePaise: nextAvailable, reservedBalancePaise: currentReserved,
-              version: Number(walletData.version || 0) + 1,
-              createdAt: walletData.createdAt || now, updatedAt: now
-            }, { merge: true });
-            tx.create(welcomeTxnRef, {
-              ownerUid: user.uid, ownerRole: "customer", currency: "INR",
-              type: "welcome_credit", direction: "credit",
-              amountPaise: CUSTOMER_WELCOME_CREDIT_PAISE,
-              balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: currentReserved,
-              idempotencyKey: "customer-registration-welcome-credit-v1",
-              referenceType: "customer_registration", referenceId: publicId,
-              note: "One-time ₹25 new Customer Wallet welcome credit",
-              status: "posted", createdAt: now
+              availableBalancePaise: 0, reservedBalancePaise: 0,
+              bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
+              createdAt: now, updatedAt: now
             });
-          } else if (!walletSnap.exists) {
-            // Defensive repair for an inconsistent older ledger; do not issue a second credit.
-            const previousLedger = welcomeTxnSnap.data() || {};
-            tx.set(walletRef, {
-              ownerUid: user.uid, ownerRole: "customer", currency: "INR",
-              availableBalancePaise: Number(previousLedger.balanceAfterPaise || 0),
-              reservedBalancePaise: Number(previousLedger.reservedBalanceAfterPaise || 0),
-              version: 1, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
-            }, { merge: true });
           }
         });
         registered = true;
@@ -3148,7 +3122,7 @@ app.post("/admin/private-consultation/reject-answer",express.json({limit:"10kb"}
 // request a quote, but Razorpay orders are always created from this server-side result.
 const OFFER_COLLECTION = "smv_offers";
 const OFFER_AUDIT_COLLECTION = "smv_offer_audit";
-const BUILTIN_WELCOME_ID = "builtin_welcome_first_question"; // legacy ID retained for existing Firestore data
+const LEGACY_WELCOME_ID = "builtin_welcome_first_question"; // retained only to ignore legacy records safely
 
 function offerText(v, max=160){ return String(v == null ? "" : v).trim().slice(0,max); }
 function offerMoney(v){ const n=Number(v); return Number.isFinite(n) ? Math.round(n*100)/100 : null; }
@@ -3167,34 +3141,6 @@ function offerDateMs(v){
   }
   const n=Date.parse(raw);
   return Number.isFinite(n)?n:null;
-}
-let builtinWelcomeReady=null;
-function ensureBuiltinWelcomeOffer(){
- if(!builtinWelcomeReady)builtinWelcomeReady=migrateBuiltinWelcomeOffer().catch(e=>{builtinWelcomeReady=null;throw e;});
- return builtinWelcomeReady;
-}
-async function migrateBuiltinWelcomeOffer(){
-  const ref=db.collection(OFFER_COLLECTION).doc(BUILTIN_WELCOME_ID), snap=await ref.get();
-  if(!snap.exists){
-    await ref.set({
-      id:BUILTIN_WELCOME_ID,name:"₹1 New Customer Welcome Offer",kind:"welcome",enabled:false,
-      automatic:true,promoCode:"",discountType:"fixed_price",offerPrice:1,eligibility:"new_customer",
-      appliesTo:["public_question","private_consultation"],usageRule:"first_paid_service",perCustomerLimit:1,totalUsageLimit:0,
-      minimumAmount:1,displayMode:"payment_only",bannerText:"Welcome Offer Applied — First Paid Service ₹1",
-      builtIn:true,priority:100,usedCount:0,successfulPayments:0,totalDiscountGiven:0,
-      createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
-    });
-  }else{
-    // Keep Admin ON/OFF state and statistics, but migrate the built-in offer to
-    // first-paid-service semantics across Ask Question OR Private Consultation.
-    await ref.set({
-      name:"₹1 New Customer Welcome Offer",kind:"welcome",automatic:true,promoCode:"",
-      discountType:"fixed_price",offerPrice:1,eligibility:"new_customer",
-      appliesTo:["public_question","private_consultation"],usageRule:"first_paid_service",
-      perCustomerLimit:1,totalUsageLimit:0,minimumAmount:1,builtIn:true,priority:100,
-      bannerText:"Welcome Offer Applied — First Paid Service ₹1",updatedAt:FieldValue.serverTimestamp()
-    },{merge:true});
-  }
 }
 async function customerPaidCount(uid, service){
   if(service==="private_consultation"){
@@ -3247,11 +3193,9 @@ async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
     const eligibility=String(o.eligibility||"all");
     // Built-in ₹1 Welcome is available only before the customer's first successful
     // paid service of either type. Other offers retain service-specific eligibility.
-    if(o.id===BUILTIN_WELCOME_ID){if(hasAnyPaidService)continue;}
-    else{
-      if(eligibility==="new_customer"&&paidBefore>0)continue;
-      if(eligibility==="existing_customer"&&paidBefore===0)continue;
-    }
+    if(o.id===LEGACY_WELCOME_ID)continue;
+    if(eligibility==="new_customer"&&paidBefore>0)continue;
+    if(eligibility==="existing_customer"&&paidBefore===0)continue;
     const oCode=offerText(o.promoCode,40).toUpperCase();
     // Automatic offers never require a promo code. A stale code saved on an
     // older automatic offer is ignored. Manual offers always require an exact code.
@@ -3262,7 +3206,7 @@ async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
   }
   // Strict priority: built-in ₹1 welcome -> explicit promo -> automatic seasonal -> normal price.
   candidates.sort((a,b)=>{
-    const rank=o=>o.id===BUILTIN_WELCOME_ID?300:(offerText(o.promoCode,40)?200:100)+Number(o.priority||0);
+    const rank=o=>(offerText(o.promoCode,40)?200:100)+Number(o.priority||0);
     return rank(b)-rank(a) || a.finalAmount-b.finalAmount;
   });
   let best=null;
@@ -3321,6 +3265,7 @@ app.get("/offers/public-banners", async (req, res) => {
     const offers = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(o => {
+        if (o.id === LEGACY_WELCOME_ID) return false;
         const enabled = o.enabled === true || String(o.enabled).toLowerCase() === "true";
         if (!enabled) return false;
         // Homepage banner follows the Admin enabled state + active date window.
@@ -3352,13 +3297,15 @@ app.get("/offers/public-banners", async (req, res) => {
 
 app.get("/admin/offers",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  await ensureBuiltinWelcomeOffer();const s=await db.collection(OFFER_COLLECTION).get();
-  return res.json({success:true,offers:s.docs.map(d=>({id:d.id,...d.data()}))});
+  const s=await db.collection(OFFER_COLLECTION).get();
+  return res.json({success:true,offers:s.docs.filter(d=>d.id!==LEGACY_WELCOME_ID).map(d=>({id:d.id,...d.data()}))});
 });
 app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id, builtIn=id===BUILTIN_WELCOME_ID;
+    const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id;
+    if(id===LEGACY_WELCOME_ID)return res.status(409).json({error:"The old Welcome Offer has been retired. Use Wallet Recharge Bonus offers instead."});
+    const builtIn=false;
     const promo=offerText(b.promoCode,40).toUpperCase().replace(/[^A-Z0-9_-]/g,"");
     const discountType=["fixed_price","percentage","flat"].includes(String(b.discountType))?String(b.discountType):"fixed_price";
     const applies=Array.isArray(b.appliesTo)?b.appliesTo.filter(x=>["public_question","private_consultation","all"].includes(String(x))):["public_question"];
@@ -3385,7 +3332,7 @@ app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
 app.post("/admin/offers/delete",express.json({limit:"10kb"}),async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   const id=offerText(req.body?.id,80);if(!id)return res.status(400).json({error:"Offer ID required."});
-  if(id===BUILTIN_WELCOME_ID)return res.status(409).json({error:"Built-in ₹1 Welcome Offer cannot be deleted. Disable it instead."});
+  if(id===LEGACY_WELCOME_ID)return res.status(409).json({error:"The retired Welcome Offer is hidden and cannot be edited."});
   await db.collection(OFFER_COLLECTION).doc(id).delete();
   publicOfferBannerCache={expiresAt:0,offers:null};
   return res.json({success:true});
