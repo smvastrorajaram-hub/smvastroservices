@@ -93,14 +93,13 @@ try {
   assert.equal(publicUi.exportControl, false, 'Public Calendar must not show manual JSON export');
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
-  assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
   assert.equal(publicUi.navLabels.length, 0, 'Calendar must not expose Services/Horoscope cross-app navigation');
   assert.equal(publicUi.calendarAdminToggle, true, 'Calendar must expose its own Calendar Admin entry');
   assert.equal(publicUi.calendarAdminPanelHidden, true, 'Calendar Admin area must stay closed until requested');
   assert.equal(publicUi.separateAdminLink, false, 'Calendar must use its in-page Admin panel, not a cross-app admin link');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
-  // Calendar Admin is intentionally not a separate Calendar route. The legacy admin.html redirect is covered by source regressions.
+  // Calendar Admin uses its own protected in-page panel. Public forecast controls stay separate.
   await page.waitForSelector('#calRasiPalan #rpRasi', { timeout: 45000 });
   await page.waitForSelector('#calRasiPalan .rp-tabs button[data-section="period"]', { timeout: 45000 });
   assert.ok(await page.evaluate(() => {
