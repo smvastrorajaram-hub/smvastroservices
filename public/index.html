@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="dashboardContent"></div>
 </section><section class="hidden smv-type-root" id="admin">
 <div class="card"><div><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg"></div><div class="stats-grid admin-summary-grid" id="adminSummary"></div></div>
-<section class="admin-workgroup" id="adminGroupPublicQuestions" aria-labelledby="adminGroupPublicQuestionsTitle">
+<section class="admin-workgroup" id="adminGroupPublicQuestions" aria-labelledby="adminGroupPublicQuestionsTitle" hidden>
 <h2 class="admin-workgroup-title" id="adminGroupPublicQuestionsTitle">01 · Public Questions & Answers / பொது கேள்விகள் மற்றும் பதில்கள்</h2>
 <p class="admin-workgroup-description">Approve public questions and submitted answers; review recent questions and response-length rules. / பொது கேள்விகள் மற்றும் பதில்களை ஒப்புதல் அளித்து, சமீபத்திய கேள்விகளையும் பதில் சொல் வரம்பையும் நிர்வகிக்கவும்.</p>
 <div class="card"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div>
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
 <div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
 </section>
-<section class="admin-workgroup" id="adminGroupPrivateConsultation" aria-labelledby="adminGroupPrivateConsultationTitle">
+<section class="admin-workgroup" id="adminGroupPrivateConsultation" aria-labelledby="adminGroupPrivateConsultationTitle" hidden>
 <h2 class="admin-workgroup-title" id="adminGroupPrivateConsultationTitle">02 · Private Consultation / தனிப்பட்ட ஆலோசனை</h2>
 <p class="admin-workgroup-description">Manage private consultation questions, answer approvals, answer length, commission and alerts. / தனிப்பட்ட ஆலோசனைக் கேள்விகள், பதில் ஒப்புதல், சொல் வரம்பு, கமிஷன் மற்றும் அறிவிப்புகளை நிர்வகிக்கவும்.</p>
 <div class="card" id="adminPrivateConsultationCard">
@@ -356,11 +356,11 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 <section class="admin-workgroup" id="adminGroupPricing" aria-labelledby="adminGroupPricingTitle">
 <h2 class="admin-workgroup-title" id="adminGroupPricingTitle">04 · Service Pricing, Access & Commission / சேவை கட்டணம், அணுகல் & கமிஷன்</h2>
-<p class="admin-workgroup-description">Set public-question pricing, Horoscope and Matching access, and standard Ask Now commission. / பொது கேள்விக் கட்டணம், Horoscope/Matching அணுகல் மற்றும் வழக்கமான Ask Now கமிஷனை அமைக்கவும்.</p>
-<div class="card"><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"/><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></div><div class="small" id="questionPriceMsg"></div></div>
+<p class="admin-workgroup-description">Configure Live Call / Live Chat concurrency, Horoscope and Matching access, and the commission split used by live sessions and accepted Live bookings.</p>
+<div class="card" hidden><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"/><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></div><div class="small" id="questionPriceMsg"></div></div>
 <div class="card" id="adminLiveSessionPricing"><h3>Live Session Settings</h3><p class="small">Call and Chat per-minute prices are set individually for each approved Astrologer in <b>Astrologer Profile Management</b>. Each Customer can enter a maximum number of minutes based on their available Wallet balance and the selected Astrologer's rate. The server reserves the entered maximum amount and returns unused balance when the session ends early.</p><div class="grid"><div><label class="small" for="liveMaxConcurrentSessions"><b>Maximum concurrent sessions per Astrologer</b></label><input id="liveMaxConcurrentSessions" type="number" min="1" max="3" step="1" value="1"/></div></div><div class="action-row"><button class="btn" id="saveLiveSessionPricing" type="button">SAVE SESSION SETTINGS</button><button class="btn gray" id="refreshLiveSessionPricing" type="button">REFRESH</button></div><div class="small" id="liveSessionPricingMsg" role="status" aria-live="polite">Live session settings have not been loaded.</div></div>
 <div class="card" id="adminHoroscopePriceSet"><h3>Horoscope Price Set</h3><p class="small">Set access and price for Advanced Horoscope Analysis and Marriage Matching. When enabled with ₹0, the feature remains free.</p><div class="grid"><div><label class="small" for="advancedAnalysisPaymentEnabled"><b>Advanced Analysis</b></label><select id="advancedAnalysisPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="advancedAnalysisPrice"><b>Advanced Analysis Price ₹</b></label><input id="advancedAnalysisPrice" min="0" placeholder="Advanced Analysis price" step="0.01" type="number"/></div><div><label class="small" for="marriageMatchingPaymentEnabled"><b>Marriage Matching</b></label><select id="marriageMatchingPaymentEnabled"><option value="false">OFF</option><option value="true">ON</option></select></div><div><label class="small" for="marriageMatchingPrice"><b>Marriage Matching Price ₹</b></label><input id="marriageMatchingPrice" min="0" placeholder="Marriage Matching price" step="0.01" type="number"/></div></div><div class="action-row"><button class="btn" id="saveHoroscopePaymentSettings" type="button">SAVE HOROSCOPE SETTINGS</button></div><div class="small" id="horoscopePaymentSettingsMsg"></div></div>
-<div class="card" id="adminCommissionSettings"><h3>Commission Settings</h3><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div>
+<div class="card" id="adminCommissionSettings"><h3>Live / Booking Commission</h3><p class="small">Applied to completed, charged Live Calls, Live Chats, and accepted Live bookings using the actual session charge.</p><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupPayments" aria-labelledby="adminGroupPaymentsTitle">
 <h2 class="admin-workgroup-title" id="adminGroupPaymentsTitle">05 · Payments, Refunds & Payouts / பணப்பரிவர்த்தனை, Refunds & Payouts</h2>
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
-<div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+<div class="card"><h3>Admin Notifications</h3><p class="small">Important Admin, Wallet, Live Call / Chat and Booking events are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
 </section>
 
 </section></div>
