@@ -9,8 +9,8 @@ const LEDGER = 'smv_wallet_transactions';
 const USERS = 'smv_users';
 const ASTROLOGERS = 'smv_astrologers';
 const SETTINGS = 'smv_settings';
-const DEFAULT_RATE_PAISE = 1000;
-const ALLOWED_MINUTES = new Set([1, 2, 3, 5, 10]);
+const DEFAULT_RATE_PAISE = 1000; // Legacy admin display/default only; never used as a Customer's Astrologer rate.
+const MAX_SESSION_MINUTES = 1440;
 const RING_TIMEOUT_MS = 45_000;
 const DISCONNECT_GRACE_MS = 20_000;
 const MAX_MESSAGE_CHARS = 4000;
@@ -45,7 +45,8 @@ function billableMinutesForElapsedMs(elapsedMs, maximumMinutes) {
   if (!Number.isFinite(elapsed) || elapsed < 0 ||
       !Number.isSafeInteger(maximum) || maximum < 1) return null;
   if (elapsed === 0) return 0;
-  return Math.min(maximum, Math.floor(elapsed / 60_000) + 1);
+  // Bill each started minute, but an exact minute boundary remains that minute.
+  return Math.min(maximum, Math.max(1, Math.ceil(elapsed / 60_000)));
 }
 
 function calculateLiveSessionCharge({ elapsedMs, ratePerMinutePaise, maximumMinutes }) {
@@ -68,6 +69,29 @@ function pricingFromSnapshot(snapshot) {
     maxConcurrentSessions: Number.isSafeInteger(maxConcurrent) && maxConcurrent >= 1 && maxConcurrent <= 3 ? maxConcurrent : 1,
     updatedAt: data.updatedAt || null
   };
+}
+
+function astrologerRatePaise(astroProfile, mode) {
+  const astro = astroProfile || {};
+  const kind = String(mode || '').trim().toLowerCase();
+  if (!['call', 'chat'].includes(kind)) return null;
+  const candidates = kind === 'call'
+    ? [astro.callPricePerMinute, astro.pricePerMinute, astro.callRatePerMinute]
+    : [astro.chatPricePerMinute, astro.liveChatPricePerMinute, astro.chatRatePerMinute];
+  for (const value of candidates) {
+    if (value === null || value === undefined || String(value).trim() === '') continue;
+    const paise = parseRupeesToPaise(value);
+    if (Number.isSafeInteger(paise) && paise >= 100 && paise <= 1_000_000) return paise;
+  }
+  return null;
+}
+
+function maxAffordableMinutes(availableBalancePaise, ratePerMinutePaise) {
+  const available = Number(availableBalancePaise);
+  const rate = Number(ratePerMinutePaise);
+  if (!Number.isSafeInteger(available) || available < 0 ||
+      !Number.isSafeInteger(rate) || rate < 100 || rate > 1_000_000) return 0;
+  return Math.min(MAX_SESSION_MINUTES, Math.floor(available / rate));
 }
 
 function liveSessionSafeView(id, data) {
@@ -324,7 +348,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const reqId = String(requestId || '').trim();
     if (!uid || !astroId || astroId.length > 160) throw httpError(400, 'Select an Astrologer to continue.', 'LIVE_ASTROLOGER_REQUIRED');
     if (!['call', 'chat'].includes(kind)) throw httpError(400, 'Choose Call or Chat.', 'LIVE_MODE_INVALID');
-    if (!ALLOWED_MINUTES.has(length)) throw httpError(400, 'Choose 1, 2, 3, 5 or 10 minutes.', 'LIVE_DURATION_INVALID');
+    if (!Number.isSafeInteger(length) || length < 1 || length > MAX_SESSION_MINUTES) {
+      throw httpError(400, 'Enter a whole duration from 1 to ' + MAX_SESSION_MINUTES + ' minutes.', 'LIVE_DURATION_INVALID');
+    }
     if (reqId.length < 8 || reqId.length > 128) throw httpError(400, 'A valid request ID is required. Please try again.', 'LIVE_REQUEST_ID_INVALID');
     const id = hash(uid + ':' + reqId);
     const fingerprint = hash(JSON.stringify({ customerUid: uid, astrologerId: astroId, mode: kind, minutes: length }));
@@ -350,7 +376,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const astro = astroSnap.data() || {};
       validateActiveAstrologer(astro, astroId);
       const pricing = pricingFromSnapshot(pricingSnap);
-      const rate = kind === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
+      const rate = astrologerRatePaise(astro, kind);
+      if (!rate) {
+        throw httpError(409, (kind === 'call' ? 'Call' : 'Chat') + ' price per minute is not configured for this Astrologer.', 'LIVE_PRICE_UNAVAILABLE');
+      }
       const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
       const requiredBalancePaise = length * rate;
       const availableBalancePaise = safePaise(walletData.availableBalancePaise);
@@ -449,13 +478,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!customerSnap.exists || String(customerSnap.data()?.role || '').toLowerCase() !== 'customer') {
         throw httpError(403, 'The booking Customer account is not available.', 'LIVE_CUSTOMER_REQUIRED');
       }
-      const currentRate = booking.mode === 'call' ? pricing.callRatePaise : pricing.chatRatePaise;
-      // A queued booking keeps the server price shown when it was requested.
-      // This avoids a surprise price increase while the Customer waits offline.
+      const currentRate = astrologerRatePaise(astro, booking.mode);
+      // A queued booking freezes the selected Astrologer's per-minute rate.
+      // If a legacy booking has no frozen rate, use only that Astrologer's current rate.
       const bookedRate = Number(booking.ratePerMinutePaise);
-      const rate = Number.isSafeInteger(bookedRate) && bookedRate >= 100 && bookedRate <= 1_000_000 ? bookedRate : currentRate;
+      const rate = Number.isSafeInteger(bookedRate) && bookedRate >= 100 && bookedRate <= 1_000_000
+        ? bookedRate : currentRate;
       const minutes = Number(booking.minutes);
-      if (!ALLOWED_MINUTES.has(minutes)) throw httpError(409, 'Booking duration is invalid.', 'LIVE_DURATION_INVALID');
+      if (!Number.isSafeInteger(minutes) || minutes < 1 || minutes > MAX_SESSION_MINUTES) {
+        throw httpError(409, 'Booking duration is invalid.', 'LIVE_DURATION_INVALID');
+      }
+      if (!rate) throw httpError(409, 'This Astrologer no longer has a configured per-minute rate for this booking.', 'LIVE_PRICE_UNAVAILABLE');
       const fingerprint = String(booking.payloadFingerprint || hash(id));
       const reserve = await reserveInTransaction(tx, {
         uid: booking.customerUid, mode: booking.mode, minutes, rate, walletSnapshot: walletSnap, sessionId: id
@@ -1174,6 +1207,8 @@ module.exports = {
   calculateLiveSessionCharge,
   pricingFromSnapshot,
   liveSessionSafeView,
-  DEFAULT_RATE_PAISE,
-  ALLOWED_MINUTES: [...ALLOWED_MINUTES]
+  astrologerRatePaise,
+  maxAffordableMinutes,
+  MAX_SESSION_MINUTES,
+  DEFAULT_RATE_PAISE
 };
