@@ -763,7 +763,18 @@ app.post("/register-astrologer-profile", async (req, res) => {
     const existing=await userRef.get();
     const existingRole=existing.exists?String(existing.data()?.role||"").toLowerCase():"";
     if(existing.exists && existingRole && existingRole!=="astrologer") return res.status(409).json({error:"This Firebase account already belongs to a different SMV ASTRO role. Please use the correct account."});
-    if(existing.exists && existingRole==="astrologer" && existing.data()?.publicId) return res.json({ok:true,alreadyRegistered:true,publicId:existing.data().publicId});
+    if(existing.exists && existingRole==="astrologer" && existing.data()?.publicId){
+      const repair={
+        uid:user.uid,name,fullName:name,displayName:name,specialization,expertise:specialization,
+        experience,experienceYears:experience,languages,spokenLanguages:languages,bio,about:bio,
+        updatedAt:FieldValue.serverTimestamp()
+      };
+      await Promise.all([
+        userRef.set({name,fullName:name,displayName:name,languages,spokenLanguages:languages,updatedAt:FieldValue.serverTimestamp()},{merge:true}),
+        astroRef.set(repair,{merge:true})
+      ]);
+      return res.json({ok:true,alreadyRegistered:true,publicId:existing.data().publicId,name,languages});
+    }
     const preflight = await findExistingPhoneOwners(phoneNorm, user.uid);
     if (preflight.taken) return phoneAlreadyRegisteredResponse(res, b.language === "ta" ? "ta" : "en");
     let publicId="";
