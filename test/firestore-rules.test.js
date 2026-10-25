@@ -123,10 +123,11 @@ test("recharge details are owner-scoped and never client-writable", async () => 
 
 test("a user cannot self-create an Admin role or later change their own role", async () => {
   const newUser = testEnv.authenticatedContext("self-admin").firestore();
+  const selfCustomer = testEnv.authenticatedContext("self-customer").firestore();
   const customer = testEnv.authenticatedContext("customer-a").firestore();
 
   await assertFails(setDoc(doc(newUser, "smv_users", "self-admin"), { role: "admin" }));
-  await assertSucceeds(setDoc(doc(newUser, "smv_users", "self-customer"), { role: "customer" }));
+  await assertSucceeds(setDoc(doc(selfCustomer, "smv_users", "self-customer"), { role: "customer" }));
   await assertFails(updateDoc(doc(customer, "smv_users", "customer-a"), { role: "admin" }));
 });
 
