@@ -12,6 +12,7 @@ const SETTINGS = 'smv_settings';
 const DEFAULT_RATE_PAISE = 1000; // Legacy admin display/default only; never used as a Customer's Astrologer rate.
 const MAX_SESSION_MINUTES = 1440;
 const RING_TIMEOUT_MS = 45_000;
+const PREPARATION_DURATION_MS = 3 * 60_000;
 const DISCONNECT_GRACE_MS = 20_000;
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_SIGNAL_BYTES = 100_000;
@@ -23,6 +24,42 @@ function httpError(status, message, code, details) {
 function safePaise(value) {
   const n = Number(value ?? 0);
   return Number.isSafeInteger(n) && n >= 0 ? n : 0;
+}
+
+function validateLiveBirthDetails(input) {
+  const d = input && typeof input === 'object' ? input : {};
+  const birthDate = String(d.birthDate || '').trim();
+  const birthTime = String(d.birthTime || '').trim();
+  const birthPlace = String(d.birthPlace || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) ||
+      !Number.isFinite(Date.parse(birthDate + 'T00:00:00Z')) ||
+      new Date(Date.parse(birthDate + 'T00:00:00Z')).toISOString().slice(0, 10) !== birthDate) {
+    throw httpError(400, 'Enter a valid Customer Date of Birth.', 'LIVE_BIRTH_DATE_INVALID');
+  }
+  const indiaToday = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+  if (birthDate > indiaToday) throw httpError(400, 'Date of Birth cannot be in the future.', 'LIVE_BIRTH_DATE_FUTURE');
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) {
+    throw httpError(400, 'Enter a valid Customer Time of Birth.', 'LIVE_BIRTH_TIME_INVALID');
+  }
+  if (birthPlace.length < 2 || birthPlace.length > 200) {
+    throw httpError(400, 'Enter a Customer Birth Place (2–200 characters).', 'LIVE_BIRTH_PLACE_INVALID');
+  }
+  const latRaw = String(d.birthLatitude ?? '').trim();
+  const lonRaw = String(d.birthLongitude ?? '').trim();
+  let birthLatitude = null, birthLongitude = null;
+  if (latRaw || lonRaw) {
+    birthLatitude = Number(latRaw); birthLongitude = Number(lonRaw);
+    if (!latRaw || !lonRaw || !Number.isFinite(birthLatitude) || !Number.isFinite(birthLongitude) ||
+        birthLatitude < -90 || birthLatitude > 90 || birthLongitude < -180 || birthLongitude > 180) {
+      throw httpError(400, 'Birth Place coordinates are invalid. Select a place suggestion or clear the coordinates.', 'LIVE_BIRTH_COORDINATES_INVALID');
+    }
+  }
+  return {
+    birthDate, birthTime, birthPlace, birthLatitude, birthLongitude,
+    birthTimezone: String(d.birthTimezone || '').trim().slice(0, 100)
+  };
 }
 
 function timestampMillis(value) {
@@ -102,6 +139,17 @@ function liveSessionSafeView(id, data) {
     astrologerUid: String(d.astrologerUid || ''),
     astrologerId: String(d.astrologerId || d.astrologerUid || ''),
     astrologerName: String(d.astrologerName || 'Astrologer'),
+    customerName: String(d.customerName || 'Customer'),
+    birthDetails: d.birthDetails && typeof d.birthDetails === 'object' ? {
+      birthDate: String(d.birthDetails.birthDate || ''),
+      birthTime: String(d.birthDetails.birthTime || ''),
+      birthPlace: String(d.birthDetails.birthPlace || ''),
+      birthLatitude: d.birthDetails.birthLatitude == null ? null : Number(d.birthDetails.birthLatitude),
+      birthLongitude: d.birthDetails.birthLongitude == null ? null : Number(d.birthDetails.birthLongitude),
+      birthTimezone: String(d.birthDetails.birthTimezone || '')
+    } : null,
+    preparationUntil: timestampMillis(d.preparationUntil) ? new Date(timestampMillis(d.preparationUntil)).toISOString() : null,
+    preparationCompletedAt: timestampMillis(d.preparationCompletedAt) ? new Date(timestampMillis(d.preparationCompletedAt)).toISOString() : null,
     mode: String(d.mode || ''),
     minutes: Number(d.minutes || 0),
     ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
@@ -142,6 +190,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   function userRef(uid) { return db.collection(USERS).doc(String(uid)); }
   function pricingRef() { return db.collection(SETTINGS).doc('liveSessionPricing'); }
   function nowTimestamp() { return FieldValue.serverTimestamp(); }
+  function notifyAdmin(type, title, message, extra = {}) {
+    return db.collection('smv_notifications').add({
+      userId: 'admin', audience: 'admin', type, title, message,
+      read: false, createdAt: FieldValue.serverTimestamp(), ...extra
+    }).catch(error => console.warn('[Live Session] Admin notification skipped:', error?.message || error));
+  }
 
   let pricingInitPromise = null;
   async function ensurePricingDocument() {
@@ -235,7 +289,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         const snap = await sessionRef(sessionId).get();
         if (!snap.exists) return;
         const session = snap.data() || {};
-        if (session.state !== 'ended') {
+        if (session.state !== 'ended' && session.state !== 'preparing') {
           await endSession(sessionId, '', 'network_disconnect', true);
         }
       } catch (error) {
@@ -246,6 +300,26 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     disconnectByKey.set(key, timer);
   }
 
+  async function completePreparation(sessionId) {
+    const id = String(sessionId || '').trim();
+    if (!id) return;
+    const ref = sessionRef(id);
+    const updated = await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return null;
+      const data = snap.data() || {};
+      if (data.state !== 'preparing') return null;
+      const next = { state: 'ringing', preparationCompletedAt: new Date(), updatedAt: nowTimestamp() };
+      tx.set(ref, next, { merge: true });
+      return { ...data, ...next };
+    });
+    if (!updated) return;
+    scheduleSessionTimer(id, updated);
+    const view = liveSessionSafeView(id, updated);
+    sendTo(updated.customerUid, { type: 'live.session.updated', session: view });
+    sendTo(updated.astrologerUid, { type: 'live.session.updated', session: view });
+  }
+
   function scheduleSessionTimer(sessionId, data) {
     const existing = timeoutBySession.get(sessionId);
     if (existing) clearTimeout(existing);
@@ -254,19 +328,24 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (d.state === 'ended') return;
     let dueAt = 0;
     let reason = 'no_answer';
-    if (d.state === 'active') {
+    if (d.state === 'preparing') {
+      dueAt = timestampMillis(d.preparationUntil) || (timestampMillis(d.preparationStartedAt) + PREPARATION_DURATION_MS);
+      reason = 'preparation_complete';
+    } else if (d.state === 'active') {
       const start = timestampMillis(d.startedAt);
       if (!start) return;
       dueAt = start + Math.max(1, Number(d.minutes || 1)) * 60_000;
       reason = 'duration_complete';
     } else if (d.state === 'ringing' || d.state === 'connecting') {
-      dueAt = timestampMillis(d.acceptedAt || d.createdAt) + RING_TIMEOUT_MS;
+      dueAt = timestampMillis(d.preparationCompletedAt || d.acceptedAt || d.createdAt) + RING_TIMEOUT_MS;
       reason = d.state === 'connecting' ? 'connection_failed' : 'no_answer';
     } else return;
     const timer = setTimeout(() => {
       timeoutBySession.delete(sessionId);
-      endSession(sessionId, '', reason, true).catch(error =>
-        console.error('[Live Session] Timer settlement failed:', error?.stack || error));
+      const operation = reason === 'preparation_complete'
+        ? completePreparation(sessionId)
+        : endSession(sessionId, '', reason, true);
+      operation.catch(error => console.error('[Live Session] Timer operation failed:', error?.stack || error));
     }, Math.max(0, dueAt - Date.now()));
     timer.unref?.();
     timeoutBySession.set(sessionId, timer);
@@ -327,10 +406,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     }
   }
 
-  function makeSession({ id, customerUid, astrologerUid, astroProfile, mode, minutes, rate, reservedAmount, state, origin, fingerprint }) {
+  function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate, reservedAmount, state, origin, fingerprint }) {
+    const preparationStartedAt = state === 'preparing' ? new Date() : null;
     return {
       sessionId: id, customerUid, astrologerUid,
       astrologerId: astrologerUid, astrologerName: String(astroProfile.name || 'Astrologer'),
+      customerName: String(customerName || 'Customer'), birthDetails: birthDetails || null,
+      preparationStartedAt, preparationUntil: preparationStartedAt ? new Date(preparationStartedAt.getTime() + PREPARATION_DURATION_MS) : null,
+      preparationCompletedAt: null,
       mode, minutes, ratePerMinutePaise: rate, reservedAmountPaise: reservedAmount,
       state, customerReady: false, astrologerReady: false,
       origin: origin || 'direct', payloadFingerprint: fingerprint,
@@ -340,12 +423,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     };
   }
 
-  async function createRequest({ customerUid, astrologerId, mode, minutes, requestId }) {
+  async function createRequest({ customerUid, astrologerId, mode, minutes, requestId, customerName, birthDetails }) {
     const uid = String(customerUid || '').trim();
     const astroId = String(astrologerId || '').trim();
     const kind = String(mode || '').trim().toLowerCase();
     const length = Number(minutes);
     const reqId = String(requestId || '').trim();
+    const sessionCustomerName = String(customerName || '').trim();
+    if (!sessionCustomerName || sessionCustomerName.length > 100 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sessionCustomerName)) {
+      throw httpError(400, 'Enter the Customer name (not an email address).', 'LIVE_CUSTOMER_NAME_INVALID');
+    }
+    const sessionBirthDetails = validateLiveBirthDetails(birthDetails);
     if (!uid || !astroId || astroId.length > 160) throw httpError(400, 'Select an Astrologer to continue.', 'LIVE_ASTROLOGER_REQUIRED');
     if (!['call', 'chat'].includes(kind)) throw httpError(400, 'Choose Call or Chat.', 'LIVE_MODE_INVALID');
     if (!Number.isSafeInteger(length) || length < 1 || length > MAX_SESSION_MINUTES) {
@@ -353,7 +441,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     }
     if (reqId.length < 8 || reqId.length > 128) throw httpError(400, 'A valid request ID is required. Please try again.', 'LIVE_REQUEST_ID_INVALID');
     const id = hash(uid + ':' + reqId);
-    const fingerprint = hash(JSON.stringify({ customerUid: uid, astrologerId: astroId, mode: kind, minutes: length }));
+    const fingerprint = hash(JSON.stringify({
+      customerUid: uid, astrologerId: astroId, mode: kind, minutes: length,
+      customerName: sessionCustomerName, birthDetails: sessionBirthDetails
+    }));
     const sRef = sessionRef(id), bRef = bookingRef(id);
     const customerProfileRef = userRef(uid), astroProfileRef = userRef(astroId);
     const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef();
@@ -397,7 +488,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!canStartNow) {
         const booking = {
           bookingId: id, customerUid: uid, astrologerUid: astroId, astrologerId: astroId,
-          astrologerName: String(astro.name || 'Astrologer'), mode: kind, minutes: length,
+          astrologerName: String(astro.name || 'Astrologer'), customerName: sessionCustomerName,
+          birthDetails: sessionBirthDetails, mode: kind, minutes: length,
           ratePerMinutePaise: rate, status: 'pending', origin: 'offline_queue',
           payloadFingerprint: fingerprint, createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -412,8 +504,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
       const data = makeSession({
         id, customerUid: uid, astrologerUid: astroId, astroProfile: astro,
+        customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
-        state: 'ringing', origin: 'direct', fingerprint
+        state: 'preparing', origin: 'direct', fingerprint
       });
       tx.create(sRef, data);
       const nextCount = liveCount + 1;
@@ -428,9 +521,15 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (txResult.kind === 'session') {
       trackSession(id, uid, astroId);
       scheduleSessionTimer(id, txResult.data);
+      notifyAdmin('live_session_requested', 'Live ' + kind.toUpperCase() + ' requested',
+        sessionCustomerName + ' requested a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
+        { sessionId: id, customerId: uid, astrologerId: astroId, mode: kind });
       sendTo(astroId, { type: 'live.session.request', session: liveSessionSafeView(id, txResult.data) });
       sendTo(uid, { type: 'live.session.updated', session: liveSessionSafeView(id, txResult.data) });
     } else if (txResult.kind === 'booking' && !txResult.alreadyProcessed) {
+      notifyAdmin('live_booking_requested', 'Live ' + kind.toUpperCase() + ' booking requested',
+        sessionCustomerName + ' booked a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '. It will be accepted when the Astrologer is online.',
+        { bookingId: id, customerId: uid, astrologerId: astroId, mode: kind });
       sendTo(astroId, { type: 'live.booking.pending', booking: { id, ...txResult.data } });
       sendTo(uid, { type: 'live.booking.updated', booking: { id, ...txResult.data } });
     }
@@ -495,8 +594,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       });
       const data = makeSession({
         id, customerUid: booking.customerUid, astrologerUid: uid, astroProfile: astro,
+        customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
+        birthDetails: booking.birthDetails || null,
         mode: booking.mode, minutes, rate, reservedAmount: reserve.reservedAmountPaise,
-        state: 'ringing', origin: 'accepted_booking', fingerprint
+        state: 'preparing', origin: 'accepted_booking', fingerprint
       });
       tx.create(sRef, data);
       tx.set(bRef, {
@@ -516,6 +617,9 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (!txResult.alreadyProcessed) {
       trackSession(id, txResult.data.customerUid, txResult.data.astrologerUid);
       scheduleSessionTimer(id, txResult.data);
+      notifyAdmin('live_booking_accepted', 'Live booking accepted',
+        String(txResult.data.customerName || 'Customer') + ' Live ' + String(txResult.data.mode || '').toUpperCase() + ' booking was accepted by ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
+        { bookingId: id, customerId: txResult.data.customerUid, astrologerId: txResult.data.astrologerUid, mode: txResult.data.mode });
       sendTo(txResult.data.customerUid, { type: 'live.session.request', session: liveSessionSafeView(id, txResult.data) });
       sendTo(txResult.data.astrologerUid, { type: 'live.session.updated', session: liveSessionSafeView(id, txResult.data) });
       sendTo(txResult.data.customerUid, { type: 'live.booking.updated', booking: { id, status: 'accepted', sessionId: id } });
@@ -1043,7 +1147,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     try {
       const result = await createRequest({
         customerUid: auth.user.uid, astrologerId: req.body?.astrologerId,
-        mode: req.body?.mode, minutes: req.body?.minutes, requestId: req.body?.requestId
+        mode: req.body?.mode, minutes: req.body?.minutes, requestId: req.body?.requestId,
+        customerName: req.body?.customerName, birthDetails: req.body?.birthDetails
       });
       return res.set('Cache-Control', 'no-store').json(result);
     } catch (error) { return replyError(res, error, 'Unable to create the Live Call / Chat request.'); }
@@ -1215,5 +1320,7 @@ module.exports = {
   astrologerRatePaise,
   maxAffordableMinutes,
   MAX_SESSION_MINUTES,
-  DEFAULT_RATE_PAISE
+  DEFAULT_RATE_PAISE,
+  PREPARATION_DURATION_MS,
+  validateLiveBirthDetails
 };
