@@ -619,7 +619,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         astroPatch.liveSessionBusyManaged = false;
       }
       tx.set(aRef, astroPatch, { merge: true });
-      const finalReason = String(reason || 'participant_ended').slice(0, 80);
+      const requestedReason = String(reason || 'participant_ended').trim().toLowerCase();
+      const serverEndReasons = new Set(['duration_complete', 'no_answer', 'connection_failed', 'network_disconnect', 'low_wallet_balance', 'rejected', 'booking_expired']);
+      const participantEndReasons = new Set(['participant_ended', 'connection_failed']);
+      const finalReason = system
+        ? (serverEndReasons.has(requestedReason) ? requestedReason : 'server_ended')
+        : (participantEndReasons.has(requestedReason) ? requestedReason : 'participant_ended');
       const finalState = {
         state: 'ended', endedAt: new Date(now), updatedAt: nowServer,
         endedByUid: actor || 'server', endReason: finalReason,
@@ -666,7 +671,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (reason === 'rejected' && session.astrologerUid !== user.uid) {
       throw httpError(403, 'Only the Astrologer can reject an incoming request.', 'LIVE_SESSION_FORBIDDEN');
     }
-    return endSession(sessionId, user.uid, reason, false);
+    // The route has already authorized this exact participant action. Treat the reason as a trusted workflow result.
+    return endSession(sessionId, user.uid, reason, true);
   }
 
   async function rejectBooking(bookingId, astrologerUid) {
