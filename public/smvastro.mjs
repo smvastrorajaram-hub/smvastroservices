@@ -2373,10 +2373,29 @@ try{
   );
 }
 
-const userStatus=String(
+let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
-   const astroStatus=String(ad.status||data.status||'pending').toLowerCase();
+   let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
+
+   // A directory-visible approved record may be a legacy/duplicate document
+   // while this dashboard reads the UID-keyed document. Reconcile only when the
+   // local state is pending; the server confirms an existing approved record
+   // before synchronizing the canonical profile and user status.
+   if(!['active','approved','rejected','declined','admin_rejected'].includes(astroStatus)){
+     try{
+       const sync=await renderApi('/astrologer/sync-approval',{method:'POST',body:JSON.stringify({})});
+       if(!active())return;
+       if(sync?.approved===true){
+         const refreshed=await withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000).catch(()=>null);
+         if(!active())return;
+         if(refreshed?.exists())ad={...ad,...(refreshed.data()||{})};
+         ad={...ad,uid:loadUid,role:'astrologer',status:'approved',pricePerQuestion:sync.pricePerQuestion??ad.pricePerQuestion};
+         data.status='active';data.role='astrologer';
+         userStatus='active';astroStatus='approved';
+       }
+     }catch(syncError){console.warn('Astrologer approval status refresh deferred:',syncError?.message||syncError);}
+   }
  
    if(!['active','approved'].includes(astroStatus)){
   const astroId=data.publicId||ad.publicId||'';

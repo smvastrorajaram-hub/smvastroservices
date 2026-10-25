@@ -2389,6 +2389,81 @@ app.post("/admin/reject-astrologer", express.json({limit:"10kb"}), async (req,re
   }
 });
 
+// Recover profiles that have an Admin-approved legacy/duplicate profile record but
+// whose canonical UID-keyed document or smv_users status is still pending. This
+// endpoint can only reconcile the signed-in user's own profile, and it never
+// grants approval unless an already-approved owned record exists.
+app.post("/astrologer/sync-approval", express.json({limit:"5kb"}), async (req,res)=>{
+  const user=await requireUser(req,res);
+  if(!user)return;
+  const uid=String(user.uid||"").trim();
+  if(!uid)return res.status(401).json({success:false,error:"Authentication required."});
+  try{
+    const [userSnap,pluralDirect,singularDirect,pluralByUid,singularByUid]=await Promise.all([
+      db.collection("smv_users").doc(uid).get(),
+      db.collection("smv_astrologers").doc(uid).get(),
+      db.collection("smv_astrologer").doc(uid).get(),
+      db.collection("smv_astrologers").where("uid","==",uid).limit(25).get(),
+      db.collection("smv_astrologer").where("uid","==",uid).limit(25).get()
+    ]);
+    const userProfile=userSnap.exists?(userSnap.data()||{}):{};
+    const records=new Map();
+    const addRecord=(snap,direct=false)=>{
+      if(!snap?.exists)return;
+      const p=snap.data()||{};
+      const recordUid=String(p.uid||"").trim();
+      if(recordUid && recordUid!==uid)return;
+      if(!recordUid && !direct)return;
+      records.set(snap.ref.path,{ref:snap.ref,data:p});
+    };
+    addRecord(pluralDirect,true);addRecord(singularDirect,true);
+    for(const snap of pluralByUid.docs)addRecord(snap,false);
+    for(const snap of singularByUid.docs)addRecord(snap,false);
+    const publicId=String(userProfile.publicId||"").trim();
+    if(publicId){
+      const [pluralById,singularById]=await Promise.all([
+        db.collection("smv_astrologers").where("publicId","==",publicId).limit(10).get(),
+        db.collection("smv_astrologer").where("publicId","==",publicId).limit(10).get()
+      ]);
+      for(const snap of [...pluralById.docs,...singularById.docs]){
+        const p=snap.data()||{};
+        if(String(p.publicId||"")===publicId && (!p.uid || String(p.uid)===uid))records.set(snap.ref.path,{ref:snap.ref,data:p});
+      }
+    }
+    const owned=[...records.values()];
+    const approvedRecord=owned.find(x=>["approved","active"].includes(String(x.data.status||"").trim().toLowerCase()));
+    if(!approvedRecord){
+      const current=owned.find(x=>x.ref.path==="smv_astrologers/"+uid)||owned[0];
+      return res.set("Cache-Control","no-store").json({success:true,approved:false,status:String(current?.data?.status||userProfile.status||"pending").toLowerCase()});
+    }
+    const canonicalRef=db.collection("smv_astrologers").doc(uid);
+    const canonicalSnap=await canonicalRef.get();
+    if(canonicalSnap.exists && canonicalSnap.data()?.uid && String(canonicalSnap.data().uid)!==uid){
+      return res.status(409).json({success:false,error:"The canonical Astrologer profile UID does not match the signed-in account. Admin repair is required."});
+    }
+    const source=approvedRecord.data;
+    const price=Number(source.pricePerQuestion??source.chatPrice??0);
+    const approvedAt=source.approvedAt||FieldValue.serverTimestamp();
+    const sharedPatch={uid,role:"astrologer",status:"approved",approvedAt,updatedAt:FieldValue.serverTimestamp()};
+    if(Number.isFinite(price)&&price>0)sharedPatch.pricePerQuestion=price;
+    if(source.approvedBy)sharedPatch.approvedBy=source.approvedBy;
+    const batch=db.batch();
+    // Ensure the UID-keyed canonical record used by the Astrologer Dashboard
+    // and protected APIs exists and carries the already-approved profile fields.
+    batch.set(canonicalRef,{...source,...sharedPatch},{merge:true});
+    for(const record of owned)batch.set(record.ref,sharedPatch,{merge:true});
+    batch.set(db.collection("smv_users").doc(uid),{
+      uid,role:"astrologer",status:"active",approvedAt,updatedAt:FieldValue.serverTimestamp()
+    },{merge:true});
+    await batch.commit();
+    publicAstrologersCache={expiresAt:0,data:null};
+    return res.set("Cache-Control","no-store").json({success:true,approved:true,status:"approved",pricePerQuestion:Number.isFinite(price)&&price>0?price:null,reconciledProfiles:owned.length});
+  }catch(e){
+    console.error("Astrologer approval state reconciliation failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to refresh the Astrologer approval state. Please try again."});
+  }
+});
+
 app.get("/admin/astrologers-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
