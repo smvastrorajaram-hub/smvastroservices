@@ -221,6 +221,7 @@
   openPrivateList();
   window.addEventListener('smv:logged-out',()=>{
     window.__smvSelectedPrivateConsultAstrologer=null;
+    walletBookingRequestId=null;walletBookingRequestOwner='';
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationQuestionCard')?.classList.add('hidden');
   });
@@ -427,12 +428,17 @@
   }
 
   function setupAsk(){
-  $('privateConsultationQuestionForm')?.addEventListener('submit',submitPrivateConsultation);
+  const privateForm=$('privateConsultationQuestionForm');
+  privateForm?.addEventListener('submit',submitPrivateConsultation);
+  ['input','change'].forEach(eventName=>privateForm?.addEventListener(eventName,()=>{
+    if(!privateConsultSubmitting){walletBookingRequestId=null;walletBookingRequestOwner='';}
+  }));
   $('privateConsultationQuestionClose')?.addEventListener('click',()=>{
     $('privateConsultationQuestionCard')?.classList.add('hidden');
     window.__smvSelectedPrivateConsultAstrologer=null;
     document.querySelectorAll('[data-private-consult-astro]').forEach(b=>{b.textContent='SELECT ASTROLOGER';b.disabled=false;});
     const selected=$('privateConsultationSelected'),summary=$('privateConsultPaymentSummary'),msg=$('privateConsultMsg');
+    walletBookingRequestId=null;walletBookingRequestOwner='';
     if(selected)selected.textContent='';
     if(summary)summary.textContent='';
     if(msg)msg.textContent='';
@@ -440,9 +446,8 @@
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationAstrologers')?.scrollIntoView({behavior:'smooth',block:'start'});
   });
-  // IMPORTANT: this script is a separate ES module from the main app module.
-  // openQuestionService() is therefore not in this module's lexical scope.
-  // Always cross the module boundary through the explicit window bridge.
+  // Private Consultation is the canonical Book a Chat form. Public Ask Now entry
+  // points route here through public-navigation.js; this module owns its form.
   document.querySelectorAll('[data-open-booking]').forEach(b=>{
     b.onclick=()=>{
       show('appointment');
