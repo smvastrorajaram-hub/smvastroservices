@@ -2523,10 +2523,10 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
   if(hasChat&&(!Number.isFinite(chatPrice)||chatPrice<1||chatPrice>100000||Math.abs(chatPrice*100-Math.round(chatPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Chat Price must be between ₹1 and ₹100000, with up to two decimal places."});
   }
-  if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+  if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||(callPrice!==0&&callPrice<1)||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Live Call Price must be ₹0 (unset) or between ₹1 and ₹10000 per minute, with up to two decimal places."});
   }
-  if(hasLiveChat&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+  if(hasLiveChat&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||(liveChatPrice!==0&&liveChatPrice<1)||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Live Chat Price must be ₹0 (unset) or between ₹1 and ₹10000 per minute, with up to two decimal places."});
   }
   try{
@@ -2569,12 +2569,20 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
       patch.chatPriceUpdatedBy=actor.uid;
     }
     if(hasCall){
-      patch.callPricePerMinute=callPrice===0?FieldValue.delete():Math.round(callPrice*100)/100;
+      if(callPrice===0){
+        patch.callPricePerMinute=FieldValue.delete();
+        patch.pricePerMinute=FieldValue.delete();
+        patch.callRatePerMinute=FieldValue.delete();
+      }else patch.callPricePerMinute=Math.round(callPrice*100)/100;
       patch.callPriceUpdatedAt=FieldValue.serverTimestamp();
       patch.callPriceUpdatedBy=actor.uid;
     }
     if(hasLiveChat){
-      patch.chatPricePerMinute=liveChatPrice===0?FieldValue.delete():Math.round(liveChatPrice*100)/100;
+      if(liveChatPrice===0){
+        patch.chatPricePerMinute=FieldValue.delete();
+        patch.liveChatPricePerMinute=FieldValue.delete();
+        patch.chatRatePerMinute=FieldValue.delete();
+      }else patch.chatPricePerMinute=Math.round(liveChatPrice*100)/100;
       patch.liveChatPriceUpdatedAt=FieldValue.serverTimestamp();
       patch.liveChatPriceUpdatedBy=actor.uid;
     }
