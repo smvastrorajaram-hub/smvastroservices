@@ -28,7 +28,7 @@ function safePaise(value) {
 
 function safeMinutes(value) {
   const n = Number(value ?? 0);
-  return Number.isSafeInteger(n) && n >= 0 && n <= MAX_SESSION_MINUTES ? n : 0;
+  return Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000 ? n : 0;
 }
 
 function validateLiveBirthDetails(input) {
