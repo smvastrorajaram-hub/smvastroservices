@@ -4651,6 +4651,17 @@ async function smvLivePollSessions(){
  }catch(e){if(!/403|role/i.test(String(e?.message||e)))console.warn('Live session polling skipped:',e?.message||e);}
  finally{smvLivePollBusy=false;}
 }
+function smvLiveRenderScheduledBookings(appointments){
+ const host=$('smvScheduledBookings');if(!host)return;
+ if(!appointments.length){host.innerHTML='<p class="small">No scheduled Call or Chat bookings yet.</p>';return;}
+ host.innerHTML=appointments.map(a=>{
+  const isChat=a.type==='Chat Consultation'||a.bookingKind==='scheduled_chat_request';
+  const label=isChat?'CHAT BOOKING':'CALL BOOKING';
+  const status=String(a.bookingStatus||a.status||'requested').replaceAll('_',' ').toUpperCase();
+  const birth=a.birthDetails||{};
+  return '<article class="card" style="margin:8px 0"><div class="badge">'+label+'</div><h4 style="margin:8px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small"><b>Email:</b> '+escapeHtml(a.email||'')+' · <b>Mobile:</b> '+escapeHtml(a.mobile||'')+'</p><p class="small"><b>Preferred:</b> '+escapeHtml(a.preferredDate||'')+' '+escapeHtml(a.preferredTime||'')+' · <b>Status:</b> '+escapeHtml(status)+'</p>'+(isChat?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Chat Question:</b> '+escapeHtml(a.question||'Not provided')+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small"><b>Birth details:</b> '+escapeHtml(birth.birthDate||'')+' · '+escapeHtml(birth.birthTime||'')+' · '+escapeHtml(birth.birthPlace||'')+'</p>':'')+(!isChat&&a.notes?'<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+'</article>';
+ }).join('');
+}
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
  if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
@@ -4676,7 +4687,7 @@ function smvLiveRenderCustomerBookings(bookings){
 function smvLiveDashboardHtml(role){
  return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
  (role==='astrologer'?'<div class="action-row"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button></div><p class="small" id="smvLiveAvailabilityMsg"></p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
- '<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
+ (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
  const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
@@ -4689,6 +4700,8 @@ async function smvLiveLoadDashboard(role){
     const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
     if(sel&&!sel.dataset.initialized){if(astro)sel.value=astro.availabilityStatus||'offline';sel.dataset.initialized='1';}
     smvLiveRenderBookings((await renderApi('/live/bookings/pending',{method:'GET'})).bookings||[]);
+    try{const scheduled=await renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000});smvLiveRenderScheduledBookings(scheduled.appointments||[]);}
+    catch(bookingError){const bookingHost=$('smvScheduledBookings');if(bookingHost)bookingHost.innerHTML='<p class="error">Scheduled bookings unavailable: '+escapeHtml(bookingError?.message||String(bookingError))+'</p>';}
    }else{
     smvLiveRenderCustomerBookings((await renderApi('/live/bookings/mine',{method:'GET'})).bookings||[]);
    }
