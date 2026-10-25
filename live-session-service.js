@@ -150,6 +150,14 @@ function maxAffordableMinutes(availableBalancePaise, ratePerMinutePaise) {
   return Math.min(MAX_SESSION_MINUTES, Math.floor(available / rate));
 }
 
+function safePersonName(...values) {
+  for (const value of values) {
+    const name = String(value || '').trim().replace(/\s+/g, ' ');
+    if (name && name.length <= 120 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name)) return name;
+  }
+  return '';
+}
+
 function liveSessionSafeView(id, data) {
   const d = data || {};
   return {
@@ -157,8 +165,8 @@ function liveSessionSafeView(id, data) {
     customerUid: String(d.customerUid || ''),
     astrologerUid: String(d.astrologerUid || ''),
     astrologerId: String(d.astrologerId || d.astrologerUid || ''),
-    astrologerName: String(d.astrologerName || 'Astrologer'),
-    customerName: String(d.customerName || 'Customer'),
+    astrologerName: safePersonName(d.astrologerName, d.astrologerFullName, d.astrologerDisplayName, d.astroName) || 'Astrologer',
+    customerName: safePersonName(d.customerName, d.customerFullName, d.customerDisplayName) || 'Customer',
     birthDetails: d.birthDetails && typeof d.birthDetails === 'object' ? {
       birthDate: String(d.birthDetails.birthDate || ''),
       birthTime: String(d.birthDetails.birthTime || ''),
@@ -431,7 +439,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const preparationStartedAt = state === 'preparing' ? new Date() : null;
     return {
       sessionId: id, customerUid, astrologerUid,
-      astrologerId: astrologerUid, astrologerName: String(astroProfile.name || 'Astrologer'),
+      astrologerId: astrologerUid, astrologerName: safePersonName(astroProfile.name, astroProfile.fullName, astroProfile.displayName, astroProfile.astrologerName) || 'Astrologer',
       customerName: String(customerName || 'Customer'), birthDetails: birthDetails || null,
       preparationStartedAt, preparationUntil: preparationStartedAt ? new Date(preparationStartedAt.getTime() + PREPARATION_DURATION_MS) : null,
       preparationCompletedAt: null,
@@ -489,6 +497,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!astroSnap.exists) throw httpError(404, 'The selected Astrologer was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
       const astro = astroSnap.data() || {};
       validateActiveAstrologer(astro, astroId);
+      const astroUser = astroUserSnap.exists ? (astroUserSnap.data() || {}) : {};
+      const astroName = safePersonName(astro.name, astro.fullName, astro.displayName, astro.astrologerName, astroUser.name, astroUser.fullName, astroUser.displayName) || 'Astrologer';
       const pricing = pricingFromSnapshot(pricingSnap);
       const commission = commissionFromSnapshot(commissionSnap);
       const rate = astrologerRatePaise(astro, kind);
@@ -512,7 +522,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!canStartNow) {
         const booking = {
           bookingId: id, customerUid: uid, astrologerUid: astroId, astrologerId: astroId,
-          astrologerName: String(astro.name || 'Astrologer'), customerName: sessionCustomerName,
+          astrologerName: astroName, customerName: sessionCustomerName,
           birthDetails: sessionBirthDetails, mode: kind, minutes: length,
           ratePerMinutePaise: rate, astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
           status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
@@ -528,7 +538,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const customer = customerSnap.data() || {};
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
       const data = makeSession({
-        id, customerUid: uid, astrologerUid: astroId, astroProfile: astro,
+        id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
         state: 'preparing', origin: 'direct', fingerprint, commission
