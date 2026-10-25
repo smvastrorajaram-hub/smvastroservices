@@ -2113,6 +2113,28 @@ async function renderWalletPanel(host,role,options={}){
   }
   await refresh();
 }
+window.__smvOpenWallet=async function(){
+  try{
+    if(!currentUser){$("authBtn")?.click();return;}
+    if(await isCurrentAdmin()){
+      hidePrimarySections("admin");show("admin");hide("dashLink");show("adminLink");
+      smvShowRoleNav();smvEnterInternalView("admin",true);go("admin");
+      await loadAdminPanel();
+      await renderWalletPanel($("admin"),"admin",{id:"smvAdminWalletPanel",after:$("adminSummary")?.closest(".card")||null});
+      $("smvAdminWalletPanel")?.scrollIntoView({behavior:"smooth",block:"start"});return;
+    }
+    const profile=await getUserProfile(currentUser.uid);
+    const role=String(profile?.role||"customer").toLowerCase()==="astrologer"?"astrologer":"customer";
+    hidePrimarySections("dashboard");show("dashboard");show("dashboardContent");
+    smvShowRoleNav();smvEnterInternalView("dashboard",true);go("dashboard");
+    await loadDashboard(role,true);
+    document.getElementById("smvWalletPanel")?.scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){
+    console.error("Open Wallet navigation failed:",e);
+    const host=document.getElementById("dashboardContent")||document.getElementById("admin");
+    if(host){let message=host.querySelector("#smvWalletNavigationMessage");if(!message){message=document.createElement("div");message.id="smvWalletNavigationMessage";message.className="card error";host.prepend(message);}message.textContent=e?.message||"Unable to open Wallet. Please log in and try again.";}
+  }
+};
 async function loadDashboard(expectedRole=null,force=false,background=false){
  const box=$('dashboardContent');
  if(!currentUser){ if(box) box.innerHTML='<div class="card">Please login to continue.</div>'; return; }
