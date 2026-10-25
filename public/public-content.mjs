@@ -205,25 +205,31 @@
       if(m&&c){c.innerHTML=`<h2>${esc(name)}</h2><div class="empty error">Unable to load this astrologer profile right now.</div><button class="btn gray" id="profileRetryBtn">TRY AGAIN</button><button class="btn gray" id="profileCloseBtn">CLOSE</button>`;m.classList.remove('hidden');document.getElementById('profileRetryBtn')?.addEventListener('click',()=>{m.classList.add('hidden');openPublicAstrologerProfile(a);},{once:true});document.getElementById('profileCloseBtn')?.addEventListener('click',closeModal,{once:true});}
     }
   }
-  async function openAstrologerCallBooking(a){
-    const rate=Number(a?.callPricePerMinute);
+  async function openAstrologerCallBooking(a,mode='call'){
+    const bookingMode=mode==='chat'?'chat':'call';
+    const bookingLabel=bookingMode==='chat'?'Chat':'Call';
+    const rate=Number(bookingMode==='chat'?(a?.chatPricePerMinute??a?.liveChatPricePerMinute??a?.chatRatePerMinute):(a?.callPricePerMinute??a?.pricePerMinute??a?.callRatePerMinute));
     const user=window.__smvFirebaseCurrentUser||null;
     if(!user){
-      alert('Customer Login Required — please log in with a Customer account to book a call.');
+      alert('Customer Login Required — please log in with a Customer account to book a '+bookingLabel.toLowerCase()+'.');
       $('authBtn')?.click();
       return;
     }
     if(!Number.isFinite(rate)||rate<=0){
-      showPublicProfileModal(`<div class="profile-dialog"><h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">Call Price per minute has not been configured for this Astrologer. Admin must set the Call Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
+      showPublicProfileModal(`<div class="profile-dialog"><h2>Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2><div class="empty error">${bookingLabel} Price per minute has not been configured for this Astrologer. Admin must set the ${bookingLabel} Price in Astrologer Profile Management before this booking request can be submitted.</div><button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button></div>`);
       $('smvCallBookingClose').onclick=closeModal;
       return;
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
     const minDate=today.toISOString().slice(0,10);
+    const notesOrQuestionField=bookingMode==='chat'
+      ? '<label style="display:block;min-width:0;color:#2d1919"><b>Question / Chat Topic</b><textarea id="smvCallBookingQuestion" name="question" maxlength="4000" rows="4" required placeholder="What would you like to discuss with the astrologer?" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:110px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>'
+      : '<label style="display:block;min-width:0;color:#2d1919"><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>';
+    const bookingSubmitLabel=bookingMode==='chat'?'REQUEST CHAT BOOKING':'REQUEST CALL BOOKING';
     showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:linear-gradient(145deg,#fffaf0 0%,#ffffff 100%);color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
-      <h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2>
-      <p><b>Call rate:</b> ₹${rate.toFixed(2)} per minute</p>
-      <p class="small">This sends a scheduled call request for confirmation. It does not start a live voice call or deduct Wallet funds.</p>
+      <h2>Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2>
+      <p><b>${bookingLabel} rate:</b> ₹${rate.toFixed(2)} per minute</p>
+      <p class="small">This sends a scheduled ${bookingLabel.toLowerCase()} booking request for confirmation. It does not start a live session or deduct Wallet funds.</p>
       <form id="smvCallBookingForm" style="display:grid;gap:12px;width:100%;min-width:0">
         <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
@@ -240,9 +246,9 @@
           <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
           <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:44px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
-        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>
+        ${notesOrQuestionField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
-        <button class="btn" id="smvCallBookingSubmit" type="submit">REQUEST CALL BOOKING</button>
+        <button class="btn" id="smvCallBookingSubmit" type="submit">${bookingSubmitLabel}</button>
         <button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button>
       </form>
     </div>`);
@@ -260,7 +266,7 @@
       event.preventDefault();
       const submit=$('smvCallBookingSubmit'),message=$('smvCallBookingMessage');
       if(submit){submit.disabled=true;submit.textContent='SUBMITTING…';}
-      if(message)message.textContent='Submitting your Call Booking request…';
+      if(message)message.textContent='Submitting your '+bookingLabel+' Booking request…';
       try{
         const token=await user.getIdToken();
         const response=await fetch(BACKEND+'/appointment-booking',{
@@ -276,20 +282,21 @@
             birthLatitude:String($('smvCallBookingBirthLatitude')?.value||birthPlaceInput?.dataset.latitude||''),
             birthLongitude:String($('smvCallBookingBirthLongitude')?.value||birthPlaceInput?.dataset.longitude||''),
             birthTimezone:String(birthPlaceInput?.dataset.timezone||''),
-            type:'Call Consultation',
+            type:bookingMode==='chat'?'Chat Consultation':'Call Consultation',
+            question:bookingMode==='chat'?String($('smvCallBookingQuestion')?.value||'').trim():'',
             preferredDate:String($('smvCallBookingDate')?.value||''),
             preferredTime:String($('smvCallBookingTime')?.value||''),
-            notes:String($('smvCallBookingNotes')?.value||'').trim(),
+            notes:bookingMode==='call'?String($('smvCallBookingNotes')?.value||'').trim():'',
             astrologerId:String(a.id||'')
           })
         });
         const result=await response.json().catch(()=>({}));
         if(!response.ok||result.ok!==true)throw new Error(result.error||'The backend did not confirm the Call Booking request.');
-        if(message)message.innerHTML='<span class="success">Call booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. The request is awaiting confirmation; no Wallet charge has been made.</span>';
-        if(submit){submit.textContent='REQUEST SUBMITTED';}
+        if(message)message.innerHTML='<span class="success">'+bookingLabel+' booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. The request is awaiting confirmation; no Wallet charge has been made.</span>';
+        if(submit){submit.textContent=bookingMode==='chat'?'CHAT BOOKING SUBMITTED':'CALL BOOKING SUBMITTED';}
       }catch(error){
         if(message)message.innerHTML='<span class="error">'+esc(error?.message||String(error))+'</span>';
-        if(submit){submit.disabled=false;submit.textContent='REQUEST CALL BOOKING';}
+        if(submit){submit.disabled=false;submit.textContent=bookingSubmitLabel;}
       }
     };
   }
@@ -428,7 +435,7 @@
           const availability=['online','busy','offline'].includes(String(a.availabilityStatus||'').toLowerCase())?String(a.availabilityStatus).toLowerCase():'offline';
           const callPrice=Number(a.callPricePerMinute),chatPricePerMinute=Number(a.chatPricePerMinute);
           const availabilityLabel=availability==='online'?'Online':availability==='busy'?'Busy':'Offline';
-          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Call -</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+'/minute':'Price not configured'}</p><p><b>Chat -</b> ${Number.isFinite(chatPricePerMinute)&&chatPricePerMinute>0?'₹'+chatPricePerMinute.toFixed(2)+'/minute':'Price not configured'}</p><div class="smv-live-choice" style="margin:10px 0;padding:12px;border:1px solid var(--border,#ddd);border-radius:10px"><p class="small">Enter the duration in minutes (suggested: 1, 2, 5, 10, 15, 20, 25, 30…). The maximum is calculated from your Wallet balance and this Astrologer’s rate.</p><div class="smv-live-duration-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px"><div><label class="small"><b>Call duration (minutes)</b><input data-live-minutes="call" aria-label="Call duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="call">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="call">${availability==='online'?'CALL NOW':'REQUEST LIVE CALL'}</button></div><div><label class="small"><b>Chat duration (minutes)</b><input data-live-minutes="chat" aria-label="Chat duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="chat">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="chat">${availability==='online'?'CHAT NOW':'REQUEST LIVE CHAT'}</button></div></div><p class="small" data-live-message role="status" aria-live="polite"></p></div><button type="button" class="smv-compact-control" data-book-call>BOOK A CALL</button> <button type="button" class="smv-compact-control" data-reviews aria-expanded="false">REVIEWS &amp; RATINGS</button><div class="smv-inline-reviews hidden"></div>`;
+          row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Call -</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+'/minute':'Price not configured'}</p><p><b>Chat -</b> ${Number.isFinite(chatPricePerMinute)&&chatPricePerMinute>0?'₹'+chatPricePerMinute.toFixed(2)+'/minute':'Price not configured'}</p><div class="smv-live-choice" style="margin:10px 0;padding:12px;border:1px solid var(--border,#ddd);border-radius:10px"><p class="small">Enter the duration in minutes (suggested: 1, 2, 5, 10, 15, 20, 25, 30…). The maximum is calculated from your Wallet balance and this Astrologer’s rate.</p><div class="smv-live-duration-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px"><div><label class="small"><b>Call duration (minutes)</b><input data-live-minutes="call" aria-label="Call duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="call">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="call">${availability==='online'?'CALL NOW':'REQUEST LIVE CALL'}</button></div><div><label class="small"><b>Chat duration (minutes)</b><input data-live-minutes="chat" aria-label="Chat duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="chat">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="chat">${availability==='online'?'CHAT NOW':'REQUEST LIVE CHAT'}</button></div></div><p class="small" data-live-message role="status" aria-live="polite"></p></div><div class="smv-astro-booking-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;align-items:stretch"><button type="button" class="smv-compact-control" data-book-call style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">BOOK CALL</button><button type="button" class="smv-compact-control" data-book-chat style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">BOOK CHAT</button><button type="button" class="smv-compact-control" data-reviews aria-expanded="false" style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">REVIEWS</button></div><div class="smv-inline-reviews hidden"></div>`;
           row.dataset.callRatePaise=String(smvLiveRatePaise(a,'call')||'');
           row.dataset.chatRatePaise=String(smvLiveRatePaise(a,'chat')||'');
           const liveMessage=row.querySelector('[data-live-message]');
@@ -441,8 +448,9 @@
             const mode=liveButton.dataset.liveAction,input=row.querySelector('[data-live-minutes="'+mode+'"]');
             liveButton.onclick=()=>smvCreateLiveRequest(a,mode,input?.value,liveButton,liveMessage);
           });
-          const bookCall=row.querySelector('[data-book-call]');
-          if(bookCall)bookCall.onclick=()=>openAstrologerCallBooking(a).catch(err=>{console.error('Call booking request failed:',err);alert(err.message||String(err));});
+          const bookCall=row.querySelector('[data-book-call]'),bookChat=row.querySelector('[data-book-chat]');
+          if(bookCall)bookCall.onclick=()=>openAstrologerCallBooking(a,'call').catch(err=>{console.error('Call booking request failed:',err);alert(err.message||String(err));});
+          if(bookChat)bookChat.onclick=()=>openAstrologerCallBooking(a,'chat').catch(err=>{console.error('Chat booking request failed:',err);alert(err.message||String(err));});
           const button=row.querySelector('[data-reviews]'),reviews=row.querySelector('.smv-inline-reviews');
           button.onclick=async()=>{
             const open=reviews.classList.contains('hidden');reviews.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));
