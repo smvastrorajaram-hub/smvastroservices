@@ -1368,7 +1368,9 @@ app.get("/public/astrologers", async (req, res) => {
       const availabilityStatus=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
       const callRateCandidates=[x.callPricePerMinute,x.pricePerMinute,x.callRatePerMinute].map(Number);
       const configuredCallRate=callRateCandidates.find(v=>Number.isFinite(v)&&v>0);
-      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,callPricePerMinute:configuredCallRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
+      const chatRateCandidates=[x.chatPricePerMinute,x.liveChatPricePerMinute,x.chatRatePerMinute].map(Number);
+      const configuredChatRate=chatRateCandidates.find(v=>Number.isFinite(v)&&v>0);
+      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,callPricePerMinute:configuredCallRate??null,chatPricePerMinute:configuredChatRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
     }));
     const astrologers=checked.filter(Boolean);
     publicAstrologersCache={expiresAt:now+60000,data:astrologers};
@@ -2512,15 +2514,20 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
   const body=req.body||{};
   const hasChat=Object.prototype.hasOwnProperty.call(body,"pricePerQuestion");
   const hasCall=Object.prototype.hasOwnProperty.call(body,"callPricePerMinute");
+  const hasLiveChat=Object.prototype.hasOwnProperty.call(body,"chatPricePerMinute");
   const chatPrice=Number(body.pricePerQuestion);
   const callPrice=Number(body.callPricePerMinute);
+  const liveChatPrice=Number(body.chatPricePerMinute);
   if(!astrologerId||astrologerId.length>200)return res.status(400).json({success:false,error:"A valid Astrologer profile ID is required."});
-  if(!hasChat&&!hasCall)return res.status(400).json({success:false,error:"Enter a Chat Price or Call Price before saving."});
+  if(!hasChat&&!hasCall&&!hasLiveChat)return res.status(400).json({success:false,error:"Enter a Private Consultation price or a Live Call/Chat per-minute price before saving."});
   if(hasChat&&(!Number.isFinite(chatPrice)||chatPrice<1||chatPrice>100000||Math.abs(chatPrice*100-Math.round(chatPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Chat Price must be between ₹1 and ₹100000, with up to two decimal places."});
   }
   if(hasCall&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
     return res.status(400).json({success:false,error:"Call Price must be ₹0 (unset) or between ₹1 and ₹100000 per minute, with up to two decimal places."});
+  }
+  if(hasLiveChat&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>100000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+    return res.status(400).json({success:false,error:"Live Chat Price must be ₹0 (unset) or between ₹1 and ₹100000 per minute, with up to two decimal places."});
   }
   try{
     const collection=db.collection("smv_astrologers");
@@ -2566,6 +2573,11 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
       patch.callPriceUpdatedAt=FieldValue.serverTimestamp();
       patch.callPriceUpdatedBy=actor.uid;
     }
+    if(hasLiveChat){
+      patch.chatPricePerMinute=liveChatPrice===0?FieldValue.delete():Math.round(liveChatPrice*100)/100;
+      patch.liveChatPriceUpdatedAt=FieldValue.serverTimestamp();
+      patch.liveChatPriceUpdatedBy=actor.uid;
+    }
     const batch=db.batch();
     for(const ref of targets.values())batch.set(ref,patch,{merge:true});
     await batch.commit();
@@ -2573,7 +2585,8 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
     return res.set("Cache-Control","no-store").json({
       success:true,astrologerId,uid,updatedProfiles:targets.size,
       pricePerQuestion:hasChat?Math.round(chatPrice*100)/100:Number(selected.pricePerQuestion||0),
-      callPricePerMinute:hasCall?(callPrice===0?null:Math.round(callPrice*100)/100):(selected.callPricePerMinute??null)
+      callPricePerMinute:hasCall?(callPrice===0?null:Math.round(callPrice*100)/100):(selected.callPricePerMinute??null),
+      chatPricePerMinute:hasLiveChat?(liveChatPrice===0?null:Math.round(liveChatPrice*100)/100):(selected.chatPricePerMinute??null)
     });
   }catch(e){
     console.error("Admin Astrologer pricing update failed:",e?.stack||e);
