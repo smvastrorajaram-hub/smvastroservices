@@ -210,7 +210,7 @@ html body.smv-v12-theme #modal.auth-modal-active .modalbox > button[aria-label="
 }
 
 /* Buttons */
-body.smv-v12-theme .btn,
+body.smv-v12-theme .btn:not(.smv-modal-action),
 .seo-page :where(.seo-action,.related-links a){
   min-height:44px;
   border-radius:var(--smv207-radius-sm)!important;
@@ -221,8 +221,8 @@ body.smv-v12-theme .btn,
   text-decoration:none;
   transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
 }
-body.smv-v12-theme .btn{border:1px solid #dfbd73!important;border-radius:0!important;background:#dfbd73!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;box-shadow:none!important;font-weight:800!important}
-body.smv-v12-theme .btn.gray{background:transparent!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
+body.smv-v12-theme .btn:not(.smv-modal-action){border:1px solid #dfbd73!important;border-radius:0!important;background:#dfbd73!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;box-shadow:none!important;font-weight:800!important}
+body.smv-v12-theme .btn.gray:not(.smv-modal-action){background:transparent!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
 body.smv-v12-theme .btn:where(:hover,:focus-visible),.seo-page :where(.seo-action,.related-links a):where(:hover,:focus-visible){filter:brightness(.97);transform:translateY(-1px)}
 body.smv-v12-theme .btn:focus-visible,.seo-page a:focus-visible,body.smv-legal-page a:focus-visible{outline:3px solid rgba(184,137,53,.35)!important;outline-offset:2px}
 body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow:none!important;cursor:not-allowed}
@@ -471,10 +471,10 @@ body.smv-v12-theme .registration-option.customer-option{background:transparent!i
 body.smv-v12-theme .registration-option.astrologer-option{background:transparent!important;border-color:transparent!important;border:0!important;box-shadow:none!important;color:var(--smv207-ink)!important;-webkit-text-fill-color:var(--smv207-ink)!important;}
 
 /* Semantic button variants — preserve meaning and the official Google-style control. */
-body.smv-v12-theme .btn.alt{background:#fff!important;color:var(--smv207-red)!important;border-color:var(--smv207-red)!important;box-shadow:none!important}
-body.smv-v12-theme .btn.danger,body.smv-v12-theme .smv-dialog-actions .btn.danger{background:var(--smv207-danger)!important;color:#fff!important;border-color:#7e1e1e!important}
-body.smv-v12-theme .btn.auth-google{display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;background:#fff!important;color:#2b241d!important;border:1px solid #cfc4b2!important;box-shadow:0 4px 12px rgba(44,31,20,.08)!important}
-body.smv-v12-theme .btn.auth-google:hover{background:#faf7f0!important}
+body.smv-v12-theme .btn.alt:not(.smv-modal-action){background:#fff!important;color:var(--smv207-red)!important;border-color:var(--smv207-red)!important;box-shadow:none!important}
+body.smv-v12-theme .btn.danger:not(.smv-modal-action),body.smv-v12-theme .smv-dialog-actions .btn.danger:not(.smv-modal-action){background:var(--smv207-danger)!important;color:#fff!important;border-color:#7e1e1e!important}
+body.smv-v12-theme .btn.auth-google:not(.smv-modal-action){display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;background:#fff!important;color:#2b241d!important;border:1px solid #cfc4b2!important;box-shadow:0 4px 12px rgba(44,31,20,.08)!important}
+body.smv-v12-theme .btn.auth-google:not(.smv-modal-action):hover{background:#faf7f0!important}
 body.smv-v12-theme .smv-withdraw-btn.is-green{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}
 body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn.is-red:disabled{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;opacity:1!important}
 
