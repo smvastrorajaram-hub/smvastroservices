@@ -694,21 +694,43 @@ async function isAdminAccount(user, profileHint=null){
 }
 async function resolveSmvRole(user, profileHint=null){
  if(!user)return "customer";
+
+ // On isolated Phase 1 staging, resolve the role with the authenticated
+ // backend/Admin SDK first. This avoids silently downgrading a legacy
+ // Astrologer because browser Firestore rules or a missing role field blocked
+ // the client-side profile lookup.
+ if(IS_SMV_PHASE1_STAGING){
+  try{
+   const resolved=await withTimeout(renderApi("/account/role",{method:"GET",timeoutMs:12000},user),14000);
+   const serverRole=String(resolved?.role||"").toLowerCase();
+   if(["admin","customer","astrologer"].includes(serverRole)){
+    smvAdminAccessCache.set(String(user.uid),{allowed:serverRole==="admin",at:Date.now()});
+    window.__smvAccountRoleDiagnostics={
+     role:serverRole,
+     profileFound:resolved?.profileFound===true,
+     astrologerProfileFound:resolved?.astrologerProfileFound===true,
+     astrologerProfileCollection:String(resolved?.astrologerProfileCollection||""),
+     checkedAt:Date.now()
+    };
+    return serverRole;
+   }
+  }catch(e){
+   console.warn("Server account role lookup failed; using authenticated profile fallback:",e?.message||e);
+  }
+ }
+
  if(await isAdminAccount(user,profileHint))return "admin";
  const profile=profileHint||await getUserProfile(user.uid);
  const role=String(profile?.role||"").toLowerCase();
 
- // On Phase 1 staging, verify the owner's own professional profile as a
- // fallback. Older/migrated accounts can have a stale "customer" role in
- // smv_users even though their server-created smv_astrologers profile exists.
+ // Last-resort staging fallback. Document ownership (UID) is authoritative;
+ // older valid astrologer records may not contain an explicit role field.
  if(IS_SMV_PHASE1_STAGING && role!=="astrologer"){
   try{
    const astroSnap=await withTimeout(getDoc(doc(db,"smv_astrologers",user.uid)),10000);
    if(astroSnap.exists()){
     const astro=astroSnap.data()||{};
-    if(String(astro.uid||user.uid)===String(user.uid) && String(astro.role||"").toLowerCase()==="astrologer"){
-     return "astrologer";
-    }
+    if(!astro.uid || String(astro.uid)===String(user.uid))return "astrologer";
    }
   }catch(e){
    console.warn("Astrologer role profile lookup failed:",e?.message||e);
