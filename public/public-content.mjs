@@ -172,6 +172,15 @@
     const contentEl=document.getElementById('modalContent');
     if(!modalEl||!contentEl) throw new Error('Profile dialog is unavailable.');
     contentEl.innerHTML=html;
+    const dialogSurface=contentEl.querySelector('.profile-dialog');
+    if(dialogSurface){
+      dialogSurface.style.color='#2d1919';
+      dialogSurface.style.webkitTextFillColor='#2d1919';
+      dialogSurface.querySelectorAll('button,input,select,textarea').forEach(control=>{
+        const computedColor=window.getComputedStyle(control).color;
+        if(computedColor)control.style.webkitTextFillColor=computedColor;
+      });
+    }
     modalEl.classList.add('profile-modal-active');
     modalEl.classList.remove('hidden');
     return modalEl;
@@ -211,7 +220,7 @@
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
     const minDate=today.toISOString().slice(0,10);
-    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:linear-gradient(145deg,#fffaf0 0%,#ffffff 100%);color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
+    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);max-width:100%;min-width:0;padding:clamp(12px,3vw,24px);background:linear-gradient(145deg,#fffaf0 0%,#ffffff 100%);color:#2d1919;-webkit-text-fill-color:#2d1919;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
       <h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2>
       <p><b>Call rate:</b> ₹${rate.toFixed(2)} per minute</p>
       <p class="small">This sends a scheduled call request for confirmation. It does not start a live voice call or deduct Wallet funds.</p>
