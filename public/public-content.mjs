@@ -208,19 +208,19 @@
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
     const minDate=today.toISOString().slice(0,10);
-    showPublicProfileModal(`<div class="profile-dialog">
+    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:min(100%,560px);padding:clamp(16px,4vw,28px)">
       <h2>Book a Call — ${esc(a?.name||'Astrologer')}</h2>
       <p><b>Call rate:</b> ₹${rate.toFixed(2)} per minute</p>
       <p class="small">This creates a scheduled call request for Admin/Astrologer confirmation. It does not start a live voice call or deduct Wallet funds.</p>
       <form id="smvCallBookingForm">
-        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required></label>
-        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required></label>
-        <label><b>Mobile</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" required></label>
-        <div class="grid" style="gap:10px">
-          <label><b>Preferred date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required></label>
-          <label><b>Preferred time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required></label>
+        <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(user.displayName||'')}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
+        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
+        <label><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
+        <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px">
+          <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
+          <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></label>
         </div>
-        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="3" placeholder="Preferred time window or brief details"></textarea></label>
+        <label><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="3" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px"></textarea></label>
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
         <button class="btn" id="smvCallBookingSubmit" type="submit">REQUEST CALL BOOKING</button>
         <button class="btn gray" id="smvCallBookingClose" type="button">CLOSE</button>
