@@ -1,4 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
+const {registerWalletRoutes,CUSTOMER_WELCOME_CREDIT_PAISE}=require('./wallet-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
 const crypto = require("crypto");
@@ -571,9 +572,14 @@ app.post("/register-customer-profile", async (req, res) => {
       try {
         await db.runTransaction(async tx => {
           const publicIdRef = db.collection("smv_public_ids").doc(publicId);
-          const publicIdSnap = await tx.get(publicIdRef);
+          const walletRef = db.collection("smv_wallets").doc(user.uid);
+          const welcomeTxnRef = db.collection("smv_wallet_transactions").doc(walletService.welcomeLedgerId(user.uid));
+          // Read all Wallet and registration documents before the phone-claim helper begins writes.
+          const [publicIdSnap, walletSnap, welcomeTxnSnap] = await Promise.all([
+            tx.get(publicIdRef), tx.get(walletRef), tx.get(welcomeTxnRef)
+          ]);
           if (publicIdSnap.exists) throw publicIdCollisionError();
-          // This helper performs the second/last transaction read before writes.
+          // This helper performs the last transaction read and then claims the unique phone.
           await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
           tx.set(publicIdRef, { publicId, uid:user.uid, role:"customer", createdAt:FieldValue.serverTimestamp() });
           tx.set(ref, {
@@ -586,6 +592,41 @@ app.post("/register-customer-profile", async (req, res) => {
             createdAt: existing.exists ? (existing.data()?.createdAt || FieldValue.serverTimestamp()) : FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp()
           }, { merge: true });
+
+          // Credit new Customer registrations once, in the same transaction as the profile.
+          // An established Customer with a publicId exits before this transaction.
+          const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
+          if (!welcomeTxnSnap.exists) {
+            const currentAvailable = Number(walletData.availableBalancePaise || 0);
+            const currentReserved = Number(walletData.reservedBalancePaise || 0);
+            const nextAvailable = currentAvailable + CUSTOMER_WELCOME_CREDIT_PAISE;
+            const now = FieldValue.serverTimestamp();
+            tx.set(walletRef, {
+              ownerUid: user.uid, ownerRole: "customer", currency: "INR",
+              availableBalancePaise: nextAvailable, reservedBalancePaise: currentReserved,
+              version: Number(walletData.version || 0) + 1,
+              createdAt: walletData.createdAt || now, updatedAt: now
+            }, { merge: true });
+            tx.create(welcomeTxnRef, {
+              ownerUid: user.uid, ownerRole: "customer", currency: "INR",
+              type: "welcome_credit", direction: "credit",
+              amountPaise: CUSTOMER_WELCOME_CREDIT_PAISE,
+              balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: currentReserved,
+              idempotencyKey: "customer-registration-welcome-credit-v1",
+              referenceType: "customer_registration", referenceId: publicId,
+              note: "One-time ₹25 new Customer Wallet welcome credit",
+              status: "posted", createdAt: now
+            });
+          } else if (!walletSnap.exists) {
+            // Defensive repair for an inconsistent older ledger; do not issue a second credit.
+            const previousLedger = welcomeTxnSnap.data() || {};
+            tx.set(walletRef, {
+              ownerUid: user.uid, ownerRole: "customer", currency: "INR",
+              availableBalancePaise: Number(previousLedger.balanceAfterPaise || 0),
+              reservedBalancePaise: Number(previousLedger.reservedBalanceAfterPaise || 0),
+              version: 1, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
+            }, { merge: true });
+          }
         });
         registered = true;
       } catch (e) {
@@ -3478,14 +3519,32 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
     const eventKey = `${eventType}_${paymentId || orderId || crypto.createHash("sha256").update(req.body).digest("hex")}`.replace(/\//g, "_");
     if (!eventKey) return res.status(400).send("Invalid webhook event key");
     const eventRef = db.collection("razorpay_webhook_events").doc(eventKey);
-    if ((await eventRef.get()).exists) return res.status(200).send("OK");
-    await eventRef.set({ event: eventType, razorpayPaymentId: paymentId, razorpayOrderId: orderId, receivedAt: FieldValue.serverTimestamp(), processed: false });
+    const previousEventSnap = await eventRef.get();
+    if (previousEventSnap.exists && previousEventSnap.data()?.processed === true) return res.status(200).send("OK");
+    if (previousEventSnap.exists) {
+      // A prior attempt failed before marking the event complete. Allow Razorpay retries
+      // to resume; Wallet credits themselves are protected by a transactional ledger key.
+      await eventRef.set({ retryCount: FieldValue.increment(1), lastRetryAt: FieldValue.serverTimestamp(), processed: false }, { merge: true });
+    } else {
+      await eventRef.set({ event: eventType, razorpayPaymentId: paymentId, razorpayOrderId: orderId, receivedAt: FieldValue.serverTimestamp(), retryCount: 0, processed: false });
+    }
     if (orderId) {
       const orderRef = db.collection("razorpay_orders").doc(orderId);
       const orderSnap = await orderRef.get();
       const stored = orderSnap.exists ? orderSnap.data() : {};
       const newStatus = ["payment.captured", "order.paid"].includes(eventType) ? "paid" : eventType === "payment.failed" ? "failed" : null;
       if (newStatus) await orderRef.set({ status: newStatus, razorpayPaymentId: paymentId, lastWebhookEvent: eventType, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      if (newStatus === "paid" && stored.walletRechargeId && paymentId) {
+        try {
+          await walletService.handleCapturedWebhook({
+            rechargeId: stored.walletRechargeId, orderId, paymentId,
+            amountPaise: Number(paymentEntity?.amount), currency: String(paymentEntity?.currency || "INR")
+          });
+        } catch (walletError) {
+          console.error("Wallet recharge webhook credit failed; return 500 for retry:", walletError?.stack || walletError);
+          throw walletError;
+        }
+      }
       if (newStatus === "paid" && stored.questionId && paymentId) {
         try {
           const qSnap = await db.collection("smv_questions").doc(stored.questionId).get();
@@ -3673,7 +3732,14 @@ app.post("/api/prediction/matching",smvPredictionRoute("matching"));
 // GeoNames place search + selected-place timezoneId (username kept server-side).
 registerGeoNamesRoutes(app);
 
-// Final 404 must remain AFTER every functional route, including Horoscope payment routes.
+// Wallet routes must be registered before the final 404. All balance/ledger writes use Admin SDK transactions.
+const walletService = registerWalletRoutes({
+  app, db, FieldValue, crypto, razorpay,
+  razorpayKeyId: RAZORPAY_KEY_ID, razorpayKeySecret: RAZORPAY_KEY_SECRET,
+  adminUid: ADMIN_UID, requireUser, isAdminUser
+});
+
+// Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
   console.warn("Unhandled backend route:", req.method, req.originalUrl);
   if (req.path.startsWith("/api/") || req.path.includes("withdrawal")) {
