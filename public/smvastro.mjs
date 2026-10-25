@@ -4475,7 +4475,7 @@ function smvLiveApplySession(session){
  if(s.state==='ended'){
   if(!wasEnded&&String(s.astrologerUid||'')===String(currentUser?.uid||'')&&!s.__smvEarningsRefreshTriggered){
    s.__smvEarningsRefreshTriggered=true;
-   setTimeout(()=>{if(typeof loadDashboard==='function')Promise.resolve(loadDashboard()).catch(error=>console.warn('Astrologer earnings refresh after Live Session was skipped:',error));},300);
+   setTimeout(()=>{if(typeof loadDashboard==='function')Promise.resolve(loadDashboard('astrologer',true)).catch(error=>console.warn('Astrologer earnings refresh after Live Session was skipped:',error));},300);
   }
   const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Call session ended. Microphone is no longer in use.';
   const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.' ;
