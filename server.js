@@ -1388,30 +1388,42 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
     if(!["online","busy","offline"].includes(availabilityStatus)){
       return res.status(400).json({success:false,error:"Choose Online, Busy, or Offline."});
     }
-    const [userSnap,astroSnap]=await Promise.all([
-      db.collection("smv_users").doc(user.uid).get(),
-      db.collection("smv_astrologers").doc(user.uid).get()
-    ]);
-    const profile=userSnap.exists?(userSnap.data()||{}):{};
-    const astro=astroSnap.exists?(astroSnap.data()||{}):{};
-    if(!astroSnap.exists || (astro.uid && String(astro.uid)!==String(user.uid))){
-      return res.status(403).json({success:false,error:"This account does not own an Astrologer profile."});
-    }
-    // The document must be tied to the authenticated UID. Do not reject a
-    // legitimate migrated professional profile only because smv_users.role
-    // retained an old Customer value; the verified-owned Astrologer record is
-    // the authority for this profile-scoped setting.
-    if(!["approved","active"].includes(String(astro.status||"").toLowerCase())){
-      return res.status(409).json({success:false,error:"Only an approved Astrologer can change availability."});
-    }
-    await astroSnap.ref.set({
-      availabilityStatus,
-      availabilityUpdatedAt:FieldValue.serverTimestamp(),
-      availabilityUpdatedBy:user.uid
-    },{merge:true});
+    const result=await db.runTransaction(async tx=>{
+      const astroRef=db.collection("smv_astrologers").doc(user.uid);
+      const [userSnap,astroSnap,pricingSnap]=await Promise.all([
+        tx.get(db.collection("smv_users").doc(user.uid)),
+        tx.get(astroRef),
+        tx.get(db.collection("smv_settings").doc("liveSessionPricing"))
+      ]);
+      const profile=userSnap.exists?(userSnap.data()||{}):{};
+      const astro=astroSnap.exists?(astroSnap.data()||{}):{};
+      if(!astroSnap.exists || (astro.uid && String(astro.uid)!==String(user.uid))){
+        throw Object.assign(new Error("This account does not own an Astrologer profile."),{httpStatus:403});
+      }
+      // The verified-owned Astrologer record remains authoritative for migrated profiles.
+      if(!["approved","active"].includes(String(astro.status||"").toLowerCase())){
+        throw Object.assign(new Error("Only an approved Astrologer can change availability."),{httpStatus:409});
+      }
+      const activeCount=Number.isSafeInteger(Number(astro.activeSessionCount))&&Number(astro.activeSessionCount)>=0?Number(astro.activeSessionCount):0;
+      const stored=pricingSnap.exists?(pricingSnap.data()||{}):{};
+      const rawMax=Number(stored.maxConcurrentSessions);
+      const maxConcurrent=Number.isSafeInteger(rawMax)&&rawMax>=1&&rawMax<=3?rawMax:1;
+      if(availabilityStatus==="offline"&&activeCount>0){
+        throw Object.assign(new Error("You have an active Live Session. End it before going Offline."),{httpStatus:409});
+      }
+      const finalStatus=availabilityStatus==="online"&&activeCount>=maxConcurrent?"busy":availabilityStatus;
+      tx.set(astroRef,{
+        availabilityStatus:finalStatus,
+        availabilityUpdatedAt:FieldValue.serverTimestamp(),
+        availabilityUpdatedBy:user.uid,
+        liveSessionBusyManaged:finalStatus==="busy"&&activeCount>=maxConcurrent
+          ?true:(finalStatus==="busy"?false:false)
+      },{merge:true});
+      return {availabilityStatus:finalStatus,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
+    });
     publicAstrologersCache={expiresAt:0,data:null};
     res.set("Cache-Control","no-store");
-    return res.json({success:true,availabilityStatus});
+    return res.json({success:true,...result});
   }catch(e){
     console.error("Astrologer availability update failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to update Astrologer availability."});
