@@ -151,7 +151,7 @@ test('Horoscope Rules Admin and Calendar Rasi Palan Admin are separate', () => {
   assert.match(calendarIndexSource, /\.\.\/calendar-rasi-palan\.mjs\?v=20261025-local-calendar-forecast-v1/);
   assert.match(calendarIndexSource, /\.\.\/calendar-rasi-palan\.css\?v=20261025-local-calendar-forecast-v1/);
   assert.match(adminPageSource, /<title>SMV CALENDAR · Admin<\/title>/);
-  assert.match(adminPageSource, /\.\/?admin=1#smvCalendarAdminArea/);
+  assert.ok(adminPageSource.includes('./?admin=1#smvCalendarAdminArea'));
   assert.doesNotMatch(adminPageSource, /horoscope\.smvastroservices\.in|\/horoscope\/\?admin=1/);
   assert.match(horoscopeAdminSource, /smvAdminRulesPanel|smvAdminRulesAccess/);
   assert.doesNotMatch(horoscopeIndexSource, /calendar\.smvastroservices\.in|id="smvCalendarNav"/);
