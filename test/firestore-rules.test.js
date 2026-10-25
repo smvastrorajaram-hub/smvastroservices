@@ -22,7 +22,8 @@ const {
 let testEnv;
 
 before(async () => {
-  const rules = fs.readFileSync(path.join(__dirname, "..", "firestore.rules"), "utf8");
+  const rulesPath = path.resolve(process.env.FIRESTORE_RULES_PATH || path.join(__dirname, "..", "firestore.rules"));
+  const rules = fs.readFileSync(rulesPath, "utf8");
   testEnv = await initializeTestEnvironment({
     projectId: "demo-smvastro-rules",
     firestore: { rules }
@@ -145,7 +146,11 @@ test("server-managed Admin allowlist and trusted Firebase claims may authorize A
 
   await assertSucceeds(getDoc(doc(allowlistedAdmin, "smv_wallets", "customer-a")));
   await assertSucceeds(getDoc(doc(claimsAdmin, "smv_wallets", "customer-a")));
-  await assertSucceeds(getDoc(doc(fixedOwner, "smv_wallets", "customer-a")));
+  if (path.basename(process.env.FIRESTORE_RULES_PATH || "firestore.rules") === "firestore.staging.rules") {
+    await assertFails(getDoc(doc(fixedOwner, "smv_wallets", "customer-a")));
+  } else {
+    await assertSucceeds(getDoc(doc(fixedOwner, "smv_wallets", "customer-a")));
+  }
 });
 
 test("regular users cannot grant themselves an smv_admins allowlist document", async () => {
