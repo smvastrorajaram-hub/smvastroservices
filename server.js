@@ -323,6 +323,8 @@ const DASHBOARD_SIGNAL_PATHS=new Set([
   '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/submit-answer',
   '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
   '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing','/admin/astrologer-languages',
+  '/admin/astrologer-profile-description','/admin/astrologer-profile-permission',
+  '/admin/content/save','/admin/content/toggle','/admin/content/delete',
   '/admin/edit-question','/admin/takeover-answer','/astrologer/change-payout','/admin/payout-change-status',
   '/admin/set-open-workflow','/customer/mark-answer-viewed','/admin/astrologer-quiz/load-defaults',
   '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete','/admin/astrologer-auto-approval/settings',
@@ -659,6 +661,7 @@ app.post("/register-customer-profile", async (req, res) => {
     const existingRole = existing.exists ? String(existing.data()?.role || "").toLowerCase() : "";
     if (existing.exists && existingRole && existingRole !== "customer") return res.status(409).json({ error: "This Firebase account already belongs to a different SMV ASTRO role. Please use the correct account." });
     if (existing.exists && existingRole === "customer" && existing.data()?.publicId) {
+      await ref.set({ name, fullName: name, displayName: name, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       return res.json({ ok: true, alreadyRegistered: true, publicId: existing.data().publicId });
     }
     const preflight = await findExistingPhoneOwners(phoneNorm, user.uid);
@@ -2573,6 +2576,104 @@ app.post("/astrologer/sync-approval", express.json({limit:"5kb"}), async (req,re
     console.error("Astrologer approval state reconciliation failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to refresh the Astrologer approval state. Please try again."});
   }
+});
+
+// Admin Astrologer management writes use the trusted backend, rather than depending on client Firestore rules.
+app.post("/admin/astrologer-profile-permission", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim();
+  if(!astrologerId||astrologerId.length>200||typeof req.body?.allow!=="boolean")return res.status(400).json({success:false,error:"A valid Astrologer ID and permission value are required."});
+  try{
+    const selectedRef=db.collection("smv_astrologers").doc(astrologerId),selectedSnap=await selectedRef.get();
+    if(!selectedSnap.exists)return res.status(404).json({success:false,error:"Astrologer profile not found."});
+    const selected=selectedSnap.data()||{},uid=String(selected.uid||selectedSnap.id).trim();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"Astrologer profile has no valid login UID."});
+    const linked=await db.collection("smv_astrologers").where("uid","==",uid).limit(25).get();
+    const refs=new Map([[selectedRef.path,selectedRef],[db.collection("smv_astrologers").doc(uid).path,db.collection("smv_astrologers").doc(uid)]]);
+    for(const row of linked.docs)refs.set(row.ref.path,row.ref);
+    const patch={profileEditAllowed:req.body.allow,profileEditPermissionUpdatedAt:FieldValue.serverTimestamp(),profileEditPermissionUpdatedBy:actor.uid,updatedAt:FieldValue.serverTimestamp()};
+    const batch=db.batch();for(const ref of refs.values())batch.set(ref,patch,{merge:true});
+    await batch.commit();
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,allow:req.body.allow});
+  }catch(e){console.error("Admin Astrologer profile permission update failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Astrologer profile permission."});}
+});
+
+app.post("/admin/astrologer-profile-description", express.json({limit:"10kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const astrologerId=String(req.body?.astrologerId||"").trim(),action=String(req.body?.action||"save").trim().toLowerCase();
+  if(!astrologerId||astrologerId.length>200||!["save","approve","reject"].includes(action))return res.status(400).json({success:false,error:"A valid Astrologer ID and description action are required."});
+  try{
+    const selectedRef=db.collection("smv_astrologers").doc(astrologerId),selectedSnap=await selectedRef.get();
+    if(!selectedSnap.exists)return res.status(404).json({success:false,error:"Astrologer profile not found."});
+    const selected=selectedSnap.data()||{},uid=String(selected.uid||selectedSnap.id).trim();
+    if(!uid||uid.length>128)return res.status(409).json({success:false,error:"Astrologer profile has no valid login UID."});
+    let description=String(req.body?.description||"").trim();
+    if(action==="approve")description=String(selected.profileDescriptionPending||"").trim();
+    if(action==="save"&&(description.length<20||description.length>2000))return res.status(400).json({success:false,error:"Description must be 20–2000 characters."});
+    if(action==="approve"&&!description)return res.status(409).json({success:false,error:"There is no pending description to approve."});
+    const linked=await db.collection("smv_astrologers").where("uid","==",uid).limit(25).get();
+    const refs=new Map([[selectedRef.path,selectedRef],[db.collection("smv_astrologers").doc(uid).path,db.collection("smv_astrologers").doc(uid)]]);
+    for(const row of linked.docs)refs.set(row.ref.path,row.ref);
+    const now=FieldValue.serverTimestamp();
+    let patch;
+    if(action==="save")patch={profileDescription:description,profileDescriptionPending:"",profileDescriptionStatus:"approved",profileDescriptionApprovedAt:now,profileDescriptionApprovedBy:actor.uid,updatedAt:now};
+    else if(action==="approve")patch={profileDescription:description,profileDescriptionPending:"",profileDescriptionStatus:"approved",profileDescriptionApprovedAt:now,profileDescriptionApprovedBy:actor.uid,updatedAt:now};
+    else patch={profileDescriptionPending:"",profileDescriptionStatus:"rejected",profileDescriptionRejectedAt:now,profileDescriptionRejectedBy:actor.uid,updatedAt:now};
+    const batch=db.batch();for(const ref of refs.values())batch.set(ref,patch,{merge:true});
+    if(action==="approve")batch.set(db.collection("smv_notifications").doc(uid+"_profile_approved_"+Date.now()),{userId:uid,type:"profile_description",title:"Profile description approved",message:"Your updated profile description has been approved by Admin.",createdAt:now,read:false});
+    await batch.commit();
+    return res.set("Cache-Control","no-store").json({success:true,astrologerId,uid,action,description:action==="reject"?"":description});
+  }catch(e){console.error("Admin Astrologer profile description update failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Astrologer profile description."});}
+});
+
+// Admin Content Manager reads and writes through Firebase Admin SDK so its UI does not depend on Firestore client rules.
+app.get("/admin/content", async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  try{
+    const snap=await db.collection("smv_content").where("language","==","en").get();
+    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    return res.set("Cache-Control","no-store").json({success:true,items});
+  }catch(e){console.error("Admin content read failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to load Admin content."});}
+});
+app.post("/admin/content/save", express.json({limit:"30kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const id=String(req.body?.id||"").trim(),input=req.body?.data;
+  if(!id||id.length>200||id.includes("/")||!input||typeof input!=="object"||Array.isArray(input))return res.status(400).json({success:false,error:"A valid content ID and content payload are required."});
+  const allowed=["kind","title","summary","language","bodyUrl","bodyPublicId","bodySize","coverUrl","coverPath","published","description","mediaType","url","storagePath","cloudinaryPublicId","size","mimeType","fileName"];
+  const patch={};for(const key of allowed)if(Object.prototype.hasOwnProperty.call(input,key))patch[key]=input[key];
+  if(patch.language!==undefined&&patch.language!=="en")return res.status(400).json({success:false,error:"Only English content can be managed here."});
+  if(patch.kind!==undefined&&!["blog","media"].includes(String(patch.kind)))return res.status(400).json({success:false,error:"Unsupported content type."});
+  if(patch.title!==undefined&&(typeof patch.title!=="string"||!patch.title.trim()||patch.title.length>240))return res.status(400).json({success:false,error:"Content title is required and must be 240 characters or less."});
+  if(patch.published!==undefined&&typeof patch.published!=="boolean")return res.status(400).json({success:false,error:"Published must be true or false."});
+  try{
+    const ref=db.collection("smv_content").doc(id),old=await ref.get();
+    const now=FieldValue.serverTimestamp();
+    patch.updatedAt=now;patch.updatedBy=actor.uid;
+    if(!old.exists){patch.createdAt=now;patch.authorUid=actor.uid;if(patch.published===true)patch.publishedAt=now;}
+    else if(patch.published===true)patch.publishedAt=now;
+    await ref.set(patch,{merge:true});
+    return res.set("Cache-Control","no-store").json({success:true,id});
+  }catch(e){console.error("Admin content save failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Admin content."});}
+});
+app.post("/admin/content/toggle", express.json({limit:"5kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const id=String(req.body?.id||"").trim();
+  if(!id||id.length>200||id.includes("/")||typeof req.body?.published!=="boolean")return res.status(400).json({success:false,error:"Content ID and publish state are required."});
+  try{const ref=db.collection("smv_content").doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({success:false,error:"Content not found."});await ref.set({published:req.body.published,publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),updatedBy:actor.uid},{merge:true});return res.json({success:true,id,published:req.body.published});}
+  catch(e){console.error("Admin content toggle failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to update Admin content."});}
+});
+app.post("/admin/content/delete", express.json({limit:"5kb"}), async (req,res)=>{
+  const actor=await requireUser(req,res); if(!actor)return;
+  if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
+  const id=String(req.body?.id||"").trim();
+  if(!id||id.length>200||id.includes("/"))return res.status(400).json({success:false,error:"A valid content ID is required."});
+  try{await db.collection("smv_content").doc(id).delete();return res.json({success:true,id});}
+  catch(e){console.error("Admin content delete failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to delete Admin content."});}
 });
 
 app.post("/admin/astrologer-languages", express.json({limit:"10kb"}), async (req,res)=>{
