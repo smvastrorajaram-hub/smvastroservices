@@ -6,6 +6,12 @@ on:
       - 'wallet-service.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
+      - 'answer-credit.js'
+      - 'public/smvastro.mjs'
+      - 'public/offer-banners.js'
+      - 'public/index.html'
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
       - 'package.json'
       - '.github/workflows/wallet-core-tests.yml'
   push:
@@ -14,6 +20,12 @@ on:
       - 'wallet-service.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
+      - 'answer-credit.js'
+      - 'public/smvastro.mjs'
+      - 'public/offer-banners.js'
+      - 'public/index.html'
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
       - 'package.json'
       - '.github/workflows/wallet-core-tests.yml'
 
@@ -35,6 +47,9 @@ jobs:
         run: |
           node --check server.js
           node --check wallet-service.js
+          node --check answer-credit.js
+          node --check public/smvastro.mjs
+          node --check public/offer-banners.js
           node --check test/wallet-service.test.js
       - name: Run Wallet unit tests
         run: npm run test:wallet
