@@ -1150,14 +1150,8 @@ async function submitAuth(mode){
     // ASK NOW and Admin-entry keep their protected destinations.
     const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
     const goToAdmin=pendingAfterLogin==="admin";
-    closeModal();
-    if(!goToQuestion && !goToAdmin && loginCred.user.uid!==ADMIN_UID){
-      hidePrimarySections("dashboard");
-      show("dashboard"); show("dashboardContent"); show("dashLink"); hide("adminLink");
-      if($("dashboardContent")) $("dashboardContent").innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
-      smvShowRoleNav(); smvEnterInternalView("dashboard",true); go("dashboard");
-    }
-
+    // Resolve the authoritative server role before exposing any dashboard shell.
+    // This prevents a stale/previous role title from flashing during login.
     const loginProfile=await getUserProfile(loginCred.user.uid);
     const loginRole=String(loginProfile?.role||"customer").toLowerCase();
     const loginStatus=String(loginProfile?.status||"active").toLowerCase(); if(loginRole!=="admin" && loginCred.user.uid!==ADMIN_UID){
@@ -1167,6 +1161,7 @@ async function submitAuth(mode){
     const profile=await getUserProfile(loginCred.user.uid);
     const profileRole=String(profile.role||loginRole||"customer").toLowerCase();
     const role=await resolveSmvRole(loginCred.user,profile);
+    closeModal();
     const adminUser=role==="admin";
     setHeaderRoleLabel(adminUser?'admin':role);
     window.__smvCurrentRole=adminUser?'admin':role;
@@ -3557,10 +3552,47 @@ async function loadAdminPanelData(background=false){
   $('testRazorpayBtn').onclick=async()=>{const b=$('testRazorpayBtn');b.disabled=true;b.textContent='TESTING...';try{const r=await withTimeout(renderApi('/test-razorpay',{method:'GET'}),60000);$('razorpayTestMsg').innerHTML='<span class="success"><b>Razorpay connection OK.</b> '+escapeHtml(r?.message||'Render payment server and Razorpay API are working.')+'</span>';}catch(e){$('razorpayTestMsg').innerHTML='<span class="error"><b>Razorpay test failed:</b> '+escapeHtml(e.message||String(e))+'</span>';}b.disabled=false;b.textContent='TEST RAZORPAY CONNECTION';};
 
   const box=$('pendingAstros');
-  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(userMap.get(d.id)?.email||'')}</p><p><b>Mobile:</b> ${escapeHtml(userMap.get(d.id)?.mobile||userMap.get(d.id)?.phone||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><input id="price_${d.id}" type="number" min="1" step="0.01" placeholder="Private Consultation Chat Price ₹"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
+  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(userMap.get(d.id)?.email||'')}</p><p><b>Mobile:</b> ${escapeHtml(userMap.get(d.id)?.mobile||userMap.get(d.id)?.phone||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><input id="price_${d.id}" type="number" min="1" step="0.01" placeholder="Private Consultation Chat Price ₹"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
   await smvMapLimit(pendingDocs,4,async d=>{try{const ps=await getDoc(doc(db,'smv_payouts',d.id));if(ps.exists()){const p=ps.data();const target=$('payout_'+d.id);if(target)target.innerHTML=`<b>PRIVATE BANK/UPI:</b> Bank: ${escapeHtml(p.bankName||'')} · Holder: ${escapeHtml(p.accountName||'')} · Account: ${escapeHtml(p.accountNumber||'')} · IFSC: ${escapeHtml(p.ifsc||'')} · UPI: ${escapeHtml(p.upi||'')} · Status: ${escapeHtml(p.status||'')}`;}}catch(e){const target=$('payout_'+d.id);if(target)target.textContent='Payout details unavailable.';}});
-  box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{const id=b.dataset.approve,price=Number($('price_'+id).value);if(!price||price<1){alert('Admin must set the Private Consultation Chat Price before approval.');return;}await updateDoc(doc(db,'smv_astrologers',id),{status:'approved',pricePerQuestion:price,approvedAt:serverTimestamp(),approvedBy:currentUser.uid});await updateDoc(doc(db,'smv_users',id),{status:'active'});await setDoc(doc(db,'smv_notifications',id+'_approval_'+Date.now()),{userId:id,type:'approval',title:'Astrologer application approved',message:'Your profile has been approved by Admin.',createdAt:serverTimestamp(),read:false});await smvAdminTouch();loadAdminPanel();});
-  box.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reject,reason=$('reject_'+id).value.trim();if(!reason){alert('Enter rejection reason.');return;}await updateDoc(doc(db,'smv_astrologers',id),{status:'rejected',rejectionReason:reason,rejectedAt:serverTimestamp(),rejectedBy:currentUser.uid});await updateDoc(doc(db,'smv_users',id),{status:'rejected'});await setDoc(doc(db,'smv_notifications',id+'_reject_'+Date.now()),{userId:id,type:'rejection',title:'Astrologer application requires changes',message:reason,createdAt:serverTimestamp(),read:false});await smvAdminTouch();loadAdminPanel();});
+  box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.approve,price=Number($('price_'+id)?.value);
+    const root=b.closest('.card'),msg=root?.querySelector('[id^="astroApprovalMsg_"]');
+    if(!Number.isFinite(price)||price<1||price>100000||Math.round(price*100)!==price*100){
+      if(msg)msg.innerHTML='<span class="error">Enter a valid Private Consultation Chat Price (₹1–₹100000, up to 2 decimal places).</span>';
+      return;
+    }
+    root?.querySelectorAll('[data-approve],[data-reject]').forEach(btn=>btn.disabled=true);
+    b.textContent='APPROVING…';
+    if(msg)msg.textContent='Approving Astrologer securely…';
+    try{
+      const result=await renderApi('/admin/approve-astrologer',{method:'POST',body:JSON.stringify({astrologerId:id,pricePerQuestion:price})});
+      if(!result?.success)throw new Error(result?.error||'The backend did not confirm Astrologer approval.');
+      if(msg)msg.innerHTML='<span class="success">Astrologer approved successfully.</span>';
+      await loadAdminPanel();
+    }catch(e){
+      if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';
+      root?.querySelectorAll('[data-approve],[data-reject]').forEach(btn=>btn.disabled=false);
+      b.textContent='APPROVE';
+    }
+  });
+  box.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.reject,reason=String($('reject_'+id)?.value||'').trim();
+    const root=b.closest('.card'),msg=root?.querySelector('[id^="astroApprovalMsg_"]');
+    if(!reason){if(msg)msg.innerHTML='<span class="error">Enter a rejection reason.</span>';return;}
+    root?.querySelectorAll('[data-approve],[data-reject]').forEach(btn=>btn.disabled=true);
+    b.textContent='REJECTING…';
+    if(msg)msg.textContent='Rejecting Astrologer application securely…';
+    try{
+      const result=await renderApi('/admin/reject-astrologer',{method:'POST',body:JSON.stringify({astrologerId:id,reason})});
+      if(!result?.success)throw new Error(result?.error||'The backend did not confirm rejection.');
+      if(msg)msg.innerHTML='<span class="success">Application rejected successfully.</span>';
+      await loadAdminPanel();
+    }catch(e){
+      if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';
+      root?.querySelectorAll('[data-approve],[data-reject]').forEach(btn=>btn.disabled=false);
+      b.textContent='REJECT';
+    }
+  });
 
   // STEP 4 — Approved astrologer profile-description administration.
   const profileBox=$('adminAstrologerProfiles');
