@@ -51,7 +51,7 @@ function billableMinutesForElapsedMs(elapsedMs, maximumMinutes) {
 function calculateLiveSessionCharge({ elapsedMs, ratePerMinutePaise, maximumMinutes }) {
   const rate = Number(ratePerMinutePaise);
   const minutes = billableMinutesForElapsedMs(elapsedMs, maximumMinutes);
-  if (minutes === null || !Number.isSafeInteger(rate) || rate < 0) return null;
+  if (minutes === null || !Number.isSafeInteger(rate) || rate < 0 || rate > 1_000_000) return null;
   const amountPaise = minutes * rate;
   if (!Number.isSafeInteger(amountPaise)) return null;
   return { elapsedMs: Math.floor(Number(elapsedMs)), billableMinutes: minutes, amountPaise };
@@ -778,6 +778,26 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         updatedAt: timestampMillis(p.updatedAt) ? new Date(timestampMillis(p.updatedAt)).toISOString() : null
       });
     } catch (error) { return replyError(res, error, 'Unable to load Live Call / Chat prices.'); }
+  });
+
+  // Return short-lived TURN REST credentials if staging configures a TURN relay.
+  // Without TURN, browsers still attempt STUN; restrictive NAT/firewall networks may fail.
+  app.get('/live/ice-config', async (req, res) => {
+    const auth = await requireRole(req, res, ['customer', 'astrologer']);
+    if (!auth) return;
+    const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+    const turnUrls = String(process.env.LIVE_TURN_URLS || process.env.LIVE_TURN_URL || '')
+      .split(',').map(v => v.trim()).filter(v => /^turns?:/i.test(v));
+    const sharedSecret = String(process.env.LIVE_TURN_SHARED_SECRET || '');
+    let turnConfigured = false;
+    if (turnUrls.length && sharedSecret) {
+      const expiry = Math.floor(Date.now() / 1000) + 600;
+      const username = expiry + ':' + String(auth.user.uid);
+      const credential = crypto.createHmac('sha1', sharedSecret).update(username).digest('base64');
+      iceServers.push({ urls: turnUrls, username, credential });
+      turnConfigured = true;
+    }
+    return res.set('Cache-Control', 'no-store').json({ success: true, iceServers, turnConfigured, credentialLifetimeSeconds: turnConfigured ? 600 : 0 });
   });
 
   app.post('/admin/live/pricing', async (req, res) => {
