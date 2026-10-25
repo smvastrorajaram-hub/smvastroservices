@@ -3641,8 +3641,8 @@ async function loadAdminPanelData(background=false){
         <div style="margin:10px 0">
           <div class="grid" style="align-items:end;gap:10px">
             <label for="adminChatPrice_${d.id}"><b>Private Consultation Question Price (₹)</b><input id="adminChatPrice_${d.id}" type="number" min="1" max="100000" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Question Price ₹"></label>
-            <label for="adminCallPrice_${d.id}"><b>Live Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
-            <label for="adminLiveChatPrice_${d.id}"><b>Live Chat Price per minute (₹)</b><input id="adminLiveChatPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.chatPricePerMinute??a.liveChatPricePerMinute??a.chatRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
+            <label for="adminCallPrice_${d.id}"><b>Live Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="10000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
+            <label for="adminLiveChatPrice_${d.id}"><b>Live Chat Price per minute (₹)</b><input id="adminLiveChatPrice_${d.id}" type="number" min="0" max="10000" step="0.01" value="${escapeHtml(String(Number(a.chatPricePerMinute??a.liveChatPricePerMinute??a.chatRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
           </div>
           <div class="action-row"><button class="btn" data-chat-price-save="${d.id}">SAVE PRICES</button></div>
           <div class="small" id="adminChatPriceMsg_${d.id}"></div>
@@ -3668,11 +3668,11 @@ async function loadAdminPanelData(background=false){
       if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
         if(msg)msg.innerHTML='<span class="error">Enter a valid Chat Price from ₹1 to ₹100000 (up to two decimals).</span>';return;
       }
-      if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
-        if(msg)msg.innerHTML='<span class="error">Call Price must be ₹0 (unset) or ₹1–₹100000 per minute, up to two decimals.</span>';return;
+      if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>10000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
+        if(msg)msg.innerHTML='<span class="error">Live Call Price must be ₹0 (unset) or ₹1–₹10000 per minute, up to two decimals.</span>';return;
       }
-      if(liveChatRaw!==''&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>100000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
-        if(msg)msg.innerHTML='<span class="error">Live Chat Price must be ₹0 (unset) or ₹1–₹100000 per minute, up to two decimals.</span>';return;
+      if(liveChatRaw!==''&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>10000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+        if(msg)msg.innerHTML='<span class="error">Live Chat Price must be ₹0 (unset) or ₹1–₹10000 per minute, up to two decimals.</span>';return;
       }
       b.disabled=true;b.textContent='SAVING…';
       try{
