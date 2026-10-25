@@ -84,8 +84,9 @@ test('legacy global pricing defaults safely, but Customer rates come from the se
   assert.equal(maxAffordableMinutes(105000, 3500), 30);
   assert.equal(maxAffordableMinutes(25500, 1000), 25);
   assert.equal(maxAffordableMinutes(25500, 1200), 21);
-  assert.equal(maxAffordableMinutes(3400, 3500), 0);
-  assert.equal(maxAffordableMinutes(1900, 2000), 0);
+  assert.equal(maxAffordableMinutes(3400, 3500), 0); // ₹34 cannot start a ₹35/minute Call.
+  assert.equal(maxAffordableMinutes(1900, 2000), 0); // ₹19 cannot start a ₹20/minute Chat.
+  assert.equal(maxAffordableMinutes(1900, 3500), 0); // ₹19 cannot start a ₹35/minute Call.
   assert.equal(maxAffordableMinutes(105000, 2000), 52);
   assert.equal(maxAffordableMinutes(1000, null), 0);
   assert.equal(MAX_SESSION_MINUTES, 1440);
