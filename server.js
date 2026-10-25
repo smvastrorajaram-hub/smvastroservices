@@ -2520,7 +2520,13 @@ app.post("/admin/astrologer-pricing", express.json({limit:"10kb"}), async (req,r
     }
     const byUid=await collection.where("uid","==",uid).get();
     const targets=new Map([[selectedSnap.id,selectedRef]]);
-    targets.set(uid,collection.doc(uid));
+    // Do not create a blank UID-keyed record just to save a price. Add the
+    // canonical target only when it already exists (or it is the selected doc).
+    if(uid===selectedSnap.id)targets.set(uid,selectedRef);
+    else{
+      const canonicalRef=collection.doc(uid),canonicalSnap=await canonicalRef.get();
+      if(canonicalSnap.exists)targets.set(uid,canonicalRef);
+    }
     for(const docSnap of byUid.docs){
       const record=docSnap.data()||{};
       if(!record.uid||String(record.uid)===uid)targets.set(docSnap.id,docSnap.ref);
@@ -4266,9 +4272,25 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
     const rawLimit=Number(req.query?.limit||50);
     const limit=Number.isFinite(rawLimit)?Math.max(1,Math.min(100,Math.floor(rawLimit))):50;
     const ownerUid=String(req.query?.ownerUid||"").trim().slice(0,160);
-    let query=db.collection("smv_wallet_transactions");
-    if(ownerUid)query=query.where("ownerUid","==",ownerUid);
-    const snap=await query.orderBy("createdAt","desc").limit(limit).get();
+    const transactionCollection=db.collection("smv_wallet_transactions");
+    let snap;
+    try{
+      let query=transactionCollection;
+      if(ownerUid)query=query.where("ownerUid","==",ownerUid);
+      snap=await query.orderBy("createdAt","desc").limit(limit).get();
+    }catch(error){
+      const code=String(error?.code||"").toLowerCase();
+      const missingCompositeIndex=!!ownerUid&&(code==="9"||code==="failed-precondition"||/requires an index|create_composite/i.test(String(error?.message||"")));
+      if(!missingCompositeIndex)throw error;
+      const fallbackLimit=Math.min(2000,Math.max(limit,limit*20));
+      snap=await transactionCollection.where("ownerUid","==",ownerUid).limit(fallbackLimit).get();
+      const millis=value=>{
+        if(value&&typeof value.toMillis==="function")return value.toMillis();
+        if(value&&Number.isFinite(Number(value.seconds??value._seconds)))return Number(value.seconds??value._seconds)*1000;
+        const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:0;
+      };
+      snap={docs:snap.docs.slice().sort((a,b)=>millis(b.data()?.createdAt)-millis(a.data()?.createdAt)).slice(0,limit)};
+    }
     const transactions=snap.docs.map(docSnap=>{
       const t=docSnap.data()||{};
       let createdAt=null;
