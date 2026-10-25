@@ -27,6 +27,24 @@ function safePaise(value) {
   return Number.isSafeInteger(n) && n >= 0 ? n : 0;
 }
 
+function safeMinutes(value) {
+  const n = Number(value ?? 0);
+  return Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000 ? n : 0;
+}
+
+function offerTimeMillis(value) {
+  try {
+    if (value && typeof value.toMillis === 'function') return value.toMillis();
+    if (value && typeof value.toDate === 'function') return value.toDate().getTime();
+    if (value instanceof Date) return value.getTime();
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const local = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw);
+    const parsed = Date.parse(local ? raw + '+05:30' : raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch (_) { return null; }
+}
+
 function walletLedgerDocId(type, key) {
   return crypto.createHash('sha256').update(String(type) + ':' + String(key)).digest('hex');
 }
@@ -79,7 +97,8 @@ function createWalletService({ db, FieldValue }) {
       if (snap.exists) return;
       tx.set(ref, {
         ownerUid: uid, ownerRole: role, currency: 'INR',
-        availableBalancePaise: 0, reservedBalancePaise: 0, version: 1,
+        availableBalancePaise: 0, reservedBalancePaise: 0,
+        bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
       });
     });
@@ -89,6 +108,8 @@ function createWalletService({ db, FieldValue }) {
       ownerUid: uid, ownerRole: role, currency: 'INR',
       availableBalancePaise: safePaise(data.availableBalancePaise),
       reservedBalancePaise: safePaise(data.reservedBalancePaise),
+      bonusMinutesBalance: safeMinutes(data.bonusMinutesBalance),
+      reservedBonusMinutes: safeMinutes(data.reservedBonusMinutes),
       version: safePaise(data.version), createdAt: data.createdAt || null, updatedAt: data.updatedAt || null
     };
   }
@@ -243,6 +264,8 @@ function createWalletService({ db, FieldValue }) {
           amountPaise: safePaise(d.amountPaise), amount: paiseToRupees(safePaise(d.amountPaise)),
           balanceAfterPaise: safePaise(d.balanceAfterPaise), balanceAfter: paiseToRupees(safePaise(d.balanceAfterPaise)),
           reservedBalanceAfterPaise: safePaise(d.reservedBalanceAfterPaise),
+          bonusMinutes: safeMinutes(d.bonusMinutes), bonusMinutesCredited: safeMinutes(d.bonusMinutesCredited),
+          bonusMinutesBalanceAfter: safeMinutes(d.bonusMinutesBalanceAfter),
           note: d.note || '', referenceType: d.referenceType || '', referenceId: d.referenceId || '',
           createdAt: timestampIso(d.createdAt)
         };
