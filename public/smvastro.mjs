@@ -769,15 +769,12 @@ async function isCurrentAdmin(){
 }
 let smvBoardRequest=null;
 const SMV_ADMIN_SHORTCUTS=[
- ['adminPendingQuestions','Public Questions','parent'],
- ['adminAnswers','Answers','parent'],
- ['adminPrivatePending','Private Questions','parent'],
  ['adminRefunds','Refunds','parent'],
  ['adminWalletLedger','Wallet Ledger','self'],
  ['adminHoroscopePriceSet','Horoscope Settings','self'],
  ['adminOffersPromotions','Offers','self'],
  ['adminWithdrawals','Withdrawals','parent'],
- ['adminCommissionSettings','Commission','self']
+ ['adminCommissionSettings','Live / Booking Commission','self']
 ];
 function smvWalletAuditMoney(paise){
  const n=Number(paise);
