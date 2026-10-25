@@ -3095,6 +3095,8 @@ ${ad.status === 'rejected' && ad.rejectionReason
 
   }
   if(!active()) return;
+  if(!active()) return;
+  if(role==='customer'||role==='astrologer')smvLiveBindDashboard(role);
   const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note);
   // Notifications are supplementary. A Firestore permission/timeout issue in
   // this optional section must never turn a successfully loaded dashboard into
@@ -3515,6 +3517,7 @@ async function loadAdminPanelData(background=false){
   smvRenderOpenWorkflowControl(adminData);
   smvRenderPrivateConsultAdmin(adminData);
   smvBindAdminWalletLedger();
+  smvLiveBindAdminPricing();
   if(!background)smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger unavailable:',e));
   smvWatchAdminQuestions();
   const adminReadErrors=adminData.errors||{};
