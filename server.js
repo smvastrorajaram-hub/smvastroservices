@@ -1367,10 +1367,13 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
     ]);
     const profile=userSnap.exists?(userSnap.data()||{}):{};
     const astro=astroSnap.exists?(astroSnap.data()||{}):{};
-    if(!astroSnap.exists || (astro.uid && String(astro.uid)!==String(user.uid)) ||
-       String(profile.role||"").toLowerCase()!=="astrologer"){
+    if(!astroSnap.exists || (astro.uid && String(astro.uid)!==String(user.uid))){
       return res.status(403).json({success:false,error:"This account does not own an Astrologer profile."});
     }
+    // The document must be tied to the authenticated UID. Do not reject a
+    // legitimate migrated professional profile only because smv_users.role
+    // retained an old Customer value; the verified-owned Astrologer record is
+    // the authority for this profile-scoped setting.
     if(!["approved","active"].includes(String(astro.status||"").toLowerCase())){
       return res.status(409).json({success:false,error:"Only an approved Astrologer can change availability."});
     }
