@@ -2050,16 +2050,16 @@ async function renderWalletPanel(host,role,options={}){
   panel.innerHTML='<div class="smv-wallet-heading"><h3>'+(admin?'Admin Wallet':role==='astrologer'?'My Wallet':'My Wallet')+'</h3><p class="small">'+(customer?'Recharge your Wallet securely. Eligible seasonal offers add free consultation minutes after payment is verified.':role==='astrologer'?'Earnings are shown in Wallet. Withdrawal eligibility and payout continue through the existing Earnings section.':'Service revenue received by SMV ASTRO is recorded here.')+'</p></div><div class="grid"><div class="card"><span class="small">Available Wallet Balance</span><h3 id="'+panel.id+'Available">₹0.00</h3></div><div class="card"><span class="small">Free Consultation Time</span><h3 id="'+panel.id+'Minutes">0 min</h3></div></div>'+(customer?'<form id="'+panel.id+'RechargeForm"><div class="grid"><label>Recharge Amount ₹<input id="'+panel.id+'Amount" type="number" min="1" step="0.01" required value="100"></label><label>Promo Code (optional)<input id="'+panel.id+'Promo" maxlength="40" autocomplete="off" placeholder="DIWALI / PONGAL"></label></div><div class="small" id="'+panel.id+'Quote">Offer minutes will be confirmed by the server when you create a recharge.</div><button type="submit" class="btn" id="'+panel.id+'RechargeBtn">RECHARGE WALLET</button><div class="small" id="'+panel.id+'Message" role="status" aria-live="polite"></div></form>':'')+'<h4>Recent Wallet Transactions</h4><div id="'+panel.id+'Ledger"><div class="empty">Loading Wallet...</div></div><button type="button" class="btn gray" id="'+panel.id+'Refresh">REFRESH WALLET</button>';
   const fmtAmount=v=>'₹'+(Number(v||0)).toFixed(2);
   async function refresh(){
-    const ledger=$('#' + panel.id + 'Ledger');
+    const ledger=$(panel.id + 'Ledger');
     try{
       const values=await Promise.all([
         renderApi('/wallet?_fresh='+Date.now(),{method:'GET'}),
         renderApi('/wallet/transactions?limit=10&_fresh='+Date.now(),{method:'GET'})
       ]);
       const wallet=values[0]?.wallet||values[1]?.wallet||{};
-      $('#'+panel.id+'Available').textContent=fmtAmount(wallet.availableBalance);
+      $(panel.id+'Available').textContent=fmtAmount(wallet.availableBalance);
       const seconds=Math.max(0,Number(wallet.freeSecondsBalance||0));
-      $('#'+panel.id+'Minutes').textContent=Math.floor(seconds/60)+' min'+(seconds%60?' '+(seconds%60)+' sec':'');
+      $(panel.id+'Minutes').textContent=Math.floor(seconds/60)+' min'+(seconds%60?' '+(seconds%60)+' sec':'');
       const items=Array.isArray(values[1]?.transactions)?values[1].transactions:[];
       const label={recharge:'Wallet Recharge',welcome_credit:'Welcome Wallet Credit',consultation_earning:'Consultation Earnings',service_revenue:'Service Revenue',consultation_debit:'Consultation Charge',reserve_release:'Reserved Amount Released',refund:'Wallet Refund',free_minutes_offer:'Free-minute Offer'};
       ledger.innerHTML=items.length?items.map(x=>{
@@ -2071,16 +2071,16 @@ async function renderWalletPanel(host,role,options={}){
       return true;
     }catch(e){
       if(ledger)ledger.innerHTML='<div class="empty error">'+escapeHtml(e.message||'Wallet is temporarily unavailable.')+'</div>';
-      const message=$('#'+panel.id+'Message');if(message)message.textContent=e.message||'Wallet is temporarily unavailable.';
+      const message=$(panel.id+'Message');if(message)message.textContent=e.message||'Wallet is temporarily unavailable.';
       return false;
     }
   }
-  $('#'+panel.id+'Refresh')?.addEventListener('click',async e=>{e.currentTarget.disabled=true;await refresh();e.currentTarget.disabled=false;});
+  $(panel.id+'Refresh')?.addEventListener('click',async e=>{e.currentTarget.disabled=true;await refresh();e.currentTarget.disabled=false;});
   if(customer){
-    const form=$('#'+panel.id+'RechargeForm'),button=$('#'+panel.id+'RechargeBtn'),message=$('#'+panel.id+'Message'),quote=$('#'+panel.id+'Quote');
+    const form=$(panel.id+'RechargeForm'),button=$(panel.id+'RechargeBtn'),message=$(panel.id+'Message'),quote=$(panel.id+'Quote');
     form?.addEventListener('submit',async e=>{
       e.preventDefault();if(button.disabled)return;
-      const amount=Number($('#'+panel.id+'Amount')?.value),promoCode=String($('#'+panel.id+'Promo')?.value||'').trim().toUpperCase();
+      const amount=Number($(panel.id+'Amount')?.value),promoCode=String($(panel.id+'Promo')?.value||'').trim().toUpperCase();
       if(!Number.isFinite(amount)||amount<1){message.innerHTML='<span class="error">Enter a recharge amount of at least ₹1.</span>';return;}
       button.disabled=true;button.textContent='PREPARING PAYMENT...';message.textContent='';
       try{
