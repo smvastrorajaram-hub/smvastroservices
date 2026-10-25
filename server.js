@@ -1316,7 +1316,9 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
       if(type!=="Call Consultation")return res.status(400).json({error:"An Astrologer can only be selected for a Call Consultation booking."});
       // Book a Call records the birth details requested by the customer and stores
       // them in a structured field for the Admin booking view.
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||Number.isNaN(Date.parse(birthDate+"T00:00:00Z"))||new Date(birthDate+"T00:00:00Z").toISOString().slice(0,10)!==birthDate||birthDate>indiaDateKey()){
+      const birthTodayParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,p)=>{o[p.type]=p.value;return o;},{});
+      const birthTodayIso=`${birthTodayParts.year}-${birthTodayParts.month}-${birthTodayParts.day}`;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||Number.isNaN(Date.parse(birthDate+"T00:00:00Z"))||new Date(birthDate+"T00:00:00Z").toISOString().slice(0,10)!==birthDate||birthDate>birthTodayIso){
         return res.status(400).json({error:"Enter a valid Date of Birth that is not in the future."});
       }
       if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(birthTime)){
