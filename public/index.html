@@ -318,44 +318,19 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="dashboardContent"></div>
 </section><section class="hidden smv-type-root" id="admin">
 <div class="card"><div><div><h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2><p class="small admin-dashboard-subtitle">SMV ASTRO administration and approval center</p></div></div><div id="adminDataLoadMsg"></div><div class="stats-grid admin-summary-grid" id="adminSummary"></div></div>
-<section class="admin-workgroup" id="adminGroupPublicQuestions" aria-labelledby="adminGroupPublicQuestionsTitle" hidden>
-<h2 class="admin-workgroup-title" id="adminGroupPublicQuestionsTitle">01 · Public Questions & Answers / பொது கேள்விகள் மற்றும் பதில்கள்</h2>
-<p class="admin-workgroup-description">Approve public questions and submitted answers; review recent questions and response-length rules. / பொது கேள்விகள் மற்றும் பதில்களை ஒப்புதல் அளித்து, சமீபத்திய கேள்விகளையும் பதில் சொல் வரம்பையும் நிர்வகிக்கவும்.</p>
-<div class="card"><h3>Public Question Approval</h3><div id="adminPendingQuestions"><div class="empty">Loading questions...</div></div></div>
-<div class="card"><h3>Answers Awaiting Approval</h3><div id="adminAnswers"><div class="empty">Loading answers...</div></div></div>
-<div class="card"><h3>Recent Questions</h3><div id="adminQuestions"><div class="empty">Loading questions...</div></div></div>
-<div class="card"><h3>Answer Word Limit</h3><div class="action-row"><input id="minimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="saveAnswerWords" type="button">SAVE WORD LIMIT</button></div><div class="small" id="answerWordsMsg"></div></div>
-</section>
-<section class="admin-workgroup" id="adminGroupPrivateConsultation" aria-labelledby="adminGroupPrivateConsultationTitle" hidden>
-<h2 class="admin-workgroup-title" id="adminGroupPrivateConsultationTitle">02 · Private Consultation / தனிப்பட்ட ஆலோசனை</h2>
-<p class="admin-workgroup-description">Manage private consultation questions, answer approvals, answer length, commission and alerts. / தனிப்பட்ட ஆலோசனைக் கேள்விகள், பதில் ஒப்புதல், சொல் வரம்பு, கமிஷன் மற்றும் அறிவிப்புகளை நிர்வகிக்கவும்.</p>
-<div class="card" id="adminPrivateConsultationCard">
-<h3>Private Consultation — Question Approval</h3>
-<p class="small">Separate from Ask Now. Paid private questions are handled only with the customer-selected astrologer.</p>
-<div id="privateConsultWorkflowControl"></div>
-<div id="adminPrivatePending"><div class="empty">Loading private consultations...</div></div>
-</div>
-<div class="card">
-<h3>Private Consultation — Answers Awaiting Approval</h3>
-<div id="adminPrivateAnswers"><div class="empty">Loading private answers...</div></div>
-</div>
-<div class="card">
-<h3>Private Consultation — Answer Word Count</h3>
-<p class="small">Separate from the existing Ask Now answer word limit.</p>
-<div class="action-row"><input id="privateMinimumAnswerWords" max="10000" min="1" placeholder="Minimum words" type="number"/><button class="btn" id="savePrivateMinimumAnswerWords" type="button">SAVE WORD COUNT</button></div>
-<div class="small" id="privateMinimumAnswerWordsMsg"></div>
-</div>
-<div class="card"><h3>Private Consultation Commission</h3><p class="small">Applies globally to every astrologer's individual Private Consultation Chat Price. Existing Ask Now commission is separate.</p><div class="action-row"><input id="privateAstroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="privateAdminCommission" max="100" min="0" placeholder="Admin %" readonly="" type="number"/><button class="btn" id="savePrivateCommission" type="button">SAVE PRIVATE COMMISSION</button></div><div class="small" id="privateCommissionMsg"></div></div>
-
+<section class="admin-workgroup" id="adminGroupNotifications" aria-labelledby="adminGroupNotificationsTitle">
+<h2 class="admin-workgroup-title" id="adminGroupNotificationsTitle">Admin Notifications / நிர்வாக அறிவிப்புகள்</h2>
+<p class="admin-workgroup-description">Important Admin, Wallet, Live Call / Chat and Booking events. / முக்கியமான நிர்வாகம், Wallet, Live Call / Chat மற்றும் Booking அறிவிப்புகள்.</p>
+<div class="card"><div id="adminNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupAstrologers" aria-labelledby="adminGroupAstrologersTitle">
-<h2 class="admin-workgroup-title" id="adminGroupAstrologersTitle">03 · Astrologer Management / ஜோதிடர் நிர்வாகம்</h2>
+<h2 class="admin-workgroup-title" id="adminGroupAstrologersTitle">01 · Astrologer Management / ஜோதிடர் நிர்வாகம்</h2>
 <p class="admin-workgroup-description">Review astrologer applications and manage approved public profile descriptions. / ஜோதிடர் விண்ணப்பங்களை ஆய்வு செய்து, பொது சுயவிவர விவரங்களை நிர்வகிக்கவும்.</p>
 <div class="card"><h3>Astrologer Applications</h3><div id="pendingAstros"><div class="empty">Loading applications...</div></div></div>
 <div class="card" id="adminAstrologerProfileManagementCard"><div><h3>Astrologer Profile Management</h3><button aria-label="Collapse Astrologer Profile Management" class="smv-v170-collapse-btn" id="adminAstrologerProfileManagementToggle" title="Collapse" type="button">▼</button></div><div id="adminAstrologerProfileManagementBody"><p class="small">Allow or block profile-description editing, review submitted descriptions, or update an approved public description directly.</p><div id="adminAstrologerProfiles"><div class="empty">Loading approved astrologer profiles...</div></div></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupPricing" aria-labelledby="adminGroupPricingTitle">
-<h2 class="admin-workgroup-title" id="adminGroupPricingTitle">04 · Service Pricing, Access & Commission / சேவை கட்டணம், அணுகல் & கமிஷன்</h2>
+<h2 class="admin-workgroup-title" id="adminGroupPricingTitle">02 · Live / Booking Settings & Commission / சேவை கட்டணம், அணுகல் & கமிஷன்</h2>
 <p class="admin-workgroup-description">Configure Live Call / Live Chat concurrency, Horoscope and Matching access, and the commission split used by live sessions and accepted Live bookings.</p>
 <div class="card" hidden><h3>Question Price</h3><div class="action-row"><input id="questionPrice" min="1" placeholder="Question price" step="0.01" type="number"/><button class="btn" id="saveQuestionPrice" type="button">SAVE PRICE</button></div><div class="small" id="questionPriceMsg"></div></div>
 <div class="card" id="adminLiveSessionPricing"><h3>Live Session Settings</h3><p class="small">Call and Chat per-minute prices are set individually for each approved Astrologer in <b>Astrologer Profile Management</b>. Each Customer can enter a maximum number of minutes based on their available Wallet balance and the selected Astrologer's rate. The server reserves the entered maximum amount and returns unused balance when the session ends early.</p><div class="grid"><div><label class="small" for="liveMaxConcurrentSessions"><b>Maximum concurrent sessions per Astrologer</b></label><input id="liveMaxConcurrentSessions" type="number" min="1" max="3" step="1" value="1"/></div></div><div class="action-row"><button class="btn" id="saveLiveSessionPricing" type="button">SAVE SESSION SETTINGS</button><button class="btn gray" id="refreshLiveSessionPricing" type="button">REFRESH</button></div><div class="small" id="liveSessionPricingMsg" role="status" aria-live="polite">Live session settings have not been loaded.</div></div>
@@ -363,10 +338,10 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card" id="adminCommissionSettings"><h3>Live / Booking Commission</h3><p class="small">Applied to completed, charged Live Calls, Live Chats, and accepted Live bookings using the actual session charge.</p><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button></input></div><div class="small" id="commissionMsg"></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupPayments" aria-labelledby="adminGroupPaymentsTitle">
-<h2 class="admin-workgroup-title" id="adminGroupPaymentsTitle">05 · Payments, Refunds & Payouts / பணப்பரிவர்த்தனை, Refunds & Payouts</h2>
+<h2 class="admin-workgroup-title" id="adminGroupPaymentsTitle">03 · Payments & Payouts / பணப்பரிவர்த்தனை, Refunds & Payouts</h2>
 <p class="admin-workgroup-description">Review payment-method changes, rejected-question refunds, astrologer withdrawals, earnings and Razorpay connectivity. / கட்டண முறையின் மாற்றங்கள், கேள்வி refund-கள், ஜோதிடர் withdrawals, வருமானம் மற்றும் Razorpay இணைப்பை ஆய்வு செய்யவும்.</p>
 <div class="card"><h3>Payment Method Changes — Admin Approval</h3><div id="adminPayoutChanges"><div class="empty">Loading payment method changes...</div></div></div>
-<div class="card"><h3>Refunds — Rejected Paid Questions</h3><div id="adminRefunds"><div class="empty">Loading refunds...</div></div></div>
+
 <div class="card"><h3>Astrologer Withdrawals</h3><div id="adminWithdrawals"><div class="empty">Loading withdrawal requests...</div></div></div>
 <div class="card"><h3>Admin Earnings History</h3><p class="small">Admin earnings are shown for completed and approved consultations.</p><div id="adminEarningsHistory"><div class="empty">Loading admin earnings...</div></div></div>
 <div class="card" id="adminWalletLedger">
@@ -383,12 +358,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
 </section>
 <section class="admin-workgroup" id="adminGroupReviews" aria-labelledby="adminGroupReviewsTitle">
-<h2 class="admin-workgroup-title" id="adminGroupReviewsTitle">06 · Customer Reviews / வாடிக்கையாளர் மதிப்புரைகள்</h2>
+<h2 class="admin-workgroup-title" id="adminGroupReviewsTitle">04 · Customer Reviews / வாடிக்கையாளர் மதிப்புரைகள்</h2>
 <p class="admin-workgroup-description">Manage the customer review displayed on the website. / இணையதளத்தில் காட்டப்படும் வாடிக்கையாளர் மதிப்புரையை நிர்வகிக்கவும்.</p>
 <div class="card"><h3>Customer Reviews</h3><div id="adminReviews"><div class="empty">Loading reviews...</div></div><div class="small" id="adminReviewMsg"></div><input id="adminReviewRating" type="hidden" value="5"/><textarea class="hidden" id="adminReviewText"></textarea><button class="hidden" id="saveAdminReview" type="button">SAVE</button></div>
 </section>
 <section class="admin-workgroup" id="adminGroupContent" aria-labelledby="adminGroupContentTitle">
-<h2 class="admin-workgroup-title" id="adminGroupContentTitle">07 · Website Content & Media / இணையதள உள்ளடக்கம் & மீடியா</h2>
+<h2 class="admin-workgroup-title" id="adminGroupContentTitle">05 · Website Content & Media / இணையதள உள்ளடக்கம் & மீடியா</h2>
 <p class="admin-workgroup-description">Create and publish blog posts; manage downloadable documents, images, videos and music. / வலைப்பதிவுகளை உருவாக்கி வெளியிட்டு, பதிவிறக்க ஆவணங்கள், படங்கள், வீடியோக்கள் மற்றும் இசையை நிர்வகிக்கவும்.</p>
 <div class="card" id="adminContentManager">
 <h3>Blogs &amp; Downloadable Content</h3>
@@ -425,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
-<div class="card"><h3>Admin Notifications</h3><p class="small">Important Admin, Wallet, Live Call / Chat and Booking events are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
+
 </section>
 
 </section></div>
@@ -513,8 +488,8 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- SMV ASTRO Install App option: placed immediately before the final footer -->
 <div id="smv24-footer" role="contentinfo"><div class="smv24-footer-top"><div class="smv24-brand"><h2>SMV ASTRO SERVICES</h2><p>Sri Madurai Veerayah Astro Services</p><small>GUIDING YOUR COSMIC JOURNEY</small><em>Astrology for a Better Tomorrow</em></div><div class="smv24-columns"><div aria-label="Footer Quick Links" class="smv26-links" role="navigation"><h3>Quick Links</h3><a href="#home">Home</a><a href="https://horoscope.smvastroservices.in/" rel="noopener" target="_blank">Horoscope</a><a href="#publicBlogs">Blog</a><a href="#publicMedia">Media</a><a href="#about">About Us</a><a href="#contact">Contact Us</a></div><div aria-label="Footer Our Services" class="smv26-links" role="navigation"><h3>Our Services</h3><a href="https://horoscope.smvastroservices.in/" rel="noopener" target="_blank">Birth Chart Analysis</a><a data-smv-route="private-consultation" href="./?view=consult">Career Guidance</a><a href="https://horoscope.smvastroservices.in/#smvMarriageMatching" rel="noopener" target="_blank">Marriage Matching</a><a data-smv-route="private-consultation" href="./?view=consult">Health &amp; Wellness</a><a data-smv-route="private-consultation" href="./?view=consult">Remedies &amp; Solutions</a><a data-smv-route="private-consultation" href="./?view=consult">Personal Consultation</a></div><div aria-label="Footer Support" class="smv26-links" role="navigation"><h3>Support</h3><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="#faq">FAQ</a><a href="sitemap.html">Sitemap</a><a href="https://wa.me/message/EPR2XEATFYREB1">Help &amp; Support</a></div></div><div class="smv24-contact"><a href="tel:+916381171084"><img alt="" class="smv26-social-icon" height="26" src="assets/social/phone.svg" width="26"/> +91 6381171084</a><a href="mailto:smvastroservices@gmail.com">✉ smvastroservices@gmail.com</a><span>⌖ Perambalur, Tamil Nadu, India</span></div><div class="smv24-social"><a aria-label="Facebook" href="https://www.facebook.com/share/1ErDtsZR6i/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/facebook.svg" width="32"/><span>Facebook</span></a><a aria-label="Instagram" href="https://www.instagram.com/smvastroproducts/" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/instagram.svg" width="32"/><span>Instagram</span></a><a aria-label="YouTube" href="https://youtube.com/@rajarammaduraiveeran?si=Yez_7W6c14hDl-d2" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/youtube.svg" width="32"/><span>YouTube</span></a><a aria-label="WhatsApp" href="https://wa.me/message/EPR2XEATFYREB1" rel="noopener noreferrer" target="_blank"><img alt="" class="smv26-social-icon" height="32" src="assets/social/whatsapp.svg" width="32"/><span>WhatsApp</span></a></div></div><div class="smv24-scenery"><p>Let the Stars Guide You Towards<br/>a Brighter Tomorrow</p></div><div class="smv24-copyright">© 2026 SMV ASTRO SERVICES. All Rights Reserved.<small>TRADITIONAL WISDOM　|　MODERN GUIDANCE</small></div></div>
 <div class="modal hidden" id="modal">
-<div class="modalbox">
-<button aria-label="Close" onclick="closeModal()" title="Close" type="button">X</button>
+<div class="modalbox" style="position:relative;max-height:calc(100dvh - 20px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box">
+<button aria-label="Close" onclick="closeModal()" title="Close" type="button" style="position:absolute;top:8px;right:8px;z-index:30;width:38px;height:38px;min-width:38px;min-height:38px;display:grid;place-items:center;padding:0;border:1px solid #d4af37;border-radius:50%;background:#8b1717;color:#fff;-webkit-text-fill-color:#fff;font-size:20px;font-weight:700;line-height:1;cursor:pointer">×</button>
 <div id="modalContent"></div>
 </div>
 </div>
