@@ -1,5 +1,6 @@
 const {createRefundService,bankReferences}=require('./refund-service');
 const {registerWalletRoutes,CUSTOMER_WELCOME_CREDIT_PAISE,walletLedgerDocId}=require('./wallet-service');
+const {registerLiveSessionRoutes}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
 const crypto = require("crypto");
@@ -4327,6 +4328,10 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
     return res.status(500).json({success:false,error:"Unable to load Wallet transaction audit."});
   }
 });
+
+// Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
+// Register only on the active service; the staging deployment is routed by its own config.
+const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
