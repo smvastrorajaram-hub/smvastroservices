@@ -1371,6 +1371,8 @@ module.exports = {
   billableMinutesForElapsedMs,
   calculateLiveSessionCharge,
   pricingFromSnapshot,
+  commissionFromSnapshot,
+  frozenBookingCommission,
   liveSessionSafeView,
   astrologerRatePaise,
   maxAffordableMinutes,
