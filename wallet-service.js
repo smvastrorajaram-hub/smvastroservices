@@ -329,13 +329,16 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
           receipt: 'SMV_WR_' + rechargeId.slice(0, 24),
           notes: { walletRechargeId: rechargeId, customerUid: user.uid }
         });
-        await rechargeRef.set({ razorpayOrderId: order.id, status: 'order_created', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-        await db.collection('razorpay_orders').doc(order.id).set({
+        // Keep the recharge lookup and the existing webhook order registry atomic.
+        const orderBatch = db.batch();
+        orderBatch.set(rechargeRef, { razorpayOrderId: order.id, status: 'order_created', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        orderBatch.set(db.collection('razorpay_orders').doc(order.id), {
           razorpayOrderId: order.id, walletRechargeId: rechargeId, firebaseUid: user.uid,
           customerEmail: user.email || null, amount: amountPaise, currency: 'INR',
           serviceName: 'SMV ASTRO Wallet Recharge', status: 'created',
           createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
+        await orderBatch.commit();
         return res.json({ success: true, rechargeId, orderId: order.id, keyId: razorpayKeyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR' });
       } catch (e) {
         await rechargeRef.set({ status: 'failed', failureReason: String(e?.message || 'Order creation failed').slice(0, 200), updatedAt: FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
