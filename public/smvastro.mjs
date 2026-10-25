@@ -2154,8 +2154,8 @@ document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
 function smvCustomerBookingChatCardHtml(){
  return '<section class="card smv-customer-book-chat" id="smvCustomerBookChatCard" style="margin-top:16px" aria-labelledby="smvCustomerBookChatTitle">'+
- '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Astrologer Directory &amp; Book a Chat</h3><p>Browse approved astrologer profiles and reviews first. Book a Chat uses the existing Private Consultation question-and-answer flow; it is not a live text-chat session.</p><p class="small">New Customer registrations receive a one-time ₹25 Wallet credit.</p></div>'+
- '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gray" id="smvCustomerOpenAstrologerList" type="button">VIEW ASTROLOGER LIST</button><button class="btn" id="smvCustomerBookChat" type="button">BOOK A CHAT</button></div></div></section>';
+ '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p><p class="small">New Customer registrations receive a one-time ₹25 Wallet credit.</p></div>'+
+ '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gray" id="smvCustomerOpenAstrologerList" type="button">VIEW ASTROLOGERS LIST</button><button class="btn" id="smvCustomerBookChat" type="button">CONSULT AN ASTROLOGER</button></div></div></section>';
 }
 function smvBindCustomerBookingChat(){
  const viewButton=$('smvCustomerOpenAstrologerList');
@@ -2168,7 +2168,7 @@ function smvBindCustomerBookingChat(){
  button.onclick=()=>{
   if(!currentUser||!auth?.currentUser){$('authBtn')?.click();return;}
   const role=String(window.__smvCurrentRole||'customer').toLowerCase();
-  if(role!=='customer'){alert('Book a Chat is available for Customer accounts. Please sign in with a Customer account.');return;}
+  if(role!=='customer'){alert('Consult an Astrologer is available for Customer accounts. Please sign in with a Customer account.');return;}
   if(typeof window.__smvOpenBookingChat==='function'){window.__smvOpenBookingChat();return;}
   if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('private-consultation');return;}
   location.href='./?view=consult';
@@ -3640,8 +3640,9 @@ async function loadAdminPanelData(background=false){
         <div class="small"><b>Astrologer ID:</b> ${escapeHtml(d.id)} · <b>Profile Edit:</b> ${allowed?'Allowed':'Blocked'}</div>
         <div style="margin:10px 0">
           <div class="grid" style="align-items:end;gap:10px">
-            <label for="adminChatPrice_${d.id}"><b>Private Consultation Chat Price (₹)</b><input id="adminChatPrice_${d.id}" type="number" min="1" max="100000" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Chat Price ₹"></label>
-            <label for="adminCallPrice_${d.id}"><b>Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured"></label>
+            <label for="adminChatPrice_${d.id}"><b>Private Consultation Question Price (₹)</b><input id="adminChatPrice_${d.id}" type="number" min="1" max="100000" step="0.01" value="${escapeHtml(String(Number(a.pricePerQuestion||0)||''))}" placeholder="Question Price ₹"></label>
+            <label for="adminCallPrice_${d.id}"><b>Live Call Price per minute (₹)</b><input id="adminCallPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.callPricePerMinute??a.pricePerMinute??a.callRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
+            <label for="adminLiveChatPrice_${d.id}"><b>Live Chat Price per minute (₹)</b><input id="adminLiveChatPrice_${d.id}" type="number" min="0" max="100000" step="0.01" value="${escapeHtml(String(Number(a.chatPricePerMinute??a.liveChatPricePerMinute??a.chatRatePerMinute??0)||''))}" placeholder="Not configured (₹0 to unset)"></label>
           </div>
           <div class="action-row"><button class="btn" data-chat-price-save="${d.id}">SAVE PRICES</button></div>
           <div class="small" id="adminChatPriceMsg_${d.id}"></div>
@@ -3658,26 +3659,33 @@ async function loadAdminPanelData(background=false){
     }).join(''):'<div class="empty">No approved astrologers available.</div>';
 
     profileBox.querySelectorAll('[data-chat-price-save]').forEach(b=>b.onclick=async()=>{
-      const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),callInput=$('adminCallPrice_'+id),msg=$('adminChatPriceMsg_'+id);
+      const id=b.dataset.chatPriceSave,input=$('adminChatPrice_'+id),callInput=$('adminCallPrice_'+id),liveChatInput=$('adminLiveChatPrice_'+id),msg=$('adminChatPriceMsg_'+id);
       const price=Number(input?.value);
       const callRaw=String(callInput?.value||'').trim();
       const callPrice=callRaw===''?null:Number(callRaw);
+      const liveChatRaw=String(liveChatInput?.value||'').trim();
+      const liveChatPrice=liveChatRaw===''?null:Number(liveChatRaw);
       if(!Number.isFinite(price)||price<1||price>100000||Math.abs(price*100-Math.round(price*100))>1e-7){
         if(msg)msg.innerHTML='<span class="error">Enter a valid Chat Price from ₹1 to ₹100000 (up to two decimals).</span>';return;
       }
       if(callRaw!==''&&(!Number.isFinite(callPrice)||callPrice<0||callPrice>100000||Math.abs(callPrice*100-Math.round(callPrice*100))>1e-7)){
         if(msg)msg.innerHTML='<span class="error">Call Price must be ₹0 (unset) or ₹1–₹100000 per minute, up to two decimals.</span>';return;
       }
+      if(liveChatRaw!==''&&(!Number.isFinite(liveChatPrice)||liveChatPrice<0||liveChatPrice>100000||Math.abs(liveChatPrice*100-Math.round(liveChatPrice*100))>1e-7)){
+        if(msg)msg.innerHTML='<span class="error">Live Chat Price must be ₹0 (unset) or ₹1–₹100000 per minute, up to two decimals.</span>';return;
+      }
       b.disabled=true;b.textContent='SAVING…';
       try{
         const payload={astrologerId:id,pricePerQuestion:Math.round(price*100)/100};
         if(callRaw!=='')payload.callPricePerMinute=callPrice;
+        if(liveChatRaw!=='')payload.chatPricePerMinute=liveChatPrice;
         const result=await renderApi('/admin/astrologer-pricing',{method:'POST',body:JSON.stringify(payload)});
         if(!result?.success)throw new Error(result?.error||'The backend did not confirm pricing changes.');
         await smvAdminTouch();
         window.__smvInvalidatePublicAstrologersOnce?.();
         window.dispatchEvent(new Event('smv:astrologer-pricing-changed'));
-        if(msg)msg.innerHTML='<span class="success">'+(callRaw!==''?'Chat Price and Call Price saved.':'Chat Price saved; Call Price was left unchanged.')+'</span>';
+        const changed=['Private Consultation question price',callRaw!==''?'Live Call rate':'',liveChatRaw!==''?'Live Chat rate':''].filter(Boolean);
+        if(msg)msg.innerHTML='<span class="success">'+escapeHtml(changed.join(', '))+' saved. A blank per-minute field is left unchanged; enter ₹0 to unset it.</span>';
       }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
       finally{b.disabled=false;b.textContent='SAVE PRICES';}
     });
@@ -4652,12 +4660,28 @@ function smvLiveBindAdminPricing(){
  const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
  async function load(force=false){
   if(!force&&smvLivePricingLoadedAt&&Date.now()-smvLivePricingLoadedAt<30000)return;
-  if(msg)msg.textContent='Loading server-owned prices…';
-  try{const r=await renderApi('/live/pricing',{method:'GET'});if($('liveCallRatePerMinute'))$('liveCallRatePerMinute').value=String(r.callRatePerMinute);if($('liveChatRatePerMinute'))$('liveChatRatePerMinute').value=String(r.chatRatePerMinute);if($('liveMaxConcurrentSessions'))$('liveMaxConcurrentSessions').value=String(r.maxConcurrentSessions||1);if(msg)msg.textContent='Server rates: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';smvLivePricingLoadedAt=Date.now();}
-  catch(e){if(msg)msg.textContent='Pricing load failed: '+(e.message||String(e));}
+  if(msg)msg.textContent='Loading session settings…';
+  try{
+   const r=await renderApi('/live/pricing',{method:'GET'});
+   if($('liveMaxConcurrentSessions'))$('liveMaxConcurrentSessions').value=String(r.maxConcurrentSessions||1);
+   if(msg)msg.textContent='Per-minute Call and Chat prices are configured separately for each approved Astrologer in Astrologer Profile Management.';
+   smvLivePricingLoadedAt=Date.now();
+  }catch(e){if(msg)msg.textContent='Session settings load failed: '+(e.message||String(e));}
  }
- if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=async()=>{save.disabled=true;if(msg)msg.textContent='Saving price settings on server…';try{const r=await renderApi('/admin/live/pricing',{method:'POST',body:JSON.stringify({callRatePerMinute:String($('liveCallRatePerMinute')?.value||''),chatRatePerMinute:String($('liveChatRatePerMinute')?.value||''),maxConcurrentSessions:Number($('liveMaxConcurrentSessions')?.value||1)})});if(msg)msg.textContent='Saved: Call '+smvLiveMoney(r.callRatePaise)+'/minute · Chat '+smvLiveMoney(r.chatRatePaise)+'/minute.';}catch(e){if(msg)msg.textContent='Save failed: '+(e.message||String(e));}finally{save.disabled=false;}};}
- if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=()=>load(true);}if(!smvLivePricingLoadedAt)load();
+ if(save&&!save.dataset.bound){
+  save.dataset.bound='1';
+  save.onclick=async()=>{
+   save.disabled=true;
+   if(msg)msg.textContent='Saving session settings…';
+   try{
+    const r=await renderApi('/admin/live/pricing',{method:'POST',body:JSON.stringify({maxConcurrentSessions:Number($('liveMaxConcurrentSessions')?.value||1)})});
+    if(msg)msg.textContent='Saved. Maximum concurrent sessions per Astrologer: '+r.maxConcurrentSessions+'. Individual per-minute rates remain unchanged.';
+   }catch(e){if(msg)msg.textContent='Save failed: '+(e.message||String(e));}
+   finally{save.disabled=false;}
+  };
+ }
+ if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=()=>load(true);}
+ if(!smvLivePricingLoadedAt)load();
 }
 window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
 window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
