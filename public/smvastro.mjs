@@ -2530,18 +2530,7 @@ ${ad.status === 'rejected' && ad.rejectionReason
         );
       }
 
-      const commissionPercent =
-        Number(
-          q.commissionPercent ||
-          q.commissionRate ||
-          20
-        );
-
-      const commissionAmount =
-        Math.round(
-          Number(q.amount || 0) *
-          commissionPercent
-        ) / 100;
+      // Commission is calculated server-side from the single Admin setting at settlement.
 
       // Use the same authenticated Render API helper used by Admin actions.
       // This avoids the previous 'BACKEND is not defined' browser error and
