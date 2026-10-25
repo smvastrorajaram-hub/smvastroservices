@@ -612,9 +612,9 @@ if (calendarHost && calendarHost.parentElement && !document.getElementById('calR
       try {
         const CONFIG = {
           apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpZHNcNysMXHuvSs',
-          authDomain: location.hostname.toLowerCase() === 'calendar.smvastroservices.in'
-            ? 'auth.smvastroservices.in'
-            : 'smv-astro.firebaseapp.com',
+          authDomain: (location.hostname === 'smvastroservices.pages.dev' || location.hostname.endsWith('.smvastroservices.pages.dev'))
+            ? 'smv-astro.firebaseapp.com'
+            : 'auth.smvastroservices.in',
           projectId: 'smv-astro',
           storageBucket: 'smv-astro.firebasestorage.app',
           messagingSenderId: '299081899217',
