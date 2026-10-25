@@ -2066,11 +2066,11 @@ app.get("/admin/private-consultations-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const [consultSnap,usersSnap,astrologersSnap,privateCommissionSnap,privateWorkflowSnap]=await Promise.all([
+    const [consultSnap,usersSnap,astrologersSnap,commissionSnap,privateWorkflowSnap]=await Promise.all([
       db.collection("smv_private_consultations").get(),
       db.collection("smv_users").get(),
       db.collection("smv_astrologers").get(),
-      db.collection("smv_settings").doc("privateCommission").get(),
+      db.collection("smv_settings").doc("commission").get(),
       db.collection("smv_settings").doc("privateConsultationWorkflow").get()
     ]);
     return res.json({
