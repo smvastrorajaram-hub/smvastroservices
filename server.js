@@ -416,6 +416,69 @@ app.get("/admin/access", async (req, res) => {
   }
 });
 
+// Resolve the authenticated user's SMV role with the Admin SDK. This is
+// authoritative for Phase 1 dashboard routing and avoids depending on client
+// Firestore rules or a legacy smv_users.role value that may be stale.
+app.get("/account/role", async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const uid = String(user.uid || "").trim();
+  if (!uid) return res.status(401).json({ success: false, error: "Authentication required." });
+  try {
+    if (await isAdminUser(user)) {
+      res.set("Cache-Control", "no-store");
+      return res.json({ success: true, role: "admin" });
+    }
+
+    const userSnap = await db.collection("smv_users").doc(uid).get();
+    const profile = userSnap.exists ? (userSnap.data() || {}) : {};
+    let astroProfile = null;
+
+    // Current registrations use UID as document ID. Also support migrated
+    // profiles stored under another ID, but only accept records linked to this UID.
+    const directAstro = await db.collection("smv_astrologers").doc(uid).get();
+    if (directAstro.exists) {
+      const candidate = directAstro.data() || {};
+      if (!candidate.uid || String(candidate.uid) === uid) astroProfile = candidate;
+    }
+
+    if (!astroProfile) {
+      const byUid = await db.collection("smv_astrologers").where("uid", "==", uid).limit(1).get();
+      if (!byUid.empty) {
+        const candidate = byUid.docs[0].data() || {};
+        if (!candidate.uid || String(candidate.uid) === uid) astroProfile = candidate;
+      }
+    }
+
+    // Older migrated records may lack uid on the astrologer document. The
+    // signed-in user's own profile must carry the same unique publicId.
+    const publicId = String(profile.publicId || "").trim();
+    if (!astroProfile && publicId) {
+      const byPublicId = await db.collection("smv_astrologers").where("publicId", "==", publicId).limit(1).get();
+      if (!byPublicId.empty) {
+        const candidate = byPublicId.docs[0].data() || {};
+        if ((!candidate.uid || String(candidate.uid) === uid) &&
+            String(candidate.publicId || "") === publicId) {
+          astroProfile = candidate;
+        }
+      }
+    }
+
+    const storedRole = String(profile.role || "").toLowerCase();
+    const role = astroProfile || storedRole === "astrologer" ? "astrologer" : "customer";
+    res.set("Cache-Control", "no-store");
+    return res.json({
+      success: true,
+      role,
+      profileFound: userSnap.exists,
+      astrologerProfileFound: !!astroProfile
+    });
+  } catch (e) {
+    console.error("Authenticated role lookup failed:", e?.message || e);
+    return res.status(500).json({ success: false, error: "Unable to verify account role." });
+  }
+});
+
 function signatureEqual(expected, actual) {
   const a = Buffer.from(String(expected || ""));
   const b = Buffer.from(String(actual || ""));
