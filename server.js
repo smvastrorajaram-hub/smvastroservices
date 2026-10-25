@@ -1302,6 +1302,8 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     const name=String(req.body?.name||"").trim(), email=String(req.body?.email||user.email||"").trim(), mobile=String(req.body?.mobile||"").trim();
     const type=String(req.body?.type||"").trim(), preferredDate=String(req.body?.preferredDate||"").trim(), preferredTime=String(req.body?.preferredTime||"").trim(), notes=String(req.body?.notes||"").trim();
     const astrologerId=String(req.body?.astrologerId||"").trim();
+    const birthDate=String(req.body?.birthDate||"").trim(), birthTime=String(req.body?.birthTime||"").trim(), birthPlace=String(req.body?.birthPlace||"").trim();
+    const birthLatitudeRaw=String(req.body?.birthLatitude||"").trim(), birthLongitudeRaw=String(req.body?.birthLongitude||"").trim(), birthTimezone=String(req.body?.birthTimezone||"").trim();
     if(!name||!email||!mobile||!type||!preferredDate||!preferredTime) return res.status(400).json({error:"Please fill all required appointment fields."});
     if(!["Chat Consultation","Call Consultation"].includes(type)) return res.status(400).json({error:"Please choose Chat or Call consultation."});
     if(name.length>100||email.length>160||mobile.length>20||notes.length>2000) return res.status(400).json({error:"One or more fields are too long."});
@@ -1312,6 +1314,31 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     let callBooking={};
     if(astrologerId){
       if(type!=="Call Consultation")return res.status(400).json({error:"An Astrologer can only be selected for a Call Consultation booking."});
+      // Book a Call records the birth details requested by the customer and stores
+      // them in a structured field for the Admin booking view.
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||Number.isNaN(Date.parse(birthDate+"T00:00:00Z"))||new Date(birthDate+"T00:00:00Z").toISOString().slice(0,10)!==birthDate||birthDate>indiaDateKey()){
+        return res.status(400).json({error:"Enter a valid Date of Birth that is not in the future."});
+      }
+      if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(birthTime)){
+        return res.status(400).json({error:"Enter a valid Time of Birth."});
+      }
+      if(!birthPlace||birthPlace.length>200){
+        return res.status(400).json({error:"Enter your Birth Place (up to 200 characters)."});
+      }
+      if(Boolean(birthLatitudeRaw)!==Boolean(birthLongitudeRaw)){
+        return res.status(400).json({error:"Birth-place latitude and longitude must be supplied together."});
+      }
+      let birthLatitude=null,birthLongitude=null;
+      if(birthLatitudeRaw){
+        birthLatitude=Number(birthLatitudeRaw);birthLongitude=Number(birthLongitudeRaw);
+        if(!Number.isFinite(birthLatitude)||birthLatitude < -90||birthLatitude > 90||!Number.isFinite(birthLongitude)||birthLongitude < -180||birthLongitude > 180){
+          return res.status(400).json({error:"Birth Place coordinates are invalid. Select the place from search again."});
+        }
+      }
+      if(birthTimezone){
+        try{new Intl.DateTimeFormat("en",{timeZone:birthTimezone});}
+        catch{return res.status(400).json({error:"Birth Place time zone is invalid. Select the place from search again."});}
+      }
       const [astroSnap,customerSnap]=await Promise.all([
         db.collection("smv_astrologers").doc(astrologerId).get(),
         db.collection("smv_users").doc(user.uid).get()
@@ -1328,7 +1355,8 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
         astrologerId:astroSnap.id,astrologerUid:String(astro.uid||astroSnap.id),
         astrologerName:String(astro.name||"Astrologer"),
         callPricePerMinute:Math.round(callPricePerMinute*100)/100,
-        priceUnit:"per_minute",bookingKind:"scheduled_call_request"
+        priceUnit:"per_minute",bookingKind:"scheduled_call_request",
+        birthDetails:{birthDate,birthTime,birthPlace,birthLatitude,birthLongitude,birthTimezone}
       };
     }
     const bookingId = await nextBookingId();
@@ -1340,7 +1368,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     // the optional notification provider is unavailable.
     if(ADMIN_EMAIL && (RESEND_API_KEY || smtpTransport)){
       try {
-        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${mobile}`,`Type: ${type}`,`Astrologer: ${callBooking.astrologerName||"Not specified"}`,`Call rate: ${callBooking.callPricePerMinute?"₹"+callBooking.callPricePerMinute+" per minute":"Not applicable"}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`,`Payment: ${astrologerId?"Not collected; awaiting confirmation":"Not required"}`].join("\n")});
+        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${mobile}`,`Type: ${type}`,`Astrologer: ${callBooking.astrologerName||"Not specified"}`,`Call rate: ${callBooking.callPricePerMinute?"₹"+callBooking.callPricePerMinute+" per minute":"Not applicable"}`,`Birth Date: ${callBooking.birthDetails?.birthDate||"Not provided"}`,`Birth Time: ${callBooking.birthDetails?.birthTime||"Not provided"}`,`Birth Place: ${callBooking.birthDetails?.birthPlace||"Not provided"}`,`Birth Coordinates: ${callBooking.birthDetails?.birthLatitude!=null?callBooking.birthDetails.birthLatitude+", "+callBooking.birthDetails.birthLongitude:"Not selected"}`,`Birth Time Zone: ${callBooking.birthDetails?.birthTimezone||"Not available"}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`,`Payment: ${astrologerId?"Not collected; awaiting confirmation":"Not required"}`].join("\n")});
       } catch(emailErr) { console.warn("Booking notification email failed; booking remains created:", emailErr?.message||emailErr); }
     }
     return res.json({ok:true,bookingId,appointmentId:ref.id,status:"new",bookingStatus:"requested"});
