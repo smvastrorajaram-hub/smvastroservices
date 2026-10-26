@@ -4721,11 +4721,12 @@ function smvLiveApplySession(session){
  smvLiveCurrentSession=mergedSession;
  const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
  smvLiveSyncRemoteAudio();
- if(s.state==='preparing')smvLiveUpdatePreparationCountdown(s);else smvLiveStopPreparationCountdown();
+ if(s.state!=='preparing')smvLiveStopPreparationCountdown();
  if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();
  if(active||s.state==='ended')smvLiveStopRingtone();
  const callArea=$('smvLiveCallArea');if(callArea)callArea.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));
  if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=smvLiveSessionStatusLabel(s);
+ if(s.state==='preparing')smvLiveUpdatePreparationCountdown(s);
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
  const connectMic=$('smvLiveConnectMic');if(connectMic){connectMic.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));if(s.state==='ended')connectMic.disabled=true;}
@@ -4779,7 +4780,7 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(end)end.onclick=async()=>{smvLiveStopRingtone();end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'ended'});if(r.wallet&&$('smvLiveSessionResult'))$('smvLiveSessionResult').textContent='Session ended. Available Wallet: '+smvLiveMoney(r.wallet.availableBalancePaise)+'.';}catch(e){smvLiveShowError(e);end.disabled=false;}};
  if(close)close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();};
  const form=$('smvLiveMessageForm');
- if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});smvLiveAppendMessage(r.message);if(input)input.value='';}catch(err){smvLiveShowError(err);}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
+ if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}const pendingId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2);const pendingRow=smvLiveAppendMessage({id:pendingId,sessionId:id,senderUid:currentUser?.uid,text:body,createdAt:new Date().toISOString()});if(input)input.value='';try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveAppendMessage(r.message);}catch(err){if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveShowError(err);if(input&&!input.value)input.value=body;}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
  const connectChat=$('smvLiveConnectChat');
  if(connectChat)connectChat.onclick=async()=>{
   const current=smvLiveCurrentSession;
@@ -4905,18 +4906,18 @@ async function smvLiveProcessSignal(sig){
  }catch(error){smvLiveSignalSeen.delete(sig.id);throw error;}
 }
 function smvLiveAppendMessage(m){
- if(!m||!m.id||smvLiveMessageSeen.has(m.id))return;smvLiveMessageSeen.add(m.id);
- const host=$('smvLiveMessages');if(!host)return;
+ if(!m||!m.id||smvLiveMessageSeen.has(m.id))return null;smvLiveMessageSeen.add(m.id);
+ const host=$('smvLiveMessages');if(!host)return null;
  if(host.children.length===1&&/Loading chat history/.test(host.textContent))host.innerHTML='';
- const row=document.createElement('div');row.style.cssText='padding:6px 0;border-bottom:1px solid #eee';
+ const row=document.createElement('div');row.style.cssText='padding:6px 0;border-bottom:1px solid #eee';row.dataset.messageId=String(m.id);
  const session=smvLiveCurrentSession||{};const who=document.createElement('b');who.textContent=(m.senderUid===session.astrologerUid?'Astrologer: '+(session.astrologerName||'Astrologer'):'Customer: '+(session.customerName||'Customer'))+' · '+(m.createdAt?new Date(m.createdAt).toLocaleTimeString():new Date().toLocaleTimeString());
- const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0';body.textContent=String(m.text||'');row.append(who,body);host.append(row);host.scrollTop=host.scrollHeight;
+ const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0';body.textContent=String(m.text||'');row.append(who,body);host.append(row);host.scrollTop=host.scrollHeight;return row;
 }
 async function smvLivePollMessages(id){try{const suffix=smvLiveMessageSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveMessageSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages'+suffix,{method:'GET',timeoutMs:10000});for(const m of d.messages||[]){const ms=Date.parse(m.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage({ ...m,id:m.id||m.messageId});}}catch(e){if(!$('smvLiveSessionResult'))return;}}
 async function smvLivePollSignals(id){try{const suffix=smvLiveSignalSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveSignalSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signals'+suffix,{method:'GET',timeoutMs:10000});for(const s of d.signals||[]){const ms=Date.parse(s.createdAt||'');const processed=await smvLiveProcessSignal({...s,id:s.id||s.signalId});if(processed&&Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);}}catch(e){if(!$('smvLiveSessionResult'))return;}}
 function smvLiveStartTransport(id,s){
  if(s.mode==='call'){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1200);smvLivePollSignals(id).catch(()=>{});}
- if(s.mode==='chat'){if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},1800);smvLivePollMessages(id).catch(()=>{});}
+ if(s.mode==='chat'){if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600);smvLivePollMessages(id).catch(()=>{});}
 }
 function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
