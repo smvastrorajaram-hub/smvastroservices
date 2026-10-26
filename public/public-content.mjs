@@ -77,7 +77,7 @@
         }else if(max<1){
           note.textContent='No balance for '+(mode==='call'?'Call':'Chat')+' at '+smvLiveMoney(rate)+'/minute. Available Wallet: '+smvLiveMoney(balance)+'.';
         }else{
-          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. '+(bonusMinutes?bonusMinutes+' promotional free minute(s). ':'')+'Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
+          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
           const entered=Number(input.value);
           if(input.value!==''&&(!Number.isSafeInteger(entered)||entered<1||entered>max)){
             note.textContent+=' Enter a whole number from 1 to '+max+'.';
@@ -146,8 +146,8 @@
       const available=Number(wallet.availableBalancePaise||0);
       const bonusMinutes=Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0)));
       const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(available/ratePaise)+bonusMinutes);
-      if(max<1)throw new Error('No cash or promotional minutes available for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
-      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s), including '+bonusMinutes+' promotional free minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
+      if(max<1)throw new Error('Wallet balance is insufficient for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
+      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
       const token=await user.getIdToken();
       const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
       const response=await fetch(BACKEND+'/live/requests',{
@@ -165,14 +165,14 @@
         throw new Error(result.error||'The server did not accept this Live request.');
       }
       if(result.kind==='session'&&result.session){
-        if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Cash reserved: '+smvLiveMoney(Number(result.session.reservedAmountPaise??0))+'. Promotional minutes reserved: '+String(Number(result.session.reservedBonusMinutes||0))+'. Waiting for the Astrologer to accept.';
+        if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Cash reserved: '+smvLiveMoney(Number(result.session.reservedAmountPaise??0))+'. Waiting for the Astrologer to accept.';
         window.dispatchEvent(new Event('smv:wallet-updated'));
         window.__smvStartLiveEvents?.();
         window.__smvOpenLiveSession?.(result.session);
       }else if(result.kind==='booking'&&result.booking){
-        if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. Wallet cash and promotional minutes are reserved until the Astrologer accepts or the booking is cancelled, rejected, or expires.';
+        if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. Wallet balance is reserved until the booking is cancelled, rejected, or expires.';
         window.dispatchEvent(new Event('smv:wallet-updated'));
-        alert('Live '+kind.toUpperCase()+' booking created. Reserved cash: '+smvLiveMoney(Number(result.booking.reservedAmountPaise??0))+'. Promotional minutes reserved: '+String(Number(result.booking.reservedBonusMinutes||0))+'. Unused reserves are returned if the booking is cancelled, rejected, or expires.');
+        alert('Live '+kind.toUpperCase()+' booking created. Reserved cash: '+smvLiveMoney(Number(result.booking.reservedAmountPaise??0))+'. Unused reserves are returned if the booking is cancelled, rejected, or expires.');
       }else{
         throw new Error('The backend returned an unknown Live request status. Please refresh the directory.');
       }
@@ -638,30 +638,6 @@
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationQuestionCard')?.classList.add('hidden');
   });
-  async function refreshPrivateOfferQuote(showInvalid=false){
-    const astro=window.__smvSelectedPrivateConsultAstrologer;
-    const summary=$('privateConsultPaymentSummary'),msg=$('privateConsultOfferMsg');
-    if(!astro?.id||Number(astro.chatPrice)<1)return null;
-    const u=window.__smvFirebaseCurrentUser;
-    if(!u||String(window.__smvCurrentRole||'').toLowerCase()!=='customer')return null;
-    const code=String($('privateConsultPromoCode')?.value||'').trim();
-    try{
-      const token=await u.getIdToken();
-      const r=await fetch(BACKEND+'/offers/quote',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({service:'private_consultation',originalAmount:Number(astro.chatPrice),promoCode:code}),cache:'no-store'});
-      const q=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(q.error||`Offer service returned HTTP ${r.status}.`);
-      if(q.offerId){
-        if(summary){summary.innerHTML=`Private Consultation Chat Price: <s>₹${Number(q.originalAmount).toFixed(2)}</s> <b>₹${Number(q.finalAmount).toFixed(2)}</b>`;summary.dataset.smvOfferFinal=String(q.finalAmount);summary.dataset.smvOfferOriginal=String(q.originalAmount);}
-        if(msg)msg.innerHTML=`<span class="success">${esc(q.bannerText||q.offerName||'Offer applied')}</span>`;
-      }else{
-        if(summary){summary.textContent='Private Consultation Chat Price: ₹'+Number(astro.chatPrice).toFixed(2);delete summary.dataset.smvOfferFinal;delete summary.dataset.smvOfferOriginal;}
-        if(msg)msg.innerHTML=code&&showInvalid?'<span class="error">Promotion code is not valid or not eligible for this account.</span>':'';
-      }
-      return q;
-    }catch(err){if(msg&&showInvalid)msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';return null;}
-  }
-  $('privateConsultApplyPromo')?.addEventListener('click',()=>refreshPrivateOfferQuote(true));
-
   async function selectPrivateAstrologer(astro,button){
     let user=window.__smvFirebaseCurrentUser||null;
     if(!user){
@@ -695,16 +671,13 @@
       return;
     }
     if(window.__smvSelectedPrivateConsultAstrologer?.id===astro.id){$('privateConsultationQuestionCard')?.classList.remove('hidden');$('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
-    $('smvPrivateAutomaticOffer')?.remove();
     if(window.__smvSelectedPrivateConsultAstrologer?.id!==astro.id){walletBookingRequestId=null;walletBookingRequestOwner='';}
     window.__smvSelectedPrivateConsultAstrologer={id:astro.id,name:astro.name||'Astrologer',chatPrice:Number(astro.chatPrice||0)};
     document.querySelectorAll('.smv-private-consult-select').forEach(el=>{el.textContent=el===button?'SELECTED':'SELECT ASTROLOGER';});
     $('privateConsultationSelected').textContent='Selected Astrologer: '+astro.name;
     const summary=$('privateConsultPaymentSummary');
     summary.textContent='Private Consultation Chat Price: ₹'+Number(astro.chatPrice).toFixed(2);
-    delete summary.dataset.smvOfferFinal;delete summary.dataset.smvOfferOriginal;
     $('privateConsultationQuestionCard')?.classList.remove('hidden');
-    refreshPrivateOfferQuote(false).catch(()=>{});
     $('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
   window.__smvSelectPrivateAstrologer=selectPrivateAstrologer;
@@ -736,7 +709,6 @@
     if(!astro?.id||Number(astro.chatPrice)<1){if(msg)msg.innerHTML='<span class="error">Please select an available astrologer first.</span>';return;}
     const payload={
       astrologerId:String(astro.id),
-      promoCode:String($('privateConsultPromoCode')?.value||'').trim(),
       customerName:String($('privateConsultName')?.value||'').trim(),
       question:String($('privateConsultQuestion')?.value||'').trim(),
       birthDetails:{
@@ -812,7 +784,6 @@
       const checkoutWindow=checkoutReady?.value;
       const RazorpayCtor=checkoutWindow?.Razorpay||window.Razorpay;
       if(!order?.orderId||!order?.keyId||!order?.consultationId)throw new Error('Private consultation payment order was not created correctly.');
-      if(order?.offerId&&msg)msg.innerHTML='<span class="success">'+esc(order.offerBannerText||order.offerName||'Offer applied')+' — Pay ₹'+(Number(order.amount||0)/100).toFixed(2)+'</span>';
       if(typeof RazorpayCtor!=='function')throw new Error('Payment checkout is not ready. Please refresh and try again.');
       const options={
         key:order.keyId,amount:order.amount,currency:order.currency||'INR',name:'SMV ASTRO SERVICES',
@@ -871,7 +842,7 @@
     if(selected)selected.textContent='';
     if(summary)summary.textContent='';
     if(msg)msg.textContent='';
-    if($('privateConsultOfferMsg'))$('privateConsultOfferMsg').textContent='';
+    
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationAstrologers')?.scrollIntoView({behavior:'smooth',block:'start'});
   });
