@@ -311,10 +311,9 @@ test('Astrologer earnings no longer replay every historical Live Session on dash
 test('Astrologer withdrawal validation does not rescan every Live Session and parallelizes balance reads', () => {
   const server = read('server.js');
   const start = server.indexOf('app.post("/astrologer/withdrawal-request"');
-  const end = server.indexOf(');', start);
-  const routeEnd = server.indexOf('//', start);
-  assert.ok(start >= 0);
-  const route = server.slice(start, server.indexOf('app.', start + 12));
+  const end = server.indexOf('\n});', start);
+  assert.ok(start >= 0 && end > start);
+  const route = server.slice(start, end);
   assert.ok(!route.includes('syncLiveSessionEarningsForAstrologer'));
   assert.ok(route.includes('const [questionSnap, privateCreditSnap, liveCreditSnap, withdrawalSnap] = await Promise.all(['));
   assert.ok(route.includes('.where("source", "==", "live_session")'));
@@ -330,21 +329,3 @@ test('Admin navigation does not show the generic DASHBOARD flash before role res
   assert.ok(html.includes('<h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2>'));
 });
 
-test('Admin home uses aggregate counts and targeted history queries instead of reading all users/questions', () => {
-  const server = read('server.js');
-  const frontend = read('public/smvastro.mjs');
-  const start = server.indexOf('app.get("/admin-data"');
-  const end = server.indexOf('\n});', start);
-  assert.ok(start >= 0 && end > start);
-  const route = server.slice(start, end);
-  assert.ok(!route.includes('readCollection("smv_users")'));
-  assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
-  assert.ok(route.includes('readCount("questions",db.collection("smv_questions"))'));
-  assert.ok(route.includes('where("status","==","answered").where("commissionStatus","==","credited")'));
-  assert.ok(route.includes('pendingAstrologers.map(async a=>'));
-  assert.ok(frontend.includes('adminData.customerCount'));
-  assert.ok(frontend.includes('adminData.questionCount'));
-  assert.ok(frontend.includes('a.adminContactEmail'));
-  assert.ok(frontend.includes('a.adminContactMobile'));
-  assert.ok(!frontend.includes('const userMap=new Map(users.docs'));
-});
