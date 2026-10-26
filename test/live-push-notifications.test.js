@@ -336,3 +336,23 @@ test('Admin navigation does not show the generic DASHBOARD flash before role res
   assert.ok(html.includes('<h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2>'));
 });
 
+
+test('Astrologer earning indexes cover the credited-only queries used for Dashboard and withdrawal validation', () => {
+  const indexes = JSON.parse(read('firestore.indexes.json'));
+  const has = (collectionGroup, fields) => (indexes.indexes || []).some(index =>
+    index.collectionGroup === collectionGroup &&
+    fields.every(([fieldPath, order], i) =>
+      index.fields[i]?.fieldPath === fieldPath && index.fields[i]?.order === order
+    ) &&
+    index.fields.length === fields.length
+  );
+  assert.ok(has('smv_questions', [
+    ['astrologerId','ASCENDING'],['status','ASCENDING'],['commissionStatus','ASCENDING']
+  ]));
+  assert.ok(has('smv_private_consultations', [
+    ['astrologerId','ASCENDING'],['commissionStatus','ASCENDING']
+  ]));
+  assert.ok(has('smv_payments', [
+    ['astrologerId','ASCENDING'],['source','ASCENDING'],['type','ASCENDING'],['status','ASCENDING']
+  ]));
+});
