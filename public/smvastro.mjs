@@ -1256,7 +1256,27 @@ async function submitAuth(mode){
     // ASK NOW and Admin-entry keep their protected destinations.
     const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
     const goToAdmin=pendingAfterLogin==="admin";
-    // Resolve the authoritative server role before exposing any dashboard shell.
+
+    // After an explicit successful login, open a neutral dashboard shell before
+    // profile/role Firestore reads. Database quota exhaustion must not leave the
+    // user staring at the closed Login modal. No role-specific controls or data
+    // are rendered until the authoritative role resolution below completes.
+    if(!goToQuestion&&!goToAdmin){
+      closeModal();
+      hideHomeSurface();
+      hidePrimarySections("dashboard");
+      show("dashboard");
+      show("dashboardContent");
+      hide("askNowSection");
+      hide("approved-astrologers");
+      hide("faq");
+      if($("dashboardTitle"))$("dashboardTitle").textContent="DASHBOARD";
+      if($("dashboardContent"))$("dashboardContent").innerHTML='<div class="card" role="status"><div class="small">Login successful. Opening your dashboard…</div></div>';
+      smvEnterInternalView("dashboard",true);
+      go("dashboard");
+    }
+
+    // Resolve the authoritative server role before exposing any role-specific controls.
     // This prevents a stale/previous role title from flashing during login.
     const loginProfile=await getUserProfile(loginCred.user.uid);
     const loginRole=String(loginProfile?.role||"customer").toLowerCase();

@@ -75,6 +75,20 @@ test('Live Chat uses one large, scrolling message pane without changing preparat
   assert.ok(frontend.includes("s.state==='preparing'"));
 });
 
+test('Explicit login opens a neutral Dashboard shell before Firestore profile and role reads', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function submitAuth(mode)');
+  const shell = frontend.indexOf('Login successful. Opening your dashboard', start);
+  const profile = frontend.indexOf('const loginProfile=await getUserProfile(loginCred.user.uid)', start);
+  const role = frontend.indexOf('const role=await resolveSmvRole(loginCred.user,profile)', start);
+  assert.ok(start >= 0 && shell > start);
+  assert.ok(profile > shell, 'The visible neutral shell must render before profile reads');
+  assert.ok(role > profile, 'Role-specific rendering must still wait for role resolution');
+  assert.ok(frontend.includes('if(!goToQuestion&&!goToAdmin){'));
+  assert.ok(frontend.includes('role="status"'));
+  assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
+});
+
 test('Live Chat box is visible while connecting and message sending remains locked until active', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
@@ -83,7 +97,7 @@ test('Live Chat box is visible while connecting and message sending remains lock
   assert.ok(frontend.includes('chatInput.disabled=!chatReady'));
   assert.ok(frontend.includes('chatSend.disabled=!chatReady'));
   assert.ok(frontend.includes("chat.style.display='flex';chat.style.flex='0 0 auto'"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-chat-box-connect-state-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-shell-quota-resilience-v1'));
 });
 
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
