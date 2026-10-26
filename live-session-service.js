@@ -694,7 +694,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       notifyAdmin('live_session_requested', 'Live ' + kind.toUpperCase() + ' requested',
         sessionCustomerName + ' requested a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
         { sessionId: id, customerId: uid, astrologerId: astroId, mode: kind });
-      sendPushAlert(astroId, { kind: 'live_session', mode: kind, entityId: id });
+      if (!txResult.alreadyProcessed) sendPushAlert(astroId, { kind: 'live_session', mode: kind, entityId: id });
       sendTo(astroId, { type: 'live.session.request', session: liveSessionSafeView(id, txResult.data) });
       sendTo(uid, { type: 'live.session.updated', session: liveSessionSafeView(id, txResult.data) });
     } else if (txResult.kind === 'booking' && !txResult.alreadyProcessed) {
