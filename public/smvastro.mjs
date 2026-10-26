@@ -141,6 +141,64 @@ const RAZORPAY_BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-s
 // Keep this in the main Firebase module so it is available to the answer-submit handler.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
+let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
+function smvHomeOfferMoney(minimumPaise){
+ const paise=Math.max(100,Number.isSafeInteger(Number(minimumPaise))?Number(minimumPaise):0);
+ return '₹'+(paise/100).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function smvHomeOfferWhen(value){
+ if(!value)return '';
+ let raw=String(value);
+ if(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw))raw+='+05:30';
+ const millis=Date.parse(raw);
+ return Number.isFinite(millis)?new Date(millis).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+}
+async function smvLoadHomeWalletRechargeOffers(force=false){
+ const banner=document.getElementById('smvWalletOffersBanner');
+ const list=document.getElementById('smvWalletOfferBannerItems');
+ if(!banner||!list)return;
+ if(!force&&Date.now()-smvHomeWalletOffersFetchedAt<30000)return;
+ if(smvHomeWalletOffersRequest)return smvHomeWalletOffersRequest;
+ smvHomeWalletOffersRequest=(async()=>{
+  try{
+   const response=await fetch(BACKEND+'/wallet/recharge-offers',{headers:{Accept:'application/json'},cache:'no-store'});
+   if(!response.ok)throw new Error('Offer request failed ('+response.status+').');
+   const result=await response.json();
+   if(result?.success!==true||!Array.isArray(result.offers))throw new Error(result?.error||'Active Wallet offers are unavailable.');
+   const themeLabels={auto:'Festival Offer',generic:'Wallet Offer',pongal:'Pongal Offer',diwali:'Diwali Offer',navaratri:'Navaratri Offer',dasara:'Dasara Offer',ayudha_pooja:'Ayudha Pooja Offer',shivaratri:'Shivaratri Offer',tamil_new_year:'Tamil New Year Offer',vinayagar_chaturthi:'Vinayagar Chaturthi Offer',karthigai_deepam:'Karthigai Deepam Offer',thaipusam:'Thaipusam Offer',new_year:'New Year Offer',onam:'Onam Offer',christmas:'Christmas Offer',eid:'Eid Offer'};
+   const allowedThemes=new Set(Object.keys(themeLabels));
+   const offers=result.offers.filter(o=>o&&Number.isSafeInteger(Number(o.bonusMinutes))&&Number(o.bonusMinutes)>0&&Number(o.bonusMinutes)<=1440);
+   list.innerHTML=offers.map(offer=>{
+    const theme=allowedThemes.has(String(offer.bannerTheme||'auto'))?String(offer.bannerTheme||'auto'):'auto';
+    const name=String(offer.name||'Wallet Recharge Bonus');
+    const minutes=Number(offer.bonusMinutes);
+    const limit=Number(offer.perCustomerLimit||0);
+    const minimum=smvHomeOfferMoney(offer.minimumRechargeAmountPaise);
+    const start=smvHomeOfferWhen(offer.startAt),end=smvHomeOfferWhen(offer.endAt);
+    const validity=start||end?'<p class="smv-wallet-offer-validity">'+(start?'Starts: '+escapeHtml(start):'Available now')+(end?' · Ends: '+escapeHtml(end):'')+'</p>':'';
+    return '<article class="smv-wallet-offer-card" data-theme="'+theme+'">'+
+     '<span class="smv-wallet-offer-theme">'+escapeHtml(themeLabels[theme])+'</span>'+
+     '<h3>'+escapeHtml(name)+'</h3>'+
+     '<p class="smv-wallet-offer-minimum">Recharge <strong>'+escapeHtml(minimum)+'</strong> or more</p>'+
+     '<p class="smv-wallet-offer-bonus"><strong>'+minutes+'</strong> FREE Live '+(minutes===1?'Minute':'Minutes')+'</p>'+
+     '<p class="smv-wallet-offer-applies">Credited automatically after successful recharge verification.</p>'+
+     '<p class="smv-wallet-offer-limit">'+(limit===0?'Unlimited uses per Customer':String(limit)+' use(s) per Customer')+' where eligible</p>'+
+     validity+
+     '</article>';
+   }).join('');
+   banner.hidden=offers.length===0;
+   smvHomeWalletOffersFetchedAt=Date.now();
+  }catch(error){
+   banner.hidden=true;
+   console.warn('Home Wallet Offers are not available:',error?.message||error);
+  }finally{
+   smvHomeWalletOffersRequest=null;
+  }
+ })();
+ return smvHomeWalletOffersRequest;
+}
+
+
 function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
  if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend. Backend: '+RAZORPAY_BACKEND_URL);
@@ -212,13 +270,14 @@ function hideHomeSurface(){
   // Hide the COMPLETE public Home surface. Internal views such as Question Form
   // and Dashboard must never show Blogs/Media/Horoscope/Create-Horoscope content
   // underneath or beside them.
-  ["home","askNowSection","approved-astrologers","faq",
+  ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq",
    "smv-content-hub","horoscope-tools","tamil-horoscope","english-horoscope"].forEach(id=>hide(id));
   ["tamilHoroscopeResult","englishHoroscopeResult"].forEach(id=>{const el=$(id);if(el){el.classList.add("hidden");el.innerHTML="";}});
   document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>hideElement(el));
 }
 function showHomeSurface(){
-  ["home","askNowSection","approved-astrologers","faq"].forEach(id=>show(id));
+  ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq"].forEach(id=>show(id));
+  smvLoadHomeWalletRechargeOffers().catch(()=>{});
   hide("register-flow");
   document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>showElement(el));
 }
@@ -271,8 +330,9 @@ function smvReturnHome(restoreRoleNav=true){
    "astro-flow","appointment","contact"].forEach(id=>hide(id));
 
   // Restore the COMPLETE public Home surface.
-  ["home","askNowSection","approved-astrologers","faq","smv-content-hub",
+  ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq","smv-content-hub",
    "english-horoscope"].forEach(id=>{const el=$(id);if(el)el.classList.remove("hidden");});
+  smvLoadHomeWalletRechargeOffers().catch(()=>{});
   hide("horoscope-tools");
   hide("tamil-horoscope");
   const tr=$("tamilHoroscopeResult"), er=$("englishHoroscopeResult");
@@ -2237,6 +2297,7 @@ function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
  '<div><div class="small">Available Balance</div><div id="smvWalletBalance" style="font-size:1.8rem;font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
+ '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Free Minutes Available</span><strong id="smvWalletBonusMinutes">Loading…</strong></div><div><span class="small">Reserved for active / booked sessions</span><strong id="smvWalletBonusReserved">0 minutes</strong></div><p>These promotional minutes are used before paid minutes for eligible Live Call and Live Chat sessions.</p></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
  '<form id="smvWalletRechargeForm" style="display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:16px;width:100%;max-width:100%;box-sizing:border-box">'+
  '<label style="display:flex;flex:1 1 0%;flex-direction:column;gap:6px;min-width:0;width:50%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;height:46px;min-height:46px;max-height:46px;box-sizing:border-box"></label>'+
@@ -2262,9 +2323,11 @@ function smvWalletSetMessage(message,kind='info'){
 async function smvLoadCustomerWallet(){
  const card=$('smvCustomerWalletCard');
  if(!card)return;
- const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),host=$('smvWalletTransactions');
+ const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),bonus=$('smvWalletBonusMinutes'),bonusReserved=$('smvWalletBonusReserved'),host=$('smvWalletTransactions');
  if(refresh)refresh.disabled=true;
  if(balance)balance.textContent='Loading…';
+ if(bonus)bonus.textContent='Loading…';
+ if(bonusReserved)bonusReserved.textContent='Loading…';
  if(host)host.innerHTML='<div class="small">Loading transactions…</div>';
  try{
   // Load the actual balance first. A failed ledger query must never block it.
@@ -2276,6 +2339,10 @@ async function smvLoadCustomerWallet(){
   const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
   if(balance)balance.textContent=smvWalletMoney(availablePaise);
   if(reserved)reserved.textContent=smvWalletMoney(reservedPaise);
+  const bonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
+  const reservedBonusMinutes=Number.isSafeInteger(Number(wallet.reservedBonusMinutes))&&Number(wallet.reservedBonusMinutes)>=0?Number(wallet.reservedBonusMinutes):0;
+  if(bonus)bonus.textContent=bonusMinutes+' '+(bonusMinutes===1?'minute':'minutes');
+  if(bonusReserved)bonusReserved.textContent=reservedBonusMinutes+' '+(reservedBonusMinutes===1?'minute':'minutes');
   let transactionError=null;
   try{
    const transactionResult=await renderApi('/wallet/transactions?limit=10',{method:'GET'});
@@ -2301,6 +2368,8 @@ async function smvLoadCustomerWallet(){
   console.error('Customer Wallet load failed:',error);
   if(balance)balance.textContent='Unavailable';
   if(reserved)reserved.textContent='—';
+  if(bonus)bonus.textContent='—';
+  if(bonusReserved)bonusReserved.textContent='—';
   if(host)host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
   smvWalletSetMessage('Unable to load Wallet balance: '+(error?.message||String(error)),'error');
  }finally{
