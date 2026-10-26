@@ -2399,10 +2399,10 @@ function smvBindCustomerWallet(){
    }
    if(requestAmount!==amount){requestKey=smvWalletNewRequestKey();requestAmount=amount;}
    if(submit)submit.disabled=true;
-   smvWalletSetMessage('Creating Payment');
+   smvWalletSetMessage('Creating Payment.... Please wait...');
    try{
     const checkoutReady=ensureRazorpayCheckout();
-    const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey})});
+    const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey}),timeoutMs:90000});
     if(order?.alreadyPaid){
      smvWalletSetMessage('This recharge was already paid. Refreshing the Wallet balance.','success');
      requestKey=smvWalletNewRequestKey();requestAmount='';
@@ -2417,7 +2417,7 @@ function smvBindCustomerWallet(){
      handler:async paymentResponse=>{
       try{
        smvWalletSetMessage('Payment response received. Verifying signature and updating Wallet…');
-       const verified=await renderApi('/wallet/recharge/verify',{method:'POST',body:JSON.stringify({rechargeId:order.rechargeId,...paymentResponse})});
+       const verified=await renderApi('/wallet/recharge/verify',{method:'POST',body:JSON.stringify({rechargeId:order.rechargeId,...paymentResponse}),timeoutMs:90000});
        if(!verified?.verified)throw new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet();
@@ -2437,6 +2437,7 @@ function smvBindCustomerWallet(){
      smvWalletSetMessage('Recharge not confirmed: '+reason+'. No Wallet credit has been confirmed.','error');
      if(submit&&document.contains(submit))submit.disabled=false;
     });
+    smvWalletSetMessage('Payment order created. Opening secure payment window…');
     checkout.open();
    }catch(error){
     smvWalletSetMessage('Unable to start Wallet recharge: '+(error?.message||String(error)), 'error');
