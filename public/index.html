@@ -855,33 +855,19 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <!-- SMV V10.2.2 MOBILE HEADER + HERO TARGETED FIX -->
 <!-- SMV V10.3 APPROVED REFERENCE HERO VISUAL FIX -->
-<dialog aria-labelledby="paymentReceiptTitle" class="smv-type-root" id="paymentSuccessPanel">
-<div class="smv-receipt-card">
-<h2 id="paymentReceiptTitle">Payment Successful ✓</h2>
-<p>Your payment has been securely verified and your question is saved.</p>
-<dl id="paymentSuccessDetails">
-<dt id="paymentReceiptQuestionLabel">Question ID</dt><dd id="paymentReceiptQuestionId"></dd>
-<dt>Payment ID</dt><dd id="paymentReceiptPaymentId"></dd>
-<div id="paymentReceiptReferenceRow"><dt>Razorpay Reference</dt><dd id="paymentReceiptReference"></dd></div>
-<dt>Payment Date &amp; Time</dt><dd id="paymentReceiptDate"></dd>
-</dl>
-<p aria-live="polite" class="small" id="paymentReceiptStatus" role="status"></p>
-<button class="btn" id="continueAfterPayment" type="button">VIEW MY QUESTION</button>
-</div>
-</dialog>
-<script defer="" src="./payment-receipt.js?v=20261026-payment-reliability-v1"></script>
+
+
 <script id="smv-v172-ui-symbol-collapse-script">
 /* V172: robust UI-only symbol collapse. No data/Firebase/API/payment logic is changed. */
 (function(){
 'use strict';
 const TARGETS=new Set([
-'Public Question Inbox','Questions — Unanswered Queue','Earnings History','Notifications','My Consultations',
-'Admin Earnings History','Allocated Questions — Admin Control','Answers Awaiting Approval','Answers — Answered Questions',
-'Astrologer Applications','Astrologer Withdrawals','Customer Reviews','Admin Answers','Admin Reviews','Question Approval',
-'Answer Approval','Public Question Approval','Payment Method Changes — Admin Approval','Recent Questions',
-'Blogs & Downloadable Content','Blog Writer & Publisher','Upload PDF / Image / Video / Music','Commission Settings'
+'Earnings History','Notifications','Live Call / Chat Earnings History',
+'Astrologer Applications','Astrologer Withdrawals','Customer Reviews','Admin Reviews',
+'Payment Method Changes — Admin Approval','Blogs & Downloadable Content','Blog Writer & Publisher',
+'Upload PDF / Image / Video / Music','Commission Settings'
 ]);
-const EXCLUDE=new Set(['ASTROLOGER DASHBOARD','CUSTOMER DASHBOARD','Profile','Astrologer Profile','My Questions','Total Earnings']);
+const EXCLUDE=new Set(['ASTROLOGER DASHBOARD','CUSTOMER DASHBOARD','Profile','Astrologer Profile','Total Earnings']);
 function text(x){return String(x||'').replace(/\s+/g,' ').trim()}
 function heading(card){const h=card.querySelector(':scope > h2,:scope > h3,:scope > h4');return text(h&&h.textContent)}
 function add(card){
