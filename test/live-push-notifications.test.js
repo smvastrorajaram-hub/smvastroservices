@@ -90,7 +90,8 @@ test('Explicit login renders a generic shell only for non-Admin roles; Admin ent
   assert.ok(!frontend.includes('if(!goToQuestion&&!goToAdmin){'));
   assert.ok(!frontend.includes('Login successful. Opening your dashboard…'));
   assert.ok(!frontend.includes('<h2>DASHBOARD</h2>'));
-  assert.ok(frontend.includes('?"CUSTOMER DASHBOARD":"");'));
+  assert.ok(frontend.includes('if(!goToAdmin && loginShellRole){'));
+  assert.ok(frontend.includes('if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";'));
 });
 
 test('Customer Dashboard loads current Live/Booking and Wallet UI without legacy question histories', () => {
