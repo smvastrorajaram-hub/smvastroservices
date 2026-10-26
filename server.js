@@ -4604,9 +4604,8 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
       name, bannerTheme: theme, enabled: body.enabled === true,
       minimumRechargeAmountPaise, bonusMinutes, perCustomerLimit, totalUsageLimit, priority,
       startAt, endAt,
-      usedCount: walletOfferWholeNumber(existing.usedCount, 0),
-      successfulRedemptions: walletOfferWholeNumber(existing.successfulRedemptions, 0),
-      totalBonusMinutesAwarded: walletOfferWholeNumber(existing.totalBonusMinutesAwarded, 0),
+      // Preserve redemption statistics already stored on the Offer. Do not copy stale
+      // counters from a non-transactional read while successful recharges update them.
       createdAt: existing.createdAt || now, updatedAt: now, updatedBy: user.uid
     };
     await offerRef.set(data, { merge: true });
