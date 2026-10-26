@@ -11,6 +11,7 @@ const {
   astrologerRatePaise,
   maxAffordableMinutes,
   calculateBookingReserveRelease,
+  preparationWindow,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
@@ -174,4 +175,14 @@ test('Live Call and Chat commission splits follow the Admin percentage and defau
   assert.deepEqual(frozenBookingCommission({
     astrologerCommissionPercent: 55, adminCommissionPercent: 55
   }, { astroPercent: 20, adminPercent: 80 }), { astroPercent: 20, adminPercent: 80 });
+});
+
+
+test('Accept starts the three-minute Horoscope preparation window at the acceptance timestamp', () => {
+  const acceptedAt = new Date('2026-10-26T06:00:00.000Z');
+  const window = preparationWindow(acceptedAt);
+  assert.equal(window.preparationStartedAt.toISOString(), acceptedAt.toISOString());
+  assert.equal(window.preparationUntil.toISOString(), '2026-10-26T06:03:00.000Z');
+  assert.equal(window.preparationUntil.getTime() - window.preparationStartedAt.getTime(), PREPARATION_DURATION_MS);
+  assert.equal(preparationWindow('invalid timestamp'), null);
 });
