@@ -2976,7 +2976,7 @@ app.get("/admin-data", async (req, res) => {
       // The total question count comes from an aggregate query above.
       readCollection("smv_questions",db.collection("smv_questions").where("status","==","answered").where("commissionStatus","==","credited")),
       // The landing page uses payments only for the Astrologer earnings ledger.
-      readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning")),
+      readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning").where("status","==","credited")),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getPrivateCommissionSettings(),
       db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),

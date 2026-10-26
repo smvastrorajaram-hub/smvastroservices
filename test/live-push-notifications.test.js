@@ -270,7 +270,7 @@ test('Admin landing reads only payment documents used by the Astrologer earnings
   const end = server.indexOf('\n});', start);
   assert.ok(start >= 0 && end > start);
   const route = server.slice(start, end);
-  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning"))'));
+  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning").where("status","==","credited"))'));
   assert.ok(frontend.includes("String(p.type||'').toLowerCase()==='astrologer_earning' && String(p.status||'').toLowerCase()==='credited'"));
   // Wallet transactions remain served by their existing dedicated route.
   assert.ok(server.includes('app.get("/admin/wallet/transactions"'));
