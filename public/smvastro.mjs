@@ -827,7 +827,6 @@ let smvBoardRequest=null;
 const SMV_ADMIN_SHORTCUTS=[
  ['adminWalletLedger','Wallet Ledger','self'],
  ['adminHoroscopePriceSet','Horoscope Settings','self'],
- ['adminOffersPromotions','Offers','self'],
  ['adminWithdrawals','Withdrawals','parent'],
  ['adminCommissionSettings','Live / Booking Commission','self']
 ];
@@ -1461,26 +1460,6 @@ async function smvLoadAstroCards(){
 }
 window.__smvReloadAstrologers=loadAstroCards;
 window.dispatchEvent(new Event('smv:app-ready'));
-let smvOfferQuote=null;
-function ensureOfferControls(){
-  const rateBox=$("askRate"); if(!rateBox||$("smvPromoCode"))return;
-  const wrap=document.createElement("div");wrap.id="smvOfferControls";wrap.className="action-row";wrap.style.margin="8px 0";
-  wrap.innerHTML='<input id="smvPromoCode" maxlength="40" autocomplete="off" placeholder="Promotion code (optional)" style="max-width:220px"><button class="btn" type="button" id="smvApplyPromo">APPLY</button><span class="small" id="smvOfferMsg"></span>';
-  rateBox.insertAdjacentElement("afterend",wrap);
-  $("smvApplyPromo").onclick=()=>refreshOfferQuote(true);
-}
-async function refreshOfferQuote(showInvalid=false){
-  ensureOfferControls(); if(!currentUser||!questionServicePrice)return null;
-  const code=String($("smvPromoCode")?.value||"").trim();
-  try{
-    const q=await renderApi("/offers/quote",{method:"POST",body:JSON.stringify({service:"public_question",originalAmount:questionServicePrice,promoCode:code})});
-    smvOfferQuote=q; const rate=$("askRate"),msg=$("smvOfferMsg");
-    if(q.offerId){if(rate)rate.innerHTML=`<b><s>₹${Number(q.originalAmount).toFixed(2)}</s> ₹${Number(q.finalAmount).toFixed(2)} per Question</b>`;if(msg)msg.innerHTML=`<span class="success">${escapeHtml(q.bannerText||q.offerName||'Offer applied')}</span>`;}
-    else{if(rate)rate.innerHTML=`<b>₹${Number(q.finalAmount||questionServicePrice).toFixed(2)} per Question</b>`;if(msg)msg.innerHTML=code&&showInvalid?'<span class="error">Promotion code is not valid or not eligible for this account.</span>':'';}
-    return q;
-  }catch(e){if($("smvOfferMsg")&&showInvalid)$("smvOfferMsg").innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';return null;}
-}
-
 let questionPriceUnsubscribe=null;
 let questionPriceInitPromise=null;
 async function loadQuestionPrice(){
@@ -1490,8 +1469,6 @@ async function loadQuestionPrice(){
   if(questionPriceUnsubscribe && Number.isFinite(Number(questionServicePrice)) && Number(questionServicePrice)>=1){
     if(rateBox) rateBox.innerHTML=`<b>₹${Number(questionServicePrice).toFixed(2)} per Question</b>`;
     if($("publicQuestionPrice")) $("publicQuestionPrice").textContent=`₹${Number(questionServicePrice).toFixed(2)}`;
-    ensureOfferControls();
-    refreshOfferQuote(false).catch(()=>{});
     return;
   }
   // Multiple fast taps share the same initial listener instead of creating
@@ -1521,8 +1498,6 @@ async function loadQuestionPrice(){
           questionServicePrice=v;
           if($("askRate")) $("askRate").innerHTML=`<b>₹${questionServicePrice.toFixed(2)} per Question</b>`;
           if($("publicQuestionPrice")) $("publicQuestionPrice").textContent=`₹${questionServicePrice.toFixed(2)}`;
-          ensureOfferControls();
-          refreshOfferQuote(false).catch(()=>{});
         }else{
           console.warn("QUESTION PRICE LISTENER returned an invalid/missing price");
           applyFallback();
@@ -1679,11 +1654,10 @@ $("submitQuestionBtn")?.addEventListener("click",async()=>{
    const birthTime=$("birthTime").value;
    const birthPlace=$("birthPlace").value.trim();
    const birthGender=$("birthGender").value;
-   const payload={customerName:name,question:text,amount,birthDetails:{name,birthDate,birthTime,birthPlace,birthGender,timezone:"Asia/Kolkata",utcOffsetMinutes:330},serviceName:"Public Astrology Question",customerEmail:currentUser.email||"",promoCode:String($("smvPromoCode")?.value||"").trim()};
+   const payload={customerName:name,question:text,amount,birthDetails:{name,birthDate,birthTime,birthPlace,birthGender,timezone:"Asia/Kolkata",utcOffsetMinutes:330},serviceName:"Public Astrology Question",customerEmail:currentUser.email||""};
    const orderRes=await withTimeout(renderApi("/create-order",{method:"POST",body:JSON.stringify(payload)}),30000);
    if(orderRes?.questionId) pendingQuestionId=String(orderRes.questionId).trim();
    const {orderId,keyId,amount:paise,currency}=orderRes||{};
-   if(orderRes?.offerId&&$("smvOfferMsg"))$("smvOfferMsg").innerHTML=`<span class="success">${escapeHtml(orderRes.offerBannerText||orderRes.offerName||'Offer applied')} — Pay ₹${(Number(paise||0)/100).toFixed(2)}</span>`;
    if(!pendingQuestionId||!orderId||!keyId)throw new Error("Payment order was not created correctly. Please retry.");
    paymentFlow?.status?.('Question ID created. Opening secure Payment Gateway…');
    const checkoutReady=await checkoutReadyPromise;
@@ -2254,15 +2228,10 @@ document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
 function smvCustomerBookingChatCardHtml(){
  return '<section class="card smv-customer-book-chat" id="smvCustomerBookChatCard" style="margin-top:16px" aria-labelledby="smvCustomerBookChatTitle">'+
- '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p><p class="small">New Customer registrations receive a one-time ₹25 Wallet credit.</p></div>'+
- '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gray" id="smvCustomerOpenAstrologerList" type="button">VIEW ASTROLOGERS LIST</button><button class="btn" id="smvCustomerBookChat" type="button">CONSULT AN ASTROLOGER</button></div></div></section>';
+ '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p></div>'+
+ '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="smvCustomerBookChat" type="button">CONSULT AN ASTROLOGER</button></div></div></section>';
 }
 function smvBindCustomerBookingChat(){
- const viewButton=$('smvCustomerOpenAstrologerList');
- if(viewButton)viewButton.onclick=()=>{
-  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('private-consultation');return;}
-  location.href='./?view=consult';
- };
  const button=$('smvCustomerBookChat');
  if(!button)return;
  button.onclick=()=>{
@@ -2276,13 +2245,12 @@ function smvBindCustomerBookingChat(){
 }
 function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
- '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and eligible consultation charges.</div></div>'+
- '<div><div class="small">Available Balance</div><div id="smvWalletBalance" style="font-size:1.8rem;font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div><div class="small" style="margin-top:6px">Promotional free Call/Chat minutes: <b id="smvWalletBonusMinutes">0</b> (reserved: <b id="smvWalletBonusReserved">0</b>)</div></div></div>'+
+ '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
+ '<div><div class="small">Available Balance</div><div id="smvWalletBalance" style="font-size:1.8rem;font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
  '<form id="smvWalletRechargeForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;margin-top:16px">'+
  '<label style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box"></label>'+
- '<div style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%"><span aria-hidden="true" style="visibility:hidden;min-height:1.2em;font-weight:700">Recharge amount (₹)</span><button class="btn" id="smvWalletRechargeButton" type="submit" style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere">Recharge Wallet</button></div>'+
- '<label style="display:flex;flex-direction:column;gap:6px;grid-column:1 / -1;min-width:0;width:100%"><b>Recharge promo code (optional)</b><input id="smvWalletRechargePromoCode" maxlength="40" autocomplete="off" placeholder="DIWALI / PONGAL" style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box"></label></form>'+
+ '<div style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%"><b aria-hidden="true" style="visibility:hidden">Recharge amount (₹)</b><button class="btn" id="smvWalletRechargeButton" type="submit" style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere">RECHARGE WALLET</button></div></form>'+
  '<div id="smvWalletMessage" class="small" role="status" aria-live="polite" style="margin-top:10px">Loading Wallet details…</div>'+
  '<div style="margin-top:18px"><h4 style="margin-bottom:8px">Recent Wallet Transactions</h4><div id="smvWalletTransactions"><div class="small">Loading transactions…</div></div></div></section>';
 }
@@ -2304,7 +2272,7 @@ function smvWalletSetMessage(message,kind='info'){
 async function smvLoadCustomerWallet(){
  const card=$('smvCustomerWalletCard');
  if(!card)return;
- const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),bonus=$('smvWalletBonusMinutes'),bonusReserved=$('smvWalletBonusReserved'),host=$('smvWalletTransactions');
+ const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),host=$('smvWalletTransactions');
  if(refresh)refresh.disabled=true;
  if(balance)balance.textContent='Loading…';
  if(host)host.innerHTML='<div class="small">Loading transactions…</div>';
@@ -2318,8 +2286,6 @@ async function smvLoadCustomerWallet(){
   const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
   if(balance)balance.textContent=smvWalletMoney(availablePaise);
   if(reserved)reserved.textContent=smvWalletMoney(reservedPaise);
-  if(bonus)bonus.textContent=String(Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0))));
-  if(bonusReserved)bonusReserved.textContent=String(Math.max(0,Math.floor(Number(wallet.reservedBonusMinutes||0))));
   let transactionError=null;
   try{
    const transactionResult=await renderApi('/wallet/transactions?limit=10',{method:'GET'});
@@ -2331,8 +2297,7 @@ async function smvLoadCustomerWallet(){
      const label=String(t.type||'transaction').replace(/_/g,' ');
      const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
      const status=String(t.status||'posted');
-     const bonusCount=Number(t.bonusMinutesCredited||t.bonusMinutes||0);
-     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(bonusCount>0?'<div class="small">Promotional free minutes: +'+bonusCount+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
     }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
    }
   }catch(error){
@@ -2346,8 +2311,6 @@ async function smvLoadCustomerWallet(){
   console.error('Customer Wallet load failed:',error);
   if(balance)balance.textContent='Unavailable';
   if(reserved)reserved.textContent='—';
-  if(bonus)bonus.textContent='—';
-  if(bonusReserved)bonusReserved.textContent='—';
   if(host)host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
   smvWalletSetMessage('Unable to load Wallet balance: '+(error?.message||String(error)),'error');
  }finally{
@@ -2363,7 +2326,6 @@ function smvBindCustomerWallet(){
  if(form){
   let requestKey=smvWalletNewRequestKey();
   let requestAmount='';
-  let requestPromoCode='';
   form.onsubmit=async event=>{
    event.preventDefault();
    if(!currentUser||!auth?.currentUser){smvWalletSetMessage('Please log in again before recharging.','error');return;}
@@ -2372,17 +2334,15 @@ function smvBindCustomerWallet(){
    if(!/^\d+(?:\.\d{1,2})?$/.test(amount)||!Number.isFinite(Number(amount))||Number(amount)<1){
     smvWalletSetMessage('Enter a valid recharge amount of at least ₹1.00, using up to two decimal places.','error');return;
    }
-   const promoCode=String($('smvWalletRechargePromoCode')?.value||'').trim();
-   if(requestAmount!==amount||requestPromoCode!==promoCode){requestKey=smvWalletNewRequestKey();requestAmount=amount;requestPromoCode=promoCode;}
+   if(requestAmount!==amount){requestKey=smvWalletNewRequestKey();requestAmount=amount;}
    if(submit)submit.disabled=true;
    smvWalletSetMessage('Creating a Razorpay Test Mode recharge order…');
    try{
     const checkoutReady=ensureRazorpayCheckout();
-    const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey,promoCode})});
-    if(Number(order?.bonusFreeMinutes||0)>0)smvWalletSetMessage('Recharge offer: '+Number(order.bonusFreeMinutes)+' free Call/Chat minute(s)'+(order.bonusOfferName?' — '+String(order.bonusOfferName):'')+'. Bonus is credited only after payment verification.');
+    const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey})});
     if(order?.alreadyPaid){
      smvWalletSetMessage('This recharge was already paid. Refreshing the Wallet balance.','success');
-     requestKey=smvWalletNewRequestKey();requestAmount='';requestPromoCode='';
+     requestKey=smvWalletNewRequestKey();requestAmount='';
      await smvLoadCustomerWallet();smvWalletSetMessage('Wallet balance refreshed.','success');return;
     }
     await checkoutReady;
@@ -2398,7 +2358,7 @@ function smvBindCustomerWallet(){
        if(!verified?.verified)throw new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';requestPromoCode='';
        await smvLoadCustomerWallet();
-       smvWalletSetMessage('Recharge verified successfully. Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(Number(verified.bonusMinutesCredited||0)>0?' Added '+Number(verified.bonusMinutesCredited)+' free Call/Chat minute(s).':''),'success');
+       smvWalletSetMessage('Recharge verified successfully. Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.','success');
       }catch(error){
        smvWalletSetMessage('Payment was returned but Wallet verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until the transaction is checked.','error');
       }finally{if(submit&&document.contains(submit))submit.disabled=false;}
@@ -3081,24 +3041,13 @@ let userStatus=String(
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
-   box.innerHTML=`<div class="smv-customer-offer-banners hidden" aria-live="polite"></div><div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
+   box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
    ${smvCustomerBookingChatCardHtml()}
    ${smvWalletDashboardCardHtml()}
    <div class="card" style="margin-top:16px"><h3 class="customer-consultations-title">Previous Question History</h3>${!consultationItems.length?'<div class="empty">No previous question records. New bookings use Book a Chat.</div>':consultationItems.slice(0,20).map(q=>{const qid=String(q.questionId||q.id||''); const reviewButton=q.status==='answered'&&!q.reviewed?`<button class="btn" data-review="${escapeHtml(qid)}" data-astro="${escapeHtml(q.astrologerId||'')}">Rate & Review</button>`:''; const paymentRetryButton=["awaiting_payment","payment_failed"].includes(String(q.status||""))&&q.paymentStatus!=="paid"&&qid?`<button class="smv-customer-payment-btn" data-retry-payment="${escapeHtml(qid)}" type="button">Retry Payment · ₹${Number(q.amount||0).toFixed(2)}</button>`:""; const statusMap={awaiting_payment:'Payment Pending',payment_failed:'Payment Failed',pending_admin_approval:'Waiting for Admin Approval',assigned_to_astrologer:'Assigned to Astrologer',available_to_astrologers:'Available to Astrologers',claimed_by_astrologer:'Astrologer Answering',admin_approved:'Waiting for Answers',processing:'Processing',answer_draft:'Processing',admin_review:'Processing',revision_required:'Revision Required',answered:'Answer Ready',question_rejected:'Question Rejected',admin_rejected:'Question Rejected'}; const astroName=q.astrologerName||'Selected Astrologer'; const adminQuestionApproved=!!q.adminQuestionApprovedAt||['assigned_to_astrologer','reallocated','available_to_astrologers','claimed_by_astrologer','admin_approved','processing','answer_draft','admin_review','answered'].includes(String(q.status||'')); const statusText=q.status==='paid'&&!adminQuestionApproved?'Waiting for Admin Approval':adminQuestionApproved&&['paid','admin_approved'].includes(String(q.status||''))?`Waiting for Answers — ${astroName}`:q.status==='processing'||q.status==='answer_draft'||q.status==='admin_review'?`Processing — ${astroName} answer received and under Admin review`:q.status==='revision_required'?`Revision Required — ${astroName}`:q.status==='answered'?'Answer Ready':(statusMap[q.status]||q.status||'Processing'); const paymentReceived=!!q.customerPaymentId || !!q.paymentRecordedAt || !!q.paidAt || !!q.paymentDate || !['awaiting_payment','payment_failed'].includes(String(q.status||'')); const refundStatuses=['pending','created','initiated','processing']; const refundCompleted=['processed','completed']; const isQuestionRejected=['question_rejected','admin_rejected'].includes(String(q.status||'')); const refundAmount=Number(q.refundAmount||q.amount||q.paymentAmount||0); const refundStatus=String(q.refundStatus||'').toLowerCase(); const steps=isQuestionRejected?[['Payment Received',paymentReceived],['Question Rejected',true],['Refund Status',refundCompleted.includes(refundStatus)]]:[['Payment Received',paymentReceived],['Question Approved',adminQuestionApproved],['Astrologer Answer Submitted',['processing','answer_draft','admin_review','revision_required','answered'].includes(String(q.status||''))],['Admin Approval',['answered'].includes(String(q.status||''))],['Answer Ready',['answered'].includes(String(q.status||''))]]; const timeline=`<div class="timeline">${steps.map(x=>`<div class="timeline-step ${x[1]?'done':''}"><span>${x[1]?'✓':'○'}</span>${x[0]}</div>`).join('')}</div>`; const paymentLine=q.customerPaymentId?`<div class="small smv-customer-meta-line"><b>Customer Payment ID:</b> <span>${escapeHtml(q.customerPaymentId)}</span> · <b>Payment Date & Time:</b> <span>${escapeHtml(smvDateTime(q.paymentRecordedAt||q.paidAt||q.paymentUpdatedAt||q.paymentDate))}</span></div>`:''; const isRejected=isQuestionRejected; const refundLine='';; const questionIdLine=qid?`<div class="small smv-customer-meta-line"><b>Question ID:</b> <span>${escapeHtml(qid)}</span></div>`:''; return `<div class="smv-consultation-item" data-smv-question-id="${escapeHtml(qid)}" data-smv-service="public" style="padding:14px 0;border-bottom:1px solid #eee"><div class="smv-question-text">${escapeHtml(q.question||'Question')}</div>${questionIdLine}<div class="small customer-meta smv-customer-meta-line"><b>Astrologer:</b> <span>${escapeHtml(astroName)}</span> · <b>Status:</b> <span>${escapeHtml(statusText)}</span></div><div class="small smv-customer-meta-line"><b>Date & Time:</b> <span>${escapeHtml(smvDateTime(q.updatedAt||q.answerApprovedAt||q.adminQuestionApprovedAt||q.createdAt))}</span></div>${paymentLine}${refundLine}${isRejected&&refundAmount>0?`<div class="refund-summary" style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid #e6e6e6"><div><b>Question Status:</b> 🔴 Rejected</div><div style="margin-top:4px"><b>Payment:</b> ${paymentReceived?'✅ Payment Received':'⏳ Payment Pending'}</div><div class="small"><b>Paid Amount:</b> ₹${refundAmount.toFixed(2)}</div><div style="margin-top:8px"><b>Refund Status:</b> ${refundCompleted.includes(refundStatus)?'<span class="success">🟢 Refund Completed</span>':refundStatus==='waiting_balance'?'<span style="color:#b26a00">🟠 Waiting for Razorpay Balance — Admin Retry Required</span>':refundStatus==='failed'?'<span class="error">🔴 Refund Failed — Admin Review Required</span>':'<span style="color:#b26a00">🟠 Refund Pending</span>'}</div><div class="small"><b>Refund Amount:</b> ₹${refundAmount.toFixed(2)}</div>${q.refundId?`<div class="small"><b>Refund ID:</b> ${escapeHtml(q.refundId)}</div>`:''}<div class="small"><b>RRN:</b> ${escapeHtml(q.refundRrn||"Available after Razorpay processes the refund")}</div>${q.refundArn?`<div class="small"><b>ARN:</b> ${escapeHtml(q.refundArn)}</div>`:''}${q.refundUtr?`<div class="small"><b>UTR:</b> ${escapeHtml(q.refundUtr)}</div>`:''}${refundCompleted.includes(refundStatus)&&q.refundProcessedAt?`<div class="small"><b>Refund Date:</b> ${escapeHtml(smvDateTime(q.refundProcessedAt))}</div>`:''}<div class="small" style="margin-top:6px"><b>Refund Reason:</b> ${escapeHtml(q.refundReason||q.adminQuestionRejectionReason||'Question rejected by Admin')}</div>${q.adminQuestionRejectedAt?`<div class="small"><b>Rejected On:</b> ${escapeHtml(smvDateTime(q.adminQuestionRejectedAt))}</div>`:''}${refundCompleted.includes(refundStatus)?`<div class="small" style="margin-top:6px">Refund has been processed successfully.<br>The amount may take 5–7 working days to reflect in your bank account/card. You can use the RRN for bank tracking.</div>`:''}</div>`:''}${timeline}${q.answer&&q.status==='answered'?`<div class="card" style="margin-top:10px"><b>${q.answerAuthorType==='admin'||q.adminAnswered?'Admin Answer':'Astrologer Answer'}</b><div class="smv-customer-answer-text" style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${escapeHtml(q.answer)}</div><div class="small success smv-customer-viewed-status">SUBMITTED</div>${q.answerAuthorType==='admin'||q.adminAnswered?'<p class="small success"><b>Answered directly by SMV ASTRO Admin.</b></p>':''}</div>`:''}${paymentRetryButton?`<div style="margin-top:10px"><div class="smv-private-payment-note">Retry this saved question at its original price. Current price changes do not apply.</div>${paymentRetryButton}</div>`:""}${reviewButton}</div>`}).join('')}</div>
    <div class="card" style="margin-top:16px"><h3 class="customer-private-consultations-title">My Chat Bookings</h3>${!privateConsultationItems.length?'<div class="empty">No private consultations yet.</div>':privateConsultationItems.slice(0,20).map(c=>{const id=String(c.id||c.consultationId||'');const rejected=c.status==='question_rejected';const refundStatus=String(c.refundStatus||'').toLowerCase();const refundDone=['processed','completed'].includes(refundStatus);const answerReady=c.status==='answered'&&!!String(c.answer||'').trim();const unpaid=c.paymentStatus!=='paid'&&!rejected;const statusMap={awaiting_payment:'Payment Pending',pending_admin_approval:'Waiting for Admin Approval',approved_for_astrologer:'Waiting for Selected Astrologer',answer_pending_admin_approval:'Answer Waiting for Admin Approval',revision_required:'Astrologer Revising Answer',answered:'Answer Ready',question_rejected:'Question Rejected / Refund'};return `<div class="smv-consultation-item" data-smv-question-id="${escapeHtml(id)}" data-smv-service="private" style="padding:14px 0;border-bottom:1px solid #eee"><div class="smv-question-text">${escapeHtml(c.question||'Private Consultation')}</div><div class="small smv-customer-meta-line"><b>Selected Astrologer:</b> <span>${escapeHtml(c.astrologerName||'Astrologer')}</span> · <b>Chat Price:</b> <span>₹${Number(c.chatPrice||c.amount||0).toFixed(2)}</span></div><div class="small smv-customer-meta-line"><b>Status:</b> <span>${escapeHtml(statusMap[c.status]||c.status||'Processing')}</span></div><div class="small smv-customer-meta-line"><b>Payment Status:</b> <span>${escapeHtml(c.paymentStatus||'pending')}</span></div><div class="small smv-customer-meta-line"><b>Consultation ID:</b> <span>${escapeHtml(id)}</span></div><div class="small smv-customer-meta-line"><b>Date &amp; Time:</b> <span>${escapeHtml(smvDateTime(c.createdAt||c.questionCreatedAt||c.submittedAt||c.paymentRecordedAt||c.updatedAt))}</span></div>${(c.customerPaymentId||c.razorpayPaymentId)?`<div class="small smv-customer-meta-line"><b>Payment ID:</b> <span>${escapeHtml(c.customerPaymentId||c.razorpayPaymentId)}</span></div>`:''}${unpaid?`<div class="smv-private-payment-actions" style="margin-top:8px"><button class="smv-customer-payment-btn" data-private-retry="${escapeHtml(id)}">RETRY PAYMENT ₹${Number(c.chatPrice||c.amount||0).toFixed(2)}</button> <button class="smv-customer-payment-btn" data-private-recover="${escapeHtml(id)}">RECOVER PAYMENT</button></div>`:''}${rejected?`<div class="refund-summary" style="margin-top:10px"><b>Refund Status:</b> ${refundDone?'Refund Completed':(refundStatus==='failed'?'Refund Failed — Admin Retry Required':escapeHtml(c.refundStatus||'Pending'))}<br><span class="small"><b>Refund Amount:</b> ₹${Number(c.refundAmount||c.chatPrice||0).toFixed(2)}</span>${c.refundId?`<br><span class="small"><b>Refund ID:</b> ${escapeHtml(c.refundId)}</span>`:''}<br><span class="small"><b>RRN:</b> ${escapeHtml(c.refundRrn||'Available after Razorpay processes the refund')}</span>${c.refundProcessedAt?`<br><span class="small"><b>Refund Date:</b> ${escapeHtml(smvDateTime(c.refundProcessedAt))}</span>`:''}</div>`:''}${answerReady?`<div class="card" style="margin-top:10px"><b>Astrologer Answer</b><div class="smv-customer-answer-text" style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(c.answer)}</div><div class="small success smv-customer-viewed-status">SUBMITTED</div></div>`:''}</div>`}).join('')}</div>`;
    smvBindCustomerBookingChat();
    smvBindCustomerWallet();
-   // Restore the existing offer banner on Customer Dashboard only when Admin
-   // selected Customer Dashboard or Home + Dashboard. Uses the shared offer
-   // presentation cache and does not change dashboard/Firebase hydration.
-   try{
-     const offerHost=box.querySelector('.smv-customer-offer-banners');
-     if(offerHost&&window.SMVOfferBanners){
-       const visibleOffers=await window.SMVOfferBanners.getOffers(false);
-       if(active()) window.SMVOfferBanners.render(offerHost,visibleOffers,'customer_dashboard',()=>window.__smvOpenBookingChat?.());
-     }
-   }catch(offerBannerErr){console.warn('Customer offer banner unavailable:',offerBannerErr);}
-
    document.querySelectorAll('[data-private-recover]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await renderApi('/private-consultation/recover-payment',{method:'POST',body:JSON.stringify({consultationId:b.dataset.privateRecover})});if(r.recovered)await loadDashboard('customer',true);else alert('No captured Razorpay payment was found. Use Retry Payment.');}catch(e){alert(e.message||String(e));}finally{b.disabled=false;}});
    document.querySelectorAll('[data-private-retry]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const checkoutReady=ensureRazorpayCheckout();const r=await renderApi('/private-consultation/retry-payment',{method:'POST',body:JSON.stringify({consultationId:b.dataset.privateRetry})});await checkoutReady;if(!window.Razorpay)throw new Error('Razorpay is not available. Please refresh and try again.');const rz=new Razorpay({key:r.keyId,amount:r.amount,currency:r.currency,name:'SMV ASTRO',description:'Private Astrology Consultation',order_id:r.orderId,handler:async p=>{await renderApi('/private-consultation/verify-payment',{method:'POST',body:JSON.stringify({consultationId:r.consultationId,...p})});await loadDashboard('customer',true);},modal:{ondismiss:()=>{renderApi('/private-consultation/cancel-payment',{method:'POST',body:JSON.stringify({consultationId:r.consultationId})}).catch(()=>{});b.disabled=false;}}});rz.on('payment.failed',()=>{b.disabled=false;});rz.open();}catch(e){alert(e.message||String(e));b.disabled=false;}});
    document.querySelectorAll('[data-retry-payment]').forEach(b=>b.onclick=()=>retryCustomerPayment(b.dataset.retryPayment,b));
@@ -3446,36 +3395,6 @@ function smvRenderOpenWorkflowControl(data){
 }
 
 let smvAdminLoad=null,smvAdminLoadUid=null;
-async function renderAdminOffers(initialOffers=null){
-  const anchor=$("questionPrice")?.closest(".card"); if(!anchor)return;
-  let card=$("adminOffersPromotions"); if(!card){card=document.createElement("div");card.id="adminOffersPromotions";card.className="card";card.style.marginTop="16px";anchor.insertAdjacentElement("afterend",card);}
-  card.innerHTML='<h3>Offers & Promotions</h3><p class="small">Create festival/season discounts or Wallet Recharge Bonus offers. For Wallet Recharge, set the minimum recharge amount and free minutes; bonus minutes are credited only after successful payment verification. Discounts never stack.</p><div id="adminOfferEditor"></div><div id="adminOfferList"><div class="empty">Loading offers...</div></div><div class="small" id="adminOfferMsg"></div>';
-  $("adminOfferEditor").innerHTML=`<input type="hidden" id="offerEditId"><div class="grid"><label><b>Offer Name</b><input id="offerName" placeholder="Pongal Special"></label><label><b>Promo Code</b><input id="offerPromoCode" maxlength="40" placeholder="PONGAL49"></label><label><b>Banner Choose</b><select id="offerBannerTheme"><option value="auto">Auto</option><option value="generic">Generic</option><option value="pongal">Pongal</option><option value="diwali">Diwali</option><option value="navaratri">Navaratri</option><option value="dasara">Dasara</option><option value="ayudha_pooja">Ayudha Pooja</option><option value="shivaratri">Shivaratri</option><option value="tamil_new_year">Tamil New Year</option><option value="vinayagar_chaturthi">Vinayagar Chaturthi</option><option value="karthigai_deepam">Karthigai Deepam</option><option value="thaipusam">Thaipusam</option><option value="onam">Onam</option><option value="new_year">New Year</option><option value="christmas">Christmas</option><option value="eid">Eid</option></select></label><label><b>Discount Type</b><select id="offerDiscountType"><option value="fixed_price">Fixed Price</option><option value="percentage">Percentage Discount</option><option value="flat">Flat Discount</option></select></label><label><b>Offer Price ₹</b><input id="offerPrice" type="number" min="1" step="0.01" value="1"></label><label><b>Discount Value</b><input id="offerDiscountValue" type="number" min="0" step="0.01" value="0"></label><label><b>Eligibility</b><select id="offerEligibility"><option value="all">All Customers</option><option value="new_customer">New Customers Only</option><option value="existing_customer">Existing Customers Only</option></select></label><label><b>Applies To</b><select id="offerAppliesTo"><option value="public_question">Ask Question</option><option value="private_consultation">Private Consultation</option><option value="wallet_recharge">Wallet Recharge (Free Minutes)</option><option value="all">Both</option></select></label><label><b>Display Mode</b><select id="offerDisplayMode"><option value="payment_only">Payment Only / Invisible</option><option value="hidden">Hidden</option><option value="home_banner">Home Banner</option><option value="customer_dashboard">Customer Dashboard</option><option value="home_dashboard">Home + Dashboard</option></select></label><label><b>Start Date & Time</b><input id="offerStartAt" type="datetime-local"></label><label><b>End Date & Time</b><input id="offerEndAt" type="datetime-local"></label><label><b>Per Customer Limit</b><input id="offerPerCustomerLimit" type="number" min="0" value="1"></label><label><b>Total Usage Limit (0 = unlimited)</b><input id="offerTotalUsageLimit" type="number" min="0" value="0"></label><label><b>Minimum Amount / Minimum Recharge ₹</b><input id="offerMinimumAmount" type="number" min="0" step="0.01" value="1"></label><label id="offerBonusFreeMinutesWrap" style="display:none"><b>Wallet Recharge Bonus Free Minutes</b><input id="offerBonusFreeMinutes" type="number" min="0" max="1440" step="1" value="0"></label><label><b>Automatic Offer</b><select id="offerAutomatic"><option value="true">YES</option><option value="false">NO — Promo Code Required</option></select></label><label><b>Enabled</b><select id="offerEnabled"><option value="true">ON</option><option value="false">OFF</option></select></label></div><label><b>Banner / Payment Message</b><input id="offerBannerText" maxlength="240" placeholder="Pongal Special Offer Applied"></label><div class="action-row"><button class="btn" id="saveOfferBtn" type="button">SAVE OFFER</button><button class="btn gray" id="clearOfferBtn" type="button">CLEAR</button></div>`;
-  const syncOfferCodeMode=()=>{const automatic=$('offerAutomatic')?.value==='true',promo=$('offerPromoCode');if(!promo)return;promo.disabled=automatic;if(automatic){promo.value='';promo.placeholder='Disabled for Automatic Offer';}else{promo.placeholder='PONGAL49';}}; const syncOfferBonusMode=()=>{const wrap=$('offerBonusFreeMinutesWrap');if(wrap)wrap.style.display=$('offerAppliesTo')?.value==='wallet_recharge'?'block':'none';}; const clear=()=>{for(const id of ['offerEditId','offerName','offerPromoCode','offerStartAt','offerEndAt','offerBannerText'])if($(id))$(id).value='';$('offerPrice').value='1';$('offerDiscountValue').value='0';$('offerPerCustomerLimit').value='1';$('offerTotalUsageLimit').value='0';$('offerMinimumAmount').value='1';if($('offerBonusFreeMinutes'))$('offerBonusFreeMinutes').value='0';$('offerEnabled').value='true';$('offerAutomatic').value='true';$('offerAppliesTo').value='public_question';if($('offerBannerTheme'))$('offerBannerTheme').value='auto';syncOfferCodeMode();syncOfferBonusMode();}; $("clearOfferBtn").onclick=clear; $('offerAutomatic').onchange=syncOfferCodeMode; $('offerAppliesTo').onchange=syncOfferBonusMode; syncOfferCodeMode();syncOfferBonusMode();
-  async function reload(prefetched=null){const r=Array.isArray(prefetched)?{offers:prefetched}:await renderApi('/admin/offers',{method:'GET'}),list=$("adminOfferList"),offers=r.offers||[];list.innerHTML=offers.length?offers.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(o=>`<div class="card" style="margin-top:8px"><b>${escapeHtml(o.name||'Offer')}</b> ${o.enabled?'<span class="success">ON</span>':'<span class="small">OFF</span>'}<div class="small">${Array.isArray(o.appliesTo)&&o.appliesTo.includes('wallet_recharge')?('+'+Number(o.bonusFreeMinutes||0)+' free minutes on recharge ≥₹'+Number(o.minimumAmount||0).toFixed(2)):(escapeHtml(o.promoCode||'Automatic')+' · '+escapeHtml(o.discountType||'fixed_price'))} · Used ${Number(o.usedCount||0)}${Number(o.totalUsageLimit||0)>0?' / '+Number(o.totalUsageLimit):''} · Successful Payments ${Number(o.successfulPayments||0)} · Discount Given ₹${Number(o.totalDiscountGiven||0).toFixed(2)}</div><div class="action-row"><button class="btn" data-offer-edit="${escapeHtml(o.id)}">EDIT</button><button class="btn gray" data-offer-delete="${escapeHtml(o.id)}">DELETE</button></div></div>`).join(''):'<div class="empty">No offers created yet.</div>';list.querySelectorAll('[data-offer-edit]').forEach(b=>b.onclick=()=>{const o=offers.find(x=>x.id===b.dataset.offerEdit);if(!o||o.builtIn)return;$('offerEditId').value=o.id;$('offerName').value=o.name||'';$('offerPromoCode').value=o.promoCode||'';$('offerDiscountType').value=o.discountType||'fixed_price';$('offerPrice').value=o.offerPrice??1;$('offerDiscountValue').value=o.discountValue??0;$('offerEligibility').value=o.eligibility||'all';$('offerAppliesTo').value=(o.appliesTo||['public_question'])[0]||'public_question';$('offerDisplayMode').value=o.displayMode||'payment_only';$('offerStartAt').value=typeof o.startAt==='string'?o.startAt.slice(0,16):'';$('offerEndAt').value=typeof o.endAt==='string'?o.endAt.slice(0,16):'';$('offerPerCustomerLimit').value=o.perCustomerLimit??1;$('offerTotalUsageLimit').value=o.totalUsageLimit??0;$('offerMinimumAmount').value=o.minimumAmount??1;if($('offerBonusFreeMinutes'))$('offerBonusFreeMinutes').value=o.bonusFreeMinutes??0;$('offerAutomatic').value=String(o.automatic!==false);$('offerEnabled').value=String(o.enabled===true);if($('offerBannerTheme'))$('offerBannerTheme').value=o.bannerTheme||'auto';$('offerBannerText').value=o.bannerText||'';syncOfferCodeMode();syncOfferBonusMode();card.scrollIntoView({behavior:'smooth',block:'start'});});list.querySelectorAll('[data-offer-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this offer?'))return;await renderApi('/admin/offers/delete',{method:'POST',body:JSON.stringify({id:b.dataset.offerDelete})});await reload();});}
-  $("saveOfferBtn").onclick=async()=>{
-    const b=$("saveOfferBtn");b.disabled=true;b.textContent='SAVING...';
-    try{
-      const applies=$("offerAppliesTo").value;
-      const payload={id:$("offerEditId").value||undefined,name:$("offerName").value.trim(),promoCode:$("offerPromoCode").value.trim(),discountType:$("offerDiscountType").value,offerPrice:Number($("offerPrice").value),discountValue:Number($("offerDiscountValue").value),eligibility:$("offerEligibility").value,appliesTo:applies==='all'?['all']:[applies],displayMode:$("offerDisplayMode").value,startAt:$("offerStartAt").value||null,endAt:$("offerEndAt").value||null,perCustomerLimit:Number($("offerPerCustomerLimit").value),totalUsageLimit:Number($("offerTotalUsageLimit").value),minimumAmount:Number($("offerMinimumAmount").value),bonusFreeMinutes:Number($("offerBonusFreeMinutes")?.value||0),automatic:$("offerAutomatic").value==='true',enabled:$("offerEnabled").value==='true',bannerTheme:$("offerBannerTheme")?.value||'auto',bannerText:$("offerBannerText").value.trim()};
-      if(!payload.name)throw new Error('Offer Name is required.');
-      if(applies==='wallet_recharge'&&(!Number.isSafeInteger(payload.bonusFreeMinutes)||payload.bonusFreeMinutes<1||payload.bonusFreeMinutes>1440))throw new Error('Enter 1–1440 bonus free minutes for a Wallet Recharge offer.');
-      if(applies!=='wallet_recharge'&&payload.discountType==='fixed_price'&&(!Number.isFinite(payload.offerPrice)||payload.offerPrice<1))throw new Error('Offer Price must be at least ₹1.');
-      const result=await renderApi('/admin/offers/save',{method:'POST',body:JSON.stringify(payload)});
-      if(!result?.success||!result?.id)throw new Error('Offer was not confirmed by the server.');
-      // Re-read from the server and keep the editor values until persistence is verified.
-      const verify=await renderApi('/admin/offers',{method:'GET'});
-      const saved=(verify.offers||[]).find(o=>o.id===result.id);
-      if(!saved)throw new Error('Offer was not found after saving. Please deploy the updated server.js.');
-      const same=String(saved.name||'')===payload.name && String(saved.discountType||'')===payload.discountType && Number(saved.offerPrice||0)===Number(payload.offerPrice||0) && Number(saved.discountValue||0)===Number(payload.discountValue||0) && String(saved.eligibility||'')===payload.eligibility && String(saved.displayMode||'')===payload.displayMode && String(saved.bannerTheme||'auto')===payload.bannerTheme && Boolean(saved.automatic)===payload.automatic && Boolean(saved.enabled)===payload.enabled && Number(saved.bonusFreeMinutes||0)===Number(payload.bonusFreeMinutes||0) && Array.isArray(saved.appliesTo)&&saved.appliesTo.includes(applies==='all'?'all':applies);
-      if(!same)throw new Error('Server returned old offer values. Deploy the changed server.js before testing again.');
-      $('adminOfferMsg').innerHTML='<span class="success">Offer saved and verified: '+escapeHtml(saved.name||payload.name)+'</span>';
-      clear();await reload();
-    }catch(e){$('adminOfferMsg').innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}
-    finally{b.disabled=false;b.textContent='SAVE OFFER';}
-  };try{await reload(initialOffers);}catch(e){$("adminOfferList").innerHTML='<div class="error">'+escapeHtml(e.message||String(e))+'</div>';}
-}
-
 async function loadAdminPanel(background=false){
  if(smvAdminLoad&&smvAdminLoadUid===currentUser?.uid){const uid=currentUser.uid;await smvAdminLoad;if(background&&currentUser?.uid===uid)return loadAdminPanel(true);return;}
  smvAdminLoadUid=currentUser?.uid;
@@ -3567,7 +3486,6 @@ async function loadAdminPanelData(background=false){
   if($('marriageMatchingPaymentEnabled'))$('marriageMatchingPaymentEnabled').value=String(hp.marriageMatchingEnabled===true);
   if($('marriageMatchingPrice'))$('marriageMatchingPrice').value=Number(hp.marriageMatchingPrice??51);
   if($('saveHoroscopePaymentSettings'))$('saveHoroscopePaymentSettings').onclick=async()=>{const b=$('saveHoroscopePaymentSettings'),msg=$('horoscopePaymentSettingsMsg');b.disabled=true;try{const payload={advancedAnalysisEnabled:$('advancedAnalysisPaymentEnabled').value==='true',advancedAnalysisPrice:Number($('advancedAnalysisPrice').value),marriageMatchingEnabled:$('marriageMatchingPaymentEnabled').value==='true',marriageMatchingPrice:Number($('marriageMatchingPrice').value)},r=await renderApi('/admin/horoscope-feature-settings',{method:'POST',body:JSON.stringify(payload)}),a={enabled:r.settings.advancedAnalysisEnabled===true,price:Number(r.settings.advancedAnalysisPrice??0)},m={enabled:r.settings.marriageMatchingEnabled===true,price:Number(r.settings.marriageMatchingPrice??0)};try{localStorage.setItem('smv-horoscope-feature-config',JSON.stringify({advanced_analysis:a,marriage_matching:m}));}catch(_){}msg.innerHTML='<span class="success">Horoscope settings saved. Advanced: '+(a.enabled?'ON':'OFF')+' ₹'+a.price.toFixed(2)+' · Marriage: '+(m.enabled?'ON':'OFF')+' ₹'+m.price.toFixed(2)+'</span>';}catch(e){msg.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;}};
-  renderAdminOffers(Array.isArray(adminData.offers)?adminData.offers:null).catch(e=>console.error('Offers manager load failed:',e));
   $('saveQuestionPrice').onclick=async()=>{const price=Math.round(Number($('questionPrice').value)*100)/100;if(!Number.isFinite(price)||price<1){$('questionPriceMsg').innerHTML='<span class="error">Enter a valid price of at least ₹1.</span>';return;}const b=$('saveQuestionPrice');b.disabled=true;b.textContent='SAVING...';try{await setDoc(doc(db,'smv_settings','question'),{price,updatedAt:serverTimestamp(),updatedBy:currentUser.uid});await smvAdminTouch();questionServicePrice=price;if($('askRate'))$('askRate').innerHTML=`<b>₹${price.toFixed(2)} per Question</b>`;if($('publicQuestionPrice'))$('publicQuestionPrice').textContent=`₹${price.toFixed(2)}`;$('questionPriceMsg').innerHTML='<span class="success">Current public question price saved: ₹'+price.toFixed(2)+'</span>';}catch(e){$('questionPriceMsg').innerHTML='<span class="error">Unable to save price: '+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;b.textContent='SAVE PRICE';}};
   $('astroCommission').value=settings.astroPercent??20;$('adminCommission').value=settings.adminPercent??80;
   $('saveCommission').onclick=async()=>{const a=Number($('astroCommission').value),ad=Number($('adminCommission').value);if(a<0||ad<0||Math.abs(a+ad-100)>0.001){$('commissionMsg').innerHTML='<span class="error">Astrologer % + Admin % must equal 100%.</span>';return;}await setDoc(doc(db,'smv_settings','commission'),{astroPercent:a,adminPercent:ad,updatedAt:serverTimestamp(),updatedBy:currentUser.uid});await smvAdminTouch();$('commissionMsg').innerHTML='<span class="success">Commission settings saved.</span>';};
@@ -4557,10 +4475,10 @@ function smvLivePanelHtml(s,incoming){
  return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><div class="smv-live-session-body" style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box;padding-bottom:8px"><span class="badge" style="display:inline-block;background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
  '<div style="display:flex;justify-content:flex-end;margin-top:6px" '+(incoming&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'?'':'hidden')+'><button id="smvLiveRingToggleSession" class="btn smv-modal-action" style="'+secondaryStyle+'" type="button">ENABLE RING SOUND</button></div>'+
  '<h2 style="color:#ffffff;-webkit-text-fill-color:#ffffff;font-size:1.25rem;line-height:1.3;margin:12px 0;padding-right:40px;margin:6px 0;font-size:1.15rem">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#ffffff;-webkit-text-fill-color:#ffffff;margin:4px 0"><b>Astrologer:</b> '+escapeHtml(smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer')+'</p><p style="color:#ffffff;-webkit-text-fill-color:#ffffff;margin:4px 0"><b>Customer:</b> '+escapeHtml(smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer')+'</p><p style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5;margin:4px 0"><b>You:</b> '+escapeHtml(youName)+' · <b>Other participant:</b> '+escapeHtml(otherName)+'</p>'+(s.birthDetails?'<p style="color:#ffffff;-webkit-text-fill-color:#ffffff;overflow-wrap:anywhere"><b>Customer Birth Details:</b> '+escapeHtml([s.birthDetails.birthDate,s.birthDetails.birthTime,s.birthDetails.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+'<p style="color:#ffffff;-webkit-text-fill-color:#ffffff;margin:4px 0"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#ffffff;-webkit-text-fill-color:#ffffff;margin:4px 0"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5"></p>'+
- '<div id="smvLiveCallArea" '+(call&&['connecting','active'].includes(String(s.state||''))?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn smv-modal-action" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT MICROPHONE</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
+ '<div id="smvLiveCallArea" '+(call&&['connecting','active'].includes(String(s.state||''))?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn smv-modal-action" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>CONNECT CUSTOMER CALL / MICROPHONE</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div></div>'+
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv||s.state==='ended'?'hidden':'')+' style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5">'+(s.state==='preparing'?(viewerIsCustomer?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.'):(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.'))+'</p>'+
- '<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:min(190px,28vh);overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fff;color:#241818;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:60px;padding:7px;border:1px solid #b9a17b;border-radius:8px;background:#fff;color:#241818;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
+ '<div id="smvLiveConnectChatWrap" '+(s.mode==='chat'&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||'')?'':'hidden')+' style="margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveConnectChat" type="button">CONNECT CUSTOMER CHAT NOW</button></div>'+'<div id="smvLiveChatArea" '+(s.mode==='chat'&&active?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="max-height:min(190px,28vh);overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fff;color:#241818;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:60px;padding:7px;border:1px solid #b9a17b;border-radius:8px;background:#fff;color:#241818;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
  '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite" style="color:#ffffff;-webkit-text-fill-color:#ffffff;overflow-wrap:anywhere"></p></div><div class="action-row smv-live-session-actions" style="position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveDownloadReceipt" type="button" '+(s.state==='ended'?'':'hidden')+'>PRINT / SAVE AS PDF</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'hidden':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveClosePanel" type="button" '+(s.state==='ended'?'hidden':'')+'>CLOSE WINDOW</button></div></div>';
 }
 function smvLivePrintReceipt(session){
@@ -4605,6 +4523,7 @@ function smvLiveApplySession(session){
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
  const connectMic=$('smvLiveConnectMic');if(connectMic){connectMic.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));if(s.state==='ended')connectMic.disabled=true;}
+ const connectChatWrap=$('smvLiveConnectChatWrap');if(connectChatWrap)connectChatWrap.hidden=!(s.mode==='chat'&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||''));
  const waiting=$('smvLiveWaiting');if(waiting){waiting.hidden=active||(ringing&&s.astrologerUid===currentUser?.uid)||s.state==='ended';if(s.state==='preparing')waiting.textContent=String(s.customerUid||'')===String(currentUser?.uid||'')?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.';else if(s.state==='connecting')waiting.textContent=String(s.customerUid||'')===String(currentUser?.uid||'')?'Horoscope preparation is complete. Waiting for the Astrologer to connect.':'Horoscope preparation is complete. Connect Customer Chat / Call now.';else if(ringing)waiting.textContent=s.astrologerUid===currentUser?.uid?'Customer request is ready. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.';}
  const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';
  if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
@@ -4638,6 +4557,19 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(close)close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();};
  const form=$('smvLiveMessageForm');
  if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});smvLiveAppendMessage(r.message);if(input)input.value='';}catch(err){smvLiveShowError(err);}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
+ const connectChat=$('smvLiveConnectChat');
+ if(connectChat)connectChat.onclick=async()=>{
+  const current=smvLiveCurrentSession;
+  if(!current||current.mode!=='chat'||current.state!=='connecting')return;
+  connectChat.disabled=true;connectChat.textContent='CONNECTING CHAT…';
+  try{
+   const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/ready',{method:'POST',body:JSON.stringify({mediaConnected:false})});
+   if(r.session)smvLiveApplySession(r.session);
+   const result=$('smvLiveSessionResult');
+   if(result)result.textContent=r.session?.state==='active'?'Customer Chat is connected. You can now exchange messages.':'Your readiness is confirmed. Waiting for the Customer to connect.';
+  }catch(error){smvLiveShowError(error);}
+  finally{if(connectChat.isConnected){connectChat.disabled=false;connectChat.textContent='CONNECT CUSTOMER CHAT NOW';}}
+ };
  const connectMic=$('smvLiveConnectMic');
  if(connectMic)connectMic.onclick=async()=>{
   const current=smvLiveCurrentSession;
@@ -4882,17 +4814,45 @@ function smvLiveRenderScheduledBookings(appointments){
  host.querySelectorAll('[data-scheduled-start]').forEach(btn=>btn.onclick=async()=>{
   const appointmentId=String(btn.dataset.scheduledStart||'');if(!appointmentId)return;
   btn.disabled=true;btn.textContent='STARTING…';
+  const recoverStartedSession=async()=>{
+   const [appointmentsResult,sessionsResult]=await Promise.all([
+    renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000}),
+    renderApi('/live/sessions',{method:'GET',timeoutMs:12000})
+   ]);
+   const appointment=(appointmentsResult.appointments||[]).find(a=>String(a.id||a.appointmentId||'')===appointmentId);
+   const sessionId=String(appointment?.liveSessionId||'');
+   const session=(sessionsResult.sessions||[]).find(s=>String(s.id||'')===sessionId||(String(s.appointmentId||'')===appointmentId&&['preparing','connecting','active'].includes(String(s.state||''))));
+   return {appointment,session};
+  };
   try{
    const result=await renderApi('/live/scheduled-appointments/'+encodeURIComponent(appointmentId)+'/start',{method:'POST',body:JSON.stringify({})});
-   if(result.session){
-    smvLiveOpenSession(result.session,result.wallet,false);
-    smvLiveShowDashboardMessage('Scheduled Live Session started. Customer was notified; status is visible in the Customer dashboard.');
+   let session=result.session||null;
+   if(!session){const recovery=await recoverStartedSession();session=recovery.session||null;}
+   if(session){
+    smvLiveOpenSession(session,result.wallet||null,false);
+    smvLiveShowDashboardMessage('Scheduled Live Session opened. The Horoscope timer and Call / Chat connect controls are available in the Live Session window.');
    }else if(result.booking){
-    smvLiveShowDashboardMessage('Scheduled request is queued. Set the single enabled mode to Online, then accept it under Pending Bookings.');
+    smvLiveShowDashboardMessage('Scheduled booking is queued. Set availability Online to receive the request, then accept it under Pending Bookings.');
+   }else{
+    throw new Error('The scheduled session was not returned. Checking for an already-started session.');
    }
    await smvLivePollSessions();
    await smvLiveLoadScheduledAppointments();
-  }catch(error){smvLiveShowDashboardMessage(error?.message||String(error));btn.disabled=false;btn.textContent='START SCHEDULED '+(btn.closest('article')?.textContent.includes('CHAT BOOKING')?'CHAT':'CALL');}
+  }catch(error){
+   try{
+    const recovery=await recoverStartedSession();
+    if(recovery.session){
+     smvLiveOpenSession(recovery.session,null,false);
+     smvLiveShowDashboardMessage('The scheduled session was already started and has now been opened.');
+     await smvLivePollSessions();
+     await smvLiveLoadScheduledAppointments();
+     return;
+    }
+   }catch(recoveryError){console.warn('Scheduled session recovery could not complete:',recoveryError?.message||recoveryError);}
+   smvLiveShowDashboardMessage(error?.message||String(error));
+   btn.disabled=false;
+   btn.textContent='START SCHEDULED '+(btn.closest('article')?.textContent.includes('CHAT BOOKING')?'CHAT':'CALL');
+  }
  });
  host.querySelectorAll('[data-scheduled-open]').forEach(btn=>btn.onclick=async()=>{
   const id=String(btn.dataset.scheduledOpen||'');if(!id)return;
