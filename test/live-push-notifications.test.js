@@ -231,3 +231,25 @@ test('Astrologer dashboard keeps the fast shell and parallel profile preload', (
   assert.ok(frontend.includes("shouldPreloadAstroProfile=requestedRole==='astrologer'||smvCachedDashboardRole(loadUid)==='astrologer'"));
   assert.ok(frontend.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null'));
 });
+
+
+test('Admin home avoids eagerly reading the unused private-consultation history collection', () => {
+  const server = read('server.js');
+  const start = server.indexOf('app.get("/admin-data"');
+  const end = server.indexOf('\n});', start);
+  assert.ok(start >= 0 && end > start);
+  const route = server.slice(start, end);
+  assert.ok(route.includes('readCollection("smv_users")'));
+  assert.ok(!route.includes('readCollection("smv_private_consultations")'));
+  assert.ok(!route.includes('privateConsultations: newestFirst('));
+  // The full history remains available through the existing dedicated section route.
+  assert.ok(server.includes('app.get("/admin/private-consultations-data"'));
+});
+
+test('Admin dashboard reuses commission settings from its existing payload', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("adminData?.settings?.commission||{astroPercent:20,adminPercent:80}"));
+  assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','commission'))"));
+  assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','answer'))"));
+  assert.ok(frontend.includes("getDoc(doc(db,'smv_settings','question'))"));
+});
