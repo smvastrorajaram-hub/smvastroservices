@@ -35,7 +35,7 @@ test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
 test('Astrologer can register and test device-level Background Alerts', () => {
   const frontend = read('public/smvastro.mjs');
   assert.match(frontend, /Notification\.requestPermission\(\)/);
-  assert.match(frontend, /getToken\(messaging,\{serviceWorkerRegistration:registration\}\)/);
+  assert.match(frontend, /getToken\(messaging,\s*\{\s*serviceWorkerRegistration\s*:\s*registration\s*\}\)/);
   assert.match(frontend, /id="smvLivePushEnable"/);
   assert.match(frontend, /id="smvLivePushTest"/);
   assert.match(frontend, /renderApi\('\/live\/push\/register'/);
