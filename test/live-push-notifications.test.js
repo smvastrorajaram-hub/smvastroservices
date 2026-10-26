@@ -89,18 +89,15 @@ test('Explicit login immediately opens a Dashboard shell before profile and role
   assert.ok(!frontend.includes('Login successful. Opening your dashboard…'));
 });
 
-test('Customer Dashboard remains usable when consultation reads hit a Firestore quota error', () => {
+test('Customer Dashboard keeps its shell when history reads fail without a Dashboard-wide quota note', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes("const questionReadFailed=!!customerResults[0]?.error||!cr?.success||!Array.isArray(cr.questions);"));
   assert.ok(frontend.includes("const privateReadFailed=!!customerResults[1]?.error||!privateCr?.success||!Array.isArray(privateCr.consultations);"));
-  assert.ok(frontend.includes("Dashboard opened, but some data is temporarily unavailable."));
   assert.ok(frontend.includes("Question history is temporarily unavailable. Your records have not been deleted."));
   assert.ok(frontend.includes("Chat booking history is temporarily unavailable. Your records have not been deleted."));
-  assert.ok(frontend.includes('id="smvCustomerDataRetry"'));
-  assert.ok(frontend.includes("loadDashboard('customer',true)"));
-  assert.ok(!frontend.includes("if(customerResult?.error)throw customerResult.error;"));
-  assert.ok(frontend.includes("smvProfiles.set(uid,{data:{_smvProfileReadFailed:true},at:Date.now()});"));
-  assert.ok(frontend.includes("const profile=loginProfile;"));
+  assert.ok(!frontend.includes("Dashboard opened, but some data is temporarily unavailable."));
+  assert.ok(!frontend.includes("Please retry when Firebase is available."));
+  assert.ok(!frontend.includes('id="smvCustomerDataRetry"'));
 });
 
 test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
@@ -117,15 +114,27 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
 });
 
-test('Customer and Astrologer Dashboard show a fast role shell without Dashboard-wide loading text', () => {
+test('Customer and Astrologer Dashboard open without Dashboard-wide loading or quota notes', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
   assert.ok(frontend.includes("function smvRenderFastDashboardShell(roleValue=''){"));
-  assert.ok(frontend.includes("smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(loginShellRole);"));
   assert.ok(frontend.includes("smvRenderFastDashboardShell(role);"));
   assert.ok(frontend.includes("smvRenderFastDashboardShell(headerRole);"));
-  assert.equal(frontend.split('Loading your dashboard...').length - 1, 1, 'Only the historical explanatory comment may mention this label');
-  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
+  assert.equal(frontend.includes('Loading your dashboard...'), false);
+  assert.ok(!frontend.includes("because Firebase could not be read."));
+  assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-instant-open-no-loading-v2'));
+});
+
+test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function submitAuth(mode)');
+  const roleBranch = frontend.indexOf('if(goToAdmin || adminUser){', start);
+  const roleShell = frontend.indexOf('if(loginShellRole!==role)smvRenderFastDashboardShell(role);', roleBranch);
+  assert.ok(start>=0 && roleBranch>start && roleShell>roleBranch);
+  assert.equal(frontend.slice(roleBranch,roleShell).includes('hide("dashboard")'), false);
+  assert.ok(!frontend.includes("dashboardReadyRole===await resolveSmvRole(user)"));
 });
 
 test('Last-known Dashboard role cache only stores Customer or Astrologer UI roles', () => {
