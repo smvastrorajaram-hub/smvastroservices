@@ -35,7 +35,7 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
   input.dataset.smvQuestionPlaceBound='1';input.autocomplete='off';
   const parent=input.parentElement;parent.style.position='relative';
   const list=document.createElement('div');list.className='smv-question-place-list';list.setAttribute('role','listbox');
-  Object.assign(list.style,{display:'none',position:'absolute',left:'0',right:'0',top:'100%',zIndex:'9999',background:'#fff',border:'1px solid #d7dde7',borderRadius:'8px',boxShadow:'0 8px 20px rgba(0,0,0,.12)',maxHeight:'230px',overflowY:'auto'});
+  Object.assign(list.style,{display:'none',position:'absolute',left:'0',right:'0',top:'100%',zIndex:'9999',background:'#fff',color:'#111',WebkitTextFillColor:'#111',colorScheme:'light',border:'1px solid #d7dde7',borderRadius:'8px',boxShadow:'0 8px 20px rgba(0,0,0,.12)',maxHeight:'min(40dvh,280px)',overflowY:'auto',overflowX:'hidden',overscrollBehavior:'contain'});
   parent.appendChild(list);
   let timer=0,ctl=null;
   const close=()=>{list.style.display='none';list.innerHTML='';};
@@ -61,7 +61,7 @@ export function bindQuestionPlaceSearch(inputOrId,{latId='',lonId='',onSelect=nu
   };
   const render=rows=>{
     list.innerHTML='';
-    for(const x of rows){const b=document.createElement('button');b.type='button';b.textContent=x.place;b.setAttribute('role','option');Object.assign(b.style,{display:'block',width:'100%',textAlign:'left',padding:'9px 10px',border:'0',borderBottom:'1px solid #eee',background:'#fff',color:'#111'});b.addEventListener('click',()=>choose(x));list.appendChild(b);}
+    for(const x of rows){const b=document.createElement('button');b.type='button';b.textContent=x.place;b.setAttribute('role','option');Object.assign(b.style,{display:'block',width:'100%',boxSizing:'border-box',textAlign:'left',padding:'10px 12px',border:'0',borderBottom:'1px solid #e5e7eb',background:'#fff',color:'#111',WebkitTextFillColor:'#111',colorScheme:'light',font:'inherit',lineHeight:'1.4',cursor:'pointer',opacity:'1'});b.addEventListener('mouseenter',()=>{b.style.background='#f3f4f6';});b.addEventListener('mouseleave',()=>{b.style.background='#fff';});b.addEventListener('focus',()=>{b.style.background='#f3f4f6';});b.addEventListener('blur',()=>{b.style.background='#fff';});b.addEventListener('click',()=>choose(x));list.appendChild(b);}
     list.style.display=rows.length?'block':'none';
   };
   input.addEventListener('input',()=>{
