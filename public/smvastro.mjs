@@ -912,17 +912,6 @@ async function smvAdminTouch(){
  try{await renderApi('/admin/dashboard-touch',{method:'POST',body:JSON.stringify({})});}
  catch(e){console.warn('Admin dashboard cache/signal touch skipped:',e);}
 }
-async function smvRefreshWorkflowCards(){
- const uid=currentUser?.uid;if(!uid)return;
- if(smvBoardRequest)return smvBoardRequest;
- smvBoardRequest=(async()=>{
-  const data=await renderApi('/admin-data',{method:'GET'});
-  if(!data?.success)throw new Error(data?.error||'Admin data unavailable.');
-  if(currentUser?.uid!==uid)return;
-  smvRenderAdminNotifications(data);
- })();
- try{return await smvBoardRequest;}finally{smvBoardRequest=null;}
-}
 function smvWatchAdminQuestions(){smvStartLive('admin');}
 window.__smvRefreshAdmin=()=>loadAdminPanel();
 async function openAdminEntry(){
@@ -3359,24 +3348,6 @@ function initContentManager(){
 initContentManager();
 smvArmPublicContentLazyLoad();
 
-function smvRenderAdminNotifications(data){
- const host=$('adminNotifications');
- if(!host)return;
- const notes=Array.isArray(data?.adminNotifications)?data.adminNotifications.slice():[];
- const key=n=>[n.type||'',n.sessionId||n.bookingId||n.consultationId||n.questionId||n.astrologerId||'',n.title||''].join('|');
- const seen=new Set();
- const unique=notes.filter(n=>{const k=key(n);if(seen.has(k))return false;seen.add(k);return true;});
- const millis=n=>{
-  const value=n?.createdAt;
-  if(value?.toMillis)return value.toMillis();
-  if(value?.seconds)return Number(value.seconds)*1000;
-  if(typeof value==='string')return Date.parse(value)||0;
-  if(value instanceof Date)return value.getTime();
-  return 0;
- };
- unique.sort((a,b)=>millis(b)-millis(a));
- host.innerHTML=unique.length?unique.slice(0,100).map(n=>`<article class="smv-notification-row smv-admin-notification-row"><h4 class="smv-notification-title">${escapeHtml(n.title||'Admin Event')}</h4><p class="smv-notification-content">${escapeHtml(n.message||'')}</p><p class="smv-notification-meta"><span class="smv-notification-label">Date &amp; Time:</span> <span class="smv-notification-result">${escapeHtml(smvDateTime(n.createdAt))}</span></p></article>`).join(''):'<div class="empty">No Admin notifications.</div>';
-}
 async function smvRenderAdminWalletOffers(){
  const admin=$('admin');if(!admin||!currentUser)return;
  let card=$('adminOffersPromotions');
@@ -3572,7 +3543,6 @@ async function loadAdminPanelData(background=false){
   const toDocs=(arr)=>({docs:(arr||[]).map(x=>({id:x.id,data:()=>x})),size:(arr||[]).length,empty:!(arr||[]).length});
   const users=toDocs(adminData.users), astros=toDocs(adminData.astrologers), questions=toDocs(adminData.questions), payments=toDocs(adminData.payments);
   if(!currentUser || currentUser.uid!==adminLoadUid || currentUser.uid!==auth?.currentUser?.uid) return;
-  smvRenderAdminNotifications(adminData);
   smvBindAdminWalletLedger();
   smvLiveBindAdminPricing();
   smvRenderAdminWalletOffers().catch(error=>console.warn('Admin Wallet Offers unavailable:',error?.message||error));
