@@ -4647,6 +4647,13 @@ app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, re
   }
 });
 
+// The Web Push VAPID public key is public by design. Keep it in Render Environment,
+// not in source, and expose it only to let the authenticated Astrologer browser register FCM.
+app.get('/public/push-config', (_req, res) => {
+  const vapidPublicKey = String(process.env.FCM_VAPID_PUBLIC_KEY || '').trim();
+  return res.set('Cache-Control', 'no-store').json({ success: true, vapidPublicKey });
+});
+
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
 const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,admin});
