@@ -101,5 +101,5 @@ test('Customer dashboard, live forms and booking location suggestions use black 
   assert.ok(mainPlaces.includes('.smv-main-place-row{'));
   assert.ok(places.includes("WebkitTextFillColor:'#111'"));
   assert.ok(places.includes("colorScheme:'light'"));
-  assert.equal((content.match(/question-place-search\.mjs\?v=20261026-livechat-scroll-place-black-v2/g)||[]).length,2);
+  assert.equal(content.split('question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').length-1,2);
 });
