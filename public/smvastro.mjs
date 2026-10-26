@@ -4587,6 +4587,69 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
+let smvLiveForegroundMessagingBound = false;
+async function smvLiveEnableBackgroundAlerts(){
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')throw new Error('Background Alerts can only be enabled from the Astrologer Dashboard.');
+ if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
+ if(!navigator.serviceWorker?.register)throw new Error('This browser cannot register a background notification worker.');
+ if(Notification.permission==='denied')throw new Error('Notifications are blocked for this site. Enable notifications in your browser or Android app settings, then try again.');
+ const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+ if(permission!=='granted')throw new Error('Allow notifications for SMV ASTRO to receive background Call, Chat and Booking alerts.');
+ if(!app)throw new Error('Firebase has not initialized. Refresh SMV ASTRO and try again.');
+ const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+ await navigator.serviceWorker.ready;
+ if(!registration.pushManager)throw new Error('Push notifications are not supported by this browser. On iPhone, install SMV ASTRO to the Home Screen and open the installed app.');
+ const {getMessaging,getToken,onMessage}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js');
+ const messaging=getMessaging(app);
+ const token=await getToken(messaging,{serviceWorkerRegistration:registration});
+ if(!token)throw new Error('The push service did not issue a device token. Check Firebase Cloud Messaging setup and retry.');
+ await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,userAgent:navigator.userAgent})});
+ if(!smvLiveForegroundMessagingBound){
+  onMessage(messaging,payload=>{
+   const data=payload?.data||{},type=String(data.type||'');
+   if(type==='push_test'&&Notification.permission==='granted'){
+    try{new Notification(String(data.title||'SMV ASTRO Test Alert'),{body:String(data.body||'Background alert delivery is active.'),icon:'/assets/icon-192.png',tag:String(data.tag||'smv-push-test')});}catch(_){}
+    const status=$('smvLivePushStatus');if(status)status.textContent='Test Alert arrived while SMV ASTRO was open. Close the browser or turn the screen off to test background delivery.';
+   }
+  });
+  smvLiveForegroundMessagingBound=true;
+ }
+ return {registered:true};
+}
+function smvLiveBindPushControls(){
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
+ const enable=$('smvLivePushEnable'),test=$('smvLivePushTest'),status=$('smvLivePushStatus');
+ if(enable&&!enable.dataset.bound){
+  enable.dataset.bound='1';
+  enable.onclick=async()=>{
+   enable.disabled=true;
+   if(status)status.textContent='Requesting notification permission and registering this device…';
+   try{
+    await smvLiveEnableBackgroundAlerts();
+    enable.textContent='BACKGROUND ALERTS ENABLED';
+    if(status)status.textContent='This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
+    if(test)test.disabled=false;
+   }catch(error){if(status)status.textContent=error?.message||String(error);}
+   finally{enable.disabled=false;}
+  };
+ }
+ if(test&&!test.dataset.bound){
+  test.dataset.bound='1';
+  test.onclick=async()=>{
+   test.disabled=true;if(status)status.textContent='Sending a test push alert…';
+   try{
+    await renderApi('/live/push/test',{method:'POST',body:JSON.stringify({})});
+    if(status)status.textContent='Test alert accepted by Firebase. If this page is visible, look for an SMV ASTRO Test Alert. For background testing, close the site or turn the screen off.';
+   }catch(error){if(status)status.textContent=error?.message||String(error);}
+   finally{test.disabled=false;}
+  };
+ }
+ renderApi('/live/push/status',{method:'GET',timeoutMs:12000}).then(r=>{
+  if(status)status.textContent=Number(r.registeredDevices||0)
+   ? 'Registered push device(s): '+Number(r.registeredDevices)+'. Enable alerts on every phone/browser that should ring.'
+   : 'Background alerts are not enabled on this device yet. Tap ENABLE BACKGROUND ALERTS and allow notifications.';
+ }).catch(()=>{});
+}
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function smvLiveCanonicalMode(session,fallback=''){
  const values=[session?.mode,session?.sessionMode,session?.consultationMode,session?.type,fallback];
@@ -5322,7 +5385,7 @@ function smvLiveShowDashboardMessage(message){
 }
 function smvLiveDashboardHtml(role){
  return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
- (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
+ (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><button class="btn" id="smvLivePushEnable" type="button">ENABLE BACKGROUND ALERTS</button><button class="btn gray" id="smvLivePushTest" type="button">SEND TEST ALERT</button></div><p id="smvLivePushStatus" class="small" role="status" aria-live="polite">Enable Push Alerts once on each mobile device that should receive incoming requests.</p><div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
  (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
@@ -5407,6 +5470,7 @@ async function smvLiveLoadDashboard(role){
  syncModes();
  const ring=$('smvLiveRingToggle');if(ring&&!ring.dataset.bound){ring.dataset.bound='1';ring.onclick=smvLiveToggleRingtone;}
  smvLiveRingButtonSync();
+ smvLiveBindPushControls();
  await reload();
  syncModes();
 }
