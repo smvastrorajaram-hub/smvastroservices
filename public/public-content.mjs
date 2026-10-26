@@ -53,17 +53,20 @@
         if(!input||!button||!note)continue;
         const rate=Number(row.dataset[mode+'RatePaise']||0);
         const goodRate=Number.isSafeInteger(rate)&&rate>=100&&rate<=1000000;
+        const modeEnabled=row.dataset[mode+'Enabled']==='true';
         const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)+bonusMinutes):0;
         input.max=String(isCustomer?Math.max(0,max):SMV_MAX_LIVE_MINUTES);
         input.dataset.maximumMinutes=String(max);
-        if(!goodRate||knownNonCustomer||(isCustomer&&max<1)){
+        if(!modeEnabled||!goodRate||knownNonCustomer||(isCustomer&&max<1)){
           input.disabled=true;
           button.disabled=true;
         }else{
           input.disabled=false;
           button.disabled=false;
         }
-        if(!goodRate){
+        if(!modeEnabled){
+          note.textContent='Live '+(mode==='call'?'Call':'Chat')+' is disabled by this Astrologer.';
+        }else if(!goodRate){
           note.textContent=(mode==='call'?'Call':'Chat')+' price per minute is not configured for this Astrologer.';
         }else if(knownNonCustomer){
           note.textContent='Please sign in with a Customer account to use Live Call / Live Chat.';
@@ -572,6 +575,8 @@
           row.innerHTML=`<div class="smv-private-consult-head">${photo?`<img class="smv-private-consult-photo" loading="lazy" decoding="async" src="${esc(photo)}" alt="${esc(a.name)}">`:''}<div class="smv-private-consult-meta"><h3>${esc(a.name||'Astrologer')}</h3><p>${esc(a.expertise||'Astrology')} · ${esc(a.experience||0)} years experience</p></div></div><div class="smv-private-rating-summary">${privateSummary(a.rating||a.averageRating)}</div><p class="smv-private-consult-description">${esc(a.profileDescription||a.bio||'Professional astrologer')}</p><p class="small"><b>Languages:</b> ${esc(languages.length?languages.join(', '):'Not specified')}</p><p class="small"><b>Availability:</b> <span>${availabilityLabel}</span></p><p><b>Call -</b> ${Number.isFinite(callPrice)&&callPrice>0?'₹'+callPrice.toFixed(2)+'/minute':'Price not configured'}</p><p><b>Chat -</b> ${Number.isFinite(chatPricePerMinute)&&chatPricePerMinute>0?'₹'+chatPricePerMinute.toFixed(2)+'/minute':'Price not configured'}</p><div class="smv-live-choice" style="margin:10px 0;padding:12px;border:1px solid var(--border,#ddd);border-radius:10px"><p class="small">Enter the duration in minutes (suggested: 1, 2, 5, 10, 15, 20, 25, 30…). The maximum is calculated from your Wallet balance and this Astrologer’s rate.</p><div class="smv-live-duration-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px"><div><label class="small"><b>Call duration (minutes)</b><input data-live-minutes="call" aria-label="Call duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="call">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="call" ${callAllowed?'':'disabled title="Live Call is disabled by this Astrologer"'}>${callAllowed?(availability==='online'?'CALL NOW':'REQUEST LIVE CALL'):'CALL DISABLED'}</button></div><div><label class="small"><b>Chat duration (minutes)</b><input data-live-minutes="chat" aria-label="Chat duration in minutes" type="number" min="1" max="1440" step="1" inputmode="numeric" placeholder="Enter minutes" style="display:block;width:100%;box-sizing:border-box;margin-top:6px"></label><p class="small" data-live-limit="chat">Checking Wallet…</p><button type="button" class="smv-compact-control" data-live-action="chat" ${chatAllowed?'':'disabled title="Live Chat is disabled by this Astrologer"'}>${chatAllowed?(availability==='online'?'CHAT NOW':'REQUEST LIVE CHAT'):'CHAT DISABLED'}</button></div></div><p class="small" data-live-message role="status" aria-live="polite"></p></div><div class="smv-astro-booking-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;align-items:stretch"><button type="button" class="smv-compact-control" data-book-call ${callAllowed?'':'disabled title="Call booking is disabled by this Astrologer"'} style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">${callAllowed?'BOOK CALL':'CALL DISABLED'}</button><button type="button" class="smv-compact-control" data-book-chat ${chatAllowed?'':'disabled title="Chat booking is disabled by this Astrologer"'} style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">${chatAllowed?'BOOK CHAT':'CHAT DISABLED'}</button><button type="button" class="smv-compact-control" data-reviews aria-expanded="false" style="display:flex;width:100%;min-width:0;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:8px 4px">REVIEWS</button></div><div class="smv-inline-reviews hidden"></div>`;
           row.dataset.callRatePaise=String(smvLiveRatePaise(a,'call')||'');
           row.dataset.chatRatePaise=String(smvLiveRatePaise(a,'chat')||'');
+          row.dataset.callEnabled=String(callAllowed);
+          row.dataset.chatEnabled=String(chatAllowed);
           const liveMessage=row.querySelector('[data-live-message]');
           row.querySelectorAll('[data-live-minutes]').forEach(input=>{
             input.addEventListener('input',()=>smvRefreshLiveMinuteLimits(false).catch(()=>{}));
