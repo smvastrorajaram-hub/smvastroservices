@@ -206,3 +206,28 @@ test('Customer dashboard, live forms and booking location suggestions use black 
   assert.ok(places.includes("colorScheme:'light'"));
   assert.equal(content.split('question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').length-1,2);
 });
+
+
+test('Astrologer dashboard live updates use a lightweight signal instead of history-sized listeners', () => {
+  const events = read('dashboard-events.js');
+  assert.ok(events.includes("kind:'dashboard_signal'"));
+  assert.ok(events.includes("role==='astrologer'&&kind==='dashboard_signal'"));
+  assert.ok(events.includes("'questions','private_consultations','withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'"));
+  assert.ok(!events.includes("where(role==='astrologer'?'astrologerId':'customerId'"));
+  assert.ok(!events.includes("where('status','==','available_to_astrologers')"));
+  assert.ok(!events.includes("where('astrologerId','==',user.uid),kind:'withdrawals'"));
+});
+
+test('Claiming a public question publishes the Astrologer dashboard invalidation signal', () => {
+  const server = read('server.js');
+  assert.ok(server.includes("'/astrologer/claim-question'"));
+  assert.ok(server.includes("p.includes('/claim-question')"));
+  assert.ok(server.includes("db.collection('smv_settings').doc('dashboardChange').set"));
+});
+
+test('Astrologer dashboard keeps the fast shell and parallel profile preload', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('smvRenderFastDashboardShell(requestedRole)'));
+  assert.ok(frontend.includes("shouldPreloadAstroProfile=requestedRole==='astrologer'||smvCachedDashboardRole(loadUid)==='astrologer'"));
+  assert.ok(frontend.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null'));
+});
