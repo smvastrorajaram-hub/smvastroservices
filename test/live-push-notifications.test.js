@@ -114,7 +114,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-firestore-polling-customer-fallback-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
 });
 
 test('Customer and Astrologer Dashboard show a fast role shell without Dashboard-wide loading text', () => {
