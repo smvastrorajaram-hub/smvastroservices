@@ -2,7 +2,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseRupeesToPaise, paiseToRupees, calculateStartedMinuteCharge, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId } = require('../wallet-service');
+const { parseRupeesToPaise, paiseToRupees, calculateStartedMinuteCharge, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId, classifyRechargeIntent } = require('../wallet-service');
+
+test('failed Wallet recharge order can be retried with the same idempotency key without weakening amount checks', () => {
+  assert.equal(classifyRechargeIntent({ status: 'failed', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'retry_failed');
+  assert.equal(classifyRechargeIntent({ status: 'order_created', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'reuse_order');
+  assert.equal(classifyRechargeIntent({ status: 'paid', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'already_paid');
+  assert.equal(classifyRechargeIntent({ status: 'creating', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'in_progress');
+  assert.equal(classifyRechargeIntent({ status: 'failed', storedAmountPaise: 10000, requestedAmountPaise: 12000 }), 'amount_conflict');
+});
 
 test('rupee input converts to exact integer paise', () => {
   assert.equal(parseRupeesToPaise('1'), 100);

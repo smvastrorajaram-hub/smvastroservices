@@ -8,10 +8,15 @@ on:
       - 'test/admin-auth.test.js'
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
+      - 'test/live-push-notifications.test.js'
+      - 'public/sw.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
       - 'public/index.html'
       - 'public/smvastro.mjs'
+      - 'public/razorpay-checkout-loader.mjs'
+      - 'public/payment-receipt.js'
+      - 'test/razorpay-checkout-loader.test.mjs'
       - 'public/public-content.mjs'
       - 'public/main-location-search.js'
       - 'public/question-place-search.mjs'
@@ -26,6 +31,9 @@ on:
       - 'server.js'
       - 'public/index.html'
       - 'public/smvastro.mjs'
+      - 'public/razorpay-checkout-loader.mjs'
+      - 'public/payment-receipt.js'
+      - 'test/razorpay-checkout-loader.test.mjs'
       - 'public/public-content.mjs'
       - 'public/main-location-search.js'
       - 'public/question-place-search.mjs'
@@ -55,14 +63,21 @@ jobs:
           node --check wallet-service.js
           node --check live-session-service.js
           node --check test/live-session-service.test.js
+          node --check test/live-push-notifications.test.js
+          node --check public/sw.js
           node --check test/wallet-service.test.js
           node --check public/smvastro.mjs
+          node --check public/razorpay-checkout-loader.mjs
+          node --check public/payment-receipt.js
+          node --check test/razorpay-checkout-loader.test.mjs
           node --check public/public-content.mjs
           node --check public/main-location-search.js
           node --check public/question-place-search.mjs
           node --check public/public-navigation.js
       - name: Run trusted Admin authorization tests
         run: node --test test/admin-auth.test.js
+      - name: Run Razorpay Checkout reliability tests
+        run: node --test test/razorpay-checkout-loader.test.mjs
       - name: Run Wallet unit tests
         run: npm run test:wallet
       - name: Run Live Session billing tests
