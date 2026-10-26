@@ -112,7 +112,7 @@
       '</form></div>');
     const place=$('smvLiveBirthPlace'),lat=$('smvLiveBirthLatitude'),lon=$('smvLiveBirthLongitude'),message=$('smvLiveBirthMessage'),submit=$('smvLiveBirthSubmit');
     place?.addEventListener('input',()=>{if(lat)lat.value='';if(lon)lon.value='';if(place){delete place.dataset.latitude;delete place.dataset.longitude;delete place.dataset.timezone;}});
-    import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(place,{latId:'smvLiveBirthLatitude',lonId:'smvLiveBirthLongitude'})).catch(error=>console.warn('Live Session birth-place search is unavailable:',error));
+    import('./question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(place,{latId:'smvLiveBirthLatitude',lonId:'smvLiveBirthLongitude'})).catch(error=>console.warn('Live Session birth-place search is unavailable:',error));
     $('smvLiveBirthForm').onsubmit=async event=>{
       event.preventDefault();
       const birthDetails={birthDate:String($('smvLiveBirthDate')?.value||''),birthTime:String($('smvLiveBirthTime')?.value||''),birthPlace:String(place?.value||'').trim(),birthLatitude:String(lat?.value||place?.dataset.latitude||''),birthLongitude:String(lon?.value||place?.dataset.longitude||''),birthTimezone:String(place?.dataset.timezone||'')};
@@ -393,7 +393,7 @@
         const lat=$('smvCallBookingBirthLatitude'),lon=$('smvCallBookingBirthLongitude');
         if(lat)lat.value='';if(lon)lon.value='';
       });
-      import('./question-place-search.mjs').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(birthPlaceInput,{latId:'smvCallBookingBirthLatitude',lonId:'smvCallBookingBirthLongitude'})).catch(error=>console.warn('Book a Call birth-place search is unavailable:',error));
+      import('./question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(birthPlaceInput,{latId:'smvCallBookingBirthLatitude',lonId:'smvCallBookingBirthLongitude'})).catch(error=>console.warn('Book a Call birth-place search is unavailable:',error));
     }
     const form=$('smvCallBookingForm');
     form.onsubmit=async event=>{

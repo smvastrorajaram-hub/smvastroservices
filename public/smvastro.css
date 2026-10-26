@@ -578,9 +578,9 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #modal.smv-live-session-modal.smv-live-chat-active .modalbox{width:min(calc(100vw - 16px),960px);max-width:960px;height:calc(100dvh - 16px - env(safe-area-inset-bottom));max-height:calc(100dvh - 16px - env(safe-area-inset-bottom));padding:8px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
 #modal.smv-live-session-modal.smv-live-chat-active #modalContent{display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;height:100%;width:100%;box-sizing:border-box}
 #modal.smv-live-session-modal.smv-live-chat-active #smvLiveSessionPanel{display:flex;flex:1 1 auto;flex-direction:column;width:100%;height:100%;max-height:100%;min-width:0;min-height:0;overflow:hidden}
-#modal.smv-live-session-modal.smv-live-chat-active .smv-live-session-body{display:flex;flex:1 1 auto;flex-direction:column;width:100%;min-width:0;min-height:0;overflow:hidden}
-#modal.smv-live-session-modal.smv-live-chat-active #smvLiveChatArea{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:100%;min-width:0;min-height:min(240px,38dvh);max-height:none;overflow:hidden;margin:8px 0 0;padding:0;border:0;border-radius:0;background:transparent;box-sizing:border-box}
-#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:block;flex:1 1 0%;width:100%;height:100%;min-width:0;min-height:min(180px,28dvh);max-height:none;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;font-size:16px;line-height:1.55;padding:12px;overscroll-behavior:contain}
+#modal.smv-live-session-modal.smv-live-chat-active .smv-live-session-body{display:flex;flex:1 1 0%;flex-direction:column;width:100%;min-width:0;min-height:0;max-height:none;overflow:hidden;overscroll-behavior:contain}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveChatArea{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0;max-height:none;overflow:hidden;margin:8px 0 0;padding:0;border:0;border-radius:0;background:transparent;box-sizing:border-box}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;font-size:16px;line-height:1.55;padding:12px;overscroll-behavior:contain;scrollbar-gutter:stable}
 #modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessageForm{display:grid;flex:0 0 auto;width:100%;min-width:0;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px;margin-top:10px}
 #modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessageInput{min-height:68px;max-height:180px;font-size:16px;line-height:1.5;box-sizing:border-box}
 #modal.smv-live-session-modal .smv-live-session-actions{position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37}
@@ -4067,39 +4067,60 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
 }
 
-/* Plain, readable location suggestions; no heavy boxed widget. */
+/* Main-site birth-place suggestions: high contrast for Customer, Call/Chat and booking flows. */
 .smv-main-place-host{position:relative!important;}
 .smv-main-place-results{
   display:none;
   margin:5px 0 0;
-  padding:0;border-top:1px solid rgba(223,189,115,.30);background:#111c33;
+  padding:0;
+  border:1px solid #b9a17b;
+  background:#ffffff;
   position:relative;
   z-index:80;
-color:#f2eddf;-webkit-text-fill-color:#f2eddf;}
+  max-height:min(40dvh,280px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  color:#111111;
+  -webkit-text-fill-color:#111111;
+  color-scheme:light;
+}
 .smv-main-place-results.smv-open{display:block;}
 .smv-main-place-row{
   display:block;
   width:100%;
   margin:0;
-  padding:9px 4px;
-  border:0;border-bottom:1px solid rgba(223,189,115,.16);
-  background:transparent;color:#f2eddf;
+  padding:10px 12px;
+  border:0;
+  border-bottom:1px solid #e5e7eb;
+  background:#ffffff;
+  color:#111111;
+  -webkit-text-fill-color:#111111;
   font:inherit;
   text-align:left;
   cursor:pointer;
-  line-height:1.35;
--webkit-text-fill-color:#f2eddf;}
+  line-height:1.4;
+}
 .smv-main-place-row:hover,
 .smv-main-place-row:focus{
-  outline:none;background:rgba(223,189,115,.14);
+  outline:2px solid #b9a17b;
+  outline-offset:-2px;
+  background:#f3f4f6;
+  color:#000000;
+  -webkit-text-fill-color:#000000;
 }
 .smv-main-place-note{
-  padding:8px 4px;
-  font-size:12px;
+  padding:8px 12px;
+  font-size:13px;
   line-height:1.4;
-  color:#6f625a;
+  background:#ffffff;
+  color:#111111;
+  -webkit-text-fill-color:#111111;
 }
-.smv-main-place-note.smv-error{color:#9a1b1b;}
+.smv-main-place-note.smv-error{
+  color:#9a1b1b;
+  -webkit-text-fill-color:#9a1b1b;
+}
 
 
 
