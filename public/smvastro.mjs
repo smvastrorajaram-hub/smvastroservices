@@ -894,7 +894,7 @@ async function resolveSmvRole(user, profileHint=null){
  }
  if(IS_SMV_PHASE1_STAGING&&role==="admin")return "customer";
  const resolvedRole=["customer","astrologer"].includes(role)?role:"customer";
- smvRememberDashboardRole(user.uid,resolvedRole);
+ if(!profile?._smvProfileReadFailed)smvRememberDashboardRole(user.uid,resolvedRole);
  return resolvedRole;
 }
 
