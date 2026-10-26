@@ -307,7 +307,7 @@ function hidePrimarySections(except=""){
     hide("register-flow");
     hide("astro-register-form");
     hide("astro-flow");
-    hide();
+    
     hide("appointment");
     hide("contact");
   }else{
@@ -801,7 +801,7 @@ async function smvAdminTouch(){
  try{await renderApi('/admin/dashboard-touch',{method:'POST',body:JSON.stringify({})});}
  catch(e){console.warn('Admin dashboard cache/signal touch skipped:',e);}
 }
-function smvWatchAdminQuestions(){smvStartLive('admin');}
+function smvWatchAdminEvents(){smvStartLive('admin');}
 window.__smvRefreshAdmin=()=>loadAdminPanel();
 async function openAdminEntry(){
   if(!currentUser){pendingAfterLogin="admin";openAuth("login");return;}
@@ -824,7 +824,7 @@ function smvPasswordEye(visible){
 }
 function openAuth(mode="login"){
   if(mode==='login')hidePublicHoroscopeSections?.();
-  hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide(); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
+  hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
   closeModal(); const isLogin=mode==="login";
   openModal(`<div class="auth-shell" data-auth-mode="${isLogin?'login':'register'}">
     <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
@@ -1033,7 +1033,7 @@ async function submitAuth(mode){
     // dashboard shell before any Firestore/profile hydration. Customer and
     // Astrologer share this shell; the resolved role updates its heading below.
     // Explicit Admin entry keeps its protected destination.
-    const goToAdmin=pendingAfterLogin==="admin";
+    const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;
     let loginShellRole=smvCachedDashboardRole(loginCred.user.uid);
 
     // After an explicit successful login, open a neutral dashboard shell before
@@ -1049,7 +1049,7 @@ async function submitAuth(mode){
       hide("askNowSection");
       hide("approved-astrologers");
       hide("faq");
-      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD":"DASHBOARD";
+      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?(loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD"):"";
       smvRenderFastDashboardShell(loginShellRole);
       smvEnterInternalView("dashboard",true);
       go("dashboard");
@@ -1100,7 +1100,7 @@ async function submitAuth(mode){
       hide("register-flow");
       hide("astro-register-form");
       hide("astro-flow");
-      hide();
+      
       hide("appointment");
       hide("contact");
       hide("home");
@@ -1398,7 +1398,7 @@ function smvStartLive(role){
   onStatus:smvLiveStatus
  });
 }
-function smvWatchQuestions(role){smvStartLive(role);}
+function smvWatchDashboardEvents(role){smvStartLive(role);}
 let smvAstroAnswerProtectionBound=false;
 function bindAstrologerAnswerProtectionOnce(){
  if(smvAstroAnswerProtectionBound)return;
@@ -1464,7 +1464,7 @@ function smvRenderFastDashboardShell(roleValue=''){
   box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span></div>';
   return;
  }
- box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">SMV ASTRO</span><h2>DASHBOARD</h2></div>';
+ box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">SMV ASTRO</span></div>';
 }
 function smvWalletMoney(paise){
  const n=Number(paise);
@@ -1651,11 +1651,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
  if(!currentUser){ if(box) box.innerHTML='<div class="card">Please login to continue.</div>'; return; }
  const loadUid=currentUser.uid;
  const requestedRole=String(expectedRole||'').toLowerCase();
- // IMPORTANT: Returning from ASK NOW must not rehydrate an already-rendered
- // dashboard. The old behaviour started another full Firestore load every time
- // the Question Form Back button was pressed, which could create a repeated
- // Loading -> open -> Loading cycle. Explicit data-changing actions can pass
- // force=true when a fresh render is actually required.
+ // Reuse an already-rendered Dashboard unless a data-changing action explicitly requests a refresh.
  if(!force && !smvDashboardDirty && dashboardReadyAt>0 && dashboardReadyUid===loadUid && (!requestedRole || dashboardReadyRole===requestedRole) && smvInternalView==='dashboard' && box && !box.querySelector('.error')){
    show('dashboard');
    touchSession();
@@ -1679,6 +1675,13 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
   const readAstrologerProfile=()=>withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000)
    .then(snapshot=>({snapshot}),error=>({error}));
   const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;
+  const astrologerEarningsPromise=astrologerProfilePromise
+   ?astrologerProfilePromise.then(profileResult=>{
+      const status=String(profileResult.snapshot?.data()?.status||'').toLowerCase();
+      if(!profileResult.snapshot?.exists()||!['active','approved'].includes(status))return null;
+      return renderApi('/astrologer/earnings',{method:'GET'}).then(value=>({value}),error=>({error}));
+    }).catch(error=>({error}))
+   :null;
   let astrologerProfileResult=null;
   const data=await getUserProfile(loadUid);
   if(!active()) return;
@@ -1692,7 +1695,6 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
      else if(astrologerProfileResult.error)console.warn('Astrologer role profile lookup deferred:',astrologerProfileResult.error?.message||astrologerProfileResult.error);
    }
    if(role!=='customer' && role!=='astrologer') role='customer';
-   let notificationContext={role};
    if(!active()) return;
    // Keep one stable dashboard heading during loading and after role resolution.
    // The role is already shown by the role badge/content; changing the heading
@@ -1723,7 +1725,7 @@ if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
     loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard refresh deferred:',error?.message||error));
   });
   dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
-  smvWatchQuestions(role);
+  smvWatchDashboardEvents(role);
   return;
 }
 let userStatus=String(
@@ -1799,10 +1801,11 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
 
   $('astroRefreshApproval')?.addEventListener('click',()=>loadDashboard('astrologer',true));
   $('astroLogoutPending')?.addEventListener('click',()=>logoutToHome());
-  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();smvWatchQuestions(role);
+  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();smvWatchDashboardEvents(role);
   return;
 }
-   const earningsRead=await renderApi('/astrologer/earnings',{method:'GET'}).then(value=>({value}),error=>({error}));
+   let earningsRead=astrologerEarningsPromise?await astrologerEarningsPromise:null;
+   if(!earningsRead)earningsRead=await renderApi('/astrologer/earnings',{method:'GET'}).then(value=>({value}),error=>({error}));
    if(!active())return;
    let epRemote=null;
    try{
@@ -2098,7 +2101,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    smvBindCustomerWallet({load:false});
   }
   dashboardReadyUid=loadUid; dashboardReadyAt=Date.now(); smvDashboardDirty=false;
-  dashboardReadyRole=role; smvWatchQuestions(role);
+  dashboardReadyRole=role; smvWatchDashboardEvents(role);
   smvLiveStatus('Updated just now');
   const refresh=$('smvRefreshDashboard');if(refresh)refresh.textContent='Refresh';
   touchSession();
@@ -2134,7 +2137,7 @@ function openPayoutChange(){
 }
 // ---------- SMV ASTRO Blog (isolated feature) ----------
 // Cloudinary stores Blog text (JSON), cover images, PDFs and videos. Firestore keeps lightweight metadata/index fields.
-// Existing Horoscope, Login, Ask Now, Question and Payment logic is untouched.
+// Existing Horoscope, Login, Wallet and Live Session flows remain independent.
 const SMV_CONTENT_COLLECTION="smv_content";
 const SMV_CLOUDINARY_CLOUD_NAME="l6r6c8zi";
 const SMV_CLOUDINARY_UPLOAD_PRESET="smv_astro_media";
@@ -2549,7 +2552,7 @@ async function loadAdminPanelData(background=false){
   smvLiveBindAdminPricing();
   smvRenderAdminWalletOffers().catch(error=>console.warn('Admin Wallet Offers unavailable:',error?.message||error));
   if(!background)smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger unavailable:',e));
-  smvWatchAdminQuestions();
+  smvWatchAdminEvents();
   const adminReadErrors=adminData.errors||{};
   const readErrorText=Object.entries(adminReadErrors).filter(([,v])=>v).map(([k,v])=>k+': '+v).join(' | ');
   $('adminDataLoadMsg') && ($('adminDataLoadMsg').innerHTML=readErrorText?'<div class="empty error">Some Admin data could not be loaded: '+escapeHtml(readErrorText)+'</div>':'');
