@@ -1321,6 +1321,41 @@ app.get("/astrologer/appointments", async (req,res)=>{
   }
 });
 
+app.get("/customer/appointments", async (req,res)=>{
+  const user=await requireUser(req,res);
+  if(!user)return;
+  try{
+    const uid=String(user.uid||"").trim();
+    const userSnap=await db.collection("smv_users").doc(uid).get();
+    const profile=userSnap.exists?(userSnap.data()||{}):{};
+    if(String(profile.role||"").toLowerCase()!=="customer"){
+      return res.status(403).json({success:false,error:"Customer access required."});
+    }
+    const snap=await db.collection("smv_appointments").where("customerUid","==",uid).limit(100).get();
+    const appointments=snap.docs.map(d=>{
+      const a=d.data()||{};
+      return {
+        id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),
+        bookingKind:String(a.bookingKind||""),astrologerId:String(a.astrologerId||a.astrologerUid||""),
+        astrologerName:String(a.astrologerName||"Astrologer"),
+        preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
+        scheduledMinutes:Number(a.scheduledMinutes||5),
+        bookingStatus:String(a.bookingStatus||"requested"),status:String(a.status||"new"),
+        liveSessionId:String(a.liveSessionId||""),liveBookingId:String(a.liveBookingId||""),
+        createdAt:a.createdAt||null
+      };
+    }).filter(a=>["scheduled_call_request","scheduled_chat_request"].includes(a.bookingKind))
+      .sort((a,b)=>{
+        const time=v=>typeof v?.toMillis==="function"?v.toMillis():Date.parse(v||"")||0;
+        return time(b.createdAt)-time(a.createdAt);
+      });
+    return res.set("Cache-Control","no-store").json({success:true,appointments});
+  }catch(e){
+    console.error("Customer scheduled bookings load failed:",e?.stack||e);
+    return res.status(500).json({success:false,error:"Unable to load your scheduled Call/Chat bookings."});
+  }
+});
+
 app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
   const user=await requireUser(req,res);
   if(!user)return;
@@ -1427,6 +1462,11 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
       if(!astroSnap.exists)return res.status(404).json({error:"The selected Astrologer profile was not found."});
       const astro=astroSnap.data()||{};
       if(!["approved","active"].includes(String(astro.status||"").toLowerCase()))return res.status(409).json({error:"This Astrologer is not currently approved for bookings."});
+      const liveCallEnabled=astro.liveCallEnabled===true,liveChatEnabled=astro.liveChatEnabled===true;
+      const selectedModeEnabled=type==="Chat Consultation"?liveChatEnabled:liveCallEnabled;
+      if(liveCallEnabled===liveChatEnabled||!selectedModeEnabled){
+        return res.status(409).json({error:"This Astrologer has not enabled "+(type==="Chat Consultation"?"Live Chat":"Live Call")+". Only one of Call or Chat can be enabled at a time."});
+      }
       const rates=(type==="Chat Consultation"
         ? [astro.chatPricePerMinute,astro.liveChatPricePerMinute,astro.chatRatePerMinute]
         : [astro.callPricePerMinute,astro.pricePerMinute,astro.callRatePerMinute]).map(Number);
@@ -1476,12 +1516,15 @@ app.get("/public/astrologers", async (req, res) => {
       const rawLanguages=x.languages??x.spokenLanguages??x.language??[];
       const languages=Array.isArray(rawLanguages)?rawLanguages.map(v=>String(v||"").trim()).filter(Boolean):String(rawLanguages||"").split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
       const rawAvailability=String(x.availabilityStatus||x.onlineStatus||"").trim().toLowerCase();
-      const availabilityStatus=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
+      const storedAvailability=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
+      const liveCallEnabled=x.liveCallEnabled===true,liveChatEnabled=x.liveChatEnabled===true;
+      const activeSessionCount=Number.isSafeInteger(Number(x.activeSessionCount))&&Number(x.activeSessionCount)>0?Number(x.activeSessionCount):0;
+      const availabilityStatus=activeSessionCount>0?"busy":(liveCallEnabled===liveChatEnabled?"offline":storedAvailability);
       const callRateCandidates=[x.callPricePerMinute,x.pricePerMinute,x.callRatePerMinute].map(Number);
       const configuredCallRate=callRateCandidates.find(v=>Number.isFinite(v)&&v>0);
       const chatRateCandidates=[x.chatPricePerMinute,x.liveChatPricePerMinute,x.chatRatePerMinute].map(Number);
       const configuredChatRate=chatRateCandidates.find(v=>Number.isFinite(v)&&v>0);
-      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,callPricePerMinute:configuredCallRate??null,chatPricePerMinute:configuredChatRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
+      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,liveCallEnabled,liveChatEnabled,callPricePerMinute:configuredCallRate??null,chatPricePerMinute:configuredChatRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
     }));
     const astrologers=checked.filter(Boolean);
     publicAstrologersCache={expiresAt:now+60000,data:astrologers};
@@ -1498,8 +1541,13 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
   if(!user)return;
   try{
     const availabilityStatus=String(req.body?.availabilityStatus||"").trim().toLowerCase();
+    const liveCallEnabled=req.body?.liveCallEnabled===true;
+    const liveChatEnabled=req.body?.liveChatEnabled===true;
     if(!["online","busy","offline"].includes(availabilityStatus)){
       return res.status(400).json({success:false,error:"Choose Online, Busy, or Offline."});
+    }
+    if(typeof req.body?.liveCallEnabled!=="boolean"||typeof req.body?.liveChatEnabled!=="boolean"){
+      return res.status(400).json({success:false,error:"Choose whether Live Call or Live Chat is enabled."});
     }
     const result=await db.runTransaction(async tx=>{
       const astroRef=db.collection("smv_astrologers").doc(user.uid);
@@ -1521,20 +1569,18 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
       const stored=pricingSnap.exists?(pricingSnap.data()||{}):{};
       const rawMax=Number(stored.maxConcurrentSessions);
       const maxConcurrent=Number.isSafeInteger(rawMax)&&rawMax>=1&&rawMax<=3?rawMax:1;
-      if(availabilityStatus==="offline"&&activeCount>0){
-        throw Object.assign(new Error("You have an active Live Session. End it before going Offline."),{httpStatus:409});
-      }
-      const automaticallyBusy=availabilityStatus==="online"&&activeCount>=maxConcurrent;
-      const finalStatus=automaticallyBusy?"busy":availabilityStatus;
+      const automaticallyBusy=activeCount>0;
+      const modesMatch=liveCallEnabled===liveChatEnabled;
+      const finalStatus=automaticallyBusy?"busy":(modesMatch?"offline":availabilityStatus);
       tx.set(astroRef,{
+        liveCallEnabled,liveChatEnabled,
         availabilityStatus:finalStatus,
         availabilityUpdatedAt:FieldValue.serverTimestamp(),
         availabilityUpdatedBy:user.uid,
-        // Only a Busy state forced by the active-session ceiling may auto-return to Online.
-        // A Busy state explicitly selected by the Astrologer must remain Busy after a session ends.
+        // A Live session keeps the Astrologer Busy until its final active session settles.
         liveSessionBusyManaged:automaticallyBusy
       },{merge:true});
-      return {availabilityStatus:finalStatus,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
+      return {availabilityStatus:finalStatus,liveCallEnabled,liveChatEnabled,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
     });
     publicAstrologersCache={expiresAt:0,data:null};
     res.set("Cache-Control","no-store");
