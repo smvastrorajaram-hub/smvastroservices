@@ -4529,7 +4529,7 @@ function smvLiveApplySession(session){
  if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
  if($('smvLiveEndSession')){ $('smvLiveEndSession').hidden=s.state==='ended';$('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':'CANCEL / CLOSE SESSION';}
  if($('smvLiveClosePanel'))$('smvLiveClosePanel').hidden=s.state==='ended';
- if(s.state==='connecting'&&!call)smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
+ if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
  // The Customer now starts WebRTC from the explicit microphone button, preserving the browser permission gesture.
  if(active)smvLiveStartClock(s);
  if(s.state==='ended'){
