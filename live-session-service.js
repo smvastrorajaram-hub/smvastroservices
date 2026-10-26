@@ -272,7 +272,7 @@ function liveSessionSafeView(id, data) {
   };
 }
 
-function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser }) {
+function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser, notifyAstrologer = async () => ({ skipped: true }) }) {
   if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser) {
     throw new Error('Live Session service requires Firestore, FieldValue, crypto and auth helpers.');
   }
@@ -357,6 +357,16 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     if (!session) return;
     sendTo(session.customerUid, payload);
     sendTo(session.astrologerUid, payload);
+  }
+
+  function sendPushAlert(uid, alert) {
+    try {
+      Promise.resolve(notifyAstrologer(uid, alert)).catch(error => {
+        console.warn('[Live Session] Best-effort Push alert skipped:', error?.message || error);
+      });
+    } catch (error) {
+      console.warn('[Live Session] Best-effort Push alert skipped:', error?.message || error);
+    }
   }
 
   function trackSession(sessionId, customerUid, astrologerUid) {
@@ -684,12 +694,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       notifyAdmin('live_session_requested', 'Live ' + kind.toUpperCase() + ' requested',
         sessionCustomerName + ' requested a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
         { sessionId: id, customerId: uid, astrologerId: astroId, mode: kind });
+      sendPushAlert(astroId, { kind: 'live_session', mode: kind, entityId: id });
       sendTo(astroId, { type: 'live.session.request', session: liveSessionSafeView(id, txResult.data) });
       sendTo(uid, { type: 'live.session.updated', session: liveSessionSafeView(id, txResult.data) });
     } else if (txResult.kind === 'booking' && !txResult.alreadyProcessed) {
       notifyAdmin('live_booking_requested', 'Live ' + kind.toUpperCase() + ' booking requested',
         sessionCustomerName + ' booked a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '. It will be accepted when the Astrologer is online.',
         { bookingId: id, customerId: uid, astrologerId: astroId, mode: kind });
+      sendPushAlert(astroId, { kind: 'live_booking', mode: kind, entityId: id });
       sendTo(astroId, { type: 'live.booking.pending', booking: { id, ...txResult.data } });
       sendTo(uid, { type: 'live.booking.updated', booking: { id, ...txResult.data } });
     }
