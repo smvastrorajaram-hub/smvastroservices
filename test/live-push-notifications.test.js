@@ -151,6 +151,26 @@ test('Last-known Dashboard role cache only stores Customer or Astrologer UI role
   assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
 });
 
+test('Astrologer Dashboard keeps one heading and parallelizes its first profile read', () => {
+  const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  const fastStart = frontend.indexOf("function smvRenderFastDashboardShell(roleValue='')");
+  const fastEnd = frontend.indexOf('function smvWalletMoney', fastStart);
+  const fastShell = frontend.slice(fastStart, fastEnd);
+  const dashboardStart = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
+  const dashboardEnd = frontend.indexOf('function openPayoutChange()', dashboardStart);
+  const dashboard = frontend.slice(dashboardStart, dashboardEnd);
+  assert.ok(fastStart >= 0 && fastEnd > fastStart);
+  assert.ok(!fastShell.includes('<h2>ASTROLOGER DASHBOARD</h2>'));
+  assert.ok(!dashboard.includes('<h2>ASTROLOGER DASHBOARD</h2>'));
+  assert.ok(frontend.includes('<h2 id="dashboardTitle">CUSTOMER DASHBOARD</h2>'));
+  assert.ok(dashboard.includes("const shouldPreloadAstroProfile=requestedRole==='astrologer'"));
+  assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
+  assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
+  assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-astrologer-single-heading-parallel-profile-v1'));
+});
+
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes("smvBindCustomerWallet({load:false});"));
