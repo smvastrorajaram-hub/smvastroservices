@@ -442,6 +442,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         const snap = await sessionRef(sessionId).get();
         if (!snap.exists) return;
         const session = snap.data() || {};
+        // An Astrologer may close the browser or lock the phone while an incoming
+        // request is ringing. Keep that request alive for its existing no-answer
+        // timer so the server push can bring the Astrologer back to the app.
+        // A Customer disconnect still follows the existing settlement path.
+        if (session.state === 'ringing' && String(session.astrologerUid || '') === String(uid)) {
+          return;
+        }
         if (session.state !== 'ended' && session.state !== 'preparing') {
           await endSession(sessionId, '', 'network_disconnect', true);
         }
