@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'wallet-service.js'
+      - 'admin-auth.js'
+      - 'test/admin-auth.test.js'
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
       - 'test/wallet-service.test.js'
@@ -48,6 +50,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check server.js
+          node --check admin-auth.js
+          node --check test/admin-auth.test.js
           node --check wallet-service.js
           node --check live-session-service.js
           node --check test/live-session-service.test.js
@@ -57,6 +61,8 @@ jobs:
           node --check public/main-location-search.js
           node --check public/question-place-search.mjs
           node --check public/public-navigation.js
+      - name: Run trusted Admin authorization tests
+        run: node --test test/admin-auth.test.js
       - name: Run Wallet unit tests
         run: npm run test:wallet
       - name: Run Live Session billing tests
