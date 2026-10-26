@@ -3984,29 +3984,38 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       return res.status(403).json({ error: "Only an astrologer account can request a withdrawal." });
     }
 
-    await syncLiveSessionEarningsForAstrologer(user.uid);
-    const questionSnap = await db.collection("smv_questions")
-      .where("astrologerId", "==", user.uid).get();
+    // Wallet/earnings are written by the successful session settlement transaction.
+    // Validate withdrawals using credited historic earnings and live-session earnings;
+    // never replay every completed session on a button click.
+    const [questionSnap, privateCreditSnap, liveCreditSnap, withdrawalSnap] = await Promise.all([
+      db.collection("smv_questions")
+        .where("astrologerId", "==", user.uid)
+        .where("status", "==", "answered")
+        .where("commissionStatus", "==", "credited").get(),
+      db.collection("smv_private_consultations")
+        .where("astrologerId", "==", user.uid)
+        .where("commissionStatus", "==", "credited").get(),
+      db.collection("smv_payments")
+        .where("astrologerId", "==", user.uid)
+        .where("source", "==", "live_session")
+        .where("type", "==", "astrologer_earning")
+        .where("status", "==", "credited").get(),
+      db.collection("smv_withdrawals").where("astrologerId", "==", user.uid).get()
+    ]);
     let totalEarnings = 0;
     questionSnap.docs.forEach(d => {
       const q = d.data() || {};
-      if (q.status === "answered" && q.commissionStatus === "credited") {
-        totalEarnings += Number(q.astrologerCommissionAmount || q.commissionAmount || 0);
-      }
+      totalEarnings += Number(q.astrologerCommissionAmount || q.commissionAmount || 0);
     });
-
-    const privateCreditSnap=await db.collection("smv_private_consultations").where("astrologerId","==",user.uid).get();
-    privateCreditSnap.docs.forEach(d=>{const c=d.data()||{};if(c.commissionStatus==='credited')totalEarnings+=Number(c.astrologerCreditedAmount??c.astrologerAmount??0);});
-    const liveCreditSnap = await db.collection("smv_payments").where("astrologerId", "==", user.uid).get();
+    privateCreditSnap.docs.forEach(d => {
+      const c = d.data() || {};
+      totalEarnings += Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0);
+    });
     liveCreditSnap.docs.forEach(d => {
       const payment = d.data() || {};
-      if (payment.source === "live_session" && payment.type === "astrologer_earning" && payment.status === "credited") {
-        totalEarnings += Number(payment.earningAmount ?? payment.commissionAmount ?? 0);
-      }
+      totalEarnings += Number(payment.earningAmount ?? payment.commissionAmount ?? 0);
     });
 
-    const withdrawalSnap = await db.collection("smv_withdrawals")
-      .where("astrologerId", "==", user.uid).get();
     let reservedWithdrawals = 0;
     withdrawalSnap.docs.forEach(d => {
       const w = d.data() || {};
