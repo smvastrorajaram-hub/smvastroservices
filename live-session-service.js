@@ -797,6 +797,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
           bookingStatus: 'in_progress', status: 'in_progress', liveSessionId: id,
           updatedAt: FieldValue.serverTimestamp()
         }, { merge: true }).catch(error => console.warn('[Live Session] Scheduled booking status update skipped:', error?.message || error));
+      }
       notifyAdmin('live_booking_accepted', 'Live booking accepted',
         String(txResult.data.customerName || 'Customer') + ' Live ' + String(txResult.data.mode || '').toUpperCase() + ' booking was accepted by ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
         { bookingId: id, customerId: txResult.data.customerUid, astrologerId: txResult.data.astrologerUid, mode: txResult.data.mode });
