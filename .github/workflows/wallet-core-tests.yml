@@ -1,0 +1,69 @@
+name: Wallet core tests
+
+on:
+  pull_request:
+    paths:
+      - 'wallet-service.js'
+      - 'admin-auth.js'
+      - 'test/admin-auth.test.js'
+      - 'live-session-service.js'
+      - 'test/live-session-service.test.js'
+      - 'test/wallet-service.test.js'
+      - 'server.js'
+      - 'public/index.html'
+      - 'public/smvastro.mjs'
+      - 'public/public-content.mjs'
+      - 'public/main-location-search.js'
+      - 'public/question-place-search.mjs'
+      - 'public/public-navigation.js'
+      - 'package.json'
+      - '.github/workflows/wallet-core-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'wallet-service.js'
+      - 'test/wallet-service.test.js'
+      - 'server.js'
+      - 'public/index.html'
+      - 'public/smvastro.mjs'
+      - 'public/public-content.mjs'
+      - 'public/main-location-search.js'
+      - 'public/question-place-search.mjs'
+      - 'public/public-navigation.js'
+      - 'package.json'
+      - '.github/workflows/wallet-core-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check server.js
+          node --check admin-auth.js
+          node --check test/admin-auth.test.js
+          node --check wallet-service.js
+          node --check live-session-service.js
+          node --check test/live-session-service.test.js
+          node --check test/wallet-service.test.js
+          node --check public/smvastro.mjs
+          node --check public/public-content.mjs
+          node --check public/main-location-search.js
+          node --check public/question-place-search.mjs
+          node --check public/public-navigation.js
+      - name: Run trusted Admin authorization tests
+        run: node --test test/admin-auth.test.js
+      - name: Run Wallet unit tests
+        run: npm run test:wallet
+      - name: Run Live Session billing tests
+        run: npm run test:live-session

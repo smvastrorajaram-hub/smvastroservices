@@ -339,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
 <div class="card"><h3>Razorpay Connection</h3><button class="btn" id="testRazorpayBtn" type="button">TEST RAZORPAY CONNECTION</button><div class="small" id="razorpayTestMsg"></div></div>
-<div class="card"><h3>Admin Notifications</h3><p class="small">Private Consultation events requiring Admin attention are shown here.</p><div id="adminPrivateNotifications"><div class="empty">Loading Admin notifications...</div></div></div>
 </section></div>
 <section class="hidden" id="astro-register-form">
 <div class="card">
@@ -354,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <input accept="image/*" id="arPhoto" required="" type="file"/>
 <input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required=""/>
 <input id="arExperience" min="0" placeholder="Experience (years)" required="" type="number"/>
+<label class="small" for="arLanguages">Languages spoken (required)</label><input id="arLanguages" maxlength="240" placeholder="Tamil, English" required=""/>
 <textarea id="arBio" placeholder="Professional Bio" required="" rows="5"></textarea>
 <h3>Payment Method</h3>
 <input id="arBankName" placeholder="Bank Name" required=""/>

@@ -1,0 +1,55 @@
+name: Firestore Rules emulator tests
+
+on:
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firestore.staging.rules'
+      - 'firebase.staging.json'
+      - 'server.js'
+      - 'test/firestore-rules.test.js'
+      - '.github/workflows/firestore-rules-emulator-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'firestore.staging.rules'
+      - 'firebase.staging.json'
+      - 'server.js'
+      - 'test/firestore-rules.test.js'
+      - '.github/workflows/firestore-rules-emulator-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up Java for the Firestore emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install isolated Rules-test dependencies
+        run: npm install --prefix .rules-test --no-save --package-lock=false @firebase/rules-unit-testing@6.0.0 firebase@13.1.0
+
+      - name: Check server syntax
+        run: node --check server.js
+
+      - name: Test Security Rules against the local Firestore emulator
+        env:
+          RULES_TEST_NODE_PATH: ${{ github.workspace }}/.rules-test/node_modules
+        run: |
+          npx --yes firebase-tools@15.34.1 emulators:exec --only firestore --project demo-smvastro-rules \
+            "NODE_PATH=$RULES_TEST_NODE_PATH FIRESTORE_RULES_PATH=firestore.rules node --test test/firestore-rules.test.js && NODE_PATH=$RULES_TEST_NODE_PATH FIRESTORE_RULES_PATH=firestore.staging.rules node --test test/firestore-rules.test.js"

@@ -34,7 +34,6 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts}){
    tx.update(ref,patch);
    if(!automatic)viewNotice(tx,q,kind,id,viewedKey);
    if(!prior.exists)tx.set(db.collection('smv_notifications').doc('answer-credit-'+kind+'-'+id),{userId:q.astrologerId,type:privateQuestion?'private_earning_credited':'earning_credited',title:automatic?(privateQuestion?'Private Consultation Commission Credited':'Astrologer Commission Credited'):(privateQuestion?'Private Consultation Earning Credited':'Earning Credited'),message:automatic?`24-hour automatic settlement completed. ₹${amount.toFixed(2)} astrologer commission has been credited.`:`Customer viewed your answer. ₹${amount.toFixed(2)} has been credited.`,questionId:privateQuestion?null:id,consultationId:privateQuestion?id:null,commissionAmount:amount,createdAt:stamp(),read:false});
-   if(privateQuestion&&!prior.exists)tx.set(db.collection('smv_admin_notifications').doc('answer-credit-private-'+id),{type:'private_commission_credited',title:'Private Consultation Commission Credited',message:`${automatic?'24-hour automatic credit':'Customer viewed answer'}: Astrologer ₹${amount.toFixed(2)} / Admin ₹${adminAmount.toFixed(2)}.`,consultationId:id,source:'private_consultation',createdAt:stamp(),read:false});
    tx.set(db.collection('smv_settings').doc('dashboardChange'),{category:'answer_credit',path:ref.path,updatedAt:stamp()},{merge:true});
    return {credited:!prior.exists,commissionAmount:amount,astrologerAmount:amount,adminAmount};
   });
@@ -43,7 +42,6 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts}){
   if(q[viewedKey]||kind!=='private')return;
   const data={type:'private_answer_viewed',title:'Private Answer Viewed',message:`${q.customerName||'Customer'} viewed the approved answer.`,consultationId:id,source:'private_consultation',createdAt:FieldValue.serverTimestamp(),read:false};
   if(q.astrologerId)tx.set(db.collection('smv_notifications').doc('answer-view-private-'+id),{...data,userId:q.astrologerId});
-  tx.set(db.collection('smv_admin_notifications').doc('answer-view-private-'+id),data);
  }
  let running=false;
  async function sweep(){

@@ -58,6 +58,12 @@
   return true;
  }
  window.__smvNavigatePublic=navigate;
+ // All customer-facing chat entry points use this one canonical workflow.
+ window.__smvOpenBookingChat=function(){
+  if(navigate('private-consultation'))return true;
+  location.href='./?view=consult';
+  return false;
+ };
  document.addEventListener('click',event=>{
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   const control=event.target.closest?.('a[href^="#"],[data-smv-route]');if(!control)return;

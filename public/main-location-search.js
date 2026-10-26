@@ -1,5 +1,7 @@
 /* SMV ASTRO V221 — Ask Now + Private Consultation local place search + header Calendar link.
    Uses the existing bundled India place database. No Firebase/API polling and no MutationObserver. */
+const SMV_BACKEND_BASE = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname)
+  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
 (function(){
   'use strict';
   if(window.__SMV_MAIN_LOCATION_SEARCH_V187__) return;
@@ -34,7 +36,7 @@
       }catch(e){if(e?.name==='AbortError')throw e;}
     }
     try{
-      const url=new URL('https://smvastroservices.onrender.com/api/locations/search');
+      const url=new URL('/api/locations/search',SMV_BACKEND_BASE);
       url.searchParams.set('q',q);
       url.searchParams.set('limit',String(Math.max(1,Math.min(70,Number(limit)||70))));
       url.searchParams.set('lang',/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en');
@@ -56,7 +58,7 @@
           input.dataset.timezoneSource=String(x.timezoneSource||(x.timezone?'offline-india':'unverified'));
           if(!x.timezone&&Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lon))){
             const chosen=input.value;
-            const url=new URL('https://smvastroservices.onrender.com/api/locations/timezone');
+            const url=new URL('/api/locations/timezone',SMV_BACKEND_BASE);
             url.searchParams.set('lat',String(x.lat));
             url.searchParams.set('lng',String(x.lon));
             fetch(url.toString(),{headers:{Accept:'application/json'}})

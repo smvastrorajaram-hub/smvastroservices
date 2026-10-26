@@ -50,8 +50,8 @@
   ['adminPrivatePending','Private Questions','parent'],
   ['adminRefunds','Refunds','parent'],
   ['adminHoroscopePriceSet','Horoscope Settings','self'],
-  ['adminOffersPromotions','Offers','self'],
   ['adminWithdrawals','Withdrawals','parent'],
+  ['adminOffersPromotions','Wallet Offers','self'],
   ['adminCommissionSettings','Commission','self']
  ];
  // Isolate the CSS to the eight shortcuts only; do not change the other cards.

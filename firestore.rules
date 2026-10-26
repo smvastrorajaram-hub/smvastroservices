@@ -2,12 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    // Admin trust comes from the fixed owner UID, server-managed custom claims,
+    // or the server-controlled smv_admins allowlist. A mutable profile role is
+    // never an authorization source.
     function isAdmin() {
       return signedIn() && (
         request.auth.uid == "TwjeEIFS3Zcf1SxboLZoujm91Ky2" ||
         exists(/databases/$(database)/documents/smv_admins/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/smv_users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/smv_users/$(request.auth.uid)).data.role == "admin")
+        ("admin" in request.auth.token && request.auth.token.admin == true) ||
+        ("role" in request.auth.token && request.auth.token.role == "admin")
       );
     }
     function isApprovedAstrologer() {
@@ -28,7 +31,7 @@ service cloud.firestore {
     }
     match /smv_users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-      allow create: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && (!("role" in request.resource.data) || request.resource.data.role != "admin");
       allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name","phone","mobile","emailVerificationRequired","updatedAt"]));
     }
     match /smv_astrologers/{uid} {
@@ -82,6 +85,21 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+    // Wallet balances, ledger entries and recharge status are server-owned.
+    // Client reads are owner-scoped; all mutations go through authenticated backend transactions.
+    match /smv_wallets/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+    match /smv_wallet_transactions/{transactionId} {
+      allow read: if signedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+    match /smv_wallet_recharges/{rechargeId} {
+      allow read: if signedIn() && (resource.data.customerUid == request.auth.uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+
     match /smv_payments/{paymentId} {
       allow read: if isAdmin() || (signedIn() && resource.data.customerId == request.auth.uid) || (signedIn() && resource.data.astrologerId == request.auth.uid && resource.data.type == "astrologer_earning");
       allow write: if isAdmin();
