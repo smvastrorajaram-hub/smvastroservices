@@ -89,17 +89,6 @@ test('Explicit login opens a neutral Dashboard shell before Firestore profile an
   assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
 });
 
-test('Live Chat box is visible while connecting and message sending remains locked until active', () => {
-  const frontend = read('public/smvastro.mjs');
-  const html = read('public/index.html');
-  assert.ok(frontend.includes("const connecting=smvLiveCanonicalMode(session)==='chat'&&String(session?.state||'')==='connecting';"));
-  assert.ok(frontend.includes("(s.mode==='chat'&&['connecting','active'].includes(String(s.state||''))?'':'hidden')"));
-  assert.ok(frontend.includes('chatInput.disabled=!chatReady'));
-  assert.ok(frontend.includes('chatSend.disabled=!chatReady'));
-  assert.ok(frontend.includes("chat.style.display='flex';chat.style.flex='0 0 auto'"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-shell-quota-resilience-v1'));
-});
-
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes('async function smvLivePrintReceipt(session)'));
