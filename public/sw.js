@@ -46,7 +46,7 @@ try {
       }
     : {
         apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',
-        authDomain: 'smv-astro.firebaseapp.com',
+        authDomain: (self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev')) ? 'smv-astro.firebaseapp.com' : 'auth.smvastroservices.in',
         projectId: 'smv-astro',
         storageBucket: 'smv-astro.firebasestorage.app',
         messagingSenderId: '299081899217',
