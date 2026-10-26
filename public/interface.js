@@ -50,7 +50,6 @@
   ['adminPrivatePending','Private Questions','parent'],
   ['adminRefunds','Refunds','parent'],
   ['adminHoroscopePriceSet','Horoscope Settings','self'],
-  ['adminOffersPromotions','Offers','self'],
   ['adminWithdrawals','Withdrawals','parent'],
   ['adminCommissionSettings','Commission','self']
  ];
