@@ -1703,7 +1703,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)){min-height:90px!importan
 .feature-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important}
 table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
 img:where(:not(.smv-css-island,.smv-css-island *)), video:where(:not(.smv-css-island,.smv-css-island *)), iframe:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
 @media print{
 body:where(:not(.smv-css-island,.smv-css-island *)){background:#24103F!important;color:#f2eddf!important;}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
@@ -1878,7 +1878,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 .media-card:where(:not(.smv-css-island,.smv-css-island *)){padding:7px!important;margin:5px 0px!important}
 .media-card img:where(:not(.smv-css-island,.smv-css-island *)){max-height:100px!important;object-fit:cover!important}
 .modal:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
 .modalbox h2:where(:not(.smv-css-island,.smv-css-island *)), .modalbox h3:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important;margin:3px 0px 6px!important}
 .smv-dialog-backdrop:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
 .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:none!important;padding:11px!important;border-radius:11px!important}
