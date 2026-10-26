@@ -1454,6 +1454,34 @@ async function rejectOrCancel(sessionId, user, reason) {
     } catch (error) { return replyError(res, error, 'Unable to save Live Call / Chat prices.'); }
   });
 
+  app.post('/admin/live/commission', async (req, res) => {
+    const auth = await requireRole(req, res, ['admin']);
+    if (!auth) return;
+    try {
+      const body = req.body || {};
+      const astroPercent = Number(body.astroPercent);
+      const adminPercent = Number(body.adminPercent);
+      if (!Number.isFinite(astroPercent) || !Number.isFinite(adminPercent) ||
+          astroPercent < 0 || astroPercent > 100 || adminPercent < 0 || adminPercent > 100 ||
+          Math.abs(astroPercent + adminPercent - 100) > 0.001) {
+        return res.status(400).json({
+          success: false,
+          error: 'Astrologer commission and Admin commission must each be 0–100%, and must add up to 100%.',
+          code: 'LIVE_COMMISSION_INVALID'
+        });
+      }
+      await commissionRef().set({
+        astroPercent, adminPercent,
+        updatedBy: auth.user.uid, updatedAt: nowTimestamp()
+      }, { merge: true });
+      return res.set('Cache-Control', 'no-store').json({
+        success: true, astroPercent, adminPercent
+      });
+    } catch (error) {
+      return replyError(res, error, 'Unable to save Live / Booking commission settings.');
+    }
+  });
+
   app.get('/live/events', async (req, res) => {
     const auth = await requireRole(req, res, ['customer', 'astrologer']);
     if (!auth) return;
