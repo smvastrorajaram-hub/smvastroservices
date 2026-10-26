@@ -261,3 +261,17 @@ test('Customer dashboard live question invalidation uses the same 100-record cap
   assert.ok(events.includes("where('customerId','==',user.uid).limit(100)"));
   assert.ok(server.includes("db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get()"));
 });
+
+
+test('Admin landing reads only payment documents used by the Astrologer earnings ledger', () => {
+  const server = read('server.js');
+  const frontend = read('public/smvastro.mjs');
+  const start = server.indexOf('app.get("/admin-data"');
+  const end = server.indexOf('\n});', start);
+  assert.ok(start >= 0 && end > start);
+  const route = server.slice(start, end);
+  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning"))'));
+  assert.ok(frontend.includes("String(p.type||'').toLowerCase()==='astrologer_earning' && String(p.status||'').toLowerCase()==='credited'"));
+  // Wallet transactions remain served by their existing dedicated route.
+  assert.ok(server.includes('app.get("/admin/wallet/transactions"'));
+});
