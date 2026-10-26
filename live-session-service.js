@@ -1467,7 +1467,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!auth) return;
     try {
       const token = String(req.body?.token || '').trim();
-      if (token.length < 30 || token.length > 8192 || /\\s/.test(token)) {
+      if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
         return res.status(400).json({ success: false, error: 'The browser push token is invalid. Enable Background Alerts again.' });
       }
       const ref = db.collection('smv_push_tokens').doc(hash(token));
@@ -1485,7 +1485,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!auth) return;
     try {
       const token = String(req.body?.token || '').trim();
-      if (token.length < 30 || token.length > 8192 || /\\s/.test(token)) {
+      if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
         return res.status(400).json({ success: false, error: 'The browser push token is invalid.' });
       }
       const ref = db.collection('smv_push_tokens').doc(hash(token));
