@@ -78,7 +78,7 @@ test('Live Chat uses one large, scrolling message pane without changing preparat
 test('Explicit login immediately opens a Dashboard shell before profile and role reads', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function submitAuth(mode)');
-  const shell = frontend.indexOf('smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));', start);
+  const shell = frontend.indexOf('smvRenderFastDashboardShell(loginShellRole);', start);
   const profile = frontend.indexOf('const loginProfile=await getUserProfile(loginCred.user.uid)', start);
   const role = frontend.indexOf('const role=await resolveSmvRole(loginCred.user,profile)', start);
   assert.ok(start >= 0 && shell > start);
@@ -111,7 +111,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-instant-open-no-loading-v2'));
 });
 
 test('Customer and Astrologer Dashboard open without Dashboard-wide loading or quota notes', () => {
@@ -131,9 +131,11 @@ test('Explicit login keeps the fast role shell mounted and does not hide/reopen 
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function submitAuth(mode)');
   const roleBranch = frontend.indexOf('if(goToAdmin || adminUser){', start);
-  const roleShell = frontend.indexOf('if(loginShellRole!==role)smvRenderFastDashboardShell(role);', roleBranch);
-  assert.ok(start>=0 && roleBranch>start && roleShell>roleBranch);
-  assert.equal(frontend.slice(roleBranch,roleShell).includes('hide("dashboard")'), false);
+  const normalBranch = frontend.indexOf('}else{\n      hide("admin"); hide("adminLink");\n      show("dashLink");', roleBranch);
+  const roleShell = frontend.indexOf('if(loginShellRole!==role)smvRenderFastDashboardShell(role);', normalBranch);
+  assert.ok(start>=0 && roleBranch>start && normalBranch>roleBranch && roleShell>normalBranch);
+  assert.equal(frontend.slice(normalBranch,roleShell).includes('hide("dashboard")'), false);
+  assert.ok(!frontend.includes('pendingAfterLogin=null;\n    hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink");\n    if(goToAdmin || adminUser){'));
   assert.ok(!frontend.includes("dashboardReadyRole===await resolveSmvRole(user)"));
 });
 
@@ -144,7 +146,8 @@ test('Last-known Dashboard role cache only stores Customer or Astrologer UI role
   assert.ok(frontend.includes('const cachedRole=smvCachedDashboardRole(user.uid);'));
   assert.ok(frontend.includes("if(!profile?._smvProfileReadFailed)smvRememberDashboardRole(user.uid,resolvedRole);"));
   assert.ok(frontend.includes("if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){"));
-  assert.ok(frontend.includes("Your account status has not been changed."));
+  assert.ok(frontend.includes("id=\"smvAstroDataRetry\""));
+  assert.ok(frontend.includes("REFRESH DASHBOARD"));
   assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
 });
 
