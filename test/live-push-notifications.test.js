@@ -253,3 +253,11 @@ test('Admin dashboard reuses commission settings from its existing payload', () 
   assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','answer'))"));
   assert.ok(frontend.includes("getDoc(doc(db,'smv_settings','question'))"));
 });
+
+
+test('Customer dashboard live question invalidation uses the same 100-record cap as its data API', () => {
+  const events = read('dashboard-events.js');
+  const server = read('server.js');
+  assert.ok(events.includes("where('customerId','==',user.uid).limit(100)"));
+  assert.ok(server.includes("db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get()"));
+});
