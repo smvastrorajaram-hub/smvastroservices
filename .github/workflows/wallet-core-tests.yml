@@ -7,6 +7,8 @@ on:
       - 'admin-auth.js'
       - 'test/admin-auth.test.js'
       - 'live-session-service.js'
+      - 'push-notification-service.js'
+      - 'test/push-notification-service.test.js'
       - 'test/live-session-service.test.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
@@ -54,6 +56,8 @@ jobs:
           node --check test/admin-auth.test.js
           node --check wallet-service.js
           node --check live-session-service.js
+          node --check push-notification-service.js
+          node --check test/push-notification-service.test.js
           node --check test/live-session-service.test.js
           node --check test/wallet-service.test.js
           node --check public/smvastro.mjs
