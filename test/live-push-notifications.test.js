@@ -85,7 +85,7 @@ test('Explicit login renders a generic shell only for non-Admin roles; Admin ent
   assert.ok(profile > shell, 'Known Customer/Astrologer shell is mounted before profile reads');
   assert.ok(role > profile, 'Role resolution follows the first profile result');
   assert.ok(frontend.includes('const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;'));
-  assert.ok(frontend.includes('if(!goToAdmin){'));
+  assert.ok(frontend.includes('if(!goToAdmin && loginShellRole){'));
   assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
   assert.ok(!frontend.includes('if(!goToQuestion&&!goToAdmin){'));
   assert.ok(!frontend.includes('Login successful. Opening your dashboard…'));
@@ -324,7 +324,8 @@ test('Admin navigation does not show the generic DASHBOARD flash before role res
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
   assert.ok(frontend.includes('const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;'));
-  assert.ok(frontend.includes('if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?(loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD"):"";'));
+  assert.ok(frontend.includes('if(!goToAdmin && loginShellRole){'));
+  assert.ok(frontend.includes('if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";'));
   assert.ok(!frontend.includes('<h2>DASHBOARD</h2>'));
   assert.ok(html.includes('<h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2>'));
 });
