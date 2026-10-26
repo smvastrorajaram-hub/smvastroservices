@@ -49,7 +49,7 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
     }
    }else{
     refs.push(
-     {ref:db.collection('smv_questions').where('customerId','==',user.uid),kind:'questions'},
+     {ref:db.collection('smv_questions').where('customerId','==',user.uid).limit(100),kind:'questions'},
      {ref:db.collection('smv_notifications').where('userId','==',user.uid),kind:'notifications'}
     );
    }
