@@ -149,7 +149,7 @@ function smvHomeOfferMoney(minimumPaise){
 function smvHomeOfferWhen(value){
  if(!value)return '';
  let raw=String(value);
- if(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw))raw+='+05:30';
+ if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw))raw+='+05:30';
  const millis=Date.parse(raw);
  return Number.isFinite(millis)?new Date(millis).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
 }
