@@ -3438,7 +3438,7 @@ async function smvRenderAdminWalletOffers(){
  ];
  card.innerHTML=[
   '<h3>Wallet Recharge Bonus Offers</h3>',
-  '<p class="small">Create festival offers such as Pongal or Diwali. When a Customer recharge is successfully captured by Razorpay, one eligible offer can add the configured free Live Call/Chat minutes to Wallet. Bonus minutes are not cash, do not stack, and the legacy ₹25/₹1 Welcome Offer is not used.</p>',
+  '<p class="small">When an Offer is ON and inside its Start / End Date window, it appears on the public Home page banner. OFF, not-yet-started, expired or fully redeemed offers are hidden. A Customer must recharge the Wallet through Razorpay at or above the minimum amount; after successful payment capture, one eligible Offer credits promotional time to My Wallet → Bonus Free Minutes. Those minutes are used before paid minutes for eligible Live Call / Live Chat sessions. Per-customer limits apply, offers do not stack, and bonus minutes are not cash.</p>',
   '<input id="smvWalletOfferId" type="hidden">',
   '<div class="grid">',
   '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Minutes"></label>',
