@@ -2568,6 +2568,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    $('dashboardTitle').textContent=role==='astrologer'?'ASTROLOGER DASHBOARD':'CUSTOMER DASHBOARD';
    if(role==='astrologer'){
    let ad=preloadedAstro||{};
+let astroProfileReadFailed=!!data._smvProfileReadFailed;
 
 /* Always load the latest astrologer profile.
    This is required so rejected status and rejectionReason
@@ -2580,18 +2581,35 @@ try{
 
   if(a.exists()){
     ad=a.data()||{};
+    astroProfileReadFailed=false;
+  }else if(data._smvProfileReadFailed){
+    astroProfileReadFailed=true;
   }
 }catch(profileErr){
+  astroProfileReadFailed=true;
   console.warn(
     'Astrologer profile load skipped:',
     profileErr
   );
 }
 
+// Never show a false "Waiting for Admin Approval" state because quota exhaustion
+// prevented reading the actual Astrologer profile. Keep the known-role shell open.
+if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2><p>Dashboard is open. Astrologer profile and data are temporarily unavailable because Firebase could not be read. Your account status has not been changed.</p><button class="btn gray" id="smvAstroDataRetry" type="button">RETRY DATA LOAD</button></div>';
+  $('smvAstroDataRetry')?.addEventListener('click',()=>{
+    smvProfiles.delete(loadUid);
+    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard retry deferred:',error?.message||error));
+  });
+  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
+  smvWatchQuestions(role);
+  return;
+}
+
 let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
-   let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
+let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
 
    // A directory-visible approved record may be a legacy/duplicate document
    // while this dashboard reads the UID-keyed document. Reconcile only when the
