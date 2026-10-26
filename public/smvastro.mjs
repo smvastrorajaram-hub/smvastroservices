@@ -4599,16 +4599,21 @@ async function smvLiveEnableBackgroundAlerts(){
  const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
  await navigator.serviceWorker.ready;
  if(!registration.pushManager)throw new Error('Push notifications are not supported by this browser. On iPhone, install SMV ASTRO to the Home Screen and open the installed app.');
- const {getMessaging,getToken,onMessage}=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js');
- const messaging=getMessaging(app);
- const token=await getToken(messaging,{serviceWorkerRegistration:registration});
+ const messagingModule=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js');
+ if(!(await messagingModule.isSupported()))throw new Error('Firebase Web Push is not supported in this browser. Use current Chrome on Android, or install SMV ASTRO to the Home Screen on a supported iPhone/iPad.');
+ const pushConfig=await renderApi('/public/push-config',{method:'GET',timeoutMs:12000});
+ const vapidKey=String(pushConfig?.vapidPublicKey||'').trim();
+ if(!vapidKey)throw new Error('Firebase Web Push key is not configured on the server. Set Render environment variable FCM_VAPID_PUBLIC_KEY from Firebase Console → Project settings → Cloud Messaging → Web Push certificates.');
+ const messaging=messagingModule.getMessaging(app);
+ const token=await messagingModule.getToken(messaging,{vapidKey,serviceWorkerRegistration:registration});
  if(!token)throw new Error('The push service did not issue a device token. Check Firebase Cloud Messaging setup and retry.');
+ const onMessage=messagingModule.onMessage;
  await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,userAgent:navigator.userAgent})});
  if(!smvLiveForegroundMessagingBound){
   onMessage(messaging,payload=>{
    const data=payload?.data||{},type=String(data.type||'');
    if(type==='push_test'&&Notification.permission==='granted'){
-    try{new Notification(String(data.title||'SMV ASTRO Test Alert'),{body:String(data.body||'Background alert delivery is active.'),icon:'/assets/icon-192.png',tag:String(data.tag||'smv-push-test')});}catch(_){}
+    navigator.serviceWorker.ready.then(registration=>registration.showNotification(String(data.title||'SMV ASTRO Test Alert'),{body:String(data.body||'Background alert delivery is active.'),icon:'/assets/icon-192.png',badge:'/assets/favicon-64.png',tag:String(data.tag||'smv-push-test'),data:{url:'/'}})).catch(error=>console.warn('Foreground push test display failed:',error?.message||error));
     const status=$('smvLivePushStatus');if(status)status.textContent='Test Alert arrived while SMV ASTRO was open. Close the browser or turn the screen off to test background delivery.';
    }
   });
