@@ -2966,21 +2966,13 @@ app.get("/admin-data", async (req, res) => {
   };
 
   try {
-    // Read each collection independently. One damaged/missing collection must
-    // never prevent the Admin Dashboard itself from opening.
-    const [customerCountResult, astrologers, questionCountResult, questions, payments, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
+    // Admin landing only loads current management controls and Live Call/Chat earnings.
+    // Retired question/Private Consultation counts and histories are not Dashboard dependencies.
+    const [customerCountResult, astrologers, livePayments, commission, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCount("customers",db.collection("smv_users").where("role","==","customer")),
       readCollection("smv_astrologers"),
-      readCount("questions",db.collection("smv_questions")),
-      // The landing page shows only credited answered questions in Earnings History.
-      // The total question count comes from an aggregate query above.
-      readCollection("smv_questions",db.collection("smv_questions").where("status","==","answered").where("commissionStatus","==","credited")),
-      // The landing page uses payments only for the Astrologer earnings ledger.
-      readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning").where("status","==","credited")),
+      readCollection("smv_payments",db.collection("smv_payments").where("source","==","live_session")),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
-      getPrivateCommissionSettings(),
-      db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),
-      db.collection("smv_settings").doc("privateConsultationWorkflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false,minimumAnswerWords:20}).catch(()=>({allowWithoutAdminApproval:false,minimumAnswerWords:20})),
       getAstrologerAutoApprovalSettings(true),
       getHoroscopePaymentSettings()
     ]);
@@ -3006,14 +2998,12 @@ app.get("/admin-data", async (req, res) => {
     const newestFirst = items => (items || []).slice().sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
     const payload={
       success: true,
-      settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment},
+      settings: {commission, astrologerAutoApproval, horoscopePayment},
       customerCount: customerCountResult.count,
       astrologerCount: astrologers.items.length,
-      questionCount: questionCountResult.count,
       astrologers: newestFirst(astrologerItems),
-      questions: newestFirst(questions.items),
-      payments: newestFirst(payments.items),
-      errors: { customers: customerCountResult.error || null, astrologers: astrologers.error || null, questions: questions.error || null, questionCount: questionCountResult.error || null, payments: payments.error || null }
+      payments: newestFirst(livePayments.items),
+      errors: { customers: customerCountResult.error || null, astrologers: astrologers.error || null, payments: livePayments.error || null }
     };
     adminDataCache={payload,expiresAt:Date.now()+8000};
     return res.set('Cache-Control','no-store').json(payload);
