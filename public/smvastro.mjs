@@ -199,17 +199,10 @@ async function renderPublicApi(path, options={}){
   return data;
 }
 const ADMIN_UID = IS_SMV_PHASE1_STAGING ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
-let currentUser=null, selectedAstro=null, pendingAfterLogin=null, questionServicePrice=5, pendingQuestionId="", pendingQuestionFingerprint="";
+let currentUser=null, selectedAstro=null, pendingAfterLogin=null;
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
-// ASK NOW is a protected navigation transaction. Firebase auth callbacks must never
-// redirect it to Dashboard while the transaction is opening the Question Form.
-let askNowTransitionLock=false;
-// HARD ASK NOW INTENT: independent of pendingAfterLogin so legacy/async code cannot clear it.
-window.__SMV_ASK_NOW_INTENT = false;
 let smvNavigationEpoch=0;
-// Dashboard hydration state: once a customer dashboard has rendered successfully,
-// returning from ASK NOW must reveal that existing dashboard instead of starting
-// another loading cycle. This is UI/navigation state only.
+// Dashboard hydration state is UI/navigation state only.
 let dashboardReadyUid=null;
 let dashboardReadyAt=0;
 let dashboardReadyRole=null;
@@ -265,19 +258,19 @@ function smvEnterInternalView(view,push=true){
 }
 $("workspaceHome")?.addEventListener("click",e=>{e.preventDefault();smvReturnHome(true);});
 window.__smvPreparePublicNavigation=()=>{
- ++smvNavigationEpoch;askNowTransitionLock=false;window.__SMV_ASK_NOW_INTENT=false;
+ ++smvNavigationEpoch;
  pendingAfterLogin=null;smvInternalView='home';
  show('contactNav');if(currentUser)smvShowRoleNav();
 };
 function smvReturnHome(restoreRoleNav=true){
   ++smvNavigationEpoch;
-  askNowTransitionLock=false;
-  window.__SMV_ASK_NOW_INTENT=false;
+  
+  
   pendingAfterLogin=null;
   smvInternalView="home";
 
   // Close every internal view.
-  ["dashboard","admin","ask-flow","register-flow","astro-register-form",
+  ["dashboard","admin","register-flow","astro-register-form",
    "astro-flow","appointment","contact"].forEach(id=>hide(id));
 
   // Restore the COMPLETE public Home surface.
@@ -307,7 +300,7 @@ window.addEventListener("popstate",()=>{
 
 function showElement(el){if(el) el.classList.remove("hidden");}
 function hidePrimarySections(except=""){
-  ["register-flow","astro-register-form","astro-flow","ask-flow","appointment","contact","dashboard","admin"].forEach(id=>{if(id!==except) hide(id);});
+  ["register-flow","astro-register-form","astro-flow","appointment","contact","dashboard","admin"].forEach(id=>{if(id!==except) hide(id);});
   hide("dashLink");
   hide("adminLink");
   if(except==="dashboard" || except==="admin"){
@@ -316,7 +309,7 @@ function hidePrimarySections(except=""){
     hide("register-flow");
     hide("astro-register-form");
     hide("astro-flow");
-    hide("ask-flow");
+    hide();
     hide("appointment");
     hide("contact");
   }else{
@@ -334,34 +327,7 @@ window.closeModal=()=>{
     m.classList.remove("profile-modal-active","auth-modal-active");
   }
 
-  // If Login was opened from ASK NOW and user closes Login
-  // without logging in, return completely to the Home page.
-  if(!currentUser && pendingAfterLogin==="question"){
-    pendingAfterLogin=null;
-    askNowTransitionLock=false;
-
-    hide("dashboard");
-    hide("dashboardContent");
-    hide("admin");
-    hide("ask-flow");
-    hide("register-flow");
-    hide("astro-register-form");
-    hide("astro-flow");
-    hide("appointment");
-    hide("contact");
-
-    showHomeSurface();
-
-    try{
-      smvShowRoleNav();
-    }catch(_e){}
-
-    try{
-      smvEnterInternalView("home",true);
-    }catch(_e){}
-
-    window.scrollTo({top:0,behavior:"smooth"});
-  }
+  
 };
 function openModal(html){
  const modal=$("modal"),content=$("modalContent"),box=modal?.querySelector(".modalbox");
@@ -453,129 +419,6 @@ async function openAstrologerRegistration(){
   }
   openAstroRegister();
 }
-function openAstroFlow(){openQuestionService();}
-async function openQuestionService(options={}){
-  // Every entry through ASK NOW owns this transaction until Home/Back/payment completion.
-  window.__SMV_ASK_NOW_INTENT=true;
-  const fastAfterLogin=options.fastAfterLogin===true;
-  const suppliedProfile=options.profile||null;
-
-  // SINGLE ASK NOW ROUTE:
-  // 1) Guest -> Login -> this function again after authentication.
-  // 2) Signed-in customer -> Question Form directly.
-  // No Dashboard render is allowed anywhere in this route.
-  askNowTransitionLock=true;
-  const askEpoch=++smvNavigationEpoch;
-
-  try{
-    const signedInUser=auth?.currentUser||currentUser;
-    if(!signedInUser){
-      pendingAfterLogin="question";
-      openAuth("login");
-      return;
-    }
-
-    currentUser=signedInUser;
-    const activeUser=auth?.currentUser||signedInUser;
-    if(!activeUser){
-      currentUser=null;
-      pendingAfterLogin="question";
-      openAuth("login");
-      return;
-    }
-
-    // A verified Firebase user does not need a network reload on every ASK NOW tap.
-    // Reload only when emailVerified is still false/stale (for example just after
-    // the user verified email in another tab). This removes one common auth round-trip.
-    if(!fastAfterLogin && activeUser.uid!==ADMIN_UID && !activeUser.emailVerified){
-      try{ await activeUser.reload(); }catch(_e){ console.warn("ASK NOW auth reload skipped",_e); }
-    }
-
-    const verifiedUser=auth?.currentUser||activeUser;
-    if(!verifiedUser){
-      currentUser=null;
-      pendingAfterLogin="question";
-      openAuth("login");
-      return;
-    }
-
-    if(verifiedUser.uid!==ADMIN_UID && !verifiedUser.emailVerified){
-      await signOut(auth);
-      currentUser=null;
-      pendingAfterLogin="question";
-      openAuth("login");
-      return;
-    }
-
-    // Resolve the protected role once, lazily. Explicit login already has the role
-    // cached; a cold-reopened session performs only this one profile read on tap.
-    currentUser=verifiedUser;
-    if(suppliedProfile && !window.__smvCurrentRole){
-      window.__smvCurrentRole=String(suppliedProfile?.role||"customer").toLowerCase();
-    }
-    const protectedSession=await smvEnsureCustomerSessionForProtectedAction();
-    const questionRole=String(protectedSession.role||"").toLowerCase();
-    if(!protectedSession.ok || questionRole!=="customer"){
-      askNowTransitionLock=false;
-      window.__SMV_ASK_NOW_INTENT=false;
-      pendingAfterLogin=null;
-      hide("ask-flow");
-      smvNotice("Customer Login Required","Please login with a Customer account to ask an astrology question.","!");
-      return;
-    }
-
-    currentUser=verifiedUser;
-    // If another navigation started while Firebase/profile data was loading,
-    // this stale ASK NOW operation must not repaint the page.
-    if(askEpoch!==smvNavigationEpoch){ return; }
-    pendingAfterLogin=null;
-
-    // Atomic visual transition: hide every competing surface BEFORE showing form.
-    hideHomeSurface();
-    ["dashboard","dashboardContent","admin","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
-    show("ask-flow");
-    smvOpenPublicQuestionWindow();
-    show("dashLink");
-    hide("adminLink");
-
-    selectedAstro=null;
-    if($("askTitle")) $("askTitle").textContent="Ask Your Question";
-    loadQuestionPrice().catch(err=>console.warn("Question price refresh skipped:",err));
-    ["birthName","birthDate","birthTime","birthPlace","birthGender","questionText"].forEach(id=>{if($(id)) $(id).value="";});
-    message("askMsg","");
-    try{window.__smvTranslateCurrentLanguage?.();}catch(_e){}
-    smvShowRoleNav();
-    smvEnterInternalView("ask-flow",true);
-    requestAnimationFrame(()=>{
-      const ask=$("ask-flow");
-      if(ask) ask.scrollIntoView({behavior:"smooth",block:"start"});
-    });
-  }catch(err){
-    console.error("ASK NOW -> Question Form failed",err);
-    pendingAfterLogin=auth?.currentUser?null:"question";
-    // Never fall through to Dashboard on ASK NOW failure.
-    hide("dashboard"); hide("dashboardContent");
-    const msg=$("askMsg");
-    if(msg) msg.innerHTML='<span class="error"><b>Question Form could not be opened.</b><br>'+escapeHtml(err?.message||String(err))+'</span>';
-    if(!auth?.currentUser) openAuth("login");
-  }finally{
-    // Keep the lock through the synchronous destination render. Firebase auth
-    // callbacks that fire later will see smvInternalView === "ask-flow" too.
-    askNowTransitionLock=false;
-  }
-}
-
-function smvOpenPublicQuestionWindow(){
-  const w=$("smvPublicQuestionWindow");
-  if(w){w.classList.remove("hidden");document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";w.scrollTop=0;}
-}
-function smvClosePublicQuestionWindow(){
-  const w=$("smvPublicQuestionWindow");
-  if(w)w.classList.add("hidden");
-  document.documentElement.style.overflow="";document.body.style.overflow="";
-  hide("ask-flow");
-}
-window.__smvOpenQuestionService=openQuestionService;
 function smvDateTime(value){ try { if(value==null || value==='') return '—'; let d=null; if(value instanceof Date) d=value; else if(typeof value?.toDate==='function') d=value.toDate(); else if(typeof value==='object' && value){ const sec=value.seconds ?? value._seconds; const ns=value.nanoseconds ?? value._nanoseconds ?? 0; if(sec!=null) d=new Date(Number(sec)*1000+Math.floor(Number(ns)/1e6)); else if(value.timestamp) return smvDateTime(value.timestamp); else if(value.date) return smvDateTime(value.date); else if(value.value) return smvDateTime(value.value); } if(!d) d=new Date(value); if(Number.isNaN(d.getTime())) return '—'; return d.toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}); } catch(e){ return '—'; } }
 function smvDateSortMs(value){ try { if(value==null||value==='')return 0; if(typeof value?.toMillis==='function')return Number(value.toMillis())||0; if(typeof value?.toDate==='function')return value.toDate().getTime()||0; if(value instanceof Date)return value.getTime()||0; if(typeof value==='object'&&value){const sec=value.seconds??value._seconds;const ns=value.nanoseconds??value._nanoseconds??0;if(sec!=null)return Number(sec)*1000+Math.floor(Number(ns)/1e6);if(value.timestamp!=null)return smvDateSortMs(value.timestamp);if(value.date!=null)return smvDateSortMs(value.date);if(value.value!=null)return smvDateSortMs(value.value);} const n=typeof value==='number'?value:Date.parse(String(value));return Number.isFinite(n)?n:0;}catch(_e){return 0;} }
 function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
@@ -644,7 +487,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
     try{
       const user=auth?.currentUser||currentUser;
       if(!user){ pendingAfterLogin="dashboard"; openAuth("login"); return; }
-      currentUser=user; window.__SMV_ASK_NOW_INTENT=false; askNowTransitionLock=false;
+      currentUser=user;  
 
       // Reopening the role button while its dashboard is already rendered must
       // reuse the current view. Do not re-read the profile or dashboard merely
@@ -666,7 +509,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
       const dashboardAlreadyVisible=smvInternalView==='dashboard'&&dashboardReadyUid===user.uid&&dashboardReadyAt>0&&!$("dashboard")?.classList.contains('hidden');
       if(cachedRole&&!dashboardAlreadyVisible){
         hideHomeSurface();
-        ["admin","ask-flow","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
+        ["admin","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
         show("dashboard");show("dashboardContent");show("dashLink");hide("adminLink");hideDashboardPublicSections();
         $("dashboardTitle").textContent=cachedRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
         smvRenderFastDashboardShell(cachedRole);
@@ -679,7 +522,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
       if(epoch!==smvNavigationEpoch) return;
       if(adminUser){
         hideHomeSurface();
-        ["dashboard","dashboardContent","ask-flow","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
+        ["dashboard","dashboardContent","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
         show("admin"); hide("dashLink"); hide("adminLink");
         smvEnterInternalView("admin",true); go("admin");
         await loadAdminPanel();
@@ -690,7 +533,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
         if(epoch!==smvNavigationEpoch) return;
         if(role!=="customer" && role!=="astrologer"){ smvNotice("Dashboard Access","Your account role could not be verified. Please try again.","!"); return; }
         hideHomeSurface();
-        ["admin","ask-flow","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
+        ["admin","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
         show("dashboard"); show("dashboardContent"); show("dashLink"); hide("adminLink"); hideDashboardPublicSections();
         setHeaderRoleLabel(role);
         if(cachedRole!==role){
@@ -727,8 +570,8 @@ $("askNowBackBtn")?.addEventListener("click",e=>{
   e.preventDefault();
   e.stopPropagation();
   if(!currentUser) return smvReturnHome(true);
-  askNowTransitionLock=false;
-  window.__SMV_ASK_NOW_INTENT=false;
+  
+  
   pendingAfterLogin=null;
   smvClosePublicQuestionWindow();
   // Return through the existing role-aware Dashboard router.
@@ -998,7 +841,7 @@ function smvPasswordEye(visible){
 }
 function openAuth(mode="login"){
   if(mode==='login')hidePublicHoroscopeSections?.();
-  hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
+  hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); hide("appointment"); hide("contact"); hide(); hide("register-flow"); hide("astro-register-form"); hide("astro-flow"); hide("smv-content-hub"); window.__smvContentVisible=false;
   closeModal(); const isLogin=mode==="login";
   openModal(`<div class="auth-shell" data-auth-mode="${isLogin?'login':'register'}">
     <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
@@ -1098,19 +941,16 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
   window.__smvCurrentRole=resolvedRole;
   closeModal();
 
-  // ASK NOW remains Customer-only. Staff Google login always returns to its own dashboard.
-  if(askNowLogin && resolvedRole==="customer"){
-    await openQuestionService({fastAfterLogin:true,profile});
-    pendingAfterLogin=null;
+  pendingAfterLogin=null;
     return;
   }
   if(askNowLogin && resolvedRole!=="customer"){
-    askNowTransitionLock=false;
-    window.__SMV_ASK_NOW_INTENT=false;
+    
+    
   }
 
   pendingAfterLogin=null;
-  hide("ask-flow"); hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
+  hide(); hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
   hide("appointment"); hide("contact"); hide("home"); hide("askNowSection"); hide("approved-astrologers"); hide("faq");
 
   if(resolvedRole==="admin"){
@@ -1138,19 +978,17 @@ async function signInWithGoogle(){
     return;
   }
   btn.disabled=true; btn.querySelector('span:last-child').textContent='Signing in with Google...';
-  const askNowLogin=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
-  if(askNowLogin) askNowTransitionLock=true;
   try{
     smvGoogleLoginInProgress=true;
     const provider=new GoogleAuthProvider();
     provider.setCustomParameters({prompt:"select_account"});
     const result=await withTimeout(signInWithPopup(auth,provider),30000);
-    await finishGoogleRoleLogin(result?.user,askNowLogin);
+    await finishGoogleRoleLogin(result?.user);
     smvGoogleLoginInProgress=false;
   }catch(e){
     smvGoogleLoginInProgress=false;
     console.error("Google Sign-In failed",e);
-    askNowTransitionLock=false;
+    
     try{if(auth?.currentUser) await signOut(auth);}catch(_){ }
     currentUser=null;
     const code=String(e?.code||"");
@@ -1211,11 +1049,6 @@ async function submitAuth(mode){
   if(mode==="login"){
     const resolvedLogin=await smvResolveLoginIdentifier(rawLogin);
     const email=resolvedLogin.email;
-    // ASK NOW owns this authentication transaction. Set the lock BEFORE calling
-    // Firebase so an onAuthStateChanged callback can never open Dashboard between
-    // sign-in success and Question Form rendering.
-    const askNowLogin= pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
-    if(askNowLogin) askNowTransitionLock=true;
     // Do not wait for a separate auth-state promise here. Firebase already returns
     // the signed-in user from signInWithEmailAndPassword; use that result directly.
     // Do not race Firebase Authentication against a client-side timeout here.
@@ -1250,7 +1083,6 @@ async function submitAuth(mode){
     // dashboard shell before any Firestore/profile hydration. Customer and
     // Astrologer share this shell; the resolved role updates its heading below.
     // ASK NOW and Admin-entry keep their protected destinations.
-    const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
     const goToAdmin=pendingAfterLogin==="admin";
     let loginShellRole=smvCachedDashboardRole(loginCred.user.uid);
 
@@ -1258,7 +1090,7 @@ async function submitAuth(mode){
     // profile/role Firestore reads. Database quota exhaustion must not leave the
     // user staring at the closed Login modal. No role-specific controls or data
     // are rendered until the authoritative role resolution below completes.
-    if(!goToQuestion&&!goToAdmin){
+    if(!goToAdmin){
       closeModal();
       hideHomeSurface();
       hidePrimarySections("dashboard");
@@ -1278,7 +1110,7 @@ async function submitAuth(mode){
     const loginProfile=await getUserProfile(loginCred.user.uid);
     const loginRole=String(loginProfile?.role||"customer").toLowerCase();
     const profileShellRole=String(loginProfile?.role||"").toLowerCase();
-    if(!goToQuestion&&!goToAdmin&&["customer","astrologer"].includes(profileShellRole)&&loginShellRole!==profileShellRole){
+    if(!goToAdmin&&["customer","astrologer"].includes(profileShellRole)&&loginShellRole!==profileShellRole){
       loginShellRole=profileShellRole;
       if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
       smvRenderFastDashboardShell(loginShellRole);
@@ -1295,48 +1127,6 @@ async function submitAuth(mode){
     setHeaderRoleLabel(adminUser?'admin':role);
     window.__smvCurrentRole=adminUser?'admin':role;
 
-    /* IMPORTANT: Do NOT clear pendingAfterLogin before the Firebase
-       onAuthStateChanged callback has seen the protected ASK NOW intent.
-       signInWithEmailAndPassword() fires onAuthStateChanged asynchronously.
-       Clearing this flag here creates a race: the auth listener thinks this
-       is a normal login and opens Customer Dashboard while submitAuth() is
-       trying to open the Question Form. This was the root cause of the
-       screenshot: Dashboard title visible, Question Form missing. */
-    // Login modal was already closed immediately after Firebase Auth success.
-
-    /* ASK NOW routing: Customer -> Customer Dashboard + Question Form.
-       Astrologer -> Astrologer Dashboard. Admin -> Admin Dashboard.
-       Staff accounts never enter the customer question flow. */
-    if(goToQuestion){
-      if(adminUser){
-        hide("dashboard"); hide("ask-flow"); hide("dashLink");
-        hidePrimarySections("admin"); show("admin"); show("adminLink");
-        await loadAdminPanel();
-        setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
-        smvShowRoleNav();
-        smvEnterInternalView("admin",true);
-        go("admin");
-      }else if(role==="astrologer"){
-        // ASK NOW is a customer-only transaction. Never route an Astrologer
-        // account into the Astrologer Dashboard from this protected action.
-        // This prevents the Ask Now flow from interacting with dashboard
-        // initialization or causing a dashboard-loading/routing race.
-        askNowTransitionLock=false;
-        window.__SMV_ASK_NOW_INTENT=false;
-        pendingAfterLogin=null;
-        hide("dashboard"); hide("dashboardContent"); hide("admin"); hide("ask-flow");
-        hide("adminLink");
-        smvShowRoleNav();
-        smvNotice("Customer Login Required","Ask Now is available for Customer accounts only. Please use a Customer account to ask an astrology question.","!");
-      }else{
-        await openQuestionService({fastAfterLogin:true,profile});
-      }
-      // The protected destination has now been consumed. Only clear it AFTER
-      // the destination routing has completed so Firebase auth-state callbacks
-      // cannot hijack this navigation.
-      pendingAfterLogin=null;
-      return;
-    }
     pendingAfterLogin=null;
     if(goToAdmin || adminUser){
       hide("dashboard"); hide("dashboardContent"); hide("dashLink"); hide("adminLink");
@@ -1360,7 +1150,7 @@ async function submitAuth(mode){
       hide("register-flow");
       hide("astro-register-form");
       hide("astro-flow");
-      hide("ask-flow");
+      hide();
       hide("appointment");
       hide("contact");
       hide("home");
@@ -1541,221 +1331,6 @@ async function smvLoadAstroCards(){
 }
 window.__smvReloadAstrologers=loadAstroCards;
 window.dispatchEvent(new Event('smv:app-ready'));
-let questionPriceUnsubscribe=null;
-let questionPriceInitPromise=null;
-async function loadQuestionPrice(){
-  const rateBox=$("askRate");
-  // Once the live price listener is active, re-entering ASK NOW reuses the
-  // current in-memory value with zero additional Firestore reads.
-  if(questionPriceUnsubscribe && Number.isFinite(Number(questionServicePrice)) && Number(questionServicePrice)>=1){
-    if(rateBox) rateBox.innerHTML=`<b>₹${Number(questionServicePrice).toFixed(2)} per Question</b>`;
-    if($("publicQuestionPrice")) $("publicQuestionPrice").textContent=`₹${Number(questionServicePrice).toFixed(2)}`;
-    return;
-  }
-  // Multiple fast taps share the same initial listener instead of creating
-  // duplicate Firestore listeners/reads. onSnapshot's first snapshot supplies
-  // the initial price, so the former getDoc + onSnapshot double-read is gone.
-  if(questionPriceInitPromise) return questionPriceInitPromise;
-  if(rateBox) rateBox.innerHTML='<b>Loading current question price...</b>';
-  const priceRef=doc(db,"smv_settings","question");
-  const applyFallback=()=>{
-    const adminValue=Number($("questionPrice")?.value);
-    if(Number.isFinite(adminValue)&&adminValue>=1){
-      questionServicePrice=adminValue;
-      if(rateBox) rateBox.innerHTML=`<b>₹${questionServicePrice.toFixed(2)} per Question</b><br><span class="error small">Firebase public price read failed; payment will be rechecked by the server.</span>`;
-    }else{
-      questionServicePrice=0;
-      if(rateBox) rateBox.innerHTML='<b class="error">Question price unavailable. Firebase could not read smv_settings/question.</b>';
-    }
-  };
-  questionPriceInitPromise=new Promise(resolve=>{
-    let firstPending=true;
-    const settle=()=>{if(!firstPending)return;firstPending=false;clearTimeout(timer);resolve();};
-    const timer=setTimeout(()=>{applyFallback();settle();},10000);
-    try{
-      questionPriceUnsubscribe=onSnapshot(priceRef,snap=>{
-        const v=Number(snap.data()?.price);
-        if(Number.isFinite(v)&&v>=1){
-          questionServicePrice=v;
-          if($("askRate")) $("askRate").innerHTML=`<b>₹${questionServicePrice.toFixed(2)} per Question</b>`;
-          if($("publicQuestionPrice")) $("publicQuestionPrice").textContent=`₹${questionServicePrice.toFixed(2)}`;
-        }else{
-          console.warn("QUESTION PRICE LISTENER returned an invalid/missing price");
-          applyFallback();
-        }
-        settle();
-      },err=>{
-        console.warn("QUESTION PRICE LISTENER ERROR:",err);
-        try{questionPriceUnsubscribe?.();}catch(_e){}
-        questionPriceUnsubscribe=null;
-        applyFallback();
-        settle();
-      });
-    }catch(err){
-      console.error("QUESTION PRICE LISTENER START ERROR:",err);
-      questionPriceUnsubscribe=null;
-      applyFallback();
-      settle();
-    }
-  }).finally(()=>{questionPriceInitPromise=null;});
-  return questionPriceInitPromise;
-}
-
-function showAskFlow(a){openQuestionService();}
-// Customer dashboard retry for questions whose payment was not completed.
-// Reuses the existing server-side /create-order endpoint with the SAME questionId,
-// Wallet, Ask Now and retry-payment flows share the resilient Checkout SDK loader.
-
-
-// so retry never creates a duplicate question.
-async function retryCustomerPayment(questionId, triggerButton){
-  if(!currentUser) return;
-  const id=String(questionId||'').trim();
-  if(!id) return;
-  const btn=triggerButton; const originalLabel=btn?.textContent||'Retry Payment';
-  if(btn){btn.disabled=true;btn.textContent='CREATING PAYMENT...';}
-  try{
-    const checkoutReady=ensureRazorpayCheckout();
-    const orderRes=await withTimeout(renderApi("/create-order",{method:"POST",body:JSON.stringify({questionId:id,serviceName:"Public Astrology Question"})}),30000);
-    if(orderRes?.alreadyPaid){await loadDashboard("customer",true);return;}
-    await checkoutReady;
-    const {orderId,keyId,amount:paise,currency}=orderRes||{};
-    if(!orderId||!keyId) throw new Error(orderRes?.error||"Payment order could not be created. Please try again.");
-    const options={
-      key:keyId, amount:paise, currency:currency||"INR", name:"SMV ASTRO SERVICES",
-      description:"Public astrology question", order_id:orderId,
-      prefill:{email:currentUser.email||""}, notes:{questionId:id}, theme:{color:"#6b21a8"},
-      handler:async function(response){
-        if(btn){btn.disabled=true;btn.textContent=originalLabel;}
-        try{
-          const vr=await withTimeout(renderApi("/verify-payment",{method:"POST",body:JSON.stringify({
-            questionId:id, razorpay_order_id:response.razorpay_order_id,
-            razorpay_payment_id:response.razorpay_payment_id, razorpay_signature:response.razorpay_signature
-          })}),30000);
-          if(!vr?.verified) throw new Error(vr?.error||"Payment verification failed. Please retry.");
-          try{sessionStorage.setItem("smv_last_payment_success",JSON.stringify({
-            customerUid:currentUser.uid,questionId:id,paymentId:vr.customerPaymentId||"",
-            paymentDate:smvDateTime(vr.paymentRecordedAt||new Date())
-          }));}catch(_e){}
-          await loadDashboard('customer',true);
-          await showDashboardPaymentSuccess();
-          window.scrollTo({top:0,behavior:'smooth'});
-        }catch(e){
-          console.error('Retry payment verification failed:',e);
-          alert(e?.message||String(e)||'Payment verification failed. Please retry.');
-          if(btn){btn.disabled=false;btn.textContent=originalLabel;}
-        }
-      },
-      modal:{ondismiss:function(){if(btn){btn.disabled=false;btn.textContent=originalLabel;}}}
-    };
-    smvAssertLiveCheckout(options.key);
-  const rzp=new Razorpay(options);
-    rzp.on('payment.failed',function(resp){
-      console.warn('Retry payment failed:',resp);
-      alert('Payment failed: '+(resp?.error?.description||'Please try again.'));
-      if(btn){btn.disabled=false;btn.textContent=originalLabel;}
-    });
-    rzp.open();
-  }catch(e){
-    console.error('Retry payment start failed:',e);
-    alert(e?.message||String(e)||'Payment could not be started.');
-    if(btn){btn.disabled=false;btn.textContent=originalLabel;}
-  }
-}
-window.__smvRetryCustomerPayment=retryCustomerPayment;
-$("submitQuestionBtn")?.addEventListener("click",async()=>{
- const name=$("birthName").value.trim();
- const text=$("questionText").value.trim();
- if(!currentUser){message("askMsg",'<span class="error">Please login before asking.</span>');return;}
- if(!name){message("askMsg","<span class=\"error\">Please enter the person's name.</span>");$("birthName").focus();return;}
- if(!$("birthDate").value||!$("birthTime").value||!$("birthPlace").value.trim()){message("askMsg",'<span class="error">Please complete all birth details.</span>');return;}
- if(!text){message("askMsg",'<span class="error">Please enter your question.</span>');return;}
- const amount=Number(questionServicePrice||0);
- if(!Number.isFinite(amount)||amount<1){message("askMsg",'<span class="error">Invalid question price.</span>');return;}
- const btn=$("submitQuestionBtn"),originalLabel=btn.textContent||"Proceed to Secure Payment";
- const paymentFlow=window.__smvStartPaymentWindow?.('public')||null;
- // Start loading Razorpay immediately in the isolated payment tab while the
- // trusted backend creates the question/order. Network waits now overlap.
- const checkoutReadyPromise=(paymentFlow
-   ? paymentFlow.ensureRazorpay()
-   : ensureRazorpayCheckout().then(()=>window))
-   .then(value=>({value}),error=>({error}));
- btn.disabled=true; btn.textContent=originalLabel;
- paymentFlow?.status?.('Preparing secure payment…');
- try{ sessionStorage.removeItem("smv_last_payment_success"); }catch(_e){}
- try{
-   const birthDate=$("birthDate").value;
-   const birthTime=$("birthTime").value;
-   const birthPlace=$("birthPlace").value.trim();
-   const birthGender=$("birthGender").value;
-   const payload={customerName:name,question:text,amount,birthDetails:{name,birthDate,birthTime,birthPlace,birthGender,timezone:"Asia/Kolkata",utcOffsetMinutes:330},serviceName:"Public Astrology Question",customerEmail:currentUser.email||""};
-   const orderRes=await withTimeout(renderApi("/create-order",{method:"POST",body:JSON.stringify(payload)}),30000);
-   if(orderRes?.questionId) pendingQuestionId=String(orderRes.questionId).trim();
-   const {orderId,keyId,amount:paise,currency}=orderRes||{};
-   if(!pendingQuestionId||!orderId||!keyId)throw new Error("Payment order was not created correctly. Please retry.");
-   paymentFlow?.status?.('Question ID created. Opening secure Payment Gateway…');
-   const checkoutReady=await checkoutReadyPromise;
-   if(checkoutReady?.error)throw checkoutReady.error;
-   const checkoutWindow=checkoutReady?.value;
-   const RazorpayCtor=checkoutWindow?.Razorpay||window.Razorpay;
-   if(typeof RazorpayCtor!=='function')throw new Error('Payment Gateway is not ready. Please refresh and try again.');
-   const options={
-    key:keyId,amount:paise,currency:currency||"INR",name:"SMV ASTRO SERVICES",
-    description:"Public astrology question",order_id:orderId,
-    prefill:{email:currentUser.email||""},notes:{questionId:pendingQuestionId},theme:{color:"#6b21a8"},
-    handler:async function(response){
-     paymentFlow?.status?.('Payment received. Verifying Payment and creating Payment ID…');
-     try{
-      message("askMsg","");
-      const vr=await withTimeout(renderApi("/verify-payment",{method:"POST",body:JSON.stringify({
-       questionId:pendingQuestionId,razorpay_order_id:response.razorpay_order_id,
-       razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
-      })}),30000);
-      if(!vr?.verified)throw new Error("Payment verification failed.");
-      const verifiedQuestionId=String(vr.questionId||pendingQuestionId).trim();
-      const paymentId=String(vr.customerPaymentId||vr.paymentId||response.razorpay_payment_id||'').trim();
-      if(!verifiedQuestionId||!paymentId)throw new Error('Verified payment did not return Question ID / Payment ID. Do not pay again; check Customer Dashboard.');
-      pendingQuestionId=verifiedQuestionId;
-      btn.textContent="PAYMENT DONE ✓";
-      window.__SMV_ASK_NOW_INTENT=false; pendingAfterLogin=null;
-      await window.__smvShowVerifiedPayment?.({...vr,verified:true,questionId:verifiedQuestionId,paymentId},'public',paymentFlow);
-      pendingQuestionId="";
-      return;
-     }catch(err){
-      const detail=err?.message||String(err)||"Payment verification failed.";
-      paymentFlow?.error?.('Payment received, but verification could not finish: '+detail);
-      message("askMsg",'<span class="error">Payment received, but verification could not finish.<br><small>'+escapeHtml(detail)+'</small><br>Do not pay again; use Customer Dashboard / support to verify this payment.</span>');
-      btn.disabled=false;btn.textContent=originalLabel;
-     }
-    },
-    modal:{ondismiss:function(){
-      try{ sessionStorage.removeItem("smv_last_payment_success"); }catch(_e){}
-      paymentFlow?.error?.('Payment window closed. No payment was confirmed.');
-      setTimeout(()=>paymentFlow?.close?.(),1400);
-      message("askMsg",'<span class="small">Payment window closed. No payment was confirmed. You can retry.</span>');
-      btn.disabled=false;btn.textContent=originalLabel;
-    }}
-   };
-   smvAssertLiveCheckout(options.key);
-   const rzp=new RazorpayCtor(options);
-   rzp.on?.("payment.failed",function(resp){
-     try{ sessionStorage.removeItem("smv_last_payment_success"); }catch(_e){}
-     paymentFlow?.error?.('Payment failed: '+(resp?.error?.description||'Please try again.'));
-     setTimeout(()=>paymentFlow?.close?.(),1800);
-     message("askMsg",'<span class="error">Payment failed: '+escapeHtml(resp?.error?.description||"Please try again.")+'</span>');
-     btn.disabled=false;btn.textContent=originalLabel;
-   });
-   rzp.open();
- }catch(e){
-   const detail=e?.message||e?.details||e?.error?.message||String(e);
-   const code=e?.code?` [${escapeHtml(String(e.code))}]`:"";
-   console.error("SMV ASTRO payment error",e);
-   paymentFlow?.error?.('Payment could not be started: '+detail); setTimeout(()=>paymentFlow?.close?.(),1800);
-   message("askMsg",'<span class="error"><b>Payment could not be started.</b>'+code+'<br>'+escapeHtml(detail)+'</span>');
-   btn.disabled=false;btn.textContent=originalLabel;
- }
-});
-
 // ---------- Astrologer registration ----------
 async function compressPhoto(file){
   if(!file) throw new Error("Profile photo is required.");
@@ -3989,38 +3564,15 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     // ASK NOW login has a protected destination. Let submitAuth() continue
-     // to Customer Dashboard + Question Form instead of this normal dashboard-only path.
-     // Never let a late auth-state callback replace an already-open Question Form.
-     // This protects the second and later Home -> ASK NOW cycles.
-     if(pendingAfterLogin==='question' || window.__SMV_ASK_NOW_INTENT===true || askNowTransitionLock || smvInternalView==='ask-flow'){
-       // ASK NOW owns this auth transition. NEVER fall through to the normal
-       // login -> Dashboard renderer while the protected Question Form route
-       // is active or being completed.
-       armIdleTimer();
-       return;
-     }
-     // Re-check immediately before any automatic dashboard navigation. This is
-     // intentionally duplicated after async auth/profile work to close the race
-     // window where ASK NOW can start while this callback is already suspended.
-     if(pendingAfterLogin==='question' || window.__SMV_ASK_NOW_INTENT===true || askNowTransitionLock || smvInternalView==='ask-flow'){
-       armIdleTimer();
-       return;
-     }
      if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
      const listenerEpoch=smvNavigationEpoch;
      const headerRole=await resolveSmvRole(user);
      const adminUser=headerRole==='admin';
      setHeaderRoleLabel(headerRole);
      window.__smvCurrentRole=headerRole;
-     // CRITICAL LATE-RACE GUARD: ASK NOW may have started while the auth
-     // listener was awaiting Firebase/profile data. Never let this older
-     // listener resume and overwrite the Question Form with Dashboard.
-     if(listenerEpoch!==smvNavigationEpoch || pendingAfterLogin==='question' || askNowTransitionLock || smvInternalView==='ask-flow'){
-       armIdleTimer();
-       return;
-     }
-     if(adminUser){
+     // Keep this auth callback from overriding a newer explicit navigation.
+      if(listenerEpoch!==smvNavigationEpoch){armIdleTimer();return;}
+      if(adminUser){
        hidePrimarySections('admin');
        show('admin');
        hide('dashLink'); show('adminLink');
