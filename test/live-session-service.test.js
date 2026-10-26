@@ -12,6 +12,7 @@ const {
   maxAffordableMinutes,
   calculateBookingReserveRelease,
   preparationWindow,
+  isAstrologerLiveModeEnabled,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
@@ -185,4 +186,19 @@ test('Accept starts the three-minute Horoscope preparation window at the accepta
   assert.equal(window.preparationUntil.toISOString(), '2026-10-26T06:03:00.000Z');
   assert.equal(window.preparationUntil.getTime() - window.preparationStartedAt.getTime(), PREPARATION_DURATION_MS);
   assert.equal(preparationWindow('invalid timestamp'), null);
+});
+
+
+test('Astrologer live mode is exclusive: Call ON / Chat OFF enables only Call', () => {
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:false}, 'call'), true);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:false}, 'chat'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:true}, 'call'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:true}, 'chat'), true);
+});
+
+test('both live modes ON or both OFF disables all new live requests', () => {
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'call'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'chat'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:false}, 'call'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:false}, 'chat'), false);
 });
