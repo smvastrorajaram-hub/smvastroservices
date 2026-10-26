@@ -71,6 +71,17 @@ function offerUsageCounterId(offerId, uid) {
   return walletLedgerDocId('wallet_offer_usage', String(offerId) + ':' + String(uid));
 }
 
+function classifyRechargeIntent({ status, storedAmountPaise, requestedAmountPaise } = {}) {
+  const stored = Number(storedAmountPaise);
+  const requested = Number(requestedAmountPaise);
+  if (!Number.isSafeInteger(stored) || !Number.isSafeInteger(requested) || stored !== requested) return 'amount_conflict';
+  const state = String(status || '');
+  if (state === 'paid') return 'already_paid';
+  if (state === 'order_created') return 'reuse_order';
+  if (state === 'failed') return 'retry_failed';
+  return 'in_progress';
+}
+
 function parseRupeesToPaise(value, { allowZero = false } = {}) {
   const raw = String(value ?? '').trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(raw)) return null;
@@ -467,7 +478,18 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
       const rechargeRef = db.collection(RECHARGE_COLLECTION).doc(rechargeId);
       const intent = await db.runTransaction(async tx => {
         const snap = await tx.get(rechargeRef);
-        if (snap.exists) return { existing: true, data: snap.data() || {} };
+        if (snap.exists) {
+          const old = snap.data() || {};
+          const disposition = classifyRechargeIntent({ status: old.status, storedAmountPaise: old.amountPaise, requestedAmountPaise: amountPaise });
+          if (disposition === 'retry_failed') {
+            tx.set(rechargeRef, {
+              status: 'creating', lastFailureReason: old.failureReason || old.lastFailureReason || null,
+              failureReason: null, updatedAt: FieldValue.serverTimestamp()
+            }, { merge: true });
+            return { existing: false, data: null, retrying: true };
+          }
+          return { existing: true, data: old, disposition };
+        }
         tx.create(rechargeRef, {
           customerUid: user.uid, amountPaise, currency: 'INR', idempotencyKey,
           status: 'creating', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
@@ -476,10 +498,11 @@ function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayK
       });
       if (intent.existing) {
         const old = intent.data || {};
-        if (safePaise(old.amountPaise) !== amountPaise) return res.status(409).json({ error: 'This recharge request key was already used for a different amount. Start a new recharge.', code: 'WALLET_IDEMPOTENCY_CONFLICT' });
-        if (old.status === 'paid') return res.json({ success: true, alreadyPaid: true, rechargeId, amount: paiseToRupees(amountPaise) });
-        if (old.status === 'order_created') return res.json({ success: true, rechargeId, orderId: old.razorpayOrderId, keyId: razorpayKeyId, amount: amountPaise, currency: 'INR', amountRupees: paiseToRupees(amountPaise), reusedOrder: true });
-        return res.status(409).json({ error: 'This recharge request is already being processed or failed. Retry with a new request key.', code: 'WALLET_RECHARGE_IN_PROGRESS' });
+        const disposition = intent.disposition || classifyRechargeIntent({ status: old.status, storedAmountPaise: old.amountPaise, requestedAmountPaise: amountPaise });
+        if (disposition === 'amount_conflict') return res.status(409).json({ error: 'This recharge request key was already used for a different amount. Start a new recharge.', code: 'WALLET_IDEMPOTENCY_CONFLICT' });
+        if (disposition === 'already_paid') return res.json({ success: true, alreadyPaid: true, rechargeId, amount: paiseToRupees(amountPaise) });
+        if (disposition === 'reuse_order') return res.json({ success: true, rechargeId, orderId: old.razorpayOrderId, keyId: razorpayKeyId, amount: amountPaise, currency: 'INR', amountRupees: paiseToRupees(amountPaise), reusedOrder: true });
+        return res.status(409).json({ error: 'This recharge request is already being processed. Please wait briefly and retry.', code: 'WALLET_RECHARGE_IN_PROGRESS' });
       }
       try {
         const order = await razorpay.orders.create({
@@ -557,6 +580,7 @@ module.exports = {
   rechargeOfferMatches,
   selectRechargeBonusOffer,
   offerUsageCounterId,
+  classifyRechargeIntent,
   WALLET_OFFER_THEMES,
   WALLET_RECHARGE_OFFER_TYPE,
   createWalletService,

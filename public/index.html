@@ -7,6 +7,7 @@
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link rel="preconnect" href="https://checkout.razorpay.com" crossorigin>
 <link href="https://smvastroservices.in/" rel="canonical"/><script id="smv-v350-host-seo">
 if(location.hostname==='smvastroservices.pages.dev'){
  const c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+'/';
@@ -307,11 +308,10 @@ document.addEventListener('DOMContentLoaded', function(){
 <label>Gender<select id="privateConsultGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
 <label>Your Question<textarea id="privateConsultQuestion" maxlength="10000" required="" rows="4"></textarea></label>
 <div id="privateConsultPaymentSummary"></div>
-<div class="action-row" aria-label="Choose consultation payment method">
-<button class="btn alt" id="privateConsultPayBtn" name="paymentMethod" value="razorpay" type="submit">PAY WITH RAZORPAY</button>
+<div class="action-row" aria-label="Private Consultation Wallet payment">
 <button class="btn" id="privateConsultWalletPayBtn" name="paymentMethod" value="wallet" type="submit">PAY WITH WALLET</button>
 </div>
-<p class="small">Wallet payments use your available balance. Razorpay is used only for the selected payment mode.</p>
+<p class="small">Private Consultation uses your available Wallet balance. Razorpay Checkout is not used in this section.</p>
 <div class="small" id="privateConsultMsg"></div>
 </form>
 </div>
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js"></script>
-<script src="./smvastro.mjs?v=20261026-background-push-alerts-v2" type="module"></script>
+<script src="./smvastro.mjs?v=20261026-payment-reliability-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261026-live-text-action-v5" type="module"></script>
+<script src="./public-content.mjs?v=20261026-payment-reliability-v1" type="module"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
@@ -912,7 +912,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <button class="btn" id="continueAfterPayment" type="button">VIEW MY QUESTION</button>
 </div>
 </dialog>
-<script defer="" src="./payment-receipt.js"></script>
+<script defer="" src="./payment-receipt.js?v=20261026-payment-reliability-v1"></script>
 <script id="smv-v172-ui-symbol-collapse-script">
 /* V172: robust UI-only symbol collapse. No data/Firebase/API/payment logic is changed. */
 (function(){

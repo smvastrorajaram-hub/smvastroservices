@@ -682,29 +682,15 @@
   }
   window.__smvSelectPrivateAstrologer=selectPrivateAstrologer;
 
-  let checkoutRequest=null;
-  function ensurePrivateCheckout(){
-    if(typeof window.Razorpay==='function')return Promise.resolve();
-    if(checkoutRequest)return checkoutRequest;
-    checkoutRequest=new Promise((resolve,reject)=>{
-      let script=document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-      const timer=setTimeout(()=>finish(new Error('Payment checkout timed out. Please retry.')),15000);
-      function finish(error){clearTimeout(timer);script?.removeEventListener('load',loaded);script?.removeEventListener('error',failed);if(error){script?.remove();reject(error);}else resolve();}
-      function loaded(){finish(typeof window.Razorpay==='function'?null:new Error('Payment checkout unavailable.'));}
-      function failed(){finish(new Error('Payment checkout could not load. Please retry.'));}
-      if(!script){script=document.createElement('script');script.src='https://checkout.razorpay.com/v1/checkout.js';document.head.append(script);}
-      script.addEventListener('load',loaded,{once:true});script.addEventListener('error',failed,{once:true});
-    }).finally(()=>checkoutRequest=null);return checkoutRequest;
-  }
   let privateConsultSubmitting=false;
   let walletBookingRequestId=null,walletBookingRequestOwner='';
   async function submitPrivateConsultation(e){
     e.preventDefault();
     if(privateConsultSubmitting)return;
     const astro=window.__smvSelectedPrivateConsultAstrologer;
-    const paymentMethod=String(e.submitter?.value||'razorpay').toLowerCase()==='wallet'?'wallet':'razorpay';
-    const msg=$('privateConsultMsg'),btn=paymentMethod==='wallet'? $('privateConsultWalletPayBtn'):$('privateConsultPayBtn');
-    const actionButtons=[$('privateConsultWalletPayBtn'),$('privateConsultPayBtn')].filter(Boolean);
+    const paymentMethod='wallet';
+    const msg=$('privateConsultMsg'),btn=$('privateConsultWalletPayBtn');
+    const actionButtons=[btn].filter(Boolean);
     const enableButtons=()=>actionButtons.forEach(button=>{button.disabled=false;});
     if(!astro?.id||Number(astro.chatPrice)<1){if(msg)msg.innerHTML='<span class="error">Please select an available astrologer first.</span>';return;}
     const payload={
@@ -723,18 +709,9 @@
     if(!payload.customerName||!payload.question||!payload.birthDetails.birthDate||!payload.birthDetails.birthTime||!payload.birthDetails.birthPlace){
       if(msg)msg.innerHTML='<span class="error">Please complete all birth details and your question.</span>';return;
     }
-    const originalLabel=btn?.textContent||(paymentMethod==='wallet'?'PAY WITH WALLET':'PAY WITH RAZORPAY');
-    let paymentFlow=null,checkoutReadyPromise=null;
-    if(paymentMethod==='razorpay'){
-      paymentFlow=window.__smvStartPaymentWindow?.('private')||null;
-      checkoutReadyPromise=(paymentFlow
-        ? paymentFlow.ensureRazorpay()
-        : ensurePrivateCheckout().then(()=>window))
-        .then(value=>({value}),error=>({error}));
-    }
+
     privateConsultSubmitting=true;actionButtons.forEach(button=>{button.disabled=true;});
-    if(btn)btn.textContent=paymentMethod==='wallet'?'PROCESSING WALLET PAYMENT…':'PREPARING PAYMENT…';
-    if(paymentMethod==='razorpay')paymentFlow?.status?.('Preparing secure payment…');
+    if(btn)btn.textContent='PROCESSING WALLET PAYMENT…';
     try{
       const u=window.__smvFirebaseCurrentUser;
       if(!u || String(window.__smvCurrentRole||'').toLowerCase()!=='customer')throw new Error('Please login with your Customer account before payment.');
@@ -778,51 +755,11 @@
         }
         return;
       }
-      paymentFlow?.status?.('Private Consultation ID created. Opening secure Payment Gateway…');
-      const checkoutReady=await checkoutReadyPromise;
-      if(checkoutReady?.error)throw checkoutReady.error;
-      const checkoutWindow=checkoutReady?.value;
-      const RazorpayCtor=checkoutWindow?.Razorpay||window.Razorpay;
-      if(!order?.orderId||!order?.keyId||!order?.consultationId)throw new Error('Private consultation payment order was not created correctly.');
-      if(typeof RazorpayCtor!=='function')throw new Error('Payment checkout is not ready. Please refresh and try again.');
-      const options={
-        key:order.keyId,amount:order.amount,currency:order.currency||'INR',name:'SMV ASTRO SERVICES',
-        description:'Private Astrology Consultation',order_id:order.orderId,
-        prefill:{email:u.email||''},notes:{consultationId:order.consultationId,astrologerId:String(astro.id)},
-        theme:{color:'#6b21a8'},
-        handler:async response=>{
-          paymentFlow?.status?.('Payment received. Verifying Payment and creating Payment ID…');
-          try{
-            const vr=await api('/private-consultation/verify-payment',{
-              consultationId:order.consultationId,razorpay_order_id:response.razorpay_order_id,
-              razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
-            });
-            if(!vr?.verified)throw new Error(vr?.error||'Payment verification failed.');
-            const paymentId=String(vr.paymentId||vr.razorpayPaymentId||response.razorpay_payment_id||'').trim();
-            if(!paymentId)throw new Error('Verified payment did not return Payment ID. Do not pay again; check Customer Dashboard.');
-            if(msg)msg.innerHTML='';
-            if(btn)btn.textContent='PAYMENT DONE ✓';
-            privateConsultSubmitting=false;
-            try{
-              await window.__smvShowVerifiedPayment?.({...vr,verified:true,consultationId:vr.consultationId||order.consultationId,paymentId},'private',paymentFlow);
-            }catch(receiptError){
-              console.error('Razorpay payment was verified, but receipt navigation failed:',receiptError);
-              if(msg)msg.innerHTML='<span class="success">Payment verified and booking saved. Do not pay again. Open Customer Dashboard to view the booking.</span>';
-              $('dashLink')?.click();
-            }
-          }catch(err){paymentFlow?.error?.('Payment received, but verification could not finish: '+(err.message||String(err)));if(msg)msg.innerHTML='<span class="error">Payment received, but verification could not finish. Do not pay again; check Customer Dashboard / support.<br>'+esc(err.message||String(err))+'</span>';privateConsultSubmitting=false;if(btn)btn.textContent=originalLabel;enableButtons();}
-        },
-        modal:{ondismiss:()=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment window closed. No payment was confirmed.');setTimeout(()=>paymentFlow?.close?.(),1400);if(btn)btn.textContent=originalLabel;enableButtons();}}
-      };
-      const rzp=new RazorpayCtor(options);
-      rzp.on?.('payment.failed',resp=>{privateConsultSubmitting=false;paymentFlow?.error?.('Payment failed: '+(resp?.error?.description||'Please retry.'));setTimeout(()=>paymentFlow?.close?.(),1800);if(msg)msg.innerHTML='<span class="error">'+esc(resp?.error?.description||'Payment failed. Please retry.')+'</span>';if(btn)btn.textContent=originalLabel;enableButtons();});
-      if(btn)btn.textContent='PAYMENT WINDOW OPEN';
-      rzp.open();
+
     }catch(err){
       privateConsultSubmitting=false;
-      paymentFlow?.error?.('Payment could not be started: '+(err.message||String(err)));setTimeout(()=>paymentFlow?.close?.(),1800);
       if(msg)msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';
-      if(btn)btn.textContent=originalLabel;
+      if(btn)btn.textContent='PAY WITH WALLET';
       enableButtons();
     }
   }
