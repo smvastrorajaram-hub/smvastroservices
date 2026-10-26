@@ -211,9 +211,7 @@ const syncAccountSurface=id=>{if(id==='dashboard'||id==='admin')window.__smvSync
 const show=id=>{$(id)?.classList.remove("hidden");syncAccountSurface(id);};const hide=id=>{$(id)?.classList.add("hidden");syncAccountSurface(id);};
 const go=id=>$(id)?.scrollIntoView({behavior:"smooth",block:"start"});
 function hideHomeSurface(){
-  // Hide the COMPLETE public Home surface. Internal views such as Question Form
-  // and Dashboard must never show Blogs/Media/Horoscope/Create-Horoscope content
-  // underneath or beside them.
+  // Hide the public Home surface while an internal Dashboard is open.
   ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq",
    "smv-content-hub","horoscope-tools","tamil-horoscope","english-horoscope"].forEach(id=>hide(id));
   ["tamilHoroscopeResult","englishHoroscopeResult"].forEach(id=>{const el=$(id);if(el){el.classList.add("hidden");el.innerHTML="";}});
@@ -858,36 +856,11 @@ let smvEmailLoginInProgress=false;
 // restoration, not an explicit Login action. Keep the authenticated session,
 // but start on Home. Explicit Email/Google login continues to own Dashboard routing.
 let smvInitialAuthStateHandled=false;
-// V192: a verified payment tab may return directly to Customer Dashboard.
-// This is an explicit post-payment continuation, not persisted-session auto-restore.
-const smvPaymentReturnParams=new URL(location.href).searchParams;
-const smvPaymentReturnRequested=smvPaymentReturnParams.get('smvPaymentReturn')==='1';
-const smvPaymentReturnKind=String(smvPaymentReturnParams.get('smvService')||'public').toLowerCase()==='private'?'private':'public';
-const smvPaymentReturnId=String(smvPaymentReturnParams.get('smvTargetId')||'').trim();
-const smvPaymentReturnPaymentId=String(smvPaymentReturnParams.get('smvPaymentId')||'').trim();
-// V193 locked session rule: every fresh document/tab starts on Home even when
-// Firebase restores a signed-in user. Dashboard opens only after an explicit
-// Login, Dashboard tap, or a verified payment-return continuation.
-const smvValidPaymentReturn=smvPaymentReturnRequested && !!smvPaymentReturnId;
-let smvColdStartHomeLock=!smvValidPaymentReturn;
-if(smvColdStartHomeLock && /^(#dashboard|#admin)$/i.test(location.hash||'')){
+// A persisted Firebase session starts at Home until the user explicitly opens a Dashboard.
+let smvColdStartHomeLock=true;if(smvColdStartHomeLock && /^(#dashboard|#admin)$/i.test(location.hash||'')){
   try{history.replaceState({smvView:'home'},'',location.pathname+location.search);}catch(_e){}
 }
 function smvUnlockDashboardNavigation(){ smvColdStartHomeLock=false; }
-function smvRevealPaidDashboardItem(kind,id){
- const targetId=String(id||'').trim(); if(!targetId)return false;
- const target=Array.from(document.querySelectorAll('[data-smv-question-id]')).find(el=>String(el.dataset.smvQuestionId||'')===targetId&&String(el.dataset.smvService||'')===String(kind||''));
- if(!target)return false;
- target.setAttribute('tabindex','-1');
- target.style.outline='2px solid #b8860b';
- target.style.outlineOffset='4px';
- target.scrollIntoView({behavior:'auto',block:'center'});
- try{target.focus({preventScroll:true});}catch(_e){}
- setTimeout(()=>{try{target.style.outline='';target.style.outlineOffset='';}catch(_e){}},5000);
- return true;
-}
-window.__smvRevealPaidDashboardItem=smvRevealPaidDashboardItem;
-
 async function finishGoogleRoleLogin(googleUser){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
   currentUser=googleUser;
@@ -1059,7 +1032,7 @@ async function submitAuth(mode){
     // Authentication is complete. Close Login immediately and expose a stable
     // dashboard shell before any Firestore/profile hydration. Customer and
     // Astrologer share this shell; the resolved role updates its heading below.
-    // ASK NOW and Admin-entry keep their protected destinations.
+    // Explicit Admin entry keeps its protected destination.
     const goToAdmin=pendingAfterLogin==="admin";
     let loginShellRole=smvCachedDashboardRole(loginCred.user.uid);
 
@@ -1398,45 +1371,6 @@ async function logoutToHome(reason=''){
   window.__SMV_LOGGED_OUT=true;
   try{window.dispatchEvent(new Event('smv:logged-out'));}catch(_){ }
   if(reason) alert(reason);
-}
-
-async function showDashboardPaymentSuccess(){
-  const box=$("dashboardContent");
-  if(!box || !currentUser) return;
-  let info=null;
-  try{info=JSON.parse(sessionStorage.getItem("smv_last_payment_success")||"null");}catch(_e){}
-  if(!info || info.customerUid!==(currentUser?.uid||"") || !info.questionId) return;
-
-  // Never trust sessionStorage alone. It is only a UI hint. Re-read the exact
-  // question from Firestore and require the server-written paymentStatus=paid.
-  try{
-    const qSnap=await withTimeout(getDoc(doc(db,"smv_questions",String(info.questionId))),12000);
-    if(!qSnap.exists()){
-      sessionStorage.removeItem("smv_last_payment_success");
-      return;
-    }
-    const q=qSnap.data()||{};
-    const isPaid=String(q.customerId||"")===String(currentUser.uid||"") && String(q.paymentStatus||"").toLowerCase()==="paid";
-    const samePayment=!info.paymentId || String(q.customerPaymentId||"")===String(info.paymentId||"");
-    if(!isPaid || !samePayment){
-      // Stale/cancelled/failed attempts must never display a success banner.
-      sessionStorage.removeItem("smv_last_payment_success");
-      return;
-    }
-  }catch(err){
-    console.warn("Payment success banner verification skipped:",err);
-    // Fail closed: if we cannot verify the stored success state, do not show it.
-    return;
-  }
-
-  $("dashboardPaymentSuccessBox")?.remove();
-  const card=document.createElement("div");
-  card.id="dashboardPaymentSuccessBox";
-  card.className="card";
-  card.style.cssText="position:relative;margin:0 0 16px 0;border:2px solid #b8860b;background:#fffaf0;";
-  card.innerHTML=`<button type="button" aria-label="Close" id="dashboardPaymentSuccessClose" style="position:absolute;right:10px;top:8px;appearance:none;-webkit-appearance:none;border:0!important;background:transparent!important;background-image:none!important;box-shadow:none!important;outline:0!important;padding:0!important;margin:0!important;width:auto!important;min-width:0!important;height:auto!important;font-size:24px;line-height:1;cursor:pointer;color:#000!important">×</button><h3 style="margin-top:0;color:#166534">Payment Successful ✓</h3><p>Your payment has been securely verified.</p><p><b>You Will Get Your Answer Within 24 hrs - 48 hrs.</b></p>${info.questionId?`<div class="small"><b>Question ID:</b> ${escapeHtml(info.questionId)}</div>`:""}${info.paymentId?`<div class="small"><b>Payment ID:</b> ${escapeHtml(info.paymentId)}</div>`:""}`;
-  box.insertBefore(card,box.firstChild);
-  $("dashboardPaymentSuccessClose")?.addEventListener("click",()=>{card.remove();try{sessionStorage.removeItem("smv_last_payment_success");}catch(_e){}});
 }
 
 let smvDashboardDirty=false;
@@ -2198,41 +2132,6 @@ function openPayoutChange(){
    }catch(e){console.error('Payment method change error:',e);msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';btn.disabled=false;btn.textContent='Submit for Admin Review';}
  };
 }
-function openReview(questionId, astroId) {
-  openModal(`<h2>Rate your consultation</h2>
-    <select id="reviewStars"><option value="5">★★★★★ — 5</option><option value="4">★★★★☆ — 4</option><option value="3">★★★☆☆ — 3</option><option value="2">★★☆☆☆ — 2</option><option value="1">★☆☆☆☆ — 1</option></select>
-    <textarea id="reviewText" placeholder="Write your review"></textarea>
-    <button class="btn" id="submitReview">Submit Review</button><div id="reviewMsg" class="small"></div>`);
-  $('submitReview').onclick = async () => {
-    const btn=$('submitReview'), msg=$('reviewMsg');
-    try {
-      if(!currentUser) throw new Error('Please login again.');
-      if(!questionId||!astroId) throw new Error('Consultation information is missing. Please refresh and try again.');
-      const rating=Number($('reviewStars').value), review=$('reviewText').value.trim();
-      if(!Number.isInteger(rating)||rating<1||rating>5) throw new Error('Please select a rating from 1 to 5.');
-      if(!review) throw new Error('Please write your review.');
-      btn.disabled=true; btn.textContent='SUBMITTING...';
-      const questionSnap=await withTimeout(getDoc(doc(db,'smv_questions',questionId)),15000);
-      if(!questionSnap.exists()) throw new Error('Consultation not found.');
-      const q=questionSnap.data()||{};
-      if(q.customerId!==currentUser.uid) throw new Error('You are not allowed to review this consultation.');
-      if(q.status!=='answered') throw new Error('You can review only after the answer has been approved.');
-      if(q.astrologerId!==astroId) throw new Error('Astrologer information does not match.');
-      const reviewId=`${questionId}_${currentUser.uid}`;
-      await withTimeout(setDoc(doc(db,'smv_reviews',reviewId),{questionId,customerId:currentUser.uid,customerName:q.customerName||q.birthName||'Customer',astrologerId:astroId,astrologerName:q.astrologerName||'Astrologer',rating,review,verified:true,approved:false,status:'pending',createdAt:serverTimestamp()}),15000);
-      try { await withTimeout(updateDoc(doc(db,'smv_questions',questionId),{reviewed:true,reviewSubmittedAt:serverTimestamp()}),15000); }
-      catch(markError){ console.warn('Review saved but review flag could not be updated:',markError); }
-      msg.innerHTML='<span class="success"><b>Thank you!</b> Your review was submitted and is waiting for Admin approval.</span>';
-      setTimeout(()=>{closeModal();loadDashboard();},700);
-    } catch(e) {
-      console.error('Review submission error:',e);
-      const raw=String(e?.message||e);
-      const friendly=/permission|insufficient permissions/i.test(raw)?'Review permission was denied by Firebase. Please publish the latest firestore.rules to the same smv-astro Firebase project.':raw;
-      msg.innerHTML='<span class="error">'+escapeHtml(friendly)+'</span>'; btn.disabled=false; btn.textContent='Submit Review';
-    }
-  };
-}
-
 // ---------- SMV ASTRO Blog (isolated feature) ----------
 // Cloudinary stores Blog text (JSON), cover images, PDFs and videos. Firestore keeps lightweight metadata/index fields.
 // Existing Horoscope, Login, Ask Now, Question and Payment logic is untouched.
@@ -3474,39 +3373,6 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      // Astrologer or Admin dashboard automatically. The user starts at Home
      // and can open Dashboard explicitly. This branch is intentionally after
      // the explicit-login guard so first-time Login still opens its dashboard.
-     if(isInitialAuthState && smvValidPaymentReturn){
-       smvUnlockDashboardNavigation();
-       // Verified payment continuation: open Customer Dashboard in this same tab,
-       // then reveal the exact Question/Private Consultation row.
-       window.__smvPaymentTarget={kind:smvPaymentReturnKind,id:smvPaymentReturnId};
-       if(smvPaymentReturnKind==='public'){
-         try{sessionStorage.setItem('smv_last_payment_success',JSON.stringify({customerUid:user.uid,questionId:smvPaymentReturnId,paymentId:smvPaymentReturnPaymentId||''}));}catch(_e){}
-       }
-       hidePrimarySections('dashboard'); show('dashboard'); show('dashboardContent'); show('dashLink'); hide('adminLink');
-       $('dashboardTitle').textContent='CUSTOMER DASHBOARD';
-       let paymentSnapshot=null;
-       try{paymentSnapshot=JSON.parse(sessionStorage.getItem('smv_payment_return_snapshot')||'null');}catch(_e){}
-       const snapshotMatches=paymentSnapshot&&String(paymentSnapshot.id||'')===smvPaymentReturnId&&String(paymentSnapshot.kind||'')===smvPaymentReturnKind;
-       if(snapshotMatches){
-         $('dashboardContent').innerHTML=`<div class="card smv-consultation-item" data-smv-question-id="${escapeHtml(smvPaymentReturnId)}" data-smv-service="${escapeHtml(smvPaymentReturnKind)}"><div class="success"><b>Payment Successful ✓</b></div><div class="smv-question-text">${escapeHtml(paymentSnapshot.question||'Paid consultation')}</div><div class="small smv-customer-meta-line"><b>${smvPaymentReturnKind==='private'?'Consultation ID':'Question ID'}:</b> ${escapeHtml(smvPaymentReturnId)}</div><div class="small smv-customer-meta-line"><b>Payment ID:</b> ${escapeHtml(paymentSnapshot.paymentId||smvPaymentReturnPaymentId||'')}</div><div class="small">Refreshing full dashboard…</div></div>`;
-       }else{
-         $('dashboardContent').innerHTML='<div class="card"><div class="small">Loading your paid question…</div></div>';
-       }
-       smvInternalView='dashboard'; window.__smvCurrentRole='customer'; setHeaderRoleLabel('customer'); smvShowRoleNav();
-       try{history.replaceState({smvView:'dashboard'},'',location.pathname+'#dashboard');}catch(_e){}
-       go('dashboard');
-       loadDashboard('customer',true).then(async()=>{
-         try{sessionStorage.removeItem('smv_payment_return_snapshot');}catch(_e){}
-         if(!smvRevealPaidDashboardItem(smvPaymentReturnKind,smvPaymentReturnId)){
-           for(let attempt=0;attempt<4;attempt++){
-             await new Promise(r=>setTimeout(r,120));
-             if(smvRevealPaidDashboardItem(smvPaymentReturnKind,smvPaymentReturnId))break;
-           }
-         }
-       }).catch(err=>console.warn('Payment return dashboard load delayed:',err));
-       armIdleTimer();
-       return;
-     }
      if(isInitialAuthState){
        hide('dashboard'); hide('admin');
        smvInternalView='home';
