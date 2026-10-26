@@ -2248,9 +2248,9 @@ function smvWalletDashboardCardHtml(){
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
  '<div><div class="small">Available Balance</div><div id="smvWalletBalance" style="font-size:1.8rem;font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
- '<form id="smvWalletRechargeForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;margin-top:16px">'+
- '<label style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box"></label>'+
- '<div style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%"><b aria-hidden="true" style="visibility:hidden">Recharge amount (₹)</b><button class="btn" id="smvWalletRechargeButton" type="submit" style="display:block;width:100%;min-width:0;min-height:46px;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere">RECHARGE WALLET</button></div></form>'+
+ '<form id="smvWalletRechargeForm" style="display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:16px;width:100%;max-width:100%;box-sizing:border-box">'+
+ '<label style="display:flex;flex:1 1 0%;flex-direction:column;gap:6px;min-width:0;width:50%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;height:46px;min-height:46px;max-height:46px;box-sizing:border-box"></label>'+
+ '<div style="display:flex;flex:1 1 0%;flex-direction:column;gap:6px;min-width:0;width:50%"><b aria-hidden="true" style="visibility:hidden">Recharge amount (₹)</b><button class="btn" id="smvWalletRechargeButton" type="submit" style="display:block;width:100%;min-width:0;height:46px;min-height:46px;max-height:46px;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere">RECHARGE WALLET</button></div></form>'+
  '<div id="smvWalletMessage" class="small" role="status" aria-live="polite" style="margin-top:10px">Loading Wallet details…</div>'+
  '<div style="margin-top:18px"><h4 style="margin-bottom:8px">Recent Wallet Transactions</h4><div id="smvWalletTransactions"><div class="small">Loading transactions…</div></div></div></section>';
 }
@@ -2663,7 +2663,7 @@ let userStatus=String(
           <div id="astroProfileDescriptionMsg" class="small"></div>`
        : `<div class="empty smv-profile-edit-disabled">Profile description editing is currently disabled by Admin.</div>`}
    </div>
-   <div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><div class="withdrawal-history-title">Withdrawal History</div>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
+   <div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Question ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><h4 style="margin:0 0 8px">Withdrawal History</h4>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
     const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
@@ -3057,16 +3057,6 @@ let userStatus=String(
   if(!active()) return;
   if(!active()) return;
   if(role==='customer'||role==='astrologer')smvLiveBindDashboard(role);
-  const note=document.createElement('div'); note.className='card'; note.style.marginTop='16px'; note.innerHTML='<h3>Notifications</h3><div id="userNotifications"><div class="small">Loading...</div></div>'; box.appendChild(note);
-  // Notifications are supplementary. A Firestore permission/timeout issue in
-  // this optional section must never turn a successfully loaded dashboard into
-  // a false "Unable to load dashboard" state.
-  try{ renderNotifications('userNotifications',notificationContext).catch(e=>console.warn('Notifications unavailable:',e)); }
-  catch(notificationErr){
-    console.warn('Dashboard notifications skipped:',notificationErr);
-    const nb=$('userNotifications');
-    if(nb) nb.innerHTML='<div class="small">Notifications are temporarily unavailable.</div>';
-  }
   if(!active()) return;
   show('dashboard');
   dashboardReadyUid=loadUid; dashboardReadyAt=Date.now(); smvDashboardDirty=false;
@@ -4748,7 +4738,7 @@ async function smvLivePollSessions(){
    const b=await renderApi('/live/bookings/mine',{method:'GET',timeoutMs:12000});smvLiveRenderCustomerBookings(b.bookings||[]);
    if($('smvLiveCustomerScheduledBookings')&&Date.now()-smvLiveCustomerAppointmentsPollAt>12000){
     smvLiveCustomerAppointmentsPollAt=Date.now();
-    try{const scheduled=await renderApi('/customer/appointments',{method:'GET',timeoutMs:12000});smvLiveRenderCustomerScheduledBookings(scheduled.appointments||[]);}
+    try{const scheduled=await renderApi('/customer/appointments',{method:'GET',timeoutMs:12000});smvLiveRenderCustomerScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],list.sessions||[]));}
     catch(scheduleError){const box=$('smvLiveCustomerScheduledBookings');if(box)box.innerHTML='<p class="error">Scheduled bookings unavailable: '+escapeHtml(scheduleError?.message||String(scheduleError))+'</p>'; }
    }
   }
@@ -4862,8 +4852,8 @@ function smvLiveRenderScheduledBookings(appointments){
 }
 async function smvLiveLoadScheduledAppointments(){
  const host=$('smvScheduledBookings');if(!host||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
- const r=await renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000});
- smvLiveRenderScheduledBookings(r.appointments||[]);
+ const [r,live]=await Promise.all([renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000}),renderApi('/live/sessions',{method:'GET',timeoutMs:12000})]);
+ smvLiveRenderScheduledBookings(smvLiveNormalizeScheduledAppointments(r.appointments||[],live.sessions||[]));
 }
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
@@ -4886,6 +4876,18 @@ function smvLiveRenderCustomerBookings(bookings){
  if(!bookings.length){host.innerHTML='<p class="small">No Live Call / Chat bookings yet.</p>';return;}
  host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' minute(s)</b><p class="small">Astrologer: '+escapeHtml(b.astrologerName||'Astrologer')+' · Status: <b>'+escapeHtml(b.status||'pending')+'</b></p><p class="small">Selected maximum cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+' · Charged: '+smvLiveMoney(b.actualChargePaise)+' · Released: '+smvLiveMoney(b.releasedAmountPaise)+'</p>'+(b.status==='pending'?'<button class="btn gray" type="button" data-live-booking-cancel="'+escapeHtml(b.id)+'">CANCEL BOOKING</button>':'')+'</article>').join('');
  host.querySelectorAll('[data-live-booking-cancel]').forEach(btn=>btn.onclick=async()=>{if(!confirm('Cancel this pending Live booking?'))return;btn.disabled=true;try{await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingCancel)+'/cancel',{method:'POST',body:JSON.stringify({})});await smvLivePollSessions();}catch(e){smvLiveShowError(e);btn.disabled=false;}});
+}
+function smvLiveNormalizeScheduledAppointments(appointments,sessions){
+ const sessionById=new Map((Array.isArray(sessions)?sessions:[]).map(s=>[String(s?.id||s?.sessionId||''),s]));
+ return (Array.isArray(appointments)?appointments:[]).map(a=>{
+  const liveId=String(a?.liveSessionId||'');
+  const session=liveId?sessionById.get(liveId):null;
+  if(!session||String(session.state||'').toLowerCase()!=='ended')return a;
+  const connected=!!session.startedAt||Number(session.connectedDurationMs)>0;
+  const reason=String(session.endReason||'').toLowerCase();
+  const status=connected?'completed':(reason==='rejected'?'rejected':'cancelled');
+  return {...a,bookingStatus:status,status,liveSessionId:liveId||String(session.id||''),liveEndedAt:session.endedAt||a.liveEndedAt||null};
+ });
 }
 function smvLiveRenderCustomerScheduledBookings(appointments){
  const host=$('smvLiveCustomerScheduledBookings');if(!host)return;
@@ -4940,7 +4942,7 @@ async function smvLiveLoadDashboard(role){
  const reload=async()=>{
   try{
    const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];
-   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveSessionStatusLabel(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button class="btn" type="button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveSessionStatusLabel(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" data-live-open="'+escapeHtml(s.id)+'" style="padding:0;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;box-shadow:none;min-height:0">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s)smvLiveOpenSession(s,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&s.astrologerUid===currentUser?.uid&&s.state==='ringing');});
    if(role==='astrologer'){
     const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
@@ -4952,12 +4954,12 @@ async function smvLiveLoadDashboard(role){
      sel.dataset.initialized='1';
     }
     smvLiveRenderBookings((await renderApi('/live/bookings/pending',{method:'GET'})).bookings||[]);
-    try{const scheduled=await renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000});smvLiveRenderScheduledBookings(scheduled.appointments||[]);}
+    try{const scheduled=await renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000});smvLiveRenderScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],list.sessions||[]));}
     catch(bookingError){const bookingHost=$('smvScheduledBookings');if(bookingHost)bookingHost.innerHTML='<p class="error">Scheduled bookings unavailable: '+escapeHtml(bookingError?.message||String(bookingError))+'</p>';}
    }else{
     smvLiveRenderCustomerBookings((await renderApi('/live/bookings/mine',{method:'GET'})).bookings||[]);
     const scheduled=await renderApi('/customer/appointments',{method:'GET',timeoutMs:12000});
-    smvLiveRenderCustomerScheduledBookings(scheduled.appointments||[]);
+    smvLiveRenderCustomerScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],list.sessions||[]));
     smvLiveCustomerAppointmentsPollAt=Date.now();
    }
    if(msg)msg.textContent='Live session status refreshed.';
