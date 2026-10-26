@@ -25,7 +25,6 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
    const [adminUser,profile]=await Promise.all([isAdminUser(user),db.collection('smv_users').doc(user.uid).get()]);
    if(stopped)return;
    const role=adminUser?'admin':String(profile.data()?.role||'customer');
-   const astro=role==='astrologer'?await db.collection('smv_astrologers').doc(user.uid).get():null;
    res.status(200).set({'Content-Type':'text/event-stream','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
    res.flushHeaders();
    const send=(event,data={})=>{if(!stopped)res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);};
@@ -37,16 +36,13 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
     // All successful backend mutations bump this single lightweight document.
     refs.push({ref:db.collection('smv_settings').doc('dashboardChange'),kind:'admin_signal'});
    }else if(role==='astrologer'){
-    // Keep the Astrologer's own profile live, but avoid subscribing to every
-    // question, notification and withdrawal document just to invalidate UI.
-    // Successful workflow mutations publish a single lightweight signal doc.
+    // Keep the Astrologer's own profile live, but avoid a second profile read
+    // and all history/workflow listeners just to invalidate the Dashboard.
+    // Current session/booking changes arrive through the Live Session SSE stream.
     refs.push(
      {ref:db.collection('smv_astrologers').doc(user.uid),kind:'profile'},
      {ref:db.collection('smv_settings').doc('dashboardChange'),kind:'dashboard_signal'}
     );
-    if(String(astro.data()?.status)==='approved'){
-     refs.push({ref:db.collection('smv_settings').doc('workflow'),kind:'workflow'});
-    }
    }else{
     // Customer dashboard no longer has public/private question history. Keep only
     // the newest relevant notification records for Call, Chat, booking, Wallet and withdrawals.
@@ -72,9 +68,8 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
      }
      if(role==='astrologer'&&kind==='dashboard_signal'){
       const category=String(snap.data?.()?.category||'');
-      // Ignore unrelated site/admin-content writes. These categories affect
-      // Astrologer questions, consultation history, earnings or profile data.
-      if(!['questions','private_consultations','withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'].includes(category))return;
+      // Ignore writes from retired question workflows and unrelated site content.
+      if(!['withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'].includes(category))return;
       send('change',{kinds:['dashboard_signal'],category});
       return;
      }
