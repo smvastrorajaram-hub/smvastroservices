@@ -538,7 +538,7 @@
         const d=await r.json().catch(()=>({}));
         if(!r.ok)throw new Error(d.error||`Booking request returned HTTP ${r.status}.`);
         console.log('Booking created:',d.bookingId);
-        msg.innerHTML='<span class="success">✓ Booking request submitted.<br><b>Booking ID:</b> '+esc(d.bookingId||'')+'<br>Admin will confirm your consultation.</span>';
+        msg.innerHTML='<span class="success">✓ Booking request submitted.<br><b>Booking ID:</b> '+esc(d.bookingId||'')+'<br>'+(payload.astrologerId?'Your Astrologer will accept or reject this scheduled Call/Chat. Track the request under Customer Dashboard → Live Call / Live Chat → My Scheduled Bookings.':'Admin will confirm your consultation.')+'</span>';
         f.reset();
       }catch(err){console.error('Appointment booking error:',err);msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';}
       finally{bookingSubmitting=false;btn.disabled=false;btn.textContent='REQUEST APPOINTMENT';}
