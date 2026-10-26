@@ -4587,7 +4587,7 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
-let smvLiveForegroundMessagingBound = false;
+let smvLiveForegroundMessagingBound = false, smvLivePendingPushOpen = null;
 async function smvLiveEnableBackgroundAlerts(){
  if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')throw new Error('Background Alerts can only be enabled from the Astrologer Dashboard.');
  if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
@@ -5477,7 +5477,14 @@ async function smvLiveLoadDashboard(role){
 async function smvLiveHandlePushOpen(payload = {}){
  const sessionId=String(payload.sessionId||'');
  const bookingId=String(payload.bookingId||'');
- if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer'||!currentUser)return;
+ if(!currentUser)return;
+ let role=String(window.__smvCurrentRole||'').toLowerCase();
+ if(role!=='astrologer'){
+  const account=await renderApi('/account/role',{method:'GET',timeoutMs:12000});
+  role=String(account.role||'').toLowerCase();
+  if(role!=='astrologer')return;
+  window.__smvCurrentRole='astrologer';
+ }
  if(!$('smvLiveDashboardCard')&&typeof loadDashboard==='function')await loadDashboard('astrologer',true);
  if(!$('smvLiveDashboardCard'))throw new Error('Open the Astrologer Dashboard after logging in to respond to this request.');
  await smvLiveLoadDashboard('astrologer');
@@ -5506,7 +5513,9 @@ function smvLiveBindPushOpenListener(){
  navigator.serviceWorker.addEventListener('message',event=>{
   const message=event.data||{};
   if(message.type!=='SMV_LIVE_PUSH_OPEN')return;
-  smvLiveHandlePushOpen(message.payload||{}).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));
+  const payload=message.payload||{};
+  if(!currentUser){smvLivePendingPushOpen=payload;return;}
+  smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));
  });
 }
 function smvLiveBindDashboard(role){
@@ -5553,7 +5562,13 @@ function smvLiveBindAdminPricing(){
 }
 smvLiveBindPushOpenListener();
 window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveRingSuppressedIds.clear();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
-window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
+window.addEventListener('smv:auth-user',()=>{
+ setTimeout(smvLiveStartEventStream,200);
+ if(smvLivePendingPushOpen){
+  const payload=smvLivePendingPushOpen;smvLivePendingPushOpen=null;
+  setTimeout(()=>smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error))),400);
+ }
+});
 
 window.__SMV_APP_READY=true;
 window.dispatchEvent(new Event('smv:app-ready'));
