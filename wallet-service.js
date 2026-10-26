@@ -5,6 +5,71 @@ const crypto = require('node:crypto');
 const WALLET_COLLECTION = 'smv_wallets';
 const TRANSACTION_COLLECTION = 'smv_wallet_transactions';
 const RECHARGE_COLLECTION = 'smv_wallet_recharges';
+const OFFER_COLLECTION = 'smv_offers';
+const OFFER_AUDIT_COLLECTION = 'smv_offer_audit';
+const OFFER_USAGE_COUNTER_COLLECTION = 'smv_offer_usage_counters';
+const WALLET_RECHARGE_OFFER_TYPE = 'wallet_recharge_bonus_minutes';
+const WALLET_OFFER_THEMES = Object.freeze([
+  'auto', 'generic', 'pongal', 'diwali', 'navaratri', 'dasara', 'ayudha_pooja',
+  'shivaratri', 'tamil_new_year', 'vinayagar_chaturthi', 'karthigai_deepam',
+  'thaipusam', 'new_year', 'onam', 'christmas', 'eid'
+]);
+
+function offerDateMilliseconds(value) {
+  if (!value) return null;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const ist = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw);
+  const parsed = Date.parse(ist ? raw + '+05:30' : raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function rechargeOfferMatches(offer, { amountPaise, nowMs = Date.now() } = {}) {
+  if (!offer || offer.offerType !== WALLET_RECHARGE_OFFER_TYPE || offer.enabled !== true) return false;
+  const amount = Number(amountPaise);
+  const bonus = Number(offer.bonusMinutes);
+  const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
+  const used = Number(offer.usedCount ?? 0);
+  const totalLimit = Number(offer.totalUsageLimit ?? 0);
+  const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
+  if (!Number.isSafeInteger(amount) || amount < 100 ||
+      !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+      !Number.isSafeInteger(minimum) || minimum < 0 || amount < minimum ||
+      !Number.isSafeInteger(used) || used < 0 ||
+      !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
+      !Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0) return false;
+  if (totalLimit > 0 && used >= totalLimit) return false;
+  if (offer.startAt) {
+    const start = offerDateMilliseconds(offer.startAt);
+    if (start === null || nowMs < start) return false;
+  }
+  if (offer.endAt) {
+    const end = offerDateMilliseconds(offer.endAt);
+    if (end === null || nowMs >= end) return false;
+  }
+  return true;
+}
+
+function selectRechargeBonusOffer({ offers, amountPaise, nowMs = Date.now(), usageCounts = {} } = {}) {
+  const candidates = (Array.isArray(offers) ? offers : []).filter(offer => {
+    if (!rechargeOfferMatches(offer, { amountPaise, nowMs })) return false;
+    const count = Number(usageCounts[offer.id] ?? 0);
+    const limit = Number(offer.perCustomerLimit ?? 1);
+    return Number.isSafeInteger(count) && count >= 0 && (limit === 0 || count < limit);
+  });
+  candidates.sort((a, b) =>
+    Number(b.priority || 0) - Number(a.priority || 0) ||
+    Number(b.bonusMinutes || 0) - Number(a.bonusMinutes || 0) ||
+    String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''))
+  );
+  return candidates.length ? candidates[0] : null;
+}
+
+function offerUsageCounterId(offerId, uid) {
+  return walletLedgerDocId('wallet_offer_usage', String(offerId) + ':' + String(uid));
+}
 
 function parseRupeesToPaise(value, { allowZero = false } = {}) {
   const raw = String(value ?? '').trim();
@@ -190,10 +255,35 @@ function createWalletService({ db, FieldValue }) {
       const reserved = safePaise(wallet.reservedBalancePaise);
       const bonusBalance = safeMinutes(wallet.bonusMinutesBalance);
       const reservedBonus = safeMinutes(wallet.reservedBonusMinutes);
-      const awardBonus = 0;
+      const nowMs = Date.now();
+      const offerQuery = db.collection(OFFER_COLLECTION)
+        .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100);
+      const offersQuerySnap = await tx.get(offerQuery);
+      const offerRows = offersQuerySnap.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() || {}) }));
+      const candidateRows = offerRows.filter(offer => rechargeOfferMatches(offer, { amountPaise: amount, nowMs }));
+      const usageReferences = candidateRows.map(offer => ({
+        offer,
+        ref: db.collection(OFFER_USAGE_COUNTER_COLLECTION).doc(offerUsageCounterId(offer.id, uid))
+      }));
+      const usageSnapshots = await Promise.all(usageReferences.map(entry => tx.get(entry.ref)));
+      const usageCounts = {};
+      usageReferences.forEach((entry, index) => {
+        usageCounts[entry.offer.id] = safePaise(usageSnapshots[index].data()?.redemptionCount);
+      });
+      const selectedOffer = selectRechargeBonusOffer({
+        offers: candidateRows, amountPaise: amount, nowMs, usageCounts
+      });
+      const selectedUsageIndex = selectedOffer
+        ? usageReferences.findIndex(entry => entry.offer.id === selectedOffer.id)
+        : -1;
+      const selectedUsageRef = selectedUsageIndex >= 0 ? usageReferences[selectedUsageIndex].ref : null;
+      const selectedUsageSnap = selectedUsageIndex >= 0 ? usageSnapshots[selectedUsageIndex] : null;
+      const awardBonus = selectedOffer ? Number(selectedOffer.bonusMinutes) : 0;
       const nextAvailable = available + amount;
       const nextBonusBalance = bonusBalance + awardBonus;
-      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextBonusBalance)) throw httpError(409, 'Wallet balance exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
+      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextBonusBalance) || nextBonusBalance > 1_000_000) {
+        throw httpError(409, 'Wallet balance or promotional minute balance exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
+      }
       const now = FieldValue.serverTimestamp();
       tx.set(walletRef, {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR',
@@ -205,18 +295,48 @@ function createWalletService({ db, FieldValue }) {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR', type: 'recharge', direction: 'credit',
         amountPaise: amount, balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: reserved,
         bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
+        offerId: selectedOffer?.id || null, offerName: selectedOffer?.name || null,
         idempotencyKey: 'recharge:' + pid, referenceType: 'razorpay_payment', referenceId: pid,
-        note: 'Wallet recharge successful',
+        note: awardBonus > 0
+          ? 'Wallet recharge successful; ' + awardBonus + ' promotional Live minute(s) credited'
+          : 'Wallet recharge successful',
         status: 'posted', source, razorpayOrderId: oid, razorpayPaymentId: pid, createdAt: now
       });
       tx.set(rechargeRef, {
         status: 'paid', razorpayPaymentId: pid, paidAmountPaise: amount, currency: 'INR',
         bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
+        offerId: selectedOffer?.id || null, offerName: selectedOffer?.name || null,
         paymentSource: source, paidAt: now, updatedAt: now
       }, { merge: true });
       tx.set(orderRef, { status: 'paid', razorpayPaymentId: pid, updatedAt: now }, { merge: true });
-      return { success: true, alreadyProcessed: false, rechargeId: rid, paymentId: pid, amountPaise: amount,
-        availableBalancePaise: nextAvailable, bonusMinutesCredited: awardBonus, bonusMinutesBalance: nextBonusBalance };
+      if (selectedOffer && selectedUsageRef && selectedUsageSnap) {
+        const usedCount = safePaise(selectedOffer.usedCount) + 1;
+        const successfulRedemptions = safePaise(selectedOffer.successfulRedemptions) + 1;
+        const totalBonusMinutesAwarded = safePaise(selectedOffer.totalBonusMinutesAwarded) + awardBonus;
+        const redemptionCount = usageCounts[selectedOffer.id] + 1;
+        tx.set(db.collection(OFFER_COLLECTION).doc(selectedOffer.id), {
+          usedCount, successfulRedemptions, totalBonusMinutesAwarded, lastRedeemedAt: now, updatedAt: now
+        }, { merge: true });
+        tx.set(selectedUsageRef, {
+          offerId: selectedOffer.id, customerUid: uid, redemptionCount,
+          lastRechargeId: rid, updatedAt: now
+        }, { merge: true });
+        const auditRef = db.collection(OFFER_AUDIT_COLLECTION)
+          .doc(walletLedgerDocId('wallet_recharge_bonus_minutes', rid + ':' + selectedOffer.id));
+        tx.create(auditRef, {
+          customerId: uid, customerUid: uid, service: 'wallet_recharge',
+          referenceId: rid, rechargeId: rid, paymentId: pid, offerId: selectedOffer.id,
+          offerName: String(selectedOffer.name || 'Wallet recharge offer'),
+          offerType: WALLET_RECHARGE_OFFER_TYPE, amountPaise: amount, bonusMinutes: awardBonus,
+          status: 'used', usedAt: now, createdAt: now
+        });
+      }
+      return {
+        success: true, alreadyProcessed: false, rechargeId: rid, paymentId: pid, amountPaise: amount,
+        availableBalancePaise: nextAvailable, bonusMinutesCredited: awardBonus,
+        bonusMinutesBalance: nextBonusBalance, offerId: selectedOffer?.id || null,
+        offerName: selectedOffer?.name || null
+      };
     });
   }
 
@@ -433,6 +553,12 @@ module.exports = {
   paiseToRupees,
   calculateStartedMinuteCharge,
   walletLedgerDocId,
+  offerDateMilliseconds,
+  rechargeOfferMatches,
+  selectRechargeBonusOffer,
+  offerUsageCounterId,
+  WALLET_OFFER_THEMES,
+  WALLET_RECHARGE_OFFER_TYPE,
   createWalletService,
   registerWalletRoutes
 };
