@@ -420,6 +420,7 @@ function openModal(html){
  const modal=$("modal"),content=$("modalContent"),box=modal?.querySelector(".modalbox");
  modal?.classList.remove("profile-modal-active");
  modal?.classList.remove("smv-live-session-modal");
+ modal?.classList.remove("smv-live-chat-active");
  if(content)content.innerHTML=html;
  const livePanel=content?.querySelector(".smv-live-session-panel");
  if(livePanel&&modal&&box){
@@ -4731,6 +4732,69 @@ function smvLiveCloseMedia(){
  smvLiveLocalStream=null;smvLiveRemoteStream=null;
 }
 function smvLiveShowError(error){const el=$('smvLiveSessionResult');if(el)el.textContent=String(error?.message||error||'Live Session request failed.');}
+function smvLiveApplyChatLayout(session){
+ const active=smvLiveCanonicalMode(session)==='chat'&&String(session?.state||'')==='active';
+ const modal=$('modal'),box=modal?.querySelector('.modalbox'),content=$('modalContent');
+ const panel=$('smvLiveSessionPanel'),body=panel?.querySelector('.smv-live-session-body');
+ if(!modal||!box||!content||!panel||!body||!modal.classList.contains('smv-live-session-modal'))return;
+ modal.classList.toggle('smv-live-chat-active',active);
+ const fullHeight='calc(100dvh - 16px - env(safe-area-inset-bottom))';
+ box.style.width=active?'min(calc(100vw - 16px),960px)':'min(100%,600px)';
+ box.style.maxWidth=active?'960px':'600px';
+ box.style.height=active?fullHeight:'';
+ box.style.maxHeight=fullHeight;
+ box.style.minHeight='0';
+ box.style.overflow='hidden';
+ box.style.display='flex';
+ box.style.flexDirection='column';
+ box.style.boxSizing='border-box';
+ if(active){
+  box.style.padding='8px';
+  content.style.display='flex';content.style.flex='1 1 auto';content.style.flexDirection='column';
+  content.style.minHeight='0';content.style.width='100%';content.style.height='100%';
+  panel.style.width='100%';panel.style.height='100%';panel.style.maxHeight='100%';panel.style.minHeight='0';
+  panel.style.flex='1 1 auto';panel.style.display='flex';panel.style.flexDirection='column';panel.style.overflow='hidden';panel.style.boxSizing='border-box';
+  body.style.display='flex';body.style.flex='1 1 auto';body.style.flexDirection='column';body.style.minHeight='0';
+  body.style.width='100%';body.style.overflow='hidden';body.style.overflowY='hidden';body.style.boxSizing='border-box';
+  for(const child of body.children){if(child.id!=='smvLiveChatArea')child.style.flex='0 0 auto';}
+ }
+ const chat=$('smvLiveChatArea'),messages=$('smvLiveMessages'),form=$('smvLiveMessageForm'),input=$('smvLiveMessageInput'),send=$('smvLiveSendMessage');
+ if(chat){
+  if(active){
+   chat.hidden=false;chat.style.display='flex';chat.style.flex='1 1 0%';chat.style.flexDirection='column';
+   chat.style.width='100%';chat.style.height='100%';chat.style.minHeight='min(240px,38dvh)';
+   chat.style.maxHeight='none';chat.style.minWidth='0';chat.style.overflow='hidden';
+   chat.style.boxSizing='border-box';chat.style.margin='8px 0 0';chat.style.padding='0';
+   chat.style.border='0';chat.style.borderRadius='0';chat.style.background='transparent';chat.style.color='#ffffff';
+  }else{
+   chat.style.display='';chat.style.flex='';chat.style.flexDirection='';chat.style.width='';
+   chat.style.height='';chat.style.minHeight='';chat.style.maxHeight='';chat.style.minWidth='';
+   chat.style.overflow='';chat.style.boxSizing='';chat.style.margin='';chat.style.padding='';
+   chat.style.border='';chat.style.borderRadius='';chat.style.background='';chat.style.color='';
+  }
+ }
+ if(messages){
+  if(active){
+   messages.style.display='block';messages.style.flex='1 1 0%';messages.style.width='100%';messages.style.height='100%';
+   messages.style.minHeight='min(180px,28dvh)';messages.style.maxHeight='none';messages.style.overflowY='auto';
+   messages.style.overflowX='hidden';messages.style.boxSizing='border-box';messages.style.fontSize='16px';
+   messages.style.lineHeight='1.55';messages.style.padding='12px';messages.style.overscrollBehavior='contain';
+  }else{
+   messages.style.flex='1 1 auto';messages.style.width='';messages.style.height='';messages.style.minHeight='120px';
+   messages.style.maxHeight='none';messages.style.overflowY='auto';messages.style.overflowX='';
+   messages.style.boxSizing='';messages.style.fontSize='';messages.style.lineHeight='';messages.style.padding='10px';
+   messages.style.overscrollBehavior='';
+  }
+ }
+ if(form){
+  form.style.flex=active?'0 0 auto':'';
+  form.style.display='grid';form.style.width='100%';form.style.minWidth='0';
+  form.style.gridTemplateColumns=active&&window.matchMedia('(min-width:720px)').matches?'minmax(0,1fr) 150px':'minmax(0,1fr)';
+  form.style.alignItems='stretch';form.style.gap='10px';form.style.marginTop='10px';
+ }
+ if(input&&active){input.style.minHeight='68px';input.style.maxHeight='180px';input.style.fontSize='16px';input.style.lineHeight='1.5';input.style.boxSizing='border-box';}
+ if(send&&active){send.style.minHeight='48px';send.style.alignSelf='stretch';send.style.fontSize='15px';}
+}
 function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  const wasEnded=String(smvLiveCurrentSession?.state||'')==='ended';
@@ -4753,14 +4817,7 @@ function smvLiveApplySession(session){
  const waiting=$('smvLiveWaiting');if(waiting){waiting.hidden=active||(ringing&&s.astrologerUid===currentUser?.uid)||s.state==='ended';if(s.state==='preparing')waiting.textContent=String(s.customerUid||'')===String(currentUser?.uid||'')?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.';else if(s.state==='connecting')waiting.textContent=call?(String(s.customerUid||'')===String(currentUser?.uid||'')?'Horoscope preparation is complete. Waiting for the Astrologer to connect.':'Horoscope preparation is complete. Connect Customer Call now.'):(String(s.customerUid||'')===String(currentUser?.uid||'')?'Horoscope preparation is complete. Waiting for the Astrologer to accept Chat.':'Horoscope preparation is complete. Click ACCEPT CHAT to open the live Chat.');else if(ringing)waiting.textContent=s.astrologerUid===currentUser?.uid?'Customer request is ready. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.';}
  const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';
  if($('smvLiveChatArea'))$('smvLiveChatArea').hidden=!(s.mode==='chat'&&active);
- const largeLiveChat=s.mode==='chat'&&active;
- const liveModalForChat=$('modal'),liveBoxForChat=liveModalForChat?.querySelector('.modalbox');
- if(liveModalForChat?.classList.contains('smv-live-session-modal')&&s.mode==='chat'&&liveBoxForChat){liveBoxForChat.style.width=largeLiveChat?'min(100%,960px)':'min(100%,600px)';liveBoxForChat.style.maxWidth=largeLiveChat?'960px':'600px';}
- const liveBodyForChat=$('smvLiveSessionPanel')?.querySelector('.smv-live-session-body');
- if(liveBodyForChat){if(largeLiveChat){liveBodyForChat.style.display='flex';liveBodyForChat.style.flexDirection='column';liveBodyForChat.style.overflow='hidden';liveBodyForChat.style.minHeight='0';}else{liveBodyForChat.style.display='';liveBodyForChat.style.flexDirection='';liveBodyForChat.style.overflow='';liveBodyForChat.style.overflowY='auto';}}
- const liveChatArea=$('smvLiveChatArea'),liveMessageList=$('smvLiveMessages');
- if(liveChatArea){if(largeLiveChat){liveChatArea.style.display='flex';liveChatArea.style.flex='1 1 auto';liveChatArea.style.flexDirection='column';liveChatArea.style.minHeight='0';liveChatArea.style.overflow='hidden';}else{liveChatArea.style.display='';liveChatArea.style.flex='';liveChatArea.style.flexDirection='';liveChatArea.style.minHeight='';liveChatArea.style.overflow='';}}
- if(liveMessageList){liveMessageList.style.flex='1 1 auto';liveMessageList.style.minHeight='120px';liveMessageList.style.maxHeight='none';liveMessageList.style.overflowY='auto';}
+ smvLiveApplyChatLayout(s);
  if($('smvLiveEndSession')){ $('smvLiveEndSession').hidden=s.state==='ended';$('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':'CANCEL / CLOSE SESSION';}
  if($('smvLiveClosePanel'))$('smvLiveClosePanel').hidden=s.state==='ended';
  if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
