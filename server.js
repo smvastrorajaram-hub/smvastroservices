@@ -2963,7 +2963,9 @@ app.get("/admin-data", async (req, res) => {
       readCollection("smv_users"),
       readCollection("smv_astrologers"),
       readCollection("smv_questions"),
-      readCollection("smv_payments"),
+      // The Admin landing page uses this array only for the Astrologer earnings ledger.
+      // Do not read unrelated checkout/recharge payment documents here.
+      readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning")),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getPrivateCommissionSettings(),
       db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),
