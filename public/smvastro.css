@@ -112,7 +112,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-roo
 form:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 form input, form select, form textarea{width:100%;box-sizing:border-box}
 .btn:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:13px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-24px + 100vw)!important;max-width:calc(-24px + 100vw)!important;padding:14px 12px!important;border-radius:12px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-24px + 100vw)!important;max-width:calc(-24px + 100vw)!important;padding:14px 12px!important;border-radius:12px!important}
 .modalbox .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:40px!important}}
 #dashboardContent .astro-dashboard-summary:where(:not(.smv-css-island,.smv-css-island *)){overflow:visible!important}
 #dashboardContent .astro-dashboard-summary > .card:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;word-break:break-word!important}
@@ -557,7 +557,7 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #englishHoroscopeResult .bhava-chart, #tamilHoroscopeResult .bhava-chart{display:grid!important;visibility:visible!important;opacity:1!important}
 #modal.modal{visibility:visible;position:fixed!important;inset:0px!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;display:grid!important;place-items:center!important;overflow:hidden}
 #modal.modal.hidden{display:none!important}
-#modal .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:auto!important;overscroll-behavior:contain}
+#modal .modalbox:not(#modal.smv-live-session-modal .modalbox){position:relative!important;z-index:2147483001!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:auto!important;overscroll-behavior:contain}
 #modal .modalbox > button[aria-label="Close"]{position:absolute!important;top:5px!important;right:7px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:700 23px/1 Arial,sans-serif!important;cursor:pointer!important;z-index:20!important}
 
 #modal .modalbox .smv-live-session-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;opacity:1;color:#ffffff;-webkit-text-fill-color:#ffffff}
@@ -572,9 +572,17 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 
 #modal.profile-modal-active{padding:12px!important;place-items:start center!important}
 #modal.smv-live-session-modal{place-items:center!important;overflow:hidden}
-#modal.smv-live-session-modal .modalbox{margin:0;min-width:0;overflow:hidden}
-#modal.smv-live-session-modal #modalContent{min-width:0;min-height:0;flex:1 1 auto}
+#modal.smv-live-session-modal .modalbox{margin:0;min-width:0;max-width:600px;width:min(100%,600px);height:auto;max-height:calc(100dvh - 16px - env(safe-area-inset-bottom));padding:8px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+#modal.smv-live-session-modal #modalContent{min-width:0;min-height:0;flex:1 1 auto;display:flex;flex-direction:column;width:100%;box-sizing:border-box}
 #modal.smv-live-session-modal .smv-live-session-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;overscroll-behavior:contain}
+#modal.smv-live-session-modal.smv-live-chat-active .modalbox{width:min(calc(100vw - 16px),960px);max-width:960px;height:calc(100dvh - 16px - env(safe-area-inset-bottom));max-height:calc(100dvh - 16px - env(safe-area-inset-bottom));padding:8px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+#modal.smv-live-session-modal.smv-live-chat-active #modalContent{display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;height:100%;width:100%;box-sizing:border-box}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveSessionPanel{display:flex;flex:1 1 auto;flex-direction:column;width:100%;height:100%;max-height:100%;min-width:0;min-height:0;overflow:hidden}
+#modal.smv-live-session-modal.smv-live-chat-active .smv-live-session-body{display:flex;flex:1 1 auto;flex-direction:column;width:100%;min-width:0;min-height:0;overflow:hidden}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveChatArea{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:100%;min-width:0;min-height:min(240px,38dvh);max-height:none;overflow:hidden;margin:8px 0 0;padding:0;border:0;border-radius:0;background:transparent;box-sizing:border-box}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:block;flex:1 1 0%;width:100%;height:100%;min-width:0;min-height:min(180px,28dvh);max-height:none;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;font-size:16px;line-height:1.55;padding:12px;overscroll-behavior:contain}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessageForm{display:grid;flex:0 0 auto;width:100%;min-width:0;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px;margin-top:10px}
+#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessageInput{min-height:68px;max-height:180px;font-size:16px;line-height:1.5;box-sizing:border-box}
 #modal.smv-live-session-modal .smv-live-session-actions{position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37}
 #modal.smv-live-session-modal .smv-live-session-actions button{flex:0 0 auto;min-width:0;width:100%;max-width:100%;min-height:44px;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box}
 #modal.profile-modal-active .modalbox{width:min(720px, -16px + 100vw)!important;max-width:720px!important;max-height:calc(100dvh - 8px)!important;min-height:0;overflow:hidden!important;padding:14px!important;border-radius:16px!important}
@@ -1695,7 +1703,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)){min-height:90px!importan
 .feature-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important}
 table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
 img:where(:not(.smv-css-island,.smv-css-island *)), video:where(:not(.smv-css-island,.smv-css-island *)), iframe:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
 @media print{
 body:where(:not(.smv-css-island,.smv-css-island *)){background:#24103F!important;color:#f2eddf!important;}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
@@ -1870,7 +1878,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 .media-card:where(:not(.smv-css-island,.smv-css-island *)){padding:7px!important;margin:5px 0px!important}
 .media-card img:where(:not(.smv-css-island,.smv-css-island *)){max-height:100px!important;object-fit:cover!important}
 .modal:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
 .modalbox h2:where(:not(.smv-css-island,.smv-css-island *)), .modalbox h3:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important;margin:3px 0px 6px!important}
 .smv-dialog-backdrop:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
 .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:none!important;padding:11px!important;border-radius:11px!important}

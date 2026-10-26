@@ -4587,6 +4587,74 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
+let smvLiveForegroundMessagingBound = false, smvLivePendingPushOpen = null;
+async function smvLiveEnableBackgroundAlerts(){
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')throw new Error('Background Alerts can only be enabled from the Astrologer Dashboard.');
+ if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
+ if(!navigator.serviceWorker?.register)throw new Error('This browser cannot register a background notification worker.');
+ if(Notification.permission==='denied')throw new Error('Notifications are blocked for this site. Enable notifications in your browser or Android app settings, then try again.');
+ const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+ if(permission!=='granted')throw new Error('Allow notifications for SMV ASTRO to receive background Call, Chat and Booking alerts.');
+ if(!app)throw new Error('Firebase has not initialized. Refresh SMV ASTRO and try again.');
+ const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+ await navigator.serviceWorker.ready;
+ if(!registration.pushManager)throw new Error('Push notifications are not supported by this browser. On iPhone, install SMV ASTRO to the Home Screen and open the installed app.');
+ const messagingModule=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js');
+ if(!(await messagingModule.isSupported()))throw new Error('Firebase Web Push is not supported in this browser. Use current Chrome on Android, or install SMV ASTRO to the Home Screen on a supported iPhone/iPad.');
+ const pushConfig=await renderApi('/public/push-config',{method:'GET',timeoutMs:12000});
+ const vapidKey=String(pushConfig?.vapidPublicKey||'').trim();
+ if(!vapidKey)throw new Error('Firebase Web Push key is not configured on the server. Set Render environment variable FCM_VAPID_PUBLIC_KEY from Firebase Console → Project settings → Cloud Messaging → Web Push certificates.');
+ const messaging=messagingModule.getMessaging(app);
+ const token=await messagingModule.getToken(messaging,{vapidKey,serviceWorkerRegistration:registration});
+ if(!token)throw new Error('The push service did not issue a device token. Check Firebase Cloud Messaging setup and retry.');
+ const onMessage=messagingModule.onMessage;
+ await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,userAgent:navigator.userAgent})});
+ if(!smvLiveForegroundMessagingBound){
+  onMessage(messaging,payload=>{
+   const data=payload?.data||{},type=String(data.type||'');
+   if(type==='push_test'&&Notification.permission==='granted'){
+    navigator.serviceWorker.ready.then(registration=>registration.showNotification(String(data.title||'SMV ASTRO Test Alert'),{body:String(data.body||'Background alert delivery is active.'),icon:'/assets/icon-192.png',badge:'/assets/favicon-64.png',tag:String(data.tag||'smv-push-test'),data:{url:'/'}})).catch(error=>console.warn('Foreground push test display failed:',error?.message||error));
+    const status=$('smvLivePushStatus');if(status)status.textContent='Test Alert arrived while SMV ASTRO was open. Close the browser or turn the screen off to test background delivery.';
+   }
+  });
+  smvLiveForegroundMessagingBound=true;
+ }
+ return {registered:true};
+}
+function smvLiveBindPushControls(){
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
+ const enable=$('smvLivePushEnable'),test=$('smvLivePushTest'),status=$('smvLivePushStatus');
+ if(enable&&!enable.dataset.bound){
+  enable.dataset.bound='1';
+  enable.onclick=async()=>{
+   enable.disabled=true;
+   if(status)status.textContent='Requesting notification permission and registering this device…';
+   try{
+    await smvLiveEnableBackgroundAlerts();
+    enable.textContent='BACKGROUND ALERTS ENABLED';
+    if(status)status.textContent='This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
+    if(test)test.disabled=false;
+   }catch(error){if(status)status.textContent=error?.message||String(error);}
+   finally{enable.disabled=false;}
+  };
+ }
+ if(test&&!test.dataset.bound){
+  test.dataset.bound='1';
+  test.onclick=async()=>{
+   test.disabled=true;if(status)status.textContent='Sending a test push alert…';
+   try{
+    await renderApi('/live/push/test',{method:'POST',body:JSON.stringify({})});
+    if(status)status.textContent='Test alert accepted by Firebase. If this page is visible, look for an SMV ASTRO Test Alert. For background testing, close the site or turn the screen off.';
+   }catch(error){if(status)status.textContent=error?.message||String(error);}
+   finally{test.disabled=false;}
+  };
+ }
+ renderApi('/live/push/status',{method:'GET',timeoutMs:12000}).then(r=>{
+  if(status)status.textContent=Number(r.registeredDevices||0)
+   ? 'Registered push device(s): '+Number(r.registeredDevices)+'. Enable alerts on every phone/browser that should ring.'
+   : 'Background alerts are not enabled on this device yet. Tap ENABLE BACKGROUND ALERTS and allow notifications.';
+ }).catch(()=>{});
+}
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function smvLiveCanonicalMode(session,fallback=''){
  const values=[session?.mode,session?.sessionMode,session?.consultationMode,session?.type,fallback];
@@ -5322,7 +5390,7 @@ function smvLiveShowDashboardMessage(message){
 }
 function smvLiveDashboardHtml(role){
  return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
- (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
+ (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><button class="btn" id="smvLivePushEnable" type="button">ENABLE BACKGROUND ALERTS</button><button class="btn gray" id="smvLivePushTest" type="button">SEND TEST ALERT</button></div><p id="smvLivePushStatus" class="small" role="status" aria-live="polite">Enable Push Alerts once on each mobile device that should receive incoming requests.</p><div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
  (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
@@ -5407,13 +5475,68 @@ async function smvLiveLoadDashboard(role){
  syncModes();
  const ring=$('smvLiveRingToggle');if(ring&&!ring.dataset.bound){ring.dataset.bound='1';ring.onclick=smvLiveToggleRingtone;}
  smvLiveRingButtonSync();
+ smvLiveBindPushControls();
  await reload();
  syncModes();
+}
+async function smvLiveHandlePushOpen(payload = {}){
+ const sessionId=String(payload.sessionId||'');
+ const bookingId=String(payload.bookingId||'');
+ if(!currentUser)return;
+ let role=String(window.__smvCurrentRole||'').toLowerCase();
+ if(role!=='astrologer'){
+  const account=await renderApi('/account/role',{method:'GET',timeoutMs:12000});
+  role=String(account.role||'').toLowerCase();
+  if(role!=='astrologer')return;
+  window.__smvCurrentRole='astrologer';
+ }
+ if(!$('smvLiveDashboardCard')&&typeof loadDashboard==='function')await loadDashboard('astrologer',true);
+ if(!$('smvLiveDashboardCard'))throw new Error('Open the Astrologer Dashboard after logging in to respond to this request.');
+ await smvLiveLoadDashboard('astrologer');
+ if(sessionId){
+  const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
+  const session=(list.sessions||[]).find(item=>String(item.id||'')===sessionId);
+  if(session&&session.state!=='ended'){
+   smvLiveOpenSession(session,null,session.state==='ringing');
+   return;
+  }
+  smvLiveShowDashboardMessage('This Live request is no longer pending. Refresh your Live Sessions.');
+  return;
+ }
+ if(bookingId){
+  const target=document.querySelector('[data-live-booking-accept="'+CSS.escape(bookingId)+'"]')||
+    document.querySelector('[data-scheduled-respond][data-appointment-id="'+CSS.escape(bookingId)+'"]');
+  target?.closest('article')?.scrollIntoView?.({behavior:'smooth',block:'center'});
+  smvLiveShowDashboardMessage('Booking alert opened. Review Pending Live Bookings or Scheduled Call / Chat Bookings.');
+  return;
+ }
+ if(String(payload.type||'')==='push_test')smvLiveShowDashboardMessage('SMV ASTRO Test Alert was opened successfully.');
+}
+function smvLiveBindPushOpenListener(){
+ if(!('serviceWorker' in navigator)||window.__smvLivePushOpenMessageBound)return;
+ window.__smvLivePushOpenMessageBound=true;
+ navigator.serviceWorker.addEventListener('message',event=>{
+  const message=event.data||{};
+  if(message.type!=='SMV_LIVE_PUSH_OPEN')return;
+  const payload=message.payload||{};
+  if(!currentUser){smvLivePendingPushOpen=payload;return;}
+  smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));
+ });
 }
 function smvLiveBindDashboard(role){
  if(!['customer','astrologer'].includes(role))return;const box=$('dashboardContent');if(!box||$('smvLiveDashboardCard'))return;
  const host=role==='astrologer'?(box.querySelector('#smvLiveDashboardMount')||box):box;
  host.insertAdjacentHTML('beforeend',smvLiveDashboardHtml(role));smvLiveLoadDashboard(role).catch(smvLiveShowError);smvLiveStartEventStream();
+ if(role==='astrologer'){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('smvLivePush')==='1'){
+   const payload={type:'push_open',sessionId:params.get('smvSessionId')||'',bookingId:params.get('smvBookingId')||''};
+   params.delete('smvLivePush');params.delete('smvSessionId');params.delete('smvBookingId');
+   const cleanUrl=window.location.pathname+(params.toString()?'?'+params.toString():'')+window.location.hash;
+   window.history.replaceState(window.history.state,'',cleanUrl);
+   setTimeout(()=>smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error))),350);
+  }
+ }
 }
 function smvLiveBindAdminPricing(){
  const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
@@ -5442,8 +5565,15 @@ function smvLiveBindAdminPricing(){
  if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=()=>load(true);}
  if(!smvLivePricingLoadedAt)load();
 }
+smvLiveBindPushOpenListener();
 window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveRingSuppressedIds.clear();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
-window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
+window.addEventListener('smv:auth-user',()=>{
+ setTimeout(smvLiveStartEventStream,200);
+ if(smvLivePendingPushOpen){
+  const payload=smvLivePendingPushOpen;smvLivePendingPushOpen=null;
+  setTimeout(()=>smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error))),400);
+ }
+});
 
 window.__SMV_APP_READY=true;
 window.dispatchEvent(new Event('smv:app-ready'));

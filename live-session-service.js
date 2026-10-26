@@ -272,9 +272,9 @@ function liveSessionSafeView(id, data) {
   };
 }
 
-function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser }) {
-  if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser) {
-    throw new Error('Live Session service requires Firestore, FieldValue, crypto and auth helpers.');
+function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser, admin }) {
+  if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser || !admin || typeof admin.messaging !== 'function') {
+    throw new Error('Live Session service requires Firestore, FieldValue, crypto, auth helpers and Firebase Messaging.');
   }
 
   const eventClients = new Map();
@@ -300,6 +300,54 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       userId: 'admin', audience: 'admin', type, title, message,
       read: false, createdAt: FieldValue.serverTimestamp(), ...extra
     }).catch(error => console.warn('[Live Session] Admin notification skipped:', error?.message || error));
+  }
+
+  // Web push tokens are created only by the authenticated Astrologer dashboard.
+  // This service uses the existing Firebase Admin app; no client can target another UID.
+  async function notifyAstrologerPush(astrologerUid, payload = {}) {
+    const uid = String(astrologerUid || '').trim();
+    if (!uid) return { sent: 0, failed: 0, registered: 0 };
+    try {
+      const snap = await db.collection('smv_push_tokens').where('uid', '==', uid).limit(25).get();
+      if (snap.empty) return { sent: 0, failed: 0, registered: 0 };
+      const title = String(payload.title || 'SMV ASTRO Alert').slice(0, 100);
+      const body = String(payload.body || 'Open SMV ASTRO to review the request.').slice(0, 240);
+      const data = {
+        type: String(payload.type || 'live_alert').slice(0, 40),
+        title, body,
+        url: '/',
+        tag: String(payload.tag || ('smv-live-' + Date.now())).slice(0, 100),
+        mode: String(payload.mode || '').slice(0, 12),
+        sessionId: String(payload.sessionId || '').slice(0, 180),
+        bookingId: String(payload.bookingId || '').slice(0, 180)
+      };
+      let sent = 0, failed = 0;
+      await Promise.all(snap.docs.map(async tokenDoc => {
+        const stored = tokenDoc.data() || {};
+        const token = String(stored.token || '');
+        if (String(stored.uid || '') !== uid || !token) return;
+        try {
+          await admin.messaging().send({
+            token,
+            data,
+            android: { priority: 'high', ttl: 24 * 60 * 60 * 1000 },
+            webpush: { headers: { TTL: '86400', Urgency: 'high' } }
+          });
+          sent++;
+        } catch (error) {
+          failed++;
+          const code = String(error?.code || '');
+          if (['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'].includes(code)) {
+            await tokenDoc.ref.delete().catch(() => {});
+          }
+          console.warn('[Live Push] Delivery failed for an Astrologer device:', code || 'unknown error');
+        }
+      }));
+      return { sent, failed, registered: snap.size };
+    } catch (error) {
+      console.warn('[Live Push] Notification delivery skipped:', error?.code || error?.message || 'unknown error');
+      return { sent: 0, failed: 1, registered: 0 };
+    }
   }
 
   let pricingInitPromise = null;
@@ -394,6 +442,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         const snap = await sessionRef(sessionId).get();
         if (!snap.exists) return;
         const session = snap.data() || {};
+        // An Astrologer may close the browser or lock the phone while an incoming
+        // request is ringing. Keep that request alive for its existing no-answer
+        // timer so the server push can bring the Astrologer back to the app.
+        // A Customer disconnect still follows the existing settlement path.
+        if (session.state === 'ringing' && String(session.astrologerUid || '') === String(uid)) {
+          return;
+        }
         if (session.state !== 'ended' && session.state !== 'preparing') {
           await endSession(sessionId, '', 'network_disconnect', true);
         }
@@ -685,12 +740,24 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         sessionCustomerName + ' requested a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
         { sessionId: id, customerId: uid, astrologerId: astroId, mode: kind });
       sendTo(astroId, { type: 'live.session.request', session: liveSessionSafeView(id, txResult.data) });
+      void notifyAstrologerPush(astroId, {
+        type: 'live_request', mode: kind, sessionId: id,
+        title: 'Incoming Live ' + kind.toUpperCase(),
+        body: 'A Customer is requesting a Live ' + kind.toUpperCase() + '. Open SMV ASTRO to respond.',
+        tag: 'smv-session-' + id
+      });
       sendTo(uid, { type: 'live.session.updated', session: liveSessionSafeView(id, txResult.data) });
     } else if (txResult.kind === 'booking' && !txResult.alreadyProcessed) {
       notifyAdmin('live_booking_requested', 'Live ' + kind.toUpperCase() + ' booking requested',
         sessionCustomerName + ' booked a Live ' + kind.toUpperCase() + ' with ' + String(txResult.data.astrologerName || 'Astrologer') + '. It will be accepted when the Astrologer is online.',
         { bookingId: id, customerId: uid, astrologerId: astroId, mode: kind });
       sendTo(astroId, { type: 'live.booking.pending', booking: { id, ...txResult.data } });
+      void notifyAstrologerPush(astroId, {
+        type: 'live_booking', mode: kind, bookingId: id,
+        title: 'New Live ' + kind.toUpperCase() + ' Booking',
+        body: 'A Customer has requested a Live ' + kind.toUpperCase() + ' booking. Open SMV ASTRO to review.',
+        tag: 'smv-booking-' + id
+      });
       sendTo(uid, { type: 'live.booking.updated', booking: { id, ...txResult.data } });
     }
     return {
@@ -1391,6 +1458,72 @@ async function rejectOrCancel(sessionId, user, reason) {
 
   if (!app) throw new Error('Live Session service requires Express app.');
 
+  app.get('/live/push/status', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    try {
+      const tokens = await db.collection('smv_push_tokens').where('uid', '==', auth.user.uid).limit(25).get();
+      return res.set('Cache-Control', 'no-store').json({
+        success: true, supported: true, registeredDevices: tokens.size
+      });
+    } catch (error) { return replyError(res, error, 'Unable to check Background Alert status.'); }
+  });
+
+  app.post('/live/push/register', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    try {
+      const token = String(req.body?.token || '').trim();
+      if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
+        return res.status(400).json({ success: false, error: 'The browser push token is invalid. Enable Background Alerts again.' });
+      }
+      const ref = db.collection('smv_push_tokens').doc(hash(token));
+      await ref.set({
+        uid: auth.user.uid, token, platform: 'web',
+        userAgent: String(req.body?.userAgent || '').slice(0, 500),
+        updatedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+      return res.set('Cache-Control', 'no-store').json({ success: true, registered: true });
+    } catch (error) { return replyError(res, error, 'Unable to register this device for Background Alerts.'); }
+  });
+
+  app.post('/live/push/unregister', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    try {
+      const token = String(req.body?.token || '').trim();
+      if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
+        return res.status(400).json({ success: false, error: 'The browser push token is invalid.' });
+      }
+      const ref = db.collection('smv_push_tokens').doc(hash(token));
+      const snap = await ref.get();
+      if (snap.exists && String(snap.data()?.uid || '') !== String(auth.user.uid)) {
+        return res.status(403).json({ success: false, error: 'This device token belongs to another account.' });
+      }
+      if (snap.exists) await ref.delete();
+      return res.set('Cache-Control', 'no-store').json({ success: true, unregistered: true });
+    } catch (error) { return replyError(res, error, 'Unable to disable Background Alerts for this device.'); }
+  });
+
+  app.post('/live/push/test', async (req, res) => {
+    const auth = await requireRole(req, res, ['astrologer']);
+    if (!auth) return;
+    const result = await notifyAstrologerPush(auth.user.uid, {
+      type: 'push_test', title: 'SMV ASTRO Test Alert',
+      body: 'Background Alerts are enabled on this device. Push delivery reached SMV ASTRO.',
+      tag: 'smv-push-test-' + Date.now()
+    });
+    if (!result.sent) {
+      return res.status(503).json({
+        success: false,
+        error: result.registered
+          ? 'The push service did not accept the test alert. Re-enable Background Alerts and try again.'
+          : 'No device is registered yet. Tap ENABLE BACKGROUND ALERTS first.'
+      });
+    }
+    return res.set('Cache-Control', 'no-store').json({ success: true, sent: result.sent });
+  });
+
   app.get('/live/pricing', async (_req, res) => {
     try {
       await ensurePricingDocument();
@@ -1774,7 +1907,7 @@ async function rejectOrCancel(sessionId, user, reason) {
   ensurePricingDocument().catch(error => console.warn('[Live Session] Pricing defaults were not persisted yet:', error?.message || error));
   restoreTimers().catch(() => {});
 
-  return { createRequest, acceptBooking, rejectBooking, cancelBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, listBookings, listCustomerBookings };
+  return { createRequest, acceptBooking, rejectBooking, cancelBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, listBookings, listCustomerBookings, notifyAstrologerPush };
 }
 
 function registerLiveSessionRoutes(options) {
