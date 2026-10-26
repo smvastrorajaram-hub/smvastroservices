@@ -11,9 +11,11 @@ const ASTROLOGERS = 'smv_astrologers';
 const SETTINGS = 'smv_settings';
 const DEFAULT_RATE_PAISE = 1000; // Legacy admin display/default only; never used as a Customer's Astrologer rate.
 const MAX_SESSION_MINUTES = 1440;
-const RING_TIMEOUT_MS = 45_000;
-// Give an Astrologer enough time to accept the live Chat after the 3-minute preparation phase.
-// Voice Call connection timeout remains unchanged.
+// Keep the initial incoming Call / Chat request visible to the Astrologer for two minutes.
+const RING_TIMEOUT_MS = 2 * 60_000;
+// Keep the voice-call connection timeout separate from the initial incoming answer window.
+const CALL_CONNECT_TIMEOUT_MS = 45_000;
+// Give an Astrologer enough time to establish the live Chat after accepting the request.
 const CHAT_ACCEPT_TIMEOUT_MS = 5 * 60_000;
 const PREPARATION_DURATION_MS = 3 * 60_000;
 const DISCONNECT_GRACE_MS = 20_000;
@@ -506,7 +508,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       dueAt = timestampMillis(d.createdAt) + RING_TIMEOUT_MS;
       reason = 'no_answer';
     } else if (d.state === 'connecting') {
-      dueAt = timestampMillis(d.connectingAt || d.preparationCompletedAt || d.acceptedAt || d.createdAt) + (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : RING_TIMEOUT_MS);
+      dueAt = timestampMillis(d.connectingAt || d.preparationCompletedAt || d.acceptedAt || d.createdAt) + (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : CALL_CONNECT_TIMEOUT_MS);
       reason = 'connection_failed';
     } else return;
     const timer = setTimeout(() => {
@@ -1932,6 +1934,8 @@ module.exports = {
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
+  RING_TIMEOUT_MS,
+  CALL_CONNECT_TIMEOUT_MS,
   PREPARATION_DURATION_MS,
   CHAT_ACCEPT_TIMEOUT_MS,
   validateLiveBirthDetails
