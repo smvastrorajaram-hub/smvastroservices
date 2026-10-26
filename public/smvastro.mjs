@@ -1,3 +1,5 @@
+import { ensureRazorpayCheckout } from './razorpay-checkout-loader.mjs?v=20261026-payment-reliability-v1';
+
 // SMV ASTRO merged frontend application module
 // Consolidated: dashboard-live.mjs + admin-workflows.mjs + app.mjs
 
@@ -1578,55 +1580,8 @@ async function loadQuestionPrice(){
 function showAskFlow(a){openQuestionService();}
 // Customer dashboard retry for questions whose payment was not completed.
 // Reuses the existing server-side /create-order endpoint with the SAME questionId,
-// Shared checkout bootstrap for Wallet recharge and existing payment retries.
-// The Checkout script is loaded only on demand; Wallet credit still requires server signature verification.
-let smvRazorpayCheckoutPromise = null;
-function ensureRazorpayCheckout() {
-  if (typeof window.Razorpay === 'function') return Promise.resolve(window);
-  if (smvRazorpayCheckoutPromise) return smvRazorpayCheckoutPromise;
-  smvRazorpayCheckoutPromise = new Promise((resolve, reject) => {
-    let script = document.querySelector('script[data-smv-razorpay-checkout-loader]');
-    if (script && ['failed', 'loaded'].includes(script.dataset.smvRazorpayCheckoutState) && typeof window.Razorpay !== 'function') {
-      script.remove();
-      script = null;
-    }
-    let settled = false;
-    let timeoutId = null;
-    const finish = error => {
-      if (settled) return;
-      settled = true;
-      if (timeoutId) clearTimeout(timeoutId);
-      if (error) {
-        if (script) script.dataset.smvRazorpayCheckoutState = 'failed';
-        reject(error);
-        return;
-      }
-      resolve(window);
-    };
-    const onLoad = () => {
-      if (script) script.dataset.smvRazorpayCheckoutState = 'loaded';
-      if (typeof window.Razorpay === 'function') finish(null);
-      else finish(new Error('Razorpay Checkout loaded without the payment constructor. Refresh and retry.'));
-    };
-    const onError = () => finish(new Error('Razorpay Checkout could not load. Check your connection and retry.'));
-    if (!script) {
-      script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.dataset.smvRazorpayCheckoutLoader = '1';
-      script.dataset.smvRazorpayCheckoutState = 'loading';
-    }
-    script.addEventListener('load', onLoad, { once: true });
-    script.addEventListener('error', onError, { once: true });
-    timeoutId = setTimeout(() => finish(new Error('Razorpay Checkout did not respond within 15 seconds. Please retry.')), 15000);
-    if (!script.isConnected) document.head.appendChild(script);
-    if (typeof window.Razorpay === 'function') finish(null);
-  }).catch(error => {
-    smvRazorpayCheckoutPromise = null;
-    throw error;
-  });
-  return smvRazorpayCheckoutPromise;
-}
+// Wallet, Ask Now and retry-payment flows share the resilient Checkout SDK loader.
+
 
 // so retry never creates a duplicate question.
 async function retryCustomerPayment(questionId, triggerButton){
@@ -2336,7 +2291,7 @@ async function smvLoadCustomerWallet(){
  if(host)host.innerHTML='<div class="small">Loading transactions…</div>';
  try{
   // Load the actual balance first. A failed ledger query must never block it.
-  const walletResult=await renderApi('/wallet',{method:'GET'});
+  const walletResult=await renderApi('/wallet',{method:'GET',timeoutMs:90000});
   const wallet=walletResult?.wallet||{};
   if(!walletResult?.success||!walletResult.wallet)throw new Error(walletResult?.error||'The backend did not return Wallet balance.');
   if(wallet.ownerRole&&String(wallet.ownerRole).toLowerCase()!=='customer')throw new Error('The signed-in account is not a Customer Wallet owner.');
@@ -2388,10 +2343,14 @@ function smvBindCustomerWallet(){
  const form=$('smvWalletRechargeForm');
  const submit=$('smvWalletRechargeButton');
  if(form){
+  const originalButtonLabel=submit?.textContent||'RECHARGE WALLET';
+  let rechargeInFlight=false;
+  ensureRazorpayCheckout().catch(error=>console.warn('Razorpay Checkout preload failed; click-to-retry remains available:',error?.message||error));
   let requestKey=smvWalletNewRequestKey();
   let requestAmount='';
   form.onsubmit=async event=>{
    event.preventDefault();
+   if(rechargeInFlight)return;
    if(!currentUser||!auth?.currentUser){smvWalletSetMessage('Please log in again before recharging.','error');return;}
    const input=$('smvWalletRechargeAmount');
    const amount=String(input?.value||'').trim();
@@ -2399,50 +2358,83 @@ function smvBindCustomerWallet(){
     smvWalletSetMessage('Enter a valid recharge amount of at least ₹1.00, using up to two decimal places.','error');return;
    }
    if(requestAmount!==amount){requestKey=smvWalletNewRequestKey();requestAmount=amount;}
-   if(submit)submit.disabled=true;
-   smvWalletSetMessage('Creating Payment.... Please wait...');
+   rechargeInFlight=true;
+   let verificationInProgress=false;
+   const releaseButton=()=>{
+    rechargeInFlight=false;
+    if(submit&&document.contains(submit)){submit.disabled=false;submit.textContent=originalButtonLabel;}
+   };
+   if(submit){submit.disabled=true;submit.textContent='CONNECTING TO PAYMENT…';}
+   smvWalletSetMessage('Connecting securely and preparing your Wallet recharge…');
    try{
-    const checkoutReady=ensureRazorpayCheckout();
-    const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey}),timeoutMs:90000});
+    const checkoutReadyPromise=ensureRazorpayCheckout().then(value=>({value}),error=>({error}));
+    const order=await renderApi('/wallet/recharge/create-order',{
+     method:'POST',timeoutMs:90000,body:JSON.stringify({amount,idempotencyKey:requestKey})
+    });
     if(order?.alreadyPaid){
      smvWalletSetMessage('This recharge was already paid. Refreshing the Wallet balance.','success');
      requestKey=smvWalletNewRequestKey();requestAmount='';
-     await smvLoadCustomerWallet();smvWalletSetMessage('Wallet balance refreshed.','success');return;
+     await smvLoadCustomerWallet();
+     smvWalletSetMessage('Wallet balance refreshed. No second payment is required.','success');
+     releaseButton();return;
     }
-    await checkoutReady;
-    if(!window.Razorpay)throw new Error('Razorpay Checkout did not load. Refresh the page and retry.');
-    if(!order?.rechargeId||!order?.orderId||!order?.keyId)throw new Error('The staging backend did not return a complete Wallet recharge order.');
-    const checkout=new window.Razorpay({
+    const checkoutReady=await checkoutReadyPromise;
+    if(checkoutReady?.error)throw checkoutReady.error;
+    const checkoutWindow=checkoutReady?.value;
+    const RazorpayCtor=checkoutWindow?.Razorpay||window.Razorpay;
+    if(typeof RazorpayCtor!=='function')throw new Error('Razorpay Checkout did not finish initializing. Please retry.');
+    if(!order?.rechargeId||!order?.orderId||!order?.keyId)throw new Error('The backend did not return a complete Wallet recharge order.');
+    smvWalletSetMessage('Recharge order ready. Opening secure Razorpay Checkout…');
+    const checkout=new RazorpayCtor({
      key:order.keyId,amount:Number(order.amount),currency:String(order.currency||'INR'),
      name:'SMV ASTRO',description:'Customer Wallet Recharge',order_id:order.orderId,
      handler:async paymentResponse=>{
+      verificationInProgress=true;
       try{
-       smvWalletSetMessage('Payment response received. Verifying signature and updating Wallet…');
-       const verified=await renderApi('/wallet/recharge/verify',{method:'POST',body:JSON.stringify({rechargeId:order.rechargeId,...paymentResponse}),timeoutMs:90000});
-       if(!verified?.verified)throw new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
+       smvWalletSetMessage('Payment response received. Verifying securely before crediting your Wallet…');
+       const verificationPayload={rechargeId:order.rechargeId,...paymentResponse};
+       let verified=null,lastVerificationError=null;
+       for(let attempt=0;attempt<3;attempt++){
+        try{
+         verified=await renderApi('/wallet/recharge/verify',{method:'POST',timeoutMs:90000,body:JSON.stringify(verificationPayload)});
+         lastVerificationError=null;break;
+        }catch(error){
+         lastVerificationError=error;
+         const status=Number(error?.status||0),reason=String(error?.message||error||'');
+         const retryable=[408,425,429,500,502,503,504].includes(status)||
+          (!status&&/timed out|failed to fetch|fetch failed|network|temporarily unavailable|aborted/i.test(reason))||
+          (status===409&&/capture is pending/i.test(reason));
+         if(!retryable||attempt===2)throw error;
+         smvWalletSetMessage('Payment was received. Checking the same transaction again; do not pay again ('+(attempt+1)+'/2)…');
+         await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+        }
+       }
+       if(!verified?.verified)throw lastVerificationError||new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet();
        const bonusMinutesCredited=Number.isSafeInteger(Number(verified.bonusMinutesCredited))&&Number(verified.bonusMinutesCredited)>0?Number(verified.bonusMinutesCredited):0;
-       smvWalletSetMessage('Recharge verified successfully. Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) were added to My Wallet.':' No bonus-minute offer was applied to this recharge.'),'success');
+       smvWalletSetMessage('Payment Successful — recharge verified. Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) added.':' No bonus-minute offer applied.'),'success');
       }catch(error){
-       smvWalletSetMessage('Payment was returned but Wallet verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until the transaction is checked.','error');
-      }finally{if(submit&&document.contains(submit))submit.disabled=false;}
+       smvWalletSetMessage('Payment returned but server verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until this transaction is checked.','error');
+      }finally{verificationInProgress=false;releaseButton();}
      },
-     modal:{ondismiss:()=>{
-      if(submit&&document.contains(submit))submit.disabled=false;
+     modal:{ondismiss:()=>setTimeout(()=>{
+      if(verificationInProgress)return;
       smvWalletSetMessage('Checkout closed. If payment completed, refresh Wallet before starting another recharge.');
-     }}
+      releaseButton();
+     },250)}
     });
     checkout.on('payment.failed',failure=>{
      const reason=failure?.error?.description||failure?.error?.reason||'Payment was not completed.';
-     smvWalletSetMessage('Recharge not confirmed: '+reason+'. No Wallet credit has been confirmed.','error');
-     if(submit&&document.contains(submit))submit.disabled=false;
+     smvWalletSetMessage('Payment Failed / not confirmed: '+reason+'. Wallet credit requires server verification.','error');
+     releaseButton();
     });
-    smvWalletSetMessage('Payment order created. Opening secure payment window…');
     checkout.open();
+    if(submit&&document.contains(submit))submit.textContent='WAITING FOR PAYMENT…';
+    smvWalletSetMessage('Razorpay Checkout is opening. Complete payment in the secure payment window.');
    }catch(error){
-    smvWalletSetMessage('Unable to start Wallet recharge: '+(error?.message||String(error)), 'error');
-    if(submit&&document.contains(submit))submit.disabled=false;
+    smvWalletSetMessage('Unable to start Wallet recharge: '+(error?.message||String(error)),'error');
+    releaseButton();
    }
   };
  }

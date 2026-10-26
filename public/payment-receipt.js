@@ -41,14 +41,9 @@
   const next=message=>{const t=target();const el=t?.document?.getElementById('next');if(el)el.textContent=String(message||'');};
   const ensureRazorpay=async()=>{
    const t=target()||window;
-   if(t.Razorpay)return t;
-   await new Promise((resolve,reject)=>{
-    const d=t.document;let s=d.querySelector('script[data-smv-razorpay]');
-    if(s){s.addEventListener('load',resolve,{once:true});s.addEventListener('error',()=>reject(Error('Payment Gateway could not load.')),{once:true});return;}
-    s=d.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.dataset.smvRazorpay='1';s.onload=resolve;s.onerror=()=>reject(Error('Payment Gateway could not load.'));d.head.appendChild(s);
-   });
-   if(!t.Razorpay)throw Error('Payment Gateway is unavailable.');
-   return t;
+   if(typeof t.Razorpay==='function')return t;
+   const loader=await import('./razorpay-checkout-loader.mjs?v=20261026-payment-reliability-v1');
+   return loader.ensureRazorpayCheckout(t,{timeoutMs:90000});
   };
   const success=({id,paymentId,date,kind:successKind})=>{
    const t=target();if(!t)return false;
