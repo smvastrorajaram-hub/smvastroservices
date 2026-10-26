@@ -376,8 +376,6 @@ html body.smv-v12-theme #smv-content-hub :where(.blog-content,.blog-card p,.blog
 #privateConsultationQuestionCard{position:relative}
 #privateConsultationQuestionClose{position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;padding:4px 8px;color:var(--smv207-red)}
 #privateConsultationQuestionCard h3{padding-right:42px}
-#privateConsultOfferControls{margin:8px 0}
-#privateConsultPromoCode{max-width:220px}
 #sessionNotice{margin:8px 0 14px}
 
 /* Contact page / forms */
@@ -438,7 +436,7 @@ body.smv-seo-page{margin:0;background:radial-gradient(ellipse at 12% 5%,rgba(91,
   #privateConsultationQuestionForm>label>:where(input,select,textarea){width:100%!important;max-width:none!important;box-sizing:border-box!important;margin:3px 0 0!important;padding:8px 10px!important;min-height:42px!important}
   #privateConsultQuestion{min-height:80px!important;height:80px!important;resize:vertical!important}
   #privateConsultPaymentSummary{margin:5px 0 2px!important}
-  #privateConsultOfferControls{margin:5px 0!important;gap:6px!important}
+  
   #privateConsultPayBtn{margin-top:5px!important}
   #privateConsultationQuestionClose{top:5px!important;right:7px!important}
 }
