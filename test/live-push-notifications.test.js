@@ -266,11 +266,14 @@ test('Admin dashboard reuses commission settings from its existing payload', () 
 });
 
 
-test('Customer live updates listen only to the latest relevant notification records', () => {
+test('Customer Dashboard event stream does not read retired question notification history', () => {
   const events = read('dashboard-events.js');
-  assert.ok(events.includes("where('userId','==',user.uid).orderBy('createdAt','desc').limit(50)"));
-  assert.ok(events.includes("kind:'notifications'"));
-  assert.ok(!events.includes("where('customerId','==',user.uid).limit(100)"));
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(events.includes("const refs=[{ref:db.collection('smv_users').doc(user.uid),kind:'profile'}]"));
+  assert.ok(!events.includes('smv_notifications'));
+  assert.ok(!events.includes("kind:'notifications'"));
+  assert.ok(frontend.includes("window.addEventListener('smv:wallet-updated'"));
+  assert.ok(frontend.includes("smvLiveStartEventStream"));
 });
 
 test('Admin home reads only the Live Session earnings ledger and the current management datasets', () => {
