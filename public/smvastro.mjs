@@ -3702,13 +3702,13 @@ async function loadAdminPanelData(background=false){
   const adminLoadUid=currentUser.uid;
   const adminReads=await Promise.allSettled([
    withTimeout(renderApi('/admin-data',{method:'GET'}),20000),
-   withTimeout(getDoc(doc(db,'smv_settings','commission'))),withTimeout(getDoc(doc(db,'smv_settings','question'))),withTimeout(getDoc(doc(db,'smv_settings','answer')))
+   withTimeout(getDoc(doc(db,'smv_settings','question')))
   ]);
   const adminRead=i=>{if(adminReads[i].status==='rejected')throw adminReads[i].reason;return adminReads[i].value;};
   const adminData=adminRead(0);
   // Keep every date-based Admin operational list newest-first. Notification arrays
   // are deliberately excluded so their existing behaviour remains untouched.
-  ['users','customers','astrologers','questions','payments','privateConsultations'].forEach(k=>{
+  ['users','customers','astrologers','questions','payments'].forEach(k=>{
     if(Array.isArray(adminData?.[k]))adminData[k]=smvSortDashboardDesc(adminData[k]);
   });
   if(currentUser?.uid!==adminLoadUid)return;
@@ -3768,8 +3768,10 @@ async function loadAdminPanelData(background=false){
   renderQuizManager();
 
 
-  let settings={astroPercent:20,adminPercent:80}; try{const ss=adminRead(1);if(ss.exists())settings=ss.data();}catch(e){}
-  let questionSettings={price:5}; try{const qps=adminRead(2);if(qps.exists())questionSettings=qps.data();}catch(e){}
+  // /admin-data already includes the same commission settings document.
+  // Reuse that payload instead of issuing a second Firestore read.
+  let settings=adminData?.settings?.commission||{astroPercent:20,adminPercent:80};
+  let questionSettings={price:5}; try{const qps=adminRead(1);if(qps.exists())questionSettings=qps.data();}catch(e){}
   $('questionPrice').value=Number(questionSettings.price||5);
   const hp=adminData.settings?.horoscopePayment||{advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};
   if($('advancedAnalysisPaymentEnabled'))$('advancedAnalysisPaymentEnabled').value=String(hp.advancedAnalysisEnabled===true);
