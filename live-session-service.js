@@ -1350,7 +1350,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     sendTo(recipientUid, {
       type: 'live.call.signal',
-      signal: { id: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType, payload }
+      signal: { id: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType, payload, createdAt: data.createdAt.toISOString() }
     });
     return { success: true, signalId: signalRef.id };
   }
