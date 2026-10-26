@@ -221,7 +221,9 @@ test('Astrologer dashboard live updates use a lightweight signal instead of hist
   const events = read('dashboard-events.js');
   assert.ok(events.includes("kind:'dashboard_signal'"));
   assert.ok(events.includes("role==='astrologer'&&kind==='dashboard_signal'"));
-  assert.ok(events.includes("'questions','private_consultations','withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'"));
+  assert.ok(events.includes("'withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'"));
+  assert.ok(!events.includes("doc('workflow'),kind:'workflow'"));
+  assert.ok(!events.includes("'questions','private_consultations','withdrawals_payouts'"));
   assert.ok(!events.includes("where(role==='astrologer'?'astrologerId':'customerId'"));
   assert.ok(!events.includes("where('status','==','available_to_astrologers')"));
   assert.ok(!events.includes("where('astrologerId','==',user.uid),kind:'withdrawals'"));
