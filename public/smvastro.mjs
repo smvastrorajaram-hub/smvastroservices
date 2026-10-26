@@ -1036,20 +1036,21 @@ async function submitAuth(mode){
     const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;
     let loginShellRole=smvCachedDashboardRole(loginCred.user.uid);
 
-    // After an explicit successful login, open a neutral dashboard shell before
-    // profile/role Firestore reads. Database quota exhaustion must not leave the
-    // user staring at the closed Login modal. No role-specific controls or data
-    // are rendered until the authoritative role resolution below completes.
-    if(!goToAdmin){
-      closeModal();
+    // Close Login immediately after Firebase Auth succeeds. Show a fast
+    // role-specific shell only when Customer/Astrologer role is already known;
+    // Admin must never flash the generic Dashboard while its role is resolved.
+    closeModal();
+    if(!goToAdmin && loginShellRole){
       hideHomeSurface();
       hidePrimarySections("dashboard");
       show("dashboard");
       show("dashboardContent");
+      show("dashLink");
+      hide("adminLink");
       hide("askNowSection");
       hide("approved-astrologers");
       hide("faq");
-      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?(loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD"):"";
+      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
       smvRenderFastDashboardShell(loginShellRole);
       smvEnterInternalView("dashboard",true);
       go("dashboard");
@@ -1062,6 +1063,14 @@ async function submitAuth(mode){
     const profileShellRole=String(loginProfile?.role||"").toLowerCase();
     if(!goToAdmin&&["customer","astrologer"].includes(profileShellRole)&&loginShellRole!==profileShellRole){
       loginShellRole=profileShellRole;
+      if(!$("dashboard")||$("dashboard").classList.contains("hidden")){
+        hideHomeSurface();
+        hidePrimarySections("dashboard");
+        show("dashboard");show("dashboardContent");show("dashLink");hide("adminLink");
+        hide("askNowSection");hide("approved-astrologers");hide("faq");
+        smvEnterInternalView("dashboard",true);
+        go("dashboard");
+      }
       if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
       smvRenderFastDashboardShell(loginShellRole);
     }
