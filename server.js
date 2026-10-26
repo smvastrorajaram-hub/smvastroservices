@@ -4479,6 +4479,56 @@ function walletOfferView(docSnap) {
     updatedAt: offer.updatedAt || null
   };
 }
+// Public, display-only list for the Home-page Wallet Offer banner.
+// Award eligibility is still checked again inside the captured-recharge transaction.
+app.get('/wallet/recharge-offers', async (req, res) => {
+  try {
+    const snap = await db.collection('smv_offers')
+      .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
+    const nowMs = Date.now();
+    const offers = snap.docs.map(docSnap => {
+      const offer = docSnap.data() || {};
+      const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
+      const bonus = Number(offer.bonusMinutes);
+      const used = Number(offer.usedCount ?? 0);
+      const totalLimit = Number(offer.totalUsageLimit ?? 0);
+      const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
+      if (offer.enabled !== true ||
+          !Number.isSafeInteger(minimum) || minimum < 0 ||
+          !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+          !Number.isSafeInteger(used) || used < 0 ||
+          !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
+          !Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 ||
+          (totalLimit > 0 && used >= totalLimit)) return null;
+      if (offer.startAt) {
+        const start = offerDateMilliseconds(offer.startAt);
+        if (start === null || nowMs < start) return null;
+      }
+      if (offer.endAt) {
+        const end = offerDateMilliseconds(offer.endAt);
+        if (end === null || nowMs >= end) return null;
+      }
+      return {
+        id: docSnap.id,
+        name: walletOfferText(offer.name),
+        bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
+        minimumRechargeAmountPaise: minimum,
+        bonusMinutes: bonus,
+        perCustomerLimit,
+        startAt: offer.startAt || null,
+        endAt: offer.endAt || null,
+        priority: walletOfferWholeNumber(offer.priority, 0)
+      };
+    }).filter(Boolean).sort((a, b) =>
+      b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
+    );
+    return res.set('Cache-Control', 'no-store').json({ success: true, offers });
+  } catch (error) {
+    console.error('Public Wallet recharge offers read failed:', error?.stack || error);
+    return res.status(500).json({ success: false, error: 'Unable to load active Wallet offers.' });
+  }
+});
+
 app.get('/admin/offers', async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
