@@ -199,6 +199,10 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
 }
 
 
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>smvLoadHomeWalletRechargeOffers().catch(()=>{}),{once:true});
+else smvLoadHomeWalletRechargeOffers().catch(()=>{});
+
+
 function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
  if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend. Backend: '+RAZORPAY_BACKEND_URL);
@@ -2417,7 +2421,8 @@ function smvBindCustomerWallet(){
        if(!verified?.verified)throw new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet();
-       smvWalletSetMessage('Recharge verified successfully. Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.','success');
+       const bonusMinutesCredited=Number.isSafeInteger(Number(verified.bonusMinutesCredited))&&Number(verified.bonusMinutesCredited)>0?Number(verified.bonusMinutesCredited):0;
+       smvWalletSetMessage('Recharge verified successfully. Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) were added to My Wallet.':' No bonus-minute offer was applied to this recharge.'),'success');
       }catch(error){
        smvWalletSetMessage('Payment was returned but Wallet verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until the transaction is checked.','error');
       }finally{if(submit&&document.contains(submit))submit.disabled=false;}
