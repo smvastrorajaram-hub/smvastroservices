@@ -139,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <main class="container" id="smv-public-page">
-<div aria-live="polite" class="smv-home-offer-banners hidden" id="smvHomeOfferBanners"></div>
 <div class="smv33-hero smv-css-island" id="home"><div class="smv33-scene"><div class="smv33-copy"><div class="smv33-mobile-head">
 <div class="smv33-kicker">Sri Madurai Veerayah Astro Services</div>
 <h1>Traditional Wisdom.<br/><span>Personal Guidance.</span></h1>
@@ -190,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="smv-new-asknow-kicker">CONSULT AN APPROVED ASTROLOGER</div>
 <h2 id="askNowHeading">Personal Astrology Guidance</h2>
 <p>Choose an approved astrologer, enter your birth details and question, then pay securely using your Wallet balance or Razorpay.</p>
-<p class="smv-new-asknow-note">Customer login is required. New Customer registrations receive a one-time ₹25 Wallet credit.</p>
+<p class="smv-new-asknow-note">Customer login is required.</p>
 <div class="smv-new-asknow-action">
 <button class="smv-new-asknow-button" id="askNowButton" type="button"><span class="asknow-label">CONSULT AN ASTROLOGER</span><span aria-hidden="true" class="asknow-arrow">→</span></button>
 </div>
@@ -227,9 +226,6 @@ document.addEventListener('DOMContentLoaded', function(){
 <details><summary>Is there a refund or cancellation policy?</summary><p>Payments are generally non-refundable once an accepted question enters the consultation process. If SMV ASTRO cannot provide the purchased service, a refund may be considered.</p></details>
 <details><summary>What happens if my question is not suitable for the astrology service?</summary><p>Questions that are unrelated to astrology, inappropriate, abusive, or involve matters that SMV ASTRO cannot responsibly provide guidance on may be rejected. If the question is rejected before consultation is provided, the customer may be eligible for a refund, normally processed within <strong>48 hours</strong> of the rejection decision.</p></details>
 <details><summary>Are astrology answers guaranteed?</summary><p>No. Astrology is a traditional form of guidance and interpretation. It is not a guarantee of future events or outcomes. Customers are free to accept, consider, or disagree with the guidance provided.</p></details>
-<details><summary>How do offers and promotion codes work?</summary><p>Eligible offers may be applied automatically at payment, or you can enter a valid promotion code when the option is available. Only one eligible offer is applied to a payment, and the final amount is verified securely before payment.</p></details>
-<details><summary>How does the ₹25 New Customer Wallet Credit work?</summary><p>New Customer registrations receive a one-time ₹25 Wallet credit when their Customer profile is successfully registered. The balance and posted welcome-credit entry appear in the Customer Dashboard Wallet.</p></details>
-<details><summary>Are festival and seasonal offers available?</summary><p>SMV ASTRO may enable limited-time festival or seasonal promotions. Availability, eligibility, price and promotion-code requirements depend on the active offer at the time of payment.</p></details>
 <details><summary>How does astrologer qualification and auto approval work?</summary><p>When the qualification system is enabled, a registered astrologer may be required to complete the SMV ASTRO Google Form qualification test. If the verified score reaches the required pass mark, the account can be approved automatically. When auto approval is disabled, the existing Admin review and approval process continues.</p></details>
 <details><summary>Does SMV ASTRO use AI to calculate or generate astrology results?</summary><p><strong>No.</strong> Horoscope, Marriage Matching, Panchang, Transit, SMV CALENDAR and automated prediction sections are produced by programmed astronomical/Vedic-astrology calculation and rule engines. They are <strong>not AI-generated and not AI-calculated</strong>. Personal consultation answers are a separate human astrologer service.</p></details>
 <details><summary>What does SMV CALENDAR provide?</summary><p>SMV CALENDAR provides date-based Panchang, Hora, planetary transit chart and positions, Moon-sign transit readings, Chandrashtama indication, Tara Bala, Tamil-calendar information, listed vrats, festivals and supported holiday references.</p></details>
@@ -298,7 +294,6 @@ document.addEventListener('DOMContentLoaded', function(){
 <label>Gender<select id="privateConsultGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
 <label>Your Question<textarea id="privateConsultQuestion" maxlength="10000" required="" rows="4"></textarea></label>
 <div id="privateConsultPaymentSummary"></div>
-<div class="action-row" id="privateConsultOfferControls"><input autocomplete="off" id="privateConsultPromoCode" maxlength="40" placeholder="Promotion code (optional)"/><button class="btn" id="privateConsultApplyPromo" type="button">APPLY</button><span class="small" id="privateConsultOfferMsg"></span></div>
 <div class="action-row" aria-label="Choose consultation payment method">
 <button class="btn alt" id="privateConsultPayBtn" name="paymentMethod" value="razorpay" type="submit">PAY WITH RAZORPAY</button>
 <button class="btn" id="privateConsultWalletPayBtn" name="paymentMethod" value="wallet" type="submit">PAY WITH WALLET</button>
@@ -895,7 +890,6 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <!-- SMV V10.2.2 MOBILE HEADER + HERO TARGETED FIX -->
 <!-- SMV V10.3 APPROVED REFERENCE HERO VISUAL FIX -->
-<script src="./offer-banners.js?v=20261025-phase1-admin-role-v1"></script>
 <dialog aria-labelledby="paymentReceiptTitle" class="smv-type-root" id="paymentSuccessPanel">
 <div class="smv-receipt-card">
 <h2 id="paymentReceiptTitle">Payment Successful ✓</h2>
