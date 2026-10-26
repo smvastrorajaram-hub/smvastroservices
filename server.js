@@ -2946,7 +2946,7 @@ app.get("/admin-data", async (req, res) => {
   try {
     // Read each collection independently. One damaged/missing collection must
     // never prevent the Admin Dashboard itself from opening.
-     = await Promise.all([
+    const [users, astrologers, questions, payments, privateConsultations, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCollection("smv_users"),
       readCollection("smv_astrologers"),
       readCollection("smv_questions"),
