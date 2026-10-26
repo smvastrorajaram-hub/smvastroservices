@@ -29,13 +29,15 @@ test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
   const server = read('server.js');
   assert.match(server, /registerLiveSessionRoutes\(\{app,db,FieldValue,crypto,requireUser,isAdminUser,admin\}\)/);
   assert.match(server, /type: 'scheduled_booking'/);
+  assert.match(server, /app\.get\('\/public\/push-config'/);
+  assert.match(server, /process\.env\.FCM_VAPID_PUBLIC_KEY/);
   assert.match(server, /liveSessionService\.notifyAstrologerPush\(callBooking\.astrologerUid/);
 });
 
 test('Astrologer can register and test device-level Background Alerts', () => {
   const frontend = read('public/smvastro.mjs');
   assert.match(frontend, /Notification\.requestPermission\(\)/);
-  assert.match(frontend, /getToken\(messaging,\s*\{\s*serviceWorkerRegistration\s*:\s*registration\s*\}\)/);
+  assert.match(frontend, /messagingModule\.getToken\(messaging,\s*\{\s*vapidKey,\s*serviceWorkerRegistration\s*:\s*registration\s*\}\)/);
   assert.match(frontend, /id="smvLivePushEnable"/);
   assert.match(frontend, /id="smvLivePushTest"/);
   assert.match(frontend, /renderApi\('\/live\/push\/register'/);
