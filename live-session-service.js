@@ -555,11 +555,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const scheduledAppointmentId = String(appointmentId || '').trim();
     if (scheduledAppointmentId && scheduledAppointmentId.length > 180) throw httpError(400, 'Scheduled booking ID is invalid.', 'LIVE_APPOINTMENT_ID_INVALID');
     const id = hash(uid + ':' + reqId);
-    const fingerprint = hash(JSON.stringify({
+    const fingerprintPayload = {
       customerUid: uid, astrologerId: astroId, mode: kind, minutes: length,
-      customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
-      appointmentId: scheduledAppointmentId
-    }));
+      customerName: sessionCustomerName, birthDetails: sessionBirthDetails
+    };
+    const legacyFingerprint = hash(JSON.stringify(fingerprintPayload));
+    const fingerprint = hash(JSON.stringify(scheduledAppointmentId
+      ? { ...fingerprintPayload, appointmentId: scheduledAppointmentId }
+      : fingerprintPayload));
     const sRef = sessionRef(id), bRef = bookingRef(id);
     const customerProfileRef = userRef(uid), astroProfileRef = userRef(astroId);
     const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef(), cRef = commissionRef();
@@ -570,8 +573,16 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       ]);
       if (oldSession.exists || oldBooking.exists) {
         const old = oldSession.exists ? (oldSession.data() || {}) : (oldBooking.data() || {});
-        if (old.payloadFingerprint !== fingerprint || old.customerUid !== uid || old.astrologerUid !== astroId) {
+        const canAttachLegacyAppointment = !!scheduledAppointmentId && !old.appointmentId &&
+          old.payloadFingerprint === legacyFingerprint;
+        if ((old.payloadFingerprint !== fingerprint && !canAttachLegacyAppointment) ||
+            old.customerUid !== uid || old.astrologerUid !== astroId) {
           throw httpError(409, 'This request ID was already used for different session details.', 'LIVE_IDEMPOTENCY_CONFLICT');
+        }
+        if (canAttachLegacyAppointment) {
+          const patch = { appointmentId: scheduledAppointmentId, payloadFingerprint: fingerprint, updatedAt: nowTimestamp() };
+          tx.set(oldSession.exists ? sRef : bRef, patch, { merge: true });
+          Object.assign(old, patch);
         }
         return { kind: oldSession.exists ? 'session' : 'booking', id, data: old, alreadyProcessed: true };
       }
@@ -1469,6 +1480,15 @@ async function rejectOrCancel(sessionId, user, reason) {
       const currentStatus = String(appointment.bookingStatus || 'requested').toLowerCase();
       if (!['accepted', 'in_progress', 'waiting_for_online'].includes(currentStatus)) {
         return res.status(409).json({ success: false, error: 'Accept this booking in the Astrologer dashboard before starting it.' });
+      }
+      if (currentStatus === 'in_progress' && appointment.liveSessionId) {
+        const existingSession = await sessionRef(String(appointment.liveSessionId)).get();
+        if (existingSession.exists) {
+          return res.set('Cache-Control', 'no-store').json({
+            success: true, alreadyProcessed: true, kind: 'session',
+            session: liveSessionSafeView(existingSession.id, existingSession.data() || {})
+          });
+        }
       }
       const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(appointment.preferredDate || ''));
       const timeMatch = /^(\d{2}):(\d{2})$/.exec(String(appointment.preferredTime || ''));
