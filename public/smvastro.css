@@ -3724,49 +3724,6 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 #admin [data-qcard] > .action-row > [data-qsave], #admin [data-qcard] > .action-row > [data-qdelete]{flex:1 1 0px!important;width:auto!important;min-width:0px!important;margin:0px!important}
 #admin .action-row{display:flex!important;flex-flow:wrap!important;align-items:center!important;gap:8px!important}
 #admin .action-row > .btn, #admin .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){flex:1 1 calc(50% - 4px)!important;width:auto!important;min-width:0px!important}
-.smv-home-offer-banners{width:100%;margin:10px 0px 16px;display:grid;gap:10px;position:relative;z-index:4}
-.smv-home-offer-banners.hidden{display:none}
-.smv-home-offer-banner{position:relative;isolation:isolate;overflow:hidden;width:100%;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;min-height:82px;padding:11px 16px 11px 13px;border:1px solid rgba(221, 178, 71, 0.82);border-radius:16px;background:linear-gradient(112deg, rgb(77, 7, 18) 0%, rgb(126, 16, 33) 36%, rgb(59, 9, 42) 72%, rgb(24, 9, 22) 100%);color:rgb(255, 255, 255);box-shadow:rgba(72, 9, 23, 0.18) 0px 8px 24px, rgba(255, 255, 255, 0.16) 0px 1px 0px inset;cursor:pointer;text-decoration:none;transform:translateZ(0px);line-height:1.5}
-.smv-home-offer-banner::before{content:"";position:absolute;z-index:-1;inset:-70% auto -70% -18%;width:32%;transform:rotate(18deg);background:linear-gradient(90deg, transparent, rgba(255, 230, 151, 0.2), transparent);animation:5.2s ease-in-out 0s infinite normal none running smvOfferShine}
-.smv-home-offer-banner::after{content:"";position:absolute;z-index:-2;inset:0px;background:radial-gradient(circle at 83% 35%, rgba(255, 191, 58, 0.18), transparent 25%), radial-gradient(circle at 9% 70%, rgba(255, 221, 125, 0.11), transparent 24%);pointer-events:none}
-@keyframes smvOfferShine{
-0%, 55%{left:-30%}
-80%, 100%{left:125%}}
-.smv-offer-art{width:58px;height:58px;display:grid;place-items:center;flex:0 0 auto;filter:drop-shadow(rgba(0, 0, 0, 0.28) 0px 3px 7px)}
-.smv-offer-art img{width:100%;height:100%;object-fit:contain;display:block}
-.smv-offer-copy{min-width:0px;text-align:left}
-.smv-offer-kicker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
-.smv-offer-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;background:linear-gradient(rgb(255, 230, 154), rgb(231, 183, 62));color:rgb(91, 16, 23);font-size:0.68rem;font-weight:900;letter-spacing:0.075em;text-transform:uppercase;box-shadow:rgba(0, 0, 0, 0.18) 0px 2px 8px}
-.smv-offer-name{font-size:0.72rem;color:rgb(247, 217, 135);font-weight:800;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42ch}
-.smv-offer-title{display:block;color:rgb(255, 255, 255);font-size:clamp(1rem, 1.55vw, 1.28rem);font-weight:900;line-height:1.18;text-shadow:rgba(0, 0, 0, 0.24) 0px 1px 2px}
-.smv-offer-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:5px;color:rgb(249, 233, 193);font-size:0.76rem;font-weight:700}
-.smv-offer-code{padding:2px 7px;border:1px dashed rgba(255, 226, 143, 0.68);border-radius:6px;background:rgba(255, 255, 255, 0.07);letter-spacing:0.05em}
-.smv-offer-countdown{font-variant-numeric:tabular-nums;color:rgb(255, 243, 196)}
-.smv-offer-period{font-variant-numeric:tabular-nums;color:rgb(255, 247, 220);font-weight:800}
-.smv-offer-cta{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:116px;min-height:42px;padding:8px 14px;border-radius:11px;background:linear-gradient(rgb(255, 217, 104), rgb(231, 173, 38));color:rgb(84, 16, 25);font-size:0.82rem;font-weight:950;letter-spacing:0.025em;box-shadow:rgba(0, 0, 0, 0.24) 0px 5px 14px, rgba(255, 255, 255, 0.55) 0px 1px 0px inset;transition:transform 0.18s, filter 0.18s}
-.smv-home-offer-banner:hover .smv-offer-cta, .smv-home-offer-banner:focus-visible .smv-offer-cta{transform:translateY(-1px);filter:brightness(1.05)}
-.smv-home-offer-banner:focus-visible{outline:rgb(244, 198, 80) solid 3px;outline-offset:2px}
-@media (max-width: 899px){
-.smv-home-offer-banners{margin:8px 0px 11px}
-.smv-home-offer-banner{grid-template-columns:42px minmax(0px, 1fr) auto;gap:9px;min-height:68px;padding:8px 9px 8px 8px;border-radius:12px}
-.smv-offer-art{width:42px;height:42px}
-.smv-offer-kicker{gap:5px;margin-bottom:2px}
-.smv-offer-badge{font-size:0.56rem;min-height:18px;padding:1px 6px}
-.smv-offer-name{font-size:0.6rem;max-width:21ch}
-.smv-offer-title{font-size:0.86rem;line-height:1.15}
-.smv-offer-meta{gap:5px;margin-top:3px;font-size:0.61rem}
-.smv-offer-cta{min-width:auto;min-height:34px;padding:6px 9px;font-size:0.68rem;border-radius:9px}
-.smv-offer-cta span{display:none}}
-@media (max-width: 430px){
-.smv-offer-name{display:none}
-.smv-offer-countdown{display:inline}
-.smv-offer-period{font-size:0.57rem;line-height:1.25}
-.smv-home-offer-banner{grid-template-columns:38px minmax(0px, 1fr) auto}
-.smv-offer-art{width:38px;height:38px}
-.smv-offer-title{font-size:0.8rem}}
-@media (prefers-reduced-motion: reduce){
-.smv-home-offer-banner::before{animation:auto ease 0s 1 normal none running none}
-.smv-offer-cta{transition:none}}
 html body #private-consultation button.smv-compact-control{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:148px;height:29px;min-height:29px;padding:4px 6px;margin:5px 0px;border:1px solid rgb(200, 164, 93);border-radius:7px;background:rgb(139, 16, 29);color:rgb(255, 255, 255);white-space:nowrap;cursor:pointer;box-shadow:rgba(80, 19, 32, 0.125) 0px 3px 8px}
 html body #private-consultation button.smv-compact-control:disabled{opacity:0.5;cursor:not-allowed}
 #private-consultation .smv-private-sub-review{padding:5px 0px;border-bottom:1px solid rgb(238, 238, 238)}
@@ -3779,7 +3736,7 @@ html body #private-consultation button.smv-compact-control:disabled{opacity:0.5;
 #admin .smv-admin-shortcuts{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px 10px!important;width:min(100%,760px)!important;max-width:760px!important;margin:12px auto 16px!important;padding:0 8px!important;box-sizing:border-box!important;align-items:stretch!important;justify-items:stretch!important;justify-content:center!important}
 html body #admin button.smv-admin-shortcut{display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;height:44px!important;min-height:44px!important;max-height:none!important;margin:0!important;padding:4px 2px!important;border:0!important;border-bottom:2px solid rgb(224,196,137)!important;border-radius:0!important;background:transparent!important;color:#f2eddf!important;-webkit-text-fill-color:#f2eddf!important;font-size:clamp(10px,1.05vw,12px)!important;font-weight:700!important;line-height:1.12!important;text-align:center!important;white-space:normal!important;overflow:visible!important;overflow-wrap:normal!important;word-break:normal!important;text-wrap:balance;aspect-ratio:auto!important;box-shadow:none!important;cursor:pointer!important;flex:none!important}
 html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-admin-shortcut:focus-visible{background:rgb(255,250,240)!important;color:rgb(123,12,23)!important;-webkit-text-fill-color:rgb(123,12,23)!important;border-bottom-color:rgb(158,20,31)!important;outline:0!important}
-#admin :is(#adminPendingQuestions,#adminPrivatePending,#adminAnswers,#adminRefunds,#adminOffersPromotions,#adminWithdrawals,#adminHoroscopePriceSet,#adminCommissionSettings){scroll-margin-top:100px}
+#admin :is(#adminPendingQuestions,#adminPrivatePending,#adminAnswers,#adminRefunds,#adminWithdrawals,#adminHoroscopePriceSet,#adminCommissionSettings){scroll-margin-top:100px}
 @media (max-width:700px){#admin > .card:first-child > div:first-child > div{max-width:100%!important}#admin .admin-dashboard-title,#admin .admin-dashboard-subtitle{text-align:center!important}#admin .smv-admin-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 8px!important;width:min(100%,520px)!important;max-width:520px!important;margin:10px auto 15px!important;padding:0 8px!important}html body #admin button.smv-admin-shortcut{height:48px!important;min-height:48px!important;padding:4px 1px!important;font-size:clamp(8.5px,2.42vw,10.25px)!important;line-height:1.08!important;letter-spacing:-0.08px!important}}
 .smv-type-root{font-family:Arial,sans-serif;font-size:14px;line-height:1.55;font-weight:400}
 :where(.smv-type-root) :where(div,p,span,a,label,small,li,td,th,dl,dt,dd){font-family:inherit;font-size:inherit;line-height:inherit}
