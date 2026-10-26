@@ -4814,15 +4814,19 @@ function smvLiveApplyChatLayout(session){
   content.style.minHeight='0';content.style.width='100%';content.style.height='100%';
   panel.style.width='100%';panel.style.height='100%';panel.style.maxHeight='100%';panel.style.minHeight='0';
   panel.style.flex='1 1 auto';panel.style.display='flex';panel.style.flexDirection='column';panel.style.overflow='hidden';panel.style.boxSizing='border-box';
-  body.style.display='flex';body.style.flex='1 1 auto';body.style.flexDirection='column';body.style.minHeight='0';
+  body.style.display='flex';body.style.flex='1 1 0%';body.style.flexDirection='column';body.style.minHeight='0';body.style.maxHeight='100%';
   body.style.width='100%';body.style.overflow='hidden';body.style.overflowY='hidden';body.style.boxSizing='border-box';
   for(const child of body.children){if(child.id!=='smvLiveChatArea')child.style.flex='0 0 auto';}
+ }else{
+  body.style.display='flex';body.style.flex='1 1 auto';body.style.flexDirection='column';body.style.minHeight='0';body.style.maxHeight='';
+  body.style.width='100%';body.style.overflow='';body.style.overflowY='auto';body.style.overflowX='hidden';body.style.boxSizing='border-box';
+  for(const child of body.children)child.style.flex='';
  }
  const chat=$('smvLiveChatArea'),messages=$('smvLiveMessages'),form=$('smvLiveMessageForm'),input=$('smvLiveMessageInput'),send=$('smvLiveSendMessage');
  if(chat){
   if(active){
    chat.hidden=false;chat.style.display='flex';chat.style.flex='1 1 0%';chat.style.flexDirection='column';
-   chat.style.width='100%';chat.style.height='100%';chat.style.minHeight='min(240px,38dvh)';
+   chat.style.width='100%';chat.style.height='auto';chat.style.minHeight='0';
    chat.style.maxHeight='none';chat.style.minWidth='0';chat.style.overflow='hidden';
    chat.style.boxSizing='border-box';chat.style.margin='8px 0 0';chat.style.padding='0';
    chat.style.border='0';chat.style.borderRadius='0';chat.style.background='transparent';chat.style.color='#ffffff';
@@ -4835,12 +4839,12 @@ function smvLiveApplyChatLayout(session){
  }
  if(messages){
   if(active){
-   messages.style.display='block';messages.style.flex='1 1 0%';messages.style.width='100%';messages.style.height='100%';
-   messages.style.minHeight='min(180px,28dvh)';messages.style.maxHeight='none';messages.style.overflowY='auto';
+   messages.style.display='flex';messages.style.flexDirection='column';messages.style.flex='1 1 0%';messages.style.width='100%';messages.style.height='auto';
+   messages.style.minHeight='0';messages.style.maxHeight='none';messages.style.overflowY='auto';
    messages.style.overflowX='hidden';messages.style.boxSizing='border-box';messages.style.fontSize='16px';
    messages.style.lineHeight='1.55';messages.style.padding='12px';messages.style.overscrollBehavior='contain';
   }else{
-   messages.style.flex='1 1 auto';messages.style.width='';messages.style.height='';messages.style.minHeight='120px';
+   messages.style.display='';messages.style.flexDirection='';messages.style.flex='1 1 auto';messages.style.width='';messages.style.height='';messages.style.minHeight='120px';
    messages.style.maxHeight='none';messages.style.overflowY='auto';messages.style.overflowX='';
    messages.style.boxSizing='';messages.style.fontSize='';messages.style.lineHeight='';messages.style.padding='10px';
    messages.style.overscrollBehavior='';
@@ -4852,8 +4856,8 @@ function smvLiveApplyChatLayout(session){
   form.style.gridTemplateColumns=active&&window.matchMedia('(min-width:720px)').matches?'minmax(0,1fr) 150px':'minmax(0,1fr)';
   form.style.alignItems='stretch';form.style.gap='10px';form.style.marginTop='10px';
  }
- if(input&&active){input.style.minHeight='68px';input.style.maxHeight='180px';input.style.fontSize='16px';input.style.lineHeight='1.5';input.style.boxSizing='border-box';}
- if(send&&active){send.style.minHeight='48px';send.style.alignSelf='stretch';send.style.fontSize='15px';}
+ if(input&&active){input.style.minHeight='68px';input.style.maxHeight='180px';input.style.fontSize='16px';input.style.lineHeight='1.5';input.style.boxSizing='border-box';}else if(input){input.style.minHeight='';input.style.maxHeight='';input.style.fontSize='';input.style.lineHeight='';input.style.boxSizing='';}
+ if(send&&active){send.style.minHeight='48px';send.style.alignSelf='stretch';send.style.fontSize='15px';}else if(send){send.style.minHeight='';send.style.alignSelf='';send.style.fontSize='';}
 }
 function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
