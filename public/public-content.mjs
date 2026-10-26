@@ -424,7 +424,7 @@
         });
         const result=await response.json().catch(()=>({}));
         if(!response.ok||result.ok!==true)throw new Error(result.error||'The backend did not confirm the Call Booking request.');
-        if(message)message.innerHTML='<span class="success">'+bookingLabel+' booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. Wait for the Astrologer to accept it. At the scheduled time the Astrologer starts the session; Wallet balance must cover the selected duration.</span>';
+        if(message)message.innerHTML='<span class="success">'+bookingLabel+' booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. Wait for the Astrologer to accept it. Track status under Customer Dashboard → Live Call / Live Chat → My Scheduled Bookings. At the scheduled time the Astrologer starts the session; Wallet balance must cover the selected duration.</span>';
         if(submit){submit.textContent=bookingMode==='chat'?'CHAT BOOKING SUBMITTED':'CALL BOOKING SUBMITTED';}
       }catch(error){
         if(message)message.innerHTML='<span class="error">'+esc(error?.message||String(error))+'</span>';
