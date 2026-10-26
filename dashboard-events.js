@@ -44,12 +44,9 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
      {ref:db.collection('smv_settings').doc('dashboardChange'),kind:'dashboard_signal'}
     );
    }else{
-    // Customer dashboard no longer has public/private question history. Keep only
-    // the newest relevant notification records for Call, Chat, booking, Wallet and withdrawals.
-    refs.push({
-     ref:db.collection('smv_notifications').where('userId','==',user.uid).orderBy('createdAt','desc').limit(50),
-     kind:'notifications'
-    });
+    // Customer Call/Chat and scheduled-booking state comes from the Live Session
+    // SSE stream; Wallet recharge refreshes its own trusted response. The retired
+    // question-payment notification history is no longer a dashboard dependency.
    }
    let waiting=refs.length;
    refs.forEach((entry,index)=>{
@@ -63,6 +60,9 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
      if(role==='admin'&&kind==='admin_signal'){
       const signal=snap.data?.()||{};
       const path=String(signal.path||''),category=String(signal.category||'');
+      // Legacy question workflows no longer render in Admin. Ignore their
+      // signals so an old client cannot trigger a full Admin data reload.
+      if(category==='questions'||category==='private_consultations')return;
       send('change',{kinds:['admin_signal'],path,category});
       return;
      }
