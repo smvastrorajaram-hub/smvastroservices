@@ -149,7 +149,7 @@ function createPushNotificationService({ app, db, FieldValue, requireUser, webPu
       const astro = astroSnap.exists ? (astroSnap.data() || {}) : {};
       const role = String(profile.role || astro.role || '').trim().toLowerCase();
       const status = String(astro.status || '').trim().toLowerCase();
-      if (role !== 'astrologer' || !astroSnap.exists || !['approved', 'active'].includes(status)) {
+      if ((role && role !== 'astrologer') || !astroSnap.exists || !['approved', 'active'].includes(status)) {
         return res.status(403).json({ success: false, error: 'Phone alerts are available to approved Astrologer accounts only.' });
       }
 
