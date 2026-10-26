@@ -25,6 +25,9 @@ on:
     paths:
       - 'wallet-service.js'
       - 'test/wallet-service.test.js'
+      - 'live-session-service.js'
+      - 'push-notification-service.js'
+      - 'test/push-notification-service.test.js'
       - 'server.js'
       - 'public/index.html'
       - 'public/smvastro.mjs'
@@ -71,3 +74,5 @@ jobs:
         run: npm run test:wallet
       - name: Run Live Session billing tests
         run: npm run test:live-session
+      - name: Run Web Push validation tests
+        run: node --test test/push-notification-service.test.js
