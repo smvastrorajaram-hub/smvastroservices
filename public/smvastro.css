@@ -112,7 +112,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-roo
 form:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 form input, form select, form textarea{width:100%;box-sizing:border-box}
 .btn:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:13px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-24px + 100vw)!important;max-width:calc(-24px + 100vw)!important;padding:14px 12px!important;border-radius:12px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-chat-active .modalbox){width:calc(-24px + 100vw)!important;max-width:calc(-24px + 100vw)!important;padding:14px 12px!important;border-radius:12px!important}
 .modalbox .btn:where(:not(.smv-css-island,.smv-css-island *)){min-height:40px!important}}
 #dashboardContent .astro-dashboard-summary:where(:not(.smv-css-island,.smv-css-island *)){overflow:visible!important}
 #dashboardContent .astro-dashboard-summary > .card:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;word-break:break-word!important}
@@ -557,7 +557,7 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #englishHoroscopeResult .bhava-chart, #tamilHoroscopeResult .bhava-chart{display:grid!important;visibility:visible!important;opacity:1!important}
 #modal.modal{visibility:visible;position:fixed!important;inset:0px!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;display:grid!important;place-items:center!important;overflow:hidden}
 #modal.modal.hidden{display:none!important}
-#modal .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:auto!important;overscroll-behavior:contain}
+#modal:not(.smv-live-chat-active) .modalbox{position:relative!important;z-index:2147483001!important;max-height:calc(100dvh - 24px)!important;min-height:0;overflow:auto!important;overscroll-behavior:contain}
 #modal .modalbox > button[aria-label="Close"]{position:absolute!important;top:5px!important;right:7px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:700 23px/1 Arial,sans-serif!important;cursor:pointer!important;z-index:20!important}
 
 #modal .modalbox .smv-live-session-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;opacity:1;color:#ffffff;-webkit-text-fill-color:#ffffff}
@@ -1695,7 +1695,7 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)){min-height:90px!importan
 .feature-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important}
 table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;max-width:100%!important;font-size:11px!important;display:block!important;overflow-x:auto!important}
 img:where(:not(.smv-css-island,.smv-css-island *)), video:where(:not(.smv-css-island,.smv-css-island *)), iframe:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-chat-active .modalbox){width:calc(-20px + 100vw)!important;max-width:calc(-20px + 100vw)!important;padding:14px!important}}
 @media print{
 body:where(:not(.smv-css-island,.smv-css-island *)){background:#24103F!important;color:#f2eddf!important;}
 .container:where(:not(.smv-css-island,.smv-css-island *)){padding:0px!important}
@@ -1870,7 +1870,7 @@ label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.
 .media-card:where(:not(.smv-css-island,.smv-css-island *)){padding:7px!important;margin:5px 0px!important}
 .media-card img:where(:not(.smv-css-island,.smv-css-island *)){max-height:100px!important;object-fit:cover!important}
 .modal:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-chat-active .modalbox){width:calc(-10px + 100vw)!important;max-width:calc(-10px + 100vw)!important;max-height:calc(-10px + 100dvh)!important;padding:10px!important;border-radius:11px!important}
 .modalbox h2:where(:not(.smv-css-island,.smv-css-island *)), .modalbox h3:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important;margin:3px 0px 6px!important}
 .smv-dialog-backdrop:where(:not(.smv-css-island,.smv-css-island *)){padding:5px!important}
 .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){width:calc(-10px + 100vw)!important;max-width:none!important;padding:11px!important;border-radius:11px!important}
@@ -1943,7 +1943,7 @@ input:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:
 .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 .password-toggle:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 .password-toggle svg:where(:not(.smv-css-island,.smv-css-island *)){fill:none;stroke:rgb(0, 0, 0);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;width:18px!important;height:18px!important}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)), .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){border-radius:9px!important;box-shadow:rgba(0, 0, 0, 0.2) 0px 12px 35px!important}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-chat-active .modalbox), .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){border-radius:9px!important;box-shadow:rgba(0, 0, 0, 0.2) 0px 12px 35px!important}
 .smv-dialog-icon:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;border-color:rgb(152, 0, 0)!important;box-shadow:none!important;color:rgb(152, 0, 0)!important}
 .smv-dialog h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(143, 0, 0)!important}
 #astroCards{gap:12px!important}
@@ -2339,7 +2339,7 @@ input::placeholder:where(), textarea::placeholder:where(){color:#687386!importan
 .password-toggle:focus-visible:where(:not(.smv-css-island,.smv-css-island *)){outline-offset:2px;outline:rgb(139, 0, 0) solid 2px!important}
 .password-toggle svg{width:18px;height:18px;stroke:rgb(0, 0, 0);stroke-width:2}
 .password-toggle svg circle{fill:rgb(0, 0, 0);stroke:rgb(0, 0, 0)}
-.modalbox:where(:not(.smv-css-island,.smv-css-island *)), .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg,#111c33 0%,#0b1429 100%)!important;color:#f2eddf!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-text-fill-color:#f2eddf!important;}
+.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-chat-active .modalbox), .smv-dialog:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(145deg,#111c33 0%,#0b1429 100%)!important;color:#f2eddf!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-text-fill-color:#f2eddf!important;}
 .smv-dialog h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(139, 0, 0)!important}
 .smv-dialog-backdrop:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(0, 0, 0, 0.55)!important;backdrop-filter:none!important}
 table:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;border-color:rgb(221, 221, 221)!important}
