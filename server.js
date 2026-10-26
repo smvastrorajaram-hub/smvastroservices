@@ -1,6 +1,6 @@
 const {createRefundService,bankReferences}=require('./refund-service');
 const {registerWalletRoutes,walletLedgerDocId}=require('./wallet-service');
-const {registerLiveSessionRoutes}=require('./live-session-service');
+const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
 const crypto = require("crypto");
@@ -1464,8 +1464,8 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
       if(!["approved","active"].includes(String(astro.status||"").toLowerCase()))return res.status(409).json({error:"This Astrologer is not currently approved for bookings."});
       const liveCallEnabled=astro.liveCallEnabled===true,liveChatEnabled=astro.liveChatEnabled===true;
       const selectedModeEnabled=type==="Chat Consultation"?liveChatEnabled:liveCallEnabled;
-      if(liveCallEnabled===liveChatEnabled||!selectedModeEnabled){
-        return res.status(409).json({error:"This Astrologer has not enabled "+(type==="Chat Consultation"?"Live Chat":"Live Call")+". Only one of Call or Chat can be enabled at a time."});
+      if(!selectedModeEnabled){
+        return res.status(409).json({error:"This Astrologer has not enabled "+(type==="Chat Consultation"?"Live Chat":"Live Call")+"."});
       }
       const rates=(type==="Chat Consultation"
         ? [astro.chatPricePerMinute,astro.liveChatPricePerMinute,astro.chatRatePerMinute]
@@ -1519,7 +1519,7 @@ app.get("/public/astrologers", async (req, res) => {
       const storedAvailability=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
       const liveCallEnabled=x.liveCallEnabled===true,liveChatEnabled=x.liveChatEnabled===true;
       const activeSessionCount=Number.isSafeInteger(Number(x.activeSessionCount))&&Number(x.activeSessionCount)>0?Number(x.activeSessionCount):0;
-      const availabilityStatus=activeSessionCount>0?"busy":(liveCallEnabled===liveChatEnabled?"offline":storedAvailability);
+      const availabilityStatus=astrologerAvailabilityStatus({...x,liveCallEnabled,liveChatEnabled},activeSessionCount);
       const callRateCandidates=[x.callPricePerMinute,x.pricePerMinute,x.callRatePerMinute].map(Number);
       const configuredCallRate=callRateCandidates.find(v=>Number.isFinite(v)&&v>0);
       const chatRateCandidates=[x.chatPricePerMinute,x.liveChatPricePerMinute,x.chatRatePerMinute].map(Number);
@@ -1570,8 +1570,7 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
       const rawMax=Number(stored.maxConcurrentSessions);
       const maxConcurrent=Number.isSafeInteger(rawMax)&&rawMax>=1&&rawMax<=3?rawMax:1;
       const automaticallyBusy=activeCount>0;
-      const modesMatch=liveCallEnabled===liveChatEnabled;
-      const finalStatus=automaticallyBusy?"busy":(modesMatch?"offline":availabilityStatus);
+      const finalStatus=astrologerAvailabilityStatus({liveCallEnabled,liveChatEnabled},activeCount);
       tx.set(astroRef,{
         liveCallEnabled,liveChatEnabled,
         availabilityStatus:finalStatus,
