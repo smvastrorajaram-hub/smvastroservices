@@ -55,43 +55,51 @@ test('service worker displays background pushes and focuses the app when clicked
 test('Live Chat active modal dimensions are not overridden by generic dialog rules', () => {
   const css = read('public/smvastro.css');
   const html = read('public/index.html');
-  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-24px \+ 100vw\)!important/);
-  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-20px \+ 100vw\)!important/);
-  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-10px \+ 100vw\)!important/);
-  assert.match(css, /#modal\.smv-live-session-modal\.smv-live-chat-active \.modalbox\{width:min\(calc\(100vw - 16px\),960px\);max-width:960px;height:calc\(100dvh - 16px - env\(safe-area-inset-bottom\)\)/);
-  assert.match(css, /#modal\\.smv-live-session-modal\\.smv-live-chat-active #smvLiveMessages\\{display:flex;flex:1 1 0%/);
-  assert.match(css, /#modal\\.smv-live-session-modal\\.smv-live-chat-active #smvLiveMessages\\{[^}]*height:auto;[^}]*min-height:0;[^}]*overflow-y:auto/);
-  assert.match(html, /smvastro\\.css\\?v=20261026-livechat-scroll-place-black-v2/);
+  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-24px + 100vw)!important'));
+  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-20px + 100vw)!important'));
+  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-10px + 100vw)!important'));
+  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active .modalbox{width:min(calc(100vw - 16px),960px);max-width:960px;height:calc(100dvh - 16px - env(safe-area-inset-bottom))'));
+  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:flex;flex:1 1 0%'));
+  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0;max-height:none;overflow-y:auto'));
+  assert.ok(html.includes('smvastro.css?v=20261026-livechat-scroll-place-black-v2'));
 });
 
 test('Live Chat uses one large, scrolling message pane without changing preparation timing', () => {
   const css = read('public/smvastro.css');
   const frontend = read('public/smvastro.mjs');
-  assert.match(css, /#modal\\.smv-live-session-modal\\.smv-live-chat-active \\.smv-live-session-body\\{[^}]*overflow:hidden/);
-  assert.match(css, /#modal\\.smv-live-session-modal\\.smv-live-chat-active #smvLiveChatArea\\{[^}]*height:auto;[^}]*min-height:0/);
-  assert.match(frontend, /messages\\.style\\.height='auto'/);
-  assert.match(frontend, /messages\\.style\\.minHeight='0'/);
-  assert.match(frontend, /host\\.scrollTop=host\\.scrollHeight/);
-  assert.match(frontend, /s\\.state==='preparing'/);
+  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active .smv-live-session-body{display:flex;flex:1 1 0%;flex-direction:column;width:100%;min-width:0;min-height:0;max-height:none;overflow:hidden'));
+  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveChatArea{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0'));
+  assert.ok(frontend.includes("messages.style.height='auto'"));
+  assert.ok(frontend.includes("messages.style.minHeight='0'"));
+  assert.ok(frontend.includes("host.scrollTop=host.scrollHeight"));
+  assert.ok(frontend.includes("s.state==='preparing'"));
 });
 
-test('Live Chat receipt includes the session chat history in Print / Save as PDF', () => {
+test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
   const frontend = read('public/smvastro.mjs');
-  assert.match(frontend, /async function smvLivePrintReceipt\\(session\\)/);
-  assert.match(frontend, /Live Chat History/);
-  assert.match(frontend, /chat-history/);
-  assert.match(frontend, /\/live\/sessions\/\x27\+encodeURIComponent\(String\(s\.id\|\|s\.sessionId\|\|\x27\x27\)\)\+\x27\/messages/);
-  assert.match(frontend, /transcriptMessages\.map/);
-  assert.match(frontend, /row\.dataset\.senderUid/);
+  assert.ok(frontend.includes('async function smvLivePrintReceipt(session)'));
+  assert.ok(frontend.includes('Live Chat History ('));
+  assert.ok(frontend.includes('class="chat-history"'));
+  assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
+  assert.ok(frontend.includes('transcriptMessages.map'));
+  assert.ok(frontend.includes("row.dataset.senderUid"));
+  assert.ok(frontend.includes("row.dataset.createdAt"));
 });
 
 test('Customer dashboard, live forms and booking location suggestions use black text on white', () => {
   const css = read('public/smvastro.css');
   const places = read('public/question-place-search.mjs');
   const content = read('public/public-content.mjs');
-  assert.match(css, /\\.smv-main-place-results\\{[\\s\\S]*?background:#ffffff;[\\s\\S]*?color:#111111;[\\s\\S]*?-webkit-text-fill-color:#111111/);
-  assert.match(css, /\\.smv-main-place-row\\{[\\s\\S]*?background:#ffffff;[\\s\\S]*?color:#111111;[\\s\\S]*?-webkit-text-fill-color:#111111/);
-  assert.match(places, /WebkitTextFillColor:'#111'/);
-  assert.match(places, /colorScheme:'light'/);
-  assert.equal((content.match(/question-place-search\\.mjs\\?v=20261026-livechat-scroll-place-black-v2/g)||[]).length,2);
+  const start = css.indexOf('/* Main-site birth-place suggestions: high contrast');
+  const end = css.indexOf('@media (min-width: 900px)', start);
+  assert.ok(start >= 0 && end > start);
+  const mainPlaces = css.slice(start, end);
+  assert.ok(mainPlaces.includes('.smv-main-place-results{'));
+  assert.ok(mainPlaces.includes('background:#ffffff;'));
+  assert.ok(mainPlaces.includes('color:#111111;'));
+  assert.ok(mainPlaces.includes('-webkit-text-fill-color:#111111;'));
+  assert.ok(mainPlaces.includes('.smv-main-place-row{'));
+  assert.ok(places.includes("WebkitTextFillColor:'#111'"));
+  assert.ok(places.includes("colorScheme:'light'"));
+  assert.equal((content.match(/question-place-search\.mjs\?v=20261026-livechat-scroll-place-black-v2/g)||[]).length,2);
 });
