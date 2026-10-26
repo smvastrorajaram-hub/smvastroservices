@@ -4604,7 +4604,7 @@ if(firebaseInitError){
 // Phase 1 Live Call / Chat client. Prices and settlement remain server-owned.
 let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='',smvLivePricingLoadedAt=0;
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
-let smvLiveEventStreamConnected=false;
+let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='';
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
@@ -4863,7 +4863,7 @@ async function smvLivePrintReceipt(session){
  const bill='<html><head><title>SMV ASTRO Live Session Bill</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}*{box-sizing:border-box}body{font:16px/1.6 Arial,Helvetica,sans-serif;color:#24103F;background:#fff;max-width:760px;margin:24px auto;padding:20px}h1{color:#5b2a86;font-size:clamp(24px,5vw,32px);line-height:1.25}h2{color:#24103F;font-size:clamp(19px,4vw,25px);line-height:1.35}table{border-collapse:collapse;width:100%;table-layout:fixed}td,th{padding:10px;border-bottom:1px solid #d4af37;text-align:left;vertical-align:top;color:#24103F;overflow-wrap:anywhere;word-break:break-word}th{width:38%;font-weight:700;background:#f5f0fb}.note{margin-top:24px;color:#514063}.chat-history{margin-top:32px;page-break-before:auto}.chat-history h2{border-bottom:2px solid #d4af37;padding-bottom:8px}.message{padding:10px 0;border-bottom:1px solid #d9d1e6;break-inside:avoid;overflow-wrap:anywhere}.message-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;margin:0 0 4px;color:#514063;font-size:13px}.message-meta time{font-weight:400}.message-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:0;color:#24103F}.history-warning{padding:10px;background:#fff8e7;border:1px solid #d4af37;color:#5a3026}button{font:700 16px/1.4 Arial,Helvetica,sans-serif;background:#5b2a86;color:#fff;border:1px solid #d4af37;border-radius:8px;min-height:44px;padding:10px 16px;max-width:100%;white-space:normal;overflow-wrap:anywhere}@media(max-width:520px){body{margin:0 auto;padding:14px}td,th{padding:8px;font-size:15px}th{width:42%}}@media print{button{display:none}body{margin:0 auto;max-width:none;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.chat-history{break-before:page}.message{break-inside:avoid}}</style></head><body><h1>SMV ASTRO SERVICES</h1><h2>Live '+esc(String(smvLiveCanonicalMode(s)||'call').toUpperCase())+' Bill / Receipt</h2><table><tr><th>Session ID</th><td>'+esc(s.id||s.sessionId||'')+'</td></tr><tr><th>Customer</th><td>'+esc(s.customerName||'Customer')+'</td></tr><tr><th>Astrologer</th><td>'+esc(s.astrologerName||'Astrologer')+'</td></tr><tr><th>Started minutes charged</th><td>'+esc(s.billableMinutes||0)+'</td></tr><tr><th>Rate</th><td>'+esc(money(s.ratePerMinutePaise))+' / minute</td></tr><tr><th>Amount charged</th><td><strong>'+esc(money(s.actualChargePaise))+'</strong></td></tr><tr><th>Unused reserve returned</th><td>'+esc(money(s.releasedAmountPaise))+'</td></tr><tr><th>Session ended</th><td>'+esc(s.endedAt||new Date().toISOString())+'</td></tr></table>'+historySection+'<p class="note">This receipt is based on the SMV ASTRO Live Session Wallet ledger. Select “Save as PDF” in the browser print dialog to save the bill'+(isChat?' and Live Chat history':'')+'.</p><button onclick="window.print()">PRINT / SAVE AS PDF</button></body></html>';
  popup.document.open();popup.document.write(bill);popup.document.close();popup.focus();setTimeout(()=>{try{popup.print();}catch(_){}},250);
 }
-function smvLiveClearTransport(){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);if(smvLiveClockTimer)clearInterval(smvLiveClockTimer);smvLiveSignalTimer=smvLiveMessageTimer=smvLiveClockTimer=null;smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();smvLiveQueuedIce=[];smvLiveReadySentKey='';smvLiveOfferStartedKey='';smvLiveSignalSinceMs=0;smvLiveMessageSinceMs=0;}
+function smvLiveClearTransport(){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);if(smvLiveClockTimer)clearInterval(smvLiveClockTimer);smvLiveSignalTimer=smvLiveMessageTimer=smvLiveClockTimer=null;smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();smvLiveQueuedIce=[];smvLiveReadySentKey='';smvLiveOfferStartedKey='';smvLiveSignalSinceMs=0;smvLiveMessageSinceMs=0;smvLiveTransportPrimedSessionId='';}
 function smvLiveMuteUntilVoiceConnected(){const audio=$('smvLiveRemoteAudio');if(audio)audio.muted=true;}
 function smvLiveSyncRemoteAudio(){
  const audio=$('smvLiveRemoteAudio');if(!audio)return;
@@ -5238,11 +5238,15 @@ function smvLiveStartFallbackPolling(){
  if(session.mode==='chat'&&!smvLiveMessageTimer)smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},1200);
 }
 function smvLiveStartTransport(id,s){
- if(smvLiveEventStreamConnected){smvLiveStopFallbackPolling();return;}
- smvLiveStartFallbackPolling();
- // Fetch once immediately for a just-opened session while the event stream connects.
- if(s.mode==='call')smvLivePollSignals(id).catch(()=>{});
- if(s.mode==='chat')smvLivePollMessages(id).catch(()=>{});
+ if(smvLiveEventStreamConnected)smvLiveStopFallbackPolling();
+ else smvLiveStartFallbackPolling();
+ // Load the existing signal/message history once per session, even when SSE is healthy.
+ // Subsequent updates arrive over SSE, avoiding repeated reads every 600–1200ms.
+ if(smvLiveTransportPrimedSessionId!==String(id)){
+  smvLiveTransportPrimedSessionId=String(id);
+  if(s.mode==='call')smvLivePollSignals(id).catch(()=>{});
+  if(s.mode==='chat')smvLivePollMessages(id).catch(()=>{});
+ }
 }
 function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
