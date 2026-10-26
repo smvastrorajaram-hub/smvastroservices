@@ -52,3 +52,53 @@ self.addEventListener('fetch',event=>{
     {status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}}
   )));
 });
+
+
+// Background Push alerts are intentionally independent of the open page.
+// The server sends only generic alert text; customer birth details and contact
+// information are never included in a system notification.
+self.addEventListener('push', event => {
+  event.waitUntil((async () => {
+    let payload = {};
+    try { payload = event.data ? event.data.json() : {}; }
+    catch (_) {
+      try { payload = { body: event.data ? event.data.text() : '' }; } catch (_) {}
+    }
+
+    const title = String(payload.title || 'SMV ASTRO Alert').slice(0, 120);
+    const body = String(payload.body || 'You have a new SMV ASTRO request. Tap to open the app.').slice(0, 240);
+    const url = String(payload.url || self.registration.scope);
+    await self.registration.showNotification(title, {
+      body,
+      icon: String(payload.icon || new URL('assets/icon-192.png', self.registration.scope).href),
+      badge: String(payload.badge || new URL('assets/favicon-64.png', self.registration.scope).href),
+      tag: String(payload.tag || 'smv-astro-alert').slice(0, 160),
+      renotify: payload.renotify === true,
+      requireInteraction: payload.requireInteraction !== false,
+      vibrate: Array.isArray(payload.vibrate) ? payload.vibrate.slice(0, 8).map(Number).filter(n => Number.isFinite(n) && n >= 0 && n <= 3000) : [250, 100, 250, 100, 450],
+      data: { url }
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const rawTarget = String(event.notification?.data?.url || self.registration.scope);
+    let target;
+    try { target = new URL(rawTarget, self.registration.scope); }
+    catch (_) { target = new URL(self.registration.scope); }
+    if (target.origin !== self.location.origin) target = new URL(self.registration.scope);
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find(client => {
+      try { return new URL(client.url).origin === self.location.origin; }
+      catch (_) { return false; }
+    });
+    if (existing) {
+      try { await existing.navigate(target.href); } catch (_) {}
+      return existing.focus();
+    }
+    return self.clients.openWindow(target.href);
+  })());
+});
