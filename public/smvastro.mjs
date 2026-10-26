@@ -785,7 +785,14 @@ const smvProfiles=new Map();
 async function getUserProfile(uid){
  const cached=smvProfiles.get(uid); if(cached&&Date.now()-cached.at<15000)return cached.data;
   try{const s=await withTimeout(getDoc(doc(db,"smv_users",uid)),10000);const data=s.exists()?s.data():{};smvProfiles.set(uid,{data,at:Date.now()});return data;}
-  catch(e){console.warn("Profile lookup failed",e);return {};}
+  catch(e){
+   console.warn("Profile lookup failed",e);
+   // A failed read during quota exhaustion must not be repeated immediately by
+   // login role resolution and Dashboard hydration. Keep only an empty profile
+   // for the same short TTL as the normal cache; a later retry can read Firestore again.
+   smvProfiles.set(uid,{data:{},at:Date.now()});
+   return {};
+  }
 }
 
 // Admin authorization must come from the backend's verified token/custom-claim
@@ -1284,7 +1291,7 @@ async function submitAuth(mode){
       // Pending astrologers can log in. Their restricted dashboard is shown
       // below; protected consultation/earnings queries are skipped until approval.
 }
-    const profile=await getUserProfile(loginCred.user.uid);
+    const profile=loginProfile;
     const profileRole=String(profile.role||loginRole||"customer").toLowerCase();
     const role=await resolveSmvRole(loginCred.user,profile);
     closeModal();
