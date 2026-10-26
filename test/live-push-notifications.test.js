@@ -99,6 +99,8 @@ test('Customer Dashboard remains usable when consultation reads hit a Firestore 
   assert.ok(frontend.includes('id="smvCustomerDataRetry"'));
   assert.ok(frontend.includes("loadDashboard('customer',true)"));
   assert.ok(!frontend.includes("if(customerResult?.error)throw customerResult.error;"));
+  assert.ok(frontend.includes("smvProfiles.set(uid,{data:{},at:Date.now()});"));
+  assert.ok(frontend.includes("const profile=loginProfile;"));
 });
 
 test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
