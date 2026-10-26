@@ -134,6 +134,9 @@ test('Last-known Dashboard role cache only stores Customer or Astrologer UI role
   assert.ok(frontend.includes("if(!uid||!['customer','astrologer'].includes(safeRole))return;"));
   assert.ok(frontend.includes('const cachedRole=smvCachedDashboardRole(user.uid);'));
   assert.ok(frontend.includes("if(!profile?._smvProfileReadFailed)smvRememberDashboardRole(user.uid,resolvedRole);"));
+  assert.ok(frontend.includes("if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){"));
+  assert.ok(frontend.includes("Your account status has not been changed."));
+  assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
