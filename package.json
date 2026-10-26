@@ -10,6 +10,7 @@
     "sweph": "2.10.3-7",
     "razorpay": "^2.9.6",
     "firebase-admin": "^13.5.0",
+    "web-push": "^3.6.7",
     "nodemailer": "^7.0.6",
     "cloudinary": "^2.7.0",
     "puppeteer-core": "25.11.0",
