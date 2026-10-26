@@ -97,7 +97,7 @@ test('Live Chat box is visible while connecting and message sending remains lock
   assert.ok(frontend.includes('chatInput.disabled=!chatReady'));
   assert.ok(frontend.includes('chatSend.disabled=!chatReady'));
   assert.ok(frontend.includes("chat.style.display='flex';chat.style.flex='0 0 auto'"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-chat-box-connect-state-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-shell-quota-resilience-v1'));
 });
 
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
