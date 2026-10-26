@@ -15,7 +15,6 @@ on:
       - 'public/index.html'
       - 'public/smvastro.mjs'
       - 'public/razorpay-checkout-loader.mjs'
-      - 'public/payment-receipt.js'
       - 'test/razorpay-checkout-loader.test.mjs'
       - 'public/public-content.mjs'
       - 'public/main-location-search.js'
@@ -32,7 +31,6 @@ on:
       - 'public/index.html'
       - 'public/smvastro.mjs'
       - 'public/razorpay-checkout-loader.mjs'
-      - 'public/payment-receipt.js'
       - 'test/razorpay-checkout-loader.test.mjs'
       - 'public/public-content.mjs'
       - 'public/main-location-search.js'
@@ -68,7 +66,6 @@ jobs:
           node --check test/wallet-service.test.js
           node --check public/smvastro.mjs
           node --check public/razorpay-checkout-loader.mjs
-          node --check public/payment-receipt.js
           node --check test/razorpay-checkout-loader.test.mjs
           node --check public/public-content.mjs
           node --check public/main-location-search.js
