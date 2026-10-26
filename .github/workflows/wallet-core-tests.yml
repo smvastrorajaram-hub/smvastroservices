@@ -12,6 +12,8 @@ on:
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
+      - 'dashboard-events.js'
+      - 'firestore.indexes.json'
       - 'public/index.html'
       - 'public/smvastro.mjs'
       - 'public/razorpay-checkout-loader.mjs'
@@ -28,6 +30,8 @@ on:
       - 'wallet-service.js'
       - 'test/wallet-service.test.js'
       - 'server.js'
+      - 'dashboard-events.js'
+      - 'firestore.indexes.json'
       - 'public/index.html'
       - 'public/smvastro.mjs'
       - 'public/razorpay-checkout-loader.mjs'
@@ -56,6 +60,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check server.js
+          node --check dashboard-events.js
+          node -e "JSON.parse(require('fs').readFileSync('firestore.indexes.json','utf8'))"
           node --check admin-auth.js
           node --check test/admin-auth.test.js
           node --check wallet-service.js
