@@ -62,12 +62,12 @@ function validatePushSubscription(input) {
   return { endpoint, keys: { p256dh, auth } };
 }
 
-function buildNotificationPayload({ kind, mode, entityId, origin }) {
+function buildNotificationPayload({ kind, mode, entityId, origin }, allowedOrigins = allowedOriginsFromEnv()) {
   const type = String(kind || '').trim().toLowerCase();
   const sessionMode = String(mode || '').trim().toLowerCase() === 'chat' ? 'chat' : 'call';
   const id = String(entityId || '').trim();
   if (!['live_session', 'live_booking', 'scheduled_booking'].includes(type) || !id || id.length > 200) return null;
-  if (!isAllowedPushOrigin(origin)) return null;
+  if (!isAllowedPushOrigin(origin, allowedOrigins)) return null;
 
   let alertType, title, body, ttl;
   if (type === 'live_session') {
@@ -215,7 +215,7 @@ function createPushNotificationService({ app, db, FieldValue, requireUser, webPu
           mode: alert?.mode,
           entityId: alert?.entityId,
           origin: record.origin
-        });
+        }, allowedOrigins);
         if (!message) return { ok: false, skipped: true };
         const topic = crypto.createHash('sha256').update(String(alert?.kind) + ':' + String(alert?.mode) + ':' + String(alert?.entityId)).digest('hex').slice(0, 32);
         try {
