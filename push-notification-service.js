@@ -208,7 +208,8 @@ function createPushNotificationService({ app, db, FieldValue, requireUser, webPu
       const entries = snapshot.docs;
       const results = await Promise.all(entries.map(async entry => {
         const record = entry.data() || {};
-        if (record.enabled !== true || !validatePushSubscription(record)) return { ok: false, skipped: true };
+        const subscription = validatePushSubscription(record);
+        if (record.enabled !== true || !subscription) return { ok: false, skipped: true };
         const message = buildNotificationPayload({
           kind: alert?.kind,
           mode: alert?.mode,
@@ -218,7 +219,7 @@ function createPushNotificationService({ app, db, FieldValue, requireUser, webPu
         if (!message) return { ok: false, skipped: true };
         const topic = crypto.createHash('sha256').update(String(alert?.kind) + ':' + String(alert?.mode) + ':' + String(alert?.entityId)).digest('hex').slice(0, 32);
         try {
-          await webPush.sendNotification(record, JSON.stringify({
+          await webPush.sendNotification(subscription, JSON.stringify({
             title: message.title,
             body: message.body,
             icon: message.icon,
