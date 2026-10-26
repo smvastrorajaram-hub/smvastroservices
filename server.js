@@ -3898,44 +3898,56 @@ app.get("/astrologer/earnings", async (req, res) => {
   const user = await requireUser(req, res);
   if (!user) return;
   try {
-    await syncLiveSessionEarningsForAstrologer(user.uid);
-    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, privateWorkflow, privateCommission, liveEarningsSnap] = await Promise.all([
-      db.collection("smv_users").doc(user.uid).get(),
-      db.collection("smv_questions").where("astrologerId", "==", user.uid).get(),
-      db.collection("smv_private_consultations").where("astrologerId", "==", user.uid).get(),
-      db.collection("smv_withdrawals").where("astrologerId", "==", user.uid).get(),
-      getPrivateConsultWorkflow(),
-      getPrivateCommissionSettings(),
-      db.collection("smv_payments").where("astrologerId", "==", user.uid).get()
+    // Live-session billing writes its earning payment in the same endSession
+    // transaction. Do not scan and transactionally replay every historical
+    // session each time the Astrologer opens the Dashboard.
+    const uid=String(user.uid||"");
+    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, liveEarningsSnap] = await Promise.all([
+      db.collection("smv_users").doc(uid).get(),
+      db.collection("smv_questions")
+        .where("astrologerId", "==", uid)
+        .where("status", "==", "answered")
+        .where("commissionStatus", "==", "credited").get(),
+      db.collection("smv_private_consultations")
+        .where("astrologerId", "==", uid)
+        .where("commissionStatus", "==", "credited").get(),
+      db.collection("smv_withdrawals").where("astrologerId", "==", uid).get(),
+      db.collection("smv_payments")
+        .where("astrologerId", "==", uid)
+        .where("source", "==", "live_session")
+        .where("type", "==", "astrologer_earning")
+        .where("status", "==", "credited").get()
     ]);
     const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
     const role = String(profile.role || user.role || "").toLowerCase();
-    if (role && role !== "astrologer") return res.status(403).json({ error: "Only an astrologer account can read earnings." });
+    if (role && role !== "astrologer") {
+      return res.status(403).json({ error: "Only an astrologer account can read earnings." });
+    }
 
-    const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
-    const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
-    const privateConsultations=allPrivate.filter(c=>!["pending_admin_approval","question_rejected"].includes(String(c.status||"")));
-    const privateHistory=allPrivate.filter(c=>{const st=String(c.status||"");return st==="question_rejected"||st==="revision_required"||st==="answer_pending_admin_approval"||st==="answered"||!!c.customerViewedAt||String(c.commissionStatus||"")==="credited";});
-    const withdrawals=withdrawalSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    // These two result sets exist only for historical financial reconciliation.
+    // Current public-question/private-consultation UI and workflows are retired.
+    const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}));
+    const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}));
+    const withdrawals = withdrawalSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
 
     const ledger = [];
     for(const q of questions){
-      if (q.status === "answered" && q.commissionStatus === "credited") ledger.push({
+      ledger.push({
         id:q.id, question:q.question || "Consultation",
         commission:Number(q.astrologerCommissionAmount || q.commissionAmount || 0),
         date:q.commissionCreditedAt || q.answerApprovedAt || q.adminAnswerApprovedAt || null
       });
     }
     for(const c of allPrivate){
-      if (c.commissionStatus === "credited") ledger.push({
-        id:c.id, question:c.question || "Private Consultation",
+      ledger.push({
+        id:c.id, question:c.question || "Consultation",
         commission:Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
         date:c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
       });
     }
     for (const paymentDoc of liveEarningsSnap.docs) {
       const payment = paymentDoc.data() || {};
-      if (payment.source !== "live_session" || payment.type !== "astrologer_earning" || payment.status !== "credited") continue;
       ledger.push({
         id: payment.sessionId || paymentDoc.id,
         question: payment.question || ("Live " + String(payment.mode || "chat").toUpperCase()),
@@ -3946,13 +3958,7 @@ app.get("/astrologer/earnings", async (req, res) => {
     const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
     ledger.sort((a,b) => toMs(b.date) - toMs(a.date));
     const totalEarnings = Math.round(ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0) * 100) / 100;
-    return res.set('Cache-Control','no-store').json({
-      success:true,totalEarnings,ledger,questions,withdrawals,
-      privateDashboard:{
-        success:true,consultations:privateConsultations,history:privateHistory,
-        settings:{minimumAnswerWords:privateWorkflow.minimumAnswerWords,allowWithoutAdminApproval:privateWorkflow.allowWithoutAdminApproval,privateCommission}
-      }
-    });
+    return res.set('Cache-Control','no-store').json({success:true,totalEarnings,ledger,withdrawals});
   } catch (e) {
     console.error("Astrologer earnings load failed:", e?.message || e);
     return res.status(500).json({ error: e?.message || "Unable to load astrologer earnings." });
