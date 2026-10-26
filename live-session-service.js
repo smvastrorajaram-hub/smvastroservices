@@ -207,9 +207,17 @@ function isAstrologerLiveModeEnabled(astroProfile, mode) {
   const astro = astroProfile || {};
   const callEnabled = astro.liveCallEnabled === true;
   const chatEnabled = astro.liveChatEnabled === true;
-  if (callEnabled === chatEnabled) return false;
   const kind = String(mode || '').trim().toLowerCase();
   return kind === 'call' ? callEnabled : kind === 'chat' ? chatEnabled : false;
+}
+
+function astrologerAvailabilityStatus(astroProfile, activeSessionCountOverride) {
+  const astro = astroProfile || {};
+  const activeSessionCount = activeSessionCountOverride == null
+    ? Number(astro.activeSessionCount || 0)
+    : Number(activeSessionCountOverride);
+  if (Number.isFinite(activeSessionCount) && activeSessionCount > 0) return 'busy';
+  return astro.liveCallEnabled === true || astro.liveChatEnabled === true ? 'online' : 'offline';
 }
 
 function liveSessionSafeView(id, data) {
@@ -594,7 +602,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       validateActiveAstrologer(astro, astroId);
       if (!isAstrologerLiveModeEnabled(astro, kind)) {
         throw httpError(409,
-          'This Astrologer has not enabled Live ' + kind.toUpperCase() + '. Only one of Call or Chat can be enabled at a time.',
+          'This Astrologer has not enabled Live ' + kind.toUpperCase() + '. Enable that mode to receive requests.',
           'LIVE_MODE_DISABLED');
       }
       const astroUser = astroUserSnap.exists ? (astroUserSnap.data() || {}) : {};
@@ -618,7 +626,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         });
       }
       const liveCount = safePaise(astro.activeSessionCount);
-      const availability = String(astro.availabilityStatus || astro.onlineStatus || 'offline').toLowerCase();
+      const availability = astrologerAvailabilityStatus(astro, liveCount);
       const canStartNow = availability === 'online' && liveCount < pricing.maxConcurrentSessions;
       if (!canStartNow) {
         const reserve = await reserveInTransaction(tx, {
@@ -998,8 +1006,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const astroPatch = { activeSessionCount: nextCount, updatedAt: nowServer };
       if (String(astro.availabilityStatus || '').toLowerCase() === 'busy' &&
           astro.liveSessionBusyManaged === true && nextCount === 0) {
-        astroPatch.availabilityStatus = isAstrologerLiveModeEnabled(astro, 'call') !== isAstrologerLiveModeEnabled(astro, 'chat')
-          ? 'online' : 'offline';
+        astroPatch.availabilityStatus = astrologerAvailabilityStatus(astro, nextCount);
         astroPatch.liveSessionBusyManaged = false;
       }
       tx.set(aRef, astroPatch, { merge: true });
@@ -1738,6 +1745,7 @@ module.exports = {
   calculateBookingReserveRelease,
   preparationWindow,
   isAstrologerLiveModeEnabled,
+  astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
