@@ -75,29 +75,37 @@ test('Live Chat uses one large, scrolling message pane without changing preparat
   assert.ok(frontend.includes("s.state==='preparing'"));
 });
 
-test('Explicit login immediately opens a Dashboard shell before profile and role reads', () => {
+test('Explicit login renders a generic shell only for non-Admin roles; Admin enters Admin directly', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function submitAuth(mode)');
   const shell = frontend.indexOf('smvRenderFastDashboardShell(loginShellRole);', start);
   const profile = frontend.indexOf('const loginProfile=await getUserProfile(loginCred.user.uid)', start);
   const role = frontend.indexOf('const role=await resolveSmvRole(loginCred.user,profile)', start);
   assert.ok(start >= 0 && shell > start);
-  assert.ok(profile > shell, 'The Dashboard shell must render before profile reads');
+  assert.ok(profile > shell, 'Known Customer/Astrologer shell is mounted before profile reads');
   assert.ok(role > profile, 'Role resolution follows the first profile result');
-  assert.ok(frontend.includes('if(!goToQuestion&&!goToAdmin){'));
+  assert.ok(frontend.includes('const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;'));
+  assert.ok(frontend.includes('if(!goToAdmin){'));
   assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
+  assert.ok(!frontend.includes('if(!goToQuestion&&!goToAdmin){'));
   assert.ok(!frontend.includes('Login successful. Opening your dashboard…'));
+  assert.ok(!frontend.includes('<h2>DASHBOARD</h2>'));
+  assert.ok(frontend.includes('?"CUSTOMER DASHBOARD":"");'));
 });
 
-test('Customer Dashboard keeps its shell when history reads fail without a Dashboard-wide quota note', () => {
+test('Customer Dashboard loads current Live/Booking and Wallet UI without legacy question histories', () => {
   const frontend = read('public/smvastro.mjs');
-  assert.ok(frontend.includes("const questionReadFailed=!!customerResults[0]?.error||!cr?.success||!Array.isArray(cr.questions);"));
-  assert.ok(frontend.includes("const privateReadFailed=!!customerResults[1]?.error||!privateCr?.success||!Array.isArray(privateCr.consultations);"));
-  assert.ok(frontend.includes("Question history is temporarily unavailable. Your records have not been deleted."));
-  assert.ok(frontend.includes("Chat booking history is temporarily unavailable. Your records have not been deleted."));
-  assert.ok(!frontend.includes("Dashboard opened, but some data is temporarily unavailable."));
-  assert.ok(!frontend.includes("Please retry when Firebase is available."));
-  assert.ok(!frontend.includes('id="smvCustomerDataRetry"'));
+  const html = read('public/index.html');
+  assert.ok(frontend.includes('smvCustomerBookingChatCardHtml()'));
+  assert.ok(frontend.includes('smvWalletDashboardCardHtml()'));
+  assert.ok(frontend.includes('smvBindCustomerBookingChat();'));
+  assert.ok(frontend.includes('smvBindCustomerWallet({load:false});'));
+  assert.ok(!frontend.includes('/customer/consultations'));
+  assert.ok(!frontend.includes('/customer/private-consultations'));
+  assert.ok(!frontend.includes('Previous Question History'));
+  assert.ok(!frontend.includes('My Consultation Requests'));
+  assert.ok(!html.includes('smvPublicQuestionWindow'));
+  assert.ok(!html.includes('privateConsultationQuestionForm'));
 });
 
 test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
@@ -251,31 +259,76 @@ test('Admin dashboard reuses commission settings from its existing payload', () 
   assert.ok(frontend.includes("adminData?.settings?.commission||{astroPercent:20,adminPercent:80}"));
   assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','commission'))"));
   assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','answer'))"));
-  assert.ok(frontend.includes("getDoc(doc(db,'smv_settings','question'))"));
+  assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','question'))"));
 });
 
 
-test('Customer dashboard live question invalidation uses the same 100-record cap as its data API', () => {
+test('Customer live updates listen only to the latest relevant notification records', () => {
   const events = read('dashboard-events.js');
-  const server = read('server.js');
-  assert.ok(events.includes("where('customerId','==',user.uid).limit(100)"));
-  assert.ok(server.includes("db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get()"));
+  assert.ok(events.includes("where('userId','==',user.uid).orderBy('createdAt','desc').limit(50)"));
+  assert.ok(events.includes("kind:'notifications'"));
+  assert.ok(!events.includes("where('customerId','==',user.uid).limit(100)"));
 });
 
-
-test('Admin landing reads only payment documents used by the Astrologer earnings ledger', () => {
+test('Admin home reads only the Live Session earnings ledger and the current management datasets', () => {
   const server = read('server.js');
   const frontend = read('public/smvastro.mjs');
   const start = server.indexOf('app.get("/admin-data"');
   const end = server.indexOf('\n});', start);
   assert.ok(start >= 0 && end > start);
   const route = server.slice(start, end);
-  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning").where("status","==","credited"))'));
-  assert.ok(frontend.includes("String(p.type||'').toLowerCase()==='astrologer_earning' && String(p.status||'').toLowerCase()==='credited'"));
-  // Wallet transactions remain served by their existing dedicated route.
-  assert.ok(server.includes('app.get("/admin/wallet/transactions"'));
+  assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
+  assert.ok(route.includes('readCollection("smv_astrologers")'));
+  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("source","==","live_session"))'));
+  assert.ok(!route.includes('smv_questions'));
+  assert.ok(!route.includes('smv_private_consultations'));
+  assert.ok(!route.includes('privateConsultationWorkflow'));
+  assert.ok(!route.includes('getPrivateCommissionSettings()'));
+  assert.ok(frontend.includes('adminData.customerCount'));
+  assert.ok(frontend.includes('adminData.astrologerCount'));
+  assert.ok(!frontend.includes('adminData.questionCount'));
+  assert.ok(!frontend.includes('adminEarnedQuestions'));
+  assert.ok(frontend.includes("p.source==='live_session'&&p.type==='astrologer_earning'&&p.status==='credited'"));
 });
 
+test('Astrologer earnings no longer replay every historical Live Session on dashboard open', () => {
+  const server = read('server.js');
+  const live = read('live-session-service.js');
+  const start = server.indexOf('app.get("/astrologer/earnings"');
+  const end = server.indexOf('// V165 withdrawal request:', start);
+  assert.ok(start >= 0 && end > start);
+  const route = server.slice(start, end);
+  assert.ok(!route.includes('syncLiveSessionEarningsForAstrologer'));
+  assert.ok(route.includes('.where("status", "==", "answered")'));
+  assert.ok(route.includes('.where("commissionStatus", "==", "credited")'));
+  assert.ok(route.includes('.where("source", "==", "live_session")'));
+  assert.ok(route.includes('.where("type", "==", "astrologer_earning")'));
+  assert.ok(!route.includes('privateDashboard:'));
+  assert.ok(!route.includes('questions,withdrawals'));
+  assert.ok(live.includes("paymentId: earningRefDoc.id, type: 'astrologer_earning', source: 'live_session'"));
+});
+
+test('Astrologer withdrawal validation does not rescan every Live Session and parallelizes balance reads', () => {
+  const server = read('server.js');
+  const start = server.indexOf('app.post("/astrologer/withdrawal-request"');
+  const end = server.indexOf(');', start);
+  const routeEnd = server.indexOf('//', start);
+  assert.ok(start >= 0);
+  const route = server.slice(start, server.indexOf('app.', start + 12));
+  assert.ok(!route.includes('syncLiveSessionEarningsForAstrologer'));
+  assert.ok(route.includes('const [questionSnap, privateCreditSnap, liveCreditSnap, withdrawalSnap] = await Promise.all(['));
+  assert.ok(route.includes('.where("source", "==", "live_session")'));
+  assert.ok(route.includes('const cooldownMs = 7 * 24 * 60 * 60 * 1000;'));
+});
+
+test('Admin navigation does not show the generic DASHBOARD flash before role resolution', () => {
+  const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  assert.ok(frontend.includes('const goToAdmin=pendingAfterLogin==="admin" || loginCred.user.uid===ADMIN_UID;'));
+  assert.ok(frontend.includes('if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?(loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD"):"";'));
+  assert.ok(!frontend.includes('<h2>DASHBOARD</h2>'));
+  assert.ok(html.includes('<h2 class="admin-dashboard-title">ADMIN DASHBOARD</h2>'));
+});
 
 test('Admin home uses aggregate counts and targeted history queries instead of reading all users/questions', () => {
   const server = read('server.js');
