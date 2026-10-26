@@ -2955,16 +2955,27 @@ app.get("/admin-data", async (req, res) => {
       return { ok: false, items: [], error: e?.message || `Unable to read ${name}.` };
     }
   };
+  const readCount = async (name,source) => {
+    try {
+      const snap = await source.count().get();
+      return { ok:true, count:Number(snap.data()?.count||0), error:null };
+    } catch (e) {
+      console.error(`Admin aggregate count ${name} failed:`,e?.message||e);
+      return { ok:false, count:null, error:e?.message||`Unable to count ${name}.` };
+    }
+  };
 
   try {
     // Read each collection independently. One damaged/missing collection must
     // never prevent the Admin Dashboard itself from opening.
-    const [users, astrologers, questions, payments, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
-      readCollection("smv_users"),
+    const [customerCountResult, astrologers, questionCountResult, questions, payments, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
+      readCount("customers",db.collection("smv_users").where("role","==","customer")),
       readCollection("smv_astrologers"),
-      readCollection("smv_questions"),
-      // The Admin landing page uses this array only for the Astrologer earnings ledger.
-      // Do not read unrelated checkout/recharge payment documents here.
+      readCount("questions",db.collection("smv_questions")),
+      // The landing page shows only credited answered questions in Earnings History.
+      // The total question count comes from an aggregate query above.
+      readCollection("smv_questions",db.collection("smv_questions").where("status","==","answered").where("commissionStatus","==","credited")),
+      // The landing page uses payments only for the Astrologer earnings ledger.
       readCollection("smv_payments",db.collection("smv_payments").where("type","==","astrologer_earning")),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getPrivateCommissionSettings(),
@@ -2974,17 +2985,35 @@ app.get("/admin-data", async (req, res) => {
       getHoroscopePaymentSettings()
     ]);
 
+    // Only pending Astrologers need user contact details on the landing page.
+    // Fetch those UID-scoped profiles instead of reading every user document.
+    const pendingAstrologers=astrologers.items.filter(a=>String(a.status||"").toLowerCase()==="pending");
+    const pendingUserProfiles=await Promise.all(pendingAstrologers.map(async a=>{
+      try{
+        const snap=await db.collection("smv_users").doc(a.id).get();
+        return [a.id,snap.exists?(snap.data()||{}):{}];
+      }catch(e){
+        console.warn("Pending Astrologer contact lookup skipped:",a.id,e?.message||e);
+        return [a.id,{}];
+      }
+    }));
+    const pendingUserMap=new Map(pendingUserProfiles);
+    const astrologerItems=astrologers.items.map(a=>{
+      if(String(a.status||"").toLowerCase()!=="pending")return a;
+      const userProfile=pendingUserMap.get(a.id)||{};
+      return {...a,adminContactEmail:String(userProfile.email||""),adminContactMobile:String(userProfile.mobile||userProfile.phone||"")};
+    });
     const newestFirst = items => (items || []).slice().sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
-    const customers = newestFirst(users.items.filter(x => String(x.role || "").toLowerCase() === "customer"));
     const payload={
       success: true,
       settings: {commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment},
-      customers,
-      users: newestFirst(users.items),
-      astrologers: newestFirst(astrologers.items),
+      customerCount: customerCountResult.count,
+      astrologerCount: astrologers.items.length,
+      questionCount: questionCountResult.count,
+      astrologers: newestFirst(astrologerItems),
       questions: newestFirst(questions.items),
       payments: newestFirst(payments.items),
-      errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null }
+      errors: { customers: customerCountResult.error || null, astrologers: astrologers.error || null, questions: questions.error || null, questionCount: questionCountResult.error || null, payments: payments.error || null }
     };
     adminDataCache={payload,expiresAt:Date.now()+8000};
     return res.set('Cache-Control','no-store').json(payload);
