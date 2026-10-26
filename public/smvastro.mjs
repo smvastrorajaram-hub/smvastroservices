@@ -2356,7 +2356,7 @@ function smvRenderFastDashboardShell(roleValue=''){
   return;
  }
  if(role==='astrologer'){
-  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2></div>';
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span></div>';
   return;
  }
  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">SMV ASTRO</span><h2>DASHBOARD</h2></div>';
@@ -2575,11 +2575,22 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
     readCustomerPayload('/customer/consultations?_fresh='+Date.now()+'-'+loadId),
     readCustomerPayload('/customer/private-consultations?_fresh='+Date.now()+'-'+loadId)
   ]):null;
+  const shouldPreloadAstroProfile=requestedRole==='astrologer'||smvCachedDashboardRole(loadUid)==='astrologer'||String(window.__smvCurrentRole||'').toLowerCase()==='astrologer';
+  const readAstrologerProfile=()=>withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000)
+   .then(snapshot=>({snapshot}),error=>({error}));
+  const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;
+  let astrologerProfileResult=null;
   const data=await getUserProfile(loadUid);
   if(!active()) return;
    let role=String(expectedRole||data.role||'').toLowerCase();
    let preloadedAstro={};
-   if(!expectedRole && role!=='astrologer'){try{const a0=await withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000);if(!active()) return;if(a0.exists()){preloadedAstro=a0.data()||{};role='astrologer';}}catch(_e){}}
+   if(!expectedRole && role!=='astrologer'){
+     astrologerProfileResult=astrologerProfilePromise?await astrologerProfilePromise:await readAstrologerProfile();
+     if(!active())return;
+     const a0=astrologerProfileResult.snapshot;
+     if(a0?.exists()){preloadedAstro=a0.data()||{};role='astrologer';}
+     else if(astrologerProfileResult.error)console.warn('Astrologer role profile lookup deferred:',astrologerProfileResult.error?.message||astrologerProfileResult.error);
+   }
    if(role!=='customer' && role!=='astrologer') role='customer';
    let notificationContext={role};
    if(!active()) return;
@@ -2591,33 +2602,22 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    if(role==='astrologer'){
    let ad=preloadedAstro||{};
 let astroProfileReadFailed=!!data._smvProfileReadFailed;
-
-/* Always load the latest astrologer profile.
-   This is required so rejected status and rejectionReason
-   are read directly from smv_astrologers. */
-try{
-  const a=await withTimeout(
-    getDoc(doc(db,'smv_astrologers',currentUser.uid)),
-    10000
-  );
-
-  if(a.exists()){
-    ad=a.data()||{};
-    astroProfileReadFailed=false;
-  }else if(data._smvProfileReadFailed){
-    astroProfileReadFailed=true;
-  }
-}catch(profileErr){
+const profileResult=astrologerProfileResult||(astrologerProfilePromise?await astrologerProfilePromise:await readAstrologerProfile());
+astrologerProfileResult=profileResult;
+if(!active())return;
+if(profileResult.snapshot?.exists()){
+  ad=profileResult.snapshot.data()||{};
+  astroProfileReadFailed=false;
+}else if(profileResult.error){
   astroProfileReadFailed=true;
-  console.warn(
-    'Astrologer profile load skipped:',
-    profileErr
-  );
+  console.warn('Astrologer profile load skipped:',profileResult.error?.message||profileResult.error);
+}else if(data._smvProfileReadFailed){
+  astroProfileReadFailed=true;
 }
 
 // If the profile is unavailable, preserve the known role without guessing approval status.
 if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
-  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
   $('smvAstroDataRetry')?.addEventListener('click',()=>{
     smvProfiles.delete(loadUid);
     loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard refresh deferred:',error?.message||error));
@@ -2659,7 +2659,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
     if(!active())return;
     if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
     box.innerHTML=`<div class="card" style="max-width:900px;margin:0 auto">
-      <h2>ASTROLOGER DASHBOARD</h2>
+      
       <div class="card" style="border:2px solid #c62828;background:#fff5f5">
         <h3 style="margin-top:0;color:#b71c1c">❌ Astrologer Application Rejected</h3>
         <p>Your astrologer application has been rejected by Admin.</p>
@@ -2695,7 +2695,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <p class="small">You can login and view this status now. Customer questions, answering, earnings and withdrawals will become available after Admin approval.</p>
       </div>`;
     }
-    box.innerHTML=`<div class="card" style="max-width:900px;margin:0 auto"><h2>ASTROLOGER DASHBOARD</h2>${pendingContent}<div class="action-row"><button class="btn gray" id="astroRefreshApproval">REFRESH STATUS</button><button class="btn" id="astroLogoutPending">LOGOUT</button></div></div>`;
+    box.innerHTML=`<div class="card" style="max-width:900px;margin:0 auto">${pendingContent}<div class="action-row"><button class="btn gray" id="astroRefreshApproval">REFRESH STATUS</button><button class="btn" id="astroLogoutPending">LOGOUT</button></div></div>`;
   }
 
   $('astroRefreshApproval')?.addEventListener('click',()=>loadDashboard('astrologer',true));
