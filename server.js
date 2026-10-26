@@ -3,6 +3,7 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
+const {createPushNotificationService}=require('./push-notification-service');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -11,6 +12,7 @@ const admin = require("firebase-admin");
 
 
 const app = express();
+let pushNotificationService = null;
 app.use((req,res,next)=>{
  const started=process.hrtime.bigint();const json=res.json.bind(res);
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
@@ -1478,6 +1480,13 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     const ref=db.collection("smv_appointments").doc();
     const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
+
+    // Astrologer phone alert is best-effort; booking creation must not depend on Push delivery.
+    if(callBooking?.astrologerUid&&['scheduled_call_request','scheduled_chat_request'].includes(String(callBooking.bookingKind||''))){
+      const pushMode=callBooking.bookingKind==='scheduled_chat_request'?'chat':'call';
+      Promise.resolve(pushNotificationService?.notifyAstrologer(callBooking.astrologerUid,{kind:'scheduled_booking',mode:pushMode,entityId:ref.id}))
+        .catch(pushError=>console.warn('Scheduled booking Push alert skipped:',pushError?.message||pushError));
+    }
 
     // Email notification is best-effort. Booking creation must not fail just because
     // the optional notification provider is unavailable.
@@ -4636,7 +4645,8 @@ app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, re
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser});
+pushNotificationService=createPushNotificationService({app,db,FieldValue,requireUser});
+const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,notifyAstrologer:pushNotificationService.notifyAstrologer});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
