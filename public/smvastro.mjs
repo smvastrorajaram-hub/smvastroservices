@@ -5288,7 +5288,7 @@ function smvLiveStartEventStream(){
    // Reconcile once after connecting/reconnecting to recover state events missed during a disconnect.
    smvLivePollSessions().catch(()=>{});
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
-   while(true){const item=await reader.read();if(item.done)break;buffer+=decoder.decode(item.value,{stream:true});let n;while((n=buffer.indexOf('\\n\\n'))>=0){const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);const line=frame.split('\\n').find(x=>x.startsWith('data:'));if(line)try{smvLiveHandleEvent(JSON.parse(line.slice(5).trim()));}catch(e){console.warn('Invalid Live Session event:',e);}}}
+   while(true){const item=await reader.read();if(item.done)break;buffer+=decoder.decode(item.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);const line=frame.split('\n').find(x=>x.startsWith('data:'));if(line)try{smvLiveHandleEvent(JSON.parse(line.slice(5).trim()));}catch(e){console.warn('Invalid Live Session event:',e);}}}
   }catch(e){
    if(e?.name!=='AbortError')console.warn('Live events disconnected; enabling recovery polling.',e?.message||e);
    if(smvLiveEventController===controller){smvLiveEventStreamConnected=false;smvLiveStartFallbackPolling();}
@@ -5300,6 +5300,7 @@ function smvLiveStartEventStream(){
     smvLiveEventRetry=setTimeout(()=>{smvLiveEventRetry=null;smvLiveStartEventStream();},3000);
    }
   }
+ })();
 }
 async function smvLivePollSessions(){
  if(smvLivePollBusy||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
