@@ -275,3 +275,23 @@ test('Admin landing reads only payment documents used by the Astrologer earnings
   // Wallet transactions remain served by their existing dedicated route.
   assert.ok(server.includes('app.get("/admin/wallet/transactions"'));
 });
+
+
+test('Admin home uses aggregate counts and targeted history queries instead of reading all users/questions', () => {
+  const server = read('server.js');
+  const frontend = read('public/smvastro.mjs');
+  const start = server.indexOf('app.get("/admin-data"');
+  const end = server.indexOf('\n});', start);
+  assert.ok(start >= 0 && end > start);
+  const route = server.slice(start, end);
+  assert.ok(!route.includes('readCollection("smv_users")'));
+  assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
+  assert.ok(route.includes('readCount("questions",db.collection("smv_questions"))'));
+  assert.ok(route.includes('where("status","==","answered").where("commissionStatus","==","credited")'));
+  assert.ok(route.includes('pendingAstrologers.map(async a=>'));
+  assert.ok(frontend.includes('adminData.customerCount'));
+  assert.ok(frontend.includes('adminData.questionCount'));
+  assert.ok(frontend.includes('a.adminContactEmail'));
+  assert.ok(frontend.includes('a.adminContactMobile'));
+  assert.ok(!frontend.includes('const userMap=new Map(users.docs'));
+});
