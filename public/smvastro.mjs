@@ -2356,7 +2356,7 @@ function smvBindCustomerWallet(){
        smvWalletSetMessage('Payment response received. Verifying signature and updating Wallet…');
        const verified=await renderApi('/wallet/recharge/verify',{method:'POST',body:JSON.stringify({rechargeId:order.rechargeId,...paymentResponse})});
        if(!verified?.verified)throw new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
-       requestKey=smvWalletNewRequestKey();requestAmount='';requestPromoCode='';
+       requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet();
        smvWalletSetMessage('Recharge verified successfully. Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.','success');
       }catch(error){
