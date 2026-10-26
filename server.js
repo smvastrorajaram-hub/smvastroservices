@@ -1,5 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
-const {registerWalletRoutes,walletLedgerDocId}=require('./wallet-service');
+const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds}=require('./wallet-service');
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const express = require("express");
@@ -17,6 +17,8 @@ app.use((req,res,next)=>{
 const PORT = process.env.PORT || 10000;
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
+const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
+const ADMIN_AUTH_EMAILS = new Set(String(process.env.ADMIN_AUTH_EMAILS || '').split(',').map(value => String(value || '').trim().toLowerCase()).filter(Boolean));
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -390,15 +392,19 @@ async function requireUser(req, res) {
 
 async function isAdminUser(user) {
   if (!user) return false;
-  if (user.uid === ADMIN_UID) return true;
-  // Firebase ID-token custom claims are signed by Firebase. Do not promote a
-  // user based only on the mutable smv_users profile document.
-  if (user.admin === true || String(user.role || "").toLowerCase() === "admin") return true;
+  // Keep the original owner UID while supporting an explicit comma-separated
+  // UID allowlist for existing Admin accounts during controlled migration.
+  if (ADMIN_UIDS.has(String(user.uid || '').trim())) return true;
+  // Firebase custom claims and verified, explicitly configured Admin emails
+  // are deployment-controlled sources; a mutable profile role is not.
+  if (user.admin === true || String(user.role || '').toLowerCase() === 'admin') return true;
+  const email = String(user.email || '').trim().toLowerCase();
+  if (user.email_verified === true && email && ADMIN_AUTH_EMAILS.has(email)) return true;
   try {
-    const snap = await db.collection("smv_admins").doc(user.uid).get();
+    const snap = await db.collection('smv_admins').doc(user.uid).get();
     return snap.exists;
   } catch (e) {
-    console.error("Admin allowlist lookup failed:", e?.message || e);
+    console.error('Admin allowlist lookup failed:', e?.message || e);
     return false;
   }
 }
@@ -4488,6 +4494,149 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
   }catch(e){
     console.error("Admin Wallet ledger read failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to load Wallet transaction audit."});
+  }
+});
+
+// Admin-managed Wallet recharge bonus-minute Offers.
+// These records are isolated from any legacy cash-discount offers still in Firestore.
+// A bonus is selected and credited only inside the captured-recharge Wallet transaction.
+function walletOfferText(value, maxLength = 120) {
+  return String(value ?? '').trim().slice(0, maxLength);
+}
+function walletOfferWholeNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isSafeInteger(n) ? n : fallback;
+}
+function walletOfferDate(value, fieldName) {
+  if (value == null || String(value).trim() === '') return null;
+  if (offerDateMilliseconds(value) === null) throw new Error(fieldName + ' must be a valid date and time (India time).');
+  return String(value).trim();
+}
+function walletOfferView(docSnap) {
+  const offer = docSnap.data() || {};
+  return {
+    id: docSnap.id,
+    offerType: WALLET_RECHARGE_OFFER_TYPE,
+    name: walletOfferText(offer.name),
+    bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
+    enabled: offer.enabled === true,
+    minimumRechargeAmountPaise: Number.isSafeInteger(Number(offer.minimumRechargeAmountPaise)) ? Number(offer.minimumRechargeAmountPaise) : 0,
+    bonusMinutes: walletOfferWholeNumber(offer.bonusMinutes, 0),
+    perCustomerLimit: walletOfferWholeNumber(offer.perCustomerLimit, 1),
+    totalUsageLimit: walletOfferWholeNumber(offer.totalUsageLimit, 0),
+    priority: walletOfferWholeNumber(offer.priority, 0),
+    usedCount: walletOfferWholeNumber(offer.usedCount, 0),
+    successfulRedemptions: walletOfferWholeNumber(offer.successfulRedemptions, 0),
+    totalBonusMinutesAwarded: walletOfferWholeNumber(offer.totalBonusMinutesAwarded, 0),
+    startAt: offer.startAt || null,
+    endAt: offer.endAt || null,
+    createdAt: offer.createdAt || null,
+    updatedAt: offer.updatedAt || null
+  };
+}
+app.get('/admin/offers', async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
+  try {
+    const snap = await db.collection('smv_offers')
+      .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
+    const offers = snap.docs.map(walletOfferView).sort((a, b) => b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name));
+    return res.set('Cache-Control', 'no-store').json({ success: true, offers });
+  } catch (error) {
+    console.error('Admin Wallet Offers read failed:', error?.stack || error);
+    return res.status(500).json({ success: false, error: 'Unable to load Wallet recharge offers.' });
+  }
+});
+app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
+  try {
+    const body = req.body || {};
+    const requestedId = walletOfferText(body.id, 100);
+    if (requestedId && !/^[A-Za-z0-9_-]+$/.test(requestedId)) {
+      return res.status(400).json({ success: false, error: 'Invalid Offer ID.' });
+    }
+    const offerRef = requestedId
+      ? db.collection('smv_offers').doc(requestedId)
+      : db.collection('smv_offers').doc();
+    const existingSnap = requestedId ? await offerRef.get() : null;
+    if (requestedId && !existingSnap.exists) return res.status(404).json({ success: false, error: 'Wallet Offer was not found.' });
+    const existing = existingSnap?.exists ? (existingSnap.data() || {}) : {};
+    if (existingSnap?.exists && existing.offerType !== WALLET_RECHARGE_OFFER_TYPE) {
+      return res.status(409).json({ success: false, error: 'This Offer belongs to a different Offer type and cannot be overwritten.' });
+    }
+
+    const name = walletOfferText(body.name, 120);
+    const theme = String(body.bannerTheme || 'auto');
+    const minimumRechargeAmountPaise = parseRupeesToPaise(body.minimumRechargeAmount ?? '0', { allowZero: true });
+    const bonusMinutes = Number(body.bonusMinutes);
+    const perCustomerLimit = Number(body.perCustomerLimit ?? 1);
+    const totalUsageLimit = Number(body.totalUsageLimit ?? 0);
+    const priority = Number(body.priority ?? 0);
+    const startAt = walletOfferDate(body.startAt, 'Start Date');
+    const endAt = walletOfferDate(body.endAt, 'End Date');
+    if (!name) return res.status(400).json({ success: false, error: 'Offer Name is required.' });
+    if (!WALLET_OFFER_THEMES.includes(theme) || theme === 'welcome') return res.status(400).json({ success: false, error: 'Choose an available festival Offer theme.' });
+    if (minimumRechargeAmountPaise === null || minimumRechargeAmountPaise < 0) {
+      return res.status(400).json({ success: false, error: 'Minimum recharge must be ₹0 or a positive amount with up to two decimal places.' });
+    }
+    if (!Number.isSafeInteger(bonusMinutes) || bonusMinutes < 1 || bonusMinutes > 1440) {
+      return res.status(400).json({ success: false, error: 'Free minutes must be a whole number from 1 to 1,440.' });
+    }
+    if (!Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 || perCustomerLimit > 10000) {
+      return res.status(400).json({ success: false, error: 'Per-customer limit must be 0 (unlimited) or a whole number up to 10,000.' });
+    }
+    if (!Number.isSafeInteger(totalUsageLimit) || totalUsageLimit < 0 || totalUsageLimit > 1000000) {
+      return res.status(400).json({ success: false, error: 'Total usage limit must be 0 (unlimited) or a whole number up to 1,000,000.' });
+    }
+    if (!Number.isSafeInteger(priority) || priority < -1000 || priority > 1000) {
+      return res.status(400).json({ success: false, error: 'Offer priority must be a whole number from -1,000 to 1,000.' });
+    }
+    if (startAt && endAt && offerDateMilliseconds(startAt) >= offerDateMilliseconds(endAt)) {
+      return res.status(400).json({ success: false, error: 'End Date must be later than Start Date.' });
+    }
+
+    const now = FieldValue.serverTimestamp();
+    const data = {
+      offerType: WALLET_RECHARGE_OFFER_TYPE,
+      name, bannerTheme: theme, enabled: body.enabled === true,
+      minimumRechargeAmountPaise, bonusMinutes, perCustomerLimit, totalUsageLimit, priority,
+      startAt, endAt,
+      usedCount: walletOfferWholeNumber(existing.usedCount, 0),
+      successfulRedemptions: walletOfferWholeNumber(existing.successfulRedemptions, 0),
+      totalBonusMinutesAwarded: walletOfferWholeNumber(existing.totalBonusMinutesAwarded, 0),
+      createdAt: existing.createdAt || now, updatedAt: now, updatedBy: user.uid
+    };
+    await offerRef.set(data, { merge: true });
+    return res.set('Cache-Control', 'no-store').json({ success: true, id: offerRef.id, offer: { id: offerRef.id, ...data } });
+  } catch (error) {
+    if (Number(error?.httpStatus)) return res.status(error.httpStatus).json({ success: false, error: error.message });
+    console.error('Admin Wallet Offer save failed:', error?.stack || error);
+    return res.status(400).json({ success: false, error: error?.message || 'Unable to save Wallet Offer.' });
+  }
+});
+app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, res) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!(await isAdminUser(user))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
+  const id = walletOfferText(req.body?.id, 100);
+  if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) return res.status(400).json({ success: false, error: 'Invalid Offer ID.' });
+  try {
+    const ref = db.collection('smv_offers').doc(id);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()?.offerType !== WALLET_RECHARGE_OFFER_TYPE) {
+      return res.status(404).json({ success: false, error: 'Wallet Offer was not found.' });
+    }
+    if (walletOfferWholeNumber(snap.data()?.usedCount, 0) > 0) {
+      return res.status(409).json({ success: false, error: 'This Offer has redemption history. Turn it OFF instead of deleting it.' });
+    }
+    await ref.delete();
+    return res.json({ success: true, id });
+  } catch (error) {
+    console.error('Admin Wallet Offer delete failed:', error?.stack || error);
+    return res.status(500).json({ success: false, error: 'Unable to delete Wallet Offer.' });
   }
 });
 
