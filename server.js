@@ -1479,6 +1479,19 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
 
+    // Send the Astrologer a background push after a durable scheduled-booking write.
+    // The live-session service treats push as best-effort so a provider outage never
+    // rolls back the Customer's booking.
+    if (callBooking.astrologerUid && ['scheduled_call_request', 'scheduled_chat_request'].includes(String(callBooking.bookingKind || ''))) {
+      const scheduledMode = callBooking.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call';
+      void liveSessionService.notifyAstrologerPush(callBooking.astrologerUid, {
+        type: 'scheduled_booking', mode: scheduledMode, bookingId: ref.id,
+        title: 'New Scheduled ' + scheduledMode.toUpperCase() + ' Booking',
+        body: 'A Customer has requested a scheduled ' + scheduledMode.toUpperCase() + ' for ' + preferredDate + ' at ' + preferredTime + ' IST. Open SMV ASTRO to review.',
+        tag: 'smv-scheduled-' + ref.id
+      });
+    }
+
     // Email notification is best-effort. Booking creation must not fail just because
     // the optional notification provider is unavailable.
     if(ADMIN_EMAIL && (RESEND_API_KEY || smtpTransport)){
@@ -4636,7 +4649,7 @@ app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, re
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser});
+const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,admin});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
