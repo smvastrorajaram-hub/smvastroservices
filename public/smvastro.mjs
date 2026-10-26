@@ -1408,18 +1408,6 @@ function smvStartLive(role){
  });
 }
 function smvWatchDashboardEvents(role){smvStartLive(role);}
-let smvAstroAnswerProtectionBound=false;
-function bindAstrologerAnswerProtectionOnce(){
- if(smvAstroAnswerProtectionBound)return;
- smvAstroAnswerProtectionBound=true;
- const protectedBox=el=>!!(el&&el.matches&&el.matches('textarea[data-answer-protected="true"]'));
- const notice=()=>smvNotice('Clipboard Not Allowed','For security, answers must be typed directly into the answer box. Copy, cut and paste are not allowed.','🔒');
- for(const type of ['paste','drop','copy','cut']) document.addEventListener(type,e=>{if(!protectedBox(e.target))return;e.preventDefault();e.stopPropagation();notice();},{capture:true});
- document.addEventListener('dragover',e=>{if(protectedBox(e.target)){e.preventDefault();e.stopPropagation();}},{capture:true});
- document.addEventListener('beforeinput',e=>{if(protectedBox(e.target)&&['insertFromPaste','insertFromDrop','insertFromPasteAsQuotation'].includes(e.inputType)){e.preventDefault();e.stopPropagation();notice();}},{capture:true});
- document.addEventListener('keydown',e=>{if(protectedBox(e.target)&&(e.ctrlKey||e.metaKey)&&String(e.key||'').toLowerCase()==='v'){e.preventDefault();e.stopPropagation();notice();}},{capture:true});
- document.addEventListener('contextmenu',e=>{if(protectedBox(e.target))e.preventDefault();},{capture:true});
-}
 window.__smvRefreshDashboard=()=>{
  if(!currentUser)throw new Error('Please login again.');
  smvInternalView='dashboard';dashboardReadyAt=0;
@@ -2819,7 +2807,7 @@ async function loadAdminPanelData(background=false){
     payoutBox.querySelectorAll('[data-payout-reject]').forEach(b=>b.onclick=async()=>{const id=b.dataset.payoutReject,reason=$('payoutReject_'+id)?.value.trim()||'';if(!reason){alert('Enter rejection reason.');return;}b.disabled=true;try{const r=await withTimeout(renderApi('/admin/payout-change-status',{method:'POST',body:JSON.stringify({astrologerId:id,status:'rejected',reason})}),15000);if(!r?.success)throw new Error(r?.error||'Unable to reject payment method.');alert('Payment method rejected.');await loadAdminPanel();}catch(e){alert(e.message||String(e));b.disabled=false;}});
   }catch(e){payoutBox.innerHTML='<div class="empty error">Payment method approval list could not be loaded right now.</div>';console.warn('Admin payout changes load skipped:',e);}
 
-  // Public Question Admin Approval: Admin selects exactly one approved astrologer and commission rate.
+  // Admin payout and withdrawal history is loaded from trusted backend records.
   const withdrawalPayload=await renderApi('/admin/withdrawals-data',{method:'GET'});
   const withdrawalDocs=smvSortDashboardDesc(Array.isArray(withdrawalPayload?.withdrawals)?withdrawalPayload.withdrawals:[]).slice(0,50);
   $('adminWithdrawals').innerHTML=withdrawalDocs.length?withdrawalDocs.map(w=>{const docId=String(w.id||'');return `<div class="card" style="margin:10px 0"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <b>${escapeHtml(w.status||'pending').toUpperCase()}</b><div class="small">Astrologer: ${escapeHtml(w.astrologerName||w.astrologerId||'')} · Astrologer ID: ${escapeHtml(w.astrologerId||'')}<br><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}${String(w.status||'').toLowerCase()==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? `<br><b>Admin Payment ID:</b> ${escapeHtml(w.adminPaymentId)}` : ''}<br>Requested: ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${String(w.status||'').toLowerCase()==='paid' && w.paidAt ? `<br><b>Paid Date & Time:</b> ${escapeHtml(smvDateTime(w.paidAt))}` : ''}</div><div id="withdrawBank_${docId}" class="small" style="margin-top:8px"><b>PRIVATE PAYMENT DETAILS:</b> Loading…</div><div class="action-row">${w.status==='pending'?`<button class="btn" data-wstatus="${docId}" data-status="processing">MARK PROCESSING</button><button class="btn gray" data-wstatus="${docId}" data-status="rejected">REJECT</button>`:''}${w.status==='processing'?`<button class="btn" data-wstatus="${docId}" data-status="paid">MARK PAID</button>`:''}${String(w.status||'').toLowerCase()==='paid' && !/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?`<button class="btn" data-wstatus="${docId}" data-status="paid">CREATE ADMIN PAYMENT ID</button>`:''}</div></div>`}).join(''):'<div class="empty">No withdrawal requests.</div>';
