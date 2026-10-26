@@ -4671,7 +4671,25 @@ function smvLiveToggleRingtone(){
  }catch(error){console.warn('Incoming melody toggle failed:',error);}
  smvLiveRingButtonSync();
 }
-function smvLiveSessionStatusLabel(session){const s=String(session?.state||session?.status||'');const mode=smvLiveCanonicalMode(session);if(s==='preparing'){const until=Date.parse(session?.preparationUntil||''),started=Date.parse(session?.preparationStartedAt||session?.acceptedAt||session?.createdAt||'');const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+180000:Date.now()+180000);const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));const clock=String(Math.floor(remaining/60))+':'+String(remaining%60).padStart(2,'0');return String(session?.customerUid||'')===String(currentUser?.uid||'')?'Please... '+clock:'Generate Customer Horoscope · '+clock';}if(s==='connecting')return mode==='chat'?'Waiting for Astrologer to accept Chat…':mode==='call'?'Connecting Call…':'Connecting…';return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';}
+function smvLiveSessionStatusLabel(session){
+ const s=String(session?.state||session?.status||'');
+ const mode=smvLiveCanonicalMode(session);
+ if(s==='preparing'){
+  const until=Date.parse(session?.preparationUntil||'');
+  const started=Date.parse(session?.preparationStartedAt||session?.acceptedAt||session?.createdAt||'');
+  const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+180000:Date.now()+180000);
+  const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+  const clock=String(Math.floor(remaining/60))+':'+String(remaining%60).padStart(2,'0');
+  if(String(session?.customerUid||'')===String(currentUser?.uid||''))return 'Please... '+clock;
+  return 'Generate Customer Horoscope · '+clock;
+ }
+ if(s==='connecting'){
+  if(mode==='chat')return String(session?.astrologerUid||'')===String(currentUser?.uid||'')?'ACCEPT CHAT to open Live Chat…':'Waiting for Astrologer to accept Chat…';
+  if(mode==='call')return 'Connecting Call…';
+  return 'Connecting…';
+ }
+ return ({ringing:'Ringing — waiting for Astrologer',active:'Connected',ended:'Session ended'})[s]||s||'Request sent';
+}
 function smvLivePanelHtml(s,incoming){
  const id=String(s.id||s.sessionId||''),call=smvLiveCanonicalMode(s)==='call',active=s.state==='active',ringing=s.state==='ringing',inv=!!incoming&&ringing,connectable=call&&['connecting','active'].includes(String(s.state||''));
  const viewerIsCustomer=String(currentUser?.uid||'')===String(s.customerUid||''),youName=viewerIsCustomer?smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer':smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer',otherName=viewerIsCustomer?smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer':smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer';
