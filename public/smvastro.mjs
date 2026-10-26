@@ -424,7 +424,6 @@ function smvDateSortMs(value){ try { if(value==null||value==='')return 0; if(typ
 function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
 function smvDashboardData(item){try{return typeof item?.data==='function'?(item.data()||{}):(item||{});}catch(_e){return {};}}
 function smvSortDashboardDesc(items){return (Array.isArray(items)?items:[]).slice().sort((a,b)=>smvDashboardActivityMs(smvDashboardData(b))-smvDashboardActivityMs(smvDashboardData(a)));}
-window.__smvOpenQuestionService=openQuestionService;
   window.__smvOpenRegister=openRegister;
 
 function hidePublicHoroscopeSections(){
@@ -566,20 +565,6 @@ $("astroRegBtn")?.addEventListener("click",()=>openAstrologerRegistration());
 $("regBackBtn")?.addEventListener("click",e=>{e.preventDefault();smvReturnHome(true);});
 $("astroRegBackBtn")?.addEventListener("click",e=>{e.preventDefault();smvReturnHome(true);});
 $("backHomeBtn")?.addEventListener("click",e=>{e.preventDefault();smvReturnHome(true);});
-$("askNowBackBtn")?.addEventListener("click",e=>{
-  e.preventDefault();
-  e.stopPropagation();
-  if(!currentUser) return smvReturnHome(true);
-  
-  
-  pendingAfterLogin=null;
-  smvClosePublicQuestionWindow();
-  // Return through the existing role-aware Dashboard router.
-  // It resolves Admin / Astrologer / Customer from the signed-in account
-  // instead of forcing every ASK NOW Back action into Customer Dashboard.
-  $("dashLink")?.click();
-});
-
 // Admin no longer has a separate header button.
 $("adminLink")?.addEventListener("click",e=>{e.preventDefault();openAdminEntry();});
 $("adminFeatureBtn")?.addEventListener("click",e=>{e.preventDefault();openAdminEntry();});
@@ -903,7 +888,7 @@ function smvRevealPaidDashboardItem(kind,id){
 }
 window.__smvRevealPaidDashboardItem=smvRevealPaidDashboardItem;
 
-async function finishGoogleRoleLogin(googleUser, askNowLogin){
+async function finishGoogleRoleLogin(googleUser){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
   currentUser=googleUser;
   smvAdminAccessCache.delete(googleUser.uid);
@@ -942,15 +927,7 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
   closeModal();
 
   pendingAfterLogin=null;
-    return;
-  }
-  if(askNowLogin && resolvedRole!=="customer"){
-    
-    
-  }
-
-  pendingAfterLogin=null;
-  hide(); hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
+  hide("register-flow"); hide("astro-register-form"); hide("astro-flow");
   hide("appointment"); hide("contact"); hide("home"); hide("askNowSection"); hide("approved-astrologers"); hide("faq");
 
   if(resolvedRole==="admin"){
@@ -1413,7 +1390,7 @@ async function logoutToHome(reason=''){
   setTimeout(()=>{if(!auth?.currentUser && $('authBtn')) $('authBtn').textContent='Login';},1200);
   hide('dashboard'); hide('admin'); hide('dashLink'); hide('adminLink');
   setHeaderRoleLabel('');
-  smvClosePublicQuestionWindow(); hide('register-flow'); hide('astro-register-form'); hide('astro-flow'); hide('appointment'); hide('contact');
+   hide('register-flow'); hide('astro-register-form'); hide('astro-flow'); hide('appointment'); hide('contact');
   showHomeSurface();
   show('smv-content-hub');
   show('english-horoscope'); window.__smvContentVisible=false;
@@ -2637,14 +2614,6 @@ async function smvRenderAdminWalletOffers(){
  await reloadOffers();
 }
 
-function smvRenderOpenWorkflowControl(data){
- const host=$('adminSummary'); if(!host)return; let card=$('smvOpenWorkflowControl');
- if(!card){card=document.createElement('div');card.id='smvOpenWorkflowControl';card.className='card';card.style.marginTop='16px';}const workflowAnchor=$('adminPendingQuestions')?.closest('.card')||host.closest('.card');if(workflowAnchor&&card.previousElementSibling!==workflowAnchor)workflowAnchor.insertAdjacentElement('afterend',card);
- const on=data?.settings?.workflow?.allowWithoutAdminApproval===true;
- card.innerHTML=`<h3>Question / Answer Approval Control</h3><p class="small">When <b>ALLOW</b> is ON, paid questions go directly to Open Questions for all approved astrologers. The first astrologer to claim owns the question, and submitted answers go directly to the customer without Admin approval. The astrologer can edit only until the customer views the answer.</p><div class="action-row"><button class="btn ${on?'':'gray'}" id="smvWorkflowAllow" type="button">${on?'ALLOW ON':'ALLOW OFF'}</button><span class="small"><b>Current mode:</b> ${on?'Open questions + direct answers':'Admin question/answer approval required'}</span></div><div id="smvWorkflowMsg" class="small"></div>`;
- $('smvWorkflowAllow').onclick=async()=>{const b=$('smvWorkflowAllow'),next=!on;b.disabled=true;try{const r=await renderApi('/admin/set-open-workflow',{method:'POST',body:JSON.stringify({allowWithoutAdminApproval:next})});if(!r?.success)throw new Error(r?.error||'Unable to change workflow.');$('smvWorkflowMsg').innerHTML='<span class="success">Saved. '+(next?'Open Questions mode is ON.':'Admin approval mode is ON.')+'</span>';await loadAdminPanel();}catch(e){$('smvWorkflowMsg').innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';b.disabled=false;}};
-}
-
 let smvAdminLoad=null,smvAdminLoadUid=null;
 async function loadAdminPanel(background=false){
  if(smvAdminLoad&&smvAdminLoadUid===currentUser?.uid){const uid=currentUser.uid;await smvAdminLoad;if(background&&currentUser?.uid===uid)return loadAdminPanel(true);return;}
@@ -2661,8 +2630,7 @@ async function loadAdminPanelData(background=false){
  try{
   const adminLoadUid=currentUser.uid;
   const adminReads=await Promise.allSettled([
-   withTimeout(renderApi('/admin-data',{method:'GET'}),20000),
-   withTimeout(getDoc(doc(db,'smv_settings','question')))
+   withTimeout(renderApi('/admin-data',{method:'GET'}),20000)
   ]);
   const adminRead=i=>{if(adminReads[i].status==='rejected')throw adminReads[i].reason;return adminReads[i].value;};
   const adminData=adminRead(0);
@@ -2730,15 +2698,12 @@ async function loadAdminPanelData(background=false){
   // /admin-data already includes the same commission settings document.
   // Reuse that payload instead of issuing a second Firestore read.
   let settings=adminData?.settings?.commission||{astroPercent:20,adminPercent:80};
-  let questionSettings={price:5}; try{const qps=adminRead(1);if(qps.exists())questionSettings=qps.data();}catch(e){}
-  $('questionPrice').value=Number(questionSettings.price||5);
   const hp=adminData.settings?.horoscopePayment||{advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};
   if($('advancedAnalysisPaymentEnabled'))$('advancedAnalysisPaymentEnabled').value=String(hp.advancedAnalysisEnabled===true);
   if($('advancedAnalysisPrice'))$('advancedAnalysisPrice').value=Number(hp.advancedAnalysisPrice??51);
   if($('marriageMatchingPaymentEnabled'))$('marriageMatchingPaymentEnabled').value=String(hp.marriageMatchingEnabled===true);
   if($('marriageMatchingPrice'))$('marriageMatchingPrice').value=Number(hp.marriageMatchingPrice??51);
   if($('saveHoroscopePaymentSettings'))$('saveHoroscopePaymentSettings').onclick=async()=>{const b=$('saveHoroscopePaymentSettings'),msg=$('horoscopePaymentSettingsMsg');b.disabled=true;try{const payload={advancedAnalysisEnabled:$('advancedAnalysisPaymentEnabled').value==='true',advancedAnalysisPrice:Number($('advancedAnalysisPrice').value),marriageMatchingEnabled:$('marriageMatchingPaymentEnabled').value==='true',marriageMatchingPrice:Number($('marriageMatchingPrice').value)},r=await renderApi('/admin/horoscope-feature-settings',{method:'POST',body:JSON.stringify(payload)}),a={enabled:r.settings.advancedAnalysisEnabled===true,price:Number(r.settings.advancedAnalysisPrice??0)},m={enabled:r.settings.marriageMatchingEnabled===true,price:Number(r.settings.marriageMatchingPrice??0)};try{localStorage.setItem('smv-horoscope-feature-config',JSON.stringify({advanced_analysis:a,marriage_matching:m}));}catch(_){}msg.innerHTML='<span class="success">Horoscope settings saved. Advanced: '+(a.enabled?'ON':'OFF')+' ₹'+a.price.toFixed(2)+' · Marriage: '+(m.enabled?'ON':'OFF')+' ₹'+m.price.toFixed(2)+'</span>';}catch(e){msg.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;}};
-  $('saveQuestionPrice').onclick=async()=>{const price=Math.round(Number($('questionPrice').value)*100)/100;if(!Number.isFinite(price)||price<1){$('questionPriceMsg').innerHTML='<span class="error">Enter a valid price of at least ₹1.</span>';return;}const b=$('saveQuestionPrice');b.disabled=true;b.textContent='SAVING...';try{await setDoc(doc(db,'smv_settings','question'),{price,updatedAt:serverTimestamp(),updatedBy:currentUser.uid});await smvAdminTouch();questionServicePrice=price;if($('askRate'))$('askRate').innerHTML=`<b>₹${price.toFixed(2)} per Question</b>`;if($('publicQuestionPrice'))$('publicQuestionPrice').textContent=`₹${price.toFixed(2)}`;$('questionPriceMsg').innerHTML='<span class="success">Current public question price saved: ₹'+price.toFixed(2)+'</span>';}catch(e){$('questionPriceMsg').innerHTML='<span class="error">Unable to save price: '+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;b.textContent='SAVE PRICE';}};
   $('astroCommission').value=settings.astroPercent??20;$('adminCommission').value=settings.adminPercent??80;
   $('saveCommission').onclick=async()=>{
    const btn=$('saveCommission'),msg=$('commissionMsg');
