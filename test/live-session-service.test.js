@@ -13,6 +13,7 @@ const {
   calculateBookingReserveRelease,
   preparationWindow,
   isAstrologerLiveModeEnabled,
+  astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
@@ -189,16 +190,22 @@ test('Accept starts the three-minute Horoscope preparation window at the accepta
 });
 
 
-test('Astrologer live mode is exclusive: Call ON / Chat OFF enables only Call', () => {
+test('each enabled live mode is available independently or together', () => {
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:false}, 'call'), true);
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:false}, 'chat'), false);
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:true}, 'call'), false);
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:true}, 'chat'), true);
-});
-
-test('both live modes ON or both OFF disables all new live requests', () => {
-  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'call'), false);
-  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'chat'), false);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'call'), true);
+  assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:true}, 'chat'), true);
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:false}, 'call'), false);
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:false,liveChatEnabled:false}, 'chat'), false);
+});
+
+test('availability automatically follows enabled modes, while active sessions stay Busy', () => {
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true,liveChatEnabled:true}, 0), 'online');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true,liveChatEnabled:false}, 0), 'online');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:true}, 0), 'online');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 0), 'offline');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 1), 'busy');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true,liveChatEnabled:true}, 1), 'busy');
 });
