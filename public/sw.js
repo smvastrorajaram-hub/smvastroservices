@@ -83,14 +83,24 @@ try {
 }
 
 self.addEventListener('notificationclick', event => {
+  const details = {
+    type: String(event.notification?.data?.type || ''),
+    mode: String(event.notification?.data?.mode || ''),
+    sessionId: String(event.notification?.data?.sessionId || ''),
+    bookingId: String(event.notification?.data?.bookingId || '')
+  };
   event.notification?.close();
   event.waitUntil((async () => {
     let target = new URL(String(event.notification?.data?.url || '/'), self.location.origin);
     if (target.origin !== self.location.origin) target = new URL('/', self.location.origin);
+    target.searchParams.set('smvLivePush', '1');
+    if (details.sessionId) target.searchParams.set('smvSessionId', details.sessionId);
+    if (details.bookingId) target.searchParams.set('smvBookingId', details.bookingId);
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of windows) {
       if (new URL(client.url).origin !== self.location.origin) continue;
       await client.focus();
+      client.postMessage({ type: 'SMV_LIVE_PUSH_OPEN', payload: details });
       return;
     }
     await self.clients.openWindow(target.href);
