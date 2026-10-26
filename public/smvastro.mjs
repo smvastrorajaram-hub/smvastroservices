@@ -2659,7 +2659,6 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
     if(!active())return;
     if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
     box.innerHTML=`<div class="card" style="max-width:900px;margin:0 auto">
-      
       <div class="card" style="border:2px solid #c62828;background:#fff5f5">
         <h3 style="margin-top:0;color:#b71c1c">❌ Astrologer Application Rejected</h3>
         <p>Your astrologer application has been rejected by Admin.</p>
