@@ -317,7 +317,7 @@ app.use((req, res, next) => {
 // write after the response has finished so it never delays Razorpay/payment or
 // any other request's critical path.
 const DASHBOARD_SIGNAL_PATHS=new Set([
-  '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/submit-answer',
+  '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/astrologer/claim-question','/submit-answer',
   '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
   '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing','/admin/astrologer-languages',
   '/admin/astrologer-profile-description','/admin/astrologer-profile-permission',
@@ -350,7 +350,7 @@ function dashboardSignalCategory(path=''){
   if(p.includes('/review'))return 'reviews';
   if(p.includes('/astrologer-quiz/')||p.includes('/astrologer-auto-approval/'))return 'astrologer_settings';
   if(p.includes('/set-open-workflow')||p.includes('/set-commission')||p.includes('/set-word-count')||p.includes('/set-workflow'))return 'settings';
-  if(p.includes('/approve-question')||p.includes('/reallocate-question')||p.includes('/reject-question')||p.includes('/retry-refund')||p.includes('/sync-refund')||p.includes('/edit-question')||p.includes('/takeover-answer')||p.includes('/approve-answer')||p.includes('/reject-answer')||p.includes('/submit-answer')||p.includes('/mark-answer-viewed'))return 'questions';
+  if(p.includes('/approve-question')||p.includes('/reallocate-question')||p.includes('/reject-question')||p.includes('/retry-refund')||p.includes('/sync-refund')||p.includes('/edit-question')||p.includes('/takeover-answer')||p.includes('/approve-answer')||p.includes('/reject-answer')||p.includes('/submit-answer')||p.includes('/edit-answer')||p.includes('/claim-question')||p.includes('/mark-answer-viewed'))return 'questions';
   if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer')||p.includes('/astrologer-pricing'))return 'astrologers';
   if(p.includes('/verify-payment')||p.includes('/recover-payment')||p.includes('/razorpay/webhook')||p.includes('/credit-commission'))return 'financial';
   return 'unknown';
