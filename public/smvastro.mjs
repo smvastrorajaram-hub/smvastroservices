@@ -4682,7 +4682,7 @@ function smvLiveSessionStatusLabel(session){
   const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+180000:Date.now()+180000);
   const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
   const clock=String(Math.floor(remaining/60))+':'+String(remaining%60).padStart(2,'0');
-  if(String(session?.customerUid||'')===String(currentUser?.uid||''))return 'Please wait... '+clock;
+  if(String(session?.customerUid||'')===String(currentUser?.uid||''))return 'Please wait.... '+clock;
   return 'Generate Customer Horoscope · '+clock;
  }
  if(s==='connecting'){
@@ -5005,6 +5005,13 @@ async function smvLiveSwitchAudioInput(sessionId,deviceId){
  await smvLiveRefreshAudioInputs(nextTrack).catch(error=>console.warn('Could not refresh microphone list:',error));
  const picked=select?.selectedOptions?.[0]?.textContent||nextTrack.label||'selected microphone';
  if(voice)voice.textContent='Microphone input: '+picked+'. Voice connection: '+pc.connectionState+'.';
+}
+if(navigator.mediaDevices?.addEventListener&&!window.__smvLiveAudioDeviceChangeBound){
+ window.__smvLiveAudioDeviceChangeBound=true;
+ navigator.mediaDevices.addEventListener('devicechange',()=>{
+  if(smvLiveCurrentSession?.mode==='call'&&smvLiveLocalStream)
+   smvLiveRefreshAudioInputs(smvLiveLocalStream.getAudioTracks()[0]).catch(error=>console.warn('Audio input refresh after device change failed:',error));
+ });
 }
 async function smvLiveHandleMediaFailure(id,error){const message=smvLiveMediaErrorText(error);console.warn('Live voice setup failed:',error);smvLiveShowError(new Error(message));const voice=$('smvLiveVoiceStatus');if(voice)voice.textContent=message;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'connection_failed'})});if(r.session)smvLiveApplySession(r.session);}catch(e){console.warn('Call settlement retry required:',e);}}
 async function smvLiveEnsurePeer(id){
