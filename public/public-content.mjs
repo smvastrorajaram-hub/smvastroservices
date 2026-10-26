@@ -208,7 +208,6 @@
     };
     return fbApi;
   }
-  async function loadQuestionPrice(){try{const f=await fb();const snap=await f.getDoc(f.doc(db,'smv_settings','question'));if(!snap.exists())throw new Error('Question price is not configured.');const price=Number(snap.data()?.price);if(!Number.isFinite(price)||price<1)throw new Error('Invalid question price.');if($('publicQuestionPrice'))$('publicQuestionPrice').textContent='₹'+price.toFixed(2);}catch(e){console.warn('Public question price unavailable:',e);if($('publicQuestionPrice'))$('publicQuestionPrice').textContent='Price unavailable';}}
   function showPublicProfileModal(html){
     const modalEl=document.getElementById('modal');
     const contentEl=document.getElementById('modalContent');
@@ -498,16 +497,6 @@
   }
 
   window.__smvSetupLanguage=()=>{document.documentElement.lang='en';};
-  window.__smvNotifyQuestionUpdate=async function(questionId,event,reason){
-    try{
-      const u=auth?.currentUser;
-      if(!u||!questionId)return;
-      const token=await u.getIdToken();
-      const r=await fetch(BACKEND+'/question-notify',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({questionId,event,reason:reason||''})});
-      if(!r.ok){const d=await r.json().catch(()=>({}));console.warn('Question email notification failed:',d.error||r.status);}
-    }catch(e){console.warn('Question email notification failed:',e);}
-  }
-  let bookingSubmitting=false;
   function setupBooking(){
     document.querySelectorAll('[data-open-booking]').forEach(b=>b.onclick=()=>{show("appointment");if($('apType'))$('apType').value=b.dataset.openBooking;location.hash='appointment';$('apName')?.focus();});
     const f=$('appointmentForm');if(!f)return;
@@ -638,162 +627,6 @@
     $('privateConsultationQuestionForm')?.reset();
     $('privateConsultationQuestionCard')?.classList.add('hidden');
   });
-  async function selectPrivateAstrologer(astro,button){
-    let user=window.__smvFirebaseCurrentUser||null;
-    if(!user){
-      alert('Customer Login Required — Please login with a Customer account to select an astrologer.');
-      $('authBtn')?.click();
-      return;
-    }
-    let role=String(window.__smvCurrentRole||'').toLowerCase();
-    // Fresh/cold reopen intentionally leaves the role unresolved so Home stays
-    // fresh without a profile read. Resolve it only now, on this explicit action.
-    if(role!=='customer' && typeof window.__smvEnsureCustomerSession==='function'){
-      const originalText=button?.textContent||'SELECT ASTROLOGER';
-      if(button){button.disabled=true;button.textContent='CHECKING SESSION…';}
-      try{
-        const session=await window.__smvEnsureCustomerSession();
-        user=session?.user||window.__smvFirebaseCurrentUser||null;
-        role=String(session?.role||window.__smvCurrentRole||'').toLowerCase();
-      }catch(err){
-        console.warn('Private Consultation session check failed:',err);
-      }finally{
-        if(button){button.disabled=false;button.textContent=originalText;}
-      }
-    }
-    if(!user){
-      alert('Customer Login Required — Please login with a Customer account to select an astrologer.');
-      $('authBtn')?.click();
-      return;
-    }
-    if(role!=='customer'){
-      alert('Private Consultation is available only for Customer accounts. Please use a Customer login.');
-      return;
-    }
-    if(window.__smvSelectedPrivateConsultAstrologer?.id===astro.id){$('privateConsultationQuestionCard')?.classList.remove('hidden');$('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
-    if(window.__smvSelectedPrivateConsultAstrologer?.id!==astro.id){walletBookingRequestId=null;walletBookingRequestOwner='';}
-    window.__smvSelectedPrivateConsultAstrologer={id:astro.id,name:astro.name||'Astrologer',chatPrice:Number(astro.chatPrice||0)};
-    document.querySelectorAll('.smv-private-consult-select').forEach(el=>{el.textContent=el===button?'SELECTED':'SELECT ASTROLOGER';});
-    $('privateConsultationSelected').textContent='Selected Astrologer: '+astro.name;
-    const summary=$('privateConsultPaymentSummary');
-    summary.textContent='Private Consultation Chat Price: ₹'+Number(astro.chatPrice).toFixed(2);
-    $('privateConsultationQuestionCard')?.classList.remove('hidden');
-    $('privateConsultationQuestionCard')?.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  window.__smvSelectPrivateAstrologer=selectPrivateAstrologer;
-
-  let privateConsultSubmitting=false;
-  let walletBookingRequestId=null,walletBookingRequestOwner='';
-  async function submitPrivateConsultation(e){
-    e.preventDefault();
-    if(privateConsultSubmitting)return;
-    const astro=window.__smvSelectedPrivateConsultAstrologer;
-    const paymentMethod='wallet';
-    const msg=$('privateConsultMsg'),btn=$('privateConsultWalletPayBtn');
-    const actionButtons=[btn].filter(Boolean);
-    const enableButtons=()=>actionButtons.forEach(button=>{button.disabled=false;});
-    if(!astro?.id||Number(astro.chatPrice)<1){if(msg)msg.innerHTML='<span class="error">Please select an available astrologer first.</span>';return;}
-    const payload={
-      astrologerId:String(astro.id),
-      customerName:String($('privateConsultName')?.value||'').trim(),
-      question:String($('privateConsultQuestion')?.value||'').trim(),
-      birthDetails:{
-        name:String($('privateConsultName')?.value||'').trim(),
-        birthDate:String($('privateConsultBirthDate')?.value||''),
-        birthTime:String($('privateConsultBirthTime')?.value||''),
-        birthPlace:String($('privateConsultBirthPlace')?.value||'').trim(),
-        birthGender:String($('privateConsultGender')?.value||''),
-        timezone:'Asia/Kolkata',utcOffsetMinutes:330
-      }
-    };
-    if(!payload.customerName||!payload.question||!payload.birthDetails.birthDate||!payload.birthDetails.birthTime||!payload.birthDetails.birthPlace){
-      if(msg)msg.innerHTML='<span class="error">Please complete all birth details and your question.</span>';return;
-    }
-
-    privateConsultSubmitting=true;actionButtons.forEach(button=>{button.disabled=true;});
-    if(btn)btn.textContent='PROCESSING WALLET PAYMENT…';
-    try{
-      const u=window.__smvFirebaseCurrentUser;
-      if(!u || String(window.__smvCurrentRole||'').toLowerCase()!=='customer')throw new Error('Please login with your Customer account before payment.');
-      const token=await u.getIdToken();
-      const api=async(path,body)=>{
-        const started=performance.now();
-        const r=await fetch(BACKEND+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body),cache:'no-store'});
-        const d=await r.json().catch(()=>({}));window.__smvRecordTiming?.(path,performance.now()-started,r.ok);if(!r.ok)throw new Error(d.error||`Service returned HTTP ${r.status}.`);return d;
-      };
-      const requestPayload={...payload,paymentMethod};
-      if(paymentMethod==='wallet'){
-        const owner=String(u.uid)+':'+String(astro.id);
-        if(walletBookingRequestOwner!==owner||!walletBookingRequestId){
-          walletBookingRequestOwner=owner;
-          walletBookingRequestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('pcw-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
-        }
-        requestPayload.requestId=walletBookingRequestId;
-      }
-      const order=await api('/private-consultation/create-order',requestPayload);
-      if(paymentMethod==='wallet'){
-        if(!order?.verified||!order?.walletPaid||!order?.consultationId||!String(order?.customerPaymentId||order?.paymentId||'')){
-          throw new Error(order?.error||'The backend did not confirm the Wallet debit and consultation booking. No payment success is shown.');
-        }
-        const paymentId=String(order.customerPaymentId||order.paymentId);
-        walletBookingRequestId=null;walletBookingRequestOwner='';
-        privateConsultSubmitting=false;
-        if(msg)msg.textContent='';
-        if(btn)btn.textContent='WALLET PAYMENT DONE ✓';
-        try{
-          if(typeof window.__smvShowVerifiedPayment==='function'){
-            await window.__smvShowVerifiedPayment({...order,verified:true,paymentId},'private',null);
-          }else{
-            const dashboardButton=$('dashLink');
-            if(dashboardButton)dashboardButton.click();
-            if(msg){msg.className='small success';msg.textContent='Wallet payment confirmed. Your chat booking is saved. Open Customer Dashboard to view it. Do not pay again.';}
-          }
-        }catch(receiptError){
-          console.error('Wallet payment was confirmed, but receipt navigation failed:',receiptError);
-          if(msg){msg.className='small success';msg.textContent='Wallet payment confirmed and booking saved. Do not pay again. Open Customer Dashboard to view the booking.';}
-          $('dashLink')?.click();
-        }
-        return;
-      }
-
-    }catch(err){
-      privateConsultSubmitting=false;
-      if(msg)msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';
-      if(btn)btn.textContent='PAY WITH WALLET';
-      enableButtons();
-    }
-  }
-
-  function setupAsk(){
-  const privateForm=$('privateConsultationQuestionForm');
-  privateForm?.addEventListener('submit',submitPrivateConsultation);
-  ['input','change'].forEach(eventName=>privateForm?.addEventListener(eventName,()=>{
-    if(!privateConsultSubmitting){walletBookingRequestId=null;walletBookingRequestOwner='';}
-  }));
-  $('privateConsultationQuestionClose')?.addEventListener('click',()=>{
-    $('privateConsultationQuestionCard')?.classList.add('hidden');
-    window.__smvSelectedPrivateConsultAstrologer=null;
-    document.querySelectorAll('[data-private-consult-astro]').forEach(b=>{b.textContent='SELECT ASTROLOGER';b.disabled=false;});
-    const selected=$('privateConsultationSelected'),summary=$('privateConsultPaymentSummary'),msg=$('privateConsultMsg');
-    walletBookingRequestId=null;walletBookingRequestOwner='';
-    if(selected)selected.textContent='';
-    if(summary)summary.textContent='';
-    if(msg)msg.textContent='';
-    
-    $('privateConsultationQuestionForm')?.reset();
-    $('privateConsultationAstrologers')?.scrollIntoView({behavior:'smooth',block:'start'});
-  });
-  // Legacy fixed-price question submission remains for saved-history compatibility,
-  // but new consultation entry points use the per-minute Live Call / Live Chat directory.
-  document.querySelectorAll('[data-open-booking]').forEach(b=>{
-    b.onclick=()=>{
-      show('appointment');
-      if($('apType')) $('apType').value=b.dataset.openBooking;
-      $('appointment')?.scrollIntoView({behavior:'smooth',block:'start'});
-      $('apName')?.focus();
-    };
-  });
-}
   let adminRefreshRunning=false;
   async function refreshAdminSections(){
     if($('admin')?.classList.contains('hidden'))return;
@@ -808,7 +641,7 @@
     window.__SMV_ADMIN_HOOKED=true;
     window.__smvRefreshAdminSections=refreshAdminSections;
   }
-  setupBooking();setupAsk();if($('publicQuestionPrice'))loadQuestionPrice().catch(()=>{});hookAdmin();armPublicReviewsLazyLoad();
+  setupBooking();hookAdmin();armPublicReviewsLazyLoad();
   // Admin data loaders are triggered explicitly after Admin authentication.
 })();
   document.getElementById("contactNav")?.addEventListener("click",e=>{e.preventDefault();document.getElementById("contact")?.classList.remove("hidden");document.getElementById("contact")?.scrollIntoView({behavior:"smooth",block:"start"});});
