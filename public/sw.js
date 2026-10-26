@@ -25,6 +25,31 @@ self.addEventListener('activate',event=>{
 });
 
 
+self.addEventListener('notificationclick', event => {
+  const details = {
+    type: String(event.notification?.data?.type || ''),
+    mode: String(event.notification?.data?.mode || ''),
+    sessionId: String(event.notification?.data?.sessionId || ''),
+    bookingId: String(event.notification?.data?.bookingId || '')
+  };
+  event.notification?.close();
+  event.waitUntil((async () => {
+    let target = new URL(String(event.notification?.data?.url || '/'), self.location.origin);
+    if (target.origin !== self.location.origin) target = new URL('/', self.location.origin);
+    target.searchParams.set('smvLivePush', '1');
+    if (details.sessionId) target.searchParams.set('smvSessionId', details.sessionId);
+    if (details.bookingId) target.searchParams.set('smvBookingId', details.bookingId);
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      await client.focus();
+      client.postMessage({ type: 'SMV_LIVE_PUSH_OPEN', payload: details });
+      return;
+    }
+    await self.clients.openWindow(target.href);
+  })());
+});
+
 /* Firebase Cloud Messaging: data-only push alerts for Astrologer Live Call,
    Live Chat and scheduled/live bookings. Never depend on an open page for delivery. */
 try {
@@ -81,31 +106,6 @@ try {
   // Other site features continue working if FCM is unsupported or not configured.
   console.warn('SMV ASTRO background push setup is unavailable:', error?.message || error);
 }
-
-self.addEventListener('notificationclick', event => {
-  const details = {
-    type: String(event.notification?.data?.type || ''),
-    mode: String(event.notification?.data?.mode || ''),
-    sessionId: String(event.notification?.data?.sessionId || ''),
-    bookingId: String(event.notification?.data?.bookingId || '')
-  };
-  event.notification?.close();
-  event.waitUntil((async () => {
-    let target = new URL(String(event.notification?.data?.url || '/'), self.location.origin);
-    if (target.origin !== self.location.origin) target = new URL('/', self.location.origin);
-    target.searchParams.set('smvLivePush', '1');
-    if (details.sessionId) target.searchParams.set('smvSessionId', details.sessionId);
-    if (details.bookingId) target.searchParams.set('smvBookingId', details.bookingId);
-    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const client of windows) {
-      if (new URL(client.url).origin !== self.location.origin) continue;
-      await client.focus();
-      client.postMessage({ type: 'SMV_LIVE_PUSH_OPEN', payload: details });
-      return;
-    }
-    await self.clients.openWindow(target.href);
-  })());
-});
 
 self.addEventListener('fetch',event=>{
   const req=event.request;
