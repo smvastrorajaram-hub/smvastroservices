@@ -266,7 +266,7 @@ function createWalletService({ db, FieldValue }) {
         ref: db.collection(OFFER_USAGE_COUNTER_COLLECTION).doc(offerUsageCounterId(offer.id, uid))
       }));
       const usageSnapshots = await Promise.all(usageReferences.map(entry => tx.get(entry.ref)));
-      const usageCounts = {};
+      const usageCounts = Object.create(null);
       usageReferences.forEach((entry, index) => {
         usageCounts[entry.offer.id] = safePaise(usageSnapshots[index].data()?.redemptionCount);
       });
