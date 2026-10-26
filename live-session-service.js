@@ -17,6 +17,15 @@ const DISCONNECT_GRACE_MS = 20_000;
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_SIGNAL_BYTES = 100_000;
 
+function preparationWindow(acceptedAt = new Date()) {
+  const startedAt = acceptedAt instanceof Date ? new Date(acceptedAt.getTime()) : new Date(acceptedAt);
+  if (!Number.isFinite(startedAt.getTime())) return null;
+  return {
+    preparationStartedAt: startedAt,
+    preparationUntil: new Date(startedAt.getTime() + PREPARATION_DURATION_MS)
+  };
+}
+
 function httpError(status, message, code, details) {
   return Object.assign(new Error(message), { httpStatus: status, code, details });
 }
@@ -376,7 +385,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!snap.exists) return null;
       const data = snap.data() || {};
       if (data.state !== 'preparing') return null;
-      const next = { state: data.acceptedAt ? 'connecting' : 'ringing', preparationCompletedAt: new Date(), updatedAt: nowTimestamp() };
+      const completedAt = new Date();
+      const next = {
+        state: data.acceptedAt ? 'connecting' : 'ringing',
+        preparationCompletedAt: completedAt,
+        connectingAt: data.acceptedAt ? completedAt : null,
+        updatedAt: nowTimestamp()
+      };
       tx.set(ref, next, { merge: true });
       return { ...data, ...next };
     });
@@ -403,9 +418,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!start) return;
       dueAt = start + Math.max(1, Number(d.minutes || 1)) * 60_000;
       reason = 'duration_complete';
-    } else if (d.state === 'ringing' || d.state === 'connecting') {
-      dueAt = timestampMillis(d.preparationCompletedAt || d.acceptedAt || d.createdAt) + RING_TIMEOUT_MS;
-      reason = d.state === 'connecting' ? 'connection_failed' : 'no_answer';
+    } else if (d.state === 'ringing') {
+      dueAt = timestampMillis(d.createdAt) + RING_TIMEOUT_MS;
+      reason = 'no_answer';
+    } else if (d.state === 'connecting') {
+      dueAt = timestampMillis(d.connectingAt || d.preparationCompletedAt || d.acceptedAt || d.createdAt) + RING_TIMEOUT_MS;
+      reason = 'connection_failed';
     } else return;
     const timer = setTimeout(() => {
       timeoutBySession.delete(sessionId);
@@ -486,13 +504,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   }
 
   function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate, reservedAmount, reservedBonusMinutes = 0, state, origin, fingerprint, commission }) {
-    const preparationStartedAt = state === 'preparing' ? new Date() : null;
+    const preparation = state === 'preparing' ? preparationWindow() : null;
+    const preparationStartedAt = preparation?.preparationStartedAt || null;
     return {
       sessionId: id, customerUid, astrologerUid,
       astrologerId: astrologerUid, astrologerName: safePersonName(astroProfile.name, astroProfile.fullName, astroProfile.displayName, astroProfile.astrologerName) || 'Astrologer',
       customerName: String(customerName || 'Customer'), birthDetails: birthDetails || null,
-      preparationStartedAt, preparationUntil: preparationStartedAt ? new Date(preparationStartedAt.getTime() + PREPARATION_DURATION_MS) : null,
-      preparationCompletedAt: null,
+      preparationStartedAt, preparationUntil: preparation?.preparationUntil || null,
+      preparationCompletedAt: null, connectingAt: null,
       mode, minutes, ratePerMinutePaise: rate, reservedAmountPaise: reservedAmount,
       reservedBonusMinutes: safeMinutes(reservedBonusMinutes), freeMinutesUsed: 0,
       astrologerCommissionPercent: Number(commission?.astroPercent ?? 20),
@@ -500,7 +519,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       state, customerReady: false, astrologerReady: false,
       origin: origin || 'direct', payloadFingerprint: fingerprint,
       createdAt: new Date(), updatedAt: nowTimestamp(),
-      acceptedAt: null, startedAt: null, endedAt: null,
+      acceptedAt: preparationStartedAt, startedAt: null, endedAt: null,
       actualChargePaise: 0, billableMinutes: 0, releasedAmountPaise: 0
     };
   }
@@ -758,15 +777,20 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (session.state === 'connecting' || session.state === 'active' || (session.state === 'preparing' && !!session.acceptedAt)) return { data: session, alreadyProcessed: true };
       if (session.state !== 'ringing') throw httpError(409, 'This request is no longer ringing.', 'LIVE_SESSION_NOT_RINGING');
       const acceptedAt = new Date();
-      const preparationUntil = new Date(acceptedAt.getTime() + PREPARATION_DURATION_MS);
+      const preparation = preparationWindow(acceptedAt);
+      if (!preparation) throw httpError(500, 'Unable to start the Horoscope preparation timer.', 'LIVE_PREPARATION_TIMER_INVALID');
       const updated = {
-        ...session, state: 'preparing', acceptedAt, preparationStartedAt: acceptedAt,
-        preparationUntil, preparationCompletedAt: null,
+        ...session, state: 'preparing', acceptedAt,
+        preparationStartedAt: preparation.preparationStartedAt,
+        preparationUntil: preparation.preparationUntil,
+        preparationCompletedAt: null, connectingAt: null,
         customerReady: false, astrologerReady: false, updatedAt: nowTimestamp()
       };
       tx.set(ref, {
-        state: 'preparing', acceptedAt, preparationStartedAt: acceptedAt,
-        preparationUntil, preparationCompletedAt: null,
+        state: 'preparing', acceptedAt,
+        preparationStartedAt: updated.preparationStartedAt,
+        preparationUntil: updated.preparationUntil,
+        preparationCompletedAt: null, connectingAt: null,
         customerReady: false, astrologerReady: false, updatedAt: updated.updatedAt
       }, { merge: true });
       return { data: updated, alreadyProcessed: false };
@@ -1611,7 +1635,7 @@ async function rejectOrCancel(sessionId, user, reason) {
 
   async function restoreTimers() {
     try {
-      const snap = await db.collection(SESSIONS).where('state', 'in', ['ringing', 'connecting', 'active']).limit(100).get();
+      const snap = await db.collection(SESSIONS).where('state', 'in', ['preparing', 'ringing', 'connecting', 'active']).limit(100).get();
       for (const doc of snap.docs) {
         const d = doc.data() || {};
         trackSession(doc.id, d.customerUid, d.astrologerUid);
@@ -1643,6 +1667,7 @@ module.exports = {
   astrologerRatePaise,
   maxAffordableMinutes,
   calculateBookingReserveRelease,
+  preparationWindow,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
