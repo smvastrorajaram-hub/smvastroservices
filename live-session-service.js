@@ -90,6 +90,13 @@ function timestampMillis(value) {
   return 0;
 }
 
+function scheduledAppointmentStatusForEndedSession(session) {
+  if (timestampMillis(session?.startedAt)) return 'completed';
+  return String(session?.endReason || '').trim().toLowerCase() === 'rejected'
+    ? 'rejected'
+    : 'cancelled';
+}
+
 function billableMinutesForElapsedMs(elapsedMs, maximumMinutes) {
   const elapsed = Number(elapsedMs);
   const maximum = Number(maximumMinutes);
@@ -908,6 +915,20 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       const wallet = wSnap.exists ? (wSnap.data() || {}) : {};
       const astro = aSnap.exists ? (aSnap.data() || {}) : {};
       if (session.state === 'ended') {
+        // Idempotent retry also reconciles a scheduled appointment. Older writes may
+        // have ended the session before its linked appointment was available to update.
+        if (scheduledAppointmentRef && scheduledAppointmentSnap?.exists) {
+          const appointmentStatus = scheduledAppointmentStatusForEndedSession(session);
+          const appointment = scheduledAppointmentSnap.data() || {};
+          const existingStatus = String(appointment.bookingStatus || appointment.status || '').toLowerCase();
+          if (existingStatus !== appointmentStatus || String(appointment.liveSessionId || '') !== id) {
+            tx.set(scheduledAppointmentRef, {
+              bookingStatus: appointmentStatus, status: appointmentStatus,
+              liveSessionId: id, liveEndedAt: session.endedAt || nowTimestamp(),
+              updatedAt: nowTimestamp()
+            }, { merge: true });
+          }
+        }
         return {
           alreadyProcessed: true, session,
           wallet: { availableBalancePaise: safePaise(wallet.availableBalancePaise), reservedBalancePaise: safePaise(wallet.reservedBalancePaise) }
@@ -1045,9 +1066,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       tx.set(sRef, finalState, { merge: true });
       if (scheduledAppointmentRef && scheduledAppointmentSnap?.exists) {
-        const appointmentStatus = startedAt
-          ? 'completed'
-          : (finalReason === 'rejected' ? 'rejected' : 'cancelled');
+        const appointmentStatus = scheduledAppointmentStatusForEndedSession({ ...session, ...finalState, endReason: finalReason });
         tx.set(scheduledAppointmentRef, {
           bookingStatus: appointmentStatus, status: appointmentStatus,
           liveSessionId: id, liveEndedAt: nowServer, updatedAt: nowServer
@@ -1744,6 +1763,7 @@ module.exports = {
   maxAffordableMinutes,
   calculateBookingReserveRelease,
   preparationWindow,
+  scheduledAppointmentStatusForEndedSession,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
