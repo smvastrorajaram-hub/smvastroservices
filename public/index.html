@@ -31,7 +31,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261026-live-text-action-v5" rel="stylesheet"/><link href="./smv-ui.css?v=20261026-live-text-action-v5" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261026-wallet-offers-v1" rel="stylesheet"/><link href="./smv-ui.css?v=20261026-live-text-action-v5" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script>
 /* SMV ASTRO V122 - one-time browser fresh start.
    Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
@@ -157,6 +157,19 @@ document.addEventListener('DOMContentLoaded', function(){
 <span class="smv33-trust-item"><b aria-hidden="true">▣</b><span class="smv33-trust-label">Private &amp; Secure</span></span>
 <span class="smv33-trust-item"><b aria-hidden="true">✦</b><span class="smv33-trust-label">Traditional Vedic Guidance</span></span>
 </div></div></div></div>
+<section class="smv-wallet-offers-banner" id="smvWalletOffersBanner" aria-labelledby="smvWalletOffersHeading" hidden>
+  <div class="smv-wallet-offers-banner-head">
+    <span class="smv-wallet-offers-kicker">SMV ASTRO · WALLET BONUS</span>
+    <h2 id="smvWalletOffersHeading">Recharge Your Wallet. Get FREE Live Minutes.</h2>
+    <p>Active festival offers are shown here. Choose an offer that matches your recharge amount.</p>
+  </div>
+  <div class="smv-wallet-offers-grid" id="smvWalletOfferBannerItems" aria-live="polite"></div>
+  <div class="smv-wallet-offers-how">
+    <h3>How and where is the offer applied?</h3>
+    <p>After Razorpay confirms your recharge, the free minutes are added automatically to <strong>My Wallet → Bonus Free Minutes</strong>. For eligible Live Call or Live Chat sessions, bonus minutes are used before paid minutes; your cash Wallet balance pays only for the remaining billable minutes.</p>
+    <p class="smv-wallet-offers-terms">Only one matching offer applies per recharge. Offer dates, minimum recharge and per-customer / overall limits apply. Bonus minutes have no cash value and cannot be withdrawn. Sign in as a Customer, open Dashboard → My Wallet, then use Recharge Wallet.</p>
+  </div>
+</section>
 <div aria-label="SMV ASTRO services" class="smv-master-services">
 <a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-286.6848%;top:-13.0435%"/></span><strong>Consult an Astrologer</strong><span>Compare approved astrologers' per-minute Call and Chat rates and consult using your Wallet.</span></a>
 <a class="smv-master-service" data-smv-route="private-consultation" href="./?view=consult" aria-label="Browse Astrologer List and profiles"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-157.6087%;top:-13.0435%"/></span><strong>Astrologer List</strong><span>Browse approved astrologer profiles, languages, availability, existing prices and Reviews &amp; Ratings.</span></a>
@@ -484,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js"></script>
-<script src="./smvastro.mjs?v=20261026-live-text-action-v7" type="module"></script>
+<script src="./smvastro.mjs?v=20261026-wallet-offers-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
