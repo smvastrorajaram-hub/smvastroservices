@@ -48,10 +48,12 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
      refs.push({ref:db.collection('smv_settings').doc('workflow'),kind:'workflow'});
     }
    }else{
-    refs.push(
-     {ref:db.collection('smv_questions').where('customerId','==',user.uid).limit(100),kind:'questions'},
-     {ref:db.collection('smv_notifications').where('userId','==',user.uid),kind:'notifications'}
-    );
+    // Customer dashboard no longer has public/private question history. Keep only
+    // the newest relevant notification records for Call, Chat, booking, Wallet and withdrawals.
+    refs.push({
+     ref:db.collection('smv_notifications').where('userId','==',user.uid).orderBy('createdAt','desc').limit(50),
+     kind:'notifications'
+    });
    }
    let waiting=refs.length;
    refs.forEach((entry,index)=>{
