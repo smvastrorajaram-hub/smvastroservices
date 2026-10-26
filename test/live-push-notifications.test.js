@@ -239,7 +239,7 @@ test('Admin home avoids eagerly reading the unused private-consultation history 
   const end = server.indexOf('\n});', start);
   assert.ok(start >= 0 && end > start);
   const route = server.slice(start, end);
-  assert.ok(route.includes('readCollection("smv_users")'));
+  assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
   assert.ok(!route.includes('readCollection("smv_private_consultations")'));
   assert.ok(!route.includes('privateConsultations: newestFirst('));
   // The full history remains available through the existing dedicated section route.
