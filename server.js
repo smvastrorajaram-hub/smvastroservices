@@ -3812,21 +3812,17 @@ app.get("/astrologer/earnings", async (req, res) => {
     const withdrawals = withdrawalSnap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
 
-    const ledger = [];
+    // Keep legacy settled commissions in the withdrawal-eligibility total so no
+    // previously earned balance is lost, but show only Live Call/Chat earnings
+    // in the current Dashboard history.
+    let historicalEarnings = 0;
     for(const q of questions){
-      ledger.push({
-        id:q.id, question:q.question || "Consultation",
-        commission:Number(q.astrologerCommissionAmount || q.commissionAmount || 0),
-        date:q.commissionCreditedAt || q.answerApprovedAt || q.adminAnswerApprovedAt || null
-      });
+      historicalEarnings += Number(q.astrologerCommissionAmount || q.commissionAmount || 0);
     }
     for(const c of allPrivate){
-      ledger.push({
-        id:c.id, question:c.question || "Consultation",
-        commission:Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0),
-        date:c.commissionCreditedAt || c.customerViewedAt || c.answerApprovedAt || null
-      });
+      historicalEarnings += Number(c.astrologerCreditedAmount ?? c.astrologerAmount ?? 0);
     }
+    const ledger = [];
     for (const paymentDoc of liveEarningsSnap.docs) {
       const payment = paymentDoc.data() || {};
       ledger.push({
@@ -3838,7 +3834,7 @@ app.get("/astrologer/earnings", async (req, res) => {
     }
     const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
     ledger.sort((a,b) => toMs(b.date) - toMs(a.date));
-    const totalEarnings = Math.round(ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0) * 100) / 100;
+    const totalEarnings = Math.round((historicalEarnings + ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0)) * 100) / 100;
     return res.set('Cache-Control','no-store').json({success:true,totalEarnings,ledger,withdrawals});
   } catch (e) {
     console.error("Astrologer earnings load failed:", e?.message || e);
