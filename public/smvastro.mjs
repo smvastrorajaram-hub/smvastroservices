@@ -4530,6 +4530,23 @@ function smvLiveApplySession(session){
   const voiceStatus=$('smvLiveVoiceStatus');if(voiceStatus)voiceStatus.textContent='Call session ended. Microphone is no longer in use.';
   const result=$('smvLiveSessionResult');if(result&&!result.textContent)result.textContent='Session ended. Charged '+smvLiveMoney(s.actualChargePaise)+'; unused reserve returned '+smvLiveMoney(s.releasedAmountPaise)+'.' ;
   smvLiveCloseMedia();smvLiveClearTransport();
+  if(!wasEnded&&!s.__smvScheduleRefreshTriggered){
+   s.__smvScheduleRefreshTriggered=true;
+   const dashboardRole=String(window.__smvCurrentRole||'').toLowerCase();
+   setTimeout(async()=>{
+    try{
+     if(dashboardRole==='astrologer')await smvLiveLoadScheduledAppointments();
+     else if(dashboardRole==='customer'){
+      const [scheduled,live]=await Promise.all([
+       renderApi('/customer/appointments',{method:'GET',timeoutMs:12000}),
+       renderApi('/live/sessions',{method:'GET',timeoutMs:12000})
+      ]);
+      smvLiveRenderCustomerScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],live.sessions||[]));
+      smvLiveCustomerAppointmentsPollAt=Date.now();
+     }
+    }catch(refreshError){console.warn('Ended Live Session booking refresh skipped:',refreshError?.message||refreshError);}
+   },250);
+  }
  }
 }
 function smvLiveOpenSession(session,wallet,incoming){
