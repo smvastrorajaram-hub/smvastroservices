@@ -4684,7 +4684,7 @@ function smvLiveSessionStatusLabel(session){
   return 'Generate Customer Horoscope · '+clock;
  }
  if(s==='connecting'){
-  if(mode==='chat')return String(session?.astrologerUid||'')===String(currentUser?.uid||'')?'ACCEPT CHAT to open Live Chat…':'Waiting for Astrologer to accept Chat…';
+  if(mode==='chat')return String(session?.astrologerUid||'')===String(currentUser?.uid||'')?'Connect Customer Chat Now to open Live Chat…':'Waiting for Astrologer to connect Chat…';
   if(mode==='call')return 'Connecting Call…';
   return 'Connecting…';
  }
