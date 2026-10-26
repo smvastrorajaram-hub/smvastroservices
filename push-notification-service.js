@@ -1,7 +1,8 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const webPushDefault = require('web-push');
+let webPushDefault = null;
+try { webPushDefault = require('web-push'); } catch (_) { /* Unit tests can validate helpers without installing web-push. */ }
 
 const SUBSCRIPTIONS = 'smv_push_subscriptions';
 const DEFAULT_ALLOWED_ORIGINS = [
