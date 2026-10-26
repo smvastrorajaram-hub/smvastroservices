@@ -18,6 +18,7 @@ const {
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
   PREPARATION_DURATION_MS,
+  CHAT_ACCEPT_TIMEOUT_MS,
   validateLiveBirthDetails
 } = require('../live-session-service');
 
@@ -151,6 +152,7 @@ test('pending-booking reserve release fails closed on mismatched or unsafe balan
 
 test('Live sessions require valid DOB/time/place before the three-minute horoscope preparation', () => {
   assert.equal(PREPARATION_DURATION_MS, 180_000);
+  assert.equal(CHAT_ACCEPT_TIMEOUT_MS, 300_000); // Chat remains available for acceptance; Call timeout is unchanged.
   assert.deepEqual(validateLiveBirthDetails({
     birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
     birthLatitude: '13.0827', birthLongitude: '80.2707', birthTimezone: 'Asia/Kolkata'
