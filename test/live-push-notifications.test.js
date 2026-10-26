@@ -117,6 +117,31 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(html.includes('smvastro.mjs?v=20261027-firestore-polling-customer-fallback-v1'));
 });
 
+test('Customer and Astrologer Dashboard show a fast role shell without Dashboard-wide loading text', () => {
+  const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  assert.ok(frontend.includes("function smvRenderFastDashboardShell(roleValue=''){"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(role);"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(headerRole);"));
+  assert.equal(frontend.split('Loading your dashboard...').length - 1, 1, 'Only the historical explanatory comment may mention this label');
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
+});
+
+test('Last-known Dashboard role cache only stores Customer or Astrologer UI roles', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("return ['customer','astrologer'].includes(role)?role:'';"));
+  assert.ok(frontend.includes("if(!uid||!['customer','astrologer'].includes(safeRole))return;"));
+  assert.ok(frontend.includes('const cachedRole=smvCachedDashboardRole(user.uid);'));
+});
+
+test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("smvBindCustomerWallet({load:false});"));
+  assert.ok(frontend.includes("function smvBindCustomerWallet({load=true}={}){"));
+  assert.ok(frontend.includes("if(load)smvLoadCustomerWallet();"));
+});
+
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes('async function smvLivePrintReceipt(session)'));
