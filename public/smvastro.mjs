@@ -705,7 +705,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
       // reuse the current view. Do not re-read the profile or dashboard merely
       // because the header button was touched again. Live change events and
       // explicit Refresh/data-changing actions remain the only refresh triggers.
-      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden') && dashboardReadyRole===await resolveSmvRole(user)){
+      if(smvInternalView==='dashboard' && dashboardReadyUid===user.uid && dashboardReadyAt>0 && !smvDashboardDirty && !$("dashboard")?.classList.contains('hidden') && !!dashboardReadyRole){
         hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
         setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
         try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
@@ -716,7 +716,18 @@ $("contentNav")?.addEventListener("click",(e)=>{
         try{history.replaceState({smvView:'admin'},'', '#admin');}catch(_e){}
         touchSession(); armIdleTimer(); return;
       }
-      // Resolve the server-authorized role before choosing a dashboard.
+      // Reopen a known Customer/Astrologer shell immediately, then validate role and refresh data.
+      const cachedRole=smvCachedDashboardRole(user.uid);
+      const dashboardAlreadyVisible=smvInternalView==='dashboard'&&dashboardReadyUid===user.uid&&dashboardReadyAt>0&&!$("dashboard")?.classList.contains('hidden');
+      if(cachedRole&&!dashboardAlreadyVisible){
+        hideHomeSurface();
+        ["admin","ask-flow","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
+        show("dashboard");show("dashboardContent");show("dashLink");hide("adminLink");hideDashboardPublicSections();
+        $("dashboardTitle").textContent=cachedRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
+        smvRenderFastDashboardShell(cachedRole);
+        go("dashboard");
+      }
+      // Resolve the server-authorized role before refreshing Dashboard data.
       const roleProfile=await withTimeout(getUserProfile(user.uid),15000);
       const resolvedRole=await resolveSmvRole(user,roleProfile);
       const adminUser=resolvedRole==='admin';
@@ -736,7 +747,12 @@ $("contentNav")?.addEventListener("click",(e)=>{
         hideHomeSurface();
         ["admin","ask-flow","register-flow","astro-register-form","astro-flow","appointment","contact"].forEach(hide);
         show("dashboard"); show("dashboardContent"); show("dashLink"); hide("adminLink"); hideDashboardPublicSections();
-        setHeaderRoleLabel(role); smvEnterInternalView("dashboard",true); go("dashboard");
+        setHeaderRoleLabel(role);
+        if(cachedRole!==role){
+          $("dashboardTitle").textContent=role==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
+          smvRenderFastDashboardShell(role);
+        }
+        smvEnterInternalView("dashboard",true); go("dashboard");
         await loadDashboard(role);
       }
     }catch(err){
@@ -1291,6 +1307,7 @@ async function submitAuth(mode){
     // ASK NOW and Admin-entry keep their protected destinations.
     const goToQuestion=pendingAfterLogin==="question" || window.__SMV_ASK_NOW_INTENT===true;
     const goToAdmin=pendingAfterLogin==="admin";
+    let loginShellRole=smvCachedDashboardRole(loginCred.user.uid);
 
     // After an explicit successful login, open a neutral dashboard shell before
     // profile/role Firestore reads. Database quota exhaustion must not leave the
@@ -1305,8 +1322,8 @@ async function submitAuth(mode){
       hide("askNowSection");
       hide("approved-astrologers");
       hide("faq");
-      if($("dashboardTitle"))$("dashboardTitle").textContent="DASHBOARD";
-      smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));
+      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole?loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD":"DASHBOARD";
+      smvRenderFastDashboardShell(loginShellRole);
       smvEnterInternalView("dashboard",true);
       go("dashboard");
     }
@@ -1315,6 +1332,12 @@ async function submitAuth(mode){
     // This prevents a stale/previous role title from flashing during login.
     const loginProfile=await getUserProfile(loginCred.user.uid);
     const loginRole=String(loginProfile?.role||"customer").toLowerCase();
+    const profileShellRole=String(loginProfile?.role||"").toLowerCase();
+    if(!goToQuestion&&!goToAdmin&&["customer","astrologer"].includes(profileShellRole)&&loginShellRole!==profileShellRole){
+      loginShellRole=profileShellRole;
+      if($("dashboardTitle"))$("dashboardTitle").textContent=loginShellRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
+      smvRenderFastDashboardShell(loginShellRole);
+    }
     const loginStatus=String(loginProfile?.status||"active").toLowerCase(); if(loginRole!=="admin" && loginCred.user.uid!==ADMIN_UID){
       // Pending astrologers can log in. Their restricted dashboard is shown
       // below; protected consultation/earnings queries are skipped until approval.
@@ -1370,8 +1393,8 @@ async function submitAuth(mode){
       return;
     }
     pendingAfterLogin=null;
-    hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink");
     if(goToAdmin || adminUser){
+      hide("dashboard"); hide("dashboardContent"); hide("dashLink"); hide("adminLink");
       pendingAfterLogin=null;
       if(adminUser){
         hidePrimarySections("admin");
@@ -1386,6 +1409,7 @@ async function submitAuth(mode){
         openModal('<h2>Admin Access</h2><div class="error">This account is not an Admin account.</div><p class="small">Please use your Admin login.</p>');
       }
     }else{
+      hide("admin"); hide("adminLink");
       show("dashLink");
       hidePrimarySections("dashboard");
       hide("register-flow");
@@ -1405,7 +1429,7 @@ async function submitAuth(mode){
       show("dashboard");
       show("dashboardContent");
       if($("dashboardTitle")) $("dashboardTitle").textContent=role==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
-      smvRenderFastDashboardShell(role);
+      if(loginShellRole!==role)smvRenderFastDashboardShell(role);
       smvShowRoleNav();
       smvEnterInternalView("dashboard",true);
       go("dashboard");
@@ -2533,10 +2557,8 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    armIdleTimer();
    return;
  }
- // IMPORTANT: deduplicate before incrementing the load sequence. A second caller
- // must not invalidate the first caller's active render and then wait on the
- // already-invalidated promise. This was the cause of the permanent "Loading your dashboard..." state when the auth listener and Dashboard navigation
- // both called loadDashboard during first login.
+ // Deduplicate concurrent first-load requests before incrementing the load sequence.
+ // This prevents auth and navigation work from invalidating each other.
  if(dashboardLoadPromise && dashboardLoadUid===loadUid){
   await dashboardLoadPromise;
   if(force&&currentUser?.uid===loadUid)return loadDashboard(expectedRole,true,background);
@@ -2593,19 +2615,17 @@ try{
   );
 }
 
-// Never show a false "Waiting for Admin Approval" state because quota exhaustion
-// prevented reading the actual Astrologer profile. Keep the known-role shell open.
+// If the profile is unavailable, preserve the known role without guessing approval status.
 if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
-  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2><p>Dashboard is open. Astrologer profile and data are temporarily unavailable because Firebase could not be read. Your account status has not been changed.</p><button class="btn gray" id="smvAstroDataRetry" type="button">RETRY DATA LOAD</button></div>';
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
   $('smvAstroDataRetry')?.addEventListener('click',()=>{
     smvProfiles.delete(loadUid);
-    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard retry deferred:',error?.message||error));
+    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard refresh deferred:',error?.message||error));
   });
   dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
   smvWatchQuestions(role);
   return;
 }
-
 let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
@@ -3181,10 +3201,6 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    if(!active())return;
    const consultationItems=questionReadFailed?[]:cr.questions.slice().sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
    const privateConsultationItems=privateReadFailed?[]:privateCr.consultations.slice().sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
-   const customerReadErrors=[questionReadFailed?'Previous Question History':'',privateReadFailed?'My Chat Bookings':''].filter(Boolean);
-   const customerDataWarning=customerReadErrors.length
-     ?'<div class="card error" role="status" style="margin-bottom:12px"><b>Dashboard opened, but some data is temporarily unavailable.</b><p class="small">'+escapeHtml(customerReadErrors.join(' and '))+' could not be loaded. Your existing records have not been deleted. Please retry when Firebase is available.</p><button class="btn gray" id="smvCustomerDataRetry" type="button">RETRY DATA LOAD</button></div>'
-     :''; 
    notificationContext={role:'customer',questions:consultationItems,privateConsultations:privateConsultationItems};
    const hasPendingRefund=false;
    const paid=consultationItems.filter(q=>q.status!=='awaiting_payment').length+privateConsultationItems.filter(q=>String(q.paymentStatus||'').toLowerCase()==='paid').length;
@@ -3193,18 +3209,13 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
-   box.innerHTML=`${customerDataWarning}<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
+   box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div><div class="card"><h3>My Consultation Requests</h3><p><b>Total:</b> <span class="customer-profile-result">${qCount}</span></p><p><b>Paid/processed:</b> <span class="customer-profile-result">${paid}</span></p></div></div>
    ${smvCustomerBookingChatCardHtml()}
    ${smvWalletDashboardCardHtml()}
    <div class="card" style="margin-top:16px"><h3 class="customer-consultations-title">Previous Question History</h3>${questionReadFailed?'<div class="error smv-customer-data-error">Question history is temporarily unavailable. Your records have not been deleted.</div>':!consultationItems.length?'<div class="empty">No previous question records. New bookings use Book a Chat.</div>':consultationItems.slice(0,20).map(q=>{const qid=String(q.questionId||q.id||''); const reviewButton=q.status==='answered'&&!q.reviewed?`<button class="btn" data-review="${escapeHtml(qid)}" data-astro="${escapeHtml(q.astrologerId||'')}">Rate & Review</button>`:''; const paymentRetryButton=["awaiting_payment","payment_failed"].includes(String(q.status||""))&&q.paymentStatus!=="paid"&&qid?`<button class="smv-customer-payment-btn" data-retry-payment="${escapeHtml(qid)}" type="button">Retry Payment · ₹${Number(q.amount||0).toFixed(2)}</button>`:""; const statusMap={awaiting_payment:'Payment Pending',payment_failed:'Payment Failed',pending_admin_approval:'Waiting for Admin Approval',assigned_to_astrologer:'Assigned to Astrologer',available_to_astrologers:'Available to Astrologers',claimed_by_astrologer:'Astrologer Answering',admin_approved:'Waiting for Answers',processing:'Processing',answer_draft:'Processing',admin_review:'Processing',revision_required:'Revision Required',answered:'Answer Ready',question_rejected:'Question Rejected',admin_rejected:'Question Rejected'}; const astroName=q.astrologerName||'Selected Astrologer'; const adminQuestionApproved=!!q.adminQuestionApprovedAt||['assigned_to_astrologer','reallocated','available_to_astrologers','claimed_by_astrologer','admin_approved','processing','answer_draft','admin_review','answered'].includes(String(q.status||'')); const statusText=q.status==='paid'&&!adminQuestionApproved?'Waiting for Admin Approval':adminQuestionApproved&&['paid','admin_approved'].includes(String(q.status||''))?`Waiting for Answers — ${astroName}`:q.status==='processing'||q.status==='answer_draft'||q.status==='admin_review'?`Processing — ${astroName} answer received and under Admin review`:q.status==='revision_required'?`Revision Required — ${astroName}`:q.status==='answered'?'Answer Ready':(statusMap[q.status]||q.status||'Processing'); const paymentReceived=!!q.customerPaymentId || !!q.paymentRecordedAt || !!q.paidAt || !!q.paymentDate || !['awaiting_payment','payment_failed'].includes(String(q.status||'')); const refundStatuses=['pending','created','initiated','processing']; const refundCompleted=['processed','completed']; const isQuestionRejected=['question_rejected','admin_rejected'].includes(String(q.status||'')); const refundAmount=Number(q.refundAmount||q.amount||q.paymentAmount||0); const refundStatus=String(q.refundStatus||'').toLowerCase(); const steps=isQuestionRejected?[['Payment Received',paymentReceived],['Question Rejected',true],['Refund Status',refundCompleted.includes(refundStatus)]]:[['Payment Received',paymentReceived],['Question Approved',adminQuestionApproved],['Astrologer Answer Submitted',['processing','answer_draft','admin_review','revision_required','answered'].includes(String(q.status||''))],['Admin Approval',['answered'].includes(String(q.status||''))],['Answer Ready',['answered'].includes(String(q.status||''))]]; const timeline=`<div class="timeline">${steps.map(x=>`<div class="timeline-step ${x[1]?'done':''}"><span>${x[1]?'✓':'○'}</span>${x[0]}</div>`).join('')}</div>`; const paymentLine=q.customerPaymentId?`<div class="small smv-customer-meta-line"><b>Customer Payment ID:</b> <span>${escapeHtml(q.customerPaymentId)}</span> · <b>Payment Date & Time:</b> <span>${escapeHtml(smvDateTime(q.paymentRecordedAt||q.paidAt||q.paymentUpdatedAt||q.paymentDate))}</span></div>`:''; const isRejected=isQuestionRejected; const refundLine='';; const questionIdLine=qid?`<div class="small smv-customer-meta-line"><b>Question ID:</b> <span>${escapeHtml(qid)}</span></div>`:''; return `<div class="smv-consultation-item" data-smv-question-id="${escapeHtml(qid)}" data-smv-service="public" style="padding:14px 0;border-bottom:1px solid #eee"><div class="smv-question-text">${escapeHtml(q.question||'Question')}</div>${questionIdLine}<div class="small customer-meta smv-customer-meta-line"><b>Astrologer:</b> <span>${escapeHtml(astroName)}</span> · <b>Status:</b> <span>${escapeHtml(statusText)}</span></div><div class="small smv-customer-meta-line"><b>Date & Time:</b> <span>${escapeHtml(smvDateTime(q.updatedAt||q.answerApprovedAt||q.adminQuestionApprovedAt||q.createdAt))}</span></div>${paymentLine}${refundLine}${isRejected&&refundAmount>0?`<div class="refund-summary" style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid #e6e6e6"><div><b>Question Status:</b> 🔴 Rejected</div><div style="margin-top:4px"><b>Payment:</b> ${paymentReceived?'✅ Payment Received':'⏳ Payment Pending'}</div><div class="small"><b>Paid Amount:</b> ₹${refundAmount.toFixed(2)}</div><div style="margin-top:8px"><b>Refund Status:</b> ${refundCompleted.includes(refundStatus)?'<span class="success">🟢 Refund Completed</span>':refundStatus==='waiting_balance'?'<span style="color:#b26a00">🟠 Waiting for Razorpay Balance — Admin Retry Required</span>':refundStatus==='failed'?'<span class="error">🔴 Refund Failed — Admin Review Required</span>':'<span style="color:#b26a00">🟠 Refund Pending</span>'}</div><div class="small"><b>Refund Amount:</b> ₹${refundAmount.toFixed(2)}</div>${q.refundId?`<div class="small"><b>Refund ID:</b> ${escapeHtml(q.refundId)}</div>`:''}<div class="small"><b>RRN:</b> ${escapeHtml(q.refundRrn||"Available after Razorpay processes the refund")}</div>${q.refundArn?`<div class="small"><b>ARN:</b> ${escapeHtml(q.refundArn)}</div>`:''}${q.refundUtr?`<div class="small"><b>UTR:</b> ${escapeHtml(q.refundUtr)}</div>`:''}${refundCompleted.includes(refundStatus)&&q.refundProcessedAt?`<div class="small"><b>Refund Date:</b> ${escapeHtml(smvDateTime(q.refundProcessedAt))}</div>`:''}<div class="small" style="margin-top:6px"><b>Refund Reason:</b> ${escapeHtml(q.refundReason||q.adminQuestionRejectionReason||'Question rejected by Admin')}</div>${q.adminQuestionRejectedAt?`<div class="small"><b>Rejected On:</b> ${escapeHtml(smvDateTime(q.adminQuestionRejectedAt))}</div>`:''}${refundCompleted.includes(refundStatus)?`<div class="small" style="margin-top:6px">Refund has been processed successfully.<br>The amount may take 5–7 working days to reflect in your bank account/card. You can use the RRN for bank tracking.</div>`:''}</div>`:''}${timeline}${q.answer&&q.status==='answered'?`<div class="card" style="margin-top:10px"><b>${q.answerAuthorType==='admin'||q.adminAnswered?'Admin Answer':'Astrologer Answer'}</b><div class="smv-customer-answer-text" style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${escapeHtml(q.answer)}</div><div class="small success smv-customer-viewed-status">SUBMITTED</div>${q.answerAuthorType==='admin'||q.adminAnswered?'<p class="small success"><b>Answered directly by SMV ASTRO Admin.</b></p>':''}</div>`:''}${paymentRetryButton?`<div style="margin-top:10px"><div class="smv-private-payment-note">Retry this saved question at its original price. Current price changes do not apply.</div>${paymentRetryButton}</div>`:""}${reviewButton}</div>`}).join('')}</div>
    <div class="card" style="margin-top:16px"><h3 class="customer-private-consultations-title">My Chat Bookings</h3>${privateReadFailed?'<div class="error smv-customer-data-error">Chat booking history is temporarily unavailable. Your records have not been deleted.</div>':!privateConsultationItems.length?'<div class="empty">No private consultations yet.</div>':privateConsultationItems.slice(0,20).map(c=>{const id=String(c.id||c.consultationId||'');const rejected=c.status==='question_rejected';const refundStatus=String(c.refundStatus||'').toLowerCase();const refundDone=['processed','completed'].includes(refundStatus);const answerReady=c.status==='answered'&&!!String(c.answer||'').trim();const unpaid=c.paymentStatus!=='paid'&&!rejected;const statusMap={awaiting_payment:'Payment Pending',pending_admin_approval:'Waiting for Admin Approval',approved_for_astrologer:'Waiting for Selected Astrologer',answer_pending_admin_approval:'Answer Waiting for Admin Approval',revision_required:'Astrologer Revising Answer',answered:'Answer Ready',question_rejected:'Question Rejected / Refund'};return `<div class="smv-consultation-item" data-smv-question-id="${escapeHtml(id)}" data-smv-service="private" style="padding:14px 0;border-bottom:1px solid #eee"><div class="smv-question-text">${escapeHtml(c.question||'Private Consultation')}</div><div class="small smv-customer-meta-line"><b>Selected Astrologer:</b> <span>${escapeHtml(c.astrologerName||'Astrologer')}</span> · <b>Chat Price:</b> <span>₹${Number(c.chatPrice||c.amount||0).toFixed(2)}</span></div><div class="small smv-customer-meta-line"><b>Status:</b> <span>${escapeHtml(statusMap[c.status]||c.status||'Processing')}</span></div><div class="small smv-customer-meta-line"><b>Payment Status:</b> <span>${escapeHtml(c.paymentStatus||'pending')}</span></div><div class="small smv-customer-meta-line"><b>Consultation ID:</b> <span>${escapeHtml(id)}</span></div><div class="small smv-customer-meta-line"><b>Date &amp; Time:</b> <span>${escapeHtml(smvDateTime(c.createdAt||c.questionCreatedAt||c.submittedAt||c.paymentRecordedAt||c.updatedAt))}</span></div>${(c.customerPaymentId||c.razorpayPaymentId)?`<div class="small smv-customer-meta-line"><b>Payment ID:</b> <span>${escapeHtml(c.customerPaymentId||c.razorpayPaymentId)}</span></div>`:''}${unpaid?`<div class="smv-private-payment-actions" style="margin-top:8px"><button class="smv-customer-payment-btn" data-private-retry="${escapeHtml(id)}">RETRY PAYMENT ₹${Number(c.chatPrice||c.amount||0).toFixed(2)}</button> <button class="smv-customer-payment-btn" data-private-recover="${escapeHtml(id)}">RECOVER PAYMENT</button></div>`:''}${rejected?`<div class="refund-summary" style="margin-top:10px"><b>Refund Status:</b> ${refundDone?'Refund Completed':(refundStatus==='failed'?'Refund Failed — Admin Retry Required':escapeHtml(c.refundStatus||'Pending'))}<br><span class="small"><b>Refund Amount:</b> ₹${Number(c.refundAmount||c.chatPrice||0).toFixed(2)}</span>${c.refundId?`<br><span class="small"><b>Refund ID:</b> ${escapeHtml(c.refundId)}</span>`:''}<br><span class="small"><b>RRN:</b> ${escapeHtml(c.refundRrn||'Available after Razorpay processes the refund')}</span>${c.refundProcessedAt?`<br><span class="small"><b>Refund Date:</b> ${escapeHtml(smvDateTime(c.refundProcessedAt))}</span>`:''}</div>`:''}${answerReady?`<div class="card" style="margin-top:10px"><b>Astrologer Answer</b><div class="smv-customer-answer-text" style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(c.answer)}</div><div class="small success smv-customer-viewed-status">SUBMITTED</div></div>`:''}</div>`}).join('')}</div>`;
    smvBindCustomerBookingChat();
    smvBindCustomerWallet();
-   $('smvCustomerDataRetry')?.addEventListener('click',async event=>{
-     const button=event.currentTarget;if(!button)return;
-     button.disabled=true;button.textContent='RETRYING...';
-     try{await loadDashboard('customer',true);}catch(retryError){console.warn('Customer Dashboard data retry deferred:',retryError?.message||retryError);}
-   });
    document.querySelectorAll('[data-private-recover]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await renderApi('/private-consultation/recover-payment',{method:'POST',body:JSON.stringify({consultationId:b.dataset.privateRecover})});if(r.recovered)await loadDashboard('customer',true);else alert('No captured Razorpay payment was found. Use Retry Payment.');}catch(e){alert(e.message||String(e));}finally{b.disabled=false;}});
    document.querySelectorAll('[data-private-retry]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const checkoutReady=ensureRazorpayCheckout();const r=await renderApi('/private-consultation/retry-payment',{method:'POST',body:JSON.stringify({consultationId:b.dataset.privateRetry})});await checkoutReady;if(!window.Razorpay)throw new Error('Razorpay is not available. Please refresh and try again.');const rz=new Razorpay({key:r.keyId,amount:r.amount,currency:r.currency,name:'SMV ASTRO',description:'Private Astrology Consultation',order_id:r.orderId,handler:async p=>{await renderApi('/private-consultation/verify-payment',{method:'POST',body:JSON.stringify({consultationId:r.consultationId,...p})});await loadDashboard('customer',true);},modal:{ondismiss:()=>{renderApi('/private-consultation/cancel-payment',{method:'POST',body:JSON.stringify({consultationId:r.consultationId})}).catch(()=>{});b.disabled=false;}}});rz.on('payment.failed',()=>{b.disabled=false;});rz.open();}catch(e){alert(e.message||String(e));b.disabled=false;}});
    document.querySelectorAll('[data-retry-payment]').forEach(b=>b.onclick=()=>retryCustomerPayment(b.dataset.retryPayment,b));
@@ -3224,11 +3235,9 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
   armIdleTimer();
  }catch(e){
    if(!active()) return;
-   console.error('Dashboard load failed:',e);
-   if(dashboardReadyUid===loadUid){smvLiveStatus('Update failed — previous information retained. Tap Refresh to retry.');return;}
-   if(dashboardReadyUid===loadUid){ dashboardReadyUid=null; dashboardReadyRole=null; }
-   box.innerHTML='<div class="card error"><b>Dashboard could not be loaded.</b><p class="small">Your login session is active, but some dashboard data could not be read. The basic dashboard is being kept available.</p><button class="btn gray" id="dashboardRetry">RETRY</button></div>';
-   $('dashboardRetry')?.addEventListener('click',()=>loadDashboard(expectedRole));
+   console.error('Dashboard data refresh deferred:',e);
+   // Preserve the fast shell or previous Dashboard content for the next refresh.
+   if(!box?.innerHTML?.trim())smvRenderFastDashboardShell(expectedRole||smvCachedDashboardRole(loadUid));
  }
  })();
  const ownedRequest=dashboardLoadPromise;
