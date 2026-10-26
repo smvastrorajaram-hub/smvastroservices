@@ -17,10 +17,18 @@ const {
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
+  RING_TIMEOUT_MS,
+  CALL_CONNECT_TIMEOUT_MS,
   PREPARATION_DURATION_MS,
   CHAT_ACCEPT_TIMEOUT_MS,
   validateLiveBirthDetails
 } = require('../live-session-service');
+
+test('incoming Live Call and Chat requests ring for two minutes without changing connection timers', () => {
+  assert.equal(RING_TIMEOUT_MS, 120_000);
+  assert.equal(CALL_CONNECT_TIMEOUT_MS, 45_000);
+  assert.equal(CHAT_ACCEPT_TIMEOUT_MS, 5 * 60_000);
+});
 
 test('started-minute billing charges whole-minute boundaries without adding an extra minute', () => {
   assert.equal(billableMinutesForElapsedMs(0, 30), 0);
