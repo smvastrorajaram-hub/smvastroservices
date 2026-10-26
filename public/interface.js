@@ -45,22 +45,19 @@
  const title=summary.querySelector('.admin-dashboard-title');
  if(!title)return;
  const shortcuts=[
-  ['adminPendingQuestions','Public Questions','parent'],
-  ['adminAnswers','Answers','parent'],
-  ['adminPrivatePending','Private Questions','parent'],
-  ['adminRefunds','Refunds','parent'],
+  ['adminWalletLedger','Wallet Ledger','self'],
   ['adminHoroscopePriceSet','Horoscope Settings','self'],
   ['adminWithdrawals','Withdrawals','parent'],
   ['adminOffersPromotions','Wallet Offers','self'],
-  ['adminCommissionSettings','Commission','self']
+  ['adminCommissionSettings','Live / Booking Commission','self']
  ];
- // Isolate the CSS to the eight shortcuts only; do not change the other cards.
- const style=document.createElement('style');
+ // Pin only current Wallet, withdrawal and live/booking settings.
+  const style=document.createElement('style');
  style.id='smvAdminFixedQuickLinksStyle';
  style.textContent=`
  #admin #smvAdminQuickLinks{display:none!important}
  #admin #smvAdminFixedQuickLinks{
-   display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+   display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr))!important;
    gap:8px 12px!important;justify-content:center!important;justify-items:stretch!important;
    align-items:center!important;width:min(100%,760px)!important;max-width:760px!important;
    box-sizing:border-box!important;margin:18px auto 22px!important;padding:0 8px!important;
