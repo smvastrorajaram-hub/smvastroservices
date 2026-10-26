@@ -24,6 +24,79 @@ self.addEventListener('activate',event=>{
   })());
 });
 
+
+/* Firebase Cloud Messaging: data-only push alerts for Astrologer Live Call,
+   Live Chat and scheduled/live bookings. Never depend on an open page for delivery. */
+try {
+  importScripts('https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js');
+  importScripts('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-compat.js');
+  const SMV_STAGING_PUSH_HOSTS = [
+    'smv-astro-phase1-browser-staging.onrender.com',
+    'smv-astro-phase1-browser-isolated.onrender.com'
+  ];
+  const SMV_PUSH_STAGING = SMV_STAGING_PUSH_HOSTS.includes(self.location.hostname);
+  const SMV_PUSH_FIREBASE_CONFIG = SMV_PUSH_STAGING
+    ? {
+        apiKey: 'AIzaSyD9LzJ-7OKZMaVV5kXa9aABBECS6kE8mA',
+        authDomain: 'smv-astro-staging.firebaseapp.com',
+        projectId: 'smv-astro-staging',
+        storageBucket: 'smv-astro-staging.firebasestorage.app',
+        messagingSenderId: '73946216796',
+        appId: '1:73946216796:web:09500761bec02699a4e999'
+      }
+    : {
+        apiKey: 'AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs',
+        authDomain: 'smv-astro.firebaseapp.com',
+        projectId: 'smv-astro',
+        storageBucket: 'smv-astro.firebasestorage.app',
+        messagingSenderId: '299081899217',
+        appId: '1:299081899217:web:8d558df08e86037ea539f0'
+      };
+  if (!firebase.apps.length) firebase.initializeApp(SMV_PUSH_FIREBASE_CONFIG);
+  const smvPushMessaging = firebase.messaging();
+  smvPushMessaging.onBackgroundMessage(payload => {
+    const data = payload?.data || {};
+    const fallback = payload?.notification || {};
+    const title = String(data.title || fallback.title || 'SMV ASTRO Alert').slice(0, 100);
+    const body = String(data.body || fallback.body || 'Open SMV ASTRO to review the request.').slice(0, 240);
+    const tag = String(data.tag || ('smv-push-' + Date.now())).slice(0, 100);
+    self.registration.showNotification(title, {
+      body,
+      icon: '/assets/icon-192.png',
+      badge: '/assets/icon-192.png',
+      tag,
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [250, 120, 250, 120, 450],
+      data: {
+        url: '/',
+        type: String(data.type || 'live_alert'),
+        mode: String(data.mode || ''),
+        sessionId: String(data.sessionId || ''),
+        bookingId: String(data.bookingId || '')
+      }
+    });
+  });
+} catch (error) {
+  // Other site features continue working if FCM is unsupported or not configured.
+  console.warn('SMV ASTRO background push setup is unavailable:', error?.message || error);
+}
+
+self.addEventListener('notificationclick', event => {
+  event.notification?.close();
+  event.waitUntil((async () => {
+    let target = new URL(String(event.notification?.data?.url || '/'), self.location.origin);
+    if (target.origin !== self.location.origin) target = new URL('/', self.location.origin);
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      await client.focus();
+      return;
+    }
+    await self.clients.openWindow(target.href);
+  })());
+});
+
 self.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET')return;
