@@ -782,6 +782,18 @@ $("adminFeatureBtn")?.addEventListener("click",e=>{e.preventDefault();openAdminE
 
 // ---------- Admin access + Login / customer registration ----------
 const smvProfiles=new Map();
+const SMV_DASHBOARD_ROLE_CACHE_PREFIX='smv.dashboard-role.';
+function smvCachedDashboardRole(uid){
+ try{
+  const role=String(localStorage.getItem(SMV_DASHBOARD_ROLE_CACHE_PREFIX+String(uid||''))||'').toLowerCase();
+  return ['customer','astrologer'].includes(role)?role:'';
+ }catch(_e){return '';}
+}
+function smvRememberDashboardRole(uid,role){
+ const safeRole=String(role||'').toLowerCase();
+ if(!uid||!['customer','astrologer'].includes(safeRole))return;
+ try{localStorage.setItem(SMV_DASHBOARD_ROLE_CACHE_PREFIX+String(uid),safeRole);}catch(_e){}
+}
 async function getUserProfile(uid){
  const cached=smvProfiles.get(uid); if(cached&&Date.now()-cached.at<15000)return cached.data;
   try{const s=await withTimeout(getDoc(doc(db,"smv_users",uid)),10000);const data=s.exists()?s.data():{};smvProfiles.set(uid,{data,at:Date.now()});return data;}
@@ -790,8 +802,8 @@ async function getUserProfile(uid){
    // A failed read during quota exhaustion must not be repeated immediately by
    // login role resolution and Dashboard hydration. Keep only an empty profile
    // for the same short TTL as the normal cache; a later retry can read Firestore again.
-   smvProfiles.set(uid,{data:{},at:Date.now()});
-   return {};
+   smvProfiles.set(uid,{data:{_smvProfileReadFailed:true},at:Date.now()});
+   return {_smvProfileReadFailed:true};
   }
 }
 
@@ -842,13 +854,27 @@ async function resolveSmvRole(user, profileHint=null){
      astrologerProfileCollection:String(resolved?.astrologerProfileCollection||""),
      checkedAt:Date.now()
     };
-    return serverRole;
+    smvRememberDashboardRole(user.uid,serverRole);
+     return serverRole;
    }
   }catch(e){
    console.warn("Server account role lookup failed; using authenticated profile fallback:",e?.message||e);
   }
  }
 
+ if(!IS_SMV_PHASE1_STAGING){
+  const resolvedProfile=profileHint||await getUserProfile(user.uid);
+  profileHint=resolvedProfile;
+  const profileRole=String(resolvedProfile?.role||"").trim().toLowerCase();
+  if(["customer","astrologer"].includes(profileRole)){
+   smvRememberDashboardRole(user.uid,profileRole);
+   return profileRole;
+  }
+  if(resolvedProfile?._smvProfileReadFailed===true){
+   const cachedRole=smvCachedDashboardRole(user.uid);
+   if(cachedRole)return cachedRole;
+  }
+ }
  if(await isAdminAccount(user,profileHint))return "admin";
  const profile=profileHint||await getUserProfile(user.uid);
  const role=String(profile?.role||"").toLowerCase();
@@ -860,14 +886,16 @@ async function resolveSmvRole(user, profileHint=null){
    const astroSnap=await withTimeout(getDoc(doc(db,"smv_astrologers",user.uid)),10000);
    if(astroSnap.exists()){
     const astro=astroSnap.data()||{};
-    if(!astro.uid || String(astro.uid)===String(user.uid))return "astrologer";
+    if(!astro.uid || String(astro.uid)===String(user.uid)){smvRememberDashboardRole(user.uid,"astrologer");return "astrologer";}
    }
   }catch(e){
    console.warn("Astrologer role profile lookup failed:",e?.message||e);
   }
  }
  if(IS_SMV_PHASE1_STAGING&&role==="admin")return "customer";
- return ["customer","astrologer"].includes(role)?role:"customer";
+ const resolvedRole=["customer","astrologer"].includes(role)?role:"customer";
+ if(!profile?._smvProfileReadFailed)smvRememberDashboardRole(user.uid,resolvedRole);
+ return resolvedRole;
 }
 
 // V194 — A cold reopen deliberately stays on Home, so the initial auth callback
@@ -1136,7 +1164,7 @@ async function finishGoogleRoleLogin(googleUser, askNowLogin){
   hide("admin"); hide("adminLink");
   show("dashLink"); show("dashboard"); show("dashboardContent");
   if($("dashboardTitle")) $("dashboardTitle").textContent=resolvedRole==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
-  if($("dashboardContent")) $("dashboardContent").innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+  smvRenderFastDashboardShell(resolvedRole);
   smvShowRoleNav(); smvEnterInternalView("dashboard",true); go("dashboard");
   await loadDashboard(resolvedRole);
 }
@@ -1278,7 +1306,7 @@ async function submitAuth(mode){
       hide("approved-astrologers");
       hide("faq");
       if($("dashboardTitle"))$("dashboardTitle").textContent="DASHBOARD";
-      if($("dashboardContent"))$("dashboardContent").innerHTML='<div class="card" role="status"><div class="small">Login successful. Opening your dashboard…</div></div>';
+      smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));
       smvEnterInternalView("dashboard",true);
       go("dashboard");
     }
@@ -1377,7 +1405,7 @@ async function submitAuth(mode){
       show("dashboard");
       show("dashboardContent");
       if($("dashboardTitle")) $("dashboardTitle").textContent=role==="astrologer"?"ASTROLOGER DASHBOARD":"CUSTOMER DASHBOARD";
-      if($("dashboardContent")) $("dashboardContent").innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+      smvRenderFastDashboardShell(role);
       smvShowRoleNav();
       smvEnterInternalView("dashboard",true);
       go("dashboard");
@@ -2292,6 +2320,23 @@ function smvWalletDashboardCardHtml(){
  '<div id="smvWalletMessage" class="small" role="status" aria-live="polite" style="margin-top:10px">Loading Wallet details…</div>'+
  '<div style="margin-top:18px"><h4 style="margin-bottom:8px">Recent Wallet Transactions</h4><div id="smvWalletTransactions"><div class="small">Loading transactions…</div></div></div></section>';
 }
+function smvRenderFastDashboardShell(roleValue=''){
+ const box=$('dashboardContent');if(!box)return;
+ const role=String(roleValue||'').toLowerCase();
+ const user=currentUser||auth?.currentUser;
+ if(role==='customer'){
+  const name=[user?.displayName].map(value=>String(value||'').trim()).find(Boolean)||'Customer';
+  box.innerHTML='<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">'+escapeHtml(name)+'</span></h3><p>Your dashboard is ready.</p></div></div>'+smvCustomerBookingChatCardHtml()+smvWalletDashboardCardHtml();
+  smvBindCustomerBookingChat();
+  smvBindCustomerWallet({load:false});
+  return;
+ }
+ if(role==='astrologer'){
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2></div>';
+  return;
+ }
+ box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">SMV ASTRO</span><h2>DASHBOARD</h2></div>';
+}
 function smvWalletMoney(paise){
  const n=Number(paise);
  const safe=Number.isSafeInteger(n)&&n>=0?n:0;
@@ -2363,7 +2408,7 @@ async function smvLoadCustomerWallet(){
   if(refresh&&document.contains(refresh))refresh.disabled=false;
  }
 }
-function smvBindCustomerWallet(){
+function smvBindCustomerWallet({load=true}={}){
  if(!$('smvCustomerWalletCard'))return;
  const refresh=$('smvWalletRefresh');
  if(refresh)refresh.onclick=()=>smvLoadCustomerWallet();
@@ -2465,7 +2510,7 @@ function smvBindCustomerWallet(){
    }
   };
  }
- smvLoadCustomerWallet();
+ if(load)smvLoadCustomerWallet();
 }
 window.addEventListener('smv:wallet-updated',()=>{
  if(currentUser&&auth?.currentUser?.uid===currentUser.uid){
@@ -2502,7 +2547,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
  dashboardLoadUid=loadUid;
  dashboardLoadPromise=(async()=>{
  try{
-  if(box && active() && dashboardReadyUid!==loadUid) box.innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+  if(box && active() && dashboardReadyUid!==loadUid && !box.innerHTML.trim())smvRenderFastDashboardShell(requestedRole);
   const readCustomerPayload=path=>renderApi(path,{method:'GET'}).then(value=>({value}),error=>({error}));
   const customerRequest=requestedRole==='customer'?Promise.all([
     readCustomerPayload('/customer/consultations?_fresh='+Date.now()+'-'+loadId),
@@ -2523,6 +2568,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    $('dashboardTitle').textContent=role==='astrologer'?'ASTROLOGER DASHBOARD':'CUSTOMER DASHBOARD';
    if(role==='astrologer'){
    let ad=preloadedAstro||{};
+let astroProfileReadFailed=!!data._smvProfileReadFailed;
 
 /* Always load the latest astrologer profile.
    This is required so rejected status and rejectionReason
@@ -2535,18 +2581,35 @@ try{
 
   if(a.exists()){
     ad=a.data()||{};
+    astroProfileReadFailed=false;
+  }else if(data._smvProfileReadFailed){
+    astroProfileReadFailed=true;
   }
 }catch(profileErr){
+  astroProfileReadFailed=true;
   console.warn(
     'Astrologer profile load skipped:',
     profileErr
   );
 }
 
+// Never show a false "Waiting for Admin Approval" state because quota exhaustion
+// prevented reading the actual Astrologer profile. Keep the known-role shell open.
+if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
+  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><h2>ASTROLOGER DASHBOARD</h2><p>Dashboard is open. Astrologer profile and data are temporarily unavailable because Firebase could not be read. Your account status has not been changed.</p><button class="btn gray" id="smvAstroDataRetry" type="button">RETRY DATA LOAD</button></div>';
+  $('smvAstroDataRetry')?.addEventListener('click',()=>{
+    smvProfiles.delete(loadUid);
+    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard retry deferred:',error?.message||error));
+  });
+  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
+  smvWatchQuestions(role);
+  return;
+}
+
 let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
-   let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
+let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
 
    // A directory-visible approved record may be a legacy/duplicate document
    // while this dashboard reads the UID-keyed document. Reconcile only when the
@@ -4586,7 +4649,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        show('dashboard');
        show('dashboardContent');
        $('dashboardTitle').textContent=headerRole==='astrologer'?'ASTROLOGER DASHBOARD':'CUSTOMER DASHBOARD';
-       $('dashboardContent').innerHTML='<div class="card"><div class="small">Loading your dashboard...</div></div>';
+       smvRenderFastDashboardShell(headerRole);
        smvShowRoleNav(); smvInternalView="dashboard";
        try{history.replaceState({smvView:"dashboard"},"","#dashboard");}catch(_e){}
        go('dashboard');

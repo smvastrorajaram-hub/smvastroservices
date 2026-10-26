@@ -75,18 +75,18 @@ test('Live Chat uses one large, scrolling message pane without changing preparat
   assert.ok(frontend.includes("s.state==='preparing'"));
 });
 
-test('Explicit login opens a neutral Dashboard shell before Firestore profile and role reads', () => {
+test('Explicit login immediately opens a Dashboard shell before profile and role reads', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function submitAuth(mode)');
-  const shell = frontend.indexOf('Login successful. Opening your dashboard', start);
+  const shell = frontend.indexOf('smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));', start);
   const profile = frontend.indexOf('const loginProfile=await getUserProfile(loginCred.user.uid)', start);
   const role = frontend.indexOf('const role=await resolveSmvRole(loginCred.user,profile)', start);
   assert.ok(start >= 0 && shell > start);
-  assert.ok(profile > shell, 'The visible neutral shell must render before profile reads');
-  assert.ok(role > profile, 'Role-specific rendering must still wait for role resolution');
+  assert.ok(profile > shell, 'The Dashboard shell must render before profile reads');
+  assert.ok(role > profile, 'Role resolution follows the first profile result');
   assert.ok(frontend.includes('if(!goToQuestion&&!goToAdmin){'));
-  assert.ok(frontend.includes('role="status"'));
   assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
+  assert.ok(!frontend.includes('Login successful. Opening your dashboard…'));
 });
 
 test('Customer Dashboard remains usable when consultation reads hit a Firestore quota error', () => {
@@ -99,7 +99,7 @@ test('Customer Dashboard remains usable when consultation reads hit a Firestore 
   assert.ok(frontend.includes('id="smvCustomerDataRetry"'));
   assert.ok(frontend.includes("loadDashboard('customer',true)"));
   assert.ok(!frontend.includes("if(customerResult?.error)throw customerResult.error;"));
-  assert.ok(frontend.includes("smvProfiles.set(uid,{data:{},at:Date.now()});"));
+  assert.ok(frontend.includes("smvProfiles.set(uid,{data:{_smvProfileReadFailed:true},at:Date.now()});"));
   assert.ok(frontend.includes("const profile=loginProfile;"));
 });
 
@@ -114,7 +114,36 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-firestore-polling-customer-fallback-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
+});
+
+test('Customer and Astrologer Dashboard show a fast role shell without Dashboard-wide loading text', () => {
+  const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  assert.ok(frontend.includes("function smvRenderFastDashboardShell(roleValue=''){"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(smvCachedDashboardRole(loginCred.user.uid));"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(role);"));
+  assert.ok(frontend.includes("smvRenderFastDashboardShell(headerRole);"));
+  assert.equal(frontend.split('Loading your dashboard...').length - 1, 1, 'Only the historical explanatory comment may mention this label');
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-fast-shell-no-loading-v1'));
+});
+
+test('Last-known Dashboard role cache only stores Customer or Astrologer UI roles', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("return ['customer','astrologer'].includes(role)?role:'';"));
+  assert.ok(frontend.includes("if(!uid||!['customer','astrologer'].includes(safeRole))return;"));
+  assert.ok(frontend.includes('const cachedRole=smvCachedDashboardRole(user.uid);'));
+  assert.ok(frontend.includes("if(!profile?._smvProfileReadFailed)smvRememberDashboardRole(user.uid,resolvedRole);"));
+  assert.ok(frontend.includes("if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){"));
+  assert.ok(frontend.includes("Your account status has not been changed."));
+  assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
+});
+
+test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("smvBindCustomerWallet({load:false});"));
+  assert.ok(frontend.includes("function smvBindCustomerWallet({load=true}={}){"));
+  assert.ok(frontend.includes("if(load)smvLoadCustomerWallet();"));
 });
 
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
