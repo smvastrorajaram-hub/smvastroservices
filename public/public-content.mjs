@@ -473,69 +473,7 @@
     },{rootMargin:'300px 0px'});
     io.observe(box);
   }
-  async function authHeaders(){await fb();const u=auth?.currentUser;if(!u)throw new Error('Please login as Admin to use this feature.');return {Authorization:'Bearer '+await u.getIdToken()};}
-  // Admin question actions are owned by admin-workflows.mjs.
-  async function loadAdminAppointments(){
-    const box=$('adminAppointments'); if(!box||adminAppointmentsLoading)return;
-    adminAppointmentsLoading=true; box.innerHTML='<div class="empty">Loading appointment requests...</div>';
-    try{
-      await fb(); const u=auth?.currentUser; if(!u)throw new Error('Please login as Admin.');
-      const token=await u.getIdToken();
-      const r=await withTimeout(fetch(BACKEND+'/admin/appointments',{headers:{Authorization:'Bearer '+token},cache:'no-store'}),12000);
-      const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||`Appointment service returned HTTP ${r.status}.`);
-      const items=Array.isArray(d.appointments)?d.appointments:[];
-      if(!items.length){box.innerHTML='<div class="empty">No appointment requests.</div>';return;}
-      box.innerHTML=items.map(a=>{const current=String(a.status||'new').toLowerCase(),birth=a.birthDetails||{};return `<div style="padding:14px 0;border-bottom:1px solid #eee"><b>${esc(a.name||'Customer')}</b> · <b>${esc(a.type||'Consultation')}</b><div class="small">${esc(a.email||'')} · ${esc(a.mobile||'')}</div>${birth.birthDate||birth.birthTime||birth.birthPlace?'<div class="small">Birth details: DOB '+esc(birth.birthDate||'-')+' · Time '+esc(birth.birthTime||'-')+' · Place '+esc(birth.birthPlace||'-')+'</div>':''}<div class="small">Preferred: <b>${esc(a.preferredDate||'-')}</b> ${esc(a.preferredTime||'')}</div><div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.notes||'No notes')}</div><div class="small" style="margin-top:6px">Status: <b>${esc(current.toUpperCase())}</b></div><div class="action-row">${['new','confirmed','completed','cancelled'].map(st=>`<button type="button" class="btn ${st==='cancelled'?'gray':''}" data-apstatus="${esc(a.id)}" data-status="${st}" ${st===current?'disabled style="opacity:.65;cursor:default"':''}>${st===current?'✓ ':''}${st.toUpperCase()}</button>`).join('')}</div></div>`;}).join('');
-      box.querySelectorAll('[data-apstatus]').forEach(b=>b.onclick=()=>updateAppointment(b.dataset.apstatus,b.dataset.status,b));
-    }catch(e){console.error('ADMIN APPOINTMENT ERROR:',e);box.innerHTML='<div class="empty error">Appointment loading failed: '+esc(e?.message||String(e))+'</div>';}finally{adminAppointmentsLoading=false;}
-  }
-  let appointmentUpdating=false;
-  async function updateAppointment(id,status,button){
-    if(appointmentUpdating)return; appointmentUpdating=true;
-    const buttons=[...document.querySelectorAll('[data-apstatus]')]; buttons.forEach(x=>x.disabled=true);
-    try{await fb();const u=auth?.currentUser;if(!u)throw new Error('Please login as Admin.');const token=await u.getIdToken();const r=await fetch(BACKEND+'/admin/appointment-status',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({id,status}),cache:'no-store'});const d=await r.json().catch(()=>({}));window.__smvRecordTiming?.(path,performance.now()-started,r.ok);if(!r.ok)throw new Error(d.error||`Appointment update returned HTTP ${r.status}.`);await loadAdminAppointments();}catch(e){console.error('Appointment update error:',e);alert(e?.message||String(e));buttons.forEach(x=>x.disabled=false);}finally{appointmentUpdating=false;}
-  }
-
   window.__smvSetupLanguage=()=>{document.documentElement.lang='en';};
-  function setupBooking(){
-    document.querySelectorAll('[data-open-booking]').forEach(b=>b.onclick=()=>{show("appointment");if($('apType'))$('apType').value=b.dataset.openBooking;location.hash='appointment';$('apName')?.focus();});
-    const f=$('appointmentForm');if(!f)return;
-    if(f.dataset.smvBookingBound==='1')return;
-    f.dataset.smvBookingBound='1';
-    f.addEventListener('submit',async e=>{
-      e.preventDefault();
-      if(bookingSubmitting)return;
-      const btn=$('appointmentSubmit'),msg=$('appointmentMsg');
-      bookingSubmitting=true;btn.disabled=true;btn.textContent='SENDING...';
-      try{
-        await fb();
-        const u=auth?.currentUser;
-        if(!u)throw new Error('Please login before booking.');
-        await u.reload();
-        const freshUser=auth.currentUser;
-        if(!freshUser)throw new Error('Please login before booking.');
-        if(!freshUser.emailVerified)throw new Error('Please verify your email before booking.');
-        const payload={
-          name:$('apName')?.value.trim()||'',email:$('apEmail')?.value.trim()||freshUser.email||'',mobile:$('apMobile')?.value.trim()||'',
-          type:$('apType')?.value||'',preferredDate:$('apDate')?.value||'',preferredTime:$('apTime')?.value||'',notes:$('apNotes')?.value.trim()||'',
-          customerId:freshUser.uid,status:'new'
-        };
-        if(!payload.name)throw new Error('Please enter your name.');
-        if(!payload.mobile)throw new Error('Please enter your mobile number.');
-        if(!payload.type)throw new Error('Please select Chat or Call.');
-        if(!payload.preferredDate)throw new Error('Please select your preferred date.');
-        if(!payload.preferredTime)throw new Error('Please select your preferred time.');
-        const token=await freshUser.getIdToken();
-        const r=await fetch(BACKEND+'/appointment-booking',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(payload),cache:'no-store'});
-        const d=await r.json().catch(()=>({}));
-        if(!r.ok)throw new Error(d.error||`Booking request returned HTTP ${r.status}.`);
-        console.log('Booking created:',d.bookingId);
-        msg.innerHTML='<span class="success">✓ Booking request submitted.<br><b>Booking ID:</b> '+esc(d.bookingId||'')+'<br>'+(payload.astrologerId?'Your Astrologer will accept or reject this scheduled Call/Chat. Track the request under Customer Dashboard → Live Call / Live Chat → My Scheduled Bookings.':'Admin will confirm your consultation.')+'</span>';
-        f.reset();
-      }catch(err){console.error('Appointment booking error:',err);msg.innerHTML='<span class="error">'+esc(err.message||String(err))+'</span>';}
-      finally{bookingSubmitting=false;btn.disabled=false;btn.textContent='REQUEST APPOINTMENT';}
-    });
-  }
   const privateRating=v=>Math.max(0,Math.min(5,Number(v)||0));
   const privateStars=v=>{const n=privateRating(v);return `<span class="smv-rating-stars" aria-label="${n.toFixed(1)} out of 5">${[0,1,2,3,4].map(i=>`<span class="smv-rating-star" style="--fill:${Math.max(0,Math.min(1,n-i))*100}%">★</span>`).join('')}</span>`;};
   const privateSummary=v=>{const n=privateRating(v);return n?`${privateStars(n)} <strong>${Number(n.toFixed(1))}/5</strong>`:'<span class="smv-rating-none">No ratings yet</span>';};
@@ -622,26 +560,9 @@
   });
   openPrivateList();
   window.addEventListener('smv:logged-out',()=>{
-    window.__smvSelectedPrivateConsultAstrologer=null;
     walletBookingRequestId=null;walletBookingRequestOwner='';
-    $('privateConsultationQuestionForm')?.reset();
-    $('privateConsultationQuestionCard')?.classList.add('hidden');
   });
-  let adminRefreshRunning=false;
-  async function refreshAdminSections(){
-    if($('admin')?.classList.contains('hidden'))return;
-    if(adminRefreshRunning)return;
-    adminRefreshRunning=true;
-    try{
-      await loadAdminAppointments();
-    }finally{adminRefreshRunning=false;}
-  }
-  function hookAdmin(){
-    if(window.__SMV_ADMIN_HOOKED)return;
-    window.__SMV_ADMIN_HOOKED=true;
-    window.__smvRefreshAdminSections=refreshAdminSections;
-  }
-  setupBooking();hookAdmin();armPublicReviewsLazyLoad();
+  armPublicReviewsLazyLoad();
   // Admin data loaders are triggered explicitly after Admin authentication.
 })();
   document.getElementById("contactNav")?.addEventListener("click",e=>{e.preventDefault();document.getElementById("contact")?.classList.remove("hidden");document.getElementById("contact")?.scrollIntoView({behavior:"smooth",block:"start"});});
