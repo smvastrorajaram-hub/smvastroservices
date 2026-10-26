@@ -5474,10 +5474,55 @@ async function smvLiveLoadDashboard(role){
  await reload();
  syncModes();
 }
+async function smvLiveHandlePushOpen(payload = {}){
+ const sessionId=String(payload.sessionId||'');
+ const bookingId=String(payload.bookingId||'');
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer'||!currentUser)return;
+ if(!$('smvLiveDashboardCard')&&typeof loadDashboard==='function')await loadDashboard('astrologer',true);
+ if(!$('smvLiveDashboardCard'))throw new Error('Open the Astrologer Dashboard after logging in to respond to this request.');
+ await smvLiveLoadDashboard('astrologer');
+ if(sessionId){
+  const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
+  const session=(list.sessions||[]).find(item=>String(item.id||'')===sessionId);
+  if(session&&session.state!=='ended'){
+   smvLiveOpenSession(session,null,session.state==='ringing');
+   return;
+  }
+  smvLiveShowDashboardMessage('This Live request is no longer pending. Refresh your Live Sessions.');
+  return;
+ }
+ if(bookingId){
+  const target=document.querySelector('[data-live-booking-accept="'+CSS.escape(bookingId)+'"]')||
+    document.querySelector('[data-scheduled-booking="'+CSS.escape(bookingId)+'"]');
+  target?.closest('article')?.scrollIntoView?.({behavior:'smooth',block:'center'});
+  smvLiveShowDashboardMessage('Booking alert opened. Review Pending Live Bookings or Scheduled Call / Chat Bookings.');
+  return;
+ }
+ if(String(payload.type||'')==='push_test')smvLiveShowDashboardMessage('SMV ASTRO Test Alert was opened successfully.');
+}
+function smvLiveBindPushOpenListener(){
+ if(!('serviceWorker' in navigator)||window.__smvLivePushOpenMessageBound)return;
+ window.__smvLivePushOpenMessageBound=true;
+ navigator.serviceWorker.addEventListener('message',event=>{
+  const message=event.data||{};
+  if(message.type!=='SMV_LIVE_PUSH_OPEN')return;
+  smvLiveHandlePushOpen(message.payload||{}).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));
+ });
+}
 function smvLiveBindDashboard(role){
  if(!['customer','astrologer'].includes(role))return;const box=$('dashboardContent');if(!box||$('smvLiveDashboardCard'))return;
  const host=role==='astrologer'?(box.querySelector('#smvLiveDashboardMount')||box):box;
  host.insertAdjacentHTML('beforeend',smvLiveDashboardHtml(role));smvLiveLoadDashboard(role).catch(smvLiveShowError);smvLiveStartEventStream();
+ if(role==='astrologer'){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('smvLivePush')==='1'){
+   const payload={type:'push_open',sessionId:params.get('smvSessionId')||'',bookingId:params.get('smvBookingId')||''};
+   params.delete('smvLivePush');params.delete('smvSessionId');params.delete('smvBookingId');
+   const cleanUrl=window.location.pathname+(params.toString()?'?'+params.toString():'')+window.location.hash;
+   window.history.replaceState(window.history.state,'',cleanUrl);
+   setTimeout(()=>smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error))),350);
+  }
+ }
 }
 function smvLiveBindAdminPricing(){
  const save=$('saveLiveSessionPricing'),refresh=$('refreshLiveSessionPricing'),msg=$('liveSessionPricingMsg');
@@ -5506,6 +5551,7 @@ function smvLiveBindAdminPricing(){
  if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=()=>load(true);}
  if(!smvLivePricingLoadedAt)load();
 }
+smvLiveBindPushOpenListener();
 window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveRingSuppressedIds.clear();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
 window.addEventListener('smv:auth-user',()=>setTimeout(smvLiveStartEventStream,200));
 
