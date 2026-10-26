@@ -736,7 +736,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'preparing', origin: 'accepted_booking', fingerprint, commission
       });
-      data.acceptedAt = new Date();
+      data.acceptedAt = data.preparationStartedAt || new Date();
       tx.create(sRef, data);
       tx.set(bRef, {
         status: 'accepted', sessionId: id, acceptedAt: nowTimestamp(),
