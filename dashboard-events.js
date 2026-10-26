@@ -36,12 +36,22 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
     // V48 READ HARDENING: never attach whole-collection listeners for Admin.
     // All successful backend mutations bump this single lightweight document.
     refs.push({ref:db.collection('smv_settings').doc('dashboardChange'),kind:'admin_signal'});
-   }else{
-    refs.push({ref:db.collection('smv_questions').where(role==='astrologer'?'astrologerId':'customerId','==',user.uid),kind:'questions'},{ref:db.collection('smv_notifications').where('userId','==',user.uid),kind:'notifications'});
-    if(role==='astrologer'){
-     refs.push({ref:db.collection('smv_astrologers').doc(user.uid),kind:'profile'},{ref:db.collection('smv_withdrawals').where('astrologerId','==',user.uid),kind:'withdrawals'});
-     if(String(astro.data()?.status)==='approved')refs.push({ref:db.collection('smv_questions').where('status','==','available_to_astrologers'),kind:'open_questions'},{ref:db.collection('smv_settings').doc('workflow'),kind:'workflow'});
+   }else if(role==='astrologer'){
+    // Keep the Astrologer's own profile live, but avoid subscribing to every
+    // question, notification and withdrawal document just to invalidate UI.
+    // Successful workflow mutations publish a single lightweight signal doc.
+    refs.push(
+     {ref:db.collection('smv_astrologers').doc(user.uid),kind:'profile'},
+     {ref:db.collection('smv_settings').doc('dashboardChange'),kind:'dashboard_signal'}
+    );
+    if(String(astro.data()?.status)==='approved'){
+     refs.push({ref:db.collection('smv_settings').doc('workflow'),kind:'workflow'});
     }
+   }else{
+    refs.push(
+     {ref:db.collection('smv_questions').where('customerId','==',user.uid),kind:'questions'},
+     {ref:db.collection('smv_notifications').where('userId','==',user.uid),kind:'notifications'}
+    );
    }
    let waiting=refs.length;
    refs.forEach((entry,index)=>{
@@ -56,6 +66,14 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
       const signal=snap.data?.()||{};
       const path=String(signal.path||''),category=String(signal.category||'');
       send('change',{kinds:['admin_signal'],path,category});
+      return;
+     }
+     if(role==='astrologer'&&kind==='dashboard_signal'){
+      const category=String(snap.data?.()?.category||'');
+      // Ignore unrelated site/admin-content writes. These categories affect
+      // Astrologer questions, consultation history, earnings or profile data.
+      if(!['questions','private_consultations','withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'].includes(category))return;
+      send('change',{kinds:['dashboard_signal'],category});
       return;
      }
      changed(kind);
