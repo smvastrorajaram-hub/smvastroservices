@@ -333,7 +333,7 @@ const DASHBOARD_SIGNAL_PATHS=new Set([
   '/admin/private-consultation/approve-question','/admin/private-consultation/reject-question',
   '/admin/private-consultation/retry-refund','/admin/private-consultation/sync-refund',
   '/astrologer/private-consultation/submit-answer','/admin/private-consultation/approve-answer',
-  '/admin/private-consultation/reject-answer','/admin/offers/save','/admin/offers/delete',
+  '/admin/private-consultation/reject-answer',
   '/private-consultation/recover-payment','/private-consultation/verify-payment','/admin/credit-commission',
   '/admin/reject-answer','/admin/approve-answer','/customer/private-consultation/mark-viewed','/verify-payment',
   '/astrologer/withdrawal-request','/admin/withdrawal-mark-paid','/admin/dashboard-touch','/razorpay/webhook'
@@ -348,7 +348,6 @@ function invalidateAdminDataCache(){adminDataCache={payload:null,expiresAt:0};}
 
 function dashboardSignalCategory(path=''){
   const p=String(path||'');
-  if(p.startsWith('/admin/offers/'))return 'offers';
   if(p.includes('/private-consultation/'))return 'private_consultations';
   if(p.includes('/withdrawal')||p.includes('/payout'))return 'withdrawals_payouts';
   if(p.includes('/review'))return 'reviews';
@@ -2954,7 +2953,7 @@ app.get("/admin-data", async (req, res) => {
   try {
     // Read each collection independently. One damaged/missing collection must
     // never prevent the Admin Dashboard itself from opening.
-    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, offers, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
+    const [users, astrologers, questions, payments, privateConsultations, adminNotifications, legacyNotifications, commission, privateCommission, workflow, privateWorkflow, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCollection("smv_users"),
       readCollection("smv_astrologers"),
       readCollection("smv_questions"),
@@ -2962,7 +2961,6 @@ app.get("/admin-data", async (req, res) => {
       readCollection("smv_private_consultations"),
       readCollection("smv_admin_notifications"),
       readCollection("smv_notifications",db.collection("smv_notifications").where("userId","==",ADMIN_UID)),
-      readCollection(OFFER_COLLECTION),
       db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getPrivateCommissionSettings(),
       db.collection("smv_settings").doc("workflow").get().then(s=>s.exists?s.data():{allowWithoutAdminApproval:false}).catch(()=>({allowWithoutAdminApproval:false})),
@@ -2980,7 +2978,6 @@ app.get("/admin-data", async (req, res) => {
       users: newestFirst(users.items),
       astrologers: newestFirst(astrologers.items),
       questions: newestFirst(questions.items),
-      offers: offers.items,
       privateConsultations: newestFirst(privateConsultations.items),
       adminNotifications: [
         ...adminNotifications.items,
@@ -3000,7 +2997,7 @@ app.get("/admin-data", async (req, res) => {
         })
       ],
       payments: newestFirst(payments.items),
-      errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null, offers: offers.error || null }
+      errors: { users: users.error || null, astrologers: astrologers.error || null, questions: questions.error || null, payments: payments.error || null }
     };
     adminDataCache={payload,expiresAt:Date.now()+8000};
     return res.set('Cache-Control','no-store').json(payload);
@@ -3211,229 +3208,6 @@ app.post("/admin/private-consultation/reject-answer",express.json({limit:"10kb"}
 });
 
 
-// SMV ASTRO OFFER & PROMOTION ENGINE
-// Server is authoritative for eligibility and final payable amount. The browser may
-// request a quote, but Razorpay orders are always created from this server-side result.
-const OFFER_COLLECTION = "smv_offers";
-const OFFER_AUDIT_COLLECTION = "smv_offer_audit";
-const LEGACY_WELCOME_ID = "builtin_welcome_first_question"; // retained only to ignore legacy records safely
-
-function offerText(v, max=160){ return String(v == null ? "" : v).trim().slice(0,max); }
-function offerMoney(v){ const n=Number(v); return Number.isFinite(n) ? Math.round(n*100)/100 : null; }
-function offerDateMs(v){
-  if(!v) return null;
-  if(typeof v.toMillis === "function") return v.toMillis();
-  const raw=String(v).trim();
-  if(!raw) return null;
-  // Admin uses <input type="datetime-local">, so saved values have no timezone.
-  // SMV ASTRO offer schedules are India-local times. Parse the same way as the
-  // public offer-banner endpoint so banner eligibility and payment eligibility
-  // become active at the exact same instant.
-  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw)){
-    const n=Date.parse(raw+"+05:30");
-    return Number.isFinite(n)?n:null;
-  }
-  const n=Date.parse(raw);
-  return Number.isFinite(n)?n:null;
-}
-async function customerPaidCount(uid, service){
-  if(service==="private_consultation"){
-    const s=await db.collection("smv_private_consultations").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get();
-    return s.empty?0:1;
-  }
-  const s=await db.collection("smv_questions").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get();
-  return s.empty?0:1;
-}
-async function customerHasAnyPaidService(uid){
-  const [questions,privateConsultations]=await Promise.all([
-    db.collection("smv_questions").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get(),
-    db.collection("smv_private_consultations").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get()
-  ]);
-  return !questions.empty || !privateConsultations.empty;
-}
-async function offerUsageCount(uid, offerId, maximum=1){
-  const s=await db.collection(OFFER_AUDIT_COLLECTION).where("customerId","==",uid).where("offerId","==",offerId).where("status","==","used").limit(Math.max(1,Math.floor(maximum))).get();
-  return s.size;
-}
-function computeOfferPrice(original, offer){
-  let final=original;
-  const type=String(offer.discountType||"fixed_price");
-  if(type==="fixed_price") final=Number(offer.offerPrice);
-  else if(type==="percentage") final=original-(original*Math.max(0,Math.min(100,Number(offer.discountValue||0)))/100);
-  else if(type==="flat") final=original-Math.max(0,Number(offer.discountValue||0));
-  if(!Number.isFinite(final)) return null;
-  return Math.max(1,Math.round(final*100)/100);
-}
-async function resolveOfferForCustomer({uid,service,originalAmount,promoCode}){
-  const original=offerMoney(originalAmount), code=offerText(promoCode,40).toUpperCase();
-  if(original==null||original<1) throw new Error("Invalid original price.");
-  const now=Date.now();
-  const [snap,questionPaid,privatePaid]=await Promise.all([
-    db.collection(OFFER_COLLECTION).where("enabled","==",true).get(),
-    db.collection("smv_questions").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get(),
-    db.collection("smv_private_consultations").where("customerId","==",uid).where("paymentStatus","==","paid").limit(1).get()
-  ]);
-  const paidBefore=service==="private_consultation"?(privatePaid.empty?0:1):(questionPaid.empty?0:1);
-  const candidates=[];
-  for(const d of snap.docs){
-    const o={id:d.id,...d.data()};
-    const services=Array.isArray(o.appliesTo)?o.appliesTo:[String(o.appliesTo||"public_question")];
-    if(!services.includes(service)&&!services.includes("all")) continue;
-    const start=offerDateMs(o.startAt), end=offerDateMs(o.endAt);
-    if(start&&now<start)continue;if(end&&now>end)continue;
-    if(Number(o.minimumAmount||0)>original)continue;
-    if(Number(o.totalUsageLimit||0)>0&&Number(o.usedCount||0)>=Number(o.totalUsageLimit))continue;
-    const eligibility=String(o.eligibility||"all");
-    if(o.id===LEGACY_WELCOME_ID)continue;
-    if(eligibility==="new_customer"&&paidBefore>0)continue;
-    if(eligibility==="existing_customer"&&paidBefore===0)continue;
-    const oCode=offerText(o.promoCode,40).toUpperCase();
-    // Automatic offers never require a promo code. A stale code saved on an
-    // older automatic offer is ignored. Manual offers always require an exact code.
-    if(o.automatic===true){ /* eligible automatically */ }
-    else { if(!oCode || !code || code!==oCode) continue; }
-    const final=computeOfferPrice(original,o);if(final==null||final>=original)continue;
-    candidates.push({...o,finalAmount:final,discountAmount:Math.round((original-final)*100)/100});
-  }
-  // Explicit promo and automatic seasonal offers are ranked by Admin priority.
-  candidates.sort((a,b)=>{
-    const rank=o=>(offerText(o.promoCode,40)?200:100)+Number(o.priority||0);
-    return rank(b)-rank(a) || a.finalAmount-b.finalAmount;
-  });
-  let best=null;
-  for(const candidate of candidates){
-    const limit=Number(candidate.perCustomerLimit||0);
-    if(limit>0 && await offerUsageCount(uid,candidate.id,limit)>=limit)continue;
-    best=candidate;break;
-  }
-  return best?{originalAmount:original,finalAmount:best.finalAmount,discountAmount:best.discountAmount,offerId:best.id,offerName:best.name||"Offer",automatic:best.automatic===true,promoCode:best.automatic===true?"":offerText(best.promoCode,40).toUpperCase(),displayMode:best.displayMode||"payment_only",bannerText:best.bannerText||"Offer applied",kind:best.kind||"promotion"}:{originalAmount:original,finalAmount:original,discountAmount:0,offerId:null,offerName:null,automatic:false,promoCode:code||"",displayMode:"hidden",bannerText:"",kind:null};
-}
-async function consumeOfferAfterPayment({uid,service,referenceId,paymentId,quote}){
-  if(!quote?.offerId)return;
-  const auditRef=db.collection(OFFER_AUDIT_COLLECTION).doc(`${service}_${referenceId}`);
-  await db.runTransaction(async tx=>{
-    const audit=await tx.get(auditRef);if(audit.exists&&audit.data()?.status==="used")return;
-    const offerRef=db.collection(OFFER_COLLECTION).doc(quote.offerId), offerSnap=await tx.get(offerRef);
-    tx.set(auditRef,{customerId:uid,service,referenceId,paymentId:paymentId||null,offerId:quote.offerId,offerName:quote.offerName||null,promoCode:quote.promoCode||"",originalAmount:Number(quote.originalAmount||0),finalAmount:Number(quote.finalAmount||0),discountAmount:Number(quote.discountAmount||0),status:"used",usedAt:FieldValue.serverTimestamp(),createdAt:FieldValue.serverTimestamp()},{merge:true});
-    if(offerSnap.exists)tx.set(offerRef,{usedCount:FieldValue.increment(1),successfulPayments:FieldValue.increment(1),totalDiscountGiven:FieldValue.increment(Number(quote.discountAmount||0)),updatedAt:FieldValue.serverTimestamp()},{merge:true});
-  });
-}
-app.post("/offers/quote",express.json({limit:"10kb"}),async(req,res)=>{
-  const user=await requireUser(req,res);if(!user)return;
-  try{
-    const service=String(req.body?.service||"public_question");
-    let original=Number(req.body?.originalAmount||0);
-    if(service==="public_question"){const q=await db.collection("smv_settings").doc("question").get();original=Number(q.data()?.price||0);}
-    const quote=await resolveOfferForCustomer({uid:user.uid,service,originalAmount:original,promoCode:req.body?.promoCode});
-    return res.json({success:true,...quote});
-  }catch(e){return res.status(400).json({error:e?.message||"Unable to calculate offer."});}
-});
-
-// Public homepage offer banners.
-// Payment eligibility/final amount remain server-verified separately.
-let publicOfferBannerCache={expiresAt:0,offers:null};
-app.get("/offers/public-banners", async (req, res) => {
-  try {
-    const now = Date.now();
-    if(Array.isArray(publicOfferBannerCache.offers)&&publicOfferBannerCache.expiresAt>now){res.set("Cache-Control","no-store, no-cache, must-revalidate");return res.json({success:true,offers:publicOfferBannerCache.offers,cached:true});}
-    const bannerDateMs = (v) => {
-      if (!v) return null;
-      if (typeof v.toMillis === "function") return v.toMillis();
-      const raw = String(v).trim();
-      if (!raw) return null;
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw)) {
-        const n = Date.parse(raw + "+05:30");
-        return Number.isFinite(n) ? n : null;
-      }
-      const n = Date.parse(raw);
-      return Number.isFinite(n) ? n : null;
-    };
-    const bannerDateIso = (v) => {
-      const ms = bannerDateMs(v);
-      return ms === null ? null : new Date(ms).toISOString();
-    };
-    const snap = await sharedPublicRead("banners",()=>db.collection(OFFER_COLLECTION).where("enabled","==",true).limit(50).get());
-    const offers = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(o => {
-        if (o.id === LEGACY_WELCOME_ID) return false;
-        // Wallet recharge bonuses are shown in the Wallet checkout, not the public Book-a-Chat banner.
-        const appliesTo = Array.isArray(o.appliesTo) ? o.appliesTo : [String(o.appliesTo || "")];
-        if (appliesTo.includes("wallet_recharge")) return false;
-        const enabled = o.enabled === true || String(o.enabled).toLowerCase() === "true";
-        if (!enabled) return false;
-        // Homepage banner follows the Admin enabled state + active date window.
-        // displayMode is payment/UI metadata and must not silently suppress an enabled banner.
-        const start = bannerDateMs(o.startAt), end = bannerDateMs(o.endAt);
-        if (start !== null && now < start) return false;
-        if (end !== null && now > end) return false;
-        return !!offerText(o.bannerText || o.name, 240);
-      })
-      .sort((a,b) => Number(b.priority || 0) - Number(a.priority || 0))
-      .map(o => ({
-        id:o.id,name:offerText(o.name,120),
-        bannerText:offerText(o.bannerText||o.name,240),
-        promoCode:o.automatic===true?"":offerText(o.promoCode,40),
-        bannerTheme:offerText(o.bannerTheme||"auto",30),
-        discountType:offerText(o.discountType,24),
-        offerPrice:Number(o.offerPrice||0),
-        discountValue:Number(o.discountValue||0),
-        automatic:o.automatic===true,displayMode:offerText(o.displayMode||"payment_only",30),startAt:bannerDateIso(o.startAt),endAt:bannerDateIso(o.endAt)
-      }));
-    publicOfferBannerCache={expiresAt:now+60000,offers};
-    res.set("Cache-Control","no-store, no-cache, must-revalidate");
-    return res.json({success:true,offers,activeOfferCount:offers.length});
-  } catch(e) {
-    console.error("Public offer banner load failed:",e);
-    return res.status(500).json({success:false,offers:[],error:"Unable to load offers."});
-  }
-});
-
-app.get("/admin/offers",async(req,res)=>{
-  const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  const s=await db.collection(OFFER_COLLECTION).get();
-  return res.json({success:true,offers:s.docs.filter(d=>d.id!==LEGACY_WELCOME_ID).map(d=>({id:d.id,...d.data()}))});
-});
-app.post("/admin/offers/save",express.json({limit:"30kb"}),async(req,res)=>{
-  const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  try{
-    const b=req.body||{}, requested=offerText(b.id,80), id=requested||db.collection(OFFER_COLLECTION).doc().id;
-    if(id===LEGACY_WELCOME_ID)return res.status(409).json({error:"The old Welcome Offer has been retired. Use Wallet Recharge Bonus offers instead."});
-    const promo=offerText(b.promoCode,40).toUpperCase().replace(/[^A-Z0-9_-]/g,"");
-    const discountType=["fixed_price","percentage","flat"].includes(String(b.discountType))?String(b.discountType):"fixed_price";
-    const applies=Array.isArray(b.appliesTo)?b.appliesTo.filter(x=>["public_question","private_consultation","wallet_recharge","all"].includes(String(x))):["public_question"];
-    const automatic=b.automatic===true;
-    const bonusFreeMinutes=Math.floor(Number(b.bonusFreeMinutes||0));
-    if(applies.includes("wallet_recharge")&&(!Number.isSafeInteger(bonusFreeMinutes)||bonusFreeMinutes<1||bonusFreeMinutes>1440))return res.status(400).json({error:"Wallet Recharge offers must award 1–1440 free minutes."});
-    if(applies.includes("wallet_recharge")&&Number(b.minimumAmount||0)<1)return res.status(400).json({error:"Wallet Recharge offers must have a minimum recharge of at least ₹1."});
-    if(!automatic && !promo)return res.status(400).json({error:"Promo Code is required when Automatic Offer is NO."});
-    const allowedThemes=["vinayagar_chaturthi","karthigai_deepam","thaipusam","new_year","onam","christmas","eid","auto","generic","pongal","diwali","navaratri","dasara","ayudha_pooja","shivaratri","tamil_new_year"];
-    const bannerTheme=allowedThemes.includes(String(b.bannerTheme||"auto"))?String(b.bannerTheme||"auto"):"auto";
-    const data={name:offerText(b.name,120)||"Promotion",kind:offerText(b.kind,30)||"promotion",enabled:b.enabled===true,automatic,promoCode:automatic?"":promo,bannerTheme,discountType,offerPrice:offerMoney(b.offerPrice),discountValue:offerMoney(b.discountValue)||0,bonusFreeMinutes:applies.includes("wallet_recharge")?bonusFreeMinutes:0,eligibility:["new_customer","existing_customer","all"].includes(String(b.eligibility))?String(b.eligibility):"all",appliesTo:applies.length?applies:["public_question"],usageRule:offerText(b.usageRule,30)||"one_per_customer",perCustomerLimit:Math.max(0,Math.floor(Number(b.perCustomerLimit||0))),totalUsageLimit:Math.max(0,Math.floor(Number(b.totalUsageLimit||0))),minimumAmount:Math.max(0,Number(b.minimumAmount||0)),displayMode:["hidden","home_banner","customer_dashboard","payment_only","home_dashboard"].includes(String(b.displayMode))?String(b.displayMode):"payment_only",bannerText:offerText(b.bannerText,240),startAt:b.startAt?String(b.startAt):null,endAt:b.endAt?String(b.endAt):null,priority:Number(b.priority||0),builtIn:false,updatedAt:FieldValue.serverTimestamp(),updatedBy:user.uid};
-    if(!applies.includes("wallet_recharge")&&discountType==="fixed_price"&&(!Number.isFinite(data.offerPrice)||data.offerPrice<1))return res.status(400).json({error:"Fixed offer price must be at least ₹1."});
-    const ref=db.collection(OFFER_COLLECTION).doc(id);
-    const before=await ref.get();
-    const writeData={...data};
-    if(!before.exists)writeData.createdAt=FieldValue.serverTimestamp();
-    await ref.set(writeData,{merge:true});
-    // Read back the exact persisted document. This prevents the Admin UI from
-    // reporting success when the values were not actually stored.
-    const savedSnap=await ref.get();
-    if(!savedSnap.exists)return res.status(500).json({error:"Offer save verification failed."});
-    const saved={id:savedSnap.id,...savedSnap.data()};
-    publicOfferBannerCache={expiresAt:0,offers:null};
-    return res.json({success:true,id,saved});
-  }catch(e){return res.status(400).json({error:e?.message||"Unable to save offer."});}
-});
-app.post("/admin/offers/delete",express.json({limit:"10kb"}),async(req,res)=>{
-  const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  const id=offerText(req.body?.id,80);if(!id)return res.status(400).json({error:"Offer ID required."});
-  if(id===LEGACY_WELCOME_ID)return res.status(409).json({error:"The retired Welcome Offer is hidden and cannot be edited."});
-  await db.collection(OFFER_COLLECTION).doc(id).delete();
-  publicOfferBannerCache={expiresAt:0,offers:null};
-  return res.json({success:true});
-});
-
 app.post("/private-consultation/create-order", express.json({limit:"30kb"}), async (req,res)=>{
   const user=await requireUser(req,res);if(!user)return;
   try{
@@ -3455,8 +3229,8 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
       return res.status(409).json({error:"Selected astrologer is not currently approved."});
     const originalChatPrice=Number(a.pricePerQuestion||0);
     if(!Number.isFinite(originalChatPrice)||originalChatPrice<1)return res.status(409).json({error:"This astrologer's Chat Price is not available."});
-    const [offerQuote,privateCommission]=await Promise.all([resolveOfferForCustomer({uid:user.uid,service:"private_consultation",originalAmount:originalChatPrice,promoCode:req.body?.promoCode}),getPrivateCommissionSettings()]);
-    const chatPrice=offerQuote.finalAmount;
+    const privateCommission=await getPrivateCommissionSettings();
+    const chatPrice=originalChatPrice;
     const commissionSnapshot=privateCommissionSnapshot(chatPrice,privateCommission);
     const {privateAstrologerCommissionRate,privateAdminCommissionRate,astrologerAmount,adminAmount}=commissionSnapshot;
     if(paymentMethod==="wallet"){
@@ -3466,7 +3240,6 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
         astrologerId,customerName,question,
         birthDate:String(birth.birthDate),birthTime:String(birth.birthTime),
         birthPlace:String(birth.birthPlace).trim(),birthGender:String(birth.birthGender||""),
-        promoCode:String(req.body?.promoCode||"").trim()
       })).digest("hex");
       const amountPaise=Math.round(chatPrice*100);
       if(!Number.isSafeInteger(amountPaise)||amountPaise<100)return res.status(409).json({error:"The selected chat price is not valid for Wallet payment.",code:"WALLET_CHAT_AMOUNT_INVALID"});
@@ -3515,9 +3288,7 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
         const baseRecord={
           consultationId,customerId:user.uid,customerEmail:user.email||null,customerName,question,
           astrologerId,astrologerName:String(a.name||"Astrologer"),
-          chatPrice,originalChatPrice,offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,
-          offerPromoCode:offerQuote.promoCode||"",offerDiscountAmount:offerQuote.discountAmount||0,
-          offerBannerText:offerQuote.bannerText||"",offerDisplayMode:offerQuote.displayMode||"hidden",
+          chatPrice,originalChatPrice,
           privateAstrologerCommissionRate,privateAdminCommissionRate,adminAmount,astrologerAmount,
           amount:chatPrice,status:finalStatus,paymentStatus:"paid",paymentMethod:"wallet",
           walletRequestId:requestId,walletRequestFingerprint:requestFingerprint,walletTransactionId:ledgerId,questionApprovalBypassed:autoAllow,
@@ -3553,12 +3324,10 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
       });
       if(!booking.alreadyProcessed){
         setImmediate(async()=>{
-          const quote={offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,promoCode:offerQuote.promoCode||"",originalAmount:Number(offerQuote.originalAmount||originalChatPrice),finalAmount:Number(chatPrice),discountAmount:Number(offerQuote.discountAmount||0)};
           const customerEmail=String(user.email||await getUserEmail(user.uid)||"").trim();
           const astrologerEmail=await resolveAstrologerEmail({astrologerId});
           const amountText="₹"+Number(chatPrice).toFixed(2);
           await Promise.allSettled([
-            consumeOfferAfterPayment({uid:user.uid,service:"private_consultation",referenceId:consultationId,paymentId:customerPaymentId,quote}),
             addAdminPrivateNotification("private_payment_received","Private Consultation Wallet Payment Received",customerName+" paid "+amountText+" from Wallet for "+(a.name||"the selected astrologer")+".",consultationId,{customerId:user.uid,astrologerId,paymentMethod:"wallet"}),
             addAdminEventNotification("private_payment_received","Private Consultation Payment Received",customerName+" paid "+amountText+" for "+(a.name||"the selected astrologer")+".",{consultationId,paymentId:customerPaymentId,paymentMethod:"wallet"}),
             db.collection("smv_notifications").add({userId:user.uid,type:"private_consultation_payment",title:"Wallet payment successful",message:autoAllow?"Your private consultation is now visible to "+(a.name||"the selected astrologer")+".":"Your private consultation with "+(a.name||"the selected astrologer")+" is waiting for Admin approval.",consultationId,paymentId:customerPaymentId,createdAt:FieldValue.serverTimestamp(),read:false}),
@@ -3580,12 +3349,12 @@ app.post("/private-consultation/create-order", express.json({limit:"30kb"}), asy
     await ref.set({
       consultationId,customerId:user.uid,customerEmail:user.email||null,customerName,question,
       astrologerId,astrologerName:String(a.name||"Astrologer"),
-      chatPrice,originalChatPrice,offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,offerPromoCode:offerQuote.promoCode||"",offerDiscountAmount:offerQuote.discountAmount||0,offerBannerText:offerQuote.bannerText||"",offerDisplayMode:offerQuote.displayMode||"hidden",privateAstrologerCommissionRate,privateAdminCommissionRate,adminAmount,astrologerAmount,
+      chatPrice,originalChatPrice,privateAstrologerCommissionRate,privateAdminCommissionRate,adminAmount,astrologerAmount,
       amount:chatPrice,status:"awaiting_payment",paymentStatus:"order_created",allocationStatus:"selected_astrologer",
       birthDetails:{name:customerName,birthDate:String(birth.birthDate),birthTime:String(birth.birthTime),birthPlace:String(birth.birthPlace).trim(),birthGender:String(birth.birthGender||""),timezone:"Asia/Kolkata",utcOffsetMinutes:330},
       razorpayOrderId:order.id,paymentCurrency:"INR",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
     });
-    res.json({success:true,consultationId,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,originalAmount:offerQuote.originalAmount,offerId:offerQuote.offerId||null,offerName:offerQuote.offerName||null,promoCode:offerQuote.promoCode||"",discountAmount:offerQuote.discountAmount||0,offerBannerText:offerQuote.bannerText||""});
+    res.json({success:true,consultationId,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,originalAmount:originalChatPrice});
     setImmediate(async()=>{
       const customerEmail=String(user.email||await getUserEmail(user.uid)||"").trim();
       await Promise.allSettled([
@@ -3685,7 +3454,6 @@ app.post("/private-consultation/verify-payment", express.json({limit:"15kb"}), a
       setImmediate(async()=>{
         try{
           await Promise.allSettled([
-            consumeOfferAfterPayment({uid:user.uid,service:"private_consultation",referenceId:consultationId,paymentId:customerPaymentId,quote:{offerId:c.offerId||null,offerName:c.offerName||null,promoCode:c.offerPromoCode||"",originalAmount:Number(c.originalChatPrice||c.chatPrice||c.amount||0),finalAmount:Number(c.chatPrice||c.amount||0),discountAmount:Number(c.offerDiscountAmount||0)}}),
             addAdminPrivateNotification("private_payment_received","Private Consultation Payment Received",`${c.customerName||"Customer"} paid ₹${Number(c.chatPrice||c.amount||0).toFixed(2)} for ${c.astrologerName||"the selected astrologer"}.`,consultationId,{customerId:c.customerId,astrologerId:c.astrologerId}),
             db.collection("smv_notifications").add({userId:c.customerId,type:"private_consultation_payment",title:"Private consultation payment successful",message:autoAllow?`Your private consultation is now visible to ${c.astrologerName||"the selected astrologer"}.`:`Your private consultation with ${c.astrologerName||"the selected astrologer"} is waiting for Admin approval.`,consultationId,paymentId:customerPaymentId,createdAt:FieldValue.serverTimestamp(),read:false})
           ]);
@@ -3742,18 +3510,11 @@ app.post("/create-order", express.json(), async (req, res) => {
         return res.status(400).json({ error: "Complete customer birth details and question are required." });
       }
 
-      const quote = await resolveOfferForCustomer({
-        uid:user.uid, service:"public_question", originalAmount:configuredPrice,
-        promoCode:req.body?.promoCode
-      });
+      const questionAmount = configuredPrice;
       q = {
         customerId:user.uid, customerEmail:user.email || null, questionId,
         customerName, birthName:customerName, question:questionText,
-        amount:quote.finalAmount, originalAmount:quote.originalAmount,
-        offerId:quote.offerId || null, offerName:quote.offerName || null,
-        offerPromoCode:quote.promoCode || "", offerDiscountAmount:quote.discountAmount || 0,
-        offerBannerText:quote.bannerText || "", offerDisplayMode:quote.displayMode || "hidden",
-        offerLockedAt:FieldValue.serverTimestamp(),
+        amount:questionAmount, originalAmount:questionAmount,
         status:"awaiting_payment", paymentStatus:"pending", allocationStatus:"awaiting_admin",
         birthDetails:{
           name:customerName, birthDate:String(birth.birthDate), birthTime:String(birth.birthTime),
@@ -3860,10 +3621,7 @@ app.post("/create-order", express.json(), async (req, res) => {
     return res.json({
       success:true, questionId, orderId:order.id, keyId:RAZORPAY_KEY_ID,
       amount:order.amount, currency:order.currency,
-      originalAmount:Number(q.originalAmount || q.amount || 0),
-      offerId:q.offerId || null, offerName:q.offerName || null,
-      promoCode:q.offerPromoCode || "", discountAmount:Number(q.offerDiscountAmount || 0),
-      offerBannerText:q.offerBannerText || ""
+      originalAmount:Number(q.originalAmount || q.amount || 0)
     });
   } catch (e) {
     console.error("Create order error:", e);
@@ -3887,8 +3645,6 @@ async function markQuestionPaid(questionId, orderId, paymentId, signature, sourc
         already:true, customerId:q.customerId, customerPaymentId:q.customerPaymentId || null,
         paymentRecordedAt:q.paymentRecordedAt || null, amount:Number(q.amount || 0),
         question:String(q.question || ""), customerEmail:String(q.customerEmail || ""),
-        offerId:q.offerId || null, offerName:q.offerName || null, offerPromoCode:q.offerPromoCode || "",
-        originalAmount:Number(q.originalAmount || q.amount || 0), offerDiscountAmount:Number(q.offerDiscountAmount || 0)
       };
     }
     const amount = Number(q.amount || 0);
@@ -3918,8 +3674,6 @@ async function markQuestionPaid(questionId, orderId, paymentId, signature, sourc
       already:false, customerId:q.customerId, customerPaymentId, paymentRecordedAt,
       amount, question:String(q.question || ""), status:nextStatus,
       customerEmail:String(q.customerEmail || ""),
-      offerId:q.offerId || null, offerName:q.offerName || null, offerPromoCode:q.offerPromoCode || "",
-      originalAmount:Number(q.originalAmount || q.amount || 0), offerDiscountAmount:Number(q.offerDiscountAmount || 0)
     };
   });
 
@@ -3936,15 +3690,6 @@ async function markQuestionPaid(questionId, orderId, paymentId, signature, sourc
               : `Your payment was verified. Your question is now waiting for Admin approval. Payment ID: ${result.customerPaymentId || "N/A"}.`,
             paymentId:result.customerPaymentId || null, razorpayPaymentId:paymentId || null,
             questionId, createdAt:FieldValue.serverTimestamp(), read:false
-          }),
-          consumeOfferAfterPayment({
-            uid:result.customerId, service:"public_question", referenceId:questionId,
-            paymentId:result.customerPaymentId || paymentId,
-            quote:{
-              offerId:result.offerId, offerName:result.offerName,
-              promoCode:result.offerPromoCode || "", originalAmount:result.originalAmount,
-              finalAmount:amount, discountAmount:result.offerDiscountAmount
-            }
           }),
           customerEmail ? sendSystemEmail({
             to:[customerEmail, ADMIN_EMAIL], subject:"SMV ASTRO — Payment Successful", replyTo:ADMIN_EMAIL,
