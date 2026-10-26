@@ -2399,7 +2399,7 @@ function smvBindCustomerWallet(){
    }
    if(requestAmount!==amount){requestKey=smvWalletNewRequestKey();requestAmount=amount;}
    if(submit)submit.disabled=true;
-   smvWalletSetMessage('Creating a Razorpay Test Mode recharge order…');
+   smvWalletSetMessage('Creating Payment');
    try{
     const checkoutReady=ensureRazorpayCheckout();
     const order=await renderApi('/wallet/recharge/create-order',{method:'POST',body:JSON.stringify({amount,idempotencyKey:requestKey})});
