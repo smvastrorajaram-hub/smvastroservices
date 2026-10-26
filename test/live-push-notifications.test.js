@@ -104,7 +104,7 @@ test('Customer Dashboard remains usable when consultation reads hit a Firestore 
 test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
-  assert.ok(frontend.includes('let smvLiveEventStreamConnected=false;'));
+  assert.ok(frontend.includes('let smvLiveEventStreamConnected=false'));
   assert.ok(frontend.includes('function smvLiveStartFallbackPolling(){'));
   assert.ok(frontend.includes('if(smvLiveEventStreamConnected||!currentUser'));
   assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
