@@ -12,6 +12,7 @@ const {
   maxAffordableMinutes,
   calculateBookingReserveRelease,
   preparationWindow,
+  scheduledAppointmentStatusForEndedSession,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
@@ -189,6 +190,13 @@ test('Accept starts the three-minute Horoscope preparation window at the accepta
   assert.equal(preparationWindow('invalid timestamp'), null);
 });
 
+
+test('ended scheduled appointments reconcile to terminal status', () => {
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: new Date('2026-10-26T09:00:00.000Z'), endReason: 'participant_ended' }), 'completed');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'rejected' }), 'rejected');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'participant_ended' }), 'cancelled');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'connection_failed' }), 'cancelled');
+});
 
 test('each enabled live mode is available independently or together', () => {
   assert.equal(isAstrologerLiveModeEnabled({liveCallEnabled:true,liveChatEnabled:false}, 'call'), true);
