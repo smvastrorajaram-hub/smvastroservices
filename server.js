@@ -2,6 +2,7 @@ const {createRefundService,bankReferences}=require('./refund-service');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds}=require('./wallet-service');
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
+const {isConfiguredAdminIdentity}=require('./admin-auth');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -392,14 +393,13 @@ async function requireUser(req, res) {
 
 async function isAdminUser(user) {
   if (!user) return false;
-  // Keep the original owner UID while supporting an explicit comma-separated
-  // UID allowlist for existing Admin accounts during controlled migration.
-  if (ADMIN_UIDS.has(String(user.uid || '').trim())) return true;
-  // Firebase custom claims and verified, explicitly configured Admin emails
-  // are deployment-controlled sources; a mutable profile role is not.
-  if (user.admin === true || String(user.role || '').toLowerCase() === 'admin') return true;
-  const email = String(user.email || '').trim().toLowerCase();
-  if (user.email_verified === true && email && ADMIN_AUTH_EMAILS.has(email)) return true;
+  // Support existing Admins via configured UIDs/verified emails, signed Firebase
+  // Admin claims, or the server-managed smv_admins allowlist. Never trust a
+  // mutable smv_users.profile role for privileged server-side actions.
+  if (isConfiguredAdminIdentity(user, {
+    adminUids: ADMIN_UIDS,
+    adminEmails: ADMIN_AUTH_EMAILS
+  })) return true;
   try {
     const snap = await db.collection('smv_admins').doc(user.uid).get();
     return snap.exists;
