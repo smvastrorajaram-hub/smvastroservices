@@ -4587,6 +4587,146 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
+
+let smvPushConfigCache = null;
+function smvPushStatus(message, isError = false) {
+ const target = $('smvPushAlertStatus');
+ if (target) {
+  target.textContent = String(message || '');
+  target.className = isError ? 'small error' : 'small';
+  target.setAttribute('role', 'status');
+  target.setAttribute('aria-live', 'polite');
+ }
+}
+function smvPushBase64UrlToBytes(value) {
+ const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+ const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+ const raw = atob(padded);
+ const bytes = new Uint8Array(raw.length);
+ for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+ return bytes;
+}
+async function smvPushGetConfig() {
+ if (smvPushConfigCache) return smvPushConfigCache;
+ const response = await fetch(BACKEND + '/notifications/push-config', { method: 'GET', cache: 'no-store' });
+ const data = await response.json().catch(() => ({}));
+ if (!response.ok) throw new Error(data.error || 'Phone alert settings could not be loaded.');
+ smvPushConfigCache = data;
+ return data;
+}
+async function smvPushPostSubscription(subscription) {
+ if (!subscription) throw new Error('This browser has no Push subscription. Enable phone alerts again.');
+ await renderApi('/notifications/push/register', {
+  method: 'POST',
+  body: JSON.stringify({
+   subscription: subscription.toJSON(),
+   siteOrigin: location.origin,
+   userAgent: navigator.userAgent
+  })
+ });
+ const button = $('smvPushAlertsToggle');
+ if (button) {
+  button.textContent = 'PHONE ALERTS ENABLED';
+  button.dataset.enabled = '1';
+  button.setAttribute('aria-pressed', 'true');
+ }
+ smvPushStatus('Phone alerts enabled. Allow notifications for SMV ASTRO in your phone/browser settings.');
+}
+async function smvPushEnableAlerts() {
+ const button = $('smvPushAlertsToggle');
+ if (button) button.disabled = true;
+ smvPushStatus('Enabling phone alerts…');
+ try {
+  if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+   throw new Error('This browser does not support background Push alerts. Open SMV ASTRO in an updated HTTPS browser.');
+  }
+  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Notification permission is blocked. Allow notifications for SMV ASTRO in browser settings, then try again.');
+  const config = await smvPushGetConfig();
+  if (config.enabled !== true || !config.publicKey) {
+   throw new Error('The server Push keys are not configured yet. Set WEB_PUSH_PUBLIC_KEY and WEB_PUSH_PRIVATE_KEY in the SMV ASTRO Render backend.');
+  }
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+   subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: smvPushBase64UrlToBytes(config.publicKey)
+   });
+  }
+  await smvPushPostSubscription(subscription);
+ } catch (error) {
+  smvPushStatus(error?.message || String(error), true);
+  if (button && button.dataset.enabled !== '1') {
+   button.textContent = 'ENABLE PHONE ALERTS';
+   button.setAttribute('aria-pressed', 'false');
+  }
+ } finally {
+  if (button) button.disabled = false;
+ }
+}
+async function smvPushSyncExistingSubscription() {
+ if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+  smvPushStatus('Background phone alerts are not supported by this browser.');
+  return;
+ }
+ if (Notification.permission !== 'granted') {
+  smvPushStatus('Tap ENABLE PHONE ALERTS once and allow notifications to receive alerts when the screen is off.');
+  return;
+ }
+ const config = await smvPushGetConfig();
+ if (config.enabled !== true || !config.publicKey) {
+  smvPushStatus('Phone alerts are not configured on the server yet. Existing Live Ringtone works only while the page is running.', true);
+  return;
+ }
+ const registration = await navigator.serviceWorker.ready;
+ const subscription = await registration.pushManager.getSubscription();
+ if (!subscription) {
+  smvPushStatus('Notifications are allowed, but this device is not subscribed yet. Tap ENABLE PHONE ALERTS.');
+  return;
+ }
+ await smvPushPostSubscription(subscription);
+}
+async function smvLiveHandlePushDeepLink(role) {
+ if (String(role || '').toLowerCase() !== 'astrologer') return;
+ const url = new URL(window.location.href);
+ const alertType = String(url.searchParams.get('smvPushType') || '');
+ const alertId = String(url.searchParams.get('smvPushId') || '');
+ if (!alertType || !alertId) return;
+ try {
+  if (alertType === 'live-session') {
+   const list = await renderApi('/live/sessions', { method: 'GET', timeoutMs: 12000 });
+   const session = (list.sessions || []).find(item => String(item.id || '') === alertId && String(item.astrologerUid || '') === String(currentUser?.uid || ''));
+   if (session && session.state === 'ringing') {
+    smvLiveOpenSession(session, null, true);
+   } else {
+    smvLiveShowDashboardMessage('This Live request is no longer ringing. Refresh Live Sessions to view its latest status.');
+   }
+  } else if (alertType === 'live-booking') {
+   const list = await renderApi('/live/bookings/pending', { method: 'GET', timeoutMs: 12000 });
+   smvLiveRenderBookings(list.bookings || []);
+   const host = $('smvLiveBookings');
+   const card = host && Array.from(host.querySelectorAll('[data-live-booking-id]')).find(item => item.dataset.liveBookingId === alertId);
+   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   else host?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+   smvLiveShowDashboardMessage(card ? 'A new Live booking is ready for your review.' : 'Open Pending Bookings to check the latest Live booking status.');
+  } else if (alertType === 'scheduled-booking') {
+   await smvLiveLoadScheduledAppointments();
+   const host = $('smvScheduledBookings');
+   const card = host && Array.from(host.querySelectorAll('[data-scheduled-appointment-id]')).find(item => item.dataset.scheduledAppointmentId === alertId);
+   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   else host?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+   smvLiveShowDashboardMessage(card ? 'A new scheduled Call / Chat booking is ready for your review.' : 'Open Scheduled Call / Chat Bookings to check the latest status.');
+  }
+ } catch (error) {
+  smvLiveShowDashboardMessage('Unable to open the notification item: ' + (error?.message || String(error)));
+ } finally {
+  url.searchParams.delete('smvPushType');
+  url.searchParams.delete('smvPushId');
+  history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+ }
+}
+
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function smvLiveCanonicalMode(session,fallback=''){
  const values=[session?.mode,session?.sessionMode,session?.consultationMode,session?.type,fallback];
@@ -5176,7 +5316,7 @@ function smvLiveRenderScheduledBookings(appointments){
   }else if(status==='waiting_for_online'){
    buttons='<p class="small" style="margin-top:8px">This appointment was moved to the Live queue because the session could not start immediately. Check Pending Bookings above and accept the queued request after going Online.</p>';
   }
-  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="badge">'+modeLabel+'</div><h4 style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(a.email?'<p class="small"><b>Email:</b> '+escapeHtml(a.email)+'</p>':'')+(a.mobile?'<p class="small"><b>Mobile:</b> '+escapeHtml(a.mobile)+'</p>':'')+(isChat?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Chat Question:</b> '+escapeHtml(a.question||'Not provided')+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(!isChat&&a.notes?'<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
+  return '<article class="card" data-scheduled-appointment-id="'+escapeHtml(a.id)+'" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="badge">'+modeLabel+'</div><h4 style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(a.email?'<p class="small"><b>Email:</b> '+escapeHtml(a.email)+'</p>':'')+(a.mobile?'<p class="small"><b>Mobile:</b> '+escapeHtml(a.mobile)+'</p>':'')+(isChat?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Chat Question:</b> '+escapeHtml(a.question||'Not provided')+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(!isChat&&a.notes?'<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
  }).join('');
  host.querySelectorAll('[data-scheduled-respond]').forEach(btn=>btn.onclick=async()=>{
   const appointmentId=String(btn.dataset.appointmentId||''),action=String(btn.dataset.scheduledRespond||'');
@@ -5246,7 +5386,7 @@ async function smvLiveLoadScheduledAppointments(){
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
  if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
- host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+' · Maximum selected cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+'</p><div class="action-row"><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button><button class="btn gray" type="button" data-live-booking-reject="'+escapeHtml(b.id)+'">REJECT BOOKING</button></div></article>').join('');
+ host.innerHTML=bookings.map(b=>'<article class="card" data-live-booking-id="'+escapeHtml(b.id)+'" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+' · Maximum selected cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+'</p><div class="action-row"><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button><button class="btn gray" type="button" data-live-booking-reject="'+escapeHtml(b.id)+'">REJECT BOOKING</button></div></article>').join('');
  host.querySelectorAll('[data-live-booking-accept]').forEach(btn=>btn.onclick=async()=>{
   btn.disabled=true;
   try{const r=await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingAccept)+'/accept',{method:'POST',body:JSON.stringify({})});if(r.session)smvLiveOpenSession(r.session,r.wallet,false);await smvLivePollSessions();}
@@ -5322,7 +5462,7 @@ function smvLiveShowDashboardMessage(message){
 }
 function smvLiveDashboardHtml(role){
  return '<section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
- (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
+ (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button><button class="btn gray" id="smvPushAlertsToggle" type="button" aria-pressed="false">ENABLE PHONE ALERTS</button></div><p class="small" id="smvPushAlertStatus" role="status" aria-live="polite">Enable phone alerts to receive Live Call, Live Chat and Booking alerts while the browser is in the background.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
  (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
@@ -5406,9 +5546,14 @@ async function smvLiveLoadDashboard(role){
  if(set&&!set.dataset.bound){set.dataset.bound='1';set.onclick=saveModes;}
  syncModes();
  const ring=$('smvLiveRingToggle');if(ring&&!ring.dataset.bound){ring.dataset.bound='1';ring.onclick=smvLiveToggleRingtone;}
+ const pushButton=$('smvPushAlertsToggle');if(pushButton&&!pushButton.dataset.bound){pushButton.dataset.bound='1';pushButton.onclick=smvPushEnableAlerts;}
  smvLiveRingButtonSync();
  await reload();
  syncModes();
+ if(role==='astrologer'){
+  smvPushSyncExistingSubscription().catch(error=>smvPushStatus(error?.message||String(error),true));
+  smvLiveHandlePushDeepLink(role).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));
+ }
 }
 function smvLiveBindDashboard(role){
  if(!['customer','astrologer'].includes(role))return;const box=$('dashboardContent');if(!box||$('smvLiveDashboardCard'))return;
