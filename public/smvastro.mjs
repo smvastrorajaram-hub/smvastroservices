@@ -2538,7 +2538,7 @@ async function loadAdminPanelData(background=false){
   const adminData=adminRead(0);
   // Keep every date-based Admin operational list newest-first. Notification arrays
   // are deliberately excluded so their existing behaviour remains untouched.
-  ['astrologers','questions','payments'].forEach(k=>{
+  ['astrologers','payments'].forEach(k=>{
     if(Array.isArray(adminData?.[k]))adminData[k]=smvSortDashboardDesc(adminData[k]);
   });
   if(currentUser?.uid!==adminLoadUid)return;
@@ -2546,7 +2546,7 @@ async function loadAdminPanelData(background=false){
 
   if(!adminData?.success) throw new Error(adminData?.error||'Admin data could not be loaded.');
   const toDocs=(arr)=>({docs:(arr||[]).map(x=>({id:x.id,data:()=>x})),size:(arr||[]).length,empty:!(arr||[]).length});
-  const astros=toDocs(adminData.astrologers), questions=toDocs(adminData.questions), payments=toDocs(adminData.payments);
+  const astros=toDocs(adminData.astrologers), payments=toDocs(adminData.payments);
   if(!currentUser || currentUser.uid!==adminLoadUid || currentUser.uid!==auth?.currentUser?.uid) return;
   smvBindAdminWalletLedger();
   smvLiveBindAdminPricing();
@@ -2556,8 +2556,8 @@ async function loadAdminPanelData(background=false){
   const adminReadErrors=adminData.errors||{};
   const readErrorText=Object.entries(adminReadErrors).filter(([,v])=>v).map(([k,v])=>k+': '+v).join(' | ');
   $('adminDataLoadMsg') && ($('adminDataLoadMsg').innerHTML=readErrorText?'<div class="empty error">Some Admin data could not be loaded: '+escapeHtml(readErrorText)+'</div>':'');
-  const customers=adminData.customerCount==null?'—':Number(adminData.customerCount), questionCount=adminData.questionCount==null?'—':Number(adminData.questionCount), pendingDocs=astros.docs.filter(d=>d.data().status==='pending');
-  $('adminSummary').innerHTML=`<div class="stat">Customers <b>${customers}</b></div><div class="stat">Astrologers <b>${adminData.astrologerCount??astros.size}</b></div><div class="stat">Pending <b>${pendingDocs.length}</b></div><div class="stat">Questions <b>${questionCount}</b></div>`;
+  const customers=adminData.customerCount==null?'—':Number(adminData.customerCount), pendingDocs=astros.docs.filter(d=>d.data().status==='pending');
+  $('adminSummary').innerHTML=`<div class="stat">Customers <b>${customers}</b></div><div class="stat">Astrologers <b>${adminData.astrologerCount??astros.size}</b></div><div class="stat">Pending Applications <b>${pendingDocs.length}</b></div>`;
   const adminQuickLinks=smvEnsureAdminQuickLinks();
   const adminSummaryCard=$('adminSummary')?.closest('.card');
   const apmt=$('adminAstrologerProfileManagementToggle'),apmb=$('adminAstrologerProfileManagementBody');
@@ -2980,19 +2980,31 @@ async function loadAdminPanelData(background=false){
     };
 
   });
-  /* ADMIN EARNINGS HISTORY — display-only ledger from credited answered questions. */
+  /* Active Admin earnings history: completed Live Call / Chat and scheduled bookings only. */
   try {
-    const adminEarnedQuestions = smvSortDashboardDesc(questions.docs.filter(d=>{const q=d.data()||{};return q.status==='answered' && q.commissionStatus==='credited';}));
-    const creditedPayments = payments.docs.filter(d=>{const p=d.data()||{};return String(p.type||'').toLowerCase()==='astrologer_earning' && String(p.status||'').toLowerCase()==='credited';});
+    const livePayments=payments.docs
+      .map(d=>({id:d.id,...(d.data()||{})}))
+      .filter(p=>p.source==='live_session'&&p.type==='astrologer_earning'&&p.status==='credited');
     let adminTotal=0;
-    const questionLedgerIds=new Set();
-    const earningRows=[];
-    adminEarnedQuestions.forEach(d=>{const q=d.data()||{};questionLedgerIds.add(String(d.id));const paid=Number(q.amount||q.customerAmount||0);const astro=Number(q.astrologerCommissionAmount||q.commissionAmount||0);const adminEarn=Math.max(0,Math.round((paid-astro)*100)/100);adminTotal+=adminEarn;const dt=q.commissionCreditedAt||q.answerApprovedAt||q.adminAnswerApprovedAt||q.updatedAt||q.createdAt||null;const customer=q.customerName||q.birthName||q.birthDetails?.name||'Customer';earningRows.push({time:smvDateSortMs(dt),html:`<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Customer:</b> ${escapeHtml(customer)} · <b>Question ID:</b> ${escapeHtml(d.id)}</div><div class="small">${escapeHtml(q.question||'Consultation')}</div><div class="small">Credited: ${escapeHtml(smvDateTime(dt))}</div></div>`});});
-    creditedPayments.filter(d=>{const p=d.data()||{};return !questionLedgerIds.has(String(p.questionId||''));}).forEach(d=>{const p=d.data()||{};const gross=Number(p.grossAmount||0);const astro=Number(p.commissionAmount||p.earningAmount||0);const adminEarn=Math.max(0,Math.round((gross-astro)*100)/100);adminTotal+=adminEarn;const dt=p.creditedAt||p.updatedAt||p.createdAt||null;earningRows.push({time:smvDateSortMs(dt),html:`<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminEarn.toFixed(2)}</b> <span class="success">Admin Earned</span></div><div class="small"><b>Payment ID:</b> ${escapeHtml(p.paymentId||d.id)} · ${p.consultationId?`<b>Private Consultation ID:</b> ${escapeHtml(p.consultationId)}`:`<b>Question ID:</b> ${escapeHtml(p.questionId||'—')}`}</div><div class="small">${p.consultationId?'Private Consultation':'Astrologer'} earning credited</div><div class="small">Credited: ${escapeHtml(smvDateTime(dt))}</div></div>`});});
+    const earningRows=livePayments.map(p=>{
+      const gross=Number(p.grossAmount||0);
+      const astrologerShare=Number(p.commissionAmount??p.earningAmount??0);
+      const adminShare=Number(p.adminCommissionAmount??Math.max(0,Math.round((gross-astrologerShare)*100)/100));
+      adminTotal+=adminShare;
+      const dt=p.commissionCreditedAt||p.createdAt||p.updatedAt||null;
+      const mode=String(p.mode||'chat').toUpperCase();
+      const sessionId=String(p.sessionId||p.bookingId||p.paymentId||p.id);
+      return {
+        time:smvDateSortMs(dt),
+        html:`<div style="padding:12px 0;border-bottom:1px solid #eee"><div><b>₹${adminShare.toFixed(2)}</b> <span class="success">Admin Earnings Credited</span></div><div class="small"><b>Live ${escapeHtml(mode)} / Booking ID:</b> ${escapeHtml(sessionId)}</div><div class="small"><b>Customer:</b> ${escapeHtml(p.customerName||p.customerId||'Customer')} · <b>Astrologer:</b> ${escapeHtml(p.astrologerName||p.astrologerId||'Astrologer')}</div><div class="small">Gross ₹${gross.toFixed(2)} · Astrologer share ₹${astrologerShare.toFixed(2)} · Credited: ${escapeHtml(smvDateTime(dt))}</div></div>`
+      };
+    });
     const adminRows=earningRows.sort((a,b)=>b.time-a.time).map(x=>x.html).join('');
-    
-$('adminEarningsHistory').innerHTML=`<div class="stats-grid" style="margin-bottom:12px"><div class="stat">Total Admin Earnings <b>₹${adminTotal.toFixed(2)}</b></div><div class="stat">Completed Consultations <b>${adminEarnedQuestions.length}</b></div></div>${adminRows||'<div class="empty">No credited admin earnings yet.</div>'}`;
-  } catch(e) { console.warn('Admin earnings history load skipped:',e); if($('adminEarningsHistory'))$('adminEarningsHistory').innerHTML='<div class="empty">Admin earnings history could not be loaded right now.</div>'; }
+    $('adminEarningsHistory').innerHTML=`<div class="stats-grid" style="margin-bottom:12px"><div class="stat">Total Admin Earnings <b>₹${adminTotal.toFixed(2)}</b></div><div class="stat">Credited Live Sessions / Bookings <b>${livePayments.length}</b></div></div>${adminRows||'<div class="empty">No credited Live Call / Chat earnings yet.</div>'}`;
+  } catch(e) {
+    console.warn('Admin Live earnings history load skipped:',e);
+    if($('adminEarningsHistory'))$('adminEarningsHistory').innerHTML='<div class="empty">Live earnings history could not be loaded right now.</div>';
+  }
 
   const reviewsPayload=await renderApi('/admin/reviews-data',{method:'GET'});
   const adminReviewItems=smvSortDashboardDesc(Array.isArray(reviewsPayload?.reviews)?reviewsPayload.reviews:[]).slice(0,50);
