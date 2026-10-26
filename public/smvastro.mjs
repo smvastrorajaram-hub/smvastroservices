@@ -5493,7 +5493,7 @@ async function smvLiveHandlePushOpen(payload = {}){
  }
  if(bookingId){
   const target=document.querySelector('[data-live-booking-accept="'+CSS.escape(bookingId)+'"]')||
-    document.querySelector('[data-scheduled-booking="'+CSS.escape(bookingId)+'"]');
+    document.querySelector('[data-scheduled-respond][data-appointment-id="'+CSS.escape(bookingId)+'"]');
   target?.closest('article')?.scrollIntoView?.({behavior:'smooth',block:'center'});
   smvLiveShowDashboardMessage('Booking alert opened. Review Pending Live Bookings or Scheduled Call / Chat Bookings.');
   return;
