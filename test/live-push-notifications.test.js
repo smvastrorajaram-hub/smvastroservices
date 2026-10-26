@@ -22,6 +22,7 @@ test('Live requests and Live bookings trigger best-effort server-side pushes', (
   assert.match(service, /type: 'live_request'/);
   assert.match(service, /type: 'live_booking'/);
   assert.match(service, /messaging\/registration-token-not-registered/);
+  assert.match(service, /session\.state === 'ringing' && String\(session\.astrologerUid \|\| ''\) === String\(uid\)/);
 });
 
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
