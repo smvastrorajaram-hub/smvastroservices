@@ -89,6 +89,32 @@ test('Explicit login opens a neutral Dashboard shell before Firestore profile an
   assert.ok(frontend.includes('smvEnterInternalView("dashboard",true)'));
 });
 
+test('Customer Dashboard remains usable when consultation reads hit a Firestore quota error', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("const questionReadFailed=!!customerResults[0]?.error||!cr?.success||!Array.isArray(cr.questions);"));
+  assert.ok(frontend.includes("const privateReadFailed=!!customerResults[1]?.error||!privateCr?.success||!Array.isArray(privateCr.consultations);"));
+  assert.ok(frontend.includes("Dashboard opened, but some data is temporarily unavailable."));
+  assert.ok(frontend.includes("Question history is temporarily unavailable. Your records have not been deleted."));
+  assert.ok(frontend.includes("Chat booking history is temporarily unavailable. Your records have not been deleted."));
+  assert.ok(frontend.includes('id="smvCustomerDataRetry"'));
+  assert.ok(frontend.includes("loadDashboard('customer',true)"));
+  assert.ok(!frontend.includes("if(customerResult?.error)throw customerResult.error;"));
+});
+
+test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
+  const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  assert.ok(frontend.includes('let smvLiveEventStreamConnected=false;'));
+  assert.ok(frontend.includes('function smvLiveStartFallbackPolling(){'));
+  assert.ok(frontend.includes('if(smvLiveEventStreamConnected||!currentUser'));
+  assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
+  assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
+  assert.ok(frontend.includes('enabling recovery polling.'));
+  assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
+  assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-firestore-polling-customer-fallback-v1'));
+});
+
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes('async function smvLivePrintReceipt(session)'));
