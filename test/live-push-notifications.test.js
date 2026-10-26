@@ -49,3 +49,14 @@ test('service worker displays background pushes and focuses the app when clicked
   assert.match(worker, /smv-astro-staging/);
   assert.match(worker, /projectId: 'smv-astro'/);
 });
+
+test('Live Chat active modal dimensions are not overridden by generic dialog rules', () => {
+  const css = read('public/smvastro.css');
+  const html = read('public/index.html');
+  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-24px \+ 100vw\)!important/);
+  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-20px \+ 100vw\)!important/);
+  assert.match(css, /\.modalbox:where\(:not\(\.smv-css-island,\.smv-css-island \*\)\):not\(#modal\.smv-live-session-modal \.modalbox\)\{width:calc\(-10px \+ 100vw\)!important/);
+  assert.match(css, /#modal\.smv-live-session-modal\.smv-live-chat-active \.modalbox\{width:min\(calc\(100vw - 16px\),960px\);max-width:960px;height:calc\(100dvh - 16px - env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /#modal\.smv-live-session-modal\.smv-live-chat-active #smvLiveMessages\{display:block;flex:1 1 0%/);
+  assert.match(html, /smvastro\.css\?v=20261026-live-chat-modal-fix-v1/);
+});
