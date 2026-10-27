@@ -5,6 +5,8 @@
 // This script copies; it never deletes source documents or source subcollections.
 const admin = require('firebase-admin');
 const { initializeMultiProjectFirestore, normalizePrivateKey } = require('../multi-project-firestore');
+const { DASHBOARD_READ_REPLICA_COLLECTIONS } = require('../firestore-read-replica-catalog');
+const { applyReplicaChange } = require('../firestore-replica-sync');
 
 function isEnabled(name) {
   return /^(?:1|true|yes|on)$/i.test(String(process.env[name] || '').trim());
@@ -47,6 +49,13 @@ async function copyCollection(source, target, counts, label) {
   });
 }
 
+async function copyReplicaCollection(source, targetDb, collectionName, counts, label) {
+  counts[label] = await forEachPage(source, async doc => {
+    if (!APPLY) return;
+    await applyReplicaChange({ targetDb, collectionName, documentId: doc.id, exists: true, data: doc.data(), sourceVersion: doc.updateTime });
+  });
+}
+
 async function copySessionSubcollection(sourceSessionRef, targetSessionRef, name, counts, label) {
   const source = sourceSessionRef.collection(name);
   const target = targetSessionRef.collection(name);
@@ -60,7 +69,8 @@ async function main() {
     const mirrorFlags = [
       'SMV_SESSION_HISTORY_MIRROR_WRITES',
       'SMV_LIVE_DATA_MIRROR_WRITES',
-      'SMV_CONTENT_MIRROR_WRITES'
+      'SMV_CONTENT_MIRROR_WRITES',
+      'SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES'
     ];
     const missing = mirrorFlags.filter(name => !isEnabled(name));
     if (missing.length) {
@@ -74,7 +84,8 @@ async function main() {
       'SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE',
       'SMV_SESSION_HISTORY_BACKFILL_COMPLETE',
       'SMV_LIVE_DATA_BACKFILL_COMPLETE',
-      'SMV_CONTENT_BACKFILL_COMPLETE'
+      'SMV_CONTENT_BACKFILL_COMPLETE',
+      'SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE'
     ];
     const enabledReads = readFlags.filter(name => isEnabled(name));
     if (enabledReads.length) {
@@ -100,9 +111,12 @@ async function main() {
     }
   };
 
-  await copyCollection(sourceDb.collection('smv_questions'), multi.consultationsDb.collection('smv_questions'), counts, 'questionHistoryDocuments');
-  await copyCollection(sourceDb.collection('smv_private_consultations'), multi.consultationsDb.collection('smv_private_consultations'), counts, 'privateConsultationHistoryDocuments');
+  await copyReplicaCollection(sourceDb.collection('smv_questions'), multi.consultationsDb, 'smv_questions', counts, 'questionHistoryDocuments');
+  await copyReplicaCollection(sourceDb.collection('smv_private_consultations'), multi.consultationsDb, 'smv_private_consultations', counts, 'privateConsultationHistoryDocuments');
   await copyCollection(sourceDb.collection('smv_content'), multi.contentDb.collection('smv_content'), counts, 'publicContentDocuments');
+  for (const collectionName of DASHBOARD_READ_REPLICA_COLLECTIONS) {
+    await copyReplicaCollection(sourceDb.collection(collectionName), multi.consultationsDb, collectionName, counts, 'dashboardReadReplica_' + collectionName);
+  }
 
   counts.endedLiveSessionArchives = 0;
   counts.liveSessionDocumentsChecked = 0;

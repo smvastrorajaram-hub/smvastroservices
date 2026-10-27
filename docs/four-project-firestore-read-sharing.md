@@ -89,3 +89,12 @@ These deploy commands are documentation only; this PR does not deploy Firestore 
 - Live Chat message and WebRTC signal fallback polling deduplicates overlapping requests for a given session. The existing healthy-SSE behavior remains: polling is recovery-only.
 - The primary session transaction no longer performs an extra participant/session read before its own transaction validates the same session.
 - The active Customer Dashboard no longer loads the retired question/private-consultation histories as part of its initial render. The two legacy history APIs remain separate; failure of one does not call or gate the other.
+
+
+## Continuous sync and reconciliation for read replicas
+
+The additional Project 2 replica allowlist includes question/private-consultation records, astrologer profiles, reviews, notifications and quiz questions. Deploy the Cloud Functions triggers in `functions/` to the **source project only**. Supply target service-account credentials through Firebase Functions Secrets, configure `SMV_REPLICA_SOURCE_PROJECT_ID` to the exact source project and `FIREBASE_CONSULTATIONS_PROJECT_ID` to the isolated destination. Keep `SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES=false` until project IDs and permissions are checked.
+
+The copy script includes the same allowlist and uses source-version sidecars to avoid stale backfill overwrites. Run `node scripts/validate-multi-project-firestore.js` for read-only document-ID and content-hash reconciliation. It must report zero missing, extra or mismatched documents before enabling `SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE=true` on the intended Render backend.
+
+Client rules remain deny-all in all secondary databases. The generic replica does not include profile/role identity, Admin allowlists, phone/public-ID registries, counters, payment/Razorpay, Wallet, payout/withdrawal, or active booking/settlement records. They stay authoritative in Project 1 (or Project 5 only after its separate guarded cutover).

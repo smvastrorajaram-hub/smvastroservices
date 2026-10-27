@@ -4,6 +4,8 @@ const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointme
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
+const {isFirestoreQuotaError,readWithQuotaFallback}=require('./firestore-quota-routing');
+const {project2ReadCandidates}=require('./firestore-read-replica-catalog');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -37,6 +39,24 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
+function project1ReadCandidates(collectionName){
+ return project2ReadCandidates({
+  primaryDb:db,
+  replicaDb:multiProjectFirestore.consultationsDb,
+  multiProjectEnabled:multiProjectFirestore.enabled===true,
+  backfillComplete:multiProjectFirestore.dashboardReadReplicaBackfillComplete===true,
+  collectionName
+ });
+}
+async function readProject1WithQuotaFallback(collectionName,read,label){
+ const routed=await readWithQuotaFallback({
+  candidates:project1ReadCandidates(collectionName),
+  read:(candidateDb)=>read(candidateDb),
+  logger:console,
+  label:label||collectionName
+ });
+ return routed.value;
+}
 // Project 5 becomes authoritative for the whole active Wallet + Call/Chat billing domain
 // only after the source integration gate, backfill, and dependency checks are all verified.
 function walletDomainDb(){
@@ -67,23 +87,40 @@ async function readCustomerHistoryCollection(collectionName,uid){
   console.warn('[Multi-project Firestore] Customer-history routing flag is set without a valid SMV_CUSTOMER_HISTORY_CUTOVER_AT; keeping reads on primary.');
   return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
  }
- let snapshots;
- try{
-  snapshots=await Promise.all([
-   multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
-   db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
-   db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
-  ]);
- }catch(error){
-  console.warn('[Multi-project Firestore] Customer-history archive read failed; using primary for '+collectionName+':',error?.message||error);
-  return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
- }
- const [archiveSnap,createdAfterCutover,updatedAfterCutover]=snapshots;
+ const archiveResult=await readWithQuotaFallback({
+  candidates:[
+   {id:String(multiProjectFirestore.projectIds.consultations||'Project 2'),db:multiProjectFirestore.consultationsDb},
+   {id:String(multiProjectFirestore.projectIds.primary||'Project 1'),db}
+  ],
+  read:targetDb=>targetDb===multiProjectFirestore.consultationsDb
+   ? multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get()
+   : readPrimary(),
+  logger:console,
+  label:'Customer history archive read for '+collectionName
+ });
+ const archiveSnap=archiveResult.value;
+ const recentResults=await Promise.allSettled([
+  db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
+  db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
+ ]);
+ const failures=recentResults.filter(result=>result.status==='rejected');
+ const nonQuotaFailure=failures.find(result=>!isFirestoreQuotaError(result.reason));
+ if(nonQuotaFailure)throw nonQuotaFailure.reason;
  const byId=new Map();
  for(const doc of archiveSnap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
- // Primary rows created/updated after cutover override their copied archive version.
- for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
- return [...byId.values()].sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100);
+ // Each successful primary delta query overrides the copied archive by document ID.
+ for(const result of recentResults)if(result.status==='fulfilled'){
+  for(const doc of result.value.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
+ }
+ const rows=[...byId.values()].sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100);
+ if(failures.length){
+  // Return only records that were successfully read and explicitly tell API consumers
+  // that quota prevented a complete merge; never label this result as complete.
+  rows.partial=true;
+  rows.partialSource=archiveResult.source;
+  console.warn('[Multi-project Firestore] Customer-history primary delta quota exhausted; serving archived history as partial data for '+collectionName+'.');
+ }
+ return rows;
 }
 const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
 const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
@@ -1586,7 +1623,7 @@ app.get("/public/astrologers", async (req, res) => {
       res.set("Cache-Control","public, max-age=30, stale-while-revalidate=60");
       return res.json({success:true,astrologers:publicAstrologersCache.data,cached:true});
     }
-    const snap=await sharedPublicRead("astrologers",()=>db.collection("smv_astrologers").where("status","==","approved").limit(200).get());
+    const snap=await sharedPublicRead("astrologers",()=>readProject1WithQuotaFallback("smv_astrologers",sourceDb=>sourceDb.collection("smv_astrologers").where("status","==","approved").limit(200).get(),"public astrologer directory"));
     const checked=await Promise.all(snap.docs.map(async d=>{
       const x=d.data()||{};
       try{
@@ -1693,7 +1730,7 @@ app.get("/public/astrologers/:astrologerId/reviews", async(req,res)=>{
     // stays bounded and index-free: use the astrologer field equality query first.
     // If an old project has no usable field index, return the actual backend error
     // to the browser instead of hiding it behind a generic message.
-    const snap=await sharedPublicRead("reviews:"+astrologerId,()=>db.collection("smv_reviews").where("astrologerId","==",astrologerId).limit(100).get());
+    const snap=await sharedPublicRead("reviews:"+astrologerId,()=>readProject1WithQuotaFallback("smv_reviews",sourceDb=>sourceDb.collection("smv_reviews").where("astrologerId","==",astrologerId).limit(100).get(),"public astrologer reviews"));
     const reviews=snap.docs
       .map(d=>({id:d.id,...d.data()}))
       .filter(r=>r.approved===true || String(r.status||"").toLowerCase()==="approved");
@@ -1713,10 +1750,10 @@ app.get("/customer/reviews", async (req, res) => {
   if (!user) return;
 
   try {
-    const snap = await db.collection("smv_reviews")
+    const snap = await readProject1WithQuotaFallback("smv_reviews",sourceDb=>sourceDb.collection("smv_reviews")
       .where("customerId", "==", user.uid)
       .limit(200)
-      .get();
+      .get(),"customer review status");
 
     const reviews = snap.docs
       .map(d => ({
@@ -2319,7 +2356,9 @@ app.get('/customer/consultations',async(req,res)=>{
  try{
   const history=await readCustomerHistoryCollection('smv_questions',user.uid);
   const questions=history.map(q=>({...q,questionId:q.id}));
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions});
+  const response={success:true,customerId:user.uid,questions};
+  if(history.partial===true){response.partial=true;response.warning='Some recent history may be unavailable while a Firestore read quota is exhausted.';}
+  return res.set('Cache-Control','no-store').json(response);
  }catch(e){
   console.error('Customer consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load customer consultations.',code:e?.code||null});
@@ -2331,7 +2370,9 @@ app.get('/customer/private-consultations',async(req,res)=>{
  try{
   const history=await readCustomerHistoryCollection('smv_private_consultations',user.uid);
   const consultations=history.map(c=>({...c,consultationId:c.id}));
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations});
+  const response={success:true,customerId:user.uid,consultations};
+  if(history.partial===true){response.partial=true;response.warning='Some recent history may be unavailable while a Firestore read quota is exhausted.';}
+  return res.set('Cache-Control','no-store').json(response);
  }catch(e){
   console.error('Customer private consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load private consultations.',code:e?.code||null});
@@ -2374,7 +2415,7 @@ app.post("/admin/astrologer-quiz/load-defaults",express.json({limit:"10kb"}),asy
 });
 app.get("/admin/astrologer-quiz/questions",async(req,res)=>{
   const user=await requireUser(req,res);if(!user)return;if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
-  try{const s=await db.collection("smv_astrologer_quiz_questions").orderBy("order").get();return res.json({success:true,questions:s.docs.map(d=>({id:d.id,...d.data()}))});}
+  try{const s=await readProject1WithQuotaFallback("smv_astrologer_quiz_questions",sourceDb=>sourceDb.collection("smv_astrologer_quiz_questions").orderBy("order").get(),"admin astrologer quiz questions");return res.json({success:true,questions:s.docs.map(d=>({id:d.id,...d.data()}))});}
   catch(e){return res.status(500).json({error:e.message||"Unable to load qualification questions."});}
 });
 app.post("/admin/astrologer-quiz/questions",express.json({limit:"50kb"}),async(req,res)=>{
@@ -2391,7 +2432,7 @@ app.get("/google-form/astrologer-quiz-config",async(req,res)=>{
   try{
     const cfg=await getAstrologerAutoApprovalSettings(true),secret=String(req.get("x-smv-quiz-secret")||req.query?.secret||"");
     if(!cfg.webhookSecret||!secret||!signatureEqual(cfg.webhookSecret,secret))return res.status(401).json({error:"Invalid quiz secret."});
-    const s=await db.collection("smv_astrologer_quiz_questions").where("enabled","==",true).get();
+    const s=await readProject1WithQuotaFallback("smv_astrologer_quiz_questions",sourceDb=>sourceDb.collection("smv_astrologer_quiz_questions").where("enabled","==",true).get(),"Google Form astrologer quiz questions");
     const questions=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>Number(a.order||999)-Number(b.order||999));
     return res.json({success:true,passMark:cfg.passMark,questions});
   }catch(e){return res.status(500).json({error:e.message||"Unable to load Google Form quiz configuration."});}
@@ -2569,7 +2610,7 @@ app.get("/admin/reviews-data", async (req,res)=>{
   const user=await requireUser(req,res);if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const snap=await db.collection("smv_reviews").orderBy("createdAt","desc").limit(50).get();
+    const snap=await readProject1WithQuotaFallback("smv_reviews",sourceDb=>sourceDb.collection("smv_reviews").orderBy("createdAt","desc").limit(50).get(),"admin reviews list");
     const reviews=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,50);
     return res.set('Cache-Control','no-store').json({success:true,reviews});
   }catch(e){
