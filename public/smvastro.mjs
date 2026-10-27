@@ -3694,6 +3694,21 @@ function smvLiveToggleRingtone(){
  }catch(error){console.warn('Incoming melody toggle failed:',error);}
  smvLiveRingButtonSync();
 }
+const SMV_LIVE_SESSION_STATE_RANK=Object.freeze({ringing:0,preparing:1,connecting:2,active:3,ended:4});
+function smvLiveMergeSessionState(previous,incoming){
+ const before=previous&&typeof previous==='object'?previous:{};
+ const next=incoming&&typeof incoming==='object'?incoming:{};
+ const merged={...before,...next};
+ const previousState=String(before.state||before.status||'');
+ const incomingState=String(next.state||next.status||'');
+ const previousRank=SMV_LIVE_SESSION_STATE_RANK[previousState];
+ const incomingRank=SMV_LIVE_SESSION_STATE_RANK[incomingState];
+ // An older Firestore/SSE/poll response must never move a session backwards.
+ // In particular, a delayed "connecting" event must not hide an active Live Chat.
+ if(previousState==='ended'&&incomingState!=='ended')return {...merged,...before,state:'ended',status:'ended'};
+ if(Number.isInteger(previousRank)&&Number.isInteger(incomingRank)&&incomingRank<previousRank)return {...merged,...before};
+ return merged;
+}
 function smvLiveSessionStatusLabel(session){
  const s=String(session?.state||session?.status||'');
  const mode=smvLiveCanonicalMode(session);
@@ -3881,8 +3896,8 @@ function smvLiveApplyChatLayout(session){
 function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  const wasEnded=String(smvLiveCurrentSession?.state||'')==='ended';
- const mergedSession={...smvLiveCurrentSession,...session,id:smvLivePanelSessionId};
- const canonicalMode=smvLiveCanonicalMode(session,smvLiveCurrentSession?.mode);
+ const mergedSession=smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId});
+ const canonicalMode=smvLiveCanonicalMode(mergedSession,smvLiveCurrentSession?.mode);
  if(canonicalMode)mergedSession.mode=canonicalMode;
  smvLiveCurrentSession=mergedSession;
  const s=smvLiveCurrentSession,active=s.state==='active',ringing=s.state==='ringing',call=s.mode==='call';
@@ -3935,8 +3950,12 @@ function smvLiveApplySession(session){
 }
 function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
- if(smvLivePanelSessionId!==id){smvLiveCloseMedia();smvLiveClearTransport();}
- smvLivePanelSessionId=id;smvLiveCurrentSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
+ const samePanelSession=smvLivePanelSessionId===id;
+ if(!samePanelSession){smvLiveCloseMedia();smvLiveClearTransport();}
+ const incomingSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};
+ smvLivePanelSessionId=id;
+ smvLiveCurrentSession=samePanelSession?smvLiveMergeSessionState(smvLiveCurrentSession,incomingSession):incomingSession;
+ smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();
  if(incoming&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&String(session.state||'')==='ringing')smvLiveStartRingtone(id);
  openModal(smvLivePanelHtml(smvLiveCurrentSession,!!incoming));
  const ringSession=$('smvLiveRingToggleSession');if(ringSession)ringSession.onclick=smvLiveToggleRingtone;smvLiveRingButtonSync();
@@ -3955,9 +3974,23 @@ function smvLiveOpenSession(session,wallet,incoming){
   connectChat.disabled=true;connectChat.textContent='CONNECTING CHAT…';
   try{
    const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/ready',{method:'POST',body:JSON.stringify({mediaConnected:false})});
-   if(r.session)smvLiveApplySession(r.session);
+   const responseSession=r.session;
+   if(responseSession){
+    const responseId=String(responseSession.id||responseSession.sessionId||'');
+    if(responseId!==id)throw new Error('The server response did not match this Live Chat session. Reopen the correct session and retry.');
+    if(smvLivePanelSessionId!==id)throw new Error('The Live Chat panel changed while connecting. Open this session again from your Dashboard.');
+    smvLiveApplySession(responseSession);
+   }
+   let chat=$('smvLiveChatArea');
+   if(responseSession?.state==='active'&&smvLivePanelSessionId===id&&(!chat||chat.hidden||smvLiveCurrentSession?.state!=='active'||smvLiveCanonicalMode(smvLiveCurrentSession)!=='chat')){
+    // Re-render from the server-confirmed active session if an out-of-order UI update left the Chat Box hidden.
+    smvLiveOpenSession(responseSession,null,false);
+    chat=$('smvLiveChatArea');
+    smvLivePollMessages(id).catch(()=>{});
+   }
+   const connected=!!responseSession&&responseSession.state==='active'&&smvLivePanelSessionId===id&&smvLiveCurrentSession?.state==='active'&&smvLiveCanonicalMode(smvLiveCurrentSession)==='chat'&&!!chat&&!chat.hidden&&chat.style.display!=='none';
    const result=$('smvLiveSessionResult');
-   if(result)result.textContent=r.session?.state==='active'?'Customer Chat is connected. You can now exchange messages.':'Your readiness is confirmed. Waiting for the Customer to connect.';
+   if(result)result.textContent=connected?'Customer Chat is connected. You can now exchange messages.':responseSession?.state==='active'?'The server started this Chat, but the Chat Box is not ready yet. Reopen this session from your Dashboard.':'Your readiness is confirmed. Waiting for the Customer to connect.';
   }catch(error){smvLiveShowError(error);}
   finally{if(connectChat.isConnected){connectChat.disabled=false;connectChat.textContent='CONNECT CUSTOMER CHAT NOW';}}
  };
@@ -4297,7 +4330,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
  const id=String(session?.id||session?.sessionId||'');
  if(!id)return;
  const previous=smvLiveDashboardSessionsById.get(id)||{};
- const current={...previous,...session,id};
+ const current=smvLiveMergeSessionState(previous,{...session,id});
  smvLiveDashboardSessionsById.set(id,current);
  const updateRow=()=>{
   const host=$('smvLiveDashboardSessions');if(!host)return;
