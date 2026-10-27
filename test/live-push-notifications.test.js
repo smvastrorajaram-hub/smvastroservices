@@ -43,6 +43,12 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   const service = read('live-session-service.js');
   const bookingServer = read('server.js');
   assert.ok(frontend.includes("Request received · Please be patient. Your Astrologer will review it; the session can start at the scheduled time once confirmed."));
+  assert.ok(frontend.includes("Missed · Astrologer did not start/connect within 2 minutes of the scheduled time. Please choose another time."));
+  assert.ok(frontend.includes("Astrologer rejected this booking. No live session was started."));
+  assert.ok(bookingServer.includes("return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;"));
+  assert.ok(service.includes("const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;"));
+  assert.ok(service.includes("currentStatus === 'accepted' && !appointment.liveSessionId && Date.now() >= startDeadlineAt"));
+  assert.ok(service.includes("code: 'SCHEDULED_START_WINDOW_EXPIRED', bookingStatus: 'missed_by_astrologer'"));
   assert.ok(frontend.includes("const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time;"));
   assert.ok(bookingServer.includes('const scheduleEpoch=Date.parse(preferredDate+"T"+preferredTime+":00+05:30")'));
   assert.ok(bookingServer.includes('scheduleEpoch<=Date.now()'));
