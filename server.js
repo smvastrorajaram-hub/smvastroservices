@@ -37,7 +37,6 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
-function customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
 async function mirrorAdminContentPatch(id,patch){
  if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
@@ -63,11 +62,18 @@ async function readCustomerHistoryCollection(collectionName,uid){
   console.warn('[Multi-project Firestore] Customer-history routing flag is set without a valid SMV_CUSTOMER_HISTORY_CUTOVER_AT; keeping reads on primary.');
   return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
  }
- const [archiveSnap,createdAfterCutover,updatedAfterCutover]=await Promise.all([
-  multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
-  db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
-  db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
- ]);
+ let snapshots;
+ try{
+  snapshots=await Promise.all([
+   multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
+   db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
+   db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
+  ]);
+ }catch(error){
+  console.warn('[Multi-project Firestore] Customer-history archive read failed; using primary for '+collectionName+':',error?.message||error);
+  return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
+ }
+ const [archiveSnap,createdAfterCutover,updatedAfterCutover]=snapshots;
  const byId=new Map();
  for(const doc of archiveSnap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
  // Primary rows created/updated after cutover override their copied archive version.
