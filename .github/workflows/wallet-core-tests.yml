@@ -14,6 +14,7 @@ on:
       - 'multi-project-firestore.js'
       - 'test/multi-project-firestore.test.js'
       - 'scripts/backfill-wallet-domain.js'
+      - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
       - 'server.js'
       - 'dashboard-events.js'
@@ -36,6 +37,7 @@ on:
       - 'multi-project-firestore.js'
       - 'test/multi-project-firestore.test.js'
       - 'scripts/backfill-wallet-domain.js'
+      - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
       - 'server.js'
       - 'dashboard-events.js'
@@ -74,6 +76,7 @@ jobs:
           node --check test/admin-auth.test.js
           node --check multi-project-firestore.js
           node --check scripts/backfill-wallet-domain.js
+          node --check scripts/validate-wallet-domain.js
           node --check test/multi-project-firestore.test.js
           node --check wallet-service.js
           node --check live-session-service.js
