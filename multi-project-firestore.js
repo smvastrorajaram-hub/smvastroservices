@@ -9,6 +9,9 @@ const DEFAULT_PROJECT_IDS = Object.freeze({
   content: 'svm-astro'
 });
 const DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services';
+// This preflight PR does not yet route the complete billing domain at runtime.
+// A later, tested integration must deliberately flip this code-level gate.
+const WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false;
 
 const APP_NAMES = Object.freeze({
   consultations: 'smv-multiproject-consultations',
@@ -132,7 +135,8 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     state.walletDomainBackfillComplete = enabledFlag(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE);
     // These two gates intentionally do not trigger data routing by themselves.
     // Runtime cutover must also be wired to the fully tested wallet/session domain.
-    state.walletDomainRuntimeIntegrationVerified = enabledFlag(env.SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED);
+    state.walletDomainRuntimeIntegrationVerified = WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED &&
+      enabledFlag(env.SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED);
     state.walletDomainCutoverComplete = state.walletDomainBackfillComplete &&
       enabledFlag(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE) &&
       enabledFlag(env.SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED) &&
