@@ -39,6 +39,31 @@ const FieldValue = admin.firestore.FieldValue;
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
 function customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
+function customerHistoryCutoverDate(){
+ const raw=String(process.env.SMV_CUSTOMER_HISTORY_CUTOVER_AT||'').trim();
+ if(!raw)return null;
+ const date=new Date(raw);
+ return Number.isFinite(date.getTime())?date:null;
+}
+async function readCustomerHistoryCollection(collectionName,uid){
+ const readPrimary=async()=>db.collection(collectionName).where('customerId','==',uid).limit(100).get();
+ if(!multiProjectFirestore.customerHistoryBackfillComplete)return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
+ const cutover=customerHistoryCutoverDate();
+ if(!cutover){
+  console.warn('[Multi-project Firestore] Customer-history routing flag is set without a valid SMV_CUSTOMER_HISTORY_CUTOVER_AT; keeping reads on primary.');
+  return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
+ }
+ const [archiveSnap,createdAfterCutover,updatedAfterCutover]=await Promise.all([
+  multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).limit(100).get(),
+  db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
+  db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
+ ]);
+ const byId=new Map();
+ for(const doc of archiveSnap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
+ // Primary rows created/updated after cutover override their copied archive version.
+ for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
+ return [...byId.values()].sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100);
+}
 const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
 const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
 if (IS_STAGING_DEPLOYMENT && RAZORPAY_KEY_ID && !RAZORPAY_KEY_ID.startsWith("rzp_test_")) {
@@ -2246,12 +2271,8 @@ app.post('/customer/mark-answer-viewed',express.json({limit:'10kb'}),markViewedR
 app.get('/customer/consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
-  // Legacy question-history data is copied, not moved. Route to the archive only
-  // after its one-time copy is verified and legacy writes are retired.
-  const snap=await customerHistoryDb().collection('smv_questions').where('customerId','==',user.uid).limit(100).get();
-  const questions=snap.docs
-    .map(d=>({id:d.id,questionId:d.id,...d.data()}))
-    .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+  const history=await readCustomerHistoryCollection('smv_questions',user.uid);
+  const questions=history.map(q=>({...q,questionId:q.id}));
   return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions});
  }catch(e){
   console.error('Customer consultations load failed:',e);
@@ -2262,10 +2283,8 @@ app.get('/customer/consultations',async(req,res)=>{
 app.get('/customer/private-consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
-  const snap=await customerHistoryDb().collection('smv_private_consultations').where('customerId','==',user.uid).limit(100).get();
-  const consultations=snap.docs
-    .map(d=>({id:d.id,consultationId:d.id,...d.data()}))
-    .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+  const history=await readCustomerHistoryCollection('smv_private_consultations',user.uid);
+  const consultations=history.map(c=>({...c,consultationId:c.id}));
   return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations});
  }catch(e){
   console.error('Customer private consultations load failed:',e);
