@@ -377,8 +377,11 @@ async function main() {
       sourceDb.collection('smv_users').doc(uid).get(),
       targetDb.collection('smv_users').doc(uid).get()
     ]);
-    if (sourceProfile.exists && !targetProfile.exists) missingUserProfiles.push(uid);
-    else if (sourceProfile.exists && String(sourceProfile.data()?.role || '') !== String(targetProfile.data()?.role || '')) {
+    if (sourceProfile.exists !== targetProfile.exists) {
+      missingUserProfiles.push(uid + (sourceProfile.exists ? ' (missing in Project 5)' : ' (unexpected in Project 5; missing in Project 1)'));
+    } else if (!sourceProfile.exists) {
+      missingUserProfiles.push(uid + ' (profile missing from both projects)');
+    } else if (String(sourceProfile.data()?.role || '') !== String(targetProfile.data()?.role || '')) {
       missingUserProfiles.push(uid + ' (role mismatch)');
     }
   }
