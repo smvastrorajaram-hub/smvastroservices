@@ -279,8 +279,14 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     throw new Error('Live Session service requires Firestore, FieldValue, crypto, auth helpers and Firebase Messaging.');
   }
 
+  const sessionHistoryArchiveWriteDb = multiProjectFirestore?.enabled &&
+    (multiProjectFirestore.sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete)
+    ? multiProjectFirestore.consultationsDb : null;
   const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
-  const liveDataDb = multiProjectFirestore?.liveDataBackfillComplete ? multiProjectFirestore.liveDataDb : null;
+  const liveDataWriteDb = multiProjectFirestore?.enabled ? multiProjectFirestore.liveDataDb : null;
+  const liveDataReadDb = multiProjectFirestore?.liveDataBackfillComplete ? liveDataWriteDb : null;
+  const liveDataMirrorWritesEnabled = multiProjectFirestore?.enabled &&
+    (multiProjectFirestore.liveDataMirrorWritesEnabled || multiProjectFirestore.liveDataBackfillComplete);
   const eventClients = new Map();
   const timeoutBySession = new Map();
   const disconnectByKey = new Map();
@@ -293,20 +299,20 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   function sessionRef(id) { return db.collection(SESSIONS).doc(String(id)); }
   function annotateSessionStorage(data) {
     const next = { ...data };
-    if (sessionHistoryDb) next.historyArchivedToSecondary = false;
-    if (liveDataDb) next.liveAuxStoreReady = true;
+    if (sessionHistoryArchiveWriteDb) next.historyArchivedToSecondary = false;
+    if (liveDataMirrorWritesEnabled || liveDataReadDb) next.liveAuxStoreReady = true;
     return next;
   }
   async function archiveEndedSessionToSecondary(id, session) {
-    if (!sessionHistoryDb || String(session?.state || '').toLowerCase() !== 'ended') return;
-    await sessionHistoryDb.collection(SESSIONS).doc(String(id))
+    if (!sessionHistoryArchiveWriteDb || String(session?.state || '').toLowerCase() !== 'ended') return;
+    await sessionHistoryArchiveWriteDb.collection(SESSIONS).doc(String(id))
       .set({ ...session, historyArchivedToSecondary: true }, { merge: true });
     await sessionRef(id).set({ historyArchivedToSecondary: true, updatedAt: nowTimestamp() }, { merge: true });
   }
   async function mirrorLiveRecordToSecondary(sessionId, collectionName, recordId, record, session) {
-    if (!liveDataDb || session?.liveAuxStoreReady !== true) return;
+    if (!liveDataWriteDb || !liveDataMirrorWritesEnabled) return;
     try {
-      await liveDataDb.collection(SESSIONS).doc(String(sessionId))
+      await liveDataWriteDb.collection(SESSIONS).doc(String(sessionId))
         .collection(collectionName).doc(String(recordId)).set(record, { merge: true });
     } catch (error) {
       // Keep the primary copy authoritative and turn secondary reads off for
@@ -1182,7 +1188,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         wallet: { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved }
       };
     });
-    if (sessionHistoryDb && result.session?.state === 'ended') {
+    if (sessionHistoryArchiveWriteDb && result.session?.state === 'ended') {
       // Best-effort archive after the primary billing transaction has committed.
       // Until the archive/marker is complete, listSessions still reads this
       // session from the primary project via historyArchivedToSecondary=false.
@@ -1943,7 +1949,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;
+      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
       let signalQuery = signalStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
       if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
       const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
@@ -1969,7 +1975,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;
+      const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
       let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
       if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
       const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
