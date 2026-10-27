@@ -2162,6 +2162,9 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    ${smvWalletDashboardCardHtml()}`;
    smvBindCustomerBookingChat();
    smvBindCustomerWallet({load:false});
+   // The fast shell only binds handlers. Load real balance/minutes after this
+   // final Customer Dashboard DOM has mounted, so the request updates live nodes.
+   void smvLoadCustomerWallet();
   }
   // Mount the Live Call/Chat panel only after the role-specific Dashboard DOM exists.
   // Without this call, the render helpers are defined but the controls never enter the DOM.

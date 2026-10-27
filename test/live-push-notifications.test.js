@@ -120,7 +120,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-controls-restored-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-customer-wallet-hydration-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -151,7 +151,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-controls-restored-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-customer-wallet-hydration-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -195,7 +195,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-controls-restored-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-customer-wallet-hydration-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -215,7 +215,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-controls-restored-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-customer-wallet-hydration-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -223,6 +223,25 @@ test('Customer fast shell binds Wallet actions without starting a duplicate init
   assert.ok(frontend.includes("smvBindCustomerWallet({load:false});"));
   assert.ok(frontend.includes("function smvBindCustomerWallet({load=true}={}){"));
   assert.ok(frontend.includes("if(load)smvLoadCustomerWallet();"));
+});
+
+test('Customer Wallet balance and bonus minutes load after the final Dashboard DOM is mounted', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
+  const end = frontend.indexOf('function openPayoutChange()', start);
+  assert.ok(start >= 0 && end > start, 'Dashboard render function exists');
+  const dashboard = frontend.slice(start, end);
+  const walletBind = dashboard.lastIndexOf('smvBindCustomerWallet({load:false});');
+  const walletLoad = dashboard.indexOf('void smvLoadCustomerWallet();', walletBind);
+  const liveBind = dashboard.indexOf("if(role==='customer'||role==='astrologer')smvLiveBindDashboard(role);", walletLoad);
+  assert.ok(walletBind >= 0, 'Wallet action handlers are bound after Customer card render');
+  assert.ok(walletLoad > walletBind, 'Initial Wallet API read starts after the final Customer DOM is present');
+  assert.ok(liveBind > walletLoad, 'Wallet hydration is started without blocking Live Call/Chat dashboard mounting');
+  const shellStart = frontend.indexOf("function smvRenderFastDashboardShell(roleValue='')");
+  const shellEnd = frontend.indexOf('function smvWalletMoney', shellStart);
+  const shell = frontend.slice(shellStart, shellEnd);
+  assert.ok(shellStart >= 0 && shellEnd > shellStart);
+  assert.equal(shell.includes('void smvLoadCustomerWallet();'), false, 'Temporary shell does not start a duplicate Wallet read');
 });
 
 test('Live Chat receipt includes chat history in Print / Save as PDF', () => {
