@@ -619,9 +619,12 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
   assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
-  assert.ok(service.includes('const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);'));
-  assert.ok(service.includes('Initial history may use the completed archive. Incremental reads must use'));
-  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
+  assert.ok(service.includes('async function readSessionAuxiliarySnapshot({ sessionId, collectionName, afterMs, limit, useSecondary })'));
+  assert.ok(service.includes('readWithQuotaFallback({'));
+  assert.ok(service.includes("useSecondary: afterMs <= 0 && loaded.data.liveAuxStoreReady === true && !!liveDataReadDb"));
+  assert.ok(service.includes("useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb"));
+  assert.ok(service.includes("onQuotaFallback: () => sessionRef(sessionId).set({"));
+  assert.ok(service.includes('liveAuxStoreReady: false'));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
@@ -856,7 +859,8 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   assert.ok(service.includes('function sendToParticipants(session, payload)'));
   assert.ok(service.includes('sendTo(session.customerUid, payload);'));
   assert.ok(service.includes('sendTo(session.astrologerUid, payload);'));
-  assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
+  assert.ok(messagesRoute.includes('readSessionAuxiliarySnapshot({'));
+  assert.ok(messagesRoute.includes('useSecondary: afterMs <= 0'));
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
   assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
   assert.ok(frontend.includes('},1500);'));
