@@ -4354,6 +4354,31 @@ function smvLiveScheduledBookingEpoch(a){
  if(check.getUTCFullYear()!==y||check.getUTCMonth()!==m-1||check.getUTCDate()!==d)return NaN;
  return utc-330*60*1000;
 }
+async function smvLiveRefreshScheduledBookingRole(role){
+ const activeRole=String(window.__smvCurrentRole||role||'').toLowerCase();
+ if(activeRole==='astrologer'&&$('smvScheduledBookings')){
+  await smvLiveLoadScheduledAppointments();
+ }else if(activeRole==='customer'&&$('smvLiveCustomerScheduledBookings')){
+  const [scheduled,live]=await Promise.all([
+   renderApi('/customer/appointments',{method:'GET',timeoutMs:12000}),
+   renderApi('/live/sessions',{method:'GET',timeoutMs:12000})
+  ]);
+  smvLiveRenderCustomerScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],live.sessions||[]));
+  smvLiveCustomerAppointmentsPollAt=Date.now();
+ }
+}
+function smvLiveScheduleBookingRefreshRetry(role,attempt=1){
+ if(smvLiveScheduledRefreshTimer){clearTimeout(smvLiveScheduledRefreshTimer);smvLiveScheduledRefreshTimer=null;}
+ const retryDelayMs=Math.min(60_000,5_000*(2**Math.min(attempt-1,4)));
+ smvLiveScheduledRefreshTimer=setTimeout(async()=>{
+  smvLiveScheduledRefreshTimer=null;
+  try{await smvLiveRefreshScheduledBookingRole(role);}
+  catch(error){
+   console.warn('Scheduled booking transition retry failed:',error?.message||error);
+   smvLiveScheduleBookingRefreshRetry(role,attempt+1);
+  }
+ },retryDelayMs);
+}
 function smvLiveScheduleBookingTransitionRefresh(appointments,role){
  if(smvLiveScheduledRefreshTimer){clearTimeout(smvLiveScheduledRefreshTimer);smvLiveScheduledRefreshTimer=null;}
  const now=Date.now();
@@ -4371,20 +4396,10 @@ function smvLiveScheduleBookingTransitionRefresh(appointments,role){
  smvLiveScheduledRefreshTimer=setTimeout(async()=>{
   smvLiveScheduledRefreshTimer=null;
   const activeRole=String(window.__smvCurrentRole||role||'').toLowerCase();
-  try{
-   if(activeRole==='astrologer'&&$('smvScheduledBookings')){
-    await smvLiveLoadScheduledAppointments();
-   }else if(activeRole==='customer'&&$('smvLiveCustomerScheduledBookings')){
-    const [scheduled,live]=await Promise.all([
-     renderApi('/customer/appointments',{method:'GET',timeoutMs:12000}),
-     renderApi('/live/sessions',{method:'GET',timeoutMs:12000})
-    ]);
-    smvLiveRenderCustomerScheduledBookings(smvLiveNormalizeScheduledAppointments(scheduled.appointments||[],live.sessions||[]));
-    smvLiveCustomerAppointmentsPollAt=Date.now();
-   }
-  }catch(error){
+  try{await smvLiveRefreshScheduledBookingRole(activeRole);}
+  catch(error){
    console.warn('Scheduled booking time transition refresh skipped:',error?.message||error);
-   smvLiveScheduleBookingTransitionRefresh(appointments,activeRole);
+   smvLiveScheduleBookingRefreshRetry(activeRole);
   }
  },delay);
 }
@@ -4534,7 +4549,7 @@ function smvLiveNormalizeScheduledAppointments(appointments,sessions){
 }
 function smvLiveRenderCustomerScheduledBookings(appointments){
  const host=$('smvLiveCustomerScheduledBookings');if(!host)return;
- if(!appointments.length){host.innerHTML='<p class="small">No scheduled Call / Chat bookings yet.</p>';return;}
+ if(!appointments.length){smvLiveScheduleBookingTransitionRefresh([],'customer');host.innerHTML='<p class="small">No scheduled Call / Chat bookings yet.</p>';return;}
  const describe=a=>{
   const s=String(a.bookingStatus||a.status||'requested').toLowerCase();
   if(s==='requested')return 'Request received · Please be patient. Your Astrologer will review it; the session can start at the scheduled time once confirmed.';
