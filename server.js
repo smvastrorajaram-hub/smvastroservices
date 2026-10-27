@@ -2113,7 +2113,7 @@ app.post("/admin/edit-question", express.json({limit:"20kb"}), async (req,res)=>
     const snap=await ref.get(); if(!snap.exists) return res.status(404).json({error:"Question not found."});
     const q=snap.data()||{};
     if(["answered","question_rejected"].includes(q.status)) return res.status(409).json({error:"This question can no longer be edited."});
-    await ref.update({question,adminQuestionEditedAt:FieldValue.serverTimestamp(),adminQuestionEditedBy:user.uid});
+    await ref.update({question,adminQuestionEditedAt:FieldValue.serverTimestamp(),adminQuestionEditedBy:user.uid,updatedAt:FieldValue.serverTimestamp()});
     return res.json({success:true,questionId});
   }catch(e){console.error("Admin edit question error:",e);return res.status(500).json({error:e?.message||"Unable to edit question."});}
 });
@@ -3703,6 +3703,7 @@ async function markQuestionPaid(questionId, orderId, paymentId, signature, sourc
     const nextStatus = workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "pending_admin_approval";
     tx.update(qRef, {
       status:nextStatus,
+      updatedAt:FieldValue.serverTimestamp(),
       paymentStatus:"paid",
       allocationStatus:workflow.allowWithoutAdminApproval ? "available_to_astrologers" : "awaiting_admin",
       adminApprovalBypassed:workflow.allowWithoutAdminApproval,
@@ -4223,7 +4224,7 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
         ]);
       }
       if (newStatus === "failed" && stored.questionId) {
-        await db.collection("smv_questions").doc(stored.questionId).set({ status: "payment_failed", paymentStatus: "failed", paymentUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        await db.collection("smv_questions").doc(stored.questionId).set({ status: "payment_failed", paymentStatus: "failed", paymentUpdatedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         const qSnap = await db.collection("smv_questions").doc(stored.questionId).get();
         const q = qSnap.exists ? (qSnap.data() || {}) : {};
         const customerEmail = String(q.customerEmail || stored.customerEmail || await getUserEmail(q.customerId || stored.firebaseUid) || "").trim();
