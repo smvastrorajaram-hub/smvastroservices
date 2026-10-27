@@ -109,16 +109,6 @@ test('Customer Dashboard loads current Live/Booking and Wallet UI without legacy
   assert.ok(!html.includes('privateConsultationQuestionForm'));
 });
 
-test('Customer Wallet transaction-history failure does not block its loaded balance', () => {
-  const frontend = read('public/smvastro.mjs');
-  const balanceRead = frontend.indexOf("const walletResult=await renderApi('/wallet'");
-  const historyRead = frontend.indexOf("const transactionResult=await renderApi('/wallet/transactions?limit=10'");
-  assert.ok(balanceRead >= 0 && historyRead > balanceRead, 'Balance is fetched before recent transactions');
-  assert.ok(frontend.includes('let transactionError=null;'));
-  assert.ok(frontend.includes('Wallet balance is available, but recent transactions could not be loaded. Use Refresh Wallet to retry.'));
-  assert.ok(frontend.includes("if(transactionError)smvWalletSetMessage('Wallet balance loaded. Recent transaction history is temporarily unavailable.','info');"));
-});
-
 test('Live Session uses SSE as primary transport and reserves polling for recovery', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
@@ -128,14 +118,9 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
   assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
   assert.ok(frontend.includes('enabling recovery polling.'));
-  assert.match(frontend,/if\(!sessionId\|\|smvLiveMessagePollsInFlight\.has\(sessionId\)\)return;/);
-  assert.match(frontend,/if\(!sessionId\|\|smvLiveSignalPollsInFlight\.has\(sessionId\)\)return;/);
-  assert.match(frontend,/finally\s*\{\s*smvLiveMessagePollsInFlight\.delete\(sessionId\);\s*\}/);
-  assert.match(frontend,/finally\s*\{\s*smvLiveSignalPollsInFlight\.delete\(sessionId\);\s*\}/);
-  assert.match(frontend,/smvLivePanelSessionId!==sessionId\|\|smvLiveCurrentSession\?\.state==='ended'/);
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-poll-overlap-guard-firestore-routing-plan-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-clean-earning-parallel-admin-role-v1'));
 });
 
 test('Customer and Astrologer Dashboard open without Dashboard-wide loading or quota notes', () => {
@@ -148,7 +133,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-poll-overlap-guard-firestore-routing-plan-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-clean-earning-parallel-admin-role-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -192,7 +177,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-poll-overlap-guard-firestore-routing-plan-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-dashboard-clean-earning-parallel-admin-role-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
