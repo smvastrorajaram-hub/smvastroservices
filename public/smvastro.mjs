@@ -4354,8 +4354,11 @@ function smvLiveRenderScheduledBookings(appointments){
   if(status==='accepted'){
    const t=bookingEpoch(a);
    if(!Number.isFinite(t))return 'Accepted · schedule needs correction';
-   return Date.now()<t?'Accepted · waiting for scheduled time':'Accepted · ready to start';
+   if(Date.now()<t)return 'Accepted · waiting for scheduled time';
+   return Date.now()<t+120_000?'Scheduled time reached · waiting for Astrologer to start (2-minute grace period)':'Missed · Astrologer did not start within 2 minutes of scheduled time';
   }
+  if(status==='rejected')return 'Rejected by Astrologer';
+  if(status==='missed_by_astrologer'||status==='missed')return 'Missed · start window expired (2 minutes after schedule)';
   if(status==='in_progress')return 'Live session started';
   if(status==='waiting_for_online')return 'Queued · set availability Online to continue';
   if(status==='rejected')return 'Rejected';
@@ -4368,7 +4371,8 @@ function smvLiveRenderScheduledBookings(appointments){
   const status=String(a.bookingStatus||a.status||'requested').toLowerCase();
   const birth=a.birthDetails||{};
   const time=bookingEpoch(a);
-  const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time;
+  const startDeadline=Number.isFinite(time)?time+120_000:NaN;
+  const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time&&Date.now()<startDeadline;
   let buttons='';
   if(status==='requested'){
    buttons='<div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn" data-scheduled-respond="accept" data-appointment-id="'+escapeHtml(a.id)+'" type="button">ACCEPT BOOKING</button><button class="btn gray" data-scheduled-respond="reject" data-appointment-id="'+escapeHtml(a.id)+'" type="button">REJECT BOOKING</button></div>';
@@ -4476,7 +4480,7 @@ function smvLiveNormalizeScheduledAppointments(appointments,sessions){
   if(!session||String(session.state||'').toLowerCase()!=='ended')return a;
   const connected=!!session.startedAt||Number(session.connectedDurationMs)>0;
   const reason=String(session.endReason||'').toLowerCase();
-  const status=connected?'completed':(reason==='rejected'?'rejected':'cancelled');
+  const status=connected?'completed':(['rejected','rejected_by_astrologer'].includes(reason)?'rejected':(['connection_failed','no_answer','missed_by_astrologer','scheduled_connection_timeout'].includes(reason)?'missed_by_astrologer':'cancelled'));
   return {...a,bookingStatus:status,status,liveSessionId:liveId||String(session.id||''),liveEndedAt:session.endedAt||a.liveEndedAt||null};
  });
 }
@@ -4486,11 +4490,17 @@ function smvLiveRenderCustomerScheduledBookings(appointments){
  const describe=a=>{
   const s=String(a.bookingStatus||a.status||'requested').toLowerCase();
   if(s==='requested')return 'Request received · Please be patient. Your Astrologer will review it; the session can start at the scheduled time once confirmed.';
-  if(s==='accepted')return 'Accepted · waiting for the scheduled time';
+  if(s==='accepted'){
+   const t=bookingEpoch(a);
+   if(!Number.isFinite(t))return 'Accepted · schedule needs correction';
+   if(Date.now()<t)return 'Accepted · waiting for the scheduled time';
+   return Date.now()<t+120_000?'Scheduled time reached · please wait while the Astrologer starts (2-minute grace period)':'Missed · Astrologer did not start within 2 minutes of the scheduled time';
+  }
   if(s==='waiting_for_online')return 'Queued · waiting for Astrologer to come Online';
   if(s==='in_progress')return 'Horoscope preparation / Live Session in progress';
   if(s==='completed')return 'Completed';
-  if(s==='rejected')return 'Rejected by Astrologer';
+  if(s==='rejected')return 'Astrologer rejected this booking. No live session was started.';
+  if(s==='missed_by_astrologer'||s==='missed')return 'Missed · Astrologer did not start/connect within 2 minutes of the scheduled time. Please choose another time.';
   if(s==='cancelled')return 'Cancelled';
   return s.replaceAll('_',' ');
  };
