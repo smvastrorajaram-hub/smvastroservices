@@ -32,6 +32,7 @@ test('Project 5 remains off by default and preserves the primary database', () =
   assert.equal(result.walletDomainDb, primaryDb);
   assert.equal(result.walletDomainBackfillComplete, false);
   assert.equal(result.walletDomainCutoverComplete, false);
+  assert.equal(result.walletDomainRuntimeIntegrationVerified, false);
   assert.equal(admin.apps.length, 0);
 });
 
@@ -71,11 +72,16 @@ test('Project 5 cannot be cut over until backfill, cutover, and dependency check
   };
   const incomplete = initializeMultiProjectFirestore({ admin, primaryDb, env });
   assert.equal(incomplete.walletDomainCutoverComplete, false);
-  const verified = initializeMultiProjectFirestore({
-    admin: fakeAdmin(),
-    primaryDb,
+  const dependenciesVerified = initializeMultiProjectFirestore({
+    admin: fakeAdmin(), primaryDb,
     env: { ...env, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true' }
   });
+  assert.equal(dependenciesVerified.walletDomainCutoverComplete, false);
+  const verified = initializeMultiProjectFirestore({
+    admin: fakeAdmin(), primaryDb,
+    env: { ...env, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true', SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED: 'true' }
+  });
+  assert.equal(verified.walletDomainRuntimeIntegrationVerified, true);
   assert.equal(verified.walletDomainCutoverComplete, true);
 });
 
