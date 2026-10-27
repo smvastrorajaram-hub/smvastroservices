@@ -33,6 +33,10 @@ test('Scheduled Call and Chat booking form uses optional Notes and no required C
   assert.equal(content.includes('id="smvCallBookingQuestion"'), false);
   assert.ok(content.includes("notes:String($('smvCallBookingNotes')?.value||'').trim(),"));
   assert.ok(content.includes("question:'',"));
+  assert.ok(content.includes('<input id="smvCallBookingMinutes" name="scheduledMinutes" type="number" min="1" max="1440" step="1" value="5" inputmode="numeric" required'), 'duration must be manually entered as whole minutes');
+  assert.equal(content.includes('<select id="smvCallBookingMinutes"'), false, 'duration must not use fixed preset choices');
+  assert.ok(content.includes('Enter 1–1440 whole minutes.'));
+  assert.ok(server.includes('scheduledMinutes<1||scheduledMinutes>1440'), 'server must enforce duration limits');
   assert.equal(content.includes('id="smvCallBookingEmail"'), false, 'scheduled profile booking must not collect Email in the form');
   assert.equal(content.includes('id="smvCallBookingMobile"'), false, 'scheduled profile booking must not collect Mobile in the form');
   assert.equal(content.includes("email:String($('smvCallBookingEmail')?.value||'').trim(),"), false);
