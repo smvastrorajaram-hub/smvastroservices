@@ -63,13 +63,15 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261027-live-chat-natural-source-v4'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-mode-guard-v5'));
+  assert.ok(html.includes('public-content.mjs?v=20261027-live-chat-mode-guard-v5'));
+  assert.ok(service.includes('normalizeLiveSessionMode(d.mode, d.sessionMode, d.consultationMode, d.type, d.kind, d.sessionType, d.consultationType)'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
   const frontend = read('public/smvastro.mjs');
   const helperStart = frontend.indexOf('function smvLiveChatBoxIsVisible(){');
-  const helperEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', helperStart);
+  const helperEnd = frontend.indexOf("function smvLiveOpenSession(session,wallet,incoming,modeHint=''){", helperStart);
   const visibility = frontend.slice(helperStart, helperEnd);
   assert.ok(visibility.includes("!modal||modal.classList.contains('hidden')||!chat||chat.hidden||!messages"));
   assert.ok(visibility.includes('chatRect.width>0&&chatRect.height>0&&messagesRect.width>0&&messagesRect.height>0'));
@@ -713,7 +715,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   assert.ok(merge.includes('incomingRank<previousRank'));
   assert.ok(merge.includes("previousState==='ended'&&incomingState!=='ended'"));
   const applyStart = frontend.indexOf('function smvLiveApplySession(session){');
-  const applyEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', applyStart);
+  const applyEnd = frontend.indexOf("function smvLiveOpenSession(session,wallet,incoming,modeHint=''){", applyStart);
   const apply = frontend.slice(applyStart, applyEnd);
   assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
   const dashboardStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
@@ -747,6 +749,19 @@ test('Live Chat message rendering never marks a message seen before a message bo
 });
 
 
+test('Session mode is preserved across reopen and an unknown mode cannot auto-connect or appear Connected', () => {
+  const frontend = read('public/smvastro.mjs');
+  const content = read('public/public-content.mjs');
+  const service = read('live-session-service.js');
+  assert.ok(frontend.includes("function smvLiveOpenSession(session,wallet,incoming,modeHint=''){"));
+  assert.ok(frontend.includes("const resolvedMode=smvLiveCanonicalMode(session,modeHint)||(samePanelSession?smvLiveCanonicalMode(smvLiveCurrentSession):'');"));
+  assert.ok(frontend.includes("if(s.state==='connecting'&&chat&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
+  assert.ok(frontend.includes("if(s==='active'&&!mode)return 'Session type missing — end this session and restart using the intended Call / Chat button';"));
+  assert.ok(content.includes('window.__smvOpenLiveSession?.(result.session,kind);'));
+  assert.ok(service.includes("if (!['call', 'chat'].includes(mode)) throw httpError(409, 'This Live Session is missing its Call / Chat type."));
+  assert.ok(service.includes('const patch = { [field]: true, mode, updatedAt: nowTimestamp() };'));
+});
+
 test('Live and booked Call/Chat sessions share the same timeout, readiness and settlement lifecycle', () => {
   const live = read('live-session-service.js');
   const frontend = read('public/smvastro.mjs');
@@ -763,7 +778,7 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(scheduled.includes('const accepted = await acceptSession(result.session.id, uid);'));
   assert.ok(scheduled.includes("bookingStatus: isSession ? 'in_progress' : 'waiting_for_online'"));
   assert.ok(directRequest.includes('const result = await createRequest('));
-  assert.ok(frontend.includes("if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
+  assert.ok(frontend.includes("if(s.state==='connecting'&&chat&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
   assert.ok(frontend.includes("id=\"smvLiveConnectChat\""));
   assert.ok(live.includes('const release = reservedAmount - charge;'));
   assert.ok(live.includes('const commission = Number.isFinite(savedAstroPercent)'));
