@@ -29,20 +29,29 @@ Required to initialize all four projects:
 - `FIREBASE_LIVE_DATA_CLIENT_EMAIL` and `FIREBASE_LIVE_DATA_PRIVATE_KEY`
 - `FIREBASE_CONTENT_CLIENT_EMAIL` and `FIREBASE_CONTENT_PRIVATE_KEY`
 
+To prevent gaps while live writes continue, set these **before** running the copy:
+
+- `SMV_SESSION_HISTORY_MIRROR_WRITES=true`
+- `SMV_LIVE_DATA_MIRROR_WRITES=true`
+- `SMV_CONTENT_MIRROR_WRITES=true`
+
+These mirror flags write to the secondary projects but keep secondary reads disabled. They do not move the source of truth or split Wallet/payment transactions.
+
 Project ID overrides are available as `FIREBASE_CONSULTATIONS_PROJECT_ID`, `FIREBASE_LIVE_DATA_PROJECT_ID`, and `FIREBASE_CONTENT_PROJECT_ID`; defaults match the table above. Each credential must belong to its respective secondary project and have only the Firestore access required by the backend.
 
 With the master flag off (the default), the backend uses Project 1 only and does not initialize secondary apps. With the master flag on but credentials missing/IDs duplicated, startup fails fast rather than silently writing to the wrong database. A non-production primary is also blocked from the screenshot-named production secondaries by default.
 
 ## Copy/backfill sequence
 
-1. Install the secondary-project credentials on a staging backend and run the dry run:
+1. Create isolated secondary staging projects and configure their explicit `FIREBASE_*_PROJECT_ID` overrides. Deploy the code with the master flag and the three `*_MIRROR_WRITES` flags enabled, while all `*_BACKFILL_COMPLETE` read flags remain **false**.
+2. Run the dry run:
 
    ```sh
    node scripts/backfill-multi-project-firestore.js
    ```
 
-2. Review counts and test the target service-account permissions. The default command makes no writes.
-3. Run the resumable copy on staging:
+3. Review counts and test the target service-account permissions. The default command makes no writes.
+4. Run the resumable copy while mirror writes stay enabled:
 
    ```sh
    node scripts/backfill-multi-project-firestore.js --apply
@@ -50,14 +59,14 @@ With the master flag off (the default), the backend uses Project 1 only and does
 
    The script copies question/private-consultation history to Project 2, ended Live Session records to Project 2, Live Session `messages` and `signals` subcollections to Project 3, and `smv_content` records to Project 4. It uses merge-set writes and **never deletes source data**. Repeat `--apply` after fixing any reported copy errors; it is idempotent.
 
-4. Compare document counts and sample records in source and destination projects. Confirm both old and new content are visible, ended history is present, and live chat / WebRTC still operate.
-5. Record the cutover boundary as an ISO timestamp in `SMV_CUSTOMER_HISTORY_CUTOVER_AT` before enabling the customer history flag. The two legacy history endpoints merge the copied Project 2 rows with post-cutover primary rows (created or updated since the cutover), keyed by document ID so the newest primary version wins. If the cutover value is missing or invalid, those endpoints fail safe to Project 1.
-6. Only after verification, set the per-domain read flags on the intended backend:
+5. Compare document counts and sample records in source and destination projects. Confirm both old and new content are visible, ended history is present, and live chat / WebRTC still operate.
+6. Record the cutover boundary as an ISO timestamp in `SMV_CUSTOMER_HISTORY_CUTOVER_AT` before enabling the customer history flag. The two legacy history endpoints merge the copied Project 2 rows with post-cutover primary rows (created or updated since the cutover), keyed by document ID so the newest primary version wins. If the cutover value is missing or invalid, those endpoints fail safe to Project 1.
+7. Only after verification, set the per-domain read flags on the intended backend:
    - `SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE=true` — routes the older customer history to Project 2 and merges newer/updated records from Project 1. This flag does not move writes or change the source of truth.
    - `SMV_SESSION_HISTORY_BACKFILL_COMPLETE=true` — reads ended sessions from Project 2 while active and unarchived sessions still fall back to Project 1.
    - `SMV_LIVE_DATA_BACKFILL_COMPLETE=true` — reads messages/signals from Project 3 only for sessions marked ready; a failed mirror switches that session back to Project 1.
    - `SMV_CONTENT_BACKFILL_COMPLETE=true` — routes public content reads and Admin content updates to Project 4.
-7. Run authenticated browser tests for Customer and Astrologer login, live Chat send/receive, WebRTC Call connection, booking, session end/refund/commission, Wallet balance, content publishing, and old content visibility before considering production rollout.
+8. Run authenticated browser tests for Customer and Astrologer login, live Chat send/receive, WebRTC Call connection, booking, session end/refund/commission, Wallet balance, content publishing, and old content visibility before considering production rollout.
 
 ## Firestore security
 
