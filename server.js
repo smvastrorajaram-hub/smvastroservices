@@ -4050,19 +4050,20 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
 
     const financeDb=walletDomainDb();
     const withdrawalRef = financeDb.collection("smv_withdrawals").doc();
-    await withdrawalRef.set({
+    const payoutSnapshotRef = financeDb.collection("smv_withdrawal_payouts").doc(withdrawalRef.id);
+    const createdAt = FieldValue.serverTimestamp();
+    const withdrawalData = {
       astrologerId: user.uid,
       astrologerName: profile.name || user.name || user.displayName || "Astrologer",
       amount,
       withdrawalId,
       status: "pending",
-      createdAt: FieldValue.serverTimestamp(),
-      requestedAt: FieldValue.serverTimestamp()
-    });
-
-    // Private admin-only snapshot. Never place bank details in smv_withdrawals,
-    // because the astrologer is allowed to read their own withdrawal document.
-    await financeDb.collection("smv_withdrawal_payouts").doc(withdrawalRef.id).set({
+      createdAt,
+      requestedAt: createdAt
+    };
+    // Keep the financial withdrawal request and its private payout snapshot atomic
+    // inside the same selected Wallet domain; the browser never receives bank details.
+    const payoutSnapshotData = {
       withdrawalDocId: withdrawalRef.id,
       withdrawalId,
       astrologerId: user.uid,
@@ -4073,8 +4074,12 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       ifsc: String(payout.ifsc || "").trim().toUpperCase(),
       upi: String(payout.upi || "").trim(),
       payoutStatus,
-      createdAt: FieldValue.serverTimestamp()
-    });
+      createdAt
+    };
+    const withdrawalBatch = financeDb.batch();
+    withdrawalBatch.set(withdrawalRef, withdrawalData);
+    withdrawalBatch.set(payoutSnapshotRef, payoutSnapshotData);
+    await withdrawalBatch.commit();
 
     console.log("Withdrawal request created", { astrologerId:user.uid, withdrawalId, amount, payoutStatus });
     return res.json({
