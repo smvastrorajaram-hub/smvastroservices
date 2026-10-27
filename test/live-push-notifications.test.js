@@ -737,7 +737,7 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(frontend.includes("id=\"smvLiveConnectChat\""));
   assert.ok(live.includes('const release = reservedAmount - charge;'));
   assert.ok(live.includes('const commission = Number.isFinite(savedAstroPercent)'));
-  assert.ok(live.includes('const earningRefDoc = earningRef(id);'));
+  assert.ok(live.includes('earningRefDoc = earningRef(id);'));
 });
 
 
