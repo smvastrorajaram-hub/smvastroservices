@@ -2246,10 +2246,9 @@ async function smvGetPublishedContent(force=false){
   if(smvPublishedContentItems)return smvPublishedContentItems;
   if(smvPublishedContentRequest)return smvPublishedContentRequest;
   smvPublishedContentRequest=(async()=>{
-    const snap=await getDocs(query(collection(db,SMV_CONTENT_COLLECTION),where("published","==",true),where("language","==","en")));
-    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>{
-      const av=a.publishedAt?.seconds||a.createdAt?.seconds||0,bv=b.publishedAt?.seconds||b.createdAt?.seconds||0;return bv-av;
-    });
+    const response=await renderApi('/public/content',{method:'GET'});
+    if(!response?.success||!Array.isArray(response.items))throw new Error(response?.error||'Published content is temporarily unavailable.');
+    const items=response.items.sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
     smvPublishedContentItems=items;return items;
   })().finally(()=>{smvPublishedContentRequest=null;});
   return smvPublishedContentRequest;
@@ -4142,8 +4141,37 @@ function smvLiveAppendMessage(m){
  const session=smvLiveCurrentSession||{};const who=document.createElement('b');who.textContent=(m.senderUid===session.astrologerUid?'Astrologer: '+(session.astrologerName||'Astrologer'):'Customer: '+(session.customerName||'Customer'))+' · '+(m.createdAt?new Date(m.createdAt).toLocaleTimeString():new Date().toLocaleTimeString());
  const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0';body.textContent=String(m.text||'');row.append(who,body);host.append(row);host.scrollTop=host.scrollHeight;return row;
 }
-async function smvLivePollMessages(id){try{const suffix=smvLiveMessageSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveMessageSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages'+suffix,{method:'GET',timeoutMs:10000});for(const m of d.messages||[]){const ms=Date.parse(m.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage({ ...m,id:m.id||m.messageId});}}catch(e){if(!$('smvLiveSessionResult'))return;}}
-async function smvLivePollSignals(id){try{const suffix=smvLiveSignalSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveSignalSinceMs):'';const d=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/signals'+suffix,{method:'GET',timeoutMs:10000});for(const s of d.signals||[]){const ms=Date.parse(s.createdAt||'');const processed=await smvLiveProcessSignal({...s,id:s.id||s.signalId});if(processed&&Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);}}catch(e){if(!$('smvLiveSessionResult'))return;}}
+const smvLiveMessagePollsInFlight=new Map();
+const smvLiveSignalPollsInFlight=new Map();
+async function smvLivePollMessages(id){
+ const key=String(id||'');if(!key)return;
+ const pending=smvLiveMessagePollsInFlight.get(key);if(pending)return pending;
+ const request=(async()=>{try{
+  const suffix=smvLiveMessageSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveMessageSinceMs):'';
+  const d=await renderApi('/live/sessions/'+encodeURIComponent(key)+'/messages'+suffix,{method:'GET',timeoutMs:10000});
+  for(const m of d.messages||[]){
+   const ms=Date.parse(m.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);
+   smvLiveAppendMessage({...m,id:m.id||m.messageId});
+  }
+ }catch(e){if(!$('smvLiveSessionResult'))return;}})();
+ smvLiveMessagePollsInFlight.set(key,request);
+ try{return await request;}finally{if(smvLiveMessagePollsInFlight.get(key)===request)smvLiveMessagePollsInFlight.delete(key);}
+}
+async function smvLivePollSignals(id){
+ const key=String(id||'');if(!key)return;
+ const pending=smvLiveSignalPollsInFlight.get(key);if(pending)return pending;
+ const request=(async()=>{try{
+  const suffix=smvLiveSignalSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveSignalSinceMs):'';
+  const d=await renderApi('/live/sessions/'+encodeURIComponent(key)+'/signals'+suffix,{method:'GET',timeoutMs:10000});
+  for(const s of d.signals||[]){
+   const ms=Date.parse(s.createdAt||'');
+   const processed=await smvLiveProcessSignal({...s,id:s.id||s.signalId});
+   if(processed&&Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
+  }
+ }catch(e){if(!$('smvLiveSessionResult'))return;}})();
+ smvLiveSignalPollsInFlight.set(key,request);
+ try{return await request;}finally{if(smvLiveSignalPollsInFlight.get(key)===request)smvLiveSignalPollsInFlight.delete(key);}
+}
 function smvLiveStopFallbackPolling(){
  if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);
  if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);
