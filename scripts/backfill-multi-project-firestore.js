@@ -66,6 +66,10 @@ async function main() {
     if (missing.length) {
       throw new Error('Refusing to copy while writes can race with the backfill. Enable these mirror flags first: ' + missing.join(', '));
     }
+    const cutoverAt = new Date(String(process.env.SMV_CUSTOMER_HISTORY_CUTOVER_AT || '').trim());
+    if (!process.env.SMV_CUSTOMER_HISTORY_CUTOVER_AT || !Number.isFinite(cutoverAt.getTime())) {
+      throw new Error('Set a valid SMV_CUSTOMER_HISTORY_CUTOVER_AT ISO timestamp before the first copy/dry-run so concurrent Customer history writes can be reconciled.');
+    }
     const readFlags = [
       'SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE',
       'SMV_SESSION_HISTORY_BACKFILL_COMPLETE',
