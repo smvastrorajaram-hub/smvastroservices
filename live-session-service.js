@@ -274,11 +274,13 @@ function liveSessionSafeView(id, data) {
   };
 }
 
-function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser, admin }) {
+function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser, admin, multiProjectFirestore = null }) {
   if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser || !admin || typeof admin.messaging !== 'function') {
     throw new Error('Live Session service requires Firestore, FieldValue, crypto, auth helpers and Firebase Messaging.');
   }
 
+  const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
+  const liveDataDb = multiProjectFirestore?.liveDataBackfillComplete ? multiProjectFirestore.liveDataDb : null;
   const eventClients = new Map();
   const timeoutBySession = new Map();
   const disconnectByKey = new Map();
@@ -289,6 +291,30 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   }
 
   function sessionRef(id) { return db.collection(SESSIONS).doc(String(id)); }
+  function annotateSessionStorage(data) {
+    const next = { ...data };
+    if (sessionHistoryDb) next.historyArchivedToSecondary = false;
+    if (liveDataDb) next.liveAuxStoreReady = true;
+    return next;
+  }
+  async function archiveEndedSessionToSecondary(id, session) {
+    if (!sessionHistoryDb || String(session?.state || '').toLowerCase() !== 'ended') return;
+    await sessionHistoryDb.collection(SESSIONS).doc(String(id))
+      .set({ ...session, historyArchivedToSecondary: true }, { merge: true });
+    await sessionRef(id).set({ historyArchivedToSecondary: true, updatedAt: nowTimestamp() }, { merge: true });
+  }
+  async function mirrorLiveRecordToSecondary(sessionId, collectionName, recordId, record, session) {
+    if (!liveDataDb || session?.liveAuxStoreReady !== true) return;
+    try {
+      await liveDataDb.collection(SESSIONS).doc(String(sessionId))
+        .collection(collectionName).doc(String(recordId)).set(record, { merge: true });
+    } catch (error) {
+      // Keep the primary copy authoritative and turn secondary reads off for
+      // this session so a delayed/failed mirror can never hide a live message.
+      await sessionRef(sessionId).set({ liveAuxStoreReady: false, updatedAt: nowTimestamp() }, { merge: true }).catch(() => {});
+      console.warn('[Live Session] Secondary ' + collectionName + ' mirror skipped for ' + sessionId + ':', error?.message || error);
+    }
+  }
   function bookingRef(id) { return db.collection(BOOKINGS).doc(String(id)); }
   function walletRef(uid) { return db.collection(WALLETS).doc(String(uid)); }
   function astroRef(uid) { return db.collection(ASTROLOGERS).doc(String(uid)); }
@@ -718,13 +744,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       const customer = customerSnap.data() || {};
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
-      const data = makeSession({
+      const data = annotateSessionStorage(makeSession({
         id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
         reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'ringing', origin: 'direct', fingerprint, commission, appointmentId: scheduledAppointmentId
-      });
+      }));
       tx.create(sRef, data);
       const nextCount = liveCount + 1;
       tx.set(aRef, {
@@ -850,7 +876,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
           sessionId: id, reservationType: 'live_booking'
         });
       }
-      const data = makeSession({
+      const data = annotateSessionStorage(makeSession({
         id, customerUid: booking.customerUid, astrologerUid: uid, astroProfile: astro,
         customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
         birthDetails: booking.birthDetails || null,
@@ -858,7 +884,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'preparing', origin: 'accepted_booking', fingerprint, commission,
         appointmentId: booking.appointmentId || ''
-      });
+      }));
       data.acceptedAt = data.preparationStartedAt || new Date();
       tx.create(sRef, data);
       tx.set(bRef, {
@@ -1156,6 +1182,13 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         wallet: { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved }
       };
     });
+    if (sessionHistoryDb && result.session?.state === 'ended') {
+      // Best-effort archive after the primary billing transaction has committed.
+      // Until the archive/marker is complete, listSessions still reads this
+      // session from the primary project via historyArchivedToSecondary=false.
+      void archiveEndedSessionToSecondary(id, result.session).catch(error =>
+        console.warn('[Live Session] Secondary history archive deferred:', error?.message || error));
+    }
     untrackSession(id, result.session.customerUid, result.session.astrologerUid);
     if (!result.alreadyProcessed) {
       sendToParticipants(result.session, {
@@ -1281,7 +1314,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!body || body.length > MAX_MESSAGE_CHARS) {
       throw httpError(400, 'Enter a message of up to 4,000 characters.', 'LIVE_MESSAGE_INVALID');
     }
-    await loadSessionForParticipant(sessionId, senderUid);
+    const loadedSession = await loadSessionForParticipant(sessionId, senderUid);
     const sRef = sessionRef(sessionId);
     const msgRef = sRef.collection('messages').doc(crypto.randomUUID());
     const message = {
@@ -1306,7 +1339,10 @@ async function rejectOrCancel(sessionId, user, reason) {
     });
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: message.createdAt.toISOString() };
+    // Deliver the realtime event immediately; the primary transaction already
+    // persisted it. Mirror failures fall back to primary reads for this session.
     sendTo(recipientUid, { type: 'live.chat.message', message: safe });
+    await mirrorLiveRecordToSecondary(sessionId, 'messages', msgRef.id, message, session);
     return { success: true, message: safe };
   }
 
@@ -1318,7 +1354,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     const serialized = JSON.stringify(payload ?? {});
     if (serialized.length > MAX_SIGNAL_BYTES) throw httpError(413, 'WebRTC signal is too large.', 'LIVE_SIGNAL_TOO_LARGE');
     if (!payload || typeof payload !== 'object') throw httpError(400, 'WebRTC signal payload is invalid.', 'LIVE_SIGNAL_INVALID');
-    await loadSessionForParticipant(sessionId, senderUid);
+    const loadedSession = await loadSessionForParticipant(sessionId, senderUid);
     const sRef = sessionRef(sessionId);
     const signalRef = sRef.collection('signals').doc(crypto.randomUUID());
     const data = {
@@ -1352,14 +1388,36 @@ async function rejectOrCancel(sessionId, user, reason) {
       type: 'live.call.signal',
       signal: { id: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType, payload, createdAt: data.createdAt.toISOString() }
     });
+    await mirrorLiveRecordToSecondary(sessionId, 'signals', signalRef.id, data, session);
     return { success: true, signalId: signalRef.id };
   }
 
   async function listSessions(uid, role) {
     const field = role === 'astrologer' ? 'astrologerUid' : 'customerUid';
-    const snap = await db.collection(SESSIONS).where(field, '==', uid).limit(100).get();
-    const rows = snap.docs.map(d => liveSessionSafeView(d.id, d.data() || {}));
-    rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
+    let rows;
+    if (sessionHistoryDb) {
+      const [activeSnap, archiveSnap, pendingArchiveSnap] = await Promise.all([
+        db.collection(SESSIONS).where(field, '==', uid)
+          .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active']).limit(100).get(),
+        sessionHistoryDb.collection(SESSIONS).where(field, '==', uid)
+          .where('state', '==', 'ended').limit(100).get(),
+        db.collection(SESSIONS).where(field, '==', uid)
+          .where('state', '==', 'ended').where('historyArchivedToSecondary', '==', false).limit(100).get()
+      ]);
+      const byId = new Map();
+      for (const doc of archiveSnap.docs) byId.set(doc.id, doc.data() || {});
+      // Include active primary records and any ended records whose secondary copy
+      // is pending/failed. The primary remains authoritative for wallet settlement.
+      for (const doc of activeSnap.docs) byId.set(doc.id, doc.data() || {});
+      for (const doc of pendingArchiveSnap.docs) byId.set(doc.id, doc.data() || {});
+      rows = [...byId.entries()].map(([id, data]) => liveSessionSafeView(id, data));
+      rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
+      rows = rows.slice(0, 100);
+    } else {
+      const snap = await db.collection(SESSIONS).where(field, '==', uid).limit(100).get();
+      rows = snap.docs.map(d => liveSessionSafeView(d.id, d.data() || {}));
+      rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
+    }
     const due = rows.filter(row => row.state === 'active' && row.startedAt &&
       Date.now() >= Date.parse(row.startedAt) + row.minutes * 60_000);
     const settled = new Map();
@@ -1858,7 +1916,8 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      let signalQuery = sessionRef(req.params.id).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;
+      let signalQuery = signalStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
       if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
       const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
       const signals = snap.docs.map(d => {
@@ -1883,7 +1942,8 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      let messageQuery = sessionRef(req.params.id).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;
+      let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
       if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
       const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
       const messages = snap.docs.map(d => {
