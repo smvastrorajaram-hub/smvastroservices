@@ -3876,6 +3876,18 @@ function smvLiveApplyChatLayout(session){
  if(input&&active){input.style.minHeight='68px';input.style.maxHeight='180px';input.style.fontSize='16px';input.style.lineHeight='1.5';input.style.boxSizing='border-box';}else if(input){input.style.minHeight='';input.style.maxHeight='';input.style.fontSize='';input.style.lineHeight='';input.style.boxSizing='';}
  if(send&&active){send.style.minHeight='48px';send.style.alignSelf='stretch';send.style.fontSize='15px';}else if(send){send.style.minHeight='';send.style.alignSelf='';send.style.fontSize='';}
 }
+function smvLiveUpdateDashboardSessionRow(session){
+ const host=$('smvLiveDashboardSessions');
+ const id=String(session?.id||session?.sessionId||'');
+ if(!host||!id)return false;
+ const button=[...host.querySelectorAll('[data-live-open]')].find(item=>String(item.dataset.liveOpen||'')===id);
+ const card=button?.closest('article.card');
+ if(!card)return false;
+ const paragraphs=card.querySelectorAll('p.small');
+ if(paragraphs[0])paragraphs[0].textContent='Status: '+smvLiveSessionStatusLabel(session)+' · Rate '+smvLiveMoney(session.ratePerMinutePaise)+'/min';
+ if(paragraphs[1])paragraphs[1].textContent='Charged: '+smvLiveMoney(session.actualChargePaise)+' · Released: '+smvLiveMoney(session.releasedAmountPaise);
+ return true;
+}
 function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  const wasEnded=String(smvLiveCurrentSession?.state||'')==='ended';
@@ -4210,6 +4222,7 @@ function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
  if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
   const s=ev.session;if(!s)return;
+  smvLiveUpdateDashboardSessionRow(s);
   if(s.state==='ringing'&&s.astrologerUid===currentUser?.uid&&s.id!==smvLivePanelSessionId){smvLiveStartRingtone(s.id);smvLiveOpenSession(s,null,true);}
   else if(s.id===smvLivePanelSessionId){if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();smvLiveApplySession(s);}
   else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
@@ -4266,6 +4279,7 @@ async function smvLivePollSessions(){
  try{
   const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
   for(const session of list.sessions||[]){
+   smvLiveUpdateDashboardSessionRow(session);
    if(session.state==='ringing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==session.id){smvLiveStartRingtone(session.id);smvLiveOpenSession(session,null,true);}
    else if(session.id===smvLivePanelSessionId){if(session.state!=='ringing'&&smvLiveRingCurrentId===String(session.id||''))smvLiveStopRingtone();smvLiveApplySession(session);}
    else if(['preparing','connecting','active'].includes(session.state)&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
