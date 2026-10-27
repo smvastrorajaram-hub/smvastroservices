@@ -212,7 +212,14 @@ async function main() {
   for (const data of all[9].source.values()) {
     if (data.astrologerId) { participantIds.add(String(data.astrologerId)); astrologerIds.add(String(data.astrologerId)); }
   }
-  for (const id of all[13].source.keys()) appointmentIds.add(id);
+  for (const [appointmentId, appointment] of all[13].source) {
+    appointmentIds.add(appointmentId);
+    if (appointment.customerUid) participantIds.add(String(appointment.customerUid));
+    if (appointment.astrologerUid) {
+      participantIds.add(String(appointment.astrologerUid));
+      astrologerIds.add(String(appointment.astrologerUid));
+    }
+  }
 
   await compareNamedIds('appointmentsLinkedToSessions',
     appointmentIds, sourceDb.collection('smv_appointments'), targetDb.collection('smv_appointments'), report);
