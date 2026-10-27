@@ -3,6 +3,7 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
+const {initializeMultiProjectFirestore}=require('./multi-project-firestore');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -35,6 +36,9 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
+const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
+function customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}
+function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
 const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
 const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
 if (IS_STAGING_DEPLOYMENT && RAZORPAY_KEY_ID && !RAZORPAY_KEY_ID.startsWith("rzp_test_")) {
@@ -2242,7 +2246,9 @@ app.post('/customer/mark-answer-viewed',express.json({limit:'10kb'}),markViewedR
 app.get('/customer/consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
-  const snap=await db.collection('smv_questions').where('customerId','==',user.uid).limit(100).get();
+  // Legacy question-history data is copied, not moved. Route to the archive only
+  // after its one-time copy is verified and legacy writes are retired.
+  const snap=await customerHistoryDb().collection('smv_questions').where('customerId','==',user.uid).limit(100).get();
   const questions=snap.docs
     .map(d=>({id:d.id,questionId:d.id,...d.data()}))
     .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
@@ -2256,7 +2262,7 @@ app.get('/customer/consultations',async(req,res)=>{
 app.get('/customer/private-consultations',async(req,res)=>{
  const user=await requireUser(req,res);if(!user)return;
  try{
-  const snap=await db.collection('smv_private_consultations').where('customerId','==',user.uid).limit(100).get();
+  const snap=await customerHistoryDb().collection('smv_private_consultations').where('customerId','==',user.uid).limit(100).get();
   const consultations=snap.docs
     .map(d=>({id:d.id,consultationId:d.id,...d.data()}))
     .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
@@ -2713,11 +2719,27 @@ app.post("/admin/astrologer-profile-description", express.json({limit:"10kb"}), 
 });
 
 // Admin Content Manager reads and writes through Firebase Admin SDK so its UI does not depend on Firestore client rules.
+// Public read-only view of published English content. Never expose drafts through this route.
+app.get('/public/content', async (_req,res)=>{
+  try{
+    const snap=await contentStoreDb().collection('smv_content')
+      .where('published','==',true).where('language','==','en').get();
+    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})}))
+      .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    return res.set('Cache-Control','public, max-age=60, stale-while-revalidate=300')
+      .json({success:true,items});
+  }catch(e){
+    console.error('Public content read failed:',e?.message||e);
+    return res.status(503).set('Cache-Control','no-store')
+      .json({success:false,error:'Published content is temporarily unavailable.'});
+  }
+});
+
 app.get("/admin/content", async (req,res)=>{
   const actor=await requireUser(req,res); if(!actor)return;
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   try{
-    const snap=await db.collection("smv_content").where("language","==","en").get();
+    const snap=await contentStoreDb().collection("smv_content").where("language","==","en").get();
     const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
     return res.set("Cache-Control","no-store").json({success:true,items});
   }catch(e){console.error("Admin content read failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to load Admin content."});}
@@ -2734,7 +2756,7 @@ app.post("/admin/content/save", express.json({limit:"30kb"}), async (req,res)=>{
   if(patch.title!==undefined&&(typeof patch.title!=="string"||!patch.title.trim()||patch.title.length>240))return res.status(400).json({success:false,error:"Content title is required and must be 240 characters or less."});
   if(patch.published!==undefined&&typeof patch.published!=="boolean")return res.status(400).json({success:false,error:"Published must be true or false."});
   try{
-    const ref=db.collection("smv_content").doc(id),old=await ref.get();
+    const ref=contentStoreDb().collection("smv_content").doc(id),old=await ref.get();
     const now=FieldValue.serverTimestamp();
     patch.updatedAt=now;patch.updatedBy=actor.uid;
     if(!old.exists){patch.createdAt=now;patch.authorUid=actor.uid;if(patch.published===true)patch.publishedAt=now;}
@@ -2748,7 +2770,7 @@ app.post("/admin/content/toggle", express.json({limit:"5kb"}), async (req,res)=>
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   const id=String(req.body?.id||"").trim();
   if(!id||id.length>200||id.includes("/")||typeof req.body?.published!=="boolean")return res.status(400).json({success:false,error:"Content ID and publish state are required."});
-  try{const ref=db.collection("smv_content").doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({success:false,error:"Content not found."});await ref.set({published:req.body.published,publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),updatedBy:actor.uid},{merge:true});return res.json({success:true,id,published:req.body.published});}
+  try{const ref=contentStoreDb().collection("smv_content").doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({success:false,error:"Content not found."});await ref.set({published:req.body.published,publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),updatedBy:actor.uid},{merge:true});return res.json({success:true,id,published:req.body.published});}
   catch(e){console.error("Admin content toggle failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to update Admin content."});}
 });
 app.post("/admin/content/delete", express.json({limit:"5kb"}), async (req,res)=>{
@@ -2756,7 +2778,7 @@ app.post("/admin/content/delete", express.json({limit:"5kb"}), async (req,res)=>
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   const id=String(req.body?.id||"").trim();
   if(!id||id.length>200||id.includes("/"))return res.status(400).json({success:false,error:"A valid content ID is required."});
-  try{await db.collection("smv_content").doc(id).delete();return res.json({success:true,id});}
+  try{await contentStoreDb().collection("smv_content").doc(id).delete();return res.json({success:true,id});}
   catch(e){console.error("Admin content delete failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to delete Admin content."});}
 });
 
@@ -4605,7 +4627,7 @@ app.get('/public/push-config', (_req, res) => {
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,admin});
+const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
