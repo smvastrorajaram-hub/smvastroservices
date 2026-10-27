@@ -4,6 +4,7 @@ const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointme
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
+const {isFirestoreQuotaError,readWithQuotaFallback}=require('./firestore-quota-routing');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -67,23 +68,40 @@ async function readCustomerHistoryCollection(collectionName,uid){
   console.warn('[Multi-project Firestore] Customer-history routing flag is set without a valid SMV_CUSTOMER_HISTORY_CUTOVER_AT; keeping reads on primary.');
   return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
  }
- let snapshots;
- try{
-  snapshots=await Promise.all([
-   multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
-   db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
-   db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
-  ]);
- }catch(error){
-  console.warn('[Multi-project Firestore] Customer-history archive read failed; using primary for '+collectionName+':',error?.message||error);
-  return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
- }
- const [archiveSnap,createdAfterCutover,updatedAfterCutover]=snapshots;
+ const archiveResult=await readWithQuotaFallback({
+  candidates:[
+   {id:String(multiProjectFirestore.projectIds.consultations||'Project 2'),db:multiProjectFirestore.consultationsDb},
+   {id:String(multiProjectFirestore.projectIds.primary||'Project 1'),db}
+  ],
+  read:targetDb=>targetDb===multiProjectFirestore.consultationsDb
+   ? multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get()
+   : readPrimary(),
+  logger:console,
+  label:'Customer history archive read for '+collectionName
+ });
+ const archiveSnap=archiveResult.value;
+ const recentResults=await Promise.allSettled([
+  db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
+  db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
+ ]);
+ const failures=recentResults.filter(result=>result.status==='rejected');
+ const nonQuotaFailure=failures.find(result=>!isFirestoreQuotaError(result.reason));
+ if(nonQuotaFailure)throw nonQuotaFailure.reason;
  const byId=new Map();
  for(const doc of archiveSnap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
- // Primary rows created/updated after cutover override their copied archive version.
- for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
- return [...byId.values()].sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100);
+ // Each successful primary delta query overrides the copied archive by document ID.
+ for(const result of recentResults)if(result.status==='fulfilled'){
+  for(const doc of result.value.docs)byId.set(doc.id,{id:doc.id,...(doc.data()||{})});
+ }
+ const rows=[...byId.values()].sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,100);
+ if(failures.length){
+  // Return only records that were successfully read and explicitly tell API consumers
+  // that quota prevented a complete merge; never label this result as complete.
+  rows.partial=true;
+  rows.partialSource=archiveResult.source;
+  console.warn('[Multi-project Firestore] Customer-history primary delta quota exhausted; serving archived history as partial data for '+collectionName+'.');
+ }
+ return rows;
 }
 const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
 const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
@@ -2319,7 +2337,9 @@ app.get('/customer/consultations',async(req,res)=>{
  try{
   const history=await readCustomerHistoryCollection('smv_questions',user.uid);
   const questions=history.map(q=>({...q,questionId:q.id}));
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,questions});
+  const response={success:true,customerId:user.uid,questions};
+  if(history.partial===true){response.partial=true;response.warning='Some recent history may be unavailable while a Firestore read quota is exhausted.';}
+  return res.set('Cache-Control','no-store').json(response);
  }catch(e){
   console.error('Customer consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load customer consultations.',code:e?.code||null});
@@ -2331,7 +2351,9 @@ app.get('/customer/private-consultations',async(req,res)=>{
  try{
   const history=await readCustomerHistoryCollection('smv_private_consultations',user.uid);
   const consultations=history.map(c=>({...c,consultationId:c.id}));
-  return res.set('Cache-Control','no-store').json({success:true,customerId:user.uid,consultations});
+  const response={success:true,customerId:user.uid,consultations};
+  if(history.partial===true){response.partial=true;response.warning='Some recent history may be unavailable while a Firestore read quota is exhausted.';}
+  return res.set('Cache-Control','no-store').json(response);
  }catch(e){
   console.error('Customer private consultations load failed:',e);
   return res.status(500).json({success:false,error:e?.message||'Unable to load private consultations.',code:e?.code||null});

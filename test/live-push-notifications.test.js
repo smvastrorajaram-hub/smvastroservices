@@ -599,7 +599,9 @@ test('Customer history and public content route only after their explicit copy f
   assert.ok(server.includes('for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id'));
   assert.ok(server.includes('async function readCustomerHistoryCollection(collectionName,uid)'));
   assert.ok(server.includes('if(!multiProjectFirestore.customerHistoryBackfillComplete)return readPrimary()'));
-  assert.ok(server.includes('Customer-history archive read failed; using primary'));
+  assert.ok(server.includes('readWithQuotaFallback'));
+  assert.ok(server.includes('Customer-history primary delta quota exhausted; serving archived history as partial data'));
+  assert.ok(server.includes('history.partial===true'));
   assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
   assert.ok(server.includes("app.get('/public/content'"));
   assert.ok(server.includes(".where('published','==',true).where('language','==','en')"));
@@ -633,9 +635,11 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
   assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
-  assert.ok(service.includes('const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);'));
-  assert.ok(service.includes('Initial history may use the completed archive. Incremental reads must use'));
-  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
+  assert.ok(service.includes('async function readSessionAuxiliarySnapshot('));
+  assert.ok(service.includes('readWithQuotaFallback'));
+  assert.ok(service.includes('useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb'));
+  assert.ok(service.includes('preferSecondary: afterMs <= 0'));
+  assert.ok(service.includes("label: 'Ended Live Session history for ' + String(uid)"));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
