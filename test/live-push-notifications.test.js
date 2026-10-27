@@ -633,9 +633,12 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
   assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
-  assert.ok(service.includes('const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);'));
-  assert.ok(service.includes('Initial history may use the completed archive. Incremental reads must use'));
-  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
+  assert.ok(service.includes('async function readSessionAuxiliarySnapshot({ sessionId, collectionName, afterMs, limit, useSecondary })'));
+  assert.ok(service.includes('readWithQuotaFallback({'));
+  assert.ok(service.includes("useSecondary: afterMs <= 0 && loaded.data.liveAuxStoreReady === true && !!liveDataReadDb"));
+  assert.ok(service.includes("useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb"));
+  assert.ok(service.includes("onQuotaFallback: () => sessionRef(sessionId).set({"));
+  assert.ok(service.includes('liveAuxStoreReady: false'));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
@@ -870,7 +873,8 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   assert.ok(service.includes('function sendToParticipants(session, payload)'));
   assert.ok(service.includes('sendTo(session.customerUid, payload);'));
   assert.ok(service.includes('sendTo(session.astrologerUid, payload);'));
-  assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
+  assert.ok(messagesRoute.includes('readSessionAuxiliarySnapshot({'));
+  assert.ok(messagesRoute.includes('useSecondary: afterMs <= 0'));
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
   assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
   assert.ok(frontend.includes('},1500);'));
@@ -949,4 +953,19 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
   const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
   assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
+});
+
+
+test('Live message and signal replicas fall back to the authoritative domain only on quota errors', () => {
+  const service = read('live-session-service.js');
+  const walletService = read('wallet-service.js');
+  assert.ok(service.includes("const { readWithQuotaFallback } = require('./firestore-quota-routing');"));
+  assert.ok(service.includes('async function readSessionAuxiliarySnapshot'));
+  assert.ok(service.includes("collectionName: 'signals'"));
+  assert.ok(service.includes("collectionName: 'messages'"));
+  assert.ok(service.includes('onQuotaFallback: () => sessionRef(sessionId).set({'));
+  assert.ok(service.includes('liveAuxStoreReady: false'));
+  assert.ok(service.includes('useSecondary: afterMs <= 0'));
+  assert.equal(walletService.includes('readWithQuotaFallback'), false,
+    'Wallet financial writes must remain pinned to the selected authoritative Wallet domain');
 });
