@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Secondary databases are accessed only by authenticated backend Admin SDK
+    // service accounts. Browser/mobile Firebase clients must never read or write
+    // these mirrors directly; the authorized Render API enforces UID/role scope.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
