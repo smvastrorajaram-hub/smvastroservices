@@ -704,7 +704,7 @@ test('Preparation countdown reconciles the server session at zero instead of lea
   assert.ok(server.includes('scheduleSessionTimer(row.id, row)'));
 });
 
-test('Live Chat state stays active across delayed events and the Connect action verifies the Chat Box is visible', () => {
+test('Live Chat state stays active across delayed events and the Connect action verifies rendered Chat visibility', () => {
   const frontend = read('public/smvastro.mjs');
   const helperStart = frontend.indexOf('function smvLiveMergeSessionState(previous,incoming){');
   const helperEnd = frontend.indexOf('function smvLiveSessionStatusLabel(session){', helperStart);
@@ -724,7 +724,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   const connect = frontend.slice(connectStart, connectEnd);
   assert.ok(connect.includes("if(responseId!==id)throw new Error("));
   assert.ok(connect.includes('smvLiveOpenSession(responseSession,null,false);'));
-  assert.ok(connect.includes("!chat.hidden&&chat.style.display!=='none'"));
+  assert.ok(connect.includes('smvLiveChatBoxIsVisible()'));
   assert.ok(connect.includes('smvLivePollMessages(id).catch(()=>{});'));
 });
 
