@@ -52,27 +52,33 @@ test('service worker displays background pushes and focuses the app when clicked
   assert.match(worker, /projectId: 'smv-astro'/);
 });
 
-test('Live Chat active modal dimensions are not overridden by generic dialog rules', () => {
-  const css = read('public/smvastro.css');
-  const html = read('public/index.html');
-  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-24px + 100vw)!important'));
-  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-20px + 100vw)!important'));
-  assert.ok(css.includes('.modalbox:where(:not(.smv-css-island,.smv-css-island *)):not(#modal.smv-live-session-modal .modalbox){width:calc(-10px + 100vw)!important'));
-  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active .modalbox{width:min(calc(100vw - 16px),960px);max-width:960px;height:calc(100dvh - 16px - env(safe-area-inset-bottom))'));
-  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:flex;flex:1 1 0%'));
-  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveMessages{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0;max-height:none;overflow-y:auto'));
-  assert.ok(html.includes('smvastro.css?v=20261026-livechat-scroll-place-black-v2'));
-});
-
-test('Live Chat uses one large, scrolling message pane without changing preparation timing', () => {
+test('Live Chat uses canonical mode/state and native visibility instead of a chat-only CSS layout override', () => {
   const css = read('public/smvastro.css');
   const frontend = read('public/smvastro.mjs');
-  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active .smv-live-session-body{display:flex;flex:1 1 0%;flex-direction:column;width:100%;min-width:0;min-height:0;max-height:none;overflow:hidden'));
-  assert.ok(css.includes('#modal.smv-live-session-modal.smv-live-chat-active #smvLiveChatArea{display:flex;flex:1 1 0%;flex-direction:column;width:100%;height:auto;min-width:0;min-height:0'));
-  assert.ok(frontend.includes("messages.style.height='auto'"));
-  assert.ok(frontend.includes("messages.style.minHeight='0'"));
-  assert.ok(frontend.includes("host.scrollTop=host.scrollHeight"));
-  assert.ok(frontend.includes("s.state==='preparing'"));
+  const html = read('public/index.html');
+  assert.ok(frontend.includes("function smvLiveChatIsActive(session){return smvLiveCanonicalMode(session)==='chat'&&String(session?.state||session?.status||'')==='active';}"));
+  assert.ok(frontend.includes("mode=smvLiveCanonicalMode(s),call=mode==='call',chat=mode==='chat'"));
+  assert.ok(frontend.includes('if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);'));
+  assert.equal(frontend.includes('smvLiveApplyChatLayout'), false, 'Chat visibility must not depend on a second dynamic layout mutator');
+  assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
+  assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
+  assert.ok(html.includes('smvastro.css?v=20261027-live-chat-natural-source-v4'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
+});
+
+test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
+  const frontend = read('public/smvastro.mjs');
+  const helperStart = frontend.indexOf('function smvLiveChatBoxIsVisible(){');
+  const helperEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', helperStart);
+  const visibility = frontend.slice(helperStart, helperEnd);
+  assert.ok(visibility.includes("!modal||modal.classList.contains('hidden')||!chat||chat.hidden||!messages"));
+  assert.ok(visibility.includes('chatRect.width>0&&chatRect.height>0&&messagesRect.width>0&&messagesRect.height>0'));
+  const connectStart = frontend.indexOf("const connectChat=$('smvLiveConnectChat');");
+  const connectEnd = frontend.indexOf("const connectMic=$('smvLiveConnectMic');", connectStart);
+  const connect = frontend.slice(connectStart, connectEnd);
+  assert.ok(connect.includes('smvLiveChatBoxIsVisible()'));
+  assert.ok(connect.includes('smvLiveOpenSession(responseSession,null,false);'));
+  assert.equal(connect.includes('window.open('), false, 'Connect Chat must stay in the existing session panel');
 });
 
 test('Explicit login renders a generic shell only for non-Admin roles; Admin enters Admin directly', () => {
@@ -120,7 +126,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-state-monotonic-v3'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -151,7 +157,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-state-monotonic-v3'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -195,7 +201,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-state-monotonic-v3'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -215,7 +221,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-state-monotonic-v3'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-natural-source-v4'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
