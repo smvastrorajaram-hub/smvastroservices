@@ -183,26 +183,34 @@ async function main() {
       report.blockers.push('Wallet ' + uid + ' still has reserved balance/minutes; reconcile its active reservation before cutover.');
     }
   }
-  for (const data of sessions.values()) {
+  for (const data of all[1].source.values()) if (data.ownerUid) participantIds.add(String(data.ownerUid));
+  for (const [sessionId, data] of sessions) {
     if (data.customerUid) participantIds.add(String(data.customerUid));
     if (data.astrologerUid) { participantIds.add(String(data.astrologerUid)); astrologerIds.add(String(data.astrologerUid)); }
     if (data.appointmentId) appointmentIds.add(String(data.appointmentId));
     if (!['ended', 'cancelled', 'rejected', 'expired'].includes(String(data.state || '').toLowerCase())) {
-      report.blockers.push('Live session ' + String(data.sessionId || '') + ' is not terminal (' + String(data.state || 'missing') + ').');
+      report.blockers.push('Live session ' + sessionId + ' is not terminal (' + String(data.state || 'missing') + ').');
     }
   }
-  for (const data of bookings.values()) {
+  for (const [bookingId, data] of bookings) {
     if (data.customerUid) participantIds.add(String(data.customerUid));
     if (data.astrologerUid) { participantIds.add(String(data.astrologerUid)); astrologerIds.add(String(data.astrologerUid)); }
-    if (String(data.status || '').toLowerCase() === 'pending' || String(data.walletReservationState || '') === 'reserved') {
-      report.blockers.push('Live booking ' + String(data.bookingId || '') + ' remains pending/reserved.');
+    if (!['ended', 'completed', 'cancelled', 'rejected', 'expired', 'no_show'].includes(String(data.status || '').toLowerCase()) ||
+        String(data.walletReservationState || '') === 'reserved') {
+      report.blockers.push('Live booking ' + bookingId + ' remains pending/reserved.');
     }
   }
-  for (const data of recharges.values()) {
+  for (const [rechargeId, data] of recharges) {
     if (data.customerUid) participantIds.add(String(data.customerUid));
     if (['creating', 'order_created', 'payment_pending', 'created', 'pending', 'processing'].includes(String(data.status || '').toLowerCase())) {
-      report.blockers.push('Wallet recharge ' + String(data.rechargeId || '') + ' remains in a non-terminal state (' + String(data.status || '') + ').');
+      report.blockers.push('Wallet recharge ' + rechargeId + ' remains in a non-terminal state (' + String(data.status || '') + ').');
     }
+  }
+  for (const data of all[8].source.values()) {
+    if (data.astrologerId) { participantIds.add(String(data.astrologerId)); astrologerIds.add(String(data.astrologerId)); }
+  }
+  for (const data of all[9].source.values()) {
+    if (data.astrologerId) { participantIds.add(String(data.astrologerId)); astrologerIds.add(String(data.astrologerId)); }
   }
   for (const id of all[13].source.keys()) appointmentIds.add(id);
 
