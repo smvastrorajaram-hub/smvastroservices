@@ -1319,7 +1319,7 @@ function nextPaymentId() {
   return newSmvId("smvcp");
 }
 
-async function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
+function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
   const a = appointment || {};
   const status = String(a.bookingStatus || 'requested').toLowerCase();
   if (!['requested', 'accepted'].includes(status) || a.liveSessionId) return status;
