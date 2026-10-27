@@ -882,3 +882,18 @@ test('Live Chat and Call recover messages/signals after an SSE reconnect without
   assert.ok(poll.includes('if(!$(' + "'smvLiveMessages'" + '))break;'));
   assert.ok(poll.includes('(appended||smvLiveMessageSeen.has(messageId))'));
 });
+
+
+test('Live message and signal replicas fall back to the authoritative domain only on quota errors', () => {
+  const service = read('live-session-service.js');
+  const walletService = read('wallet-service.js');
+  assert.ok(service.includes("const { readWithQuotaFallback } = require('./firestore-quota-routing');"));
+  assert.ok(service.includes('async function readSessionAuxiliarySnapshot'));
+  assert.ok(service.includes("collectionName: 'signals'"));
+  assert.ok(service.includes("collectionName: 'messages'"));
+  assert.ok(service.includes('onQuotaFallback: () => sessionRef(sessionId).set({'));
+  assert.ok(service.includes('liveAuxStoreReady: false'));
+  assert.ok(service.includes('useSecondary: afterMs <= 0'));
+  assert.equal(walletService.includes('readWithQuotaFallback'), false,
+    'Wallet financial writes must remain pinned to the selected authoritative Wallet domain');
+});
