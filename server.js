@@ -39,6 +39,16 @@ const FieldValue = admin.firestore.FieldValue;
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
 function customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
+async function mirrorAdminContentPatch(id,patch){
+ if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
+ try{await multiProjectFirestore.contentDb.collection('smv_content').doc(String(id)).set(patch,{merge:true});}
+ catch(e){console.warn('[Multi-project Firestore] Content mirror deferred for '+id+':',e?.message||e);}
+}
+async function mirrorAdminContentDelete(id){
+ if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
+ try{await multiProjectFirestore.contentDb.collection('smv_content').doc(String(id)).delete();}
+ catch(e){console.warn('[Multi-project Firestore] Content delete mirror deferred for '+id+':',e?.message||e);}
+}
 function customerHistoryCutoverDate(){
  const raw=String(process.env.SMV_CUSTOMER_HISTORY_CUTOVER_AT||'').trim();
  if(!raw)return null;
@@ -2781,6 +2791,7 @@ app.post("/admin/content/save", express.json({limit:"30kb"}), async (req,res)=>{
     if(!old.exists){patch.createdAt=now;patch.authorUid=actor.uid;if(patch.published===true)patch.publishedAt=now;}
     else if(patch.published===true)patch.publishedAt=now;
     await ref.set(patch,{merge:true});
+    await mirrorAdminContentPatch(id,patch);
     return res.set("Cache-Control","no-store").json({success:true,id});
   }catch(e){console.error("Admin content save failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Admin content."});}
 });
@@ -2789,7 +2800,7 @@ app.post("/admin/content/toggle", express.json({limit:"5kb"}), async (req,res)=>
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   const id=String(req.body?.id||"").trim();
   if(!id||id.length>200||id.includes("/")||typeof req.body?.published!=="boolean")return res.status(400).json({success:false,error:"Content ID and publish state are required."});
-  try{const ref=contentStoreDb().collection("smv_content").doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({success:false,error:"Content not found."});await ref.set({published:req.body.published,publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),updatedBy:actor.uid},{merge:true});return res.json({success:true,id,published:req.body.published});}
+  try{const patch={published:req.body.published,publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),updatedBy:actor.uid};const ref=contentStoreDb().collection("smv_content").doc(id),snap=await ref.get();if(!snap.exists)return res.status(404).json({success:false,error:"Content not found."});await ref.set(patch,{merge:true});await mirrorAdminContentPatch(id,patch);return res.json({success:true,id,published:req.body.published});}
   catch(e){console.error("Admin content toggle failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to update Admin content."});}
 });
 app.post("/admin/content/delete", express.json({limit:"5kb"}), async (req,res)=>{
@@ -2797,7 +2808,7 @@ app.post("/admin/content/delete", express.json({limit:"5kb"}), async (req,res)=>
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   const id=String(req.body?.id||"").trim();
   if(!id||id.length>200||id.includes("/"))return res.status(400).json({success:false,error:"A valid content ID is required."});
-  try{await contentStoreDb().collection("smv_content").doc(id).delete();return res.json({success:true,id});}
+  try{await contentStoreDb().collection("smv_content").doc(id).delete();await mirrorAdminContentDelete(id);return res.json({success:true,id});}
   catch(e){console.error("Admin content delete failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to delete Admin content."});}
 });
 
