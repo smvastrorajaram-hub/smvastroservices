@@ -79,7 +79,8 @@ test('Project 5 cutover requires the integrated runtime plus every explicit migr
     SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
   };
   const missingDependencyGate = initializeMultiProjectFirestore({
-    admin: fakeAdmin(), primaryDb, env: baseEnv
+    admin: fakeAdmin(), primaryDb,
+    env: { ...baseEnv, SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED: 'true' }
   });
   assert.equal(missingDependencyGate.walletDomainRuntimeIntegrationVerified, true);
   assert.equal(missingDependencyGate.walletDomainCutoverComplete, false);
