@@ -6,9 +6,9 @@ const DEFAULT_PROJECT_IDS = Object.freeze({
   primary: 'smv-astro',
   consultations: 'astro-service-ae9e7',
   liveData: 'smv-astro-services',
-  content: 'svm-astro',
-  walletDomain: 'smvastro-services'
+  content: 'svm-astro'
 });
+const DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services';
 
 const APP_NAMES = Object.freeze({
   consultations: 'smv-multiproject-consultations',
@@ -61,7 +61,7 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     consultations: String(env.FIREBASE_CONSULTATIONS_PROJECT_ID || DEFAULT_PROJECT_IDS.consultations).trim(),
     liveData: String(env.FIREBASE_LIVE_DATA_PROJECT_ID || DEFAULT_PROJECT_IDS.liveData).trim(),
     content: String(env.FIREBASE_CONTENT_PROJECT_ID || DEFAULT_PROJECT_IDS.content).trim(),
-    walletDomain: String(env.FIREBASE_WALLET_DOMAIN_PROJECT_ID || DEFAULT_PROJECT_IDS.walletDomain).trim()
+    walletDomain: String(env.FIREBASE_WALLET_DOMAIN_PROJECT_ID || DEFAULT_WALLET_DOMAIN_PROJECT_ID).trim()
   });
   const enabled = enabledFlag(env.SMV_FIRESTORE_MULTI_PROJECT_ENABLED);
   const walletDomainEnabled = enabledFlag(env.SMV_WALLET_DOMAIN_ENABLED);
@@ -102,7 +102,7 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
       throw new Error('Refusing to connect a non-production primary project to the production secondary projects. Create isolated secondary projects and explicitly set all FIREBASE_*_PROJECT_ID variables, or set SMV_ALLOW_CROSS_ENV_FIRESTORE_PROJECTS=true only after a deliberate security review.');
     }
     if (new Set([projectIds.primary, ...selectedSecondaryIds]).size !== 4) {
-      throw new Error('The four-project Firestore routing IDs must be distinct.');
+      throw new Error('The four-project Firestore project IDs must be distinct.');
     }
     state.consultationsDb = databaseForProject(admin, projectIds.consultations, APP_NAMES.consultations,
       credentialsFromEnv(env, 'FIREBASE_CONSULTATIONS', projectIds.consultations));
@@ -142,6 +142,7 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
 
 module.exports = {
   DEFAULT_PROJECT_IDS,
+  DEFAULT_WALLET_DOMAIN_PROJECT_ID,
   enabledFlag,
   normalizePrivateKey,
   initializeMultiProjectFirestore
