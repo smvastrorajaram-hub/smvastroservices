@@ -49,7 +49,8 @@ test('Scheduled booking status helper is synchronous for Customer and Astrologer
   assert.ok(helperStart >= 0 && helperEnd > helperStart, 'status helper source must be present');
   assert.equal(server.slice(helperStart, helperEnd).includes('await '), false,
     'a synchronous status helper must not contain await');
-  assert.equal((server.match(/const bookingStatus=scheduledBookingReadStatus\\(a\\);/g) || []).length, 2,
+  const bookingStatusCall = 'const bookingStatus=scheduledBookingReadStatus(a);';
+  assert.equal(server.split(bookingStatusCall).length - 1, 2,
     'both Customer and Astrologer appointment endpoints must consume the plain status value');
 });
 
