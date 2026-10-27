@@ -56,6 +56,16 @@ function databaseForProject(admin, projectId, appName, credentials) {
   return admin.firestore(app);
 }
 
+function resolveWalletDomainDatabase(multiProjectState, primaryDb) {
+  if (multiProjectState?.walletDomainCutoverComplete === true &&
+      multiProjectState?.walletDomainEnabled === true &&
+      multiProjectState.walletDomainDb &&
+      multiProjectState.walletDomainDb !== primaryDb) {
+    return multiProjectState.walletDomainDb;
+  }
+  return primaryDb;
+}
+
 function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env } = {}) {
   if (!admin || !primaryDb) throw new Error('Multi-project Firestore requires the primary Firebase Admin SDK and Firestore.');
 
@@ -152,5 +162,6 @@ module.exports = {
   DEFAULT_WALLET_DOMAIN_PROJECT_ID,
   enabledFlag,
   normalizePrivateKey,
+  resolveWalletDomainDatabase,
   initializeMultiProjectFirestore
 };
