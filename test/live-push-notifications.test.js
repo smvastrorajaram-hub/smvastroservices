@@ -663,3 +663,55 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
   assert.ok(frontend.includes('smvLiveUpdateDashboardSessionStatus(current);'),
     'the 3-minute preparation countdown must keep the Dashboard status current');
 });
+
+
+test('Live Call transitions from preparation to a clear Customer connect action and replays missed WebRTC offers', () => {
+  const frontend = read('public/smvastro.mjs');
+  const statusStart = frontend.indexOf('function smvLiveSessionStatusLabel(session){');
+  const statusEnd = frontend.indexOf('function smvLivePanelHtml(s,incoming){', statusStart);
+  const status = frontend.slice(statusStart, statusEnd);
+  const panelStart = frontend.indexOf('function smvLivePanelHtml(s,incoming){');
+  const panelEnd = frontend.indexOf('async function smvLivePrintReceipt(', panelStart);
+  const panel = frontend.slice(panelStart, panelEnd);
+  const handlerStart = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){');
+  const handlerEnd = frontend.indexOf('function smvLiveDismissSessionUi(', handlerStart);
+  const handler = frontend.slice(handlerStart, handlerEnd);
+  assert.ok(status.includes("?'Connect to Astrologer':'Connect Customer Call / Microphone'"));
+  assert.ok(panel.includes("viewerIsCustomer?'CONNECT TO ASTROLOGER':'CONNECT CUSTOMER CALL / MICROPHONE'"));
+  assert.ok(frontend.includes('Tap CONNECT TO ASTROLOGER to start the voice call.'));
+  assert.ok(handler.includes('await smvLiveReconcileCallSignals(id);'),
+    'a peer that becomes ready after the original offer event must fetch pending signals again');
+  assert.ok(frontend.includes('async function smvLiveReconcileCallSignals(id){'));
+});
+
+test('Preparation countdown reconciles the server session at zero instead of leaving a stale Connecting/Ringing state', () => {
+  const frontend = read('public/smvastro.mjs');
+  const server = read('live-session-service.js');
+  const countdownStart = frontend.indexOf('function smvLiveUpdatePreparationCountdown(session){');
+  const countdownEnd = frontend.indexOf('function smvLiveStartClock(s){', countdownStart);
+  const countdown = frontend.slice(countdownStart, countdownEnd);
+  assert.ok(countdown.includes('if(seconds===0)smvLiveReconcileExpiredPreparation(id);'));
+  assert.ok(countdown.includes("renderApi('/live/sessions',{method:'GET',timeoutMs:10000})"));
+  assert.ok(server.includes('Runtime timeouts are in-memory.'));
+  assert.ok(server.includes("if (plan.delayMs <= 0)"));
+  assert.ok(server.includes('? await completePreparation(row.id)'));
+  assert.ok(server.includes('scheduleSessionTimer(row.id, row)'));
+});
+
+test('Live Chat message rendering never marks a message seen before a message box exists, and preserves both sides of the chat', () => {
+  const frontend = read('public/smvastro.mjs');
+  const server = read('live-session-service.js');
+  const appendStart = frontend.indexOf('function smvLiveAppendMessage(m){');
+  const appendEnd = frontend.indexOf('const smvLiveMessagePollsInFlight', appendStart);
+  const append = frontend.slice(appendStart, appendEnd);
+  const sendStart = server.indexOf('async function sendMessage(sessionId, senderUid, text)');
+  const sendEnd = server.indexOf('async function signal(sessionId, senderUid, type, payload)', sendStart);
+  const send = server.slice(sendStart, sendEnd);
+  assert.ok(append.indexOf("const host=$('smvLiveMessages');if(!host") < append.indexOf('smvLiveMessageSeen.add(m.id)'));
+  assert.ok(append.includes('body.textContent=String(m.text||\'\')'));
+  assert.ok(frontend.includes("ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId"));
+  assert.ok(send.includes('current.customerUid !== senderUid && current.astrologerUid !== senderUid'));
+  assert.ok(send.includes("current.state !== 'active'"));
+  assert.ok(send.includes("sendTo(recipientUid, { type: 'live.chat.message', message: safe })"));
+  assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
+});
