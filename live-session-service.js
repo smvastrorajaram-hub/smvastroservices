@@ -267,6 +267,15 @@ function astrologerAvailabilityStatus(astroProfile, activeSessionCountOverride) 
   return astro.liveCallEnabled === true || astro.liveChatEnabled === true ? 'online' : 'offline';
 }
 
+function normalizeLiveSessionMode(...values) {
+  for (const value of values) {
+    const raw = String(value || '').trim().toLowerCase().replace(/[^a-z]/g, '');
+    if (raw.includes('chat')) return 'chat';
+    if (raw.includes('call') || raw.includes('voice')) return 'call';
+  }
+  return '';
+}
+
 function liveSessionSafeView(id, data) {
   const d = data || {};
   return {
@@ -288,7 +297,7 @@ function liveSessionSafeView(id, data) {
     preparationUntil: timestampMillis(d.preparationUntil) ? new Date(timestampMillis(d.preparationUntil)).toISOString() : null,
     preparationCompletedAt: timestampMillis(d.preparationCompletedAt) ? new Date(timestampMillis(d.preparationCompletedAt)).toISOString() : null,
     connectingAt: timestampMillis(d.connectingAt) ? new Date(timestampMillis(d.connectingAt)).toISOString() : null,
-    mode: String(d.mode || ''),
+    mode: normalizeLiveSessionMode(d.mode, d.sessionMode, d.consultationMode, d.type, d.kind, d.sessionType, d.consultationType),
     minutes: Number(d.minutes || 0),
     ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
     reservedAmountPaise: safePaise(d.reservedAmountPaise),
@@ -1044,12 +1053,14 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       if (session.customerUid !== actor && session.astrologerUid !== actor) throw httpError(403, 'This Live Session belongs to another account.', 'LIVE_SESSION_FORBIDDEN');
       if (session.state === 'ended') throw httpError(409, 'This Live Session has already ended.', 'LIVE_SESSION_ENDED');
       if (!['connecting', 'active'].includes(session.state)) throw httpError(409, 'The other participant has not accepted this session yet.', 'LIVE_SESSION_NOT_ACCEPTED');
-      if (session.mode === 'call' && mediaConnected !== true) throw httpError(400, 'Voice Call must be connected before billing starts.', 'LIVE_CALL_NOT_CONNECTED');
+      const mode = normalizeLiveSessionMode(session.mode, session.sessionMode, session.consultationMode, session.type, session.kind, session.sessionType, session.consultationType);
+      if (!['call', 'chat'].includes(mode)) throw httpError(409, 'This Live Session is missing its Call / Chat type. Reopen the intended request from the Dashboard; the session cannot connect safely.', 'LIVE_MODE_MISSING');
+      if (mode === 'call' && mediaConnected !== true) throw httpError(400, 'Voice Call must be connected before billing starts.', 'LIVE_CALL_NOT_CONNECTED');
       const field = session.customerUid === actor ? 'customerReady' : 'astrologerReady';
       const customerReady = field === 'customerReady' ? true : session.customerReady === true;
       const astrologerReady = field === 'astrologerReady' ? true : session.astrologerReady === true;
       const start = session.state !== 'active' && customerReady && astrologerReady;
-      const patch = { [field]: true, updatedAt: nowTimestamp() };
+      const patch = { [field]: true, mode, updatedAt: nowTimestamp() };
       if (start) {
         patch.state = 'active';
         patch.startedAt = new Date();
