@@ -76,6 +76,14 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
   if (!enabled) return disabled;
 
   if (!projectIds.primary) throw new Error('FIREBASE_PROJECT_ID is required before enabling multi-project Firestore.');
+  const isNonProductionPrimary = projectIds.primary !== DEFAULT_PROJECT_IDS.primary;
+  const defaultSecondaryIds = [DEFAULT_PROJECT_IDS.consultations, DEFAULT_PROJECT_IDS.liveData, DEFAULT_PROJECT_IDS.content];
+  const selectedSecondaryIds = [projectIds.consultations, projectIds.liveData, projectIds.content];
+  const crossEnvironmentOverride = enabledFlag(env.SMV_ALLOW_CROSS_ENV_FIRESTORE_PROJECTS);
+  if (isNonProductionPrimary && !crossEnvironmentOverride &&
+      selectedSecondaryIds.some((id, index) => id === defaultSecondaryIds[index])) {
+    throw new Error('Refusing to connect a non-production primary project to the production secondary projects. Create isolated secondary projects and explicitly set all FIREBASE_*_PROJECT_ID variables, or set SMV_ALLOW_CROSS_ENV_FIRESTORE_PROJECTS=true only after a deliberate security review.');
+  }
   const ids = Object.values(projectIds);
   if (new Set(ids).size !== ids.length) {
     throw new Error('Multi-project Firestore project IDs must be distinct. Check the four Firebase Project Settings screenshots and environment variables.');
