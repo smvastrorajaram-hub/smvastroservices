@@ -398,11 +398,13 @@ function createWalletService({ db, FieldValue }) {
   };
 }
 
-function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayKeyId, razorpayKeySecret, adminUid, requireUser, isAdminUser }) {
+function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, razorpay, razorpayKeyId, razorpayKeySecret, adminUid, requireUser, isAdminUser }) {
+  // Financial records always share the selected Wallet-domain database. Auth and role
+  // ownership remain anchored to Project 1 so Project 5 does not need Firebase Auth.
   const service = createWalletService({ db, FieldValue });
   async function readRole(user) {
     if (await isAdminUser(user)) return 'admin';
-    const snap = await db.collection('smv_users').doc(user.uid).get();
+    const snap = await profileDb.collection('smv_users').doc(user.uid).get();
     const role = String(snap.data()?.role || user.role || '').toLowerCase();
     return ['customer', 'astrologer'].includes(role) ? role : '';
   }
