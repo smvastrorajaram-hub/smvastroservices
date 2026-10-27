@@ -1,6 +1,8 @@
-# Project 5 Wallet/Live Session domain — guarded preflight
+# Project 5 Wallet/Live Session domain — guarded integration
 
-> **Current scope:** this PR adds preparation/configuration and a guarded migration tool only. It does not yet route production Wallet or Live Session requests to Project 5. A separate source integration must coordinate live profiles, Admin/Astrologer earnings, withdrawals, booking/session writes, all Wallet credits/debits/refunds, and client indexes before any cutover flag may be enabled.
+> **Active product scope:** Consult an Astrologer, Astrologer list, Live Call, Live Chat, Book a Call, Book a Chat, Wallet recharge, reserve/debit/release/refund ledger entries, Razorpay recharge webhook, commission/earnings, and withdrawals. The retired Private Consultation flow is explicitly outside this integration; its legacy wallet payment endpoint is blocked once a Project 5 cutover is active.
+
+> **Runtime safety:** Source routing is integrated behind one shared database resolver. Production still uses Project 1 unless the source integration gate, successful backfill, dependency verification and explicit cutover flags are all true. No Render environment variables were changed, no backfill was run, no production data/resources were changed, and this Draft PR is not merged.
 
 Project 5 supplied for this change:
 
@@ -8,13 +10,13 @@ Project 5 supplied for this change:
 - Project ID: `smvastro-services`
 - Project number: `862081928731`
 
-This change only adds guarded configuration and a non-destructive data-copy tool. It does **not** route production Wallet or Live Session traffic to Project 5, set Render environment variables, merge itself, or create/modify Firebase resources. The Wallet and Live Session billing path must stay on Project 1 until a complete domain cutover has been tested.
+This change adds guarded runtime routing for the active Wallet/Call/Chat domain, a quiescence-checked non-destructive copy tool, and a read-only source/target reconciliation tool. It does **not** set Render environment variables, enable the cutover, merge itself, or create/modify Firebase resources. The runtime gate remains disabled until the integration/test workflow is green and the explicit migration review is completed.
 
 ## Why this is a coordinated domain
 
 Live-session creation, reserve, settlement, refunds/release, wallet balance changes, and ledger writes currently use a single Firestore transaction containing both `smv_live_sessions` / `smv_live_bookings` and `smv_wallets` / `smv_wallet_transactions`. Firestore transactions cannot span Project 1 and Project 5. Moving only `smv_wallets` would break the atomic billing guarantee.
 
-The backfill tool copies the Wallet and live-session billing records together and also copies the relevant session participants' profile shadows, session settings, appointment references, live-session earning records, and withdrawal records. It preserves Project 1 and never deletes source documents. Auth identities/UIDs remain in Project 1; Project 5 is not a new Authentication project.
+The backfill tool copies Wallet balances/ledger/recharges, recharge offers and usage, all active-domain live sessions/bookings (including message/signal subcollections), scheduled Call/Chat appointments, the session pricing and commission settings, live-session earning records, withdrawals and private payout snapshots, every Wallet recharge Razorpay order, and webhook idempotency records. Project 1 is preserved and source documents are never deleted. Auth identities/UIDs, FCM registration tokens, and the authoritative login/role/rate/approval profiles remain in Project 1; Project 5 is not a new Authentication project. The live service reads those current profiles from Project 1 and commits all session/wallet/ledger/earning mutations in one Project 5 transaction after cutover. Profile and appointment status projections are synced back to Project 1 for existing dashboards and Astrologer-list availability.
 
 ## Render variables — names only
 
@@ -25,7 +27,7 @@ After creating a service account that can access Project 5, add these to the exi
 - `FIREBASE_WALLET_DOMAIN_PRIVATE_KEY=<Project 5 service-account private key, stored as a secret>`
 - `SMV_WALLET_DOMAIN_ENABLED=true`
 
-The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, dependency-verification, and the separate runtime-integration-verification gates are explicitly enabled. In this preflight revision, a code-level `WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false` guard also prevents environment variables alone from marking cutover ready. A later integration change must deliberately update this source gate only after every billing/profile/withdrawal path has been routed and tested. This PR intentionally does not enable any production cutover gate.
+The old four-project flag is not required for preparing Project 5. It can be initialized independently. The runtime routing state remains on Project 1 unless backfill, cutover, dependency-verification, and runtime-integration-verification gates are explicitly enabled. The code-level `WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED` guard is separate from Render variables; environment variables alone cannot enable cutover while that source guard is false. Even after tests allow the source guard to be enabled, do not set the cutover flags until migration and reconciliation are reviewed. This PR intentionally does not enable any production cutover flag.
 
 ## FCM versus Project 3 WebRTC data
 
@@ -47,11 +49,13 @@ Use `firebase.multi-project-wallet-domain.json` as the Firebase CLI configuratio
 2. Schedule downtime and stop/disable the production backend before an `--apply` copy. Ensure no active/ringing/preparing/connecting/active Live Sessions, pending bookings, or pending Razorpay wallet recharges. Also ensure the project is not receiving transactions from another backend instance.
 3. Run dry-run first:
    `SMV_WALLET_DOMAIN_ENABLED=true node scripts/backfill-wallet-domain.js`
-4. Inspect the collection counts. A failed query or quota error means the backfill is incomplete; do not proceed.
-5. Only while the backend is stopped, set `SMV_WALLET_DOMAIN_QUIESCED=true` in the migration environment and run:
+4. Inspect the source counts; a failed query/quota error means the snapshot is incomplete. The `--apply` command now actively refuses to run while ringing/preparing/connecting/active Live Sessions, pending/reserved Live bookings, or non-terminal Wallet recharges remain.
+5. Only while all backend instances are stopped, set `SMV_WALLET_DOMAIN_QUIESCED=true` in the migration environment and run:
    `SMV_WALLET_DOMAIN_ENABLED=true SMV_WALLET_DOMAIN_QUIESCED=true node scripts/backfill-wallet-domain.js --apply`
-6. Reconcile the source/target wallet counts, each balance against the sum/semantics of its ledger, recharges and Razorpay order references, live-session state, participant profiles, earnings and withdrawals. The script intentionally never sets `SMV_WALLET_DOMAIN_BACKFILL_COMPLETE`, `SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED`, `SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED`, or `SMV_WALLET_DOMAIN_CUTOVER_COMPLETE`.
-7. Do not turn the cutover flags on until a separate integration change completes profile/rate/settings synchronization, reroutes the admin/astrologer earnings and withdrawal reads, and passes the full Wallet + Live Session billing suite. During the initial preflight, all production traffic remains on Project 1.
+6. Run the read-only validator:
+   `SMV_WALLET_DOMAIN_ENABLED=true node scripts/validate-wallet-domain.js`
+   It compares source/target IDs and full document values for the Wallet ledger/recharges, offers, Live Sessions/bookings, child messages/signals, scheduled appointments, Razorpay wallet orders/webhook markers, earnings and withdrawal records. It also checks profile mirrors, pricing/commission settings, non-terminal sessions/bookings/recharges and leftover wallet reserves. The command exits non-zero unless every comparison matches and there are no cutover blockers; it does not modify either database or any environment flag.
+7. Review and retain the validator report. Only after the report has `ok=true` and `cutoverSafe=true`, run a controlled end-to-end Wallet + Live Call/Chat test, and verify the Project 5 rules/indexes and profile projections, may an operator separately set `SMV_WALLET_DOMAIN_BACKFILL_COMPLETE`, `SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED`, `SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED`, and `SMV_WALLET_DOMAIN_CUTOVER_COMPLETE`. Never set cutover flags as part of the copy/validation scripts.
 
 ## Security and correctness
 
