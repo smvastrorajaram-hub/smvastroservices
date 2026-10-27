@@ -844,6 +844,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     const bookingPreview = await bRef.get();
     if (!bookingPreview.exists) throw httpError(404, 'Pending Live booking was not found.', 'LIVE_BOOKING_NOT_FOUND');
     const previewCustomerUid = String(bookingPreview.data()?.customerUid || '');
+    if (!previewCustomerUid) throw httpError(409, 'This booking has no Customer owner and cannot be accepted.', 'LIVE_CUSTOMER_REQUIRED');
     const [astroProfileSnap, astroUserSnap, customerSnap] = await Promise.all([
       profileDb.collection(ASTROLOGERS).doc(uid).get(),
       profileDb.collection(USERS).doc(uid).get(),
@@ -959,10 +960,16 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       trackSession(id, txResult.data.customerUid, txResult.data.astrologerUid);
       scheduleSessionTimer(id, txResult.data);
       if (txResult.data.appointmentId) {
-        await db.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set({
+        const appointmentPatch = {
           bookingStatus: 'in_progress', status: 'in_progress', liveSessionId: id,
           updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true }).catch(error => console.warn('[Live Session] Scheduled booking status update skipped:', error?.message || error));
+        };
+        await db.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set(appointmentPatch, { merge: true })
+          .catch(error => console.warn('[Live Session] Domain scheduled-booking status update skipped:', error?.message || error));
+        if (db !== profileDb) {
+          await profileDb.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set(appointmentPatch, { merge: true })
+            .catch(error => console.warn('[Live Session] Primary scheduled-booking status sync deferred:', error?.message || error));
+        }
       }
       notifyAdmin('live_booking_accepted', 'Live booking accepted',
         String(txResult.data.customerName || 'Customer') + ' Live ' + String(txResult.data.mode || '').toUpperCase() + ' booking was accepted by ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
