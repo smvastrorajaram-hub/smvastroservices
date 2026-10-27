@@ -33,3 +33,16 @@ A complete five-project pool for every ordinary website read needs an inventory 
 4. Run scripts/backfill-multi-project-firestore.js in dry-run mode, review counts, then apply only under its documented copy procedure.
 5. Reconcile copies and run authenticated browser tests for history, Live Chat, WebRTC, booking, Wallet, content publishing and dashboards.
 6. Enable one read domain at a time, retaining a rollback procedure. Never enable Project 5 cutover based solely on credentials being present.
+
+
+## Additional continuous Project 2 read replicas
+
+The allowlisted Project 2 mirror now covers `smv_questions`, `smv_private_consultations`, `smv_astrologers`, `smv_reviews`, `smv_notifications`, and `smv_astrologer_quiz_questions`. Firestore write triggers mirror create/update/delete events, and a backend-only source-version sidecar prevents older delayed events from overwriting newer rows or resurrecting deleted rows. The backfill uses the same source-version ordering to protect concurrent updates.
+
+Quota fallback has been added only to specific public astrologer/review and quiz-question read endpoints. It remains off unless the multi-project connections and `SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE=true` are set after full reconciliation. This increases read coverage; it does not yet mean every Firestore read made by every website and horoscope client is covered by universal failover.
+
+Run `node scripts/validate-multi-project-firestore.js` after copying and again after sync events drain. It reads all allowlisted collection IDs and canonical document hashes without writing data or changing flags. It blocks production validation by default. Missing, extra or mismatched documents block the read gate.
+
+The mirror target is backend-only, with deny-all client rules. Functions need Project 2 credentials stored as Firebase Functions Secrets, never committed to source. Non-production source projects are blocked from writing into known production secondaries.
+
+Role and identity validation, phone/public-ID uniqueness, counters, Wallet, ledger/recharges/offers, Razorpay orders/webhooks, commission/settlement/earnings, payout/withdrawal, and active booking transactions remain out of generic replica fallback. Project 3 live auxiliary data, Project 4 public content and Project 5 financial-domain rules remain separate.
