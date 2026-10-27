@@ -38,6 +38,21 @@ test('Scheduled Call and Chat booking form uses optional Notes and no required C
   assert.ok(server.includes('scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:""'));
 });
 
+test('Scheduled booking status helper is synchronous for Customer and Astrologer dashboard APIs', () => {
+  const server = read('server.js');
+  assert.ok(server.includes('function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {'),
+    'booking status must be returned directly, not wrapped in a Promise');
+  assert.equal(server.includes('async function scheduledBookingReadStatus('), false,
+    'the helper must remain synchronous because the dashboard routes serialize its return value');
+  const helperStart = server.indexOf('function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {');
+  const helperEnd = server.indexOf('\\n}', helperStart) + 2;
+  assert.ok(helperStart >= 0 && helperEnd > helperStart, 'status helper source must be present');
+  assert.equal(server.slice(helperStart, helperEnd).includes('await '), false,
+    'a synchronous status helper must not contain await');
+  assert.equal((server.match(/const bookingStatus=scheduledBookingReadStatus\\(a\\);/g) || []).length, 2,
+    'both Customer and Astrologer appointment endpoints must consume the plain status value');
+});
+
 test('Scheduled bookings explain patience and gate Call/Chat start until the selected IST time', () => {
   const frontend = read('public/smvastro.mjs');
   const service = read('live-session-service.js');
