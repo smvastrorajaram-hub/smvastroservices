@@ -1322,7 +1322,9 @@ async function rejectOrCancel(sessionId, user, reason) {
       messageId: msgRef.id, sessionId: String(sessionId), senderUid,
       text: body, createdAt: new Date()
     };
-    const session = await db.runTransaction(async tx => {
+    let session;
+    try {
+      session = await db.runTransaction(async tx => {
       const snap = await tx.get(sRef);
       if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
       const current = snap.data() || {};
@@ -1337,7 +1339,16 @@ async function rejectOrCancel(sessionId, user, reason) {
       }
       tx.create(msgRef, message);
       return current;
-    });
+      });
+    } catch (error) {
+      // Preserve the pre-read expiry side effect without paying for a separate
+      // participant read on every message send.
+      if (error?.code === 'LIVE_SESSION_ENDED') {
+        await endSession(sessionId, '', 'duration_complete', true)
+          .catch(settlementError => console.warn('[Live Session] Expired chat settlement deferred:', settlementError?.message || settlementError));
+      }
+      throw error;
+    }
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: message.createdAt.toISOString() };
     // Deliver the realtime event immediately; the primary transaction already
@@ -1364,7 +1375,9 @@ async function rejectOrCancel(sessionId, user, reason) {
       signalId: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType,
       payload, createdAt: new Date()
     };
-    const session = await db.runTransaction(async tx => {
+    let session;
+    try {
+      session = await db.runTransaction(async tx => {
       const snap = await tx.get(sRef);
       if (!snap.exists) throw httpError(404, 'Live session was not found.', 'LIVE_SESSION_NOT_FOUND');
       const current = snap.data() || {};
@@ -1385,7 +1398,15 @@ async function rejectOrCancel(sessionId, user, reason) {
       }
       tx.create(signalRef, data);
       return current;
-    });
+      });
+    } catch (error) {
+      // Expired calls still settle through the primary-project billing transaction.
+      if (error?.code === 'LIVE_SESSION_ENDED') {
+        await endSession(sessionId, '', 'duration_complete', true)
+          .catch(settlementError => console.warn('[Live Session] Expired call settlement deferred:', settlementError?.message || settlementError));
+      }
+      throw error;
+    }
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     sendTo(recipientUid, {
       type: 'live.call.signal',
