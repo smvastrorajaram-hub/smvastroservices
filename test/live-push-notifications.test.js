@@ -27,7 +27,8 @@ test('Live requests and Live bookings trigger best-effort server-side pushes', (
 
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
   const server = read('server.js');
-  assert.match(server, /registerLiveSessionRoutes\(\{app,db:walletDomainDb\(\),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
+  assert.match(server, /const liveSessionSettlementDb=walletDomainDb\(\)/);
+  assert.match(server, /registerLiveSessionRoutes\(\{app,db:liveSessionSettlementDb,profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
   assert.match(server, /type: 'scheduled_booking'/);
   assert.match(server, /app\.get\('\/public\/push-config'/);
   assert.match(server, /process\.env\.FCM_VAPID_PUBLIC_KEY/);
