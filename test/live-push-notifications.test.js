@@ -596,7 +596,7 @@ test('Customer history and public content route only after their explicit copy f
   assert.ok(server.includes("consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get()"));
   assert.ok(server.includes("where('createdAt','>=',cutover).orderBy('createdAt','desc')"));
   assert.ok(server.includes("where('updatedAt','>=',cutover).orderBy('updatedAt','desc')"));
-  assert.ok(server.includes('for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id'));
+  assert.ok(server.includes("for(const result of recentResults)if(result.status==='fulfilled')"));
   assert.ok(server.includes('async function readCustomerHistoryCollection(collectionName,uid)'));
   assert.ok(server.includes('if(!multiProjectFirestore.customerHistoryBackfillComplete)return readPrimary()'));
   assert.ok(server.includes('readWithQuotaFallback'));
@@ -818,7 +818,7 @@ test('Live Chat message rendering never marks a message seen before a message bo
   assert.ok(send.includes('current.customerUid !== senderUid && current.astrologerUid !== senderUid'));
   assert.ok(send.includes("current.state !== 'active'"));
   assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe })"));
-  assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
+  assert.ok(server.includes("limit: afterMs > 0 ? 50 : 100"));
 });
 
 
@@ -874,7 +874,8 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   assert.ok(service.includes('function sendToParticipants(session, payload)'));
   assert.ok(service.includes('sendTo(session.customerUid, payload);'));
   assert.ok(service.includes('sendTo(session.astrologerUid, payload);'));
-  assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
+  assert.ok(messagesRoute.includes('readSessionAuxiliarySnapshot({'));
+  assert.ok(messagesRoute.includes('preferSecondary: afterMs <= 0'));
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
   assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
   assert.ok(frontend.includes('},1500);'));
