@@ -325,6 +325,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     (multiProjectFirestore.liveDataMirrorWritesEnabled || multiProjectFirestore.liveDataBackfillComplete);
   const eventClients = new Map();
   const timeoutBySession = new Map();
+  const timerRetryAttemptsBySession = new Map();
   const disconnectByKey = new Map();
   const sessionsByUid = new Map();
 
@@ -524,6 +525,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     const timer = timeoutBySession.get(sessionId);
     if (timer) clearTimeout(timer);
     timeoutBySession.delete(sessionId);
+    timerRetryAttemptsBySession.delete(sessionId);
   }
 
   function scheduleDisconnectEnd(uid, sessionId) {
@@ -581,18 +583,46 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     return view;
   }
 
+  function scheduleSessionTimerRetry(sessionId, data, reason, error) {
+    const attempt = (timerRetryAttemptsBySession.get(sessionId) || 0) + 1;
+    timerRetryAttemptsBySession.set(sessionId, attempt);
+    const retryDelayMs = Math.min(60_000, 5_000 * (2 ** Math.min(attempt - 1, 4)));
+    console.error('[Live Session] Timer operation failed; retry queued:', JSON.stringify({
+      sessionId, reason, attempt, retryDelayMs,
+      errorCode: String(error?.code || ''),
+      error: String(error?.message || error || 'Unknown timer operation error')
+    }));
+    const existing = timeoutBySession.get(sessionId);
+    if (existing) clearTimeout(existing);
+    const retryTimer = setTimeout(async () => {
+      if (timeoutBySession.get(sessionId) === retryTimer) timeoutBySession.delete(sessionId);
+      try {
+        if (reason === 'preparation_complete') await completePreparation(sessionId);
+        else await endSession(sessionId, '', reason, true);
+        timerRetryAttemptsBySession.delete(sessionId);
+      } catch (retryError) {
+        scheduleSessionTimerRetry(sessionId, data, reason, retryError);
+      }
+    }, retryDelayMs);
+    retryTimer.unref?.();
+    timeoutBySession.set(sessionId, retryTimer);
+  }
+
   function scheduleSessionTimer(sessionId, data) {
     const existing = timeoutBySession.get(sessionId);
+    // Do not replace a backoff retry with an immediate expired-deadline timer.
+    if (existing && timerRetryAttemptsBySession.has(sessionId)) return;
     if (existing) clearTimeout(existing);
     timeoutBySession.delete(sessionId);
     const plan = sessionTimerPlan(data);
     if (!plan) return;
     const timer = setTimeout(() => {
-      timeoutBySession.delete(sessionId);
+      if (timeoutBySession.get(sessionId) === timer) timeoutBySession.delete(sessionId);
       const operation = plan.reason === 'preparation_complete'
         ? completePreparation(sessionId)
         : endSession(sessionId, '', plan.reason, true);
-      operation.catch(error => console.error('[Live Session] Timer operation failed:', error?.stack || error));
+      operation.then(() => timerRetryAttemptsBySession.delete(sessionId))
+        .catch(error => scheduleSessionTimerRetry(sessionId, data, plan.reason, error));
     }, plan.delayMs);
     timer.unref?.();
     timeoutBySession.set(sessionId, timer);
