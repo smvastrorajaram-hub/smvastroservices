@@ -2,8 +2,17 @@
   "name": "smv-horoscope",
   "version": "1.0.0",
   "private": true,
-  "scripts": {"start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js", "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js test/firestore-quota-routing.test.js", "validate:wallet-domain": "node scripts/validate-wallet-domain.js"},
-  "engines": {"node": ">=20 <27"},
+  "scripts": {
+    "start": "node server.js",
+    "test:wallet": "node --test test/wallet-service.test.js",
+    "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js test/firestore-quota-routing.test.js",
+    "validate:wallet-domain": "node scripts/validate-wallet-domain.js",
+    "test:replication": "node --test test/firestore-replica-sync.test.js test/firestore-quota-routing.test.js",
+    "validate:multi-project-read-replica": "node scripts/validate-multi-project-firestore.js"
+  },
+  "engines": {
+    "node": ">=20 <27"
+  },
   "dependencies": {
     "express": "^4.21.2",
     "astronomy-engine": "^2.1.19",

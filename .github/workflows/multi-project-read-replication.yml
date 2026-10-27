@@ -1,0 +1,52 @@
+name: Multi-project read replication tests
+on:
+  pull_request:
+    paths:
+      - 'firestore-read-replica-catalog.js'
+      - 'firestore-replica-sync.js'
+      - 'multi-project-firestore.js'
+      - 'server.js'
+      - 'scripts/backfill-multi-project-firestore.js'
+      - 'scripts/validate-multi-project-firestore.js'
+      - 'functions/**'
+      - 'test/firestore-replica-sync.test.js'
+      - 'test/firestore-quota-routing.test.js'
+      - '.github/workflows/multi-project-read-replication.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'firestore-read-replica-catalog.js'
+      - 'firestore-replica-sync.js'
+      - 'multi-project-firestore.js'
+      - 'server.js'
+      - 'scripts/backfill-multi-project-firestore.js'
+      - 'scripts/validate-multi-project-firestore.js'
+      - 'functions/**'
+      - 'test/firestore-replica-sync.test.js'
+      - 'test/firestore-quota-routing.test.js'
+      - '.github/workflows/multi-project-read-replication.yml'
+permissions:
+  contents: read
+jobs:
+  replica-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Syntax and JSON checks
+        run: |
+          node --check server.js
+          node --check multi-project-firestore.js
+          node --check firestore-read-replica-catalog.js
+          node --check firestore-replica-sync.js
+          node --check scripts/backfill-multi-project-firestore.js
+          node --check scripts/validate-multi-project-firestore.js
+          node --check functions/index.js
+          node --check test/firestore-replica-sync.test.js
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('functions/package.json','utf8'))"
+      - name: Unit tests for ordering, deletes, allowlist and read gates
+        run: node --test test/firestore-replica-sync.test.js test/firestore-quota-routing.test.js
+      - name: Validate Cloud Functions package
+        run: npm install --prefix functions --ignore-scripts --no-audit --no-fund
