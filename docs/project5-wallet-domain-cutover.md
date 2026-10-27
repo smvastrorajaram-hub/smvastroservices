@@ -25,7 +25,17 @@ After creating a service account that can access Project 5, add these to the exi
 - `FIREBASE_WALLET_DOMAIN_PRIVATE_KEY=<Project 5 service-account private key, stored as a secret>`
 - `SMV_WALLET_DOMAIN_ENABLED=true`
 
-The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, and dependency-verification gates are explicitly enabled. This PR intentionally does not enable those gates.
+The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, dependency-verification, and the separate runtime-integration-verification gates are explicitly enabled. This PR intentionally does not enable those gates.
+
+## FCM versus Project 3 WebRTC data
+
+The current source keeps the production browser FCM configuration on Project 1 (`smv-astro`; sender ID `299081899217`) in `public/sw.js`. The backend initializes Firebase Admin from Render's `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY`, and `live-session-service.js` sends incoming-call/chat pushes through `admin.messaging().send()`. The separate `FCM_VAPID_PUBLIC_KEY` exposed by `/public/push-config` is a Web Push public key, not the Admin service-account private key.
+
+Project 3 (`smv-astro-services`) is configured as the auxiliary Live Data project. In the existing code, Chat messages and WebRTC offer/answer/ICE signals are validated and written through the primary database first, then best-effort mirrored to Project 3; mirror reads only become eligible after their backfill flag and per-session ready marker. Project 3 does not have to send FCM merely because it stores or serves signaling data.
+
+Therefore Project 1 FCM can continue delivering incoming-request notifications while Project 3 handles mirrored/eligible signaling data. Keep FCM registration tokens generated for Project 1 paired with the Project 1 sender credential. If client tokens are ever registered against Project 3, sending them with the Project 1 sender can fail with sender/credential mismatch; in that case, use a dedicated Project 3 Admin Messaging sender and a distinct Project 3 token registration flow. Do not change the production FCM client config just to move Firestore signals.
+
+This is architecture-level source verification, not a live-device FCM delivery test. WebRTC media still requires the participants' browser/app to join, grant microphone permission, and complete peer negotiation; FCM alerts a user and does not carry voice media.
 
 ## Firestore rules and indexes
 
@@ -40,7 +50,7 @@ Use `firebase.multi-project-wallet-domain.json` as the Firebase CLI configuratio
 4. Inspect the collection counts. A failed query or quota error means the backfill is incomplete; do not proceed.
 5. Only while the backend is stopped, set `SMV_WALLET_DOMAIN_QUIESCED=true` in the migration environment and run:
    `SMV_WALLET_DOMAIN_ENABLED=true SMV_WALLET_DOMAIN_QUIESCED=true node scripts/backfill-wallet-domain.js --apply`
-6. Reconcile the source/target wallet counts, each balance against the sum/semantics of its ledger, recharges and Razorpay order references, live-session state, participant profiles, earnings and withdrawals. The script intentionally never sets `SMV_WALLET_DOMAIN_BACKFILL_COMPLETE`, `SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED`, or `SMV_WALLET_DOMAIN_CUTOVER_COMPLETE`.
+6. Reconcile the source/target wallet counts, each balance against the sum/semantics of its ledger, recharges and Razorpay order references, live-session state, participant profiles, earnings and withdrawals. The script intentionally never sets `SMV_WALLET_DOMAIN_BACKFILL_COMPLETE`, `SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED`, `SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED`, or `SMV_WALLET_DOMAIN_CUTOVER_COMPLETE`.
 7. Do not turn the cutover flags on until a separate integration change completes profile/rate/settings synchronization, reroutes the admin/astrologer earnings and withdrawal reads, and passes the full Wallet + Live Session billing suite. During the initial preflight, all production traffic remains on Project 1.
 
 ## Security and correctness
