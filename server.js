@@ -3,7 +3,7 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
-const {initializeMultiProjectFirestore}=require('./multi-project-firestore');
+const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -40,9 +40,7 @@ const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,
 // Project 5 becomes authoritative for the whole active Wallet + Call/Chat billing domain
 // only after the source integration gate, backfill, and dependency checks are all verified.
 function walletDomainDb(){
- return multiProjectFirestore.walletDomainCutoverComplete===true
-  ? multiProjectFirestore.walletDomainDb
-  : db;
+ return resolveWalletDomainDatabase(multiProjectFirestore,db);
 }
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
 async function mirrorAdminContentPatch(id,patch){
