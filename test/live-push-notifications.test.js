@@ -520,8 +520,8 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
   assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
-  assert.ok(service.includes("const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
-  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
+  assert.ok(service.includes("const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
+  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
