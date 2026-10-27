@@ -500,8 +500,10 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   const service = read('live-session-service.js');
   assert.ok(service.includes('tx.create(msgRef, message)'));
   assert.ok(service.includes('tx.create(signalRef, data)'));
-  assert.ok(service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\', msgRef.id, message, session)'));
-  assert.ok(service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\', signalRef.id, data, session)'));
+  assert.ok(service.includes('void mirrorLiveRecordToSecondary(sessionId, \'messages\', msgRef.id, message, session)'));
+  assert.ok(service.includes('void mirrorLiveRecordToSecondary(sessionId, \'signals\', signalRef.id, data, session)'));
+  assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\''));
+  assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\''));
   assert.ok(service.includes('const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
   assert.ok(service.includes("historyArchivedToSecondary: false"));
   assert.ok(service.includes("liveAuxStoreReady: false"));
@@ -536,4 +538,22 @@ test('Firestore indexes include public-content and multi-project session-history
   assert.ok(has('smv_live_sessions', [['astrologerUid','ASCENDING'],['state','ASCENDING']]));
   assert.ok(has('smv_live_sessions', [['customerUid','ASCENDING'],['state','ASCENDING'],['historyArchivedToSecondary','ASCENDING']]));
   assert.ok(has('smv_live_sessions', [['astrologerUid','ASCENDING'],['state','ASCENDING'],['historyArchivedToSecondary','ASCENDING']]));
+});
+
+
+test('Non-production Firestore cannot silently route into screenshot-named production projects', () => {
+  const { initializeMultiProjectFirestore } = require('../multi-project-firestore');
+  const apps = [];
+  const admin = {
+    apps,
+    credential: { cert: value => value },
+    initializeApp(options, name) { const app = { name, options }; apps.push(app); return app; },
+    firestore(app) { return { projectId: app?.options?.credential?.projectId || 'primary' }; }
+  };
+  assert.throws(() => initializeMultiProjectFirestore({
+    admin,
+    primaryDb: { project: 'staging' },
+    env: { SMV_FIRESTORE_MULTI_PROJECT_ENABLED: 'true', FIREBASE_PROJECT_ID: 'smv-astro-staging' }
+  }), /Refusing to connect a non-production primary project to the production secondary projects/);
+  assert.equal(apps.length, 0);
 });
