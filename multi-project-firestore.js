@@ -76,6 +76,7 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     walletDomainEnabled: false,
     walletDomainBackfillComplete: false,
     walletDomainCutoverComplete: false,
+    walletDomainRuntimeIntegrationVerified: false,
     walletDomainMirrorWritesEnabled: false,
     customerHistoryBackfillComplete: false,
     sessionHistoryBackfillComplete: false,
@@ -131,9 +132,11 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     state.walletDomainBackfillComplete = enabledFlag(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE);
     // These two gates intentionally do not trigger data routing by themselves.
     // Runtime cutover must also be wired to the fully tested wallet/session domain.
+    state.walletDomainRuntimeIntegrationVerified = enabledFlag(env.SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED);
     state.walletDomainCutoverComplete = state.walletDomainBackfillComplete &&
       enabledFlag(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE) &&
-      enabledFlag(env.SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED);
+      enabledFlag(env.SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED) &&
+      state.walletDomainRuntimeIntegrationVerified;
     state.walletDomainMirrorWritesEnabled = enabledFlag(env.SMV_WALLET_DOMAIN_MIRROR_WRITES);
   }
 
