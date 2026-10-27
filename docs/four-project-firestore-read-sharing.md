@@ -19,7 +19,7 @@ Secondary reads are enabled only after the relevant data has been copied and ver
 
 ## Render environment variables
 
-Set these only on the intended **staging** backend first. Never commit service-account JSON or private keys.
+Never commit service-account JSON or private keys. The four project IDs above came from the uploaded screenshots and are the production-named projects. The current `smv-astro-staging` backend must **not** route data into these projects. The router rejects this combination unless an explicit cross-environment override is provided, and that override is not recommended for normal testing. Test with isolated secondary staging projects first; enable the production project IDs only on the intended production backend after review.
 
 Required to initialize all four projects:
 
@@ -31,7 +31,7 @@ Required to initialize all four projects:
 
 Project ID overrides are available as `FIREBASE_CONSULTATIONS_PROJECT_ID`, `FIREBASE_LIVE_DATA_PROJECT_ID`, and `FIREBASE_CONTENT_PROJECT_ID`; defaults match the table above. Each credential must belong to its respective secondary project and have only the Firestore access required by the backend.
 
-With the master flag off (the default), the backend uses Project 1 only and does not initialize secondary apps. With the master flag on but credentials missing/IDs duplicated, startup fails fast rather than silently writing to the wrong database.
+With the master flag off (the default), the backend uses Project 1 only and does not initialize secondary apps. With the master flag on but credentials missing/IDs duplicated, startup fails fast rather than silently writing to the wrong database. A non-production primary is also blocked from the screenshot-named production secondaries by default.
 
 ## Copy/backfill sequence
 
