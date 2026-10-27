@@ -123,12 +123,20 @@ async function compareQuery(label, sourceQuery, targetQuery, report) {
 async function compareNamedIds(label, ids, sourceCollection, targetCollection, report) {
   const source = new Map();
   const target = new Map();
-  for (const id of ids) {
-    const [sourceDoc, targetDoc] = await Promise.all([
-      sourceCollection.doc(id).get(), targetCollection.doc(id).get()
-    ]);
-    if (sourceDoc.exists) source.set(id, sourceDoc.data() || {});
-    if (targetDoc.exists) target.set(id, targetDoc.data() || {});
+  const uniqueIds = [...new Set([...ids].map(id => String(id)).filter(Boolean))];
+  // Bound parallel reads to avoid a large burst when a project has many old recharges/bookings.
+  for (let offset = 0; offset < uniqueIds.length; offset += 100) {
+    const batchIds = uniqueIds.slice(offset, offset + 100);
+    const results = await Promise.all(batchIds.map(async id => {
+      const [sourceDoc, targetDoc] = await Promise.all([
+        sourceCollection.doc(id).get(), targetCollection.doc(id).get()
+      ]);
+      return { id, sourceDoc, targetDoc };
+    }));
+    for (const { id, sourceDoc, targetDoc } of results) {
+      if (sourceDoc.exists) source.set(id, sourceDoc.data() || {});
+      if (targetDoc.exists) target.set(id, targetDoc.data() || {});
+    }
   }
   compareMaps(label, source, target, report);
   return { source, target };
