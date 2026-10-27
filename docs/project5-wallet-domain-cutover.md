@@ -62,3 +62,29 @@ Use `firebase.multi-project-wallet-domain.json` as the Firebase CLI configuratio
 - Project 5 Firestore rules must deny client writes to wallets, transactions, recharges, payout details, and billing/session collections. Server operations must use the service account and continue validating Firebase ID tokens/roles.
 - Do not fail over individual financial transaction reads/writes between Project 1 and Project 5. That can split an idempotency key or show a stale balance. Any later cutover must route the complete transaction domain to one database.
 - Do not share the Project 1 private key or any user credential in this PR or chat.
+
+
+## Backend key continuity — no Razorpay key migration
+
+Project routing changes the Firestore database used by a service; it does not change the Razorpay merchant account or payment gateway credentials.
+
+- Keep the existing production `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` on the Render backend. Do not copy them into Firebase Project 5, rotate them, or replace them as part of the Firestore cutover.
+- Keep `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` for Project 1. Project 1 remains the identity/profile control plane.
+- Add a separate Project 5 service account to Render as `FIREBASE_WALLET_DOMAIN_CLIENT_EMAIL` and `FIREBASE_WALLET_DOMAIN_PRIVATE_KEY`; use `FIREBASE_WALLET_DOMAIN_PROJECT_ID=smvastro-services` (or the already configured Project 5 ID). Never reuse Project 1's private key for Project 5.
+- Projects 2–4 likewise need their own project-specific service-account credentials only when their routing is being enabled. Never place service-account private keys in source code, browser code, PR text, or logs.
+- The backend's existing Razorpay key variables are passed unchanged to the Wallet service; the selected Firestore database is resolved separately through `walletDomainDb()`.
+
+## Quota fallback boundaries
+
+A quota-exhausted **replica read** can fall back to its verified authoritative copy. Live Chat history and WebRTC signal reads now use that rule for the Project 3 mirror: on Firestore quota exhaustion they retry the read against the active session domain (Project 1 before cutover, Project 5 after cutover) and mark the session's auxiliary replica as not ready so subsequent reads stop hitting the exhausted replica. Incremental Live Chat message reads remain on the authoritative write store for freshness.
+
+This is not a blanket "write to any project" router:
+
+- Project 2 history reads retain their existing fallback to the original records in Project 1.
+- Project 3 is a mirror for live messages/signals; the authoritative session and billing transaction stay together in the selected Wallet/Live domain.
+- Project 4 content writes/read fallback need their own replicated-write/reconciliation design because Admin content writes may be authoritative in Project 4 after its cutover.
+- Wallet reserve, Razorpay verification/credit, live booking, session billing/settlement, commission and earnings must **not** retry a failed write on Project 1 or Projects 2–4. Firestore cannot provide one atomic transaction across projects, so doing so could double-credit or split a settlement. If Project 5 itself exhausts quota, the transaction must fail safely and be retried only after its authoritative state is verified or a separately fenced, fully reconciled domain failover is implemented.
+
+## Production cutover remains operator-gated
+
+The code change does not set any Render environment variables and does not move live records. Configure the Project 5 service-account variables first, apply and verify Project 5 rules/indexes, run the backfill only under the documented quiescence requirements, run the read-only validator, and complete controlled end-to-end Wallet + Call/Chat tests. Only then should an operator enable the cutover flags. Keep every cutover flag off until the preflight/validation evidence and reconciliation report have been reviewed.
