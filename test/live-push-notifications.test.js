@@ -715,3 +715,27 @@ test('Live Chat message rendering never marks a message seen before a message bo
   assert.ok(send.includes("sendTo(recipientUid, { type: 'live.chat.message', message: safe })"));
   assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
 });
+
+
+test('Live and booked Call/Chat sessions share the same timeout, readiness and settlement lifecycle', () => {
+  const live = read('live-session-service.js');
+  const frontend = read('public/smvastro.mjs');
+  const acceptedBookingStart = live.indexOf('async function acceptBooking(');
+  const acceptedBookingEnd = live.indexOf('async function acceptSession(', acceptedBookingStart);
+  const acceptedBooking = live.slice(acceptedBookingStart, acceptedBookingEnd);
+  const scheduledStart = live.indexOf("app.post('/live/scheduled-appointments/:id/start'");
+  const scheduledEnd = live.indexOf("app.post('/live/requests'", scheduledStart);
+  const scheduled = live.slice(scheduledStart, scheduledEnd);
+  const directRequest = live.slice(live.indexOf("app.post('/live/requests'"), live.indexOf("app.get('/live/sessions'", live.indexOf("app.post('/live/requests'")));
+  assert.ok(acceptedBooking.includes("state: 'preparing', origin: 'accepted_booking'"));
+  assert.ok(acceptedBooking.includes('scheduleSessionTimer(id, txResult.data);'));
+  assert.ok(acceptedBooking.includes("type: 'live.session.request'"));
+  assert.ok(scheduled.includes('const accepted = await acceptSession(result.session.id, uid);'));
+  assert.ok(scheduled.includes("bookingStatus: isSession ? 'in_progress' : 'waiting_for_online'"));
+  assert.ok(directRequest.includes('const result = await createRequest('));
+  assert.ok(frontend.includes("if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
+  assert.ok(frontend.includes("id=\"smvLiveConnectChat\""));
+  assert.ok(live.includes('const release = reservedAmount - charge;'));
+  assert.ok(live.includes('const commission = Number.isFinite(savedAstroPercent)'));
+  assert.ok(live.includes('const earningRefDoc = earningRef(id);'));
+});
