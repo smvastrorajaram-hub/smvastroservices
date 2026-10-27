@@ -58,7 +58,7 @@ test('Project 5 can be initialized independently of the existing four-project fl
   assert.equal(admin.apps.length, 1);
 });
 
-test('Project 5 cannot be cut over until backfill, cutover, and dependency checks are all explicit', () => {
+test('Project 5 cannot be cut over until runtime billing integration exists in source too', () => {
   const admin = fakeAdmin();
   const primaryDb = { primary: true };
   const env = {
@@ -81,8 +81,9 @@ test('Project 5 cannot be cut over until backfill, cutover, and dependency check
     admin: fakeAdmin(), primaryDb,
     env: { ...env, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true', SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED: 'true' }
   });
-  assert.equal(verified.walletDomainRuntimeIntegrationVerified, true);
-  assert.equal(verified.walletDomainCutoverComplete, true);
+  // Environment flags alone cannot activate cutover while the runtime domain router is absent.
+  assert.equal(verified.walletDomainRuntimeIntegrationVerified, false);
+  assert.equal(verified.walletDomainCutoverComplete, false);
 });
 
 test('Project 5 rejects missing service-account credentials instead of silently connecting', () => {
