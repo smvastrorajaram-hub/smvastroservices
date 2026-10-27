@@ -95,6 +95,41 @@ function timestampMillis(value) {
   return 0;
 }
 
+function sessionTimerPlan(data, nowMs = Date.now()) {
+  const d = data || {};
+  let dueAt = 0;
+  let reason = '';
+  if (d.state === 'preparing') {
+    const explicitDeadline = timestampMillis(d.preparationUntil);
+    const preparationStart = timestampMillis(d.preparationStartedAt) || timestampMillis(d.acceptedAt);
+    dueAt = explicitDeadline || (preparationStart ? preparationStart + PREPARATION_DURATION_MS : 0);
+    reason = 'preparation_complete';
+  } else if (d.state === 'active') {
+    const start = timestampMillis(d.startedAt);
+    const minutes = Number(d.minutes || 1);
+    if (!start || !Number.isSafeInteger(minutes) || minutes < 1 || minutes > MAX_SESSION_MINUTES) return null;
+    dueAt = start + minutes * 60_000;
+    reason = 'duration_complete';
+  } else if (d.state === 'ringing') {
+    const createdAt = timestampMillis(d.createdAt);
+    if (!createdAt) return null;
+    dueAt = createdAt + RING_TIMEOUT_MS;
+    reason = 'no_answer';
+  } else if (d.state === 'connecting') {
+    const connectedAt = timestampMillis(d.connectingAt) || timestampMillis(d.preparationCompletedAt) ||
+      timestampMillis(d.acceptedAt) || timestampMillis(d.createdAt);
+    if (!connectedAt) return null;
+    dueAt = connectedAt + (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : CALL_CONNECT_TIMEOUT_MS);
+    reason = 'connection_failed';
+  } else {
+    return null;
+  }
+  if (!Number.isFinite(dueAt) || dueAt <= 0) return null;
+  const now = Number(nowMs);
+  if (!Number.isFinite(now)) return null;
+  return { dueAt, reason, delayMs: Math.max(0, dueAt - now) };
+}
+
 function scheduledAppointmentStatusForEndedSession(session) {
   if (timestampMillis(session?.startedAt)) return 'completed';
   return String(session?.endReason || '').trim().toLowerCase() === 'rejected'
@@ -543,38 +578,22 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     const view = liveSessionSafeView(id, updated);
     sendTo(updated.customerUid, { type: 'live.session.updated', session: view });
     sendTo(updated.astrologerUid, { type: 'live.session.updated', session: view });
+    return view;
   }
 
   function scheduleSessionTimer(sessionId, data) {
     const existing = timeoutBySession.get(sessionId);
     if (existing) clearTimeout(existing);
     timeoutBySession.delete(sessionId);
-    const d = data || {};
-    if (d.state === 'ended') return;
-    let dueAt = 0;
-    let reason = 'no_answer';
-    if (d.state === 'preparing') {
-      dueAt = timestampMillis(d.preparationUntil) || (timestampMillis(d.preparationStartedAt) + PREPARATION_DURATION_MS);
-      reason = 'preparation_complete';
-    } else if (d.state === 'active') {
-      const start = timestampMillis(d.startedAt);
-      if (!start) return;
-      dueAt = start + Math.max(1, Number(d.minutes || 1)) * 60_000;
-      reason = 'duration_complete';
-    } else if (d.state === 'ringing') {
-      dueAt = timestampMillis(d.createdAt) + RING_TIMEOUT_MS;
-      reason = 'no_answer';
-    } else if (d.state === 'connecting') {
-      dueAt = timestampMillis(d.connectingAt || d.preparationCompletedAt || d.acceptedAt || d.createdAt) + (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : CALL_CONNECT_TIMEOUT_MS);
-      reason = 'connection_failed';
-    } else return;
+    const plan = sessionTimerPlan(data);
+    if (!plan) return;
     const timer = setTimeout(() => {
       timeoutBySession.delete(sessionId);
-      const operation = reason === 'preparation_complete'
+      const operation = plan.reason === 'preparation_complete'
         ? completePreparation(sessionId)
-        : endSession(sessionId, '', reason, true);
+        : endSession(sessionId, '', plan.reason, true);
       operation.catch(error => console.error('[Live Session] Timer operation failed:', error?.stack || error));
-    }, Math.max(0, dueAt - Date.now()));
+    }, plan.delayMs);
     timer.unref?.();
     timeoutBySession.set(sessionId, timer);
   }
@@ -1517,16 +1536,36 @@ async function rejectOrCancel(sessionId, user, reason) {
       rows = snap.docs.map(d => liveSessionSafeView(d.id, d.data() || {}));
       rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
     }
-    const due = rows.filter(row => row.state === 'active' && row.startedAt &&
-      Date.now() >= Date.parse(row.startedAt) + row.minutes * 60_000);
-    const settled = new Map();
-    for (const row of due) {
+    // Runtime timeouts are in-memory. Reconcile persisted deadlines on every
+    // participant refresh so a process restart or missed timer cannot leave a
+    // Preparing / Ringing / Connecting / Active session stale indefinitely.
+    const reconciled = new Map();
+    for (const row of rows) {
+      if (!['preparing', 'ringing', 'connecting', 'active'].includes(row.state)) continue;
+      trackSession(row.id, row.customerUid, row.astrologerUid);
+      const plan = sessionTimerPlan(row);
+      if (!plan) continue;
       try {
-        const result = await endSession(row.id, '', 'duration_complete', true);
-        if (result.session) settled.set(row.id, result.session);
-      } catch (e) { console.warn('[Live Session] Expiry check failed:', e?.message || e); }
+        if (plan.delayMs <= 0) {
+          const result = plan.reason === 'preparation_complete'
+            ? await completePreparation(row.id)
+            : await endSession(row.id, '', plan.reason, true);
+          const updatedView = result?.session || result;
+          if (updatedView?.state) reconciled.set(row.id, liveSessionSafeView(row.id, updatedView));
+          else {
+            // A concurrent accept/end won the transaction; return the canonical DB state.
+            const fresh = await sessionRef(row.id).get();
+            if (fresh.exists) reconciled.set(row.id, liveSessionSafeView(row.id, fresh.data() || {}));
+          }
+        } else if (!timeoutBySession.has(row.id)) {
+          // Re-arm timers for sessions omitted by the bounded process-start restore.
+          scheduleSessionTimer(row.id, row);
+        }
+      } catch (e) {
+        console.warn('[Live Session] Deadline reconciliation deferred:', e?.message || e);
+      }
     }
-    return rows.map(row => settled.get(row.id) || row);
+    return rows.map(row => reconciled.get(row.id) || row);
   }
 
   async function expireStaleBookingRows(rows) {
@@ -2098,6 +2137,7 @@ module.exports = {
   astrologerRatePaise,
   maxAffordableMinutes,
   calculateBookingReserveRelease,
+  sessionTimerPlan,
   preparationWindow,
   scheduledAppointmentStatusForEndedSession,
   isAstrologerLiveModeEnabled,
