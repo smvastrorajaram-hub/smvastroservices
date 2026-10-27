@@ -3783,21 +3783,32 @@ app.get("/astrologer/earnings", async (req, res) => {
     // transaction. Do not scan and transactionally replay every historical
     // session each time the Astrologer opens the Dashboard.
     const uid=String(user.uid||"");
-    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, liveEarningsSnap] = await Promise.all([
+    const liveEarningsQuery=db.collection("smv_payments")
+      .where("astrologerId", "==", uid)
+      .where("source", "==", "live_session")
+      .where("type", "==", "astrologer_earning")
+      .where("status", "==", "credited");
+    const [profileSnap, questionSnap, privateSnap, withdrawalSnap, liveRecentResult, liveAggregateResult] = await Promise.all([
       db.collection("smv_users").doc(uid).get(),
       db.collection("smv_questions")
         .where("astrologerId", "==", uid)
         .where("status", "==", "answered")
-        .where("commissionStatus", "==", "credited").get(),
+        .where("commissionStatus", "==", "credited")
+        .select("astrologerCommissionAmount", "commissionAmount").get(),
       db.collection("smv_private_consultations")
         .where("astrologerId", "==", uid)
-        .where("commissionStatus", "==", "credited").get(),
+        .where("commissionStatus", "==", "credited")
+        .select("astrologerCreditedAmount", "astrologerAmount").get(),
       db.collection("smv_withdrawals").where("astrologerId", "==", uid).get(),
-      db.collection("smv_payments")
-        .where("astrologerId", "==", uid)
-        .where("source", "==", "live_session")
-        .where("type", "==", "astrologer_earning")
-        .where("status", "==", "credited").get()
+      // The dashboard renders at most 50 earnings rows. Avoid transferring every
+      // historical Live Session payment just to display that short history.
+      liveEarningsQuery.orderBy("createdAt", "desc").limit(50).get()
+        .then(snapshot=>({snapshot}),error=>({error})),
+      // The total still includes every credited Live Session earning, but the
+      // aggregate returns one number instead of every matching payment document.
+      liveEarningsQuery.aggregate({
+        liveEarningsTotal: admin.firestore.AggregateField.sum("earningAmount")
+      }).get().then(snapshot=>({snapshot}),error=>({error}))
     ]);
     const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
     const role = String(profile.role || user.role || "").toLowerCase();
@@ -3805,14 +3816,31 @@ app.get("/astrologer/earnings", async (req, res) => {
       return res.status(403).json({ error: "Only an astrologer account can read earnings." });
     }
 
-    // These two result sets exist only for historical financial reconciliation.
-    // Current public-question/private-consultation UI and workflows are retired.
+    // The query fallback keeps the Dashboard and totals working before the new
+    // createdAt composite index finishes deploying, or if aggregation is unavailable.
+    let liveEarningsSnap=liveRecentResult.snapshot||null;
+    let liveEarningsTotal=liveAggregateResult.snapshot
+      ?Number(liveAggregateResult.snapshot.data().liveEarningsTotal||0)
+      :null;
+    if(!liveEarningsSnap||liveEarningsTotal===null||!Number.isFinite(liveEarningsTotal)){
+      const fullLiveEarningsSnap=await liveEarningsQuery.get();
+      if(!liveEarningsSnap)liveEarningsSnap=fullLiveEarningsSnap;
+      if(liveEarningsTotal===null||!Number.isFinite(liveEarningsTotal)){
+        liveEarningsTotal=fullLiveEarningsSnap.docs.reduce((sum,docSnap)=>{
+          const payment=docSnap.data()||{};
+          return sum+Number(payment.earningAmount??payment.commissionAmount??0);
+        },0);
+      }
+    }
+
+    // These projected result sets preserve all legacy credited money without
+    // downloading unrelated question/private-consultation fields.
     const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}));
     const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}));
     const withdrawals = withdrawalSnap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
 
-    // Keep legacy settled commissions in the withdrawal-eligibility total so no
+    // Keep historical settled commissions in the withdrawal-eligibility total so no
     // previously earned balance is lost, but show only Live Call/Chat earnings
     // in the current Dashboard history.
     let historicalEarnings = 0;
@@ -3834,8 +3862,8 @@ app.get("/astrologer/earnings", async (req, res) => {
     }
     const toMs = value => value?.toMillis ? value.toMillis() : (value?.seconds ? Number(value.seconds) * 1000 : (value instanceof Date ? value.getTime() : Number(value || 0)));
     ledger.sort((a,b) => toMs(b.date) - toMs(a.date));
-    const totalEarnings = Math.round((historicalEarnings + ledger.reduce((sum,x) => sum + Number(x.commission || 0), 0)) * 100) / 100;
-    return res.set('Cache-Control','no-store').json({success:true,totalEarnings,ledger,withdrawals});
+    const totalEarnings = Math.round((historicalEarnings + liveEarningsTotal) * 100) / 100;
+    return res.set('Cache-Control','no-store').json({success:true,totalEarnings,ledger:ledger.slice(0,50),withdrawals});
   } catch (e) {
     console.error("Astrologer earnings load failed:", e?.message || e);
     return res.status(500).json({ error: e?.message || "Unable to load astrologer earnings." });
