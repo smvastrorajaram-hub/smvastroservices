@@ -27,7 +27,7 @@ After creating a service account that can access Project 5, add these to the exi
 - `FIREBASE_WALLET_DOMAIN_PRIVATE_KEY=<Project 5 service-account private key, stored as a secret>`
 - `SMV_WALLET_DOMAIN_ENABLED=true`
 
-The old four-project flag is not required for preparing Project 5. It can be initialized independently. The runtime routing state remains on Project 1 unless backfill, cutover, dependency-verification, and runtime-integration-verification gates are explicitly enabled. The code-level `WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED` guard is separate from Render variables; environment variables alone cannot enable cutover while that source guard is false. Even after tests allow the source guard to be enabled, do not set the cutover flags until migration and reconciliation are reviewed. This PR intentionally does not enable any production cutover flag.
+The old four-project flag is not required for preparing Project 5. It can be initialized independently. The source-level `WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED` readiness gate is now true because the active Wallet/Call/Chat routing is implemented and guarded by automated tests. That does **not** switch production to Project 5 by itself: production remains on Project 1 unless the backfill, dependency-verification, runtime-integration-verification, and explicit cutover flags are all true. Do not set those Render flags until a controlled backfill has finished, the read-only validator reports `ok=true` and `cutoverSafe=true`, and the controlled end-to-end tests are reviewed. This PR intentionally does not set any production cutover flag.
 
 ## FCM versus Project 3 WebRTC data
 
