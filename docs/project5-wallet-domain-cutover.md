@@ -25,7 +25,7 @@ After creating a service account that can access Project 5, add these to the exi
 - `FIREBASE_WALLET_DOMAIN_PRIVATE_KEY=<Project 5 service-account private key, stored as a secret>`
 - `SMV_WALLET_DOMAIN_ENABLED=true`
 
-The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, dependency-verification, and the separate runtime-integration-verification gates are explicitly enabled. This PR intentionally does not enable those gates.
+The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, dependency-verification, and the separate runtime-integration-verification gates are explicitly enabled. In this preflight revision, a code-level `WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false` guard also prevents environment variables alone from marking cutover ready. A later integration change must deliberately update this source gate only after every billing/profile/withdrawal path has been routed and tested. This PR intentionally does not enable any production cutover gate.
 
 ## FCM versus Project 3 WebRTC data
 
