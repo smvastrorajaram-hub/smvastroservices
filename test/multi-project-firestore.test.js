@@ -67,10 +67,9 @@ test('Project 5 can be initialized independently of the existing four-project fl
   assert.equal(admin.apps.length, 1);
 });
 
-test('Project 5 cannot be cut over until runtime billing integration exists in source too', () => {
-  const admin = fakeAdmin();
+test('Project 5 cutover requires the integrated runtime plus every explicit migration gate', () => {
   const primaryDb = { primary: true };
-  const env = {
+  const baseEnv = {
     FIREBASE_PROJECT_ID: DEFAULT_PROJECT_IDS.primary,
     FIREBASE_WALLET_DOMAIN_PROJECT_ID: 'smvastro-services',
     FIREBASE_WALLET_DOMAIN_CLIENT_EMAIL: 'wallet-project5@example.iam.gserviceaccount.com',
@@ -79,20 +78,29 @@ test('Project 5 cannot be cut over until runtime billing integration exists in s
     SMV_WALLET_DOMAIN_BACKFILL_COMPLETE: 'true',
     SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
   };
-  const incomplete = initializeMultiProjectFirestore({ admin, primaryDb, env });
-  assert.equal(incomplete.walletDomainCutoverComplete, false);
-  const dependenciesVerified = initializeMultiProjectFirestore({
-    admin: fakeAdmin(), primaryDb,
-    env: { ...env, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true' }
+  const missingDependencyGate = initializeMultiProjectFirestore({
+    admin: fakeAdmin(), primaryDb, env: baseEnv
   });
-  assert.equal(dependenciesVerified.walletDomainCutoverComplete, false);
-  const verified = initializeMultiProjectFirestore({
+  assert.equal(missingDependencyGate.walletDomainRuntimeIntegrationVerified, true);
+  assert.equal(missingDependencyGate.walletDomainCutoverComplete, false);
+
+  const missingRuntimeFlag = initializeMultiProjectFirestore({
     admin: fakeAdmin(), primaryDb,
-    env: { ...env, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true', SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED: 'true' }
+    env: { ...baseEnv, SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true' }
   });
-  // Environment flags alone cannot activate cutover while the runtime domain router is absent.
-  assert.equal(verified.walletDomainRuntimeIntegrationVerified, false);
-  assert.equal(verified.walletDomainCutoverComplete, false);
+  assert.equal(missingRuntimeFlag.walletDomainCutoverComplete, false);
+
+  const ready = initializeMultiProjectFirestore({
+    admin: fakeAdmin(), primaryDb,
+    env: {
+      ...baseEnv,
+      SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED: 'true',
+      SMV_WALLET_DOMAIN_RUNTIME_INTEGRATION_VERIFIED: 'true'
+    }
+  });
+  assert.equal(ready.walletDomainRuntimeIntegrationVerified, true);
+  assert.equal(ready.walletDomainCutoverComplete, true);
+  assert.notEqual(ready.walletDomainDb, primaryDb);
 });
 
 test('Project 5 rejects missing service-account credentials instead of silently connecting', () => {
