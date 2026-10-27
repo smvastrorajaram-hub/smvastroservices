@@ -698,6 +698,30 @@ test('Preparation countdown reconciles the server session at zero instead of lea
   assert.ok(server.includes('scheduleSessionTimer(row.id, row)'));
 });
 
+test('Live Chat state stays active across delayed events and the Connect action verifies the Chat Box is visible', () => {
+  const frontend = read('public/smvastro.mjs');
+  const helperStart = frontend.indexOf('function smvLiveMergeSessionState(previous,incoming){');
+  const helperEnd = frontend.indexOf('function smvLiveSessionStatusLabel(session){', helperStart);
+  const merge = frontend.slice(helperStart, helperEnd);
+  assert.ok(frontend.includes('const SMV_LIVE_SESSION_STATE_RANK=Object.freeze({ringing:0,preparing:1,connecting:2,active:3,ended:4});'));
+  assert.ok(merge.includes('incomingRank<previousRank'));
+  assert.ok(merge.includes("previousState==='ended'&&incomingState!=='ended'"));
+  const applyStart = frontend.indexOf('function smvLiveApplySession(session){');
+  const applyEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', applyStart);
+  const apply = frontend.slice(applyStart, applyEnd);
+  assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
+  const dashboardStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
+  const dashboardEnd = frontend.indexOf('async function smvLivePollSessions(){', dashboardStart);
+  assert.ok(frontend.slice(dashboardStart, dashboardEnd).includes('smvLiveMergeSessionState(previous,{...session,id})'));
+  const connectStart = frontend.indexOf("const connectChat=$('smvLiveConnectChat');");
+  const connectEnd = frontend.indexOf("const connectMic=$('smvLiveConnectMic');", connectStart);
+  const connect = frontend.slice(connectStart, connectEnd);
+  assert.ok(connect.includes("if(responseId!==id)throw new Error("));
+  assert.ok(connect.includes('smvLiveOpenSession(responseSession,null,false);'));
+  assert.ok(connect.includes("!chat.hidden&&chat.style.display!=='none'"));
+  assert.ok(connect.includes('smvLivePollMessages(id).catch(()=>{});'));
+});
+
 test('Live Chat message rendering never marks a message seen before a message box exists, and preserves both sides of the chat', () => {
   const frontend = read('public/smvastro.mjs');
   const server = read('live-session-service.js');
