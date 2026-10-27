@@ -1,6 +1,6 @@
 const {createRefundService,bankReferences}=require('./refund-service');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
-const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
+const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
@@ -1319,7 +1319,15 @@ function nextPaymentId() {
   return newSmvId("smvcp");
 }
 
-async function nextBookingId() {
+async function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
+  const a = appointment || {};
+  const status = String(a.bookingStatus || 'requested').toLowerCase();
+  if (!['requested', 'accepted'].includes(status) || a.liveSessionId) return status;
+  const deadline = scheduledAppointmentStartDeadlineMs(a);
+  return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;
+}
+
+function nextBookingId() {
   const dateKey = indiaDateKey();
   const ref = db.collection("smv_counters").doc(`booking_${dateKey}`);
   return db.runTransaction(async tx => {
@@ -1347,12 +1355,14 @@ app.get("/astrologer/appointments", async (req,res)=>{
     const snap=await db.collection("smv_appointments").where("astrologerUid","==",uid).limit(100).get();
     const appointments=snap.docs.map(d=>{
       const a=d.data()||{};
+      const bookingStatus=scheduledBookingReadStatus(a);
+      const missed=bookingStatus==='missed_by_astrologer';
       return {
         id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),bookingKind:String(a.bookingKind||""),
         name:String(a.name||""),email:String(a.email||""),mobile:String(a.mobile||""),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         question:String(a.question||""),notes:String(a.notes||""),birthDetails:a.birthDetails||null,
-        status:String(a.status||"new"),bookingStatus:String(a.bookingStatus||"requested"),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
+        status:missed?'missed':String(a.status||"new"),bookingStatus,missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
       };
     }).sort((a,b)=>{
       const time=v=>typeof v?.toMillis==="function"?v.toMillis():Date.parse(v||"")||0;
@@ -1378,13 +1388,15 @@ app.get("/customer/appointments", async (req,res)=>{
     const snap=await db.collection("smv_appointments").where("customerUid","==",uid).limit(100).get();
     const appointments=snap.docs.map(d=>{
       const a=d.data()||{};
+      const bookingStatus=scheduledBookingReadStatus(a);
+      const missed=bookingStatus==='missed_by_astrologer';
       return {
         id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),
         bookingKind:String(a.bookingKind||""),astrologerId:String(a.astrologerId||a.astrologerUid||""),
         astrologerName:String(a.astrologerName||"Astrologer"),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         scheduledMinutes:Number(a.scheduledMinutes||5),
-        bookingStatus:String(a.bookingStatus||"requested"),status:String(a.status||"new"),
+        bookingStatus,status:missed?'missed':String(a.status||"new"),missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),
         liveSessionId:String(a.liveSessionId||""),liveBookingId:String(a.liveBookingId||""),
         createdAt:a.createdAt||null
       };
@@ -1427,6 +1439,15 @@ app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
       }
       const current=String(a.bookingStatus||"requested").toLowerCase();
       const target=action==="accept"?"accepted":"rejected";
+      const startDeadline=scheduledAppointmentStartDeadlineMs(a);
+      if(action==="accept"&&current==="requested"&&!a.liveSessionId&&startDeadline>0&&Date.now()>=startDeadline){
+        tx.update(ref,{
+          bookingStatus:"missed_by_astrologer",status:"missed",
+          missedReason:"astrologer_not_connected_within_grace",
+          missedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
+        });
+        return {errorStatus:409,error:"The 2-minute window after the scheduled time has passed. This booking is marked as missed because the Astrologer did not accept/start it in time.",bookingStatus:"missed_by_astrologer"};
+      }
       if(current===target)return {success:true,alreadyProcessed:true,appointmentId:ref.id,bookingStatus:target};
       if(current!=="requested")return {errorStatus:409,error:"This booking is already "+current.replaceAll("_"," ")+".",bookingStatus:current};
       tx.update(ref,{
@@ -1469,9 +1490,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
       const validDateShape=/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(preferredDate)&&dateParts.length===3&&(()=>{const d=new Date(Date.UTC(dateParts[0],dateParts[1]-1,dateParts[2]));return d.getUTCFullYear()===dateParts[0]&&d.getUTCMonth()===dateParts[1]-1&&d.getUTCDate()===dateParts[2];})();
       const validTimeShape=/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(preferredTime)&&timeParts.length===2;
       if(!validDateShape||!validTimeShape||!Number.isFinite(scheduleEpoch)||scheduleEpoch<=Date.now())return res.status(400).json({error:"Choose a valid future scheduled date and time."});
-      if(type==="Chat Consultation"&&!question)return res.status(400).json({error:"Enter the question or topic for your Chat Booking."});
-      // Both booking types use the same contact/birth/schedule form. The Chat type additionally stores the Customer's question.
-      // them in a structured field for the Admin booking view.
+      // Notes are optional for both Call and Chat bookings. Keep accepting a legacy question field from older clients.
       const birthTodayParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,p)=>{o[p.type]=p.value;return o;},{});
       const birthTodayIso=`${birthTodayParts.year}-${birthTodayParts.month}-${birthTodayParts.day}`;
       if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||Number.isNaN(Date.parse(birthDate+"T00:00:00Z"))||new Date(birthDate+"T00:00:00Z").toISOString().slice(0,10)!==birthDate||birthDate>birthTodayIso){
@@ -1522,13 +1541,13 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
         astrologerName:String(astro.name||"Astrologer"),
         pricePerMinute:Math.round(pricePerMinute*100)/100,
         priceUnit:"per_minute",bookingKind:type==="Chat Consultation"?"scheduled_chat_request":"scheduled_call_request",
-        ...(type==="Call Consultation"?{callPricePerMinute:Math.round(pricePerMinute*100)/100}:{chatPricePerMinute:Math.round(pricePerMinute*100)/100,question}),
+        ...(type==="Call Consultation"?{callPricePerMinute:Math.round(pricePerMinute*100)/100}:{chatPricePerMinute:Math.round(pricePerMinute*100)/100,...(question?{question}:{})}),
         birthDetails:{birthDate,birthTime,birthPlace,birthLatitude,birthLongitude,birthTimezone}
       };
     }
     const bookingId = await nextBookingId();
     const ref=db.collection("smv_appointments").doc();
-    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
+    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
     if (multiProjectFirestore.walletDomainCutoverComplete) {
       await walletDomainDb().collection("smv_appointments").doc(ref.id).set(data, { merge: true })
@@ -4702,7 +4721,16 @@ app.get('/public/push-config', (_req, res) => {
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db:walletDomainDb(),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
+const liveSessionSettlementDb=walletDomainDb();
+const liveSessionSettlementProject=multiProjectFirestore.walletDomainCutoverComplete===true
+  ? String(multiProjectFirestore.projectIds.walletDomain||'Project 5')
+  : String(multiProjectFirestore.projectIds.primary||process.env.FIREBASE_PROJECT_ID||'Project 1 primary');
+console.info('[Live Session] Settlement Firestore route:', JSON.stringify({
+  projectId:liveSessionSettlementProject,
+  walletDomainEnabled:multiProjectFirestore.walletDomainEnabled===true,
+  walletDomainCutoverComplete:multiProjectFirestore.walletDomainCutoverComplete===true
+}));
+const liveSessionService=registerLiveSessionRoutes({app,db:liveSessionSettlementDb,profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {

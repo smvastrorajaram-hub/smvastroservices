@@ -14,6 +14,10 @@ const {
   sessionTimerPlan,
   preparationWindow,
   scheduledAppointmentStatusForEndedSession,
+  scheduledAppointmentStartAtMs,
+  scheduledAppointmentStartDeadlineMs,
+  scheduledConnectionGraceRemainingMs,
+  SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
@@ -202,11 +206,33 @@ test('Accept starts the three-minute Horoscope preparation window at the accepta
 });
 
 
-test('ended scheduled appointments reconcile to terminal status', () => {
+test('scheduled bookings keep a two-minute Start and connection grace in IST', () => {
+  assert.equal(SCHEDULED_CONNECT_GRACE_MS, 120_000);
+  const appointment = { preferredDate: '2026-10-27', preferredTime: '10:00' };
+  const scheduledAt = Date.UTC(2026, 9, 27, 10, 0) - 330 * 60 * 1000;
+  assert.equal(scheduledAppointmentStartAtMs(appointment), scheduledAt);
+  assert.equal(scheduledAppointmentStartDeadlineMs(appointment), scheduledAt + 120_000);
+  assert.equal(scheduledAppointmentStartDeadlineMs({ preferredDate: 'bad', preferredTime: '10:00' }), 0);
+  const scheduledCall = sessionTimerPlan({ state: 'connecting', mode: 'call', appointmentId: 'apt-1', connectingAt: new Date(scheduledAt) }, scheduledAt);
+  const scheduledChat = sessionTimerPlan({ state: 'connecting', mode: 'chat', appointmentId: 'apt-1', connectingAt: new Date(scheduledAt) }, scheduledAt);
+  const ordinaryCall = sessionTimerPlan({ state: 'connecting', mode: 'call', connectingAt: new Date(scheduledAt) }, scheduledAt);
+  assert.equal(scheduledCall.dueAt, scheduledAt + 120_000);
+  assert.equal(scheduledChat.dueAt, scheduledAt + 120_000);
+  assert.equal(ordinaryCall.dueAt, scheduledAt + 45_000);
+  const scheduledConnecting = { state: 'connecting', appointmentId: 'apt-1', connectingAt: new Date(scheduledAt) };
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt), 120_000);
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt + 90_000), 30_000);
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt + 120_000), 0);
+  assert.equal(scheduledConnectionGraceRemainingMs({ ...scheduledConnecting, appointmentId: '' }, scheduledAt), 0);
+});
+
+test('ended scheduled appointments reconcile to clear terminal statuses', () => {
   assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: new Date('2026-10-26T09:00:00.000Z'), endReason: 'participant_ended' }), 'completed');
   assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'rejected' }), 'rejected');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'rejected_by_astrologer' }), 'rejected');
   assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'participant_ended' }), 'cancelled');
-  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'connection_failed' }), 'cancelled');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'connection_failed' }), 'missed_by_astrologer');
+  assert.equal(scheduledAppointmentStatusForEndedSession({ startedAt: null, endReason: 'no_answer' }), 'missed_by_astrologer');
 });
 
 test('each enabled live mode is available independently or together', () => {

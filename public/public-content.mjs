@@ -354,9 +354,7 @@
     }
     const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
     const minDate=today.toISOString().slice(0,10);
-    const notesOrQuestionField=bookingMode==='chat'
-      ? '<label style="display:block;min-width:0;color:#2d1919"><b>Question / Chat Topic</b><textarea id="smvCallBookingQuestion" name="question" maxlength="4000" rows="4" required placeholder="What would you like to discuss with the astrologer?" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:110px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>'
-      : '<label style="display:block;min-width:0;color:#2d1919"><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Preferred time window or brief details" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>';
+    const notesField='<label style="display:block;min-width:0;color:#2d1919"><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Optional note for the Astrologer" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>';
     const bookingSubmitLabel=bookingMode==='chat'?'REQUEST CHAT BOOKING':'REQUEST CALL BOOKING';
     showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 8px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:8px 10px 8px;background:#24103F;color:#ffffff;-webkit-text-fill-color:#ffffff;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
       <h2 style="padding-right:36px;line-height:1.2;font-size:18px;margin:0 0 4px">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2>
@@ -379,7 +377,7 @@
           <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
         <label style="display:grid;gap:3px;min-width:0;color:#ffffff"><b>Session duration</b><select id="smvCallBookingMinutes" name="scheduledMinutes" required style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"><option value="5" selected>5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></label>
-        ${notesOrQuestionField}
+        ${notesField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
         <div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:auto;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37">
           <button class="btn smv-modal-action" id="smvCallBookingSubmit" type="submit" style="flex:0 1 280px;width:100%;min-width:0;min-height:38px;margin:0 auto;white-space:normal;overflow-wrap:anywhere;background:#5b2a86;color:#ffffff;-webkit-text-fill-color:#ffffff;border:1px solid #d4af37;text-align:center">${bookingSubmitLabel}</button>
@@ -416,17 +414,17 @@
             birthLongitude:String($('smvCallBookingBirthLongitude')?.value||birthPlaceInput?.dataset.longitude||''),
             birthTimezone:String(birthPlaceInput?.dataset.timezone||''),
             type:bookingMode==='chat'?'Chat Consultation':'Call Consultation',
-            question:bookingMode==='chat'?String($('smvCallBookingQuestion')?.value||'').trim():'',
+            question:'',
             preferredDate:String($('smvCallBookingDate')?.value||''),
             preferredTime:String($('smvCallBookingTime')?.value||''),
             scheduledMinutes:Number($('smvCallBookingMinutes')?.value||5),
-            notes:bookingMode==='call'?String($('smvCallBookingNotes')?.value||'').trim():'',
+            notes:String($('smvCallBookingNotes')?.value||'').trim(),
             astrologerId:String(a.id||'')
           })
         });
         const result=await response.json().catch(()=>({}));
         if(!response.ok||result.ok!==true)throw new Error(result.error||'The backend did not confirm the Call Booking request.');
-        if(message)message.innerHTML='<span class="success">'+bookingLabel+' booking request submitted. Booking ID: '+esc(result.bookingId||'')+'. Wait for the Astrologer to accept it. Track status under Customer Dashboard → Live Call / Live Chat → My Scheduled Bookings. At the scheduled time the Astrologer starts the session; Wallet balance must cover the selected duration.</span>';
+        if(message)message.innerHTML='<span class="success">'+bookingLabel+' booking request received. Please be patient while your Astrologer reviews it. If confirmed, the session can start at your scheduled time. Track status under Customer Dashboard → Live Call / Live Chat → My Scheduled Bookings. Wallet balance must cover the selected duration.</span>';
         if(submit){submit.textContent=bookingMode==='chat'?'CHAT BOOKING SUBMITTED':'CALL BOOKING SUBMITTED';}
       }catch(error){
         if(message)message.innerHTML='<span class="error">'+esc(error?.message||String(error))+'</span>';

@@ -25,9 +25,49 @@ test('Live requests and Live bookings trigger best-effort server-side pushes', (
   assert.match(service, /session\.state === 'ringing' && String\(session\.astrologerUid \|\| ''\) === String\(uid\)/);
 });
 
+test('Scheduled Call and Chat booking form uses optional Notes and no required Chat Question', () => {
+  const content = read('public/public-content.mjs');
+  const server = read('server.js');
+  assert.ok(content.includes('<b>Notes (optional)</b><textarea id="smvCallBookingNotes"'));
+  assert.equal(content.includes('Question / Chat Topic'), false);
+  assert.equal(content.includes('id="smvCallBookingQuestion"'), false);
+  assert.ok(content.includes("notes:String($('smvCallBookingNotes')?.value||'').trim(),"));
+  assert.ok(content.includes("question:'',"));
+  assert.ok(server.includes('question=String(req.body?.question||"").trim();'));
+  assert.equal(server.includes('if(type==="Chat Consultation"&&!question)'), false);
+  assert.ok(server.includes('scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:""'));
+});
+
+test('Scheduled bookings explain patience and gate Call/Chat start until the selected IST time', () => {
+  const frontend = read('public/smvastro.mjs');
+  const service = read('live-session-service.js');
+  const bookingServer = read('server.js');
+  assert.ok(frontend.includes("Request received · Please be patient. Your Astrologer will review it; the session can start at the scheduled time once confirmed."));
+  assert.ok(frontend.includes("Missed · Astrologer did not start/connect within 2 minutes of the scheduled time. Please choose another time."));
+  assert.ok(frontend.includes("Astrologer rejected this booking. No live session was started."));
+  assert.ok(bookingServer.includes("!['requested', 'accepted'].includes(status) || a.liveSessionId"));
+  assert.ok(bookingServer.includes('action==="accept"&&current==="requested"&&!a.liveSessionId&&startDeadline>0&&Date.now()>=startDeadline'));
+  assert.ok(bookingServer.includes("return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;"));
+  assert.ok(service.includes("const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;"));
+  assert.ok(service.includes("currentStatus === 'accepted' && !appointment.liveSessionId && Date.now() >= startDeadlineAt"));
+  assert.ok(service.includes("code: 'SCHEDULED_START_WINDOW_EXPIRED', bookingStatus: 'missed_by_astrologer'"));
+  assert.ok(frontend.includes("const startDeadline=Number.isFinite(time)?time+120_000:NaN;"));
+  assert.ok(frontend.includes("const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time&&Date.now()<startDeadline;"));
+  assert.ok(bookingServer.includes('const scheduleEpoch=Date.parse(preferredDate+"T"+preferredTime+":00+05:30")'));
+  assert.ok(bookingServer.includes('scheduleEpoch<=Date.now()'));
+  assert.ok(service.includes('const scheduledAt = utc - 330 * 60 * 1000;'));
+  assert.ok(service.includes('if (Date.now() < scheduledAt && currentStatus !== \'in_progress\')'));
+  assert.ok(service.includes("const mode = appointment.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call';"));
+  assert.ok(service.includes('const accepted = await acceptSession(result.session.id, uid);'));
+  assert.ok(frontend.includes("smvLiveOpenSession(session,result.wallet||null,false);"));
+  assert.ok(frontend.includes("connectable=call&&['connecting','active'].includes(String(s.state||''))"));
+  assert.ok(frontend.includes("chat&&active?'':'hidden'"));
+});
+
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
   const server = read('server.js');
-  assert.match(server, /registerLiveSessionRoutes\(\{app,db:walletDomainDb\(\),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
+  assert.match(server, /const liveSessionSettlementDb=walletDomainDb\(\)/);
+  assert.match(server, /registerLiveSessionRoutes\(\{app,db:liveSessionSettlementDb,profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
   assert.match(server, /type: 'scheduled_booking'/);
   assert.match(server, /app\.get\('\/public\/push-config'/);
   assert.match(server, /process\.env\.FCM_VAPID_PUBLIC_KEY/);
@@ -63,7 +103,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261027-live-chat-natural-source-v4'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-two-way-v5'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -126,7 +166,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-two-way-v5'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -157,7 +197,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-two-way-v5'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -201,7 +241,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-two-way-v5'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -221,7 +261,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-live-chat-two-way-v5'));
+  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -771,6 +811,22 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(live.includes('earningRefDoc = earningRef(id);'));
 });
 
+
+
+test('Live Session timer failures retry settlement with bounded backoff and log the selected Firestore project', () => {
+  const service = read('live-session-service.js');
+  const server = read('server.js');
+  const timerStart = service.indexOf('function scheduleSessionTimerRetry(sessionId, data, reason, error)');
+  const timerEnd = service.indexOf('function scheduleSessionTimer(sessionId, data)', timerStart);
+  const retry = service.slice(timerStart, timerEnd);
+  assert.ok(retry.includes('const retryDelayMs = Math.min(60_000, 5_000 * (2 ** Math.min(attempt - 1, 4)));'));
+  assert.ok(retry.includes("else await endSession(sessionId, '', reason, true);"));
+  assert.ok(retry.includes('scheduleSessionTimerRetry(sessionId, data, reason, retryError);'));
+  assert.ok(retry.includes("'[Live Session] Timer operation failed; retry queued:'"));
+  assert.ok(server.includes("console.info('[Live Session] Settlement Firestore route:'"));
+  assert.ok(server.includes('walletDomainCutoverComplete:multiProjectFirestore.walletDomainCutoverComplete===true'));
+  assert.ok(server.includes('db:liveSessionSettlementDb'));
+});
 
 test('Customer and Astrologer Live Chat messages broadcast both ways and recover recent writes from the primary store', () => {
   const frontend = read('public/smvastro.mjs');
