@@ -781,7 +781,9 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   const messagesRoute = service.slice(service.indexOf("app.get('/live/sessions/:id/messages'"), service.indexOf('async function restoreTimers()'));
   assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe });"));
   assert.ok(!send.includes("sendTo(recipientUid, { type: 'live.chat.message', message: safe });"));
-  assert.ok(send.includes('const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;'));
+  assert.ok(service.includes('function sendToParticipants(session, payload)'));
+  assert.ok(service.includes('sendTo(session.customerUid, payload);'));
+  assert.ok(service.includes('sendTo(session.astrologerUid, payload);'));
   assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
   assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
