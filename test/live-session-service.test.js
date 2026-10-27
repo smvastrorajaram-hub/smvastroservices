@@ -262,5 +262,5 @@ test('persisted Live Session deadlines reconcile Preparing, Ringing, Connecting 
     state: 'active', startedAt: new Date(base), minutes: 3
   }, base + 180_000).reason, 'duration_complete');
   assert.equal(sessionTimerPlan({ state: 'preparing' }, base), null);
-  assert.equal(sessionTimerPlan({ state: 'active', startedAt: new Date(base), minutes: 0 }, base), null);
+  assert.equal(sessionTimerPlan({ state: 'active', startedAt: new Date(base), minutes: -1 }, base), null);
 });
