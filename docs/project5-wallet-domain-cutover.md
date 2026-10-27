@@ -1,5 +1,7 @@
 # Project 5 Wallet/Live Session domain — guarded preflight
 
+> **Current scope:** this PR adds preparation/configuration and a guarded migration tool only. It does not yet route production Wallet or Live Session requests to Project 5. A separate source integration must coordinate live profiles, Admin/Astrologer earnings, withdrawals, booking/session writes, all Wallet credits/debits/refunds, and client indexes before any cutover flag may be enabled.
+
 Project 5 supplied for this change:
 
 - Firebase project name: `smvastro`
@@ -24,6 +26,10 @@ After creating a service account that can access Project 5, add these to the exi
 - `SMV_WALLET_DOMAIN_ENABLED=true`
 
 The old four-project flag is not required for preparing Project 5. It can be initialized independently. The new routing state remains false unless backfill, cutover, and dependency-verification gates are explicitly enabled. This PR intentionally does not enable those gates.
+
+## Firestore rules and indexes
+
+Use `firebase.multi-project-wallet-domain.json` as the Firebase CLI configuration when deploying to Project 5. It applies the deny-all secondary-project rules and the existing index definitions; verify the index build state in the Firebase console before any migration or cutover. Admin SDK calls bypass client rules, so keep Project 5 service-account credentials restricted to the backend/migration environment.
 
 ## Backfill workflow
 
