@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "rules": "firestore.multi-project.rules",
+    "indexes": "firestore.indexes.content.json"
+  }
+}
