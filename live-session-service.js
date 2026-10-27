@@ -1400,11 +1400,13 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (sessionHistoryDb) {
       const [activeSnap, archiveSnap, pendingArchiveSnap] = await Promise.all([
         db.collection(SESSIONS).where(field, '==', uid)
-          .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active']).limit(100).get(),
+          .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active'])
+          .orderBy('createdAt', 'desc').limit(100).get(),
         sessionHistoryDb.collection(SESSIONS).where(field, '==', uid)
-          .where('state', '==', 'ended').limit(100).get(),
+          .where('state', '==', 'ended').orderBy('createdAt', 'desc').limit(100).get(),
         db.collection(SESSIONS).where(field, '==', uid)
-          .where('state', '==', 'ended').where('historyArchivedToSecondary', '==', false).limit(100).get()
+          .where('state', '==', 'ended').where('historyArchivedToSecondary', '==', false)
+          .orderBy('createdAt', 'desc').limit(100).get()
       ]);
       const byId = new Map();
       for (const doc of archiveSnap.docs) byId.set(doc.id, doc.data() || {});
