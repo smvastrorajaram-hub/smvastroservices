@@ -13,6 +13,8 @@ on:
       - 'test/wallet-service.test.js'
       - 'multi-project-firestore.js'
       - 'test/multi-project-firestore.test.js'
+      - 'firestore-quota-routing.js'
+      - 'test/firestore-quota-routing.test.js'
       - 'scripts/backfill-wallet-domain.js'
       - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
@@ -36,6 +38,8 @@ on:
       - 'test/wallet-service.test.js'
       - 'multi-project-firestore.js'
       - 'test/multi-project-firestore.test.js'
+      - 'firestore-quota-routing.js'
+      - 'test/firestore-quota-routing.test.js'
       - 'scripts/backfill-wallet-domain.js'
       - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
@@ -75,6 +79,8 @@ jobs:
           node --check admin-auth.js
           node --check test/admin-auth.test.js
           node --check multi-project-firestore.js
+          node --check firestore-quota-routing.js
+          node --check test/firestore-quota-routing.test.js
           node --check scripts/backfill-wallet-domain.js
           node --check scripts/validate-wallet-domain.js
           node --check test/multi-project-firestore.test.js
