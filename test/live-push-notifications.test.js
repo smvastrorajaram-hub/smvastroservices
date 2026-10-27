@@ -771,6 +771,23 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
 });
 
 
+test('Customer and Astrologer Live Chat messages broadcast both ways and recover recent writes from the primary store', () => {
+  const frontend = read('public/smvastro.mjs');
+  const service = read('live-session-service.js');
+  const sendStart = service.indexOf('async function sendMessage(sessionId, senderUid, text)');
+  const sendEnd = service.indexOf('async function signal(sessionId, senderUid, type, payload)', sendStart);
+  const send = service.slice(sendStart, sendEnd);
+  const messagesRoute = service.slice(service.indexOf("app.get('/live/sessions/:id/messages'"), service.indexOf('async function restoreTimers()'));
+  assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe });"));
+  assert.ok(!send.includes("sendTo(recipientUid, { type: 'live.chat.message', message: safe });"));
+  assert.ok(send.includes('const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;'));
+  assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
+  assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
+  assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
+  assert.ok(frontend.includes('},1500);'));
+  assert.ok(frontend.includes('if(chat&&active)smvLiveStartChatRecovery(s.id,s);'));
+});
+
 test('Live Chat and Call recover messages/signals after an SSE reconnect without consuming messages when the chat pane is absent', () => {
   const frontend = read('public/smvastro.mjs');
   const helperStart = frontend.indexOf('async function smvLiveReconcileAfterEventStreamConnect(){');
