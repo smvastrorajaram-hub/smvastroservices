@@ -1442,9 +1442,10 @@ async function rejectOrCancel(sessionId, user, reason) {
     }
     const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: message.createdAt.toISOString() };
-    // Deliver the realtime event immediately; the primary transaction already
-    // persisted it. Mirror failures fall back to primary reads for this session.
-    sendTo(recipientUid, { type: 'live.chat.message', message: safe });
+    // Broadcast to both participants. The sender deduplicates its already-rendered
+    // response by message ID; the other participant receives the same authoritative event.
+    // Durable client reconciliation is the fallback when SSE connections are on different instances.
+    sendToParticipants(session, { type: 'live.chat.message', message: safe });
     void mirrorLiveRecordToSecondary(sessionId, 'messages', msgRef.id, message, session)
       .catch(error => console.warn('[Live Session] Message mirror deferred:', error?.message || error));
     return { success: true, message: safe };
@@ -2091,7 +2092,9 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
+      // Initial history may use the completed archive. Incremental reads must use
+      // the primary write store so a message is visible before its best-effort mirror finishes.
+      const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);
       let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
       if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
       const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
