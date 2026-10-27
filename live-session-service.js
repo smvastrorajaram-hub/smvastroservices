@@ -114,6 +114,16 @@ function scheduledAppointmentStartDeadlineMs(appointment) {
   return scheduledAt > 0 ? scheduledAt + SCHEDULED_CONNECT_GRACE_MS : 0;
 }
 
+function scheduledConnectionGraceRemainingMs(session, nowMs = Date.now()) {
+  const d = session || {};
+  if (d.state !== 'connecting' || !d.appointmentId) return 0;
+  const connectedAt = timestampMillis(d.connectingAt) || timestampMillis(d.preparationCompletedAt) ||
+    timestampMillis(d.acceptedAt) || timestampMillis(d.createdAt);
+  const now = Number(nowMs);
+  if (!connectedAt || !Number.isFinite(now)) return 0;
+  return Math.max(0, connectedAt + SCHEDULED_CONNECT_GRACE_MS - now);
+}
+
 function sessionTimerPlan(data, nowMs = Date.now()) {
   const d = data || {};
   let dueAt = 0;
@@ -563,6 +573,13 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         // timer so the server push can bring the Astrologer back to the app.
         // A Customer disconnect still follows the existing settlement path.
         if (session.state === 'ringing' && String(session.astrologerUid || '') === String(uid)) {
+          return;
+        }
+        const scheduledGraceRemainingMs = scheduledConnectionGraceRemainingMs(session);
+        if (scheduledGraceRemainingMs > 0) {
+          console.info('[Live Session] Keeping scheduled session open during its connection grace:', JSON.stringify({
+            sessionId, uid, remainingMs: scheduledGraceRemainingMs
+          }));
           return;
         }
         if (session.state !== 'ended' && session.state !== 'preparing') {
@@ -2211,6 +2228,7 @@ module.exports = {
   scheduledAppointmentStatusForEndedSession,
   scheduledAppointmentStartAtMs,
   scheduledAppointmentStartDeadlineMs,
+  scheduledConnectionGraceRemainingMs,
   SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
