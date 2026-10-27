@@ -194,7 +194,15 @@ async function main() {
   // have not created a live session yet. Their IDs are copied with appointments below.
   const scheduledAppointmentCount = await forEachDocument(
     sourceDb.collection('smv_appointments').where('bookingKind', 'in', ['scheduled_call_request', 'scheduled_chat_request']),
-    async doc => { appointmentIds.add(doc.id); }
+    async doc => {
+      appointmentIds.add(doc.id);
+      const data = doc.data() || {};
+      if (data.customerUid) participantUids.add(String(data.customerUid));
+      if (data.astrologerUid) {
+        participantUids.add(String(data.astrologerUid));
+        astrologerUids.add(String(data.astrologerUid));
+      }
+    }
   );
   stats.scheduledCallChatAppointmentsDiscovered = scheduledAppointmentCount;
 
