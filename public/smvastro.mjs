@@ -1801,61 +1801,26 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
   dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();smvWatchDashboardEvents(role);
   return;
 }
-   let earningsRead=astrologerEarningsPromise?await astrologerEarningsPromise:null;
-   if(!earningsRead)earningsRead=await renderApi('/astrologer/earnings',{method:'GET'}).then(value=>({value}),error=>({error}));
-   if(!active())return;
+   // Keep slow earnings/history reads off the first full Dashboard render path.
+   const earningsResultPromise=(async()=>{
+    let result=astrologerEarningsPromise?await astrologerEarningsPromise:null;
+    if(!result)result=await renderApi('/astrologer/earnings',{method:'GET'}).then(value=>({value}),error=>({error}));
+    return result;
+   })();
    let epRemote=null;
-   try{
-     if(earningsRead.error)throw earningsRead.error;
-     epRemote=earningsRead.value;
-   }catch(e){console.warn('Canonical astrologer earnings endpoint unavailable:',e);}
-   let totalEarnings = 0;
-  let ledger = [];
-  if(epRemote){
-    totalEarnings=Number(epRemote.totalEarnings||0);
-    ledger=smvSortDashboardDesc(Array.isArray(epRemote.ledger)?epRemote.ledger:[]);
-  }else{
-    console.warn('Astrologer earnings are temporarily unavailable; no legacy question records are read as a fallback.');
-  }
-
-  let withdrawalSnap={docs:[]};
-  try{
-   let withdrawalItems=Array.isArray(epRemote?.withdrawals)?epRemote.withdrawals:[];
-   // Same resilience rule as questions: no duplicate read on the normal path;
-   // use the legacy direct query only when the canonical endpoint failed.
-   if(!epRemote){
-     try{
-       const ws=await getDocs(query(collection(db,'smv_withdrawals'),where('astrologerId','==',currentUser.uid)));
-       withdrawalItems=ws.docs.map(d=>({id:d.id,...(d.data()||{})}));
-     }catch(fallbackErr){console.warn('Astrologer withdrawals fallback unavailable:',fallbackErr);}
-   }
-   withdrawalSnap={docs:withdrawalItems.map(w=>({id:String(w.id||''),data:()=>w}))};
-  }catch(e){ console.warn('Astrologer withdrawals payload skipped:',e); }
-
-  let reservedWithdrawals = 0;
-  let totalWithdrawals = 0;
-  let latestWithdrawalAt = null;
-  withdrawalSnap.docs.forEach(d => {
-    const w = d.data() || {};
-    const st = String(w.status || 'pending').toLowerCase();
-    const amount = Number(w.amount || 0);
-    if (['pending','processing','paid'].includes(st)) {
-      reservedWithdrawals += amount;
-      totalWithdrawals += amount;
-      const raw = w.createdAt || w.requestedAt || w.paidAt || null;
-      const ms = raw?.toMillis ? raw.toMillis() : (raw instanceof Date ? raw.getTime() : Number(raw || 0));
-      if (ms && (!latestWithdrawalAt || ms > latestWithdrawalAt)) latestWithdrawalAt = ms;
-    }
-  });
-
-  const availableToWithdraw = Math.max(0, Math.round((totalEarnings - reservedWithdrawals) * 100) / 100);
-  const minimumWithdrawal = 300;
-  const WITHDRAWAL_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-  const withdrawalCooldownActive = !!latestWithdrawalAt && (Date.now() - latestWithdrawalAt < WITHDRAWAL_COOLDOWN_MS);
-  const withdrawalEligible = availableToWithdraw >= minimumWithdrawal && !withdrawalCooldownActive;
-  const withdrawalCooldownEndsAt = withdrawalCooldownActive ? latestWithdrawalAt + WITHDRAWAL_COOLDOWN_MS : null;
-
-  const ep = {totalEarnings,totalWithdrawals,availableToWithdraw,minimumWithdrawal,withdrawalCooldownActive,withdrawalCooldownEndsAt,withdrawalEligible,ledger};
+   let totalEarnings=0;
+   let ledger=[];
+   let withdrawalSnap={docs:[]};
+   let reservedWithdrawals=0;
+   let totalWithdrawals=0;
+   let latestWithdrawalAt=null;
+   const minimumWithdrawal=300;
+   const WITHDRAWAL_COOLDOWN_MS=7*24*60*60*1000;
+   let availableToWithdraw=0;
+   let withdrawalCooldownActive=false;
+   let withdrawalEligible=false;
+   let withdrawalCooldownEndsAt=null;
+   let ep={totalEarnings,totalWithdrawals,availableToWithdraw,minimumWithdrawal,withdrawalCooldownActive,withdrawalCooldownEndsAt,withdrawalEligible,ledger};
    if(!active()) return;
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
@@ -1876,7 +1841,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
-    <div class="card"><h3>Total Earnings</h3><p style="font-size:28px"><span class="smv-earnings-total ${Number(ep.totalEarnings||0)>=300?'is-green':''}">₹${Number(ep.totalEarnings||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span class="smv-summary-value">₹${Number(ep.totalWithdrawals||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span class="smv-summary-value">₹${Number(ep.availableToWithdraw||0).toFixed(2)}</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span class="smv-summary-value">₹${Number(ep.minimumWithdrawal||300).toFixed(2)}</span></p>${ep.withdrawalCooldownActive ? `<p class="smv-withdraw-locked"><b>🔒 Withdrawal locked for 7 days after the last withdrawal request.</b><br><span class="small">Available again: ${escapeHtml(smvDateTime(new Date(ep.withdrawalCooldownEndsAt)))}</span></p><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" disabled>WITHDRAW</button>` : ep.withdrawalEligible ? '<p class="smv-withdraw-ready"><b>✓ You can withdraw</b></p><button class="btn smv-withdraw-btn is-green" id="withdrawBtn">WITHDRAW</button>' : '<p class="smv-withdraw-locked"><b>Reach ₹300 to request a withdrawal.</b></p><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" disabled>WITHDRAW</button>'}</div>
+    <div class="card"><h3>Total Earnings</h3><p style="font-size:28px"><span id="smvAstroTotalEarnings" class="smv-earnings-total">Loading…</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span id="smvAstroTotalWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span id="smvAstroAvailableWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span id="smvAstroMinimumWithdrawal" class="smv-summary-value">₹300.00</span></p><div id="smvAstroWithdrawalStatus" class="small" aria-live="polite">Checking withdrawal eligibility…</div><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" type="button" disabled>WITHDRAW</button></div>
    </div>
    <div class="card" id="astroProfileDescriptionCard" style="margin-top:16px">
      <h3>Profile Description</h3>
@@ -1890,7 +1855,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
           <div id="astroProfileDescriptionMsg" class="small"></div>`
        : `<div class="empty smv-profile-edit-disabled">Profile description editing is currently disabled by Admin.</div>`}
    </div>
-   <div class="card" style="margin-top:16px"><h3>Earnings History</h3>${ep.ledger?.length?ep.ledger.slice(0,50).map(x=>`<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(x.commission||0).toFixed(2)}</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">${escapeHtml(x.question||'Consultation')}</div><div class="smv-history-detail"><b>Date & Time:</b> ${escapeHtml(smvDateTime(x.date))}</div><div class="smv-history-detail"><b>Session / Booking ID:</b> ${escapeHtml(x.id||'')}</div></div>`).join(''):'<div class="empty">No credited earnings yet.</div>'}<div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><h4 style="margin:0 0 8px">Withdrawal History</h4>${withdrawalSnap?.docs?.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{const w=d.data()||{};const st=String(w.status||'pending').toLowerCase();const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';return `<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <span class="${cls}">${label}</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}</div>${st==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? '<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>' : ''}<div class="small"><b>Requested:</b> ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${st==='paid' && w.paidAt ? '<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)) : ''}</div></div>`}).join(''):'<div class="small">No withdrawal requests yet.</div>'}</div></div>
+   <div class="card" style="margin-top:16px"><h3>Earnings History</h3><div id="smvAstroEarningsHistory" class="small" aria-live="polite">Loading earnings history…</div><div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><h4 style="margin:0 0 8px">Withdrawal History</h4><div id="smvAstroWithdrawalHistory" class="small" aria-live="polite">Loading withdrawal history…</div></div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
     const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
@@ -2085,6 +2050,107 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    const change=()=>openPayoutChange();
    if($('changePayoutBtn')) $('changePayoutBtn').onclick=change;
    if($('changePayoutBtn2')) $('changePayoutBtn2').onclick=change;
+   // Hydrate earnings only after the profile, Live Call/Chat mount and the
+   // rest of the Astrologer Dashboard are already visible.
+   earningsResultPromise.then(async earningsRead=>{
+    if(!active()||!$('smvAstroTotalEarnings'))return;
+    try{
+     if(earningsRead?.error)throw earningsRead.error;
+     epRemote=earningsRead?.value||null;
+     if(!epRemote)throw new Error('Astrologer earnings endpoint returned no data.');
+    }catch(e){
+     epRemote=null;
+     console.warn('Astrologer earnings hydration deferred:',e?.message||e);
+    }
+    let withdrawalItems=Array.isArray(epRemote?.withdrawals)?epRemote.withdrawals:[];
+    let withdrawalHistoryAvailable=!!epRemote;
+    if(!epRemote){
+     try{
+      const ws=await getDocs(query(collection(db,'smv_withdrawals'),where('astrologerId','==',currentUser.uid)));
+      if(!active())return;
+      withdrawalItems=ws.docs.map(d=>({id:d.id,...(d.data()||{})}));
+      withdrawalHistoryAvailable=true;
+     }catch(fallbackErr){
+      console.warn('Astrologer withdrawals fallback unavailable:',fallbackErr?.message||fallbackErr);
+      withdrawalHistoryAvailable=false;
+     }
+    }
+    withdrawalSnap={docs:withdrawalItems.map(w=>({id:String(w.id||''),data:()=>w}))};
+    totalEarnings=Number(epRemote?.totalEarnings||0);
+    ledger=smvSortDashboardDesc(Array.isArray(epRemote?.ledger)?epRemote.ledger:[]);
+    reservedWithdrawals=0;
+    totalWithdrawals=0;
+    latestWithdrawalAt=null;
+    withdrawalSnap.docs.forEach(d=>{
+     const w=d.data()||{};
+     const st=String(w.status||'pending').toLowerCase();
+     const amount=Number(w.amount||0);
+     if(['pending','processing','paid'].includes(st)){
+      reservedWithdrawals+=amount;
+      totalWithdrawals+=amount;
+      const raw=w.createdAt||w.requestedAt||w.paidAt||null;
+      const ms=smvDateSortMs(raw);
+      if(ms&&(!latestWithdrawalAt||ms>latestWithdrawalAt))latestWithdrawalAt=ms;
+     }
+    });
+    availableToWithdraw=epRemote?Math.max(0,Math.round((totalEarnings-reservedWithdrawals)*100)/100):0;
+    withdrawalCooldownActive=!!latestWithdrawalAt&&(Date.now()-latestWithdrawalAt<WITHDRAWAL_COOLDOWN_MS);
+    withdrawalEligible=!!epRemote&&availableToWithdraw>=minimumWithdrawal&&!withdrawalCooldownActive;
+    withdrawalCooldownEndsAt=withdrawalCooldownActive?latestWithdrawalAt+WITHDRAWAL_COOLDOWN_MS:null;
+    ep={totalEarnings,totalWithdrawals,availableToWithdraw,minimumWithdrawal,withdrawalCooldownActive,withdrawalCooldownEndsAt,withdrawalEligible,ledger};
+    if(!active()||!$('smvAstroTotalEarnings'))return;
+    const earningsTotalNode=$('smvAstroTotalEarnings');
+    const totalWithdrawalNode=$('smvAstroTotalWithdrawal');
+    const availableWithdrawalNode=$('smvAstroAvailableWithdrawal');
+    const minimumWithdrawalNode=$('smvAstroMinimumWithdrawal');
+    const withdrawalStatusNode=$('smvAstroWithdrawalStatus');
+    const withdrawButton=$('withdrawBtn');
+    if(epRemote){
+     earningsTotalNode.textContent='₹'+Number(ep.totalEarnings||0).toFixed(2);
+     earningsTotalNode.classList.toggle('is-green',Number(ep.totalEarnings||0)>=300);
+     if(totalWithdrawalNode)totalWithdrawalNode.textContent='₹'+Number(ep.totalWithdrawals||0).toFixed(2);
+     if(availableWithdrawalNode)availableWithdrawalNode.textContent='₹'+Number(ep.availableToWithdraw||0).toFixed(2);
+     if(withdrawalStatusNode){
+      if(ep.withdrawalCooldownActive){
+       withdrawalStatusNode.innerHTML='<p class="smv-withdraw-locked"><b>🔒 Withdrawal locked for 7 days after the last withdrawal request.</b><br><span class="small">Available again: '+escapeHtml(smvDateTime(new Date(ep.withdrawalCooldownEndsAt)))+'</span></p>';
+      }else if(ep.withdrawalEligible){
+       withdrawalStatusNode.innerHTML='<p class="smv-withdraw-ready"><b>✓ You can withdraw</b></p>';
+      }else{
+       withdrawalStatusNode.innerHTML='<p class="smv-withdraw-locked"><b>Reach ₹300 to request a withdrawal.</b></p>';
+      }
+     }
+    }else{
+     earningsTotalNode.textContent='Unavailable';
+     if(totalWithdrawalNode)totalWithdrawalNode.textContent=withdrawalHistoryAvailable?'₹'+Number(ep.totalWithdrawals||0).toFixed(2):'Unavailable';
+     if(availableWithdrawalNode)availableWithdrawalNode.textContent='Unavailable';
+     if(withdrawalStatusNode)withdrawalStatusNode.innerHTML='<p class="error">Earnings are temporarily unavailable. Tap REFRESH DASHBOARD to retry.</p>';
+    }
+    if(minimumWithdrawalNode)minimumWithdrawalNode.textContent='₹'+Number(minimumWithdrawal||300).toFixed(2);
+    if(withdrawButton){
+     withdrawButton.disabled=!ep.withdrawalEligible;
+     withdrawButton.className='btn smv-withdraw-btn '+(ep.withdrawalEligible?'is-green':'is-red');
+    }
+    const earningsHistoryNode=$('smvAstroEarningsHistory');
+    if(earningsHistoryNode){
+     earningsHistoryNode.innerHTML=epRemote
+      ?(ledger.length?ledger.slice(0,50).map(x=>'<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(x.commission||0).toFixed(2)+'</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">'+escapeHtml(x.question||'Consultation')+'</div><div class="smv-history-detail"><b>Date & Time:</b> '+escapeHtml(smvDateTime(x.date))+'</div><div class="smv-history-detail"><b>Session / Booking ID:</b> '+escapeHtml(x.id||'')+'</div></div>').join('')
+        :'<div class="empty">No credited earnings yet.</div>')
+      :'<div class="empty">Earnings history is temporarily unavailable.</div>';
+    }
+    const withdrawalHistoryNode=$('smvAstroWithdrawalHistory');
+    if(withdrawalHistoryNode){
+     withdrawalHistoryNode.innerHTML=withdrawalHistoryAvailable
+      ?(withdrawalSnap.docs.length?smvSortDashboardDesc(withdrawalSnap.docs).slice(0,20).map(d=>{
+        const w=d.data()||{};
+        const st=String(w.status||'pending').toLowerCase();
+        const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';
+        const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';
+        return '<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(w.amount||0).toFixed(2)+'</b> · <span class="'+cls+'">'+label+'</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> '+escapeHtml(w.withdrawalId||'—')+'</div>'+(st==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?'<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>':'')+'<div class="small"><b>Requested:</b> '+escapeHtml(smvDateTime(w.createdAt||w.requestedAt))+(st==='paid'&&w.paidAt?'<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)):'')+'</div></div>';
+       }).join('')
+       :'<div class="small">No withdrawal requests yet.</div>')
+      :'<div class="small">Withdrawal history is temporarily unavailable.</div>';
+    }
+   }).catch(error=>console.warn('Astrologer earnings UI refresh skipped:',error?.message||error));
   } else {
    const customerDisplayName=[data.name,data.fullName,data.displayName,data.firstName,data.customerName,data.customer_name,data.profileName,currentUser.displayName]
     .map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';
