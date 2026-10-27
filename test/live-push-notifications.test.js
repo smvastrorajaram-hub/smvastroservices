@@ -629,3 +629,18 @@ test('Project 3 WebRTC auxiliary data does not change FCM sender project 1', () 
   assert.ok(multi.includes("liveData: 'smv-astro-services'"));
   assert.ok(multi.includes("DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services'"));
 });
+
+test('Wallet recharge offer endpoints use the selected Wallet financial domain', () => {
+  const server = read('server.js');
+  const start = server.indexOf('// Admin-managed Wallet recharge bonus-minute Offers.');
+  const end = server.indexOf('// The Web Push VAPID public key', start);
+  assert.ok(start >= 0 && end > start, 'Wallet offer routes are isolated in the expected section');
+  const section = server.slice(start, end);
+  assert.equal(
+    (section.match(/walletDomainDb\\(\\)\\.collection\\('smv_offers'\\)/g) || []).length,
+    5,
+    'public offer reads, Admin offer reads, save and delete use the selected Wallet domain'
+  );
+  assert.equal(section.includes("db.collection('smv_offers')"), false,
+    'Wallet offer endpoints must not bypass the selected financial domain');
+});
