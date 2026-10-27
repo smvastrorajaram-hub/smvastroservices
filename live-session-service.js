@@ -1440,7 +1440,6 @@ async function rejectOrCancel(sessionId, user, reason) {
       }
       throw error;
     }
-    const recipientUid = senderUid === session.customerUid ? session.astrologerUid : session.customerUid;
     const safe = { id: msgRef.id, sessionId: String(sessionId), senderUid, text: body, createdAt: message.createdAt.toISOString() };
     // Broadcast to both participants. The sender deduplicates its already-rendered
     // response by message ID; the other participant receives the same authoritative event.
