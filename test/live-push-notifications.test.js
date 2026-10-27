@@ -27,7 +27,7 @@ test('Live requests and Live bookings trigger best-effort server-side pushes', (
 
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
   const server = read('server.js');
-  assert.match(server, /registerLiveSessionRoutes\(\{app,db,FieldValue,crypto,requireUser,isAdminUser,admin\}\)/);
+  assert.match(server, /registerLiveSessionRoutes\(\{app,db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
   assert.match(server, /type: 'scheduled_booking'/);
   assert.match(server, /app\.get\('\/public\/push-config'/);
   assert.match(server, /process\.env\.FCM_VAPID_PUBLIC_KEY/);
@@ -516,8 +516,10 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\''));
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\''));
   assert.ok(service.includes('const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
-  assert.ok(service.includes("historyArchivedToSecondary: false"));
-  assert.ok(service.includes("liveAuxStoreReady: false"));
+  assert.ok(service.includes("next.historyArchivedToSecondary = false"));
+  assert.ok(service.includes("next.liveAuxStoreReady = true"));
+  assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
+  assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
   assert.ok(service.includes("const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
   assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
 });
