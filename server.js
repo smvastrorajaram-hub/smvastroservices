@@ -1,6 +1,6 @@
 const {createRefundService,bankReferences}=require('./refund-service');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
-const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
+const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
@@ -1319,7 +1319,15 @@ function nextPaymentId() {
   return newSmvId("smvcp");
 }
 
-async function nextBookingId() {
+async function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
+  const a = appointment || {};
+  const status = String(a.bookingStatus || 'requested').toLowerCase();
+  if (status !== 'accepted' || a.liveSessionId) return status;
+  const deadline = scheduledAppointmentStartDeadlineMs(a);
+  return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;
+}
+
+function nextBookingId() {
   const dateKey = indiaDateKey();
   const ref = db.collection("smv_counters").doc(`booking_${dateKey}`);
   return db.runTransaction(async tx => {
@@ -1347,12 +1355,14 @@ app.get("/astrologer/appointments", async (req,res)=>{
     const snap=await db.collection("smv_appointments").where("astrologerUid","==",uid).limit(100).get();
     const appointments=snap.docs.map(d=>{
       const a=d.data()||{};
+      const bookingStatus=scheduledBookingReadStatus(a);
+      const missed=bookingStatus==='missed_by_astrologer';
       return {
         id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),bookingKind:String(a.bookingKind||""),
         name:String(a.name||""),email:String(a.email||""),mobile:String(a.mobile||""),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         question:String(a.question||""),notes:String(a.notes||""),birthDetails:a.birthDetails||null,
-        status:String(a.status||"new"),bookingStatus:String(a.bookingStatus||"requested"),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
+        status:missed?'missed':String(a.status||"new"),bookingStatus,missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
       };
     }).sort((a,b)=>{
       const time=v=>typeof v?.toMillis==="function"?v.toMillis():Date.parse(v||"")||0;
@@ -1378,13 +1388,15 @@ app.get("/customer/appointments", async (req,res)=>{
     const snap=await db.collection("smv_appointments").where("customerUid","==",uid).limit(100).get();
     const appointments=snap.docs.map(d=>{
       const a=d.data()||{};
+      const bookingStatus=scheduledBookingReadStatus(a);
+      const missed=bookingStatus==='missed_by_astrologer';
       return {
         id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),
         bookingKind:String(a.bookingKind||""),astrologerId:String(a.astrologerId||a.astrologerUid||""),
         astrologerName:String(a.astrologerName||"Astrologer"),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         scheduledMinutes:Number(a.scheduledMinutes||5),
-        bookingStatus:String(a.bookingStatus||"requested"),status:String(a.status||"new"),
+        bookingStatus,status:missed?'missed':String(a.status||"new"),missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),
         liveSessionId:String(a.liveSessionId||""),liveBookingId:String(a.liveBookingId||""),
         createdAt:a.createdAt||null
       };
