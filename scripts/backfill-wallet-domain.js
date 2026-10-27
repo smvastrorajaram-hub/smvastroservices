@@ -169,6 +169,14 @@ async function main() {
     }
   });
 
+  // Scheduled "Book a Call" / "Book a Chat" requests must migrate even when they
+  // have not created a live session yet. Their IDs are copied with appointments below.
+  const scheduledAppointmentCount = await forEachDocument(
+    sourceDb.collection('smv_appointments').where('bookingKind', 'in', ['scheduled_call_request', 'scheduled_chat_request']),
+    async doc => { appointmentIds.add(doc.id); }
+  );
+  stats.scheduledCallChatAppointmentsDiscovered = scheduledAppointmentCount;
+
   stats.liveSessionMessages = { sourceDocuments: 0, targetWrites: 0 };
   stats.liveSessionSignals = { sourceDocuments: 0, targetWrites: 0 };
   for (const sessionId of sessionIds) {
@@ -219,8 +227,12 @@ async function main() {
   await copyQuery(sourceDb.collection('smv_withdrawal_payouts'), targetDb.collection('smv_withdrawal_payouts'), 'withdrawalPayouts', stats);
   for (const orderId of razorpayOrderIds) {
     const data = await copyNamedDocument(sourceDb, targetDb, 'razorpay_orders', orderId, stats, 'razorpayOrder:' + orderId);
-    if (data) participantUids.add(String(data.customerUid || ''));
+    if (data) participantUids.add(String(data.customerUid || data.firebaseUid || ''));
   }
+  // Webhook idempotency markers migrate with Wallet orders. Without these markers a
+  // retried Razorpay event after cutover could repeat non-wallet side effects.
+  await copyQuery(sourceDb.collection('razorpay_webhook_events'),
+    targetDb.collection('razorpay_webhook_events'), 'razorpayWebhookEvents', stats);
   // Push tokens remain sourced from the primary project in the app; no tokens
   // are copied or rewritten by this migration. Auth and token ownership remain unchanged.
 
