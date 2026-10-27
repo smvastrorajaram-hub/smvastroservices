@@ -2163,6 +2163,10 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    smvBindCustomerBookingChat();
    smvBindCustomerWallet({load:false});
   }
+  // Mount the Live Call/Chat panel only after the role-specific Dashboard DOM exists.
+  // Without this call, the render helpers are defined but the controls never enter the DOM.
+  if(role==='customer'||role==='astrologer')smvLiveBindDashboard(role);
+  if(!active())return;
   dashboardReadyUid=loadUid; dashboardReadyAt=Date.now(); smvDashboardDirty=false;
   dashboardReadyRole=role; smvWatchDashboardEvents(role);
   smvLiveStatus('Updated just now');
