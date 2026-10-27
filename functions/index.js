@@ -2,9 +2,8 @@
 const admin=require('firebase-admin');
 const {onDocumentWritten}=require('firebase-functions/v2/firestore');
 const {defineSecret,defineString}=require('firebase-functions/params');
-const {normalizePrivateKey}=require('../multi-project-firestore');
-const {applyReplicaChange}=require('../firestore-replica-sync');
-const {PROJECTS,PRODUCTION_SECONDARY_PROJECT_IDS}=require('../firestore-read-replica-catalog');
+const {normalizePrivateKey,applyReplicaChange}=require('./replica-sync');
+const {PROJECTS,PRODUCTION_SECONDARY_PROJECT_IDS}=require('./replica-catalog');
 const sourceProjectParam=defineString('SMV_REPLICA_SOURCE_PROJECT_ID');
 const targetProjectParam=defineString('FIREBASE_CONSULTATIONS_PROJECT_ID');
 const enabledParam=defineString('SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES',{default:'false'});
