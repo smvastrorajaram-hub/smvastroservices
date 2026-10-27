@@ -19,6 +19,7 @@ const CALL_CONNECT_TIMEOUT_MS = 45_000;
 const CHAT_ACCEPT_TIMEOUT_MS = 5 * 60_000;
 const PREPARATION_DURATION_MS = 3 * 60_000;
 const DISCONNECT_GRACE_MS = 20_000;
+const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_SIGNAL_BYTES = 100_000;
 
@@ -95,6 +96,24 @@ function timestampMillis(value) {
   return 0;
 }
 
+function scheduledAppointmentStartAtMs(appointment) {
+  const d = appointment || {};
+  const date = String(d.preferredDate || '');
+  const time = String(d.preferredTime || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return 0;
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
+  const utc = Date.UTC(year, month - 1, day, hour, minute);
+  const check = new Date(utc);
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) return 0;
+  return utc - 330 * 60 * 1000; // appointment date/time are India local time (IST)
+}
+
+function scheduledAppointmentStartDeadlineMs(appointment) {
+  const scheduledAt = scheduledAppointmentStartAtMs(appointment);
+  return scheduledAt > 0 ? scheduledAt + SCHEDULED_CONNECT_GRACE_MS : 0;
+}
+
 function sessionTimerPlan(data, nowMs = Date.now()) {
   const d = data || {};
   let dueAt = 0;
@@ -119,7 +138,7 @@ function sessionTimerPlan(data, nowMs = Date.now()) {
     const connectedAt = timestampMillis(d.connectingAt) || timestampMillis(d.preparationCompletedAt) ||
       timestampMillis(d.acceptedAt) || timestampMillis(d.createdAt);
     if (!connectedAt) return null;
-    dueAt = connectedAt + (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : CALL_CONNECT_TIMEOUT_MS);
+    dueAt = connectedAt + (d.appointmentId ? SCHEDULED_CONNECT_GRACE_MS : (d.mode === 'chat' ? CHAT_ACCEPT_TIMEOUT_MS : CALL_CONNECT_TIMEOUT_MS));
     reason = 'connection_failed';
   } else {
     return null;
@@ -132,9 +151,10 @@ function sessionTimerPlan(data, nowMs = Date.now()) {
 
 function scheduledAppointmentStatusForEndedSession(session) {
   if (timestampMillis(session?.startedAt)) return 'completed';
-  return String(session?.endReason || '').trim().toLowerCase() === 'rejected'
-    ? 'rejected'
-    : 'cancelled';
+  const reason = String(session?.endReason || '').trim().toLowerCase();
+  if (['rejected', 'rejected_by_astrologer'].includes(reason)) return 'rejected';
+  if (['connection_failed', 'no_answer', 'missed_by_astrologer', 'scheduled_connection_timeout'].includes(reason)) return 'missed_by_astrologer';
+  return 'cancelled';
 }
 
 function billableMinutesForElapsedMs(elapsedMs, maximumMinutes) {
@@ -1922,8 +1942,25 @@ async function rejectOrCancel(sessionId, user, reason) {
         return res.status(409).json({ success: false, error: 'This booking has an invalid scheduled date/time.' });
       }
       const scheduledAt = utc - 330 * 60 * 1000; // Scheduled appointment times are India local time (IST).
+      const startDeadlineAt = scheduledAt + SCHEDULED_CONNECT_GRACE_MS;
       if (Date.now() < scheduledAt && currentStatus !== 'in_progress') {
         return res.status(409).json({ success: false, error: 'The scheduled time has not arrived yet. The Start button becomes available at the booked time.' });
+      }
+      if (currentStatus === 'accepted' && !appointment.liveSessionId && Date.now() >= startDeadlineAt) {
+        const missedPatch = {
+          bookingStatus: 'missed_by_astrologer', status: 'missed',
+          missedReason: 'astrologer_not_connected_within_grace',
+          missedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
+        };
+        await appointmentRef.set(missedPatch, { merge: true });
+        if (db !== profileDb) {
+          await domainAppointmentRef.set(missedPatch, { merge: true })
+            .catch(error => console.warn('[Live Session] Missed scheduled-booking status mirror deferred:', error?.message || error));
+        }
+        return res.status(409).json({
+          success: false, code: 'SCHEDULED_START_WINDOW_EXPIRED', bookingStatus: 'missed_by_astrologer',
+          error: 'The 2-minute start window after the scheduled time has passed. This booking is marked as missed because the Astrologer did not start the session in time.'
+        });
       }
       const [astroProfileStatusSnap, astroDomainCounterSnap, sessionPricingSnap] = await Promise.all([
         profileDb.collection(ASTROLOGERS).doc(uid).get(),
@@ -2172,6 +2209,9 @@ module.exports = {
   sessionTimerPlan,
   preparationWindow,
   scheduledAppointmentStatusForEndedSession,
+  scheduledAppointmentStartAtMs,
+  scheduledAppointmentStartDeadlineMs,
+  SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
