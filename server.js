@@ -1322,7 +1322,7 @@ function nextPaymentId() {
 async function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
   const a = appointment || {};
   const status = String(a.bookingStatus || 'requested').toLowerCase();
-  if (status !== 'accepted' || a.liveSessionId) return status;
+  if (!['requested', 'accepted'].includes(status) || a.liveSessionId) return status;
   const deadline = scheduledAppointmentStartDeadlineMs(a);
   return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;
 }
@@ -1439,6 +1439,15 @@ app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
       }
       const current=String(a.bookingStatus||"requested").toLowerCase();
       const target=action==="accept"?"accepted":"rejected";
+      const startDeadline=scheduledAppointmentStartDeadlineMs(a);
+      if(action==="accept"&&current==="requested"&&!a.liveSessionId&&startDeadline>0&&Date.now()>=startDeadline){
+        tx.update(ref,{
+          bookingStatus:"missed_by_astrologer",status:"missed",
+          missedReason:"astrologer_not_connected_within_grace",
+          missedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
+        });
+        return {errorStatus:409,error:"The 2-minute window after the scheduled time has passed. This booking is marked as missed because the Astrologer did not accept/start it in time.",bookingStatus:"missed_by_astrologer"};
+      }
       if(current===target)return {success:true,alreadyProcessed:true,appointmentId:ref.id,bookingStatus:target};
       if(current!=="requested")return {errorStatus:409,error:"This booking is already "+current.replaceAll("_"," ")+".",bookingStatus:current};
       tx.update(ref,{
