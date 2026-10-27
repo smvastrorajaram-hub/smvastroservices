@@ -1314,7 +1314,8 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!body || body.length > MAX_MESSAGE_CHARS) {
       throw httpError(400, 'Enter a message of up to 4,000 characters.', 'LIVE_MESSAGE_INVALID');
     }
-    const loadedSession = await loadSessionForParticipant(sessionId, senderUid);
+    // The write transaction below re-reads and revalidates the participant/session,
+    // so do not perform an extra Firestore read before entering that transaction.
     const sRef = sessionRef(sessionId);
     const msgRef = sRef.collection('messages').doc(crypto.randomUUID());
     const message = {
@@ -1354,7 +1355,8 @@ async function rejectOrCancel(sessionId, user, reason) {
     const serialized = JSON.stringify(payload ?? {});
     if (serialized.length > MAX_SIGNAL_BYTES) throw httpError(413, 'WebRTC signal is too large.', 'LIVE_SIGNAL_TOO_LARGE');
     if (!payload || typeof payload !== 'object') throw httpError(400, 'WebRTC signal payload is invalid.', 'LIVE_SIGNAL_INVALID');
-    const loadedSession = await loadSessionForParticipant(sessionId, senderUid);
+    // The write transaction below re-reads and revalidates the participant/session,
+    // so do not perform an extra Firestore read before entering that transaction.
     const sRef = sessionRef(sessionId);
     const signalRef = sRef.collection('signals').doc(crypto.randomUUID());
     const data = {
