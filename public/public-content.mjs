@@ -362,8 +362,6 @@
       <p class="small">Booking request only. The Astrologer must accept it. At the scheduled time, the Astrologer starts the Call/Chat; Wallet funds are reserved when the session starts.</p>
       <form id="smvCallBookingForm" style="display:flex;flex-direction:column;gap:6px;width:100%;min-width:0;min-height:0">
         <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(customerDisplayName)}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
-        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
-        <label style="display:block;min-width:0;color:#2d1919"><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <div class="grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0">
           <label style="display:block;min-width:0;color:#2d1919"><b>Date of Birth</b><input id="smvCallBookingBirthDate" name="birthDate" type="date" max="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
           <label style="display:block;min-width:0;color:#2d1919"><b>Time of Birth</b><input id="smvCallBookingBirthTime" name="birthTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
@@ -405,8 +403,6 @@
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
           body:JSON.stringify({
             name:String($('smvCallBookingName')?.value||'').trim(),
-            email:String($('smvCallBookingEmail')?.value||'').trim(),
-            mobile:String($('smvCallBookingMobile')?.value||'').trim(),
             birthDate:String($('smvCallBookingBirthDate')?.value||''),
             birthTime:String($('smvCallBookingBirthTime')?.value||''),
             birthPlace:String($('smvCallBookingBirthPlace')?.value||'').trim(),
