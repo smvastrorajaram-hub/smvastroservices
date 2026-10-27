@@ -608,5 +608,5 @@ test('Project 3 WebRTC auxiliary data does not change FCM sender project 1', () 
   assert.match(live, /mirrorLiveRecordToSecondary\\(sessionId, 'signals'/);
   assert.match(live, /mirrorLiveRecordToSecondary\\(sessionId, 'messages'/);
   assert.match(multi, /liveData: 'smv-astro-services'/);
-  assert.match(multi, /walletDomain: 'smvastro-services'/);
+  assert.match(multi, /DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services'/);
 });
