@@ -5,10 +5,10 @@ const {defineSecret,defineString}=require('firebase-functions/params');
 const {normalizePrivateKey,applyReplicaChange}=require('./replica-sync');
 const {PROJECTS,PRODUCTION_SECONDARY_PROJECT_IDS}=require('./replica-catalog');
 const sourceProjectParam=defineString('SMV_REPLICA_SOURCE_PROJECT_ID');
-const targetProjectParam=defineString('FIREBASE_CONSULTATIONS_PROJECT_ID');
+const targetProjectParam=defineString('SMV_REPLICA_TARGET_PROJECT_ID');
 const enabledParam=defineString('SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES',{default:'false'});
-const clientEmailSecret=defineSecret('FIREBASE_CONSULTATIONS_CLIENT_EMAIL');
-const privateKeySecret=defineSecret('FIREBASE_CONSULTATIONS_PRIVATE_KEY');
+const clientEmailSecret=defineSecret('SMV_REPLICA_TARGET_CLIENT_EMAIL');
+const privateKeySecret=defineSecret('SMV_REPLICA_TARGET_PRIVATE_KEY');
 const targetAppName='smv-read-replica-consultations';
 function enabled(value){return /^(?:1|true|yes|on)$/i.test(String(value??'').trim());}
 function validateTarget(){
