@@ -16,6 +16,7 @@ const {
   scheduledAppointmentStatusForEndedSession,
   scheduledAppointmentStartAtMs,
   scheduledAppointmentStartDeadlineMs,
+  scheduledConnectionGraceRemainingMs,
   SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
   astrologerAvailabilityStatus,
@@ -218,6 +219,11 @@ test('scheduled bookings keep a two-minute Start and connection grace in IST', (
   assert.equal(scheduledCall.dueAt, scheduledAt + 120_000);
   assert.equal(scheduledChat.dueAt, scheduledAt + 120_000);
   assert.equal(ordinaryCall.dueAt, scheduledAt + 45_000);
+  const scheduledConnecting = { state: 'connecting', appointmentId: 'apt-1', connectingAt: new Date(scheduledAt) };
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt), 120_000);
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt + 90_000), 30_000);
+  assert.equal(scheduledConnectionGraceRemainingMs(scheduledConnecting, scheduledAt + 120_000), 0);
+  assert.equal(scheduledConnectionGraceRemainingMs({ ...scheduledConnecting, appointmentId: '' }, scheduledAt), 0);
 });
 
 test('ended scheduled appointments reconcile to clear terminal statuses', () => {
