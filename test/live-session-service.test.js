@@ -11,6 +11,7 @@ const {
   astrologerRatePaise,
   maxAffordableMinutes,
   calculateBookingReserveRelease,
+  sessionTimerPlan,
   preparationWindow,
   scheduledAppointmentStatusForEndedSession,
   isAstrologerLiveModeEnabled,
@@ -226,4 +227,40 @@ test('availability automatically follows enabled modes, while active sessions st
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 0), 'offline');
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 1), 'busy');
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true,liveChatEnabled:true}, 1), 'busy');
+});
+
+
+test('persisted Live Session deadlines reconcile Preparing, Ringing, Connecting and Active states after timer loss', () => {
+  const base = Date.parse('2026-10-27T10:00:00.000Z');
+  const preparing = sessionTimerPlan({
+    state: 'preparing',
+    acceptedAt: new Date(base),
+    preparationStartedAt: new Date(base),
+    preparationUntil: new Date(base + PREPARATION_DURATION_MS)
+  }, base + 179_000);
+  assert.deepEqual(preparing, {
+    dueAt: base + PREPARATION_DURATION_MS,
+    reason: 'preparation_complete',
+    delayMs: 1_000
+  });
+  assert.equal(sessionTimerPlan({
+    state: 'preparing',
+    acceptedAt: new Date(base),
+    preparationStartedAt: new Date(base),
+    preparationUntil: new Date(base + PREPARATION_DURATION_MS)
+  }, base + PREPARATION_DURATION_MS).delayMs, 0);
+  assert.equal(sessionTimerPlan({
+    state: 'ringing', createdAt: new Date(base)
+  }, base + RING_TIMEOUT_MS).reason, 'no_answer');
+  assert.equal(sessionTimerPlan({
+    state: 'connecting', mode: 'call', connectingAt: new Date(base)
+  }, base + CALL_CONNECT_TIMEOUT_MS).reason, 'connection_failed');
+  assert.equal(sessionTimerPlan({
+    state: 'connecting', mode: 'chat', connectingAt: new Date(base)
+  }, base + CHAT_ACCEPT_TIMEOUT_MS).delayMs, 0);
+  assert.equal(sessionTimerPlan({
+    state: 'active', startedAt: new Date(base), minutes: 3
+  }, base + 180_000).reason, 'duration_complete');
+  assert.equal(sessionTimerPlan({ state: 'preparing' }, base), null);
+  assert.equal(sessionTimerPlan({ state: 'active', startedAt: new Date(base), minutes: 0 }, base), null);
 });
