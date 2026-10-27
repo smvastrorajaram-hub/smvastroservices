@@ -11,6 +11,11 @@ on:
       - 'test/live-push-notifications.test.js'
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
+      - 'multi-project-firestore.js'
+      - 'test/multi-project-firestore.test.js'
+      - 'scripts/backfill-wallet-domain.js'
+      - 'scripts/validate-wallet-domain.js'
+      - 'docs/project5-wallet-domain-cutover.md'
       - 'server.js'
       - 'dashboard-events.js'
       - 'firestore.indexes.json'
@@ -29,6 +34,11 @@ on:
     paths:
       - 'wallet-service.js'
       - 'test/wallet-service.test.js'
+      - 'multi-project-firestore.js'
+      - 'test/multi-project-firestore.test.js'
+      - 'scripts/backfill-wallet-domain.js'
+      - 'scripts/validate-wallet-domain.js'
+      - 'docs/project5-wallet-domain-cutover.md'
       - 'server.js'
       - 'dashboard-events.js'
       - 'firestore.indexes.json'
@@ -64,6 +74,10 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('firestore.indexes.json','utf8'))"
           node --check admin-auth.js
           node --check test/admin-auth.test.js
+          node --check multi-project-firestore.js
+          node --check scripts/backfill-wallet-domain.js
+          node --check scripts/validate-wallet-domain.js
+          node --check test/multi-project-firestore.test.js
           node --check wallet-service.js
           node --check live-session-service.js
           node --check test/live-session-service.test.js
@@ -81,6 +95,8 @@ jobs:
         run: node --test test/admin-auth.test.js
       - name: Run Razorpay Checkout reliability tests
         run: node --test test/razorpay-checkout-loader.test.mjs
+      - name: Run multi-project Firestore configuration tests
+        run: node --test test/multi-project-firestore.test.js
       - name: Run Wallet unit tests
         run: npm run test:wallet
       - name: Run Live Session billing tests

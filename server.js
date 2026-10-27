@@ -3,7 +3,7 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
-const {initializeMultiProjectFirestore}=require('./multi-project-firestore');
+const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -37,6 +37,11 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
+// Project 5 becomes authoritative for the whole active Wallet + Call/Chat billing domain
+// only after the source integration gate, backfill, and dependency checks are all verified.
+function walletDomainDb(){
+ return resolveWalletDomainDatabase(multiProjectFirestore,db);
+}
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
 async function mirrorAdminContentPatch(id,patch){
  if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
@@ -718,8 +723,10 @@ app.post("/register-customer-profile", async (req, res) => {
         await db.runTransaction(async tx => {
           const publicIdRef = db.collection("smv_public_ids").doc(publicId);
           const walletRef = db.collection("smv_wallets").doc(user.uid);
-          // Read the Wallet and registration document before the phone-claim helper begins writes.
-          const [publicIdSnap, walletSnap] = await Promise.all([tx.get(publicIdRef), tx.get(walletRef)]);
+          // Wallet creation stays on Project 1 only before cutover; after cutover the
+          // Wallet service lazily creates it in the same domain as all later debits/credits.
+          const walletRead = multiProjectFirestore.walletDomainCutoverComplete ? Promise.resolve({ exists: false }) : tx.get(walletRef);
+          const [publicIdSnap, walletSnap] = await Promise.all([tx.get(publicIdRef), walletRead]);
           if (publicIdSnap.exists) throw publicIdCollisionError();
           // This helper performs the last transaction read and then claims the unique phone.
           await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
@@ -737,7 +744,7 @@ app.post("/register-customer-profile", async (req, res) => {
 
           // New registrations start with a zero-cash, zero-bonus Wallet.
           // Existing Wallet balances (including historical credits) are never clawed back.
-          if (!walletSnap.exists) {
+          if (!walletSnap.exists && !multiProjectFirestore.walletDomainCutoverComplete) {
             const now = FieldValue.serverTimestamp();
             tx.create(walletRef, {
               ownerUid: user.uid, ownerRole: "customer", currency: "INR",
@@ -1523,6 +1530,10 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     const ref=db.collection("smv_appointments").doc();
     const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes:astrologerId&&type==="Chat Consultation"?"":notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
+    if (multiProjectFirestore.walletDomainCutoverComplete) {
+      await walletDomainDb().collection("smv_appointments").doc(ref.id).set(data, { merge: true })
+        .catch(error => console.warn("Scheduled Call/Chat booking domain mirror deferred:", error?.message || error));
+    }
 
     // Send the Astrologer a background push after a durable scheduled-booking write.
     // The live-session service treats push as best-effort so a provider outage never
@@ -2486,7 +2497,7 @@ app.get("/admin/settings-data", async (req, res) => {
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
     const [commissionSnap,questionSnap,workflowSnap,privateCommissionSnap,privateWorkflowSnap,autoApprovalSnap,horoscopePaymentSnap]=await Promise.all([
-      db.collection("smv_settings").doc("commission").get(),
+      walletDomainDb().collection("smv_settings").doc("commission").get(),
       db.collection("smv_settings").doc("question").get(),
       db.collection("smv_settings").doc("workflow").get(),
       db.collection("smv_settings").doc("privateCommission").get(),
@@ -2510,12 +2521,13 @@ app.get("/admin/withdrawals-data", async (req, res) => {
   const user=await requireUser(req,res); if(!user)return;
   if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access denied."});
   try{
-    const snap=await db.collection("smv_withdrawals").orderBy("createdAt","desc").limit(50).get();
+    const financeDb=walletDomainDb();
+    const snap=await financeDb.collection("smv_withdrawals").orderBy("createdAt","desc").limit(50).get();
     const withdrawals=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a)).slice(0,50);
     // Fetch private payout snapshots in one server-side batch instead of issuing
     // one authenticated HTTP request per withdrawal card from the browser.
-    const refs=withdrawals.map(w=>db.collection("smv_withdrawal_payouts").doc(String(w.id||"")));
-    const payoutSnaps=refs.length?await db.getAll(...refs):[];
+    const refs=withdrawals.map(w=>financeDb.collection("smv_withdrawal_payouts").doc(String(w.id||"")));
+    const payoutSnaps=refs.length?await financeDb.getAll(...refs):[];
     const payoutById=new Map(payoutSnaps.filter(x=>x.exists).map(x=>[x.id,x.data()||{}]));
     const enriched=withdrawals.map(w=>{
       const p=payoutById.get(String(w.id||""))||{};
@@ -3029,8 +3041,8 @@ app.get("/admin-data", async (req, res) => {
     const [customerCountResult, astrologers, livePayments, commission, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCount("customers",db.collection("smv_users").where("role","==","customer")),
       readCollection("smv_astrologers"),
-      readCollection("smv_payments",db.collection("smv_payments").where("source","==","live_session")),
-      db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
+      readCollection("smv_payments",walletDomainDb().collection("smv_payments").where("source","==","live_session")),
+      walletDomainDb().collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getAstrologerAutoApprovalSettings(true),
       getHoroscopePaymentSettings()
     ]);
@@ -3258,6 +3270,11 @@ app.post("/admin/private-consultation/reject-answer",express.json({limit:"10kb"}
 
 
 app.post("/private-consultation/create-order", express.json({limit:"30kb"}), async (req,res)=>{
+  // This retired flow is not part of the active Consult an Astrologer/Live Call/Chat product.
+  // Do not let its legacy Project 1 transaction debit a second Wallet after Project 5 cutover.
+  if (multiProjectFirestore.walletDomainCutoverComplete) {
+    return res.status(410).json({ error: "This legacy payment route is unavailable. Use Consult an Astrologer and Live Call/Chat booking." });
+  }
   const user=await requireUser(req,res);if(!user)return;
   try{
     const customerProfileSnap=await db.collection("smv_users").doc(user.uid).get();
@@ -3842,7 +3859,7 @@ app.get("/astrologer/earnings", async (req, res) => {
     // transaction. Do not scan and transactionally replay every historical
     // session each time the Astrologer opens the Dashboard.
     const uid=String(user.uid||"");
-    const liveEarningsQuery=db.collection("smv_payments")
+    const liveEarningsQuery=walletDomainDb().collection("smv_payments")
       .where("astrologerId", "==", uid)
       .where("source", "==", "live_session")
       .where("type", "==", "astrologer_earning")
@@ -3858,7 +3875,7 @@ app.get("/astrologer/earnings", async (req, res) => {
         .where("astrologerId", "==", uid)
         .where("commissionStatus", "==", "credited")
         .select("astrologerCreditedAmount", "astrologerAmount").get(),
-      db.collection("smv_withdrawals").where("astrologerId", "==", uid).get(),
+      walletDomainDb().collection("smv_withdrawals").where("astrologerId", "==", uid).get(),
       // The dashboard renders at most 50 earnings rows. Avoid transferring every
       // historical Live Session payment just to display that short history.
       liveEarningsQuery.orderBy("createdAt", "desc").limit(50).get()
@@ -3959,12 +3976,12 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       db.collection("smv_private_consultations")
         .where("astrologerId", "==", user.uid)
         .where("commissionStatus", "==", "credited").get(),
-      db.collection("smv_payments")
+      walletDomainDb().collection("smv_payments")
         .where("astrologerId", "==", user.uid)
         .where("source", "==", "live_session")
         .where("type", "==", "astrologer_earning")
         .where("status", "==", "credited").get(),
-      db.collection("smv_withdrawals").where("astrologerId", "==", user.uid).get()
+      walletDomainDb().collection("smv_withdrawals").where("astrologerId", "==", user.uid).get()
     ]);
     let totalEarnings = 0;
     questionSnap.docs.forEach(d => {
@@ -4031,20 +4048,22 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       return res.status(400).json({ error: "Your approved bank payment details are incomplete. Please contact Admin." });
     }
 
-    const withdrawalRef = db.collection("smv_withdrawals").doc();
-    await withdrawalRef.set({
+    const financeDb=walletDomainDb();
+    const withdrawalRef = financeDb.collection("smv_withdrawals").doc();
+    const payoutSnapshotRef = financeDb.collection("smv_withdrawal_payouts").doc(withdrawalRef.id);
+    const createdAt = FieldValue.serverTimestamp();
+    const withdrawalData = {
       astrologerId: user.uid,
       astrologerName: profile.name || user.name || user.displayName || "Astrologer",
       amount,
       withdrawalId,
       status: "pending",
-      createdAt: FieldValue.serverTimestamp(),
-      requestedAt: FieldValue.serverTimestamp()
-    });
-
-    // Private admin-only snapshot. Never place bank details in smv_withdrawals,
-    // because the astrologer is allowed to read their own withdrawal document.
-    await db.collection("smv_withdrawal_payouts").doc(withdrawalRef.id).set({
+      createdAt,
+      requestedAt: createdAt
+    };
+    // Keep the financial withdrawal request and its private payout snapshot atomic
+    // inside the same selected Wallet domain; the browser never receives bank details.
+    const payoutSnapshotData = {
       withdrawalDocId: withdrawalRef.id,
       withdrawalId,
       astrologerId: user.uid,
@@ -4055,8 +4074,12 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       ifsc: String(payout.ifsc || "").trim().toUpperCase(),
       upi: String(payout.upi || "").trim(),
       payoutStatus,
-      createdAt: FieldValue.serverTimestamp()
-    });
+      createdAt
+    };
+    const withdrawalBatch = financeDb.batch();
+    withdrawalBatch.set(withdrawalRef, withdrawalData);
+    withdrawalBatch.set(payoutSnapshotRef, payoutSnapshotData);
+    await withdrawalBatch.commit();
 
     console.log("Withdrawal request created", { astrologerId:user.uid, withdrawalId, amount, payoutStatus });
     return res.json({
@@ -4081,8 +4104,9 @@ app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req,
   try {
     const withdrawalDocId = String(req.body?.withdrawalDocId || "").trim();
     if (!withdrawalDocId) return res.status(400).json({error:"Withdrawal document ID is required."});
-    const withdrawalRef = db.collection("smv_withdrawals").doc(withdrawalDocId);
-    const result = await db.runTransaction(async tx => {
+    const financeDb=walletDomainDb();
+    const withdrawalRef = financeDb.collection("smv_withdrawals").doc(withdrawalDocId);
+    const result = await financeDb.runTransaction(async tx => {
       const snap = await tx.get(withdrawalRef);
       if (!snap.exists) throw new Error("Withdrawal request not found.");
       const w = snap.data() || {};
@@ -4130,11 +4154,12 @@ app.get("/admin/withdrawal-payout/:withdrawalDocId", async (req, res) => {
     const withdrawalDocId = String(req.params.withdrawalDocId || "").trim();
     if (!withdrawalDocId) return res.status(400).json({ error: "Withdrawal document ID is required." });
 
-    const withdrawalSnap = await db.collection("smv_withdrawals").doc(withdrawalDocId).get();
+    const financeDb=walletDomainDb();
+    const withdrawalSnap = await financeDb.collection("smv_withdrawals").doc(withdrawalDocId).get();
     if (!withdrawalSnap.exists) return res.status(404).json({ error: "Withdrawal request not found." });
     const withdrawal = withdrawalSnap.data() || {};
 
-    const snapshotRef = db.collection("smv_withdrawal_payouts").doc(withdrawalDocId);
+    const snapshotRef = financeDb.collection("smv_withdrawal_payouts").doc(withdrawalDocId);
     const snapshot = await snapshotRef.get();
     let payout = snapshot.exists ? (snapshot.data() || {}) : {};
     let source = snapshot.exists ? "withdrawal_snapshot" : "current_payout_method";
@@ -4178,7 +4203,8 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
     const orderId = orderEntity?.id || paymentEntity?.order_id || null;
     const eventKey = `${eventType}_${paymentId || orderId || crypto.createHash("sha256").update(req.body).digest("hex")}`.replace(/\//g, "_");
     if (!eventKey) return res.status(400).send("Invalid webhook event key");
-    const eventRef = db.collection("razorpay_webhook_events").doc(eventKey);
+    const eventDb = walletDomainDb();
+    const eventRef = eventDb.collection("razorpay_webhook_events").doc(eventKey);
     const previousEventSnap = await eventRef.get();
     if (previousEventSnap.exists && previousEventSnap.data()?.processed === true) return res.status(200).send("OK");
     if (previousEventSnap.exists) {
@@ -4189,8 +4215,20 @@ app.post("/razorpay/webhook", express.raw({ type: "application/json" }), async (
       await eventRef.set({ event: eventType, razorpayPaymentId: paymentId, razorpayOrderId: orderId, receivedAt: FieldValue.serverTimestamp(), retryCount: 0, processed: false });
     }
     if (orderId) {
-      const orderRef = db.collection("razorpay_orders").doc(orderId);
-      const orderSnap = await orderRef.get();
+      let orderDb = eventDb;
+      let orderRef = orderDb.collection("razorpay_orders").doc(orderId);
+      let orderSnap = await orderRef.get();
+      if (!orderSnap.exists && eventDb !== db) {
+        const primaryOrderRef = db.collection("razorpay_orders").doc(orderId);
+        const primaryOrderSnap = await primaryOrderRef.get();
+        const primaryOrder = primaryOrderSnap.exists ? (primaryOrderSnap.data() || {}) : {};
+        if (primaryOrder.walletRechargeId) {
+          throw new Error("Wallet recharge Razorpay order is missing from Project 5. Repair/backfill this order before webhook processing.");
+        }
+        orderDb = db;
+        orderRef = primaryOrderRef;
+        orderSnap = primaryOrderSnap;
+      }
       const stored = orderSnap.exists ? orderSnap.data() : {};
       const newStatus = ["payment.captured", "order.paid"].includes(eventType) ? "paid" : eventType === "payment.failed" ? "failed" : null;
       if (newStatus) await orderRef.set({ status: newStatus, razorpayPaymentId: paymentId, lastWebhookEvent: eventType, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -4392,7 +4430,7 @@ registerGeoNamesRoutes(app);
 
 // Wallet routes must be registered before the final 404. All balance/ledger writes use Admin SDK transactions.
 const walletService = registerWalletRoutes({
-  app, db, FieldValue, crypto, razorpay,
+  app, db:walletDomainDb(), profileDb:db, FieldValue, crypto, razorpay,
   razorpayKeyId: RAZORPAY_KEY_ID, razorpayKeySecret: RAZORPAY_KEY_SECRET,
   adminUid: ADMIN_UID, requireUser, isAdminUser
 });
@@ -4407,7 +4445,7 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
     const rawLimit=Number(req.query?.limit||50);
     const limit=Number.isFinite(rawLimit)?Math.max(1,Math.min(100,Math.floor(rawLimit))):50;
     const ownerUid=String(req.query?.ownerUid||"").trim().slice(0,160);
-    const transactionCollection=db.collection("smv_wallet_transactions");
+    const transactionCollection=walletDomainDb().collection("smv_wallet_transactions");
     let snap;
     try{
       let query=transactionCollection;
@@ -4449,7 +4487,7 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
     },{transactionCount:0,creditPaise:0,debitPaise:0,otherPaise:0,byType:{}});
     let wallet=null;
     if(ownerUid){
-      const ws=await db.collection("smv_wallets").doc(ownerUid).get();
+      const ws=await walletDomainDb().collection("smv_wallets").doc(ownerUid).get();
       if(ws.exists){
         const w=ws.data()||{};
         wallet={ownerUid,ownerRole:String(w.ownerRole||""),availableBalancePaise:Number(w.availableBalancePaise||0),reservedBalancePaise:Number(w.reservedBalancePaise||0),updatedAt:w.updatedAt?.toDate?w.updatedAt.toDate().toISOString():null};
@@ -4664,7 +4702,7 @@ app.get('/public/push-config', (_req, res) => {
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
+const liveSessionService=registerLiveSessionRoutes({app,db:walletDomainDb(),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {

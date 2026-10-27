@@ -274,15 +274,16 @@ function liveSessionSafeView(id, data) {
   };
 }
 
-function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, isAdminUser, admin, multiProjectFirestore = null }) {
+function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto, requireUser, isAdminUser, admin, multiProjectFirestore = null }) {
   if (!db || !FieldValue || !crypto || !requireUser || !isAdminUser || !admin || typeof admin.messaging !== 'function') {
     throw new Error('Live Session service requires Firestore, FieldValue, crypto, auth helpers and Firebase Messaging.');
   }
 
-  const sessionHistoryArchiveWriteDb = multiProjectFirestore?.enabled &&
+  const walletDomainCutover = multiProjectFirestore?.walletDomainCutoverComplete === true && db !== profileDb;
+  const sessionHistoryArchiveWriteDb = !walletDomainCutover && multiProjectFirestore?.enabled &&
     (multiProjectFirestore.sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete)
     ? multiProjectFirestore.consultationsDb : null;
-  const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
+  const sessionHistoryDb = !walletDomainCutover && multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
   const liveDataWriteDb = multiProjectFirestore?.enabled ? multiProjectFirestore.liveDataDb : null;
   const liveDataReadDb = multiProjectFirestore?.liveDataBackfillComplete ? liveDataWriteDb : null;
   const liveDataMirrorWritesEnabled = multiProjectFirestore?.enabled &&
@@ -297,6 +298,30 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   }
 
   function sessionRef(id) { return db.collection(SESSIONS).doc(String(id)); }
+  const availabilitySyncQueues = new Map();
+  async function syncAstrologerAvailabilityToProfile(astrologerUid) {
+    const uid = String(astrologerUid || '').trim();
+    if (!uid || db === profileDb) return;
+    const previous = availabilitySyncQueues.get(uid) || Promise.resolve();
+    const current = previous.catch(() => {}).then(async () => {
+      const [domainSnap, profileSnap] = await Promise.all([
+        db.collection(ASTROLOGERS).doc(uid).get(),
+        profileDb.collection(ASTROLOGERS).doc(uid).get()
+      ]);
+      if (!domainSnap.exists || !profileSnap.exists) return;
+      const domainAstro = domainSnap.data() || {};
+      const profileAstro = profileSnap.data() || {};
+      const activeSessionCount = safePaise(domainAstro.activeSessionCount);
+      const availabilityStatus = astrologerAvailabilityStatus({ ...profileAstro, activeSessionCount }, activeSessionCount);
+      await profileDb.collection(ASTROLOGERS).doc(uid).set({
+        activeSessionCount, availabilityStatus, liveSessionBusyManaged: activeSessionCount > 0,
+        updatedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+    });
+    availabilitySyncQueues.set(uid, current);
+    try { await current; }
+    finally { if (availabilitySyncQueues.get(uid) === current) availabilitySyncQueues.delete(uid); }
+  }
   function annotateSessionStorage(data) {
     const next = { ...data };
     if (sessionHistoryArchiveWriteDb) next.historyArchivedToSecondary = false;
@@ -330,7 +355,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
   function earningRef(id) { return db.collection('smv_payments').doc('SMV-LIVE-EARN-' + String(id)); }
   function nowTimestamp() { return FieldValue.serverTimestamp(); }
   function notifyAdmin(type, title, message, extra = {}) {
-    return db.collection('smv_notifications').add({
+    return profileDb.collection('smv_notifications').add({
       userId: 'admin', audience: 'admin', type, title, message,
       read: false, createdAt: FieldValue.serverTimestamp(), ...extra
     }).catch(error => console.warn('[Live Session] Admin notification skipped:', error?.message || error));
@@ -342,7 +367,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const uid = String(astrologerUid || '').trim();
     if (!uid) return { sent: 0, failed: 0, registered: 0 };
     try {
-      const snap = await db.collection('smv_push_tokens').where('uid', '==', uid).limit(25).get();
+      const snap = await profileDb.collection('smv_push_tokens').where('uid', '==', uid).limit(25).get();
       if (snap.empty) return { sent: 0, failed: 0, registered: 0 };
       const title = String(payload.title || 'SMV ASTRO Alert').slice(0, 100);
       const body = String(payload.body || 'Open SMV ASTRO to review the request.').slice(0, 240);
@@ -410,12 +435,12 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
 
   async function roleFor(user) {
     if (await isAdminUser(user)) return 'admin';
-    const snap = await userRef(user.uid).get();
+    const snap = await profileDb.collection(USERS).doc(String(user.uid)).get();
     const role = String(snap.data()?.role || '').trim().toLowerCase();
     if (role === 'astrologer') return 'astrologer';
     // Some existing professional profiles retained an older Customer role during migration.
     // A verified, approved Astrologer document owned by this Firebase UID is authoritative.
-    const astroSnap = await astroRef(user.uid).get();
+    const astroSnap = await profileDb.collection(ASTROLOGERS).doc(String(user.uid)).get();
     if (astroSnap.exists) {
       const astro = astroSnap.data() || {};
       const status = String(astro.status || '').toLowerCase();
@@ -671,12 +696,17 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       ? { ...fingerprintPayload, appointmentId: scheduledAppointmentId }
       : fingerprintPayload));
     const sRef = sessionRef(id), bRef = bookingRef(id);
-    const customerProfileRef = userRef(uid), astroProfileRef = userRef(astroId);
     const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef(), cRef = commissionRef();
+    // Auth/profile/approval/rates remain authoritative in Project 1; only wallet,
+    // live-session records, counters and billing settings share Project 5's transaction.
+    const [customerSnap, astroUserSnap, astroProfileSnap] = await Promise.all([
+      profileDb.collection(USERS).doc(uid).get(),
+      profileDb.collection(USERS).doc(astroId).get(),
+      profileDb.collection(ASTROLOGERS).doc(astroId).get()
+    ]);
     const txResult = await db.runTransaction(async tx => {
-      const [oldSession, oldBooking, customerSnap, astroUserSnap, astroSnap, walletSnap, pricingSnap, commissionSnap] = await Promise.all([
-        tx.get(sRef), tx.get(bRef), tx.get(customerProfileRef), tx.get(astroProfileRef),
-        tx.get(aRef), tx.get(wRef), tx.get(pRef), tx.get(cRef)
+      const [oldSession, oldBooking, astroCounterSnap, walletSnap, pricingSnap, commissionSnap] = await Promise.all([
+        tx.get(sRef), tx.get(bRef), tx.get(aRef), tx.get(wRef), tx.get(pRef), tx.get(cRef)
       ]);
       if (oldSession.exists || oldBooking.exists) {
         const old = oldSession.exists ? (oldSession.data() || {}) : (oldBooking.data() || {});
@@ -696,8 +726,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       if (!customerSnap.exists || String(customerSnap.data()?.role || '').toLowerCase() !== 'customer') {
         throw httpError(403, 'Customer login is required to start a Live Session.', 'LIVE_CUSTOMER_REQUIRED');
       }
-      if (!astroSnap.exists) throw httpError(404, 'The selected Astrologer was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
-      const astro = astroSnap.data() || {};
+      if (!astroProfileSnap.exists) throw httpError(404, 'The selected Astrologer was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
+      const currentProfile = astroProfileSnap.data() || {};
+      const counter = astroCounterSnap.exists ? (astroCounterSnap.data() || {}) : {};
+      const astro = { ...currentProfile, activeSessionCount: safePaise(counter.activeSessionCount) };
       validateActiveAstrologer(astro, astroId);
       if (!isAstrologerLiveModeEnabled(astro, kind)) {
         throw httpError(409,
@@ -767,6 +799,8 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }, { merge: true });
       return { kind: 'session', id, data, alreadyProcessed: false, wallet: reserve, customerName: customer.name || '' };
     });
+    await syncAstrologerAvailabilityToProfile(astroId).catch(error =>
+      console.warn('[Live Session] Astrologer availability sync deferred:', error?.message || error));
     if (txResult.kind === 'session') {
       trackSession(id, uid, astroId);
       scheduleSessionTimer(id, txResult.data);
@@ -807,13 +841,24 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     const uid = String(astrologerUid || '').trim();
     if (!id || !uid) throw httpError(400, 'Booking ID is required.', 'LIVE_BOOKING_ID_REQUIRED');
     const bRef = bookingRef(id), sRef = sessionRef(id), aRef = astroRef(uid);
-    const astroUserRef = userRef(uid);
+    const bookingPreview = await bRef.get();
+    if (!bookingPreview.exists) throw httpError(404, 'Pending Live booking was not found.', 'LIVE_BOOKING_NOT_FOUND');
+    const previewCustomerUid = String(bookingPreview.data()?.customerUid || '');
+    if (!previewCustomerUid) throw httpError(409, 'This booking has no Customer owner and cannot be accepted.', 'LIVE_CUSTOMER_REQUIRED');
+    const [astroProfileSnap, astroUserSnap, customerSnap] = await Promise.all([
+      profileDb.collection(ASTROLOGERS).doc(uid).get(),
+      profileDb.collection(USERS).doc(uid).get(),
+      profileDb.collection(USERS).doc(previewCustomerUid).get()
+    ]);
     const txResult = await db.runTransaction(async tx => {
-      const [bSnap, sSnap, astroSnap, astroUserSnap, pricingSnap, commissionSnap] = await Promise.all([
-        tx.get(bRef), tx.get(sRef), tx.get(aRef), tx.get(astroUserRef), tx.get(pricingRef()), tx.get(commissionRef())
+      const [bSnap, sSnap, astroCounterSnap, pricingSnap, commissionSnap] = await Promise.all([
+        tx.get(bRef), tx.get(sRef), tx.get(aRef), tx.get(pricingRef()), tx.get(commissionRef())
       ]);
       if (!bSnap.exists) throw httpError(404, 'Pending Live booking was not found.', 'LIVE_BOOKING_NOT_FOUND');
       const booking = bSnap.data() || {};
+      if (String(booking.customerUid || '') !== previewCustomerUid) {
+        throw httpError(409, 'The booking Customer changed during acceptance. Reload the booking and try again.', 'LIVE_BOOKING_CUSTOMER_CHANGED');
+      }
       if (booking.astrologerUid !== uid) throw httpError(403, 'This booking belongs to another Astrologer.', 'LIVE_BOOKING_FORBIDDEN');
       if (booking.status === 'accepted' && sSnap.exists) return { id, data: sSnap.data() || {}, alreadyProcessed: true };
       if (booking.status !== 'pending') throw httpError(409, 'This booking is no longer pending.', 'LIVE_BOOKING_NOT_PENDING');
@@ -822,8 +867,10 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         await releaseBookingReserveInTransaction(tx, id, booking, 'expired', { endReason: 'booking_expired' });
         return { expired: true, id };
       }
-      if (!astroSnap.exists) throw httpError(404, 'Astrologer profile was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
-      const astro = astroSnap.data() || {};
+      if (!astroProfileSnap.exists) throw httpError(404, 'Astrologer profile was not found.', 'LIVE_ASTROLOGER_NOT_FOUND');
+      const profileAstro = astroProfileSnap.data() || {};
+      const astroCounter = astroCounterSnap.exists ? (astroCounterSnap.data() || {}) : {};
+      const astro = { ...profileAstro, activeSessionCount: safePaise(astroCounter.activeSessionCount) };
       validateActiveAstrologer(astro, uid);
       if (!isAstrologerLiveModeEnabled(astro, booking.mode)) {
         throw httpError(409,
@@ -839,8 +886,7 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
       }
       if (sSnap.exists) throw httpError(409, 'A session already exists for this booking.', 'LIVE_BOOKING_SESSION_CONFLICT');
       const wRef = walletRef(booking.customerUid);
-      const customerRef = userRef(booking.customerUid);
-      const [walletSnap, customerSnap] = await Promise.all([tx.get(wRef), tx.get(customerRef)]);
+      const walletSnap = await tx.get(wRef);
       if (!customerSnap.exists || String(customerSnap.data()?.role || '').toLowerCase() !== 'customer') {
         throw httpError(403, 'The booking Customer account is not available.', 'LIVE_CUSTOMER_REQUIRED');
       }
@@ -909,13 +955,21 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     });
     if (txResult.expired) throw httpError(410, 'This booking has expired.', 'LIVE_BOOKING_EXPIRED');
     if (!txResult.alreadyProcessed) {
+      await syncAstrologerAvailabilityToProfile(uid).catch(error =>
+        console.warn('[Live Session] Astrologer availability sync deferred:', error?.message || error));
       trackSession(id, txResult.data.customerUid, txResult.data.astrologerUid);
       scheduleSessionTimer(id, txResult.data);
       if (txResult.data.appointmentId) {
-        await db.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set({
+        const appointmentPatch = {
           bookingStatus: 'in_progress', status: 'in_progress', liveSessionId: id,
           updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true }).catch(error => console.warn('[Live Session] Scheduled booking status update skipped:', error?.message || error));
+        };
+        await db.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set(appointmentPatch, { merge: true })
+          .catch(error => console.warn('[Live Session] Domain scheduled-booking status update skipped:', error?.message || error));
+        if (db !== profileDb) {
+          await profileDb.collection('smv_appointments').doc(String(txResult.data.appointmentId)).set(appointmentPatch, { merge: true })
+            .catch(error => console.warn('[Live Session] Primary scheduled-booking status sync deferred:', error?.message || error));
+        }
       }
       notifyAdmin('live_booking_accepted', 'Live booking accepted',
         String(txResult.data.customerName || 'Customer') + ' Live ' + String(txResult.data.mode || '').toUpperCase() + ' booking was accepted by ' + String(txResult.data.astrologerName || 'Astrologer') + '.',
@@ -1196,6 +1250,18 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
         console.warn('[Live Session] Secondary history archive deferred:', error?.message || error));
     }
     untrackSession(id, result.session.customerUid, result.session.astrologerUid);
+    await syncAstrologerAvailabilityToProfile(result.session.astrologerUid).catch(error =>
+      console.warn('[Live Session] Astrologer availability sync deferred:', error?.message || error));
+    if (result.session.appointmentId) {
+      const appointmentStatus = scheduledAppointmentStatusForEndedSession(result.session);
+      const appointmentPatch = {
+        bookingStatus: appointmentStatus, status: appointmentStatus, liveSessionId: id,
+        liveEndedAt: result.session.endedAt || nowTimestamp(), updatedAt: nowTimestamp()
+      };
+      await profileDb.collection('smv_appointments').doc(String(result.session.appointmentId))
+        .set(appointmentPatch, { merge: true })
+        .catch(error => console.warn('[Live Session] Primary scheduled-booking status sync deferred:', error?.message || error));
+    }
     if (!result.alreadyProcessed) {
       sendToParticipants(result.session, {
         type: 'live.session.ended',
@@ -1555,7 +1621,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     const auth = await requireRole(req, res, ['astrologer']);
     if (!auth) return;
     try {
-      const tokens = await db.collection('smv_push_tokens').where('uid', '==', auth.user.uid).limit(25).get();
+      const tokens = await profileDb.collection('smv_push_tokens').where('uid', '==', auth.user.uid).limit(25).get();
       return res.set('Cache-Control', 'no-store').json({
         success: true, supported: true, registeredDevices: tokens.size
       });
@@ -1570,7 +1636,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
         return res.status(400).json({ success: false, error: 'The browser push token is invalid. Enable Background Alerts again.' });
       }
-      const ref = db.collection('smv_push_tokens').doc(hash(token));
+      const ref = profileDb.collection('smv_push_tokens').doc(hash(token));
       await ref.set({
         uid: auth.user.uid, token, platform: 'web',
         userAgent: String(req.body?.userAgent || '').slice(0, 500),
@@ -1588,7 +1654,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
         return res.status(400).json({ success: false, error: 'The browser push token is invalid.' });
       }
-      const ref = db.collection('smv_push_tokens').doc(hash(token));
+      const ref = profileDb.collection('smv_push_tokens').doc(hash(token));
       const snap = await ref.get();
       if (snap.exists && String(snap.data()?.uid || '') !== String(auth.user.uid)) {
         return res.status(403).json({ success: false, error: 'This device token belongs to another account.' });
@@ -1752,10 +1818,12 @@ async function rejectOrCancel(sessionId, user, reason) {
     try {
       const appointmentId = String(req.params.id || '').trim();
       if (!appointmentId) return res.status(400).json({ success: false, error: 'Scheduled booking ID is required.' });
-      const appointmentRef = db.collection('smv_appointments').doc(appointmentId);
+      const appointmentRef = profileDb.collection('smv_appointments').doc(appointmentId);
+      const domainAppointmentRef = db.collection('smv_appointments').doc(appointmentId);
       const appointmentSnap = await appointmentRef.get();
       if (!appointmentSnap.exists) return res.status(404).json({ success: false, error: 'Scheduled Call/Chat booking was not found.' });
       const appointment = appointmentSnap.data() || {};
+      if (db !== profileDb) await domainAppointmentRef.set(appointment, { merge: true });
       const uid = String(auth.user.uid || '');
       if (String(appointment.astrologerUid || '') !== uid) return res.status(403).json({ success: false, error: 'This scheduled booking belongs to another Astrologer.' });
       if (!['scheduled_call_request', 'scheduled_chat_request'].includes(String(appointment.bookingKind || ''))) {
@@ -1788,12 +1856,19 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (Date.now() < scheduledAt && currentStatus !== 'in_progress') {
         return res.status(409).json({ success: false, error: 'The scheduled time has not arrived yet. The Start button becomes available at the booked time.' });
       }
-      const [astroStatusSnap, sessionPricingSnap] = await Promise.all([
-        db.collection(ASTROLOGERS).doc(uid).get(), pricingRef().get()
+      const [astroProfileStatusSnap, astroDomainCounterSnap, sessionPricingSnap] = await Promise.all([
+        profileDb.collection(ASTROLOGERS).doc(uid).get(),
+        db.collection(ASTROLOGERS).doc(uid).get(),
+        pricingRef().get()
       ]);
-      if (!astroStatusSnap.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
-      const astroStatusData = astroStatusSnap.data() || {};
-      const currentAvailability = String(astroStatusData.availabilityStatus || astroStatusData.onlineStatus || 'offline').toLowerCase();
+      if (!astroProfileStatusSnap.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
+      const astroProfileStatus = astroProfileStatusSnap.data() || {};
+      const astroDomainCounter = astroDomainCounterSnap.exists ? (astroDomainCounterSnap.data() || {}) : {};
+      const astroStatusData = {
+        ...astroProfileStatus,
+        activeSessionCount: Number(astroDomainCounter.activeSessionCount ?? astroProfileStatus.activeSessionCount ?? 0)
+      };
+      const currentAvailability = String(astroProfileStatus.availabilityStatus || astroProfileStatus.onlineStatus || 'offline').toLowerCase();
       if (currentAvailability !== 'online') {
         return res.status(409).json({ success: false, error: 'Set your Astrologer Availability to Online before starting the scheduled Call/Chat. The Customer Wallet will not be reserved until you start.' });
       }
@@ -1825,7 +1900,7 @@ async function rejectOrCancel(sessionId, user, reason) {
         result.session = accepted.session;
       }
       const isSession = result.kind === 'session' && !!result.session;
-      await appointmentRef.set({
+      const appointmentPatch = {
         bookingStatus: isSession ? 'in_progress' : 'waiting_for_online',
         status: isSession ? 'in_progress' : 'accepted',
         liveSessionId: String(result.session?.id || result.booking?.id || ''),
@@ -1833,7 +1908,9 @@ async function rejectOrCancel(sessionId, user, reason) {
         liveRequestId: requestId,
         scheduledStartedAt: isSession ? FieldValue.serverTimestamp() : null,
         updatedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
+      };
+      await domainAppointmentRef.set(appointmentPatch, { merge: true });
+      if (db !== profileDb) await appointmentRef.set(appointmentPatch, { merge: true });
       return res.set('Cache-Control', 'no-store').json(result);
     } catch (error) { return replyError(res, error, 'Unable to start this scheduled Call/Chat.'); }
   });
