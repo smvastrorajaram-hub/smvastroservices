@@ -530,6 +530,12 @@ test('Secondary-project backfill defaults to dry run and never deletes source do
   assert.ok(script.includes("const APPLY = process.argv.includes('--apply');"));
   assert.ok(script.includes("if (APPLY) await target.doc(doc.id).set(doc.data(), { merge: true });"));
   assert.ok(script.includes("sourceRef.set({"));
+  assert.ok(script.includes("SMV_SESSION_HISTORY_MIRROR_WRITES"));
+  assert.ok(script.includes("SMV_LIVE_DATA_MIRROR_WRITES"));
+  assert.ok(script.includes("SMV_CONTENT_MIRROR_WRITES"));
+  assert.ok(script.includes("SMV_CUSTOMER_HISTORY_CUTOVER_AT"));
+  assert.ok(script.includes("Refusing to copy while writes can race with the backfill."));
+  assert.ok(script.includes("Refusing to copy after secondary reads were enabled."));
   assert.ok(!/\.delete\s*\(/.test(script));
   assert.ok(rules.includes('allow read, write: if false;'));
   assert.ok(read('firebase.multi-project-consultations.json').includes('firestore.multi-project.rules'));
