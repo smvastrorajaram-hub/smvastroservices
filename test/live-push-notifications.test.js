@@ -629,3 +629,27 @@ test('Project 3 WebRTC auxiliary data does not change FCM sender project 1', () 
   assert.ok(multi.includes("liveData: 'smv-astro-services'"));
   assert.ok(multi.includes("DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services'"));
 });
+
+test('Live Session state changes refresh the Dashboard status row through SSE and recovery polling', () => {
+  const frontend = read('public/smvastro.mjs');
+  const helperStart = frontend.indexOf('function smvLiveUpdateDashboardSessionRow(session){');
+  const helperEnd = frontend.indexOf('function smvLiveApplySession(session){', helperStart);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart, 'Dashboard status-row updater exists');
+  const helper = frontend.slice(helperStart, helperEnd);
+  assert.ok(helper.includes("host.querySelectorAll('[data-live-open]')"));
+  assert.ok(helper.includes("smvLiveSessionStatusLabel(session)"));
+  assert.ok(helper.includes("session.actualChargePaise"));
+  assert.ok(helper.includes("session.releasedAmountPaise"));
+
+  const eventStart = frontend.indexOf('function smvLiveHandleEvent(ev){');
+  const eventEnd = frontend.indexOf('function smvLiveStopEventStream(){', eventStart);
+  assert.ok(eventStart >= 0 && eventEnd > eventStart, 'Live event handler exists');
+  assert.ok(frontend.slice(eventStart, eventEnd).includes('smvLiveUpdateDashboardSessionRow(s);'),
+    'authoritative live.session.updated events refresh the Dashboard row');
+
+  const pollStart = frontend.indexOf('async function smvLivePollSessions(){');
+  const pollEnd = frontend.indexOf('function smvLiveRenderScheduledBookings(', pollStart);
+  assert.ok(pollStart >= 0 && pollEnd > pollStart, 'Live recovery poller exists');
+  assert.ok(frontend.slice(pollStart, pollEnd).includes('smvLiveUpdateDashboardSessionRow(session);'),
+    'recovery polling also refreshes the Dashboard row');
+});
