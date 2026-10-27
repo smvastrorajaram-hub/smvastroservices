@@ -9,9 +9,10 @@ const DEFAULT_PROJECT_IDS = Object.freeze({
   content: 'svm-astro'
 });
 const DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services';
-// This preflight PR does not yet route the complete billing domain at runtime.
-// A later, tested integration must deliberately flip this code-level gate.
-const WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false;
+// The complete active Wallet/Call/Chat domain is wired to one database resolver.
+// This is only a source-readiness gate: production still requires a successful backfill,
+// a clean reconciliation report, dependency verification, and all explicit cutover flags.
+const WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = true;
 
 const APP_NAMES = Object.freeze({
   consultations: 'smv-multiproject-consultations',
