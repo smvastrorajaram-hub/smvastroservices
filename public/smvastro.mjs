@@ -4168,14 +4168,17 @@ function smvLiveAppendMessage(m){
 const smvLiveMessagePollsInFlight=new Map();
 const smvLiveSignalPollsInFlight=new Map();
 async function smvLivePollMessages(id){
- const key=String(id||'');if(!key)return;
+ const key=String(id||'');if(!key||!$('smvLiveMessages'))return;
  const pending=smvLiveMessagePollsInFlight.get(key);if(pending)return pending;
  const request=(async()=>{try{
   const suffix=smvLiveMessageSinceMs>0?'?afterMs='+encodeURIComponent(smvLiveMessageSinceMs):'';
   const d=await renderApi('/live/sessions/'+encodeURIComponent(key)+'/messages'+suffix,{method:'GET',timeoutMs:10000});
   for(const m of d.messages||[]){
-   const ms=Date.parse(m.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);
-   smvLiveAppendMessage({...m,id:m.id||m.messageId});
+   if(!$('smvLiveMessages'))break;
+   const messageId=String(m.id||m.messageId||'');
+   const appended=smvLiveAppendMessage({...m,id:messageId});
+   const ms=Date.parse(m.createdAt||'');
+   if(Number.isFinite(ms)&&(appended||smvLiveMessageSeen.has(messageId)))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);
   }
  }catch(e){if(!$('smvLiveSessionResult'))return;}})();
  smvLiveMessagePollsInFlight.set(key,request);
@@ -4229,6 +4232,13 @@ function smvLiveStartTransport(id,s){
   if(s.mode==='chat')smvLivePollMessages(id).catch(()=>{});
  }
 }
+async function smvLiveReconcileAfterEventStreamConnect(){
+ await smvLivePollSessions().catch(error=>console.warn('Live session recovery after SSE reconnect skipped:',error?.message||error));
+ const session=smvLiveCurrentSession,id=smvLivePanelSessionId;
+ if(!session||!id||session.state==='ended')return;
+ if(session.mode==='chat')await smvLivePollMessages(id).catch(error=>console.warn('Chat history recovery after SSE reconnect skipped:',error?.message||error));
+ else if(session.mode==='call')await smvLiveReconcileCallSignals(id).catch(error=>console.warn('Call signal recovery after SSE reconnect skipped:',error?.message||error));
+}
 function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
  if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
@@ -4241,8 +4251,7 @@ function smvLiveHandleEvent(ev){
  }else if(ev.type==='live.session.ended'){
   const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
-  const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);
-  smvLiveAppendMessage(ev.message);
+  if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
   const ms=Date.parse(ev.signal.createdAt||'');if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
   smvLiveProcessSignal(ev.signal).catch(smvLiveShowError);
@@ -4267,8 +4276,8 @@ function smvLiveStartEventStream(){
    if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
    smvLiveEventStreamConnected=true;
    smvLiveStopFallbackPolling();
-   // Reconcile once after connecting/reconnecting to recover state events missed during a disconnect.
-   smvLivePollSessions().catch(()=>{});
+   // Reconcile state, chat history and WebRTC signals missed while SSE was disconnected.
+   smvLiveReconcileAfterEventStreamConnect().catch(()=>{});
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
    while(true){const item=await reader.read();if(item.done)break;buffer+=decoder.decode(item.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);const line=frame.split('\n').find(x=>x.startsWith('data:'));if(line)try{smvLiveHandleEvent(JSON.parse(line.slice(5).trim()));}catch(e){console.warn('Invalid Live Session event:',e);}}}
   }catch(e){
