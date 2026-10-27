@@ -9,6 +9,9 @@ const DEFAULT_PROJECT_IDS = Object.freeze({
   content: 'svm-astro'
 });
 const DEFAULT_WALLET_DOMAIN_PROJECT_ID = 'smvastro-services';
+// The preflight revision does not route the complete billing domain at runtime.
+// The tested integration must deliberately turn this source-level guard on.
+const WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false;
 // This preflight PR does not yet route the complete billing domain at runtime.
 // A later, tested integration must deliberately flip this code-level gate.
 const WALLET_DOMAIN_RUNTIME_ROUTING_IMPLEMENTED = false;
