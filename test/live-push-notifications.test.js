@@ -644,3 +644,22 @@ test('Wallet recharge offer endpoints use the selected Wallet financial domain',
   assert.equal(section.includes("db.collection('smv_offers')"), false,
     'Wallet offer endpoints must not bypass the selected financial domain');
 });
+
+
+test('Customer Live Session dashboard status follows the accepted-session SSE update without a manual refresh', () => {
+  const frontend = read('public/smvastro.mjs');
+  const pollStart = frontend.indexOf('async function smvLivePollSessions(){');
+  const pollEnd = frontend.indexOf('function smvLiveRenderScheduledBookings(', pollStart);
+  const poll = frontend.slice(pollStart, pollEnd);
+  const eventsStart = frontend.indexOf('function smvLiveHandleEvent(ev){');
+  const eventsEnd = frontend.indexOf('function smvLiveStopEventStream()', eventsStart);
+  const events = frontend.slice(eventsStart, eventsEnd);
+  assert.ok(frontend.includes('function smvLiveUpdateDashboardSessionStatus(session){'));
+  assert.ok(frontend.includes('data-live-dashboard-status='));
+  assert.ok(poll.includes('smvLiveUpdateDashboardSessionStatus(session);'),
+    'recovery polling must also update the already-rendered Customer Dashboard status');
+  assert.ok(events.includes('smvLiveUpdateDashboardSessionStatus(s);'),
+    'accepted/preparing SSE events must update the Dashboard card immediately');
+  assert.ok(frontend.includes('smvLiveUpdateDashboardSessionStatus(current);'),
+    'the 3-minute preparation countdown must keep the Dashboard status current');
+});
