@@ -454,6 +454,9 @@ test('Enabled four-project routing uses screenshot project IDs and waits for ver
   assert.equal(routed.sessionHistoryBackfillComplete, false);
   assert.equal(routed.liveDataBackfillComplete, false);
   assert.equal(routed.contentBackfillComplete, false);
+  assert.equal(routed.sessionHistoryMirrorWritesEnabled, false);
+  assert.equal(routed.liveDataMirrorWritesEnabled, false);
+  assert.equal(routed.contentMirrorWritesEnabled, false);
   assert.equal(admin.apps.length, 3);
 });
 
@@ -481,7 +484,9 @@ test('Customer history and public content route only after their explicit copy f
   assert.ok(server.includes("where('createdAt','>=',cutover).orderBy('createdAt','desc')"));
   assert.ok(server.includes("where('updatedAt','>=',cutover).orderBy('updatedAt','desc')"));
   assert.ok(server.includes('for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id'));
-  assert.ok(server.includes('customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}'));
+  assert.ok(server.includes('async function readCustomerHistoryCollection(collectionName,uid)'));
+  assert.ok(server.includes('if(!multiProjectFirestore.customerHistoryBackfillComplete)return readPrimary()'));
+  assert.ok(server.includes('Customer-history archive read failed; using primary'));
   assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
   assert.ok(server.includes("app.get('/public/content'"));
   assert.ok(server.includes(".where('published','==',true).where('language','==','en')"));
