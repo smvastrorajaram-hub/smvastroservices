@@ -33,6 +33,16 @@ test('Scheduled Call and Chat booking form uses optional Notes and no required C
   assert.equal(content.includes('id="smvCallBookingQuestion"'), false);
   assert.ok(content.includes("notes:String($('smvCallBookingNotes')?.value||'').trim(),"));
   assert.ok(content.includes("question:'',"));
+  assert.equal(content.includes('id="smvCallBookingEmail"'), false, 'scheduled profile booking must not collect Email in the form');
+  assert.equal(content.includes('id="smvCallBookingMobile"'), false, 'scheduled profile booking must not collect Mobile in the form');
+  assert.equal(content.includes("email:String($('smvCallBookingEmail')?.value||'').trim(),"), false);
+  assert.equal(content.includes("mobile:String($('smvCallBookingMobile')?.value||'').trim(),"), false);
+  assert.ok(server.includes('if(!name||(!String(req.body?.astrologerId||"").trim()&&(!email||!mobile))||!type||!preferredDate||!preferredTime)'));
+  assert.ok(server.includes('...(astrologerId?{}:{email,mobile})'), 'legacy generic appointment keeps contact fields, scheduled booking does not');
+  const scheduledReadStart = server.indexOf('app.get("/astrologer/appointments"');
+  const customerReadStart = server.indexOf('app.get("/customer/appointments"', scheduledReadStart);
+  const scheduledRead = server.slice(scheduledReadStart, customerReadStart);
+  assert.equal(scheduledRead.includes('email:String(a.email||""),mobile:String(a.mobile||"")'), false);
   assert.ok(server.includes('question=String(req.body?.question||"").trim();'));
   assert.equal(server.includes('if(type==="Chat Consultation"&&!question)'), false);
   assert.ok(server.includes('scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:""'));
@@ -881,4 +891,58 @@ test('Live Chat and Call recover messages/signals after an SSE reconnect without
   assert.ok(poll.includes("if(!key||!$('smvLiveMessages'))return;"));
   assert.ok(poll.includes('if(!$(' + "'smvLiveMessages'" + '))break;'));
   assert.ok(poll.includes('(appended||smvLiveMessageSeen.has(messageId))'));
+});
+
+test('Scheduled booking status updates immediately and refreshes at the booked IST time without manual reload', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveScheduledBookingEpoch(a){'));
+  assert.ok(frontend.includes('function smvLiveScheduleBookingTransitionRefresh(appointments,role){'));
+  assert.ok(frontend.includes("smvLiveScheduleBookingTransitionRefresh(appointments,'astrologer');"));
+  assert.ok(frontend.includes("smvLiveScheduleBookingTransitionRefresh(appointments,'customer');"));
+  assert.ok(frontend.includes('const deadline=start+120_000;'));
+  assert.ok(frontend.includes('if(start>now)nextAt=Math.min(nextAt,start);'));
+  assert.ok(frontend.includes('if(deadline>now)nextAt=Math.min(nextAt,deadline);'));
+  assert.ok(frontend.includes('const updatedAppointments=smvLiveScheduledAppointmentsCache.map(appointment=>String(appointment.id||\'\')===appointmentId?{...appointment,bookingStatus:nextStatus,status:nextStatus}:appointment);'));
+  assert.equal(frontend.includes('const bookingEpoch=a=>{'), false, 'Customer renderer must not depend on Astrologer-local bookingEpoch scope');
+});
+
+test('Session-ended event and end API never send Customer wallet balance to the Astrologer', () => {
+  const service = read('live-session-service.js');
+  const frontend = read('public/smvastro.mjs');
+  const eventStart = service.indexOf('const endedEvent = {');
+  const eventEnd = service.indexOf('\n    }\n    return {', eventStart);
+  assert.ok(eventStart >= 0 && eventEnd > eventStart);
+  const eventBlock = service.slice(eventStart, eventEnd);
+  assert.ok(eventBlock.includes('sendTo(result.session.customerUid'));
+  assert.ok(eventBlock.includes('wallet: { availableBalancePaise: result.wallet.availableBalancePaise'));
+  assert.ok(eventBlock.includes('sendTo(result.session.astrologerUid, endedEvent)'));
+  assert.equal(eventBlock.includes('sendToParticipants(result.session'), false);
+  const routeStart = service.indexOf("app.post('/live/sessions/:id/end'");
+  const routeEnd = service.indexOf("app.post('/live/sessions/:id/ready'", routeStart);
+  const route = service.slice(routeStart, routeEnd);
+  assert.ok(route.includes('session: liveSessionSafeView(req.params.id, result.session)'));
+  assert.ok(route.includes("if (String(result.session?.customerUid || '') === String(auth.user.uid || '')) response.wallet = result.wallet"));
+  assert.ok(frontend.includes('function smvLiveSessionEndedMessage(session,wallet){'));
+  assert.ok(frontend.includes("return 'Session ended. Your Astrologer earnings summary has been refreshed.';"));
+  assert.ok(frontend.includes("if(String(currentUser?.uid||'')===String(s.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'))"));
+});
+
+test('Live session startup retries active timer restoration after transient Firestore failures', () => {
+  const service = read('live-session-service.js');
+  assert.ok(service.includes('let timerRestoreRetryAttempt = 0;'));
+  assert.ok(service.includes('let timerRestoreRetryTimer = null;'));
+  assert.ok(service.includes("const retryDelayMs = Math.min(60_000, 5_000 * (2 ** Math.min(timerRestoreRetryAttempt - 1, 4)));"));
+  assert.ok(service.includes("'[Live Session] Active timer restore failed; retry queued:'"));
+  assert.ok(service.includes("'[Live Session] Active timer restore completed:'"));
+});
+
+test('Print/Save is exposed only for ended sessions and Chat print retrieves the saved transcript', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';"));
+  assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
+  assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
+  assert.ok(frontend.includes("historyLoadWarning='Server history could not be refreshed. The transcript below includes messages already loaded in this session.';"));
+  const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
+  const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
+  assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
 });
