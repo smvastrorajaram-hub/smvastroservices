@@ -45,6 +45,8 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   assert.ok(frontend.includes("Request received · Please be patient. Your Astrologer will review it; the session can start at the scheduled time once confirmed."));
   assert.ok(frontend.includes("Missed · Astrologer did not start/connect within 2 minutes of the scheduled time. Please choose another time."));
   assert.ok(frontend.includes("Astrologer rejected this booking. No live session was started."));
+  assert.ok(bookingServer.includes("!['requested', 'accepted'].includes(status) || a.liveSessionId"));
+  assert.ok(bookingServer.includes('action==="accept"&&current==="requested"&&!a.liveSessionId&&startDeadline>0&&Date.now()>=startDeadline'));
   assert.ok(bookingServer.includes("return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;"));
   assert.ok(service.includes("const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;"));
   assert.ok(service.includes("currentStatus === 'accepted' && !appointment.liveSessionId && Date.now() >= startDeadlineAt"));
