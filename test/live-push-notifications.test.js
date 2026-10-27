@@ -772,6 +772,22 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
 });
 
 
+
+test('Live Session timer failures retry settlement with bounded backoff and log the selected Firestore project', () => {
+  const service = read('live-session-service.js');
+  const server = read('server.js');
+  const timerStart = service.indexOf('function scheduleSessionTimerRetry(sessionId, data, reason, error)');
+  const timerEnd = service.indexOf('function scheduleSessionTimer(sessionId, data)', timerStart);
+  const retry = service.slice(timerStart, timerEnd);
+  assert.ok(retry.includes('const retryDelayMs = Math.min(60_000, 5_000 * (2 ** Math.min(attempt - 1, 4)));'));
+  assert.ok(retry.includes("else await endSession(sessionId, '', reason, true);"));
+  assert.ok(retry.includes('scheduleSessionTimerRetry(sessionId, data, reason, retryError);'));
+  assert.ok(retry.includes("'[Live Session] Timer operation failed; retry queued:'"));
+  assert.ok(server.includes("console.info('[Live Session] Settlement Firestore route:'"));
+  assert.ok(server.includes('walletDomainCutoverComplete:multiProjectFirestore.walletDomainCutoverComplete===true'));
+  assert.ok(server.includes('db:liveSessionSettlementDb'));
+});
+
 test('Customer and Astrologer Live Chat messages broadcast both ways and recover recent writes from the primary store', () => {
   const frontend = read('public/smvastro.mjs');
   const service = read('live-session-service.js');
