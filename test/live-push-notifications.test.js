@@ -680,7 +680,7 @@ test('Live Call transitions from preparation to a clear Customer connect action 
   const panelStart = frontend.indexOf('function smvLivePanelHtml(s,incoming){');
   const panelEnd = frontend.indexOf('async function smvLivePrintReceipt(', panelStart);
   const panel = frontend.slice(panelStart, panelEnd);
-  const handlerStart = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming,modeHint=''){');
+  const handlerStart = frontend.indexOf("function smvLiveOpenSession(session,wallet,incoming,modeHint=''){");
   const handlerEnd = frontend.indexOf('function smvLiveDismissSessionUi(', handlerStart);
   const handler = frontend.slice(handlerStart, handlerEnd);
   assert.ok(status.includes("?'Connect to Astrologer':'Connect Customer Call / Microphone'"));
