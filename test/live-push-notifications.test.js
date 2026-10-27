@@ -45,7 +45,7 @@ test('Scheduled booking status helper is synchronous for Customer and Astrologer
   assert.equal(server.includes('async function scheduledBookingReadStatus('), false,
     'the helper must remain synchronous because the dashboard routes serialize its return value');
   const helperStart = server.indexOf('function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {');
-  const helperEnd = server.indexOf('\\n}', helperStart) + 2;
+  const helperEnd = server.indexOf('\n}', helperStart) + 2;
   assert.ok(helperStart >= 0 && helperEnd > helperStart, 'status helper source must be present');
   assert.equal(server.slice(helperStart, helperEnd).includes('await '), false,
     'a synchronous status helper must not contain await');
