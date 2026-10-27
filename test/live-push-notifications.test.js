@@ -817,7 +817,8 @@ test('Live Chat message rendering never marks a message seen before a message bo
   assert.ok(send.includes('current.customerUid !== senderUid && current.astrologerUid !== senderUid'));
   assert.ok(send.includes("current.state !== 'active'"));
   assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe })"));
-  assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
+  assert.ok(server.includes('return query.limit(limit);'));
+  assert.ok(server.includes('limit: afterMs > 0 ? 50 : 100'));
 });
 
 
