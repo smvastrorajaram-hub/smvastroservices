@@ -1359,7 +1359,7 @@ app.get("/astrologer/appointments", async (req,res)=>{
       const missed=bookingStatus==='missed_by_astrologer';
       return {
         id:d.id,bookingId:String(a.bookingId||d.id),type:String(a.type||""),bookingKind:String(a.bookingKind||""),
-        name:String(a.name||""),email:String(a.email||""),mobile:String(a.mobile||""),
+        name:String(a.name||""),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         question:String(a.question||""),notes:String(a.notes||""),birthDetails:a.birthDetails||null,
         status:missed?'missed':String(a.status||"new"),bookingStatus,missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
@@ -1468,16 +1468,16 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
   const user = await requireUser(req, res);
   if (!user) return;
   try {
-    const name=String(req.body?.name||"").trim(), email=String(req.body?.email||user.email||"").trim(), mobile=String(req.body?.mobile||"").trim();
+    const name=String(req.body?.name||"").trim(), email=String(user.email||req.body?.email||"").trim(), mobile=String(req.body?.mobile||"").trim();
     const type=String(req.body?.type||"").trim(), preferredDate=String(req.body?.preferredDate||"").trim(), preferredTime=String(req.body?.preferredTime||"").trim(), notes=String(req.body?.notes||"").trim(), question=String(req.body?.question||"").trim();
     const scheduledMinutes=Number(req.body?.scheduledMinutes||5);
     const astrologerId=String(req.body?.astrologerId||"").trim();
     const birthDate=String(req.body?.birthDate||"").trim(), birthTime=String(req.body?.birthTime||"").trim(), birthPlace=String(req.body?.birthPlace||"").trim();
     const birthLatitudeRaw=String(req.body?.birthLatitude||"").trim(), birthLongitudeRaw=String(req.body?.birthLongitude||"").trim(), birthTimezone=String(req.body?.birthTimezone||"").trim();
-    if(!name||!email||!mobile||!type||!preferredDate||!preferredTime) return res.status(400).json({error:"Please fill all required appointment fields."});
+    if(!name||(!String(req.body?.astrologerId||"").trim()&&(!email||!mobile))||!type||!preferredDate||!preferredTime) return res.status(400).json({error:"Please fill all required appointment fields."});
     if(!["Chat Consultation","Call Consultation"].includes(type)) return res.status(400).json({error:"Please choose Chat or Call consultation."});
-    if(name.length>100||email.length>160||mobile.length>20||notes.length>2000||question.length>4000) return res.status(400).json({error:"One or more fields are too long."});
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:"Please enter a valid email address."});
+    if(name.length>100||email.length>160||(!astrologerId&&mobile.length>20)||notes.length>2000||question.length>4000) return res.status(400).json({error:"One or more fields are too long."});
+    if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:"Please enter a valid email address."});
 
     // A directory Book a Call request must be linked to a Customer, approved
     // Astrologer and configured per-minute rate. It is a request, not a live call or Wallet debit.
@@ -1547,7 +1547,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     }
     const bookingId = await nextBookingId();
     const ref=db.collection("smv_appointments").doc();
-    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,email,mobile,type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
+    const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,...(astrologerId?{}:{email,mobile}),type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
     if (multiProjectFirestore.walletDomainCutoverComplete) {
       await walletDomainDb().collection("smv_appointments").doc(ref.id).set(data, { merge: true })
@@ -1571,7 +1571,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     // the optional notification provider is unavailable.
     if(ADMIN_EMAIL && (RESEND_API_KEY || smtpTransport)){
       try {
-        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${mobile}`,`Type: ${type}`,`Booking kind: ${callBooking.bookingKind||"general_appointment"}`,`Astrologer: ${callBooking.astrologerName||"Not specified"}`,`Call/Chat rate: ${callBooking.pricePerMinute?"₹"+callBooking.pricePerMinute+" per minute":"Not applicable"}`,`Question: ${callBooking.question||"Not applicable"}`,`Birth Date: ${callBooking.birthDetails?.birthDate||"Not provided"}`,`Birth Time: ${callBooking.birthDetails?.birthTime||"Not provided"}`,`Birth Place: ${callBooking.birthDetails?.birthPlace||"Not provided"}`,`Birth Coordinates: ${callBooking.birthDetails?.birthLatitude!=null?callBooking.birthDetails.birthLatitude+", "+callBooking.birthDetails.birthLongitude:"Not selected"}`,`Birth Time Zone: ${callBooking.birthDetails?.birthTimezone||"Not available"}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`,`Payment: ${astrologerId?"Not collected; awaiting confirmation":"Not required"}`].join("\n")});
+        await sendEmail({to:ADMIN_EMAIL,replyTo:email,subject:`SMV ASTRO ${type} Booking — ${bookingId}`,text:["New SMV ASTRO Booking Request","",`Booking ID: ${bookingId}`,`Customer UID: ${user.uid}`,`Name: ${name}`,`Email: ${email}`,`Mobile: ${astrologerId ? "Not collected for scheduled Call/Chat bookings" : mobile}`,`Type: ${type}`,`Booking kind: ${callBooking.bookingKind||"general_appointment"}`,`Astrologer: ${callBooking.astrologerName||"Not specified"}`,`Call/Chat rate: ${callBooking.pricePerMinute?"₹"+callBooking.pricePerMinute+" per minute":"Not applicable"}`,`Question: ${callBooking.question||"Not applicable"}`,`Birth Date: ${callBooking.birthDetails?.birthDate||"Not provided"}`,`Birth Time: ${callBooking.birthDetails?.birthTime||"Not provided"}`,`Birth Place: ${callBooking.birthDetails?.birthPlace||"Not provided"}`,`Birth Coordinates: ${callBooking.birthDetails?.birthLatitude!=null?callBooking.birthDetails.birthLatitude+", "+callBooking.birthDetails.birthLongitude:"Not selected"}`,`Birth Time Zone: ${callBooking.birthDetails?.birthTimezone||"Not available"}`,`Preferred: ${preferredDate} ${preferredTime}`,`Notes: ${notes||"None"}`,`Payment: ${astrologerId?"Not collected; awaiting confirmation":"Not required"}`].join("\n")});
       } catch(emailErr) { console.warn("Booking notification email failed; booking remains created:", emailErr?.message||emailErr); }
     }
     return res.json({ok:true,bookingId,appointmentId:ref.id,status:"new",bookingStatus:"requested"});
