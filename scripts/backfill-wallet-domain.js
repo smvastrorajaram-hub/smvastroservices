@@ -91,6 +91,26 @@ async function copySessionChildren(sourceDb, targetDb, sessionId, collectionName
   });
 }
 
+async function assertSourceQuiescent(sourceDb) {
+  const [activeSessions, pendingBookings, reservedBookings, pendingRecharges] = await Promise.all([
+    sourceDb.collection('smv_live_sessions').where('state', 'in', ['ringing', 'preparing', 'connecting', 'active']).limit(1).get(),
+    sourceDb.collection('smv_live_bookings').where('status', '==', 'pending').limit(1).get(),
+    sourceDb.collection('smv_live_bookings').where('walletReservationState', '==', 'reserved').limit(1).get(),
+    sourceDb.collection('smv_wallet_recharges')
+      .where('status', 'in', ['creating', 'order_created', 'payment_pending', 'created', 'pending', 'processing'])
+      .limit(1).get()
+  ]);
+  const blockers = [];
+  if (!activeSessions.empty) blockers.push('active/ringing/preparing/connecting Live Session');
+  if (!pendingBookings.empty) blockers.push('pending Live booking');
+  if (!reservedBookings.empty) blockers.push('Wallet-reserved Live booking');
+  if (!pendingRecharges.empty) blockers.push('non-terminal Wallet recharge');
+  if (blockers.length) {
+    throw new Error('Refusing migration while source has ' + blockers.join(', ') +
+      '. Settle/release these records safely, stop all writers, then run dry-run again.');
+  }
+}
+
 async function main() {
   if (APPLY) {
     if (!enabled('SMV_WALLET_DOMAIN_QUIESCED')) {
@@ -117,6 +137,7 @@ async function main() {
     throw new Error('Project 5 Wallet domain database was not initialized.');
   }
   const targetDb = multi.walletDomainDb;
+  if (APPLY) await assertSourceQuiescent(sourceDb);
   const stats = {
     mode: APPLY ? 'APPLY — source is preserved; target documents are merged' : 'DRY RUN — no target writes',
     sourceProject: multi.projectIds.primary,
