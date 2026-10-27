@@ -1343,7 +1343,8 @@ async function rejectOrCancel(sessionId, user, reason) {
     // Deliver the realtime event immediately; the primary transaction already
     // persisted it. Mirror failures fall back to primary reads for this session.
     sendTo(recipientUid, { type: 'live.chat.message', message: safe });
-    await mirrorLiveRecordToSecondary(sessionId, 'messages', msgRef.id, message, session);
+    void mirrorLiveRecordToSecondary(sessionId, 'messages', msgRef.id, message, session)
+      .catch(error => console.warn('[Live Session] Message mirror deferred:', error?.message || error));
     return { success: true, message: safe };
   }
 
@@ -1390,7 +1391,8 @@ async function rejectOrCancel(sessionId, user, reason) {
       type: 'live.call.signal',
       signal: { id: signalRef.id, sessionId: String(sessionId), senderUid, type: signalType, payload, createdAt: data.createdAt.toISOString() }
     });
-    await mirrorLiveRecordToSecondary(sessionId, 'signals', signalRef.id, data, session);
+    void mirrorLiveRecordToSecondary(sessionId, 'signals', signalRef.id, data, session)
+      .catch(error => console.warn('[Live Session] Signal mirror deferred:', error?.message || error));
     return { success: true, signalId: signalRef.id };
   }
 
