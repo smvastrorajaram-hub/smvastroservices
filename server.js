@@ -4702,7 +4702,16 @@ app.get('/public/push-config', (_req, res) => {
 
 // Live Call / Chat session, signaling, booking queue and server-side Wallet settlement.
 // Register only on the active service; the staging deployment is routed by its own config.
-const liveSessionService=registerLiveSessionRoutes({app,db:walletDomainDb(),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
+const liveSessionSettlementDb=walletDomainDb();
+const liveSessionSettlementProject=multiProjectFirestore.walletDomainCutoverComplete===true
+  ? String(multiProjectFirestore.projectIds.walletDomain||'Project 5')
+  : String(multiProjectFirestore.projectIds.primary||process.env.FIREBASE_PROJECT_ID||'Project 1 primary');
+console.info('[Live Session] Settlement Firestore route:', JSON.stringify({
+  projectId:liveSessionSettlementProject,
+  walletDomainEnabled:multiProjectFirestore.walletDomainEnabled===true,
+  walletDomainCutoverComplete:multiProjectFirestore.walletDomainCutoverComplete===true
+}));
+const liveSessionService=registerLiveSessionRoutes({app,db:liveSessionSettlementDb,profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore});
 
 // Final 404 must remain AFTER every functional route, including Wallet and Horoscope payment routes.
 app.use((req, res) => {
