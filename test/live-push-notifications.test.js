@@ -27,7 +27,7 @@ test('Live requests and Live bookings trigger best-effort server-side pushes', (
 
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
   const server = read('server.js');
-  assert.match(server, /registerLiveSessionRoutes\(\{app,db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
+  assert.match(server, /registerLiveSessionRoutes\(\{app,db:walletDomainDb\(\),profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
   assert.match(server, /type: 'scheduled_booking'/);
   assert.match(server, /app\.get\('\/public\/push-config'/);
   assert.match(server, /process\.env\.FCM_VAPID_PUBLIC_KEY/);
@@ -323,7 +323,7 @@ test('Admin home reads only the Live Session earnings ledger and the current man
   const route = server.slice(start, end);
   assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
   assert.ok(route.includes('readCollection("smv_astrologers")'));
-  assert.ok(route.includes('readCollection("smv_payments",db.collection("smv_payments").where("source","==","live_session"))'));
+  assert.ok(route.includes('readCollection("smv_payments",walletDomainDb().collection("smv_payments").where("source","==","live_session"))'));
   assert.ok(!route.includes('smv_questions'));
   assert.ok(!route.includes('smv_private_consultations'));
   assert.ok(!route.includes('privateConsultationWorkflow'));
@@ -533,7 +533,7 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes('void mirrorLiveRecordToSecondary(sessionId, \'signals\', signalRef.id, data, session)'));
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\''));
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\''));
-  assert.ok(service.includes('const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
+  assert.ok(service.includes('const sessionHistoryDb = !walletDomainCutover && multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
   assert.ok(service.includes("next.historyArchivedToSecondary = false"));
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
