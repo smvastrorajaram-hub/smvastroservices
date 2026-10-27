@@ -2486,6 +2486,14 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
     renderApi('/customer/consultations?_fresh='+Date.now()+'-'+loadId,{method:'GET'}),
     renderApi('/customer/private-consultations?_fresh='+Date.now()+'-'+loadId,{method:'GET'})
   ]).then(value=>({value}),error=>({error})):null;
+  // For explicit Astrologer navigation, overlap the canonical astrologer-profile
+  // read with the account-profile request instead of serializing both Firestore reads.
+  const astrologerProfileRequest=requestedRole==='astrologer'
+   ? withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000).catch(profileErr=>{
+      console.warn('Astrologer profile prefetch skipped:',profileErr);
+      return null;
+     })
+   : null;
   const data=await getUserProfile(loadUid);
   if(!active()) return;
    let role=String(expectedRole||data.role||'').toLowerCase();
@@ -2502,23 +2510,22 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    if(role==='astrologer'){
    let ad=preloadedAstro||{};
 
-/* Always load the latest astrologer profile.
-   This is required so rejected status and rejectionReason
-   are read directly from smv_astrologers. */
+/* Read the canonical astrologer profile for authoritative approval/rejection
+   status. Explicit Astrologer navigation starts this request alongside the
+   account-profile read; unknown-role recovery still fetches it here. */
 try{
-  const a=await withTimeout(
-    getDoc(doc(db,'smv_astrologers',currentUser.uid)),
-    10000
-  );
-
-  if(a.exists()){
+  let a=requestedRole==='astrologer'
+    ? await astrologerProfileRequest
+    : await withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000);
+  // If the parallel request failed, retain the previous one-retry recovery.
+  if(!a && requestedRole==='astrologer'){
+    a=await withTimeout(getDoc(doc(db,'smv_astrologers',loadUid)),10000);
+  }
+  if(a?.exists()){
     ad=a.data()||{};
   }
 }catch(profileErr){
-  console.warn(
-    'Astrologer profile load skipped:',
-    profileErr
-  );
+  console.warn('Astrologer profile load skipped:',profileErr);
 }
 
 let userStatus=String(
@@ -2598,41 +2605,29 @@ let userStatus=String(
   dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();smvWatchQuestions(role);
   return;
 }
-   const astroReads=await Promise.allSettled([
-    withTimeout(renderApi('/astrologer/open-questions',{method:'GET'}),12000),
-    renderApi('/astrologer/earnings',{method:'GET'})
-   ]);
-   if(!active())return;
-   const readAstro=i=>{if(astroReads[i].status==='rejected')throw astroReads[i].reason;return astroReads[i].value;};
+   // Skip the former open-questions fetch here: its response was not used by
+   // any rendered dashboard section, yet the endpoint performed an extra query
+   // and blocked the first render while it completed.
    let epRemote=null;
-   try{epRemote=readAstro(1);}catch(e){console.warn('Canonical astrologer dashboard endpoint unavailable:',e);}
+   try{epRemote=await renderApi('/astrologer/earnings',{method:'GET'});}
+   catch(e){console.warn('Canonical astrologer dashboard endpoint unavailable:',e);}
+   if(!active())return;
    let ownedQuestions=Array.isArray(epRemote?.questions)?epRemote.questions:[];
-   // Normal path: canonical backend payload already contains the astrologer's own
-   // questions, avoiding a second Firestore query. Only fall back to the legacy
-   // direct query if that endpoint itself is unavailable.
+   // Use the canonical backend payload for owned questions. Preserve the legacy
+   // direct-query fallback only if the earnings endpoint itself is unavailable.
    if(!epRemote){
      try{
-       const ownSnap=await getDocs(query(collection(db,'smv_questions'),where('astrologerId','==',currentUser.uid)));
+       const ownSnap=await getDocs(query(collection(db,'smv_questions'),where('astrologerId','==',loadUid)));
        ownedQuestions=ownSnap.docs.map(d=>({id:d.id,...(d.data()||{})}));
      }catch(e){console.warn('Astrologer own-questions fallback unavailable:',e);}
    }
    let inboxSnap={docs:ownedQuestions.map(q=>({id:String(q.id||q.questionId||''),data:()=>q}))}, qs={docs:[]};
-   let availableQuestions=inboxSnap.docs.filter(d=>{const q=d.data()||{};return q.astrologerId===currentUser.uid&&!!q.adminQuestionApprovedAt&&['assigned_to_astrologer','available_to_astrologers','reallocated'].includes(String(q.allocationStatus||''))&&['admin_approved','paid'].includes(String(q.status||''));}).map(d=>({id:d.id,...d.data()}));
-   try{
-     const openResult=readAstro(0);
-     if(openResult?.success && Array.isArray(openResult.questions) && openResult.questions.length){
-       const seen=new Set(availableQuestions.map(q=>String(q.id||q.questionId||'')));
-       for(const q of openResult.questions){const id=String(q.id||q.questionId||'');if(id&&!seen.has(id)){availableQuestions.push(q);seen.add(id);}}
-     }
-   }catch(e){console.warn('Open questions load skipped:',e);}
-
    // Every Astrologer Dashboard operational list is newest-first. Notifications
    // remain on their existing independent order by explicit user request.
    const astroQuestionDocs=smvSortDashboardDesc(inboxSnap.docs);
    qs={...inboxSnap,docs:astroQuestionDocs};
-   availableQuestions=smvSortDashboardDesc(availableQuestions);
    const activeQuestions=astroQuestionDocs.filter(d=>['paid','admin_review','answer_draft','revision_required'].includes(d.data().status));
-   const approved=ad.status==='approved';
+   const approved=ad.status==='approved';   const approved=ad.status==='approved';
   // Canonical earnings ledger comes from the trusted Render backend. This
   // prevents a successfully credited astrologer payment from being omitted
   // by client-side Firestore rules or stale question fields.
