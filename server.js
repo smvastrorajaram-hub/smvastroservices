@@ -3042,7 +3042,7 @@ app.get("/admin-data", async (req, res) => {
       readCount("customers",db.collection("smv_users").where("role","==","customer")),
       readCollection("smv_astrologers"),
       readCollection("smv_payments",walletDomainDb().collection("smv_payments").where("source","==","live_session")),
-      db.collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
+      walletDomainDb().collection("smv_settings").doc("commission").get().then(s=>s.exists?s.data():null).catch(()=>null),
       getAstrologerAutoApprovalSettings(true),
       getHoroscopePaymentSettings()
     ]);
