@@ -309,6 +309,13 @@ test('Astrologer earnings no longer replay every historical Live Session on dash
   assert.ok(route.includes('.where("commissionStatus", "==", "credited")'));
   assert.ok(route.includes('.where("source", "==", "live_session")'));
   assert.ok(route.includes('.where("type", "==", "astrologer_earning")'));
+  assert.ok(route.includes('.select("astrologerCommissionAmount", "commissionAmount").get()'));
+  assert.ok(route.includes('.select("astrologerCreditedAmount", "astrologerAmount").get()'));
+  assert.ok(route.includes('liveEarningsQuery.orderBy("createdAt", "desc").limit(50).get()'));
+  assert.ok(route.includes('AggregateField.sum("earningAmount")'));
+  assert.ok(route.includes('ledger:ledger.slice(0,50)'));
+  assert.ok(route.includes('historicalEarnings + liveEarningsTotal'));
+  assert.ok(route.includes('if(!liveEarningsSnap||liveEarningsTotal===null||!Number.isFinite(liveEarningsTotal))'));
   assert.ok(!route.includes('privateDashboard:'));
   assert.ok(!route.includes('questions,withdrawals'));
   assert.ok(live.includes("paymentId: earningRefDoc.id, type: 'astrologer_earning', source: 'live_session'"));
@@ -354,5 +361,8 @@ test('Astrologer earning indexes cover the credited-only queries used for Dashbo
   ]));
   assert.ok(has('smv_payments', [
     ['astrologerId','ASCENDING'],['source','ASCENDING'],['type','ASCENDING'],['status','ASCENDING']
+  ]));
+  assert.ok(has('smv_payments', [
+    ['astrologerId','ASCENDING'],['source','ASCENDING'],['type','ASCENDING'],['status','ASCENDING'],['createdAt','DESCENDING']
   ]));
 });
