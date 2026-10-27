@@ -51,7 +51,7 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   assert.ok(service.includes("const mode = appointment.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call';"));
   assert.ok(service.includes('const accepted = await acceptSession(result.session.id, uid);'));
   assert.ok(frontend.includes("smvLiveOpenSession(session,result.wallet||null,false);"));
-  assert.ok(frontend.includes("const connectable=call&&['connecting','active'].includes(String(s.state||''))"));
+  assert.ok(frontend.includes("connectable=call&&['connecting','active'].includes(String(s.state||''))"));
   assert.ok(frontend.includes("chat&&active?'':'hidden'"));
 });
 
