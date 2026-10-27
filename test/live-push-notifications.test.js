@@ -637,7 +637,7 @@ test('Wallet recharge offer endpoints use the selected Wallet financial domain',
   assert.ok(start >= 0 && end > start, 'Wallet offer routes are isolated in the expected section');
   const section = server.slice(start, end);
   assert.equal(
-    (section.match(/walletDomainDb\\(\\)\\.collection\\('smv_offers'\\)/g) || []).length,
+    (section.match(/walletDomainDb\(\)\.collection\('smv_offers'\)/g) || []).length,
     5,
     'public offer reads, Admin offer reads, save and delete use the selected Wallet domain'
   );
