@@ -71,7 +71,10 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     customerHistoryBackfillComplete: false,
     sessionHistoryBackfillComplete: false,
     liveDataBackfillComplete: false,
-    contentBackfillComplete: false
+    contentBackfillComplete: false,
+    sessionHistoryMirrorWritesEnabled: false,
+    liveDataMirrorWritesEnabled: false,
+    contentMirrorWritesEnabled: false
   };
   if (!enabled) return disabled;
 
@@ -107,7 +110,12 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     customerHistoryBackfillComplete: enabledFlag(env.SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE),
     sessionHistoryBackfillComplete: enabledFlag(env.SMV_SESSION_HISTORY_BACKFILL_COMPLETE),
     liveDataBackfillComplete: enabledFlag(env.SMV_LIVE_DATA_BACKFILL_COMPLETE),
-    contentBackfillComplete: enabledFlag(env.SMV_CONTENT_BACKFILL_COMPLETE)
+    contentBackfillComplete: enabledFlag(env.SMV_CONTENT_BACKFILL_COMPLETE),
+    // Enable write mirrors before starting a backfill; keep secondary reads disabled
+    // until the copy has been reconciled to avoid a gap while live writes continue.
+    sessionHistoryMirrorWritesEnabled: enabledFlag(env.SMV_SESSION_HISTORY_MIRROR_WRITES),
+    liveDataMirrorWritesEnabled: enabledFlag(env.SMV_LIVE_DATA_MIRROR_WRITES),
+    contentMirrorWritesEnabled: enabledFlag(env.SMV_CONTENT_MIRROR_WRITES)
   };
 }
 
