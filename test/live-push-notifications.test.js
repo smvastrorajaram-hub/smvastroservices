@@ -123,6 +123,24 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(html.includes('smvastro.mjs?v=20261027-four-firestore-read-routing-v1'));
 });
 
+test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
+  const frontend = read('public/smvastro.mjs');
+  const dashboardStart = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
+  const dashboardEnd = frontend.indexOf('function openPayoutChange()', dashboardStart);
+  assert.ok(dashboardStart >= 0 && dashboardEnd > dashboardStart, 'Dashboard render function exists');
+  const dashboard = frontend.slice(dashboardStart, dashboardEnd);
+  const bindCall = "if(role==='customer'||role==='astrologer')smvLiveBindDashboard(role);";
+  const bindAt = dashboard.indexOf(bindCall);
+  const readyAt = dashboard.indexOf('dashboardReadyRole=role; smvWatchDashboardEvents(role);', bindAt);
+  assert.ok(bindAt >= 0, 'Live Call/Chat panel binding runs in the successful Dashboard render path');
+  assert.ok(readyAt > bindAt, 'Live controls mount before the Dashboard is marked ready');
+  assert.ok(frontend.includes('function smvLiveBindDashboard(role){'));
+  assert.ok(frontend.includes('id="smvLiveAvailability"'));
+  assert.ok(frontend.includes('id="smvLiveSetAvailability"'));
+  assert.ok(frontend.includes('id="smvLiveCallEnabled"'));
+  assert.ok(frontend.includes('id="smvLiveChatEnabled"'));
+});
+
 test('Customer and Astrologer Dashboard open without Dashboard-wide loading or quota notes', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
