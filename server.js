@@ -4542,7 +4542,7 @@ function walletOfferView(docSnap) {
 // Award eligibility is still checked again inside the captured-recharge transaction.
 app.get('/wallet/recharge-offers', async (req, res) => {
   try {
-    const snap = await db.collection('smv_offers')
+    const snap = await walletDomainDb().collection('smv_offers')
       .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
     const nowMs = Date.now();
     const offers = snap.docs.map(docSnap => {
@@ -4593,7 +4593,7 @@ app.get('/admin/offers', async (req, res) => {
   if (!user) return;
   if (!(await isAdminUser(user))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
   try {
-    const snap = await db.collection('smv_offers')
+    const snap = await walletDomainDb().collection('smv_offers')
       .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
     const offers = snap.docs.map(walletOfferView).sort((a, b) => b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name));
     return res.set('Cache-Control', 'no-store').json({ success: true, offers });
@@ -4613,8 +4613,8 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
       return res.status(400).json({ success: false, error: 'Invalid Offer ID.' });
     }
     const offerRef = requestedId
-      ? db.collection('smv_offers').doc(requestedId)
-      : db.collection('smv_offers').doc();
+      ? walletDomainDb().collection('smv_offers').doc(requestedId)
+      : walletDomainDb().collection('smv_offers').doc();
     const existingSnap = requestedId ? await offerRef.get() : null;
     if (requestedId && !existingSnap.exists) return res.status(404).json({ success: false, error: 'Wallet Offer was not found.' });
     const existing = existingSnap?.exists ? (existingSnap.data() || {}) : {};
@@ -4677,7 +4677,7 @@ app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, re
   const id = walletOfferText(req.body?.id, 100);
   if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) return res.status(400).json({ success: false, error: 'Invalid Offer ID.' });
   try {
-    const ref = db.collection('smv_offers').doc(id);
+    const ref = walletDomainDb().collection('smv_offers').doc(id);
     const snap = await ref.get();
     if (!snap.exists || snap.data()?.offerType !== WALLET_RECHARGE_OFFER_TYPE) {
       return res.status(404).json({ success: false, error: 'Wallet Offer was not found.' });

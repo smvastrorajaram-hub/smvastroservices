@@ -3534,6 +3534,8 @@ if(firebaseInitError){
 let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='',smvLivePricingLoadedAt=0;
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='';
+let smvLiveDashboardStatusTimer=null;
+const smvLiveDashboardSessionsById=new Map();
 let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
@@ -4027,6 +4029,7 @@ function smvLiveUpdatePreparationCountdown(session){
   const clock=String(Math.floor(seconds/60))+':'+String(seconds%60).padStart(2,'0');
   const label=currentUid===String(current.customerUid||'')?'Please wait.... '+clock:'Generate Customer Horoscope · '+clock;
   if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=label;
+   smvLiveUpdateDashboardSessionStatus(current);
  };
  tick();
  if(!smvLivePreparationTimer)smvLivePreparationTimer=setInterval(tick,1000);
@@ -4210,12 +4213,13 @@ function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
  if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
   const s=ev.session;if(!s)return;
+  smvLiveUpdateDashboardSessionStatus(s);
   if(s.state==='ringing'&&s.astrologerUid===currentUser?.uid&&s.id!==smvLivePanelSessionId){smvLiveStartRingtone(s.id);smvLiveOpenSession(s,null,true);}
   else if(s.id===smvLivePanelSessionId){if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();smvLiveApplySession(s);}
   else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent='Session ended. Available Wallet: '+smvLiveMoney(ev.wallet?.availableBalancePaise??s.availableBalanceAfterPaise??0)+'.';window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);
   smvLiveAppendMessage(ev.message);
@@ -4260,12 +4264,40 @@ function smvLiveStartEventStream(){
   }
  })();
 }
+function smvLiveUpdateDashboardSessionStatus(session){
+ const id=String(session?.id||session?.sessionId||'');
+ if(!id)return;
+ const previous=smvLiveDashboardSessionsById.get(id)||{};
+ const current={...previous,...session,id};
+ smvLiveDashboardSessionsById.set(id,current);
+ const updateRow=()=>{
+  const host=$('smvLiveDashboardSessions');if(!host)return;
+  const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
+  const status=openButton?.closest('article')?.querySelector('[data-live-dashboard-status]');
+  if(status)status.textContent=smvLiveSessionStatusLabel(current);
+ };
+ updateRow();
+ if(current.state==='preparing'&&!smvLiveDashboardStatusTimer){
+  smvLiveDashboardStatusTimer=setInterval(()=>{
+   let preparing=false;
+   for(const row of smvLiveDashboardSessionsById.values()){
+    if(row.state!=='preparing')continue;
+    preparing=true;
+    const host=$('smvLiveDashboardSessions');if(!host)continue;
+    const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===String(row.id||''));
+    const status=openButton?.closest('article')?.querySelector('[data-live-dashboard-status]');
+    if(status)status.textContent=smvLiveSessionStatusLabel(row);
+   }
+   if(!preparing){clearInterval(smvLiveDashboardStatusTimer);smvLiveDashboardStatusTimer=null;}
+  },1000);
+ }
+}
 async function smvLivePollSessions(){
  if(smvLivePollBusy||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
  const role=String(window.__smvCurrentRole||'').toLowerCase();if(!['customer','astrologer'].includes(role))return;smvLivePollBusy=true;
  try{
   const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
-  for(const session of list.sessions||[]){
+  for(const session of list.sessions||[]){smvLiveUpdateDashboardSessionStatus(session);
    if(session.state==='ringing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==session.id){smvLiveStartRingtone(session.id);smvLiveOpenSession(session,null,true);}
    else if(session.id===smvLivePanelSessionId){if(session.state!=='ringing'&&smvLiveRingCurrentId===String(session.id||''))smvLiveStopRingtone();smvLiveApplySession(session);}
    else if(['preparing','connecting','active'].includes(session.state)&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
@@ -4485,8 +4517,9 @@ async function smvLiveLoadDashboard(role){
  const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
  const reload=async()=>{
   try{
-   const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];
-   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: '+escapeHtml(smvLiveSessionStatusLabel(s))+' · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action" data-live-open="'+escapeHtml(s.id)+'" style="padding:0;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:none;cursor:pointer;box-shadow:none;min-height:0">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+   const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];smvLiveDashboardSessionsById.clear();
+   host.innerHTML=rows.length?rows.map(s=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><p class="small">Status: <span data-live-dashboard-status="'+escapeHtml(s.id)+'">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span> · Rate '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small">Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action" data-live-open="'+escapeHtml(s.id)+'" style="padding:0;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:none;cursor:pointer;box-shadow:none;min-height:0">OPEN SESSION / RECEIPT</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+    rows.forEach(s=>smvLiveUpdateDashboardSessionStatus(s));
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s)smvLiveOpenSession(s,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&s.astrologerUid===currentUser?.uid&&s.state==='ringing');});
    if(role==='astrologer'){
     const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
@@ -4654,7 +4687,7 @@ function smvLiveBindAdminPricing(){
  if(!smvLivePricingLoadedAt)load();
 }
 smvLiveBindPushOpenListener();
-window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveRingSuppressedIds.clear();smvLiveCloseMedia();smvLiveClearTransport();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
+window.addEventListener('smv:logged-out',()=>{smvLiveStopEventStream();smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveRingSuppressedIds.clear();smvLiveCloseMedia();smvLiveClearTransport();if(smvLiveDashboardStatusTimer){clearInterval(smvLiveDashboardStatusTimer);smvLiveDashboardStatusTimer=null;}smvLiveDashboardSessionsById.clear();smvLiveCurrentSession=null;smvLivePanelSessionId='';});
 window.addEventListener('smv:auth-user',()=>{
  setTimeout(smvLiveStartEventStream,200);
  if(smvLivePendingPushOpen){
