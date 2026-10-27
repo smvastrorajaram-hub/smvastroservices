@@ -475,6 +475,12 @@ function makeFakeMultiProjectAdmin() {
 test('Customer history and public content route only after their explicit copy flags', () => {
   const server = read('server.js');
   const frontend = read('public/smvastro.mjs');
+  assert.ok(server.includes('async function readCustomerHistoryCollection(collectionName,uid)'));
+  assert.ok(server.includes('SMV_CUSTOMER_HISTORY_CUTOVER_AT'));
+  assert.ok(server.includes("consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get()"));
+  assert.ok(server.includes("where('createdAt','>=',cutover).orderBy('createdAt','desc')"));
+  assert.ok(server.includes("where('updatedAt','>=',cutover).orderBy('updatedAt','desc')"));
+  assert.ok(server.includes('for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id'));
   assert.ok(server.includes('customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}'));
   assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
   assert.ok(server.includes("app.get('/public/content'"));
@@ -493,7 +499,7 @@ test('Live fallback polling deduplicates same-session in-flight message and sign
   assert.ok(frontend.includes('const pending=smvLiveMessagePollsInFlight.get(key);if(pending)return pending;'));
   assert.ok(frontend.includes('const pending=smvLiveSignalPollsInFlight.get(key);if(pending)return pending;'));
   assert.ok(frontend.includes('if(smvLiveEventStreamConnected)smvLiveStopFallbackPolling();'));
-  assert.ok(frontend.includes('if(!smvLiveEventStreamConnected)smvLiveStartFallbackPolling();'));
+  assert.ok(frontend.includes('else smvLiveStartFallbackPolling();'));
 });
 
 test('Live Session auxiliary mirrors do not split the Wallet billing transaction', () => {
