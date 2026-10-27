@@ -8,6 +8,36 @@ const { initializeMultiProjectFirestore, normalizePrivateKey } = require('../mul
 const PAGE_SIZE = 200;
 const MAX_SAMPLES = 10;
 
+function timestampParts(value) {
+  if (value == null) return null;
+  if (Number.isFinite(Number(value.seconds ?? value._seconds))) {
+    return {
+      seconds: Number(value.seconds ?? value._seconds),
+      nanos: Number(value.nanoseconds ?? value._nanoseconds ?? 0)
+    };
+  }
+  let millis = null;
+  if (value instanceof Date) millis = value.getTime();
+  else if (typeof value?.toMillis === 'function') millis = value.toMillis();
+  else if (typeof value === 'number') millis = value;
+  else if (typeof value === 'string') millis = Date.parse(value);
+  if (!Number.isFinite(millis)) return null;
+  const seconds = Math.floor(millis / 1000);
+  return { seconds, nanos: Math.floor((millis - seconds * 1000) * 1_000_000) };
+}
+
+function compareTimestamps(left, right) {
+  const a = timestampParts(left), b = timestampParts(right);
+  if (!a || !b) return null;
+  if (a.seconds !== b.seconds) return a.seconds < b.seconds ? -1 : 1;
+  if (a.nanos !== b.nanos) return a.nanos < b.nanos ? -1 : 1;
+  return 0;
+}
+
+function sha256(value) {
+  return require('crypto').createHash('sha256').update(String(value)).digest('hex');
+}
+
 function primaryCredentials(env) {
   const projectId = String(env.FIREBASE_PROJECT_ID || '').trim();
   const clientEmail = String(env.FIREBASE_CLIENT_EMAIL || '').trim();
@@ -183,7 +213,73 @@ async function main() {
       report.blockers.push('Wallet ' + uid + ' still has reserved balance/minutes; reconcile its active reservation before cutover.');
     }
   }
-  for (const data of all[1].source.values()) if (data.ownerUid) participantIds.add(String(data.ownerUid));
+  const ledgerByOwner = new Map();
+  for (const [ledgerId, entry] of all[1].source) {
+    if (!entry.ownerUid) continue;
+    const ownerUid = String(entry.ownerUid);
+    participantIds.add(ownerUid);
+    if (!ledgerByOwner.has(ownerUid)) ledgerByOwner.set(ownerUid, []);
+    ledgerByOwner.get(ownerUid).push({ id: ledgerId, data: entry });
+  }
+
+  const ledgerBalanceIssues = [];
+  let walletsWithLedger = 0;
+  const balanceFields = [
+    { wallet: 'availableBalancePaise', ledger: 'balanceAfterPaise' },
+    { wallet: 'reservedBalancePaise', ledger: 'reservedBalanceAfterPaise' },
+    { wallet: 'bonusMinutesBalance', ledger: 'bonusMinutesBalanceAfter' },
+    { wallet: 'reservedBonusMinutes', ledger: 'reservedBonusMinutesAfter' }
+  ];
+  for (const [uid, wallet] of wallets) {
+    const entries = ledgerByOwner.get(String(uid)) || [];
+    if (!entries.length) {
+      const hasNonZeroBalance = balanceFields.some(field => Number(wallet[field.wallet] || 0) !== 0);
+      if (hasNonZeroBalance || Number(wallet.version || 0) > 1) {
+        ledgerBalanceIssues.push(uid + ' (Wallet has a non-initial balance/version but no ledger history)');
+      }
+      continue;
+    }
+    walletsWithLedger++;
+    for (const field of balanceFields) {
+      const fieldRows = entries.filter(row => row.data[field.ledger] !== undefined &&
+        timestampParts(row.data.createdAt));
+      if (!fieldRows.length) {
+        if (Number(wallet[field.wallet] || 0) !== 0) {
+          ledgerBalanceIssues.push(uid + ' (' + field.wallet + ' has no ledger snapshot)');
+        }
+        continue;
+      }
+      fieldRows.sort((left, right) => compareTimestamps(right.data.createdAt, left.data.createdAt) || left.id.localeCompare(right.id));
+      const newest = fieldRows[0];
+      const newestRows = fieldRows.filter(row => compareTimestamps(row.data.createdAt, newest.data.createdAt) === 0);
+      const values = new Set(newestRows.map(row => String(Number(row.data[field.ledger]))));
+      if (values.size > 1) {
+        ledgerBalanceIssues.push(uid + ' (' + field.ledger + ' has conflicting snapshots at the same latest timestamp)');
+        continue;
+      }
+      const latestSnapshot = Number(newest.data[field.ledger]);
+      const walletValue = Number(wallet[field.wallet] || 0);
+      if (!Number.isSafeInteger(latestSnapshot) || !Number.isSafeInteger(walletValue) || latestSnapshot !== walletValue) {
+        ledgerBalanceIssues.push(uid + ' (' + field.wallet + ' Wallet=' + walletValue + ', latest ledger=' + latestSnapshot + ')');
+      }
+    }
+    const latestBalanceRow = entries.filter(row => row.data.balanceAfterPaise !== undefined && timestampParts(row.data.createdAt))
+      .sort((left, right) => compareTimestamps(right.data.createdAt, left.data.createdAt))[0];
+    if (latestBalanceRow && timestampParts(wallet.updatedAt)) {
+      const walletVsLedgerTime = compareTimestamps(wallet.updatedAt, latestBalanceRow.data.createdAt);
+      if (walletVsLedgerTime !== null && walletVsLedgerTime < 0) {
+        ledgerBalanceIssues.push(uid + ' (Wallet updatedAt is older than its latest ledger entry)');
+      }
+    }
+  }
+  report.collections.walletLedgerBalanceReconciliation = {
+    walletsChecked: wallets.size,
+    walletsWithLedger,
+    inconsistencies: ledgerBalanceIssues.length,
+    samples: ledgerBalanceIssues.slice(0, MAX_SAMPLES)
+  };
+  if (ledgerBalanceIssues.length) report.errors.push('Wallet balances do not reconcile with the latest ledger snapshots.');
+
   for (const [sessionId, data] of sessions) {
     if (data.customerUid) participantIds.add(String(data.customerUid));
     if (data.astrologerUid) { participantIds.add(String(data.astrologerUid)); astrologerIds.add(String(data.astrologerUid)); }
@@ -212,6 +308,51 @@ async function main() {
   for (const data of all[9].source.values()) {
     if (data.astrologerId) { participantIds.add(String(data.astrologerId)); astrologerIds.add(String(data.astrologerId)); }
   }
+
+  // Paid Wallet recharge must have a matching order and its exact idempotent credit ledger.
+  const rechargeOrders = all[12].source;
+  const referencedOrderIds = new Set(rechargeOrders.keys());
+  const rechargeCreditIssues = [];
+  for (const [rechargeId, recharge] of recharges) {
+    const orderId = String(recharge.razorpayOrderId || '');
+    if (orderId) referencedOrderIds.add(orderId);
+    const status = String(recharge.status || '').toLowerCase();
+    if (status !== 'paid') continue;
+    const customerUid = String(recharge.customerUid || '');
+    const paymentId = String(recharge.razorpayPaymentId || '');
+    const order = rechargeOrders.get(orderId);
+    const ledgerId = customerUid && paymentId ? sha256('recharge:' + customerUid + ':' + paymentId) : '';
+    const credit = ledgerId ? all[1].source.get(ledgerId) : null;
+    const issues = [];
+    if (!orderId) issues.push('missing Razorpay order ID');
+    if (!order) issues.push('Razorpay Wallet Recharge order missing from Project 1');
+    else {
+      if (String(order.status || '').toLowerCase() !== 'paid') issues.push('order is not marked paid');
+      if (paymentId && String(order.razorpayPaymentId || '') !== paymentId) issues.push('order payment ID differs');
+      if (order.walletRechargeId && String(order.walletRechargeId) !== rechargeId) issues.push('order references another recharge');
+    }
+    if (!customerUid) issues.push('missing Customer UID');
+    if (!paymentId) issues.push('missing Razorpay payment ID');
+    if (!credit) issues.push('matching Wallet recharge credit ledger missing');
+    else {
+      if (String(credit.ownerUid || '') !== customerUid) issues.push('credit ledger owner differs');
+      if (String(credit.type || '') !== 'recharge' || String(credit.direction || '') !== 'credit') issues.push('ledger record is not a recharge credit');
+      const paidAmount = Number(recharge.paidAmountPaise ?? recharge.amountPaise);
+      if (!Number.isSafeInteger(paidAmount) || Number(credit.amountPaise) !== paidAmount) issues.push('credit amount differs from paid recharge amount');
+      if (String(credit.razorpayPaymentId || '') && String(credit.razorpayPaymentId) !== paymentId) issues.push('ledger payment ID differs');
+    }
+    if (issues.length) rechargeCreditIssues.push(rechargeId + ' (' + issues.join('; ') + ')');
+  }
+  report.collections.paidRechargeConsistency = {
+    paidRecharges: [...recharges.values()].filter(row => String(row.status || '').toLowerCase() === 'paid').length,
+    inconsistencies: rechargeCreditIssues.length,
+    samples: rechargeCreditIssues.slice(0, MAX_SAMPLES)
+  };
+  if (rechargeCreditIssues.length) report.errors.push('Paid Wallet recharges do not reconcile with Razorpay orders and credit-ledger entries.');
+
+  await compareNamedIds('walletRechargeOrdersReferencedByRecharge',
+    referencedOrderIds, sourceDb.collection('razorpay_orders'), targetDb.collection('razorpay_orders'), report);
+
   for (const [appointmentId, appointment] of all[13].source) {
     appointmentIds.add(appointmentId);
     if (appointment.customerUid) participantIds.add(String(appointment.customerUid));
