@@ -356,6 +356,8 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   const eventClients = new Map();
   const timeoutBySession = new Map();
   const timerRetryAttemptsBySession = new Map();
+  let timerRestoreRetryAttempt = 0;
+  let timerRestoreRetryTimer = null;
   const disconnectByKey = new Map();
   const sessionsByUid = new Map();
 
@@ -1349,12 +1351,16 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         .catch(error => console.warn('[Live Session] Primary scheduled-booking status sync deferred:', error?.message || error));
     }
     if (!result.alreadyProcessed) {
-      sendToParticipants(result.session, {
+      const endedEvent = {
         type: 'live.session.ended',
         session: liveSessionSafeView(id, result.session),
-        wallet: { availableBalancePaise: result.wallet.availableBalancePaise, reservedBalancePaise: result.wallet.reservedBalancePaise, bonusMinutesBalance: result.wallet.bonusMinutesBalance, reservedBonusMinutes: result.wallet.reservedBonusMinutes },
         message: String(result.session.endReason || '') === 'low_wallet_balance' ? 'Low Wallet Balance — Session ended' : (String(result.session.endReason || '') === 'duration_complete' ? 'Selected session duration completed.' : (String(result.session.endReason || '') === 'connection_failed' ? 'Connection failed. Unused Wallet reserve released.' : 'Session ended. Unused Wallet reserve released.'))
+      };
+      sendTo(result.session.customerUid, {
+        ...endedEvent,
+        wallet: { availableBalancePaise: result.wallet.availableBalancePaise, reservedBalancePaise: result.wallet.reservedBalancePaise, bonusMinutesBalance: result.wallet.bonusMinutesBalance, reservedBonusMinutes: result.wallet.reservedBonusMinutes }
       });
+      sendTo(result.session.astrologerUid, endedEvent);
     }
     return {
       success: true, alreadyProcessed: !!result.alreadyProcessed,
@@ -2122,7 +2128,9 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!auth) return;
     try {
       const result = await endSession(req.params.id, auth.user.uid, String(req.body?.reason || 'participant_ended').slice(0, 80), false);
-      return res.set('Cache-Control', 'no-store').json(result);
+      const response = { success: result.success, alreadyProcessed: result.alreadyProcessed, session: liveSessionSafeView(req.params.id, result.session) };
+      if (String(result.session?.customerUid || '') === String(auth.user.uid || '')) response.wallet = result.wallet;
+      return res.set('Cache-Control', 'no-store').json(response);
     } catch (error) { return replyError(res, error, 'Unable to end the Live Session safely.'); }
   });
 
@@ -2197,8 +2205,25 @@ async function rejectOrCancel(sessionId, user, reason) {
         trackSession(doc.id, d.customerUid, d.astrologerUid);
         scheduleSessionTimer(doc.id, d);
       }
+      timerRestoreRetryAttempt = 0;
+      if (timerRestoreRetryTimer) clearTimeout(timerRestoreRetryTimer);
+      timerRestoreRetryTimer = null;
+      console.info('[Live Session] Active timer restore completed:', JSON.stringify({ count: snap.size }));
     } catch (error) {
-      console.warn('[Live Session] Active timer restore skipped:', error?.message || error);
+      timerRestoreRetryAttempt += 1;
+      const retryDelayMs = Math.min(60_000, 5_000 * (2 ** Math.min(timerRestoreRetryAttempt - 1, 4)));
+      if (timerRestoreRetryTimer) clearTimeout(timerRestoreRetryTimer);
+      const retryTimer = setTimeout(() => {
+        if (timerRestoreRetryTimer === retryTimer) timerRestoreRetryTimer = null;
+        restoreTimers().catch(retryError => console.warn('[Live Session] Active timer restore retry failed:', retryError?.message || retryError));
+      }, retryDelayMs);
+      retryTimer.unref?.();
+      timerRestoreRetryTimer = retryTimer;
+      console.warn('[Live Session] Active timer restore failed; retry queued:', JSON.stringify({
+        attempt: timerRestoreRetryAttempt, retryDelayMs,
+        errorCode: String(error?.code || ''),
+        error: String(error?.message || error || 'Unknown timer restore error')
+      }));
     }
   }
   ensurePricingDocument().catch(error => console.warn('[Live Session] Pricing defaults were not persisted yet:', error?.message || error));

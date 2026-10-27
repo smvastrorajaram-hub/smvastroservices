@@ -362,8 +362,6 @@
       <p class="small">Booking request only. The Astrologer must accept it. At the scheduled time, the Astrologer starts the Call/Chat; Wallet funds are reserved when the session starts.</p>
       <form id="smvCallBookingForm" style="display:flex;flex-direction:column;gap:6px;width:100%;min-width:0;min-height:0">
         <label><b>Your name</b><input id="smvCallBookingName" name="name" maxlength="100" value="${esc(customerDisplayName)}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
-        <label><b>Email</b><input id="smvCallBookingEmail" name="email" type="email" maxlength="160" value="${esc(user.email||'')}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
-        <label style="display:block;min-width:0;color:#2d1919"><b>Mobile Number</b><input id="smvCallBookingMobile" name="mobile" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <div class="grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0">
           <label style="display:block;min-width:0;color:#2d1919"><b>Date of Birth</b><input id="smvCallBookingBirthDate" name="birthDate" type="date" max="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
           <label style="display:block;min-width:0;color:#2d1919"><b>Time of Birth</b><input id="smvCallBookingBirthTime" name="birthTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
@@ -376,7 +374,7 @@
           <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
           <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
-        <label style="display:grid;gap:3px;min-width:0;color:#ffffff"><b>Session duration</b><select id="smvCallBookingMinutes" name="scheduledMinutes" required style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"><option value="5" selected>5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></label>
+        <label style="display:grid;gap:3px;min-width:0;color:#ffffff"><b>Session duration (minutes)</b><input id="smvCallBookingMinutes" name="scheduledMinutes" type="number" min="1" max="1440" step="1" value="5" inputmode="numeric" required aria-describedby="smvCallBookingDurationHelp" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"><span id="smvCallBookingDurationHelp" class="small">Enter 1–1440 whole minutes.</span></label>
         ${notesField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
         <div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:auto;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37">
@@ -405,8 +403,6 @@
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
           body:JSON.stringify({
             name:String($('smvCallBookingName')?.value||'').trim(),
-            email:String($('smvCallBookingEmail')?.value||'').trim(),
-            mobile:String($('smvCallBookingMobile')?.value||'').trim(),
             birthDate:String($('smvCallBookingBirthDate')?.value||''),
             birthTime:String($('smvCallBookingBirthTime')?.value||''),
             birthPlace:String($('smvCallBookingBirthPlace')?.value||'').trim(),
