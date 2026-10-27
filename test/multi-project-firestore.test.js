@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { initializeMultiProjectFirestore, DEFAULT_PROJECT_IDS } = require('../multi-project-firestore');
+const { initializeMultiProjectFirestore, DEFAULT_PROJECT_IDS, resolveWalletDomainDatabase } = require('../multi-project-firestore');
 
 function fakeAdmin() {
   const apps = [];
@@ -34,6 +34,15 @@ test('Project 5 remains off by default and preserves the primary database', () =
   assert.equal(result.walletDomainCutoverComplete, false);
   assert.equal(result.walletDomainRuntimeIntegrationVerified, false);
   assert.equal(admin.apps.length, 0);
+});
+
+test('Wallet domain database resolver uses Project 5 only after the complete cutover gate', () => {
+  const primaryDb = { name: 'project-1' };
+  const project5Db = { name: 'project-5' };
+  assert.equal(resolveWalletDomainDatabase({ walletDomainEnabled: true, walletDomainCutoverComplete: false, walletDomainDb: project5Db }, primaryDb), primaryDb);
+  assert.equal(resolveWalletDomainDatabase({ walletDomainEnabled: false, walletDomainCutoverComplete: true, walletDomainDb: project5Db }, primaryDb), primaryDb);
+  assert.equal(resolveWalletDomainDatabase({ walletDomainEnabled: true, walletDomainCutoverComplete: true, walletDomainDb: project5Db }, primaryDb), project5Db);
+  assert.equal(resolveWalletDomainDatabase({ walletDomainEnabled: true, walletDomainCutoverComplete: true, walletDomainDb: primaryDb }, primaryDb), primaryDb);
 });
 
 test('Project 5 can be initialized independently of the existing four-project flag', () => {
