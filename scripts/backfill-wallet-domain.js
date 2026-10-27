@@ -225,10 +225,17 @@ async function main() {
     targetDb.collection('smv_payments'), 'liveSessionEarnings', stats);
   await copyQuery(sourceDb.collection('smv_withdrawals'), targetDb.collection('smv_withdrawals'), 'withdrawals', stats);
   await copyQuery(sourceDb.collection('smv_withdrawal_payouts'), targetDb.collection('smv_withdrawal_payouts'), 'withdrawalPayouts', stats);
-  for (const orderId of razorpayOrderIds) {
-    const data = await copyNamedDocument(sourceDb, targetDb, 'razorpay_orders', orderId, stats, 'razorpayOrder:' + orderId);
-    if (data) participantUids.add(String(data.customerUid || data.firebaseUid || ''));
-  }
+  // Copy every Wallet recharge order, including orphaned/incomplete recharge references;
+  // the validator below blocks cutover if an order/recharge relationship does not reconcile.
+  await copyQuery(
+    sourceDb.collection('razorpay_orders').where('serviceName', '==', 'SMV ASTRO Wallet Recharge'),
+    targetDb.collection('razorpay_orders'), 'walletRechargeOrders', stats,
+    doc => {
+      const data = doc.data() || {};
+      if (data.customerUid || data.firebaseUid) participantUids.add(String(data.customerUid || data.firebaseUid));
+      razorpayOrderIds.add(doc.id);
+    }
+  );
   // Webhook idempotency markers migrate with Wallet orders. Without these markers a
   // retried Razorpay event after cutover could repeat non-wallet side effects.
   await copyQuery(sourceDb.collection('razorpay_webhook_events'),
