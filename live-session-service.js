@@ -1,6 +1,7 @@
 'use strict';
 
 const { walletLedgerDocId, parseRupeesToPaise } = require('./wallet-service');
+const { readWithQuotaFallback } = require('./firestore-quota-routing');
 
 const SESSIONS = 'smv_live_sessions';
 const BOOKINGS = 'smv_live_bookings';
@@ -414,6 +415,29 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       console.warn('[Live Session] Secondary ' + collectionName + ' mirror skipped for ' + sessionId + ':', error?.message || error);
     }
   }
+  async function readSessionAuxiliarySnapshot({ sessionId, collectionName, afterMs, limit, useSecondary }) {
+    const buildQuery = targetDb => {
+      let query = targetDb.collection(SESSIONS).doc(String(sessionId)).collection(collectionName)
+        .orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      if (afterMs > 0) query = query.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+      return query.limit(limit);
+    };
+    if (!useSecondary || !liveDataReadDb || liveDataReadDb === db) return buildQuery(db).get();
+
+    const result = await readWithQuotaFallback({
+      secondaryDb: liveDataReadDb,
+      authoritativeDb: db,
+      read: targetDb => buildQuery(targetDb).get(),
+      onQuotaFallback: () => sessionRef(sessionId).set({
+        liveAuxStoreReady: false,
+        updatedAt: nowTimestamp()
+      }, { merge: true }),
+      label: 'Live Session ' + collectionName + ' read for ' + String(sessionId),
+      logger: console
+    });
+    return result.value;
+  }
+
   function bookingRef(id) { return db.collection(BOOKINGS).doc(String(id)); }
   function walletRef(uid) { return db.collection(WALLETS).doc(String(uid)); }
   function astroRef(uid) { return db.collection(ASTROLOGERS).doc(String(uid)); }
@@ -2157,10 +2181,13 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
-      let signalQuery = signalStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
-      if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
-      const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
+      const snap = await readSessionAuxiliarySnapshot({
+        sessionId: req.params.id,
+        collectionName: 'signals',
+        afterMs,
+        limit: afterMs > 0 ? 30 : 50,
+        useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb
+      });
       const signals = snap.docs.map(d => {
         const s = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: s.senderUid, type: s.type, payload: s.payload, createdAt: timestampMillis(s.createdAt) ? new Date(timestampMillis(s.createdAt)).toISOString() : null };
@@ -2183,12 +2210,15 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      // Initial history may use the completed archive. Incremental reads must use
-      // the primary write store so a message is visible before its best-effort mirror finishes.
-      const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);
-      let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
-      if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
-      const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
+      // Incremental reads stay on the authoritative write store so messages remain
+      // visible immediately; the replicated archive is used for initial history only.
+      const snap = await readSessionAuxiliarySnapshot({
+        sessionId: req.params.id,
+        collectionName: 'messages',
+        afterMs,
+        limit: afterMs > 0 ? 50 : 100,
+        useSecondary: afterMs <= 0 && loaded.data.liveAuxStoreReady === true && !!liveDataReadDb
+      });
       const messages = snap.docs.map(d => {
         const m = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: m.senderUid, text: m.text, createdAt: timestampMillis(m.createdAt) ? new Date(timestampMillis(m.createdAt)).toISOString() : null };
