@@ -54,7 +54,7 @@ async function readCustomerHistoryCollection(collectionName,uid){
   return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
  }
  const [archiveSnap,createdAfterCutover,updatedAfterCutover]=await Promise.all([
-  multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).limit(100).get(),
+  multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
   db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
   db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
  ]);
