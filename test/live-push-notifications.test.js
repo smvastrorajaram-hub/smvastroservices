@@ -594,3 +594,19 @@ test('Non-production Firestore cannot silently route into screenshot-named produ
   }), /Refusing to connect a non-production primary project to the production secondary projects/);
   assert.equal(apps.length, 0);
 });
+
+test('Project 3 WebRTC auxiliary data does not change FCM sender project 1', () => {
+  const server = read('server.js');
+  const worker = read('public/sw.js');
+  const live = read('live-session-service.js');
+  const multi = read('multi-project-firestore.js');
+  assert.match(server, /projectId:\\s*process\\.env\\.FIREBASE_PROJECT_ID/);
+  assert.match(server, /FCM_VAPID_PUBLIC_KEY/);
+  assert.match(worker, /projectId:\\s*'smv-astro'/);
+  assert.match(worker, /messagingSenderId:\\s*'299081899217'/);
+  assert.match(live, /admin\\.messaging\\(\\)\\.send\\(/);
+  assert.match(live, /mirrorLiveRecordToSecondary\\(sessionId, 'signals'/);
+  assert.match(live, /mirrorLiveRecordToSecondary\\(sessionId, 'messages'/);
+  assert.match(multi, /liveData: 'smv-astro-services'/);
+  assert.match(multi, /walletDomain: 'smvastro-services'/);
+});
