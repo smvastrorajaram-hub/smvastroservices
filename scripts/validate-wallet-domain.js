@@ -130,7 +130,8 @@ async function compareNamedIds(label, ids, sourceCollection, targetCollection, r
     if (sourceDoc.exists) source.set(id, sourceDoc.data() || {});
     if (targetDoc.exists) target.set(id, targetDoc.data() || {});
   }
-  return compareMaps(label, source, target, report);
+  compareMaps(label, source, target, report);
+  return { source, target };
 }
 
 async function compareSessionChildren(sessionIds, childName, sourceDb, targetDb, report) {
@@ -310,17 +311,22 @@ async function main() {
   }
 
   // Paid Wallet recharge must have a matching order and its exact idempotent credit ledger.
-  const rechargeOrders = all[12].source;
-  const referencedOrderIds = new Set(rechargeOrders.keys());
+  const referencedOrderIds = new Set(all[12].source.keys());
+  for (const recharge of recharges.values()) {
+    const orderId = String(recharge.razorpayOrderId || '');
+    if (orderId) referencedOrderIds.add(orderId);
+  }
+  const referencedOrderComparison = await compareNamedIds('walletRechargeOrdersReferencedByRecharge',
+    referencedOrderIds, sourceDb.collection('razorpay_orders'), targetDb.collection('razorpay_orders'), report);
+  const sourceRechargeOrders = referencedOrderComparison.source;
   const rechargeCreditIssues = [];
   for (const [rechargeId, recharge] of recharges) {
     const orderId = String(recharge.razorpayOrderId || '');
-    if (orderId) referencedOrderIds.add(orderId);
     const status = String(recharge.status || '').toLowerCase();
     if (status !== 'paid') continue;
     const customerUid = String(recharge.customerUid || '');
     const paymentId = String(recharge.razorpayPaymentId || '');
-    const order = rechargeOrders.get(orderId);
+    const order = sourceRechargeOrders.get(orderId);
     const ledgerId = customerUid && paymentId ? sha256('recharge:' + customerUid + ':' + paymentId) : '';
     const credit = ledgerId ? all[1].source.get(ledgerId) : null;
     const issues = [];
@@ -349,9 +355,6 @@ async function main() {
     samples: rechargeCreditIssues.slice(0, MAX_SAMPLES)
   };
   if (rechargeCreditIssues.length) report.errors.push('Paid Wallet recharges do not reconcile with Razorpay orders and credit-ledger entries.');
-
-  await compareNamedIds('walletRechargeOrdersReferencedByRecharge',
-    referencedOrderIds, sourceDb.collection('razorpay_orders'), targetDb.collection('razorpay_orders'), report);
 
   for (const [appointmentId, appointment] of all[13].source) {
     appointmentIds.add(appointmentId);
