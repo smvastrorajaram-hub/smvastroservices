@@ -6,6 +6,10 @@
 const admin = require('firebase-admin');
 const { initializeMultiProjectFirestore, normalizePrivateKey } = require('../multi-project-firestore');
 
+function isEnabled(name) {
+  return /^(?:1|true|yes|on)$/i.test(String(process.env[name] || '').trim());
+}
+
 const APPLY = process.argv.includes('--apply');
 const PAGE_SIZE = 200;
 
@@ -52,6 +56,27 @@ async function copySessionSubcollection(sourceSessionRef, targetSessionRef, name
 }
 
 async function main() {
+  if (APPLY) {
+    const mirrorFlags = [
+      'SMV_SESSION_HISTORY_MIRROR_WRITES',
+      'SMV_LIVE_DATA_MIRROR_WRITES',
+      'SMV_CONTENT_MIRROR_WRITES'
+    ];
+    const missing = mirrorFlags.filter(name => !isEnabled(name));
+    if (missing.length) {
+      throw new Error('Refusing to copy while writes can race with the backfill. Enable these mirror flags first: ' + missing.join(', '));
+    }
+    const readFlags = [
+      'SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE',
+      'SMV_SESSION_HISTORY_BACKFILL_COMPLETE',
+      'SMV_LIVE_DATA_BACKFILL_COMPLETE',
+      'SMV_CONTENT_BACKFILL_COMPLETE'
+    ];
+    const enabledReads = readFlags.filter(name => isEnabled(name));
+    if (enabledReads.length) {
+      throw new Error('Refusing to copy after secondary reads were enabled. Turn these read flags off before backfill: ' + enabledReads.join(', '));
+    }
+  }
   const primaryApp = admin.initializeApp({
     credential: admin.credential.cert(primaryCredential(process.env))
   }, 'smv-multiproject-backfill-primary');
