@@ -168,7 +168,7 @@
         if(feedback)feedback.textContent='Live '+kind.toUpperCase()+' request sent. Cash reserved: '+smvLiveMoney(Number(result.session.reservedAmountPaise??0))+'. Waiting for the Astrologer to accept.';
         window.dispatchEvent(new Event('smv:wallet-updated'));
         window.__smvStartLiveEvents?.();
-        window.__smvOpenLiveSession?.(result.session);
+        window.__smvOpenLiveSession?.(result.session,kind);
       }else if(result.kind==='booking'&&result.booking){
         if(feedback)feedback.textContent='Booking queued for '+String(astrologer.name||'Astrologer')+'. Wallet balance is reserved until the booking is cancelled, rejected, or expires.';
         window.dispatchEvent(new Event('smv:wallet-updated'));
