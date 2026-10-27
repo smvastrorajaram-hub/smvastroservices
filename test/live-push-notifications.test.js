@@ -386,3 +386,154 @@ test('Astrologer earning indexes cover the credited-only queries used for Dashbo
     ['astrologerId','ASCENDING'],['source','ASCENDING'],['type','ASCENDING'],['status','ASCENDING'],['createdAt','DESCENDING']
   ]));
 });
+
+
+test('Four-project Firestore routing stays on the primary project until explicitly enabled', () => {
+  const { initializeMultiProjectFirestore, DEFAULT_PROJECT_IDS } = require('../multi-project-firestore');
+  const primaryDb = { project: 'primary' };
+  const fakeAdmin = makeFakeMultiProjectAdmin();
+  const routed = initializeMultiProjectFirestore({
+    admin: fakeAdmin, primaryDb, env: { FIREBASE_PROJECT_ID: 'smv-astro' }
+  });
+  assert.equal(routed.enabled, false);
+  assert.equal(routed.consultationsDb, primaryDb);
+  assert.equal(routed.liveDataDb, primaryDb);
+  assert.equal(routed.contentDb, primaryDb);
+  assert.equal(routed.customerHistoryBackfillComplete, false);
+  assert.deepEqual(DEFAULT_PROJECT_IDS, {
+    primary: 'smv-astro',
+    consultations: 'astro-service-ae9e7',
+    liveData: 'smv-astro-services',
+    content: 'svm-astro'
+  });
+  assert.equal(fakeAdmin.apps.length, 0);
+});
+
+test('Four-project Firestore routing requires unique project IDs and all secondary credentials', () => {
+  const { initializeMultiProjectFirestore } = require('../multi-project-firestore');
+  const primaryDb = { project: 'primary' };
+  assert.throws(() => initializeMultiProjectFirestore({
+    admin: makeFakeMultiProjectAdmin(),
+    primaryDb,
+    env: { SMV_FIRESTORE_MULTI_PROJECT_ENABLED: 'true', FIREBASE_PROJECT_ID: 'smv-astro' }
+  }), /FIREBASE_CONSULTATIONS_CLIENT_EMAIL/);
+  assert.throws(() => initializeMultiProjectFirestore({
+    admin: makeFakeMultiProjectAdmin(),
+    primaryDb,
+    env: {
+      SMV_FIRESTORE_MULTI_PROJECT_ENABLED: 'true',
+      FIREBASE_PROJECT_ID: 'smv-astro',
+      FIREBASE_CONTENT_PROJECT_ID: 'smv-astro'
+    }
+  }), /project IDs must be distinct/);
+});
+
+test('Enabled four-project routing uses screenshot project IDs and waits for verified backfill flags', () => {
+  const { initializeMultiProjectFirestore } = require('../multi-project-firestore');
+  const env = {
+    SMV_FIRESTORE_MULTI_PROJECT_ENABLED: 'true',
+    FIREBASE_PROJECT_ID: 'smv-astro',
+    FIREBASE_CONSULTATIONS_CLIENT_EMAIL: 'consultations@astro-service-ae9e7.iam.gserviceaccount.com',
+    FIREBASE_CONSULTATIONS_PRIVATE_KEY: 'private-key',
+    FIREBASE_LIVE_DATA_CLIENT_EMAIL: 'live-data@smv-astro-services.iam.gserviceaccount.com',
+    FIREBASE_LIVE_DATA_PRIVATE_KEY: 'private-key',
+    FIREBASE_CONTENT_CLIENT_EMAIL: 'content@svm-astro.iam.gserviceaccount.com',
+    FIREBASE_CONTENT_PRIVATE_KEY: 'private-key'
+  };
+  const primaryDb = { project: 'primary' };
+  const admin = makeFakeMultiProjectAdmin();
+  const routed = initializeMultiProjectFirestore({ admin, primaryDb, env });
+  assert.equal(routed.enabled, true);
+  assert.equal(routed.projectIds.primary, 'smv-astro');
+  assert.equal(routed.projectIds.consultations, 'astro-service-ae9e7');
+  assert.equal(routed.projectIds.liveData, 'smv-astro-services');
+  assert.equal(routed.projectIds.content, 'svm-astro');
+  assert.notEqual(routed.consultationsDb, primaryDb);
+  assert.notEqual(routed.liveDataDb, primaryDb);
+  assert.notEqual(routed.contentDb, primaryDb);
+  assert.equal(routed.sessionHistoryBackfillComplete, false);
+  assert.equal(routed.liveDataBackfillComplete, false);
+  assert.equal(routed.contentBackfillComplete, false);
+  assert.equal(admin.apps.length, 3);
+});
+
+function makeFakeMultiProjectAdmin() {
+  const apps = [];
+  const admin = {
+    apps,
+    credential: { cert: value => value },
+    initializeApp(options, name) {
+      const app = { name, options };
+      apps.push(app);
+      return app;
+    }
+  };
+  admin.firestore = app => ({ projectId: app?.options?.credential?.projectId || 'primary', appName: app?.name || 'default' });
+  return admin;
+}
+
+test('Customer history and public content route only after their explicit copy flags', () => {
+  const server = read('server.js');
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(server.includes('customerHistoryDb(){return multiProjectFirestore.customerHistoryBackfillComplete?multiProjectFirestore.consultationsDb:db;}'));
+  assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
+  assert.ok(server.includes("app.get('/public/content'"));
+  assert.ok(server.includes(".where('published','==',true).where('language','==','en')"));
+  assert.ok(frontend.includes("renderApi('/public/content',{method:'GET'})"));
+  assert.ok(!frontend.includes('getDocs(query(collection(db,SMV_CONTENT_COLLECTION),where("published","==",true)'));
+  // The current Customer Dashboard deliberately does not fetch retired history as a gate on its first render.
+  assert.ok(!frontend.includes("renderApi('/customer/consultations'"));
+  assert.ok(!frontend.includes("renderApi('/customer/private-consultations'"));
+});
+
+test('Live fallback polling deduplicates same-session in-flight message and signal reads', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('const smvLiveMessagePollsInFlight=new Map();'));
+  assert.ok(frontend.includes('const smvLiveSignalPollsInFlight=new Map();'));
+  assert.ok(frontend.includes('const pending=smvLiveMessagePollsInFlight.get(key);if(pending)return pending;'));
+  assert.ok(frontend.includes('const pending=smvLiveSignalPollsInFlight.get(key);if(pending)return pending;'));
+  assert.ok(frontend.includes('if(smvLiveEventStreamConnected)smvLiveStopFallbackPolling();'));
+  assert.ok(frontend.includes('if(!smvLiveEventStreamConnected)smvLiveStartFallbackPolling();'));
+});
+
+test('Live Session auxiliary mirrors do not split the Wallet billing transaction', () => {
+  const service = read('live-session-service.js');
+  assert.ok(service.includes('tx.create(msgRef, message)'));
+  assert.ok(service.includes('tx.create(signalRef, data)'));
+  assert.ok(service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\', msgRef.id, message, session)'));
+  assert.ok(service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\', signalRef.id, data, session)'));
+  assert.ok(service.includes('const sessionHistoryDb = multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
+  assert.ok(service.includes("historyArchivedToSecondary: false"));
+  assert.ok(service.includes("liveAuxStoreReady: false"));
+  assert.ok(service.includes("const messageStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
+  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataDb ? liveDataDb : db;"));
+});
+
+test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
+  const script = read('scripts/backfill-multi-project-firestore.js');
+  const rules = read('firestore.multi-project.rules');
+  assert.ok(script.includes("const APPLY = process.argv.includes('--apply');"));
+  assert.ok(script.includes("if (APPLY) await target.doc(doc.id).set(doc.data(), { merge: true });"));
+  assert.ok(script.includes("sourceRef.set({"));
+  assert.ok(!/\.delete\s*\(/.test(script));
+  assert.ok(rules.includes('allow read, write: if false;'));
+  assert.ok(read('firebase.multi-project-consultations.json').includes('firestore.multi-project.rules'));
+  assert.ok(read('firebase.multi-project-live-data.json').includes('firestore.multi-project.rules'));
+  assert.ok(read('firebase.multi-project-content.json').includes('firestore.multi-project.rules'));
+});
+
+test('Firestore indexes include public-content and multi-project session-history routing queries', () => {
+  const indexes = JSON.parse(read('firestore.indexes.json'));
+  const has = (collectionGroup, fields) => indexes.indexes.some(index =>
+    index.collectionGroup === collectionGroup &&
+    index.fields.length === fields.length &&
+    fields.every(([fieldPath, order], i) =>
+      index.fields[i]?.fieldPath === fieldPath && index.fields[i]?.order === order
+    )
+  );
+  assert.ok(has('smv_content', [['language','ASCENDING'],['published','ASCENDING']]));
+  assert.ok(has('smv_live_sessions', [['customerUid','ASCENDING'],['state','ASCENDING']]));
+  assert.ok(has('smv_live_sessions', [['astrologerUid','ASCENDING'],['state','ASCENDING']]));
+  assert.ok(has('smv_live_sessions', [['customerUid','ASCENDING'],['state','ASCENDING'],['historyArchivedToSecondary','ASCENDING']]));
+  assert.ok(has('smv_live_sessions', [['astrologerUid','ASCENDING'],['state','ASCENDING'],['historyArchivedToSecondary','ASCENDING']]));
+});
