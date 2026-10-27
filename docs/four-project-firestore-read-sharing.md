@@ -51,12 +51,13 @@ With the master flag off (the default), the backend uses Project 1 only and does
    The script copies question/private-consultation history to Project 2, ended Live Session records to Project 2, Live Session `messages` and `signals` subcollections to Project 3, and `smv_content` records to Project 4. It uses merge-set writes and **never deletes source data**. Repeat `--apply` after fixing any reported copy errors; it is idempotent.
 
 4. Compare document counts and sample records in source and destination projects. Confirm both old and new content are visible, ended history is present, and live chat / WebRTC still operate.
-5. Only after verification, set the per-domain read flags on staging:
-   - `SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE=true` — routes the legacy, separately scoped customer history APIs to Project 2. Enable only after those legacy workflows are confirmed retired/read-only, because their old write endpoints remain in Project 1.
+5. Record the cutover boundary as an ISO timestamp in `SMV_CUSTOMER_HISTORY_CUTOVER_AT` before enabling the customer history flag. The two legacy history endpoints merge the copied Project 2 rows with post-cutover primary rows (created or updated since the cutover), keyed by document ID so the newest primary version wins. If the cutover value is missing or invalid, those endpoints fail safe to Project 1.
+6. Only after verification, set the per-domain read flags on the intended backend:
+   - `SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE=true` — routes the older customer history to Project 2 and merges newer/updated records from Project 1. This flag does not move writes or change the source of truth.
    - `SMV_SESSION_HISTORY_BACKFILL_COMPLETE=true` — reads ended sessions from Project 2 while active and unarchived sessions still fall back to Project 1.
    - `SMV_LIVE_DATA_BACKFILL_COMPLETE=true` — reads messages/signals from Project 3 only for sessions marked ready; a failed mirror switches that session back to Project 1.
    - `SMV_CONTENT_BACKFILL_COMPLETE=true` — routes public content reads and Admin content updates to Project 4.
-6. Run authenticated browser tests for Customer and Astrologer login, live Chat send/receive, WebRTC Call connection, booking, session end/refund/commission, Wallet balance, content publishing, and old content visibility before considering production rollout.
+7. Run authenticated browser tests for Customer and Astrologer login, live Chat send/receive, WebRTC Call connection, booking, session end/refund/commission, Wallet balance, content publishing, and old content visibility before considering production rollout.
 
 ## Firestore security
 
