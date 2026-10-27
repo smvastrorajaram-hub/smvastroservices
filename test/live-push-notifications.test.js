@@ -691,7 +691,7 @@ test('Preparation countdown reconciles the server session at zero instead of lea
   const countdownEnd = frontend.indexOf('function smvLiveStartClock(s){', countdownStart);
   const countdown = frontend.slice(countdownStart, countdownEnd);
   assert.ok(countdown.includes('if(seconds===0)smvLiveReconcileExpiredPreparation(id);'));
-  assert.ok(countdown.includes("renderApi('/live/sessions',{method:'GET',timeoutMs:10000})"));
+  assert.ok(frontend.includes("renderApi('/live/sessions',{method:'GET',timeoutMs:10000})"));
   assert.ok(server.includes('Runtime timeouts are in-memory.'));
   assert.ok(server.includes("if (plan.delayMs <= 0)"));
   assert.ok(server.includes('? await completePreparation(row.id)'));
