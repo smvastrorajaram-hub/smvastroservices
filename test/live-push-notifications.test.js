@@ -739,3 +739,24 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(live.includes('const commission = Number.isFinite(savedAstroPercent)'));
   assert.ok(live.includes('const earningRefDoc = earningRef(id);'));
 });
+
+
+test('Live Chat and Call recover messages/signals after an SSE reconnect without consuming messages when the chat pane is absent', () => {
+  const frontend = read('public/smvastro.mjs');
+  const helperStart = frontend.indexOf('async function smvLiveReconcileAfterEventStreamConnect(){');
+  const helperEnd = frontend.indexOf('function smvLiveHandleEvent(ev){', helperStart);
+  const helper = frontend.slice(helperStart, helperEnd);
+  const pollStart = frontend.indexOf('async function smvLivePollMessages(id){');
+  const pollEnd = frontend.indexOf('const smvLiveSignalPollsInFlight', pollStart);
+  const poll = frontend.slice(pollStart, pollEnd);
+  const streamStart = frontend.indexOf('function smvLiveStartEventStream(){');
+  const streamEnd = frontend.indexOf('function smvLiveBindPushOpenListener()', streamStart);
+  const stream = frontend.slice(streamStart, streamEnd);
+  assert.ok(helper.includes('await smvLivePollSessions()'));
+  assert.ok(helper.includes('await smvLivePollMessages(id)'));
+  assert.ok(helper.includes('await smvLiveReconcileCallSignals(id)'));
+  assert.ok(stream.includes('smvLiveReconcileAfterEventStreamConnect().catch(()=>{});'));
+  assert.ok(poll.includes("if(!key||!$('smvLiveMessages'))return;"));
+  assert.ok(poll.includes('if(!$(' + "'smvLiveMessages'" + '))break;'));
+  assert.ok(poll.includes('(appended||smvLiveMessageSeen.has(messageId))'));
+});
