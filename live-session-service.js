@@ -1849,12 +1849,19 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (Date.now() < scheduledAt && currentStatus !== 'in_progress') {
         return res.status(409).json({ success: false, error: 'The scheduled time has not arrived yet. The Start button becomes available at the booked time.' });
       }
-      const [astroStatusSnap, sessionPricingSnap] = await Promise.all([
-        db.collection(ASTROLOGERS).doc(uid).get(), pricingRef().get()
+      const [astroProfileStatusSnap, astroDomainCounterSnap, sessionPricingSnap] = await Promise.all([
+        profileDb.collection(ASTROLOGERS).doc(uid).get(),
+        db.collection(ASTROLOGERS).doc(uid).get(),
+        pricingRef().get()
       ]);
-      if (!astroStatusSnap.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
-      const astroStatusData = astroStatusSnap.data() || {};
-      const currentAvailability = String(astroStatusData.availabilityStatus || astroStatusData.onlineStatus || 'offline').toLowerCase();
+      if (!astroProfileStatusSnap.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
+      const astroProfileStatus = astroProfileStatusSnap.data() || {};
+      const astroDomainCounter = astroDomainCounterSnap.exists ? (astroDomainCounterSnap.data() || {}) : {};
+      const astroStatusData = {
+        ...astroProfileStatus,
+        activeSessionCount: Number(astroDomainCounter.activeSessionCount ?? astroProfileStatus.activeSessionCount ?? 0)
+      };
+      const currentAvailability = String(astroProfileStatus.availabilityStatus || astroProfileStatus.onlineStatus || 'offline').toLowerCase();
       if (currentAvailability !== 'online') {
         return res.status(409).json({ success: false, error: 'Set your Astrologer Availability to Online before starting the scheduled Call/Chat. The Customer Wallet will not be reserved until you start.' });
       }
