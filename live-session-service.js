@@ -2128,7 +2128,7 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!auth) return;
     try {
       const result = await endSession(req.params.id, auth.user.uid, String(req.body?.reason || 'participant_ended').slice(0, 80), false);
-      const response = { success: result.success, alreadyProcessed: result.alreadyProcessed, session: result.session };
+      const response = { success: result.success, alreadyProcessed: result.alreadyProcessed, session: liveSessionSafeView(req.params.id, result.session) };
       if (String(result.session?.customerUid || '') === String(auth.user.uid || '')) response.wallet = result.wallet;
       return res.set('Cache-Control', 'no-store').json(response);
     } catch (error) { return replyError(res, error, 'Unable to end the Live Session safely.'); }
