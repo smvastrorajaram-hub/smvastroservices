@@ -723,8 +723,10 @@ app.post("/register-customer-profile", async (req, res) => {
         await db.runTransaction(async tx => {
           const publicIdRef = db.collection("smv_public_ids").doc(publicId);
           const walletRef = db.collection("smv_wallets").doc(user.uid);
-          // Read the Wallet and registration document before the phone-claim helper begins writes.
-          const [publicIdSnap, walletSnap] = await Promise.all([tx.get(publicIdRef), tx.get(walletRef)]);
+          // Wallet creation stays on Project 1 only before cutover; after cutover the
+          // Wallet service lazily creates it in the same domain as all later debits/credits.
+          const walletRead = multiProjectFirestore.walletDomainCutoverComplete ? Promise.resolve({ exists: false }) : tx.get(walletRef);
+          const [publicIdSnap, walletSnap] = await Promise.all([tx.get(publicIdRef), walletRead]);
           if (publicIdSnap.exists) throw publicIdCollisionError();
           // This helper performs the last transaction read and then claims the unique phone.
           await claimUniquePhoneInTransaction(tx, phoneNorm, user.uid, "customer");
