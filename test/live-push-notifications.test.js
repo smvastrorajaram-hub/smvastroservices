@@ -49,7 +49,8 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   assert.ok(service.includes("const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;"));
   assert.ok(service.includes("currentStatus === 'accepted' && !appointment.liveSessionId && Date.now() >= startDeadlineAt"));
   assert.ok(service.includes("code: 'SCHEDULED_START_WINDOW_EXPIRED', bookingStatus: 'missed_by_astrologer'"));
-  assert.ok(frontend.includes("const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time;"));
+  assert.ok(frontend.includes("const startDeadline=Number.isFinite(time)?time+120_000:NaN;"));
+  assert.ok(frontend.includes("const startReady=status==='accepted'&&Number.isFinite(time)&&Date.now()>=time&&Date.now()<startDeadline;"));
   assert.ok(bookingServer.includes('const scheduleEpoch=Date.parse(preferredDate+"T"+preferredTime+":00+05:30")'));
   assert.ok(bookingServer.includes('scheduleEpoch<=Date.now()'));
   assert.ok(service.includes('const scheduledAt = utc - 330 * 60 * 1000;'));
