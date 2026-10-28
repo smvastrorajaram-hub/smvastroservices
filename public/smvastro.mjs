@@ -1511,7 +1511,7 @@ async function smvLoadCustomerWallet(){
      const label=String(t.type||'transaction').replace(/_/g,' ');
      const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
      const status=String(t.status||'posted');
-     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="'+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
     }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
    }
   }catch(error){
