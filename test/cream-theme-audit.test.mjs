@@ -98,9 +98,19 @@ test('customer Wallet transaction amounts use readable red/green bold styling', 
   assert.ok(contrastRatio('#b91c1c','#fff8e7') >= 4.5, 'red debits must meet WCAG AA contrast');
 });
 
+test('shared UI stylesheet must not override hero and content headings with pale gold', () => {
+  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.feature-top h2\\{[\\s\\S]*?font-weight:900!important;[\\s\\S]*?color:#20170f!important;[\\s\\S]*?-webkit-text-fill-color:#20170f!important;[\\s\\S]*?opacity:1!important/i);
+  assert.match(sharedCss, /html body\\.smv-v12-theme #home \\.smv33-mobile-head \\.smv33-kicker\\{[\\s\\S]*?color:#20170f!important;[\\s\\S]*?-webkit-text-fill-color:#20170f!important;[\\s\\S]*?font-weight:900!important/i);
+  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.smv-v173-subhead\\{[\\s\\S]*?color:#6b4b1e!important;[\\s\\S]*?-webkit-text-fill-color:#6b4b1e!important/i);
+  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.smv-v173-sub-collapse\\{[\\s\\S]*?color:#6b4b1e!important;[\\s\\S]*?-webkit-text-fill-color:#6b4b1e!important/i);
+  assert.ok(!sharedCss.includes('color:#f3d99b!important;\\n  -webkit-text-fill-color:#f3d99b!important;'), 'content heading must not reintroduce pale gold');
+  assert.ok(!sharedCss.includes('color:#f3d99b!important;\\n    -webkit-text-fill-color:#f3d99b!important;'), 'mobile hero kicker must not reintroduce pale gold');
+  assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
+});
+
 test('main page cache versions point to the audited theme assets', () => {
   assert.match(html, /smvastro\.css\?v=20261028-cream-content-contrast-v6/);
-  assert.match(html, /smv-ui\.css\?v=20261028-cream-background-v2/);
+  assert.match(html, /smv-ui\.css\?v=20261028-cream-content-contrast-v3/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
 });
