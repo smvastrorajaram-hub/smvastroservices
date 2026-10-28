@@ -787,7 +787,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   assert.ok(frontend.includes('const SMV_LIVE_SESSION_STATE_RANK=Object.freeze({ringing:0,preparing:1,connecting:2,active:3,ended:4});'));
   assert.ok(merge.includes('incomingRank<previousRank'));
   assert.ok(merge.includes("previousState==='ended'&&incomingState!=='ended'"));
-  const applyStart = frontend.indexOf('function smvLiveApplySession(session){');
+  const applyStart = frontend.indexOf('function smvLiveApplySession(session,wallet=null){');
   const applyEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', applyStart);
   const apply = frontend.slice(applyStart, applyEnd);
   assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
@@ -951,7 +951,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
   assert.ok(frontend.includes("historyLoadWarning='Server history could not be refreshed. The transcript below includes messages already loaded in this session.';"));
-  const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
+  const applyStart=frontend.indexOf('function smvLiveApplySession(session,wallet=null){');
   const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
   assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
 });
