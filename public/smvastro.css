@@ -2608,8 +2608,8 @@ html body.smv-v12-theme #modal #modalContent .auth-hero-icon img{display:block!i
 html body.smv-v12-theme .feature-section:where(:not(.smv-css-island,.smv-css-island *))::before{content:""!important;display:block!important;width:22px!important;height:22px!important;margin:0px auto 6px!important;background:url("./assets/smv-brand-logo.png") center center / contain no-repeat!important}
 html body.smv-v12-theme .feature-section:where(:not(.smv-css-island,.smv-css-island *))::before{border-radius:50%!important;overflow:hidden!important}
 html body.smv-v12-theme #faq#faq > h2, html body.smv-v12-theme #english-horoscope#english-horoscope > .card > h2, html body.smv-v12-theme #about #aboutTitle, html body.smv-v12-theme :is(#smv-heading-v18, .smv-new-asknow-kicker), html body.smv-v12-theme .smv-master-service[href="#english-horoscope"] strong{color:#6b4b1e!important}
-html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead{background:transparent!important;border-color:rgb(243, 221, 228)!important;color:#6b4b1e!important;text-shadow:none!important;filter:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
-html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead > span{color:#6b4b1e!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead{background:transparent!important;border-color:rgb(243, 221, 228)!important;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important;text-shadow:none!important;filter:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+html body.smv-v12-theme #smv-content-hub#smv-content-hub .smv-v173-subhead > span{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
 #generateEnglishHoroscope::before, #generateTamilHoroscope::before{content:"";display:inline-block;width:22px;height:22px;flex:0 0 22px;vertical-align:middle;margin-right:7px;border-radius:50%;background:url("./assets/smv-brand-logo.png") center center / contain no-repeat;overflow:hidden}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult){--smv-action-pink:#a80000;--smv-action-yellow:#a80000}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult):is(#englishHoroscopeResult, #tamilHoroscopeResult) :is(button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)), .btn, .dasha-head, .smv-advanced-part-title, .smv-advanced-quick-card){background:none rgb(168, 0, 0)!important;border-color:rgb(168, 0, 0)!important;font-weight:800!important}
@@ -2666,7 +2666,7 @@ html body.smv-v12-theme .registration-icon:where(:not(.smv-css-island,.smv-css-i
 #smv24-footer h2 span{color:#6b4b1e}
 #smv24-footer .smv24-brand p{font:22px / 1.4 Georgia, serif;margin:0px auto 10px;color:#30251b}
 .smv24-brand small{letter-spacing:0.22em;font-size:12px}
-.smv24-brand em{display:block;font:italic 25px / 1.5 Georgia, serif;color:#ffe2a0;margin:14px auto 28px;text-shadow:none}
+.smv24-brand em{display:block;font:italic 25px / 1.5 Georgia, serif;font-weight:900;color:#30251b;margin:14px auto 28px;text-shadow:none}
 .smv24-columns{display:grid;grid-template-columns:repeat(3, 1fr);gap:32px;padding:20px 0px 28px}
 #smv24-footer h3{color:#6b4b1e;font-size:22px;margin:0px 0px 14px}
 #smv24-footer a{color:#30251b;text-decoration:none}
@@ -2945,7 +2945,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important} #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 #approved-astrologers > .home-rule{display:none!important}
-#approved-astrologers h2, #smv-content-hub h2{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important}
+#approved-astrologers h2, #smv-content-hub h2{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important}
 #approved-astrologers h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
 #astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
@@ -3289,7 +3289,7 @@ html body.smv-v12-theme #home .smv33-photo{display:block}
 html body.smv-v12-theme #home .smv33-mobile-head{display:none}
 html body.smv-v12-theme #home .smv33-desktop-head{display:block}
 html body.smv-v12-theme #home .smv33-copy{left:8%;right:auto;top:5.5%;bottom:auto;transform:none;width:84%;max-width:1100px;min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;color:#30251b;text-shadow:none}
-html body.smv-v12-theme #home .smv33-kicker{margin:0 0 13px;color:#30251b;font-size:clamp(13px,1vw,15px);font-weight:900;letter-spacing:.04em;text-shadow:none}
+html body.smv-v12-theme #home .smv33-kicker{margin:0 0 13px;color:#30251b!important;-webkit-text-fill-color:#30251b!important;font-size:clamp(13px,1vw,15px);font-weight:900!important;letter-spacing:.04em;text-shadow:none}
 html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(32px,3.7vw,54px);line-height:1.07;margin:0 0 15px;color:#30251b;font-weight:800;text-shadow:none}
 html body.smv-v12-theme #home .smv33-copy h1 span{color:#6b4b1e;font-weight:800}
 html body.smv-v12-theme #home .smv33-copy p{font-size:clamp(15px,1.22vw,18px);line-height:1.5;margin:0 0 12px;color:#30251b;text-shadow:none;max-width:100%}
@@ -3978,7 +3978,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-copy{position:absolute;z-index:3;left:12px;right:12px;top:auto;bottom:12px;width:auto;min-height:0;margin:0;padding:clamp(8px,3vw,12px) clamp(14px,4vw,22px) clamp(12px,3vw,16px);box-sizing:border-box;color:#30251b;background:transparent;border:0;border-radius:0;box-shadow:none;transform:none;text-align:left;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-mobile-head{display:block;}
   html body.smv-v12-theme #home .smv33-desktop-head{display:none;}
-  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#30251b;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3vw,15px);line-height:1.35;font-weight:900;letter-spacing:.04em;text-transform:uppercase;text-shadow:none;}
+  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#30251b!important;-webkit-text-fill-color:#30251b!important;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3vw,15px);line-height:1.35;font-weight:900!important;letter-spacing:.04em;text-transform:uppercase;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1{margin:0 0 15px;color:#30251b;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,8vw,38px);line-height:1.12;font-weight:800;letter-spacing:-.15px;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1 span{color:#6b4b1e;font-weight:800;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy p{margin:0 0 10px;color:#30251b;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3.6vw,16px);line-height:1.53;font-weight:500;text-shadow:none;}
@@ -4054,7 +4054,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     text-align:center!important;
     font-size:clamp(22px,6.5vw,29px)!important;
     line-height:1.28!important;
-    font-weight:700!important;
+    font-weight:900!important;
     color:#30251b!important;
     -webkit-text-fill-color:#30251b!important;
     text-shadow:none!important;
