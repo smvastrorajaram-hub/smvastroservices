@@ -577,7 +577,7 @@ header .nav nav > #horoscopeNav, header .nav nav > #contentNav, header .nav nav 
 #modal.profile-modal-active .profile-dialog{max-height:calc(100dvh - 52px);min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;display:flex;flex-direction:column;align-items:stretch;text-align:left}
 #modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog){color:#2d1919!important;-webkit-text-fill-color:#2d1919!important}
 #modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) :where(h2,h3,h4,p,b,strong,label,.small){color:#2d1919!important;-webkit-text-fill-color:#2d1919!important;opacity:1!important}
-#modal.profile-modal-active .profile-dialog :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:#fff;color:#2d1919;-webkit-text-fill-color:#2d1919;caret-color:#2d1919;border-color:#b9a17b;max-width:100%;min-width:0;box-sizing:border-box}
+#modal.profile-modal-active .profile-dialog :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:#fffaf0;color:#2d1919;-webkit-text-fill-color:#2d1919;caret-color:#2d1919;border-color:#b9a17b;max-width:100%;min-width:0;box-sizing:border-box}
 #modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) .btn:not(.gray){background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#d4af37!important}
 #modal.profile-modal-active .profile-dialog:not(.smv-call-booking-dialog):not(.smv-live-birth-dialog) .btn.gray{background:#f5e8c9!important;color:#321a1a!important;-webkit-text-fill-color:#321a1a!important;border-color:#a88a4a!important}
 #modal.profile-modal-active .smv-live-birth-dialog{max-height:calc(100dvh - 40px);min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px 12px calc(16px + env(safe-area-inset-bottom));overscroll-behavior:contain}
@@ -913,13 +913,13 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 .smv-part-tap:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important}
 .smv-part-chevron:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}}
 .smv-install-app-section{width:100%;box-sizing:border-box;margin:22px auto 10px;padding:0px 16px}
-.smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:linear-gradient(rgb(255, 250, 240), rgb(255, 253, 248));box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
+.smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:#fff8e7;box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
 .smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:0;overflow:visible;border:0;background:transparent;display:grid;place-items:center}
 .smv-install-app-icon{width:64px;height:64px;display:block;object-fit:contain;border-radius:0;background:transparent}
 .smv-install-app-copy{min-width:0px;flex:1 1 0%}
 .smv-install-app-copy h3:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 4px!important;font-size:18px!important;line-height:1.25!important;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important}
 .smv-install-app-copy p:where(:not(.smv-css-island,.smv-css-island *)){margin:0px!important;font-size:13px!important;line-height:1.45!important;color:#6b6257!important;-webkit-text-fill-color:#6b6257!important}
-.smv-install-app-help{margin-top:5px;font-size:12px;line-height:1.4;color:#f3d99b;-webkit-text-fill-color:#f3d99b}
+.smv-install-app-help{margin-top:5px;font-size:12px;line-height:1.4;color:#6b4b1e;-webkit-text-fill-color:#6b4b1e}
 .smv-install-app-btn{flex:0 0 auto;border:1px solid rgb(139, 0, 0);border-radius:10px;padding:11px 16px;min-height:44px;background:rgb(139, 0, 0);color:rgb(255, 255, 255);font-weight:900;letter-spacing:0.3px;cursor:pointer;white-space:nowrap}
 .smv-install-app-btn:hover{filter:brightness(1.08)}
 .smv-install-app-btn:disabled{opacity:0.6;cursor:default}
@@ -1101,7 +1101,7 @@ header nav #authBtn.smv-logout-btn{background:none rgb(139, 44, 255)!important;b
 @media (max-width: 767px){
 .smv-v172-collapse-btn:where(:not(.smv-css-island,.smv-css-island *)){width:30px!important;height:30px!important;min-height:30px!important;font-size:16px!important;line-height:30px!important;right:8px!important;top:8px!important}}
 #faq{position:relative!important}
-#faq .smv-v174-faq-toggle{position:absolute!important;right:12px!important;top:42px!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;padding:0px!important;margin:0px!important;border:0px!important;border-radius:0px!important;background:transparent!important;color:#dfbd73!important;-webkit-text-fill-color:#dfbd73!important;font:800 17px / 30px Arial, sans-serif!important;cursor:pointer!important;z-index:6!important;box-shadow:none!important;text-align:center!important}
+#faq .smv-v174-faq-toggle{position:absolute!important;right:12px!important;top:42px!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;padding:0px!important;margin:0px!important;border:0px!important;border-radius:0px!important;background:transparent!important;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font:800 17px / 30px Arial, sans-serif!important;cursor:pointer!important;z-index:6!important;box-shadow:none!important;text-align:center!important}
 #faq .smv-v174-faq-toggle:hover{background:transparent!important;}
 #faq.smv-v174-faq-collapsed > .faq-list{display:none!important}
 header nav:where(:not(.smv-css-island,.smv-css-island *)){gap:7px!important;margin:0px auto!important;box-sizing:border-box!important}
@@ -1747,20 +1747,20 @@ h4:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-gold)!important;text-shadow:rgba(255, 255, 255, 0.9) 0px 1px 0px!important}
 .home-rule:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important;letter-spacing:2.5px!important}
 .home-rule span:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(rgb(255, 254, 250) 0%, rgb(255, 248, 234) 100%)!important;border-bottom:2px solid var(--smv-gold)!important;box-shadow:rgba(101, 16, 16, 0.1) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;border-bottom:2px solid var(--smv-gold)!important;box-shadow:rgba(101, 16, 16, 0.1) 0px 4px 18px!important}
 header .brand-text .logo:where(:not(.smv-css-island,.smv-css-island *)), header .brand-text .logo a:where(:not(.smv-css-island,.smv-css-island *)){color:var(--smv-red)!important;font-weight:900!important;letter-spacing:1px!important}
 header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(138, 104, 38)!important;font-weight:800!important;letter-spacing:1.5px!important}
 header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(135deg, rgb(156, 34, 32), rgb(113, 18, 18))!important;color:rgb(255, 253, 247)!important;border:1px solid rgb(209, 166, 76)!important;box-shadow:rgba(101, 16, 16, 0.2) 0px 4px 12px!important;font-weight:900!important;letter-spacing:0.25px!important;text-shadow:rgba(0, 0, 0, 0.28) 0px 1px 1px!important}
 header nav a:hover:where(:not(.smv-css-island,.smv-css-island *)), header nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):hover:where(:not(.smv-css-island,.smv-css-island *)), header nav .btn:hover:where(:not(.smv-css-island,.smv-css-island *)){transform:translateY(-1px);background:linear-gradient(135deg, rgb(179, 50, 39), rgb(122, 17, 17))!important;border-color:rgb(240, 204, 112)!important}
 header nav #authBtn.smv-logout-btn{background:linear-gradient(135deg, rgb(181, 47, 47), rgb(127, 21, 21))!important;border-color:rgb(214, 173, 85)!important}
-.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:where(:not(.smv-css-island,.smv-css-island *)), section .card:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.96)!important;border:1.5px solid var(--smv-border)!important;border-radius:18px!important;box-shadow:var(--smv-shadow)!important}
+.card:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:where(:not(.smv-css-island,.smv-css-island *)), section .card:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;border:1.5px solid var(--smv-border)!important;border-radius:18px!important;box-shadow:var(--smv-shadow)!important}
 .card:hover:where(:not(.smv-css-island,.smv-css-island *)), .feature-section:not(#faq) details:hover:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgba(184, 134, 45, 0.72)!important;box-shadow:rgba(101, 16, 16, 0.15) 0px 14px 34px!important}
 #faq h2{color:var(--smv-red)!important}
 #faq h2:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
-#faq summary{color:#f3d99b!important}
+#faq summary{color:#6b4b1e!important}
 #faq summary:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
 #faq details[open] summary{color:#FF2D93!important;-webkit-text-fill-color:#FF2D93!important;font-weight:900!important}
-#faq details p{color:#c4ccdc!important}
+#faq details p{color:#6b6257!important}
 #faq details p:where(:not(.smv-type-root,.smv-type-root *)){font-weight:600!important}
 input[type="button"]:where(:not(.smv-css-island,.smv-css-island *)),
 input[type="submit"]:where(:not(.smv-css-island,.smv-css-island *)),
@@ -1934,7 +1934,7 @@ section > h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type
 .btn:not(.smv-modal-action):hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(176, 0, 0)!important;transform:none!important;box-shadow:rgba(120, 0, 0, 0.18) 0px 2px 7px!important}
 .btn.alt:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:rgb(143, 0, 0)!important;border-color:rgb(143, 0, 0)!important}
 .btn.gray:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(245, 245, 245)!important;color:rgb(68, 68, 68)!important;border-color:rgb(204, 204, 204)!important}
-input:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
+input:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)){background:#fffaf0!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)){outline:rgba(152, 0, 0, 0.1) solid 2px!important;border-color:rgb(152, 0, 0)!important}
 .password-toggle:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
 .password-toggle:hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important}
@@ -2315,14 +2315,14 @@ dd:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv
 dt:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 label:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Arial, Helvetica, sans-serif!important;font-weight:400!important}
 main:where(:not(.smv-css-island,.smv-css-island *)), section:where(:not(.smv-css-island,.smv-css-island *)), article:where(:not(.smv-css-island,.smv-css-island *)), .container:where(:not(.smv-css-island,.smv-css-island *)), #faq:where(:not(.smv-css-island,.smv-css-island *)), #contact:where(:not(.smv-css-island,.smv-css-island *)), #content:where(:not(.smv-css-island,.smv-css-island *)), #about:where(:not(.smv-css-island,.smv-css-island *)), #dashboard:where(:not(.smv-css-island,.smv-css-island *)), #admin:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent:where(:not(.smv-css-island,.smv-css-island *)), #adminContent:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important}
-header:where(:not(.smv-css-island,.smv-css-island *)), .navbar:where(:not(.smv-css-island,.smv-css-island *)), .topbar:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;position:sticky!important;background:rgba(9,16,34,.94)!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
+header:where(:not(.smv-css-island,.smv-css-island *)), .navbar:where(:not(.smv-css-island,.smv-css-island *)), .topbar:where(:not(.smv-css-island,.smv-css-island *)){top:0;z-index:1000;position:sticky!important;background:#fff8e7!important;border-bottom:1px solid rgba(223,189,115,.18)!important;box-shadow:0 8px 26px rgba(0,0,0,.20)!important}
 header a:where(:not(.smv-css-island,.smv-css-island *)), .navbar a:where(:not(.smv-css-island,.smv-css-island *)), .topbar a:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 255, 255)!important}
 .btn:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border:1px solid rgb(139, 0, 0)!important;border-radius:6px!important;box-shadow:none!important;text-shadow:none!important}
 .btn:not(.smv-modal-action):hover:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(178, 34, 34)!important;color:rgb(255, 255, 255)!important;border-color:rgb(178, 34, 34)!important;box-shadow:none!important}
 .btn:not(.smv-modal-action):active:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(112, 0, 0)!important;border-color:rgb(112, 0, 0)!important}
 .btn.active:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)){background:rgb(139, 0, 0)!important;color:rgb(255, 255, 255)!important;border-color:rgb(139, 0, 0)!important;box-shadow:none!important}
 .btn.danger:not(.smv-modal-action):where(:not(.smv-css-island,.smv-css-island *)), .smv-dialog-actions .btn.danger:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(160, 0, 0)!important;border-color:rgb(160, 0, 0)!important;color:rgb(255, 255, 255)!important}
-input:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
+input:where(:not(.smv-css-island,.smv-css-island *)), textarea:where(:not(.smv-css-island,.smv-css-island *)), select:where(:not(.smv-css-island,.smv-css-island *)){background:#fffaf0!important;color:#182338!important;border:1px solid rgb(207, 207, 207)!important;border-radius:6px!important;box-shadow:none!important;-webkit-text-fill-color:#182338!important;caret-color:#182338!important;}
 input:focus:where(:not(.smv-css-island,.smv-css-island *)), textarea:focus:where(:not(.smv-css-island,.smv-css-island *)), select:focus:where(:not(.smv-css-island,.smv-css-island *)){border-color:rgb(139, 0, 0)!important;outline:rgba(139, 0, 0, 0.1) solid 2px!important;box-shadow:none!important}
 input::placeholder:where(), textarea::placeholder:where(){color:#687386!important;-webkit-text-fill-color:#687386!important;}
 .auth-field-label:where(:not(.smv-css-island,.smv-css-island *)), label:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important;-webkit-text-fill-color:#6b6257!important}
@@ -2567,7 +2567,7 @@ html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-cs
 /* Legacy desktop header reset. Scoping it to desktop prevents this high-specificity
    rule from cancelling the dedicated mobile burgundy/gold button design below. */
 @media (min-width: 900px){
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;text-shadow:none!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#30251b!important;-webkit-text-fill-color:#30251b!important;text-shadow:none!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:#30251b!important;-webkit-text-fill-color:#30251b!important}
 }
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:#dfbd73!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
@@ -2888,9 +2888,9 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){min-width:0px!impo
 :root{--smv-red:#dfbd73;--smv-deep:#8e6b3e;--smv-gold:#f0d493;--smv-yellow:#f0d493;--smv-navy:#30251b;--smv-text:#30251b;--smv-muted:#6b6257;--smv-cream:#fff8e7;--smv-pink:#241f3b;--smv-line:rgba(223,189,115,.18);--smv-white:#f4eddf;--smv-shadow:none}
 html{scroll-behavior:smooth}
 body:where(:not(.smv-css-island,.smv-css-island *)){overflow-x:hidden;color:var(--smv-navy)!important}
-.smv-master-top{background:linear-gradient(90deg, rgb(239, 10, 70), rgb(195, 0, 57));color:rgb(255, 255, 255)}
+.smv-master-top{background:#fff8e7;color:#30251b}
 .smv-master-topin{max-width:1320px;margin:auto;padding:7px 24px;display:flex;justify-content:space-between;gap:18px;font-size:0.72rem}
-header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:none;position:sticky!important;background:rgba(255, 255, 255, 0.97)!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){top:0px;z-index:1000;backdrop-filter:none;position:sticky!important;background:#fff8e7!important;border-bottom:1px solid rgb(240, 230, 227)!important;box-shadow:rgba(40, 23, 31, 0.055) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:74px;margin:auto!important;gap:20px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){object-fit:contain;width:48px!important;height:48px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){font-size:1.22rem!important;color:var(--smv-red)!important;letter-spacing:0.025em!important}
@@ -2908,34 +2908,34 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-art::after{content:"";position:absolute;inset:0px;pointer-events:none;background:linear-gradient(90deg, rgba(255, 249, 242, 0.3), transparent 24%), linear-gradient(0deg, rgba(68, 28, 17, 0.08), transparent 28%)}
 .smv-master-services{max-width:1260px;margin:0px auto;padding:16px 24px 18px;display:grid;grid-template-columns:repeat(4, minmax(0px, 1fr));gap:13px}
 .smv-products-store-section{max-width:1260px;margin:clamp(22px,3vw,38px) auto 44px;padding:clamp(24px,3.5vw,42px);scroll-margin-top:90px;box-sizing:border-box;border:0;border-radius:0;background:#fff8e7;box-shadow:none;text-align:center}
-.smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#f3d99b;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+.smv-products-store-kicker{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 10px;color:#6b4b1e;font:800 10px/1.5 Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase}
 .smv-products-store-kicker::before,.smv-products-store-kicker::after{width:20px;height:1px;content:"";background:#c6a45c}
-#smv-products-store-section h2{margin:0 0 12px;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
-.smv-products-store-description{max-width:700px;margin:0 auto;color:#b8c3d4;font:400 14px/1.8 Arial,sans-serif}
+#smv-products-store-section h2{margin:0 0 12px;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font:800 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em;font-family:Georgia,"Noto Sans Tamil",serif;}
+.smv-products-store-description{max-width:700px;margin:0 auto;color:#6b6257;font:400 14px/1.8 Arial,sans-serif}
 .smv-products-store-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;max-width:1080px;margin:24px auto 18px}
-#smv-products-store-section .smv-products-item{display:flex;min-width:0;align-items:center;justify-content:center;gap:14px;padding:12px clamp(5px,1.2vw,20px);color:#f2eddf;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:transform .18s ease;background:transparent;border:0;border-radius:0;box-shadow:none;}
+#smv-products-store-section .smv-products-item{display:flex;min-width:0;align-items:center;justify-content:center;gap:14px;padding:12px clamp(5px,1.2vw,20px);color:#30251b;text-align:left;text-decoration:none;-webkit-text-fill-color:currentColor;transition:transform .18s ease;background:transparent;border:0;border-radius:0;box-shadow:none;}
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 #smv-products-store-section .smv-products-item:hover{transform:translateY(-2px)}
 #smv-products-store-section .smv-products-item:focus-visible{outline:3px solid #9c2640;outline-offset:4px;border-radius:12px}
 .smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}.smv-products-logo{display:block;width:100%;height:100%;max-width:none;min-width:0;aspect-ratio:1/1;object-fit:contain;object-position:center;padding:0;border:0;border-radius:0;background:transparent;clip-path:none}
 .smv-products-item-copy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
-#smv-products-store-section .smv-products-item-copy>strong{color:#f3d99b;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
-#smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#c4ccdc;font:700 11px/1.4 Arial,sans-serif}
+#smv-products-store-section .smv-products-item-copy>strong{color:#6b4b1e;font:800 clamp(12px,1.35vw,16px)/1.3 Arial,sans-serif;letter-spacing:.015em}
+#smv-products-store-section .smv-products-item-copy>span{display:inline-flex;align-items:center;gap:5px;color:#6b6257;font:700 11px/1.4 Arial,sans-serif}
 #smv-products-store-section .smv-products-item-copy>span span{font-size:16px}
-.smv-products-store-note{margin:12px 0 0;color:#c4ccdc;-webkit-text-fill-color:#c4ccdc;font:400 11px/1.6 Arial,sans-serif}
+.smv-products-store-note{margin:12px 0 0;color:#6b6257;-webkit-text-fill-color:#6b6257;font:400 11px/1.6 Arial,sans-serif}
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){min-height:166px;padding:22px 18px;border:0;border-radius:0;text-align:center;box-shadow:none;transition:0.2s;text-decoration:none!important;color:#30251b!important;background:transparent;}
 .smv-master-service:nth-child(2n+1){background:transparent}
 .smv-master-service:nth-child(2n){background:transparent}
 .smv-master-service:hover{transform:translateY(-3px)}
-.smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:rgb(255, 255, 255);color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
+.smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:#fffaf0;color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
 .smv-master-service strong{display:block;font-size:1rem;margin-bottom:7px}
 .smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116);color:#6b6257;}
 #askNowSection.smv-new-asknow{margin:0px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff8e7!important;}
 #askNowSection .smv-new-asknow-inner{max-width:1320px!important;padding:38px 24px 22px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
-.smv-new-asknow-kicker:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 219, 118)!important}
+.smv-new-asknow-kicker:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important}
 .smv-new-asknow h2:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important}
 .smv-new-asknow h2:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-family:Georgia, serif!important;font-size:clamp(1.85rem, 3vw, 2.7rem)!important}
-.smv-new-asknow p:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 241, 245)!important;max-width:650px}
+.smv-new-asknow p:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;max-width:650px}
 .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-css-island,.smv-css-island *)){background:var(--smv-yellow)!important;color:rgb(64, 38, 0)!important;border:0px!important;border-radius:999px!important;padding:13px 25px!important}
 .smv-master-cats{max-width:1320px;margin:auto;padding:0px 24px 30px;display:grid;grid-template-columns:repeat(7, 1fr);gap:12px}
 .smv-master-cat{text-align:center;color:#30251b}
@@ -2943,12 +2943,12 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important} #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 #approved-astrologers > .home-rule{display:none!important}
-#approved-astrologers h2, #smv-content-hub h2{color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important}
+#approved-astrologers h2, #smv-content-hub h2{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important}
 #approved-astrologers h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
 #astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .feature-shell.card:where(:not(.smv-css-island,.smv-css-island *)){padding:24px!important}
-.smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:12px!important;border-radius:0!important;box-shadow:none!important;color:#dfbd73!important;}
+.smv-v173-subhead:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:12px!important;border-radius:0!important;box-shadow:none!important;color:#6b4b1e!important;}
 .smv-master-proof{max-width:1260px;margin:auto;padding:12px 24px 42px;display:grid;grid-template-columns:repeat(4, 1fr)}
 .smv-master-proof div{text-align:center;padding:18px;border-right:1px solid rgb(238, 238, 238)}
 .smv-master-proof div:last-child{border:0px}
@@ -2960,7 +2960,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-footer-in{max-width:1320px;margin:auto;padding:40px 24px;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:38px}
 .smv-master-footer h3{font-size:1.45rem;margin:0px 0px 5px}
 .smv-master-footer h4{color:rgb(255, 243, 174);margin:0px 0px 10px}
-.smv-master-footer p:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-footer a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.78rem;line-height:1.7;color:rgb(255, 237, 243)!important}
+.smv-master-footer p:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-footer a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.78rem;line-height:1.7;color:#30251b!important}
 .smv-master-links{display:grid;gap:3px}
 footer:not(.smv-master-footer):not(#smv24-footer){display:none!important}
 @media (max-width: 900px){
@@ -2974,10 +2974,10 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-art::after{background:linear-gradient(0deg, rgba(255, 255, 255, 0.05), transparent)}
 .smv-master-services{grid-template-columns:repeat(2, minmax(0px, 1fr));padding:12px;gap:9px}
 .smv-products-store-section{margin:18px auto 24px;padding:22px 16px;border-radius:0;border:0;box-shadow:none;background:#fff8e7;}
-#smv-products-store-section h2{font-size:clamp(27px,7vw,34px);color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-family:Georgia,"Noto Sans Tamil",serif;letter-spacing:-.035em;}
-.smv-products-store-description{font-size:13px;line-height:1.75;color:#b8c3d4;}
+#smv-products-store-section h2{font-size:clamp(27px,7vw,34px);color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-family:Georgia,"Noto Sans Tamil",serif;letter-spacing:-.035em;}
+.smv-products-store-description{font-size:13px;line-height:1.75;color:#6b6257;}
 .smv-products-store-links{grid-template-columns:1fr;max-width:420px;margin:18px auto 14px}
-#smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
+#smv-products-store-section .smv-products-item{justify-content:flex-start;padding:14px 4px;color:#30251b;background:transparent;border:0;border-radius:0;box-shadow:none;}
 #smv-products-store-section .smv-products-item+.smv-products-item{border:0}
 .smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:15px}
@@ -2996,13 +2996,13 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-services{padding:10px 9px}
 .smv-products-store-section{padding:20px 13px;border:0;border-radius:0;box-shadow:none;background:#fff8e7;}
 .smv-products-store-links{margin-top:16px}
-#smv-products-store-section .smv-products-item{gap:12px;color:#f2eddf;background:transparent;border:0;border-radius:0;box-shadow:none;}
+#smv-products-store-section .smv-products-item{gap:12px;color:#30251b;background:transparent;border:0;border-radius:0;box-shadow:none;}
 .smv-products-logo-frame{position:relative;display:block;flex:0 0 auto;width:clamp(76px,7.8vw,96px);height:clamp(76px,7.8vw,96px);aspect-ratio:1/1;box-sizing:border-box;overflow:visible;border:0;border-radius:0;background:transparent}
 #smv-products-store-section .smv-products-item-copy>strong{font-size:14px}
 .smv-master-service{min-height:150px}}
 @media (prefers-reduced-motion: reduce){
 :where(:not(.smv-css-island,.smv-css-island *)){transition:none!important;scroll-behavior:auto!important}}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(238, 7, 80) 0%, rgb(207, 0, 61) 100%)!important}
+.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){letter-spacing:0.01em;max-width:1360px!important;padding:6px 28px!important;font-size:0.7rem!important}
 header:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.984)!important;border-bottom:1px solid rgb(240, 229, 226)!important;box-shadow:rgba(40, 22, 30, 0.067) 0px 7px 24px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1360px!important;min-height:82px!important;padding:10px 28px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:26px!important}
@@ -3053,7 +3053,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){background:linear-gradient(135deg, rgb(255, 216, 61), rgb(255, 197, 27))!important;color:rgb(23, 18, 11)!important}
 #askNowSection .smv-new-asknow-button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
-.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 220, 63)!important;opacity:1!important;text-shadow:rgba(0, 0, 0, 0.08) 0px 1px 0px!important}
+.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important;opacity:1!important;text-shadow:rgba(0, 0, 0, 0.08) 0px 1px 0px!important}
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){opacity:1!important;text-shadow:none!important}
 @media (max-width: 900px){
 #askNowSection .smv-new-asknow-inner{padding:28px 18px 24px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
@@ -3076,7 +3076,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){font-size:1rem!important}
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.84rem!important}}
 :root{--smv-pink:#ed0750;--smv-red:#c9003e;--smv-yellow:#ffd236;--smv-ink:#101a31}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(233, 0, 75), rgb(199, 0, 59))!important}
+.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
 header:where(:not(.smv-css-island,.smv-css-island *)){border-bottom:1px solid rgb(242, 229, 225)!important;box-shadow:rgba(44, 23, 32, 0.07) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:72px!important;padding:8px 24px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
@@ -3091,8 +3091,8 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;background:#fff8e7!important;}
 .smv-master-footer::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:35%;background:none!important;opacity:0!important;pointer-events:none}
 .smv-master-footer-in{position:relative;z-index:2}
-.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 221, 63)!important}
-.smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 77, 154)!important}
+.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important}
+.smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important}
 @media (max-width: 900px){
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!important}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:330px!important;background:linear-gradient(90deg, rgba(255, 246, 232, 0.06), transparent 20%), url("assets/smv-desktop-hero-rooted-final.jpg") center center / cover no-repeat!important}
@@ -3100,9 +3100,9 @@ header .nav:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!impo
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){padding-bottom:165px!important}}
 :root{--smv-r:#e90046;--smv-r2:#b90036;--smv-y:#ffd238;--smv-p:#ff3f91;--smv-ink:#30251b;--smv-cream:#fff8e7}
 body:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;color:#30251b!important}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(231, 7, 73), rgb(201, 0, 61))!important;color:rgb(255, 255, 255)!important}
+.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;color:#30251b!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;padding:7px 24px!important}
-header:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 255, 255)!important;border-bottom:1px solid rgb(240, 228, 224)!important;box-shadow:rgba(46, 23, 32, 0.06) 0px 5px 18px!important}
+header:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;border-bottom:1px solid rgb(240, 228, 224)!important;box-shadow:rgba(46, 23, 32, 0.06) 0px 5px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;min-height:78px!important;padding:9px 24px!important;gap:18px!important}
 .brand-logo:where(:not(.smv-css-island,.smv-css-island *)){width:52px!important;height:52px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(230, 7, 72)!important;font-size:1.42rem!important}
@@ -3135,8 +3135,8 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;position:relative!important;overflow:hidden!important;color:#30251b!important;}
 .smv-master-footer:where(:not(.smv-css-island,.smv-css-island *))::after{content:"";position:absolute;right:0px;top:0px;bottom:0px;width:34%;background:none!important;opacity:0!important;pointer-events:none!important}
 .smv-master-footer-in:where(:not(.smv-css-island,.smv-css-island *)){max-width:1320px!important;grid-template-columns:1.25fr 0.75fr 0.8fr 1.15fr!important;gap:26px!important;padding:34px 24px 28px!important;position:relative!important;z-index:2!important}
-.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 223, 62)!important;font-size:1.55rem!important}
-.smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 74, 154)!important;font-weight:900!important}
+.smv-master-footer h3:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important;font-size:1.55rem!important}
+.smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important;font-weight:900!important}
 .smv-master-footer p:where(:not(.smv-css-island,.smv-css-island *)), .smv-master-footer a:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;opacity:1!important}
 .smv-master-footer-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:125px!important;background:transparent!important}
 .smv-master-footer-art:where(:not(.smv-css-island,.smv-css-island *))::after{content:"May the stars bring you happiness";position:absolute!important;right:8px!important;bottom:10px!important;color:rgb(255, 244, 197)!important;font-family:Georgia, serif!important;font-size:1.05rem!important;font-style:italic!important;max-width:180px!important;text-align:right!important}
@@ -3167,7 +3167,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){padding:15px 8px!important;min-height:145px!important;border:0;border-radius:0;box-shadow:none;background:transparent;color:#30251b!important;}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:285px!important}}
 #smvPremiumHeaderV9, #smvPremiumHeaderV9 *{box-sizing:border-box}
-#smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:linear-gradient(115deg, #fff6df 0%, #f5dfbb 42%, #f6e3dd 76%, #fffaf2 100%);color:rgb(23, 25, 39);border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
+#smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:#fff8e7;color:rgb(23, 25, 39);border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
 #smvPremiumHeaderV9 .smv9-nav{max-width:1280px;min-height:78px;margin:auto;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 #smvPremiumHeaderV9 .smv9-brand{display:flex;align-items:center;gap:9px;flex:0 0 auto;text-decoration:none;color:inherit}
 #smvPremiumHeaderV9 .smv9-brand img{display:block;width:50px;height:50px;object-fit:contain}
@@ -3230,14 +3230,14 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-menu > *{min-width:0px!important;width:auto!important;margin:0px!important;justify-self:stretch!important;text-align:center!important}
 #smvPremiumHeaderV9 .smv9-menu .login, #smvPremiumHeaderV9 .smv9-menu .register{align-self:center!important;margin:0px!important}
 #smvPremiumHeaderV9 .smv9-menu .register{grid-area:auto!important}}
-#smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:none rgb(255, 255, 255)!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:rgb(23, 25, 39)!important;overflow:visible!important;position:relative!important;z-index:1000!important}
-#smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:rgb(255, 255, 255)!important}
+#smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:#fff8e7!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:rgb(23, 25, 39)!important;overflow:visible!important;position:relative!important;z-index:1000!important}
+#smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:#fff8e7!important}
 #smvPremiumHeaderV9 .smv9-brand{display:flex!important;align-items:center!important;gap:9px!important;min-width:max-content!important;margin:0px!important;padding:0px!important;background:transparent!important;border:0px!important;text-decoration:none!important}
 #smvPremiumHeaderV9 .smv9-brand img{display:block!important;width:72px!important;height:72px!important;max-width:72px!important;object-fit:cover!important;object-position:center!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;border:0!important;border-radius:50%!important;background:transparent!important}
 #smvPremiumHeaderV9 .smv9-brand span{display:flex!important;flex-direction:column!important;align-items:flex-start!important;line-height:1!important}
 #smvPremiumHeaderV9 .smv9-brand strong{display:block!important;color:rgb(213, 10, 69)!important;font:900 29px / 1 Georgia, "Times New Roman", serif!important;white-space:nowrap!important}
 #smvPremiumHeaderV9 .smv9-brand small{display:block!important;margin-top:5px!important;color:rgb(111, 82, 96)!important;font:650 10.5px / 1.15 Arial, sans-serif!important;white-space:nowrap!important}
-#smvPremiumHeaderV9 .smv9-menu{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:2px!important;width:auto!important;margin:0px!important;padding:0px!important;background:rgb(255, 255, 255)!important;border:0px!important;overflow:visible!important}
+#smvPremiumHeaderV9 .smv9-menu{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:2px!important;width:auto!important;margin:0px!important;padding:0px!important;background:#fff8e7!important;border:0px!important;overflow:visible!important}
 #smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0px!important;min-height:40px!important;height:auto!important;margin:0px!important;padding:10px 9px!important;background:none transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;color:rgb(23, 25, 39)!important;text-decoration:none!important;font:700 14px / 1 Arial, sans-serif!important;white-space:nowrap!important;opacity:1!important;visibility:visible!important;overflow:visible!important;position:relative!important}
 #smvPremiumHeaderV9 .smv9-menu > a.active{color:rgb(229, 0, 70)!important}
 #smvPremiumHeaderV9 .smv9-menu > a.active::after{content:""!important;display:block!important;position:absolute!important;left:9px!important;right:9px!important;bottom:1px!important;height:3px!important;background:rgb(229, 0, 70)!important;border-radius:10px!important}
@@ -3250,7 +3250,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-brand img{width:40px!important;height:40px!important;max-width:40px!important}
 #smvPremiumHeaderV9 .smv9-brand strong{font-size:24px!important}
 #smvPremiumHeaderV9 .smv9-brand small{font-size:9.5px!important}
-#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:rgb(255, 255, 255)!important}
+#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:#fff8e7!important}
 #smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){display:flex!important;min-height:38px!important;padding:8px 3px!important;font-size:11.5px!important;text-align:center!important;border-radius:0px!important}
 #smvPremiumHeaderV9 .smv9-menu > .hidden{display:none!important}
 #smvPremiumHeaderV9 .smv9-menu > .login{margin:0px!important;border:1.5px solid rgb(229, 0, 70)!important;border-radius:999px!important;background:rgb(255, 255, 255)!important;color:rgb(199, 0, 61)!important}
@@ -3259,7 +3259,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-nav{padding:9px 12px 10px!important}
 #smvPremiumHeaderV9 .smv9-brand{margin-bottom:8px!important}
 #smvPremiumHeaderV9 .smv9-menu{grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important}
-#smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){min-height:38px!important;padding:8px 2px!important;font-size:11px!important;color:rgb(23, 25, 39)!important;background:rgb(255, 255, 255)!important;border:0px!important}
+#smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){min-height:38px!important;padding:8px 2px!important;font-size:11px!important;color:rgb(23, 25, 39)!important;background:#fff8e7!important;border:0px!important}
 #smvPremiumHeaderV9 .smv9-menu > a.active{color:rgb(229, 0, 70)!important}
 #smvPremiumHeaderV9 .smv9-menu > .login{background:rgb(255, 255, 255)!important;border:1.5px solid rgb(229, 0, 70)!important;color:rgb(199, 0, 61)!important}
 #smvPremiumHeaderV9 .smv9-menu > .register{background:rgb(255, 209, 44)!important;color:rgb(36, 28, 0)!important;border:0px!important}}
@@ -3638,15 +3638,15 @@ html body.smv-legal-page.smv-sitemap-page:where(:not(.smv-css-island,.smv-css-is
 html body.smv-legal-page.smv-sitemap-page main:where(:not(.smv-css-island,.smv-css-island *)){width:auto!important;max-width:none!important;margin:12px!important;padding:24px 20px!important}
 html body.smv-legal-page.smv-sitemap-page nav.smv-sitemap-links:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:1fr!important;gap:0px!important;padding:14px 16px!important}
 html body.smv-legal-page.smv-sitemap-page nav.smv-sitemap-links > a:where(:not(.smv-css-island,.smv-css-island *)){font-size:14px!important;padding:9px 0px!important}}
-html body.smv-sitemap-page.smv-sitemap-v2:where(:not(.smv-css-island,.smv-css-island *)){background:#24103F!important;color:rgb(47, 37, 40)!important}
-html body.smv-sitemap-page.smv-sitemap-v2 main:where(:not(.smv-css-island,.smv-css-island *)){width:min(1080px, 100% - 32px)!important;max-width:1080px!important;margin:32px auto!important;padding:clamp(24px, 4vw, 48px)!important;box-sizing:border-box!important;background:rgb(255, 255, 255)!important;border:1px solid rgb(234, 219, 221)!important;border-radius:22px!important;box-shadow:rgba(94, 20, 30, 0.07) 0px 12px 34px!important;overflow:visible!important}
+html body.smv-sitemap-page.smv-sitemap-v2:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important;color:rgb(47, 37, 40)!important}
+html body.smv-sitemap-page.smv-sitemap-v2 main:where(:not(.smv-css-island,.smv-css-island *)){width:min(1080px, 100% - 32px)!important;max-width:1080px!important;margin:32px auto!important;padding:clamp(24px, 4vw, 48px)!important;box-sizing:border-box!important;background:#fff8e7!important;border:1px solid rgb(234, 219, 221)!important;border-radius:22px!important;box-shadow:rgba(94, 20, 30, 0.07) 0px 12px 34px!important;overflow:visible!important}
 html body.smv-sitemap-page.smv-sitemap-v2 .smv-sitemap-kicker:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 10px!important;color:rgb(125, 23, 34)!important;font-size:13px!important;font-weight:900!important;letter-spacing:2.4px!important;text-transform:uppercase!important}
 html body.smv-sitemap-page.smv-sitemap-v2 h1:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 12px!important;color:rgb(157, 17, 24)!important;font-size:clamp(34px, 6vw, 58px)!important;line-height:1.08!important;font-weight:900!important;letter-spacing:-1px!important}
 html body.smv-sitemap-page.smv-sitemap-v2 .smv-sitemap-intro:where(:not(.smv-css-island,.smv-css-island *)){max-width:760px!important;margin:0px 0px 34px!important;color:rgb(93, 82, 85)!important;font-size:clamp(16px, 2vw, 19px)!important;line-height:1.7!important}
 html body.smv-sitemap-page.smv-sitemap-v2 .smv-sitemap-section:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 30px!important;padding:0px!important;background:transparent!important;border:0px!important;box-shadow:none!important}
 html body.smv-sitemap-page.smv-sitemap-v2 .smv-sitemap-section h2:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 13px!important;padding:0px 0px 9px!important;border-bottom:2px solid rgb(157, 17, 24)!important;color:rgb(125, 23, 34)!important;font-size:clamp(20px, 3vw, 27px)!important;line-height:1.25!important;font-weight:900!important}
 html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links:where(:not(.smv-css-island,.smv-css-island *)){display:grid!important;grid-template-columns:repeat(2, minmax(0px, 1fr))!important;gap:10px!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;overflow:visible!important}
-html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;width:100%!important;min-width:0px!important;max-width:none!important;height:auto!important;min-height:82px!important;max-height:none!important;margin:0px!important;padding:14px 16px!important;box-sizing:border-box!important;background:rgb(255, 250, 245)!important;border:1px solid rgb(234, 215, 210)!important;border-radius:12px!important;box-shadow:none!important;color:rgb(125, 23, 34)!important;text-align:left!important;text-decoration:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;transform:none!important;flex:0 0 auto!important}
+html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a:where(:not(.smv-css-island,.smv-css-island *)){display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;width:100%!important;min-width:0px!important;max-width:none!important;height:auto!important;min-height:82px!important;max-height:none!important;margin:0px!important;padding:14px 16px!important;box-sizing:border-box!important;background:#fffaf0!important;border:1px solid rgb(234, 215, 210)!important;border-radius:12px!important;box-shadow:none!important;color:rgb(125, 23, 34)!important;text-align:left!important;text-decoration:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;transform:none!important;flex:0 0 auto!important}
 html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a strong:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;margin:0px 0px 4px!important;color:rgb(141, 16, 25)!important;font-size:15px!important;font-weight:900!important;line-height:1.35!important}
 html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;color:rgb(103, 91, 94)!important;font-size:13px!important;font-weight:500!important;line-height:1.45!important}
 html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a:hover:where(:not(.smv-css-island,.smv-css-island *)), html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a:focus:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(255, 244, 234)!important;border-color:rgb(205, 169, 159)!important;color:rgb(125, 23, 34)!important;box-shadow:none!important;transform:none!important;text-decoration:none!important}
@@ -4254,8 +4254,8 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{
     background:#ffd66b!important;
     border-color:#fff0b4!important;
-    color:#fff8e7!important;
-    -webkit-text-fill-color:#fff8e7!important;
+    color:#30251b!important;
+    -webkit-text-fill-color:#30251b!important;
   }
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register,
   html body.smv-v12-theme #smvPremiumHeaderV9 .smv9-menu > .register:is(:hover,:focus,:focus-visible,:active,.smv-nav-current,.active){
@@ -4343,16 +4343,16 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 
 /* Active Wallet Recharge Offers — Home and Customer Wallet */
 .smv-wallet-offers-banner[hidden]{display:none}
-.smv-wallet-offers-banner{display:grid;gap:16px;margin:22px auto 26px;padding:clamp(18px,3vw,30px);border:1px solid #c9b3ef;border-radius:22px;background:linear-gradient(135deg,#f7f1ff 0%,#fffdf7 54%,#f0e9ff 100%);color:#24103f;box-shadow:0 12px 34px rgba(45,16,79,.09);box-sizing:border-box}
+.smv-wallet-offers-banner{display:grid;gap:16px;margin:22px auto 26px;padding:clamp(18px,3vw,30px);border:1px solid #c9b3ef;border-radius:22px;background:#fff8e7;color:#24103f;box-shadow:0 12px 34px rgba(45,16,79,.09);box-sizing:border-box}
 .smv-wallet-offers-banner-head{text-align:center;max-width:760px;margin:0 auto}
 .smv-wallet-offers-kicker{display:inline-block;font-size:.76rem;font-weight:900;letter-spacing:.12em;color:#6f36a8}
 .smv-wallet-offers-banner-head h2{margin:8px 0;font-size:clamp(1.35rem,3.3vw,2rem);line-height:1.2;color:#24103f}
 .smv-wallet-offers-banner-head p{margin:8px 0 0;color:#514465;line-height:1.55}
 .smv-wallet-offers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
-.smv-wallet-offer-card{min-width:0;padding:18px;border:1px solid #d7c8ec;border-radius:16px;background:rgba(255,255,255,.88);box-shadow:0 4px 14px rgba(36,16,63,.06);box-sizing:border-box}
-.smv-wallet-offer-card[data-theme="diwali"],.smv-wallet-offer-card[data-theme="karthigai_deepam"],.smv-wallet-offer-card[data-theme="dasara"],.smv-wallet-offer-card[data-theme="ayudha_pooja"]{border-color:#e7c07d;background:linear-gradient(145deg,#fff8e8,#fff)}
-.smv-wallet-offer-card[data-theme="pongal"],.smv-wallet-offer-card[data-theme="tamil_new_year"],.smv-wallet-offer-card[data-theme="thaipusam"]{border-color:#c7d9ad;background:linear-gradient(145deg,#f5ffef,#fff)}
-.smv-wallet-offer-card[data-theme="new_year"],.smv-wallet-offer-card[data-theme="christmas"]{border-color:#bfd2f4;background:linear-gradient(145deg,#f0f6ff,#fff)}
+.smv-wallet-offer-card{min-width:0;padding:18px;border:1px solid #d7c8ec;border-radius:16px;background:#fffaf0;box-shadow:0 4px 14px rgba(36,16,63,.06);box-sizing:border-box}
+.smv-wallet-offer-card[data-theme="diwali"],.smv-wallet-offer-card[data-theme="karthigai_deepam"],.smv-wallet-offer-card[data-theme="dasara"],.smv-wallet-offer-card[data-theme="ayudha_pooja"]{border-color:#e7c07d;background:#fffaf0}
+.smv-wallet-offer-card[data-theme="pongal"],.smv-wallet-offer-card[data-theme="tamil_new_year"],.smv-wallet-offer-card[data-theme="thaipusam"]{border-color:#c7d9ad;background:#fffaf0}
+.smv-wallet-offer-card[data-theme="new_year"],.smv-wallet-offer-card[data-theme="christmas"]{border-color:#bfd2f4;background:#fffaf0}
 .smv-wallet-offer-theme{display:inline-block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#6a3b9b;-webkit-text-fill-color:#6a3b9b}
 .smv-wallet-offer-card h3{margin:7px 0 12px;color:#24103f;-webkit-text-fill-color:#24103f;font-size:1.2rem;line-height:1.3;overflow-wrap:anywhere}
 .smv-wallet-offer-minimum{margin:0;color:#514465;-webkit-text-fill-color:#514465}
