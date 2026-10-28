@@ -4378,3 +4378,22 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 .smv-wallet-bonus-summary strong{color:#30251b;-webkit-text-fill-color:#30251b;font-size:1.1rem;overflow-wrap:anywhere}
 .smv-wallet-bonus-summary>p{grid-column:1/-1;margin:0;color:#6b6257;-webkit-text-fill-color:#6b6257;font-size:.88rem;line-height:1.5}
 @media(max-width:520px){.smv-wallet-bonus-summary{grid-template-columns:minmax(0,1fr)}.smv-wallet-bonus-summary>p{grid-column:1}}
+
+
+/* 2026-10-28: enforce high-contrast typography for the hero brand and content hub heading */
+html body.smv-v12-theme #home .smv33-kicker{
+  color:#1a1008!important;
+  -webkit-text-fill-color:#1a1008!important;
+  font-weight:900!important;
+  opacity:1!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+html body.smv-v12-theme #smv-content-hub#smv-content-hub h2{
+  color:#1a1008!important;
+  -webkit-text-fill-color:#1a1008!important;
+  font-weight:900!important;
+  opacity:1!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
