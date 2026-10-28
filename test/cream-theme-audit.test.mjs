@@ -99,12 +99,34 @@ test('customer Wallet transaction amounts use readable red/green bold styling', 
 });
 
 test('shared UI stylesheet must not override hero and content headings with pale gold', () => {
-  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.feature-top h2\\{[\\s\\S]*?font-weight:900!important;[\\s\\S]*?color:#20170f!important;[\\s\\S]*?-webkit-text-fill-color:#20170f!important;[\\s\\S]*?opacity:1!important/i);
-  assert.match(sharedCss, /html body\\.smv-v12-theme #home \\.smv33-mobile-head \\.smv33-kicker\\{[\\s\\S]*?color:#20170f!important;[\\s\\S]*?-webkit-text-fill-color:#20170f!important;[\\s\\S]*?font-weight:900!important/i);
-  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.smv-v173-subhead\\{[\\s\\S]*?color:#6b4b1e!important;[\\s\\S]*?-webkit-text-fill-color:#6b4b1e!important/i);
-  assert.match(sharedCss, /html body\\.smv-v12-theme #smv-content-hub \\.smv-v173-sub-collapse\\{[\\s\\S]*?color:#6b4b1e!important;[\\s\\S]*?-webkit-text-fill-color:#6b4b1e!important/i);
-  assert.ok(!sharedCss.includes('color:#f3d99b!important;\\n  -webkit-text-fill-color:#f3d99b!important;'), 'content heading must not reintroduce pale gold');
-  assert.ok(!sharedCss.includes('color:#f3d99b!important;\\n    -webkit-text-fill-color:#f3d99b!important;'), 'mobile hero kicker must not reintroduce pale gold');
+  const checks = [
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .feature-top h2{',
+      required: ['font-weight:900!important', 'color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'opacity:1!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{',
+      required: ['color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'font-weight:900!important', 'opacity:1!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{',
+      required: ['color:#6b4b1e!important', '-webkit-text-fill-color:#6b4b1e!important', 'font-weight:900!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .smv-v173-sub-collapse{',
+      required: ['color:#6b4b1e!important', '-webkit-text-fill-color:#6b4b1e!important'],
+    },
+  ];
+  for (const check of checks) {
+    const start = sharedCss.indexOf(check.selector);
+    assert.ok(start >= 0, 'expected shared UI selector: ' + check.selector);
+    const end = sharedCss.indexOf('}', start);
+    const rule = sharedCss.slice(start, end + 1);
+    for (const expected of check.required) {
+      assert.ok(rule.includes(expected), 'selector ' + check.selector + ' must include ' + expected);
+    }
+    assert.ok(!rule.includes('#f3d99b'), 'selector ' + check.selector + ' must not force pale-gold text');
+  }
   assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
 });
 
