@@ -173,6 +173,10 @@ jobs:
       - name: Set up gcloud with Application Default Credentials
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Activate staging-source service account for gcloud
+        shell: bash
+        run: gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project="$SOURCE_PROJECT_ID" --quiet
+
       - name: Verify required replica target secrets exist without reading their values
         shell: bash
         run: |
