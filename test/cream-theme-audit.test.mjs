@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const css = read('../public/smvastro.css');
 const sharedCss = read('../public/smv-ui.css');
 const html = read('../public/index.html');
+const rootHtml = read('../index.html');
 const publicContent = read('../public/public-content.mjs');
 const appSource = read('../public/smvastro.mjs');
 
@@ -25,15 +26,15 @@ test('cream palette keeps core foreground text readable', () => {
   assert.ok(contrastRatio('#6b6257','#fff8e7') >= 4.5);
 });
 
-test('homepage sections, footer and header use the cream surface with readable text', () => {
+test('homepage cream surfaces and celestial header keep readable text', () => {
   assert.match(css, /html body:where\(\:not\(\.smv-css-island,\.smv-css-island \*\)\)\{line-height:1\.65;background:#fff8e7!important;color:#30251b!important\}/);
   assert.match(css, /#smv-products-store-section h2\{[^}]*color:#6b4b1e/i);
   assert.match(css, /\.smv-products-store-description\{[^}]*color:#6b6257/i);
   assert.match(css, /#askNowSection\.smv-new-asknow\{[^}]*background:#fff8e7/i);
   assert.match(css, /\.smv-master-footer:where\(\:not\(\.smv-css-island,\.smv-css-island \*\)\)\{[^}]*background:#fff8e7!important/i);
   assert.match(css, /\.smv-master-footer p:where\([^}]*color:#30251b!important/i);
-  assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:#fff8e7/i);
-  assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#30251b!important/i);
+  assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:var\(--smv-celestial-bg\)/i);
+  assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#fff8e7!important/i);
   assert.match(css, /#smv24-footer a\{color:#30251b;text-decoration:none\}/);
   assert.match(css, /html body #smv24-footer \.smv26-links a\{[^}]*color:#30251b!important[^}]*font:600 16px/i);
   assert.match(css, /html body #smv24-footer \.smv24-brand p\{[^}]*color:#30251b!important/i);
@@ -67,22 +68,22 @@ test('live call/chat panel and inputs no longer force low-contrast purple text o
 
 test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-contrast text', () => {
   assert.match(css, /#approved-astrologers h2\{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important\}/);
-  assert.match(css, /#smv-content-hub h2\{color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-weight:900!important;opacity:1!important;filter:none!important;text-shadow:none!important\}/);
+  assert.match(css, /#smv-content-hub h2\{color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;font-weight:900!important;opacity:1!important;filter:none!important;text-shadow:none!important\}/);
   assert.match(css, /#publicBlogs \.blog-card > h3, #blogs \.blog-card > h3, #blogList \.blog-card > h3\{[^}]*font-weight:900!important[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
   assert.match(css, /#publicBlogs \.blog-card > p\.small, #blogs \.blog-card > p\.small, #blogList \.blog-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /#publicBlogs \.blog-card \.blog-content, #blogs \.blog-card \.blog-content, #blogList \.blog-card \.blog-content\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /#publicMedia \.media-card > h3\{[^}]*font-weight:900!important[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
   assert.match(css, /#publicMedia \.media-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /#smv-content-hub #publicMedia \.smv-media-type-title\{[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-size:clamp\(13px,1vw,15px\);font-weight:900!important/i);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#20170f!important;-webkit-text-fill-color:#20170f!important[^}]*font-size:clamp\(13px,3vw,15px\);line-height:1\.35;font-weight:900!important/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;font-size:clamp\(13px,1vw,15px\);font-weight:900!important/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important[^}]*font-size:clamp\(13px,3vw,15px\);line-height:1\.35;font-weight:900!important/i);
   assert.match(css, /html body #smv24-footer \.smv24-brand em\{[^}]*font-weight:900!important;[^}]*color:#30251b!important;[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /html body\.smv-v12-theme #smv-content-hub#smv-content-hub \.smv-v173-subhead\{[^}]*font-weight:900!important/i);
   assert.match(css, /html body\.smv-v12-theme #smv-content-hub#smv-content-hub \.smv-v173-subhead > span\{[^}]*font-weight:900!important/i);
   assert.match(css, /\.smv24-brand em\{display:block;font:italic 25px \/ 1\.5 Georgia, serif;font-weight:900;color:#30251b/);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#20170f!important;-webkit-text-fill-color:#20170f!important[^}]*font-weight:900!important/i);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#20170f!important;-webkit-text-fill-color:#20170f!important[^}]*font-weight:900!important/i);
-  assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and Astrology Insights heading must use near-black contrast');
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important[^}]*font-weight:900!important/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important[^}]*font-weight:900!important/i);
+  assert.ok(contrastRatio('#fff8e7','#24103f') >= 10, 'hero text must remain readable on the celestial background');
   assert.ok(contrastRatio('#30251b','#fff8e7') >= 7, 'general footer text must meet strong contrast');
   assert.ok(contrastRatio('#6b4b1e','#fff8e7') >= 6, 'content headings must remain strongly readable');
 });
@@ -102,11 +103,11 @@ test('shared UI stylesheet must not override hero and content headings with pale
   const checks = [
     {
       selector: 'html body.smv-v12-theme #smv-content-hub .feature-top h2{',
-      required: ['font-weight:900!important', 'color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'opacity:1!important'],
+      required: ['font-weight:900!important', 'color:#fff8e7!important', '-webkit-text-fill-color:#fff8e7!important', 'opacity:1!important'],
     },
     {
       selector: 'html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{',
-      required: ['color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'font-weight:900!important', 'opacity:1!important'],
+      required: ['color:#fff8e7!important', '-webkit-text-fill-color:#fff8e7!important', 'font-weight:900!important', 'opacity:1!important'],
     },
     {
       selector: 'html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{',
@@ -127,12 +128,26 @@ test('shared UI stylesheet must not override hero and content headings with pale
     }
     assert.ok(!rule.includes('#f3d99b'), 'selector ' + check.selector + ' must not force pale-gold text');
   }
-  assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
+  assert.ok(contrastRatio('#fff8e7','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
+});
+
+test('hero, header and Horoscope sections share the same celestial background with no hero photo', () => {
+  assert.match(css, /--smv-celestial-bg:radial-gradient\(circle at 12% 17%/);
+  assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:var\(--smv-celestial-bg\)/);
+  assert.match(css, /html body\.smv-v12-theme #home\.smv33-hero\{[^}]*background:var\(--smv-celestial-bg\)/);
+  assert.match(css, /html body\.smv-v12-theme #home\.smv33-hero\{[^}]*background-image:var\(--smv-celestial-bg\)!important/);
+  assert.match(css, /html body\.smv-v12-theme #smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background-image:var\(--smv-celestial-bg\)!important/);
+  assert.match(css, /#horoscope-tools\.feature-section, #tamil-horoscope\.feature-section, #english-horoscope\.feature-section\{[^}]*background:var\(--smv-celestial-bg\)!important/);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-photo\{display:none!important\}/);
+  assert.doesNotMatch(rootHtml, /class="smv33-photo"|smv-desktop-hero-rooted-final\.jpg|smv-mobile-premium-hero\.webp|smv-mobile-premium-header\.webp/);
+  assert.doesNotMatch(html, /smv33-photo|smv-desktop-hero-rooted-final\.jpg|smv-mobile-premium-hero\.webp|smv-mobile-premium-header\.webp/);
+  assert.ok(contrastRatio('#fff8e7','#24103f') >= 10, 'hero text must pass WCAG AA on the celestial background');
+  assert.ok(contrastRatio('#ffd66b','#24103f') >= 7, 'gold text must pass WCAG AA on the celestial background');
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.match(html, /smvastro\.css\?v=20261028-cream-content-contrast-v6/);
-  assert.match(html, /smv-ui\.css\?v=20261028-cream-content-contrast-v3/);
+  assert.match(html, /smvastro\.css\?v=20261028-unified-celestial-v1/);
+  assert.match(html, /smv-ui\.css\?v=20261028-unified-celestial-v1/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
 });
