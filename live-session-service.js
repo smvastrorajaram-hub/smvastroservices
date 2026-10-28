@@ -489,7 +489,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
             data,
             android: {
               priority: 'high', ttl: 24 * 60 * 60 * 1000,
-              notification: { sound: 'default', channelId: 'smv_live_requests', defaultSound: true, defaultVibrateTimings: true }
+              notification: { sound: 'default', defaultVibrateTimings: true }
             },
             // Web Push sound is controlled by the browser/OS notification settings;
             // the service worker explicitly requests a non-silent notification.
