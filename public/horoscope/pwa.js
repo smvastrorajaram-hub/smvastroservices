@@ -5,7 +5,7 @@
 if(location.hostname==='smvastroservices.pages.dev'){
 (()=>{
 'use strict';
-const area=document.getElementById('smvHoroscopeInstallArea')||document.querySelector('#siteFooter .smv-install-area');
+const area=document.getElementById('smvHoroscopeInstallArea');
 const button=document.getElementById('installApp');
 const status=document.getElementById('installStatus');
 const manifest=document.getElementById('appManifest');
@@ -67,7 +67,7 @@ button?.addEventListener('click',async()=>{
 }else{
 (()=>{
 'use strict';
-const area=document.getElementById('smvHoroscopeInstallArea')||document.querySelector('#siteFooter .smv-install-area');
+const area=document.getElementById('smvHoroscopeInstallArea');
 const button=document.getElementById('installApp');
 const status=document.getElementById('installStatus');
 const manifest=document.getElementById('appManifest');

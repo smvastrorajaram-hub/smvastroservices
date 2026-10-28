@@ -7,6 +7,7 @@ on:
       - 'public/horoscope/**/*.html'
       - 'tests/v358-result-layout-browser-smoke.mjs'
       - 'tests/v359-symmetric-gutters-browser-smoke.mjs'
+      - 'tests/horoscope-page-chrome-removal-regression.mjs'
       - '.github/workflows/horoscope-result-layout-browser-smoke.yml'
       - '!public/horoscope/calendar/**'
       - '!public/horoscope/calendar-rasi-palan.css'
@@ -19,6 +20,7 @@ on:
       - 'public/horoscope/**/*.html'
       - 'tests/v358-result-layout-browser-smoke.mjs'
       - 'tests/v359-symmetric-gutters-browser-smoke.mjs'
+      - 'tests/horoscope-page-chrome-removal-regression.mjs'
       - '.github/workflows/horoscope-result-layout-browser-smoke.yml'
       - '!public/horoscope/calendar/**'
       - '!public/horoscope/calendar-rasi-palan.css'
@@ -38,6 +40,8 @@ jobs:
           node-version: '22'
       - name: Install Chromium and Puppeteer dependencies from repo
         run: npm install --no-save --package-lock=false --no-audit --no-fund
+      - name: Ensure legacy site chrome is removed without breaking app controls
+        run: node tests/horoscope-page-chrome-removal-regression.mjs
       - name: V358 responsive result borders and layer geometry
         run: node tests/v358-result-layout-browser-smoke.mjs
       - name: Preserve V358 mobile and desktop screenshots
