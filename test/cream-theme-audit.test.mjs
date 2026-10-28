@@ -34,6 +34,12 @@ test('homepage sections, footer and header use the cream surface with readable t
   assert.match(css, /\.smv-master-footer p:where\([^}]*color:#30251b!important/i);
   assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:#fff8e7/i);
   assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#30251b!important/i);
+  assert.match(css, /#smv24-footer a\{color:#30251b;text-decoration:none\}/);
+  assert.match(css, /html body #smv24-footer \.smv26-links a\{[^}]*color:#30251b!important[^}]*font:600 16px/i);
+  assert.match(css, /html body #smv24-footer \.smv24-brand p\{[^}]*color:#30251b!important/i);
+  assert.match(css, /html body #smv24-footer \.smv24-contact a\{[^}]*color:#30251b!important/i);
+  assert.match(css, /html body #smv24-footer \.smv24-social a\{[^}]*color:#30251b!important/i);
+  assert.doesNotMatch(css, /[^{}]*#smv24-footer[^{}]*\{[^{}]*color:rgba\(255,248,231,\.(?:94|96)\)/i);
 });
 
 test('shared forms and dynamic booking dialogs use cream surfaces', () => {
@@ -59,9 +65,20 @@ test('live call/chat panel and inputs no longer force low-contrast purple text o
   assert.doesNotMatch(panel, /color:#e4d8f5/);
 });
 
+test('customer Wallet transaction amounts use readable red/green bold styling', () => {
+  const start=appSource.indexOf('const transactions=Array.isArray(transactionResult?.transactions)?');
+  assert.ok(start>=0, 'customer Wallet transaction rendering should exist');
+  const block=appSource.slice(start,start+3000);
+  assert.ok(block.includes(`class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap"`));
+  assert.match(css, /#smvWalletTransactions \.smv-wallet-transaction-amount\.success\{[^}]*color:#166534!important[^}]*-webkit-text-fill-color:#166534!important[^}]*font-weight:900!important/i);
+  assert.match(css, /#smvWalletTransactions \.smv-wallet-transaction-amount\.error\{[^}]*color:#b91c1c!important[^}]*-webkit-text-fill-color:#b91c1c!important[^}]*font-weight:900!important/i);
+  assert.ok(contrastRatio('#166534','#fff8e7') >= 4.5, 'green credits must meet WCAG AA contrast');
+  assert.ok(contrastRatio('#b91c1c','#fff8e7') >= 4.5, 'red debits must meet WCAG AA contrast');
+});
+
 test('main page cache versions point to the audited theme assets', () => {
-  assert.match(html, /smvastro\.css\?v=20261028-cream-background-v2/);
+  assert.match(html, /smvastro\.css\?v=20261028-cream-financial-footer-v3/);
   assert.match(html, /smv-ui\.css\?v=20261028-cream-background-v2/);
-  assert.match(html, /smvastro\.mjs\?v=20261028-cream-theme-audit-v1/);
+  assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
 });
