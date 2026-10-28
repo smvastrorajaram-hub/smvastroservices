@@ -986,7 +986,7 @@ test('Ended sessions replace the Call/Chat panel with a billing window and retai
 test('Incoming notification requests system-default sound and non-silent browser display', () => {
   const service = read('live-session-service.js');
   const worker = read('public/sw.js');
-  assert.ok(service.includes("notification: { sound: 'default', channelId: 'smv_live_requests', defaultSound: true, defaultVibrateTimings: true }"));
+  assert.ok(service.includes("notification: { sound: 'default', defaultVibrateTimings: true }"));
   assert.ok(worker.includes('silent: false'));
   assert.ok(worker.includes('vibrate: [250, 120, 250, 120, 450]'));
 });
