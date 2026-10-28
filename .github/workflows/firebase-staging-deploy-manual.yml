@@ -1,0 +1,214 @@
+name: Manual Firebase staging deployment
+
+# Deliberately manual-only. Never add push, pull_request, schedule, or workflow_run here.
+on:
+  workflow_dispatch:
+    inputs:
+      target_replica_project_id:
+        description: Exact isolated staging replica project ID; must match the firebase-staging environment variable.
+        required: true
+        type: string
+      confirm_staging_only:
+        description: Confirm this run may deploy only to the isolated staging source and staging replica.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging-replica-guards:
+    name: Deploy deny-all rules and indexes to the staging replica
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: firebase-staging
+    env:
+      SOURCE_PROJECT_ID: smv-astro-staging
+      TARGET_REPLICA_PROJECT_ID: ${{ inputs.target_replica_project_id }}
+      EXPECTED_TARGET_REPLICA_PROJECT_ID: ${{ vars.FIREBASE_STAGING_REPLICA_PROJECT_ID }}
+      FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify manual confirmation and exact staging target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.confirm_staging_only }}" != "true" ]]; then
+            echo "Refusing deployment: the staging-only confirmation checkbox is required." >&2
+            exit 1
+          fi
+          if [[ -z "$EXPECTED_TARGET_REPLICA_PROJECT_ID" ]]; then
+            echo "Missing environment variable FIREBASE_STAGING_REPLICA_PROJECT_ID; no deployment was attempted." >&2
+            exit 1
+          fi
+          if [[ "$TARGET_REPLICA_PROJECT_ID" != "$EXPECTED_TARGET_REPLICA_PROJECT_ID" ]]; then
+            echo "Refusing deployment: input target does not match the protected firebase-staging environment variable." >&2
+            exit 1
+          fi
+          if [[ ! "$TARGET_REPLICA_PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]]; then
+            echo "Refusing deployment: target is not a valid Firebase/GCP project ID." >&2
+            exit 1
+          fi
+          if [[ "$TARGET_REPLICA_PROJECT_ID" == "$SOURCE_PROJECT_ID" ]]; then
+            echo "Refusing deployment: source and replica projects must be different." >&2
+            exit 1
+          fi
+          for protected_project in smv-astro astro-service-ae9e7 smv-astro-services svm-astro smvastro-services; do
+            if [[ "$TARGET_REPLICA_PROJECT_ID" == "$protected_project" ]]; then
+              echo "Refusing deployment: production-named Firebase projects are blocked by this workflow." >&2
+              exit 1
+            fi
+          done
+          if [[ -z "$FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON" ]]; then
+            echo "Missing protected environment secret FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON." >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Firebase CLI
+        run: npm install --global firebase-tools@15.34.1
+
+      - name: Authenticate with replica-only service account
+        shell: bash
+        run: |
+          set -euo pipefail
+          credentials_file="$RUNNER_TEMP/firebase-staging-replica-service-account.json"
+          printf '%s' "$FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON" > "$credentials_file"
+          chmod 600 "$credentials_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
+          unset FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON
+
+      - name: Deploy secondary deny-all client rules and indexes only
+        shell: bash
+        run: |
+          set -euo pipefail
+          firebase deploy \
+            --only firestore:rules,firestore:indexes \
+            --config firebase.secondary-replica.json \
+            --project "$TARGET_REPLICA_PROJECT_ID" \
+            --non-interactive
+
+      - name: Remove temporary credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/firebase-staging-replica-service-account.json"
+
+  deploy-staging-source:
+    name: Deploy replica triggers and source rules/indexes to staging source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: deploy-staging-replica-guards
+    environment:
+      name: firebase-staging
+    env:
+      SOURCE_PROJECT_ID: smv-astro-staging
+      TARGET_REPLICA_PROJECT_ID: ${{ inputs.target_replica_project_id }}
+      EXPECTED_TARGET_REPLICA_PROJECT_ID: ${{ vars.FIREBASE_STAGING_REPLICA_PROJECT_ID }}
+      FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Re-check the staging-only deployment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.confirm_staging_only }}" != "true" ]]; then
+            echo "Refusing deployment: the staging-only confirmation checkbox is required." >&2
+            exit 1
+          fi
+          if [[ -z "$EXPECTED_TARGET_REPLICA_PROJECT_ID" || "$TARGET_REPLICA_PROJECT_ID" != "$EXPECTED_TARGET_REPLICA_PROJECT_ID" ]]; then
+            echo "Refusing deployment: target does not match the protected staging environment variable." >&2
+            exit 1
+          fi
+          if [[ ! "$TARGET_REPLICA_PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ || "$TARGET_REPLICA_PROJECT_ID" == "$SOURCE_PROJECT_ID" ]]; then
+            echo "Refusing deployment: invalid or duplicate staging project ID." >&2
+            exit 1
+          fi
+          for protected_project in smv-astro astro-service-ae9e7 smv-astro-services svm-astro smvastro-services; do
+            if [[ "$TARGET_REPLICA_PROJECT_ID" == "$protected_project" ]]; then
+              echo "Refusing deployment: production-named Firebase projects are blocked by this workflow." >&2
+              exit 1
+            fi
+          done
+          if [[ -z "$FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON" ]]; then
+            echo "Missing protected environment secret FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON." >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Firebase CLI
+        run: npm install --global firebase-tools@15.34.1
+
+      - name: Authenticate with staging-source service account
+        shell: bash
+        run: |
+          set -euo pipefail
+          credentials_file="$RUNNER_TEMP/firebase-staging-source-service-account.json"
+          printf '%s' "$FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON" > "$credentials_file"
+          chmod 600 "$credentials_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
+          unset FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON
+
+      - name: Verify required replica target secrets exist without reading their values
+        shell: bash
+        run: |
+          set -euo pipefail
+          # These secret values are provisioned separately in Secret Manager.
+          # This preflight checks names only; it never reads or prints secret payloads.
+          gcloud secrets describe SMV_REPLICA_TARGET_CLIENT_EMAIL --project "$SOURCE_PROJECT_ID" --format='value(name)' >/dev/null
+          gcloud secrets describe SMV_REPLICA_TARGET_PRIVATE_KEY --project "$SOURCE_PROJECT_ID" --format='value(name)' >/dev/null
+
+      - name: Deploy staging Cloud Functions with mirror writes disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotenv_file="functions/.env.smv-astro-staging"
+          if [[ -e "$dotenv_file" ]]; then
+            echo "Refusing to overwrite an existing staging dotenv file." >&2
+            exit 1
+          fi
+          cleanup() {
+            rm -f "$dotenv_file"
+            rm -f "$RUNNER_TEMP/firebase-staging-source-service-account.json"
+          }
+          trap cleanup EXIT
+          printf '%s\n' \
+            "SMV_REPLICA_SOURCE_PROJECT_ID=$SOURCE_PROJECT_ID" \
+            "SMV_REPLICA_TARGET_PROJECT_ID=$TARGET_REPLICA_PROJECT_ID" \
+            "SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES=false" \
+            > "$dotenv_file"
+          chmod 600 "$dotenv_file"
+          firebase deploy \
+            --only functions,firestore:rules,firestore:indexes \
+            --config firebase.json \
+            --project "$SOURCE_PROJECT_ID" \
+            --non-interactive
+
+      - name: Report the safe rollout boundary
+        if: success()
+        run: |
+          echo "Staging Functions and source rules/indexes deployment command completed successfully."
+          echo "Replica trigger mirror writes remain disabled (SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES=false)."
+          echo "No backfill, reconciliation, production deployment, or read/cutover flag change was performed."
+
+      - name: Remove temporary credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/firebase-staging-source-service-account.json"
