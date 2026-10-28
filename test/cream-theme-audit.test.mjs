@@ -68,7 +68,7 @@ test('live call/chat panel and inputs no longer force low-contrast purple text o
 
 test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-contrast text', () => {
   assert.match(css, /#approved-astrologers h2\{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important\}/);
-  assert.match(css, /#smv-content-hub h2\{color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;font-weight:900!important;opacity:1!important;filter:none!important;text-shadow:none!important\}/);
+  assert.match(css, /#smv-content-hub h2\{color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-weight:900!important;opacity:1!important;filter:none!important;text-shadow:none!important\}/);
   assert.match(css, /#publicBlogs \.blog-card > h3, #blogs \.blog-card > h3, #blogList \.blog-card > h3\{[^}]*font-weight:900!important[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
   assert.match(css, /#publicBlogs \.blog-card > p\.small, #blogs \.blog-card > p\.small, #blogList \.blog-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /#publicBlogs \.blog-card \.blog-content, #blogs \.blog-card \.blog-content, #blogList \.blog-card \.blog-content\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
@@ -103,7 +103,7 @@ test('shared UI stylesheet must not override hero and content headings with pale
   const checks = [
     {
       selector: 'html body.smv-v12-theme #smv-content-hub .feature-top h2{',
-      required: ['font-weight:900!important', 'color:#fff8e7!important', '-webkit-text-fill-color:#fff8e7!important', 'opacity:1!important'],
+      required: ['font-weight:900!important', 'color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'opacity:1!important'],
     },
     {
       selector: 'html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{',
@@ -128,7 +128,7 @@ test('shared UI stylesheet must not override hero and content headings with pale
     }
     assert.ok(!rule.includes('#f3d99b'), 'selector ' + check.selector + ' must not force pale-gold text');
   }
-  assert.ok(contrastRatio('#fff8e7','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
+  assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'Astrology Insights heading contrast must exceed WCAG AA');
 });
 
 test('hero, header and Horoscope sections share the same celestial background with no hero photo', () => {
