@@ -130,8 +130,15 @@ test('shared UI stylesheet must not override hero and content headings with pale
   assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
 });
 
+test('hero brand and Astrology Insights heading enforce dark opaque text', () => {
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{[^}]*color:#1a1008!important;[^}]*-webkit-text-fill-color:#1a1008!important;[^}]*font-weight:900!important;[^}]*opacity:1!important;[^}]*filter:none!important;[^}]*text-shadow:none!important;/);
+  assert.match(css, /html body\.smv-v12-theme #smv-content-hub#smv-content-hub h2\{[^}]*color:#1a1008!important;[^}]*-webkit-text-fill-color:#1a1008!important;[^}]*font-weight:900!important;[^}]*opacity:1!important;[^}]*filter:none!important;[^}]*text-shadow:none!important;/);
+  assert.match(html, /smvastro\\.css\\?v=20261028-hero-content-contrast-v7/);
+  assert.ok(contrastRatio('#1a1008','#fff8e7') >= 15, 'hero and content heading must have strong contrast against cream');
+});
+
 test('main page cache versions point to the audited theme assets', () => {
-  assert.match(html, /smvastro\.css\?v=20261028-cream-content-contrast-v6/);
+  assert.match(html, /smvastro\.css\?v=20261028-hero-content-contrast-v7/);
   assert.match(html, /smv-ui\.css\?v=20261028-cream-content-contrast-v3/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
