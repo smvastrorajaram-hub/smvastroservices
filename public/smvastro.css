@@ -2945,7 +2945,8 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-cat b{display:flex;width:44px;height:44px;margin:0px auto 7px;border-radius:50%;align-items:center;justify-content:center;border:1px solid rgba(255, 255, 255, 0.23);background:rgba(255, 255, 255, 0.1);font-size:1.15rem}
 #approved-astrologers{max-width:1320px!important;margin:0px auto!important;padding:38px 24px!important} #smv-content-hub{width:100%!important;max-width:1160px!important;margin:34px auto!important;padding:0 16px!important;box-sizing:border-box!important}
 #approved-astrologers > .home-rule{display:none!important}
-#approved-astrologers h2, #smv-content-hub h2{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important}
+#approved-astrologers h2{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:900!important}
+#smv-content-hub h2{color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-weight:900!important;opacity:1!important;filter:none!important;text-shadow:none!important}
 #approved-astrologers h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:1.65rem!important}
 #astroCards.grid, #publicBlogs.grid{gap:14px!important}
 #astroCards .card, #publicBlogs .card, #publicMedia .card, .feature-shell.card{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
@@ -3289,7 +3290,7 @@ html body.smv-v12-theme #home .smv33-photo{display:block}
 html body.smv-v12-theme #home .smv33-mobile-head{display:none}
 html body.smv-v12-theme #home .smv33-desktop-head{display:block}
 html body.smv-v12-theme #home .smv33-copy{left:8%;right:auto;top:5.5%;bottom:auto;transform:none;width:84%;max-width:1100px;min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;color:#30251b;text-shadow:none}
-html body.smv-v12-theme #home .smv33-kicker{margin:0 0 13px;color:#30251b!important;-webkit-text-fill-color:#30251b!important;font-size:clamp(13px,1vw,15px);font-weight:900!important;letter-spacing:.04em;text-shadow:none}
+html body.smv-v12-theme #home .smv33-kicker{margin:0 0 13px;color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-size:clamp(13px,1vw,15px);font-weight:900!important;letter-spacing:.04em;opacity:1!important;filter:none!important;text-shadow:none}
 html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(32px,3.7vw,54px);line-height:1.07;margin:0 0 15px;color:#30251b;font-weight:800;text-shadow:none}
 html body.smv-v12-theme #home .smv33-copy h1 span{color:#6b4b1e;font-weight:800}
 html body.smv-v12-theme #home .smv33-copy p{font-size:clamp(15px,1.22vw,18px);line-height:1.5;margin:0 0 12px;color:#30251b;text-shadow:none;max-width:100%}
@@ -3978,7 +3979,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   html body.smv-v12-theme #home .smv33-copy{position:absolute;z-index:3;left:12px;right:12px;top:auto;bottom:12px;width:auto;min-height:0;margin:0;padding:clamp(8px,3vw,12px) clamp(14px,4vw,22px) clamp(12px,3vw,16px);box-sizing:border-box;color:#30251b;background:transparent;border:0;border-radius:0;box-shadow:none;transform:none;text-align:left;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-mobile-head{display:block;}
   html body.smv-v12-theme #home .smv33-desktop-head{display:none;}
-  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#30251b!important;-webkit-text-fill-color:#30251b!important;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3vw,15px);line-height:1.35;font-weight:900!important;letter-spacing:.04em;text-transform:uppercase;text-shadow:none;}
+  html body.smv-v12-theme #home .smv33-kicker{margin:0 0 11px;color:#20170f!important;-webkit-text-fill-color:#20170f!important;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3vw,15px);line-height:1.35;font-weight:900!important;letter-spacing:.04em;text-transform:uppercase;opacity:1!important;filter:none!important;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1{margin:0 0 15px;color:#30251b;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,8vw,38px);line-height:1.12;font-weight:800;letter-spacing:-.15px;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy h1 span{color:#6b4b1e;font-weight:800;text-shadow:none;}
   html body.smv-v12-theme #home .smv33-copy p{margin:0 0 10px;color:#30251b;font-family:Arial,Helvetica,sans-serif;font-size:clamp(13px,3.6vw,16px);line-height:1.53;font-weight:500;text-shadow:none;}
