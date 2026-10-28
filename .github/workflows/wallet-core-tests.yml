@@ -31,6 +31,10 @@ on:
       - 'public/question-place-search.mjs'
       - 'public/public-navigation.js'
       - 'package.json'
+      - '.github/workflows/firebase-staging-deploy-manual.yml'
+      - 'firebase.secondary-replica.json'
+      - 'docs/firebase-staging-deploy-runbook.md'
+      - 'test/firebase-staging-deploy-workflow.test.js'
       - '.github/workflows/wallet-core-tests.yml'
   push:
     branches: [main]
@@ -57,6 +61,10 @@ on:
       - 'public/question-place-search.mjs'
       - 'public/public-navigation.js'
       - 'package.json'
+      - '.github/workflows/firebase-staging-deploy-manual.yml'
+      - 'firebase.secondary-replica.json'
+      - 'docs/firebase-staging-deploy-runbook.md'
+      - 'test/firebase-staging-deploy-workflow.test.js'
       - '.github/workflows/wallet-core-tests.yml'
 
 permissions:
@@ -83,6 +91,7 @@ jobs:
           node --check multi-project-firestore.js
           node --check firestore-quota-routing.js
           node --check test/firestore-quota-routing.test.js
+          node --check test/firebase-staging-deploy-workflow.test.js
           node --check scripts/backfill-wallet-domain.js
           node --check scripts/validate-wallet-domain.js
           node --check test/multi-project-firestore.test.js
@@ -99,6 +108,8 @@ jobs:
           node --check public/main-location-search.js
           node --check public/question-place-search.mjs
           node --check public/public-navigation.js
+      - name: Verify manual-only Firebase staging deployment guards
+        run: node --test test/firebase-staging-deploy-workflow.test.js
       - name: Run trusted Admin authorization tests
         run: node --test test/admin-auth.test.js
       - name: Run Razorpay Checkout reliability tests
