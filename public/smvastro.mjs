@@ -3539,7 +3539,6 @@ let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveScheduledRefreshTimer=null,smvLiveScheduledAppointmentsCache=[];
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
-const smvLiveBillingShownIds=new Set(),smvLiveTranscriptCache=new Map();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
 let smvLiveForegroundMessagingBound = false, smvLivePendingPushOpen = null;
 async function smvLiveEnableBackgroundAlerts(){
@@ -3745,64 +3744,6 @@ function smvLivePanelHtml(s,incoming){
  '<div id="smvLiveConnectChatWrap" '+(chat&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||'')?'':'hidden')+' style="margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveConnectChat" type="button">CONNECT CUSTOMER CHAT NOW</button></div>'+'<div id="smvLiveChatArea" '+(chat&&active?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffdf8;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="flex:1 1 auto;min-height:120px;max-height:none;overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fff;color:#241818;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:60px;padding:7px;border:1px solid #b9a17b;border-radius:8px;background:#fff;color:#241818;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
  '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite" style="color:#ffffff;-webkit-text-fill-color:#ffffff;overflow-wrap:anywhere"></p></div><div class="action-row smv-live-session-actions" style="position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveDownloadReceipt" type="button" '+(s.state==='ended'?'':'hidden')+'>PRINT / SAVE AS PDF</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'hidden':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveClosePanel" type="button" '+(s.state==='ended'?'hidden':'')+'>CLOSE WINDOW</button></div></div>';
 }
-function smvLiveCaptureTranscript(sessionId){
- const id=String(sessionId||'');if(!id)return;
- const host=$('smvLiveMessages');if(!host)return;
- const transcript=smvLiveTranscriptCache.get(id)||new Map();
- for(const row of host.querySelectorAll('[data-message-id]')){
-  const messageId=String(row.dataset.messageId||'');
-  if(!messageId||messageId.startsWith('pending-'))continue;
-  transcript.set(messageId,{
-   id:messageId,
-   sessionId:id,
-   senderUid:String(row.dataset.senderUid||''),
-   text:String(row.querySelector('p')?.textContent||''),
-   createdAt:String(row.dataset.createdAt||'')
-  });
- }
- smvLiveTranscriptCache.set(id,transcript);
-}
-function smvLiveBillingPanelHtml(session,wallet){
- const s=session||{},esc=value=>escapeHtml(String(value??'')),mode=smvLiveCanonicalMode(s)||'call';
- const dateText=value=>{const n=Date.parse(String(value||''));return Number.isFinite(n)?new Date(n).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'—';};
- const started=Date.parse(String(s.startedAt||'')),ended=Date.parse(String(s.endedAt||''));
- const durationMs=Number(s.connectedDurationMs)>0?Number(s.connectedDurationMs):(Number.isFinite(started)&&Number.isFinite(ended)?Math.max(0,ended-started):0);
- const totalSeconds=Math.floor(durationMs/1000),durationLabel=Math.floor(totalSeconds/60)+' min '+(totalSeconds%60)+' sec';
- const rows=[
-  ['Session ID',s.id||s.sessionId||''],
-  ['Session type',String(mode).toUpperCase()],
-  ['Customer',s.customerName||'Customer'],
-  ['Astrologer',s.astrologerName||'Astrologer'],
-  ['Started at',dateText(s.startedAt)],
-  ['Ended at',dateText(s.endedAt)],
-  ['Connected duration',durationLabel],
-  ['Billable minutes',String(Number(s.billableMinutes)||0)],
-  ['Rate',smvLiveMoney(Number(s.ratePerMinutePaise)||0)+' / minute'],
-  ['Amount charged',smvLiveMoney(Number(s.actualChargePaise)||0)],
-  ['Unused reserve returned',smvLiveMoney(Number(s.releasedAmountPaise)||0)]
- ];
- if(wallet&&wallet.availableBalancePaise!==undefined&&wallet.availableBalancePaise!==null)rows.push(['Customer Wallet balance after settlement',smvLiveMoney(Number(wallet.availableBalancePaise)||0)]);
- return '<section class="smv-live-session-panel smv-live-billing-panel" style="display:flex;flex:1 1 auto;min-height:0;overflow:auto;flex-direction:column;box-sizing:border-box;padding:14px;background:#24103F;color:#fff;border:2px solid #d4af37;border-radius:12px">'+
-  '<span style="display:inline-block;align-self:flex-start;background:#5b2a86;color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">SESSION BILLING</span>'+
-  '<h2 style="color:#fff;-webkit-text-fill-color:#fff;font-size:1.25rem;line-height:1.3;margin:12px 0">SMV ASTRO — '+esc(String(mode).toUpperCase())+' BILL</h2>'+
-  '<table style="border-collapse:collapse;width:100%;table-layout:fixed;background:#fff;color:#24103F;border-radius:8px;overflow:hidden">'+rows.map(([label,value])=>'<tr><th style="width:43%;padding:8px;border-bottom:1px solid #d4af37;text-align:left;vertical-align:top;background:#f5f0fb;color:#24103F;overflow-wrap:anywhere">'+esc(label)+'</th><td style="padding:8px;border-bottom:1px solid #d4af37;color:#24103F;overflow-wrap:anywhere">'+esc(value)+'</td></tr>').join('')+'</table>'+
-  '<p id="smvLiveSessionResult" role="status" class="small" style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5;margin:10px 0">Session ended. Final billing is shown above.</p>'+
-  '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button id="smvLiveBillingPrint" class="btn smv-modal-action" style="background:#fff;color:#24103F;border:1px solid #d4af37;min-height:44px" type="button">PRINT / SAVE AS PDF</button><button id="smvLiveBillingClose" class="btn smv-modal-action gray" style="background:#5b2a86;color:#fff;border:1px solid #d4af37;min-height:44px" type="button">CLOSE BILLING</button></div>'+
-  '</section>';
-}
-function smvLiveShowBillingWindow(session,wallet){
- const s=session||{},id=String(s.id||s.sessionId||'');
- if(!id||smvLiveBillingShownIds.has(id))return;
- smvLiveCaptureTranscript(id);
- smvLiveStopRingtone();smvLiveStopPreparationCountdown();smvLiveCloseMedia();smvLiveClearTransport();
- smvLivePanelSessionId=id;
- smvLiveCurrentSession={...s,id,state:'ended',mode:smvLiveCanonicalMode(s)||String(s.mode||'').toLowerCase()};
- smvLiveBillingShownIds.add(id);
- openModal(smvLiveBillingPanelHtml(smvLiveCurrentSession,wallet||null));
- const print=$('smvLiveBillingPrint'),close=$('smvLiveBillingClose');
- if(print)print.onclick=()=>{smvLivePrintReceipt(smvLiveCurrentSession).catch(error=>{smvLiveShowError(error);});};
- if(close)close.onclick=()=>{window.closeModal?.();};
-}
 async function smvLivePrintReceipt(session){
  const s=session||{};
  if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');
@@ -3852,8 +3793,6 @@ async function smvLivePrintReceipt(session){
    }
   }
  }
- const cachedTranscript=smvLiveTranscriptCache.get(String(s.id||s.sessionId||''));
- if(cachedTranscript)for(const message of cachedTranscript.values())addTranscriptMessage(message);
  const transcriptMessages=[...transcriptById.values()].sort((a,b)=>{
   const at=Date.parse(a.createdAt),bt=Date.parse(b.createdAt);
   if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return at-bt;
@@ -3897,7 +3836,7 @@ function smvLiveSessionEndedMessage(session,wallet){
  return 'Session ended.';
 }
 function smvLiveShowError(error){const el=$('smvLiveSessionResult');if(el)el.textContent=String(error?.message||error||'Live Session request failed.');}
-function smvLiveApplySession(session,wallet=null){
+function smvLiveApplySession(session){
  if(!session||String(session.id||session.sessionId||'')!==smvLivePanelSessionId)return;
  const wasEnded=String(smvLiveCurrentSession?.state||'')==='ended';
  const mergedSession=smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId});
@@ -3951,7 +3890,6 @@ function smvLiveApplySession(session,wallet=null){
    },250);
   }
  }
- if(s.state==='ended'&&!wasEnded)smvLiveShowBillingWindow(s,wallet);
 }
 function smvLiveChatBoxIsVisible(){
  const modal=$('modal'),chat=$('smvLiveChatArea'),messages=$('smvLiveMessages');
@@ -3976,7 +3914,7 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(receipt)receipt.onclick=()=>{smvLivePrintReceipt(smvLiveCurrentSession).catch(e=>smvLiveShowError(e));};
  if(accept)accept.onclick=async()=>{smvLiveStopRingtone();smvLiveMuteUntilVoiceConnected();accept.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/accept',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'preparing'});}catch(e){smvLiveShowError(e);accept.disabled=false;smvLiveSyncRemoteAudio();}};
  if(reject)reject.onclick=async()=>{smvLiveStopRingtone();reject.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'ended'});}catch(e){smvLiveShowError(e);reject.disabled=false;}};
- if(end)end.onclick=async()=>{smvLiveStopRingtone();end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});const endedSession=r.session||{...smvLiveCurrentSession,state:'ended'};smvLiveApplySession(endedSession,r.wallet||null);if($('smvLiveSessionResult'))$('smvLiveSessionResult').textContent=smvLiveSessionEndedMessage(endedSession,r.wallet);if(String(currentUser?.uid||'')===String(endedSession.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));}catch(e){smvLiveShowError(e);end.disabled=false;}};
+ if(end)end.onclick=async()=>{smvLiveStopRingtone();end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});const endedSession=r.session||{...smvLiveCurrentSession,state:'ended'};smvLiveApplySession(endedSession);if($('smvLiveSessionResult'))$('smvLiveSessionResult').textContent=smvLiveSessionEndedMessage(endedSession,r.wallet);if(String(currentUser?.uid||'')===String(endedSession.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));}catch(e){smvLiveShowError(e);end.disabled=false;}};
  if(close)close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();};
  const form=$('smvLiveMessageForm');
  if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}const pendingId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2);const pendingRow=smvLiveAppendMessage({id:pendingId,sessionId:id,senderUid:currentUser?.uid,text:body,createdAt:new Date().toISOString()});if(input)input.value='';try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveAppendMessage(r.message);}catch(err){if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveShowError(err);if(input&&!input.value)input.value=body;}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
@@ -4307,14 +4245,7 @@ function smvLiveHandleEvent(ev){
   else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);
-  const participant=!!s&&(String(s.customerUid||'')===String(currentUser?.uid||'')||String(s.astrologerUid||'')===String(currentUser?.uid||''));
-  if(s&&participant&&!smvLiveBillingShownIds.has(String(s.id||''))){
-   if(s.id===smvLivePanelSessionId)smvLiveApplySession(s,ev.wallet||null);else smvLiveShowBillingWindow(s,ev.wallet||null);
-   const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);
-   if(String(currentUser?.uid||'')===String(s.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));
-   loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});
-  }
+  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);if(String(currentUser?.uid||'')===String(s.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
