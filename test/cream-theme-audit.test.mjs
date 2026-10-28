@@ -85,6 +85,16 @@ test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-
   assert.ok(contrastRatio('#6b4b1e','#fff8e7') >= 6, 'content headings must remain strongly readable');
 });
 
+test('hero brand and Astrology Insights heading have clearly bold visual hierarchy', () => {
+  assert.match(css, /html body\\.smv-v12-theme #home \\.smv33-kicker\\{[^}]*font-size:clamp\\(17px,1\\.4vw,20px\\)!important[^}]*font-weight:900!important/i);
+  assert.match(css, /html body\\.smv-v12-theme #home \\.smv33-kicker\\{[^}]*font-size:clamp\\(15px,4vw,18px\\)!important[^}]*font-weight:900!important/i);
+  assert.match(css, /#smv-content-hub \\.feature-top h2\\{[^}]*font-size:clamp\\(28px,3vw,34px\\)!important[^}]*font-weight:900!important[^}]*color:#6b4b1e!important/i);
+  assert.match(css, /html body\\.smv-v12-theme #smv-content-hub#smv-content-hub \\.smv-v173-subhead\\{[^}]*font-size:20px!important[^}]*font-weight:900!important/i);
+  assert.match(css, /html body\\.smv-v12-theme #smv-content-hub#smv-content-hub \\.smv-v173-subhead > span\\{[^}]*font-size:20px!important[^}]*font-weight:900!important/i);
+  assert.ok(contrastRatio('#30251b','#fff8e7') >= 7, 'hero brand text should be strongly readable');
+  assert.ok(contrastRatio('#6b4b1e','#fff8e7') >= 6, 'content heading should be strongly readable');
+});
+
 test('customer Wallet transaction amounts use readable red/green bold styling', () => {
   const start=appSource.indexOf('const transactions=Array.isArray(transactionResult?.transactions)?');
   assert.ok(start>=0, 'customer Wallet transaction rendering should exist');
@@ -97,7 +107,7 @@ test('customer Wallet transaction amounts use readable red/green bold styling', 
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.match(html, /smvastro\.css\?v=20261028-cream-content-bold-v5/);
+  assert.match(html, /smvastro\.css\?v=20261028-cream-content-bold-v6/);
   assert.match(html, /smv-ui\.css\?v=20261028-cream-background-v2/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
