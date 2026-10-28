@@ -3470,7 +3470,7 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 @media (max-width: 600px){
 #admin .smv-admin-nav{display:grid!important;grid-template-columns:repeat(3, minmax(0px, 1fr))!important;gap:8px!important;width:100%!important}
 #admin .smv-admin-nav button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)).smv-admin-jump{width:100%!important;min-width:0px!important;max-width:none!important;height:42px!important;min-height:42px!important;max-height:42px!important;margin:0px!important;padding:4px 5px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow:hidden!important;aspect-ratio:auto!important}}
-html body #smv24-footer:where(:not(.hidden)){display:block!important;background-color:#30251b!important;background-image:none!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;color:#30251b!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
+html body #smv24-footer:where(:not(.hidden)){display:block!important;background-color:#fff8e7!important;background-image:none!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;color:#30251b!important;padding:0px!important;margin:30px 0px 0px!important;border:0px!important;text-align:left!important;width:100%!important;max-width:none!important;font:400 16px / 1.6 Arial, sans-serif!important}
 html body #smv24-footer::before, html body #smv24-footer::after{content:none!important;display:none!important}
 html body #smv24-footer .smv24-footer-top{background:transparent!important;max-width:1160px!important;margin:0px auto!important;padding:36px 24px 0px!important}
 html body #smv24-footer .smv24-brand{text-align:center!important;color:#30251b!important;text-shadow:none!important}
@@ -3809,7 +3809,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-position:center top!important;
     background-repeat:no-repeat!important;
   
-    background-color:#30251b!important;}
+    background-color:#fff8e7!important;}
   #smvPremiumHeaderV9 .smv9-nav{
     position:relative!important;
     z-index:2!important;
@@ -3969,7 +3969,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
   }
 
   /* Responsive homepage hero: solid background with readable overlay copy. */
-  html body.smv-v12-theme #home.smv33-hero{position:relative;left:50%;width:100vw;max-width:100vw;height:calc(150.00000000vw - clamp(210px,58.333vw,250px))!important;min-height:0!important;margin:0 0 0 -50vw;padding:0;border:0;border-radius:0;background-color:#30251b!important;background-image:none!important;background-size:100vw auto!important;background-position:center calc(0px - clamp(210px,58.333vw,250px))!important;background-repeat:no-repeat!important;overflow:hidden;}
+  html body.smv-v12-theme #home.smv33-hero{position:relative;left:50%;width:100vw;max-width:100vw;height:calc(150.00000000vw - clamp(210px,58.333vw,250px))!important;min-height:0!important;margin:0 0 0 -50vw;padding:0;border:0;border-radius:0;background-color:#fff8e7!important;background-image:none!important;background-size:100vw auto!important;background-position:center calc(0px - clamp(210px,58.333vw,250px))!important;background-repeat:no-repeat!important;overflow:hidden;}
   html body.smv-v12-theme #home .smv33-scene{display:block;width:100%;height:100%;min-height:0;margin:0;padding:0;background:transparent;}
   html body.smv-v12-theme #home .smv33-picture{display:none!important;width:100%;line-height:0;}
   html body.smv-v12-theme #home .smv33-photo{display:none!important;}
@@ -4129,7 +4129,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     margin:0!important;
     padding:0!important;
     overflow:hidden!important;
-    background-color:#30251b!important;
+    background-color:#fff8e7!important;
     background-image:none!important;
     background-size:100vw auto!important;
     background-position:center top!important;
@@ -4276,7 +4276,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     padding:0!important;
     border:0!important;
     border-radius:0!important;
-    background-color:#30251b!important;
+    background-color:#fff8e7!important;
     background-image:none!important;
     background-size:100% 100%,100vw auto!important;
     background-position:center top,center calc(0px - 152px)!important;
@@ -4301,7 +4301,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
 
 /* Footer uses the same midnight-indigo celestial gradient as the site canvas. */
 @media (max-width:760px){
-  html body #smv24-footer:where(:not(.hidden)){background-color:#30251b!important;background-image:none!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;
+  html body #smv24-footer:where(:not(.hidden)){background-color:#fff8e7!important;background-image:none!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;
   }
 }
 
