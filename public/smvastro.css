@@ -2567,7 +2567,7 @@ html body.smv-v12-theme .smv-master-footer h3:where(:not(.smv-css-island,.smv-cs
 /* Legacy desktop header reset. Scoping it to desktop prevents this high-specificity
    rule from cancelling the dedicated mobile burgundy/gold button design below. */
 @media (min-width: 900px){
-html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important;text-shadow:none!important}
+html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > :is(a, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))){color:#30251b!important;-webkit-text-fill-color:#30251b!important;text-shadow:none!important}
 html :is(#smv-v15-header-root, body.smv-v12-theme) #smvPremiumHeaderV9 .smv9-menu > .smv-nav-current{color:#30251b!important;-webkit-text-fill-color:#30251b!important}
 }
 html :is(#smv-v15-icon-root, body.smv-v12-theme) :is(#smv-v15-icon, button:where(:not(.smv-compact-control):not(.smv-admin-shortcut))[aria-label="Close"], .password-toggle, #dashboardPaymentSuccessClose){background:none transparent!important;border:0px!important;color:#dfbd73!important;box-shadow:none!important;border-radius:0px!important;text-shadow:none!important;filter:none!important}
