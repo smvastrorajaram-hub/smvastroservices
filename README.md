@@ -78,10 +78,10 @@ The SMV ASTRO homepage includes a **SMV ASTRO PRODUCTS** section. It is a produc
 
 The section links to the official Shoopy storefront and its current collections:
 
-- **Store home:** https://smv-astro-services.store.shoopy.in/
-- **SMV YANTRAS:** https://smv-astro-services.store.shoopy.in/categories/smv-yantras-526219
-- **SMV AMULETS:** https://smv-astro-services.store.shoopy.in/categories/smv-amulets-526219
-- **SMV ALL PRODUCTS:** https://smv-astro-services.store.shoopy.in/categories/smv-all-products-526219
+- **Store home:** https://smvastroservices.store.shoopy.in/
+- **SMV YANTRAS:** https://smvastroservices.store.shoopy.in/categories/smv-yantras-526219
+- **SMV AMULETS:** https://smvastroservices.store.shoopy.in/categories/smv-amulets-526219
+- **SMV ALL PRODUCTS:** https://smvastroservices.store.shoopy.in/categories/smv-all-products-526219
 
 On the website, one existing **Products** header link is retained. The single-layer homepage section presents three logo links to the corresponding collections; each opens the relevant Shoopy page in a new tab. The category marks are stored as scalable 512×512-viewBox SVG assets under `public/assets/smv-products-*.svg`, with versioned URLs in `public/index.html` to help browsers refresh cached logos.
 
