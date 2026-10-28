@@ -297,10 +297,13 @@ html body.smv-v12-theme #smv-content-hub .feature-top h2{
   font-family:inherit!important;
   font-size:var(--smv207-h2)!important;
   line-height:1.22!important;
-  font-weight:850!important;
+  font-weight:900!important;
   letter-spacing:-.018em!important;
-  color:#f3d99b!important;
-  -webkit-text-fill-color:#f3d99b!important;
+  color:#20170f!important;
+  -webkit-text-fill-color:#20170f!important;
+  opacity:1!important;
+  filter:none!important;
+  text-shadow:none!important;
 }
 html body.smv-v12-theme #smv-content-hub .smv-v173-subregion{
   width:100%!important;
@@ -322,9 +325,9 @@ html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{
   font-family:inherit!important;
   font-size:var(--smv207-body)!important;
   line-height:1.6!important;
-  font-weight:800!important;
-  color:#f3d99b!important;
-  -webkit-text-fill-color:#f3d99b!important;
+  font-weight:900!important;
+  color:#6b4b1e!important;
+  -webkit-text-fill-color:#6b4b1e!important;
   border:0!important;
   border-bottom:1px solid var(--smv207-line)!important;
   border-radius:0!important;
@@ -337,8 +340,8 @@ html body.smv-v12-theme #smv-content-hub .smv-v173-sub-collapse{
   height:30px!important;
   min-height:30px!important;
   padding:0!important;
-  color:#f3d99b!important;
-  -webkit-text-fill-color:#f3d99b!important;
+  color:#6b4b1e!important;
+  -webkit-text-fill-color:#6b4b1e!important;
   background:transparent!important;
   border:0!important;
   box-shadow:none!important;
@@ -522,10 +525,14 @@ body.smv-v12-theme .smv-dialog-actions .btn.danger{
   color:#fff!important;
   -webkit-text-fill-color:#fff!important;
 }
-/* Mobile hero kicker only; desktop hero and header colours stay unchanged. */
+/* Mobile hero kicker: keep the brand line dark on the cream hero surface. */
 @media(max-width:899px){
   html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{
-    color:#f3d99b!important;
-    -webkit-text-fill-color:#f3d99b!important;
+    color:#20170f!important;
+    -webkit-text-fill-color:#20170f!important;
+    font-weight:900!important;
+    opacity:1!important;
+    filter:none!important;
+    text-shadow:none!important;
   }
 }

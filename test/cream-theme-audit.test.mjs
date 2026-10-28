@@ -98,9 +98,41 @@ test('customer Wallet transaction amounts use readable red/green bold styling', 
   assert.ok(contrastRatio('#b91c1c','#fff8e7') >= 4.5, 'red debits must meet WCAG AA contrast');
 });
 
+test('shared UI stylesheet must not override hero and content headings with pale gold', () => {
+  const checks = [
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .feature-top h2{',
+      required: ['font-weight:900!important', 'color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'opacity:1!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{',
+      required: ['color:#20170f!important', '-webkit-text-fill-color:#20170f!important', 'font-weight:900!important', 'opacity:1!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .smv-v173-subhead{',
+      required: ['color:#6b4b1e!important', '-webkit-text-fill-color:#6b4b1e!important', 'font-weight:900!important'],
+    },
+    {
+      selector: 'html body.smv-v12-theme #smv-content-hub .smv-v173-sub-collapse{',
+      required: ['color:#6b4b1e!important', '-webkit-text-fill-color:#6b4b1e!important'],
+    },
+  ];
+  for (const check of checks) {
+    const start = sharedCss.indexOf(check.selector);
+    assert.ok(start >= 0, 'expected shared UI selector: ' + check.selector);
+    const end = sharedCss.indexOf('}', start);
+    const rule = sharedCss.slice(start, end + 1);
+    for (const expected of check.required) {
+      assert.ok(rule.includes(expected), 'selector ' + check.selector + ' must include ' + expected);
+    }
+    assert.ok(!rule.includes('#f3d99b'), 'selector ' + check.selector + ' must not force pale-gold text');
+  }
+  assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
+});
+
 test('main page cache versions point to the audited theme assets', () => {
   assert.match(html, /smvastro\.css\?v=20261028-cream-content-contrast-v6/);
-  assert.match(html, /smv-ui\.css\?v=20261028-cream-background-v2/);
+  assert.match(html, /smv-ui\.css\?v=20261028-cream-content-contrast-v3/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
   assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
 });
