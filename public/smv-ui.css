@@ -528,8 +528,8 @@ body.smv-v12-theme .smv-dialog-actions .btn.danger{
 /* Mobile hero kicker: keep the brand line dark on the cream hero surface. */
 @media(max-width:899px){
   html body.smv-v12-theme #home .smv33-mobile-head .smv33-kicker{
-    color:#20170f!important;
-    -webkit-text-fill-color:#20170f!important;
+    color:#fff8e7!important;
+    -webkit-text-fill-color:#fff8e7!important;
     font-weight:900!important;
     opacity:1!important;
     filter:none!important;
