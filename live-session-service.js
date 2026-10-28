@@ -487,7 +487,12 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           await admin.messaging().send({
             token,
             data,
-            android: { priority: 'high', ttl: 24 * 60 * 60 * 1000 },
+            android: {
+              priority: 'high', ttl: 24 * 60 * 60 * 1000,
+              notification: { sound: 'default', defaultVibrateTimings: true }
+            },
+            // Web Push sound is controlled by the browser/OS notification settings;
+            // the service worker explicitly requests a non-silent notification.
             webpush: { headers: { TTL: '86400', Urgency: 'high' } }
           });
           sent++;
@@ -1647,8 +1652,18 @@ async function rejectOrCancel(sessionId, user, reason) {
       rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
       rows = rows.slice(0, 100);
     } else {
-      const snap = await db.collection(SESSIONS).where(field, '==', uid).limit(100).get();
-      rows = snap.docs.map(d => liveSessionSafeView(d.id, d.data() || {}));
+      // Do not let a user's first 100 historical sessions hide a currently live
+      // session. Fetch active states independently, then union them with recent rows.
+      const [recentSnap, activeSnap] = await Promise.all([
+        db.collection(SESSIONS).where(field, '==', uid).limit(100).get(),
+        db.collection(SESSIONS).where(field, '==', uid)
+          .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active'])
+          .orderBy('createdAt', 'desc').limit(100).get()
+      ]);
+      const byId = new Map();
+      for (const doc of recentSnap.docs) byId.set(doc.id, doc.data() || {});
+      for (const doc of activeSnap.docs) byId.set(doc.id, doc.data() || {});
+      rows = [...byId.entries()].map(([id, data]) => liveSessionSafeView(id, data));
       rows.sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
     }
     // Runtime timeouts are in-memory. Reconcile persisted deadlines on every

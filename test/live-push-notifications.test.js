@@ -133,7 +133,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261027-live-chat-natural-source-v4'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
+  assert.ok(html.includes('smvastro.mjs?v=20261028-live-session-billing-restore-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -196,7 +196,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
+  assert.ok(html.includes('smvastro.mjs?v=20261028-live-session-billing-restore-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -227,7 +227,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
+  assert.ok(html.includes('smvastro.mjs?v=20261028-live-session-billing-restore-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -271,7 +271,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
+  assert.ok(html.includes('smvastro.mjs?v=20261028-live-session-billing-restore-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -291,7 +291,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261027-scheduled-booking-grace-v7'));
+  assert.ok(html.includes('smvastro.mjs?v=20261028-live-session-billing-restore-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -787,7 +787,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   assert.ok(frontend.includes('const SMV_LIVE_SESSION_STATE_RANK=Object.freeze({ringing:0,preparing:1,connecting:2,active:3,ended:4});'));
   assert.ok(merge.includes('incomingRank<previousRank'));
   assert.ok(merge.includes("previousState==='ended'&&incomingState!=='ended'"));
-  const applyStart = frontend.indexOf('function smvLiveApplySession(session){');
+  const applyStart = frontend.indexOf('function smvLiveApplySession(session,wallet=null){');
   const applyEnd = frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){', applyStart);
   const apply = frontend.slice(applyStart, applyEnd);
   assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
@@ -951,7 +951,42 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
   assert.ok(frontend.includes("historyLoadWarning='Server history could not be refreshed. The transcript below includes messages already loaded in this session.';"));
-  const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
+  const applyStart=frontend.indexOf('function smvLiveApplySession(session,wallet=null){');
   const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
   assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
+});
+
+
+test('Live Session close is UI-only and server listing independently restores active sessions', () => {
+  const frontend = read('public/smvastro.mjs');
+  const service = read('live-session-service.js');
+  const closeStart = frontend.indexOf('function smvLiveDismissSessionUi(sessionId){');
+  const closeEnd = frontend.indexOf('function smvLivePlayRingtoneMelody(){', closeStart);
+  const closeBlock = frontend.slice(closeStart, closeEnd);
+  assert.ok(closeBlock.includes('smvLiveRingSuppressedIds.add(id)'));
+  assert.equal(closeBlock.includes("renderApi('/live/sessions/'+encodeURIComponent(id)+'/end'"), false);
+  const listStart = service.indexOf('async function listSessions(uid, role) {');
+  const listEnd = service.indexOf('async function expireStaleBookingRows', listStart);
+  const listBlock = service.slice(listStart, listEnd);
+  assert.ok(listBlock.includes("where('state', 'in', ['preparing', 'ringing', 'connecting', 'active'])"));
+  assert.ok(listBlock.includes('for (const doc of activeSnap.docs) byId.set(doc.id, doc.data() || {});'));
+});
+
+test('Ended sessions replace the Call/Chat panel with a billing window and retain Print/Save as PDF', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveBillingPanelHtml(session,wallet){'));
+  assert.ok(frontend.includes('function smvLiveShowBillingWindow(session,wallet){'));
+  assert.ok(frontend.includes("if(s.state==='ended'&&!wasEnded)smvLiveShowBillingWindow(s,wallet);"));
+  assert.ok(frontend.includes('smvLiveApplySession(s,ev.wallet||null)'));
+  assert.ok(frontend.includes('id="smvLiveBillingPrint"'));
+  assert.ok(frontend.includes('id="smvLiveBillingClose"'));
+  assert.ok(frontend.includes('const cachedTranscript=smvLiveTranscriptCache.get(String(s.id||s.sessionId||\'\'));'));
+});
+
+test('Incoming notification requests system-default sound and non-silent browser display', () => {
+  const service = read('live-session-service.js');
+  const worker = read('public/sw.js');
+  assert.ok(service.includes("notification: { sound: 'default', defaultVibrateTimings: true }"));
+  assert.ok(worker.includes('silent: false'));
+  assert.ok(worker.includes('vibrate: [250, 120, 250, 120, 450]'));
 });
