@@ -33,7 +33,7 @@ test('homepage sections, footer and header use the cream surface with readable t
   assert.match(css, /\.smv-master-footer:where\(\:not\(\.smv-css-island,\.smv-css-island \*\)\)\{[^}]*background:#fff8e7!important/i);
   assert.match(css, /\.smv-master-footer p:where\([^}]*color:#30251b!important/i);
   assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:#fff8e7/i);
-  assert.doesNotMatch(css, /#smvPremiumHeaderV9 \.smv9-menu > a\.active,\s*html body\.smv-v12-theme #smvPremiumHeaderV9 \.smv9-menu > \.smv-nav-current\{[^}]*color:#fff8e7/i);
+  assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#30251b!important/i);
 });
 
 test('shared forms and dynamic booking dialogs use cream surfaces', () => {
