@@ -26,7 +26,7 @@ test('Deployment workflow fixes the source to staging and rejects production pro
   for (const id of ['smv-astro', 'astro-service-ae9e7', 'smv-astro-services', 'svm-astro', 'smvastro-services']) {
     assert.ok(workflow.includes(id), 'missing denylist entry: ' + id);
   }
-  assert.match(workflow, /TARGET_REPLICA_PROJECT_ID != "\$EXPECTED_TARGET_REPLICA_PROJECT_ID"/);
+  assert.ok(workflow.includes('if [[ "$TARGET_REPLICA_PROJECT_ID" != "$EXPECTED_TARGET_REPLICA_PROJECT_ID" ]]'));
   assert.match(workflow, /FIREBASE_STAGING_REPLICA_PROJECT_ID/);
   assert.match(workflow, /FIREBASE_STAGING_SOURCE_SERVICE_ACCOUNT_JSON/);
   assert.match(workflow, /FIREBASE_STAGING_REPLICA_SERVICE_ACCOUNT_JSON/);
