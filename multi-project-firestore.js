@@ -93,7 +93,6 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     walletDomainRuntimeIntegrationVerified: false,
     walletDomainMirrorWritesEnabled: false,
     customerHistoryBackfillComplete: false,
-    dashboardReadReplicaBackfillComplete: false,
     sessionHistoryBackfillComplete: false,
     liveDataBackfillComplete: false,
     contentBackfillComplete: false,
@@ -128,7 +127,6 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
       credentialsFromEnv(env, 'FIREBASE_CONTENT', projectIds.content));
     state.enabled = true;
     state.customerHistoryBackfillComplete = enabledFlag(env.SMV_CUSTOMER_HISTORY_BACKFILL_COMPLETE);
-    state.dashboardReadReplicaBackfillComplete = enabledFlag(env.SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE);
     state.sessionHistoryBackfillComplete = enabledFlag(env.SMV_SESSION_HISTORY_BACKFILL_COMPLETE);
     state.liveDataBackfillComplete = enabledFlag(env.SMV_LIVE_DATA_BACKFILL_COMPLETE);
     state.contentBackfillComplete = enabledFlag(env.SMV_CONTENT_BACKFILL_COMPLETE);

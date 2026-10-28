@@ -1,7 +1,6 @@
 'use strict';
 
 const { walletLedgerDocId, parseRupeesToPaise } = require('./wallet-service');
-const { readWithQuotaFallback } = require('./firestore-quota-routing');
 
 const SESSIONS = 'smv_live_sessions';
 const BOOKINGS = 'smv_live_bookings';
@@ -414,35 +413,6 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       await sessionRef(sessionId).set({ liveAuxStoreReady: false, updatedAt: nowTimestamp() }, { merge: true }).catch(() => {});
       console.warn('[Live Session] Secondary ' + collectionName + ' mirror skipped for ' + sessionId + ':', error?.message || error);
     }
-  }
-  async function readSessionAuxiliarySnapshot({ sessionId, collectionName, afterMs, limit, useSecondary, preferSecondary = false }) {
-    const buildQuery = targetDb => {
-      let query = targetDb.collection(SESSIONS).doc(String(sessionId)).collection(collectionName)
-        .orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
-      if (afterMs > 0) query = query.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
-      return query.limit(limit);
-    };
-    const activeProjectId = walletDomainCutover
-      ? String(multiProjectFirestore?.projectIds?.walletDomain || 'Project 5')
-      : String(multiProjectFirestore?.projectIds?.primary || 'Project 1');
-    const authoritativeCandidate = { id: activeProjectId, db };
-    const auxiliaryCandidate = {
-      id: String(multiProjectFirestore?.projectIds?.liveData || 'Project 3'),
-      db: liveDataReadDb,
-      onQuota: async () => {
-        await sessionRef(sessionId).set({ liveAuxStoreReady: false, updatedAt: nowTimestamp() }, { merge: true });
-      }
-    };
-    const candidates = useSecondary && liveDataReadDb
-      ? (preferSecondary ? [auxiliaryCandidate, authoritativeCandidate] : [authoritativeCandidate, auxiliaryCandidate])
-      : [authoritativeCandidate];
-    const result = await readWithQuotaFallback({
-      candidates,
-      read: targetDb => buildQuery(targetDb).get(),
-      logger: console,
-      label: 'Live Session ' + collectionName + ' read for ' + String(sessionId)
-    });
-    return result.value;
   }
   function bookingRef(id) { return db.collection(BOOKINGS).doc(String(id)); }
   function walletRef(uid) { return db.collection(WALLETS).doc(String(uid)); }
@@ -1615,28 +1585,16 @@ async function rejectOrCancel(sessionId, user, reason) {
     const field = role === 'astrologer' ? 'astrologerUid' : 'customerUid';
     let rows;
     if (sessionHistoryDb) {
-      const activeProjectId = walletDomainCutover
-        ? String(multiProjectFirestore?.projectIds?.walletDomain || 'Project 5')
-        : String(multiProjectFirestore?.projectIds?.primary || 'Project 1');
-      const [activeSnap, archiveResult, pendingArchiveSnap] = await Promise.all([
+      const [activeSnap, archiveSnap, pendingArchiveSnap] = await Promise.all([
         db.collection(SESSIONS).where(field, '==', uid)
           .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active'])
           .orderBy('createdAt', 'desc').limit(100).get(),
-        readWithQuotaFallback({
-          candidates: [
-            { id: String(multiProjectFirestore?.projectIds?.consultations || 'Project 2'), db: sessionHistoryDb },
-            { id: activeProjectId, db }
-          ],
-          read: targetDb => targetDb.collection(SESSIONS).where(field, '==', uid)
-            .where('state', '==', 'ended').orderBy('createdAt', 'desc').limit(100).get(),
-          logger: console,
-          label: 'Ended Live Session history for ' + String(uid)
-        }),
+        sessionHistoryDb.collection(SESSIONS).where(field, '==', uid)
+          .where('state', '==', 'ended').orderBy('createdAt', 'desc').limit(100).get(),
         db.collection(SESSIONS).where(field, '==', uid)
           .where('state', '==', 'ended').where('historyArchivedToSecondary', '==', false)
           .orderBy('createdAt', 'desc').limit(100).get()
       ]);
-      const archiveSnap = archiveResult.value;
       const byId = new Map();
       for (const doc of archiveSnap.docs) byId.set(doc.id, doc.data() || {});
       // Include active primary records and any ended records whose secondary copy
@@ -2199,14 +2157,10 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const snap = await readSessionAuxiliarySnapshot({
-        sessionId: req.params.id,
-        collectionName: 'signals',
-        afterMs,
-        limit: afterMs > 0 ? 30 : 50,
-        useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb,
-        preferSecondary: true
-      });
+      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
+      let signalQuery = signalStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+      const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
       const signals = snap.docs.map(d => {
         const s = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: s.senderUid, type: s.type, payload: s.payload, createdAt: timestampMillis(s.createdAt) ? new Date(timestampMillis(s.createdAt)).toISOString() : null };
@@ -2229,16 +2183,12 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'chat') return res.status(409).json({ success: false, error: 'Messages are available only in Live Chat.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      // Initial history uses the verified mirror when ready. Incremental reads prefer
-      // the authoritative write store, but may use the verified mirror only on quota exhaustion.
-      const snap = await readSessionAuxiliarySnapshot({
-        sessionId: req.params.id,
-        collectionName: 'messages',
-        afterMs,
-        limit: afterMs > 0 ? 50 : 100,
-        useSecondary: loaded.data.liveAuxStoreReady === true && !!liveDataReadDb,
-        preferSecondary: afterMs <= 0
-      });
+      // Initial history may use the completed archive. Incremental reads must use
+      // the primary write store so a message is visible before its best-effort mirror finishes.
+      const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);
+      let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+      if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+      const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
       const messages = snap.docs.map(d => {
         const m = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: m.senderUid, text: m.text, createdAt: timestampMillis(m.createdAt) ? new Date(timestampMillis(m.createdAt)).toISOString() : null };
