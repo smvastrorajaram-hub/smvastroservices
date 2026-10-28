@@ -101,14 +101,14 @@
       '<h2 style="color:#751515;-webkit-text-fill-color:#751515;padding-right:34px">Live '+(kind==='chat'?'Chat':'Call')+' — '+esc(astrologer?.name||'Astrologer')+'</h2>'+
       '<p style="color:#2d1919;-webkit-text-fill-color:#2d1919">Enter the Customer birth details. The Astrologer gets 3 minutes to prepare the horoscope before the Call / Chat request continues.</p>'+
       '<form id="smvLiveBirthForm" style="display:grid;gap:7px">'+
-      '<label style="display:grid;gap:3px;color:#2d1919"><b>Customer Name</b><input id="smvLiveBirthCustomerName" maxlength="100" required value="'+esc(customerName)+'" style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<label style="display:grid;gap:3px;color:#2d1919"><b>Customer Name</b><input id="smvLiveBirthCustomerName" maxlength="100" required value="'+esc(customerName)+'" style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Date of Birth</b><input id="smvLiveBirthDate" type="date" max="'+maxDate+'" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Time of Birth</b><input id="smvLiveBirthTime" type="time" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Birth Place</b><input id="smvLiveBirthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<input id="smvLiveBirthLatitude" type="hidden"><input id="smvLiveBirthLongitude" type="hidden">'+
       '<p class="small" style="margin:0;color:#62483b;-webkit-text-fill-color:#62483b">Choose a place from the suggestions when available. If online search is unavailable, you can enter the place manually.</p>'+
       '<div id="smvLiveBirthMessage" class="small" role="status" aria-live="polite"></div>'+
-      '<div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:auto;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37"><button id="smvLiveBirthSubmit" class="btn smv-modal-action" type="submit" style="flex:0 1 260px;width:100%;min-width:0;min-height:38px;margin:0 auto;background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;white-space:normal;overflow-wrap:anywhere;text-align:center">CONTINUE</button></div>'+
+      '<div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:auto;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#fff8e7;border-top:1px solid #d4af37"><button id="smvLiveBirthSubmit" class="btn smv-modal-action" type="submit" style="flex:0 1 260px;width:100%;min-width:0;min-height:38px;margin:0 auto;background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;white-space:normal;overflow-wrap:anywhere;text-align:center">CONTINUE</button></div>'+
       '</form></div>');
     const place=$('smvLiveBirthPlace'),lat=$('smvLiveBirthLatitude'),lon=$('smvLiveBirthLongitude'),message=$('smvLiveBirthMessage'),submit=$('smvLiveBirthSubmit');
     place?.addEventListener('input',()=>{if(lat)lat.value='';if(lon)lon.value='';if(place){delete place.dataset.latitude;delete place.dataset.longitude;delete place.dataset.timezone;}});
@@ -214,19 +214,19 @@
     if(!modalEl||!contentEl) throw new Error('Profile dialog is unavailable.');
     contentEl.innerHTML=html;
     const initialDialog=contentEl.querySelector('.profile-dialog');
-    const usesPurpleTheme=!!initialDialog&&(initialDialog.classList.contains('smv-call-booking-dialog')||initialDialog.classList.contains('smv-live-birth-dialog'));
+    const usesCreamTheme=!!initialDialog&&(initialDialog.classList.contains('smv-call-booking-dialog')||initialDialog.classList.contains('smv-live-birth-dialog'));
     modalEl.style.overflowY='hidden';
     modalEl.style.overflowX='hidden';
-    modalEl.style.padding=usesPurpleTheme?'8px 8px calc(8px + env(safe-area-inset-bottom))':'12px';
+    modalEl.style.padding=usesCreamTheme?'8px 8px calc(8px + env(safe-area-inset-bottom))':'12px';
     modalEl.style.alignItems='start';
     const modalBox=modalEl.querySelector('.modalbox');
     if(modalBox){
-      modalBox.style.width=usesPurpleTheme?'min(100%, 720px)':'';
-      modalBox.style.maxWidth=usesPurpleTheme?'720px':'';
+      modalBox.style.width=usesCreamTheme?'min(100%, 720px)':'';
+      modalBox.style.maxWidth=usesCreamTheme?'720px':'';
       modalBox.style.height='auto';
       modalBox.style.maxHeight='calc(100dvh - 8px - env(safe-area-inset-bottom))';
       modalBox.style.minHeight='0';
-      modalBox.style.overflow=usesPurpleTheme?'hidden':'auto';
+      modalBox.style.overflow=usesCreamTheme?'hidden':'auto';
       modalBox.style.overflowX='hidden';
       modalBox.style.display='flex';
       modalBox.style.flexDirection='column';
@@ -240,24 +240,24 @@
     contentEl.style.minHeight='0';
     const dialogSurface=contentEl.querySelector('.profile-dialog');
     if(dialogSurface){
-      const purpleTheme=dialogSurface.classList.contains('smv-call-booking-dialog')||dialogSurface.classList.contains('smv-live-birth-dialog');
-      const foreground=purpleTheme?'#ffffff':'#2d1919';
+      const creamTheme=dialogSurface.classList.contains('smv-call-booking-dialog')||dialogSurface.classList.contains('smv-live-birth-dialog');
+      const foreground=creamTheme?'#30251b':'#2d1919';
       dialogSurface.style.color=foreground;
       dialogSurface.style.webkitTextFillColor=foreground;
-      if(purpleTheme){dialogSurface.style.background='#24103F';dialogSurface.style.border='1px solid #d4af37';dialogSurface.style.borderRadius='14px';}
+      if(creamTheme){dialogSurface.style.background='#fff8e7';dialogSurface.style.border='1px solid #d4af37';dialogSurface.style.borderRadius='14px';}
       dialogSurface.style.opacity='1';
-      dialogSurface.style.height=purpleTheme?'calc(100dvh - 64px - env(safe-area-inset-bottom))':'auto';
-      dialogSurface.style.maxHeight=purpleTheme?'calc(100dvh - 32px - env(safe-area-inset-bottom))':'calc(100dvh - 52px)';
+      dialogSurface.style.height=creamTheme?'calc(100dvh - 64px - env(safe-area-inset-bottom))':'auto';
+      dialogSurface.style.maxHeight=creamTheme?'calc(100dvh - 32px - env(safe-area-inset-bottom))':'calc(100dvh - 52px)';
       dialogSurface.style.minHeight='0';
       dialogSurface.style.flex='1 1 auto';
       dialogSurface.style.display='flex';
       dialogSurface.style.flexDirection='column';
-      dialogSurface.style.overflow=purpleTheme?'hidden':'auto';
+      dialogSurface.style.overflow=creamTheme?'hidden':'auto';
       dialogSurface.style.overflowX='hidden';
       dialogSurface.style.overscrollBehavior='contain';
       dialogSurface.style.boxSizing='border-box';
       const dialogForm=dialogSurface.querySelector('form');
-      if(purpleTheme&&dialogForm){
+      if(creamTheme&&dialogForm){
         dialogForm.style.display='flex';
         dialogForm.style.flexDirection='column';
         dialogForm.style.flex='1 1 auto';
@@ -283,14 +283,14 @@
           actions.style.zIndex='10';
           actions.style.flex='0 0 auto';
           actions.style.marginTop='auto';
-          actions.style.background='#24103F';
+          actions.style.background='#fff8e7';
           actions.style.borderTop='1px solid #d4af37';
           actions.style.padding='10px 0 calc(10px + env(safe-area-inset-bottom))';
         }
       }
       dialogSurface.querySelectorAll('h1,h2,h3,h4,p,b,strong,label,small,.small,.empty').forEach(node=>{
         node.style.opacity='1';
-        node.style.color=purpleTheme?'#ffffff':(/^H[1-4]$/.test(node.tagName)?'#751515':'#2d1919');
+        node.style.color=creamTheme?'#30251b':(/^H[1-4]$/.test(node.tagName)?'#6b4b1e':'#2d1919');
         node.style.webkitTextFillColor=node.style.color;
       });
       dialogSurface.querySelectorAll('button,input,select,textarea').forEach(control=>{
@@ -299,16 +299,16 @@
           control.style.color='#2d1919';
           control.style.webkitTextFillColor='#2d1919';
           control.style.caretColor='#2d1919';
-          control.style.background='#ffffff';
+          control.style.background='#fffaf0';
           control.style.borderColor='#c9b8e4';
           control.style.borderRadius='8px';
           if(control.type!=='hidden'){control.style.minHeight='36px';control.style.padding='6px 8px';control.style.fontSize='14px';control.style.lineHeight='1.2';}
         } else {
-          if(purpleTheme){
+          if(creamTheme){
             const primary=control.id==='smvCallBookingSubmit'||control.id==='smvLiveBirthSubmit';
             control.style.minHeight='42px';control.style.whiteSpace='normal';control.style.overflowWrap='anywhere';control.style.borderRadius='8px';
             if(primary){control.style.background='#5b2a86';control.style.color='#ffffff';control.style.webkitTextFillColor='#ffffff';control.style.border='1px solid #d4af37';}
-            else{control.style.background='#ffffff';control.style.color='#24103F';control.style.webkitTextFillColor='#24103F';control.style.border='1px solid #c9b8e4';}
+            else{control.style.background='#ffffff';control.style.color='#30251b';control.style.webkitTextFillColor='#30251b';control.style.border='1px solid #c9b8e4';}
           }else{const computedColor=window.getComputedStyle(control).color;if(computedColor)control.style.webkitTextFillColor=computedColor;}
         }
       });
@@ -356,7 +356,7 @@
     const minDate=today.toISOString().slice(0,10);
     const notesField='<label style="display:block;min-width:0;color:#2d1919"><b>Notes (optional)</b><textarea id="smvCallBookingNotes" name="notes" maxlength="2000" rows="4" placeholder="Optional note for the Astrologer" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;min-height:100px;padding:10px 12px;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px;resize:vertical;overflow-y:auto;line-height:1.5"></textarea></label>';
     const bookingSubmitLabel=bookingMode==='chat'?'REQUEST CHAT BOOKING':'REQUEST CALL BOOKING';
-    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 8px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:8px 10px 8px;background:#24103F;color:#ffffff;-webkit-text-fill-color:#ffffff;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
+    showPublicProfileModal(`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 8px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:8px 10px 8px;background:#fff8e7;color:#30251b;-webkit-text-fill-color:#30251b;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
       <h2 style="padding-right:36px;line-height:1.2;font-size:18px;margin:0 0 4px">Book ${bookingLabel} — ${esc(a?.name||'Astrologer')}</h2>
       <p style="margin:3px 0;line-height:1.25;font-size:13px"><b>${bookingLabel} rate:</b> ₹${rate.toFixed(2)} per minute</p>
       <p class="small">Booking request only. The Astrologer must accept it. At the scheduled time, the Astrologer starts the Call/Chat; Wallet funds are reserved when the session starts.</p>
@@ -369,12 +369,12 @@
         <label style="display:block;min-width:0;color:#2d1919"><b>Birth Place (search and select)</b><input id="smvCallBookingBirthPlace" name="birthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         <input id="smvCallBookingBirthLatitude" type="hidden" value="">
         <input id="smvCallBookingBirthLongitude" type="hidden" value="">
-        <p class="small" style="color:#e4d8f5;-webkit-text-fill-color:#e4d8f5;margin:0">Type at least two characters and choose a place from the suggestions. If location search is unavailable, enter the place manually.</p>
+        <p class="small" style="color:#6b6257;-webkit-text-fill-color:#6b6257;margin:0">Type at least two characters and choose a place from the suggestions. If location search is unavailable, enter the place manually.</p>
         <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;min-width:0">
           <label><b>Preferred Date</b><input id="smvCallBookingDate" name="preferredDate" type="date" min="${minDate}" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
           <label><b>Preferred Time</b><input id="smvCallBookingTime" name="preferredTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
-        <label style="display:grid;gap:3px;min-width:0;color:#ffffff"><b>Session duration (minutes)</b><input id="smvCallBookingMinutes" name="scheduledMinutes" type="number" min="1" max="1440" step="1" value="5" inputmode="numeric" required aria-describedby="smvCallBookingDurationHelp" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"><span id="smvCallBookingDurationHelp" class="small">Enter 1–1440 whole minutes.</span></label>
+        <label style="display:grid;gap:3px;min-width:0;color:#30251b"><b>Session duration (minutes)</b><input id="smvCallBookingMinutes" name="scheduledMinutes" type="number" min="1" max="1440" step="1" value="5" inputmode="numeric" required aria-describedby="smvCallBookingDurationHelp" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fff;border:1px solid #b9a17b;border-radius:8px"><span id="smvCallBookingDurationHelp" class="small">Enter 1–1440 whole minutes.</span></label>
         ${notesField}
         <div id="smvCallBookingMessage" class="small" role="status" aria-live="polite"></div>
         <div class="smv-booking-actions" style="position:sticky;bottom:0;z-index:10;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:auto;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#24103F;border-top:1px solid #d4af37">
