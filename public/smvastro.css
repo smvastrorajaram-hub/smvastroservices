@@ -913,7 +913,7 @@ html body header .brand .brand-text .logo:where(:not(.smv-css-island,.smv-css-is
 .smv-part-tap:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important}
 .smv-part-chevron:where(:not(.smv-css-island,.smv-css-island *)){font-size:20px!important}}
 .smv-install-app-section{width:100%;box-sizing:border-box;margin:22px auto 10px;padding:0px 16px}
-.smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:linear-gradient(rgb(255, 250, 240), rgb(255, 253, 248));box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
+.smv-install-app-card{max-width:980px;margin:0px auto;display:flex;align-items:center;gap:14px;padding:15px 17px;border:1.5px solid rgb(197, 155, 74);border-radius:16px;background:#fff8e7;box-shadow:rgba(90, 50, 10, 0.08) 0px 5px 16px;box-sizing:border-box}
 .smv-install-app-icon-wrap{flex:0 0 auto;width:64px;height:64px;border-radius:0;overflow:visible;border:0;background:transparent;display:grid;place-items:center}
 .smv-install-app-icon{width:64px;height:64px;display:block;object-fit:contain;border-radius:0;background:transparent}
 .smv-install-app-copy{min-width:0px;flex:1 1 0%}
@@ -2927,7 +2927,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){max-width:none!imp
 .smv-master-service:nth-child(2n+1){background:transparent}
 .smv-master-service:nth-child(2n){background:transparent}
 .smv-master-service:hover{transform:translateY(-3px)}
-.smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:rgb(255, 255, 255);color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
+.smv-master-service i{display:flex;width:48px;height:48px;margin:0px auto 13px;border-radius:50%;align-items:center;justify-content:center;background:#fffaf0;color:var(--smv-red);font-style:normal;font-size:1.4rem;box-shadow:rgba(230, 20, 80, 0.11) 0px 6px 16px}
 .smv-master-service strong{display:block;font-size:1rem;margin-bottom:7px}
 .smv-master-service span{display:block;font-size:0.78rem;line-height:1.45;color:rgb(95, 102, 116);color:#6b6257;}
 #askNowSection.smv-new-asknow{margin:0px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff8e7!important;}
@@ -3002,7 +3002,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-service{min-height:150px}}
 @media (prefers-reduced-motion: reduce){
 :where(:not(.smv-css-island,.smv-css-island *)){transition:none!important;scroll-behavior:auto!important}}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(238, 7, 80) 0%, rgb(207, 0, 61) 100%)!important}
+.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
 .smv-master-topin:where(:not(.smv-css-island,.smv-css-island *)){letter-spacing:0.01em;max-width:1360px!important;padding:6px 28px!important;font-size:0.7rem!important}
 header:where(:not(.smv-css-island,.smv-css-island *)){background:rgba(255, 255, 255, 0.984)!important;border-bottom:1px solid rgb(240, 229, 226)!important;box-shadow:rgba(40, 22, 30, 0.067) 0px 7px 24px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){max-width:1360px!important;min-height:82px!important;padding:10px 28px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:26px!important}
@@ -3076,7 +3076,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){font-size:1rem!important}
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.84rem!important}}
 :root{--smv-pink:#ed0750;--smv-red:#c9003e;--smv-yellow:#ffd236;--smv-ink:#101a31}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:linear-gradient(90deg, rgb(233, 0, 75), rgb(199, 0, 59))!important}
+.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
 header:where(:not(.smv-css-island,.smv-css-island *)){border-bottom:1px solid rgb(242, 229, 225)!important;box-shadow:rgba(44, 23, 32, 0.07) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:72px!important;padding:8px 24px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
@@ -3231,7 +3231,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-menu .login, #smvPremiumHeaderV9 .smv9-menu .register{align-self:center!important;margin:0px!important}
 #smvPremiumHeaderV9 .smv9-menu .register{grid-area:auto!important}}
 #smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:#fff8e7!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:rgb(23, 25, 39)!important;overflow:visible!important;position:relative!important;z-index:1000!important}
-#smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:rgb(255, 255, 255)!important}
+#smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:#fff8e7!important}
 #smvPremiumHeaderV9 .smv9-brand{display:flex!important;align-items:center!important;gap:9px!important;min-width:max-content!important;margin:0px!important;padding:0px!important;background:transparent!important;border:0px!important;text-decoration:none!important}
 #smvPremiumHeaderV9 .smv9-brand img{display:block!important;width:72px!important;height:72px!important;max-width:72px!important;object-fit:cover!important;object-position:center!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;border:0!important;border-radius:50%!important;background:transparent!important}
 #smvPremiumHeaderV9 .smv9-brand span{display:flex!important;flex-direction:column!important;align-items:flex-start!important;line-height:1!important}
@@ -3250,7 +3250,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-brand img{width:40px!important;height:40px!important;max-width:40px!important}
 #smvPremiumHeaderV9 .smv9-brand strong{font-size:24px!important}
 #smvPremiumHeaderV9 .smv9-brand small{font-size:9.5px!important}
-#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:rgb(255, 255, 255)!important}
+#smvPremiumHeaderV9 .smv9-menu{display:grid!important;grid-template-columns:repeat(6, minmax(0px, 1fr))!important;gap:5px 4px!important;width:100%!important;background:#fff8e7!important}
 #smvPremiumHeaderV9 .smv9-menu > a, #smvPremiumHeaderV9 .smv9-menu > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){display:flex!important;min-height:38px!important;padding:8px 3px!important;font-size:11.5px!important;text-align:center!important;border-radius:0px!important}
 #smvPremiumHeaderV9 .smv9-menu > .hidden{display:none!important}
 #smvPremiumHeaderV9 .smv9-menu > .login{margin:0px!important;border:1.5px solid rgb(229, 0, 70)!important;border-radius:999px!important;background:rgb(255, 255, 255)!important;color:rgb(199, 0, 61)!important}
@@ -4350,9 +4350,9 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 .smv-wallet-offers-banner-head p{margin:8px 0 0;color:#514465;line-height:1.55}
 .smv-wallet-offers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
 .smv-wallet-offer-card{min-width:0;padding:18px;border:1px solid #d7c8ec;border-radius:16px;background:#fffaf0;box-shadow:0 4px 14px rgba(36,16,63,.06);box-sizing:border-box}
-.smv-wallet-offer-card[data-theme="diwali"],.smv-wallet-offer-card[data-theme="karthigai_deepam"],.smv-wallet-offer-card[data-theme="dasara"],.smv-wallet-offer-card[data-theme="ayudha_pooja"]{border-color:#e7c07d;background:linear-gradient(145deg,#fff8e8,#fff)}
-.smv-wallet-offer-card[data-theme="pongal"],.smv-wallet-offer-card[data-theme="tamil_new_year"],.smv-wallet-offer-card[data-theme="thaipusam"]{border-color:#c7d9ad;background:linear-gradient(145deg,#f5ffef,#fff)}
-.smv-wallet-offer-card[data-theme="new_year"],.smv-wallet-offer-card[data-theme="christmas"]{border-color:#bfd2f4;background:linear-gradient(145deg,#f0f6ff,#fff)}
+.smv-wallet-offer-card[data-theme="diwali"],.smv-wallet-offer-card[data-theme="karthigai_deepam"],.smv-wallet-offer-card[data-theme="dasara"],.smv-wallet-offer-card[data-theme="ayudha_pooja"]{border-color:#e7c07d;background:#fffaf0}
+.smv-wallet-offer-card[data-theme="pongal"],.smv-wallet-offer-card[data-theme="tamil_new_year"],.smv-wallet-offer-card[data-theme="thaipusam"]{border-color:#c7d9ad;background:#fffaf0}
+.smv-wallet-offer-card[data-theme="new_year"],.smv-wallet-offer-card[data-theme="christmas"]{border-color:#bfd2f4;background:#fffaf0}
 .smv-wallet-offer-theme{display:inline-block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#6a3b9b;-webkit-text-fill-color:#6a3b9b}
 .smv-wallet-offer-card h3{margin:7px 0 12px;color:#24103f;-webkit-text-fill-color:#24103f;font-size:1.2rem;line-height:1.3;overflow-wrap:anywhere}
 .smv-wallet-offer-minimum{margin:0;color:#514465;-webkit-text-fill-color:#514465}
