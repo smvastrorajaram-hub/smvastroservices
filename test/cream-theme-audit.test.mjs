@@ -65,6 +65,21 @@ test('live call/chat panel and inputs no longer force low-contrast purple text o
   assert.doesNotMatch(panel, /color:#e4d8f5/);
 });
 
+test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-contrast text', () => {
+  assert.match(css, /#approved-astrologers h2, #smv-content-hub h2\{color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important\}/);
+  assert.match(css, /#publicBlogs \.blog-card > h3, #blogs \.blog-card > h3, #blogList \.blog-card > h3\{[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
+  assert.match(css, /#publicBlogs \.blog-card > p\.small, #blogs \.blog-card > p\.small, #blogList \.blog-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
+  assert.match(css, /#publicBlogs \.blog-card \.blog-content, #blogs \.blog-card \.blog-content, #blogList \.blog-card \.blog-content\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
+  assert.match(css, /#publicMedia \.media-card > h3\{[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
+  assert.match(css, /#publicMedia \.media-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
+  assert.match(css, /#smv-content-hub #publicMedia \.smv-media-type-title\{[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#30251b;font-size:clamp\(13px,1vw,15px\);font-weight:900/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#30251b[^}]*font-size:clamp\(13px,3vw,15px\)[^}]*font-weight:900/i);
+  assert.match(css, /html body #smv24-footer \.smv24-brand em\{[^}]*font-weight:700!important;[^}]*color:#30251b!important;[^}]*-webkit-text-fill-color:#30251b!important/i);
+  assert.ok(contrastRatio('#30251b','#fff8e7') >= 7, 'content, hero and footer text must meet strong contrast');
+  assert.ok(contrastRatio('#6b4b1e','#fff8e7') >= 6, 'content headings must remain strongly readable');
+});
+
 test('customer Wallet transaction amounts use readable red/green bold styling', () => {
   const start=appSource.indexOf('const transactions=Array.isArray(transactionResult?.transactions)?');
   assert.ok(start>=0, 'customer Wallet transaction rendering should exist');
