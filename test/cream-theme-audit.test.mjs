@@ -73,8 +73,8 @@ test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-
   assert.match(css, /#publicMedia \.media-card > h3\{[^}]*font-weight:900!important[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
   assert.match(css, /#publicMedia \.media-card > p\.small\{[^}]*color:#30251b!important[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /#smv-content-hub #publicMedia \.smv-media-type-title\{[^}]*color:#6b4b1e!important[^}]*-webkit-text-fill-color:#6b4b1e!important/i);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#30251b;font-size:clamp\(13px,1vw,15px\);font-weight:900/i);
-  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#30251b[^}]*font-size:clamp\(13px,3vw,15px\)[^}]*font-weight:900/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 13px;color:#30251b!important;-webkit-text-fill-color:#30251b!important;font-size:clamp\(13px,1vw,15px\);font-weight:900!important/i);
+  assert.match(css, /html body\.smv-v12-theme #home \.smv33-kicker\{margin:0 0 11px;color:#30251b!important;-webkit-text-fill-color:#30251b!important[^}]*font-size:clamp\(13px,3vw,15px\)[^}]*font-weight:900!important/i);
   assert.match(css, /html body #smv24-footer \.smv24-brand em\{[^}]*font-weight:900!important;[^}]*color:#30251b!important;[^}]*-webkit-text-fill-color:#30251b!important/i);
   assert.match(css, /html body\.smv-v12-theme #smv-content-hub#smv-content-hub \.smv-v173-subhead\{[^}]*font-weight:900!important/i);
   assert.match(css, /html body\.smv-v12-theme #smv-content-hub#smv-content-hub \.smv-v173-subhead > span\{[^}]*font-weight:900!important/i);
