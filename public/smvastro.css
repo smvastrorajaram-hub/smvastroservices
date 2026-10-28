@@ -3170,7 +3170,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-service:where(:not(.smv-css-island,.smv-css-island *)){padding:15px 8px!important;min-height:145px!important;border:0;border-radius:0;box-shadow:none;background:transparent;color:#30251b!important;}
 .smv-master-art:where(:not(.smv-css-island,.smv-css-island *)){min-height:285px!important}}
 #smvPremiumHeaderV9, #smvPremiumHeaderV9 *{box-sizing:border-box}
-#smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:var(--smv-celestial-bg);color:rgb(23, 25, 39);border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
+#smvPremiumHeaderV9:where(:not(.hidden)){display:block;width:100%;background:var(--smv-celestial-bg);color:#fff8e7;border-bottom:1px solid rgb(238, 232, 228);box-shadow:rgba(35, 20, 25, 0.07) 0px 4px 18px;position:relative;z-index:1000}
 #smvPremiumHeaderV9 .smv9-nav{max-width:1280px;min-height:78px;margin:auto;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 #smvPremiumHeaderV9 .smv9-brand{display:flex;align-items:center;gap:9px;flex:0 0 auto;text-decoration:none;color:inherit}
 #smvPremiumHeaderV9 .smv9-brand img{display:block;width:50px;height:50px;object-fit:contain}
@@ -3233,7 +3233,7 @@ main.container:where(:not(.smv-css-island,.smv-css-island *)){padding-left:2px!i
 #smvPremiumHeaderV9 .smv9-menu > *{min-width:0px!important;width:auto!important;margin:0px!important;justify-self:stretch!important;text-align:center!important}
 #smvPremiumHeaderV9 .smv9-menu .login, #smvPremiumHeaderV9 .smv9-menu .register{align-self:center!important;margin:0px!important}
 #smvPremiumHeaderV9 .smv9-menu .register{grid-area:auto!important}}
-#smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:var(--smv-celestial-bg)!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:rgb(23, 25, 39)!important;overflow:visible!important;position:relative!important;z-index:1000!important}
+#smvPremiumHeaderV9:where(:not(.hidden)){display:block!important;width:100%!important;height:auto!important;min-height:0px!important;margin:0px!important;padding:0px!important;background:var(--smv-celestial-bg)!important;border-width:0px 0px 1px!important;border-top-style:initial!important;border-right-style:initial!important;border-left-style:initial!important;border-top-color:initial!important;border-right-color:initial!important;border-left-color:initial!important;border-image:initial!important;border-bottom-style:solid!important;border-bottom-color:rgb(238, 232, 228)!important;box-shadow:rgba(24, 18, 20, 0.07) 0px 3px 14px!important;color:#fff8e7!important;overflow:visible!important;position:relative!important;z-index:1000!important}
 #smvPremiumHeaderV9 .smv9-nav{width:min(1280px, 100%)!important;min-height:74px!important;margin:0px auto!important;padding:8px 18px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;background:transparent!important}
 #smvPremiumHeaderV9 .smv9-brand{display:flex!important;align-items:center!important;gap:9px!important;min-width:max-content!important;margin:0px!important;padding:0px!important;background:transparent!important;border:0px!important;text-decoration:none!important}
 #smvPremiumHeaderV9 .smv9-brand img{display:block!important;width:72px!important;height:72px!important;max-width:72px!important;object-fit:cover!important;object-position:center!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;border:0!important;border-radius:50%!important;background:transparent!important}
@@ -4286,7 +4286,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     background-color:#100b26!important;
     background-image:var(--smv-celestial-bg)!important;
     background-size:cover!important;
-    background-position:center top,center calc(0px - 152px)!important;
+    background-position:center!important;
     background-repeat:no-repeat!important;
     box-shadow:none!important;
     overflow:hidden!important;
