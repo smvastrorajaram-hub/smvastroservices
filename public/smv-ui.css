@@ -7,18 +7,19 @@
   --smv207-gold:#e5c37d;
   --smv207-gold-text:#e5c77d;
   --smv207-gold-soft:#ae8b50;
-  --smv207-ivory:#0a1227;
-  --smv207-paper:#111c33;
-  --smv207-surface:transparent;
-  --smv207-ink:#f2eddf;
-  --smv207-muted:#c4ccdc;
-  --smv207-line:rgba(223,189,115,.18);
+  --smv207-ivory:#fffaf0;
+  --smv207-paper:#fff8e7;
+  --smv207-surface:#fff8e7;
+  --smv207-ink:#30251b;
+  --smv207-muted:#6b6257;
+  --smv207-line:rgba(110,80,30,.20);
   --smv207-success:#74d7a5;
   --smv207-danger:#ff8994;
   --smv207-info:#a0bce8;
-  --smv207-form-surface:#24103F;
+  --smv207-form-surface:#fffaf0;
   --smv207-form-magenta-deep:#8f0043;
   --smv207-form-white:#ffffff;
+  --smv207-form-ink:#30251b;
   --smv207-radius-sm:0;
   --smv207-radius:0;
   --smv207-radius-lg:0;
@@ -54,7 +55,7 @@ body.smv-legal-page,
   -webkit-font-smoothing:antialiased;
 }
 html[lang="ta"] body{font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.68}
-body.smv-v12-theme{background:linear-gradient(180deg,#fffdf9 0,#fff 28%,#fffdf8 100%);background:radial-gradient(ellipse at 12% 5%,rgba(91,102,171,.20),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(223,189,115,.10),transparent 30%),linear-gradient(155deg,#070d1e 0%,#101b32 52%,#0a1124 100%);}
+body.smv-v12-theme{background:#fff8e7;}
 
 /* Content rhythm — intentionally excludes premium photographic header/hero typography. */
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation,.smv-consult-dedicated-shell) :where(h1,h2,h3,h4),
@@ -84,28 +85,28 @@ body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-b
 body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card) :where(p,li,.small){overflow-wrap:anywhere}
 body.smv-v12-theme .card::before{content:none!important;display:none!important}
 body.smv-v12-theme .stat{background:transparent!important;padding:18px 0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-body.smv-v12-theme .stat b{color:#f3d99b!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
+body.smv-v12-theme .stat b{color:#6b4b1e!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
 
 /* Forms */
-body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:#f2eddf;font-weight:650;line-height:1.4}
+body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:var(--smv207-ink);font-weight:650;line-height:1.4}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
   width:100%;
   max-width:100%;
   min-height:44px;
   box-sizing:border-box;
-  padding:10px 12px;border:1px solid rgba(223,189,115,.32)!important;border-radius:0!important;background:var(--smv207-form-surface)!important;color:#f2eddf!important;
+  padding:10px 12px;border:1px solid rgba(223,189,115,.32)!important;border-radius:0!important;background:var(--smv207-form-surface)!important;color:var(--smv207-form-ink)!important;
   font:inherit;
   line-height:1.35;box-shadow:none;
   transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
--webkit-text-fill-color:#f2eddf!important;caret-color:#f2eddf!important;}
+-webkit-text-fill-color:var(--smv207-form-ink)!important;caret-color:var(--smv207-form-ink)!important;}
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) textarea{min-height:92px;resize:vertical}
-body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#c4ccdc!important;opacity:1;-webkit-text-fill-color:#c4ccdc!important;}
+body.smv-v12-theme :where(input,select,textarea)::placeholder{color:#6b6257!important;opacity:1;-webkit-text-fill-color:#6b6257!important;}
 body.smv-v12-theme :where(input,select,textarea):focus-visible{
   outline:0!important;
   border-color:var(--smv207-red)!important;
   box-shadow:0 0 0 3px rgba(139,23,23,.13)!important;
 }
-body.smv-v12-theme :where(input,select,textarea):disabled{background:var(--smv207-form-surface)!important;color:#c4ccdc!important;cursor:not-allowed;-webkit-text-fill-color:#c4ccdc!important;border-color:rgba(223,189,115,.18)!important;}
+body.smv-v12-theme :where(input,select,textarea):disabled{background:var(--smv207-form-surface)!important;color:#6b6257!important;cursor:not-allowed;-webkit-text-fill-color:#6b6257!important;border-color:rgba(223,189,115,.18)!important;}
 body.smv-v12-theme .grid{gap:clamp(10px,1.35vw,16px)!important}
 
 /* Registration, login and question forms — use the existing Cosmic Violet theme. */
@@ -116,8 +117,8 @@ body.smv-v12-theme #smvPublicQuestionWindow,
 body.smv-v12-theme #smvPublicQuestionWindow #ask-flow > .card,
 body.smv-v12-theme #privateConsultationQuestionCard{
   background:var(--smv207-form-surface)!important;
-  color:var(--smv207-form-white)!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  color:var(--smv207-form-ink)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
   border:0!important;
   box-shadow:none!important;
 }
@@ -125,25 +126,25 @@ body.smv-v12-theme #modal.auth-modal-active .auth-shell :where(h2,h3,p,label,.sm
 body.smv-v12-theme #astro-register-form > .card :where(h2,h3,p,label,.small),
 body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(h2,h3,p,label,.small),
 body.smv-v12-theme #privateConsultationQuestionCard :where(h3,p,label,.small,.success,.error){
-  color:var(--smv207-form-white)!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  color:var(--smv207-form-ink)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
 }
 body.smv-v12-theme #modal.auth-modal-active .auth-field,
 body.smv-v12-theme #astro-register-form #astroRegistrationForm :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
 body.smv-v12-theme #smvPublicQuestionWindow #ask-flow :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
 body.smv-v12-theme #privateConsultationQuestionCard :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
   background:var(--smv207-form-surface)!important;
-  color:var(--smv207-form-white)!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
-  caret-color:var(--smv207-form-white)!important;
-  border:1px solid rgba(223,189,115,.32)!important;
+  color:var(--smv207-form-ink)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
+  caret-color:var(--smv207-form-ink)!important;
+  border:1px solid rgba(223,189,115,.55)!important;
 }
 body.smv-v12-theme #modal.auth-modal-active :where(input,select,textarea)::placeholder,
 body.smv-v12-theme #astro-register-form :where(input,select,textarea)::placeholder,
 body.smv-v12-theme #smvPublicQuestionWindow :where(input,select,textarea)::placeholder,
 body.smv-v12-theme #privateConsultationQuestionCard :where(input,select,textarea)::placeholder{
-  color:#fff0f6!important;
-  -webkit-text-fill-color:#fff0f6!important;
+  color:#6b6257!important;
+  -webkit-text-fill-color:#6b6257!important;
   opacity:1!important;
 }
 /* Chromium autofill paints a pale field unless its inset fill and text are set explicitly. */
@@ -161,8 +162,8 @@ body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:hover
 body.smv-v12-theme #privateConsultationQuestionCard input:-webkit-autofill:focus{
   -webkit-box-shadow:0 0 0 1000px var(--smv207-form-surface) inset!important;
   box-shadow:0 0 0 1000px var(--smv207-form-surface) inset!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
-  caret-color:var(--smv207-form-white)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
+  caret-color:var(--smv207-form-ink)!important;
 }
 /* Keep the Astrologer and Ask Now back-navigation controls visible on the theme surface. */
 body.smv-v12-theme #astro-register-form #astroRegBackBtn,
@@ -191,8 +192,8 @@ body.smv-v12-theme #modal.auth-modal-active #googleAuthBtn{
   box-shadow:none!important;
 }
 body.smv-v12-theme #astro-register-form #astroRegistrationForm input[type="file"]{
-  color:var(--smv207-form-white)!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  color:var(--smv207-form-ink)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
   max-width:100%!important;
 }
 html body.smv-v12-theme #modal.auth-modal-active .modalbox > button[aria-label="Close"]{
@@ -202,8 +203,8 @@ html body.smv-v12-theme #modal.auth-modal-active .modalbox > button[aria-label="
   min-height:40px!important;
   padding:0!important;
   font:700 24px/1 Arial,sans-serif!important;
-  color:var(--smv207-form-white)!important;
-  -webkit-text-fill-color:var(--smv207-form-white)!important;
+  color:var(--smv207-form-ink)!important;
+  -webkit-text-fill-color:var(--smv207-form-ink)!important;
   background:transparent!important;
   border:0!important;
   box-shadow:none!important;
@@ -222,14 +223,14 @@ body.smv-v12-theme .btn:not(.smv-modal-action),
   transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
 }
 body.smv-v12-theme .btn:not(.smv-modal-action){border:1px solid #dfbd73!important;border-radius:0!important;background:#dfbd73!important;color:#10172b!important;-webkit-text-fill-color:#10172b!important;box-shadow:none!important;font-weight:800!important}
-body.smv-v12-theme .btn.gray:not(.smv-modal-action){background:transparent!important;color:#f2eddf!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
+body.smv-v12-theme .btn.gray:not(.smv-modal-action){background:transparent!important;color:var(--smv207-ink)!important;border:1px solid rgba(223,189,115,.42)!important;box-shadow:none!important}
 body.smv-v12-theme .btn:where(:hover,:focus-visible),.seo-page :where(.seo-action,.related-links a):where(:hover,:focus-visible){filter:brightness(.97);transform:translateY(-1px)}
 body.smv-v12-theme .btn:focus-visible,.seo-page a:focus-visible,body.smv-legal-page a:focus-visible{outline:3px solid rgba(184,137,53,.35)!important;outline-offset:2px}
 body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow:none!important;cursor:not-allowed}
 body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:center;flex-wrap:wrap}
 
 /* Dashboard — preserve compact information hierarchy while making it consistent. */
-#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:#f3d99b!important;letter-spacing:.015em!important;font-family:Georgia,"Noto Sans Tamil",serif!important;font-weight:750!important}
+#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:#6b4b1e!important;letter-spacing:.015em!important;font-family:Georgia,"Noto Sans Tamil",serif!important;font-weight:750!important}
 #dashboardContent :where(.card,.stat),#admin :where(.card,.stat,.admin-content-row){min-width:0}
 #dashboardContent :where(.small,label){font-size:14px!important;font-weight:600!important}
 #dashboardContent :where(.result,.meta,.timestamp,.status-text){font-size:12px!important;font-weight:400!important}
@@ -476,7 +477,7 @@ body.smv-v12-theme .smv-withdraw-btn.is-green{background:#16a34a!important;borde
 body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn.is-red:disabled{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;opacity:1!important}
 
 /* Accessible heading level without changing the compact install-card appearance. */
-.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#f3d99b!important;-webkit-text-fill-color:#f3d99b!important;font-weight:800!important;text-transform:uppercase!important}
+.smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:800!important;text-transform:uppercase!important}
 @media(max-width:760px){.smv-install-app-copy h2{font-size:clamp(12px,4.5vw,16px)!important;white-space:nowrap!important;text-align:center!important;width:calc(100% + 66px)!important;margin-left:-66px!important}}
 
 /* Remaining structural presentation migrated from inline homepage markup. */
