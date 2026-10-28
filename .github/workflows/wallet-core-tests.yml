@@ -9,6 +9,7 @@ on:
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
       - 'test/live-push-notifications.test.js'
+      - 'test/cream-theme-audit.test.mjs'
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
       - 'multi-project-firestore.js'
@@ -90,6 +91,7 @@ jobs:
           node --check live-session-service.js
           node --check test/live-session-service.test.js
           node --check test/live-push-notifications.test.js
+          node --check test/cream-theme-audit.test.mjs
           node --check public/sw.js
           node --check test/wallet-service.test.js
           node --check public/smvastro.mjs
@@ -109,3 +111,5 @@ jobs:
         run: npm run test:wallet
       - name: Run Live Session billing tests
         run: npm run test:live-session
+      - name: Run cream theme regression tests
+        run: node --test test/cream-theme-audit.test.mjs
