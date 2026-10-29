@@ -24,11 +24,6 @@ android {
         buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
     }
 
-    dependencies {
-        implementation platform("com.google.firebase:firebase-bom:35.1.0")
-        implementation "com.google.firebase:firebase-messaging"
-    }
-
     buildTypes {
         debug {
             applicationIdSuffix ""
@@ -38,4 +33,9 @@ android {
             minifyEnabled false
         }
     }
-}
+
+
+    dependencies {
+        implementation platform("com.google.firebase:firebase-bom:35.1.0")
+        implementation "com.google.firebase:firebase-messaging"
+    }
