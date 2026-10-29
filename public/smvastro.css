@@ -2028,11 +2028,11 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 #dashboardContent .public-inbox-description:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .no-paid-public-questions:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important}
 #dashboardContent .card:has(#changePayoutBtn2) > p.small:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important}
 #dashboardContent #astroAnsweredBox .answer-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important;-webkit-text-fill-color:#6b6257!important;}
-#dashboardContent #astroAnsweredBox .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;}
+
 #dashboardContent #astroQuestionQueue .answer-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important;-webkit-text-fill-color:#6b6257!important;}
-#dashboardContent #astroQuestionQueue .answer-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;}
+
 #dashboardContent .withdrawal-history-section .withdrawal-meta-label:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important}
-#dashboardContent .withdrawal-history-section .withdrawal-meta-value:where(:not(.smv-css-island,.smv-css-island *)){color:#b91c1c!important}
+
 #dashboardContent #userNotifications .smv-notification-label:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important}
 #dashboardContent #userNotifications .smv-notification-result:where(:not(.smv-css-island,.smv-css-island *)){color:#6b6257!important}
 #dashboardContent #userNotifications .notification-red-value:where(:not(.smv-css-island,.smv-css-island *)){color:#b91c1c!important}
@@ -3079,7 +3079,7 @@ header nav a:where(:not(.smv-css-island,.smv-css-island *)), header nav button:w
 .smv-master-footer h4:where(:not(.smv-css-island,.smv-css-island *)){font-size:1rem!important}
 .smv-master-links a:where(:not(.smv-css-island,.smv-css-island *)){font-size:0.84rem!important}}
 :root{--smv-pink:#ed0750;--smv-red:#c9003e;--smv-yellow:#ffd236;--smv-ink:#101a31}
-.smv-master-top:where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
+
 header:where(:not(.smv-css-island,.smv-css-island *)){border-bottom:1px solid rgb(242, 229, 225)!important;box-shadow:rgba(44, 23, 32, 0.07) 0px 4px 18px!important}
 header .nav:where(:not(.smv-css-island,.smv-css-island *)){min-height:72px!important;padding:8px 24px!important}
 .brand .logo:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(228, 8, 73)!important}
@@ -3124,7 +3124,7 @@ header nav .smv-demo-active:where(:not(.smv-css-island,.smv-css-island *)){color
 .smv-master-service:nth-child(2n):where(:not(.smv-css-island,.smv-css-island *)){background:#fff8e7!important}
 #smvInstallAppSection{max-width:760px!important;margin:0px auto 10px!important}
 .smv-install-app-card:where(:not(.smv-css-island,.smv-css-island *)){border-radius:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
-#askNowSection.smv-new-asknow{background:#fff8e7!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+
 #askNowSection .smv-new-asknow-inner{max-width:1220px!important;margin:auto!important;background:transparent!important;border-radius:0!important;padding:27px 24px 20px!important;border:0!important;box-shadow:none!important;}
 #askNowSection .smv-new-asknow-kicker{color:#6b4b1e!important}
 #askNowSection .smv-new-asknow-kicker:where(:not(.smv-type-root,.smv-type-root *)){font-weight:900!important}
