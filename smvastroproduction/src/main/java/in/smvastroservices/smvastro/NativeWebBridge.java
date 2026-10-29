@@ -80,8 +80,9 @@ public final class NativeWebBridge {
 
     private static boolean isTrustedOrigin(Uri origin) {
         if (origin == null || !"https".equalsIgnoreCase(origin.getScheme())) return false;
-        String value = origin.toString();
-        return TRUSTED_ORIGINS.contains(value);
+        String host = origin.getHost();
+        return "smvastroservices.in".equalsIgnoreCase(host)
+            || "www.smvastroservices.in".equalsIgnoreCase(host);
     }
 
     private static void handleMessage(Context context, WebMessageCompat message, JavaScriptReplyProxy replyProxy) {
