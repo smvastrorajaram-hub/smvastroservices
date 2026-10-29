@@ -92,7 +92,7 @@ try {
   await page.screenshot({ path: new URL('mobile-ta.png', outputDir).pathname, fullPage: true });
 
   await page.setViewport({ width: 1280, height: 900 });
-  await page.waitForTimeout(250);
+  await new Promise(resolve => setTimeout(resolve, 250));
   const desktop = await page.evaluate(() => ({
     viewport: innerWidth,
     documentWidth: document.documentElement.scrollWidth,
