@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/browser-performance-baseline.cjs'
       - '.github/workflows/browser-performance-baseline.yml'
+      - 'docs/SMV-BROWSER-PERFORMANCE-BASELINE-2026-10-29.md'
   workflow_dispatch:
 
 permissions:
