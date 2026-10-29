@@ -1,0 +1,39 @@
+name: Storage and Safe Service Worker Update Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/index.html'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - '.github/workflows/storage-and-safe-sw-updates.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/index.html'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - '.github/workflows/storage-and-safe-sw-updates.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storage-and-sw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check the updated service worker syntax
+        run: |
+          node --check public/sw.js
+          node --check public/horoscope/sw.js
+      - name: Preserve browser state and prevent forced reload regressions
+        run: node --test test/storage-and-safe-sw-updates.test.js

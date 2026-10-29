@@ -1,7 +1,6 @@
 /* SMV ASTRO main-site service worker — ONLINE AUTHORITY.
-   No versioned frontend cache. No app-shell cache.
-   Frontend/Admin/UI always use the deployed network source.
-   Only offline place-search data may fall back to one stable cache. */
+   Activating a new worker must not force-reload open forms, checkout or live sessions.
+   Frontend/Admin/UI use the deployed network source; offline place-search data has one stable cache. */
 const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
 
 function isOfflinePlaceAsset(url){
@@ -19,8 +18,8 @@ self.addEventListener('activate',event=>{
     const keys=await caches.keys();
     await Promise.all(keys.filter(k=>k!==OFFLINE_PLACE_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
     await self.clients.claim();
-    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    await Promise.all(clients.map(c=>{try{return c.navigate(c.url)}catch(_){return null}}));
+    // Do not force-reload open customer/admin/live-session windows during activation.
+    // The online-authoritative fetch handler serves current assets on their next request.
   })());
 });
 
