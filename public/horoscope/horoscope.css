@@ -2856,14 +2856,7 @@ details>*{display:block!important}
 #smvSavedReports.smv-saved-reports{margin:4px 6px 9px!important;padding:6px 7px!important}
 #smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:3px!important}
 #smvSavedReports .smv-saved-row button{min-width:38px!important;padding:4px 5px!important;font-size:.61rem!important}}
-#smvSavedReports.smv-saved-reports{margin:3px auto 7px!important;padding:4px 7px!important}
-#smvSavedReports .smv-saved-group{padding:1px 0!important}
-#smvSavedReports .smv-saved-group h3{font-size:.84rem!important;margin:0 0 2px!important}
-#smvSavedReports .smv-saved-row{min-height:27px!important;padding:2px 0!important;gap:3px!important}
-#smvSavedReports .smv-saved-row b{font-size:.72rem!important}
-#smvSavedReports .smv-saved-row small{font-size:.57rem!important;margin:0!important}
-#smvSavedReports .smv-saved-row button{min-width:36px!important;min-height:22px!important;padding:3px 5px!important;font-size:.59rem!important;border-radius:5px!important}
-#smvSavedReports .smv-saved-row .smv-delete-report{min-width:40px!important}
+
 #englishHoroscopeResult .horoscope-export-actions .btn,
 #tamilHoroscopeResult .horoscope-export-actions .btn,
 #englishHoroscopeResult button,
@@ -2877,25 +2870,7 @@ details>*{display:block!important}
 .smv-v135-reason-row.smv-human-first{border-left-width:4px!important;background:rgba(255,248,226,.78)!important}
 .smv-pred-evidence{margin:8px 0 14px!important}
 .smv-pred-evidence summary{cursor:pointer;font-weight:700}
-#smvSavedReports.smv-saved-reports{max-width:980px!important;margin:6px auto 12px!important;padding:2px 8px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#fff8e7!important;-webkit-text-fill-color:currentColor!important}
-#smvSavedReports .smv-saved-group{margin:0!important;padding:5px 0!important;border:0!important;background:transparent!important}
-#smvSavedReports .smv-saved-group+.smv-saved-group{margin-top:3px!important;padding-top:6px!important;border-top:1px solid rgba(234,216,184,.58)!important}
-#smvSavedReports .smv-saved-group h3,
-#smvSavedReports h3{margin:0 0 4px!important;font-size:.95rem!important;line-height:1.2!important;font-weight:900!important;color:#f7e7bd!important;-webkit-text-fill-color:#f7e7bd!important;text-align:center!important}
-#smvSavedReports .smv-saved-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto!important;align-items:center!important;gap:5px!important;min-height:34px!important;padding:5px 0!important;border-top:1px solid rgba(234,216,184,.30)!important;background:transparent!important}
-#smvSavedReports .smv-saved-row>span{min-width:0!important;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important}
-#smvSavedReports .smv-saved-row b{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:.82rem!important;line-height:1.2!important;font-weight:800!important;color:#fff8e7!important;-webkit-text-fill-color:#fff8e7!important}
-#smvSavedReports .smv-saved-row small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:1px 0 0!important;font-size:.65rem!important;line-height:1.15!important;color:#ead9b5!important;-webkit-text-fill-color:#ead9b5!important}
-#smvSavedReports .smv-saved-row button{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:44px!important;min-height:30px!important;padding:5px 7px!important;border:0!important;border-radius:7px!important;background:#8b164e!important;color:#fff!important;-webkit-text-fill-color:#fff!important;font-size:.69rem!important;line-height:1!important;font-weight:800!important;box-shadow:none!important}
-#smvSavedReports .smv-saved-row .smv-delete-report{min-width:48px!important;background:rgba(255,255,255,.05)!important;border:1px solid #d8b97b!important;color:#f7e7bd!important;-webkit-text-fill-color:#f7e7bd!important}
-#smvSavedReports .smv-saved-group>p{margin:3px 0!important;font-size:.74rem!important;color:#ead9b5!important;-webkit-text-fill-color:#ead9b5!important;text-align:center!important}
-@media (max-width:600px){
-#smvSavedReports.smv-saved-reports{margin:5px 7px 10px!important;padding:1px 3px!important}
-#smvSavedReports .smv-saved-row{gap:4px!important;min-height:33px!important;padding:4px 0!important}
-#smvSavedReports .smv-saved-row b{font-size:.79rem!important}
-#smvSavedReports .smv-saved-row small{font-size:.63rem!important}
-#smvSavedReports .smv-saved-row button{min-width:42px!important;min-height:29px!important;padding:5px 6px!important;font-size:.67rem!important}
-#smvSavedReports .smv-saved-row .smv-delete-report{min-width:46px!important}}
+
 
 /* Direct Print/Save PDF: the live result retains today's Panchang/Hora. */
 @media print{#tamilHoroscopeResult .panchang-card,#tamilHoroscopeResult .hora-card,#englishHoroscopeResult .panchang-card,#englishHoroscopeResult .hora-card,[data-smv-screen-only^="daily-"]{display:none!important}}
