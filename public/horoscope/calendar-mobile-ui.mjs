@@ -209,14 +209,6 @@ function boot() {
     }
   }
 
-  function placeForecast() {
-    const forecast = document.getElementById("calRasiPalan");
-    const month = document.getElementById("calMonth");
-    if (forecast && month && forecast.parentElement !== root) {
-      month.before(forecast);
-    }
-  }
-
   renderText();
   setActive("home");
 
@@ -259,14 +251,9 @@ function boot() {
     observer.observe(dailyRoot, { childList: true, subtree: true, characterData: true });
   }
 
-  if ("MutationObserver" in window) {
-    const observer = new MutationObserver(() => {
-      placeForecast();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-  placeForecast();
-
+  // Keep the existing Rasi Palan module outside #smvDailyCalendar. The daily
+  // calculator rebuilds that root on language changes; moving the forecast inside
+  // it would remove the tabs and their event listeners.
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver(entries => {
       const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
