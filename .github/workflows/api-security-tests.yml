@@ -36,3 +36,9 @@ jobs:
           node --check test/api-security.test.js
       - name: Verify request-size, CORS and rate-limit policy
         run: node --test test/api-security.test.js
+      - name: Install isolated Express runtime for HTTP integration tests
+        run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
+      - name: Verify actual HTTP 413, CORS, HMAC and 429 behavior
+        env:
+          NODE_PATH: ${{ runner.temp }}/api-security-deps/node_modules
+        run: node --test test/api-security-http.test.js
