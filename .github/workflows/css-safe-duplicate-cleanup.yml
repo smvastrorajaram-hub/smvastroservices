@@ -1,0 +1,33 @@
+name: Safe CSS Duplicate Cleanup Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/smvastro.css'
+      - 'test/css-safe-duplicate-cleanup.test.mjs'
+      - '.github/workflows/css-safe-duplicate-cleanup.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/smvastro.css'
+      - 'test/css-safe-duplicate-cleanup.test.mjs'
+      - '.github/workflows/css-safe-duplicate-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safe-css-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify only the selected duplicate CSS blocks were removed
+        run: |
+          node --check test/css-safe-duplicate-cleanup.test.mjs
+          node --test test/css-safe-duplicate-cleanup.test.mjs
