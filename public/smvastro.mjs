@@ -3549,8 +3549,36 @@ let smvLiveScheduledRefreshTimer=null,smvLiveScheduledAppointmentsCache=[];
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
 let smvLiveForegroundMessagingBound = false, smvLivePendingPushOpen = null;
+let smvLiveNativePushTokenRegistered = '';
+async function smvLiveRegisterNativePushToken(tokenOverride=''){
+ const bridge=window.SMVNativeCalls;
+ if(!bridge||typeof bridge.isNativeApp!=='function'||!bridge.isNativeApp())return false;
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer'||!auth?.currentUser)return false;
+ let token=String(tokenOverride||window.__smvNativeFcmToken||'').trim();
+ if(!token){try{token=String(bridge.getFcmToken?.()||'').trim();}catch(_){}}
+ if(!token){try{bridge.requestTokenRefresh?.();}catch(_){}return false;}
+ if(smvLiveNativePushTokenRegistered===token)return true;
+ try{
+  const permissionCheck=typeof bridge.areNotificationsEnabled==='function'?bridge.areNotificationsEnabled():true;
+  if(!permissionCheck)throw new Error('Android notifications are disabled for SMV ASTRO. Enable them in Android App settings.');
+  await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,platform:'native-android',userAgent:'SMV ASTRO Android'})});
+  smvLiveNativePushTokenRegistered=token;
+  return true;
+ }catch(error){console.warn('Native Android FCM registration failed:',error?.message||error);return false;}
+}
+window.__smvNativeFcmTokenReady=token=>{
+ window.__smvNativeFcmToken=String(token||'').trim();
+ if(String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'){
+  void smvLiveRegisterNativePushToken(window.__smvNativeFcmToken);
+ }
+};
 async function smvLiveEnableBackgroundAlerts(){
  if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')throw new Error('Background Alerts can only be enabled from the Astrologer Dashboard.');
+ if(window.SMVNativeCalls?.isNativeApp?.()){
+  const nativeRegistered=await smvLiveRegisterNativePushToken();
+  if(nativeRegistered)return {registered:true,platform:'native-android'};
+  throw new Error('Native Call Ringtone is not configured on this APK yet. Register the Android app in Firebase project smv-astro, set SMV_FIREBASE_ANDROID_APP_ID when building, then reopen SMV ASTRO.');
+ }
  if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
  if(!navigator.serviceWorker?.register)throw new Error('This browser cannot register a background notification worker.');
  if(Notification.permission==='denied')throw new Error('Notifications are blocked for this site. Enable notifications in your browser or Android app settings, then try again.');
@@ -3585,6 +3613,16 @@ async function smvLiveEnableBackgroundAlerts(){
 function smvLiveBindPushControls(){
  if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
  const enable=$('smvLivePushEnable'),test=$('smvLivePushTest'),status=$('smvLivePushStatus');
+ const nativeMode=!!window.SMVNativeCalls?.isNativeApp?.();
+ if(nativeMode&&test)test.disabled=true;
+ if(nativeMode){
+  void smvLiveRegisterNativePushToken().then(registered=>{
+   if(test)test.disabled=!registered;
+   if(status)status.textContent=registered
+    ?'Native Android incoming-call ringtone is registered on this APK. Keep Android notifications and ringtone volume enabled.'
+    :'Native Android ringtone is not configured on this APK. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
+  });
+ }
  if(enable&&!enable.dataset.bound){
   enable.dataset.bound='1';
   enable.onclick=async()=>{
@@ -3592,8 +3630,11 @@ function smvLiveBindPushControls(){
    if(status)status.textContent='Requesting notification permission and registering this device…';
    try{
     await smvLiveEnableBackgroundAlerts();
-    enable.textContent='BACKGROUND ALERTS ENABLED';
-    if(status)status.textContent='This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
+    const nativeMode=!!window.SMVNativeCalls?.isNativeApp?.();
+    enable.textContent=nativeMode?'ANDROID CALL ALERTS ENABLED':'BACKGROUND ALERTS ENABLED';
+    if(status)status.textContent=nativeMode
+      ?'Native Android incoming-call ringtone is registered. Ringing stops when the request is opened/handled or times out.'
+      :'This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
     if(test)test.disabled=false;
    }catch(error){if(status)status.textContent=error?.message||String(error);}
    finally{enable.disabled=false;}

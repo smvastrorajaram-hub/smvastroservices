@@ -1043,6 +1043,11 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       return { id, data, alreadyProcessed: false, wallet: reserve };
     });
     if (txResult.expired) throw httpError(410, 'This booking has expired.', 'LIVE_BOOKING_EXPIRED');
+    void notifyAstrologerPush(uid, {
+      type: 'stop_ringing', mode: txResult.data.mode, sessionId: id, bookingId: id,
+      title: 'Incoming booking handled', body: 'The Live booking has been handled.',
+      tag: 'smv-stop-booking-' + id
+    });
     if (!txResult.alreadyProcessed) {
       await syncAstrologerAvailabilityToProfile(uid).catch(error =>
         console.warn('[Live Session] Astrologer availability sync deferred:', error?.message || error));
@@ -1098,6 +1103,11 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         customerReady: false, astrologerReady: false, updatedAt: updated.updatedAt
       }, { merge: true });
       return { data: updated, alreadyProcessed: false };
+    });
+    void notifyAstrologerPush(uid, {
+      type: 'stop_ringing', mode: result.data.mode, sessionId: id, bookingId: id,
+      title: 'Incoming request handled', body: 'The Live request has been handled.',
+      tag: 'smv-stop-session-' + id
     });
     scheduleSessionTimer(id, result.data);
     sendToParticipants(result.data, { type: 'live.session.updated', session: liveSessionSafeView(id, result.data) });
@@ -1331,6 +1341,11 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         wallet: { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved }
       };
     });
+    void notifyAstrologerPush(result.session.astrologerUid, {
+      type: 'stop_ringing', mode: result.session.mode, sessionId: id, bookingId: id,
+      title: 'Incoming request ended', body: 'The Live request has ended.',
+      tag: 'smv-stop-session-' + id
+    });
     if (sessionHistoryArchiveWriteDb && result.session?.state === 'ended') {
       // Best-effort archive after the primary billing transaction has committed.
       // Until the archive/marker is complete, listSessions still reads this
@@ -1449,6 +1464,11 @@ async function rejectOrCancel(sessionId, user, reason) {
       }
       return await releaseBookingReserveInTransaction(tx, id, booking, 'rejected', { rejectedAt: nowTimestamp(), endReason: 'rejected_by_astrologer' });
     });
+    void notifyAstrologerPush(uid, {
+      type: 'stop_ringing', sessionId: id, bookingId: id,
+      title: 'Incoming booking handled', body: 'The Live booking has been handled.',
+      tag: 'smv-stop-booking-' + id
+    });
     sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
     sendTo(uid, { type: 'live.booking.updated', booking: { id, status: result.status } });
     return { success: true, booking: safeBookingView(id, result) };
@@ -1468,6 +1488,11 @@ async function rejectOrCancel(sessionId, user, reason) {
         return { ...(await releaseBookingReserveInTransaction(tx, id, booking, 'expired', { endReason: 'booking_expired' })), bookingId: id };
       }
       return { ...(await releaseBookingReserveInTransaction(tx, id, booking, 'cancelled', { cancelledAt: nowTimestamp() })), bookingId: id };
+    });
+    void notifyAstrologerPush(result.astrologerUid, {
+      type: 'stop_ringing', sessionId: id, bookingId: id,
+      title: 'Booking cancelled', body: 'The Customer cancelled the Live booking.',
+      tag: 'smv-stop-booking-' + id
     });
     sendTo(result.astrologerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
     sendTo(result.customerUid, { type: 'live.booking.updated', booking: { id, status: result.status } });
@@ -1753,9 +1778,18 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (token.length < 30 || token.length > 8192 || /\s/.test(token)) {
         return res.status(400).json({ success: false, error: 'The browser push token is invalid. Enable Background Alerts again.' });
       }
+      const platform = String(req.body?.platform || 'web').trim().toLowerCase();
+      if (!['web', 'native-android'].includes(platform)) {
+        return res.status(400).json({ success: false, error: 'Unsupported background alert platform.' });
+      }
       const ref = profileDb.collection('smv_push_tokens').doc(hash(token));
+      const existing = await ref.get();
+      if (existing.exists && String(existing.data()?.uid || '') &&
+          String(existing.data()?.uid || '') !== String(auth.user.uid)) {
+        return res.status(403).json({ success: false, error: 'This device token is already registered to another account.' });
+      }
       await ref.set({
-        uid: auth.user.uid, token, platform: 'web',
+        uid: auth.user.uid, token, platform,
         userAgent: String(req.body?.userAgent || '').slice(0, 500),
         updatedAt: FieldValue.serverTimestamp()
       }, { merge: true });

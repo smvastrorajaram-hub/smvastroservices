@@ -113,13 +113,46 @@ test('Astrologer can register and test device-level Background Alerts', () => {
   assert.match(frontend, /renderApi\('\/live\/push\/register'/);
 });
 
-test('service worker displays background pushes and focuses the app when clicked', () => {
+test('service worker displays background pushes, ignores ring-stop control messages, and focuses the app when clicked', () => {
   const worker = read('public/sw.js');
   assert.match(worker, /onBackgroundMessage/);
   assert.match(worker, /self\.registration\.showNotification/);
   assert.match(worker, /self\.addEventListener\('notificationclick'/);
+  assert.match(worker, /String\(data\.type \|\| ''\) === 'stop_ringing'\) return/);
   assert.match(worker, /smv-astro-staging/);
   assert.match(worker, /projectId: 'smv-astro'/);
+});
+
+test('Astrologer Android test APK has a native FCM receiver and looped incoming-call ringtone service', () => {
+  const manifest = read('smvastro/src/main/AndroidManifest.xml');
+  const gradle = read('smvastro/build.gradle');
+  const app = read('smvastro/src/main/java/in/smvastroservices/test/SmvAstroApplication.java');
+  const fcm = read('smvastro/src/main/java/in/smvastroservices/test/NativePushMessagingService.java');
+  const ring = read('smvastro/src/main/java/in/smvastroservices/test/IncomingCallRingtoneService.java');
+  const incomingUi = read('smvastro/src/main/java/in/smvastroservices/test/IncomingCallActivity.java');
+  assert.match(manifest, /android\.permission\.USE_FULL_SCREEN_INTENT/);
+  assert.match(manifest, /android:name="\.NativePushMessagingService"/);
+  assert.match(manifest, /android:foregroundServiceType="mediaPlayback"/);
+  assert.match(gradle, /firebase-bom:35\.1\.0/);
+  assert.match(gradle, /SMV_FIREBASE_ANDROID_APP_ID/);
+  assert.match(app, /FirebaseApp\.initializeApp/);
+  assert.match(fcm, /FirebaseMessagingService/);
+  assert.match(fcm, /type\.equals\("live_request"\) \|\| type\.equals\("live_booking"\)/);
+  assert.match(ring, /RING_TIMEOUT_MILLIS = 120_000L/);
+  assert.match(ring, /setLooping\(true\)/);
+  assert.match(ring, /ACTION_STOP_RINGING/);
+  assert.match(incomingUi, /OPEN SMV ASTRO/);
+});
+
+test('native Android device tokens remain Astrologer-owned and the backend sends ring-stop signals on session decisions', () => {
+  const service = read('live-session-service.js');
+  const frontend = read('public/smvastro.mjs');
+  assert.match(service, /\['web', 'native-android'\]\.includes\(platform\)/);
+  assert.match(service, /uid: auth\.user\.uid, token, platform/);
+  assert.match(service, /type: 'stop_ringing'/);
+  assert.match(service, /result\.session\.astrologerUid/);
+  assert.match(frontend, /platform:'native-android'/);
+  assert.match(frontend, /window\.__smvNativeFcmTokenReady/);
 });
 
 test('Live Chat uses canonical mode/state and native visibility instead of a chat-only CSS layout override', () => {
@@ -133,7 +166,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261028-cream-content-contrast-v6'));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-chat-moderation-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -196,7 +229,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-chat-moderation-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -227,7 +260,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-chat-moderation-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -271,7 +304,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-chat-moderation-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -291,7 +324,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-chat-moderation-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
