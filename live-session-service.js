@@ -1901,27 +1901,37 @@ async function rejectOrCancel(sessionId, user, reason) {
       'X-Accel-Buffering': 'no'
     });
     res.flushHeaders?.();
-    res.write('retry: 3000\n\n');
-    res.write('data: ' + JSON.stringify({ type: 'live.ready', uid }) + '\n\n');
+    res.write('retry: 3000\\n\\n');
     if (!eventClients.has(uid)) eventClients.set(uid, new Set());
     const set = eventClients.get(uid);
+    let stopped = false;
+    let heartbeat = null;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      if (heartbeat) clearInterval(heartbeat);
+      set.delete(res);
+      if (!set.size && eventClients.get(uid) === set) eventClients.delete(uid);
+      // IncomingMessage "close" can mean the request body completed, which is
+      // normal for this long-lived GET. Only response close/abort owns SSE cleanup.
+      if (!(eventClients.get(uid) || new Set()).size) {
+        for (const id of sessionsByUid.get(uid) || []) scheduleDisconnectEnd(uid, id);
+      }
+    };
     set.add(res);
     for (const id of sessionsByUid.get(uid) || []) {
       const timer = disconnectByKey.get(uid + ':' + id);
       if (timer) { clearTimeout(timer); disconnectByKey.delete(uid + ':' + id); }
     }
-    const heartbeat = setInterval(() => {
-      try { res.write(': heartbeat\n\n'); } catch (_) {}
+    heartbeat = setInterval(() => {
+      if (stopped || res.writableEnded || res.destroyed) return;
+      try { res.write(': heartbeat\\n\\n'); } catch (_) { stop(); }
     }, 20_000);
     heartbeat.unref?.();
-    req.on('close', () => {
-      clearInterval(heartbeat);
-      set.delete(res);
-      if (!set.size) eventClients.delete(uid);
-      if (!(eventClients.get(uid) || new Set()).size) {
-        for (const id of sessionsByUid.get(uid) || []) scheduleDisconnectEnd(uid, id);
-      }
-    });
+    res.on('close', stop);
+    res.on('error', stop);
+    req.on('aborted', stop);
+    if (!stopped) res.write('data: ' + JSON.stringify({ type: 'live.ready', uid }) + '\\n\\n');
   });
 
   app.post('/live/scheduled-appointments/:id/start', async (req, res) => {
