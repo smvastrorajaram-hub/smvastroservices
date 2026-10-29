@@ -1,6 +1,6 @@
 # SMV ASTRO native Android incoming-call ringtone
 
-This change adds a native ringing path to the existing standalone Android test wrapper in smvastro/. The website/PWA FCM path remains available and the existing APK workflow file is unchanged.
+This change adds native incoming-call ringing to the separate SMV ASTRO Production Android module at smvastroproduction/. Its Android launcher label is SMV ASTRO and its package name is in.smvastroservices.smvastro. The existing smvastro/, smvhoroscope/, and smvcalendar/ modules remain standalone Test APKs, and their workflow file is unchanged.
 
 ## What it does
 
@@ -12,17 +12,17 @@ This change adds a native ringing path to the existing standalone Android test w
 
 ## Firebase Console setup required before native ringing works
 
-The repository has no Android Firebase client registration or google-services.json. Native FCM needs an Android app registered in the existing production Firebase project smv-astro; the web app ID cannot be substituted or guessed.
+The Production Android module does not commit a google-services.json or assume an Android Firebase registration already exists. Native FCM needs an Android app registered in the existing Firebase project smv-astro; the web app ID cannot be substituted or guessed. The production package is deliberately separate from the Test APK package.
 
-1. In Firebase Console, open project smv-astro and add an Android app with package name in.smvastroservices.test (the package ID of this repository's existing standalone test APK).
+1. In Firebase Console, open the existing project smv-astro and add an Android app with the exact package name in.smvastroservices.smvastro. The Android launcher label is SMV ASTRO. Do not register in.smvastroservices.test for this Production App.
 2. Copy the Android App ID. It must have the form 1:299081899217:android:....
-3. Build with SMV_FIREBASE_ANDROID_APP_ID set in the environment, or pass -PsmvFirebaseAndroidAppId=1:299081899217:android:... to Gradle.
+3. Set the GitHub repository Actions variable SMV_FIREBASE_ANDROID_APP_ID to the copied Android App ID, or build locally with that environment variable or -PsmvFirebaseAndroidAppId=1:299081899217:android:.... The separate Production APK workflow reads the repository variable.
 
-   Example: SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastro:assembleDebug
+   Example: SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastroproduction:assembleDebug
 
 The App ID is public client configuration, not a service-account secret. Do not commit Firebase Admin credentials or private service-account keys.
 
-The existing APK workflow is deliberately not modified. Its unconfigured build remains buildable, but native FCM is disabled until an Android App ID is supplied. Do not describe a default workflow APK as having working native ringing before that app ID is configured and a physical-device test is completed.
+The existing three-Test-APK workflow file is deliberately not modified, and the Test APK modules are kept separate from this Production module. The new Production workflow can compile without the App ID, but it labels that artifact FCM-UNCONFIGURED; native FCM is disabled until the registered Android App ID is supplied. Do not describe an unconfigured APK as having working native ringing before that App ID is configured and a physical-device test is completed.
 
 ## Permissions and platform limits
 
