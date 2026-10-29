@@ -1,4 +1,5 @@
 name: Multi-project read replication tests
+
 on:
   pull_request:
     paths:
@@ -10,7 +11,8 @@ on:
       - 'functions/**'
       - 'test/firestore-replica-sync.test.js'
       - 'test/firestore-quota-routing.test.js'
-       - '.github/workflows/multi-project-read-replication.yml'
+      - 'test/multi-project-workflow-config.test.js'
+      - '.github/workflows/multi-project-read-replication.yml'
   push:
     branches: [main]
     paths:
@@ -19,7 +21,6 @@ on:
       - 'multi-project-firestore.js'
       - 'server.js'
       - 'scripts/backfill-multi-project-firestore.js'
-      - 'scripts/validate-multi-project-firestore.js'
       - 'functions/**'
       - 'test/firestore-replica-sync.test.js'
       - 'test/firestore-quota-routing.test.js'
@@ -46,8 +47,9 @@ jobs:
           node --check functions/replica-catalog.js
           node --check functions/replica-sync.js
           node --check test/firestore-replica-sync.test.js
+          node --check test/multi-project-workflow-config.test.js
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('functions/package.json','utf8'))"
-      - name: Unit tests for ordering, deletes, allowlist and read gates
-        run: node --test test/firestore-replica-sync.test.js test/firestore-quota-routing.test.js
+      - name: Unit tests for ordering, deletes, allowlist, route gates and workflow paths
+        run: node --test test/firestore-replica-sync.test.js test/firestore-quota-routing.test.js test/multi-project-workflow-config.test.js
       - name: Validate Cloud Functions package
         run: npm install --prefix functions --ignore-scripts --no-audit --no-fund
