@@ -1,6 +1,7 @@
 'use strict';
 
 const { walletLedgerDocId, parseRupeesToPaise } = require('./wallet-service');
+const { inspectMessageText } = require('./public/chat-moderation');
 
 const SESSIONS = 'smv_live_sessions';
 const BOOKINGS = 'smv_live_bookings';
@@ -1477,6 +1478,10 @@ async function rejectOrCancel(sessionId, user, reason) {
     const body = String(text || '').trim();
     if (!body || body.length > MAX_MESSAGE_CHARS) {
       throw httpError(400, 'Enter a message of up to 4,000 characters.', 'LIVE_MESSAGE_INVALID');
+    }
+    const moderation = inspectMessageText(body);
+    if (!moderation.allowed && moderation.reason === 'abusive_language') {
+      throw httpError(400, moderation.message, 'LIVE_MESSAGE_ABUSIVE_LANGUAGE');
     }
     // The write transaction below re-reads and revalidates the participant/session,
     // so do not perform an extra Firestore read before entering that transaction.
