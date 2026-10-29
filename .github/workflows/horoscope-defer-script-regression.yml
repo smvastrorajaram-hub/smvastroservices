@@ -1,0 +1,33 @@
+name: Horoscope Non-blocking Script Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/index.html'
+      - 'tests/horoscope-defer-script-regression.mjs'
+      - '.github/workflows/horoscope-defer-script-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/index.html'
+      - 'tests/horoscope-defer-script-regression.mjs'
+      - '.github/workflows/horoscope-defer-script-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  defer-script-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify non-blocking script and feature-load regressions
+        run: |
+          node --check tests/horoscope-defer-script-regression.mjs
+          node --test tests/horoscope-defer-script-regression.mjs
