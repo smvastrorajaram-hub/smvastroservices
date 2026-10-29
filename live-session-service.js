@@ -1901,7 +1901,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       'X-Accel-Buffering': 'no'
     });
     res.flushHeaders?.();
-    res.write('retry: 3000\\n\\n');
+    res.write('retry: 3000\n\n');
     if (!eventClients.has(uid)) eventClients.set(uid, new Set());
     const set = eventClients.get(uid);
     let stopped = false;
@@ -1925,13 +1925,13 @@ async function rejectOrCancel(sessionId, user, reason) {
     }
     heartbeat = setInterval(() => {
       if (stopped || res.writableEnded || res.destroyed) return;
-      try { res.write(': heartbeat\\n\\n'); } catch (_) { stop(); }
+      try { res.write(': heartbeat\n\n'); } catch (_) { stop(); }
     }, 20_000);
     heartbeat.unref?.();
     res.on('close', stop);
     res.on('error', stop);
     req.on('aborted', stop);
-    if (!stopped) res.write('data: ' + JSON.stringify({ type: 'live.ready', uid }) + '\\n\\n');
+    if (!stopped) res.write('data: ' + JSON.stringify({ type: 'live.ready', uid }) + '\n\n');
   });
 
   app.post('/live/scheduled-appointments/:id/start', async (req, res) => {
