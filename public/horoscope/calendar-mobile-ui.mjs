@@ -231,8 +231,11 @@ function boot() {
     });
   };
   window.addEventListener("smv-language", syncCalendarLanguage);
-  // Keep the Calendar controls in sync even if a language setter changes the
-  // document lang attribute before its custom event is observed.
+  // The language button updates document.lang before dispatch completes.
+  // Refresh explicitly from the same controls so the UI never depends on the
+  // event's dispatch timing.
+  document.getElementById("calTamil")?.addEventListener("click", syncCalendarLanguage);
+  document.getElementById("calEnglish")?.addEventListener("click", syncCalendarLanguage);
   const languageObserver = new MutationObserver(syncCalendarLanguage);
   languageObserver.observe(document.documentElement, {
     attributes: true,
