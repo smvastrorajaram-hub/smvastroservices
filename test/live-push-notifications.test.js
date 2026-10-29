@@ -144,7 +144,7 @@ test('SMV ASTRO Production Android app has a native FCM receiver, secure bridge,
   assert.match(app, /FirebaseApp\.initializeApp/);
   assert.match(fcm, /FirebaseMessagingService/);
   assert.match(fcm, /type\.equals\("live_request"\) \|\| type\.equals\("live_booking"\)/);
-  assert.match(ring, /RING_TIMEOUT_MILLIS = 120_000L/);
+  assert.match(ring, /RING_TIMEOUT_MILLIS\\s*=\\s*120_000L/);
   assert.match(ring, /setLooping\(true\)/);
   assert.match(ring, /ACTION_STOP_RINGING/);
   assert.match(incomingUi, /OPEN SMV ASTRO/);
