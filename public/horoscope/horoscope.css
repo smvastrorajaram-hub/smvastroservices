@@ -2836,8 +2836,8 @@ details>*{display:block!important}
 #smvSavedReports.smv-saved-reports{display:block;max-width:980px;margin:10px auto 18px;padding:12px!important;border-radius:14px!important;-webkit-text-fill-color:#2f241d!important}
 #smvSavedReports[hidden]{display:none!important}
 #smvSavedReports .smv-saved-group{padding:8px 0!important}
-#smvSavedReports .smv-saved-row{display:flex!important;flex-wrap:wrap!important;gap:7px!important;padding:8px 0!important;border-top:1px solid #e4d4b7!important}
-#smvSavedReports .smv-saved-row>span{flex:1 1 220px!important;-webkit-text-fill-color:#2f241d!important}
+#smvSavedReports .smv-saved-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto!important;align-items:center!important;gap:5px!important;padding:5px 0!important;border-top:1px solid #e4d4b7!important;min-height:34px!important}
+#smvSavedReports .smv-saved-row>span{display:block!important;min-width:0!important;color:#2f241d!important;-webkit-text-fill-color:#2f241d!important}
 #smvSavedReports .smv-saved-row b,#smvSavedReports .smv-saved-row small,#smvSavedReports h3,#smvSavedReports p{color:#2f241d!important;-webkit-text-fill-color:#2f241d!important}
 #smvSavedReports .smv-saved-row button{visibility:visible!important;opacity:1!important;flex:0 0 auto!important;min-width:52px!important;min-height:32px!important;padding:7px 10px!important;border-radius:8px!important;font-size:.78rem!important}
 #smvSavedReports .smv-saved-row .smv-delete-report{-webkit-text-fill-color:#8b164e!important}
@@ -2845,17 +2845,16 @@ details>*{display:block!important}
 #smvSavedReports .smv-saved-group{padding:3px 0!important}
 #smvSavedReports .smv-saved-group+.smv-saved-group{padding-top:5px!important;border-top:1px solid #e2cfaa!important}
 #smvSavedReports .smv-saved-group h3{font-size:.96rem!important;line-height:1.15!important;margin:1px 0 4px!important;color:#2f241d!important}
-#smvSavedReports .smv-saved-row{gap:4px!important;padding:4px 0!important;border-top:1px solid #eadfca!important;min-height:32px!important}
-#smvSavedReports .smv-saved-row>span{display:block!important;color:#2f241d!important}
-#smvSavedReports .smv-saved-row b{font-size:.78rem!important;line-height:1.15!important;color:#2f241d!important}
-#smvSavedReports .smv-saved-row small{font-size:.62rem!important;line-height:1.1!important;color:#786a58!important}
-#smvSavedReports .smv-saved-row button{min-width:42px!important;min-height:25px!important;padding:4px 6px!important;border-radius:6px!important;font-size:.64rem!important}
+#smvSavedReports .smv-saved-row{gap:5px!important;padding:5px 0!important;border-top:1px solid #eadfca!important;min-height:34px!important}
+#smvSavedReports .smv-saved-row b{font-size:.84rem!important;line-height:1.2!important;color:#2f241d!important}
+#smvSavedReports .smv-saved-row small{font-size:.67rem!important;line-height:1.15!important;color:#786a58!important}
+#smvSavedReports .smv-saved-row button{min-width:42px!important;min-height:29px!important;padding:5px 6px!important;border-radius:6px!important;font-size:.67rem!important}
 #smvSavedReports .smv-saved-row .smv-delete-report{min-width:46px!important;background:#fff!important;border:1px solid #8b164e!important;color:#8b164e!important}
 #smvSavedReports .smv-saved-group>p{font-size:.72rem!important;margin:2px 0!important;color:#786a58!important}
 @media (max-width:600px){
 #smvSavedReports.smv-saved-reports{margin:4px 6px 9px!important;padding:6px 7px!important}
-#smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:3px!important}
-#smvSavedReports .smv-saved-row button{min-width:38px!important;padding:4px 5px!important;font-size:.61rem!important}}
+#smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:4px!important;min-height:33px!important}
+#smvSavedReports .smv-saved-row button{min-width:40px!important;min-height:28px!important;padding:5px 5px!important;font-size:.65rem!important}}
 
 #englishHoroscopeResult .horoscope-export-actions .btn,
 #tamilHoroscopeResult .horoscope-export-actions .btn,
