@@ -10,8 +10,7 @@ on:
       - 'functions/**'
       - 'test/firestore-replica-sync.test.js'
       - 'test/firestore-quota-routing.test.js'
-      - 'test/multi-project-workflow-config.test.js'
-      - '.github/workflows/multi-project-read-replication.yml'
+       - '.github/workflows/multi-project-read-replication.yml'
   push:
     branches: [main]
     paths:
@@ -24,6 +23,7 @@ on:
       - 'functions/**'
       - 'test/firestore-replica-sync.test.js'
       - 'test/firestore-quota-routing.test.js'
+      - 'test/multi-project-workflow-config.test.js'
       - '.github/workflows/multi-project-read-replication.yml'
 permissions:
   contents: read
