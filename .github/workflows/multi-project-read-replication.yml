@@ -7,10 +7,10 @@ on:
       - 'multi-project-firestore.js'
       - 'server.js'
       - 'scripts/backfill-multi-project-firestore.js'
-      - 'scripts/validate-multi-project-firestore.js'
       - 'functions/**'
       - 'test/firestore-replica-sync.test.js'
       - 'test/firestore-quota-routing.test.js'
+      - 'test/multi-project-workflow-config.test.js'
       - '.github/workflows/multi-project-read-replication.yml'
   push:
     branches: [main]
@@ -42,7 +42,6 @@ jobs:
           node --check firestore-read-replica-catalog.js
           node --check firestore-replica-sync.js
           node --check scripts/backfill-multi-project-firestore.js
-          node --check scripts/validate-multi-project-firestore.js
           node --check functions/index.js
           node --check functions/replica-catalog.js
           node --check functions/replica-sync.js
