@@ -1,0 +1,43 @@
+name: Browser Performance Baseline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/browser-performance-baseline.cjs'
+      - '.github/workflows/browser-performance-baseline.yml'
+      - 'docs/SMV-BROWSER-PERFORMANCE-BASELINE-2026-10-29.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Lighthouse CLI
+        run: npm install --prefix "${RUNNER_TEMP}/lighthouse-deps" --no-save --no-package-lock lighthouse@13.6.0
+      - name: Locate Chrome
+        shell: bash
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH" || { echo 'Chrome/Chromium not found on runner.' >&2; exit 1; }
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+      - name: Run repeated mobile Lighthouse measurements
+        env:
+          LIGHTHOUSE_BIN: ${{ runner.temp }}/lighthouse-deps/node_modules/.bin/lighthouse
+          PERF_REPORT_DIR: ${{ runner.temp }}/lighthouse-reports
+        run: node scripts/browser-performance-baseline.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smv-browser-performance-lighthouse
+          path: ${{ runner.temp }}/lighthouse-reports/
+          if-no-files-found: warn
+          retention-days: 30
