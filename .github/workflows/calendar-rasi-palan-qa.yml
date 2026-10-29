@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/horoscope/calendar-mobile-ui.css'
+      - 'public/horoscope/calendar-mobile-ui.mjs'
+      - 'tests/calendar-mobile-ui-browser.mjs'
       - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/horoscope-language.js'
@@ -23,6 +26,9 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/horoscope/calendar-mobile-ui.css'
+      - 'public/horoscope/calendar-mobile-ui.mjs'
+      - 'tests/calendar-mobile-ui-browser.mjs'
       - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/horoscope-language.js'
@@ -63,6 +69,8 @@ jobs:
           node --check public/horoscope/calendar-rasi-palan-admin.mjs
           node --check public/horoscope/prediction-admin-workbench.mjs
           node --check public/horoscope/calendar/sw.js
+          node --check public/horoscope/calendar-mobile-ui.mjs
+          node --check tests/calendar-mobile-ui-browser.mjs
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
           node --check tests/calendar-rasi-palan-browser-smoke.mjs
@@ -97,11 +105,24 @@ jobs:
         env:
           SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
+      - name: Run Calendar source mobile UI browser smoke
+        if: always()
+        env:
+          SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
+        run: node tests/calendar-mobile-ui-browser.mjs
       - name: Preserve Calendar preview screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: SMV-CALENDAR-RASI-PALAN-PREVIEW
           path: calendar-rasi-palan-smoke-output/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve Calendar mobile UI preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-CALENDAR-MOBILE-UI-PREVIEW
+          path: calendar-mobile-ui-smoke-output/
           if-no-files-found: warn
           retention-days: 14

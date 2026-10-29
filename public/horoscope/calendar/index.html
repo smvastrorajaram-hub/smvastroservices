@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0f514c">
+<meta name="theme-color" content="#4c2b7b">
 <meta name="color-scheme" content="light">
 <meta name="application-name" content="SMV CALENDAR">
 <meta name="mobile-web-app-capable" content="yes">
@@ -36,8 +36,9 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <link rel="stylesheet" href="../horoscope.css">
 <link rel="stylesheet" href="../daily-calendar.css">
 <link rel="stylesheet" href="../calendar-theme.css">
+<link rel="stylesheet" href="../calendar-mobile-ui.css?v=20261029-source-v1">
 </head>
-<body class="calendar-only">
+<body class="calendar-only smv-calendar-refresh">
 <header class="calendar-topbar">
 <nav class="calendar-product-nav" aria-label="SMV services">
 <a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>
@@ -145,5 +146,6 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
   // The CSS guard also covers Calendar panels rebuilt after language switches.
 })();
 </script>
+<script type="module" src="../calendar-mobile-ui.mjs?v=20261029-source-v1"></script>
 </body>
 </html>
