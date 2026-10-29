@@ -77,10 +77,88 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
 <div class="hidden" id="tamilHoroscopeResult"></div>
 
 </div>
-</section><section id="smvMarriageMatching"></section></main><div role="contentinfo" id="siteFooter" class="site-footer smv-css-island"><strong>SMV HOROSCOPE</strong><p>Sri Maduraveerayah Horoscope</p><p>Traditional Vedic Guidance</p><p>Horoscope interpretations are for reflection and personal guidance.</p><div class="smv-install-area" id="smvHoroscopeInstallArea" hidden><button id="installApp" type="button"><img src="assets/icon-192.png" width="28" height="28" alt=""> <span>Install SMV HOROSCOPE</span></button><p id="installStatus" role="status"></p></div></div><script src="report-identity.js"></script><script type="module" src="boot.mjs"></script><script type="module" src="horoscope-auth.mjs"></script><script type="module" src="report-store.mjs"></script><script src="horoscope-life-engine.js"></script><script src="d9-reading.js"></script><script src="horoscope-judgement-engine.js"></script><script src="prediction-rules-published.js"></script><script src="prediction-rule-engine.js"></script><script type="module" src="prediction-rules-sync.mjs"></script><script type="module" src="prediction-admin.mjs"></script><script type="module" src="prediction-admin-workbench.mjs"></script><script src="integrated.js"></script><script src="d1-time-reading.js"></script><script src="horoscope.js?v=20261019-ayurdaya-rules-duration-v253"></script><script src="prediction-synthesis.js"></script><script src="prediction-online.js"></script><script src="horoscope-translations.js"></script><script src="horoscope-language.js"></script>
+</section><section id="smvMarriageMatching"></section></main><div role="contentinfo" id="siteFooter" class="site-footer smv-css-island"><strong>SMV HOROSCOPE</strong><p>Sri Maduraveerayah Horoscope</p><p>Traditional Vedic Guidance</p><p>Horoscope interpretations are for reflection and personal guidance.</p><div class="smv-install-area" id="smvHoroscopeInstallArea" hidden><button id="installApp" type="button"><img src="assets/icon-192.png" width="28" height="28" alt=""> <span>Install SMV HOROSCOPE</span></button><p id="installStatus" role="status"></p></div></div><script src="report-identity.js"></script><script type="module" src="boot.mjs"></script><script type="module" src="horoscope-auth.mjs"></script><script type="module" src="report-store.mjs"></script><script src="d9-reading.js"></script><script src="prediction-rules-published.js"></script><script src="prediction-rule-engine.js"></script><script type="module" src="prediction-rules-sync.mjs"></script><script type="module" src="prediction-admin.mjs"></script><script type="module" src="prediction-admin-workbench.mjs"></script><script src="horoscope.js?v=20261019-ayurdaya-rules-duration-v253"></script><script src="prediction-online.js"></script><script src="horoscope-translations.js"></script><script src="horoscope-language.js"></script>
 <script src="./location-search-online-offline.js"></script><script src="horoscope-details.js"></script><script src="horoscope-form.js"></script>
-<script type="module" src="./birth-offset-live.mjs"></script><script src="pwa.js"></script><script>
-(()=>{let loaded=false,promise=null;const load=()=>{if(loaded)return promise||Promise.resolve();loaded=true;promise=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='marriage-matching.js?v=20261019-ayurdaya-rules-duration-v253';sc.onload=resolve;sc.onerror=()=>reject(new Error('Marriage Matching module could not be loaded.'));document.body.appendChild(sc);}).catch(e=>{loaded=false;promise=null;console.error(e);});return promise;};
+<script type="module" src="./birth-offset-live.mjs"></script><script src="pwa.js"></script><script id="smv-v260-lazy-calculation-engines">
+(()=> {
+  const files = [
+    'horoscope-life-engine.js?v=20261029-lazy-engines-v1',
+    'horoscope-judgement-engine.js?v=20261029-lazy-engines-v1',
+    'integrated.js?v=20261029-lazy-engines-v1',
+    'd1-time-reading.js?v=20261029-lazy-engines-v1',
+    'prediction-synthesis.js?v=20261029-lazy-engines-v1'
+  ];
+  const globalsReady = () => Boolean(
+    window.SMVLifePredictionD1 &&
+    window.SMVD311Judgement &&
+    window.SMVD1IntegratedV303 &&
+    window.SMVTimePredictionD1 &&
+    window.SMVPredictionSynthesis
+  );
+  function loadScript(file) {
+    return new Promise((resolve,reject) => {
+      const existing = [...document.scripts].find(s => s.dataset.smvLazyEngine === file);
+      if (existing && existing.dataset.smvLoaded === '1') { resolve(); return; }
+      if (existing) existing.remove();
+      const script = document.createElement('script');
+      script.src = new URL(file, document.baseURI).href;
+      script.async = false;
+      script.dataset.smvLazyEngine = file;
+      script.addEventListener('load',()=>{script.dataset.smvLoaded='1';resolve();},{once:true});
+      script.addEventListener('error',()=>{script.remove();reject(new Error('Calculation module failed to load: '+file));},{once:true});
+      document.body.appendChild(script);
+    });
+  }
+  window.__smvCalculationNarrativeEnginesReady = false;
+  window.__smvEnsureCalculationNarrativeEngines = function() {
+    if (globalsReady()) {
+      window.__smvCalculationNarrativeEnginesReady = true;
+      return Promise.resolve();
+    }
+    if (window.__smvCalculationNarrativeEnginesPromise) return window.__smvCalculationNarrativeEnginesPromise;
+    window.__smvCalculationNarrativeEnginesPromise = files.reduce(
+      (chain,file)=>chain.then(()=>loadScript(file)),
+      Promise.resolve()
+    ).then(()=>{
+      if (!globalsReady()) throw new Error('Calculation modules loaded without their expected engine exports.');
+      window.__smvCalculationNarrativeEnginesReady = true;
+    }).catch(error=>{
+      window.__smvCalculationNarrativeEnginesPromise = null;
+      window.__smvCalculationNarrativeEnginesReady = false;
+      throw error;
+    });
+    return window.__smvCalculationNarrativeEnginesPromise;
+  };
+  function showStatus(button,message,bad=false) {
+    const row=button.closest('.action-row')||button.parentElement||document.body;
+    let el=row.querySelector('[data-smv-lazy-engine-status]');
+    if(!el){el=document.createElement('p');el.dataset.smvLazyEngineStatus='1';el.className='small';el.setAttribute('role','status');el.setAttribute('aria-live','polite');row.appendChild(el);}
+    el.textContent=message||'';
+    el.dataset.error=bad?'1':'0';
+  }
+  document.addEventListener('click',async event=>{
+    const button=event.target?.closest?.('#generateEnglishHoroscope,#generateTamilHoroscope,#smvAdminOpenTools');
+    if(!button||window.__smvCalculationNarrativeEnginesReady||globalsReady())return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    button.disabled=true;
+    showStatus(button,document.documentElement.lang==='ta'?'விரிவான கணிப்பு இயந்திரங்கள் ஏற்றப்படுகின்றன…':'Loading detailed calculation modules…');
+    try {
+      await window.__smvEnsureCalculationNarrativeEngines();
+      showStatus(button,'');
+      button.disabled=false;
+      button.click();
+    } catch(error) {
+      button.disabled=false;
+      showStatus(button,document.documentElement.lang==='ta'
+        ? 'கணிப்பு கோப்புகளை ஏற்ற முடியவில்லை. இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும்.'
+        : 'Calculation modules could not be loaded. Check the connection and try again.',true);
+      console.error('SMV HOROSCOPE lazy engine load failed:',error);
+    }
+  },true);
+})();
+</script><script>
+(()=>{let loaded=false,promise=null;const load=()=>{if(loaded)return promise||Promise.resolve();loaded=true;promise=(async()=>{await window.__smvEnsureCalculationNarrativeEngines?.();await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='marriage-matching.js?v=20261019-ayurdaya-rules-duration-v253';sc.onload=resolve;sc.onerror=()=>reject(new Error('Marriage Matching module could not be loaded.'));document.body.appendChild(sc);});})().catch(e=>{loaded=false;promise=null;console.error(e);});return promise;};
  const target=document.getElementById('smvMarriageMatching');
  if(location.hash==='#smvMarriageMatching')load();
  if(target&&'IntersectionObserver'in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();load();}},{rootMargin:'700px'});io.observe(target);}else if(target)load();
