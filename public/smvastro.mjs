@@ -3749,7 +3749,7 @@ function smvLivePanelHtml(s,incoming){
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv||s.state==='ended'?'hidden':'')+' style="color:#6b6257;-webkit-text-fill-color:#6b6257">'+(s.state==='preparing'?(viewerIsCustomer?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.'):(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.'))+'</p>'+
  '<div id="smvLiveConnectChatWrap" '+(chat&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||'')?'':'hidden')+' style="margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveConnectChat" type="button">CONNECT CUSTOMER CHAT NOW</button></div>'+'<div id="smvLiveChatArea" '+(chat&&active?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffaf0;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="flex:1 1 auto;min-height:120px;max-height:none;overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fffaf0;color:#30251b;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:60px;padding:7px;border:1px solid #b9a17b;border-radius:8px;background:#fffaf0;color:#30251b;resize:vertical;overflow-wrap:anywhere"></textarea><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
- '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite" style="color:#30251b;-webkit-text-fill-color:#30251b;overflow-wrap:anywhere"></p></div><div class="action-row smv-live-session-actions" style="position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#fff8e7;border-top:1px solid #d4af37"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveDownloadReceipt" type="button" '+(s.state==='ended'?'':'hidden')+'>PRINT / SAVE AS PDF</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'hidden':'')+'>'+(active?'END SESSION':'CANCEL / CLOSE SESSION')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveClosePanel" type="button" '+(s.state==='ended'?'hidden':'')+'>CLOSE WINDOW</button></div></div>';
+ '<p id="smvLiveSessionResult" class="small" role="status" aria-live="polite" style="color:#30251b;-webkit-text-fill-color:#30251b;overflow-wrap:anywhere"></p></div><div class="action-row smv-live-session-actions" style="position:static;flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:8px;padding:7px 0 calc(7px + env(safe-area-inset-bottom));background:#fff8e7;border-top:1px solid #d4af37"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveDownloadReceipt" type="button" '+(s.state==='ended'?'':'hidden')+'>PRINT / SAVE AS PDF</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveEndSession" type="button" '+(s.state==='ended'?'hidden':'')+'>'+(active?'END SESSION':'CANCEL SESSION')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveClosePanel" type="button" '+(s.state==='ended'?'hidden':'')+'>CLOSE WINDOW</button></div></div>';
 }
 async function smvLivePrintReceipt(session){
  const s=session||{};
@@ -3866,7 +3866,7 @@ function smvLiveApplySession(session){
  const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';
  const chatArea=$('smvLiveChatArea');if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);
   if(chat&&active)smvLiveStartChatRecovery(s.id,s);else smvLiveStopChatRecovery();
- if($('smvLiveEndSession')){ $('smvLiveEndSession').hidden=s.state==='ended';$('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':'CANCEL / CLOSE SESSION';}
+ if($('smvLiveEndSession')){ $('smvLiveEndSession').hidden=s.state==='ended';$('smvLiveEndSession').disabled=s.state==='ended';$('smvLiveEndSession').textContent=active?'END SESSION':'CANCEL SESSION';}
  if($('smvLiveClosePanel'))$('smvLiveClosePanel').hidden=s.state==='ended';
  if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false).catch(smvLiveShowError);
  // The Customer now starts WebRTC from the explicit microphone button, preserving the browser permission gesture.
@@ -3921,7 +3921,7 @@ function smvLiveOpenSession(session,wallet,incoming){
  if(receipt)receipt.onclick=()=>{smvLivePrintReceipt(smvLiveCurrentSession).catch(e=>smvLiveShowError(e));};
  if(accept)accept.onclick=async()=>{smvLiveStopRingtone();smvLiveMuteUntilVoiceConnected();accept.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/accept',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'preparing'});}catch(e){smvLiveShowError(e);accept.disabled=false;smvLiveSyncRemoteAudio();}};
  if(reject)reject.onclick=async()=>{smvLiveStopRingtone();reject.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({})});smvLiveApplySession(r.session||{...smvLiveCurrentSession,state:'ended'});}catch(e){smvLiveShowError(e);reject.disabled=false;}};
- if(end)end.onclick=async()=>{smvLiveStopRingtone();end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});const endedSession=r.session||{...smvLiveCurrentSession,state:'ended'};smvLiveApplySession(endedSession);if($('smvLiveSessionResult'))$('smvLiveSessionResult').textContent=smvLiveSessionEndedMessage(endedSession,r.wallet);if(String(currentUser?.uid||'')===String(endedSession.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));}catch(e){smvLiveShowError(e);end.disabled=false;}};
+ if(end)end.onclick=async()=>{smvLiveStopRingtone();end.disabled=true;try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})});const endedSession=r.session||{...smvLiveCurrentSession,state:'ended'};smvLiveApplySession(endedSession);if($('smvLiveSessionResult'))$('smvLiveSessionResult').textContent=smvLiveSessionEndedMessage(endedSession,r.wallet);}catch(e){smvLiveShowError(e);end.disabled=false;}};
  if(close)close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();};
  const form=$('smvLiveMessageForm');
  if(form)form.onsubmit=async e=>{e.preventDefault();const input=$('smvLiveMessageInput'),button=$('smvLiveSendMessage'),body=String(input?.value||'').trim();if(!body)return;if(button){button.disabled=true;button.textContent='SENDING…';}const pendingId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2);const pendingRow=smvLiveAppendMessage({id:pendingId,sessionId:id,senderUid:currentUser?.uid,text:body,createdAt:new Date().toISOString()});if(input)input.value='';try{const r=await renderApi('/live/sessions/'+encodeURIComponent(id)+'/messages',{method:'POST',body:JSON.stringify({text:body})});if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveAppendMessage(r.message);}catch(err){if(pendingRow?.isConnected)pendingRow.remove();smvLiveMessageSeen.delete(pendingId);smvLiveShowError(err);if(input&&!input.value)input.value=body;}finally{if(button){button.disabled=false;button.textContent='SEND MESSAGE';}}};
@@ -4252,7 +4252,7 @@ function smvLiveHandleEvent(ev){
   else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);if(String(currentUser?.uid||'')===String(s.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'));loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
@@ -4271,22 +4271,45 @@ function smvLiveStopEventStream(){
 function smvLiveStartEventStream(){
  const user=auth?.currentUser;if(!user||!currentUser||currentUser.uid!==user.uid)return;if(smvLiveEventUid===user.uid&&smvLiveEventController)return;
  smvLiveStopEventStream();smvLiveEventUid=user.uid;const uid=user.uid,controller=new AbortController();smvLiveEventController=controller;
- // Keep low-frequency recovery polling only until the stream is confirmed healthy.
+ // Keep recovery polling active until the server's live.ready frame confirms the stream.
  smvLiveStartFallbackPolling();
  (async()=>{
+  let watchdog=null,lastByteAt=Date.now();
   try{
    const token=await user.getIdToken(),resp=await fetch(BACKEND+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
    if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
-   smvLiveEventStreamConnected=true;
-   smvLiveStopFallbackPolling();
-   // Reconcile state, chat history and WebRTC signals missed while SSE was disconnected.
-   smvLiveReconcileAfterEventStreamConnect().catch(()=>{});
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
-   while(true){const item=await reader.read();if(item.done)break;buffer+=decoder.decode(item.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);const line=frame.split('\n').find(x=>x.startsWith('data:'));if(line)try{smvLiveHandleEvent(JSON.parse(line.slice(5).trim()));}catch(e){console.warn('Invalid Live Session event:',e);}}}
+   // Some proxies keep HTTP 200 open after the application stream has stalled.
+   // Abort a silent stream so the existing recovery pollers and reconnect can resume.
+   watchdog=setInterval(()=>{if(Date.now()-lastByteAt>45000)controller.abort();},5000);
+   while(true){
+    const item=await reader.read();
+    if(item.done)break;
+    if(!item.value)continue;
+    lastByteAt=Date.now();
+    buffer+=decoder.decode(item.value,{stream:true});
+    let n;
+    while((n=buffer.indexOf('\n\n'))>=0){
+     const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);
+     const line=frame.split('\n').find(x=>x.startsWith('data:'));
+     if(!line)continue;
+     try{
+      const event=JSON.parse(line.slice(5).trim());
+      if(event?.type==='live.ready'&&!smvLiveEventStreamConnected){
+       smvLiveEventStreamConnected=true;
+       smvLiveStopFallbackPolling();
+       // Reconcile state, chat history and WebRTC signals missed while reconnecting.
+       smvLiveReconcileAfterEventStreamConnect().catch(()=>{});
+      }
+      smvLiveHandleEvent(event);
+     }catch(e){console.warn('Invalid Live Session event:',e);}
+    }
+   }
   }catch(e){
    if(e?.name!=='AbortError')console.warn('Live events disconnected; enabling recovery polling.',e?.message||e);
    if(smvLiveEventController===controller){smvLiveEventStreamConnected=false;smvLiveStartFallbackPolling();}
   }finally{
+   if(watchdog)clearInterval(watchdog);
    const isCurrent=smvLiveEventController===controller;
    if(isCurrent){smvLiveEventController=null;smvLiveEventStreamConnected=false;}
    if(isCurrent&&currentUser?.uid===uid&&auth?.currentUser?.uid===uid){
@@ -4302,6 +4325,11 @@ function smvLiveUpdateDashboardSessionStatus(session){
  const previous=smvLiveDashboardSessionsById.get(id)||{};
  const current=smvLiveMergeSessionState(previous,{...session,id});
  smvLiveDashboardSessionsById.set(id,current);
+ // Wallet settlement may be reported by the recovery poll after the session modal
+ // was closed. Refresh on the authoritative terminal transition, not only in the modal.
+ if(current.state==='ended'&&String(previous.state||'')!=='ended'&&String(current.customerUid||'')===String(currentUser?.uid||'')){
+  window.dispatchEvent(new Event('smv:wallet-updated'));
+ }
  const updateRow=()=>{
   const host=$('smvLiveDashboardSessions');if(!host)return;
   const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
