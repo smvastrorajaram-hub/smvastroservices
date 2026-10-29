@@ -966,3 +966,63 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
   assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
 });
+
+
+test('Live Session SSE cleanup is tied to the response lifecycle, not normal request completion', () => {
+  const service = read('live-session-service.js');
+  const start = service.indexOf("app.get('/live/events', async (req, res) => {");
+  const end = service.indexOf("app.post('/live/scheduled-appointments/:id/start'", start);
+  assert.ok(start >= 0 && end > start, 'Live event route exists');
+  const route = service.slice(start, end);
+  assert.ok(route.includes('res.on(\\'close\\', stop);'), 'Response close releases the SSE client');
+  assert.ok(route.includes('res.on(\\'error\\', stop);'), 'Response errors release the SSE client');
+  assert.ok(route.includes('req.on(\\'aborted\\', stop);'), 'Aborted requests release the SSE client');
+  assert.equal(route.includes('req.on(\\'close\\''), false, 'A completed GET request must not be mistaken for a disconnected SSE response');
+  assert.ok(route.includes('if (stopped) return;'), 'Cleanup is idempotent');
+  assert.ok(route.includes('if (heartbeat) clearInterval(heartbeat);'), 'Cleanup clears the heartbeat timer');
+  assert.ok(route.includes('set.delete(res);'), 'Cleanup removes the exact response');
+});
+
+test('Live Session SSE reconnects when an HTTP 200 stream becomes silent', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('function smvLiveStartEventStream(){');
+  const end = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){', start);
+  assert.ok(start >= 0 && end > start, 'Live event stream function exists');
+  const stream = frontend.slice(start, end);
+  assert.ok(stream.includes('let watchdog=null,lastByteAt=Date.now();'), 'Stream tracks transport activity');
+  assert.ok(stream.includes('if(Date.now()-lastByteAt>45000)controller.abort();'), 'A stalled open stream is aborted and reconnectable');
+  assert.ok(stream.includes("event?.type==='live.ready'&&!smvLiveEventStreamConnected"), 'SSE is not declared healthy on HTTP headers alone');
+  assert.ok(stream.includes('if(watchdog)clearInterval(watchdog);'), 'Reconnect cleanup clears the watchdog');
+  assert.ok(stream.includes('smvLiveStartFallbackPolling();'), 'Recovery polling is enabled while reconnecting');
+});
+
+test('A terminal session state refreshes the Customer Wallet even when the modal is closed', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
+  const end = frontend.indexOf('async function smvLivePollSessions(){', start);
+  assert.ok(start >= 0 && end > start, 'Dashboard session status updater exists');
+  const updater = frontend.slice(start, end);
+  assert.ok(updater.includes("current.state==='ended'"), 'Refresh is triggered by the terminal state');
+  assert.ok(updater.includes("String(previous.state||'')!=='ended'"), 'Wallet refresh fires only on the first observed terminal transition');
+  assert.ok(updater.includes("String(current.customerUid||'')===String(currentUser?.uid||'')"), 'Only the owning Customer Wallet is refreshed');
+  assert.ok(updater.includes("window.dispatchEvent(new Event('smv:wallet-updated'))"), 'Wallet reload is independent of modal visibility');
+});
+
+test('Live Session End and Cancel are distinct from closing the session window', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("active?'END SESSION':'CANCEL SESSION'"), 'Pending sessions show a clear Cancel action');
+  assert.equal(frontend.includes('CANCEL / CLOSE SESSION'), false, 'Cancel is not presented as a window-close action');
+  assert.ok(frontend.includes("end.onclick=async()=>"), 'End/Cancel invokes a server action');
+  assert.ok(frontend.includes("'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})}"), 'End/Cancel persists the terminal state on the server');
+  assert.ok(frontend.includes("close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();}"), 'Close Window only dismisses the UI');
+});
+
+test('Live Session route roles cover Astrologer accept/reject and either-participant end/connect', () => {
+  const service = read('live-session-service.js');
+  assert.ok(service.includes("app.post('/live/sessions/:id/accept', async (req, res) => {\\n    const auth = await requireRole(req, res, ['astrologer']);"));
+  assert.ok(service.includes("app.post('/live/sessions/:id/reject', async (req, res) => {\\n    const auth = await requireRole(req, res, ['astrologer']);"));
+  assert.ok(service.includes("app.post('/live/sessions/:id/end', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
+  assert.ok(service.includes("app.post('/live/sessions/:id/ready', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
+  assert.ok(service.includes("app.post('/live/sessions/:id/messages', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
+  assert.ok(service.includes("app.post('/live/sessions/:id/signal', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
+});
