@@ -1,0 +1,41 @@
+name: SMV ASTRO Consultation Module Split Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/index.html'
+      - 'public/public-content-loader.js'
+      - 'public/public-content.mjs'
+      - 'public/public-navigation.js'
+      - 'tests/astro-consultation-module-lazy-load.mjs'
+      - '.github/workflows/astro-consultation-module-lazy-load.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/index.html'
+      - 'public/public-content-loader.js'
+      - 'public/public-content.mjs'
+      - 'public/public-navigation.js'
+      - 'tests/astro-consultation-module-lazy-load.mjs'
+      - '.github/workflows/astro-consultation-module-lazy-load.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consultation-module-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify consultation module split and existing flow hooks
+        run: |
+          node --check public/public-content-loader.js
+          node --check public/public-navigation.js
+          node --check tests/astro-consultation-module-lazy-load.mjs
+          node --test tests/astro-consultation-module-lazy-load.mjs
