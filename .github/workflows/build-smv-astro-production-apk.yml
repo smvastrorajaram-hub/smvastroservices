@@ -2,6 +2,12 @@ name: Build SMV ASTRO Production Android APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "smvastroproduction/**"
+      - "settings.gradle"
+      - "prepare-smv-astro-production-icon.sh"
+      - ".github/workflows/build-smv-astro-production-apk.yml"
   push:
     paths:
       - "smvastroproduction/**"
