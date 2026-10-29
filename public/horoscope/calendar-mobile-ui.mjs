@@ -220,12 +220,23 @@ function boot() {
 
   const input = document.getElementById("calDate");
   if (input) input.addEventListener("change", renderDate);
-  window.addEventListener("smv-language", () => {
-    renderText();
+  let languageSyncPending = false;
+  const syncCalendarLanguage = () => {
+    if (languageSyncPending) return;
+    languageSyncPending = true;
     requestAnimationFrame(() => {
+      languageSyncPending = false;
       renderText();
       renderSummary();
     });
+  };
+  window.addEventListener("smv-language", syncCalendarLanguage);
+  // Keep the Calendar controls in sync even if a language setter changes the
+  // document lang attribute before its custom event is observed.
+  const languageObserver = new MutationObserver(syncCalendarLanguage);
+  languageObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["lang"]
   });
 
   const daily = document.getElementById("calDaily");
