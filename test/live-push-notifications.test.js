@@ -831,6 +831,12 @@ test('Live Chat message rendering never marks a message seen before a message bo
   assert.ok(send.includes("current.state !== 'active'"));
   assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe })"));
   assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
+  assert.ok(server.includes("const moderation = inspectMessageText(body);"), 'server must moderate before persisting');
+  assert.ok(server.includes("LIVE_MESSAGE_ABUSIVE_LANGUAGE"), 'server returns a clear rejection for abusive text');
+  assert.ok(server.includes("require('./public/chat-moderation')"), 'Live and booked sessions use the same server-side moderation utility');
+  assert.ok(frontend.includes("import './chat-moderation.js?v=20261030-chat-moderation-v1';"));
+  assert.ok(frontend.includes("window.SMVChatModeration?.inspectMessageText"));
+  assert.ok(frontend.includes('smvLiveModerationNotice'), 'Chat UI warns before sending abusive text');
 });
 
 
