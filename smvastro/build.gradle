@@ -1,27 +1,15 @@
 plugins { id "com.android.application" }
 
-def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidAppId")
-        .orElse(providers.environmentVariable("SMV_FIREBASE_ANDROID_APP_ID"))
-        .getOrElse("")
-
 android {
     namespace "in.smvastroservices.test"
     compileSdk 36
-
-    buildFeatures {
-        buildConfig true
-    }
 
     defaultConfig {
         applicationId "in.smvastroservices.test"
         minSdk 24
         targetSdk 36
         versionCode 4
-        versionName "1.0.4-test-native-call-ring"
-        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\"" + nativeFirebaseAndroidAppId.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs\""
-        buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
-        buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
+        versionName "1.0.3-test-standalone-ui"
     }
 
     buildTypes {
@@ -33,9 +21,4 @@ android {
             minifyEnabled false
         }
     }
-
-
-    dependencies {
-        implementation platform("com.google.firebase:firebase-bom:35.1.0")
-        implementation "com.google.firebase:firebase-messaging"
-    }
+}
