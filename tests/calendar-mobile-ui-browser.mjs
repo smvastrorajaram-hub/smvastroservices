@@ -16,7 +16,8 @@ const browser = await puppeteer.launch({
 });
 const pageErrors = [];
 try {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.setBypassServiceWorker(true);
   await page.evaluateOnNewDocument(() => {
     const workerStub = {
