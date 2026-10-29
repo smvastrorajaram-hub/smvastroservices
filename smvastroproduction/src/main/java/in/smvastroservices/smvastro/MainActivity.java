@@ -1,10 +1,13 @@
 package in.smvastroservices.smvastro;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -31,6 +34,7 @@ public class MainActivity extends Activity {
     private static final String OWN_HOST = "smvastroservices.in";
     private static final String EXTRA_URL = "smv_open_url";
     private static final int FILE_CHOOSER_REQUEST = 6001;
+    private static final int REQUEST_POST_NOTIFICATIONS = 7412;
 
     private WebView webView;
     private ProgressBar progress;
@@ -107,6 +111,7 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 hidePwaInstallUi(view);
+                requestNotificationPermissionIfNeeded();
             }
         });
 
@@ -144,6 +149,15 @@ public class MainActivity extends Activity {
                 "['smvInstallAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.setAttribute('aria-hidden','true');}});" +
                 "}catch(e){}})();";
         view.evaluateJavascript(script, null);
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
+        android.content.SharedPreferences preferences = getSharedPreferences(SmvAstroApplication.PUSH_PREFS, MODE_PRIVATE);
+        if (preferences.getBoolean("post_notifications_prompted", false)) return;
+        preferences.edit().putBoolean("post_notifications_prompted", true).apply();
+        requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, REQUEST_POST_NOTIFICATIONS);
     }
 
     private boolean handleNavigation(Uri uri) {
