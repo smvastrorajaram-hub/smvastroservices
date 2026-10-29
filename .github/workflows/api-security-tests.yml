@@ -1,0 +1,44 @@
+name: API Security and Request Policy Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api-security.js'
+      - 'test/api-security.test.js'
+      - 'server.js'
+      - '.github/workflows/api-security-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'api-security.js'
+      - 'test/api-security.test.js'
+      - 'server.js'
+      - '.github/workflows/api-security-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-security-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check source syntax
+        run: |
+          node --check api-security.js
+          node --check server.js
+          node --check test/api-security.test.js
+      - name: Verify request-size, CORS and rate-limit policy
+        run: node --test test/api-security.test.js
+      - name: Install isolated Express runtime for HTTP integration tests
+        run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
+      - name: Verify actual HTTP 413, CORS, HMAC and 429 behavior
+        env:
+          NODE_PATH: ${{ runner.temp }}/api-security-deps/node_modules
+        run: node --test test/api-security-http.test.js

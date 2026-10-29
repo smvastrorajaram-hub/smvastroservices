@@ -4,9 +4,8 @@
    Frontend, access policy and Print always come from the current network.
    Only /offline/ calculation/location assets may use one stable lazy cache.
 
-   This revision intentionally changes the service-worker bytes so existing
-   Chrome/Opera/PWA installations replace any older UI-caching worker. On
-   activation, every open Horoscope page is navigated once to its current URL.
+   The worker claims its scope without force-reloading open pages; this avoids
+   interrupting unsaved report work or active user flows during an update.
 */
 const OFFLINE_CACHE='smv-horoscope-offline';
 const RUNTIME_REVISION='v250-ayurdaya-selected-total-20261019';
@@ -30,11 +29,8 @@ self.addEventListener('activate',event=>{
         .map(k=>caches.delete(k))
     );
     await self.clients.claim();
-    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    await Promise.all(clients.map(client=>{
-      try{return client.navigate(client.url)}
-      catch(_){return null}
-    }));
+    // Existing tabs keep their current UI state; the online fetch policy supplies
+    // current resources on the next navigation/request rather than interrupting work.
   })());
 });
 

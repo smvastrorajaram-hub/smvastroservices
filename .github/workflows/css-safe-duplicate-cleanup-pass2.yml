@@ -1,0 +1,33 @@
+name: Safe Exact CSS Duplicate Cleanup (Pass 2)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/smvastro.css'
+      - 'test/css-safe-duplicate-cleanup-pass2.test.mjs'
+      - '.github/workflows/css-safe-duplicate-cleanup-pass2.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/smvastro.css'
+      - 'test/css-safe-duplicate-cleanup-pass2.test.mjs'
+      - '.github/workflows/css-safe-duplicate-cleanup-pass2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  css-exact-duplicate-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and duplicate-rule cleanup
+        run: |
+          node --check test/css-safe-duplicate-cleanup-pass2.test.mjs
+          node --test test/css-safe-duplicate-cleanup-pass2.test.mjs

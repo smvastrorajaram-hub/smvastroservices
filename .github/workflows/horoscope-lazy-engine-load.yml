@@ -1,0 +1,33 @@
+name: Horoscope Lazy Calculation Engine Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/index.html'
+      - 'tests/horoscope-lazy-engine-load-regression.mjs'
+      - '.github/workflows/horoscope-lazy-engine-load.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/index.html'
+      - 'tests/horoscope-lazy-engine-load-regression.mjs'
+      - '.github/workflows/horoscope-lazy-engine-load.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lazy-engine-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check regression source and lazy-load dependency order
+        run: |
+          node --check tests/horoscope-lazy-engine-load-regression.mjs
+          node --test tests/horoscope-lazy-engine-load-regression.mjs

@@ -33,41 +33,10 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
 <link href="./smvastro.css?v=20261028-cream-content-contrast-v6" rel="stylesheet"/><link href="./smv-ui.css?v=20261028-cream-content-contrast-v3" rel="stylesheet"/><script src="./payment-timing.js"></script>
-<script>
-/* SMV ASTRO V122 - one-time browser fresh start.
-   Clears browser-side app storage/cache only; never touches Firebase/Render/MongoDB data. */
-(function(){
-  const RESET_KEY='smv_astro_browser_reset_v122_done';
-  try{
-    if(localStorage.getItem(RESET_KEY)!=='1'){
-      try{ localStorage.clear(); }catch(e){}
-      try{ sessionStorage.clear(); }catch(e){}
-      try{
-        if(window.caches&&caches.keys){
-          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
-        }
-      }catch(e){}
-      try{
-        if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
-        }
-      }catch(e){}
-      try{ localStorage.setItem(RESET_KEY,'1'); }catch(e){}
-    }
-  }catch(e){}
-})();
-</script>
-<script id="smv-horoscope-build-v201-cache-guard">
-/* V201 cache guard: remove stale Cache API/service-worker copies only.
-   Firebase/IndexedDB application data is not touched. */
-(function(){
-  const KEY='smv_astro_ui_build_v201';
-  try{
-    if(localStorage.getItem(KEY)!=='1'){
-      if(window.caches?.keys) caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
-      localStorage.setItem(KEY,'1');
-    }
-  }catch(_e){}
-})();
+<script id="smv-v223-scoped-storage-policy">
+/* App state and offline caches are retained. Each Service Worker now owns
+   cleanup of its own versioned cache namespace; never clear origin-wide storage
+   because SMV ASTRO, HOROSCOPE and CALENDAR may share a Pages origin. */
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -481,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script src="./public-content.mjs?v=20261028-cream-theme-audit-v1" type="module"></script>
+<script defer src="./public-content-loader.js?v=20261029-consult-module-lazy-v1"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");
