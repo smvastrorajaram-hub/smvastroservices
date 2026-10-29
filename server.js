@@ -1,5 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
-const {requestBodyLimit,isAllowedOrigin,createRouteRateLimiter}=require('./api-security');
+const {createCorsMiddleware,createRequestBodyParser,createRouteRateLimiter}=require('./api-security');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
@@ -344,31 +344,10 @@ const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KE
 // limits distinguish clients without trusting arbitrary X-Forwarded-For entries.
 app.set("trust proxy", 1);
 
-// CORS is evaluated before body parsing so disallowed browser origins cannot spend
-// large-body parsing work. Firebase Bearer-token auth remains the actual API auth.
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  res.vary("Origin");
-  if (origin && !isAllowedOrigin(origin, process.env.ALLOWED_ORIGINS)) {
-    return res.status(403).json({ success: false, error: "Origin is not allowed for this API." });
-  }
-  if (origin) res.header("Access-Control-Allow-Origin", origin);
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
-
+// Apply CORS policy before parsing to reject disallowed browser origins early.
+app.use(createCorsMiddleware());
 app.use(createRouteRateLimiter());
-
-// Route-aware JSON parsing makes the explicitly defined 5–50 KB route limits real.
-// Only astrologer registration accepts the larger body needed for its profile photo.
-// Razorpay webhooks must retain the original raw body for HMAC signature verification.
-app.use((req, res, next) => {
-  const limit = requestBodyLimit(req.path);
-  if (!limit) return next();
-  return express.json({ limit })(req, res, next);
-});
+app.use(createRequestBodyParser(express));
 
 // V48 DASHBOARD READ HARDENING
 // Admin realtime uses one tiny version document instead of listening to entire
