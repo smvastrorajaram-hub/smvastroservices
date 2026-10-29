@@ -3577,7 +3577,7 @@ async function smvLiveEnableBackgroundAlerts(){
  if(window.SMVNativeCalls?.isNativeApp?.()){
   const nativeRegistered=await smvLiveRegisterNativePushToken();
   if(nativeRegistered)return {registered:true,platform:'native-android'};
-  throw new Error('Native Call Ringtone is not configured on this APK yet. Register the Android app in Firebase project smv-astro, set SMV_FIREBASE_ANDROID_APP_ID when building, then reopen SMV ASTRO.');
+  throw new Error('Native Call Ringtone is not configured on this SMV ASTRO app yet. Register the Android app in Firebase project smv-astro, set SMV_FIREBASE_ANDROID_APP_ID when building, then reopen SMV ASTRO.');
  }
  if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
  if(!navigator.serviceWorker?.register)throw new Error('This browser cannot register a background notification worker.');
@@ -3619,8 +3619,8 @@ function smvLiveBindPushControls(){
   void smvLiveRegisterNativePushToken().then(registered=>{
    if(test)test.disabled=!registered;
    if(status)status.textContent=registered
-    ?'Native Android incoming-call ringtone is registered on this APK. Keep Android notifications and ringtone volume enabled.'
-    :'Native Android ringtone is not configured on this APK. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
+    ?'Native Android incoming-call ringtone is registered on this SMV ASTRO app. Keep Android notifications and ringtone volume enabled.'
+    :'Native Android ringtone is not configured on this SMV ASTRO app. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
   });
  }
  if(enable&&!enable.dataset.bound){
