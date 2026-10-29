@@ -1,4 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
+const {requestBodyLimit,isAllowedOrigin,createRouteRateLimiter}=require('./api-security');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
@@ -339,26 +340,34 @@ if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
 }
 const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-  .split(",").map(x => x.trim()).filter(Boolean);
-// Parse JSON request bodies for normal API routes. Keep Razorpay webhook raw so its
-// HMAC signature can still be verified against the original request bytes.
-app.use((req, res, next) => {
-  if (req.path === "/razorpay/webhook") return next();
-  return express.json({ limit: "15mb" })(req, res, next);
-});
+// Render terminates TLS and forwards one client-facing proxy hop. This lets rate
+// limits distinguish clients without trusting arbitrary X-Forwarded-For entries.
+app.set("trust proxy", 1);
 
+// CORS is evaluated before body parsing so disallowed browser origins cannot spend
+// large-body parsing work. Firebase Bearer-token auth remains the actual API auth.
 app.use((req, res, next) => {
-  // The Blogger frontend uses Firebase ID-token Authorization headers, not
-  // cookie credentials, so wildcard CORS is safe for this API and prevents
-  // Blogger/custom-domain deployments from failing with a browser
-  // "Failed to fetch" before the request reaches Express.
   const origin = req.headers.origin;
-  res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.vary("Origin");
+  if (origin && !isAllowedOrigin(origin, process.env.ALLOWED_ORIGINS)) {
+    return res.status(403).json({ success: false, error: "Origin is not allowed for this API." });
+  }
+  if (origin) res.header("Access-Control-Allow-Origin", origin);
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
+});
+
+app.use(createRouteRateLimiter());
+
+// Route-aware JSON parsing makes the explicitly defined 5–50 KB route limits real.
+// Only astrologer registration accepts the larger body needed for its profile photo.
+// Razorpay webhooks must retain the original raw body for HMAC signature verification.
+app.use((req, res, next) => {
+  const limit = requestBodyLimit(req.path);
+  if (!limit) return next();
+  return express.json({ limit })(req, res, next);
 });
 
 // V48 DASHBOARD READ HARDENING
