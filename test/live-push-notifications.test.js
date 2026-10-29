@@ -944,7 +944,13 @@ test('Session-ended event and end API never send Customer wallet balance to the 
   assert.ok(route.includes("if (String(result.session?.customerUid || '') === String(auth.user.uid || '')) response.wallet = result.wallet"));
   assert.ok(frontend.includes('function smvLiveSessionEndedMessage(session,wallet){'));
   assert.ok(frontend.includes("return 'Session ended. Your Astrologer earnings summary has been refreshed.';"));
-  assert.ok(frontend.includes("if(String(currentUser?.uid||'')===String(s.customerUid||''))window.dispatchEvent(new Event('smv:wallet-updated'))"));
+  const statusStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
+  const statusEnd = frontend.indexOf('async function smvLivePollSessions(){', statusStart);
+  assert.ok(statusStart >= 0 && statusEnd > statusStart);
+  const statusUpdater = frontend.slice(statusStart, statusEnd);
+  assert.ok(statusUpdater.includes("current.state==='ended'"));
+  assert.ok(statusUpdater.includes("window.dispatchEvent(new Event('smv:wallet-updated'))"));
+  assert.ok(statusUpdater.includes("String(previous.state||'')!=='ended'"));
 });
 
 test('Live session startup retries active timer restoration after transient Firestore failures', () => {
