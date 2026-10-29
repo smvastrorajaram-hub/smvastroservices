@@ -301,6 +301,22 @@ test('Customer fast shell binds Wallet actions without starting a duplicate init
   assert.ok(frontend.includes("if(load)smvLoadCustomerWallet();"));
 });
 
+test('Cached Customer Dashboard rehydrates Wallet after navigation recreates the fast shell', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
+  const end = frontend.indexOf('function openPayoutChange()', start);
+  assert.ok(start >= 0 && end > start, 'Dashboard render function exists');
+  const dashboard = frontend.slice(start, end);
+  const cacheStart = dashboard.indexOf('// Reuse an already-rendered Dashboard');
+  const cacheEnd = dashboard.indexOf('// Deduplicate concurrent first-load requests', cacheStart);
+  assert.ok(cacheStart >= 0 && cacheEnd > cacheStart, 'Dashboard cache return path exists');
+  const cachedPath = dashboard.slice(cacheStart, cacheEnd);
+  assert.ok(cachedPath.includes("dashboardReadyRole==='customer'"), 'Wallet rehydration is limited to Customer dashboards');
+  assert.ok(cachedPath.includes("$('smvCustomerWalletCard')"), 'Rehydration requires the Wallet card to exist');
+  assert.ok(cachedPath.includes("startsWith('loading')"), 'Only an unhydrated/loading Wallet triggers a new read');
+  assert.ok(cachedPath.includes('void smvLoadCustomerWallet();'), 'Wallet fetch runs before the cached return');
+});
+
 test('Customer Wallet balance and bonus minutes load after the final Dashboard DOM is mounted', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');

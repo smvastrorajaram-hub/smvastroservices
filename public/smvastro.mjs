@@ -1649,6 +1649,13 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
  const requestedRole=String(expectedRole||'').toLowerCase();
  // Reuse an already-rendered Dashboard unless a data-changing action explicitly requests a refresh.
  if(!force && !smvDashboardDirty && dashboardReadyAt>0 && dashboardReadyUid===loadUid && (!requestedRole || dashboardReadyRole===requestedRole) && smvInternalView==='dashboard' && box && !box.querySelector('.error')){
+   // Navigation may have rebuilt the fast shell while preserving Dashboard readiness.
+   // The shell deliberately skips its own Wallet read; hydrate the new Wallet DOM
+   // before returning through this cache path, otherwise it stays at "Loading…".
+   const walletBalance=$('smvWalletBalance');
+   if(dashboardReadyRole==='customer' && $('smvCustomerWalletCard') && String(walletBalance?.textContent||'').trim().toLowerCase().startsWith('loading')){
+     void smvLoadCustomerWallet();
+   }
    show('dashboard');
    touchSession();
    armIdleTimer();
