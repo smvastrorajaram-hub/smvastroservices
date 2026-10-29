@@ -974,10 +974,10 @@ test('Live Session SSE cleanup is tied to the response lifecycle, not normal req
   const end = service.indexOf("app.post('/live/scheduled-appointments/:id/start'", start);
   assert.ok(start >= 0 && end > start, 'Live event route exists');
   const route = service.slice(start, end);
-  assert.ok(route.includes('res.on(\\'close\\', stop);'), 'Response close releases the SSE client');
-  assert.ok(route.includes('res.on(\\'error\\', stop);'), 'Response errors release the SSE client');
-  assert.ok(route.includes('req.on(\\'aborted\\', stop);'), 'Aborted requests release the SSE client');
-  assert.equal(route.includes('req.on(\\'close\\''), false, 'A completed GET request must not be mistaken for a disconnected SSE response');
+  assert.ok(route.includes("res.on('close', stop);"), 'Response close releases the SSE client');
+  assert.ok(route.includes("res.on('error', stop);"), 'Response errors release the SSE client');
+  assert.ok(route.includes("req.on('aborted', stop);"), 'Aborted requests release the SSE client');
+  assert.equal(route.includes("req.on('close'"), false, 'A completed GET request must not be mistaken for a disconnected SSE response');
   assert.ok(route.includes('if (stopped) return;'), 'Cleanup is idempotent');
   assert.ok(route.includes('if (heartbeat) clearInterval(heartbeat);'), 'Cleanup clears the heartbeat timer');
   assert.ok(route.includes('set.delete(res);'), 'Cleanup removes the exact response');
@@ -1012,17 +1012,25 @@ test('Live Session End and Cancel are distinct from closing the session window',
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes("active?'END SESSION':'CANCEL SESSION'"), 'Pending sessions show a clear Cancel action');
   assert.equal(frontend.includes('CANCEL / CLOSE SESSION'), false, 'Cancel is not presented as a window-close action');
-  assert.ok(frontend.includes("end.onclick=async()=>"), 'End/Cancel invokes a server action');
+  assert.ok(frontend.includes('end.onclick=async()=>'), 'End/Cancel invokes a server action');
   assert.ok(frontend.includes("'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})}"), 'End/Cancel persists the terminal state on the server');
-  assert.ok(frontend.includes("close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();}"), 'Close Window only dismisses the UI');
+  assert.ok(frontend.includes('close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();}'), 'Close Window only dismisses the UI');
 });
 
-test('Live Session route roles cover Astrologer accept/reject and either-participant end/connect', () => {
+test('Live Session route authorization separates Astrologer decisions from participant actions', () => {
   const service = read('live-session-service.js');
-  assert.ok(service.includes("app.post('/live/sessions/:id/accept', async (req, res) => {\\n    const auth = await requireRole(req, res, ['astrologer']);"));
-  assert.ok(service.includes("app.post('/live/sessions/:id/reject', async (req, res) => {\\n    const auth = await requireRole(req, res, ['astrologer']);"));
-  assert.ok(service.includes("app.post('/live/sessions/:id/end', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
-  assert.ok(service.includes("app.post('/live/sessions/:id/ready', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
-  assert.ok(service.includes("app.post('/live/sessions/:id/messages', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
-  assert.ok(service.includes("app.post('/live/sessions/:id/signal', async (req, res) => {\\n    const auth = await requireRole(req, res, ['customer', 'astrologer']);"));
+  function route(path) {
+    const start = service.indexOf("app.post('" + path + "'");
+    assert.ok(start >= 0, 'Route exists: ' + path);
+    const end = service.indexOf('\n  });', start);
+    assert.ok(end > start, 'Route closes: ' + path);
+    return service.slice(start, end);
+  }
+  assert.ok(route('/live/sessions/:id/accept').includes("requireRole(req, res, ['astrologer'])"));
+  assert.ok(route('/live/sessions/:id/reject').includes("requireRole(req, res, ['astrologer'])"));
+  assert.ok(route('/live/sessions/:id/end').includes("requireRole(req, res, ['customer', 'astrologer'])"));
+  assert.ok(route('/live/sessions/:id/ready').includes("requireRole(req, res, ['customer', 'astrologer'])"));
+  assert.ok(route('/live/sessions/:id/messages').includes("requireRole(req, res, ['customer', 'astrologer'])"));
+  assert.ok(route('/live/sessions/:id/signal').includes("requireRole(req, res, ['customer', 'astrologer'])"));
 });
+
