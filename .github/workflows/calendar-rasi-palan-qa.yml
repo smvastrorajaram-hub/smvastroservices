@@ -106,6 +106,7 @@ jobs:
           SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
       - name: Run Calendar source mobile UI browser smoke
+        if: always()
         env:
           SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
         run: node tests/calendar-mobile-ui-browser.mjs
