@@ -1,4 +1,5 @@
 const {createRefundService,bankReferences}=require('./refund-service');
+const {createCorsMiddleware,createRequestBodyParser,createRouteRateLimiter}=require('./api-security');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
@@ -339,27 +340,14 @@ if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
 }
 const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-  .split(",").map(x => x.trim()).filter(Boolean);
-// Parse JSON request bodies for normal API routes. Keep Razorpay webhook raw so its
-// HMAC signature can still be verified against the original request bytes.
-app.use((req, res, next) => {
-  if (req.path === "/razorpay/webhook") return next();
-  return express.json({ limit: "15mb" })(req, res, next);
-});
+// Render terminates TLS and forwards one client-facing proxy hop. This lets rate
+// limits distinguish clients without trusting arbitrary X-Forwarded-For entries.
+app.set("trust proxy", 1);
 
-app.use((req, res, next) => {
-  // The Blogger frontend uses Firebase ID-token Authorization headers, not
-  // cookie credentials, so wildcard CORS is safe for this API and prevents
-  // Blogger/custom-domain deployments from failing with a browser
-  // "Failed to fetch" before the request reaches Express.
-  const origin = req.headers.origin;
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
+// Apply CORS policy before parsing to reject disallowed browser origins early.
+app.use(createCorsMiddleware());
+app.use(createRouteRateLimiter());
+app.use(createRequestBodyParser(express));
 
 // V48 DASHBOARD READ HARDENING
 // Admin realtime uses one tiny version document instead of listening to entire
