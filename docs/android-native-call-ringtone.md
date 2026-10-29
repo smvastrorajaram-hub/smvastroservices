@@ -18,7 +18,7 @@ The Production Android module does not commit a google-services.json or assume a
 2. Copy the Android App ID. It must have the form 1:299081899217:android:....
 3. Set the GitHub repository Actions variable SMV_FIREBASE_ANDROID_APP_ID to the copied Android App ID, or build locally with that environment variable or -PsmvFirebaseAndroidAppId=1:299081899217:android:.... The separate Production APK workflow reads the repository variable.
 
-   Example: SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastroproduction:assembleDebug
+   Example local build: `bash prepare-smv-astro-production-icon.sh && SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastroproduction:assembleDebug`
 
 The App ID is public client configuration, not a service-account secret. Do not commit Firebase Admin credentials or private service-account keys.
 
