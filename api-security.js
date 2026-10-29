@@ -190,12 +190,44 @@ function createRouteRateLimiter({ now = Date.now, maxEntries = 20_000 } = {}) {
   return routeRateLimit;
 }
 
+function createCorsMiddleware() {
+  return function corsPolicy(req, res, next) {
+    const origin = req.headers.origin;
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.vary('Origin');
+    if (origin && !isAllowedOrigin(origin, process.env.ALLOWED_ORIGINS)) {
+      return res.status(403).json({ success: false, error: 'Origin is not allowed for this API.' });
+    }
+    if (origin) res.header('Access-Control-Allow-Origin', origin);
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    return next();
+  };
+}
+
+function createRequestBodyParser(express) {
+  if (!express || typeof express.json !== 'function') throw new TypeError('An Express-compatible JSON parser is required.');
+  const parsers = new Map();
+  return function requestBodyParser(req, res, next) {
+    const limit = requestBodyLimit(req.path);
+    if (!limit) return next();
+    let parser = parsers.get(limit);
+    if (!parser) {
+      parser = express.json({ limit });
+      parsers.set(limit, parser);
+    }
+    return parser(req, res, next);
+  };
+}
+
 module.exports = {
   DEFAULT_ALLOWED_ORIGINS,
   BODY_LIMITS,
   requestBodyLimit,
   parseConfiguredOrigins,
   isAllowedOrigin,
+  createCorsMiddleware,
+  createRequestBodyParser,
   ratePolicyForRequest,
   createRouteRateLimiter
 };
