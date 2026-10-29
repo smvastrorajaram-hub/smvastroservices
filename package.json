@@ -2,7 +2,7 @@
   "name": "smv-horoscope",
   "version": "1.0.0",
   "private": true,
-  "scripts": {"test:astro-consultation-lazy": "node --test tests/astro-consultation-module-lazy-load.mjs", "test:storage-and-sw": "node --test test/storage-and-safe-sw-updates.test.js", "start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js", "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js", "validate:wallet-domain": "node scripts/validate-wallet-domain.js"},
+  "scripts": {"test:css-safe-duplicate-cleanup-pass2": "node --test test/css-safe-duplicate-cleanup-pass2.test.mjs", "test:astro-consultation-lazy": "node --test tests/astro-consultation-module-lazy-load.mjs", "test:storage-and-sw": "node --test test/storage-and-safe-sw-updates.test.js", "start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js", "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js", "validate:wallet-domain": "node scripts/validate-wallet-domain.js"},
   "engines": {"node": ">=20 <27"},
   "dependencies": {
     "express": "^4.21.2",
