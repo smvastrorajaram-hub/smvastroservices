@@ -79,11 +79,13 @@ function boot() {
   summaryGrid.setAttribute("aria-live", "polite");
   summary.append(summaryHeader, summaryGrid);
 
-  const dailyTarget = document.getElementById("calDaily");
-  if (dailyTarget) {
-    dailyTarget.before(dateStrip, summary);
+  // Keep these presentation strips outside the calculation root. The existing
+  // daily-calendar module rebuilds that root during language switches.
+  if (shell && root.parentElement === shell) {
+    shell.insertBefore(dateStrip, root);
+    shell.insertBefore(summary, root);
   } else {
-    root.append(dateStrip, summary);
+    root.prepend(dateStrip, summary);
   }
 
   function renderText() {
@@ -242,8 +244,8 @@ function boot() {
     attributeFilter: ["lang"]
   });
 
-  const daily = document.getElementById("calDaily");
-  if (daily && "MutationObserver" in window) {
+  const dailyRoot = document.getElementById("smvDailyCalendar");
+  if (dailyRoot && "MutationObserver" in window) {
     let scheduled = false;
     const observer = new MutationObserver(() => {
       if (scheduled) return;
@@ -253,7 +255,8 @@ function boot() {
         renderSummary();
       });
     });
-    observer.observe(daily, { childList: true, subtree: true, characterData: true });
+    // Observe the stable root, not #calDaily: language changes replace descendants.
+    observer.observe(dailyRoot, { childList: true, subtree: true, characterData: true });
   }
 
   if ("MutationObserver" in window) {
