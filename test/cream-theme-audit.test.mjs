@@ -134,5 +134,8 @@ test('main page cache versions point to the audited theme assets', () => {
   assert.match(html, /smvastro\.css\?v=20261028-cream-content-contrast-v6/);
   assert.match(html, /smv-ui\.css\?v=20261028-cream-content-contrast-v3/);
   assert.match(html, /smvastro\.mjs\?v=20261028-wallet-footer-contrast-v1/);
-  assert.match(html, /public-content\.mjs\?v=20261028-cream-theme-audit-v1/);
+  assert.match(html, /public-content-loader\.js\?v=20261029-consult-module-lazy-v1/);
+  assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
+  const lazyLoader = read('../public/public-content-loader.js');
+  assert.match(lazyLoader, /public-content\.mjs\?v=20261029-consult-module-lazy-v1/);
 });
