@@ -28,6 +28,43 @@ const {
   CHAT_ACCEPT_TIMEOUT_MS,
   validateLiveBirthDetails
 } = require('../live-session-service');
+const { inspectMessageText } = require('../public/chat-moderation');
+
+test('chat moderation blocks English, Tamil, Tanglish, Hindi, Hinglish and simple punctuation evasions', () => {
+  const blocked = [
+    'You are a fucking idiot.',
+    'இது தேவடியா என்று திட்டுவது.',
+    'nee oru thevidiya',
+    'तू चूतिया है',
+    'मादरचोद',
+    'tu ek chutiya hai',
+    'madarchod',
+    'f.u.c.k',
+    'p u n d a i',
+    'm.a.d.a.r.c.h.o.d'
+  ];
+  for (const text of blocked) {
+    assert.equal(inspectMessageText(text).allowed, false, 'must block abusive text: ' + text);
+    assert.equal(inspectMessageText(text).reason, 'abusive_language', 'must return a consistent moderation reason');
+  }
+});
+
+test('chat moderation keeps ordinary English, Tamil, Hindi and Hinglish messages allowed', () => {
+  const allowed = [
+    'Please connect my consultation.',
+    'I want to book a chat with the astrologer.',
+    'The assistant will help with your horoscope.',
+    'எனக்கு ஜாதகம் பற்றி கேட்க வேண்டும்.',
+    'நான் ஜோதிடரை மரியாதையாகக் கேட்கிறேன்.',
+    'आप कैसे हैं? मुझे अपनी कुंडली के बारे में पूछना है।',
+    'मेरा नाम राम है और मुझे करियर के बारे में पूछना है।',
+    'Mujhe apni kundali ke baare mein poochna hai.',
+    'Aapka consultation kal book karna hai.'
+  ];
+  for (const text of allowed) {
+    assert.equal(inspectMessageText(text).allowed, true, 'must allow ordinary text: ' + text);
+  }
+});
 
 test('incoming Live Call and Chat requests ring for two minutes without changing connection timers', () => {
   assert.equal(RING_TIMEOUT_MS, 120_000);
