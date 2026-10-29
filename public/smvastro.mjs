@@ -1653,7 +1653,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    // The shell deliberately skips its own Wallet read; hydrate the new Wallet DOM
    // before returning through this cache path, otherwise it stays at "Loading…".
    const walletBalance=$('smvWalletBalance');
-   if(dashboardReadyRole==='customer' && $('smvCustomerWalletCard') && /^loading(?:…|\\.\\.\\.)?$/i.test(String(walletBalance?.textContent||'').trim())){
+   if(dashboardReadyRole==='customer' && $('smvCustomerWalletCard') && String(walletBalance?.textContent||'').trim().toLowerCase().startsWith('loading')){
      void smvLoadCustomerWallet();
    }
    show('dashboard');
