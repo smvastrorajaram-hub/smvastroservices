@@ -65,12 +65,11 @@
  const originals=new WeakMap();
  function ui(lang){
   document.title=lang==='ta'?'SMV ஜாதகம் — ஸ்ரீ மதுரை வீரையா ஜாதகம்':'SMV HOROSCOPE — Sri Maduraveerayah Horoscope';
-  document.querySelector('.temple-hero img').alt=lang==='ta'?'மதுரை வீரன்':'Madurai Veeran';
   /* V121: prune generated report subtrees completely. The old SHOW_TEXT walker still
      visited every text node inside a large Advanced report and only then skipped it,
      which blocked the mobile main thread during EN/TA toggle. */
   const skipSelector='#englishHoroscopeResult,#tamilHoroscopeResult,#mmResult,.smv-language-buttons,#installApp,#installStatus';
-  for(const root of [$('templeHeader'),$('home'),$('english-horoscope'),$('siteFooter')]){
+  for(const root of [$('smvHoroscopeControls'),$('english-horoscope')]){
    if(!root)continue;
    const walk=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode(n){
     if(n.nodeType===Node.ELEMENT_NODE&&n.matches?.(skipSelector))return NodeFilter.FILTER_REJECT;

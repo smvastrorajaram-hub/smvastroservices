@@ -227,18 +227,23 @@ try {
   }, { timeout: 120000 });
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
   
-  // Check the requested Matching label only; leave all existing header box styling alone.
+  // The Horoscope site header, hero, and footer are intentionally removed.
+  // Verify the compact app controls still provide language selection and customer login.
   await page.setCacheEnabled(false);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.waitForSelector('#templeHeader .header-navigation a', { timeout: 20000 });
+  await page.waitForSelector('#smvHoroscopeControls #languageTamil', { timeout: 20000 });
   await page.waitForFunction(() =>
-    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+    Boolean(document.querySelector('#smvHoroscopeAuth [data-login]')) &&
+    !document.querySelector('#templeHeader') &&
+    !document.querySelector('.temple-hero') &&
+    !document.querySelector('#siteFooter'), { timeout: 20000 });
   await page.click('#languageTamil');
   await page.waitForFunction(() =>
-    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['சேவைகள்', 'பொருத்தம்', 'நாட்காட்டி']), { timeout: 20000 });
+    document.documentElement.lang === 'ta' &&
+    document.querySelector('#smvHoroscopeAuth [data-login]')?.textContent.trim() === 'உள்நுழை' &&
+    document.querySelector('#smvHoroscopeAuth [data-register]')?.textContent.trim() === 'பதிவு செய்க',
+    { timeout: 20000 });
   await page.waitForSelector('#smvAdminOpenTools', { timeout: 20000 });
   const unauthenticatedAdminState = await page.evaluate(() => ({
     fixedHeaderAdminButton: Boolean(document.querySelector('#smvAdminRulesAccess')),
@@ -254,8 +259,10 @@ try {
   }, 'Admin Rules and Calendar must remain hidden until the normal Horoscope login confirms Admin authorization');
   await page.click('#languageEnglish');
   await page.waitForFunction(() =>
-    JSON.stringify([...document.querySelectorAll('#templeHeader .header-navigation a')].map(a => a.textContent.trim())) ===
-    JSON.stringify(['Services', 'Matching', 'Calendar']), { timeout: 20000 });
+    document.documentElement.lang === 'en' &&
+    document.querySelector('#smvHoroscopeAuth [data-login]')?.textContent.trim() === 'Login' &&
+    document.querySelector('#smvHoroscopeAuth [data-register]')?.textContent.trim() === 'Register',
+    { timeout: 20000 });
 
   console.log(JSON.stringify({
     pass: true,
