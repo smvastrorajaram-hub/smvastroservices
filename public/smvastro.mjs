@@ -2439,19 +2439,19 @@ function initContentManager(){
 initContentManager();
 async function loadAdminAndroidAppRelease(){
   const current=$('adminAndroidAppCurrent'),msg=$('adminAndroidAppMsg');
+  const uploadButton=$('adminAndroidAppUpload');
   if(!current||!msg||!currentUser)return;
   msg.textContent='Loading current Android app release…';
   try{
     const release=await renderApi('/admin/android-app',{method:'GET'});
     if(release?.success!==true)throw new Error(release?.error||'Unable to load Android app release.');
-    if(release.storageReady!==true){
-      current.innerHTML='<div class="empty">Cloudinary APK storage is not enabled yet.</div>';
-      msg.textContent=release.storageMessage||'Cloudinary APK publishing is disabled until the .apk file type is approved for this account.';
-      return;
-    }
+    const publisherReady=release.storageReady===true;
+    if(uploadButton)uploadButton.disabled=!publisherReady;
     if(release.available!==true){
       current.innerHTML='<div class="empty">No permanent Android APK has been published yet.</div>';
-      msg.textContent='The first website-managed APK must be v1.1 or newer because the permanent v1.0 APK is already in use.';
+      msg.textContent=publisherReady
+        ?'The first website-managed APK must be v1.1 or newer because the permanent v1.0 APK is already in use.'
+        :(release.storageMessage||'GitHub Releases upload is not configured on this backend.');
       return;
     }
     const size=Number(release.size||0);
@@ -2462,8 +2462,11 @@ async function loadAdminAndroidAppRelease(){
       '<div class="card"><b>Android versionCode</b><div>'+escapeHtml(String(release.versionCode||'—'))+'</div></div>'+
       '<div class="card"><b>APK size</b><div>'+escapeHtml(sizeLabel)+'</div></div>'+
       '</div><p class="small">Uploaded: '+escapeHtml(uploaded)+'</p>';
-    msg.textContent='Current permanent Android APK is published. A new upload must have a higher versionCode and the same permanent Release signing key.';
+    msg.textContent=publisherReady
+      ?'Current permanent Android APK is published on GitHub Releases. A new upload must have a higher versionCode and the same permanent Release signing key.'
+      :(release.storageMessage||'Current production APK is read-only from this backend; publishing is available from the production Admin Dashboard.');
   }catch(error){
+    if(uploadButton)uploadButton.disabled=true;
     current.innerHTML='<div class="empty error">Unable to load current Android release.</div>';
     msg.textContent=error?.message||String(error);
     throw error;
@@ -2471,13 +2474,14 @@ async function loadAdminAndroidAppRelease(){
 }
 async function uploadAdminAndroidApp(){
   const file=$('adminAndroidAppFile')?.files?.[0],button=$('adminAndroidAppUpload'),msg=$('adminAndroidAppMsg');
+  if(button?.disabled){if(msg)msg.textContent='GitHub Releases publishing is not enabled on this backend.';return;}
   if(!file){if(msg)msg.textContent='Select the production signed APK first.';return;}
   if(!/\.apk$/i.test(file.name||'')||file.size<1024||file.size>100*1024*1024){
     if(msg)msg.textContent='Select a valid .apk file between 1 KB and 100 MB.';
     return;
   }
   if(button){button.disabled=true;button.textContent='VALIDATING & UPLOADING…';}
-  if(msg)msg.textContent='Uploading the APK. The server will verify package, version and signing certificate.';
+  if(msg)msg.textContent='Validating the APK, then publishing a draft GitHub Release and its APK asset.';
   try{
     const result=await renderApi('/admin/android-app/upload',{
       method:'POST',
@@ -2487,12 +2491,13 @@ async function uploadAdminAndroidApp(){
     });
     if(result?.success!==true||result.available!==true)throw new Error(result?.error||'APK upload was not confirmed.');
     if($('adminAndroidAppFile'))$('adminAndroidAppFile').value='';
-    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+'). Website download/update status now uses this version.';
+    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+'). Website DOWNLOAD APP / UPDATE APP now uses this GitHub Release.';
     await loadAdminAndroidAppRelease();
   }catch(error){
     if(msg)msg.textContent=error?.message||String(error);
   }finally{
-    if(button){button.disabled=false;button.textContent='UPLOAD NEW APP VERSION';}
+    if(button){button.textContent='UPLOAD NEW APP VERSION';}
+    await loadAdminAndroidAppRelease().catch(()=>{});
   }
 }
 (function initAdminAndroidAppManager(){
