@@ -7,6 +7,7 @@ const {PROJECTS,PRODUCTION_SECONDARY_PROJECT_IDS}=require('./replica-catalog');
 const sourceProjectParam=defineString('SMV_REPLICA_SOURCE_PROJECT_ID');
 const targetProjectParam=defineString('SMV_REPLICA_TARGET_PROJECT_ID');
 const peerProjectParam=defineString('SMV_REPLICA_PEER_PROJECT_ID',{default:''});
+const pairedMirrorParam=defineString('SMV_P23_PAIRED_REPLICA_MIRROR_WRITES',{default:'false'});
 const enabledParam=defineString('SMV_DASHBOARD_READ_REPLICA_MIRROR_WRITES',{default:'false'});
 const clientEmailSecret=defineSecret('SMV_REPLICA_TARGET_CLIENT_EMAIL');
 const privateKeySecret=defineSecret('SMV_REPLICA_TARGET_PRIVATE_KEY');
@@ -38,7 +39,9 @@ function targetDb(){
 }
 function targetDbs(){
  const {target,peer}=validateTarget();
- return [dbForReplica(target,targetAppName),...(peer?[dbForReplica(peer,'smv-read-replica-peer')]:[])];
+ const pairEnabled=enabled(pairedMirrorParam.value());
+ if(pairEnabled&&!peer)throw new Error('Paired Project 2/3 mirroring requires SMV_REPLICA_PEER_PROJECT_ID.');
+ return [dbForReplica(target,targetAppName),...(pairEnabled&&peer?[dbForReplica(peer,'smv-read-replica-peer')]:[])];
 }
 function mirrorCollection(collectionName){
  return onDocumentWritten({document:collectionName+'/{documentId}',region:'asia-south1',retry:true,timeoutSeconds:120,memory:'256MiB',secrets:[clientEmailSecret,privateKeySecret]},async event=>{
