@@ -246,7 +246,7 @@ function createAndroidApkGitHubStore({
       versionCode: parsedVersion.versionCode,
       sha256: String(apk.sha256).toLowerCase(),
       certificateSha256: SMV_RELEASE_CERT_SHA256,
-      uploadedBy: String(uploadedBy || '').slice(0, 128),
+      uploadedBy: uploadedBy ? 'Admin' : '',
       uploadedAt: new Date().toISOString()
     };
     let createdRelease = null;
