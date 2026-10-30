@@ -1,0 +1,29 @@
+name: Firestore paired read failover tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  paired-read-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:paired-firestore
+      - run: node --check multi-project-firestore.js
+      - run: node --check firestore-paired-read-failover.js
+      - run: node --check server.js
+      - run: node --check live-session-service.js
+      - run: node --check functions/index.js
+      - run: node --check scripts/backfill-multi-project-firestore.js
+      - run: node --check scripts/backfill-p45-public-content.js
+      - run: node --check scripts/validate-paired-firestore-replicas.js
