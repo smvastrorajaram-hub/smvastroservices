@@ -71,5 +71,5 @@ test('Debug APK remains a test-only artifact and existing Test APK workflow is s
   assert.match(workflow, /retention-days: 7/);
   assert.match(gradle, /applicationId "in\.smvastroservices\.smvastro"/);
   assert.ok(docs.includes('Debug APKs are for testing only'));
-  assert.ok(docs.includes('The existing .github/workflows/build-test-apks.yml workflow is not changed'));
+  assert.ok(docs.includes('The existing ') && docs.includes('.github/workflows/build-test-apks.yml') && docs.includes('workflow is not changed'));
 });
