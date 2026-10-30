@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { inspectSmvAndroidApk, SMV_ANDROID_PACKAGE, SMV_RELEASE_CERT_SHA256, MAX_APK_BYTES } = require('../android-app-release');
+const { ratePolicyForRequest } = require('../api-security');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -100,4 +105,55 @@ test('mobile-only one-time keystore generation is explicit, password-protected, 
   assert.ok(docs.includes('feature/smv-astro-permanent-release-build-20261030'));
   assert.ok(docs.includes('The artifact expires after **1 day**') || docs.includes('expires after **1 day**'));
   assert.doesNotMatch(workflow, /echo\s+["']?\$SMV_ANDROID_(?:KEYSTORE_PASSWORD|KEY_PASSWORD)/);
+});
+
+
+test('Android APK validator enforces size, package, ordered version and permanent signing identity', () => {
+  assert.equal(SMV_ANDROID_PACKAGE, 'in.smvastroservices.smvastro');
+  assert.equal(SMV_RELEASE_CERT_SHA256, '7A3BE159218A38083986DEC117C0BD281B3EF42BDA65F2BB7B8C9946B5293401');
+  assert.equal(MAX_APK_BYTES, 100 * 1024 * 1024);
+  assert.throws(() => inspectSmvAndroidApk(Buffer.alloc(512)), /between 1 KB and 100 MB/);
+  assert.throws(() => inspectSmvAndroidApk(Buffer.alloc(1024)), /valid ZIP archive/);
+});
+
+test('APK manager API limits public polling and Admin upload attempts', () => {
+  assert.equal(ratePolicyForRequest({ method: 'GET', path: '/public/android-app' }).name, 'public-read');
+  const policy = ratePolicyForRequest({ method: 'POST', path: '/admin/android-app/upload' });
+  assert.equal(policy.name, 'admin-apk-upload');
+  assert.equal(policy.max, 5);
+  assert.equal(policy.windowMs, 60 * 60_000);
+});
+
+test('Website APK manager only exposes download/update controls and hides native app management', () => {
+  const html = read('public/index.html');
+  const installer = read('public/android-app-install.js');
+  const server = read('server.js');
+  const manifest = JSON.parse(read('public/manifest.webmanifest'));
+  const assetLinks = JSON.parse(read('public/.well-known/assetlinks.json'));
+  const nativeManifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const assetStatements = read('smvastroproduction/src/main/res/values/strings.xml');
+
+  assert.ok(html.includes('id="adminGroupAppManagement"'));
+  assert.ok(html.includes('id="adminAndroidAppFile"'));
+  assert.ok(html.includes('id="adminAndroidAppUpload"'));
+  assert.equal(html.includes('smvPermanentApkUpload'), false);
+  assert.equal(installer.includes('releases/new'), false);
+  assert.ok(installer.includes('DOWNLOAD APP'));
+  assert.ok(installer.includes('UPDATE APP'));
+  assert.ok(installer.includes('getInstalledRelatedApps'));
+  assert.ok(installer.includes('SMVNativeCalls.isNativeApp'));
+  assert.ok(server.includes("app.post('/admin/android-app/upload'"));
+  assert.ok(server.includes('isAdminUser(actor)'));
+  assert.ok(server.includes("express.raw({ type: 'application/vnd.android.package-archive'"));
+  assert.ok(server.includes('Math.max(1000, currentSnapshot.exists ? Number(currentSnapshot.data()?.versionCode || 0) : 0)'));
+  assert.ok(server.includes('Math.max(1000, latest.exists ? Number(latest.data()?.versionCode || 0) : 0)'));
+  assert.deepEqual(manifest.related_applications, [{ platform: 'play', id: SMV_ANDROID_PACKAGE }]);
+  assert.equal(assetLinks[0].target.namespace, 'android_app');
+  assert.equal(assetLinks[0].target.package_name, SMV_ANDROID_PACKAGE);
+  assert.equal(assetLinks[0].target.sha256_cert_fingerprints[0].replaceAll(':', ''), SMV_RELEASE_CERT_SHA256);
+  assert.ok(nativeManifest.includes('android:name="asset_statements"'));
+  assert.ok(assetStatements.includes('https://smvastroservices.in'));
+  assert.ok(assetStatements.includes('https://www.smvastroservices.in'));
+  assert.ok(activity.includes('adminGroupAppManagement'));
 });
