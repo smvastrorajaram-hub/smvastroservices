@@ -3,6 +3,11 @@ name: Build SMV ASTRO Production Android APK
 on:
   workflow_dispatch:
     inputs:
+      generate_release_keystore:
+        description: "Generate the one-time password-protected Release keystore artifact only; do not build an APK"
+        required: true
+        type: boolean
+        default: false
       version_name:
         description: "App version in order: v1.0, v1.1, v1.2, ... v2.0"
         required: true
@@ -34,7 +39,111 @@ permissions:
   contents: read
 
 jobs:
+  generate_release_keystore:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_release_keystore }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: smv-astro-release-keystore-bootstrap
+      cancel-in-progress: false
+    steps:
+      - name: Java 17 keytool
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Validate initial secrets and prevent accidental key rotation
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          set +x
+          missing=""
+          for secret_name in \
+            SMV_ANDROID_KEYSTORE_PASSWORD \
+            SMV_ANDROID_KEY_PASSWORD \
+            SMV_ANDROID_KEY_ALIAS; do
+            if [[ -z "$(printenv "$secret_name" || true)" ]]; then
+              missing="$missing $secret_name"
+            fi
+          done
+          if [[ -n "$missing" ]]; then
+            echo "::error::Create these repository Actions secrets before generating the key:$missing"
+            exit 1
+          fi
+          if [[ "$SMV_ANDROID_KEY_ALIAS" != "smvastro-release" ]]; then
+            echo "::error::SMV_ANDROID_KEY_ALIAS must be exactly smvastro-release."
+            exit 1
+          fi
+          if [[ -n "$SMV_ANDROID_KEYSTORE_BASE64" ]]; then
+            echo "::error::A keystore Base64 secret already exists. Refusing to generate or rotate the permanent key."
+            exit 1
+          fi
+          if (( ${#SMV_ANDROID_KEYSTORE_PASSWORD} < 24 )); then
+            echo "::error::Use a randomly generated password of at least 24 characters."
+            exit 1
+          fi
+          if [[ "$SMV_ANDROID_KEYSTORE_PASSWORD" != "$SMV_ANDROID_KEY_PASSWORD" ]]; then
+            echo "::error::PKCS12 requires the same password for the keystore and private key. Set both GitHub secrets to the same strong random value."
+            exit 1
+          fi
+
+      - name: Generate password-protected PKCS12 keystore and Base64 copy
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          output_dir="$RUNNER_TEMP/smv-astro-release-keystore"
+          mkdir -p "$output_dir"
+          keystore_path="$output_dir/smv-astro-release.p12"
+          keytool -genkeypair -noprompt -v \
+            -keystore "$keystore_path" \
+            -storetype PKCS12 \
+            -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
+            -keypass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$SMV_ANDROID_KEY_ALIAS" \
+            -keyalg RSA -keysize 4096 -sigalg SHA256withRSA \
+            -validity 10000 \
+            -dname "CN=SMV ASTRO Release, OU=Android, O=SMV ASTRO SERVICES, C=IN"
+          keytool -list -keystore "$keystore_path" -storetype PKCS12 \
+            -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
+          base64 -w 0 "$keystore_path" > "$output_dir/SMV_ANDROID_KEYSTORE_BASE64.txt"
+          printf '\\n' >> "$output_dir/SMV_ANDROID_KEYSTORE_BASE64.txt"
+          keytool -exportcert -rfc -keystore "$keystore_path" -storetype PKCS12 \
+            -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$SMV_ANDROID_KEY_ALIAS" |
+            openssl x509 -noout -fingerprint -sha256 > "$output_dir/certificate-sha256-fingerprint.txt"
+
+      - name: Upload one-time encrypted keystore package
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-RELEASE-KEYSTORE-ONE-TIME
+          path: |
+            ${{ runner.temp }}/smv-astro-release-keystore/smv-astro-release.p12
+            ${{ runner.temp }}/smv-astro-release-keystore/SMV_ANDROID_KEYSTORE_BASE64.txt
+            ${{ runner.temp }}/smv-astro-release-keystore/certificate-sha256-fingerprint.txt
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+      - name: Remove temporary runner copy
+        if: ${{ always() }}
+        run: rm -rf "$RUNNER_TEMP/smv-astro-release-keystore"
+
   build:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.generate_release_keystore }}
     runs-on: ubuntu-latest
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
@@ -164,10 +273,10 @@ jobs:
           set -euo pipefail
           set +x
           umask 077
-          keystore_path="$RUNNER_TEMP/smv-astro-release.jks"
+          keystore_path="$RUNNER_TEMP/smv-astro-release.p12"
           printf '%s' "$SMV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           test -s "$keystore_path"
-          keytool -list -keystore "$keystore_path" \
+          keytool -list -keystore "$keystore_path" -storetype PKCS12 \
             -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
             -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
           echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
@@ -175,7 +284,7 @@ jobs:
       - name: Build signed SMV ASTRO Permanent Release APK
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
         env:
-          SMV_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/smv-astro-release.jks
+          SMV_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/smv-astro-release.p12
           SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
           SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
           SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
@@ -201,4 +310,4 @@ jobs:
 
       - name: Remove signing keystore from the runner
         if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
-        run: rm -f "$RUNNER_TEMP/smv-astro-release.jks"
+        run: rm -f "$RUNNER_TEMP/smv-astro-release.p12"
