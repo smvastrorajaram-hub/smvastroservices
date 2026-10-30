@@ -149,6 +149,7 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.equal(html.includes('smvPermanentApkUpload'), false);
   assert.equal(installer.includes('releases/new'), false);
   assert.ok(installer.includes('DOWNLOAD APP'));
+  assert.ok(installer.includes("location.hostname.includes('phase1-staging')"));
   assert.ok(installer.includes('UPDATE APP'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('SMVNativeCalls.isNativeApp'));
@@ -378,7 +379,8 @@ test('GitHub APK upload creates a draft, uploads a verified immutable asset, the
   assert.equal(result.versionName, 'v1.1');
   assert.equal(result.versionCode, 1001);
   assert.equal(result.size, 2048);
-  assert.equal(result.uploadedBy, 'admin-uid');
+  assert.equal(result.uploadedBy, 'Admin');
+  assert.equal(state.requests.find(item => item.method === 'POST' && item.url.endsWith('/releases')).body.includes('admin-uid'), false);
   assert.equal(result.sha256, 'a'.repeat(64));
   assert.equal(result.downloadUrl, 'https://github.com/' + SMV_GITHUB_REPOSITORY + '/releases/download/smv-astro-v1.1/SMV-ASTRO-v1.1.apk');
 
