@@ -56,8 +56,12 @@ async function mirrorAdminContentPatch(id,patch){
  if(multiProjectFirestore.p45ContentMirrorWritesEnabled&&multiProjectFirestore.walletDomainEnabled){
   destinations.push({name:'Project 5 paired content replica',db:multiProjectFirestore.walletDomainDb});
  }
+ if(!destinations.length)return;
+ const sourceSnap=await contentStoreDb().collection('smv_content').doc(String(id)).get();
+ if(!sourceSnap.exists)return;
+ const sourceData=sourceSnap.data()||{};
  await Promise.all(destinations.map(async destination=>{
-  try{await destination.db.collection('smv_content').doc(String(id)).set(patch,{merge:true});}
+  try{await destination.db.collection('smv_content').doc(String(id)).set(sourceData);}
   catch(e){console.warn('[Multi-project Firestore] Content mirror deferred to '+destination.name+' for '+id+':',e?.message||e);}
  }));
 }
