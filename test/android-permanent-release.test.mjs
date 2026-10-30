@@ -8,6 +8,15 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { inspectSmvAndroidApk, SMV_ANDROID_PACKAGE, SMV_RELEASE_CERT_SHA256, MAX_APK_BYTES } = require('../android-app-release');
 const { ratePolicyForRequest } = require('../api-security');
+const {
+  APK_FORMAT_BLOCKED_MESSAGE,
+  NOT_ENABLED_MESSAGE,
+  getCloudinaryConfigurationStatus,
+  parseReleasePublicId,
+  createAndroidApkCloudinaryStore,
+  cloudinaryPublicError
+} = require('../android-app-release-cloudinary');
+const { Writable } = require('node:stream');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -146,8 +155,16 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.ok(server.includes("app.post('/admin/android-app/upload'"));
   assert.ok(server.includes('isAdminUser(actor)'));
   assert.ok(server.includes("express.raw({ type: 'application/vnd.android.package-archive'"));
-  assert.ok(server.includes('Math.max(1000, currentSnapshot.exists ? Number(currentSnapshot.data()?.versionCode || 0) : 0)'));
-  assert.ok(server.includes('Math.max(1000, latest.exists ? Number(latest.data()?.versionCode || 0) : 0)'));
+  assert.ok(server.includes('androidApkReleaseStore.publishRelease'));
+  assert.ok(server.includes('createAndroidApkCloudinaryStore'));
+  assert.equal(server.includes("collection('smv_app_releases')"), false);
+  assert.equal(server.includes('getStorage('), false);
+  assert.ok(installer.includes('res.cloudinary.com'));
+  assert.equal(installer.includes('firebasestorage.googleapis.com'), false);
+  assert.ok(installer.includes('/raw/upload/'));
+  assert.ok(read('android-app-release-cloudinary.js').includes('CLOUDINARY_APK_UPLOAD_ENABLED'));
+  assert.ok(read('android-app-release-cloudinary.js').includes("resource_type: 'raw'"));
+  assert.ok(read('android-app-release-cloudinary.js').includes("type: 'upload'"));
   assert.deepEqual(manifest.related_applications, [{ platform: 'play', id: SMV_ANDROID_PACKAGE }]);
   assert.equal(assetLinks[0].target.namespace, 'android_app');
   assert.equal(assetLinks[0].target.package_name, SMV_ANDROID_PACKAGE);
@@ -156,4 +173,143 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.ok(assetStatements.includes('https://smvastroservices.in'));
   assert.ok(assetStatements.includes('https://www.smvastroservices.in'));
   assert.ok(activity.includes('adminGroupAppManagement'));
+  assert.ok(read('docs/SMV-ANDROID-PERMANENT-APK-WEBSITE-INSTALL.md').includes('Cloudinary Support'));
+});
+
+function cloudinaryTestEnv() {
+  return {
+    CLOUDINARY_CLOUD_NAME: 'l6r6c8zi',
+    CLOUDINARY_API_KEY: 'test-api-key',
+    CLOUDINARY_API_SECRET: 'test-api-secret',
+    CLOUDINARY_APK_UPLOAD_ENABLED: 'true'
+  };
+}
+
+function makeCloudinaryTestSdk({ resources = [], uploadError = null } = {}) {
+  const state = { config: null, uploads: [], resourceCalls: [] };
+  const sdk = {
+    config(value) { state.config = value; },
+    api: {
+      async resources(options) {
+        state.resourceCalls.push(options);
+        return { resources, next_cursor: '' };
+      }
+    },
+    uploader: {
+      upload_stream(options, callback) {
+        state.uploads.push(options);
+        return new Writable({
+          write(chunk, encoding, done) { done(); },
+          final(done) {
+            if (uploadError) callback(uploadError);
+            else callback(null, {
+              public_id: options.public_id,
+              secure_url: 'https://res.cloudinary.com/l6r6c8zi/raw/upload/v1790000000/' + options.public_id,
+              version: 1790000000,
+              bytes: 2048,
+              created_at: '2026-10-30T09:00:00Z',
+              context: { custom: options.context }
+            });
+            done();
+          }
+        });
+      }
+    }
+  };
+  return { sdk, state };
+}
+
+test('Cloudinary APK publishing is disabled until Support approval and server credentials are configured', () => {
+  const status = getCloudinaryConfigurationStatus({});
+  assert.equal(status.ready, false);
+  assert.equal(status.enabled, false);
+  assert.match(status.message, /Cloudinary Support/);
+  const missing = getCloudinaryConfigurationStatus({ CLOUDINARY_APK_UPLOAD_ENABLED: 'true' });
+  assert.equal(missing.ready, false);
+  assert.match(missing.message, /CLOUDINARY_API_SECRET/);
+});
+
+test('Cloudinary release public IDs enforce the Android versionCode sequence and environment boundary', () => {
+  assert.deepEqual(parseReleasePublicId('smv-astro/android/releases/production/v1.1-1001.apk', 'smv-astro/android/releases/production'), {
+    versionName: 'v1.1', versionCode: 1001
+  });
+  assert.equal(parseReleasePublicId('smv-astro/android/releases/production/v1.1-1002.apk', 'smv-astro/android/releases/production'), null);
+  assert.equal(parseReleasePublicId('smv-astro/android/releases/staging/v1.1-1001.apk', 'smv-astro/android/releases/production'), null);
+});
+
+test('Cloudinary release discovery lists raw upload assets and selects the highest valid production version', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk({ resources: [
+    { public_id: 'smv-astro/android/releases/production/v1.1-1001.apk', version: 10, secure_url: 'https://res.cloudinary.com/l6r6c8zi/raw/upload/v10/smv-astro/android/releases/production/v1.1-1001.apk', bytes: 2048, created_at: '2026-10-30T08:00:00Z', context: { custom: { packageName: SMV_ANDROID_PACKAGE, certificateSha256: 'CERT1' } } },
+    { public_id: 'smv-astro/android/releases/production/v1.2-1002.apk', version: 11, secure_url: 'https://res.cloudinary.com/l6r6c8zi/raw/upload/v11/smv-astro/android/releases/production/v1.2-1002.apk', bytes: 4096, created_at: '2026-10-30T09:00:00Z', context: { custom: { packageName: SMV_ANDROID_PACKAGE, certificateSha256: 'CERT2' } } },
+    { public_id: 'smv-astro/android/releases/production/not-an-apk.txt', version: 12, bytes: 1 }
+  ] });
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: cloudinaryTestEnv() });
+  const latest = await store.getLatestRelease();
+  assert.equal(latest.versionName, 'v1.2');
+  assert.equal(latest.versionCode, 1002);
+  assert.equal(latest.size, 4096);
+  assert.equal(latest.certificateSha256, 'CERT2');
+  assert.equal(state.config.cloud_name, 'l6r6c8zi');
+  assert.equal(state.resourceCalls[0].resource_type, 'raw');
+  assert.equal(state.resourceCalls[0].type, 'upload');
+  assert.equal(state.resourceCalls[0].prefix, 'smv-astro/android/releases/production/');
+});
+
+test('staging and production APK releases use separate Cloudinary folders', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk();
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: cloudinaryTestEnv(), isStaging: true });
+  assert.equal(store.releasePrefix, 'smv-astro/android/releases/staging');
+  await store.getLatestRelease();
+  assert.equal(state.resourceCalls[0].prefix, 'smv-astro/android/releases/staging/');
+});
+
+test('APK upload uses authenticated raw/upload delivery and immutable versioned public IDs', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk();
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: cloudinaryTestEnv() });
+  const result = await store.publishRelease(Buffer.from('mock-apk'), {
+    packageName: SMV_ANDROID_PACKAGE, versionName: 'v1.1', versionCode: 1001,
+    sha256: 'sha256-value', certificateSha256: 'cert-value'
+  }, 'admin-uid');
+  assert.equal(result.versionName, 'v1.1');
+  assert.equal(result.versionCode, 1001);
+  assert.match(result.downloadUrl, /res\.cloudinary\.com\/l6r6c8zi\/raw\/upload/);
+  assert.equal(state.uploads.length, 1);
+  assert.equal(state.uploads[0].resource_type, 'raw');
+  assert.equal(state.uploads[0].type, 'upload');
+  assert.equal(state.uploads[0].overwrite, false);
+  assert.equal(state.uploads[0].public_id, 'smv-astro/android/releases/production/v1.1-1001.apk');
+  assert.equal(state.uploads[0].context.uploadedBy, 'admin-uid');
+  assert.equal(state.uploads[0].context.sha256, 'sha256-value');
+});
+
+test('APK upload refuses any version that is not higher than the current Cloudinary release', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk({ resources: [
+    { public_id: 'smv-astro/android/releases/production/v1.2-1002.apk', version: 11, secure_url: 'https://res.cloudinary.com/l6r6c8zi/raw/upload/v11/smv-astro/android/releases/production/v1.2-1002.apk', bytes: 4096 }
+  ] });
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: cloudinaryTestEnv() });
+  await assert.rejects(() => store.publishRelease(Buffer.from('mock-apk'), {
+    packageName: SMV_ANDROID_PACKAGE, versionName: 'v1.1', versionCode: 1001, sha256: 'sha', certificateSha256: 'cert'
+  }), error => error.httpStatus === 409 && error.currentVersionCode === 1002);
+  assert.equal(state.uploads.length, 0);
+});
+
+test('APK upload fails closed when Cloudinary Support approval is not enabled', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk();
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: {} });
+  await assert.rejects(() => store.publishRelease(Buffer.from('mock-apk'), {
+    packageName: SMV_ANDROID_PACKAGE, versionName: 'v1.1', versionCode: 1001, sha256: 'sha', certificateSha256: 'cert'
+  }), error => error.httpStatus === 503 && error.message === NOT_ENABLED_MESSAGE);
+  assert.equal(state.uploads.length, 0);
+});
+
+test('Cloudinary APK format rejection returns the Support allowlist requirement to Admin', async () => {
+  const { sdk, state } = makeCloudinaryTestSdk({ uploadError: new Error('File format apk not allowed') });
+  const store = createAndroidApkCloudinaryStore({ cloudinary: sdk, env: cloudinaryTestEnv() });
+  await assert.rejects(() => store.publishRelease(Buffer.from('mock-apk'), {
+    packageName: SMV_ANDROID_PACKAGE, versionName: 'v1.1', versionCode: 1001, sha256: 'sha', certificateSha256: 'cert'
+  }), error => error.code === 'CLOUDINARY_APK_FORMAT_BLOCKED' && error.message === APK_FORMAT_BLOCKED_MESSAGE);
+  assert.equal(state.uploads.length, 1);
+  const mapped = cloudinaryPublicError(Object.assign(new Error(APK_FORMAT_BLOCKED_MESSAGE), { code: 'CLOUDINARY_APK_FORMAT_BLOCKED', httpStatus: 503 }));
+  assert.equal(mapped.status, 503);
+  assert.equal(mapped.body.code, 'CLOUDINARY_APK_FORMAT_BLOCKED');
 });

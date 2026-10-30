@@ -4,8 +4,9 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
-const {getStorage}=require('firebase-admin/storage');
 const {inspectSmvAndroidApk,MAX_APK_BYTES,SMV_ANDROID_PACKAGE}=require('./android-app-release');
+const cloudinary = require('cloudinary').v2;
+const {createAndroidApkCloudinaryStore,cloudinaryPublicError}=require('./android-app-release-cloudinary');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
 const express = require("express");
 const crypto = require("crypto");
@@ -29,7 +30,6 @@ if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
-      storageBucket: String(process.env.FIREBASE_STORAGE_BUCKET || (IS_STAGING_DEPLOYMENT ? 'smv-astro-staging.firebasestorage.app' : 'smv-astro.firebasestorage.app')).trim(),
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: String(process.env.FIREBASE_PRIVATE_KEY || "")
         .replace(/^['"]|['"]$/g, "")
@@ -2775,12 +2775,17 @@ app.post("/admin/astrologer-profile-description", express.json({limit:"10kb"}), 
   }catch(e){console.error("Admin Astrologer profile description update failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Astrologer profile description."});}
 });
 
-// Android app releases are uploaded only by a verified Admin. The APK is inspected
-// before it is stored: package, ordered versionCode, and permanent Release signing
-// certificate must all match the native SMV ASTRO application.
-const SMV_ANDROID_RELEASE_REF = () => db.collection('smv_app_releases').doc('android');
+// Android app releases are uploaded only by a verified Admin. Cloudinary stores the
+// immutable raw APK assets; the Cloudinary Admin API is the version index, so APK
+// publishing does not require Firebase Storage or a Firestore release document.
+const androidApkReleaseStore = createAndroidApkCloudinaryStore({
+  cloudinary,
+  env: process.env,
+  isStaging: IS_STAGING_DEPLOYMENT
+});
 function smvPublicAndroidRelease(data) {
-  if (!data || !data.downloadUrl || !Number.isSafeInteger(Number(data.versionCode))) {
+  if (!data || !data.downloadUrl || !Number.isSafeInteger(Number(data.versionCode)) ||
+      data.packageName !== SMV_ANDROID_PACKAGE) {
     return { success: true, available: false };
   }
   return {
@@ -2791,13 +2796,13 @@ function smvPublicAndroidRelease(data) {
     versionCode: Number(data.versionCode),
     downloadUrl: String(data.downloadUrl),
     size: Number(data.size || 0),
-    uploadedAt: Number(data.uploadedAt || 0)
+    uploadedAt: Number(data.uploadedAt || 0),
+    cloudName: String(data.cloudName || '')
   };
 }
 app.get('/public/android-app', async (_req, res) => {
   try {
-    const snapshot = await SMV_ANDROID_RELEASE_REF().get();
-    const data = snapshot.exists ? (snapshot.data() || {}) : null;
+    const data = await androidApkReleaseStore.getLatestRelease();
     return res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
       .json(smvPublicAndroidRelease(data));
   } catch (error) {
@@ -2811,11 +2816,15 @@ app.get('/admin/android-app', async (req, res) => {
   if (!actor) return;
   if (!(await isAdminUser(actor))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
   try {
-    const snapshot = await SMV_ANDROID_RELEASE_REF().get();
-    const data = snapshot.exists ? (snapshot.data() || {}) : null;
+    const storage = androidApkReleaseStore.configurationStatus();
+    const data = storage.ready ? await androidApkReleaseStore.getLatestRelease() : null;
     return res.set('Cache-Control', 'no-store').json({
       ...smvPublicAndroidRelease(data),
+      storageProvider: 'cloudinary',
+      storageReady: storage.ready,
+      storageMessage: storage.message,
       uploadedBy: data?.uploadedBy ? String(data.uploadedBy) : '',
+      sha256: data?.sha256 ? String(data.sha256) : '',
       certificateSha256: data?.certificateSha256 ? String(data.certificateSha256) : ''
     });
   } catch (error) {
@@ -2844,86 +2853,13 @@ app.post('/admin/android-app/upload',
     } catch (error) {
       return res.status(400).json({ success: false, error: error?.message || 'The APK failed SMV ASTRO release validation.' });
     }
-    const releaseRef = SMV_ANDROID_RELEASE_REF();
-    let currentCode = 1000;
     try {
-      const currentSnapshot = await releaseRef.get();
-      currentCode = Math.max(1000, currentSnapshot.exists ? Number(currentSnapshot.data()?.versionCode || 0) : 0);
+      const release = await androidApkReleaseStore.publishRelease(req.body, apk, actor.uid);
+      return res.set('Cache-Control', 'no-store').json(smvPublicAndroidRelease(release));
     } catch (error) {
-      console.error('Current Android release version lookup failed:', error?.message || error);
-      return res.status(503).json({ success: false, error: 'Unable to verify the currently published Android app version.' });
-    }
-    if (apk.versionCode <= currentCode) {
-      return res.status(409).json({
-        success: false,
-        error: 'The uploaded APK must have a higher versionCode than the current published version.',
-        currentVersionCode: currentCode,
-        uploadedVersionCode: apk.versionCode
-      });
-    }
-    const bucketName = String(process.env.FIREBASE_STORAGE_BUCKET ||
-      (IS_STAGING_DEPLOYMENT ? 'smv-astro-staging.firebasestorage.app' : 'smv-astro.firebasestorage.app')).trim();
-    const token = crypto.randomUUID();
-    const objectName = 'smv-astro/android/releases/' + apk.versionCode + '/' + crypto.randomUUID() + '.apk';
-    let stored = false;
-    try {
-      const bucket = getStorage(admin.app()).bucket(bucketName);
-      await bucket.file(objectName).save(req.body, {
-        resumable: false,
-        validation: 'crc32c',
-        metadata: {
-          contentType: 'application/vnd.android.package-archive',
-          cacheControl: 'public, max-age=31536000, immutable',
-          metadata: {
-            firebaseStorageDownloadTokens: token,
-            smvPackageName: apk.packageName,
-            smvVersionName: apk.versionName,
-            smvVersionCode: String(apk.versionCode),
-            smvSha256: apk.sha256
-          }
-        }
-      });
-      stored = true;
-      const downloadUrl = 'https://firebasestorage.googleapis.com/v0/b/' +
-        encodeURIComponent(bucketName) + '/o/' + encodeURIComponent(objectName) +
-        '?alt=media&token=' + encodeURIComponent(token);
-      await db.runTransaction(async transaction => {
-        const latest = await transaction.get(releaseRef);
-        const latestCode = Math.max(1000, latest.exists ? Number(latest.data()?.versionCode || 0) : 0);
-        if (apk.versionCode <= latestCode) {
-          const conflict = new Error('A newer or equal Android APK version was published while this upload was processing.');
-          conflict.httpStatus = 409;
-          throw conflict;
-        }
-        transaction.set(releaseRef, {
-          packageName: apk.packageName,
-          versionName: apk.versionName,
-          versionCode: apk.versionCode,
-          downloadUrl,
-          storagePath: objectName,
-          sha256: apk.sha256,
-          certificateSha256: apk.certificateSha256,
-          size: apk.size,
-          uploadedBy: actor.uid,
-          uploadedAt: Date.now()
-        });
-      });
-      return res.set('Cache-Control', 'no-store').json({
-        success: true,
-        ...smvPublicAndroidRelease({ ...apk, downloadUrl, uploadedAt: Date.now() })
-      });
-    } catch (error) {
-      if (stored) {
-        try { await getStorage(admin.app()).bucket(bucketName).file(objectName).delete({ ignoreNotFound: true }); }
-        catch (cleanupError) { console.error('Unpublished Android APK cleanup failed:', cleanupError?.message || cleanupError); }
-      }
-      console.error('Admin Android APK upload failed:', error?.stack || error);
-      return res.status(error?.httpStatus || 503).json({
-        success: false,
-        error: error?.httpStatus === 409
-          ? error.message
-          : 'The APK could not be published to Firebase Storage. Check the backend Storage bucket configuration.'
-      });
+      const mapped = cloudinaryPublicError(error);
+      console.error('Admin Android APK Cloudinary upload failed:', mapped.body.code, error?.message || error);
+      return res.status(mapped.status).set('Cache-Control', 'no-store').json(mapped.body);
     }
   }
 );

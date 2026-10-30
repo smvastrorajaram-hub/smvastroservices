@@ -2444,6 +2444,11 @@ async function loadAdminAndroidAppRelease(){
   try{
     const release=await renderApi('/admin/android-app',{method:'GET'});
     if(release?.success!==true)throw new Error(release?.error||'Unable to load Android app release.');
+    if(release.storageReady!==true){
+      current.innerHTML='<div class="empty">Cloudinary APK storage is not enabled yet.</div>';
+      msg.textContent=release.storageMessage||'Cloudinary APK publishing is disabled until the .apk file type is approved for this account.';
+      return;
+    }
     if(release.available!==true){
       current.innerHTML='<div class="empty">No permanent Android APK has been published yet.</div>';
       msg.textContent='The first website-managed APK must be v1.1 or newer because the permanent v1.0 APK is already in use.';

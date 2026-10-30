@@ -76,11 +76,15 @@
       }
 
       const url = new URL(release.downloadUrl);
-      const allowedBuckets = ['smv-astro.firebasestorage.app', 'smv-astro-staging.firebasestorage.app'];
+      const cloudName = String(release.cloudName || '');
+      const releaseScope = location.hostname.includes('phase1-staging') ? 'staging' : 'production';
       const path = decodeURIComponent(url.pathname);
-      if (url.protocol !== 'https:' || url.hostname !== 'firebasestorage.googleapis.com' ||
-          !allowedBuckets.some(bucket => path.startsWith('/v0/b/' + bucket + '/o/smv-astro/android/releases/'))) {
-        throw new Error('The Android APK download URL is not a trusted SMV ASTRO Firebase Storage object.');
+      if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com' ||
+          cloudName !== 'l6r6c8zi' ||
+          !path.startsWith('/' + cloudName + '/raw/upload/') ||
+          !path.includes('/smv-astro/android/releases/' + releaseScope + '/') ||
+          !path.endsWith('.apk')) {
+        throw new Error('The Android APK download URL is not a trusted SMV ASTRO Cloudinary raw asset.');
       }
 
       const installed = await installedNativeApp();
