@@ -1,6 +1,6 @@
 
 (function(){
-  const IS_SMV_PHASE1_STAGING=["staging.smvastroservices.in","staging.smvastroservices.in"].includes(location.hostname);
+  const IS_SMV_PHASE1_STAGING=["staging.smvastroservices.in"].includes(location.hostname);
   const BACKEND=IS_SMV_PHASE1_STAGING?"https://api-staging.smvastroservices.in":"https://api.smvastroservices.in";
   const FBCONFIG=IS_SMV_PHASE1_STAGING
     ? {apiKey:"AIzaSyD9LzJ-7OKZMaVVf5kXa9aABBECS6kE8mA",authDomain:"smv-astro-staging.firebaseapp.com",projectId:"smv-astro-staging",storageBucket:"smv-astro-staging.firebasestorage.app",messagingSenderId:"73946216796",appId:"1:73946216796:web:09500761bec02699a4e999"}
