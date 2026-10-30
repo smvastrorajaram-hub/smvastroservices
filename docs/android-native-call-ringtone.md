@@ -16,13 +16,13 @@ The Production Android module does not commit a google-services.json or assume a
 
 1. In Firebase Console, open the existing project smv-astro and add an Android app with the exact package name in.smvastroservices.smvastro. The Android launcher label is SMV ASTRO. Do not register in.smvastroservices.test for this Production App.
 2. Copy the Android App ID. It must have the form 1:299081899217:android:....
-3. Set the GitHub repository Actions variable SMV_FIREBASE_ANDROID_APP_ID to the copied Android App ID, or build locally with that environment variable or -PsmvFirebaseAndroidAppId=1:299081899217:android:.... The separate Production APK workflow reads the repository variable.
+3. The verified Android App ID is configured as the Production module's default: `1:299081899217:android:09e43164cfdd015ba539f0`. The workflow can override it with the repository Actions variable `SMV_FIREBASE_ANDROID_APP_ID`. For local builds, you can also use that environment variable or `-PsmvFirebaseAndroidAppId=1:299081899217:android:09e43164cfdd015ba539f0`.
 
    Example local build: `bash prepare-smv-astro-production-icon.sh && SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastroproduction:assembleDebug`
 
 The App ID is public client configuration, not a service-account secret. Do not commit Firebase Admin credentials or private service-account keys.
 
-The existing three-Test-APK workflow file is deliberately not modified, and the Test APK modules are kept separate from this Production module. The new Production workflow can compile without the App ID, but it labels that artifact FCM-UNCONFIGURED; native FCM is disabled until the registered Android App ID is supplied. Do not describe an unconfigured APK as having working native ringing before that App ID is configured and a physical-device test is completed.
+The existing three-Test-APK workflow file is deliberately not modified, and the Test APK modules are kept separate from this Production module. The Production workflow now builds with the verified Android App ID by default. If an Actions variable overrides it, the workflow checks that the ID matches the current Firebase Project Number prefix before building. Do not describe an unconfigured APK as having working native ringing before that App ID is configured and a physical-device test is completed.
 
 ## Permissions and platform limits
 
