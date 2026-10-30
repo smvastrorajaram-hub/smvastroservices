@@ -1,7 +1,7 @@
 
 (function(){
-  const IS_SMV_PHASE1_STAGING=["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname);
-  const BACKEND=IS_SMV_PHASE1_STAGING?"https://smv-astro-phase1-staging.onrender.com":"https://smvastroservices.onrender.com";
+  const IS_SMV_PHASE1_STAGING=["staging.smvastroservices.in","staging.smvastroservices.in"].includes(location.hostname);
+  const BACKEND=IS_SMV_PHASE1_STAGING?"https://api-staging.smvastroservices.in":"https://api.smvastroservices.in";
   const FBCONFIG=IS_SMV_PHASE1_STAGING
     ? {apiKey:"AIzaSyD9LzJ-7OKZMaVVf5kXa9aABBECS6kE8mA",authDomain:"smv-astro-staging.firebaseapp.com",projectId:"smv-astro-staging",storageBucket:"smv-astro-staging.firebasestorage.app",messagingSenderId:"73946216796",appId:"1:73946216796:web:09500761bec02699a4e999"}
     : {apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
