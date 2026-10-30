@@ -20,21 +20,35 @@ Location hint: `APAC` (இது location hint மட்டுமே; data resid
 
 கொடுக்கப்பட்ட Database ID-ஐ Wrangler configuration-ல் சேர்த்துள்ளோம். இது user வழங்கிய ID மட்டுமே; Cloudflare API access இல்லாததால் database-ன் இருப்பு, பெயர் அல்லது location-ஐ இன்னும் remote-ஆக verify செய்யவில்லை. Deployment-க்கு முன் Cloudflare Dashboard-ல் ID `smv-astro-staging-db` என்ற பெயருடன் பொருந்துகிறதா என்பதை உறுதிப்படுத்த வேண்டும்.
 
-## Worker-ஐ GitHub-உடன் இணைத்தல்
+## Worker-ஐ முதலில் உருவாக்கி GitHub-உடன் இணைத்தல்
 
-D1 ID கிடைத்து Wrangler config-இல் சேர்க்கப்பட்ட பிறகு:
-
-1. Workers & Pages → Create application → GitHub.
-2. Repository: `smvastrorajaram-hub/smvastroservices`.
-3. Branch: `feat/cloudflare-worker-d1-staging-20261030`.
-4. Worker name: `smv-astro-api-staging`.
+1. Cloudflare Dashboard → Workers & Pages → Create application → Create Worker; பெயர் `smv-astro-api-staging` என்று கொடுத்து Hello World Worker-ஐ உருவாக்குங்கள். `workers.dev` இயக்கப்பட்டிருக்கட்டும். இதனால் முதல் Worker-ஐ உருவாக்க தேவையான Admin அனுமதி Dashboard வழியாகப் பயன்படுத்தப்படும்.
+2. அந்த Worker → Settings → Builds → Connect → GitHub.
+3. Repository: `smvastrorajaram-hub/smvastroservices`.
+4. இந்த Worker-ன் Production branch: `feat/cloudflare-worker-d1-staging-20261030` (இந்த Worker staging-only என்பதால் இதுவே சரியான branch; Pages Production branch `main` அப்படியே இருக்கும்).
 5. Root directory: `cloudflare/smv-astro-api-staging`.
 6. Build command: `npm run check`.
-7. Deploy command: `npx wrangler d1 migrations apply smv-astro-staging-db --remote && npx wrangler deploy`.
-8. Workers Builds token-க்கு குறைந்தபட்சம் Account `Workers Scripts: Edit` மற்றும் `D1: Edit` அனுமதிகள் வேண்டும்; மேலும் Cloudflare token flow கேட்கும் account/user read permissions மட்டும் கொடுக்கவும். Scope இந்த Cloudflare Account-க்கு மட்டும் இருக்க வேண்டும். Default auto-generated token-ல் D1 permission இல்லை என்று Cloudflare ஆவணம் குறிப்பிடுவதால், அதன் permissions-ஐ சரிபார்க்காமல் D1 migration ஓட்ட வேண்டாம்.
-9. Token-ஐ GitHub Secret-ல் இடத் தேவையில்லை; Workers Builds-இன் API token setting-ல் Cloudflare வழங்கும் பாதுகாப்பான token selection-ஐப் பயன்படுத்தவும். அந்த setting D1 edit அனுமதியைச் சேர்க்க முடியாவிட்டால், முதலில் D1 Console-ல் migration SQL-ஐ இயக்கி, Deploy command-ஐ `npx wrangler deploy` என்று மட்டும் அமைக்கவும்.
+7. Deploy command: `npx wrangler deploy`.
+8. Build token-க்கு இந்த Worker-ஐ deploy செய்ய Workers Editor permission வேண்டும். D1 binding-ஐ deploy செய்ய D1 product-க்கான தனி permission தேவையில்லை; ஆனால் remote D1 SQL/migration இயக்க தனி D1 permission தேவை. Default token-க்கு D1 permission இல்லை என்பதால் migration-ஐ தனியாக D1 Console-ல் இயக்கும் வழியும் கீழே தரப்பட்டுள்ளது.
 
 இந்த branch-ஐ இந்த Worker-க்கான deployment branch ஆக மட்டும் தேர்ந்தெடுக்கவும். Pages project-ன் Production branch `main` மாற்றப்படக்கூடாது. Pages project-ல் PR preview build தோன்றலாம்; அது Pages Production `main` deployment அல்ல.
+
+## D1 schema-வை Dashboard Console-ல் அமைத்தல் (Remote SQL)
+
+Cloudflare Dashboard → Storage & databases → D1 → `smv-astro-staging-db` → Console. கீழே உள்ள SQL-ஐ இயக்கவும். இது staging probe table மற்றும் index மட்டும் உருவாக்கும்; production data எதையும் தொடாது:
+
+\`\`\`sql
+CREATE TABLE IF NOT EXISTS staging_probe_events (
+  id TEXT PRIMARY KEY NOT NULL,
+  probe_name TEXT NOT NULL CHECK (length(probe_name) BETWEEN 1 AND 40),
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_staging_probe_events_created_at
+  ON staging_probe_events (created_at DESC);
+\`\`\`
+
+இந்த SQL idempotent; மீண்டும் இயக்கப்பட்டாலும் ஏற்கெனவே உள்ள table/index அழிக்கப்படாது.
 
 ## Runtime secret
 
