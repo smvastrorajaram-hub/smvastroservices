@@ -1,0 +1,16 @@
+{
+  "name": "smvastro-api-staging",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-30",
+  "workers_dev": true,
+  "preview_urls": false,
+  "cache": {
+    "enabled": true
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SMV_ENVIRONMENT": "staging"
+  }
+}

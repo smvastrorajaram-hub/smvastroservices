@@ -1,0 +1,30 @@
+name: Cloudflare Workers API Phase 1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cloudflare/workers-api/**'
+      - 'test/cloudflare-workers-api.test.mjs'
+      - '.github/workflows/cloudflare-workers-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Worker syntax
+        run: node --check cloudflare/workers-api/src/index.mjs
+      - name: Run isolated Worker API tests
+        run: node --test test/cloudflare-workers-api.test.mjs
+      - name: Validate Cloudflare bundle without deploying
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config cloudflare/workers-api/wrangler.jsonc
