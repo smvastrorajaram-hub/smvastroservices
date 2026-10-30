@@ -29,11 +29,12 @@ D1 ID கிடைத்து Wrangler config-இல் சேர்க்க�
 3. Branch: `feat/cloudflare-worker-d1-staging-20261030`.
 4. Worker name: `smv-astro-api-staging`.
 5. Root directory: `cloudflare/smv-astro-api-staging`.
-6. Build command: `npm install --no-audit --no-fund && npm run check`.
+6. Build command: `npm run check`.
 7. Deploy command: `npx wrangler d1 migrations apply smv-astro-staging-db --remote && npx wrangler deploy`.
-8. Workers Builds API token: Cloudflare auto-generated token option பயன்படுத்தலாம்; தனியாக முழு Account API token பகிர வேண்டாம்.
+8. Workers Builds token-க்கு குறைந்தபட்சம் Account `Workers Scripts: Edit` மற்றும் `D1: Edit` அனுமதிகள் வேண்டும்; மேலும் Cloudflare token flow கேட்கும் account/user read permissions மட்டும் கொடுக்கவும். Scope இந்த Cloudflare Account-க்கு மட்டும் இருக்க வேண்டும். Default auto-generated token-ல் D1 permission இல்லை என்று Cloudflare ஆவணம் குறிப்பிடுவதால், அதன் permissions-ஐ சரிபார்க்காமல் D1 migration ஓட்ட வேண்டாம்.
+9. Token-ஐ GitHub Secret-ல் இடத் தேவையில்லை; Workers Builds-இன் API token setting-ல் Cloudflare வழங்கும் பாதுகாப்பான token selection-ஐப் பயன்படுத்தவும். அந்த setting D1 edit அனுமதியைச் சேர்க்க முடியாவிட்டால், முதலில் D1 Console-ல் migration SQL-ஐ இயக்கி, Deploy command-ஐ `npx wrangler deploy` என்று மட்டும் அமைக்கவும்.
 
-இந்த branch-ஐ இந்த Worker-க்கான deployment branch ஆக மட்டும் தேர்ந்தெடுக்கவும். Pages project-ன் Production branch `main` மாற்றப்படக்கூடாது.
+இந்த branch-ஐ இந்த Worker-க்கான deployment branch ஆக மட்டும் தேர்ந்தெடுக்கவும். Pages project-ன் Production branch `main` மாற்றப்படக்கூடாது. Pages project-ல் PR preview build தோன்றலாம்; அது Pages Production `main` deployment அல்ல.
 
 ## Runtime secret
 
