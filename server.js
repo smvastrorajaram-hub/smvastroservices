@@ -19,7 +19,9 @@ app.use((req,res,next)=>{
  const started=process.hrtime.bigint();const json=res.json.bind(res);
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
 });
-const PORT = process.env.PORT || 10000;
+const PORT = Number(process.env.PORT || 10000);
+const LISTEN_HOST = String(process.env.HOST || "0.0.0.0").trim() || "0.0.0.0";
+const PUBLIC_BACKEND_URL = String(process.env.PUBLIC_BACKEND_URL || "https://api.smvastroservices.in").trim().replace(/\/+$/, "");
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
@@ -833,7 +835,11 @@ app.get("/public/registration-config", (req,res)=>res.set("Cache-Control","no-st
   whatsappProviderConfigured: !!WHATSAPP_OTP_PROVIDER
 }));
 
-app.get('/api/smv-mode', (req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:'https://smvastroservices.onrender.com'}));
+app.get('/healthz', (_req,res)=>res.set('Cache-Control','no-store').status(200).json({
+  ok:true,service:'smv-astro-backend',uptimeSeconds:Math.floor(process.uptime()),
+  environment:String(process.env.NODE_ENV||'production')
+}));
+app.get('/api/smv-mode', (_req,res)=>res.set('Cache-Control','no-store').json({mode:'server',backend:PUBLIC_BACKEND_URL}));
 
 app.get("/", (req, res) => res.status(200).json({
   service: "SMV ASTRO Razorpay Backend",
@@ -4887,4 +4893,4 @@ app.use((req, res) => {
 
 answerCredit.start();
 
-app.listen(PORT, "0.0.0.0", () => console.log(`SMV ASTRO Razorpay backend running on port ${PORT}`));
+app.listen(PORT, LISTEN_HOST, () => console.log(`SMV ASTRO Razorpay backend running on ${LISTEN_HOST}:${PORT}`));
