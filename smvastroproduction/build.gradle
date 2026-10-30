@@ -43,10 +43,10 @@ android {
         targetSdk 36
         versionCode appVersionCode
         versionName appVersionName
-        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\\\"" + nativeFirebaseAndroidAppId.replace("\\\\", "\\\\\\\\").replace("\\\"", "\\\\\\"") + "\\\""
-        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\\\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\\\""
-        buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\\\"smv-astro\\\""
-        buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\\\"299081899217\\\""
+        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\\\"" + nativeFirebaseAndroidAppId.replace("\\", "\\\\").replace("\"", "\\\"") + "\\\""
+        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
+        buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
+        buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
     }
 
     signingConfigs {
