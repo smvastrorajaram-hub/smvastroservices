@@ -17,7 +17,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # Paired router/configuration tests use Node built-ins and local source modules.
+      # The repository lockfile predates current package.json dependencies, so npm ci is not valid.
       - run: npm run test:paired-firestore
       - run: node --check multi-project-firestore.js
       - run: node --check firestore-paired-read-failover.js
