@@ -91,10 +91,12 @@ test('mobile-only one-time keystore generation is explicit, password-protected, 
   assert.ok(workflow.includes('retention-days: 1'));
   assert.ok(workflow.includes('SMV_ANDROID_KEYSTORE_BASE64.txt'));
   assert.ok(workflow.includes('A keystore Base64 secret already exists'));
-  assert.ok(workflow.includes('at least 24 characters'));
+  assert.ok(workflow.includes('at least 32 characters'));
   assert.ok(workflow.includes('build:') && workflow.includes('!inputs.generate_release_keystore'));
   assert.ok(gradle.includes('storeType = "PKCS12"'));
   assert.ok(docs.includes('Android phone + GitHub Cloud'));
+  assert.ok(docs.includes('This repository is public'));
+  assert.ok(docs.includes('delete the artifact'));
   assert.ok(docs.includes('feature/smv-astro-permanent-release-build-20261030'));
   assert.ok(docs.includes('The artifact expires after **1 day**') || docs.includes('expires after **1 day**'));
   assert.doesNotMatch(workflow, /echo\s+["']?\$SMV_ANDROID_(?:KEYSTORE_PASSWORD|KEY_PASSWORD)/);
