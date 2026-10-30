@@ -166,7 +166,7 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.equal(installer.includes('firebasestorage.googleapis.com'), false);
   assert.ok(read('android-app-release-github.js').includes('uploads.github.com'));
   assert.ok(read('android-app-release-github.js').includes('draft: true'));
-  assert.ok(read('android-app-release-github.js').includes('make_latest: \\'false\\''));
+  assert.ok(read('android-app-release-github.js').includes("make_latest: 'false'"));
   assert.deepEqual(manifest.related_applications, [{ platform: 'play', id: SMV_ANDROID_PACKAGE }]);
   assert.equal(assetLinks[0].target.namespace, 'android_app');
   assert.equal(assetLinks[0].target.package_name, SMV_ANDROID_PACKAGE);
