@@ -28,7 +28,7 @@
   }
   if (!section || !download || !heading || !description || !status) return;
   const androidDevice = /android/i.test(navigator.userAgent || '');
-  if (!androidDevice) {
+  if (!androidDevice || location.hostname.includes('phase1-staging')) {
     hide(section);
     return;
   }
@@ -76,11 +76,16 @@
       }
 
       const url = new URL(release.downloadUrl);
-      const allowedBuckets = ['smv-astro.firebasestorage.app', 'smv-astro-staging.firebasestorage.app'];
-      const path = decodeURIComponent(url.pathname);
-      if (url.protocol !== 'https:' || url.hostname !== 'firebasestorage.googleapis.com' ||
-          !allowedBuckets.some(bucket => path.startsWith('/v0/b/' + bucket + '/o/smv-astro/android/releases/'))) {
-        throw new Error('The Android APK download URL is not a trusted SMV ASTRO Firebase Storage object.');
+      const versionName = String(release.versionName || '');
+      const releaseTag = 'smv-astro-' + versionName;
+      const fileName = 'SMV-ASTRO-' + versionName + '.apk';
+      const expectedPath = '/smvastrorajaram-hub/smvastroservices/releases/download/' +
+        releaseTag + '/' + fileName;
+      if (url.protocol !== 'https:' || url.hostname !== 'github.com' ||
+          url.port || url.username || url.password || url.search || url.hash ||
+          url.pathname !== expectedPath ||
+          versionCode(versionName) !== Number(release.versionCode)) {
+        throw new Error('The Android APK download URL is not a trusted SMV ASTRO GitHub Release asset.');
       }
 
       const installed = await installedNativeApp();
