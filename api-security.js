@@ -126,6 +126,7 @@ function ratePolicyForRequest(req) {
       path === '/public/astrologers' ||
       /^\/public\/astrologers\/[^/]+\/reviews$/.test(path) ||
       path === '/public/content' ||
+      path === '/public/android-app' ||
       path === '/public/registration-config' ||
       path === '/api/smv-mode'
     )) return { name: 'public-read', windowMs: 60_000, max: 240 };
@@ -135,6 +136,7 @@ function ratePolicyForRequest(req) {
   if (path === '/lookup-customer-login' || path === '/lookup-id-login') {
     return { name: 'identity-lookup', windowMs: 15 * 60_000, max: 30 };
   }
+  if (path === '/admin/android-app/upload') return { name: 'admin-apk-upload', windowMs: 60 * 60_000, max: 5 };
   if (path === '/contact-query' || path === '/question-notify') {
     return { name: 'public-form', windowMs: 15 * 60_000, max: 20 };
   }

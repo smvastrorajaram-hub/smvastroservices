@@ -21,6 +21,10 @@
         android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
 
+        <meta-data
+            android:name="asset_statements"
+            android:resource="@string/asset_statements" />
+
         <activity
             android:name=".IncomingCallActivity"
             android:exported="false"

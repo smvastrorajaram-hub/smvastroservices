@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "in.smvastroservices.smvastro",
+      "sha256_cert_fingerprints": [
+        "7A:3B:E1:59:21:8A:38:08:39:86:DE:C1:17:C0:BD:28:1B:3E:F4:2B:DA:65:F2:BB:7B:8C:99:46:B5:29:34:01"
+      ]
+    }
+  }
+]

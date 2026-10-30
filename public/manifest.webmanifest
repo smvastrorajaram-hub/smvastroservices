@@ -39,5 +39,11 @@
     "utilities"
   ],
   "prefer_related_applications": false,
-  "id": "/"
+  "id": "/",
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "in.smvastroservices.smvastro"
+    }
+  ]
 }

@@ -1123,13 +1123,13 @@ test('Permanent Android WebView bridges only trusted-origin microphone capture t
 
 test('Live Call SSE replay cursor advances only after a WebRTC signal is processed', () => {
   const frontend = read('public/smvastro.mjs');
-  const start = frontend.indexOf(\"}else if(ev.type==='live.call.signal'\");
-  const end = frontend.indexOf(\"else if(ev.type==='live.booking.pending'\", start);
+  const start = frontend.indexOf("}else if(ev.type==='live.call.signal'");
+  const end = frontend.indexOf("else if(ev.type==='live.booking.pending'", start);
   assert.ok(start >= 0 && end > start, 'Live Call SSE signal handler exists');
   const handler = frontend.slice(start, end);
   const processAt = handler.indexOf('smvLiveProcessSignal(signal).then(processed=>');
   const guardAt = handler.indexOf('if(processed!==true)return;');
-  const cursorAt = handler.indexOf(\"const ms=Date.parse(signal.createdAt||'');\");
+  const cursorAt = handler.indexOf("const ms=Date.parse(signal.createdAt||'');");
   assert.ok(processAt >= 0 && guardAt > processAt && cursorAt > guardAt);
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });

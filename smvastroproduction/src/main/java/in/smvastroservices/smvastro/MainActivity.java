@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
     private void hidePwaInstallUi(WebView view) {
         if (view == null) return;
         String script = "(function(){try{" +
-                "['smvInstallAppSection','smvPermanentAndroidAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.setAttribute('aria-hidden','true');}});" +
+                "['smvInstallAppSection','smvPermanentAndroidAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.style.display='none';e.setAttribute('aria-hidden','true');}});" +
                 "}catch(e){}})();";
         view.evaluateJavascript(script, null);
     }

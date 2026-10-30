@@ -32,7 +32,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261028-cream-content-contrast-v6" rel="stylesheet"/><link href="./android-app-install.css?v=20261030-permanent-apk-v1" rel="stylesheet"/><link href="./smv-ui.css?v=20261028-cream-content-contrast-v3" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261028-cream-content-contrast-v6" rel="stylesheet"/><link href="./android-app-install.css?v=20261030-admin-apk-manager-v2" rel="stylesheet"/><link href="./smv-ui.css?v=20261028-cream-content-contrast-v3" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script id="smv-v223-scoped-storage-policy">
 /* App state and offline caches are retained. Each Service Worker now owns
    cleanup of its own versioned cache namespace; never clear origin-wide storage
@@ -167,19 +167,17 @@ document.addEventListener('DOMContentLoaded', function(){
   <p class="smv-products-store-note">Products, pricing and stock availability are updated in the Shoopy store.</p>
 </section>
 <section aria-label="Install SMV ASTRO App" class="smv-install-app-section" id="smvInstallAppSection"><div class="smv-install-app-card"><div class="smv-install-app-icon-wrap"><img alt="SMV ASTRO" class="smv-install-app-icon" height="64" src="./assets/icon-512-transparent.svg?v=20261023-transparent-pwa-v1" width="64"/></div><div class="smv-install-app-copy"><h2>INSTALL SMV ASTRO APP</h2><p>Install SMV ASTRO on your phone and use it like an app from your Home Screen.</p><div aria-live="polite" class="smv-install-app-help" id="smvInstallAppHelp"></div></div><button class="smv-install-app-btn" id="smvInstallAppBtn" type="button">INSTALL APP</button></div></section>
-<section aria-labelledby="smvPermanentAndroidApkHeading" class="smv-android-apk-section" id="smvPermanentAndroidAppSection">
+<section aria-labelledby="smvPermanentAndroidApkHeading" class="smv-android-apk-section" id="smvPermanentAndroidAppSection" hidden>
   <div class="smv-android-apk-card">
     <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android App" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
     <div class="smv-android-apk-copy">
-      <p class="smv-android-apk-eyebrow">PERMANENT ANDROID APPLICATION</p>
-      <h2 id="smvPermanentAndroidApkHeading">INSTALL SMV ASTRO ANDROID APP</h2>
-      <p>Download the permanent signed Android app and install it on your phone. The existing website PWA installation remains available separately above.</p>
-      <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite">Checking the latest signed APK…</p>
+      <p class="smv-android-apk-eyebrow">OFFICIAL ANDROID APPLICATION</p>
+      <h2 id="smvPermanentAndroidApkHeading">SMV ASTRO ANDROID APP</h2>
+      <p id="smvPermanentApkDescription">Download the official signed SMV ASTRO Android application.</p>
+      <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite">Checking app availability…</p>
     </div>
     <div class="smv-android-apk-actions">
-      <a class="smv-android-apk-download" id="smvPermanentApkDownload" href="https://github.com/smvastrorajaram-hub/smvastroservices/releases/latest" hidden>DOWNLOAD AND INSTALL APK</a>
-      <a class="smv-android-apk-upload" id="smvPermanentApkUpload" href="https://github.com/smvastrorajaram-hub/smvastroservices/releases/new" target="_blank" rel="noopener noreferrer">ADMIN: UPLOAD / UPDATE APK</a>
-      <a class="smv-android-apk-releases" href="https://github.com/smvastrorajaram-hub/smvastroservices/releases" target="_blank" rel="noopener noreferrer">View APK release history</a>
+      <a class="smv-android-apk-download" id="smvPermanentApkDownload" href="#" hidden>DOWNLOAD APP</a>
     </div>
   </div>
 </section>
@@ -351,6 +349,23 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="adminBlogsMedia"><div class="empty">Loading content...</div></div>
 </div>
 
+</section>
+<section class="admin-workgroup" id="adminGroupAppManagement" aria-labelledby="adminGroupAppManagementTitle">
+<h2 class="admin-workgroup-title" id="adminGroupAppManagementTitle">06 · Android App Release Management / Android App நிர்வாகம்</h2>
+<p class="admin-workgroup-description">Upload a new permanent signed Android APK. The website checks the installed app version and shows DOWNLOAD APP or UPDATE APP automatically.</p>
+<div class="card" id="adminAndroidAppManagementCard">
+  <h3>SMV ASTRO Permanent Android APK</h3>
+  <p class="small">Select the production Release APK only. The server verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. Every upload must be newer than the current version.</p>
+  <div class="grid">
+    <label><b>Select signed APK file</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
+  </div>
+  <div class="action-row">
+    <button class="btn" id="adminAndroidAppUpload" type="button">UPLOAD NEW APP VERSION</button>
+    <button class="btn gray" id="adminAndroidAppRefresh" type="button">REFRESH CURRENT VERSION</button>
+  </div>
+  <div class="small" id="adminAndroidAppMsg" role="status" aria-live="polite">Current Android release has not been loaded.</div>
+  <div id="adminAndroidAppCurrent"><div class="empty">Loading current Android release…</div></div>
+</div>
 </section>
 
 </section></div>
@@ -1058,6 +1073,13 @@ else initFAQ();
   var help = document.getElementById('smvInstallAppHelp');
   if(!installSection || !installBtn) return;
 
+  var nativeApp = !!(window.SMVNativeCalls && typeof window.SMVNativeCalls.isNativeApp === 'function' && window.SMVNativeCalls.isNativeApp());
+  if(nativeApp){
+    installSection.hidden = true;
+    installSection.style.display = 'none';
+    return;
+  }
+
   var deferredPrompt = null;
   var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
   var iosStandalone = window.navigator.standalone === true;
@@ -1114,7 +1136,7 @@ else initFAQ();
   else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
 })();
 </script>
-<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261030-permanent-apk-v1"></script>
+<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261030-admin-apk-manager-v2"></script>
 <script src="./public-navigation.js?v=20261025-phase1-directory-dashboard-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{

@@ -1,44 +1,39 @@
-# SMV ASTRO permanent Android APK — website install and upload
+# SMV ASTRO permanent Android APK — Admin upload and automatic update detection
 
-The public website now has **two separate installation options**:
+The permanent Android APK is managed from the authenticated Admin Dashboard → Android App Release Management section. There is no public APK upload link and no GitHub Release upload step.
 
-- **INSTALL SMV ASTRO APP** is the existing website PWA install flow. Its manifest, icons, prompt, and service worker are not replaced by the Android APK option.
-- **INSTALL SMV ASTRO ANDROID APP** resolves the latest published permanent Android APK from this repository's GitHub Releases page.
+## Admin upload
 
-The Android APK card checks the public GitHub Releases API for the latest published release. It enables **DOWNLOAD AND INSTALL APK** only when that release contains this exact asset name:
+1. Build the SMV ASTRO Production permanent signed Release APK from the existing Android Release workflow.
+2. Sign in to the SMV ASTRO website using the configured Admin account and open the Admin Dashboard.
+3. Select the production APK file under Permanent Android APK and choose UPLOAD NEW APP VERSION.
+4. The backend verifies the APK package (in.smvastroservices.smvastro), the ordered vMAJOR.MINOR version and calculated Android versionCode, and the permanent Release signing certificate before upload.
+5. Only a strictly higher versionCode can replace the public current-version pointer. Each APK is stored at a versioned immutable Firebase Storage path; the previous APK file is retained.
 
-`SMV-ASTRO-PERMANENT-RELEASE.apk`
+The existing permanent v1.0 APK from PR #245 is already distributed. Therefore the first APK uploaded through this website manager must be v1.1 or newer (versionCode 1001 or higher). When manually running the existing Release workflow, set its version_name input to v1.1 for the first update. Do not upload the existing v1.0 artifact as an update.
 
-The page does not contain a GitHub token, signing secret, or APK upload credential. **ADMIN: UPLOAD / UPDATE APK** opens GitHub's Releases upload page; GitHub itself enforces repository write permissions.
+The Admin upload API requires a verified Firebase ID token and server-side Admin authorization before it reads the binary APK body. The APK is not accepted through a public Cloudinary unsigned upload preset. The service account writes to Firebase Storage using the configured production/staging bucket; no Firebase Storage admin credential is sent to the browser.
 
-## Publish the first APK
+## Website behavior
 
-1. Open the successful **Build SMV ASTRO Production Android APK** Actions run that produced the permanent Release artifact (PR #245's signed build is run **41016568571**).
-2. Download the Actions artifact named `SMV-ASTRO-PERMANENT-RELEASE-APK` and extract the signed `.apk` file. Do not use any Debug/Test APK from the separate Test APK workflow.
-3. Rename the extracted signed APK to exactly `SMV-ASTRO-PERMANENT-RELEASE.apk`.
-4. Open [Create a GitHub Release](https://github.com/smvastrorajaram-hub/smvastroservices/releases/new). Use a tag matching the APK's embedded app version (for example, `v1.0` if the APK was built as v1.0). Add a release title and upload the renamed APK asset.
-5. Publish the release. A draft or prerelease is deliberately not offered to website visitors.
-6. Open the SMV ASTRO website on Android and verify that **DOWNLOAD AND INSTALL APK** appears with the published version.
+- A new Android visitor sees one DOWNLOAD APP action once the Admin has published the first APK.
+- A visitor with an older installed SMV ASTRO production app sees UPDATE APP when the browser can verify the installed app and read its version. The newer signed APK can update the existing installation without uninstalling it.
+- When the installed version is current or newer, both the Android APK card and the website PWA install card are hidden on that device.
+- The dedicated PWA INSTALL APP flow remains on non-Android browsers. The native Android WebView hides the PWA card, public APK card, and Admin APK manager inside the installed app.
+- iPhone/iPad and desktop users do not get an Android APK download button.
 
-## Upload each future Android update
+## Installed-app detection requirements
 
-1. Run **Actions → Build SMV ASTRO Production Android APK → Run workflow** on the intended source branch, with **Generate the one-time Release keystore** set to `false`, **Build the permanent signed Release APK** enabled, and the next ordered version (for example, `v1.1` after `v1.0`).
-2. Download the new `SMV-ASTRO-PERMANENT-RELEASE-APK` artifact after the workflow succeeds. Extract the signed APK and rename it to the exact asset filename above.
-3. Create a **new** GitHub Release using the same version tag as the APK's embedded version, upload the renamed APK, and publish it. Use a new increasing version for every update; do not replace the existing permanent signing key.
-4. The website automatically resolves the latest published release. No website source change, PWA manifest change, or public backend deployment is required for each APK update.
+The website uses navigator.getInstalledRelatedApps() with the Android package ID in.smvastroservices.smvastro. The web manifest declares the related Android app, while /.well-known/assetlinks.json and the Android asset_statements establish the reciprocal Digital Asset Links relationship. The published assetlinks fingerprint is taken from the existing signed permanent Release APK.
 
-## Android installation notes
+Browser support is limited: Chrome on Android 80+ supports the Android-app check when the website/app relationship is correctly verified. Other browsers may not expose installed-app information; in those browsers the site cannot reliably distinguish an already-installed native package, so it falls back to DOWNLOAD APP rather than guessing. The originally distributed v1.0 APK contains the asset_statements resource but did not declare it in AndroidManifest.xml. The first v1.1 update adds that metadata; installed-app detection is therefore guaranteed only after the updated app has been installed once. On devices where the browser cannot verify the older installation, DOWNLOAD APP still points to the newer same-package signed APK, and Android's package installer can apply it over the old app without uninstalling it.
 
-- Open the website in Chrome on the Android phone, download the APK, open the downloaded file, and confirm **Install** in Android's package installer.
-- Android may ask the user to allow that browser to **Install unknown apps**. Grant it only to the browser used for this download, then return to the installer.
-- To update an already-installed permanent app without uninstalling it, the new APK must use the same `in.smvastroservices.smvastro` package, the same permanent PKCS12 signing key, and a higher Android `versionCode`.
-- The website's PWA install remains independent and available through its existing **INSTALL APP** button.
+Reference: https://developer.chrome.com/docs/capabilities/get-installed-related-apps/
 
-## WebRTC prerequisites and verification boundary
+## Version and signing safety
 
-- The native Android WebView requests Android's runtime microphone permission only for audio-capture requests from `https://smvastroservices.in` or `https://www.smvastroservices.in`. Video capture and other origins are denied.
-- Browser-side Live Call still uses `getUserMedia()`, `RTCPeerConnection`, the existing authenticated `/live/sessions/:id/signal` routes, and the Customer-offer / Astrologer-answer role restrictions.
-- The backend's `/live/ice-config` route returns STUN by default. It adds short-lived TURN credentials only when Render has both `LIVE_TURN_URLS` (or `LIVE_TURN_URL`) and `LIVE_TURN_SHARED_SECRET` configured. STUN-only calls can fail on restrictive carrier/NAT networks; a real TURN endpoint and secret must be provisioned and verified separately.
-- Source tests and Android compilation do not prove a physical handset call works. Before production use, test two different Android phones/accounts (Customer and Astrologer), approve microphone permission on both, complete a call in Wi-Fi and mobile data, verify two-way audio, and test call ending/retry. Also verify a signed APK update installs over the previous version without uninstalling it.
+The Android build uses the established Gradle rule versionCode = major * 1000 + minor. Every subsequent build must use the same application ID, permanent Release keystore, and a strictly increasing versionCode. Never upload a Debug/Test APK, never rotate the permanent key, and do not uninstall the existing app to apply an update.
 
-This Draft PR does not publish a GitHub Release, upload an APK, merge code, or deploy the website/production service.
+The Android upload endpoint validates the package, version sequence and signing certificate before publishing. Source tests do not prove a physical over-the-install update: test installation of v1.0 followed by v1.1 on an Android handset before announcing an update to all users.
+
+This Draft PR does not merge, publish an APK, or deploy production services. Once merged and deployed, the Admin Dashboard upload action publishes metadata to the production endpoint and the website reads the current release automatically.

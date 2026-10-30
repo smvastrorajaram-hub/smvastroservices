@@ -1,4 +1,5 @@
 /* Separate presentation for the permanent Android APK; the PWA card is untouched. */
+.smv-android-apk-section[hidden] { display: none; }
 .smv-android-apk-section { width: 100%; max-width: 1260px; margin: 8px auto 18px; padding: 0 24px; box-sizing: border-box; }
 .smv-android-apk-card { display: flex; align-items: center; gap: 16px; max-width: 980px; margin: 0 auto; padding: 15px 17px; border: 1px solid #d7c69f; border-radius: 14px; background: #fffaf0; box-sizing: border-box; }
 .smv-android-apk-icon-wrap { flex: 0 0 58px; width: 58px; height: 58px; }
