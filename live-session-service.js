@@ -346,13 +346,13 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     throw new Error('Live Session service requires Firestore, FieldValue, crypto, auth helpers and Firebase Messaging.');
   }
 
-  const walletDomainCutover = multiProjectFirestore?.walletDomainCutoverComplete === true && db !== profileDb;
   const p23MirrorWritesEnabled = multiProjectFirestore?.p23MirrorWritesEnabled === true;
   const p23ReadFailoverComplete = multiProjectFirestore?.p23ReadFailoverComplete === true;
-  const sessionHistoryArchiveWriteDb = !walletDomainCutover && multiProjectFirestore?.enabled &&
+  const sessionHistoryArchiveWriteDb = multiProjectFirestore?.enabled &&
     (multiProjectFirestore.sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete || p23MirrorWritesEnabled)
     ? multiProjectFirestore.consultationsDb : null;
-  const sessionHistoryDb = !walletDomainCutover && multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
+  const sessionHistoryDb = multiProjectFirestore?.enabled && multiProjectFirestore?.sessionHistoryBackfillComplete
+    ? multiProjectFirestore.consultationsDb : null;
   const liveDataWriteDb = multiProjectFirestore?.enabled ? multiProjectFirestore.liveDataDb : null;
   const liveDataReadDb = multiProjectFirestore?.liveDataBackfillComplete ? liveDataWriteDb : null;
   const liveDataMirrorWritesEnabled = multiProjectFirestore?.enabled &&
@@ -2223,7 +2223,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       const loaded = await loadSessionForParticipant(req.params.id, auth.user.uid);
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
-      const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
+      const signalStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);
       const readSignals = async replicaDb => {
         let query = replicaDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
         if (afterMs > 0) query = query.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
