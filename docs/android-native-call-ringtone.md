@@ -1,35 +1,80 @@
-# SMV ASTRO native Android incoming-call ringtone
+# SMV ASTRO Android app: native incoming-call ringtone and permanent Release build
 
-This change adds native incoming-call ringing to the separate SMV ASTRO Production Android module at smvastroproduction/. Its Android launcher label is SMV ASTRO and its package name is in.smvastroservices.smvastro. The existing smvastro/, smvhoroscope/, and smvcalendar/ modules remain standalone Test APKs, and their workflow file is unchanged.
+The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## What it does
+## Native incoming-call ringtone
 
-- Registers a native Firebase Cloud Messaging token from the Android app and posts it to POST /live/push/register with platform: native-android. The server derives the owner from the verified Firebase ID token and refuses a token already owned by another account.
-- For live_request and live_booking data messages, Android runs a foreground media-playback service, loops the phone's configured ringtone, and shows an incoming request notification/full-screen screen where Android allows it.
-- The ringtone stops when the request is opened from the native request screen, when the backend sends a stop_ringing event after handling/ending a request, or after the two-minute ring timeout.
+- The Production Android app registers a native Firebase Cloud Messaging token and posts it to `POST /live/push/register` with `platform: native-android`. The server derives the owner from the verified Firebase ID token and refuses a token already owned by another account.
+- For `live_request` and `live_booking` data messages, Android runs a foreground media-playback service, loops the phone's configured ringtone, and shows an incoming request notification/full-screen screen where Android allows it.
+- The ringtone stops when the request is opened from the native request screen, when the backend sends a `stop_ringing` event after handling/ending a request, or after the two-minute ring timeout.
 - Scheduled-booking and test alerts use ordinary notification behavior, not the looping incoming-call ringtone.
-- The service worker ignores internal stop_ringing control messages rather than showing them as extra user-facing notifications.
+- Android notification/full-screen permissions, DND/silent settings, ring volume, battery management, FCM delivery, and force-stop restrictions remain controlled by Android and the device owner.
 
-## Firebase Console setup required before native ringing works
+## Firebase Android configuration
 
-The Production Android module does not commit a google-services.json or assume an Android Firebase registration already exists. Native FCM needs an Android app registered in the existing Firebase project smv-astro; the web app ID cannot be substituted or guessed. The production package is deliberately separate from the Test APK package.
+The verified Android app is registered in Firebase project `smv-astro` with package `in.smvastroservices.smvastro` and Android App ID `1:299081899217:android:09e43164cfdd015ba539f0`. The workflow checks the expected Firebase project number prefix. The app ID is public client configuration; do not put Firebase Admin credentials or private service-account keys in the Android app.
 
-1. In Firebase Console, open the existing project smv-astro and add an Android app with the exact package name in.smvastroservices.smvastro. The Android launcher label is SMV ASTRO. Do not register in.smvastroservices.test for this Production App.
-2. Copy the Android App ID. It must have the form 1:299081899217:android:....
-3. The verified Android App ID is configured as the Production module's default: `1:299081899217:android:09e43164cfdd015ba539f0`. The workflow can override it with the repository Actions variable `SMV_FIREBASE_ANDROID_APP_ID`. For local builds, you can also use that environment variable or `-PsmvFirebaseAndroidAppId=1:299081899217:android:09e43164cfdd015ba539f0`.
+## Version numbering
 
-   Example local build: `bash prepare-smv-astro-production-icon.sh && SMV_FIREBASE_ANDROID_APP_ID='1:299081899217:android:YOUR_REGISTERED_ANDROID_APP_SUFFIX' gradle --no-daemon :smvastroproduction:assembleDebug`
+The installed app displays versions in this order:
 
-The App ID is public client configuration, not a service-account secret. Do not commit Firebase Admin credentials or private service-account keys.
+| Display version | Android versionCode |
+|---|---:|
+| `v1.0` | 1000 |
+| `v1.1` | 1001 |
+| `v1.2` | 1002 |
+| `v1.10` | 1010 |
+| `v2.0` | 2000 |
+| `v2.1` | 2001 |
 
-The existing three-Test-APK workflow file is deliberately not modified, and the Test APK modules are kept separate from this Production module. The Production workflow now builds with the verified Android App ID by default. If an Actions variable overrides it, the workflow checks that the ID matches the current Firebase Project Number prefix before building. Do not describe an unconfigured APK as having working native ringing before that App ID is configured and a physical-device test is completed.
+The Gradle build derives Android's required increasing integer `versionCode` from the `vMAJOR.MINOR` name: `MAJOR * 1000 + MINOR`. Minor values are from 0 to 999. The workflow validates the version format before building. When creating a Release, enter the next version in the `version_name` workflow input. Example: after `v1.0`, use `v1.1`; after `v1.9`, use `v1.10`; after `v1.999`, use `v2.0`.
 
-## Permissions and platform limits
+## One-time permanent Release signing setup
 
-- Allow Android notifications for SMV ASTRO.
-- On Android 14+, grant the app's full-screen incoming-call permission in system settings if the device offers it. Without this permission, Android may show a heads-up notification instead of opening the full-screen view.
-- Ring volume, Do Not Disturb/silent settings, device battery management, FCM delivery, user notification settings, and Android's background-start restrictions remain authoritative. Force-stopping the app from Android Settings can block push delivery until the app is opened again.
+A single private Android keystore must be created and retained securely. **Do not send the keystore, Base64 value, or passwords in ChatGPT, email, issue comments, or source files.** Keep at least two safe offline backups of the original `.jks` file and its passwords. Losing the private key prevents signing future updates for the same package.
+
+1. On a trusted computer with Java `keytool` installed, create the key (it prompts you for the keystore password and certificate details):
+
+   ```bash
+   keytool -genkeypair -v -keystore smv-astro-release.jks -alias smvastro-release -keyalg RSA -keysize 4096 -validity 10000
+   ```
+
+   Keep the alias as `smvastro-release`. Set a strong keystore password and key password; store them in a password manager. The key file itself must be backed up securely.
+
+2. Convert that same `.jks` file to a single-line Base64 string. On Linux/macOS:
+
+   ```bash
+   python -c "import base64; print(base64.b64encode(open('smv-astro-release.jks','rb').read()).decode())" > smv-astro-release.base64.txt
+   ```
+
+   On Windows PowerShell:
+
+   ```powershell
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\smv-astro-release.jks")) | Set-Content -NoNewline smv-astro-release.base64.txt
+   ```
+
+3. In the GitHub repository, open **Settings → Secrets and variables → Actions → New repository secret**. Create these four repository secrets. Put the Base64 text from the generated file in the first secret; type the matching values chosen in step 1 for the other three.
+
+   | Secret name | Value |
+   |---|---|
+   | `SMV_ANDROID_KEYSTORE_BASE64` | Entire single-line Base64 content of the `.jks` |
+   | `SMV_ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+   | `SMV_ANDROID_KEY_ALIAS` | `smvastro-release` |
+   | `SMV_ANDROID_KEY_PASSWORD` | Key password |
+
+4. Never commit the `.jks`, Base64 text file, or passwords to Git. The Release workflow restores the keystore into the temporary Actions runner, verifies its alias, signs the APK, verifies the APK signature with Android `apksigner`, uploads only the APK, and removes the temporary keystore at the end of the job.
+
+5. Open **Actions → Build SMV ASTRO Production Android APK → Run workflow**. Enter the next `version_name` (first permanent release: `v1.0`) and keep **Build the permanent signed Release APK** enabled. The workflow stops before signing if any required secret is missing.
+
+## Debug vs permanent Release
+
+- Debug APKs are for testing only. Their GitHub artifact is named `SMV-ASTRO-PRODUCTION-DEBUG-TEST-APK` and is retained for 7 days.
+- Permanent Release APKs use the stable private key and are named `SMV-ASTRO-PERMANENT-RELEASE-APK`; the Actions artifact is retained for 30 days. The installed Android app does not expire when an artifact link expires.
+- Future updates to the website/backend loaded by the WebView do not usually require a new APK. A new Release APK is needed when the native Android app or its bundled configuration changes.
+- All Release APKs for this same package must use the exact same keystore/certificate. Never regenerate a replacement key after the first Release.
+
+**Important transition:** the existing test Debug APK and the signed Release APK have the same package name but different signing certificates. Android will not install the Release APK as an in-place update over that Debug APK. After the first signed Release APK has been built and verified, uninstall the Debug test app, then install the Release APK. Uninstalling can clear the app's local data; server-side account data is not deleted by uninstalling.
 
 ## Verification boundary
 
-Automated checks can compile the native classes and run source regression tests. An APK build alone does not prove Firebase app registration, FCM delivery, lock-screen permissions, or physical-device ringtone behavior; those require the configured Android App ID and a real Android-device test.
+A CI compile proves the Android Release variant can be assembled, not that the signing secrets are configured. A permanent Release is considered ready only after the four secrets are supplied, the signed APK is built, and `apksigner` verifies its certificate. Real-device testing should then be performed with the signed Release app as well.
