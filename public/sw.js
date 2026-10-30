@@ -55,8 +55,8 @@ try {
   importScripts('https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js');
   importScripts('https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-compat.js');
   const SMV_STAGING_PUSH_HOSTS = [
-    'smv-astro-phase1-browser-staging.onrender.com',
-    'smv-astro-phase1-browser-isolated.onrender.com'
+    'staging.smvastroservices.in',
+    'staging.smvastroservices.in'
   ];
   const SMV_PUSH_STAGING = SMV_STAGING_PUSH_HOSTS.includes(self.location.hostname);
   const SMV_PUSH_FIREBASE_CONFIG = SMV_PUSH_STAGING
