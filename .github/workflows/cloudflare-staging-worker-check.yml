@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test:
-    name: Worker syntax and security tests
+    name: Worker syntax, D1 migration and security tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,7 +29,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check Worker syntax
-        run: node --check src/index.js
-      - name: Run Worker tests
-        run: npm test
+      - name: Install isolated Worker tooling
+        run: npm install --no-audit --no-fund
+      - name: Check Worker syntax and security tests
+        run: npm run check
+      - name: Validate D1 migration locally
+        run: npx wrangler d1 migrations apply smv-astro-staging-db --local
+      - name: Validate Worker bundle without deployment
+        run: npx wrangler deploy --dry-run --outdir .wrangler-test-out
