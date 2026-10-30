@@ -19,6 +19,14 @@ app.use((req,res,next)=>{
  const started=process.hrtime.bigint();const json=res.json.bind(res);
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
 });
+
+// Process liveness/readiness endpoint. Firebase configuration is validated during
+// startup; this route deliberately performs no Firestore read and spends no quota.
+app.get('/healthz', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.status(200).json({ status: 'ok' });
+});
+
 const PORT = process.env.PORT || 10000;
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();

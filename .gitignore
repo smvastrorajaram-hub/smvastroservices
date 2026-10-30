@@ -1,0 +1,11 @@
+# Local Node artifacts
+/node_modules/
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+/coverage/
+
+# Local secrets; do not commit Firebase service-account values or Oracle runtime env
+.env
+.env.*
+/ops/oracle/backend.env

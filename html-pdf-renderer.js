@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const puppeteer = require('puppeteer-core');
-const chromiumModule = require('@sparticuz/chromium');
+// The full npm package ships x64 binaries; ARM64 uses chromium-min with an explicitly pinned pack URL.
+const chromiumModule = process.arch === 'arm64'
+  ? require('@sparticuz/chromium-min')
+  : require('@sparticuz/chromium');
 // @sparticuz/chromium v153 can be exposed through a CJS default wrapper on Node 26.
 // Normalize both module shapes once instead of mutating the imported namespace.
 const chromium = chromiumModule?.default || chromiumModule;
@@ -59,7 +62,11 @@ async function renderHtmlPdf(opts={}){
     ? chromium.executablePath.bind(chromium)
     : (typeof chromiumModule?.executablePath === 'function' ? chromiumModule.executablePath.bind(chromiumModule) : null);
   if(!executablePathFn)throw new Error('Bundled Chromium API is incompatible: executablePath() is unavailable.');
-  const executablePath=await executablePathFn();
+  const chromiumPackUrl = String(process.env.CHROMIUM_PACK_URL || '').trim();
+  if (process.arch === 'arm64' && !chromiumPackUrl) {
+    throw new Error('CHROMIUM_PACK_URL must point to the pinned ARM64 Chromium pack on ARM64 hosts.');
+  }
+  const executablePath=await executablePathFn(process.arch === 'arm64' ? chromiumPackUrl : undefined);
   if(!executablePath)throw new Error('Bundled Chromium executable could not be resolved.');
   const chromiumArgs=Array.isArray(chromium?.args)?chromium.args:(Array.isArray(chromiumModule?.args)?chromiumModule.args:[]);
   if(!chromiumArgs.length)throw new Error('Bundled Chromium API is incompatible: launch args are unavailable.');

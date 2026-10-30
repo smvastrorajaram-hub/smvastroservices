@@ -2,8 +2,19 @@
   "name": "smv-horoscope",
   "version": "1.0.0",
   "private": true,
-  "scripts": {"test:api-security": "node --test test/api-security.test.js", "test:css-safe-duplicate-cleanup-pass2": "node --test test/css-safe-duplicate-cleanup-pass2.test.mjs", "test:astro-consultation-lazy": "node --test tests/astro-consultation-module-lazy-load.mjs", "test:storage-and-sw": "node --test test/storage-and-safe-sw-updates.test.js", "start": "node server.js", "test:wallet": "node --test test/wallet-service.test.js", "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js", "validate:wallet-domain": "node scripts/validate-wallet-domain.js"},
-  "engines": {"node": ">=20 <27"},
+  "scripts": {
+    "test:api-security": "node --test test/api-security.test.js",
+    "test:css-safe-duplicate-cleanup-pass2": "node --test test/css-safe-duplicate-cleanup-pass2.test.mjs",
+    "test:astro-consultation-lazy": "node --test tests/astro-consultation-module-lazy-load.mjs",
+    "test:storage-and-sw": "node --test test/storage-and-safe-sw-updates.test.js",
+    "start": "node server.js",
+    "test:wallet": "node --test test/wallet-service.test.js",
+    "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js",
+    "validate:wallet-domain": "node scripts/validate-wallet-domain.js"
+  },
+  "engines": {
+    "node": ">=20 <27"
+  },
   "dependencies": {
     "express": "^4.21.2",
     "astronomy-engine": "^2.1.19",
@@ -13,6 +24,7 @@
     "nodemailer": "^7.0.6",
     "cloudinary": "^2.7.0",
     "puppeteer-core": "25.11.0",
-    "@sparticuz/chromium": "153.0.0"
+    "@sparticuz/chromium": "153.0.0",
+    "@sparticuz/chromium-min": "153.0.0"
   }
 }
