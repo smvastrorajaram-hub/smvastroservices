@@ -1,6 +1,6 @@
 /* SMV ASTRO V221 — Ask Now + Private Consultation local place search + header Calendar link.
    Uses the existing bundled India place database. No Firebase/API polling and no MutationObserver. */
-const SMV_BACKEND_BASE = ["staging.smvastroservices.in","staging.smvastroservices.in"].includes(location.hostname)
+const SMV_BACKEND_BASE = ["staging.smvastroservices.in"].includes(location.hostname)
   ? "https://api-staging.smvastroservices.in" : "https://api.smvastroservices.in";
 (function(){
   'use strict';
