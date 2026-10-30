@@ -23,7 +23,7 @@ Create a GitHub fine-grained personal access token for the repository owner smva
 
 Add the token as the secret environment variable SMV_GITHUB_RELEASE_TOKEN on the production Render backend service only. Do not place it in source code, GitHub files, Android APKs, browser JavaScript, HTML, or client-visible API responses. Never paste the token into ChatGPT.
 
-The staging backend is deliberately read-only for APK publishing because GitHub Releases in this public repository are publicly visible. Staging can read the production release version, but the upload API refuses to publish from staging even if a token is accidentally configured there.
+The staging backend is deliberately read-only for APK publishing because GitHub Releases in this public repository are publicly visible. Staging can read the production release version in its Admin manager, but the staging website hides the public Android APK DOWNLOAD card and the upload API refuses to publish from staging even if a token is accidentally configured there.
 
 No production Render variable is changed by this Draft PR. The token must be configured manually by the repository owner before the production Admin upload function becomes available. Until then, the public release lookup remains read-only and the Admin page displays the configuration requirement.
 
