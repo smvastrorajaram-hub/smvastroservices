@@ -5,7 +5,7 @@ window.SMV_BACKEND_URL = '';
 (()=>{
 'use strict';
 
-const DEFAULT_BACKEND='https://api.smvastroservices.in';
+const DEFAULT_BACKEND=location.hostname==='staging.smvastroservices.in'?'https://api-staging.smvastroservices.in':'https://api.smvastroservices.in';
 const FEATURES=new Set(['advanced_analysis','marriage_matching']);
 const LEGACY_KEYS=[
   'smv-horoscope-feature-config',
