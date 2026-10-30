@@ -86,8 +86,8 @@ jobs:
             echo "::error::A keystore Base64 secret already exists. Refusing to generate or rotate the permanent key."
             exit 1
           fi
-          if (( ${#SMV_ANDROID_KEYSTORE_PASSWORD} < 24 )); then
-            echo "::error::Use a randomly generated password of at least 24 characters."
+          if (( ${#SMV_ANDROID_KEYSTORE_PASSWORD} < 32 )); then
+            echo "::error::Use a randomly generated password of at least 32 characters."
             exit 1
           fi
           if [[ "$SMV_ANDROID_KEYSTORE_PASSWORD" != "$SMV_ANDROID_KEY_PASSWORD" ]]; then
