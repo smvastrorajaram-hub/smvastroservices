@@ -2,7 +2,7 @@ plugins { id "com.android.application" }
 
 def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidAppId")
         .orElse(providers.environmentVariable("SMV_FIREBASE_ANDROID_APP_ID"))
-        .getOrElse("")
+        .getOrElse("1:299081899217:android:09e43164cfdd015ba539f0")
 
 android {
     namespace "in.smvastroservices.smvastro"
