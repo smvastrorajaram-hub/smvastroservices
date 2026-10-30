@@ -8,7 +8,7 @@
  if(window.__smvSearchPlacesOnlineOffline)return;
  const scriptBase=new URL('.',document.currentScript?.src||new URL('./',location.href));
  const offlineUrl=new URL('offline/places/place-search.mjs',scriptBase).href;
- const defaultBackend='https://api.smvastroservices.in';
+ const defaultBackend=location.hostname==='staging.smvastroservices.in'?'https://api-staging.smvastroservices.in':'https://api.smvastroservices.in';
  const backend=String(window.SMV_LOCATION_BACKEND||defaultBackend).replace(/\/+$/,'');
  let offlinePromise=null;
  const offline=()=>offlinePromise||(offlinePromise=import(offlineUrl));
