@@ -48,7 +48,6 @@ elif find "$APP_DIR" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
   echo "$APP_DIR is not a Git checkout and is not empty; refusing to overwrite it." >&2
   exit 1
 else
-  rmdir "$APP_DIR"
   runuser -u smvastro -- git clone --single-branch --branch "$REF" "$REPO_URL" "$APP_DIR"
 fi
 
