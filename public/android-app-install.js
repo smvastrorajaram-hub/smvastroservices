@@ -76,15 +76,16 @@
       }
 
       const url = new URL(release.downloadUrl);
-      const cloudName = String(release.cloudName || '');
-      const releaseScope = location.hostname.includes('phase1-staging') ? 'staging' : 'production';
-      const path = decodeURIComponent(url.pathname);
-      if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com' ||
-          cloudName !== 'l6r6c8zi' ||
-          !path.startsWith('/' + cloudName + '/raw/upload/') ||
-          !path.includes('/smv-astro/android/releases/' + releaseScope + '/') ||
-          !path.endsWith('.apk')) {
-        throw new Error('The Android APK download URL is not a trusted SMV ASTRO Cloudinary raw asset.');
+      const versionName = String(release.versionName || '');
+      const releaseTag = 'smv-astro-' + versionName;
+      const fileName = 'SMV-ASTRO-' + versionName + '.apk';
+      const expectedPath = '/smvastrorajaram-hub/smvastroservices/releases/download/' +
+        releaseTag + '/' + fileName;
+      if (url.protocol !== 'https:' || url.hostname !== 'github.com' ||
+          url.port || url.username || url.password || url.search || url.hash ||
+          url.pathname !== expectedPath ||
+          versionCode(versionName) !== Number(release.versionCode)) {
+        throw new Error('The Android APK download URL is not a trusted SMV ASTRO GitHub Release asset.');
       }
 
       const installed = await installedNativeApp();
