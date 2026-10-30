@@ -7,6 +7,7 @@ const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {getStorage}=require('firebase-admin/storage');
 const {inspectSmvAndroidApk,MAX_APK_BYTES,SMV_ANDROID_PACKAGE}=require('./android-app-release');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
+const {readPairedWithQuotaFallback}=require('./firestore-paired-read-failover');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -48,14 +49,45 @@ function walletDomainDb(){
 }
 function contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}
 async function mirrorAdminContentPatch(id,patch){
- if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
- try{await multiProjectFirestore.contentDb.collection('smv_content').doc(String(id)).set(patch,{merge:true});}
- catch(e){console.warn('[Multi-project Firestore] Content mirror deferred for '+id+':',e?.message||e);}
+ const destinations=[];
+ if(multiProjectFirestore.enabled&&multiProjectFirestore.contentMirrorWritesEnabled&&!multiProjectFirestore.contentBackfillComplete){
+  destinations.push({name:'Project 4',db:multiProjectFirestore.contentDb});
+ }
+ if(multiProjectFirestore.p45ContentMirrorWritesEnabled&&multiProjectFirestore.walletDomainEnabled){
+  destinations.push({name:'Project 5 paired content replica',db:multiProjectFirestore.walletDomainDb});
+ }
+ await Promise.all(destinations.map(async destination=>{
+  try{await destination.db.collection('smv_content').doc(String(id)).set(patch,{merge:true});}
+  catch(e){console.warn('[Multi-project Firestore] Content mirror deferred to '+destination.name+' for '+id+':',e?.message||e);}
+ }));
 }
 async function mirrorAdminContentDelete(id){
- if(!multiProjectFirestore.enabled||!multiProjectFirestore.contentMirrorWritesEnabled||multiProjectFirestore.contentBackfillComplete)return;
- try{await multiProjectFirestore.contentDb.collection('smv_content').doc(String(id)).delete();}
- catch(e){console.warn('[Multi-project Firestore] Content delete mirror deferred for '+id+':',e?.message||e);}
+ const destinations=[];
+ if(multiProjectFirestore.enabled&&multiProjectFirestore.contentMirrorWritesEnabled&&!multiProjectFirestore.contentBackfillComplete){
+  destinations.push({name:'Project 4',db:multiProjectFirestore.contentDb});
+ }
+ if(multiProjectFirestore.p45ContentMirrorWritesEnabled&&multiProjectFirestore.walletDomainEnabled){
+  destinations.push({name:'Project 5 paired content replica',db:multiProjectFirestore.walletDomainDb});
+ }
+ await Promise.all(destinations.map(async destination=>{
+  try{await destination.db.collection('smv_content').doc(String(id)).delete();}
+  catch(e){console.warn('[Multi-project Firestore] Content delete mirror deferred to '+destination.name+' for '+id+':',e?.message||e);}
+ }));
+}
+async function readContentQuery(buildQuery,label){
+ const sourceDb=contentStoreDb();
+ const pairEnabled=multiProjectFirestore.p45ReadFailoverComplete===true&&
+   multiProjectFirestore.contentBackfillComplete===true&&sourceDb===multiProjectFirestore.contentDb;
+ const result=await readPairedWithQuotaFallback({
+  pool:'p45',dataset:'smv_content',sourceDb,
+  peerDb:multiProjectFirestore.walletDomainDb,
+  enabled:pairEnabled,
+  sourceId:sourceDb===multiProjectFirestore.contentDb?'project-4-content':'project-1-primary',
+  peerId:'project-5-content-replica',
+  read:readDb=>buildQuery(readDb).get(),
+  label
+ });
+ return result.value;
 }
 function customerHistoryCutoverDate(){
  const raw=String(process.env.SMV_CUSTOMER_HISTORY_CUTOVER_AT||'').trim();
@@ -73,13 +105,23 @@ async function readCustomerHistoryCollection(collectionName,uid){
  }
  let snapshots;
  try{
+  const archiveRead=await readPairedWithQuotaFallback({
+   pool:'p23',dataset:collectionName,
+   sourceDb:multiProjectFirestore.consultationsDb,
+   peerDb:multiProjectFirestore.liveDataDb,
+   enabled:multiProjectFirestore.p23ReadFailoverComplete===true,
+   sourceId:'project-2-history-archive',peerId:'project-3-history-replica',
+   read:replicaDb=>replicaDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
+   label:'Customer history archive '+collectionName
+  });
   snapshots=await Promise.all([
-   multiProjectFirestore.consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get(),
+   Promise.resolve(archiveRead.value),
    db.collection(collectionName).where('customerId','==',uid).where('createdAt','>=',cutover).orderBy('createdAt','desc').limit(100).get(),
    db.collection(collectionName).where('customerId','==',uid).where('updatedAt','>=',cutover).orderBy('updatedAt','desc').limit(100).get()
   ]);
  }catch(error){
-  console.warn('[Multi-project Firestore] Customer-history archive read failed; using primary for '+collectionName+':',error?.message||error);
+  if(multiProjectFirestore.p23ReadFailoverComplete===true)throw error;
+  console.warn('[Multi-project Firestore] Customer-history archive read failed; using primary before paired failover rollout for '+collectionName+':',error?.message||error);
   return readPrimary().then(snap=>snap.docs.map(d=>({id:d.id,...(d.data()||{})})));
  }
  const [archiveSnap,createdAfterCutover,updatedAfterCutover]=snapshots;
@@ -2932,9 +2974,9 @@ app.post('/admin/android-app/upload',
 // Public read-only view of published English content. Never expose drafts through this route.
 app.get('/public/content', async (_req,res)=>{
   try{
-    const snap=await contentStoreDb().collection('smv_content')
-      .where('published','==',true).where('language','==','en').get();
-    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})}))
+    const snap=await readContentQuery(contentDb=>contentDb.collection('smv_content')
+       .where('published','==',true).where('language','==','en'),'Public published content');
+     const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})}))
       .sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
     return res.set('Cache-Control','public, max-age=60, stale-while-revalidate=300')
       .json({success:true,items});
@@ -2949,8 +2991,8 @@ app.get("/admin/content", async (req,res)=>{
   const actor=await requireUser(req,res); if(!actor)return;
   if(!(await isAdminUser(actor)))return res.status(403).json({success:false,error:"Admin access denied."});
   try{
-    const snap=await contentStoreDb().collection("smv_content").where("language","==","en").get();
-    const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
+    const snap=await readContentQuery(contentDb=>contentDb.collection("smv_content").where("language","==","en"),'Admin content');
+     const items=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).sort((a,b)=>smvNewestActivityMillis(b)-smvNewestActivityMillis(a));
     return res.set("Cache-Control","no-store").json({success:true,items});
   }catch(e){console.error("Admin content read failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to load Admin content."});}
 });
