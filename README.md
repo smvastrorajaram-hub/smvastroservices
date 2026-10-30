@@ -232,7 +232,7 @@ If a future release intentionally introduces an AI/model feature, it must not si
 
 ## 19. Deployment
 
-Frontend/static/PWA files are deployed to the SMV ASTRO web host. Backend changes in `server.js` require deployment to the configured Node/Render backend. Environment variables and secrets must be configured in the deployment environment, not hard-coded into public source.
+Frontend/static/PWA files are deployed to the SMV ASTRO web host. Backend changes in `server.js` require deployment to the configured Node/Oracle backend. Environment variables and secrets must be configured in the deployment environment, not hard-coded into public source.
 
 After deployment, verify cache/service-worker versioning so the browser is loading the new files rather than a previous cached build.
 
@@ -447,11 +447,11 @@ Physical-device Flight Mode remains a device-level acceptance test rather than s
 
 ## GeoNames worldwide location + birth-time DST setup
 
-SMV ASTRO's browser uses the existing Render backend for worldwide GeoNames search, followed by a **single GeoNames `timezoneJSON` lookup when a city is selected**. The backend returns `timezoneId`, never a current `dstOffset` for a historical birth. The browser's IANA database calculates the UTC offset for the person's actual birth date and local clock time.
+SMV ASTRO's browser uses the existing Oracle backend for worldwide GeoNames search, followed by a **single GeoNames `timezoneJSON` lookup when a city is selected**. The backend returns `timezoneId`, never a current `dstOffset` for a historical birth. The browser's IANA database calculates the UTC offset for the person's actual birth date and local clock time.
 
-**Required production configuration:** Create and activate your own GeoNames Web Service account at https://www.geonames.org/login. In the **Render backend** service for `smvastroservices.onrender.com`, add the environment variable `GEONAMES_USERNAME` with your active GeoNames username, then deploy/restart the backend. The `demo` account is intentionally rejected. Never put a GeoNames username or other backend settings into Horoscope HTML, Firebase rules, or a client-side token.
+**Required production configuration:** Create and activate your own GeoNames Web Service account at https://www.geonames.org/login. In the **Oracle backend** service for `smvastroservices.onrender.com`, add the environment variable `GEONAMES_USERNAME` with your active GeoNames username, then deploy/restart the backend. The `demo` account is intentionally rejected. Never put a GeoNames username or other backend settings into Horoscope HTML, Firebase rules, or a client-side token.
 
-Check the backend status at `https://smvastroservices.onrender.com/api/locations/status`: `configured:true` means the backend sees a username. A real city search and timezone request must still be tested to verify account authorization, upstream availability, and quota. Search endpoint: `/api/locations/search?q=London&limit=70`; selected-place timezone: `/api/locations/timezone?lat=51.5074&lng=-0.1278`.
+Check the backend status at `https://api.smvastroservices.in/api/locations/status`: `configured:true` means the backend sees a username. A real city search and timezone request must still be tested to verify account authorization, upstream availability, and quota. Search endpoint: `/api/locations/search?q=London&limit=70`; selected-place timezone: `/api/locations/timezone?lat=51.5074&lng=-0.1278`.
 
 When GeoNames is unavailable, bundled offline India place searches continue. Non-India autocomplete does **not** fall back to the public Nominatim service (its autocomplete policy prohibits this use). The Horoscope, Marriage Matching and Calendar fields retain manual IANA-zone entry/override. Inaccurate coordinate-based estimates must never be labeled as GeoNames-verified; high-risk historical and border locations should be checked against archival civil-time records.
 
