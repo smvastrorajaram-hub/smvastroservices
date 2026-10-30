@@ -157,7 +157,7 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.ok(server.includes("express.raw({ type: 'application/vnd.android.package-archive'"));
   assert.ok(server.includes('androidApkReleaseStore.publishRelease'));
   assert.ok(server.includes('createAndroidApkGitHubStore'));
-  assert.ok(server.includes('SMV_GITHUB_RELEASE_TOKEN'));
+  assert.ok(read('android-app-release-github.js').includes('SMV_GITHUB_RELEASE_TOKEN'));
   assert.equal(server.includes("collection('smv_app_releases')"), false);
   assert.equal(server.includes('getStorage('), false);
   assert.equal(server.includes("require('cloudinary')"), false);
@@ -355,7 +355,7 @@ test('GitHub Release discovery selects the highest valid SMV ASTRO production AP
     id: 90, tag_name: 'v9.9', draft: false, prerelease: false, assets: []
   };
   const invalidCertificate = githubReleaseFixture('v1.9', 19);
-  invalidCertificate.body = invalidCertificate.body.replace(SMV_RELEASE_CERT_SHA256, '0'.repeat(64));
+  invalidCertificate.body = invalidCertificate.body.replace(/"certificateSha256":"[A-F0-9]{64}"/, '"certificateSha256":"' + '0'.repeat(64) + '"');
   const draft = githubReleaseFixture('v2.0', 20, { draft: true });
   const { fetchImpl } = makeGitHubFetchMock({
     releases: [unrelated, githubReleaseFixture('v1.1', 11), githubReleaseFixture('v1.3', 13), invalidCertificate, draft]
