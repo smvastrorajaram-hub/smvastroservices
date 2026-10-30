@@ -147,6 +147,7 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     state.contentMirrorWritesEnabled = enabledFlag(env.SMV_CONTENT_MIRROR_WRITES);
     state.dashboardReadReplicaBackfillComplete = enabledFlag(env.SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE);
     state.p23MirrorWritesEnabled = enabledFlag(env.SMV_P23_PAIRED_REPLICA_MIRROR_WRITES);
+    state.liveDataMirrorWritesEnabled = state.liveDataMirrorWritesEnabled || state.p23MirrorWritesEnabled;
   }
 
   if (walletDomainEnabled) {
