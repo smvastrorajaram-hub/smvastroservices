@@ -18,7 +18,7 @@ Database name: `smv-astro-staging-db`
 
 Location hint: `APAC` (இது location hint மட்டுமே; data residency உத்தரவாதம் அல்ல).
 
-Database உருவானதும் அதன் Database ID-ஐப் பாதுகாப்பாகக் குறித்துக்கொள்ளுங்கள். Database ID secret அல்ல; ஆனால் அதை chat-ல் பகிர்வதற்கு பதிலாக தேவையான config-இல் மட்டுமே பயன்படுத்துங்கள். உண்மையான ID கிடைக்கும் வரை Wrangler config-இல் போலியான ID சேர்க்கப்படாது; remote deployment தொடங்கக்கூடாது.
+கொடுக்கப்பட்ட Database ID-ஐ Wrangler configuration-ல் சேர்த்துள்ளோம். இது user வழங்கிய ID மட்டுமே; Cloudflare API access இல்லாததால் database-ன் இருப்பு, பெயர் அல்லது location-ஐ இன்னும் remote-ஆக verify செய்யவில்லை. Deployment-க்கு முன் Cloudflare Dashboard-ல் ID `smv-astro-staging-db` என்ற பெயருடன் பொருந்துகிறதா என்பதை உறுதிப்படுத்த வேண்டும்.
 
 ## Worker-ஐ GitHub-உடன் இணைத்தல்
 
@@ -29,8 +29,8 @@ D1 ID கிடைத்து Wrangler config-இல் சேர்க்க�
 3. Branch: `feat/cloudflare-worker-d1-staging-20261030`.
 4. Worker name: `smv-astro-api-staging`.
 5. Root directory: `cloudflare/smv-astro-api-staging`.
-6. Build command: `npm run check && npx wrangler d1 migrations apply smv-astro-staging-db --remote`.
-7. Deploy command: `npx wrangler deploy`.
+6. Build command: `npm install --no-audit --no-fund && npm run check`.
+7. Deploy command: `npx wrangler d1 migrations apply smv-astro-staging-db --remote && npx wrangler deploy`.
 8. Workers Builds API token: Cloudflare auto-generated token option பயன்படுத்தலாம்; தனியாக முழு Account API token பகிர வேண்டாம்.
 
 இந்த branch-ஐ இந்த Worker-க்கான deployment branch ஆக மட்டும் தேர்ந்தெடுக்கவும். Pages project-ன் Production branch `main` மாற்றப்படக்கூடாது.
