@@ -161,7 +161,8 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.equal(server.includes("collection('smv_app_releases')"), false);
   assert.equal(server.includes('getStorage('), false);
   assert.equal(server.includes("require('cloudinary')"), false);
-  assert.ok(installer.includes('github.com/smvastrorajaram-hub/smvastroservices/releases/download/'));
+  assert.ok(installer.includes("'/smvastrorajaram-hub/smvastroservices/releases/download/'"));
+  assert.ok(installer.includes("url.hostname !== 'github.com'"));
   assert.equal(installer.includes('res.cloudinary.com'), false);
   assert.equal(installer.includes('firebasestorage.googleapis.com'), false);
   assert.ok(read('android-app-release-github.js').includes('uploads.github.com'));
