@@ -2,8 +2,8 @@
    Online: existing Render GeoNames world-wide search proxy.
    Offline/failure: bundled India place-search database.
    This module performs no Firestore reads. */
-const SMV_QUESTION_BACKEND = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname)
-  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+const SMV_QUESTION_BACKEND = ["staging.smvastroservices.in","staging.smvastroservices.in"].includes(location.hostname)
+  ? "https://api-staging.smvastroservices.in" : "https://api.smvastroservices.in";
 let offlineSearchPromise=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 async function offlineSearch(q,limit){
