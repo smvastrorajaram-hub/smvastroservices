@@ -718,7 +718,8 @@ const SMV_ADMIN_SHORTCUTS=[
  ['adminHoroscopePriceSet','Horoscope Settings','self'],
  ['adminWithdrawals','Withdrawals','parent'],
  ['adminOffersPromotions','Wallet Offers','self'],
- ['adminCommissionSettings','Live / Booking Commission','self']
+ ['adminCommissionSettings','Live / Booking Commission','self'],
+ ['adminAndroidAppManagementCard','Android App Releases','self']
 ];
 function smvWalletAuditMoney(paise){
  const n=Number(paise);
@@ -2436,6 +2437,65 @@ function initContentManager(){
   }));
 }
 initContentManager();
+async function loadAdminAndroidAppRelease(){
+  const current=$('adminAndroidAppCurrent'),msg=$('adminAndroidAppMsg');
+  if(!current||!msg||!currentUser)return;
+  msg.textContent='Loading current Android app release…';
+  try{
+    const release=await renderApi('/admin/android-app',{method:'GET'});
+    if(release?.success!==true)throw new Error(release?.error||'Unable to load Android app release.');
+    if(release.available!==true){
+      current.innerHTML='<div class="empty">No permanent Android APK has been published yet.</div>';
+      msg.textContent='The first website-managed APK must be v1.1 or newer because the permanent v1.0 APK is already in use.';
+      return;
+    }
+    const size=Number(release.size||0);
+    const sizeLabel=size>0?(size/1024/1024).toFixed(2)+' MB':'—';
+    const uploaded=release.uploadedAt?smvDateTime(new Date(release.uploadedAt)):'—';
+    current.innerHTML='<div class="stats-grid admin-summary-grid">'+
+      '<div class="card"><b>Current version</b><div>'+escapeHtml(release.versionName||'—')+'</div></div>'+
+      '<div class="card"><b>Android versionCode</b><div>'+escapeHtml(String(release.versionCode||'—'))+'</div></div>'+
+      '<div class="card"><b>APK size</b><div>'+escapeHtml(sizeLabel)+'</div></div>'+
+      '</div><p class="small">Uploaded: '+escapeHtml(uploaded)+'</p>';
+    msg.textContent='Current permanent Android APK is published. A new upload must have a higher versionCode and the same permanent Release signing key.';
+  }catch(error){
+    current.innerHTML='<div class="empty error">Unable to load current Android release.</div>';
+    msg.textContent=error?.message||String(error);
+    throw error;
+  }
+}
+async function uploadAdminAndroidApp(){
+  const file=$('adminAndroidAppFile')?.files?.[0],button=$('adminAndroidAppUpload'),msg=$('adminAndroidAppMsg');
+  if(!file){if(msg)msg.textContent='Select the production signed APK first.';return;}
+  if(!/\.apk$/i.test(file.name||'')||file.size<1024||file.size>100*1024*1024){
+    if(msg)msg.textContent='Select a valid .apk file between 1 KB and 100 MB.';
+    return;
+  }
+  if(button){button.disabled=true;button.textContent='VALIDATING & UPLOADING…';}
+  if(msg)msg.textContent='Uploading the APK. The server will verify package, version and signing certificate.';
+  try{
+    const result=await renderApi('/admin/android-app/upload',{
+      method:'POST',
+      headers:{'Content-Type':'application/vnd.android.package-archive'},
+      body:file,
+      timeoutMs:120000
+    });
+    if(result?.success!==true||result.available!==true)throw new Error(result?.error||'APK upload was not confirmed.');
+    if($('adminAndroidAppFile'))$('adminAndroidAppFile').value='';
+    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+'). Website download/update status now uses this version.';
+    await loadAdminAndroidAppRelease();
+  }catch(error){
+    if(msg)msg.textContent=error?.message||String(error);
+  }finally{
+    if(button){button.disabled=false;button.textContent='UPLOAD NEW APP VERSION';}
+  }
+}
+(function initAdminAndroidAppManager(){
+  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh');
+  if(upload&&!upload.dataset.smvBound){upload.dataset.smvBound='1';upload.addEventListener('click',uploadAdminAndroidApp);}
+  if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.addEventListener('click',()=>loadAdminAndroidAppRelease().catch(()=>{}));}
+})();
+
 smvArmPublicContentLazyLoad();
 
 async function smvRenderAdminWalletOffers(){
@@ -2602,6 +2662,7 @@ async function loadAdminPanel(background=false){
 async function loadAdminPanelData(background=false){
  if(!currentUser || !(await isCurrentAdmin())){hide('admin');hide('adminLink');return;}
   if(!background)loadAdminContent().catch(e=>console.warn('Admin content unavailable:',e));
+  if(!background)loadAdminAndroidAppRelease().catch(e=>console.warn('Android app release status unavailable:',e));
  if(!background){hidePrimarySections('admin');show('smv-dashboard-page');show('admin');}
  smvEnsureAdminQuickLinks();
  setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
@@ -4331,8 +4392,14 @@ function smvLiveHandleEvent(ev){
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
-  const ms=Date.parse(ev.signal.createdAt||'');if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
-  smvLiveProcessSignal(ev.signal).catch(smvLiveShowError);
+  const signal=ev.signal;
+  // A signal can arrive before this participant grants microphone permission.
+  // Keep the replay cursor unchanged until WebRTC has actually consumed it.
+  smvLiveProcessSignal(signal).then(processed=>{
+   if(processed!==true)return;
+   const ms=Date.parse(signal.createdAt||'');
+   if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
+  }).catch(smvLiveShowError);
  }
  else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated'){if(ev.type==='live.booking.pending')smvLiveStartRingtone();smvLivePollSessions().catch(()=>{});}
 }

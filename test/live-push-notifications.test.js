@@ -1102,3 +1102,57 @@ test('Live Session route authorization separates Astrologer decisions from parti
   assert.ok(route('/live/sessions/:id/signal').includes("requireRole(req, res, ['customer', 'astrologer'])"));
 });
 
+
+test('Permanent Android WebView bridges only trusted-origin microphone capture to Android runtime permission', () => {
+  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  assert.ok(manifest.includes('android.permission.RECORD_AUDIO'));
+  assert.ok(manifest.includes('android.permission.MODIFY_AUDIO_SETTINGS'));
+  assert.ok(activity.includes('onPermissionRequest(PermissionRequest request)'));
+  assert.ok(activity.includes('onPermissionRequestCanceled(PermissionRequest request)'));
+  assert.ok(activity.includes('REQUEST_RECORD_AUDIO'));
+  assert.ok(activity.includes('requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, REQUEST_RECORD_AUDIO)'));
+  assert.ok(activity.includes('PermissionRequest.RESOURCE_AUDIO_CAPTURE'));
+  assert.ok(activity.includes('isTrustedAudioOrigin(request.getOrigin())'));
+  assert.ok(activity.includes('requestsAudioCaptureOnly(request.getResources())'));
+  assert.ok(activity.includes('\"smvastroservices.in\".equals(host) || \"www.smvastroservices.in\".equals(host)'));
+  assert.ok(activity.includes('settlePendingAudioPermissionRequests(granted)'));
+  assert.ok(activity.includes('pendingAudioPermissionRequests.clear()'));
+  assert.ok(activity.includes('smvPermanentAndroidAppSection'));
+});
+
+test('Live Call SSE replay cursor advances only after a WebRTC signal is processed', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf("}else if(ev.type==='live.call.signal'");
+  const end = frontend.indexOf("else if(ev.type==='live.booking.pending'", start);
+  assert.ok(start >= 0 && end > start, 'Live Call SSE signal handler exists');
+  const handler = frontend.slice(start, end);
+  const processAt = handler.indexOf('smvLiveProcessSignal(signal).then(processed=>');
+  const guardAt = handler.indexOf('if(processed!==true)return;');
+  const cursorAt = handler.indexOf("const ms=Date.parse(signal.createdAt||'');");
+  assert.ok(processAt >= 0 && guardAt > processAt && cursorAt > guardAt);
+  assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
+});
+
+test('Android APK download/update is Admin-managed and remains separate from PWA installation', () => {
+  const html = read('public/index.html');
+  const pwa = read('public/manifest.webmanifest');
+  const installer = read('public/android-app-install.js');
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('rel="manifest"'));
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('id="adminGroupAppManagement"'));
+  assert.ok(html.includes('id="adminAndroidAppFile"'));
+  assert.ok(html.includes('id="adminAndroidAppUpload"'));
+  assert.equal(html.includes('smvPermanentApkUpload'), false);
+  assert.ok(pwa.includes('"display": "standalone"'));
+  assert.ok(installer.includes("'/public/android-app'"));
+  assert.ok(installer.includes('getInstalledRelatedApps'));
+  assert.ok(installer.includes('DOWNLOAD APP'));
+  assert.ok(installer.includes('UPDATE APP'));
+  assert.equal(installer.includes('releases/new'), false);
+  assert.equal(installer.includes('ghp_'), false);
+});
+

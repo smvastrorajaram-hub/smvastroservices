@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.PermissionRequest;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -22,6 +23,8 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -35,10 +38,13 @@ public class MainActivity extends Activity {
     private static final String EXTRA_URL = "smv_open_url";
     private static final int FILE_CHOOSER_REQUEST = 6001;
     private static final int REQUEST_POST_NOTIFICATIONS = 7412;
+    private static final int REQUEST_RECORD_AUDIO = 7413;
 
     private WebView webView;
     private ProgressBar progress;
     private ValueCallback<Uri[]> fileChooserCallback;
+    private final List<PermissionRequest> pendingAudioPermissionRequests = new ArrayList<>();
+    private boolean recordAudioPermissionPromptInFlight = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +123,18 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
+            public void onPermissionRequest(PermissionRequest request) {
+                if (request == null) return;
+                runOnUiThread(() -> handleWebPermissionRequest(request));
+            }
+
+            @Override
+            public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (request == null) return;
+                runOnUiThread(() -> pendingAudioPermissionRequests.remove(request));
+            }
+
+            @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 progress.setProgress(newProgress);
                 progress.setVisibility(newProgress >= 100 ? android.view.View.GONE : android.view.View.VISIBLE);
@@ -146,9 +164,82 @@ public class MainActivity extends Activity {
     private void hidePwaInstallUi(WebView view) {
         if (view == null) return;
         String script = "(function(){try{" +
-                "['smvInstallAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.setAttribute('aria-hidden','true');}});" +
+                "['smvInstallAppSection','smvPermanentAndroidAppSection','adminGroupAppManagement','smvHoroscopeInstallArea','smvCalendarInstallArea'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.style.display='none';e.setAttribute('aria-hidden','true');}});" +
                 "}catch(e){}})();";
         view.evaluateJavascript(script, null);
+    }
+
+    private void handleWebPermissionRequest(PermissionRequest request) {
+        if (webView == null || isFinishing() || isDestroyed()
+                || !isTrustedAudioOrigin(request.getOrigin())
+                || !requestsAudioCaptureOnly(request.getResources())) {
+            denyWebPermissionRequest(request);
+            return;
+        }
+
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            grantWebAudioPermission(request);
+            return;
+        }
+
+        if (!pendingAudioPermissionRequests.contains(request)) pendingAudioPermissionRequests.add(request);
+        if (recordAudioPermissionPromptInFlight) return;
+        recordAudioPermissionPromptInFlight = true;
+        try {
+            requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, REQUEST_RECORD_AUDIO);
+        } catch (RuntimeException permissionError) {
+            recordAudioPermissionPromptInFlight = false;
+            settlePendingAudioPermissionRequests(false);
+        }
+    }
+
+    private static boolean requestsAudioCaptureOnly(String[] resources) {
+        return resources != null && resources.length == 1
+                && PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0]);
+    }
+
+    private static boolean isTrustedAudioOrigin(Uri origin) {
+        if (origin == null || !"https".equalsIgnoreCase(origin.getScheme())) return false;
+        int port = origin.getPort();
+        if (port != -1 && port != 443) return false;
+        String host = lower(origin.getHost());
+        return "smvastroservices.in".equals(host) || "www.smvastroservices.in".equals(host);
+    }
+
+    private void grantWebAudioPermission(PermissionRequest request) {
+        try { request.grant(new String[] { PermissionRequest.RESOURCE_AUDIO_CAPTURE }); }
+        catch (RuntimeException ignored) { /* The WebView may cancel while Android permission UI is open. */ }
+    }
+
+    private static void denyWebPermissionRequest(PermissionRequest request) {
+        try { request.deny(); } catch (RuntimeException ignored) { /* Ignore cancelled requests. */ }
+    }
+
+    private void settlePendingAudioPermissionRequests(boolean permissionGranted) {
+        List<PermissionRequest> pending = new ArrayList<>(pendingAudioPermissionRequests);
+        pendingAudioPermissionRequests.clear();
+        for (PermissionRequest request : pending) {
+            boolean stillTrusted = webView != null && !isFinishing() && !isDestroyed()
+                    && isTrustedAudioOrigin(request.getOrigin())
+                    && requestsAudioCaptureOnly(request.getResources());
+            if (permissionGranted && stillTrusted
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                grantWebAudioPermission(request);
+            } else {
+                denyWebPermissionRequest(request);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_RECORD_AUDIO) return;
+        recordAudioPermissionPromptInFlight = false;
+        boolean granted = grantResults != null && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+        settlePendingAudioPermissionRequests(granted);
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -305,6 +396,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         appVisible = false;
+        for (PermissionRequest request : new ArrayList<>(pendingAudioPermissionRequests)) {
+            denyWebPermissionRequest(request);
+        }
+        pendingAudioPermissionRequests.clear();
+        recordAudioPermissionPromptInFlight = false;
         if (fileChooserCallback != null) {
             fileChooserCallback.onReceiveValue(null);
             fileChooserCallback = null;
