@@ -42,8 +42,8 @@ fi
 REPO_URL=https://github.com/smvastrorajaram-hub/smvastroservices.git
 install -d -o smvastro -g smvastro -m 0750 "$APP_DIR"
 if [[ -d "$APP_DIR/.git" ]]; then
-  git -C "$APP_DIR" fetch --prune origin "$REF"
-  git -C "$APP_DIR" checkout --force -B "$REF" "origin/$REF"
+  runuser -u smvastro -- git -C "$APP_DIR" fetch --prune origin "$REF"
+  runuser -u smvastro -- git -C "$APP_DIR" checkout --force -B "$REF" "origin/$REF"
 elif find "$APP_DIR" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
   echo "$APP_DIR is not a Git checkout and is not empty; refusing to overwrite it." >&2
   exit 1
@@ -51,7 +51,6 @@ else
   rmdir "$APP_DIR"
   runuser -u smvastro -- git clone --single-branch --branch "$REF" "$REPO_URL" "$APP_DIR"
 fi
-chown -R smvastro:smvastro "$APP_DIR"
 
 # package-lock.json is known to be stale versus package.json, so npm ci will fail.
 # Do not delete or rewrite any ephemeris/native/wasm data; install only runtime packages.
