@@ -60,7 +60,8 @@ async function main() {
     const mirrorFlags = [
       'SMV_SESSION_HISTORY_MIRROR_WRITES',
       'SMV_LIVE_DATA_MIRROR_WRITES',
-      'SMV_CONTENT_MIRROR_WRITES'
+      'SMV_CONTENT_MIRROR_WRITES',
+      'SMV_P23_PAIRED_REPLICA_MIRROR_WRITES'
     ];
     const missing = mirrorFlags.filter(name => !isEnabled(name));
     if (missing.length) {
@@ -100,14 +101,29 @@ async function main() {
     }
   };
 
-  await copyCollection(sourceDb.collection('smv_questions'), multi.consultationsDb.collection('smv_questions'), counts, 'questionHistoryDocuments');
-  await copyCollection(sourceDb.collection('smv_private_consultations'), multi.consultationsDb.collection('smv_private_consultations'), counts, 'privateConsultationHistoryDocuments');
+  const pairMirrorEnabled = isEnabled('SMV_P23_PAIRED_REPLICA_MIRROR_WRITES');
+  const pairedReadCollections = [
+    ['smv_questions', 'questionHistoryDocuments'],
+    ['smv_private_consultations', 'privateConsultationHistoryDocuments'],
+    ['smv_astrologers', 'astrologerProfileReplicaDocuments'],
+    ['smv_reviews', 'astrologerReviewReplicaDocuments'],
+    ['smv_notifications', 'notificationReplicaDocuments'],
+    ['smv_astrologer_quiz_questions', 'astrologerQuizReplicaDocuments']
+  ];
+  for (const [collectionName, countLabel] of pairedReadCollections) {
+    await copyCollection(sourceDb.collection(collectionName), multi.consultationsDb.collection(collectionName), counts, countLabel);
+    if (pairMirrorEnabled) {
+      await copyCollection(sourceDb.collection(collectionName), multi.liveDataDb.collection(collectionName), counts, countLabel + 'Project3');
+    }
+  }
   await copyCollection(sourceDb.collection('smv_content'), multi.contentDb.collection('smv_content'), counts, 'publicContentDocuments');
 
-  counts.endedLiveSessionArchives = 0;
+  counts.endedLiveSessionArchives = 0;  counts.endedLiveSessionArchives = 0;
   counts.liveSessionDocumentsChecked = 0;
   counts.liveMessageDocuments = 0;
   counts.liveSignalDocuments = 0;
+  counts.liveMessageDocumentsProject2 = 0;
+  counts.liveSignalDocumentsProject2 = 0;
   counts.sessionCopyFailures = 0;
 
   await forEachPage(sourceDb.collection('smv_live_sessions'), async sourceDoc => {
@@ -124,11 +140,18 @@ async function main() {
         counts.endedLiveSessionArchives += 1;
         if (APPLY) {
           await archiveRef.set({ ...sourceData, historyArchivedToSecondary: true }, { merge: true });
+          if (pairMirrorEnabled) {
+            await liveMirrorRef.set({ ...sourceData, historyArchivedToSecondary: true }, { merge: true });
+          }
         }
         archiveReady = true;
       }
       await copySessionSubcollection(sourceRef, liveMirrorRef, 'messages', counts, 'liveMessageDocuments');
       await copySessionSubcollection(sourceRef, liveMirrorRef, 'signals', counts, 'liveSignalDocuments');
+      if (pairMirrorEnabled) {
+        await copySessionSubcollection(sourceRef, archiveRef, 'messages', counts, 'liveMessageDocumentsProject2');
+        await copySessionSubcollection(sourceRef, archiveRef, 'signals', counts, 'liveSignalDocumentsProject2');
+      }
     } catch (error) {
       liveMirrorReady = false;
       archiveReady = false;
