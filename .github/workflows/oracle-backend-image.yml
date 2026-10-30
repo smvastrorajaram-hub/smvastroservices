@@ -30,7 +30,11 @@ jobs:
           node --check html-pdf-renderer.js
       - name: Test deployment safety contracts
         run: node --test test/oracle-backend-deployment.test.js
-      - name: Build runtime image (no production secrets)
-        run: docker build --pull -f ops/oracle/Dockerfile -t smvastroservices-api:pr .
-      - name: Inspect container metadata
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build x86_64 runtime image (no production secrets)
+        run: docker buildx build --pull --platform linux/amd64 --load -f ops/oracle/Dockerfile -t smvastroservices-api:pr .
+      - name: Build OCI Ampere ARM64 runtime image (no production secrets)
+        run: docker buildx build --pull --platform linux/arm64 -f ops/oracle/Dockerfile -t smvastroservices-api:arm64-ci .
+      - name: Inspect x86_64 container metadata
         run: docker image inspect smvastroservices-api:pr --format '{{.Os}}/{{.Architecture}} user={{.Config.User}}'
