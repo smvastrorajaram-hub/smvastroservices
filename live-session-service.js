@@ -2,6 +2,7 @@
 
 const { walletLedgerDocId, parseRupeesToPaise } = require('./wallet-service');
 const { inspectMessageText } = require('./public/chat-moderation');
+const { readPairedWithQuotaFallback } = require('./firestore-paired-read-failover');
 
 const SESSIONS = 'smv_live_sessions';
 const BOOKINGS = 'smv_live_bookings';
@@ -346,8 +347,10 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   }
 
   const walletDomainCutover = multiProjectFirestore?.walletDomainCutoverComplete === true && db !== profileDb;
+  const p23MirrorWritesEnabled = multiProjectFirestore?.p23MirrorWritesEnabled === true;
+  const p23ReadFailoverComplete = multiProjectFirestore?.p23ReadFailoverComplete === true;
   const sessionHistoryArchiveWriteDb = !walletDomainCutover && multiProjectFirestore?.enabled &&
-    (multiProjectFirestore.sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete)
+    (multiProjectFirestore.sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete || p23MirrorWritesEnabled)
     ? multiProjectFirestore.consultationsDb : null;
   const sessionHistoryDb = !walletDomainCutover && multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;
   const liveDataWriteDb = multiProjectFirestore?.enabled ? multiProjectFirestore.liveDataDb : null;
@@ -399,20 +402,27 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   }
   async function archiveEndedSessionToSecondary(id, session) {
     if (!sessionHistoryArchiveWriteDb || String(session?.state || '').toLowerCase() !== 'ended') return;
-    await sessionHistoryArchiveWriteDb.collection(SESSIONS).doc(String(id))
-      .set({ ...session, historyArchivedToSecondary: true }, { merge: true });
+    const archiveRecord = { ...session, historyArchivedToSecondary: true };
+    await sessionHistoryArchiveWriteDb.collection(SESSIONS).doc(String(id)).set(archiveRecord, { merge: true });
+    if (p23MirrorWritesEnabled && liveDataWriteDb && liveDataWriteDb !== sessionHistoryArchiveWriteDb) {
+      await liveDataWriteDb.collection(SESSIONS).doc(String(id)).set(archiveRecord, { merge: true });
+    }
     await sessionRef(id).set({ historyArchivedToSecondary: true, updatedAt: nowTimestamp() }, { merge: true });
   }
   async function mirrorLiveRecordToSecondary(sessionId, collectionName, recordId, record, session) {
     if (!liveDataWriteDb || !liveDataMirrorWritesEnabled) return;
+    const destinations = [{ name: 'Project 3', db: liveDataWriteDb }];
+    if (p23MirrorWritesEnabled && multiProjectFirestore?.consultationsDb &&
+        multiProjectFirestore.consultationsDb !== liveDataWriteDb) {
+      destinations.push({ name: 'Project 2 paired replica', db: multiProjectFirestore.consultationsDb });
+    }
     try {
-      await liveDataWriteDb.collection(SESSIONS).doc(String(sessionId))
-        .collection(collectionName).doc(String(recordId)).set(record, { merge: true });
+      await Promise.all(destinations.map(destination => destination.db.collection(SESSIONS).doc(String(sessionId))
+        .collection(collectionName).doc(String(recordId)).set(record, { merge: true })));
     } catch (error) {
-      // Keep the primary copy authoritative and turn secondary reads off for
-      // this session so a delayed/failed mirror can never hide a live message.
+      // Paired reads are disabled for this session if either replica misses a message/signal.
       await sessionRef(sessionId).set({ liveAuxStoreReady: false, updatedAt: nowTimestamp() }, { merge: true }).catch(() => {});
-      console.warn('[Live Session] Secondary ' + collectionName + ' mirror skipped for ' + sessionId + ':', error?.message || error);
+      console.warn('[Live Session] Paired secondary ' + collectionName + ' mirror skipped for ' + sessionId + ':', error?.message || error);
     }
   }
   function bookingRef(id) { return db.collection(BOOKINGS).doc(String(id)); }
@@ -1619,8 +1629,15 @@ async function rejectOrCancel(sessionId, user, reason) {
         db.collection(SESSIONS).where(field, '==', uid)
           .where('state', 'in', ['preparing', 'ringing', 'connecting', 'active'])
           .orderBy('createdAt', 'desc').limit(100).get(),
-        sessionHistoryDb.collection(SESSIONS).where(field, '==', uid)
-          .where('state', '==', 'ended').orderBy('createdAt', 'desc').limit(100).get(),
+        readPairedWithQuotaFallback({
+          pool: 'p23', dataset: 'smv_live_sessions',
+          sourceDb: sessionHistoryDb, peerDb: multiProjectFirestore?.liveDataDb,
+          enabled: p23ReadFailoverComplete,
+          sourceId: 'project-2-ended-session-archive', peerId: 'project-3-ended-session-replica',
+          read: replicaDb => replicaDb.collection(SESSIONS).where(field, '==', uid)
+            .where('state', '==', 'ended').orderBy('createdAt', 'desc').limit(100).get(),
+          label: 'Ended Live Session history'
+        }).then(result => result.value),
         db.collection(SESSIONS).where(field, '==', uid)
           .where('state', '==', 'ended').where('historyArchivedToSecondary', '==', false)
           .orderBy('createdAt', 'desc').limit(100).get()
@@ -2207,9 +2224,19 @@ async function rejectOrCancel(sessionId, user, reason) {
       if (loaded.data.mode !== 'call') return res.status(409).json({ success: false, error: 'WebRTC signals are available only for voice calls.' });
       const afterMs = Number(req.query?.afterMs || 0);
       const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;
-      let signalQuery = signalStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
-      if (afterMs > 0) signalQuery = signalQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
-      const snap = await signalQuery.limit(afterMs > 0 ? 30 : 50).get();
+      const readSignals = async replicaDb => {
+        let query = replicaDb.collection(SESSIONS).doc(String(req.params.id)).collection('signals').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+        if (afterMs > 0) query = query.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+        return query.limit(afterMs > 0 ? 30 : 50).get();
+      };
+      const snap = signalStoreDb === liveDataReadDb
+        ? (await readPairedWithQuotaFallback({
+            pool: 'p23', dataset: 'smv_live_sessions/signals', sourceDb: signalStoreDb,
+            peerDb: multiProjectFirestore?.consultationsDb, enabled: p23ReadFailoverComplete && afterMs <= 0,
+            sourceId: 'project-3-live-signals', peerId: 'project-2-live-signals-replica',
+            read: readSignals, label: 'Live Call signals'
+          })).value
+        : await readSignals(signalStoreDb);
       const signals = snap.docs.map(d => {
         const s = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: s.senderUid, type: s.type, payload: s.payload, createdAt: timestampMillis(s.createdAt) ? new Date(timestampMillis(s.createdAt)).toISOString() : null };
@@ -2235,9 +2262,19 @@ async function rejectOrCancel(sessionId, user, reason) {
       // Initial history may use the completed archive. Incremental reads must use
       // the primary write store so a message is visible before its best-effort mirror finishes.
       const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);
-      let messageQuery = messageStoreDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
-      if (afterMs > 0) messageQuery = messageQuery.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
-      const snap = await messageQuery.limit(afterMs > 0 ? 50 : 100).get();
+      const readMessages = async replicaDb => {
+        let query = replicaDb.collection(SESSIONS).doc(String(req.params.id)).collection('messages').orderBy('createdAt', afterMs > 0 ? 'asc' : 'desc');
+        if (afterMs > 0) query = query.where('createdAt', '>=', new Date(Math.max(0, afterMs)));
+        return query.limit(afterMs > 0 ? 50 : 100).get();
+      };
+      const snap = messageStoreDb === liveDataReadDb
+        ? (await readPairedWithQuotaFallback({
+            pool: 'p23', dataset: 'smv_live_sessions/messages', sourceDb: messageStoreDb,
+            peerDb: multiProjectFirestore?.consultationsDb, enabled: p23ReadFailoverComplete && afterMs <= 0,
+            sourceId: 'project-3-live-chat-messages', peerId: 'project-2-live-chat-messages-replica',
+            read: readMessages, label: 'Live Chat messages'
+          })).value
+        : await readMessages(messageStoreDb);
       const messages = snap.docs.map(d => {
         const m = d.data() || {};
         return { id: d.id, sessionId: req.params.id, senderUid: m.senderUid, text: m.text, createdAt: timestampMillis(m.createdAt) ? new Date(timestampMillis(m.createdAt)).toISOString() : null };
