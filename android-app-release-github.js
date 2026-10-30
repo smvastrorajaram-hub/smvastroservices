@@ -184,6 +184,14 @@ function createAndroidApkGitHubStore({
     return all;
   }
 
+  async function getHighestReservedVersionCode(options = {}) {
+    const releases = await listReleases(options);
+    return releases.reduce((highest, release) => {
+      const parsed = parseAndroidReleaseTag(release?.tag_name);
+      return parsed ? Math.max(highest, parsed.versionCode) : highest;
+    }, 1000);
+  }
+
   async function getLatestRelease(options = {}) {
     const releases = await listReleases(options);
     const candidates = releases
@@ -228,10 +236,9 @@ function createAndroidApkGitHubStore({
       throw error;
     }
 
-    const latest = await getLatestRelease({ forceRefresh: true });
-    const currentCode = Math.max(1000, Number(latest?.versionCode || 0));
+    const currentCode = await getHighestReservedVersionCode({ forceRefresh: true });
     if (parsedVersion.versionCode <= currentCode) {
-      const conflict = new Error('The uploaded APK must have a higher versionCode than the current published version.');
+      const conflict = new Error('The uploaded APK must have a higher versionCode than the current published version or any in-progress release.');
       conflict.code = 'ANDROID_APK_VERSION_CONFLICT';
       conflict.httpStatus = 409;
       conflict.currentVersionCode = currentCode;
@@ -285,6 +292,19 @@ function createAndroidApkGitHubStore({
           Number(uploadedAsset.size) !== buffer.length ||
           uploadedAsset.browser_download_url !== makeDownloadUrl(parsedVersion.tagName, fileName)) {
         throw new Error('GitHub uploaded the APK but did not confirm its expected name, size and public download URL.');
+      }
+
+      // Re-check all release tags, including authenticated draft releases, just before
+      // publication. This prevents a slower lower-version upload from publishing after
+      // a higher version has already reserved its release tag.
+      const highestReservedCode = await getHighestReservedVersionCode({ forceRefresh: true });
+      if (highestReservedCode > parsedVersion.versionCode) {
+        const conflict = new Error('A higher Android version was reserved while this APK was uploading. The lower version will not be published.');
+        conflict.code = 'ANDROID_APK_VERSION_CONFLICT';
+        conflict.httpStatus = 409;
+        conflict.currentVersionCode = highestReservedCode;
+        conflict.uploadedVersionCode = parsedVersion.versionCode;
+        throw conflict;
       }
 
       const { data: published } = await request(
