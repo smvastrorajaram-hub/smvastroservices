@@ -1,4 +1,4 @@
-const BACKEND='https://smvastroservices.onrender.com';
+const BACKEND='https://api.smvastroservices.in';
 let cachedToken='';
 const paidState={};
 Object.defineProperties(paidState,{
