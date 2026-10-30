@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "smv-astro-api-staging",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-30",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "APP_ENV": "staging",
+    "STAGING_BUILD_VERSION": "0.1.0",
+    "CORS_ALLOWED_ORIGINS": "http://localhost:8788,http://127.0.0.1:8788"
+  }
+  // D1 binding intentionally added only after the separate staging D1
+  // database is created and its real database_id is verified.
+}
