@@ -4331,8 +4331,14 @@ function smvLiveHandleEvent(ev){
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
-  const ms=Date.parse(ev.signal.createdAt||'');if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
-  smvLiveProcessSignal(ev.signal).catch(smvLiveShowError);
+  const signal=ev.signal;
+  // A signal can arrive before this participant grants microphone permission.
+  // Keep the replay cursor unchanged until WebRTC has actually consumed it.
+  smvLiveProcessSignal(signal).then(processed=>{
+   if(processed!==true)return;
+   const ms=Date.parse(signal.createdAt||'');
+   if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
+  }).catch(smvLiveShowError);
  }
  else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated'){if(ev.type==='live.booking.pending')smvLiveStartRingtone();smvLivePollSessions().catch(()=>{});}
 }
