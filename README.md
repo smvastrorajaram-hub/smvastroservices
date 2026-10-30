@@ -232,7 +232,7 @@ If a future release intentionally introduces an AI/model feature, it must not si
 
 ## 19. Deployment
 
-Frontend/static/PWA files are deployed to the SMV ASTRO web host. Backend changes in `server.js` require deployment to the configured Node/Oracle backend. Environment variables and secrets must be configured in the deployment environment, not hard-coded into public source.
+Frontend/static/PWA files are deployed to the SMV ASTRO web host. Backend changes in `server.js` require deployment to the Oracle VM backend. Target hostnames, systemd service units, Nginx/TLS, secrets and cutover acceptance checks are documented in [`ops/oracle/README.md`](ops/oracle/README.md). A source PR alone does not imply the OCI VM or DNS is live.
 
 After deployment, verify cache/service-worker versioning so the browser is loading the new files rather than a previous cached build.
 
