@@ -3,8 +3,13 @@ name: Build SMV ASTRO Production Android APK
 on:
   workflow_dispatch:
     inputs:
+      version_name:
+        description: "App version in order: v1.0, v1.1, v1.2, ... v2.0"
+        required: true
+        type: string
+        default: "v1.0"
       build_signed_release:
-        description: "Build the permanent signed Release APK (requires the four repository Actions secrets)"
+        description: "Build the permanent signed Release APK (requires all four repository Actions secrets)"
         required: true
         type: boolean
         default: true
@@ -33,8 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
-      SMV_ANDROID_VERSION_CODE: ${{ vars.SMV_ANDROID_VERSION_CODE || '1' }}
-      SMV_ANDROID_VERSION_NAME: ${{ vars.SMV_ANDROID_VERSION_NAME || '1.0.0' }}
+      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +47,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
       - name: Verify permanent Release build configuration
         run: node --test test/android-permanent-release.test.mjs
 
@@ -68,10 +73,11 @@ jobs:
       - name: Prepare official SMV ASTRO app icon
         run: bash prepare-smv-astro-production-icon.sh
 
-      - name: Validate Firebase Android App ID
+      - name: Validate Firebase Android App ID and ordered version
         shell: bash
         run: |
-          case "${SMV_FIREBASE_ANDROID_APP_ID}" in
+          set -euo pipefail
+          case "$SMV_FIREBASE_ANDROID_APP_ID" in
             "")
               echo "::warning::SMV_FIREBASE_ANDROID_APP_ID is not set. This APK will not register native FCM or ring for incoming requests."
               ;;
@@ -83,8 +89,20 @@ jobs:
               exit 1
               ;;
           esac
+          if [[ ! "$SMV_ANDROID_VERSION_NAME" =~ ^v([1-9][0-9]*)\.([0-9]{1,3})$ ]]; then
+            echo "::error::SMV_ANDROID_VERSION_NAME must use vMAJOR.MINOR format, e.g. v1.0 or v1.1. Minor must be 0-999."
+            exit 1
+          fi
+          major=$(printf '%s' "$SMV_ANDROID_VERSION_NAME" | cut -d. -f1 | cut -c2-)
+          minor=$(printf '%s' "$SMV_ANDROID_VERSION_NAME" | cut -d. -f2)
+          version_code=$((10#$major * 1000 + 10#$minor))
+          if (( version_code < 1 || version_code > 2100000000 )); then
+            echo "::error::Calculated Android versionCode is outside the supported range."
+            exit 1
+          fi
+          echo "SMV ASTRO app version: $SMV_ANDROID_VERSION_NAME; Android versionCode: $version_code"
 
-      - name: Build SMV ASTRO Production Debug APK (test build)
+      - name: Build SMV ASTRO Production Debug APK (test build only)
         run: gradle --no-daemon :smvastroproduction:assembleDebug
 
       - name: Upload test-only Debug APK
@@ -107,7 +125,7 @@ jobs:
         if: ${{ github.event_name != 'workflow_dispatch' }}
         run: |
           gradle --no-daemon \
-            -PsmvVersionName="${SMV_ANDROID_VERSION_NAME}" \
+            -PsmvVersionName="$SMV_ANDROID_VERSION_NAME" \
             :smvastroproduction:assembleRelease
 
       - name: Validate permanent Release signing secrets
@@ -120,26 +138,18 @@ jobs:
           SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          missing=()
+          missing=""
           for secret_name in \
             SMV_ANDROID_KEYSTORE_BASE64 \
             SMV_ANDROID_KEYSTORE_PASSWORD \
             SMV_ANDROID_KEY_ALIAS \
             SMV_ANDROID_KEY_PASSWORD; do
-            if [[ -z "${!secret_name:-}" ]]; then
-              missing+=("$secret_name")
+            if [[ -z "$(printenv "$secret_name" || true)" ]]; then
+              missing="$missing $secret_name"
             fi
           done
-          if (( ${#missing[@]} > 0 )); then
-            printf '::error::Add these repository Actions secrets before requesting a signed Release APK: %s\n' "${missing[*]}"
-            exit 1
-          fi
-          if [[ ! "${SMV_ANDROID_VERSION_CODE}" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::SMV_ANDROID_VERSION_CODE must be a positive integer."
-            exit 1
-          fi
-          if [[ -z "${SMV_ANDROID_VERSION_NAME//[[:space:]]/}" ]]; then
-            echo "::error::SMV_ANDROID_VERSION_NAME must not be empty."
+          if [[ -n "$missing" ]]; then
+            echo "::error::Add these repository Actions secrets before requesting a signed Release APK:$missing"
             exit 1
           fi
 
@@ -171,7 +181,7 @@ jobs:
           SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
         run: |
           gradle --no-daemon \
-            -PsmvVersionName="${SMV_ANDROID_VERSION_NAME}" \
+            -PsmvVersionName="$SMV_ANDROID_VERSION_NAME" \
             :smvastroproduction:assembleRelease
 
       - name: Verify signed Release APK certificate
