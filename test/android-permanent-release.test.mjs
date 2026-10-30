@@ -57,7 +57,7 @@ test('permanent Release signing reads only repository secrets and never commits 
   assert.ok(workflow.includes('rm -f "$RUNNER_TEMP/smv-astro-release.p12"'));
   assert.ok(workflow.includes('SMV-ASTRO-PERMANENT-RELEASE-APK'));
   assert.ok(workflow.includes('retention-days: 30'));
-  assert.ok(docs.includes('Do not send the keystore, Base64 value, or passwords'));
+  assert.ok(docs.includes('Do not send the keystore, Base64 text, or passwords'));
 
   assert.doesNotMatch(gradle, /\.jks/);
   assert.doesNotMatch(gradle, /password\s*=\s*["'][^"']+["']/i);
