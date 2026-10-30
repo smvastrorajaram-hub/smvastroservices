@@ -1,0 +1,60 @@
+name: Oracle backend source validation
+
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'live-session-service.js'
+      - 'wallet-service.js'
+      - 'api-security.js'
+      - 'geonames-location-service.js'
+      - 'main-location-search.js'
+      - 'smvastro.mjs'
+      - 'public/**'
+      - 'ops/oracle/**'
+      - 'test/oracle-deploy-config.test.js'
+      - 'package.json'
+      - '.github/workflows/oracle-source-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ops/oracle/**'
+      - 'test/oracle-deploy-config.test.js'
+      - '.github/workflows/oracle-source-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  oracle-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check backend and frontend JavaScript syntax
+        run: |
+          node --check server.js
+          node --check live-session-service.js
+          node --check wallet-service.js
+          node --check api-security.js
+          node --check geonames-location-service.js
+          node --check main-location-search.js
+          node --check smvastro.mjs
+          node --check public/main-location-search.js
+          node --check public/question-place-search.mjs
+          node --check public/public-content.mjs
+          node --check public/smvastro.mjs
+          node --check public/horoscope/config.js
+          node --check public/horoscope/horoscope-auth.mjs
+          node --check public/horoscope/location-search-online-offline.js
+          node --check public/horoscope/saved-compat.mjs
+      - name: Check Oracle scripts
+        run: |
+          bash -n ops/oracle/bootstrap-ubuntu.sh
+          bash -n ops/oracle/deploy-backend.sh
+          node --check test/oracle-deploy-config.test.js
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
+      - name: Run Oracle configuration regression tests
+        run: node --test test/oracle-deploy-config.test.js
