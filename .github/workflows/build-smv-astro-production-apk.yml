@@ -120,7 +120,7 @@ jobs:
             -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
             -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
           base64 -w 0 "$keystore_path" > "$output_dir/SMV_ANDROID_KEYSTORE_BASE64.txt"
-          printf '\\n' >> "$output_dir/SMV_ANDROID_KEYSTORE_BASE64.txt"
+          printf '\n' >> "$output_dir/SMV_ANDROID_KEYSTORE_BASE64.txt"
           keytool -exportcert -rfc -keystore "$keystore_path" -storetype PKCS12 \
             -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
             -alias "$SMV_ANDROID_KEY_ALIAS" |
