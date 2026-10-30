@@ -244,7 +244,7 @@ function fakeResponse(status, value) {
   };
 }
 
-function makeGitHubFetchMock({ releases = [], failUpload = false } = {}) {
+function makeGitHubFetchMock({ releases = [], failUpload = false, beforeUpload = null } = {}) {
   const state = {
     releases: structuredClone(releases),
     requests: [],
@@ -309,6 +309,7 @@ function makeGitHubFetchMock({ releases = [], failUpload = false } = {}) {
       const release = state.releases.find(item => item.id === Number(match[1]));
       if (!release) return fakeResponse(404, { message: 'Release not found' });
       const name = url.searchParams.get('name');
+      if (beforeUpload) await beforeUpload({ state, release, name, options });
       const tag = release.tag_name;
       const size = Buffer.isBuffer(options.body) ? options.body.length : 0;
       const asset = {
@@ -409,6 +410,26 @@ test('GitHub APK publisher blocks a versionCode that is not higher than the curr
     error => error.httpStatus === 409 && error.currentVersionCode === 1002 && error.uploadedVersionCode === 1001
   );
   assert.equal(state.requests.some(item => item.method === 'POST' && item.url.endsWith('/releases')), false);
+});
+
+test('GitHub APK publisher will not publish a slower lower version after a higher draft is reserved', async () => {
+  const { fetchImpl, state } = makeGitHubFetchMock({
+    beforeUpload({ state: current }) {
+      current.releases.push(githubReleaseFixture('v1.2', 12, { draft: true }));
+    }
+  });
+  const store = createAndroidApkGitHubStore({ env: githubEnv(), fetchImpl });
+  await assert.rejects(
+    () => store.publishRelease(Buffer.alloc(2048), apkFixture('v1.1'), 'admin-uid'),
+    error => error.httpStatus === 409 &&
+      error.code === 'ANDROID_APK_VERSION_CONFLICT' &&
+      error.currentVersionCode === 1002 &&
+      error.uploadedVersionCode === 1001
+  );
+  assert.equal(state.releases.some(item => item.tag_name === 'smv-astro-v1.1'), false);
+  assert.equal(state.releases.some(item => item.tag_name === 'smv-astro-v1.2'), true);
+  assert.equal(state.deletedTag, 'smv-astro-v1.1');
+  assert.equal(state.requests.some(item => item.method === 'PATCH' && item.url.endsWith('/releases/1')), false);
 });
 
 test('GitHub APK publisher checks a missing token before attempting any network write', async () => {
