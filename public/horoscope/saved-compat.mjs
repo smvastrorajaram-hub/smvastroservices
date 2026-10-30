@@ -1,4 +1,4 @@
-const BACKEND='https://api.smvastroservices.in';
+const BACKEND=location.hostname==='staging.smvastroservices.in'?'https://api-staging.smvastroservices.in':'https://api.smvastroservices.in';
 let cachedToken='';
 const paidState={};
 Object.defineProperties(paidState,{
