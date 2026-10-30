@@ -118,7 +118,7 @@ async function main() {
   }
   await copyCollection(sourceDb.collection('smv_content'), multi.contentDb.collection('smv_content'), counts, 'publicContentDocuments');
 
-  counts.endedLiveSessionArchives = 0;  counts.endedLiveSessionArchives = 0;
+  counts.endedLiveSessionArchives = 0;
   counts.liveSessionDocumentsChecked = 0;
   counts.liveMessageDocuments = 0;
   counts.liveSignalDocuments = 0;
