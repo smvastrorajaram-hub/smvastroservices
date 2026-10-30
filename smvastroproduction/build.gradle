@@ -24,7 +24,7 @@ android {
         versionCode 1
         versionName "1.0.0"
         buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\"" + nativeFirebaseAndroidAppId.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs\""
+        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
         buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
         buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
     }
