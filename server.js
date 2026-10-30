@@ -5,8 +5,7 @@ const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointme
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {inspectSmvAndroidApk,MAX_APK_BYTES,SMV_ANDROID_PACKAGE}=require('./android-app-release');
-const cloudinary = require('cloudinary').v2;
-const {createAndroidApkCloudinaryStore,cloudinaryPublicError}=require('./android-app-release-cloudinary');
+const {createAndroidApkGitHubStore,githubReleasePublicError,SMV_GITHUB_REPOSITORY}=require('./android-app-release-github');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
 const express = require("express");
 const crypto = require("crypto");
@@ -2775,20 +2774,19 @@ app.post("/admin/astrologer-profile-description", express.json({limit:"10kb"}), 
   }catch(e){console.error("Admin Astrologer profile description update failed:",e?.stack||e);return res.status(500).json({success:false,error:"Unable to save Astrologer profile description."});}
 });
 
-// Android app releases are uploaded only by a verified Admin. Cloudinary stores the
-// immutable raw APK assets; the Cloudinary Admin API is the version index, so APK
-// publishing does not require Firebase Storage or a Firestore release document.
-const androidApkReleaseStore = createAndroidApkCloudinaryStore({
-  cloudinary,
+// Android app releases are stored as immutable public GitHub Release assets.
+// The APK release metadata is read from GitHub Releases; no Firebase Storage bucket
+// or Firestore APK-release document is used. Only production Admin may publish.
+const androidApkReleaseStore = createAndroidApkGitHubStore({
   env: process.env,
   isStaging: IS_STAGING_DEPLOYMENT
 });
-function smvPublicAndroidRelease(data) {
+function smvPublicAndroidRelease(data, includeAdminMetadata = false) {
   if (!data || !data.downloadUrl || !Number.isSafeInteger(Number(data.versionCode)) ||
       data.packageName !== SMV_ANDROID_PACKAGE) {
     return { success: true, available: false };
   }
-  return {
+  const result = {
     success: true,
     available: true,
     packageName: SMV_ANDROID_PACKAGE,
@@ -2796,9 +2794,14 @@ function smvPublicAndroidRelease(data) {
     versionCode: Number(data.versionCode),
     downloadUrl: String(data.downloadUrl),
     size: Number(data.size || 0),
-    uploadedAt: Number(data.uploadedAt || 0),
-    cloudName: String(data.cloudName || '')
+    uploadedAt: Number(data.uploadedAt || 0)
   };
+  if (includeAdminMetadata) {
+    result.sha256 = String(data.sha256 || '');
+    result.certificateSha256 = String(data.certificateSha256 || '');
+    result.uploadedBy = String(data.uploadedBy || '');
+  }
+  return result;
 }
 app.get('/public/android-app', async (_req, res) => {
   try {
@@ -2806,7 +2809,7 @@ app.get('/public/android-app', async (_req, res) => {
     return res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
       .json(smvPublicAndroidRelease(data));
   } catch (error) {
-    console.error('Public Android app release lookup failed:', error?.message || error);
+    console.error('Public Android app GitHub Release lookup failed:', error?.message || error);
     return res.status(503).set('Cache-Control', 'no-store')
       .json({ success: false, available: false, error: 'Android app information is temporarily unavailable.' });
   }
@@ -2817,18 +2820,16 @@ app.get('/admin/android-app', async (req, res) => {
   if (!(await isAdminUser(actor))) return res.status(403).json({ success: false, error: 'Admin access denied.' });
   try {
     const storage = androidApkReleaseStore.configurationStatus();
-    const data = storage.ready ? await androidApkReleaseStore.getLatestRelease() : null;
+    const data = await androidApkReleaseStore.getLatestRelease();
     return res.set('Cache-Control', 'no-store').json({
-      ...smvPublicAndroidRelease(data),
-      storageProvider: 'cloudinary',
+      ...smvPublicAndroidRelease(data, true),
+      storageProvider: 'github-releases',
+      releaseRepository: SMV_GITHUB_REPOSITORY,
       storageReady: storage.ready,
-      storageMessage: storage.message,
-      uploadedBy: data?.uploadedBy ? String(data.uploadedBy) : '',
-      sha256: data?.sha256 ? String(data.sha256) : '',
-      certificateSha256: data?.certificateSha256 ? String(data.certificateSha256) : ''
+      storageMessage: storage.message
     });
   } catch (error) {
-    console.error('Admin Android app release lookup failed:', error?.message || error);
+    console.error('Admin Android GitHub Release lookup failed:', error?.message || error);
     return res.status(500).json({ success: false, error: 'Unable to load the current Android app release.' });
   }
 });
@@ -2855,10 +2856,10 @@ app.post('/admin/android-app/upload',
     }
     try {
       const release = await androidApkReleaseStore.publishRelease(req.body, apk, actor.uid);
-      return res.set('Cache-Control', 'no-store').json(smvPublicAndroidRelease(release));
+      return res.set('Cache-Control', 'no-store').json(smvPublicAndroidRelease(release, true));
     } catch (error) {
-      const mapped = cloudinaryPublicError(error);
-      console.error('Admin Android APK Cloudinary upload failed:', mapped.body.code, error?.message || error);
+      const mapped = githubReleasePublicError(error);
+      console.error('Admin Android GitHub Release upload failed:', mapped.body.code, error?.message || error);
       return res.status(mapped.status).set('Cache-Control', 'no-store').json(mapped.body);
     }
   }
