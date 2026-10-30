@@ -665,7 +665,10 @@ test('Customer history and public content route only after their explicit copy f
   const frontend = read('public/smvastro.mjs');
   assert.ok(server.includes('async function readCustomerHistoryCollection(collectionName,uid)'));
   assert.ok(server.includes('SMV_CUSTOMER_HISTORY_CUTOVER_AT'));
-  assert.ok(server.includes("consultationsDb.collection(collectionName).where('customerId','==',uid).orderBy('createdAt','desc').limit(100).get()"));
+  assert.ok(server.includes("sourceDb:multiProjectFirestore.consultationsDb"));
+  assert.ok(server.includes("pool:'p23',dataset:collectionName"));
+  assert.ok(server.includes("peerDb:multiProjectFirestore.liveDataDb"));
+  assert.ok(server.includes("readPairedWithQuotaFallback"));
   assert.ok(server.includes("where('createdAt','>=',cutover).orderBy('createdAt','desc')"));
   assert.ok(server.includes("where('updatedAt','>=',cutover).orderBy('updatedAt','desc')"));
   assert.ok(server.includes('for(const snap of [createdAfterCutover,updatedAfterCutover])for(const doc of snap.docs)byId.set(doc.id'));
@@ -700,14 +703,16 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes('void mirrorLiveRecordToSecondary(sessionId, \'signals\', signalRef.id, data, session)'));
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'messages\''));
   assert.ok(!service.includes('await mirrorLiveRecordToSecondary(sessionId, \'signals\''));
-  assert.ok(service.includes('const sessionHistoryDb = !walletDomainCutover && multiProjectFirestore?.sessionHistoryBackfillComplete ? multiProjectFirestore.consultationsDb : null;'));
+  assert.ok(service.includes('const sessionHistoryDb = multiProjectFirestore?.enabled && multiProjectFirestore?.sessionHistoryBackfillComplete'));
   assert.ok(service.includes("next.historyArchivedToSecondary = false"));
   assert.ok(service.includes("next.liveAuxStoreReady = true"));
   assert.ok(service.includes("sessionHistoryMirrorWritesEnabled || multiProjectFirestore.sessionHistoryBackfillComplete"));
   assert.ok(service.includes("liveDataMirrorWritesEnabled || liveDataReadDb"));
   assert.ok(service.includes('const messageStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);'));
   assert.ok(service.includes('Initial history may use the completed archive. Incremental reads must use'));
-  assert.ok(service.includes("const signalStoreDb = loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db;"));
+  assert.ok(service.includes("const signalStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);"));
+  assert.ok(service.includes("dataset: 'smv_live_sessions/signals'"));
+  assert.ok(service.includes("dataset: 'smv_live_sessions/messages'"));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
@@ -886,7 +891,8 @@ test('Live Chat message rendering never marks a message seen before a message bo
   assert.ok(send.includes('current.customerUid !== senderUid && current.astrologerUid !== senderUid'));
   assert.ok(send.includes("current.state !== 'active'"));
   assert.ok(send.includes("sendToParticipants(session, { type: 'live.chat.message', message: safe })"));
-  assert.ok(server.includes("messageQuery.limit(afterMs > 0 ? 50 : 100)"));
+  assert.ok(server.includes("return query.limit(afterMs > 0 ? 50 : 100).get()"));
+  assert.ok(server.includes("dataset: 'smv_live_sessions/messages'"));
   assert.ok(server.includes("const moderation = inspectMessageText(body);"), 'server must moderate before persisting');
   assert.ok(server.includes("LIVE_MESSAGE_ABUSIVE_LANGUAGE"), 'server returns a clear rejection for abusive text');
   assert.ok(server.includes("require('./public/chat-moderation')"), 'Live and booked sessions use the same server-side moderation utility');
