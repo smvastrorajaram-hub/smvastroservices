@@ -1,0 +1,85 @@
+name: Build SMV ASTRO Production Android APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "smvastroproduction/**"
+      - "settings.gradle"
+      - "prepare-smv-astro-production-icon.sh"
+      - ".github/workflows/build-smv-astro-production-apk.yml"
+  push:
+    paths:
+      - "smvastroproduction/**"
+      - "settings.gradle"
+      - "prepare-smv-astro-production-icon.sh"
+      - ".github/workflows/build-smv-astro-production-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Prepare official SMV ASTRO app icon
+        run: bash prepare-smv-astro-production-icon.sh
+
+      - name: Validate Firebase Android App ID
+        shell: bash
+        run: |
+          case "${SMV_FIREBASE_ANDROID_APP_ID}" in
+            "")
+              echo "::warning::SMV_FIREBASE_ANDROID_APP_ID is not set. This compile-only APK will not register native FCM or ring for incoming requests."
+              ;;
+            1:299081899217:android:*)
+              echo "Firebase Android App ID has the expected project/sender prefix."
+              ;;
+            *)
+              echo "::error::SMV_FIREBASE_ANDROID_APP_ID must be the Android App ID registered in the existing smv-astro Firebase project (prefix 1:299081899217:android:)."
+              exit 1
+              ;;
+          esac
+
+      - name: Build SMV ASTRO Production Debug APK
+        run: gradle --no-daemon :smvastroproduction:assembleDebug
+
+      - name: Upload configured Production APK
+        if: ${{ env.SMV_FIREBASE_ANDROID_APP_ID != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-PRODUCTION-DEBUG-APK
+          path: smvastroproduction/build/outputs/apk/debug/smvastroproduction-debug.apk
+          retention-days: 7
+
+      - name: Upload compile-only APK (FCM not configured)
+        if: ${{ env.SMV_FIREBASE_ANDROID_APP_ID == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-PRODUCTION-UNCONFIGURED-DEBUG-APK
+          path: smvastroproduction/build/outputs/apk/debug/smvastroproduction-debug.apk
+          retention-days: 7

@@ -80,6 +80,7 @@ try {
   const smvPushMessaging = firebase.messaging();
   smvPushMessaging.onBackgroundMessage(payload => {
     const data = payload?.data || {};
+    if (String(data.type || '') === 'stop_ringing') return;
     const fallback = payload?.notification || {};
     const title = String(data.title || fallback.title || 'SMV ASTRO Alert').slice(0, 100);
     const body = String(data.body || fallback.body || 'Open SMV ASTRO to review the request.').slice(0, 240);
