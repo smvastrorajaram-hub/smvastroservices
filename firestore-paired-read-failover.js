@@ -33,11 +33,12 @@ function pairedReadCandidates({
   if (!allowed) throw new TypeError('Unknown Firestore read-failover pool.');
   if (!sourceDb) throw new TypeError('A source Firestore database is required.');
 
-  const candidates = [{
-    id: String(sourceId || (key === 'p23' ? 'project-2-or-3-source' : 'project-4-or-5-source')),
-    db: sourceDb
-  }];
-  if (enabled === true && allowed.has(String(dataset || '')) &&
+  const resolvedSourceId = String(sourceId || (key === 'p23' ? 'project-2-or-3-source' : 'project-4-or-5-source'));
+  const validPairMember = key === 'p23'
+    ? /project-(?:2|3)/i.test(resolvedSourceId)
+    : /project-(?:4|5)/i.test(resolvedSourceId);
+  const candidates = [{ id: resolvedSourceId, db: sourceDb }];
+  if (enabled === true && validPairMember && allowed.has(String(dataset || '')) &&
       peerDb && peerDb !== sourceDb) {
     candidates.push({
       id: String(peerId || (key === 'p23' ? 'paired-project-3-or-2-replica' : 'paired-project-5-or-4-content-replica')),
