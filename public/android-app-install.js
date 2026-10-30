@@ -28,7 +28,7 @@
   }
   if (!section || !download || !heading || !description || !status) return;
   const androidDevice = /android/i.test(navigator.userAgent || '');
-  if (!androidDevice) {
+  if (!androidDevice || location.hostname.includes('phase1-staging')) {
     hide(section);
     return;
   }
