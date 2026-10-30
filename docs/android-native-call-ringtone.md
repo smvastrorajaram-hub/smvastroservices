@@ -35,7 +35,7 @@ The permanent Release key is generated once by the dedicated manual mode in the 
 
 **Before generating the key**
 
-1. On your Android phone, use a trusted password manager to create one random password of at least 24 characters. Save it securely; do not use a password from another account.
+1. On your Android phone, use a trusted password manager to create one random password of at least 32 characters. Save it securely; do not use a password from another account.
 2. Open the repository's **Settings → Secrets and variables → Actions → New repository secret** page:
    [SMV ASTRO Actions Secrets](https://github.com/smvastrorajaram-hub/smvastroservices/settings/secrets/actions)
 3. Add these three secrets before starting generation:
@@ -68,8 +68,8 @@ The permanent Release key is generated once by the dedicated manual mode in the 
 
 **Security and repeat-run rules**
 
-- The artifact contains the password-protected PKCS12 keystore and its Base64 representation, but **does not contain either password**. Anyone with repository artifact access may be able to download the artifact; keep the passwords private and use a randomly generated value of 24+ characters.
-- The artifact is retained for only 1 day. Download it and save the original keystore before it expires.
+- The artifact contains the password-protected PKCS12 keystore and its Base64 representation, but **does not contain either password**. This repository is public, so anyone may be able to download its Actions artifact. The private key is protected inside the PKCS12 file, but the artifact itself is not a private download; use a randomly generated 32+ character password and never expose it.
+- The artifact is retained for only 1 day. Download it and save the original keystore before it expires. After saving the keystore and Base64 secret, delete the artifact from the workflow run summary as soon as you can.
 - The generation job refuses to run if `SMV_ANDROID_KEYSTORE_BASE64` is already set. This prevents accidentally generating a replacement key after the permanent key has been saved.
 - Do not generate a second key after the first key is saved or used. All future signed Release APKs must use this same `.p12` file and certificate.
 - When all four secrets are present, use the same workflow with **Generate the one-time Release keystore** set to `false` and **Build the permanent signed Release APK** enabled.
