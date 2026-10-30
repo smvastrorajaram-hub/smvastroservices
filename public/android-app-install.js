@@ -34,7 +34,7 @@
   }
 
   const backend = window.SMV_BACKEND_URL ||
-    (location.hostname.includes('phase1-staging') ? 'https://smv-astro-phase1-staging.onrender.com' : 'https://smvastroservices.onrender.com');
+    (location.hostname === 'staging.smvastroservices.in' ? 'https://api-staging.smvastroservices.in' : 'https://api.smvastroservices.in');
   const packageId = 'in.smvastroservices.smvastro';
 
   function versionCode(value) {
