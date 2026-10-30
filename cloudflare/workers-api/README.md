@@ -11,17 +11,36 @@ This is an isolated, staging-first Worker. It does not replace `server.js`, chan
 
 The GeoNames username is read only from the `GEONAMES_USERNAME` Worker secret. It is never returned to the browser or included in a cache key. The response mapping preserves the existing API shape expected by SMV ASTRO location-search clients. The selected-place timezone endpoint returns the IANA `timezoneId`; it deliberately does not return a current DST offset for historical birth-time calculations.
 
-## Staging setup
+The Worker uses Cloudflare Workers Cache, enabled in Wrangler config. Cache TTLs are expressed through `Cache-Control` response headers, and `Vary: Origin` keeps the CORS response aligned with its requesting origin. The code does not rely on the legacy Cache API for this `workers.dev` staging endpoint.
 
-1. Create or select the Cloudflare account and confirm that the account is on the Free plan.
-2. From this directory, run `npx --yes wrangler@4.156.0 dev` for local runtime testing.
-3. Add the GeoNames username as a Worker secret: `npx --yes wrangler@4.156.0 secret put GEONAMES_USERNAME`.
-4. Add the comma-separated, exact frontend origins as a Worker secret named `ALLOWED_ORIGINS`. Do not use `*`.
-5. Validate the deployment bundle with `npx --yes wrangler@4.156.0 deploy --dry-run`.
-6. Deploy only the staging Worker after the account owner has reviewed the Cloudflare project and secrets. The initial Worker uses its `workers.dev` hostname and has no production custom-domain route.
-7. Test status, a worldwide location search, and timezone resolution with a real GeoNames account before changing any staging frontend URL.
+## Staging deploy via GitHub Actions
 
-No production secrets, Firebase service-account credentials, Razorpay keys, wallet state, or Cloudinary credentials belong in this Worker Phase 1.
+The PR includes a separate staging-only workflow. It is limited to this exact feature branch and same-repository pull requests. It does not deploy on pushes to `main` and it does not configure a custom domain.
+
+Before the workflow can deploy, add these four **GitHub Actions repository secrets** in the repository:
+
+| Secret name | Value |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID for the account that owns the Worker |
+| `CLOUDFLARE_API_TOKEN` | Account-scoped API token with the custom **Edit Cloudflare Workers** permission |
+| `GEONAMES_USERNAME` | Your activated GeoNames web-services username |
+| `ALLOWED_ORIGINS` | Exact browser origin(s), comma-separated; for the current staging browser use `https://smv-astro-phase1-browser-staging.onrender.com` |
+
+GitHub location: **Repository → Settings → Secrets and variables → Actions → New repository secret**.
+
+Cloudflare token guidance:
+1. In Cloudflare Dashboard, open **Manage Account → Account API tokens** and create a custom token.
+2. Select **Edit Cloudflare Workers** and restrict its account resource to only the Cloudflare account used for SMV ASTRO.
+3. Copy the token once and store it directly in the GitHub Actions secret `CLOUDFLARE_API_TOKEN`. Do not paste it into chat, source files, issues, or PR comments.
+4. Find the account ID from the Cloudflare account overview and save it as `CLOUDFLARE_ACCOUNT_ID`.
+
+The workflow first checks that all four secrets exist without printing their values. If any is missing, it skips deployment safely. When all are present, it deploys only `smvastro-api-staging`, uploads `GEONAMES_USERNAME` and `ALLOWED_ORIGINS` as encrypted Worker secrets, and performs live smoke tests for health, a Madurai search, and the `Asia/Kolkata` timezone response.
+
+After adding the secrets, rerun the skipped **Cloudflare Workers staging deployment** workflow from the pull request's Actions run page. A successful run prints the isolated `workers.dev` URL.
+
+## Local validation
+
+From this directory, run `npx --yes wrangler@4.156.0 dev` for local runtime testing. Validate a bundle without deploying using `npx --yes wrangler@4.156.0 deploy --dry-run`.
 
 ## Deliberate exclusions
 
