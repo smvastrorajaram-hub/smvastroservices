@@ -2,18 +2,28 @@ name: Build SMV ASTRO Production Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      build_signed_release:
+        description: "Build the permanent signed Release APK (requires the four repository Actions secrets)"
+        required: true
+        type: boolean
+        default: true
   pull_request:
     paths:
       - "smvastroproduction/**"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
+      - "test/android-permanent-release.test.mjs"
+      - "docs/android-native-call-ringtone.md"
   push:
     paths:
       - "smvastroproduction/**"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
+      - "test/android-permanent-release.test.mjs"
+      - "docs/android-native-call-ringtone.md"
 
 permissions:
   contents: read
@@ -23,9 +33,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
+      SMV_ANDROID_VERSION_CODE: ${{ vars.SMV_ANDROID_VERSION_CODE || '1' }}
+      SMV_ANDROID_VERSION_NAME: ${{ vars.SMV_ANDROID_VERSION_NAME || '1.0.0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Node 22 source regression tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify permanent Release build configuration
+        run: node --test test/android-permanent-release.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
@@ -54,7 +73,7 @@ jobs:
         run: |
           case "${SMV_FIREBASE_ANDROID_APP_ID}" in
             "")
-              echo "::warning::SMV_FIREBASE_ANDROID_APP_ID is not set. This compile-only APK will not register native FCM or ring for incoming requests."
+              echo "::warning::SMV_FIREBASE_ANDROID_APP_ID is not set. This APK will not register native FCM or ring for incoming requests."
               ;;
             1:299081899217:android:*)
               echo "Firebase Android App ID has the expected project/sender prefix."
@@ -65,21 +84,113 @@ jobs:
               ;;
           esac
 
-      - name: Build SMV ASTRO Production Debug APK
+      - name: Build SMV ASTRO Production Debug APK (test build)
         run: gradle --no-daemon :smvastroproduction:assembleDebug
 
-      - name: Upload configured Production APK
+      - name: Upload test-only Debug APK
         if: ${{ env.SMV_FIREBASE_ANDROID_APP_ID != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: SMV-ASTRO-PRODUCTION-DEBUG-APK
+          name: SMV-ASTRO-PRODUCTION-DEBUG-TEST-APK
           path: smvastroproduction/build/outputs/apk/debug/smvastroproduction-debug.apk
           retention-days: 7
 
-      - name: Upload compile-only APK (FCM not configured)
+      - name: Upload unconfigured Debug APK (FCM not configured)
         if: ${{ env.SMV_FIREBASE_ANDROID_APP_ID == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: SMV-ASTRO-PRODUCTION-UNCONFIGURED-DEBUG-APK
+          name: SMV-ASTRO-PRODUCTION-UNCONFIGURED-DEBUG-TEST-APK
           path: smvastroproduction/build/outputs/apk/debug/smvastroproduction-debug.apk
           retention-days: 7
+
+      - name: Compile Release variant without signing (PR/push validation only)
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        run: |
+          gradle --no-daemon \
+            -PsmvVersionCode="${SMV_ANDROID_VERSION_CODE}" \
+            -PsmvVersionName="${SMV_ANDROID_VERSION_NAME}" \
+            :smvastroproduction:assembleRelease
+
+      - name: Validate permanent Release signing secrets
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for secret_name in \
+            SMV_ANDROID_KEYSTORE_BASE64 \
+            SMV_ANDROID_KEYSTORE_PASSWORD \
+            SMV_ANDROID_KEY_ALIAS \
+            SMV_ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              missing+=("$secret_name")
+            fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::Add these repository Actions secrets before requesting a signed Release APK: %s\n' "${missing[*]}"
+            exit 1
+          fi
+          if [[ ! "${SMV_ANDROID_VERSION_CODE}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::SMV_ANDROID_VERSION_CODE must be a positive integer."
+            exit 1
+          fi
+          if [[ -z "${SMV_ANDROID_VERSION_NAME//[[:space:]]/}" ]]; then
+            echo "::error::SMV_ANDROID_VERSION_NAME must not be empty."
+            exit 1
+          fi
+
+      - name: Restore permanent signing keystore securely
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          keystore_path="$RUNNER_TEMP/smv-astro-release.jks"
+          printf '%s' "$SMV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          test -s "$keystore_path"
+          keytool -list -keystore "$keystore_path" \
+            -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
+          echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Build signed SMV ASTRO Permanent Release APK
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        env:
+          SMV_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/smv-astro-release.jks
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon \
+            -PsmvVersionCode="${SMV_ANDROID_VERSION_CODE}" \
+            -PsmvVersionName="${SMV_ANDROID_VERSION_NAME}" \
+            :smvastroproduction:assembleRelease
+
+      - name: Verify signed Release APK certificate
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        run: |
+          apk="smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk"
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
+
+      - name: Upload permanent signed Release APK
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-PERMANENT-RELEASE-APK
+          path: smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk
+          retention-days: 30
+
+      - name: Remove signing keystore from the runner
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        run: rm -f "$RUNNER_TEMP/smv-astro-release.jks"
