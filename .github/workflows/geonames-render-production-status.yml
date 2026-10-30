@@ -1,30 +1,30 @@
-name: Render GeoNames Live Status
+name: Oracle GeoNames Live Status
 on:
   push:
     branches: [main]
     paths:
       - 'server.js'
       - 'geonames-location-service.js'
-      - 'render.yaml'
+      - 'oracle.yaml'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/geonames-render-production-status.yml'
+      - '.github/workflows/geonames-oracle-production-status.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  geonames-render-production-status:
+  geonames-oracle-production-status:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Render GeoNames configuration and live timezoneId
+      - name: Check Oracle GeoNames configuration and live timezoneId
         shell: bash
         run: |
           set -euo pipefail
-          ROOT='https://smvastroservices.onrender.com'
+          ROOT='https://api.smvastroservices.in'
           temp="$(mktemp)"
           status="$(curl --silent --show-error --location --connect-timeout 15 --max-time 95 --output "$temp" --write-out '%{http_code}' "$ROOT/api/locations/status" || echo 000)"
           if [ "$status" != 200 ]; then
-            echo "::warning::Render GeoNames backend not deployed/ready (HTTP $status); set GEONAMES_USERNAME and redeploy Render."
+            echo "::warning::Oracle GeoNames backend not deployed/ready (HTTP $status); set GEONAMES_USERNAME and redeploy Oracle."
             exit 0
           fi
           if [ "$(jq -r '.configured // false' "$temp")" != true ]; then
