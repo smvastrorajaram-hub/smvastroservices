@@ -57,37 +57,14 @@ function validCoordinates(latitude, longitude) {
     && longitude >= -180 && longitude <= 180;
 }
 
-function createCacheKey(request) {
-  const url = new URL(request.url);
-  // Cache keys deliberately contain only public request inputs. The GeoNames
-  // account name is never added to the request URL or cache key.
-  return new Request(url.toString(), { method: 'GET' });
-}
-
-async function cachedJson(request, env, ctx, ttlSeconds, loader, cacheOverride) {
-  const cache = cacheOverride || globalThis.caches?.default;
-  const key = createCacheKey(request);
-
-  if (cache && typeof cache.match === 'function') {
-    try {
-      const hit = await cache.match(key);
-      if (hit) return hit;
-    } catch {
-      // Cache failure must not make the location provider unavailable.
-    }
-  }
-
+// Workers Cache uses the public Cache-Control response headers below. Avoid
+// Cache API writes here: Cache API behavior differs by Worker hostname and is
+// not the cache layer used by the deployed workers.dev staging endpoint.
+async function cachedJson(ttlSeconds, loader) {
   const result = await loader();
-  const response = jsonResponse(200, result.body, {
+  return jsonResponse(200, result.body, {
     'Cache-Control': `public, max-age=120, s-maxage=${ttlSeconds}`
   });
-
-  if (cache && typeof cache.put === 'function') {
-    const write = Promise.resolve().then(() => cache.put(key, response.clone())).catch(() => {});
-    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(write);
-    else await write;
-  }
-  return response;
 }
 
 async function geonamesJson(endpoint, params, username, fetchImpl) {
@@ -176,7 +153,6 @@ export async function handleRequest(request, env = {}, ctx = {}, dependencies = 
   }
 
   const fetchImpl = dependencies.fetchImpl || globalThis.fetch;
-  const cache = dependencies.cache;
 
   if (url.pathname === '/api/locations/search') {
     const query = String(url.searchParams.get('q') || '').trim();
@@ -189,7 +165,7 @@ export async function handleRequest(request, env = {}, ctx = {}, dependencies = 
     }
 
     try {
-      const response = await cachedJson(request, env, ctx, SEARCH_CACHE_SECONDS, async () => {
+      const response = await cachedJson(SEARCH_CACHE_SECONDS, async () => {
         const payload = await geonamesJson('searchJSON', {
           name: query,
           name_startsWith: query,
@@ -221,7 +197,7 @@ export async function handleRequest(request, env = {}, ctx = {}, dependencies = 
           };
         }).filter(Boolean).slice(0, limit);
         return { body: { ok: true, provider: 'GeoNames', rows } };
-      }, cache);
+      });
       return addHeaders(response, cors.headers);
     } catch {
       return jsonResponse(502, {
@@ -243,7 +219,7 @@ export async function handleRequest(request, env = {}, ctx = {}, dependencies = 
     }
 
     try {
-      const response = await cachedJson(request, env, ctx, TIMEZONE_CACHE_SECONDS, async () => {
+      const response = await cachedJson(TIMEZONE_CACHE_SECONDS, async () => {
         const payload = await geonamesJson('timezoneJSON', { lat: latitude, lng: longitude }, username, fetchImpl);
         const timezoneId = String(payload?.timezoneId || '').trim();
         if (!timezoneId || timezoneId.length > 100 || !/^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+-]+)+$/.test(timezoneId)) {
@@ -258,7 +234,7 @@ export async function handleRequest(request, env = {}, ctx = {}, dependencies = 
             countryCode: String(payload.countryCode || '').slice(0, 2)
           }
         };
-      }, cache);
+      });
       return addHeaders(response, cors.headers);
     } catch {
       return jsonResponse(502, {
