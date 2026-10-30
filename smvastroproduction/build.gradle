@@ -4,6 +4,26 @@ def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidApp
         .orElse(providers.environmentVariable("SMV_FIREBASE_ANDROID_APP_ID"))
         .getOrElse("1:299081899217:android:09e43164cfdd015ba539f0")
 
+def releaseKeystorePath = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PATH").orNull
+def releaseKeystorePassword = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PASSWORD").orNull
+def releaseKeyAlias = providers.environmentVariable("SMV_ANDROID_KEY_ALIAS").orNull
+def releaseKeyPassword = providers.environmentVariable("SMV_ANDROID_KEY_PASSWORD").orNull
+def releaseSigningConfigured = [
+        releaseKeystorePath,
+        releaseKeystorePassword,
+        releaseKeyAlias,
+        releaseKeyPassword
+].every { value -> value != null && !value.trim().isEmpty() }
+
+def appVersionCode = providers.gradleProperty("smvVersionCode").orElse("1").get().toInteger()
+def appVersionName = providers.gradleProperty("smvVersionName").orElse("1.0.0").get()
+if (appVersionCode < 1) {
+    throw new GradleException("smvVersionCode must be a positive integer.")
+}
+if (appVersionName.trim().isEmpty()) {
+    throw new GradleException("smvVersionName must not be empty.")
+}
+
 android {
     namespace "in.smvastroservices.smvastro"
     compileSdk 36
@@ -21,12 +41,23 @@ android {
         applicationId "in.smvastroservices.smvastro"
         minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName "1.0.0"
-        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\"" + nativeFirebaseAndroidAppId.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
-        buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
-        buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
+        versionCode appVersionCode
+        versionName appVersionName
+        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\\\"" + nativeFirebaseAndroidAppId.replace("\\\\", "\\\\\\\\").replace("\\\"", "\\\\\\"") + "\\\""
+        buildConfigField "String", "SMV_FIREBASE_API_KEY", "\\\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\\\""
+        buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\\\"smv-astro\\\""
+        buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\\\"299081899217\\\""
+    }
+
+    signingConfigs {
+        release {
+            if (releaseSigningConfigured) {
+                storeFile = file(releaseKeystorePath)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -35,6 +66,9 @@ android {
         }
         release {
             minifyEnabled false
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
