@@ -1134,19 +1134,25 @@ test('Live Call SSE replay cursor advances only after a WebRTC signal is process
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });
 
-test('Permanent Android APK download is separate from the existing PWA installation', () => {
+test('Android APK download/update is Admin-managed and remains separate from PWA installation', () => {
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
-  assert.ok(html.includes('id=\"smvInstallAppSection\"'));
-  assert.ok(html.includes('id=\"smvInstallAppBtn\"'));
-  assert.ok(html.includes('rel=\"manifest\"'));
-  assert.ok(html.includes('id=\"smvPermanentAndroidAppSection\"'));
-  assert.ok(html.includes('id=\"smvPermanentApkDownload\"'));
-  assert.ok(html.includes('id=\"smvPermanentApkUpload\"'));
-  assert.ok(pwa.includes('\"display\": \"standalone\"'));
-  assert.ok(installer.includes('https://api.github.com/repos/smvastrorajaram-hub/smvastroservices/releases/latest'));
-  assert.ok(installer.includes('SMV-ASTRO-PERMANENT-RELEASE.apk'));
-  assert.ok(installer.includes('https://github.com/' + 'smvastrorajaram-hub/smvastroservices/releases/new'));
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('rel="manifest"'));
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('id="adminGroupAppManagement"'));
+  assert.ok(html.includes('id="adminAndroidAppFile"'));
+  assert.ok(html.includes('id="adminAndroidAppUpload"'));
+  assert.equal(html.includes('smvPermanentApkUpload'), false);
+  assert.ok(pwa.includes('"display": "standalone"'));
+  assert.ok(installer.includes("'/public/android-app'"));
+  assert.ok(installer.includes('getInstalledRelatedApps'));
+  assert.ok(installer.includes('DOWNLOAD APP'));
+  assert.ok(installer.includes('UPDATE APP'));
+  assert.equal(installer.includes('releases/new'), false);
   assert.equal(installer.includes('ghp_'), false);
 });
+
