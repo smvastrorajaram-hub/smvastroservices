@@ -98,12 +98,24 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     contentBackfillComplete: false,
     sessionHistoryMirrorWritesEnabled: false,
     liveDataMirrorWritesEnabled: false,
-    contentMirrorWritesEnabled: false
+    contentMirrorWritesEnabled: false,
+    dashboardReadReplicaBackfillComplete: false,
+    p23MirrorWritesEnabled: false,
+    p23ReadFailoverComplete: false,
+    p45ContentMirrorWritesEnabled: false,
+    p45ReadFailoverComplete: false
   };
 
-  // The fifth project can be prepared independently; it does not require the
-  // older four-project routing flag. With both flags off, behavior is unchanged.
-  if (!enabled && !walletDomainEnabled) return state;
+  // Project 1 remains a standalone data source. Paired pools are opt-in and
+  // require secondary connections before their failover gates can be requested.
+  const p23ReadFailoverRequested = enabledFlag(env.SMV_P23_READ_FAILOVER_COMPLETE);
+  const p45ReadFailoverRequested = enabledFlag(env.SMV_P45_READ_FAILOVER_COMPLETE);
+  if (!enabled && !walletDomainEnabled) {
+    if (p23ReadFailoverRequested || p45ReadFailoverRequested) {
+      throw new Error('Paired Firestore read failover requires the relevant secondary-project connections to be enabled first.');
+    }
+    return state;
+  }
 
   if (!projectIds.primary) throw new Error('FIREBASE_PROJECT_ID is required before enabling multi-project Firestore.');
 
@@ -133,6 +145,8 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
     state.sessionHistoryMirrorWritesEnabled = enabledFlag(env.SMV_SESSION_HISTORY_MIRROR_WRITES);
     state.liveDataMirrorWritesEnabled = enabledFlag(env.SMV_LIVE_DATA_MIRROR_WRITES);
     state.contentMirrorWritesEnabled = enabledFlag(env.SMV_CONTENT_MIRROR_WRITES);
+    state.dashboardReadReplicaBackfillComplete = enabledFlag(env.SMV_DASHBOARD_READ_REPLICA_BACKFILL_COMPLETE);
+    state.p23MirrorWritesEnabled = enabledFlag(env.SMV_P23_PAIRED_REPLICA_MIRROR_WRITES);
   }
 
   if (walletDomainEnabled) {
@@ -153,6 +167,27 @@ function initializeMultiProjectFirestore({ admin, primaryDb, env = process.env }
       enabledFlag(env.SMV_WALLET_DOMAIN_DEPENDENCIES_VERIFIED) &&
       state.walletDomainRuntimeIntegrationVerified;
     state.walletDomainMirrorWritesEnabled = enabledFlag(env.SMV_WALLET_DOMAIN_MIRROR_WRITES);
+    state.p45ContentMirrorWritesEnabled = enabledFlag(env.SMV_P45_PAIRED_CONTENT_MIRROR_WRITES);
+  }
+
+  state.p23ReadFailoverComplete = p23ReadFailoverRequested;
+  if (p23ReadFailoverRequested &&
+      !(state.enabled &&
+        state.p23MirrorWritesEnabled &&
+        state.customerHistoryBackfillComplete &&
+        state.sessionHistoryBackfillComplete &&
+        state.liveDataBackfillComplete &&
+        state.dashboardReadReplicaBackfillComplete)) {
+    throw new Error('Project 2/3 read failover requires both projects, paired mirroring, and verified Customer-history, Session-history, Live-data and Dashboard-replica backfills.');
+  }
+
+  state.p45ReadFailoverComplete = p45ReadFailoverRequested;
+  if (p45ReadFailoverRequested &&
+      !(state.enabled &&
+        state.contentBackfillComplete &&
+        state.walletDomainEnabled &&
+        state.p45ContentMirrorWritesEnabled)) {
+    throw new Error('Project 4/5 read failover is content-only and requires Project 4 content backfill, Project 5 access, paired content mirroring, and a completed Project 4/5 validation.');
   }
 
   return state;
