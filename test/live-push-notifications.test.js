@@ -713,6 +713,8 @@ test('Live Session auxiliary mirrors do not split the Wallet billing transaction
   assert.ok(service.includes("const signalStoreDb = afterMs > 0 ? db : (loaded.data.liveAuxStoreReady === true && liveDataReadDb ? liveDataReadDb : db);"));
   assert.ok(service.includes("dataset: 'smv_live_sessions/signals'"));
   assert.ok(service.includes("dataset: 'smv_live_sessions/messages'"));
+  assert.ok(service.includes("dataset: 'smv_live_sessions/signals'"));
+  assert.ok(service.includes("dataset: 'smv_live_sessions/messages'"));
 });
 
 test('Secondary-project backfill defaults to dry run and never deletes source documents', () => {
