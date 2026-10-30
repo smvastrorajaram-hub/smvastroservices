@@ -2848,7 +2848,7 @@ app.post('/admin/android-app/upload',
     let currentCode = 1000;
     try {
       const currentSnapshot = await releaseRef.get();
-      currentCode = Math.max(currentCode, currentSnapshot.exists ? Number(currentSnapshot.data()?.versionCode || 0) : 0);
+      currentCode = Math.max(1000, currentSnapshot.exists ? Number(currentSnapshot.data()?.versionCode || 0) : 0);
     } catch (error) {
       console.error('Current Android release version lookup failed:', error?.message || error);
       return res.status(503).json({ success: false, error: 'Unable to verify the currently published Android app version.' });
