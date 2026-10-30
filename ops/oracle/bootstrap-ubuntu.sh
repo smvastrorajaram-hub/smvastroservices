@@ -44,6 +44,16 @@ systemctl enable --now nginx
 # Do not change OCI NSGs/security lists or enable the host firewall automatically.
 # A misconfigured SSH allow-list could lock out the operator. If UFW is already
 # active, allow web ports while preserving the existing SSH policy.
+install -d -m 0755 /etc/letsencrypt/renewal-hooks/deploy
+cat > /etc/letsencrypt/renewal-hooks/deploy/50-reload-nginx.sh <<'HOOK'
+#!/usr/bin/env bash
+set -e
+/usr/sbin/nginx -t
+/bin/systemctl reload nginx
+HOOK
+chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/50-reload-nginx.sh
+systemctl enable --now certbot.timer 2>/dev/null || true
+
 if ufw status 2>/dev/null | grep -qi 'Status: active'; then
   ufw allow 80/tcp
   ufw allow 443/tcp
