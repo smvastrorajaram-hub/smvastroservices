@@ -15,14 +15,21 @@ def releaseSigningConfigured = [
         releaseKeyPassword
 ].every { value -> value != null && !value.trim().isEmpty() }
 
-def appVersionCode = providers.gradleProperty("smvVersionCode").orElse("1").get().toInteger()
-def appVersionName = providers.gradleProperty("smvVersionName").orElse("1.0.0").get()
-if (appVersionCode < 1) {
-    throw new GradleException("smvVersionCode must be a positive integer.")
+def appVersionName = providers.gradleProperty("smvVersionName")
+        .orElse(providers.environmentVariable("SMV_ANDROID_VERSION_NAME"))
+        .orElse("v1.0")
+        .get()
+def versionMatcher = appVersionName =~ /^v([1-9][0-9]*)\.([0-9]{1,3})$/
+if (!versionMatcher.matches()) {
+    throw new GradleException("SMV Android version must use vMAJOR.MINOR format, e.g. v1.0, v1.1, v2.0 (minor must be 0-999).")
 }
-if (appVersionName.trim().isEmpty()) {
-    throw new GradleException("smvVersionName must not be empty.")
+long versionMajor = versionMatcher.group(1).toLong()
+long versionMinor = versionMatcher.group(2).toLong()
+long calculatedVersionCode = versionMajor * 1000L + versionMinor
+if (calculatedVersionCode < 1L || calculatedVersionCode > 2100000000L) {
+    throw new GradleException("The calculated Android versionCode is outside the supported positive 32-bit Play Store range.")
 }
+int appVersionCode = (int) calculatedVersionCode
 
 android {
     namespace "in.smvastroservices.smvastro"
@@ -43,7 +50,7 @@ android {
         targetSdk 36
         versionCode appVersionCode
         versionName appVersionName
-        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\\\"" + nativeFirebaseAndroidAppId.replace("\\", "\\\\").replace("\"", "\\\"") + "\\\""
+        buildConfigField "String", "SMV_FIREBASE_ANDROID_APP_ID", "\"\${nativeFirebaseAndroidAppId}\""
         buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
         buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
         buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
