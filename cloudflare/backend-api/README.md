@@ -25,6 +25,26 @@ The audited current Render backend exposes approximately 117 Express route regis
 
 The existing financial service is transactionally coupled: Wallet balance/ledger writes and Live Call/Chat reservation/settlement use Firestore transactions. Moving only the Wallet balance code would break atomic settlement. This foundation therefore exposes no business API until the replacements and conformance tests exist.
 
+## One shared backend source — Render + Cloudflare
+
+The platform-neutral modules live in `shared/backend-platform/` and are imported by both runtimes:
+
+- `firebase-id-token.mjs`: RS256 Firebase ID-token verification, with the same issuer/project/expiry checks in Node.js on Render and Cloudflare Workers.
+- `firebase-firestore-rest.mjs`: authenticated Firestore document reads using the verified user's Firebase ID token. Firestore Security Rules remain active; this does not use a service-account Admin bypass.
+- `firebase-authorization.mjs`: shared Admin / customer / astrologer status resolution. A mutable `smv_users.role=admin` value alone never grants Admin.
+
+Render's existing Express `server.js` now imports the same ID-token verifier for `requireUser` and the same Firestore REST reader for the `smv_admins/{uid}` fallback check. The existing Render service, `render.yaml`, build command, start command, environment configuration and deployment connection have not been changed in this PR.
+
+Cloudflare's Express Worker imports those same modules. It verifies the staging Firebase ID token, then reads only the caller's own `smv_users/{uid}`, `smv_admins/{uid}` and `smv_astrologers/{uid}` documents through Firestore REST; Firestore Security Rules control the result. Its staging allowlist is restricted to `smv-astro-staging`, not every Firebase project in the repository.
+
+This is the shared platform foundation and identity/role integration only. The remaining 117 route handlers, Razorpay, Wallet, Call/Chat, bookings, Storage, FCM, email and scheduled/realtime functions are not yet at full parity. Therefore clients are **not** switched to Cloudflare failover yet.
+
+## Independent deployment path
+
+The Cloudflare staging deployment workflow is independent of Render's build pipeline. It runs for this PR and on `main` pushes that change the shared backend/runtime files. There is no dependency on a successful Render deployment and it does not call a Render deploy hook. If Render's pipeline minutes are exhausted and its deployment fails, this GitHub Actions job can still deploy the same merged shared source to the Cloudflare staging Worker.
+
+That is deployment resilience, not yet live traffic failover. The Worker remains a staging service on `workers.dev`; no production hostname, DNS, frontend API URL or automatic request routing is changed. Before it can serve live traffic as a Render fallback, all required route families and financial flows must pass route-parity, authorization, concurrency, payment replay, data-reconciliation and browser tests. A separate production cutover will then be required.
+
 ## Firebase Authentication integration — identity verification only
 
 The staging Worker now exposes `GET /api/auth/session`. It accepts a Firebase ID token in the `Authorization: Bearer` header and verifies its RS256 signature using Google's published Secure Token JWKs, then checks the token's Firebase project audience/issuer against the explicit `FIREBASE_AUTH_PROJECT_IDS` allowlist, UID, expiry, issued-at time, authentication time and Firebase sign-in metadata.
@@ -55,7 +75,7 @@ The main application uses native Swiss Ephemeris/ephemeris assets and a separate
 
 ## Next implementation gates
 
-1. Run end-to-end Firebase Auth staging-account tests for every currently-used Auth project and decide whether disabled/revoked-user checks are required. Keep role/approval authority in Firebase profiles/admin allowlists; do not trust client-supplied role claims.
+1. Run end-to-end Firebase Auth staging-account tests for the isolated staging Auth project and verify profile/approval reads against the real staging Security Rules. Keep role/approval authority in Firebase profiles/admin allowlists; do not trust client-supplied role claims.
 2. Prove Firebase Admin Firestore REST transport compatibility with the existing CRUD, query, batch, transaction and multi-project calls. Reject any untested SDK operation. Replace `onSnapshot` routes rather than relying on gRPC.
 3. Port non-financial route families in small groups and compare response contracts with existing browser clients.
 4. Port Razorpay using direct HTTPS API calls and constant-time Web Crypto HMAC verification. Preserve raw webhook-body validation, order/payment amount/currency/status checks, capture verification, duplicate-event protection and refund reconciliation. Test with Razorpay Test Mode only.
