@@ -2,7 +2,7 @@ name: Cloudflare Backend API staging deployment
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/cloudflare-live-wallet-settlement-guard-20261031]
     paths:
       - 'cloudflare/backend-api/**'
       - 'shared/backend-platform/**'
@@ -27,6 +27,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' &&
        github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/feature/cloudflare-live-wallet-settlement-guard-20261031') ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.number == 254 &&
        github.event.pull_request.head.repo.full_name == github.repository &&
@@ -72,6 +73,15 @@ jobs:
             exit 1
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Apply additive migrations to the isolated staging D1 database
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.156.0'
+          workingDirectory: cloudflare/backend-api
+          command: d1 migrations apply smvastro-wallet-staging --remote --config wrangler.jsonc
 
       - name: Deploy only the Cloudflare backend staging Worker
         id: deploy-worker
@@ -127,9 +137,12 @@ jobs:
 
           const readiness = await get('/api/backend/readiness');
           if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
+              readiness.sharedDomainSchemaVersion !== '0002_shared_domain_repository' ||
               readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
-              readiness.walletBusinessRoutesEnabled !== false) {
-            throw new Error('Shared staging D1 readiness or safety checks failed.');
+              readiness.walletBusinessRoutesEnabled !== false ||
+              readiness.walletBackfillToolsEnabled !== false ||
+              readiness.liveCallChatRoutesEnabled !== false) {
+            throw new Error('Shared staging D1 readiness, additive migration or safety checks failed.');
           }
 
           const disabled = await fetch(base + '/api/wallet/v1/wallet/balance');
@@ -139,7 +152,7 @@ jobs:
           }
 
           console.log('PASS Express HTTP bridge /healthz');
-          console.log('PASS existing staging D1 schema readiness');
+          console.log('PASS staging D1 base schema and shared-domain migration readiness');
           console.log('PASS unfinished business route fail-closed guard');
           console.log('Staging Worker URL: ' + base);
           NODE
