@@ -235,7 +235,9 @@ async function currentRelease(env, request, fetchImpl) {
   const row = await latestRow(env.DB);
   if (row) return publicReleaseFromRow(row, request, false);
   const legacy = await fetchLegacyRelease(env, fetchImpl);
-  return legacy || { success: true, available: false };
+  return legacy
+    ? { ...legacy, downloadUrl: publicDownloadUrl(request, legacy.versionCode) }
+    : { success: true, available: false };
 }
 
 async function listReleaseHistory(env, request, fetchImpl) {
