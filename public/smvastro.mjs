@@ -2458,7 +2458,9 @@ async function smvAndroidApkWorkerStatus(){
     const response=await fetch(base+'/health',{headers:{Accept:'application/json'},cache:'no-store',signal:AbortSignal.timeout(3000)});
     if(!response.ok)return null;
     const health=await response.json();
-    return health?.success===true&&health.ready===true&&health.uploadsEnabled===true?{base}:null;
+    return health?.success===true&&health.ready===true
+      ?{base,uploadsEnabled:health.uploadsEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
+      :null;
   }catch(_){return null;}
 }
 async function smvAndroidApkWorkerRequest(worker,path,options={}){
@@ -2490,8 +2492,13 @@ async function smvAndroidApkWorkerRequest(worker,path,options={}){
 }
 async function smvAndroidApkApi(path,options={},workerOnly=false){
   const worker=await smvAndroidApkWorkerStatus();
-  if(worker)return smvAndroidApkWorkerRequest(worker,path,options);
-  if(workerOnly)return null;
+  const method=String(options.method||'GET').toUpperCase();
+  const isUpload=method==='POST'&&path==='/admin/android-app/upload';
+  if(worker&&(!isUpload||worker.uploadsEnabled))return smvAndroidApkWorkerRequest(worker,path,options);
+  if(workerOnly)return worker?smvAndroidApkWorkerRequest(worker,path,options):null;
+  if(worker&&isUpload&&worker.hasReleaseRecords){
+    throw new Error('Cloudflare APK publishing is currently disabled. The current Cloudflare release remains active; enable APK uploads on the Worker before publishing another version.');
+  }
   smvAndroidApkLastTransport='existing Firebase/Render storage';
   return renderApi(path,options);
 }
