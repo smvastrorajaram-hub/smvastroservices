@@ -101,7 +101,7 @@ app.get('/api/auth/authorization', async (req, res) => {
 
   try {
     const uid = identity.uid;
-    const [profileDocument, adminDocument, astrologerDocument] = await Promise.all([
+    const [profileDocument, adminDocument] = await Promise.all([
       firebaseFirestore.getDocument({
         projectId: identity.projectId,
         documentPath: 'smv_users/' + uid,
@@ -111,13 +111,17 @@ app.get('/api/auth/authorization', async (req, res) => {
         projectId: identity.projectId,
         documentPath: 'smv_admins/' + uid,
         idToken: match[1]
-      }),
-      firebaseFirestore.getDocument({
+      })
+    ]);
+    let astrologerDocument = { exists: false, id: uid, data: null };
+    if (profileDocument.exists &&
+        String(profileDocument.data?.role || '').trim().toLowerCase() === 'astrologer') {
+      astrologerDocument = await firebaseFirestore.getDocument({
         projectId: identity.projectId,
         documentPath: 'smv_astrologers/' + uid,
         idToken: match[1]
-      })
-    ]);
+      });
+    }
 
     const authorizationState = resolveFirebaseAuthorization({
       identity,
