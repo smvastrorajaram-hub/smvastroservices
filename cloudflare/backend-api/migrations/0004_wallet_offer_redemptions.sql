@@ -1,4 +1,13 @@
 -- Offer redemption claims protect total/per-customer bonus-minute limits under concurrent recharges.
+CREATE TABLE IF NOT EXISTS smv_domain_wallet_offer_redemption_usage (
+  offer_id TEXT NOT NULL,
+  customer_uid TEXT NOT NULL,
+  redemption_count INTEGER NOT NULL DEFAULT 0 CHECK (redemption_count >= 0),
+  last_recharge_id TEXT,
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (offer_id, customer_uid)
+);
+
 CREATE TABLE IF NOT EXISTS smv_domain_offer_redemptions (
   redemption_id TEXT PRIMARY KEY NOT NULL,
   offer_id TEXT NOT NULL,
@@ -46,7 +55,7 @@ BEGIN
   SELECT CASE WHEN EXISTS (
     SELECT 1
     FROM smv_domain_wallet_offers o
-    LEFT JOIN smv_domain_offer_usage u
+    LEFT JOIN smv_domain_wallet_offer_redemption_usage u
       ON u.offer_id = o.offer_id AND u.customer_uid = NEW.customer_uid
     WHERE o.offer_id = NEW.offer_id
       AND o.per_customer_limit > 0
@@ -62,7 +71,7 @@ BEGIN
       updated_at_ms = NEW.created_at_ms
   WHERE offer_id = NEW.offer_id;
 
-  INSERT INTO smv_domain_offer_usage
+  INSERT INTO smv_domain_wallet_offer_redemption_usage
     (offer_id, customer_uid, redemption_count, last_recharge_id, updated_at_ms)
   VALUES
     (NEW.offer_id, NEW.customer_uid, 1, NEW.recharge_id, NEW.created_at_ms)
