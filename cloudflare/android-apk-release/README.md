@@ -26,13 +26,12 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 The owner has explicitly approved `ALLOW_APK_UPLOADS = "true"` in the dedicated APK Release Worker config. After the Worker passes D1/R2 readiness checks, the Admin APK manager can publish new signed releases directly to R2 and save version metadata/history in the dedicated D1. If the Worker is unavailable before it is deployed, the existing Firebase/Render release route remains the compatibility fallback. Once Cloudflare has release records, the Cloudflare release pointer is authoritative and a newer release must be published through the Admin Cloudflare route.
 
-Enable ALLOW_APK_UPLOADS = "true" only after:
-- GET /health returns ready=true;
-- the production Admin can read release metadata via GET /admin/android-app;
-- the existing Firebase-published version appears as the baseline if one exists;
-- a signed production APK passes package, version sequence, v2 signer and size checks in a controlled staging/test project;
+Before uploading the first real APK, complete these checks:
+- GET /health returns `ready=true` and `uploadsEnabled=true`;
+- the Admin page shows Cloudflare APK service READY and the current Firebase-published version where one exists;
+- a signed production APK passes package, version sequence, v2 signer and size checks;
 - an R2 download returns the same APK bytes and SHA-256 as the uploaded artifact; and
-- the homepage chooses the matching release version and the old installed app is shown an update action.
+- the Homepage chooses the matching release version and the supported browser displays INSTALL APP or UPDATE APP as appropriate.
 
 After successful validation, Admin uploads are stored at immutable versioned R2 keys. D1 only moves the latest release pointer forward. A failed metadata write triggers a best-effort cleanup of the not-published R2 object. Old release records and objects are retained.
 
