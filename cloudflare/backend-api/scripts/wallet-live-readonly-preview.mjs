@@ -68,6 +68,7 @@ if (!credentialsText) {
           totalSourceDocuments: collection.totalSourceDocuments,
           domainMappableRecords: collection.domainMappableRecords,
           rawArchiveOnlyRecords: collection.rawArchiveOnlyRecords,
+          outOfScopeRecords: collection.outOfScopeRecords,
           unmappableRecords: collection.unmappableRecords,
           sensitivePayloadRecords: collection.sensitivePayloadRecords,
           warningCounts: collection.warningCounts,
@@ -108,14 +109,15 @@ if (!credentialsText) {
         '- Personal data or credentials included in report: **no**',
         '- Cutover readiness: **not declared; cutoverSafe=false**',
         '',
-        '| Source collection | Pages | Source docs | Domain mapped | Raw archive only | Unmappable | Warnings | Planned D1 statements | Writes |',
-        '|---|---:|---:|---:|---:|---:|---:|---:|---:|',
+        '| Source collection | Pages | Source docs | Domain mapped | Raw archive only | Out of scope | Unmappable | Warnings | Planned D1 statements | Writes |',
+        '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
         ...report.collections.map(item => [
           item.sourceCollection,
           item.pagesScanned,
           item.totalSourceDocuments,
           item.domainMappableRecords,
           item.rawArchiveOnlyRecords,
+          item.outOfScopeRecords,
           item.unmappableRecords,
           item.warningCount,
           item.plannedD1Statements,
@@ -126,6 +128,7 @@ if (!credentialsText) {
           report.totals.pagesScanned + ' pages; ' + report.totals.sourceDocuments +
           ' source documents; ' + report.totals.domainMappableRecords + ' domain-mappable; ' +
           report.totals.rawArchiveOnlyRecords + ' raw archive-only; ' +
+          report.totals.outOfScopeRecords + ' out of scope; ' +
           report.totals.unmappableRecords + ' unmappable; ' +
           report.totals.plannedD1Statements + ' planned D1 statements; **0 writes**.',
         '',
