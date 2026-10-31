@@ -1,0 +1,37 @@
+name: Cloudflare FCM and R2 adapter contract tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-live-session-durable-objects-20261031
+    paths:
+      - 'shared/backend-platform/google-service-account-token.mjs'
+      - 'shared/backend-platform/firebase-messaging-http-v1.mjs'
+      - 'shared/backend-platform/r2-object-store.mjs'
+      - 'cloudflare/backend-api/test/fcm-r2-adapters.test.mjs'
+      - 'cloudflare/backend-api/package.json'
+      - '.github/workflows/cloudflare-fcm-r2-adapters.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-adapters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check external adapter syntax
+        run: |
+          node --check shared/backend-platform/google-service-account-token.mjs
+          node --check shared/backend-platform/firebase-messaging-http-v1.mjs
+          node --check shared/backend-platform/r2-object-store.mjs
+          node --check cloudflare/backend-api/test/fcm-r2-adapters.test.mjs
+      - name: Run mocked FCM HTTP v1 and R2 adapter tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/fcm-r2-adapters.test.mjs
