@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WALLET_RECHARGE_OFFER_TYPE,
-  classifyRechargeIntent,
+  classifyRechargeIntent,\n  offerDateMilliseconds,
   parseRupeesToPaise,
   rechargeOfferMatches,
   selectRechargeBonusOffer,
@@ -73,4 +73,11 @@ test('Recharge IDs are stable per UID and idempotency key and isolated across ow
   assert.equal(first,same);
   assert.notEqual(first,other);
   await assert.rejects(walletRechargeId('customer-1','short',cryptoImpl),error=>error.code==='WALLET_IDEMPOTENCY_KEY_INVALID');
+});
+
+test('Offer date parsing preserves legacy India Standard Time for datetime-local values', () => {
+  assert.equal(offerDateMilliseconds('2026-10-31T10:00'), Date.parse('2026-10-31T10:00:00+05:30'));
+  assert.equal(offerDateMilliseconds('2026-10-31T10:00:00'), Date.parse('2026-10-31T10:00:00+05:30'));
+  assert.equal(offerDateMilliseconds('2026-10-31T10:00:00Z'), Date.parse('2026-10-31T10:00:00Z'));
+  assert.equal(offerDateMilliseconds(new Date('2026-10-31T10:00:00Z')), Date.parse('2026-10-31T10:00:00Z'));
 });
