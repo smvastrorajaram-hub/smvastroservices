@@ -1,0 +1,115 @@
+name: Android APK Cloudflare Release Worker CI
+
+on:
+  pull_request:
+    paths:
+      - 'android-app-release.js'
+      - 'cloudflare/android-apk-release/**'
+      - 'shared/backend-platform/firebase-id-token.mjs'
+      - 'public/android-app-install.js'
+      - 'public/smv-ui.css'
+      - 'public/smvastro.mjs'
+      - 'public/index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/android-apk-browser-fallback.test.mjs'
+      - 'test/live-push-notifications.test.js'
+      - 'test/cream-theme-audit.test.mjs'
+      - 'test/android-permanent-release.test.mjs'
+      - '.github/workflows/android-cloudflare-apk-release-ci.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'android-app-release.js'
+      - 'cloudflare/android-apk-release/**'
+      - 'shared/backend-platform/firebase-id-token.mjs'
+      - 'public/android-app-install.js'
+      - 'public/smv-ui.css'
+      - 'public/smvastro.mjs'
+      - 'public/index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/android-apk-browser-fallback.test.mjs'
+      - 'test/live-push-notifications.test.js'
+      - 'test/cream-theme-audit.test.mjs'
+      - 'test/android-permanent-release.test.mjs'
+      - '.github/workflows/android-cloudflare-apk-release-ci.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apk-release-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate manual deployment workflow YAML
+        run: ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify root npm manifest and lockfile stay in sync
+        run: npm ci --ignore-scripts --no-audit --no-fund --dry-run
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check android-app-release.js
+          node --check shared/backend-platform/firebase-id-token.mjs
+          node --check cloudflare/android-apk-release/worker.mjs
+          node --check public/android-app-install.js
+          node --check public/smvastro.mjs
+
+      - name: Run APK release and existing permanent-signing regression tests
+        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
+
+      - name: Validate D1 migration and database-level safety triggers
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          from pathlib import Path
+
+          sql = Path("cloudflare/android-apk-release/migrations/0001_android_app_releases.sql").read_text()
+          db = sqlite3.connect(":memory:")
+          db.executescript(sql)
+
+          def release(code, version, key):
+              db.execute(
+                  """INSERT INTO android_app_releases
+                  (package_name, version_name, version_code, storage_provider, object_key,
+                   external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at)
+                  VALUES (?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)""",
+                  ("in.smvastroservices.smvastro", version, code, key, "a" * 64, "b" * 64, 1024, "admin-test", 1700000000000),
+              )
+
+          release(1001, "v1.1", "releases/1001/a.apk")
+          try:
+              release(1001, "v1.1", "releases/1001/b.apk")
+              raise AssertionError("D1 allowed a duplicate/non-increasing versionCode")
+          except sqlite3.IntegrityError as exc:
+              assert "VERSION_CODE_NOT_INCREASING" in str(exc)
+
+          for index in range(5):
+              db.execute("INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)", ("admin-test", 2000000 + index))
+          try:
+              db.execute("INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)", ("admin-test", 2000010))
+              raise AssertionError("D1 allowed more than five APK attempts per hour")
+          except sqlite3.IntegrityError as exc:
+              assert "APK_UPLOAD_RATE_LIMIT" in str(exc)
+
+          assert db.execute("SELECT MAX(version_code) FROM android_app_releases").fetchone()[0] == 1001
+          print("D1 APK migration, monotonic version trigger and hourly rate-limit trigger: PASS")
+          PY
+
+      - name: Validate Wrangler Worker bundle without deploying
+        run: |
+          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml

@@ -67,7 +67,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, signInWithCredential } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
@@ -847,12 +847,50 @@ function openAuth(mode="login"){
 window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegister;
 
 // Google Sign-In is a customer login method. Existing Email/Password, Customer ID,
-// and Astrologer ID flows remain unchanged.
-// We therefore use Firebase signInWithPopup() only here. The redirect flow was
-// removed because storage partitioning caused Firebase "missing initial state"
-// errors on the production domain.
+// and Astrologer ID flows remain unchanged. Native Android obtains a Google ID
+// token through Credential Manager; the Firebase Web SDK then signs into this
+// same WebView Auth instance so existing role checks and routing remain intact.
+// Ordinary browsers retain Firebase's supported popup flow.
 let smvGoogleLoginInProgress=false;
+let smvNativeGoogleRequestSequence=0;
 let smvEmailLoginInProgress=false;
+
+function smvRequestNativeGoogleIdToken(){
+  const bridge=window.SMVNativeCalls;
+  if(!bridge||typeof bridge.signInWithGoogle!=='function'){
+    return Promise.reject(new Error('Please update the SMV ASTRO app to the latest version before using Google Login.'));
+  }
+  const requestId='smv-google-'+Date.now().toString(36)+'-'+(++smvNativeGoogleRequestSequence);
+  return new Promise((resolve,reject)=>{
+    let settled=false,timer=null;
+    const cleanup=()=>{
+      if(timer)clearTimeout(timer);
+      window.removeEventListener('smv:native-google-token',onToken);
+      window.removeEventListener('smv:native-google-error',onError);
+    };
+    const finish=(callback,value)=>{
+      if(settled)return;
+      settled=true;cleanup();callback(value);
+    };
+    const onToken=event=>{
+      const detail=event?.detail||{};
+      if(String(detail.requestId||'')!==requestId)return;
+      const idToken=String(detail.idToken||'').trim();
+      if(!idToken){finish(reject,new Error('Google returned an empty sign-in token. Please try again.'));return;}
+      finish(resolve,idToken);
+    };
+    const onError=event=>{
+      const detail=event?.detail||{};
+      if(String(detail.requestId||'')!==requestId)return;
+      finish(reject,new Error(String(detail.message||'Google Sign-In failed. Please try again.')));
+    };
+    window.addEventListener('smv:native-google-token',onToken);
+    window.addEventListener('smv:native-google-error',onError);
+    timer=setTimeout(()=>finish(reject,new Error('Google Sign-In timed out. Please try again.')),120000);
+    try{bridge.signInWithGoogle(requestId);}
+    catch(error){finish(reject,new Error(error?.message||'Unable to open native Google Sign-In.'));}
+  });
+}
 // The first Firebase auth callback after a fresh page/app start is session
 // restoration, not an explicit Login action. Keep the authenticated session,
 // but start on Home. Explicit Email/Google login continues to own Dashboard routing.
@@ -931,9 +969,18 @@ async function signInWithGoogle(){
   btn.disabled=true; btn.querySelector('span:last-child').textContent='Signing in with Google...';
   try{
     smvGoogleLoginInProgress=true;
-    const provider=new GoogleAuthProvider();
-    provider.setCustomParameters({prompt:"select_account"});
-    const result=await withTimeout(signInWithPopup(auth,provider),30000);
+    let result;
+    if(window.SMVNativeCalls?.isNativeApp?.()===true){
+      const idToken=await smvRequestNativeGoogleIdToken();
+      result=await withTimeout(
+        signInWithCredential(auth,GoogleAuthProvider.credential(idToken)),
+        30000
+      );
+    }else{
+      const provider=new GoogleAuthProvider();
+      provider.setCustomParameters({prompt:"select_account"});
+      result=await withTimeout(signInWithPopup(auth,provider),30000);
+    }
     await finishGoogleRoleLogin(result?.user);
     smvGoogleLoginInProgress=false;
   }catch(e){
@@ -2437,27 +2484,152 @@ function initContentManager(){
   }));
 }
 initContentManager();
+let smvAndroidApkLastTransport='existing Firebase/Render storage';
+function smvAndroidApkIsStaging(){
+  return location.hostname.includes('phase1-staging')||location.hostname.includes('phase1-browser');
+}
+function smvAndroidApkWorkerBase(){
+  if(smvAndroidApkIsStaging())return null;
+  const configured=String(window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
+  if(!configured)return null;
+  try{
+    const url=new URL(configured);
+    if(url.protocol!=='https:'||url.username||url.password||url.pathname!=='/'||url.search||url.hash)return null;
+    return url.origin;
+  }catch(_){return null;}
+}
+async function smvAndroidApkWorkerStatus(){
+  const base=smvAndroidApkWorkerBase();
+  if(!base)return null;
+  try{
+    const response=await fetch(base+'/health',{headers:{Accept:'application/json'},cache:'no-store',signal:AbortSignal.timeout(3000)});
+    if(!response.ok)return null;
+    const health=await response.json();
+    return health?.success===true&&health.ready===true
+      ?{base,uploadsEnabled:health.uploadsEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
+      :null;
+  }catch(_){return null;}
+}
+async function smvAndroidApkWorkerRequest(worker,path,options={}){
+  if(!currentUser||typeof currentUser.getIdToken!=='function')throw new Error('Please log in as Admin to manage Android APK releases.');
+  const {timeoutMs=20000,signal,...request}=options;
+  const token=await currentUser.getIdToken();
+  const actorUid=currentUser.uid;
+  const headers=new Headers(request.headers||{});
+  headers.set('Authorization','Bearer '+token);
+  headers.set('Accept','application/json');
+  const controller=new AbortController();
+  const cancel=()=>controller.abort(signal?.reason);
+  if(signal?.aborted)cancel();else signal?.addEventListener('abort',cancel,{once:true});
+  const timer=setTimeout(()=>controller.abort(),timeoutMs>0?timeoutMs:20000);
+  try{
+    const response=await fetch(worker.base+path,{...request,headers,cache:'no-store',signal:controller.signal});
+    if(currentUser?.uid!==actorUid)throw new Error('Your login changed. Please try again.');
+    let data;
+    try{data=await response.json();}catch(_){throw new Error('Cloudflare APK service returned an invalid response ('+response.status+').');}
+    if(!response.ok||data?.success===false){
+      const error=new Error(data?.error||'Cloudflare APK service returned HTTP '+response.status+'.');
+      error.status=response.status;throw error;
+    }
+    smvAndroidApkLastTransport='Cloudflare R2';
+    return data;
+  }finally{
+    clearTimeout(timer);signal?.removeEventListener('abort',cancel);
+  }
+}
+async function smvAndroidApkApi(path,options={},workerOnly=false){
+  const worker=await smvAndroidApkWorkerStatus();
+  const method=String(options.method||'GET').toUpperCase();
+  const isUpload=method==='POST'&&path==='/admin/android-app/upload';
+  if(worker&&(!isUpload||worker.uploadsEnabled))return smvAndroidApkWorkerRequest(worker,path,options);
+  if(workerOnly)return worker?smvAndroidApkWorkerRequest(worker,path,options):null;
+  if(worker&&isUpload&&worker.hasReleaseRecords){
+    throw new Error('Cloudflare APK publishing is currently disabled. The current Cloudflare release remains active; enable APK uploads on the Worker before publishing another version.');
+  }
+  smvAndroidApkLastTransport='existing Firebase/Render storage';
+  return renderApi(path,options);
+}
+function smvAndroidApkSafeDownloadUrl(value,workerBase){
+  let url;
+  try{url=new URL(String(value||''));}catch(_){return null;}
+  if(url.protocol!=='https:'||url.username||url.password||url.hash)return null;
+  if(workerBase&&url.origin===workerBase&&/^\/(?:api\/android-app\/)?download\/[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
+  if(url.hostname!=='firebasestorage.googleapis.com')return null;
+  let decodedPath;
+  try{decodedPath=decodeURIComponent(url.pathname);}catch(_){return null;}
+  const match=/^\/v0\/b\/([^/]+)\/o\/smv-astro\/android\/releases\/[1-9][0-9]*\/[^/]+\.apk$/.exec(decodedPath);
+  if(!match||!['smv-astro.firebasestorage.app','smv-astro-staging.firebasestorage.app'].includes(match[1])||
+     url.searchParams.get('alt')!=='media'||!url.searchParams.get('token'))return null;
+  return url;
+}
+async function loadAdminAndroidAppHistory(){
+  const container=$('adminAndroidAppHistory');
+  if(!container)return;
+  container.innerHTML='<div class="empty">Checking Cloudflare APK version history…</div>';
+  try{
+    const history=await smvAndroidApkApi('/admin/android-app/versions',{method:'GET'},true);
+    if(!history){
+      container.innerHTML='<div class="small">Cloudflare APK history will appear here after the dedicated Worker, R2 bucket and D1 database are ready and APK uploads are enabled. Until then, the existing APK upload remains available.</div>';
+      return;
+    }
+    const workerBase=smvAndroidApkWorkerBase();
+    const versions=Array.isArray(history.versions)?history.versions:[];
+    if(!versions.length){
+      container.innerHTML='<div class="empty">No Cloudflare APK releases are recorded yet.</div>';
+      return;
+    }
+    container.innerHTML='<h4>Saved APK versions</h4>'+versions.map(release=>{
+      const safeUrl=smvAndroidApkSafeDownloadUrl(release.downloadUrl,workerBase);
+      const label='SMV ASTRO '+String(release.versionName||'APK')+' · code '+String(release.versionCode||'—');
+      const date=release.uploadedAt?smvDateTime(new Date(Number(release.uploadedAt))):'';
+      const link=safeUrl?'<a class="btn gray" href="'+escapeHtml(safeUrl.href)+'" rel="noopener" download>DOWNLOAD APK</a>':'<span class="small">Download link unavailable</span>';
+      return '<div class="card" style="margin-top:8px"><div><b>'+escapeHtml(label)+'</b></div><div class="small">'+escapeHtml(date)+' · '+escapeHtml(String(release.storageProvider||'stored release'))+'</div><div class="action-row">'+link+'</div></div>';
+    }).join('');
+  }catch(error){
+    container.innerHTML='<div class="small">Unable to load Cloudflare APK history: '+escapeHtml(error?.message||String(error))+'</div>';
+  }
+}
 async function loadAdminAndroidAppRelease(){
   const current=$('adminAndroidAppCurrent'),msg=$('adminAndroidAppMsg');
   if(!current||!msg||!currentUser)return;
+  const backendStatus=$('adminAndroidApkBackendStatus');
+  const workerStatus=await smvAndroidApkWorkerStatus();
+  if(backendStatus){
+    if(workerStatus?.uploadsEnabled){
+      backendStatus.textContent='Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.';
+      backendStatus.className='small success';
+    }else if(workerStatus){
+      backendStatus.textContent=workerStatus.hasReleaseRecords
+        ?'Cloudflare APK service READY · current release is protected · Admin publishing is disabled on the Worker.'
+        :'Cloudflare APK service READY · Admin publishing is disabled; the legacy upload route is available until Cloudflare owns a release.';
+      backendStatus.className='small';
+    }else{
+      backendStatus.textContent='Cloudflare APK service is not connected yet. The existing Firebase/Render release route is still used until the Worker URL is configured and healthy.';
+      backendStatus.className='small';
+    }
+  }
   msg.textContent='Loading current Android app release…';
   try{
-    const release=await renderApi('/admin/android-app',{method:'GET'});
+    const release=await smvAndroidApkApi('/admin/android-app',{method:'GET'});
     if(release?.success!==true)throw new Error(release?.error||'Unable to load Android app release.');
     if(release.available!==true){
       current.innerHTML='<div class="empty">No permanent Android APK has been published yet.</div>';
-      msg.textContent='The first website-managed APK must be v1.1 or newer because the permanent v1.0 APK is already in use.';
+      msg.textContent='No website-managed APK pointer is available. The first upload must use a higher versionCode than the permanent v1.0 app.';
+      await loadAdminAndroidAppHistory();
       return;
     }
     const size=Number(release.size||0);
     const sizeLabel=size>0?(size/1024/1024).toFixed(2)+' MB':'—';
     const uploaded=release.uploadedAt?smvDateTime(new Date(release.uploadedAt)):'—';
+    const provider=String(release.storageProvider||smvAndroidApkLastTransport);
     current.innerHTML='<div class="stats-grid admin-summary-grid">'+
       '<div class="card"><b>Current version</b><div>'+escapeHtml(release.versionName||'—')+'</div></div>'+
       '<div class="card"><b>Android versionCode</b><div>'+escapeHtml(String(release.versionCode||'—'))+'</div></div>'+
       '<div class="card"><b>APK size</b><div>'+escapeHtml(sizeLabel)+'</div></div>'+
+      '<div class="card"><b>Storage</b><div>'+escapeHtml(provider)+'</div></div>'+
       '</div><p class="small">Uploaded: '+escapeHtml(uploaded)+'</p>';
-    msg.textContent='Current permanent Android APK is published. A new upload must have a higher versionCode and the same permanent Release signing key.';
+    msg.textContent='Current permanent Android APK is published. New uploads must have a higher versionCode and the same permanent Release signing key. Website status uses this version.';
+    await loadAdminAndroidAppHistory();
   }catch(error){
     current.innerHTML='<div class="empty error">Unable to load current Android release.</div>';
     msg.textContent=error?.message||String(error);
@@ -2472,9 +2644,9 @@ async function uploadAdminAndroidApp(){
     return;
   }
   if(button){button.disabled=true;button.textContent='VALIDATING & UPLOADING…';}
-  if(msg)msg.textContent='Uploading the APK. The server will verify package, version and signing certificate.';
+  if(msg)msg.textContent='Uploading APK. The service checks package, version sequence and permanent Release signing certificate.';
   try{
-    const result=await renderApi('/admin/android-app/upload',{
+    const result=await smvAndroidApkApi('/admin/android-app/upload',{
       method:'POST',
       headers:{'Content-Type':'application/vnd.android.package-archive'},
       body:file,
@@ -2482,7 +2654,8 @@ async function uploadAdminAndroidApp(){
     });
     if(result?.success!==true||result.available!==true)throw new Error(result?.error||'APK upload was not confirmed.');
     if($('adminAndroidAppFile'))$('adminAndroidAppFile').value='';
-    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+'). Website download/update status now uses this version.';
+    const provider=String(result.storageProvider||smvAndroidApkLastTransport);
+    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+') using '+provider+'. Homepage Install / Update status now uses this release.';
     await loadAdminAndroidAppRelease();
   }catch(error){
     if(msg)msg.textContent=error?.message||String(error);
@@ -2491,9 +2664,19 @@ async function uploadAdminAndroidApp(){
   }
 }
 (function initAdminAndroidAppManager(){
-  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh');
+  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh'),file=$('adminAndroidAppFile'),fileInfo=$('adminAndroidAppFileInfo');
   if(upload&&!upload.dataset.smvBound){upload.dataset.smvBound='1';upload.addEventListener('click',uploadAdminAndroidApp);}
   if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.addEventListener('click',()=>loadAdminAndroidAppRelease().catch(()=>{}));}
+  if(file&&!file.dataset.smvBound){
+    file.dataset.smvBound='1';
+    file.addEventListener('change',()=>{
+      const selected=file.files?.[0];
+      if(!fileInfo)return;
+      fileInfo.textContent=selected
+        ?'Selected APK: '+selected.name+' · '+(selected.size/1024/1024).toFixed(2)+' MB. Package, version and signing certificate are checked by Cloudflare before publishing.'
+        :'APK limit: 100 MB. The server verifies package, versionCode and permanent Release signature.';
+    });
+  }
 })();
 
 smvArmPublicContentLazyLoad();

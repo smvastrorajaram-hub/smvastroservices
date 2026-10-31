@@ -17,11 +17,11 @@ test('SMV ASTRO uses ordered vMAJOR.MINOR names and monotonically increasing And
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
   const docs = read('docs/android-native-call-ringtone.md');
 
-  assert.ok(gradle.includes('.orElse("v1.0")'));
+  assert.ok(gradle.includes('.orElse("v1.2")'));
   assert.ok(gradle.includes('versionCode appVersionCode'));
   assert.ok(gradle.includes('versionName appVersionName'));
   assert.ok(gradle.includes('calculatedVersionCode = versionMajor * 1000L + versionMinor'));
-  assert.ok(workflow.includes('default: "v1.0"'));
+  assert.ok(workflow.includes('default: "v1.2"'));
   assert.ok(workflow.includes('version_name'));
   assert.ok(workflow.includes('version_code=$((10#$major * 1000 + 10#$minor))'));
   assert.match(docs, /v1\.0[\s\S]*v1\.1[\s\S]*v1\.2/);
@@ -139,8 +139,12 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
   assert.equal(html.includes('smvPermanentApkUpload'), false);
   assert.equal(installer.includes('releases/new'), false);
-  assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('UPDATE APP'));
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.equal(html.includes('id="smvInstallAppSection"'), false);
+  assert.ok(installer.includes('DOWNLOAD APK'));
+  assert.ok(installer.includes('Using Latest Version'));
+  assert.ok(installer.includes("'UPDATE'"));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('SMVNativeCalls.isNativeApp'));
   assert.ok(server.includes("app.post('/admin/android-app/upload'"));

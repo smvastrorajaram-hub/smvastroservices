@@ -1,0 +1,268 @@
+name: Deploy SMV ASTRO APK Release Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_apk_release_deployment:
+        description: "Apply the APK Release D1 migration and deploy the APK Release Worker?"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smv-astro-apk-release-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Confirm APK Release deployment request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main branch and explicit confirmation
+        shell: bash
+        env:
+          CONFIRM_DEPLOYMENT: ${{ inputs.confirm_apk_release_deployment }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this deployment from the main branch only."
+            exit 1
+          fi
+          if [[ "$CONFIRM_DEPLOYMENT" != "yes" ]]; then
+            echo "::error::Deployment was not confirmed. Select yes only when you intend to deploy the APK Release Worker."
+            exit 1
+          fi
+          echo "APK Release deployment explicitly confirmed on main."
+
+  deploy:
+    name: APK-only D1 migration and Worker deployment
+    needs: preflight
+    if: ${{ needs.preflight.result == 'success' && github.ref == 'refs/heads/main' && inputs.confirm_apk_release_deployment == 'yes' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APK_RELEASE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify dedicated Cloudflare credentials are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "::error::Repository secret CLOUDFLARE_APK_RELEASE_API_TOKEN is missing."
+            exit 1
+          fi
+          if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Repository variable CLOUDFLARE_ACCOUNT_ID is missing."
+            exit 1
+          fi
+          echo "Dedicated APK Release Cloudflare credentials are present. Values are not printed."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify committed APK-only Cloudflare resource configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloudflare/android-apk-release/wrangler.toml';
+          const config = fs.readFileSync(file, 'utf8');
+          const checks = [
+            [/^name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-release-api', 'Worker name'],
+            [/^bucket_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'R2 bucket'],
+            [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
+            [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
+            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate']
+          ];
+          for (const [pattern, expected, label] of checks) {
+            const match = config.match(pattern);
+            if (!match || match[1] !== expected) {
+              throw new Error(`${label} mismatch in ${file}; refusing deployment.`);
+            }
+          }
+          console.log('Exact APK Worker, R2 bucket and D1 identity verified; APK Admin APK uploads are enabled.');
+          NODE
+
+      - name: Verify the live D1 database identity before migration
+        shell: bash
+        env:
+          EXPECTED_D1_NAME: smv-astro-apk-releases
+          EXPECTED_D1_ID: 5105ebb3-435c-47b7-9983-2e171fa911cd
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 info "$EXPECTED_D1_NAME" --json \
+            --config cloudflare/android-apk-release/wrangler.toml \
+            > "$RUNNER_TEMP/apk-release-d1-info.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-d1-info.json', 'utf8');
+          const data = JSON.parse(output);
+          const serialized = JSON.stringify(data).toLowerCase();
+          if (!serialized.includes(process.env.EXPECTED_D1_NAME.toLowerCase()) ||
+              !serialized.includes(process.env.EXPECTED_D1_ID.toLowerCase())) {
+            throw new Error('Live Cloudflare D1 details do not match the approved APK Release database. No migration was applied.');
+          }
+          console.log('Live D1 database name and ID match exactly.');
+          NODE
+
+      - name: Show pending APK Release migrations
+        run: |
+          npx --yes wrangler@4 d1 migrations list smv-astro-apk-releases --remote \
+            --config cloudflare/android-apk-release/wrangler.toml
+
+      - name: Apply migrations only to the dedicated APK Release D1
+        run: |
+          npx --yes wrangler@4 d1 migrations apply smv-astro-apk-releases --remote \
+            --config cloudflare/android-apk-release/wrangler.toml
+
+      - name: Verify APK Release migration state
+        run: |
+          npx --yes wrangler@4 d1 migrations list smv-astro-apk-releases --remote \
+            --config cloudflare/android-apk-release/wrangler.toml
+
+      - name: Deploy the isolated APK Release Worker
+        id: deploy_worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG_FILE="$RUNNER_TEMP/apk-release-wrangler-deploy.log"
+          npx --yes wrangler@4 deploy --config cloudflare/android-apk-release/wrangler.toml 2>&1 | tee "$LOG_FILE"
+          WORKER_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' "$LOG_FILE" | tail -n 1 || true)"
+          if [[ -z "$WORKER_URL" ]]; then
+            echo "::error::Wrangler did not print the workers.dev URL. Inspect the deploy log before retrying."
+            exit 1
+          fi
+          echo "worker_url=$WORKER_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed APK Release Worker: $WORKER_URL"
+
+      - name: Verify Worker health and APK upload safety gate
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+        run: |
+          set -euo pipefail
+          HEALTH_FILE="$RUNNER_TEMP/apk-release-health.json"
+          HEALTH_OK=0
+          for attempt in {1..10}; do
+            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 20 \
+              --output "$HEALTH_FILE" --write-out '%{http_code}' "$WORKER_URL/health" || true)"
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              if node - "$HEALTH_FILE" <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const ready = health.success === true &&
+            health.ready === true &&
+            health.d1Ready === true &&
+            health.r2Ready === true &&
+            health.uploadsEnabled === true;
+          if (!ready) {
+            console.error('APK Worker readiness is incomplete:', JSON.stringify({
+              success: health.success === true,
+              ready: health.ready === true,
+              d1Ready: health.d1Ready === true,
+              r2Ready: health.r2Ready === true,
+              uploadsEnabled: health.uploadsEnabled === true
+            }));
+            process.exit(1);
+          }
+          console.log('Worker health: D1 schema ready; R2 read-only probe succeeded; Admin APK publishing is enabled.');
+          NODE
+              then
+                HEALTH_OK=1
+                break
+              fi
+            fi
+            echo "::notice::APK Worker health check attempt $attempt/10 returned HTTP ${HTTP_CODE:-unavailable}; retrying for Cloudflare edge propagation."
+            sleep 3
+          done
+          if [[ "$HEALTH_OK" != "1" ]]; then
+            echo "::error::Worker health did not become ready after bounded propagation retries."
+            cat "$HEALTH_FILE" 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: Check public APK metadata endpoint
+        id: public_metadata
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+        run: |
+          set -euo pipefail
+          METADATA_FILE="$RUNNER_TEMP/apk-release-public.json"
+          METADATA_OK=0
+          for attempt in {1..2}; do
+            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 25 \
+              --output "$METADATA_FILE" --write-out '%{http_code}' "$WORKER_URL/public/android-app" || true)"
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              if node - "$METADATA_FILE" <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (data.success !== true || typeof data.available !== 'boolean') {
+            throw new Error('Public APK metadata response is missing the success/available contract.');
+          }
+          if (data.available === true) {
+            const expectedOrigin = new URL(process.env.WORKER_URL).origin;
+            const download = new URL(data.downloadUrl);
+            if (data.packageName !== 'in.smvastroservices.smvastro' ||
+                !Number.isSafeInteger(Number(data.versionCode)) ||
+                Number(data.versionCode) < 1001 ||
+                !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
+                download.origin !== expectedOrigin ||
+                download.pathname !== '/download/' + String(data.versionCode)) {
+              throw new Error('Public APK release metadata failed package, version or download-origin validation.');
+            }
+          }
+          console.log('Public APK metadata contract is valid; available=' + data.available + '.');
+          NODE
+              then
+                METADATA_OK=1
+                echo "status=ok" >> "$GITHUB_OUTPUT"
+                break
+              fi
+            fi
+            echo "::notice::Public APK metadata attempt $attempt/2 returned HTTP ${HTTP_CODE:-unavailable} or an invalid response; retrying once."
+            sleep 2
+          done
+          if [[ "$METADATA_OK" != "1" ]]; then
+            echo "::error::Public APK metadata did not pass validation after bounded retries. Do not connect the Homepage URL."
+            cat "$METADATA_FILE" 2>/dev/null || true
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Publish deployment summary
+        if: always()
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+          PUBLIC_METADATA_STATUS: ${{ steps.public_metadata.outputs.status }}
+        run: |
+          {
+            echo "## SMV ASTRO APK Release Worker"
+            if [[ -n "$WORKER_URL" ]]; then
+              echo "- Worker URL: $WORKER_URL"
+              echo "- Health endpoint: $WORKER_URL/health"
+              echo "- Public metadata endpoint: $WORKER_URL/public/android-app"
+            else
+              echo "- Worker URL: not captured; inspect the deployment step."
+            fi
+            echo '- APK upload gate: ALLOW_APK_UPLOADS=true (Admin-only, signed-APK validation enforced).'
+            echo "- Homepage API URL: unchanged; connect only after successful verification."
+            echo "- Public metadata check: ${PUBLIC_METADATA_STATUS:-not completed}."
+            echo "- Scope: dedicated APK Release D1 only, plus the APK Release Worker."
+          } >> "$GITHUB_STEP_SUMMARY"

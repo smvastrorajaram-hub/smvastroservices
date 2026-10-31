@@ -1,5 +1,6 @@
 package in.smvastroservices.smvastro;
 
+import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
@@ -31,17 +32,35 @@ public final class NativeWebBridge {
           var nativeBridge = window.SMVNativeBridge;
           if (!nativeBridge || typeof nativeBridge.postMessage !== 'function') return;
           var token = '';
-          function send(action) {
-            try { nativeBridge.postMessage(JSON.stringify({ action: action })); } catch (_) {}
+          function send(action, requestId) {
+            try {
+              var request = { action: action };
+              if (requestId) request.requestId = String(requestId);
+              nativeBridge.postMessage(JSON.stringify(request));
+            } catch (_) {}
           }
           window.SMVNativeCalls = {
             isNativeApp: function () { return true; },
             getFcmToken: function () { return token; },
-            requestTokenRefresh: function () { send('refreshToken'); }
+            requestTokenRefresh: function () { send('refreshToken'); },
+            signInWithGoogle: function (requestId) { send('googleSignIn', requestId); }
           };
           nativeBridge.onmessage = function (event) {
             try {
               var message = JSON.parse(String(event.data || '{}'));
+              if (message.type === 'googleIdToken') {
+                var idToken = String(message.idToken || '').trim();
+                if (idToken) window.dispatchEvent(new CustomEvent('smv:native-google-token', {
+                  detail: { requestId: String(message.requestId || ''), idToken: idToken }
+                }));
+                return;
+              }
+              if (message.type === 'googleSignInError') {
+                window.dispatchEvent(new CustomEvent('smv:native-google-error', {
+                  detail: { requestId: String(message.requestId || ''), message: String(message.message || 'Google Sign-In failed.') }
+                }));
+                return;
+              }
               if (message.type !== 'token') return;
               token = String(message.token || '').trim();
               if (token && typeof window.__smvNativeFcmTokenReady === 'function') {
@@ -67,7 +86,7 @@ public final class NativeWebBridge {
             TRUSTED_ORIGINS,
             (view, message, sourceOrigin, isMainFrame, replyProxy) -> {
                 if (!isMainFrame || !isTrustedOrigin(sourceOrigin)) return;
-                handleMessage(context.getApplicationContext(), message, replyProxy);
+                handleMessage(context, message, replyProxy);
             }
         );
 
@@ -89,6 +108,16 @@ public final class NativeWebBridge {
         try {
             JSONObject request = new JSONObject(message == null ? "" : message.getData());
             String action = request.optString("action", "");
+            if ("googleSignIn".equals(action)) {
+                String requestId = request.optString("requestId", "");
+                if (requestId.length() > 80 || requestId.trim().isEmpty()) {
+                    Log.w(LOG_TAG, "Rejected a Google sign-in request with an invalid request ID.");
+                    return;
+                }
+                NativeGoogleSignIn.start(context instanceof Activity ? (Activity) context : null,
+                        replyProxy, requestId);
+                return;
+            }
             if (!"getToken".equals(action) && !"refreshToken".equals(action)) return;
 
             String saved = context.getSharedPreferences(SmvAstroApplication.PUSH_PREFS, Context.MODE_PRIVATE)

@@ -189,7 +189,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261028-cream-content-contrast-v6'));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-production-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -252,7 +252,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-production-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -283,7 +283,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-production-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -327,7 +327,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-production-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -347,7 +347,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261030-native-call-ring-production-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1134,24 +1134,27 @@ test('Live Call SSE replay cursor advances only after a WebRTC signal is process
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });
 
-test('Android APK download/update is Admin-managed and remains separate from PWA installation', () => {
+test('Homepage removes its PWA install banner and presents the dedicated Android APK card', () => {
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
-  assert.ok(html.includes('id="smvInstallAppSection"'));
-  assert.ok(html.includes('id="smvInstallAppBtn"'));
-  assert.ok(html.includes('rel="manifest"'));
+  assert.equal(html.includes('id="smvInstallAppSection"'), false);
+  assert.equal(html.includes('id="smvInstallAppBtn"'), false);
+  assert.equal(html.includes('id="smvInstallAppHelp"'), false);
+  assert.equal(html.includes('smv-install-app-prompt'), false);
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('assets/icon-192.png'));
   assert.ok(html.includes('id="adminGroupAppManagement"'));
   assert.ok(html.includes('id="adminAndroidAppFile"'));
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
-  assert.equal(html.includes('smvPermanentApkUpload'), false);
   assert.ok(pwa.includes('"display": "standalone"'));
   assert.ok(installer.includes("'/public/android-app'"));
   assert.ok(installer.includes('getInstalledRelatedApps'));
-  assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('UPDATE APP'));
+  assert.ok(installer.includes('Using Latest Version'));
+  assert.ok(installer.includes("'DOWNLOAD APK'"));
+  assert.ok(installer.includes("'UPDATE'"));
+  assert.equal(installer.includes('INSTALL APP'), false);
   assert.equal(installer.includes('releases/new'), false);
   assert.equal(installer.includes('ghp_'), false);
 });
