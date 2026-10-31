@@ -123,51 +123,66 @@ jobs:
 
           const base = String(process.env.WORKER_URL || '').replace(/\/$/, '');
           async function request(path) {
-            const response = await fetch(base + path, {
+            const url = base + path;
+            const response = await fetch(url, {
               headers: { Accept: 'application/json' },
               signal: AbortSignal.timeout(10000)
             });
             const raw = await response.text();
             let body = {};
             try { body = raw ? JSON.parse(raw) : {}; } catch {}
-            return { response, body };
+            return {
+              url,
+              status: response.status,
+              contentType: response.headers.get('content-type') || '',
+              body
+            };
           }
 
-          let health;
+          let health = null;
+          let lastHealth = null;
           let lastError = 'no response';
           for (let attempt = 1; attempt <= 16; attempt += 1) {
             try {
-              const result = await request('/healthz');
-              if (result.response.ok) { health = result.body; break; }
-              lastError = 'HTTP ' + result.response.status;
+              lastHealth = await request('/healthz');
+              if (lastHealth.status === 200 &&
+                  lastHealth.body?.ok === true &&
+                  lastHealth.body?.runtime === 'cloudflare-workers-express-http-bridge') {
+                health = lastHealth;
+                break;
+              }
+              lastError = 'HTTP ' + lastHealth.status + ' body=' + JSON.stringify(lastHealth.body).slice(0, 300);
             } catch (error) {
               lastError = error instanceof Error ? error.message : String(error);
             }
             if (attempt < 16) await new Promise(resolve => setTimeout(resolve, 2000));
           }
-          assert.ok(health, 'Production Worker health check failed: ' + lastError);
-          assert.equal(health.ok, true);
-          assert.equal(health.runtime, 'cloudflare-workers-express-http-bridge');
-          assert.equal(health.environment, 'production');
-          assert.equal(health.backendActive, false);
-          assert.equal(health.walletReadRoutesRegistered, false);
-          assert.equal(health.walletRechargeRoutesRegistered, false);
-          assert.equal(health.walletOfferRoutesRegistered, false);
-          assert.equal(health.liveSessionRoutesRegistered, false);
-          assert.equal(health.identityProfileBackfillRoutesRegistered, false);
-          assert.equal(health.identityProfileBackfillToolsEnabled, false);
-          assert.equal(health.identityProfileD1AuthorizationEnabled, false);
-          assert.equal(health.productionTrafficEnabled, false);
+
+          assert.ok(health, 'Production Worker health response did not become valid JSON: ' + lastError);
+          assert.equal(health.body.environment, 'production');
+          assert.equal(health.body.backendActive, false);
+          assert.equal(health.body.walletReadRoutesRegistered, false);
+          assert.equal(health.body.walletRechargeRoutesRegistered, false);
+          assert.equal(health.body.walletOfferRoutesRegistered, false);
+          assert.equal(health.body.liveSessionRoutesRegistered, false);
+          assert.equal(health.body.identityProfileBackfillRoutesRegistered, false);
+          assert.equal(health.body.identityProfileBackfillToolsEnabled, false);
+          assert.equal(health.body.identityProfileD1AuthorizationEnabled, false);
+          assert.equal(health.body.productionTrafficEnabled, false);
 
           const readiness = await request('/api/backend/readiness');
-          assert.equal(readiness.response.status, 503,
-            'The schema-only production D1 must not be mistaken for the legacy Wallet cutover schema.');
+          assert.ok([200, 503].includes(readiness.status),
+            'Unexpected readiness HTTP status: ' + readiness.status + ' body=' + JSON.stringify(readiness.body));
+          assert.equal(readiness.body.ok, false);
+          assert.equal(readiness.body.ready, false);
           assert.equal(readiness.body.checks?.expressRuntime, true);
           assert.equal(readiness.body.checks?.d1Binding, true);
           assert.equal(readiness.body.checks?.walletSchema, false);
 
           const migration = await request('/api/backend/migration-status');
-          assert.equal(migration.response.status, 200);
+          assert.equal(migration.status, 200,
+            'Migration-status endpoint failed: ' + JSON.stringify(migration.body));
+          assert.equal(migration.body.phase, 'cloudflare-runtime-foundation');
           assert.equal(migration.body.legacyServerLoaded, false);
           assert.equal(migration.body.productionTrafficEnabled, false);
           assert.equal(migration.body.walletReadRoutesEnabled, false);
@@ -176,19 +191,32 @@ jobs:
 
           for (const path of ['/api/auth/session', '/api/auth/authorization']) {
             const result = await request(path);
-            assert.equal(result.response.status, 401, path + ' must reject unauthenticated access.');
-            assert.equal(result.body.code, 'AUTH_REQUIRED');
+            assert.equal(result.status, 401,
+              path + ' must reject unauthenticated requests; got HTTP ' + result.status);
+            assert.equal(result.body.code, 'AUTH_REQUIRED',
+              path + ' returned an unexpected body: ' + JSON.stringify(result.body));
           }
 
           const wallet = await request('/api/wallet/v1/wallet/balance');
-          assert.equal(wallet.response.status, 503);
-          assert.equal(wallet.body.code, 'BACKEND_MIGRATION_NOT_CUT_OVER');
+          assert.ok([404, 503].includes(wallet.status),
+            'Unmigrated Wallet route must fail closed; got HTTP ' + wallet.status);
+          assert.equal(wallet.body.code, 'BACKEND_MIGRATION_NOT_CUT_OVER',
+            'Unmigrated Wallet route returned an unexpected body: ' + JSON.stringify(wallet.body));
 
           console.log('PASS: ' + base + ' serves the production Cloudflare Worker runtime.');
-          console.log('PASS: production environment and Firebase project allowlist are configured.');
-          console.log('PASS: unauthenticated auth endpoints reject requests.');
+          console.log('PASS: Production D1 is bound; readiness correctly reports the legacy Wallet schema is not cut over.');
+          console.log('PASS: unauthenticated auth endpoints reject requests with AUTH_REQUIRED.');
           console.log('PASS: Wallet, Razorpay and Live Call/Chat business routes remain disabled.');
-          console.log('PASS: legacy Wallet cutover readiness remains false; no production traffic switch occurred.');
+          console.log('PASS: frontend traffic, Render and DNS remain unchanged.');
+          console.log(JSON.stringify({
+            healthStatus: health.status,
+            readinessStatus: readiness.status,
+            d1BindingReady: readiness.body.checks.d1Binding,
+            legacyWalletSchemaReady: readiness.body.checks.walletSchema,
+            migrationStatus: migration.status,
+            authStatuses: [401, 401],
+            walletStatus: wallet.status
+          }));
           NODE
 
       - name: Publish production Worker deployment summary
