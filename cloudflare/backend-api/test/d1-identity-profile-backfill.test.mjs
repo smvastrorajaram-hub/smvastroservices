@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { createIdentityProfileBackfillService } from '../../../shared/backend-platform/d1-identity-profile-backfill.mjs';
 
-function fakeD1() {
+function fakeD1(firstResolver = null) {
   const prepared = [];
   const batches = [];
   return {
@@ -16,7 +16,7 @@ function fakeD1() {
           prepared.push(item);
           return {
             ...item,
-            async first() { return null; },
+            async first() { return firstResolver ? firstResolver(sql, values) : null; },
             async all() { return { results: [] }; },
             async run() { return { success: true }; }
           };
@@ -31,8 +31,8 @@ function fakeD1() {
 }
 
 function setup({ collection = 'smv_users', documents = [], projectId = 'smv-astro-staging',
-  environment = 'staging', payoutEncryptionKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' } = {}) {
-  const db = fakeD1();
+  environment = 'staging', payoutEncryptionKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', firstResolver = null } = {}) {
+  const db = fakeD1(firstResolver);
   const reads = [];
   const firestore = {
     projectId,
@@ -215,4 +215,81 @@ test('blocks payout import when the protected AES-GCM key is not configured', as
   await assert.rejects(service.applyPage({ collection: 'payouts' }),
     error => error.code === 'IDENTITY_BACKFILL_SOURCE_WARNINGS');
   assert.equal(db.batches.length, 0);
+});
+
+test('reconciliation detects target profile field mismatches even when source audit hash matches', async () => {
+  const source = {
+    email: 'person@example.com',
+    name: 'Test Customer',
+    role: 'customer',
+    status: 'active',
+    uid: 'customer-1'
+  };
+  const canonical = JSON.stringify(source);
+  const digest = await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  const { service } = setup({
+    documents: [{ id: 'customer-1', data: source }],
+    firstResolver(sql) {
+      if (sql.includes('FROM smv_domain_identity_import_audit')) {
+        return { source_payload_sha256: hash, mapping_status: 'mapped' };
+      }
+      if (sql.includes('FROM smv_domain_identity_users')) {
+        return {
+          email: source.email,
+          role: 'astrologer',
+          status: source.status,
+          public_id: null,
+          name: source.name,
+          phone_e164: null,
+          phone_hash: null,
+          email_verified: 0,
+          profile_json: canonical
+        };
+      }
+      return null;
+    }
+  });
+  const result = await service.reconcilePage({ collection: 'users' });
+  assert.equal(result.auditMissing, 0);
+  assert.equal(result.payloadMismatches, 0);
+  assert.equal(result.targetMappingsMissing, 0);
+  assert.equal(result.targetMappingMismatches, 1);
+  assert.equal(result.cutoverSafe, false);
+});
+
+test('reconciliation accepts a profile only when the imported target values match source', async () => {
+  const source = {
+    email: 'person@example.com',
+    name: 'Test Customer',
+    role: 'customer',
+    status: 'active',
+    uid: 'customer-1'
+  };
+  const canonical = JSON.stringify(source);
+  const digest = await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  const { service } = setup({
+    documents: [{ id: 'customer-1', data: source }],
+    firstResolver(sql) {
+      if (sql.includes('FROM smv_domain_identity_import_audit')) {
+        return { source_payload_sha256: hash, mapping_status: 'mapped' };
+      }
+      if (sql.includes('FROM smv_domain_identity_users')) {
+        return {
+          email: source.email, role: source.role, status: source.status,
+          public_id: null, name: source.name, phone_e164: null, phone_hash: null,
+          email_verified: 0, profile_json: canonical
+        };
+      }
+      return null;
+    }
+  });
+  const result = await service.reconcilePage({ collection: 'users' });
+  assert.equal(result.auditMissing, 0);
+  assert.equal(result.payloadMismatches, 0);
+  assert.equal(result.targetMappingsMissing, 0);
+  assert.equal(result.targetMappingMismatches, 0);
+  assert.equal(result.warningCount, 0);
+  assert.equal(result.cutoverSafe, false);
 });
