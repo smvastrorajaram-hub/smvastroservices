@@ -26,5 +26,7 @@ jobs:
         run: node --check cloudflare/wallet-api/src/index.mjs
       - name: Run Wallet Worker tests
         run: node --test test/cloudflare-wallet-api.test.mjs
+      - name: Validate D1 migration and critical constraints locally
+        run: python3 test/validate-cloudflare-wallet-schema.py
       - name: Validate Cloudflare bundle without deploying
         run: npx --yes wrangler@4.156.0 deploy --dry-run --config cloudflare/wallet-api/wrangler.jsonc
