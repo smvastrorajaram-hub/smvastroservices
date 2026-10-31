@@ -286,7 +286,7 @@ test('legacy public release metadata and redirect URL are validated before use',
   });
   const bad = await badWorker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(bad.status, 503);
-  assert.equal((await bad.json()).available, false);
+  assert.equal((await bad.json()).success, false);
 });
 
 
@@ -302,7 +302,7 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(installer.includes('SMV ASTRO IS UP TO DATE'));
   assert.ok(installer.includes('UPDATE APP'));
   assert.ok(installer.includes('INSTALL APP'));
-  assert.ok(installer.includes('DOWNLOAD / UPDATE APP'));
+  assert.ok(installer.includes('DOWNLOAD APP'));
   assert.ok(installer.includes('health.uploadsEnabled === true'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('firebasestorage.googleapis.com'));
