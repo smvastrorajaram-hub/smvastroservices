@@ -147,3 +147,22 @@ test('Wallet read route gate requires explicit enablement, verified backfill and
     SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
   }), true);
 });
+
+test('Wallet read handlers fail closed until D1 shared domain migration is ready', async () => {
+  const app = createApp();
+  let identityReads = 0;
+  const identityService = { async authenticateAuthorization() { identityReads += 1; return { uid:'customer-9', role:'customer' }; } };
+  const walletAdapter = { async ensureWallet() { throw new Error('must not query Wallet before schema readiness'); }, async listTransactions() { return []; } };
+  registerWalletReadRoutes({ app, identityService, walletAdapter, isReady: async () => false });
+
+  const balance = createResponse();
+  await app.handlers.get('/wallet')(request(), balance);
+  assert.equal(balance.statusCode, 503);
+  assert.equal(balance.body.code, 'WALLET_SCHEMA_NOT_READY');
+
+  const transactions = createResponse();
+  await app.handlers.get('/wallet/transactions')(request(), transactions);
+  assert.equal(transactions.statusCode, 503);
+  assert.equal(transactions.body.code, 'WALLET_SCHEMA_NOT_READY');
+  assert.equal(identityReads, 0, 'schema guard runs before identity and Wallet repository reads');
+});
