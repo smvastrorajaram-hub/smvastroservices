@@ -15,6 +15,7 @@ on:
       - 'cloudflare/backend-api/test/wallet-recharge-*.test.mjs'
       - 'cloudflare/backend-api/test/fixtures/d1-wallet-recharge-*.sql'
       - 'cloudflare/backend-api/test/fixtures/d1-wallet-offer-limit.sql'
+      - 'cloudflare/backend-api/test/fixtures/d1-wallet-premature-paid.sql'
       - '.github/workflows/cloudflare-wallet-recharge-d1.yml'
   workflow_dispatch:
 
@@ -66,6 +67,23 @@ jobs:
           if ! grep -q 'WALLET_OFFER_CUSTOMER_LIMIT_REACHED' "$RUNNER_TEMP/wallet-offer-limit.log"; then
             cat "$RUNNER_TEMP/wallet-offer-limit.log"
             echo "::error::Offer redemption failed for an unexpected reason."
+            exit 1
+          fi
+      - name: Verify recharge cannot become paid without cash ledger and matching order
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set +e
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-premature-paid.sql > "$RUNNER_TEMP/wallet-premature-paid.log" 2>&1
+          result=$?
+          set -e
+          if [[ $result -eq 0 ]]; then
+            echo "::error::A Wallet recharge was marked paid without a cash ledger entry."
+            exit 1
+          fi
+          if ! grep -q 'WALLET_RECHARGE_LEDGER_MISSING' "$RUNNER_TEMP/wallet-premature-paid.log"; then
+            cat "$RUNNER_TEMP/wallet-premature-paid.log"
+            echo "::error::Premature paid-state validation failed for an unexpected reason."
             exit 1
           fi
       - name: Clean local Wallet recharge smoke data
