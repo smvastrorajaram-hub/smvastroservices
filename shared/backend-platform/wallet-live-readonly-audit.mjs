@@ -906,7 +906,7 @@ export function createWalletLiveReadOnlyAudit({
 
         for (const document of page.documents) {
           recordDocument(key, document, parentId);
-          if (key === 'liveSessions') sessionParents.push(document);
+          if (key === 'liveSessions') sessionParents.push(primitiveString(document.id));
         }
 
         const next = String(page.nextPageToken || '');
@@ -926,8 +926,7 @@ export function createWalletLiveReadOnlyAudit({
       await scanCollection(key);
     }
 
-    for (const session of sessionParents) {
-      const parentId = primitiveString(session.id);
+    for (const parentId of sessionParents) {
       if (!parentId) {
         for (const key of ['liveSessionMessages', 'liveSessionSignals']) {
           increment(accumulators[key].warningCounts, 'LIVE_SESSION_PARENT_ID_MISSING');
