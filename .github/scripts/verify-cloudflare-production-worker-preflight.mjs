@@ -86,9 +86,9 @@ async function expectedObjects() {
   ));
   const ddl = contents.join("\n");
   const objects = {
-    tables: [...ddl.matchAll(/CREATE TABLE IF NOT EXISTS\\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1]),
-    indexes: [...ddl.matchAll(/CREATE\\s+(?:UNIQUE\\s+)?INDEX IF NOT EXISTS\\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1]),
-    triggers: [...ddl.matchAll(/CREATE TRIGGER IF NOT EXISTS\\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1])
+    tables: [...ddl.matchAll(/CREATE TABLE IF NOT EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1]),
+    indexes: [...ddl.matchAll(/CREATE\s+(?:UNIQUE\s+)?INDEX IF NOT EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1]),
+    triggers: [...ddl.matchAll(/CREATE TRIGGER IF NOT EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/gi)].map(match => match[1])
   };
   for (const [kind, names] of Object.entries(objects)) {
     assert.ok(names.length > 0, "No reviewed " + kind + " were found.");
