@@ -1134,26 +1134,27 @@ test('Live Call SSE replay cursor advances only after a WebRTC signal is process
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });
 
-test('Android APK actions reuse the existing PWA icon and hide download at the installed latest version', () => {
+test('Homepage removes its PWA install banner and presents the dedicated Android APK card', () => {
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
-  assert.ok(html.includes('id="smvInstallAppSection"'));
-  assert.ok(html.includes('id="smvInstallAppBtn"'));
-  assert.ok(html.includes('rel="manifest"'));
-  assert.equal(html.includes('smvPermanentAndroidAppSection'), false);
-  assert.equal(html.includes('smvPermanentApkDownload'), false);
+  assert.equal(html.includes('id="smvInstallAppSection"'), false);
+  assert.equal(html.includes('id="smvInstallAppBtn"'), false);
+  assert.equal(html.includes('id="smvInstallAppHelp"'), false);
+  assert.equal(html.includes('smv-install-app-prompt'), false);
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('assets/icon-192.png'));
   assert.ok(html.includes('id="adminGroupAppManagement"'));
   assert.ok(html.includes('id="adminAndroidAppFile"'));
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
-  assert.equal(html.includes('smvPermanentApkUpload'), false);
   assert.ok(pwa.includes('"display": "standalone"'));
   assert.ok(installer.includes("'/public/android-app'"));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'DOWNLOAD APK'"));
   assert.ok(installer.includes("'UPDATE'"));
-  assert.ok(html.includes('window.location.assign(installBtn.dataset.smvApkDownloadUrl)'));
+  assert.equal(installer.includes('INSTALL APP'), false);
   assert.equal(installer.includes('releases/new'), false);
   assert.equal(installer.includes('ghp_'), false);
 });

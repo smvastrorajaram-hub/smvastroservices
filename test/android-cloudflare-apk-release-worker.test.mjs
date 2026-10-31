@@ -370,33 +370,31 @@ test('an explicitly archived Firebase row in D1 remains available as historical 
 });
 
 
-test('Homepage reuses the single PWA icon and renders APK version/date with version-aware actions', async () => {
+test('Homepage uses the dedicated Android APK icon/card and hides Download when the current version is installed', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
-  const styles = fs.readFileSync(path.join(root, 'public/smv-ui.css'), 'utf8');
+  const styles = fs.readFileSync(path.join(root, 'public/android-app-install.css'), 'utf8');
 
-  assert.ok(html.includes('id="smvInstallAppSection"'));
-  assert.ok(html.includes('id="smvInstallAppBtn"'));
-  assert.ok(html.includes('icon-512-transparent.svg?v=20261023-transparent-pwa-v1'));
-  assert.doesNotMatch(html, /smvPermanentAndroidAppSection|smvPermanentApkDownload|smv-android-apk-icon-wrap/);
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('assets/icon-192.png'));
+  assert.doesNotMatch(html, /smvInstallAppSection|smvInstallAppBtn|smvInstallAppHelp|smv-install-app-prompt/);
   assert.ok(html.includes('window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
   assert.ok(html.includes('window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
-
+  assert.ok(html.includes('android-app-install.css?v=20261030-admin-apk-manager-v2'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));
   assert.ok(installer.includes("'DOWNLOAD APK'"));
-  assert.ok(installer.includes('smvApkDownloadUrl'));
   assert.ok(installer.includes('uploadedAtLabel'));
   assert.ok(installer.includes("timeZone: 'Asia/Kolkata'"));
   assert.ok(installer.includes("source.cloudflare ? 'r2' : 'firebase'"));
-  assert.ok(installer.includes('smv-apk-release-active'));
-  assert.ok(styles.includes('.smv-install-app-section.smv-apk-release-active .smv-install-app-card'));
-  assert.ok(html.includes('window.location.assign(installBtn.dataset.smvApkDownloadUrl)'));
+  assert.ok(styles.includes('.smv-android-apk-card'));
+  assert.ok(styles.includes('.smv-android-apk-download'));
 
   const vm = await import('node:vm');
   const release = {
@@ -412,29 +410,22 @@ test('Homepage reuses the single PWA icon and renders APK version/date with vers
   async function renderFor(installedApps) {
     const heading = { textContent: '' };
     const description = { textContent: '' };
-    const help = { textContent: '' };
-    const button = {
-      textContent: 'INSTALL APP', hidden: false, disabled: false, dataset: {},
-      setAttribute() {}, removeAttribute() {}
+    const status = { textContent: '' };
+    const download = {
+      textContent: 'DOWNLOAD APK', hidden: true, href: '',
+      setAttribute() {}, removeAttribute(name) { if (name === 'href') this.href = ''; }
     };
-    const section = {
-      hidden: false, style: { display: '' },
-      classList: { add() {} },
-      querySelector(selector) {
-        if (selector.endsWith('h2')) return heading;
-        return description;
-      },
-      removeAttribute() {}
-    };
+    const section = { hidden: true, style: { display: 'none' }, removeAttribute() {} };
     const document = {
       getElementById(id) {
         return ({
-          smvInstallAppSection: section,
-          smvInstallAppBtn: button,
-          smvInstallAppHelp: help
+          smvPermanentAndroidAppSection: section,
+          smvPermanentAndroidApkHeading: heading,
+          smvPermanentApkDescription: description,
+          smvPermanentApkStatus: status,
+          smvPermanentApkDownload: download
         })[id] || null;
-      },
-      documentElement: { classList: { remove() {} } }
+      }
     };
     const navigator = {
       userAgent: 'Mozilla/5.0 (Linux; Android 10) Chrome/131.0.0.0',
@@ -452,35 +443,29 @@ test('Homepage reuses the single PWA icon and renders APK version/date with vers
     };
     vm.runInNewContext(installer, sandbox);
     await new Promise(resolve => setTimeout(resolve, 0));
-    return { heading, description, help, button };
+    return { section, heading, description, status, download };
   }
 
-  const latest = await renderFor([{
-    platform: 'play', id: PACKAGE, version: 'v1.1'
-  }]);
+  const latest = await renderFor([{ platform: 'play', id: PACKAGE, version: 'v1.1' }]);
   assert.equal(latest.heading.textContent, 'SMV ASTRO v1.1 · code 1001');
   assert.equal(latest.description.textContent, '31 Oct 2026, 6:30 pm · r2');
-  assert.equal(latest.help.textContent, 'Using Latest Version');
-  assert.equal(latest.button.hidden, true);
-  assert.equal(latest.button.dataset.smvApkDownloadUrl, '');
+  assert.equal(latest.status.textContent, 'Using Latest Version');
+  assert.equal(latest.download.hidden, true);
+  assert.equal(latest.download.href, '');
 
-  const older = await renderFor([{
-    platform: 'play', id: PACKAGE, version: 'v1.0'
-  }]);
-  assert.equal(older.button.hidden, false);
-  assert.equal(older.button.textContent, 'UPDATE');
-  assert.equal(older.button.dataset.smvApkDownloadUrl, release.downloadUrl);
+  const older = await renderFor([{ platform: 'play', id: PACKAGE, version: 'v1.0' }]);
+  assert.equal(older.download.hidden, false);
+  assert.equal(older.download.textContent, 'UPDATE');
+  assert.equal(older.download.href, release.downloadUrl);
 
   const notInstalled = await renderFor([]);
-  assert.equal(notInstalled.button.hidden, false);
-  assert.equal(notInstalled.button.textContent, 'DOWNLOAD APK');
-  assert.equal(notInstalled.button.dataset.smvApkDownloadUrl, release.downloadUrl);
+  assert.equal(notInstalled.download.hidden, false);
+  assert.equal(notInstalled.download.textContent, 'DOWNLOAD APK');
+  assert.equal(notInstalled.download.href, release.downloadUrl);
 
-  const installedUnknownVersion = await renderFor([{
-    platform: 'play', id: PACKAGE
-  }]);
-  assert.equal(installedUnknownVersion.button.hidden, true);
-  assert.equal(installedUnknownVersion.help.textContent, 'Installed app version could not be verified');
+  const installedUnknownVersion = await renderFor([{ platform: 'play', id: PACKAGE }]);
+  assert.equal(installedUnknownVersion.download.hidden, true);
+  assert.equal(installedUnknownVersion.status.textContent, 'Installed app version could not be verified');
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {

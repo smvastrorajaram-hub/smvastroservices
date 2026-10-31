@@ -32,7 +32,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261028-cream-content-contrast-v6" rel="stylesheet"/><link href="./smv-ui.css?v=20261031-apk-pwa-card-v1" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261028-cream-content-contrast-v6" rel="stylesheet"/><link href="./android-app-install.css?v=20261030-admin-apk-manager-v2" rel="stylesheet"/><link href="./smv-ui.css?v=20261028-cream-content-contrast-v3" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script id="smv-v223-scoped-storage-policy">
 /* App state and offline caches are retained. Each Service Worker now owns
    cleanup of its own versioned cache namespace; never clear origin-wide storage
@@ -166,7 +166,19 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
   <p class="smv-products-store-note">Products, pricing and stock availability are updated in the Shoopy store.</p>
 </section>
-<section aria-label="Install SMV ASTRO App" class="smv-install-app-section" id="smvInstallAppSection"><div class="smv-install-app-card"><div class="smv-install-app-icon-wrap"><img alt="SMV ASTRO" class="smv-install-app-icon" height="64" src="./assets/icon-512-transparent.svg?v=20261023-transparent-pwa-v1" width="64"/></div><div class="smv-install-app-copy"><h2>INSTALL SMV ASTRO APP</h2><p>Install SMV ASTRO on your phone and use it like an app from your Home Screen.</p><div aria-live="polite" class="smv-install-app-help" id="smvInstallAppHelp"></div></div><button class="smv-install-app-btn" id="smvInstallAppBtn" type="button">INSTALL APP</button></div></section>
+<section aria-labelledby="smvPermanentAndroidApkHeading" class="smv-android-apk-section" id="smvPermanentAndroidAppSection" hidden>
+  <div class="smv-android-apk-card">
+    <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android application icon" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
+    <div class="smv-android-apk-copy">
+      <h2 id="smvPermanentAndroidApkHeading">SMV ASTRO Android App</h2>
+      <p id="smvPermanentApkDescription">Official signed Android application.</p>
+      <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite"></p>
+    </div>
+    <div class="smv-android-apk-actions">
+      <a class="smv-android-apk-download" id="smvPermanentApkDownload" href="#" hidden>DOWNLOAD APK</a>
+    </div>
+  </div>
+</section>
 <section aria-labelledby="askNowHeading" class="smv-new-asknow smv-type-root" id="askNowSection">
 <div class="smv-new-asknow-inner">
 <div class="smv-new-asknow-kicker">CONSULT AN APPROVED ASTROLOGER</div>
@@ -427,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
-<script src="./smvastro.mjs?v=20261031-cloudflare-apk-pwa-card-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -1056,84 +1068,8 @@ else initFAQ();
   }
 })();
 </script>
-<script id="smv-install-app-prompt">
-(function(){
-  var installSection = document.getElementById('smvInstallAppSection');
-  var installBtn = document.getElementById('smvInstallAppBtn');
-  var help = document.getElementById('smvInstallAppHelp');
-  if(!installSection || !installBtn) return;
 
-  var nativeApp = !!(window.SMVNativeCalls && typeof window.SMVNativeCalls.isNativeApp === 'function' && window.SMVNativeCalls.isNativeApp());
-  if(nativeApp){
-    installSection.hidden = true;
-    installSection.style.display = 'none';
-    return;
-  }
-
-  var deferredPrompt = null;
-  var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
-  var iosStandalone = window.navigator.standalone === true;
-  if(standalone || iosStandalone){
-    installSection.style.display='none';
-    return;
-  }
-
-  function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
-  function isAndroid(){ return /android/i.test(navigator.userAgent); }
-
-  window.addEventListener('beforeinstallprompt', function(e){
-    e.preventDefault();
-    deferredPrompt = e;
-    if(installBtn.dataset.smvApkReleaseAction) return;
-    installBtn.disabled = false;
-    installBtn.textContent = 'INSTALL APP';
-    help.textContent = 'Tap INSTALL APP to add SMV ASTRO to your Home Screen.';
-  });
-
-  window.addEventListener('appinstalled', function(){
-    deferredPrompt = null;
-    if(installBtn.dataset.smvApkReleaseAction) return;
-    installSection.style.display='none';
-  });
-
-  installBtn.addEventListener('click', async function(){
-    if(installBtn.dataset.smvApkDownloadUrl){
-      window.location.assign(installBtn.dataset.smvApkDownloadUrl);
-      return;
-    }
-    if(installBtn.dataset.smvApkReleaseAction) return;
-    if(deferredPrompt){
-      try{
-        deferredPrompt.prompt();
-        var choice = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        if(choice && choice.outcome === 'accepted'){
-          help.textContent='SMV ASTRO is being added to your Home Screen.';
-        } else {
-          help.textContent='Install cancelled. You can use INSTALL APP again later.';
-        }
-      }catch(err){
-        console.warn('SMV ASTRO install prompt failed:',err);
-      }
-      return;
-    }
-
-    if(isIOS()){
-      help.textContent='On iPhone/iPad: tap Share → Add to Home Screen → Add.';
-    }else if(isAndroid()){
-      help.textContent='If the install prompt does not appear, open your browser menu (⋮) and choose “Add to Home screen” or “Install app”.';
-    }else{
-      help.textContent='Use your browser menu and choose “Install app” or “Add to Home screen”.';
-    }
-  });
-
-  // Before the browser exposes beforeinstallprompt, keep the option visible with a useful instruction.
-  installBtn.disabled = false;
-  if(isIOS()) help.textContent='Add SMV ASTRO from Safari: Share → Add to Home Screen.';
-  else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
-})();
-</script>
-<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261031-cloudflare-apk-pwa-card-v1"></script>
+<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261031-apk-release-card-v2"></script>
 <script src="./public-navigation.js?v=20261025-phase1-directory-dashboard-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{

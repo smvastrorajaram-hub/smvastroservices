@@ -139,6 +139,9 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
   assert.equal(html.includes('smvPermanentApkUpload'), false);
   assert.equal(installer.includes('releases/new'), false);
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.equal(html.includes('id="smvInstallAppSection"'), false);
   assert.ok(installer.includes('DOWNLOAD APK'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));
