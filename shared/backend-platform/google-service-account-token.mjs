@@ -25,7 +25,7 @@ function normalizeCredentials(credentials) {
   const privateKey = String(credentials?.private_key || credentials?.privateKey || '').replace(/\\n/g, '\n').trim();
   const tokenUri = String(credentials?.token_uri || credentials?.tokenUri || DEFAULT_TOKEN_URI).trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail) || !privateKey ||
-      !/^https:\/\//i.test(tokenUri)) {
+      tokenUri !== DEFAULT_TOKEN_URI) {
     throw new TypeError('Google service-account credentials are incomplete.');
   }
   return { clientEmail, privateKey, tokenUri };
