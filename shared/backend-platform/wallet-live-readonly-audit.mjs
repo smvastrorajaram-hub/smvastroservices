@@ -386,6 +386,17 @@ function buildConsistency(refs) {
     item => [item.orderId, item.paymentId].join('|')
   );
 
+  const rechargeIdempotency = duplicateGroups(
+    refs.recharges,
+    item => item.idempotencyKey,
+    item => [item.customerUid, item.orderId, item.paymentId, item.amountPaise, item.status].join('|')
+  );
+  const razorpayOrderIdempotency = duplicateGroups(
+    refs.orders,
+    item => item.idempotencyKey,
+    item => [item.orderId, item.paymentId, item.amountPaise, item.status].join('|')
+  );
+
   const missingReferences = {
     walletTransactionsMissingWallet: refs.transactions.filter(
       item => item.ownerUid && !refs.wallets.has(item.ownerUid)
@@ -438,10 +449,14 @@ function buildConsistency(refs) {
     walletRechargeOrderConflictGroups: rechargeOrderDuplicates.conflictingGroupCount,
     walletRechargePaymentDuplicateGroups: rechargePaymentDuplicates.duplicateGroupCount,
     walletRechargePaymentConflictGroups: rechargePaymentDuplicates.conflictingGroupCount,
+    walletRechargeIdempotencyDuplicateGroups: rechargeIdempotency.duplicateGroupCount,
+    walletRechargeIdempotencyConflictGroups: rechargeIdempotency.conflictingGroupCount,
     razorpayOrderDuplicateGroups: sourceOrderDuplicates.duplicateGroupCount,
     razorpayOrderConflictGroups: sourceOrderDuplicates.conflictingGroupCount,
     razorpayPaymentDuplicateGroups: sourcePaymentDuplicates.duplicateGroupCount,
     razorpayPaymentConflictGroups: sourcePaymentDuplicates.conflictingGroupCount,
+    razorpayOrderIdempotencyDuplicateGroups: razorpayOrderIdempotency.duplicateGroupCount,
+    razorpayOrderIdempotencyConflictGroups: razorpayOrderIdempotency.conflictingGroupCount,
     razorpayWebhookIdempotencyDuplicateGroups: webhookDuplicates.duplicateGroupCount,
     razorpayWebhookIdempotencyConflictGroups: webhookDuplicates.conflictingGroupCount
   };
