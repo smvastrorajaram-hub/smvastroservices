@@ -16,6 +16,7 @@ on:
       - 'cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs'
       - 'cloudflare/backend-api/src/index.mjs'
       - 'cloudflare/backend-api/migrations/0005_legacy_wallet_backfill.sql'
+      - 'cloudflare/backend-api/migrations/0009_wallet_razorpay_payout_encryption.sql'
       - 'cloudflare/backend-api/test/*backfill*.test.mjs'
       - 'cloudflare/backend-api/test/fixtures/d1-backfill-*.sql'
       - 'shared/backend-platform/legacy-backend-route-inventory.mjs'
