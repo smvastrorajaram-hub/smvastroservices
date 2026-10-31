@@ -25,6 +25,7 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "test/android-google-credential-manager.test.mjs"
       - "docs/android-native-call-ringtone.md"
   push:
     paths:
@@ -33,6 +34,7 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "test/android-google-credential-manager.test.mjs"
       - "docs/android-native-call-ringtone.md"
 
 permissions:
@@ -157,8 +159,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Verify permanent Release build configuration
-        run: node --test test/android-permanent-release.test.mjs
+      - name: Verify permanent Release build and native Google login configuration
+        run: node --test test/android-permanent-release.test.mjs test/android-google-credential-manager.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
