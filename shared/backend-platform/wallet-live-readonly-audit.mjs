@@ -88,6 +88,35 @@ function primitiveString(value) {
   return '';
 }
 
+function safeInteger(value) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : null;
+}
+
+function timestampMilliseconds(value) {
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  if (value && typeof value.toMillis === 'function') {
+    const millis = Number(value.toMillis());
+    return Number.isFinite(millis) ? millis : null;
+  }
+  if (value && typeof value === 'object' &&
+      Number.isFinite(Number(value.seconds ?? value._seconds))) {
+    return Number(value.seconds ?? value._seconds) * 1000 +
+      Number(value.nanoseconds ?? value._nanoseconds ?? 0) / 1_000_000;
+  }
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value) {
+    const millis = Date.parse(value);
+    return Number.isFinite(millis) ? millis : null;
+  }
+  return null;
+}
+
+function statusBucket(value) {
+  const status = primitiveString(value).toLowerCase();
+  return /^[a-z0-9_-]{1,32}$/.test(status) ? status || 'unspecified' : 'other';
+}
+
 function hasSensitiveField(value, depth = 0) {
   if (!value || typeof value !== 'object' || depth > 24) return false;
   if (Array.isArray(value)) return value.some(item => hasSensitiveField(item, depth + 1));
@@ -139,20 +168,24 @@ function duplicateGroups(rows, keyOf, fingerprintOf) {
 function sourceReferences() {
   return {
     wallets: new Set(),
+    walletSnapshots: [],
     transactions: [],
     recharges: [],
     offers: new Set(),
     offerUsage: [],
     sessions: new Set(),
+    sessionRecords: [],
     sessionAppointments: [],
     liveBookings: [],
     scheduledAppointments: new Set(),
     appointmentSessions: [],
     earnings: [],
     withdrawals: new Set(),
+    withdrawalRecords: [],
     withdrawalPayouts: [],
     orders: [],
-    webhooks: []
+    webhooks: [],
+    billingSettings: []
   };
 }
 
@@ -160,17 +193,38 @@ function collectReferences(key, document, refs) {
   const data = document.data || {};
   const id = primitiveString(document.id);
   switch (key) {
-    case 'wallets':
-      refs.wallets.add(primitiveString(data.ownerUid) || id);
+    case 'wallets': {
+      const ownerUid = primitiveString(data.ownerUid) || id;
+      refs.wallets.add(ownerUid);
+      refs.walletSnapshots.push({
+        ownerUid,
+        availableBalancePaise: safeInteger(data.availableBalancePaise),
+        reservedBalancePaise: safeInteger(data.reservedBalancePaise),
+        bonusMinutesBalance: safeInteger(data.bonusMinutesBalance),
+        reservedBonusMinutes: safeInteger(data.reservedBonusMinutes),
+        version: safeInteger(data.version),
+        updatedAtMs: timestampMilliseconds(data.updatedAt)
+      });
       break;
+    }
     case 'walletTransactions':
       refs.transactions.push({
+        documentId: id,
         ownerUid: primitiveString(data.ownerUid),
         idempotencyKey: primitiveString(data.idempotencyKey),
         type: primitiveString(data.type),
         direction: primitiveString(data.direction),
-        amount: primitiveString(data.amountPaise),
-        referenceId: primitiveString(data.referenceId)
+        amountPaise: safeInteger(data.amountPaise),
+        balanceAfterPaise: safeInteger(data.balanceAfterPaise),
+        reservedBalanceAfterPaise: safeInteger(data.reservedBalanceAfterPaise),
+        bonusMinutes: safeInteger(data.bonusMinutes),
+        bonusMinutesCredited: safeInteger(data.bonusMinutesCredited),
+        bonusMinutesUsed: safeInteger(data.bonusMinutesUsed),
+        bonusMinutesBalanceAfter: safeInteger(data.bonusMinutesBalanceAfter),
+        reservedBonusMinutesAfter: safeInteger(data.reservedBonusMinutesAfter),
+        referenceType: primitiveString(data.referenceType),
+        referenceId: primitiveString(data.referenceId),
+        createdAtMs: timestampMilliseconds(data.createdAt)
       });
       break;
     case 'walletRecharges':
@@ -179,7 +233,11 @@ function collectReferences(key, document, refs) {
         customerUid: primitiveString(data.customerUid),
         orderId: primitiveString(data.razorpayOrderId || data.orderId),
         paymentId: primitiveString(data.razorpayPaymentId || data.paymentId),
-        amount: primitiveString(data.amountPaise),
+        amountPaise: safeInteger(data.amountPaise),
+        paidAmountPaise: safeInteger(data.paidAmountPaise),
+        bonusMinutesCredited: safeInteger(data.bonusMinutesCredited),
+        bonusMinutesBalanceAfter: safeInteger(data.bonusMinutesBalanceAfter),
+        idempotencyKey: primitiveString(data.idempotencyKey),
         status: primitiveString(data.status).toLowerCase()
       });
       break;
@@ -194,12 +252,33 @@ function collectReferences(key, document, refs) {
       break;
     case 'liveSessions':
       refs.sessions.add(id);
+      refs.sessionRecords.push({
+        sessionId: id,
+        customerUid: primitiveString(data.customerUid),
+        state: statusBucket(data.state || data.status),
+        appointmentId: primitiveString(data.appointmentId),
+        reservedAmountPaise: safeInteger(data.reservedAmountPaise),
+        reservedBonusMinutes: safeInteger(data.reservedBonusMinutes),
+        actualChargePaise: safeInteger(data.actualChargePaise),
+        releasedAmountPaise: safeInteger(data.releasedAmountPaise),
+        freeMinutesUsed: safeInteger(data.freeMinutesUsed),
+        bonusMinutesReleased: safeInteger(data.bonusMinutesReleased),
+        astrologerCommissionPaise: safeInteger(data.astrologerCommissionPaise),
+        adminCommissionPaise: safeInteger(data.adminCommissionPaise),
+        astrologerCommissionPercent: Number(data.astrologerCommissionPercent),
+        adminCommissionPercent: Number(data.adminCommissionPercent)
+      });
       refs.sessionAppointments.push(primitiveString(data.appointmentId));
       break;
     case 'liveBookings':
       refs.liveBookings.push({
+        bookingId: id,
         sessionId: primitiveString(data.liveSessionId || data.sessionId),
-        appointmentId: primitiveString(data.appointmentId)
+        appointmentId: primitiveString(data.appointmentId),
+        status: statusBucket(data.status),
+        walletReservationState: statusBucket(data.walletReservationState),
+        reservedAmountPaise: safeInteger(data.reservedAmountPaise),
+        reservedBonusMinutes: safeInteger(data.reservedBonusMinutes)
       });
       break;
     case 'scheduledCallChatAppointments':
@@ -213,30 +292,58 @@ function collectReferences(key, document, refs) {
       break;
     case 'liveSessionEarnings':
       if (data.source === 'live_session') {
-        refs.earnings.push(primitiveString(data.referenceId || data.sessionId || id));
+        refs.earnings.push({
+          earningId: id,
+          sessionId: primitiveString(data.sessionId || data.referenceId),
+          grossAmountPaise: safeInteger(data.grossAmountPaise),
+          earningAmountPaise: safeInteger(data.earningAmountPaise),
+          adminCommissionAmountPaise: safeInteger(data.adminCommissionAmountPaise),
+          commissionPercent: Number(data.commissionPercent),
+          adminCommissionPercent: Number(data.adminCommissionPercent),
+          status: statusBucket(data.status),
+          paymentStatus: statusBucket(data.paymentStatus)
+        });
       }
       break;
     case 'withdrawals':
       refs.withdrawals.add(id);
+      refs.withdrawalRecords.push({
+        withdrawalId: id,
+        astrologerUid: primitiveString(data.astrologerUid || data.astrologerId),
+        amountPaise: safeInteger(data.amountPaise),
+        status: statusBucket(data.status),
+        availableAtMs: timestampMilliseconds(data.availableAt)
+      });
       break;
     case 'withdrawalPayouts':
       refs.withdrawalPayouts.push(primitiveString(data.withdrawalId) || id);
       break;
     case 'walletRechargeOrders':
-      refs.orders.push({
-        orderId: primitiveString(data.razorpayOrderId || data.orderId || id),
-        paymentId: primitiveString(data.razorpayPaymentId || data.paymentId),
-        amount: primitiveString(data.amountPaise),
-        status: primitiveString(data.status || data.paymentStatus).toLowerCase(),
-        serviceName: primitiveString(data.serviceName || data.service)
-      });
+      if (primitiveString(data.serviceName || data.service) === 'SMV ASTRO Wallet Recharge') {
+        refs.orders.push({
+          orderId: primitiveString(data.razorpayOrderId || data.orderId || id),
+          paymentId: primitiveString(data.razorpayPaymentId || data.paymentId),
+          amountPaise: safeInteger(data.amountPaise ?? data.amount),
+          status: primitiveString(data.status || data.paymentStatus).toLowerCase(),
+          serviceName: primitiveString(data.serviceName || data.service),
+          walletRechargeId: primitiveString(data.walletRechargeId),
+          customerUid: primitiveString(data.firebaseUid || data.customerUid),
+          idempotencyKey: primitiveString(data.idempotencyKey || data.receipt)
+        });
+      }
       break;
     case 'razorpayWebhookEvents':
       refs.webhooks.push({
         eventKey: primitiveString(data.idempotencyKey || data.eventId || id),
         orderId: primitiveString(data.razorpayOrderId || data.orderId),
-        paymentId: primitiveString(data.razorpayPaymentId || data.paymentId)
+        paymentId: primitiveString(data.razorpayPaymentId || data.paymentId),
+        eventType: statusBucket(data.event || data.eventType),
+        processed: data.processed === true,
+        retryCount: safeInteger(data.retryCount)
       });
+      break;
+    case 'billingSettings':
+      refs.billingSettings.push({ settingId: id, data });
       break;
     default:
       break;
@@ -250,7 +357,7 @@ function buildConsistency(refs) {
 
   const transactionIdempotency = duplicateGroups(
     refs.transactions,
-    item => item.idempotencyKey,
+    item => item.idempotencyKey ? [item.ownerUid, item.type, item.idempotencyKey].join('|') : '',
     item => [item.ownerUid, item.type, item.direction, item.amount, item.referenceId].join('|')
   );
   const rechargeOrderDuplicates = duplicateGroups(
