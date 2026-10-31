@@ -406,6 +406,16 @@ export function createD1LiveSessionService({
     return {success:true,alreadyProcessed:false,session:sessionView(await getSession(id))};
   }
 
+  async function rejectSession({sessionId,astrologerUid}={}) {
+    const id=checkSessionId(sessionId),uid=checkUid(astrologerUid);
+    if(!id||!uid) throw liveError('LIVE_SESSION_ID_REQUIRED','Live Session ID is required.',400);
+    const session=await getSession(id);
+    if(!session) throw liveError('LIVE_SESSION_NOT_FOUND','Live session was not found.',404);
+    if(session.astrologerUid!==uid) throw liveError('LIVE_SESSION_FORBIDDEN','This request belongs to another Astrologer.',403);
+    if(session.state!=='ringing') throw liveError('LIVE_SESSION_NOT_RINGING','Only a ringing Live request can be rejected.',409);
+    return endSession({sessionId:id,actorUid:uid,reason:'rejected',system:true});
+  }
+
   async function readySession({sessionId,uid,mediaConnected=false}={}) {
     const id=checkSessionId(sessionId),actor=checkUid(uid);
     if(!id||!actor) throw liveError('LIVE_SESSION_ID_REQUIRED','Live Session ID is required.',400);
@@ -929,7 +939,7 @@ export function createD1LiveSessionService({
   }
 
   return Object.freeze({
-    createRequest,acceptBooking,acceptSession,readySession,endSession,setConnection,
+    createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
     listSessions,listBookings,listCustomerBookings,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting
