@@ -34,7 +34,8 @@ async function sha256(value, cryptoImpl) {
 
 function safeParentId(value) {
   const id = String(value || '').trim();
-  return /^[A-Za-z0-9_-]{1,180}$/.test(id) ? id : '';
+  return id && id.length <= 180 && id !== '.' && id !== '..' &&
+    !id.includes('/') && !/[\\u0000-\\u001f\\u007f]/.test(id) ? id : '';
 }
 
 function sourceCollectionPath(key, parentId = '') {
@@ -89,7 +90,7 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     return db.prepare(sql).bind(...values);
   }
 
-  async function readPage({ collection, pageToken = '', parentId = '', pageSize = 40 } = {}) {
+  async function readPage({ collection, pageToken = '', parentId = '', pageSize = 40, includeFilteredOut = false } = {}) {
     const definition = WALLET_DOMAIN_BACKFILL_COLLECTIONS[collection];
     if (!definition) throw backfillError('BACKFILL_COLLECTION_UNSUPPORTED', 'The requested migration collection is not supported.');
     const size = Math.max(1, Math.min(100, Math.floor(Number(pageSize) || 40)));
@@ -108,14 +109,14 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     const path = sourceCollectionPath(collection,parentId);
     const page = await firestore.listDocuments(path,{pageSize:size,pageToken:String(pageToken || '')});
     return {
-      documents:filterDocuments(collection,page.documents || []),
+      documents:includeFilteredOut === true ? (page.documents || []) : filterDocuments(collection,page.documents || []),
       nextPageToken:String(page.nextPageToken || ''),
       sourceCollection:path
     };
   }
 
-  async function preparePageDocuments({ collection, pageToken = '', parentId = '', pageSize = 40 } = {}) {
-    const page = await readPage({collection,pageToken,parentId,pageSize});
+  async function preparePageDocuments({ collection, pageToken = '', parentId = '', pageSize = 40, includeFilteredOut = false } = {}) {
+    const page = await readPage({collection,pageToken,parentId,pageSize,includeFilteredOut});
     const items = [];
     for (const document of page.documents) {
       const canonical = stableJson(document.data || {});
