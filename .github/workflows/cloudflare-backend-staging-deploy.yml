@@ -73,6 +73,15 @@ jobs:
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
+      - name: Apply additive migrations to the isolated staging D1 database
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.156.0'
+          workingDirectory: cloudflare/backend-api
+          command: d1 migrations apply smvastro-wallet-staging --remote --config wrangler.jsonc
+
       - name: Deploy only the Cloudflare backend staging Worker
         id: deploy-worker
         uses: cloudflare/wrangler-action@v4
@@ -127,9 +136,12 @@ jobs:
 
           const readiness = await get('/api/backend/readiness');
           if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
+              readiness.sharedDomainSchemaVersion !== '0002_shared_domain_repository' ||
               readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
-              readiness.walletBusinessRoutesEnabled !== false) {
-            throw new Error('Shared staging D1 readiness or safety checks failed.');
+              readiness.walletBusinessRoutesEnabled !== false ||
+              readiness.walletBackfillToolsEnabled !== false ||
+              readiness.liveCallChatRoutesEnabled !== false) {
+            throw new Error('Shared staging D1 readiness, additive migration or safety checks failed.');
           }
 
           const disabled = await fetch(base + '/api/wallet/v1/wallet/balance');
@@ -139,7 +151,7 @@ jobs:
           }
 
           console.log('PASS Express HTTP bridge /healthz');
-          console.log('PASS existing staging D1 schema readiness');
+          console.log('PASS staging D1 base schema and shared-domain migration readiness');
           console.log('PASS unfinished business route fail-closed guard');
           console.log('Staging Worker URL: ' + base);
           NODE

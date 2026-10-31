@@ -112,7 +112,7 @@ test('missing event queue retains deadline command with bounded retry backoff', 
   assert.equal(record.pendingEvents.length, 1);
   assert.equal(record.pendingEvents[0].attempts, 1);
   assert.ok(record.pendingEvents[0].nextAttemptAtMs > Date.now());
-  assert.ok(record.pendingEvents[0].lastError.includes('queue binding is not configured'));
+  assert.ok(record.pendingEvents[0].lastError.includes('LIVE_SESSION_EVENTS queue binding are not configured'));
 });
 
 test('parameterized session identity is immutable and deadline inputs are validated', async () => {

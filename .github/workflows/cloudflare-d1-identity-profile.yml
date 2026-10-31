@@ -1,0 +1,69 @@
+name: Cloudflare D1 Identity and Profile contracts
+
+on:
+  push:
+    branches:
+      - feature/cloudflare-d1-identity-profile-domain-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0007_identity_profile_domain.sql'
+      - 'cloudflare/backend-api/migrations/0008_identity_profile_backfill_audit.sql'
+      - 'shared/backend-platform/d1-identity-service.mjs'
+      - 'shared/backend-platform/d1-identity-profile-backfill.mjs'
+      - 'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-service.test.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-profile-backfill.test.mjs'
+      - 'cloudflare/backend-api/IDENTITY-PROFILE-FOUNDATION.md'
+      - 'cloudflare/backend-api/IDENTITY-PROFILE-BACKFILL.md'
+      - '.github/workflows/cloudflare-d1-identity-profile.yml'
+  pull_request:
+    branches:
+      - feature/cloudflare-live-wallet-settlement-guard-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0007_identity_profile_domain.sql'
+      - 'cloudflare/backend-api/migrations/0008_identity_profile_backfill_audit.sql'
+      - 'shared/backend-platform/d1-identity-service.mjs'
+      - 'shared/backend-platform/d1-identity-profile-backfill.mjs'
+      - 'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-service.test.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-profile-backfill.test.mjs'
+      - 'cloudflare/backend-api/IDENTITY-PROFILE-FOUNDATION.md'
+      - 'cloudflare/backend-api/IDENTITY-PROFILE-BACKFILL.md'
+      - '.github/workflows/cloudflare-d1-identity-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  identity-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check Identity/Profile source syntax
+        run: |
+          node --check shared/backend-platform/d1-identity-service.mjs
+          node --check shared/backend-platform/d1-identity-profile-backfill.mjs
+          node --check cloudflare/backend-api/src/identity-profile-backfill-routes.mjs
+          node --check cloudflare/backend-api/src/index.mjs
+          node --check cloudflare/backend-api/test/d1-identity-service.test.mjs
+          node --check cloudflare/backend-api/test/d1-identity-profile-backfill.test.mjs
+      - name: Run Identity authorization and Profile backfill contract tests
+        working-directory: cloudflare/backend-api
+        run: |
+          node --test \
+            test/d1-identity-service.test.mjs \
+            test/d1-identity-profile-backfill.test.mjs
+      - name: Apply D1 migrations to local ephemeral database only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc

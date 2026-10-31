@@ -31,7 +31,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
     const event = validEvent(input);
     const timestamp = Number(now());
     const prepared = statement(
-      `INSERT OR IGNORE INTO smv_domain_outbox
+      `INSERT OR IGNORE INTO smv_domain_event_outbox
        (outbox_id, event_type, event_key, payload_json, status, attempt_count,
         next_attempt_at_ms, created_at_ms, updated_at_ms)
        VALUES (?, ?, ?, ?, 'pending', 0, ?, ?, ?)`,
@@ -44,7 +44,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
     const event = createEnqueueStatement(input);
     await event.statement.run();
     const row = await statement(
-      'SELECT outbox_id, status FROM smv_domain_outbox WHERE event_type = ? AND event_key = ? LIMIT 1',
+      'SELECT outbox_id, status FROM smv_domain_event_outbox WHERE event_type = ? AND event_key = ? LIMIT 1',
       [event.eventType, event.eventKey]
     ).first();
     return { success: true, alreadyEnqueued: row?.outbox_id !== event.outboxId, outboxId: row?.outbox_id || event.outboxId, status: row?.status || 'pending' };
@@ -56,7 +56,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
     const timestamp = Number(now());
     const page = await statement(
       `SELECT outbox_id, event_type, event_key, payload_json, attempt_count
-       FROM smv_domain_outbox
+       FROM smv_domain_event_outbox
        WHERE status IN ('pending','failed') AND next_attempt_at_ms <= ?
        ORDER BY created_at_ms ASC, outbox_id ASC LIMIT ?`,
       [timestamp, max]
@@ -67,7 +67,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
       try { payload = JSON.parse(String(row.payload_json || '{}')); }
       catch {
         await statement(
-          "UPDATE smv_domain_outbox SET status='dead', last_error=?, updated_at_ms=? WHERE outbox_id=?",
+          "UPDATE smv_domain_event_outbox SET status='dead', last_error=?, updated_at_ms=? WHERE outbox_id=?",
           ['OUTBOX_PAYLOAD_INVALID', Number(now()), row.outbox_id]
         ).run();
         failed += 1;
@@ -77,7 +77,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
       try {
         await queue.send(message);
         await statement(
-          "UPDATE smv_domain_outbox SET status='sent', attempt_count=attempt_count+1, updated_at_ms=? WHERE outbox_id=? AND status IN ('pending','failed')",
+          "UPDATE smv_domain_event_outbox SET status='sent', attempt_count=attempt_count+1, updated_at_ms=? WHERE outbox_id=? AND status IN ('pending','failed')",
           [Number(now()), row.outbox_id]
         ).run();
         sent += 1;
@@ -86,7 +86,7 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
         const dead = attempts >= MAX_ATTEMPTS;
         const delay = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * (2 ** Math.min(attempts - 1, 8)));
         await statement(
-          "UPDATE smv_domain_outbox SET status=?, attempt_count=?, next_attempt_at_ms=?, last_error=?, updated_at_ms=? WHERE outbox_id=?",
+          "UPDATE smv_domain_event_outbox SET status=?, attempt_count=?, next_attempt_at_ms=?, last_error=?, updated_at_ms=? WHERE outbox_id=?",
           [dead ? 'dead' : 'failed', attempts, Number(now()) + delay, 'QUEUE_SEND_FAILED', Number(now()), row.outbox_id]
         ).run();
         failed += 1;

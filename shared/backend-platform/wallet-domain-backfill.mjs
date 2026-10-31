@@ -68,8 +68,27 @@ function dateField(data, ...keys) {
   return null;
 }
 
+function moneyFromRupees(value) {
+  if(value===null||value===undefined||String(value).trim()==='') return null;
+  const amount=Number(value);
+  if(!Number.isFinite(amount)||amount<0) return null;
+  const paise=Math.round(amount*100);
+  return Number.isSafeInteger(paise)?paise:null;
+}
+function paiseField(data,paiseKeys,rupeeKeys=[]) {
+  for(const key of paiseKeys) {
+    if(data?.[key]===null||data?.[key]===undefined||String(data[key]).trim()==='') continue;
+    return nonNegativeInteger(data[key]);
+  }
+  for(const key of rupeeKeys) {
+    if(data?.[key]===null||data?.[key]===undefined||String(data[key]).trim()==='') continue;
+    return moneyFromRupees(data[key]);
+  }
+  return null;
+}
+
 function result(statements = [], warning = '') {
-  return { statements, mapped: statements.length > 1, warning };
+  return { statements, mapped: statements.length > 0, warning };
 }
 
 function insertLegacyWallet(data, id) {
@@ -277,7 +296,7 @@ function insertLiveSession(data, id) {
     values: [id,customerUid,astrologerUid,mode,string(data.state || data.status || 'unknown'),
       string(data.appointmentId) || null,nonNegativeInteger(data.reservedAmountPaise) ?? 0,
       nonNegativeInteger(data.reservedBonusMinutes) ?? 0,nonNegativeInteger(data.actualChargePaise) ?? 0,
-      started,ended,json(data),created,updated]
+      started,ended,json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
   }]);
 }
 
@@ -297,7 +316,7 @@ function insertLiveBooking(data, id) {
     values: [id,customerUid,astrologerUid,mode,string(data.status || 'unknown'),
       string(data.walletReservationState || 'none'),
       nonNegativeInteger(data.reservedAmountPaise) ?? 0,nonNegativeInteger(data.reservedBonusMinutes) ?? 0,
-      dateField(data,'expiresAt'),json(data),created,updated]
+      dateField(data,'expiresAt'),json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
   }]);
 }
 
@@ -366,10 +385,18 @@ function insertLiveEarning(data, id) {
   const astrologerUid = string(data.astrologerUid || data.astrologerId);
   const referenceId = string(data.referenceId || data.sessionId || id);
   if (!astrologerUid) return result([], 'LIVE_EARNING_ASTROLOGER_MISSING');
-  const gross = nonNegativeInteger(data.grossAmountPaise ?? data.amountPaise ?? data.amount);
-  const astro = nonNegativeInteger(data.astrologerAmountPaise ?? data.astroAmountPaise);
-  const admin = nonNegativeInteger(data.adminAmountPaise);
-  if (gross === null || astro === null || admin === null) return result([], 'LIVE_EARNING_AMOUNT_INVALID');
+  const astro = paiseField(
+    data,
+    ['astrologerAmountPaise','astroAmountPaise','earningAmountPaise','commissionAmountPaise'],
+    ['earningAmount','commissionAmount','astrologerCommissionAmount','astrologerAmount']
+  );
+  let admin = paiseField(data,['adminAmountPaise'],['adminCommissionAmount','adminAmount']);
+  let gross = paiseField(data,['grossAmountPaise','amountPaise'],['grossAmount','amount']);
+  if(gross===null&&astro!==null&&admin!==null) gross=astro+admin;
+  if(admin===null&&gross!==null&&astro!==null&&gross>=astro) admin=gross-astro;
+  if(gross===null||astro===null||admin===null||gross!==astro+admin) {
+    return result([], 'LIVE_EARNING_AMOUNT_INVALID');
+  }
   const created = dateField(data,'createdAt') ?? 0;
   const updated = dateField(data,'updatedAt') ?? created;
   return result([{
@@ -379,13 +406,13 @@ function insertLiveEarning(data, id) {
        astrologer_amount_paise,admin_amount_paise,status,payload_json,created_at_ms,updated_at_ms)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     values: [id,astrologerUid,string(data.customerUid || data.customerId) || null,'live_session',
-      referenceId,gross,astro,admin,string(data.status || 'completed'),json(data),created,updated]
+      referenceId,gross,astro,admin,string(data.status || 'completed'),json({...data,migrationSource:'legacy_import'}),created,updated]
   }]);
 }
 
 function insertWithdrawal(data, id) {
   const uid = string(data.astrologerUid || data.astrologerId);
-  const amount = nonNegativeInteger(data.amountPaise);
+  const amount = paiseField(data,['amountPaise'],['amount']);
   if (!uid || amount === null || amount <= 0) return result([], 'WITHDRAWAL_INVALID');
   const created = dateField(data,'createdAt') ?? 0;
   const updated = dateField(data,'updatedAt') ?? created;
@@ -394,7 +421,7 @@ function insertWithdrawal(data, id) {
     sql: `INSERT OR IGNORE INTO smv_domain_withdrawals
       (withdrawal_id,astrologer_uid,amount_paise,status,available_at_ms,payload_json,created_at_ms,updated_at_ms)
       VALUES (?,?,?,?,?,?,?,?)`,
-    values: [id,uid,amount,string(data.status || 'pending'),dateField(data,'availableAt'),json(data),created,updated]
+    values: [id,uid,amount,string(data.status || 'pending'),dateField(data,'availableAt'),json({...data,migrationSource:'legacy_import'}),created,updated]
   }]);
 }
 
