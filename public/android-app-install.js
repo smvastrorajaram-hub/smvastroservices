@@ -42,7 +42,7 @@
   function versionCode(value) {
     const text = String(value == null ? '' : value).trim();
     if (/^[1-9][0-9]{2,9}$/.test(text)) return Number(text);
-    const match = /^v?([1-9][0-9]*)\\.([0-9]{1,3})$/i.exec(text);
+    const match = /^v?([1-9][0-9]*)\.([0-9]{1,3})$/i.exec(text);
     if (!match) return null;
     const code = Number(match[1]) * 1000 + Number(match[2]);
     return Number.isSafeInteger(code) && code > 0 ? code : null;
@@ -106,14 +106,14 @@
     if (url.protocol !== 'https:' || url.username || url.password || url.hash) return null;
 
     if (source.cloudflare) {
-      if (url.origin !== source.base || !/^\\/(?:api\\/android-app\\/)?download\\/[1-9][0-9]{2,9}$/.test(url.pathname) ||
+      if (url.origin !== source.base || !/^\/(?:api\/android-app\/)?download\/[1-9][0-9]{2,9}$/.test(url.pathname) ||
           url.search) return null;
       return url;
     }
 
     if (url.hostname !== 'firebasestorage.googleapis.com') return null;
     const path = decodeURIComponent(url.pathname);
-    const match = /^\\/v0\\/b\\/([^/]+)\\/o\\/smv-astro\\/android\\/releases\\/[1-9][0-9]*\\/[^/]+\\.apk$/.exec(path);
+    const match = /^\/v0\/b\/([^/]+)\/o\/smv-astro\/android\/releases\/[1-9][0-9]*\/[^/]+\.apk$/.exec(path);
     if (!match || !LEGACY_BUCKETS.has(match[1]) ||
         url.searchParams.get('alt') !== 'media' || !url.searchParams.get('token')) return null;
     return url;
@@ -132,7 +132,7 @@
       minute: '2-digit',
       hour12: true,
       timeZone: 'Asia/Kolkata'
-    }).format(date).replace(/\\u202f/g, ' ');
+    }).format(date).replace(/\u202f/g, ' ');
   }
 
   function showRelease({ release, installed, source }) {
