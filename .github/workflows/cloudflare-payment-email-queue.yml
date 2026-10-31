@@ -1,0 +1,39 @@
+name: Cloudflare payment, email and Queue adapter contract tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-fcm-r2-adapters-20261031
+    paths:
+      - 'shared/backend-platform/razorpay-rest-adapter.mjs'
+      - 'shared/backend-platform/resend-email-client.mjs'
+      - 'shared/backend-platform/d1-outbox-adapter.mjs'
+      - 'shared/backend-platform/d1-notification-queue-consumer.mjs'
+      - 'cloudflare/backend-api/migrations/0003_notification_inbox.sql'
+      - 'cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs'
+      - '.github/workflows/cloudflare-payment-email-queue.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  payment-email-queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check payment and queue adapter syntax
+        run: |
+          node --check shared/backend-platform/razorpay-rest-adapter.mjs
+          node --check shared/backend-platform/resend-email-client.mjs
+          node --check shared/backend-platform/d1-outbox-adapter.mjs
+          node --check shared/backend-platform/d1-notification-queue-consumer.mjs
+          node --check cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs
+      - name: Run mock payment, email, outbox and Queue idempotency tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/payment-email-queue-adapters.test.mjs
