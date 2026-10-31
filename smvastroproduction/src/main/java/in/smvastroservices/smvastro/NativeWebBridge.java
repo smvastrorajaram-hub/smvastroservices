@@ -17,7 +17,6 @@ import androidx.credentials.exceptions.GetCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException;
 
 import androidx.webkit.JavaScriptReplyProxy;
 import androidx.webkit.WebMessageCompat;
@@ -197,8 +196,6 @@ public final class NativeWebBridge {
                                     return;
                                 }
                                 finishGoogleSignIn(replyProxy, idToken, null);
-                            } catch (GoogleIdTokenParsingException parseError) {
-                                finishGoogleSignIn(replyProxy, null, "Google returned an invalid sign-in response. Please try again.");
                             } catch (RuntimeException callbackError) {
                                 finishGoogleSignIn(replyProxy, null, "Google Sign-In could not be completed. Please try again.");
                             }
