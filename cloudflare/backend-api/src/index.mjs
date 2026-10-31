@@ -330,7 +330,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   if (walletBackfillToolsOpen) {
     const backfillService = createWalletDomainBackfillService({
       db: env.DB,
-      firestore: firestoreAdmin
+      firestore: firestoreAdmin,
+      payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || ''),
+      payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1'),
+      sourceProjectId: projectId
     });
     registerWalletDomainBackfillRoutes({
       app,
