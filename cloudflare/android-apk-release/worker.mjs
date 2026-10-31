@@ -63,6 +63,53 @@ function json(request, env, data, status = 200, headers = {}) {
   return respond(request, env, JSON.stringify(data), status, out);
 }
 
+function requestIdFor(request) {
+  const ray = String(request.headers.get('cf-ray') || '').trim();
+  if (ray && /^[A-Za-z0-9-]{8,100}$/.test(ray)) return ray;
+  return globalThis.crypto?.randomUUID?.() || 'apk-' + Date.now();
+}
+
+function safeDiagnosticMessage(value) {
+  return String(value || 'Unknown error')
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[url]')
+    .replace(/\bBearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/\b(token|secret|password|authorization)\b\s*[:=]\s*[^\s,;]+/gi, '$1=[redacted]')
+    .replace(/\b[A-Za-z0-9_-]{40,}\b/g, '[redacted]')
+    .slice(0, 240);
+}
+
+function logDiagnosticError(logger, request, path, stage, error, requestId = requestIdFor(request)) {
+  const details = [];
+  let current = error;
+  for (let depth = 0; current && depth < 3; depth += 1) {
+    details.push({
+      name: safeDiagnosticMessage(current.name || 'Error'),
+      message: safeDiagnosticMessage(current.message || current),
+      code: safeDiagnosticMessage(current.code || '')
+    });
+    current = current.cause;
+  }
+  try {
+    logger?.error?.('[smv-apk-release] ' + JSON.stringify({
+      event: 'request_failed',
+      requestId,
+      method: request.method,
+      path,
+      stage,
+      errors: details
+    }));
+  } catch (_) {
+    // Diagnostics must never change the request outcome.
+  }
+}
+
+function serviceError(code, message, cause) {
+  const error = new Error(message);
+  error.code = code;
+  if (cause) error.cause = cause;
+  return error;
+}
+
 function configuredProjects(env) {
   const projects = parseCsv(env.FIREBASE_ALLOWED_PROJECT_IDS || 'smv-astro');
   return projects.length ? projects : ['smv-astro'];
@@ -109,6 +156,14 @@ async function hasReleaseSchema(env) {
   }
 }
 
+async function hasR2Connection(env) {
+  if (typeof env?.APK_RELEASES?.head !== 'function') return false;
+  // A read-only HEAD for a reserved, never-written key verifies the live R2 binding
+  // without creating, changing, or deleting any bucket object.
+  await env.APK_RELEASES.head('__smv_internal__/apk-release-health-probe');
+  return true;
+}
+
 async function latestRow(db) {
   return db.prepare(
     'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 1'
@@ -135,26 +190,65 @@ function safeLegacyDownloadUrl(value, expectedVersionCode) {
 async function fetchLegacyRelease(env, fetchImpl) {
   const endpoint = String(env.LEGACY_ANDROID_RELEASE_URL || DEFAULT_LEGACY_URL).trim();
   let parsed;
-  try { parsed = new URL(endpoint); } catch (_) { throw new Error('Legacy Android release endpoint is invalid.'); }
-  if (parsed.origin !== new URL(DEFAULT_LEGACY_URL).origin || parsed.pathname !== '/public/android-app' || parsed.search) {
-    throw new Error('Legacy Android release endpoint is not allowlisted.');
-  }
-  let response;
   try {
-    response = await fetchImpl(endpoint, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      redirect: 'error',
-      signal: AbortSignal.timeout(8000)
-    });
+    parsed = new URL(endpoint);
   } catch (_) {
-    throw new Error('Legacy Android release lookup is unavailable; version safety cannot be verified.');
+    throw serviceError('LEGACY_RELEASE_CONFIGURATION_INVALID', 'Legacy Android release endpoint is invalid.');
   }
-  if (!response.ok) throw new Error('Legacy Android release lookup returned HTTP ' + response.status + '.');
+  if (parsed.origin !== new URL(DEFAULT_LEGACY_URL).origin || parsed.pathname !== '/public/android-app' || parsed.search) {
+    throw serviceError('LEGACY_RELEASE_CONFIGURATION_INVALID', 'Legacy Android release endpoint is not allowlisted.');
+  }
+
+  let response = null;
+  let lastNetworkError = null;
+  const attempts = 2;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(8000) : undefined;
+      response = await fetchImpl(endpoint, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        redirect: 'error',
+        ...(signal ? { signal } : {})
+      });
+      if (response.status >= 500 && attempt < attempts) {
+        try { await response.body?.cancel(); } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 250));
+        continue;
+      }
+      break;
+    } catch (error) {
+      lastNetworkError = error;
+      if (attempt < attempts) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        continue;
+      }
+    }
+  }
+
+  if (!response) {
+    throw serviceError(
+      'LEGACY_RELEASE_NETWORK_ERROR',
+      'Legacy Android release lookup failed after a bounded retry.',
+      lastNetworkError
+    );
+  }
+  if (!response.ok) {
+    throw serviceError(
+      'LEGACY_RELEASE_HTTP_ERROR',
+      'Legacy Android release lookup returned HTTP ' + response.status + '.'
+    );
+  }
+
   let data;
-  try { data = await response.json(); } catch (_) { throw new Error('Legacy Android release response is invalid.'); }
+  try {
+    data = await response.json();
+  } catch (error) {
+    throw serviceError('LEGACY_RELEASE_RESPONSE_INVALID', 'Legacy Android release response is invalid.', error);
+  }
   if (data?.success !== true || data.available !== true) return null;
+
   const versionCode = Number(data.versionCode);
   const size = Number(data.size || 0);
   const uploadedAt = Number(data.uploadedAt || 0);
@@ -164,7 +258,7 @@ async function fetchLegacyRelease(env, fetchImpl) {
       !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
       !downloadUrl || !Number.isSafeInteger(size) || size < 0 ||
       !Number.isSafeInteger(uploadedAt) || uploadedAt < 0) {
-    throw new Error('Legacy Android release metadata failed validation.');
+    throw serviceError('LEGACY_RELEASE_METADATA_INVALID', 'Legacy Android release metadata failed validation.');
   }
   return {
     success: true,
@@ -290,22 +384,36 @@ async function handleDownload(request, env, versionCode, fetchImpl) {
 export function createAndroidApkReleaseWorker({
   verifyToken = verifyFirebaseIdToken,
   inspectApk = inspectSmvAndroidApk,
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  logger = console
 } = {}) {
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
       const path = normalizedPath(url);
+      const requestId = requestIdFor(request);
       if (request.method === 'OPTIONS') {
         return respond(request, env, null, 204, { 'Cache-Control': 'no-store' });
       }
       try {
         if (path === '/health' && request.method === 'GET') {
-          const ready = await hasReleaseSchema(env);
-          const hasReleaseRecords = ready ? Boolean(await latestRow(env.DB)) : false;
+          const d1Ready = await hasReleaseSchema(env);
+          let r2Ready = false;
+          if (d1Ready) {
+            try {
+              r2Ready = await hasR2Connection(env);
+              if (!r2Ready) throw serviceError('R2_HEALTH_CHECK_UNAVAILABLE', 'R2 head binding is unavailable.');
+            } catch (error) {
+              logDiagnosticError(logger, request, path, 'r2-health', error, requestId);
+            }
+          }
+          const ready = d1Ready && r2Ready;
+          const hasReleaseRecords = d1Ready ? Boolean(await latestRow(env.DB)) : false;
           return json(request, env, {
             success: true,
             ready,
+            d1Ready,
+            r2Ready,
             uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true',
             hasReleaseRecords
           }, 200, { 'Cache-Control': 'no-store' });
@@ -476,7 +584,16 @@ export function createAndroidApkReleaseWorker({
 
         return json(request, env, { success: false, error: 'APK release route was not found.' }, 404);
       } catch (error) {
-        return json(request, env, { success: false, error: 'Cloudflare APK release request failed safely.' }, 503);
+        logDiagnosticError(logger, request, path, 'request', error, requestId);
+        const code = /^[A-Z0-9_]{3,80}$/.test(String(error?.code || ''))
+          ? String(error.code)
+          : 'APK_RELEASE_REQUEST_FAILED';
+        return json(request, env, {
+          success: false,
+          error: 'Cloudflare APK release request failed safely.',
+          code,
+          requestId
+        }, 503);
       }
     }
   };
