@@ -299,7 +299,6 @@ jobs:
         shell: bash
         run: node scripts/wallet-live-readonly-preview.mjs
 
-
       - name: Import and reconcile Identity/Profile into staging D1 only
         working-directory: cloudflare/backend-api
         env:
@@ -307,10 +306,10 @@ jobs:
           SMV_IDENTITY_PROFILE_STAGING_IMPORT_ENABLED: 'true'
           SMV_IDENTITY_PROFILE_PRODUCTION_IMPORT_ENABLED: 'false'
           SMV_IDENTITY_PROFILE_D1_DATABASE_ID: 0ddb87a9-8a16-4e39-a806-c9137c64959a
-          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: \${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: \${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY: \${{ secrets.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY }}
-          SMV_IDENTITY_PAYOUT_KEY_VERSION: \${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY }}
+          SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
         shell: bash
         run: node scripts/identity-profile-import-staging.mjs
