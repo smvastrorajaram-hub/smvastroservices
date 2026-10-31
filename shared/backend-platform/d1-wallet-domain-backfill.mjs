@@ -262,5 +262,5 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     return { collections:result?.results || [], target:target || {} };
   }
 
-  return Object.freeze({ readPage,previewPage,applyPage,reconcilePage,status });
+  return Object.freeze({ readPage,previewPage,applyPage,reconcilePage,assertSourceQuiescent,status });
 }
