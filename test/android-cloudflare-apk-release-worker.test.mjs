@@ -274,6 +274,10 @@ test('legacy public release metadata and redirect URL are validated before use',
   const metadata = await current.json();
   assert.equal(metadata.versionCode, 1005);
   assert.equal(metadata.packageName, PACKAGE);
+  assert.match(metadata.downloadUrl, /\/download\/1005$/);
+  const legacyDownload = await worker.fetch(new Request(metadata.downloadUrl), env);
+  assert.equal(legacyDownload.status, 302);
+  assert.equal(legacyDownload.headers.get('location'), LEGACY_URL);
 
   const badWorker = createAndroidApkReleaseWorker({
     verifyToken: async () => ({ uid: 'admin-uid', projectId: 'smv-astro' }),
