@@ -4,11 +4,11 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 ## Safety defaults
 
-- APK publishing is deliberately disabled by default (ALLOW_APK_UPLOADS = "false").
+- The Worker code fails closed when the upload flag is absent. The checked-in deployment config currently sets `ALLOW_APK_UPLOADS = "true"` by explicit repository-owner approval. Uploads still require a verified Firebase Admin identity on the allowlist and a valid permanently signed production APK.
 - The Worker has no Firebase Admin service-account key and does not change existing Firebase, Razorpay, Render, Horoscope, Calendar, or Android signing configuration.
 - On the first successful Cloudflare APK upload, D1 records the currently published Firebase release as a history baseline in the same atomic D1 batch as the new R2 release. A rejected/failed upload does not create the baseline. This records metadata only; it does not download, delete, or bulk-migrate historical APK objects. Previous Firebase APKs remain available through their existing links; nothing is deleted.
 - Staging and local CI do not publish real APKs or upload anything to Cloudflare.
-- Do not set ALLOW_APK_UPLOADS = "true" until R2/D1 bindings, Admin authorization, release lookup, download and version monotonicity have been verified in an isolated staging deployment.
+- Before the first Admin upload, verify the deployed Worker `/health` response reports `ready=true` and `uploadsEnabled=true`, then confirm the Admin release card can load the current APK and history.
 
 ## Cloudflare resources
 
@@ -24,7 +24,7 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 ## Admin upload activation
 
-Initially leave ALLOW_APK_UPLOADS = "false". In that state the existing Render/Firebase upload endpoint remains available only while D1 has no release records. Once the Worker is ready, Homepage and Admin read-only release metadata come from Cloudflare regardless of the upload gate, so an existing R2 version is never replaced by a stale Firebase pointer. If Cloudflare already has release records and uploads are disabled, new publishing is blocked instead of silently writing a newer release to the legacy store.
+The owner has explicitly approved `ALLOW_APK_UPLOADS = "true"` in the dedicated APK Release Worker config. After the Worker passes D1/R2 readiness checks, the Admin APK manager can publish new signed releases directly to R2 and save version metadata/history in the dedicated D1. If the Worker is unavailable before it is deployed, the existing Firebase/Render release route remains the compatibility fallback. Once Cloudflare has release records, the Cloudflare release pointer is authoritative and a newer release must be published through the Admin Cloudflare route.
 
 Enable ALLOW_APK_UPLOADS = "true" only after:
 - GET /health returns ready=true;
