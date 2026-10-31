@@ -471,7 +471,7 @@ test('deployment workflow retries edge-propagation failures and requires D1/R2 r
   assert.ok(workflow.includes('health.d1Ready !== true'));
   assert.ok(workflow.includes('health.r2Ready !== true'));
   assert.ok(workflow.includes('Worker health did not become ready after bounded propagation retries'));
-  assert.ok(workflow.includes('public metadata'));
-  assert.ok(workflow.includes('d.available !== true && d.available !== false'));
+  assert.ok(workflow.includes('Public APK metadata'));
+  assert.ok(workflow.includes("typeof data.available !== 'boolean'"));
   assert.ok(workflow.includes('Public APK metadata did not pass validation'));
 });
