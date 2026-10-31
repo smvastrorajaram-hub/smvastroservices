@@ -86,6 +86,7 @@ export class LiveSessionCoordinator {
       ? createD1LiveSessionService({
           db: env.DB,
           walletAdapter: createD1WalletAdapter({ db: env.DB }),
+          adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || ''),
           firestore: { async getDocument() { throw new Error('Firestore is not used by Live deadline settlement.'); } }
         })
       : null;
@@ -359,7 +360,9 @@ export class LiveSessionCoordinator {
         const result = await this.liveService.processDeadline({
           sessionId: event.sessionId,
           deadlineType: event.deadlineType,
-          deadlineAtMs: event.deadlineAtMs
+          deadlineAtMs: event.deadlineAtMs,
+          participantUid: event.participantUid || '',
+          generation: event.generation
         });
         if (result?.nextDeadline) {
           const next = deadlineFrom({
