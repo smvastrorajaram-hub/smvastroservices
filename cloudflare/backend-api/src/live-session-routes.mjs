@@ -298,7 +298,8 @@ export function registerD1LiveSessionRoutes({
       const result=await liveService.createRequest({
         customerUid:user.uid,astrologerId:req.body?.astrologerId,
         mode:req.body?.mode,minutes:req.body?.minutes,requestId:req.body?.requestId,
-        customerName:req.body?.customerName,birthDetails:req.body?.birthDetails
+        customerName:req.body?.customerName,birthDetails:req.body?.birthDetails,
+        appointmentId:req.body?.appointmentId
       });
       if(result.kind==='session'&&result.session) {
         const created=Date.parse(result.session.createdAt||'')||Date.now();
@@ -458,7 +459,7 @@ export function registerD1LiveSessionRoutes({
       if(!response.ok||scheduled.ok!==true) {
         if(!result.connected) {
           const settled=await liveService.endSession({
-            sessionId:req.params.id,reason:'network_disconnect',system:true
+            sessionId:req.params.id,reason:'server_ended',system:true
           });
           await cancelAll(req.params.id);
           await publishSession(settled.session);
