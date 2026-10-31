@@ -1,6 +1,13 @@
 name: Cloudflare Backend API staging deployment
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - 'server.js'
+      - '.github/workflows/cloudflare-backend-staging-deploy.yml'
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -17,6 +24,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.number == 254 &&
        github.event.pull_request.head.repo.full_name == github.repository &&
