@@ -288,3 +288,41 @@ test('legacy public release metadata and redirect URL are validated before use',
   assert.equal(bad.status, 503);
   assert.equal((await bad.json()).available, false);
 });
+
+
+test('Homepage shows install/update states and only trusts the configured Cloudflare APK release origin', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
+  const moduleSource = fs.readFileSync(path.join(root, 'public/smvastro.mjs'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+
+  assert.ok(installer.includes('SMV ASTRO IS UP TO DATE'));
+  assert.ok(installer.includes('UPDATE APP'));
+  assert.ok(installer.includes('INSTALL APP'));
+  assert.ok(installer.includes('DOWNLOAD / UPDATE APP'));
+  assert.ok(installer.includes('health.uploadsEnabled === true'));
+  assert.ok(installer.includes('getInstalledRelatedApps'));
+  assert.ok(installer.includes('firebasestorage.googleapis.com'));
+  assert.ok(moduleSource.includes('smvAndroidApkWorkerStatus'));
+  assert.ok(moduleSource.includes('/admin/android-app/versions'));
+  assert.ok(moduleSource.includes('DOWNLOAD APK'));
+  assert.ok(html.includes('id="adminAndroidAppHistory"'));
+  assert.ok(html.includes('v20261031-cloudflare-r2-apk-release-v1'));
+});
+
+test('Cloudflare publishing is opt-in and deployment example does not contain credentials', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const example = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/wrangler.toml.example'), 'utf8');
+  const readme = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/README.md'), 'utf8');
+  assert.match(example, /ALLOW_APK_UPLOADS\s*=\s*"false"/);
+  assert.match(example, /database_id\s*=\s*"00000000-0000-0000-0000-000000000000"/);
+  assert.match(readme, /do not change existing Firebase, Razorpay, Render/);
+  assert.match(readme, /Do not point it at Wallet or any other existing D1 database/);
+  assert.match(readme, /Do not add secrets or APK binaries/);
+});
