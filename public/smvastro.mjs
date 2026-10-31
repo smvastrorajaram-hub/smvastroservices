@@ -67,7 +67,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, signInWithCredential } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
@@ -931,9 +931,22 @@ async function signInWithGoogle(){
   btn.disabled=true; btn.querySelector('span:last-child').textContent='Signing in with Google...';
   try{
     smvGoogleLoginInProgress=true;
-    const provider=new GoogleAuthProvider();
-    provider.setCustomParameters({prompt:"select_account"});
-    const result=await withTimeout(signInWithPopup(auth,provider),30000);
+    let result;
+    if(window.SMVNativeCalls?.isNativeApp?.()===true
+       && typeof window.SMVNativeCalls.signInWithGoogle==='function'){
+      // Android APK: obtain a Google ID token in Credential Manager, then authenticate
+      // the existing Firebase Web SDK session without a WebView popup/redirect.
+      const nativeResult=await withTimeout(window.SMVNativeCalls.signInWithGoogle(),60000);
+      const idToken=String(nativeResult?.idToken||'').trim();
+      if(!idToken)throw new Error('Android Google Sign-In did not return a valid identity token. Please try again.');
+      const firebaseCredential=GoogleAuthProvider.credential(idToken);
+      result=await withTimeout(signInWithCredential(auth,firebaseCredential),30000);
+    }else{
+      // Standard browsers continue to use the existing Firebase popup login flow.
+      const provider=new GoogleAuthProvider();
+      provider.setCustomParameters({prompt:"select_account"});
+      result=await withTimeout(signInWithPopup(auth,provider),30000);
+    }
     await finishGoogleRoleLogin(result?.user);
     smvGoogleLoginInProgress=false;
   }catch(e){
