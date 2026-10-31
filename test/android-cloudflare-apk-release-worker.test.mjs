@@ -11,6 +11,18 @@ class FakeD1 {
     this.attempts = [];
   }
 
+  async batch(statements) {
+    const oldReleases = new Map(this.releases);
+    try {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      return results;
+    } catch (error) {
+      this.releases = oldReleases;
+      throw error;
+    }
+  }
+
   prepare(sql) {
     const db = this;
     let args = [];
@@ -232,18 +244,39 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
   assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
 });
 
-test('version downgrade is rejected and current legacy Firebase release is imported as a metadata baseline', async () => {
+test('version downgrade is rejected without creating a baseline record or uploading an object', async () => {
   const env = envFor();
   const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
   const response = await upload(worker, env, 'v1.4', 1004);
   assert.equal(response.status, 409);
   assert.equal((await response.json()).currentVersionCode, 1005);
-  assert.equal(env.DB.releases.size, 1);
-  assert.equal(env.DB.releases.get(1005).storage_provider, 'firebase');
+  assert.equal(env.DB.releases.size, 0);
+  assert.equal(env.APK_RELEASES.objects.size, 0);
 
   const download = await worker.fetch(new Request('https://apk.example/download/1005'), env);
   assert.equal(download.status, 302);
   assert.equal(download.headers.get('location'), LEGACY_URL);
+});
+
+test('first successful Cloudflare upload records the existing Firebase release baseline atomically', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
+  const response = await upload(worker, env, 'v1.6', 1006);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).versionCode, 1006);
+  assert.equal(env.DB.releases.size, 2);
+  assert.equal(env.DB.releases.get(1005).storage_provider, 'firebase');
+  assert.equal(env.DB.releases.get(1006).storage_provider, 'r2');
+  assert.equal(env.APK_RELEASES.objects.size, 1);
+
+  const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
+    headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  const versions = (await history.json()).versions;
+  assert.deepEqual(versions.map(row => row.versionCode), [1006, 1005]);
+  const oldDownload = await worker.fetch(new Request('https://apk.example/download/1005'), env);
+  assert.equal(oldDownload.status, 302);
+  assert.equal(oldDownload.headers.get('location'), LEGACY_URL);
 });
 
 test('invalid Admin identity cannot write release metadata', async () => {
