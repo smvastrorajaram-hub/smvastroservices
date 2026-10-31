@@ -86,3 +86,11 @@ The permanent Release key is generated once by the dedicated manual mode in the 
 ## Verification boundary
 
 A CI compile proves the Android Release variant can be assembled, not that the signing secrets are configured. A permanent Release is considered ready only after the four secrets are supplied, the signed APK is built, and `apksigner` verifies its certificate. Real-device testing should then be performed with the signed Release app as well.
+
+## Android Google Sign-In (Credential Manager)
+
+The Production APK uses Android Credential Manager for Google account selection. It must not start Google OAuth from an embedded WebView popup or redirect. The Google ID token is delivered over the origin-restricted native WebView message bridge to the Firebase JavaScript SDK, which signs into the existing `smv-astro` Firebase project and then runs the normal registered-role verification. Regular browsers continue to use the existing Firebase popup flow.
+
+The Android build uses the public Google OAuth **Web application Client ID** as `SMV_GOOGLE_WEB_CLIENT_ID` / `smvGoogleWebClientId` and passes it to Credential Manager's `setServerClientId`. This identifier is not a client secret and is compiled into the client app. Do not put an OAuth client secret, Firebase Admin credential, or service-account key in the APK or repository.
+
+The Production Android module depends on Firebase Auth, AndroidX Credential Manager 1.6.0, Credential Manager Play Services Auth 1.6.0, and Google ID 1.1.1. If Google authentication is rejected after the Android build, verify that the Production app's release-certificate SHA-1 is registered in the existing `smv-astro` Firebase Android app and that Google sign-in is enabled; do not create a new Firebase project or rotate the permanent APK signing key.
