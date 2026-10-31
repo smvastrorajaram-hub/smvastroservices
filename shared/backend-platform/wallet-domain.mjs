@@ -76,6 +76,25 @@ export function calculateWalletReservation({ wallet, minutes, ratePerMinutePaise
   });
 }
 
+export function walletReservationSettlementKeys({ sessionId, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed } = {}) {
+  const id = String(sessionId || '').trim();
+  const reservedCash = Number(reservedAmountPaise);
+  const reservedBonus = Number(reservedBonusMinutes);
+  const charge = Number(chargedAmountPaise);
+  const usedBonus = Number(freeMinutesUsed);
+  if (!id || ![reservedCash, reservedBonus, charge, usedBonus].every(Number.isSafeInteger) ||
+      reservedCash < 0 || reservedBonus < 0 || charge < 0 || charge > reservedCash ||
+      usedBonus < 0 || usedBonus > reservedBonus) {
+    throw walletError('LIVE_BILLING_CALCULATION_FAILED', 'Wallet settlement values are invalid.');
+  }
+  const keys = [];
+  if (charge > 0) keys.push({ type: 'live_session_usage', idempotencyKey: 'live-session-usage:' + id });
+  if (usedBonus > 0) keys.push({ type: 'live_session_bonus_minutes', idempotencyKey: 'live-session-bonus-used:' + id });
+  if (reservedBonus - usedBonus > 0) keys.push({ type: 'live_session_bonus_minutes_release', idempotencyKey: 'live-session-bonus-release:' + id });
+  if (reservedCash - charge > 0) keys.push({ type: 'live_session_unused_release', idempotencyKey: 'live-session-release:' + id });
+  return keys;
+}
+
 export function calculateWalletReservationSettlement({
   wallet,
   reservedAmountPaise,
@@ -87,11 +106,10 @@ export function calculateWalletReservationSettlement({
   const reservedBonus = Number(reservedBonusMinutes);
   const charge = Number(chargedAmountPaise);
   const usedBonus = Number(freeMinutesUsed);
-  if (![reservedCash, reservedBonus, charge, usedBonus].every(Number.isSafeInteger) ||
-      reservedCash < 0 || reservedBonus < 0 || charge < 0 || charge > reservedCash ||
-      usedBonus < 0 || usedBonus > reservedBonus) {
-    throw walletError('LIVE_BILLING_CALCULATION_FAILED', 'Wallet settlement values are invalid.');
-  }
+  walletReservationSettlementKeys({
+    sessionId: 'validation-only', reservedAmountPaise: reservedCash,
+    reservedBonusMinutes: reservedBonus, chargedAmountPaise: charge, freeMinutesUsed: usedBonus
+  });
   const currentReserved = safePaise(wallet?.reservedBalancePaise);
   const currentReservedBonus = safeMinutes(wallet?.reservedBonusMinutes);
   if (currentReserved < reservedCash || currentReservedBonus < reservedBonus) {
