@@ -83,13 +83,13 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z')}={}) {
         const sql=item.sql,values=item.values;
         if(sql.includes('INSERT INTO smv_domain_withdrawals')) {
           const id=String(values[0]),uid=String(values[1]),amount=Number(values[2]),created=Number(values[4]);
-          if(amount<30000) throw new Error('WITHDRAWAL_MINIMUM_NOT_MET');
+          if(amount<30000) throw Object.assign(new Error('WITHDRAWAL_MINIMUM_NOT_MET'),{code:'WITHDRAWAL_MINIMUM_NOT_MET'});
           const reserved=[...withdrawals.values()].filter(row=>row.astrologer_uid===uid&&['pending','processing','paid'].includes(row.status)).reduce((sum,row)=>sum+row.amount_paise,0);
           const legacy=snapshots.get(uid)?.total_earned_paise||0;
           const earned=50000+legacy;
-          if(amount+reserved>earned) throw new Error('WITHDRAWAL_EARNINGS_INSUFFICIENT');
+          if(amount+reserved>earned) throw Object.assign(new Error('WITHDRAWAL_EARNINGS_INSUFFICIENT'),{code:'WITHDRAWAL_EARNINGS_INSUFFICIENT'});
           const latest=[...withdrawals.values()].filter(row=>row.astrologer_uid===uid&&['pending','processing','paid'].includes(row.status)).reduce((max,row)=>Math.max(max,row.created_at_ms),0);
-          if(latest&&created-latest<604800000) throw new Error('WITHDRAWAL_SEVEN_DAY_COOLDOWN');
+          if(latest&&created-latest<604800000) throw Object.assign(new Error('WITHDRAWAL_SEVEN_DAY_COOLDOWN'),{code:'WITHDRAWAL_SEVEN_DAY_COOLDOWN'});
           withdrawals.set(id,{
             withdrawal_id:id,astrologer_uid:uid,amount_paise:amount,status:'pending',
             available_at_ms:null,payload_json:String(values[3]),created_at_ms:created,updated_at_ms:Number(values[5])
