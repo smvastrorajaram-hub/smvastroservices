@@ -77,14 +77,14 @@ export function createD1IdentityService({
       const [profile, astrologer, admin] = await Promise.all([
         db.prepare(
           'SELECT uid, firebase_project_id, email, role, status, public_id, name, email_verified, profile_json ' +
-          'FROM smv_domain_identity_users WHERE uid = ? AND firebase_project_id = ? LIMIT 1'
-        ).bind(uid, projectId).first(),
+          'FROM smv_domain_identity_users WHERE firebase_project_id = ? AND uid = ? LIMIT 1'
+        ).bind(projectId, uid).first(),
         db.prepare(
-          'SELECT uid, status FROM smv_domain_identity_astrologers WHERE uid = ? LIMIT 1'
-        ).bind(uid).first(),
+          'SELECT uid, status FROM smv_domain_identity_astrologers WHERE firebase_project_id = ? AND uid = ? LIMIT 1'
+        ).bind(projectId, uid).first(),
         db.prepare(
-          'SELECT uid FROM smv_domain_identity_admins WHERE uid = ? LIMIT 1'
-        ).bind(uid).first()
+          'SELECT uid FROM smv_domain_identity_admins WHERE firebase_project_id = ? AND uid = ? LIMIT 1'
+        ).bind(projectId, uid).first()
       ]);
       profileRow = profile || null;
       astrologerRow = astrologer || null;
