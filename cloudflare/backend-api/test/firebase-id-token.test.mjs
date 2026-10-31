@@ -76,13 +76,16 @@ test('accepts a valid Firebase ID token from an explicitly allowed project', asy
   const verify = makeVerifier();
   const token = await makeToken();
   const identity = await verify(token, [PROJECT_ID]);
-  assert.deepEqual(identity, {
-    uid: 'test-customer-uid',
-    projectId: PROJECT_ID,
-    emailVerified: true,
-    signInProvider: 'password',
-    email: 'customer@example.test'
-  });
+  assert.equal(identity.uid, 'test-customer-uid');
+  assert.equal(identity.projectId, PROJECT_ID);
+  assert.equal(identity.emailVerified, true);
+  assert.equal(identity.signInProvider, 'password');
+  assert.equal(identity.email, 'customer@example.test');
+  // Preserve the complete signed claims used by existing Render role checks.
+  assert.equal(identity.aud, PROJECT_ID);
+  assert.equal(identity.iss, 'https://securetoken.google.com/' + PROJECT_ID);
+  assert.equal(identity.email_verified, true);
+  assert.equal(identity.firebase.sign_in_provider, 'password');
   assert.equal(keyFetchCount, 1);
 });
 
