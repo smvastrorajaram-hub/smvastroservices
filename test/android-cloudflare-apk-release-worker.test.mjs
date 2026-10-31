@@ -304,25 +304,27 @@ test('versionCode 1000 is rejected as the pre-release baseline without writing D
   assert.equal(download.status, 404);
 });
 
-test('first successful Cloudflare upload records the existing Firebase release baseline atomically', async () => {
+test('first Cloudflare APK upload writes only an R2 object and its D1 release record', async () => {
   const env = envFor();
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
-  const response = await upload(worker, env, 'v1.6', 1006);
+  const { worker } = makeWorker(env);
+  const postedBytes = apkPayload('v1.1', 1001);
+  const response = await upload(worker, env, 'v1.1', 1001);
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).versionCode, 1006);
-  assert.equal(env.DB.releases.size, 2);
-  assert.equal(env.DB.releases.get(1005).storage_provider, 'firebase');
-  assert.equal(env.DB.releases.get(1006).storage_provider, 'r2');
+  const metadata = await response.json();
+  assert.equal(metadata.versionCode, 1001);
+  assert.equal(metadata.storageProvider, 'r2');
+  assert.equal(env.DB.releases.size, 1);
+  assert.equal(env.DB.releases.get(1001).storage_provider, 'r2');
   assert.equal(env.APK_RELEASES.objects.size, 1);
 
-  const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
-    headers: { Authorization: 'Bearer admin-token' }
-  }), env);
-  const versions = (await history.json()).versions;
-  assert.deepEqual(versions.map(row => row.versionCode), [1006, 1005]);
-  const oldDownload = await worker.fetch(new Request('https://apk.example/download/1005'), env);
-  assert.equal(oldDownload.status, 302);
-  assert.equal(oldDownload.headers.get('location'), LEGACY_URL);
+  const publicMetadata = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
+  assert.equal(publicMetadata.status, 200);
+  assert.equal((await publicMetadata.json()).versionCode, 1001);
+
+  const downloaded = await worker.fetch(new Request('https://apk.example/download/1001'), env);
+  assert.equal(downloaded.status, 200);
+  assert.equal(downloaded.headers.get('content-type'), 'application/vnd.android.package-archive');
+  assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
 });
 
 test('invalid Admin identity cannot write release metadata', async () => {
