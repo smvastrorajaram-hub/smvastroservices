@@ -244,9 +244,13 @@ test('missing commission setting fails closed and is reported as a billing readi
   assert.equal(billing.commissionSettingPresent,false);
   assert.equal(billing.commissionPercentValid,false);
   assert.ok(billing.missingSettings.includes('smv_settings/commission'));
-  assert.ok(report.securityBlockers.some(item =>
+  assert.equal(billing.commissionEffectivePercentValid,true);
+  assert.equal(billing.effectiveCommissionSource,'legacy_runtime_fallback');
+  assert.equal(billing.effectiveAstroPercent,20);
+  assert.equal(billing.effectiveAdminPercent,80);
+  assert.equal(report.securityBlockers.some(item =>
     item.includes('smv_settings/commission is missing')
-  ));
+  ),false);
 });
 
 test('read-only D1 guard rejects batch, exec and prepared statement execution', () => {
