@@ -163,6 +163,7 @@ if (!credentialsText) {
           '; missing cash release: ' + report.financialReconciliation.liveReservationSettlement.sessionsMissingCashReleaseLedger +
           '; bonus settlement mismatch: ' + report.financialReconciliation.liveReservationSettlement.sessionBonusMinutesNotReconciled,
         '- Commission setting valid: ' + report.financialReconciliation.billingConfiguration.commissionPercentValid,
+        '- Missing billing settings: ' + (report.financialReconciliation.billingConfiguration.missingSettings.join(', ') || 'none'),
         '- Withdrawals checked: ' + report.financialReconciliation.withdrawal.withdrawalsChecked +
           '; invalid amounts: ' + report.financialReconciliation.withdrawal.withdrawalsWithInvalidAmount,
         '',
