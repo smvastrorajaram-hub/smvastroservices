@@ -41,7 +41,7 @@ export function legacyTimestampMilliseconds(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : null;
   const raw = String(value).trim();
   if (!raw) return null;
-  const localIst = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw);
+  const localIst = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw);
   const parsed = Date.parse(localIst ? raw + '+05:30' : raw);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -334,7 +334,7 @@ function appointmentTimeMilliseconds(data) {
   if (direct !== null) return direct;
   const date = string(data.preferredDate);
   const time = string(data.preferredTime);
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
   const [year,month,day] = date.split('-').map(Number);
   const [hour,minute] = time.split(':').map(Number);
   const value = Date.UTC(year,month-1,day,hour,minute) - 330*60*1000;
