@@ -708,21 +708,16 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const pid = String(paymentId || '').trim();
     if (!oid) return { success:false, skipped:true };
     const timestamp = Number(now());
-    const results = await db.batch([
-      statement(
-        `UPDATE smv_domain_wallet_recharges
-         SET status='failed', payload_json=?, updated_at_ms=?
-         WHERE razorpay_order_id=? AND status='order_created'`,
-        [JSON.stringify({ failureReason:String(reason).slice(0,160),paymentId:pid }),timestamp,oid]
-      ),
-      statement(
-        `UPDATE smv_domain_razorpay_orders
-         SET status='failed',payment_id=?,payload_json=?,updated_at_ms=?
-         WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge' AND status <> 'paid'`,
-        [pid || null,JSON.stringify({failureReason:String(reason).slice(0,160)}),timestamp,oid]
-      )
-    ]);
-    return { success:true, results };
+    // Match the legacy webhook contract: a failed payment attempt marks the
+    // Razorpay order, not the recharge intent. Another attempt on the same
+    // order may still be captured and credited later.
+    const result = await statement(
+      `UPDATE smv_domain_razorpay_orders
+       SET status='failed',payment_id=?,payload_json=?,updated_at_ms=?
+       WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge' AND status <> 'paid'`,
+      [pid || null,JSON.stringify({failureReason:String(reason).slice(0,160)}),timestamp,oid]
+    ).run();
+    return { success:true, result };
   }
 
   async function recordWebhookEvent({ eventKey, eventType, paymentId = null, orderId = null, payload = {} } = {}) {
