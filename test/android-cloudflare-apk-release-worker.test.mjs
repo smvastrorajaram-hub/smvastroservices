@@ -395,7 +395,7 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(html.includes('APK Install &amp; Update Manager'));
   assert.ok(moduleSource.includes('Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.'));
   assert.ok(moduleSource.includes('Selected APK: '));
-  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v2-admin-manager'));
+  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
@@ -416,7 +416,10 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(config, /bucket_name\s*=\s*"smv-astro-apk-releases"/);
   assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"true"/);
   assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*""/);
-  assert.doesNotMatch(html + installer + moduleSource, /smv-astro-apk-release-api\.smvastro\.workers\.dev/);
+  assert.match(html, /window\.SMV_APK_RELEASE_ADMIN_API_URL\s*=\s*window\.SMV_APK_RELEASE_ADMIN_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
+  assert.match(moduleSource, /window\.SMV_APK_RELEASE_ADMIN_API_URL\|\|window\.SMV_APK_RELEASE_API_URL/);
+  assert.doesNotMatch(installer, /SMV_APK_RELEASE_ADMIN_API_URL|smv-astro-apk-release-api\.astroservices\.workers\.dev/);
+  assert.doesNotMatch(moduleSource, /smv-astro-apk-release-api\.astroservices\.workers\.dev/);
   assert.doesNotMatch(installer + moduleSource, /DEFAULT_WORKER_BASE|SMV_ANDROID_APK_WORKER_DEFAULT/);
   assert.match(readme, /5105ebb3-435c-47b7-9983-2e171fa911cd/);
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
