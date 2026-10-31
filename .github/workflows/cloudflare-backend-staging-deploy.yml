@@ -264,3 +264,10 @@ jobs:
           SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
         shell: bash
         run: node scripts/identity-profile-readonly-preview.mjs
+
+      - name: Run full paginated Wallet + Live historical read-only audit
+        working-directory: cloudflare/backend-api
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: node scripts/wallet-live-readonly-preview.mjs
