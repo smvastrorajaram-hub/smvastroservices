@@ -73,8 +73,8 @@ test('settlement fails closed when stored reserve is inconsistent', () => {
 
 test('safe arithmetic refuses overflows and negative values', () => {
   assert.throws(() => calculateWalletReservationSettlement({
-    wallet: wallet({ availableBalancePaise: Number.MAX_SAFE_INTEGER }),
-    reservedAmountPaise: 0, reservedBonusMinutes: 0,
+    wallet: wallet({ availableBalancePaise: Number.MAX_SAFE_INTEGER, reservedBalancePaise: 1 }),
+    reservedAmountPaise: 1, reservedBonusMinutes: 0,
     chargedAmountPaise: 0, freeMinutesUsed: 0
   }), error => error.code === 'WALLET_BALANCE_OVERFLOW');
   assert.throws(() => calculateWalletReservationSettlement({
