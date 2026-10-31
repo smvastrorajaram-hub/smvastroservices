@@ -57,5 +57,7 @@ jobs:
         working-directory: cloudflare/backend-api
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
+          SMV_WALLET_PAYOUT_KEY_VERSION: ${{ secrets.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1' }}
         shell: bash
         run: node scripts/wallet-live-readonly-preview.mjs
