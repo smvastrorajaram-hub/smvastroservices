@@ -165,7 +165,7 @@ test('full audit paginates every collection and discovers every session child co
   assert.equal(report.totals.pagesScanned,25);
 });
 
-test('audit surfaces unmappable private payouts and raw-only Razorpay order mapping without leaking data', async () => {
+test('audit surfaces keyless private payout warnings and normalized Razorpay orders without leaking data', async () => {
   const { firestore } = firestoreFixture();
   const report = await createWalletLiveReadOnlyAudit({
     firestore, pageSize:2, cryptoImpl:webcrypto
@@ -174,7 +174,7 @@ test('audit surfaces unmappable private payouts and raw-only Razorpay order mapp
 
   assert.equal(byKey.withdrawalPayouts.unmappableRecords,1);
   assert.equal(byKey.withdrawalPayouts.plannedD1Statements,0);
-  assert.equal(byKey.withdrawalPayouts.warningCounts.PAYOUT_ENCRYPTION_REQUIRED,1);
+  assert.equal(byKey.withdrawalPayouts.warningCounts.PAYOUT_ENCRYPTION_KEY_MISSING,1);
   assert.equal(byKey.walletRechargeOrders.domainMappableRecords,1);
   assert.equal(byKey.walletRechargeOrders.plannedD1Statements,2);
   assert.ok(report.securityBlockers.some(item=>item.includes('AES-256-GCM')));
