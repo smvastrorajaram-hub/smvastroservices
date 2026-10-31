@@ -209,10 +209,15 @@ export function calculateLiveSettlement({session,nowMs=Date.now()}={}) {
   const chargedAmountPaise=Math.min(reservedAmountPaise,pricing.amountPaise);
   const releasedAmountPaise=reservedAmountPaise-chargedAmountPaise;
   const bonusMinutesReleased=reservedBonusMinutes-pricing.freeMinutesUsed;
-  const commission=splitLiveCommission(chargedAmountPaise,{
-    astroPercent:s.astrologerCommissionPercent,
-    adminPercent:s.adminCommissionPercent
-  });
+  // A zero-charge termination (for example, no answer or a failed connection)
+  // only releases the reservation; it must not be blocked by missing commission
+  // settings because no earnings are being allocated.
+  const commission=chargedAmountPaise===0
+    ? {astroPercent:0,adminPercent:0,astrologerAmountPaise:0,adminAmountPaise:0}
+    : splitLiveCommission(chargedAmountPaise,{
+      astroPercent:s.astrologerCommissionPercent,
+      adminPercent:s.adminCommissionPercent
+    });
   return {
     elapsedMs:Math.floor(elapsedMs),
     billableMinutes:pricing.billableMinutes,
