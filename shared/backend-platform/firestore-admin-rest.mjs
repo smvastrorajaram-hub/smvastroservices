@@ -213,7 +213,7 @@ function buildWrite(projectId, path, data, { mode = 'set', merge = false } = {})
         }
         leaves(value, segments);
       }
-      return { mapValue: { fields: Object.fromEntries(Object.entries(nested).map(([key, child]) => [key, child && child.mapValue ? child : encodeFirestoreValue(child)])) } };
+      return { mapValue: { fields: Object.fromEntries(Object.entries(nested)) } };
     }
     return encodeFirestoreValue(value);
   }
