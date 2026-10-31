@@ -140,7 +140,7 @@ export function createIdentityProfileBackfillService({
         }
         const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
         if (bytes.length !== 32) throw new TypeError('SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY must decode to exactly 32 bytes.');
-        return cryptoImpl.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt']);
+        return cryptoImpl.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
       })();
     }
     return payoutKeyPromise;
@@ -158,6 +158,26 @@ export function createIdentityProfileBackfillService({
       version: 1, algorithm: 'A256GCM', keyVersion: str(payoutKeyVersion) || 'v1',
       iv: bytesToBase64(iv), ciphertext: bytesToBase64(new Uint8Array(ciphertext))
     });
+  }
+  async function decryptPayoutPayload(envelopeValue, uid) {
+    const key = await getPayoutKey();
+    if (!key) return null;
+    try {
+      const envelope = JSON.parse(str(envelopeValue));
+      if (envelope?.version !== 1 || envelope?.algorithm !== 'A256GCM' ||
+          envelope?.keyVersion !== (str(payoutKeyVersion) || 'v1')) return null;
+      const iv = Uint8Array.from(atob(str(envelope.iv)), character => character.charCodeAt(0));
+      const ciphertext = Uint8Array.from(atob(str(envelope.ciphertext)), character => character.charCodeAt(0));
+      if (iv.length !== 12 || !ciphertext.length) return null;
+      const plaintext = await cryptoImpl.subtle.decrypt({
+        name: 'AES-GCM', iv,
+        additionalData: new TextEncoder().encode(project + ':' + uid),
+        tagLength: 128
+      }, key, ciphertext);
+      return JSON.parse(new TextDecoder().decode(plaintext));
+    } catch {
+      return null;
+    }
   }
 
   async function readPage({ collection, pageToken = '', pageSize = 20 } = {}) {
@@ -220,8 +240,10 @@ export function createIdentityProfileBackfillService({
           (phone_hash,firebase_project_id,uid,phone_e164,role,verification_mode,phone_verified,created_at_ms,updated_at_ms)
           VALUES (?,?,?,?,?,?,?,?,?)
           ON CONFLICT(phone_hash) DO UPDATE SET
-            phone_e164=excluded.phone_e164,role=excluded.role,
-            verification_mode=excluded.verification_mode,phone_verified=excluded.phone_verified,
+            phone_e164=CASE WHEN excluded.updated_at_ms>=smv_domain_identity_phones.updated_at_ms THEN excluded.phone_e164 ELSE smv_domain_identity_phones.phone_e164 END,
+            role=CASE WHEN excluded.updated_at_ms>=smv_domain_identity_phones.updated_at_ms THEN excluded.role ELSE smv_domain_identity_phones.role END,
+            verification_mode=CASE WHEN excluded.updated_at_ms>=smv_domain_identity_phones.updated_at_ms THEN excluded.verification_mode ELSE smv_domain_identity_phones.verification_mode END,
+            phone_verified=CASE WHEN excluded.updated_at_ms>=smv_domain_identity_phones.updated_at_ms THEN excluded.phone_verified ELSE smv_domain_identity_phones.phone_verified END,
             updated_at_ms=MAX(smv_domain_identity_phones.updated_at_ms,excluded.updated_at_ms)
           WHERE smv_domain_identity_phones.firebase_project_id=excluded.firebase_project_id
             AND smv_domain_identity_phones.uid=excluded.uid`,
@@ -343,7 +365,7 @@ export function createIdentityProfileBackfillService({
         sourceUpdateTime, hash, warnings.length ? 'warning' : 'mapped',
         JSON.stringify([...new Set(warnings)].sort()), Number(now())]
     });
-    return { id, uid, hash, statements, warnings: [...new Set(warnings)] };
+    return { id, uid, hash, statements, warnings: [...new Set(warnings)], sourceData: data };
   }
 
   async function preparePage(options) {
@@ -389,48 +411,134 @@ export function createIdentityProfileBackfillService({
 
   async function reconcilePage(options = {}) {
     const page = await preparePage(options);
-    let auditMissing = 0, payloadMismatches = 0, targetMappingsMissing = 0, warningCount = 0;
-    const samples = { auditMissing: [], payloadMismatches: [], targetMappingsMissing: [], warnings: [] };
+    let auditMissing = 0, payloadMismatches = 0, targetMappingsMissing = 0;
+    let targetMappingMismatches = 0, warningCount = 0;
+    const samples = {
+      auditMissing: [], payloadMismatches: [], targetMappingsMissing: [],
+      targetMappingMismatches: [], warnings: []
+    };
+
+    function recordSample(key, value) {
+      if (samples[key].length < 10) samples[key].push(value);
+    }
+
     for (const item of page.items) {
       const audit = await statement(
         `SELECT source_payload_sha256,mapping_status FROM smv_domain_identity_import_audit
           WHERE source_project_id=? AND source_collection=? AND document_id=? LIMIT 1`,
         [project, page.sourceCollection, item.id]
       ).first();
-      if (!audit) { auditMissing += 1; if (samples.auditMissing.length < 10) samples.auditMissing.push(item.id); }
-      else {
+      if (!audit) {
+        auditMissing += 1;
+        recordSample('auditMissing', item.id);
+      } else {
         if (str(audit.source_payload_sha256) !== item.hash) {
-          payloadMismatches += 1; if (samples.payloadMismatches.length < 10) samples.payloadMismatches.push(item.id);
+          payloadMismatches += 1;
+          recordSample('payloadMismatches', item.id);
         }
         if (str(audit.mapping_status) !== 'mapped') warningCount += 1;
       }
+
       if (item.warnings.length) {
         warningCount += item.warnings.length;
-        for (const warning of item.warnings) if (samples.warnings.length < 10) samples.warnings.push(warning);
+        for (const warning of item.warnings) recordSample('warnings', warning);
       }
+
       for (const entry of item.statements.filter(value => value.kind !== 'audit')) {
-        const spec = {
-          user: ['SELECT uid FROM smv_domain_identity_users WHERE firebase_project_id=? AND uid=? LIMIT 1', [project, item.uid]],
-          astrologer: ['SELECT uid FROM smv_domain_identity_astrologers WHERE firebase_project_id=? AND uid=? LIMIT 1', [project, item.uid]],
-          admin: ['SELECT uid FROM smv_domain_identity_admins WHERE firebase_project_id=? AND uid=? LIMIT 1', [project, item.uid]],
-          payout: ['SELECT uid FROM smv_domain_identity_payout_profiles WHERE firebase_project_id=? AND uid=? LIMIT 1', [project, item.uid]],
-          phone: ['SELECT uid,firebase_project_id FROM smv_domain_identity_phones WHERE phone_hash=? LIMIT 1', [entry.values[0]]],
-          public_id: ['SELECT uid,firebase_project_id FROM smv_domain_identity_public_ids WHERE public_id=? LIMIT 1', [entry.values[0]]]
+        const specs = {
+          user: {
+            sql: 'SELECT email,role,status,public_id,name,phone_e164,phone_hash,email_verified,profile_json ' +
+              'FROM smv_domain_identity_users WHERE firebase_project_id=? AND uid=? LIMIT 1',
+            values: [project, item.uid]
+          },
+          astrologer: {
+            sql: 'SELECT public_id,status,profile_json FROM smv_domain_identity_astrologers ' +
+              'WHERE firebase_project_id=? AND uid=? LIMIT 1',
+            values: [project, item.uid]
+          },
+          admin: {
+            sql: 'SELECT source FROM smv_domain_identity_admins WHERE firebase_project_id=? AND uid=? LIMIT 1',
+            values: [project, item.uid]
+          },
+          payout: {
+            sql: 'SELECT payload_json FROM smv_domain_identity_payout_profiles ' +
+              'WHERE firebase_project_id=? AND uid=? LIMIT 1',
+            values: [project, item.uid]
+          },
+          phone: {
+            sql: 'SELECT firebase_project_id,uid,phone_e164,role,verification_mode,phone_verified ' +
+              'FROM smv_domain_identity_phones WHERE phone_hash=? LIMIT 1',
+            values: [entry.values[0]]
+          },
+          public_id: {
+            sql: 'SELECT firebase_project_id,uid,role FROM smv_domain_identity_public_ids WHERE public_id=? LIMIT 1',
+            values: [entry.values[0]]
+          }
         }[entry.kind];
-        if (!spec) continue;
-        const row = await statement(spec[0], spec[1]).first();
-        const ownerMismatch = row && ['phone', 'public_id'].includes(entry.kind) &&
-          (str(row.uid) !== str(entry.values[2]) || str(row.firebase_project_id) !== project);
-        if (!row || ownerMismatch) {
+        if (!specs) continue;
+        const row = await statement(specs.sql, specs.values).first();
+        if (!row) {
           targetMappingsMissing += 1;
-          if (samples.targetMappingsMissing.length < 10) samples.targetMappingsMissing.push(entry.kind);
+          recordSample('targetMappingsMissing', entry.kind);
+          continue;
+        }
+
+        let ownerMismatch = false;
+        if (entry.kind === 'phone' || entry.kind === 'public_id') {
+          ownerMismatch = str(row.uid) !== str(entry.values[2]) ||
+            str(row.firebase_project_id) !== project;
+        }
+        if (ownerMismatch) {
+          targetMappingsMissing += 1;
+          recordSample('targetMappingsMissing', entry.kind + ':owner');
+          continue;
+        }
+
+        let matches = true;
+        if (entry.kind === 'user') {
+          const v = entry.values;
+          matches = str(row.email) === str(v[2]) &&
+            str(row.role) === str(v[3]) &&
+            str(row.status) === str(v[4]) &&
+            str(row.public_id || '') === str(v[5] || '') &&
+            str(row.name) === str(v[6]) &&
+            str(row.phone_e164 || '') === str(v[7] || '') &&
+            str(row.phone_hash || '') === str(v[8] || '') &&
+            Number(row.email_verified) === Number(v[9]) &&
+            str(row.profile_json) === str(v[10]);
+        } else if (entry.kind === 'astrologer') {
+          const v = entry.values;
+          matches = str(row.public_id || '') === str(v[2] || '') &&
+            str(row.status) === str(v[3]) &&
+            str(row.profile_json) === str(v[4]);
+        } else if (entry.kind === 'admin') {
+          matches = str(row.source) === str(entry.values[2]);
+        } else if (entry.kind === 'payout') {
+          const restored = await decryptPayoutPayload(row.payload_json, item.uid);
+          matches = !!restored && stableJson(restored) === stableJson(item.sourceData);
+        } else if (entry.kind === 'phone') {
+          const v = entry.values;
+          matches = str(row.phone_e164) === str(v[3]) &&
+            str(row.role) === str(v[4]) &&
+            str(row.verification_mode) === str(v[5]) &&
+            Number(row.phone_verified) === Number(v[6]);
+        } else if (entry.kind === 'public_id') {
+          const v = entry.values;
+          matches = str(row.role) === str(v[3]);
+        }
+
+        if (!matches) {
+          targetMappingMismatches += 1;
+          recordSample('targetMappingMismatches', entry.kind);
         }
       }
     }
+
     return {
       sourceProjectId: project, collection: options.collection, sourceCollection: page.sourceCollection,
       sourceDocuments: page.items.length, auditMissing, payloadMismatches,
-      targetMappingsMissing, warningCount, samples, nextPageToken: page.nextPageToken,
+      targetMappingsMissing, targetMappingMismatches, warningCount, samples,
+      nextPageToken: page.nextPageToken,
       writesPerformed: 0, personalDataReturned: false, sourceDataDeleted: false, cutoverSafe: false
     };
   }
