@@ -29,7 +29,7 @@ INSERT INTO smv_domain_wallet_ledger
  reserved_delta_paise,bonus_minutes_delta,reserved_bonus_minutes_delta,idempotency_key,
  reference_type,reference_id,note,metadata_json,status,created_at_ms)
 VALUES ('ci-recharge-cash','ci-wallet-recharge-smoke','customer','INR','recharge','credit',5000,5000,
- 0,0,0,'recharge:pay_ci_smoke','razorpay_payment','pay_ci_smoke','Wallet recharge','{}','posted',2000);
+ 0,0,0,'recharge:pay_ci_smoke','razorpay_payment','pay_ci_smoke','Wallet recharge','{"rechargeId":"ci-recharge-smoke","orderId":"order_ci_wallet_smoke"}','posted',2000);
 
 INSERT INTO smv_domain_wallet_ledger
 (ledger_id,owner_uid,owner_role,currency,type,direction,amount_paise,available_delta_paise,
