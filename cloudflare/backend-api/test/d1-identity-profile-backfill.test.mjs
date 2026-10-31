@@ -255,6 +255,7 @@ test('reconciliation detects target profile field mismatches even when source au
   assert.equal(result.payloadMismatches, 0);
   assert.equal(result.targetMappingsMissing, 0);
   assert.equal(result.targetMappingMismatches, 1);
+  assert.deepEqual(result.samples.targetMappingMismatches, ['user:role']);
   assert.equal(result.cutoverSafe, false);
 });
 
