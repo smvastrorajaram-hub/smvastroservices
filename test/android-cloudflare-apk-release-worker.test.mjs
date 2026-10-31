@@ -500,7 +500,7 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(config, /database_id\s*=\s*"5105ebb3-435c-47b7-9983-2e171fa911cd"/);
   assert.match(config, /bucket_name\s*=\s*"smv-astro-apk-releases"/);
   assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"true"/);
-  assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*""/);
+  assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
   assert.match(html, /window\.SMV_APK_RELEASE_ADMIN_API_URL\s*=\s*window\.SMV_APK_RELEASE_ADMIN_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
   assert.match(moduleSource, /window\.SMV_APK_RELEASE_ADMIN_API_URL\|\|window\.SMV_APK_RELEASE_API_URL/);
   assert.doesNotMatch(installer, /SMV_APK_RELEASE_ADMIN_API_URL|smv-astro-apk-release-api\.astroservices\.workers\.dev/);
