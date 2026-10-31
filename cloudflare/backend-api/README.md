@@ -25,6 +25,16 @@ The audited current Render backend exposes approximately 117 Express route regis
 
 The existing financial service is transactionally coupled: Wallet balance/ledger writes and Live Call/Chat reservation/settlement use Firestore transactions. Moving only the Wallet balance code would break atomic settlement. This foundation therefore exposes no business API until the replacements and conformance tests exist.
 
+## Firebase Authentication integration — identity verification only
+
+The staging Worker now exposes `GET /api/auth/session`. It accepts a Firebase ID token in the `Authorization: Bearer` header and verifies its RS256 signature using Google's published Secure Token JWKs, then checks the token's Firebase project audience/issuer against the explicit `FIREBASE_AUTH_PROJECT_IDS` allowlist, UID, expiry, issued-at time, authentication time and Firebase sign-in metadata.
+
+The current staging allowlist is sourced from the existing multi-project Firebase configuration: `smv-astro`, `astro-service-ae9e7`, `smv-astro-services`, `svm-astro`, `smvastro-services`, and `smv-astro-staging`. Add any other currently-used Auth project only after confirming its exact Firebase project ID.
+
+This is **ID-token signature verification only**. It does not call Firebase Admin's user-management API, check disabled/revoked users, read Firestore roles, perform Admin allowlist lookup, or authorize Wallet/Call/Chat operations. The endpoint returns only the signed token's UID, project ID, email-verified flag and sign-in provider. All privileged endpoints remain disabled until authoritative role/profile verification is implemented against the correct Firebase project and independently tested.
+
+The security tests generate temporary RSA signing keys locally and mock Google's public-key endpoint. They cover a valid allowlisted token, rejected project audience, expiry, malformed/unsupported algorithm, forged signature and missing Firebase sign-in metadata. These tests do not substitute for end-to-end tests using real staging Firebase test accounts.
+
 ## Cloudflare runtime choices
 
 This Worker uses the official `cloudflare:node` `httpServerHandler` integration with Express. The current route handlers have not yet been ported.
@@ -45,7 +55,7 @@ The main application uses native Swiss Ephemeris/ephemeris assets and a separate
 
 ## Next implementation gates
 
-1. Build a Cloudflare-compatible Firebase Auth ID-token verifier and test tokens from every currently-used Firebase Auth project, including issuer, audience, expiry, signature rotation and project allowlisting. Keep role/approval authority in Firebase profiles/admin allowlists.
+1. Run end-to-end Firebase Auth staging-account tests for every currently-used Auth project and decide whether disabled/revoked-user checks are required. Keep role/approval authority in Firebase profiles/admin allowlists; do not trust client-supplied role claims.
 2. Prove Firebase Admin Firestore REST transport compatibility with the existing CRUD, query, batch, transaction and multi-project calls. Reject any untested SDK operation. Replace `onSnapshot` routes rather than relying on gRPC.
 3. Port non-financial route families in small groups and compare response contracts with existing browser clients.
 4. Port Razorpay using direct HTTPS API calls and constant-time Web Crypto HMAC verification. Preserve raw webhook-body validation, order/payment amount/currency/status checks, capture verification, duplicate-event protection and refund reconciliation. Test with Razorpay Test Mode only.
