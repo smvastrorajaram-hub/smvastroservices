@@ -10,6 +10,8 @@ on:
       - 'public/smv-ui.css'
       - 'public/smvastro.mjs'
       - 'public/index.html'
+      - 'package.json'
+      - 'package-lock.json'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
       - 'test/live-push-notifications.test.js'
       - 'test/cream-theme-audit.test.mjs'
@@ -26,6 +28,8 @@ on:
       - 'public/smv-ui.css'
       - 'public/smvastro.mjs'
       - 'public/index.html'
+      - 'package.json'
+      - 'package-lock.json'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
       - 'test/live-push-notifications.test.js'
       - 'test/cream-theme-audit.test.mjs'
@@ -51,6 +55,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Verify root npm manifest and lockfile stay in sync
+        run: npm ci --ignore-scripts --no-audit --no-fund --dry-run
 
       - name: Validate JavaScript syntax
         run: |
