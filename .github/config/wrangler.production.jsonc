@@ -1,0 +1,35 @@
+{
+  "name": "smvastroservices",
+  "main": "../../cloudflare/backend-api/src/index.mjs",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SMV_ENVIRONMENT": "production",
+    "SMV_BACKEND_CLOUDFLARE_ACTIVE": "false",
+    "SMV_WALLET_BACKFILL_TOOLS_ENABLED": "false",
+    "SMV_WALLET_DOMAIN_QUIESCED": "false",
+    "SMV_WALLET_DOMAIN_CUTOVER_COMPLETE": "false",
+    "SMV_WALLET_PAYOUT_KEY_VERSION": "v1",
+    "SMV_IDENTITY_PROFILE_BACKFILL_ENABLED": "false",
+    "SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE": "false",
+    "SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY": "true",
+    "SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED": "false",
+    "SMV_LIVE_SESSION_ROUTES_ENABLED": "false",
+    "FIREBASE_AUTH_PROJECT_IDS": "smv-astro",
+    "ALLOWED_ORIGINS": "https://smvastroservices.in"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "smvastro-wallet-production",
+      "database_id": "b1d5684c-3fcd-48fe-9571-ea41fc605c7d"
+    }
+  ]
+}
