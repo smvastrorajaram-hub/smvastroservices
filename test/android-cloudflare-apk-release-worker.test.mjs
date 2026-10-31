@@ -129,7 +129,7 @@ function envFor({ uploadsEnabled = true } = {}) {
 }
 
 
-function makeWorker(env, { logger = { error() {} } = {}) {
+function makeWorker(env, { logger = { error() {} } } = {}) {
   const worker = createAndroidApkReleaseWorker({
     verifyToken: async token => {
       if (token !== 'admin-token') throw new Error('invalid token');
