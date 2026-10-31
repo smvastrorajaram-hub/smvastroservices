@@ -236,4 +236,5 @@ app.use((error, _req, res, _next) => {
 });
 
 app.listen(3000);
+export { LiveSessionCoordinator, LiveUserEventHub } from './live-session-coordinator.mjs';
 export default httpServerHandler({ port: 3000 });
