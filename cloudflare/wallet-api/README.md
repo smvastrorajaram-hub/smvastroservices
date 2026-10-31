@@ -66,7 +66,7 @@ Open GitHub → repository → Settings → Secrets and variables → Actions:
 |---|---|
 | `CLOUDFLARE_API_TOKEN` | Narrowly scoped token for the named Worker and D1 database |
 
-Add the Account ID under Settings → Secrets and variables → Actions → Variables → New repository variable. Add the token under the Secrets tab. Use the least privilege available for the existing Worker and D1. Do not grant Zone DNS, account administration, billing, R2, or unrelated permissions. Keep the token only in GitHub Actions secrets. Never paste or commit token values.
+Add the Account ID under Settings → Secrets and variables → Actions → Variables → New repository variable. Add the token under the Secrets tab. Use a Custom Token with only Account → Workers Scripts → Edit and Account → D1 → Edit. Scope the token to the single Cloudflare account shown by the Account ID above; leave Zone resources and Zone permissions empty. Cloudflare API token resource scoping selects User, Account, or Zone (not an individual Worker/D1 database), so these two account permissions apply to Workers Scripts and D1 resources in that selected account. Do not grant Workers Routes, KV, R2, Zone DNS, account administration, billing, or unrelated permissions. Keep the token only in GitHub Actions secrets. Never paste or commit token values.
 
 The database ID is configuration, not an API credential; it is already wired into `wrangler.jsonc`. The CORS origin is also configured as a non-secret staging variable.
 
