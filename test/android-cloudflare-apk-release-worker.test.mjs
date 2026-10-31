@@ -332,7 +332,6 @@ test('invalid Admin identity cannot write release metadata', async () => {
   const deniedWorker = createAndroidApkReleaseWorker({
     verifyToken: async () => ({ uid: 'customer-uid', projectId: 'smv-astro' }),
     inspectApk: () => { throw new Error('must not validate an unauthorized upload'); },
-    fetchImpl: legacyFetch(0)
   });
   const denied = await deniedWorker.fetch(new Request('https://apk.example/admin/android-app/upload', {
     method: 'POST',
@@ -347,33 +346,27 @@ test('invalid Admin identity cannot write release metadata', async () => {
   assert.equal(env.DB.releases.size, 0);
 });
 
-test('legacy public release metadata and redirect URL are validated before use', async () => {
-  const env = envFor({ uploadsEnabled: false });
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
+test('an explicitly archived Firebase row in D1 remains available as historical compatibility', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  env.DB.releases.set(1005, {
+    package_name: PACKAGE, version_name: 'v1.5', version_code: 1005,
+    storage_provider: 'firebase', object_key: null, external_download_url: LEGACY_URL,
+    sha256: null, certificate_sha256: null, size_bytes: 2300,
+    uploaded_by: 'legacy-migration', uploaded_at: 1700000000000
+  });
   const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(current.status, 200);
   const metadata = await current.json();
   assert.equal(metadata.versionCode, 1005);
-  assert.equal(metadata.packageName, PACKAGE);
-  assert.match(metadata.downloadUrl, /\/download\/1005$/);
-  const legacyDownload = await worker.fetch(new Request(metadata.downloadUrl), env);
-  assert.equal(legacyDownload.status, 302);
-  assert.equal(legacyDownload.headers.get('location'), LEGACY_URL);
+  assert.ok(metadata.downloadUrl.endsWith('/download/1005'));
+  const download = await worker.fetch(new Request(metadata.downloadUrl), env);
+  assert.equal(download.status, 302);
+  assert.equal(download.headers.get('location'), LEGACY_URL);
 
-  const badWorker = createAndroidApkReleaseWorker({
-    verifyToken: async () => ({ uid: 'admin-uid', projectId: 'smv-astro' }),
-    inspectApk: () => ({}),
-    fetchImpl: async () => Response.json({
-      success: true, available: true, packageName: PACKAGE,
-      versionName: 'v1.5', versionCode: 1005,
-      downloadUrl: 'https://evil.example/file.apk', size: 1, uploadedAt: 1
-    })
-  });
-  const bad = await badWorker.fetch(new Request('https://apk.example/public/android-app'), env);
+  env.DB.releases.get(1005).external_download_url = 'https://evil.example/file.apk';
+  const bad = await worker.fetch(new Request('https://apk.example/download/1005'), env);
   assert.equal(bad.status, 503);
-  const badBody = await bad.json();
-  assert.equal(badBody.success, false);
-  assert.equal(badBody.code, 'LEGACY_RELEASE_METADATA_INVALID');
 });
 
 
