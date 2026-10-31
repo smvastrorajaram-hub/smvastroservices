@@ -3,8 +3,10 @@
 import express from 'express';
 import { env } from 'cloudflare:workers';
 import { httpServerHandler } from 'cloudflare:node';
+import { createFirebaseIdTokenVerifier } from './firebase-id-token.mjs';
 
 const app = express();
+const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
 const JSON_HEADERS = Object.freeze({ 'Cache-Control': 'no-store' });
 const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
 const ALLOWED_HEADERS = 'Authorization, Content-Type, Idempotency-Key';
@@ -39,6 +41,41 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '1mb', strict: true }));
+
+app.get('/api/auth/session', async (req, res) => {
+  const authorization = String(req.get('Authorization') || '');
+  const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(authorization);
+  if (!match) {
+    return res.status(401).set(JSON_HEADERS).json({ ok: false, code: 'AUTH_REQUIRED' });
+  }
+
+  const projectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+  if (projectIds.length === 0) {
+    return res.status(503).set(JSON_HEADERS).json({
+      ok: false,
+      code: 'AUTH_PROJECT_ALLOWLIST_NOT_CONFIGURED'
+    });
+  }
+
+  try {
+    const identity = await verifyFirebaseIdToken(match[1], projectIds);
+    return res.set(JSON_HEADERS).json({
+      ok: true,
+      uid: identity.uid,
+      firebaseProjectId: identity.projectId,
+      emailVerified: identity.emailVerified,
+      signInProvider: identity.signInProvider
+    });
+  } catch (_error) {
+    return res.status(401).set(JSON_HEADERS).json({
+      ok: false,
+      code: 'AUTH_TOKEN_INVALID'
+    });
+  }
+});
 
 app.get('/healthz', (_req, res) => {
   return res.set(JSON_HEADERS).json({
@@ -91,7 +128,8 @@ app.get('/api/backend/migration-status', (_req, res) => {
     phase: 'cloudflare-runtime-foundation',
     legacyRouteInventory: 117,
     legacyServerLoaded: false,
-    firebaseAuthConnected: false,
+    firebaseIdTokenVerification: true,
+    firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
     walletBusinessRoutesEnabled: false,
