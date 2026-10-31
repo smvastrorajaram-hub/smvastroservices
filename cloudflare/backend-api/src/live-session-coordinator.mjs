@@ -383,7 +383,7 @@ export class LiveSessionCoordinator {
         for (const uid of [...new Set(recipients.filter(Boolean))]) {
           await this.publishUserEvent(uid, {
             eventId: event.eventId + ':' + uid,
-            type: session ? 'live.session.updated' : 'live.booking.updated',
+            type: session ? (session.state === 'ended' ? 'live.session.ended' : 'live.session.updated') : 'live.booking.updated',
             data: session ? { session } : { booking }
           });
         }
@@ -479,7 +479,10 @@ export class LiveUserEventHub {
     }
     const recent = await this.ctx.storage.get('recent-event-ids') || [];
     if (recent.includes(eventId)) return json({ ok: true, duplicate: true, eventId });
-    const event = { eventId, targetUid, type, data: body.data ?? null, createdAtMs: Date.now() };
+    const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data : {};
+    // Preserve the legacy Live SSE payload shape (session/message/signal/booking
+    // fields at the top level) while retaining an explicit data envelope.
+    const event = { ...data, eventId, targetUid, type, data: body.data ?? null, createdAtMs: Date.now() };
     const frame = JSON.stringify(event);
     for (const controller of [...this.sseClients]) {
       try { controller.enqueue(new TextEncoder().encode('event: ' + type + '\ndata: ' + frame + '\n\n')); }
