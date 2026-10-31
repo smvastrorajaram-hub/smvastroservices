@@ -292,18 +292,16 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
   assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
 });
 
-test('version downgrade is rejected without creating a baseline record or uploading an object', async () => {
+test('versionCode 1000 is rejected as the pre-release baseline without writing D1 or R2', async () => {
   const env = envFor();
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
-  const response = await upload(worker, env, 'v1.4', 1004);
+  const { worker } = makeWorker(env);
+  const response = await upload(worker, env, 'v1.0', 1000);
   assert.equal(response.status, 409);
-  assert.equal((await response.json()).currentVersionCode, 1005);
+  assert.equal((await response.json()).currentVersionCode, 1000);
   assert.equal(env.DB.releases.size, 0);
   assert.equal(env.APK_RELEASES.objects.size, 0);
-
   const download = await worker.fetch(new Request('https://apk.example/download/1005'), env);
-  assert.equal(download.status, 302);
-  assert.equal(download.headers.get('location'), LEGACY_URL);
+  assert.equal(download.status, 404);
 });
 
 test('first successful Cloudflare upload records the existing Firebase release baseline atomically', async () => {
