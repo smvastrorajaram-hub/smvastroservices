@@ -1,0 +1,23 @@
+{
+  "name": "smvastro-wallet-api-staging",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-31",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SMV_ENVIRONMENT": "staging",
+    "SMV_WALLET_CLOUDFLARE_ACTIVE": "false",
+    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "smvastro-wallet-staging",
+      "database_id": "0ddb87a9-8a16-4e39-a806-c9137c64959a",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
