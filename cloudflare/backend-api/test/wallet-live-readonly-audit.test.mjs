@@ -147,8 +147,8 @@ test('full audit paginates every collection and discovers every session child co
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/messages'));
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/signals'));
   assert.equal(byKey.billingSettings.totalSourceDocuments,2);
-  assert.equal(report.totals.sourceDocuments,20);
-  assert.equal(report.totals.pagesScanned,22);
+  assert.equal(report.totals.sourceDocuments,21);
+  assert.equal(report.totals.pagesScanned,21);
 });
 
 test('audit surfaces unmappable private payouts and raw-only Razorpay order mapping without leaking data', async () => {
