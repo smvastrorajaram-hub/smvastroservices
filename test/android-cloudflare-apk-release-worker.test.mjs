@@ -371,6 +371,6 @@ test('Cloudflare publishing is opt-in and deployment example does not contain cr
   assert.doesNotMatch(installer + moduleSource, /DEFAULT_WORKER_BASE|SMV_ANDROID_APK_WORKER_DEFAULT/);
   assert.match(readme, /5105ebb3-435c-47b7-9983-2e171fa911cd/);
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
-  assert.match(readme, /Do not point it at Wallet or any other existing D1 database/);
+  assert.match(readme, /Use only the existing D1 database/);
   assert.match(readme, /Do not add secrets or APK binaries/);
 });
