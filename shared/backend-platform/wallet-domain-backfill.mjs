@@ -18,7 +18,7 @@ export const WALLET_DOMAIN_BACKFILL_COLLECTIONS = Object.freeze({
   liveSessionEarnings: Object.freeze({ path: 'smv_payments', filter: data => data.source === 'live_session' }),
   withdrawals: Object.freeze({ path: 'smv_withdrawals' }),
   withdrawalPayouts: Object.freeze({ path: 'smv_withdrawal_payouts' }),
-  walletRechargeOrders: Object.freeze({ path: 'razorpay_orders', filter: data => data.serviceName === 'SMV ASTRO Wallet Recharge' }),
+  walletRechargeOrders: Object.freeze({ path: 'razorpay_orders', filter: data => String(data.serviceName || data.service || '') === 'SMV ASTRO Wallet Recharge' }),
   razorpayWebhookEvents: Object.freeze({ path: 'razorpay_webhook_events' }),
   billingSettings: Object.freeze({ path: 'smv_settings', named: ['liveSessionPricing', 'commission'] })
 });
@@ -46,8 +46,24 @@ export function legacyTimestampMilliseconds(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const SENSITIVE_LEGACY_FIELD = /password|passwd|token|secret|private.?key|bank|account|ifsc|upi|vpa|phone|mobile|email|address|contact|signature|authorization|credential|aadhaar|aadhar|pan/i;
+
+function redactLegacyPayload(value, depth = 0) {
+  if (depth > 24) return null;
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
+  if (Array.isArray(value)) return value.slice(0, 10000).map(item => redactLegacyPayload(item, depth + 1));
+  if (!value || typeof value !== 'object') return value;
+  const output = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (child !== undefined && !SENSITIVE_LEGACY_FIELD.test(key.replace(/[^A-Za-z0-9]/g, ''))) {
+      output[key] = redactLegacyPayload(child, depth + 1);
+    }
+  }
+  return output;
+}
+
 function json(value) {
-  try { return JSON.stringify(value ?? {}); }
+  try { return JSON.stringify(redactLegacyPayload(value ?? {})); }
   catch { return '{}'; }
 }
 
@@ -415,13 +431,10 @@ function insertWithdrawal(data, id) {
   }]);
 }
 
-function insertWithdrawalPayout(data, id) {
-  return result([{
-    kind: 'withdrawal_payout',
-    sql: `INSERT OR IGNORE INTO smv_domain_withdrawal_payouts
-      (withdrawal_id,private_payout_json,created_at_ms,updated_at_ms) VALUES (?,?,?,?)`,
-    values: [id,json(data),dateField(data,'createdAt') ?? 0,dateField(data,'updatedAt') ?? dateField(data,'createdAt') ?? 0]
-  }]);
+function insertWithdrawalPayout() {
+  // Never persist a legacy payout payload in plaintext. The asynchronous
+  // AES-256-GCM mapper below is the only path allowed to map this collection.
+  return result([], 'PAYOUT_ENCRYPTION_REQUIRED');
 }
 
 function insertWebhookEvent(data, id) {
@@ -443,6 +456,34 @@ function insertWebhookEvent(data, id) {
     values: [id,eventType,string(data.razorpayPaymentId || data.paymentId) || null,
       string(data.razorpayOrderId || data.orderId) || null,processed,
       nonNegativeInteger(data.retryCount) ?? 0,json(data),received,processedAt]
+  }]);
+}
+
+function insertWalletRechargeOrder(data, id) {
+  const serviceName = string(data.serviceName || data.service);
+  if (serviceName !== 'SMV ASTRO Wallet Recharge') return result([], 'NOT_WALLET_RECHARGE_ORDER');
+  const orderId = string(data.razorpayOrderId || data.orderId || id);
+  const ownerUid = string(data.firebaseUid || data.customerUid || data.ownerUid) || null;
+  const amountPaise = nonNegativeInteger(data.amountPaise ?? data.amount);
+  const currency = string(data.currency || 'INR').toUpperCase();
+  const status = string(data.status || data.paymentStatus || 'created').toLowerCase();
+  const paymentId = string(data.razorpayPaymentId || data.paymentId) || null;
+  const walletRechargeId = string(data.walletRechargeId) || null;
+  const idempotencyKey = string(data.idempotencyKey || data.receipt) || (orderId ? 'legacy-order:' + orderId : '');
+  const createdAt = dateField(data, 'createdAt', 'created_at') ?? 0;
+  const updatedAt = dateField(data, 'updatedAt', 'updated_at') ?? createdAt;
+  if (!orderId || !Number.isSafeInteger(amountPaise) || amountPaise <= 0 ||
+      currency !== 'INR' || !/^[a-z0-9_-]{1,32}$/.test(status) || !idempotencyKey) {
+    return result([], 'RAZORPAY_WALLET_ORDER_INVALID');
+  }
+  return result([{
+    kind: 'wallet_recharge_order',
+    sql: `INSERT OR IGNORE INTO smv_domain_razorpay_orders
+      (order_id,owner_uid,service_name,amount_paise,currency,status,payment_id,payload_json,
+       created_at_ms,updated_at_ms,wallet_recharge_id,idempotency_key)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+    values: [orderId, ownerUid, serviceName, amountPaise, currency, status, paymentId,
+      json(data), createdAt, updatedAt, walletRechargeId, idempotencyKey]
   }]);
 }
 
@@ -480,17 +521,29 @@ export function mapLegacyWalletDomainDocument(collectionKey, document, { parentI
     case 'withdrawalPayouts': mapped = insertWithdrawalPayout(data,id); break;
     case 'razorpayWebhookEvents': mapped = insertWebhookEvent(data,id); break;
     case 'billingSettings': mapped = insertSetting(data,id); break;
+    case 'walletRechargeOrders': mapped = insertWalletRechargeOrder(data,id); break;
     case 'walletOfferAudit':
-    case 'walletRechargeOrders':
       mapped = result([], 'RAW_ARCHIVE_ONLY');
       break;
     default:
       return { statements: [], mapped: false, warning: 'BACKFILL_COLLECTION_UNSUPPORTED' };
   }
-  const raw = json(data);
-  const sourceUpdated = legacyTimestampMilliseconds(document.updateTime) ?? dateField(data,'updatedAt');
-  const digestPlaceholder = string(document.payloadSha256) || '';
-  const rawStatement = {
+  const rawStatement = createLegacyArchiveStatement(collectionKey, document, parentId, nowMs);
+  if (collectionKey === 'withdrawalPayouts') {
+    return { statements: [], mapped: false, warning: mapped.warning || 'PAYOUT_ENCRYPTION_REQUIRED' };
+  }
+  const statements = mapped.statements.slice();
+  statements.push(rawStatement);
+  return { statements, mapped: mapped.statements.length > 0, warning: mapped.warning || '' };
+}
+
+function createLegacyArchiveStatement(collectionKey, document, parentId = '', nowMs = Date.now(), safeOverride = null) {
+  const id = string(document?.id);
+  const data = document?.data && typeof document.data === 'object' ? document.data : {};
+  const raw = json(safeOverride ?? data);
+  const sourceUpdated = legacyTimestampMilliseconds(document?.updateTime) ?? dateField(data,'updatedAt');
+  const digestPlaceholder = string(document?.payloadSha256) || '';
+  return {
     kind: 'legacy_document_archive',
     sql: `INSERT INTO smv_domain_legacy_documents
       (source_collection,document_id,source_update_time_ms,payload_sha256,payload_json,imported_at_ms)
@@ -504,7 +557,78 @@ export function mapLegacyWalletDomainDocument(collectionKey, document, { parentI
       : WALLET_DOMAIN_BACKFILL_COLLECTIONS[collectionKey]?.path || collectionKey,
       id,sourceUpdated,digestPlaceholder,raw,Number(nowMs)]
   };
-  const statements = mapped.statements.slice();
-  statements.push(rawStatement);
-  return { statements, mapped: mapped.statements.length > 0, warning: mapped.warning || '' };
+}
+
+function hex(bytes) {
+  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+}
+
+function decodeAes256Key(encoded) {
+  const source = string(encoded);
+  if (!source) return null;
+  const normalized = source.replace(/-/g, '+').replace(/_/g, '/');
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(normalized)) throw new TypeError('PAYOUT_ENCRYPTION_KEY_INVALID');
+  const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+  if (bytes.length !== 32) throw new TypeError('PAYOUT_ENCRYPTION_KEY_INVALID');
+  return bytes;
+}
+
+/** Encrypts the private source payload; only ciphertext and a redacted archive enter D1. */
+export async function mapLegacyWalletDomainDocumentWithPayoutEncryption(
+  collectionKey, document,
+  { parentId = '', nowMs = Date.now(), payoutEncryptionKey = '',
+    payoutKeyVersion = 'v1', sourceProjectId = 'smv-astro-staging',
+    cryptoImpl = globalThis.crypto } = {}
+) {
+  if (collectionKey !== 'withdrawalPayouts') {
+    return mapLegacyWalletDomainDocument(collectionKey, document, { parentId, nowMs });
+  }
+  const id = string(document?.id);
+  const data = document?.data && typeof document.data === 'object' ? document.data : {};
+  const withdrawalId = string(data.withdrawalId) || id;
+  const version = string(payoutKeyVersion) || 'v1';
+  if (!id || !withdrawalId) return { statements: [], mapped: false, warning: 'PAYOUT_WITHDRAWAL_ID_INVALID' };
+  if (!string(payoutEncryptionKey)) return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_KEY_MISSING' };
+  if (!/^[A-Za-z0-9._-]{1,32}$/.test(version)) return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_KEY_VERSION_INVALID' };
+  if (!cryptoImpl?.subtle?.importKey || !cryptoImpl?.subtle?.encrypt || !cryptoImpl?.subtle?.digest ||
+      typeof cryptoImpl.getRandomValues !== 'function') {
+    return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_UNAVAILABLE' };
+  }
+  try {
+    const rawKey = decodeAes256Key(payoutEncryptionKey);
+    const key = await cryptoImpl.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['encrypt']);
+    const nonce = cryptoImpl.getRandomValues(new Uint8Array(12));
+    const additionalData = new TextEncoder().encode(
+      'smv-astro-wallet-payout:v1:' + sourceProjectId + ':' + withdrawalId + ':' + version
+    );
+    const plaintext = new TextEncoder().encode(JSON.stringify(data));
+    const encrypted = new Uint8Array(await cryptoImpl.subtle.encrypt(
+      { name: 'AES-GCM', iv: nonce, additionalData, tagLength: 128 }, key, plaintext
+    ));
+    if (encrypted.length <= 16) throw new Error('PAYOUT_ENCRYPTION_FAILED');
+    const ciphertext = encrypted.slice(0, -16);
+    const tag = encrypted.slice(-16);
+    const digest = new Uint8Array(await cryptoImpl.subtle.digest('SHA-256', plaintext));
+    const createdAt = dateField(data, 'createdAt') ?? 0;
+    const updatedAt = dateField(data, 'updatedAt') ?? createdAt;
+    const encryptedStatement = {
+      kind: 'encrypted_withdrawal_payout',
+      sql: `INSERT OR IGNORE INTO smv_domain_withdrawal_payouts_encrypted
+        (withdrawal_id,algorithm,key_version,nonce_hex,ciphertext_hex,auth_tag_hex,
+         source_payload_sha256,created_at_ms,updated_at_ms)
+        VALUES (?,?,?,?,?,?,?,?,?)`,
+      values: [withdrawalId, 'AES-256-GCM', version, hex(nonce), hex(ciphertext), hex(tag),
+        string(document.payloadSha256) || hex(digest), createdAt, updatedAt]
+    };
+    const archiveStatement = createLegacyArchiveStatement(collectionKey, document, '', nowMs, {
+      encryptedPrivatePayload: true,
+      encryptionAlgorithm: 'AES-256-GCM',
+      keyVersion: version
+    });
+    return { statements: [encryptedStatement, archiveStatement], mapped: true, warning: '' };
+  } catch {
+    return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_FAILED' };
+  }
 }
