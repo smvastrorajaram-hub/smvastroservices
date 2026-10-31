@@ -27,16 +27,22 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
   if (!db || typeof db.prepare !== 'function') throw new TypeError('A D1 database binding is required.');
   const statement = (sql, values = []) => db.prepare(sql).bind(...values);
 
-  async function enqueue(input) {
+  function createEnqueueStatement(input) {
     const event = validEvent(input);
     const timestamp = Number(now());
-    await statement(
+    const prepared = statement(
       `INSERT OR IGNORE INTO smv_domain_outbox
        (outbox_id, event_type, event_key, payload_json, status, attempt_count,
         next_attempt_at_ms, created_at_ms, updated_at_ms)
        VALUES (?, ?, ?, ?, 'pending', 0, ?, ?, ?)`,
       [event.outboxId, event.eventType, event.eventKey, event.payloadJson, timestamp, timestamp, timestamp]
-    ).run();
+    );
+    return Object.freeze({ statement: prepared, ...event });
+  }
+
+  async function enqueue(input) {
+    const event = createEnqueueStatement(input);
+    await event.statement.run();
     const row = await statement(
       'SELECT outbox_id, status FROM smv_domain_outbox WHERE event_type = ? AND event_key = ? LIMIT 1',
       [event.eventType, event.eventKey]
@@ -89,5 +95,5 @@ export function createD1OutboxRepository({ db, now = Date.now } = {}) {
     return { scanned: page?.results?.length || 0, sent, failed };
   }
 
-  return Object.freeze({ enqueue, dispatchPending });
+  return Object.freeze({ createEnqueueStatement, enqueue, dispatchPending });
 }
