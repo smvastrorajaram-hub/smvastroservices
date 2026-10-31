@@ -9,19 +9,25 @@ on:
       - 'test/firestore-wallet-readonly-inventory.test.mjs'
       - 'docs/firestore-wallet-readonly-inventory.md'
       - '.github/workflows/firestore-wallet-readonly-inventory.yml'
+  pull_request:
+    branches:
+      - feature/cloudflare-wallet-d1-backfill-reconciliation-20261031
+    paths:
+      - 'scripts/firestore-wallet-readonly-inventory.mjs'
+      - 'test/firestore-wallet-readonly-inventory.test.mjs'
+      - 'docs/firestore-wallet-readonly-inventory.md'
+      - '.github/workflows/firestore-wallet-readonly-inventory.yml'
 
 permissions:
   contents: read
 
 jobs:
-  firestore-wallet-source-inventory:
-    name: Count Production Wallet sources (read-only)
+  validate:
+    name: Validate read-only inventory safeguards
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: firestore-wallet-readonly
+    timeout-minutes: 10
     steps:
-      - name: Checkout the approved inventory branch
+      - name: Checkout code for tests only
         uses: actions/checkout@v4
 
       - name: Set up Node.js 22
@@ -36,6 +42,23 @@ jobs:
 
       - name: Test the read-only query and report safeguards
         run: node --test test/firestore-wallet-readonly-inventory.test.mjs
+
+  firestore-wallet-source-inventory:
+    name: Count Production Wallet sources (read-only)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/firestore-wallet-readonly-inventory-20261031'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: firestore-wallet-readonly
+    steps:
+      - name: Checkout the dedicated inventory branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Read Production Firestore aggregate counts only
         env:
