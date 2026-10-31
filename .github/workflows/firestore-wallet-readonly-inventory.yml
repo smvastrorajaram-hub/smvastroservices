@@ -60,13 +60,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Read Production Firestore aggregate counts only
+      - name: Read Production Firestore counts and allowlisted metadata only
         env:
           SMV_FIRESTORE_SOURCE_PROJECT_ID: ${{ vars.SMV_FIRESTORE_SOURCE_PROJECT_ID }}
           SMV_FIRESTORE_SOURCE_READONLY_CREDENTIALS: ${{ secrets.SMV_FIRESTORE_SOURCE_READONLY_CREDENTIALS }}
         run: node scripts/firestore-wallet-readonly-inventory.mjs
 
-      - name: Upload count-only inventory report
+      - name: Upload data-minimized inventory report
         if: always() && hashFiles('artifacts/firestore-wallet-source-inventory.json') != ''
         uses: actions/upload-artifact@v4
         with:

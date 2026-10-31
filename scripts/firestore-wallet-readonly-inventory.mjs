@@ -576,7 +576,7 @@ export async function runInventory({
   const report = {
     reportType: 'SMV_ASTRO_FIRESTORE_WALLET_SOURCE_INVENTORY',
     schemaVersion: 1,
-    mode: 'read-only-counts-and-settings-metadata',
+    mode: 'read-only-counts-and-allowlisted-metadata',
     generatedAt: generatedAt.toISOString(),
     sourceProjectId: config.projectId,
     serviceAccountProjectMatches: true,
