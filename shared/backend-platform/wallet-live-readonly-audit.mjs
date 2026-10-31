@@ -747,12 +747,22 @@ function buildFinancialReconciliation(refs) {
   const pricingSettingPresent = refs.billingSettings.some(item => item.settingId === 'liveSessionPricing');
   const commissionSettingPresent = !!commissionSetting;
   const commissionData = commissionSetting?.data || {};
-  const astroPercent = Number(commissionData.astroPercent ?? 20);
-  const adminPercent = Number(commissionData.adminPercent ?? (100 - astroPercent));
+  const sourceAstroPercent = Number(commissionData.astroPercent);
+  const sourceAdminPercent = Number(commissionData.adminPercent);
   const commissionPercentValid = commissionSettingPresent &&
-    Number.isFinite(astroPercent) && Number.isFinite(adminPercent) &&
-    astroPercent >= 0 && astroPercent <= 100 && adminPercent >= 0 && adminPercent <= 100 &&
-    Math.abs(astroPercent + adminPercent - 100) <= 0.001;
+    Number.isFinite(sourceAstroPercent) && Number.isFinite(sourceAdminPercent) &&
+    sourceAstroPercent >= 0 && sourceAstroPercent <= 100 &&
+    sourceAdminPercent >= 0 && sourceAdminPercent <= 100 &&
+    Math.abs(sourceAstroPercent + sourceAdminPercent - 100) <= 0.001;
+  // The legacy Firebase service's explicit no-document fallback is 20/80.
+  // Migration 0009 seeds this compatibility setting in isolated D1 staging
+  // without creating or mutating a Firestore source document.
+  const effectiveAstroPercent = commissionSettingPresent ? sourceAstroPercent : 20;
+  const effectiveAdminPercent = commissionSettingPresent ? sourceAdminPercent : 80;
+  const commissionEffectivePercentValid = Number.isFinite(effectiveAstroPercent) &&
+    Number.isFinite(effectiveAdminPercent) && effectiveAstroPercent >= 0 &&
+    effectiveAstroPercent <= 100 && effectiveAdminPercent >= 0 &&
+    effectiveAdminPercent <= 100 && Math.abs(effectiveAstroPercent + effectiveAdminPercent - 100) <= 0.001;
   const missingSettings = [];
   if (!pricingSettingPresent) missingSettings.push('smv_settings/liveSessionPricing');
   if (!commissionSettingPresent) missingSettings.push('smv_settings/commission');
@@ -760,6 +770,10 @@ function buildFinancialReconciliation(refs) {
     pricingSettingPresent,
     commissionSettingPresent,
     commissionPercentValid,
+    commissionEffectivePercentValid,
+    effectiveCommissionSource: commissionSettingPresent ? 'firestore' : 'legacy_runtime_fallback',
+    effectiveAstroPercent,
+    effectiveAdminPercent,
     missingSettings
   };
 
@@ -1004,12 +1018,14 @@ export function createWalletLiveReadOnlyAudit({
         ...(accumulators.scheduledCallChatAppointments.unmappableRecords > 0
           ? ['One or more scheduled Call/Chat appointments have invalid required identities or booking fields.']
           : []),
-        ...financialReconciliation.billingConfiguration.missingSettings.map(setting =>
-          setting + ' is missing from the staging Firestore source; billing configuration readiness cannot be verified.'
-        ),
-        ...(!financialReconciliation.billingConfiguration.commissionPercentValid &&
-          financialReconciliation.billingConfiguration.commissionSettingPresent
-          ? ['The staging commission percentages are invalid or do not add up to 100%.'] : [])
+        ...financialReconciliation.billingConfiguration.missingSettings
+          .filter(setting => setting !== 'smv_settings/commission')
+          .map(setting => setting + ' is missing from the staging Firestore source; billing configuration readiness cannot be verified.'),
+        ...(financialReconciliation.billingConfiguration.commissionSettingPresent &&
+          !financialReconciliation.billingConfiguration.commissionPercentValid
+          ? ['The staging commission percentages are invalid or do not add up to 100%.']
+          : []),
+
       ],
       writesPerformed: 0,
       sourceWritesPerformed: 0,
