@@ -1,0 +1,34 @@
+name: Cloudflare backend legacy route inventory guard
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-backend-runtime-staging-20261031
+    paths:
+      - 'shared/backend-platform/legacy-backend-route-inventory.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/test/legacy-route-inventory.test.mjs'
+      - '.github/workflows/cloudflare-backend-route-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route-inventory-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Worker and shared inventory syntax
+        run: |
+          node --check cloudflare/backend-api/src/index.mjs
+          node --check shared/backend-platform/legacy-backend-route-inventory.mjs
+          node --check cloudflare/backend-api/test/legacy-route-inventory.test.mjs
+      - name: Verify complete route count, uniqueness and path matching
+        working-directory: cloudflare/backend-api
+        run: node --test test/legacy-route-inventory.test.mjs
