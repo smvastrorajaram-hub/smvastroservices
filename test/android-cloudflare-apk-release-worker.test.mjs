@@ -125,23 +125,11 @@ function envFor({ uploadsEnabled = true } = {}) {
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
     ALLOWED_ORIGINS: 'https://smvastroservices.in',
-    LEGACY_ANDROID_RELEASE_URL: 'https://smvastroservices.onrender.com/public/android-app'
   };
 }
 
-function legacyFetch(versionCode = 1005) {
-  return async url => {
-    assert.equal(String(url), 'https://smvastroservices.onrender.com/public/android-app');
-    if (!versionCode) return Response.json({ success: true, available: false });
-    return Response.json({
-      success: true, available: true, packageName: PACKAGE,
-      versionName: 'v' + Math.floor(versionCode / 1000) + '.' + (versionCode % 1000),
-      versionCode, downloadUrl: LEGACY_URL, size: 2300, uploadedAt: 1700000000000
-    });
-  };
-}
 
-function makeWorker(env, { legacyVersionCode = 0, logger = { error() {} } } = {}) {
+function makeWorker(env, { logger = { error() {} } = {}) {
   const worker = createAndroidApkReleaseWorker({
     verifyToken: async token => {
       if (token !== 'admin-token') throw new Error('invalid token');
@@ -158,7 +146,6 @@ function makeWorker(env, { legacyVersionCode = 0, logger = { error() {} } } = {}
         certificateSha256: '7A3BE159218A38083986DEC117C0BD281B3EF42BDA65F2BB7B8C9946B5293401'
       };
     },
-    fetchImpl: legacyFetch(legacyVersionCode),
     logger
   });
   return { worker, env };
@@ -222,50 +209,32 @@ test('health performs a read-only R2 binding probe and fails closed when R2 is u
   assert.doesNotMatch(logged[0], /do-not-log-this/);
 });
 
-test('transient legacy metadata lookup network errors are retried once before returning the empty-release state', async () => {
+test('empty D1 metadata is healthy and never calls the unavailable Render service', async () => {
   const env = envFor();
-  let calls = 0;
-  const worker = createAndroidApkReleaseWorker({
-    fetchImpl: async () => {
-      calls += 1;
-      if (calls === 1) throw new TypeError('temporary connection reset');
-      return Response.json({ success: true, available: false });
-    },
-    logger: { error() {} }
-  });
+  const { worker } = makeWorker(env);
   const response = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { success: true, available: false });
-  assert.equal(calls, 2);
 });
 
-test('persistent legacy lookup failures expose a safe diagnostic code and request id without leaking secrets', async () => {
+test('empty Admin history and unknown downloads are resolved from D1 without Render access', async () => {
   const env = envFor();
-  const logged = [];
-  let calls = 0;
-  const worker = createAndroidApkReleaseWorker({
-    fetchImpl: async () => {
-      calls += 1;
-      throw new TypeError('request to https://smvastroservices.onrender.com/public/android-app?token=do-not-log-this failed');
-    },
-    logger: { error: message => logged.push(message) }
-  });
-  const response = await worker.fetch(new Request('https://apk.example/public/android-app', {
-    headers: { 'cf-ray': 'metadata-error-ray-5678' }
+  const { worker } = makeWorker(env);
+  const current = await worker.fetch(new Request('https://apk.example/admin/android-app', {
+    headers: { Authorization: 'Bearer admin-token' }
   }), env);
-  assert.equal(response.status, 503);
-  const body = await response.json();
-  assert.equal(body.success, false);
-  assert.equal(body.code, 'LEGACY_RELEASE_NETWORK_ERROR');
-  assert.equal(body.requestId, 'metadata-error-ray-5678');
-  assert.equal(calls, 2);
-  assert.equal(logged.length, 1);
-  assert.match(logged[0], /metadata-error-ray-5678/);
-  assert.match(logged[0], /LEGACY_RELEASE_NETWORK_ERROR/);
-  assert.doesNotMatch(logged[0], /do-not-log-this/);
-  assert.doesNotMatch(JSON.stringify(body), /do-not-log-this/);
-});
+  assert.equal(current.status, 200);
+  assert.deepEqual(await current.json(), { success: true, available: false });
 
+  const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
+    headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(history.status, 200);
+  assert.deepEqual((await history.json()).versions, []);
+
+  const missing = await worker.fetch(new Request('https://apk.example/download/1001'), env);
+  assert.equal(missing.status, 404);
+});
 test('admin-only upload rejects unauthenticated requests and respects disabled upload gate', async () => {
   const env = envFor({ uploadsEnabled: true });
   const { worker } = makeWorker(env);
