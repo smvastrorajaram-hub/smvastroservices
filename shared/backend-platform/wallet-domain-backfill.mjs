@@ -145,23 +145,13 @@ function insertLegacyWalletTransaction(data, id) {
   const created = dateField(data, 'createdAt', 'updatedAt') ?? 0;
   return result([{
     kind: 'legacy_wallet_transaction',
-    sql: `INSERT INTO smv_domain_legacy_wallet_transactions
+    sql: `INSERT OR IGNORE INTO smv_domain_legacy_wallet_transactions
       (source_document_id,owner_uid,owner_role,type,direction,amount_paise,balance_after_paise,
        reserved_balance_after_paise,bonus_minutes,bonus_minutes_credited,bonus_minutes_balance_after,
        reserved_bonus_minutes_after,idempotency_key,reference_type,reference_id,note,metadata_json,
        status,created_at_ms,payload_json)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(source_document_id) DO UPDATE SET
-       owner_uid=excluded.owner_uid,owner_role=excluded.owner_role,type=excluded.type,
-       direction=excluded.direction,amount_paise=excluded.amount_paise,
-       balance_after_paise=excluded.balance_after_paise,
-       reserved_balance_after_paise=excluded.reserved_balance_after_paise,
-       bonus_minutes=excluded.bonus_minutes,bonus_minutes_credited=excluded.bonus_minutes_credited,
-       bonus_minutes_balance_after=excluded.bonus_minutes_balance_after,
-       reserved_bonus_minutes_after=excluded.reserved_bonus_minutes_after,
-       idempotency_key=excluded.idempotency_key,reference_type=excluded.reference_type,
-       reference_id=excluded.reference_id,note=excluded.note,metadata_json=excluded.metadata_json,
-       status=excluded.status,created_at_ms=excluded.created_at_ms,payload_json=excluded.payload_json`,
+`,
     values: [id,ownerUid,ownerRole,type,direction,amount,balance,reserved,bonus,bonusCredited,
       bonusAfter,reservedBonusAfter,string(data.idempotencyKey),
       data.referenceType == null ? null : string(data.referenceType),
