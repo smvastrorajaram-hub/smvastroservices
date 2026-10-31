@@ -1,4 +1,6 @@
 import {
+  parseRupeesToPaise,
+  splitLiveCommission,
   LIVE_RING_TIMEOUT_MS,
   LIVE_PREPARATION_DURATION_MS,
   LIVE_CALL_CONNECT_TIMEOUT_MS,
@@ -220,9 +222,15 @@ export function registerD1LiveSessionRoutes({
         await publish(result.session.customerUid,'live.session.updated',result.session.id,{session:result.session});
       } else if(result.kind==='booking'&&result.booking) {
         const expiresAt=Date.parse(result.booking.expiresAt||'')||Date.now()+LIVE_BOOKING_EXPIRY_MS;
-        await schedule(result.booking.id,'booking_pending',[
-          deadline('booking_expiry',expiresAt,'booking:'+result.booking.id)
-        ]).catch(error=>console.warn('[Live Session] Booking expiry alarm deferred:',error?.message||error));
+        try {
+          await schedule(result.booking.id,'booking_pending',[
+            deadline('booking_expiry',expiresAt,'booking:'+result.booking.id)
+          ]);
+        } catch(error) {
+          await liveService.expireBooking(result.booking.id).catch(releaseError=>
+            console.error('[Live Session] Booking timer failure release deferred:',releaseError?.message||releaseError));
+          throw error;
+        }
         await publish(result.booking.astrologerUid,'live.booking.updated',result.booking.id,{booking:result.booking});
         await publish(result.booking.customerUid,'live.booking.updated',result.booking.id,{booking:result.booking});
       }
