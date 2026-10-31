@@ -48,7 +48,9 @@ function deadlineFrom(input) {
   const deadlineId = String(input?.deadlineId || (type + ':' + atMs)).slice(0, 240);
   if (!ALLOWED_DEADLINE_TYPES.has(type) || !Number.isSafeInteger(atMs) || atMs < 1 ||
       !deadlineId || deadlineId.includes('/')) return null;
-  return { type, atMs, deadlineId, generation: Number.isSafeInteger(input?.generation) ? input.generation : 0 };
+  const participantUid = validUid(input?.participantUid);
+  return { type, atMs, deadlineId, generation: Number.isSafeInteger(input?.generation) ? input.generation : 0,
+    ...(type === 'disconnect_grace' && participantUid ? { participantUid } : {}) };
 }
 
 function freshRecord(sessionId) {
@@ -177,17 +179,29 @@ export class LiveSessionCoordinator {
     if (!uid || typeof body.connected !== 'boolean') return json({ ok: false, code: 'CONNECTION_INVALID' }, 400);
     const record = await this.readRecord();
     if (!record.sessionId) return json({ ok: false, code: 'SESSION_NOT_SCHEDULED' }, 404);
+    const participantPrefix = 'disconnect_grace:' + uid + ':';
     if (connected) {
-      record.deadlines = record.deadlines.filter(item => item.type !== 'disconnect_grace');
+      record.deadlines = record.deadlines.filter(item =>
+        item.type !== 'disconnect_grace' || !String(item.deadlineId || '').startsWith(participantPrefix)
+      );
+      record.pendingEvents = record.pendingEvents.filter(item =>
+        item.deadlineType !== 'disconnect_grace' || String(item.participantUid || '') !== uid
+      );
     } else {
       const atMs = Number(body.disconnectDeadlineAtMs);
       const deadline = deadlineFrom({
         type: 'disconnect_grace', atMs,
         deadlineId: 'disconnect_grace:' + uid + ':' + atMs,
-        generation: Number(body.generation || 0)
+        generation: Number(body.generation || 0),
+        participantUid: uid
       });
       if (!deadline) return json({ ok: false, code: 'DEADLINE_INVALID' }, 400);
-      record.deadlines = record.deadlines.filter(item => item.type !== 'disconnect_grace');
+      record.deadlines = record.deadlines.filter(item =>
+        item.type !== 'disconnect_grace' || !String(item.deadlineId || '').startsWith(participantPrefix)
+      );
+      record.pendingEvents = record.pendingEvents.filter(item =>
+        item.deadlineType !== 'disconnect_grace' || String(item.participantUid || '') !== uid
+      );
       record.deadlines.push(deadline);
     }
     record.deadlines.sort((a, b) => a.atMs - b.atMs);
@@ -304,6 +318,7 @@ export class LiveSessionCoordinator {
           eventId, type: 'live.session.deadline',
           sessionId: record.sessionId, deadlineType: item.type,
           deadlineAtMs: item.atMs, generation: item.generation,
+          participantUid: item.participantUid || '',
           attempts: 0, nextAttemptAtMs: now
         });
       }
@@ -409,7 +424,8 @@ export class LiveSessionCoordinator {
           sessionId: event.sessionId,
           deadlineType: event.deadlineType,
           deadlineAtMs: event.deadlineAtMs,
-          generation: event.generation
+          generation: event.generation,
+          participantUid: event.participantUid || ''
         });
         event.deliveredAtMs = Date.now();
       } catch (error) {
