@@ -212,4 +212,5 @@ async function main() {
   console.log(JSON.stringify(summary));
 }
 
-if (process.argv[2] === "--verify-binding") await verifyDeployedBinding();\nelse await main();
+if (process.argv[2] === "--verify-binding") await verifyDeployedBinding();
+else await main();
