@@ -13,7 +13,7 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 ## Cloudflare resources
 
 1. Use only the existing R2 bucket **smv-astro-apk-releases**.
-2. Use only the existing D1 database **smv-astro-apk-releases**, ID `5105ebb3-435c-47b7-9983-2e171fa911cd`. Do not create another D1 database and do not substitute another database ID.
+2. Use only the existing D1 database **smv-astro-apk-releases**, ID `5105ebb3-435c-47b7-9983-2e171fa911cd`. Do not create another D1 database and do not substitute another database ID. If the live database name or ID differs, the deployment workflow stops before applying the migration.
 3. The checked-in `cloudflare/android-apk-release/wrangler.toml` already contains this exact D1 name/ID and R2 bucket binding. The deployment workflow verifies both the configured values and the live D1 identity before applying any migration.
 4. Keep the D1 binding name `DB`, the R2 binding name `APK_RELEASES`, and `ALLOW_APK_UPLOADS = "false"`.
 5. The deployment workflow uses the default D1 migration ledger in this dedicated APK Release database. It applies only the SQL files in `cloudflare/android-apk-release/migrations`.
