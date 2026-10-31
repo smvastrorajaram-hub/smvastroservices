@@ -30,12 +30,16 @@ Migration \`0007_identity_profile_domain.sql\` adds separate D1 tables for:
 
 Bank/payout details are intentionally separate from ordinary profile reads. The
 ordinary user profile role cannot grant Admin access; Admin authority must come
-from a trusted Firebase custom claim, a configured server allowlist, or the
-separate D1 Admin allowlist table.
+from a trusted Firebase custom claim, a project-scoped configured server
+allowlist, or the separate project-scoped D1 Admin allowlist table. Identity,
+Astrologer approval and Admin records use the Firebase project ID together with
+the UID because Firebase UIDs are scoped to their project.
 
 ## Runtime state and safety
 
 - The new resolver is a standalone module and is not wired into live routes yet.
+- Configured Admin UID/email entries use `<firebaseProjectId>:<uid-or-email>` so a
+  trusted identity in one Firebase project cannot inherit Admin authority in another.
 - Existing \`firebase-identity-service.mjs\` and its Firestore reads are unchanged.
 - No user/profile/phone/Admin/payout data is copied by this step.
 - No production or staging Firestore is read or written.
