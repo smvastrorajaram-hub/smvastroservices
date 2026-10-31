@@ -424,7 +424,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         priority: Number(row.priority || 0),
         usedCount: safePaise(row.used_count),
         successfulRedemptions: safePaise(row.successful_redemptions),
-        totalBonusMinutesAwarded: safeMinutes(row.total_bonus_minutes_awarded),
+        totalBonusMinutesAwarded: safePaise(row.total_bonus_minutes_awarded),
         startAt: date(row.start_at_ms),
         endAt: date(row.end_at_ms),
         createdAt: date(row.created_at_ms),
