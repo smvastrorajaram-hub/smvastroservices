@@ -123,12 +123,13 @@ async function cloudflareRequest(url, token, options = {}) {
   });
   const body = await response.json().catch(() => null);
   if (!response.ok || body?.success !== true) {
-    const codes = Array.isArray(body?.errors)
-      ? body.errors.map(item => String(item?.code || "")).filter(Boolean).join(",")
-      : "";
+    const errors = Array.isArray(body?.errors) ? body.errors : [];
+    const codes = errors.map(item => String(item?.code || "")).filter(Boolean).join(",");
+    const messages = errors.map(item => String(item?.message || "")).filter(Boolean).join("; ").slice(0, 240);
     throw new Error(
       "Cloudflare API request failed (HTTP " + response.status +
-      (codes ? ", API codes " + codes : "") + ")."
+      (codes ? ", API codes " + codes : "") +
+      (messages ? ", message: " + messages : "") + ")."
     );
   }
   return body;
@@ -228,10 +229,18 @@ async function verifyRemoteSchema(base, databaseId, token, objects) {
   assertExactSet("Production D1 triggers", actualTriggers, objects.triggers);
   assert.ok(actualTables.includes("d1_migrations"), "Wrangler migration ledger is missing.");
 
-  const countUnion = objects.tables.map(table =>
-    "SELECT '" + table + "' AS table_name, COUNT(*) AS row_count FROM " + table
-  ).join(" UNION ALL ");
-  const counts = await d1Query(base, databaseId, token, countUnion);
+  const counts = [];
+  for (const table of objects.tables) {
+    // Keep remote verification to simple single-table SELECTs. This avoids a
+    // large compound UNION query and never reads application row contents.
+    const result = await d1Query(
+      base,
+      databaseId,
+      token,
+      "SELECT COUNT(*) AS row_count FROM " + table
+    );
+    counts.push({ table_name: table, row_count: result[0]?.row_count ?? 0 });
+  }
   const nonEmpty = counts
     .filter(row => String(row.table_name) !== "smv_domain_schema_meta" && Number(row.row_count) !== 0)
     .map(row => String(row.table_name));
