@@ -4,6 +4,14 @@ def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidApp
         .orElse(providers.environmentVariable("SMV_FIREBASE_ANDROID_APP_ID"))
         .getOrElse("1:299081899217:android:09e43164cfdd015ba539f0")
 
+// Public OAuth configuration only; never put a Client Secret in the Android app.
+def googleWebClientId = providers.gradleProperty("smvGoogleWebClientId")
+        .orElse(providers.environmentVariable("SMV_GOOGLE_WEB_CLIENT_ID"))
+        .getOrElse("299081899217-ht47n60l8t2c7gbo07nd4lpm8i51jk3m.apps.googleusercontent.com")
+if (!(googleWebClientId ==~ /^[0-9]+-[A-Za-z0-9_-]+\\.apps\\.googleusercontent\\.com$/)) {
+    throw new GradleException("SMV_GOOGLE_WEB_CLIENT_ID must be a valid Google OAuth Web Client ID.")
+}
+
 def releaseKeystorePath = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PATH").orNull
 def releaseKeystorePassword = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PASSWORD").orNull
 def releaseKeyAlias = providers.environmentVariable("SMV_ANDROID_KEY_ALIAS").orNull
@@ -17,7 +25,7 @@ def releaseSigningConfigured = [
 
 def appVersionName = providers.gradleProperty("smvVersionName")
         .orElse(providers.environmentVariable("SMV_ANDROID_VERSION_NAME"))
-        .orElse("v1.0")
+        .orElse("v1.2")
         .get()
 def versionMatcher = appVersionName =~ /^v([1-9][0-9]*)\.([0-9]{1,3})$/
 if (!versionMatcher.matches()) {
@@ -85,4 +93,7 @@ dependencies {
     implementation platform("com.google.firebase:firebase-bom:35.1.0")
     implementation "com.google.firebase:firebase-messaging"
     implementation "androidx.webkit:webkit:1.18.0"
+    implementation "androidx.credentials:credentials:1.3.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.3.0"
+    implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
 }
