@@ -64,7 +64,9 @@ test('commission shares always reconcile to the exact gross paise amount',()=>{
   assert.deepEqual(splitLiveCommission(1001,{astroPercent:50,adminPercent:50}),{
     astroPercent:50,adminPercent:50,astrologerAmountPaise:501,adminAmountPaise:500
   });
-  assert.deepEqual(commissionFromPayload({}),{astroPercent:20,adminPercent:80});
+  assert.throws(()=>commissionFromPayload({}),error=>error.code==='LIVE_COMMISSION_NOT_CONFIGURED');
+  assert.deepEqual(commissionFromPayload({astroPercent:35}),{astroPercent:35,adminPercent:65});
+  assert.deepEqual(commissionFromPayload({adminPercent:65}),{astroPercent:35,adminPercent:65});
   assert.throws(()=>splitLiveCommission(1000,{astroPercent:80,adminPercent:80}),error=>error.code==='LIVE_COMMISSION_INVALID');
 });
 
