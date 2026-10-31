@@ -305,8 +305,17 @@ export class LiveSessionCoordinator {
 
   async deliverPending(record) {
     const queue = this.env.LIVE_SESSION_EVENTS;
-    if (!queue || typeof queue.send !== 'function') return;
     const now = Date.now();
+    if (!queue || typeof queue.send !== 'function') {
+      for (const event of record.pendingEvents) {
+        if (event.deliveredAtMs) continue;
+        event.attempts = Number(event.attempts || 0) + 1;
+        event.nextAttemptAtMs = now + Math.min(30000, RETRY_BASE_MS * (2 ** Math.min(event.attempts - 1, 3)));
+        event.lastError = 'LIVE_SESSION_EVENTS queue binding is not configured';
+      }
+      await this.ctx.storage.put('live-session-record', record);
+      return;
+    }
     for (const event of record.pendingEvents) {
       if (event.deliveredAtMs || Number(event.nextAttemptAtMs || 0) > now) continue;
       try {
@@ -327,10 +336,6 @@ export class LiveSessionCoordinator {
       }
     }
     const delivered = record.pendingEvents.filter(item => item.deliveredAtMs);
-    record.deliveredEventIds = remember(
-      Array.isArray(record.deliveredEventIds) ? record.deliveredEventIds : [],
-      ...[]
-    );
     for (const event of delivered) record.deliveredEventIds = remember(record.deliveredEventIds, event.eventId);
     record.pendingEvents = record.pendingEvents.filter(item => !item.deliveredAtMs);
     await this.ctx.storage.put('live-session-record', record);
