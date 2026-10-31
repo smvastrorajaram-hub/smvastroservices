@@ -105,11 +105,12 @@ export function registerD1LiveSessionRoutes({
       console.warn('[Live Session] User event fan-out deferred:',error?.message||error);
     }
   }
-  async function publishSession(session,type='live.session.updated') {
+  async function publishSession(session,type='') {
     if(!session) return;
+    const eventType=type||(session.state==='ended'?'live.session.ended':'live.session.updated');
     await Promise.all([
-      publish(session.customerUid,type,session.id,{session}),
-      publish(session.astrologerUid,type,session.id,{session})
+      publish(session.customerUid,eventType,session.id,{session}),
+      publish(session.astrologerUid,eventType,session.id,{session})
     ]);
   }
   async function schedulePreparation(session) {
