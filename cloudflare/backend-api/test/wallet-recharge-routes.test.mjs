@@ -159,6 +159,19 @@ test('webhook verifies raw body signature and atomically finalizes only Wallet o
   assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
 });
 
+test('payment.failed webhook records a failed attempt while keeping a pending recharge retryable', async () => {
+  const state=baseDeps();
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.failed',
+    payload:{payment:{entity:{id:'pay_failed_attempt',order_id:'order_1',amount:5000,currency:'INR',status:'failed'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(request(raw,{headers:{'X-Razorpay-Signature':'valid'}}),response);
+  assert.equal(response.statusCode,200);
+  assert.equal(state.calls.some(call=>call[0]==='paymentFailed'),true);
+  assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
+});
+
 test('late payment.failed webhook cannot downgrade an already paid Wallet recharge', async () => {
   const state=baseDeps();
   state.walletAdapter.getRechargeByOrderId=async input=>{
