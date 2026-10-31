@@ -132,9 +132,11 @@ jobs:
 
           console.log('CLOUDFLARE_D1_READ_ONLY_INVENTORY');
           console.log(JSON.stringify({
+            inventoryMode: 'read_only',
             databaseCount: databases.length,
             inventory,
             schemaInspection: summaries,
+            inspectedData: 'sqlite_master table names only; no application rows',
             writesPerformed: 0,
             migrationsApplied: 0,
             databasesCreated: 0,
