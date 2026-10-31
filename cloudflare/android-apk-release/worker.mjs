@@ -9,7 +9,6 @@ const DEFAULT_LEGACY_URL = 'https://smvastroservices.onrender.com/public/android
 const DEFAULT_WORKER_ADMIN_UID = 'TwjeEIFS3Zcf1SxboLZoujm91Ky2';
 const FIREBASE_BUCKETS = new Set([
   'smv-astro.firebasestorage.app',
-  'smv-astro-staging.firebasestorage.app'
 ]);
 const APK_CONTENT_TYPE = 'application/vnd.android.package-archive';
 const MAX_UPLOADS_PER_HOUR = 5;
@@ -25,7 +24,8 @@ function allowedOrigins(env) {
     'https://smvastroservices.in',
     'https://www.smvastroservices.in',
     'https://smvastro.pages.dev',
-    'https://smvastroservices.pages.dev'
+    'https://smvastroservices.pages.dev',
+    'https://smvastro.workers.dev'
   ].join(',')));
 }
 
