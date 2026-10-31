@@ -107,6 +107,20 @@ export function registerWalletRechargeRoutes({
 
       try {
         const receipt = 'SMV_WR_' + intent.rechargeId.slice(0, 24);
+        if (intent.retrying && typeof razorpay.findOrderByReceipt === 'function') {
+          const recovered = await razorpay.findOrderByReceipt(receipt, { amountPaise, currency: 'INR' });
+          if (recovered) {
+            await walletAdapter.attachRechargeOrder({
+              ownerUid: user.uid, rechargeId: intent.rechargeId,
+              orderId: recovered.id, amountPaise, currency: 'INR', receipt
+            });
+            return res.set('Cache-Control', 'no-store').json({
+              success: true, rechargeId: intent.rechargeId, orderId: recovered.id,
+              keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise),
+              currency: 'INR', recoveredOrder: true
+            });
+          }
+        }
         const order = await razorpay.createOrder({
           amountPaise,
           currency: 'INR',
