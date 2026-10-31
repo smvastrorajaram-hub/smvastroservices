@@ -20,8 +20,9 @@ function requestOptions(body={}) {
   }
   const pageToken=String(body.pageToken||'');
   if(pageToken.length>4096) throw Object.assign(new Error('Page token is invalid.'),{code:'BACKFILL_PAGE_TOKEN_INVALID',httpStatus:400});
-  const parentId=String(body.parentId||'').trim();
-  if(parentId && !/^[A-Za-z0-9_-]{1,180}$/.test(parentId)) {
+  const parentId=String(body.parentId||'');
+  const parentIdBytes=new TextEncoder().encode(parentId).byteLength;
+  if(parentId && (parentIdBytes>1500 || parentId==='.' || parentId==='..' || parentId.includes('/'))) {
     throw Object.assign(new Error('Parent Live Session ID is invalid.'),{code:'BACKFILL_PARENT_INVALID',httpStatus:400});
   }
   if(['liveSessionMessages','liveSessionSignals'].includes(collection)&&!parentId) {
