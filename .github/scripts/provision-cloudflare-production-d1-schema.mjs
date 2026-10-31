@@ -177,6 +177,7 @@ async function verifyExistingDatabaseIsSafe(base, databaseId, token, expectedObj
   const allNames = rows.map(row => String(row.name || ""));
   const allowed = new Set([
     "d1_migrations",
+    "_cf_KV", // Cloudflare-managed reserved D1 storage table; never read or count as application data.
     ...expectedObjects.tables,
     ...expectedObjects.indexes,
     ...expectedObjects.triggers
@@ -186,7 +187,7 @@ async function verifyExistingDatabaseIsSafe(base, databaseId, token, expectedObj
 
   const existingTables = rows.filter(row => row.type === "table").map(row => String(row.name));
   for (const table of existingTables) {
-    if (table === "d1_migrations" || table === "smv_domain_schema_meta") continue;
+    if (table === "d1_migrations" || table === "_cf_KV" || table === "smv_domain_schema_meta") continue;
     const countRows = await d1Query(base, databaseId, token, "SELECT COUNT(*) AS row_count FROM " + table);
     assert.equal(Number(countRows[0]?.row_count), 0, "Existing production-named D1 contains application rows; refusing to continue.");
   }
@@ -218,7 +219,11 @@ async function verifyRemoteSchema(base, databaseId, token, objects) {
   const actualIndexes = rows.filter(row => row.type === "index").map(row => String(row.name));
   const actualTriggers = rows.filter(row => row.type === "trigger").map(row => String(row.name));
 
-  assertExactSet("Production D1 tables", actualTables.filter(name => name !== "d1_migrations"), objects.tables);
+  assertExactSet(
+    "Production D1 tables",
+    actualTables.filter(name => name !== "d1_migrations" && name !== "_cf_KV"),
+    objects.tables
+  );
   assertExactSet("Production D1 named indexes", actualIndexes, objects.indexes);
   assertExactSet("Production D1 triggers", actualTriggers, objects.triggers);
   assert.ok(actualTables.includes("d1_migrations"), "Wrangler migration ledger is missing.");
@@ -251,7 +256,7 @@ async function verifyRemoteSchema(base, databaseId, token, objects) {
   assert.equal(Number(historyRows[0]?.row_count), MIGRATION_FILES.length, "Not all reviewed migration files were applied.");
 
   return {
-    tableCount: actualTables.filter(name => name !== "d1_migrations").length,
+    tableCount: actualTables.filter(name => name !== "d1_migrations" && name !== "_cf_KV").length,
     indexCount: actualIndexes.length,
     triggerCount: actualTriggers.length,
     migrationCount: MIGRATION_FILES.length,
