@@ -96,6 +96,27 @@ test('resolves an active Customer from project-scoped D1 profile data', async ()
   ]);
 });
 
+
+test('the same UID cannot inherit an application profile from another Firebase project', async () => {
+  const otherProjectIdentity = {
+    ...verifiedIdentity,
+    projectId: 'smv-astro-other'
+  };
+  const db = createDb();
+  const user = await serviceFor({ db, identity: otherProjectIdentity })
+    .authenticateAuthorization('Bearer valid-token');
+
+  assert.equal(user.uid, 'firebase-uid-1');
+  assert.equal(user.firebaseProjectId, 'smv-astro-other');
+  assert.equal(user.role, 'unknown');
+  assert.equal(user.isAdmin, false);
+  assert.deepEqual(db.calls.map(call => call.values), [
+    ['smv-astro-other', 'firebase-uid-1'],
+    ['smv-astro-other', 'firebase-uid-1'],
+    ['smv-astro-other', 'firebase-uid-1']
+  ]);
+});
+
 test('does not trust an Admin-looking value in an ordinary user profile', async () => {
   const db = createDb({
     user: { uid: 'firebase-uid-1', role: 'unknown', status: 'active', profile_json: '{"role":"admin"}' }
