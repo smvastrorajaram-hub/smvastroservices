@@ -78,8 +78,7 @@
           signal: AbortSignal.timeout(3000)
         });
         const health = response.ok ? await response.json() : null;
-        if (health?.success === true && health.ready === true &&
-            health.uploadsEnabled === true) {
+        if (health?.success === true && health.ready === true) {
           return { base: candidate, cloudflare: true };
         }
       } catch (_) {
