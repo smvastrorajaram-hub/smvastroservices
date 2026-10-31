@@ -6,6 +6,7 @@ This is an isolated **staging-only infrastructure scaffold**. It does not replac
 
 - Worker service: `smvastro-wallet-api-staging`
 - D1 database: `smvastro-wallet-staging`
+- Configured staging D1 database ID: `0ddb87a9-8a16-4e39-a806-c9137c64959a`
 - Public health endpoint: `GET /healthz`
 - D1 readiness/schema endpoint: `GET /api/wallet/v1/readiness`
 - Versioned D1 migration: `migrations/0001_wallet_live_domain.sql`
@@ -25,25 +26,30 @@ The migration adds tables for wallet account balances and ledger, verified Razor
 
 Money is integer paise. The schema applies uniqueness/idempotency constraints to Razorpay order/payment IDs, ledger keys, messages, bookings, sessions, refunds, and event IDs. The schema contains no production data and does not migrate or delete Firebase records. Rate and commission values are snapshots for the relevant session; the actual calculation and cutover logic will be added and tested in a later phase. The existing ₹300 minimum withdrawal rule is represented as a database constraint; the seven-day lock and payout workflow still need service-level enforcement and compatibility tests before cutover.
 
-## Create the isolated Cloudflare resources
+## Cloudflare resources already identified
 
-1. In Cloudflare Dashboard → **Workers & Pages**, create a Worker named exactly `smvastro-wallet-api-staging`. Keep it on `workers.dev`; do not configure a custom domain, route, or production DNS.
-2. In Cloudflare Dashboard → **D1 SQL Database**, create a database named exactly `smvastro-wallet-staging`. Choose the Asia-Pacific (`apac`) location hint if available to reduce geographic latency for this India service. Do not import any data.
-3. Create an API token only after both resources exist. Grant only the account-scoped Workers edit permission for `smvastro-wallet-api-staging` and D1 edit permission for `smvastro-wallet-staging`. Do not grant Zone DNS, account administration, billing, R2, or unrelated permissions. Store the token only in GitHub Actions secrets; do not paste it into chat or source files.
-4. In GitHub repository Settings → Secrets and variables → Actions, add:
+- D1 database name: `smvastro-wallet-staging`
+- D1 database ID: `0ddb87a9-8a16-4e39-a806-c9137c64959a`
+- The staging browser origin is configured as a non-secret `ALLOWED_ORIGINS` variable in `wrangler.jsonc`.
+
+If the Worker has not yet been created, in Cloudflare Dashboard → **Workers & Pages**, create a Worker named exactly `smvastro-wallet-api-staging`. Keep it on `workers.dev`; do not configure a custom domain, route, or production DNS. Do not import any Firebase/production data into the staging D1.
+
+## GitHub Actions secrets needed to deploy
+
+Open GitHub → repository → Settings → Secrets and variables → Actions and add only:
 
 | Secret | Value |
 |---|---|
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID |
 | `CLOUDFLARE_API_TOKEN` | Narrowly scoped token for the named Worker and D1 database |
-| `CLOUDFLARE_D1_DATABASE_ID` | UUID/ID displayed for `smvastro-wallet-staging` |
-| `ALLOWED_ORIGINS` | Exact origin(s) allowed to call the staging API, comma-separated; no wildcard |
 
-Never paste or commit secret values. The workflow checks that the secrets are present without printing them. It substitutes the D1 ID only into a temporary, untracked deployment config.
+Use the least privilege available for the existing Worker and D1. Do not grant Zone DNS, account administration, billing, R2, or unrelated permissions. Keep the token only in GitHub Actions secrets. Never paste or commit secret values.
+
+The database ID is configuration, not an API credential; it is already wired into `wrangler.jsonc`. The CORS origin is also configured as a non-secret staging variable.
 
 ## Staging deployment
 
-On the dedicated Draft PR/branch, open Actions → **Cloudflare Wallet API staging deployment** → **Run workflow**. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If a secret is missing it skips deployment. It does not enable Wallet business routes.
+On the dedicated Draft PR/branch, open Actions → **Cloudflare Wallet API staging deployment** → **Run workflow**. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If the Cloudflare Account ID or API token secret is missing, it skips deployment. It does not enable Wallet business routes.
 
 Expected checks after a successful deployment:
 
