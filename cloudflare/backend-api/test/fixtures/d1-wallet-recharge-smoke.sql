@@ -50,6 +50,16 @@ UPDATE smv_domain_wallet_recharges
 SET status='paid',razorpay_payment_id='pay_ci_smoke',paid_at_ms=2000,updated_at_ms=2000
 WHERE recharge_id='ci-recharge-smoke';
 
+-- A late failed attempt must not downgrade an order after the recharge is paid.
+UPDATE smv_domain_wallet_recharges
+SET status='failed',payload_json='{"failureReason":"late failure"}',updated_at_ms=3000
+WHERE razorpay_order_id='order_ci_wallet_smoke' AND status='order_created';
+UPDATE smv_domain_razorpay_orders
+SET status='failed',payment_id='pay_late_failed',payload_json='{"failureReason":"late failure"}',updated_at_ms=3000
+WHERE order_id='order_ci_wallet_smoke'
+  AND service_name='SMV ASTRO Wallet Recharge'
+  AND status <> 'paid';
+
 -- Emit each invariant separately so CI logs identify any failed condition.
 SELECT
   (SELECT available_balance_paise FROM smv_domain_wallets WHERE owner_uid='ci-wallet-recharge-smoke') AS cash_balance_paise,
