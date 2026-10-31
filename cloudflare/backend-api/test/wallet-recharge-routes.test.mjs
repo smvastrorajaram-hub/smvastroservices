@@ -38,6 +38,7 @@ function baseDeps(overrides={}) {
   const razorpay={
     async createOrder(input){calls.push(['createOrder',input]);return {id:'order_1',amount:5000,currency:'INR'};},
     async verifyPaymentSignature(input){calls.push(['verifySignature',input]);return true;},
+    async verifyWebhookSignature(){calls.push(['verifyWebhookSignature']);return true;},
     async fetchPayment(id){calls.push(['fetchPayment',id]);return {id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'authorized'};},
     async capturePayment(id,amount,currency){calls.push(['capturePayment',{id,amount,currency}]);return {id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'};}
   };
