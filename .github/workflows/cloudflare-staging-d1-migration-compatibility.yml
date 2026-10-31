@@ -10,6 +10,7 @@ on:
       - 'cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs'
       - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema.sql'
       - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema-assert.sql'
+      - 'cloudflare/backend-api/test/verify-d1-staging-migration-compatibility.mjs'
       - '.github/workflows/cloudflare-staging-d1-migration-compatibility.yml'
   pull_request:
     branches:
@@ -52,7 +53,7 @@ jobs:
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
       - name: Assert legacy rows remain and new tables have the expected schema (local D1 only)
         working-directory: cloudflare/backend-api
-        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-staging-legacy-schema-assert.sql
+        run: node test/verify-d1-staging-migration-compatibility.mjs
       - name: Validate Worker bundle without deployment
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
