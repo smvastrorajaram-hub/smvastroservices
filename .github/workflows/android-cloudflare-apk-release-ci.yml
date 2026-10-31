@@ -7,9 +7,12 @@ on:
       - 'cloudflare/android-apk-release/**'
       - 'shared/backend-platform/firebase-id-token.mjs'
       - 'public/android-app-install.js'
+      - 'public/smv-ui.css'
       - 'public/smvastro.mjs'
       - 'public/index.html'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/live-push-notifications.test.js'
+      - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
@@ -20,9 +23,12 @@ on:
       - 'cloudflare/android-apk-release/**'
       - 'shared/backend-platform/firebase-id-token.mjs'
       - 'public/android-app-install.js'
+      - 'public/smv-ui.css'
       - 'public/smvastro.mjs'
       - 'public/index.html'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/live-push-notifications.test.js'
+      - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
@@ -55,7 +61,7 @@ jobs:
           node --check public/smvastro.mjs
 
       - name: Run APK release and existing permanent-signing regression tests
-        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs
+        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs
 
       - name: Validate D1 migration and database-level safety triggers
         run: |
