@@ -310,7 +310,7 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(moduleSource.includes('/admin/android-app/versions'));
   assert.ok(moduleSource.includes('DOWNLOAD APK'));
   assert.ok(html.includes('id="adminAndroidAppHistory"'));
-  assert.ok(html.includes('v20261031-cloudflare-r2-apk-release-v1'));
+  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v1'));
 });
 
 test('Cloudflare publishing is opt-in and deployment example does not contain credentials', async () => {
