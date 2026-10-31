@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createFirebaseIdentityService } from '../../../shared/backend-platform/firebase-identity-service.mjs';
-import { registerWalletReadRoutes } from '../src/wallet-read-routes.mjs';
+import { isWalletReadRouteGateOpen, registerWalletReadRoutes } from '../src/wallet-read-routes.mjs';
 
 function createApp() {
   const handlers = new Map();
@@ -128,4 +128,22 @@ test('Wallet routes reject unknown roles and surface identity failures', async (
   await authApp.handlers.get('/wallet')(request(), unauthenticated);
   assert.equal(unauthenticated.statusCode, 401);
   assert.equal(unauthenticated.body.code, 'AUTH_REQUIRED');
+});
+
+test('Wallet read route gate requires explicit enablement, verified backfill and explicit cutover', () => {
+  assert.equal(isWalletReadRouteGateOpen({}), false);
+  assert.equal(isWalletReadRouteGateOpen({ WALLET_READ_ROUTES_ENABLED: 'true' }), false);
+  assert.equal(isWalletReadRouteGateOpen({
+    WALLET_READ_ROUTES_ENABLED: 'true',
+    SMV_WALLET_DOMAIN_BACKFILL_COMPLETE: 'true'
+  }), false);
+  assert.equal(isWalletReadRouteGateOpen({
+    WALLET_READ_ROUTES_ENABLED: 'true',
+    SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
+  }), false);
+  assert.equal(isWalletReadRouteGateOpen({
+    WALLET_READ_ROUTES_ENABLED: 'true',
+    SMV_WALLET_DOMAIN_BACKFILL_COMPLETE: 'true',
+    SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
+  }), true);
 });
