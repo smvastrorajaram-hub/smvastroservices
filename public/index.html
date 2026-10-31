@@ -354,11 +354,13 @@ document.addEventListener('DOMContentLoaded', function(){
 <h2 class="admin-workgroup-title" id="adminGroupAppManagementTitle">06 · Android App Release Management / Android App நிர்வாகம்</h2>
 <p class="admin-workgroup-description">Upload a new permanent signed Android APK. The website checks the installed app version and shows DOWNLOAD APP or UPDATE APP automatically.</p>
 <div class="card" id="adminAndroidAppManagementCard">
-  <h3>SMV ASTRO Permanent Android APK</h3>
-  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. When the dedicated Cloudflare Worker, R2 and D1 are ready, Homepage latest-version status and saved version history use Cloudflare. New APKs are saved to R2 when uploads are enabled. The existing Render/Firebase upload is used only before the release service is ready or has taken ownership of a release.</p>
+  <h3>SMV ASTRO APK Install &amp; Update Manager</h3>
+  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, increasing versionCode and permanent Release signing certificate before publishing. Once the Cloudflare Worker is ready, the latest version and saved history use the dedicated R2 bucket and D1 database.</p>
+  <div class="small" id="adminAndroidApkBackendStatus" role="status" aria-live="polite">Checking Cloudflare APK publishing service…</div>
   <div class="grid">
-    <label><b>Select signed APK file</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
+    <label><b>Select signed production APK</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
   </div>
+  <div class="small" id="adminAndroidAppFileInfo" aria-live="polite">APK limit: 100 MB. The server verifies package, versionCode and permanent Release signature.</div>
   <div class="action-row">
     <button class="btn" id="adminAndroidAppUpload" type="button">UPLOAD NEW APP VERSION</button>
     <button class="btn gray" id="adminAndroidAppRefresh" type="button">REFRESH CURRENT VERSION</button>
@@ -439,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "";</script>
-<script src="./smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v2-admin-manager" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -1138,7 +1140,7 @@ else initFAQ();
   else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
 })();
 </script>
-<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261031-cloudflare-r2-apk-release-v1"></script>
+<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261031-cloudflare-r2-apk-release-v2-admin-manager"></script>
 <script src="./public-navigation.js?v=20261025-phase1-directory-dashboard-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{

@@ -2545,6 +2545,22 @@ async function loadAdminAndroidAppHistory(){
 async function loadAdminAndroidAppRelease(){
   const current=$('adminAndroidAppCurrent'),msg=$('adminAndroidAppMsg');
   if(!current||!msg||!currentUser)return;
+  const backendStatus=$('adminAndroidApkBackendStatus');
+  const workerStatus=await smvAndroidApkWorkerStatus();
+  if(backendStatus){
+    if(workerStatus?.uploadsEnabled){
+      backendStatus.textContent='Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.';
+      backendStatus.className='small success';
+    }else if(workerStatus){
+      backendStatus.textContent=workerStatus.hasReleaseRecords
+        ?'Cloudflare APK service READY · current release is protected · Admin publishing is disabled on the Worker.'
+        :'Cloudflare APK service READY · Admin publishing is disabled; the legacy upload route is available until Cloudflare owns a release.';
+      backendStatus.className='small';
+    }else{
+      backendStatus.textContent='Cloudflare APK service is not connected yet. The existing Firebase/Render release route is still used until the Worker URL is configured and healthy.';
+      backendStatus.className='small';
+    }
+  }
   msg.textContent='Loading current Android app release…';
   try{
     const release=await smvAndroidApkApi('/admin/android-app',{method:'GET'});
@@ -2601,9 +2617,19 @@ async function uploadAdminAndroidApp(){
   }
 }
 (function initAdminAndroidAppManager(){
-  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh');
+  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh'),file=$('adminAndroidAppFile'),fileInfo=$('adminAndroidAppFileInfo');
   if(upload&&!upload.dataset.smvBound){upload.dataset.smvBound='1';upload.addEventListener('click',uploadAdminAndroidApp);}
   if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.addEventListener('click',()=>loadAdminAndroidAppRelease().catch(()=>{}));}
+  if(file&&!file.dataset.smvBound){
+    file.dataset.smvBound='1';
+    file.addEventListener('change',()=>{
+      const selected=file.files?.[0];
+      if(!fileInfo)return;
+      fileInfo.textContent=selected
+        ?'Selected APK: '+selected.name+' · '+(selected.size/1024/1024).toFixed(2)+' MB. Package, version and signing certificate are checked by Cloudflare before publishing.'
+        :'APK limit: 100 MB. The server verifies package, versionCode and permanent Release signature.';
+    });
+  }
 })();
 
 smvArmPublicContentLazyLoad();

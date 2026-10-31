@@ -347,10 +347,15 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(moduleSource.includes('/admin/android-app/versions'));
   assert.ok(moduleSource.includes('DOWNLOAD APK'));
   assert.ok(html.includes('id="adminAndroidAppHistory"'));
-  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v1'));
+  assert.ok(html.includes('id="adminAndroidApkBackendStatus"'));
+  assert.ok(html.includes('id="adminAndroidAppFileInfo"'));
+  assert.ok(html.includes('APK Install &amp; Update Manager'));
+  assert.ok(moduleSource.includes('Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.'));
+  assert.ok(moduleSource.includes('Selected APK: '));
+  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v2-admin-manager'));
 });
 
-test('Cloudflare publishing is opt-in and deployment example does not contain credentials', async () => {
+test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -365,12 +370,12 @@ test('Cloudflare publishing is opt-in and deployment example does not contain cr
   assert.match(example, /database_id\s*=\s*"00000000-0000-0000-0000-000000000000"/);
   assert.match(config, /database_id\s*=\s*"5105ebb3-435c-47b7-9983-2e171fa911cd"/);
   assert.match(config, /bucket_name\s*=\s*"smv-astro-apk-releases"/);
-  assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"false"/);
+  assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"true"/);
   assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*""/);
   assert.doesNotMatch(html + installer + moduleSource, /smv-astro-apk-release-api\.smvastro\.workers\.dev/);
   assert.doesNotMatch(installer + moduleSource, /DEFAULT_WORKER_BASE|SMV_ANDROID_APK_WORKER_DEFAULT/);
   assert.match(readme, /5105ebb3-435c-47b7-9983-2e171fa911cd/);
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
-  assert.match(readme, /Do not point it at Wallet or any other existing D1 database/);
+  assert.match(readme, /Use only the existing D1 database/);
   assert.match(readme, /Do not add secrets or APK binaries/);
 });

@@ -12,6 +12,7 @@ on:
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
   push:
     branches: [main]
     paths:
@@ -24,6 +25,7 @@ on:
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
 
 permissions:
   contents: read
@@ -35,6 +37,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate manual deployment workflow YAML
+        run: ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
