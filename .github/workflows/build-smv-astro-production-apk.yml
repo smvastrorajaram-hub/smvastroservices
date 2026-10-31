@@ -159,8 +159,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Verify permanent Release build configuration
-        run: node --test test/android-permanent-release.test.mjs
+      - name: Verify permanent Release and native Google sign-in configuration
+        run: node --test test/android-permanent-release.test.mjs test/android-google-native-signin.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
