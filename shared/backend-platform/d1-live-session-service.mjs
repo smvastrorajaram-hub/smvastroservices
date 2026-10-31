@@ -3,6 +3,7 @@ import {
   safeMinutes,
   walletError
 } from './wallet-domain.mjs';
+import { inspectMessageText } from './chat-moderation.mjs';
 import {
   calculateLiveSettlement,
   reserveLiveWallet,
@@ -698,9 +699,13 @@ export function createD1LiveSessionService({
       await endSession({sessionId:id,reason:'duration_complete',system:true});
       throw liveError('LIVE_SESSION_ENDED','The Live Chat duration has ended.',409);
     }
-    // Moderation is deliberately fail-closed until the shared moderation package
-    // is ported to the Worker runtime.
-    if(/\b(?:fuck|shit|bitch|bastard)\b/i.test(body)) throw liveError('LIVE_MESSAGE_ABUSIVE_LANGUAGE','Please keep Live Chat messages respectful.',400);
+    const moderation=inspectMessageText(body);
+    if(!moderation.allowed) {
+      throw liveError(
+        moderation.reason==='empty'?'LIVE_MESSAGE_INVALID':'LIVE_MESSAGE_ABUSIVE_LANGUAGE',
+        moderation.message,400
+      );
+    }
     const messageId=cryptoImpl.randomUUID();
     await statement(
       'INSERT INTO smv_domain_live_messages(session_id,message_id,sender_uid,text,created_at_ms) VALUES (?,?,?,?,?)',
@@ -808,11 +813,11 @@ export function createD1LiveSessionService({
     return (rows.results||[]).map(row=>bookingView(mapLiveBookingRow(row)));
   }
 
-  async function expireBooking(bookingId) {
+  async function expireBooking(bookingId,{force=false}={}) {
     const booking=await getBooking(checkSessionId(bookingId));
     if(!booking||booking.status!=='pending') return {success:true,skipped:true};
-    if(booking.expiresAtMs&&Number(now())<booking.expiresAtMs) return {success:true,skipped:true};
-    return releaseBooking({bookingId,status:'expired',endReason:'booking_expired'});
+    if(!force&&booking.expiresAtMs&&Number(now())<booking.expiresAtMs) return {success:true,skipped:true};
+    return releaseBooking({bookingId,status:'expired',endReason:force?'timer_schedule_failed':'booking_expired'});
   }
 
   return Object.freeze({
