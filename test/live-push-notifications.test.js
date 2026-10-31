@@ -1134,15 +1134,15 @@ test('Live Call SSE replay cursor advances only after a WebRTC signal is process
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });
 
-test('Android APK download/update is Admin-managed and remains separate from PWA installation', () => {
+test('Android APK actions reuse the existing PWA icon and hide download at the installed latest version', () => {
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
   assert.ok(html.includes('id="smvInstallAppSection"'));
   assert.ok(html.includes('id="smvInstallAppBtn"'));
   assert.ok(html.includes('rel="manifest"'));
-  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
-  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.equal(html.includes('smvPermanentAndroidAppSection'), false);
+  assert.equal(html.includes('smvPermanentApkDownload'), false);
   assert.ok(html.includes('id="adminGroupAppManagement"'));
   assert.ok(html.includes('id="adminAndroidAppFile"'));
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
@@ -1150,8 +1150,10 @@ test('Android APK download/update is Admin-managed and remains separate from PWA
   assert.ok(pwa.includes('"display": "standalone"'));
   assert.ok(installer.includes("'/public/android-app'"));
   assert.ok(installer.includes('getInstalledRelatedApps'));
-  assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('UPDATE APP'));
+  assert.ok(installer.includes('Using Latest Version'));
+  assert.ok(installer.includes("'DOWNLOAD APK'"));
+  assert.ok(installer.includes("'UPDATE'"));
+  assert.ok(html.includes('window.location.assign(installBtn.dataset.smvApkDownloadUrl)'));
   assert.equal(installer.includes('releases/new'), false);
   assert.equal(installer.includes('ghp_'), false);
 });
