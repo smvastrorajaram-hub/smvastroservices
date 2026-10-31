@@ -314,7 +314,7 @@ CREATE TABLE IF NOT EXISTS smv_domain_razorpay_webhook_events (
   processed_at_ms INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS smv_domain_outbox (
+CREATE TABLE IF NOT EXISTS smv_domain_event_outbox (
   outbox_id TEXT PRIMARY KEY NOT NULL,
   event_type TEXT NOT NULL,
   event_key TEXT NOT NULL,
@@ -327,10 +327,10 @@ CREATE TABLE IF NOT EXISTS smv_domain_outbox (
   updated_at_ms INTEGER NOT NULL,
   UNIQUE(event_type, event_key)
 );
-CREATE INDEX IF NOT EXISTS idx_smv_domain_outbox_pending
-  ON smv_domain_outbox(status, next_attempt_at_ms, created_at_ms);
+CREATE INDEX IF NOT EXISTS idx_smv_domain_event_outbox_pending
+  ON smv_domain_event_outbox(status, next_attempt_at_ms, created_at_ms);
 
-CREATE TABLE IF NOT EXISTS smv_domain_idempotency (
+CREATE TABLE IF NOT EXISTS smv_domain_request_idempotency (
   scope TEXT NOT NULL,
   idempotency_key TEXT NOT NULL,
   request_hash TEXT NOT NULL,
@@ -340,5 +340,5 @@ CREATE TABLE IF NOT EXISTS smv_domain_idempotency (
   expires_at_ms INTEGER NOT NULL,
   PRIMARY KEY(scope, idempotency_key)
 );
-CREATE INDEX IF NOT EXISTS idx_smv_domain_idempotency_expiry
-  ON smv_domain_idempotency(expires_at_ms);
+CREATE INDEX IF NOT EXISTS idx_smv_domain_request_idempotency_expiry
+  ON smv_domain_request_idempotency(expires_at_ms);
