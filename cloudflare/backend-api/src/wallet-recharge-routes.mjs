@@ -100,7 +100,7 @@ export function registerWalletRechargeRoutes({
       if (!intent.acquired && intent.orderId) {
         return res.set('Cache-Control', 'no-store').json({
           success: true, rechargeId: intent.rechargeId, orderId: intent.orderId,
-          keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise),
+          keyId, amount: amountPaise, amountPaise, amountRupees: paiseToRupees(amountPaise),
           currency: 'INR', reusedOrder: true
         });
       }
@@ -116,7 +116,7 @@ export function registerWalletRechargeRoutes({
             });
             return res.set('Cache-Control', 'no-store').json({
               success: true, rechargeId: intent.rechargeId, orderId: recovered.id,
-              keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise),
+              keyId, amount: amountPaise, amountPaise, amountRupees: paiseToRupees(amountPaise),
               currency: 'INR', recoveredOrder: true
             });
           }
@@ -133,7 +133,7 @@ export function registerWalletRechargeRoutes({
         });
         return res.set('Cache-Control', 'no-store').json({
           success: true, rechargeId: intent.rechargeId, orderId: order.id,
-          keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR'
+          keyId, amount: amountPaise, amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR'
         });
       } catch (error) {
         await walletAdapter.markRechargeOrderFailed({
