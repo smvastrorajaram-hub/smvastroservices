@@ -135,7 +135,8 @@ export function createD1IdentityService({
       name,
       displayName,
       publicId: String(profileRow?.public_id || ''),
-      profileStatus
+      profileStatus,
+      signInProvider: String(identity.signInProvider || identity.firebase?.sign_in_provider || '')
     });
   }
 
