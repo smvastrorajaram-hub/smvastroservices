@@ -2973,43 +2973,28 @@ async function loadAdminPanelData(background=false){
 
       try {
 
-        const withdrawalRef = doc(db,'smv_withdrawals',withdrawalId);
         const w = withdrawalDocs.find(x=>String(x.id||'')===String(withdrawalId||''))||{};
         if(!w.id)throw new Error('Withdrawal request not found in the current Admin list. Please refresh and try again.');
 
         let adminPaymentId = String(w.adminPaymentId || w.paymentId || '');
-
-        // IMPORTANT: smvpt is created only when Admin actually marks the
-        // withdrawal as PAID. Withdrawal request itself remains smvwd.
+        const actionPath = newStatus === 'paid'
+          ? '/admin/withdrawal-mark-paid'
+          : newStatus === 'processing'
+            ? '/admin/withdrawal-mark-processing'
+            : newStatus === 'rejected'
+              ? '/admin/withdrawal-reject'
+              : '';
+        if(!actionPath)throw new Error('Unsupported withdrawal status.');
+        const actionResult = await withTimeout(
+          renderApi(actionPath, {
+            method:'POST',
+            body:JSON.stringify({withdrawalDocId: withdrawalId})
+          }),
+          20000
+        );
         if(newStatus === 'paid'){
-          const paidResult = await withTimeout(
-            renderApi('/admin/withdrawal-mark-paid', {
-              method:'POST',
-              body:JSON.stringify({withdrawalDocId: withdrawalId})
-            }),
-            20000
-          );
-          adminPaymentId = String(paidResult.paymentId || '');
+          adminPaymentId = String(actionResult.paymentId || '');
           if(!adminPaymentId) throw new Error('Admin Payment ID was not returned.');
-        } else {
-          const updateData = {
-            status: newStatus,
-            updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid
-          };
-
-          if(newStatus === 'processing'){
-            updateData.processingAt = serverTimestamp();
-          }
-
-          if(newStatus === 'rejected'){
-            updateData.rejectedAt = serverTimestamp();
-          }
-
-          await withTimeout(
-            updateDoc(withdrawalRef, updateData),
-            15000
-          );
         }
 
         if(w.astrologerId){
