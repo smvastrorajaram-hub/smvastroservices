@@ -12,7 +12,7 @@ on:
         description: "App version in order: v1.0, v1.1, v1.2, ... v2.0"
         required: true
         type: string
-        default: "v1.0"
+        default: "v1.2"
       build_signed_release:
         description: "Build the permanent signed Release APK (requires all four repository Actions secrets)"
         required: true
@@ -25,6 +25,8 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "test/android-google-native-signin.test.mjs"
+      - "public/smvastro.mjs"
       - "docs/android-native-call-ringtone.md"
   push:
     paths:
@@ -147,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
-      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.0' }}
+      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.2' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
