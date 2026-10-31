@@ -531,7 +531,7 @@ export function createD1LiveSessionService({
     statements.push(statement(
       `UPDATE ${BOOKING_TABLE}
        SET status=?,wallet_reservation_state='settled',payload_json=?,updated_at_ms=?
-       WHERE booking_id=? AND session_id IS NOT NULL`,
+       WHERE booking_id=? AND status='accepted'`,
       [session.startedAtMs?'completed':(finalReason==='rejected'?'rejected':'cancelled'),
         livePayload({...session,status:session.startedAtMs?'completed':'cancelled',
           walletReservationState:'settled',actualChargePaise:settlement.chargedAmountPaise,
@@ -653,7 +653,11 @@ export function createD1LiveSessionService({
     const type=String(deadlineType||'').trim();
     const deadline=Number(deadlineAtMs);
     if(!id||!type||!Number.isSafeInteger(deadline)) throw liveError('LIVE_DEADLINE_INVALID','Live deadline event is invalid.',400);
-    if(type==='preparation_timeout') return completePreparation(id);
+    if(type==='preparation_timeout') {
+      const current=await getSession(id);
+      if(!current||current.state!=='preparing'||Number(current.preparationUntilMs||0)>deadline) return {success:true,skipped:true};
+      return completePreparation(id);
+    }
     if(type==='booking_expiry') {
       const booking=await getBooking(id);
       if(!booking||booking.status!=='pending') return {success:true,skipped:true};
@@ -671,11 +675,12 @@ export function createD1LiveSessionService({
     if(!reason) throw liveError('LIVE_DEADLINE_TYPE_INVALID','Unsupported Live deadline type.',400);
     const session=await getSession(id);
     if(!session||session.state==='ended') return {success:true,skipped:true};
-    if(type==='ring_timeout'&&session.state!=='ringing') return {success:true,skipped:true};
+    if(type==='ring_timeout'&&(session.state!=='ringing'||deadline<session.createdAtMs+LIVE_RING_TIMEOUT_MS)) return {success:true,skipped:true};
     if(type==='call_connect_timeout'||type==='chat_accept_timeout') {
-      if(session.state!=='connecting') return {success:true,skipped:true};
+      if(session.state!=='connecting'||deadline<Number(session.connectingAtMs||0)+
+        (type==='chat_accept_timeout'?LIVE_CHAT_CONNECT_TIMEOUT_MS:LIVE_CALL_CONNECT_TIMEOUT_MS)) return {success:true,skipped:true};
     }
-    if(type==='session_duration'&&session.state!=='active') return {success:true,skipped:true};
+    if(type==='session_duration'&&(session.state!=='active'||deadline<session.startedAtMs+Number(session.minutes||1)*60_000)) return {success:true,skipped:true};
     if(type==='disconnect_grace'&&!['connecting','active'].includes(session.state)) return {success:true,skipped:true};
     return endSession({sessionId:id,reason,system:true});
   }
