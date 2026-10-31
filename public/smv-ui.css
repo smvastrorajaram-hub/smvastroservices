@@ -483,6 +483,13 @@ body.smv-v12-theme .smv-withdraw-btn.is-red,body.smv-v12-theme .smv-withdraw-btn
 .smv-install-app-copy h2{margin:0 0 4px!important;font-size:18px!important;line-height:1.25!important;color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;font-weight:800!important;text-transform:uppercase!important}
 @media(max-width:760px){.smv-install-app-copy h2{font-size:clamp(12px,4.5vw,16px)!important;white-space:nowrap!important;text-align:center!important;width:calc(100% + 66px)!important;margin-left:-66px!important}}
 
+/* Android APK release uses the existing PWA icon, with metadata directly below it. */
+.smv-install-app-section.smv-apk-release-active .smv-install-app-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.smv-install-app-section.smv-apk-release-active .smv-install-app-copy{width:100%;max-width:100%;flex:0 0 auto}
+.smv-install-app-section.smv-apk-release-active .smv-install-app-copy h2{width:100%!important;margin:0 0 4px!important;text-align:center!important;text-transform:none!important;white-space:normal!important;overflow-wrap:anywhere}
+.smv-install-app-section.smv-apk-release-active .smv-install-app-copy>p{font-size:13px!important;line-height:1.45!important}
+.smv-install-app-section.smv-apk-release-active .smv-install-app-btn{width:min(100%,280px);min-width:0;margin:0 auto}
+
 /* Remaining structural presentation migrated from inline homepage markup. */
 #smv-content-hub .smv-v173-subregion+.smv-v173-subregion,#adminBlogsMedia{margin-top:14px}
 #dashboard,#admin{margin-top:45px}
