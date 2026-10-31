@@ -1,0 +1,75 @@
+name: Cloudflare backend staging integration validation
+
+on:
+  push:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - 'server.js'
+      - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
+  pull_request:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - 'server.js'
+      - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-backend-staging-integration-validation
+  cancel-in-progress: false
+
+jobs:
+  validate-staging-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout integration revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Check Worker and shared backend module syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find cloudflare/backend-api/src shared/backend-platform cloudflare/backend-api/test -type f -name '*.mjs' -print0)
+
+      - name: Run the complete Cloudflare backend contract test suite
+        working-directory: cloudflare/backend-api
+        run: node --test test/*.test.mjs
+
+      - name: Apply every D1 migration to an ephemeral local database only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+
+      - name: Validate Cloudflare Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
+
+      - name: Assert this workflow contains no remote migration or deployment step
+        shell: bash
+        run: |
+          if grep -Eq 'd1 migrations apply .*--remote|wrangler-action|wrangler .* deploy --config' .github/workflows/cloudflare-backend-staging-integration-validation.yml; then
+            echo "::error::Integration validation must never mutate remote Cloudflare resources."
+            exit 1
+          fi
+          echo "PASS: validation is local-only; no Cloudflare credentials or remote deploy are used."
