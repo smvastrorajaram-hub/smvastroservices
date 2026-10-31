@@ -363,8 +363,6 @@ app.get('/api/backend/readiness', async (_req, res) => {
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
-    walletBackfillRoutesRegistered,
-    walletBackfillToolsEnabled: walletBackfillToolsOpen,
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
       walletBusinessRoutesEnabled: false,
@@ -393,11 +391,13 @@ app.get('/api/backend/migration-status', (_req, res) => {
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+    walletBackfillRoutesRegistered,
+    walletBackfillToolsEnabled: walletBackfillToolsOpen,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: false,
     renderDependency: false,
     productionTrafficEnabled: false,
-    nextGate: 'firebase-auth-and-firestore-adapter-tests'
+    nextGate: walletBackfillRoutesRegistered ? 'wallet-backfill-preview-and-reconciliation' : 'enable-staging-wallet-backfill-tools'
   });
 });
 
