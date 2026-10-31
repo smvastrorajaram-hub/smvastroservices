@@ -13,6 +13,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/android-apk-browser-fallback.test.mjs'
       - 'test/live-push-notifications.test.js'
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
@@ -31,6 +32,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'test/android-cloudflare-apk-release-worker.test.mjs'
+      - 'test/android-apk-browser-fallback.test.mjs'
       - 'test/live-push-notifications.test.js'
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
@@ -68,7 +70,7 @@ jobs:
           node --check public/smvastro.mjs
 
       - name: Run APK release and existing permanent-signing regression tests
-        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs
+        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
 
       - name: Validate D1 migration and database-level safety triggers
         run: |

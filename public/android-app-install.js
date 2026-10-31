@@ -149,9 +149,13 @@
     section.style.display = '';
 
     if (!installed.supported) {
-      status.textContent = 'Open this page in Chrome to check your installed app version.';
-      download.hidden = true;
-      download.removeAttribute('href');
+      // This browser cannot inspect installed-app state. Keep the already validated
+      // release URL available rather than hiding the APK download action.
+      status.textContent = '';
+      download.textContent = 'DOWNLOAD APK';
+      download.href = release.downloadUrl;
+      download.hidden = false;
+      download.setAttribute('aria-label', 'Download APK SMV ASTRO ' + latestName);
       return;
     }
 
