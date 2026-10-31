@@ -323,7 +323,6 @@ app.get('/api/backend/readiness', async (_req, res) => {
       razorpayConnected: false,
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
-    walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: false
@@ -350,6 +349,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     razorpayConnected: false,
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+    walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: false,
     renderDependency: false,
