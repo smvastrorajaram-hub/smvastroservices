@@ -56,7 +56,7 @@ function transactionView(row = {}) {
  * Read-only Wallet HTTP handlers. No recharge, ledger mutation or Live settlement
  * is registered here. The same handlers accept either Firestore or D1 Wallet adapters.
  */
-export function registerWalletReadRoutes({ app, identityService, walletAdapter, adminWalletUid = '' } = {}) {
+export function registerWalletReadRoutes({ app, identityService, walletAdapter, adminWalletUid = '', isReady = async () => true } = {}) {
   if (!app || typeof app.get !== 'function' || !identityService ||
       typeof identityService.authenticateAuthorization !== 'function' || !walletAdapter ||
       typeof walletAdapter.ensureWallet !== 'function' || typeof walletAdapter.listTransactions !== 'function') {
@@ -80,6 +80,7 @@ export function registerWalletReadRoutes({ app, identityService, walletAdapter, 
 
   app.get('/wallet', async (req, res) => {
     try {
+      if (!(await isReady())) return res.status(503).set('Cache-Control', 'no-store').json({ success: false, error: 'Wallet storage is not ready.', code: 'WALLET_SCHEMA_NOT_READY' });
       const user = await authenticatedRole(req);
       const owner = walletOwner(user);
       const wallet = await walletAdapter.ensureWallet(owner.ownerUid, owner.ownerRole);
@@ -106,6 +107,7 @@ export function registerWalletReadRoutes({ app, identityService, walletAdapter, 
 
   app.get('/wallet/transactions', async (req, res) => {
     try {
+      if (!(await isReady())) return res.status(503).set('Cache-Control', 'no-store').json({ success: false, error: 'Wallet storage is not ready.', code: 'WALLET_SCHEMA_NOT_READY' });
       const user = await authenticatedRole(req);
       const owner = walletOwner(user);
       const rawLimit = Number(req.query?.limit || 30);
