@@ -11,7 +11,6 @@ export const LIVE_CHAT_CONNECT_TIMEOUT_MS = 5 * 60_000;
 export const LIVE_PREPARATION_DURATION_MS = 3 * 60_000;
 export const LIVE_BOOKING_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 export const LIVE_DISCONNECT_GRACE_MS = 20_000;
-export const LIVE_DEFAULT_COMMISSION = Object.freeze({ astroPercent:20,adminPercent:80 });
 
 export function parseRupeesToPaise(value) {
   const raw=String(value??'').trim();
@@ -81,10 +80,15 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
   };
 }
 
-export function splitLiveCommission(grossAmountPaise,commission=LIVE_DEFAULT_COMMISSION) {
+export function splitLiveCommission(grossAmountPaise,commission) {
   const gross=Number(grossAmountPaise);
-  const astroPercent=Number(commission?.astroPercent??20);
-  const adminPercent=Number(commission?.adminPercent??(100-astroPercent));
+  const hasAstroPercent=commission?.astroPercent!==null&&commission?.astroPercent!==undefined&&String(commission.astroPercent).trim()!=='';
+  const hasAdminPercent=commission?.adminPercent!==null&&commission?.adminPercent!==undefined&&String(commission.adminPercent).trim()!=='';
+  if(!hasAstroPercent&&!hasAdminPercent) {
+    throw walletError('LIVE_COMMISSION_NOT_CONFIGURED','Admin Live commission settings are not configured.');
+  }
+  const astroPercent=hasAstroPercent?Number(commission.astroPercent):100-Number(commission.adminPercent);
+  const adminPercent=hasAdminPercent?Number(commission.adminPercent):100-Number(commission.astroPercent);
   if(!Number.isSafeInteger(gross)||gross<0||
      !Number.isFinite(astroPercent)||!Number.isFinite(adminPercent)||
      astroPercent<0||astroPercent>100||adminPercent<0||adminPercent>100||
@@ -100,12 +104,20 @@ export function splitLiveCommission(grossAmountPaise,commission=LIVE_DEFAULT_COM
 }
 
 export function commissionFromPayload(payload={}) {
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)) {
+    throw walletError('LIVE_COMMISSION_NOT_CONFIGURED','Admin Live commission settings are not configured.');
+  }
+  const hasAstroPercent=payload.astroPercent!==null&&payload.astroPercent!==undefined&&String(payload.astroPercent).trim()!=='';
+  const hasAdminPercent=payload.adminPercent!==null&&payload.adminPercent!==undefined&&String(payload.adminPercent).trim()!=='';
+  if(!hasAstroPercent&&!hasAdminPercent) {
+    throw walletError('LIVE_COMMISSION_NOT_CONFIGURED','Admin Live commission settings are not configured.');
+  }
   const candidate={
-    astroPercent:Number(payload.astroPercent??20),
-    adminPercent:Number(payload.adminPercent??80)
+    astroPercent:hasAstroPercent?Number(payload.astroPercent):100-Number(payload.adminPercent),
+    adminPercent:hasAdminPercent?Number(payload.adminPercent):100-Number(payload.astroPercent)
   };
-  try { return splitLiveCommission(0,candidate),candidate; }
-  catch { return { ...LIVE_DEFAULT_COMMISSION }; }
+  splitLiveCommission(0,candidate);
+  return candidate;
 }
 
 export function astrologerAvailabilityStatus(profile={},activeSessionCount=0) {
@@ -198,8 +210,8 @@ export function calculateLiveSettlement({session,nowMs=Date.now()}={}) {
   const releasedAmountPaise=reservedAmountPaise-chargedAmountPaise;
   const bonusMinutesReleased=reservedBonusMinutes-pricing.freeMinutesUsed;
   const commission=splitLiveCommission(chargedAmountPaise,{
-    astroPercent:s.astrologerCommissionPercent??20,
-    adminPercent:s.adminCommissionPercent??80
+    astroPercent:s.astrologerCommissionPercent,
+    adminPercent:s.adminCommissionPercent
   });
   return {
     elapsedMs:Math.floor(elapsedMs),
