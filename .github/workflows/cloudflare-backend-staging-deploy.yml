@@ -25,6 +25,8 @@ jobs:
   validate-and-deploy:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031') ||
+      (github.event_name == 'workflow_dispatch' &&
        github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' &&
@@ -73,6 +75,25 @@ jobs:
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the staging Firebase service-account secret exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 secret list --format json --config wrangler.jsonc > /tmp/staging-worker-secrets.json
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const secrets = JSON.parse(readFileSync('/tmp/staging-worker-secrets.json', 'utf8'));
+          const names = new Set((Array.isArray(secrets) ? secrets : []).map(item => String(item?.name || '')));
+          if (!names.has('FIREBASE_SERVICE_ACCOUNT_JSON')) {
+            console.error('Required secret FIREBASE_SERVICE_ACCOUNT_JSON is missing from the staging Worker; deployment stopped before remote migrations.');
+            process.exit(1);
+          }
+          console.log('PASS: staging Firebase service-account secret name is present; its value was not read.');
+          NODE
+
       - name: Apply additive migrations to the isolated staging D1 database
         uses: cloudflare/wrangler-action@v4
         with:
@@ -120,6 +141,12 @@ jobs:
           const health = await get('/healthz');
           if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false) {
             throw new Error('Cloudflare Express runtime health verification failed.');
+          }
+          if (health.identityProfileBackfillRoutesRegistered !== true ||
+              health.identityProfileBackfillToolsEnabled !== true ||
+              health.identityProfileBackfillPreviewOnly !== true ||
+              health.identityProfileD1AuthorizationEnabled !== false) {
+            throw new Error('Identity/Profile backfill must be enabled for read-only preview only; D1 authorization must remain disabled.');
           }
 
           const authorizationGate = await fetch(base + '/api/auth/authorization');
