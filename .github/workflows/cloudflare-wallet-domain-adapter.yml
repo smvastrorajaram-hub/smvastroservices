@@ -38,7 +38,7 @@ jobs:
         run: npm run test:wallet-domain
       - name: Apply D1 migrations to a local ephemeral database only
         working-directory: cloudflare/backend-api
-        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --yes --config wrangler.jsonc
       - name: Exercise D1 Wallet balance triggers and ledger snapshots locally
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-trigger-smoke.sql
@@ -60,6 +60,5 @@ jobs:
             exit 1
           fi
       - name: Clean local D1 smoke data
-        if: always()
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-trigger-cleanup.sql
