@@ -129,9 +129,13 @@ export function registerWalletDomainBackfillRoutes({
         sourceQuiescent:preflight.ok,sourceDataDeleted:false,cutoverComplete:false,...result
       });
     } catch(error) {
-      const response=replyError(res,error,'Unable to import the legacy Wallet data page.');
-      if(error?.blockers) response.json({success:false,code:error.code||'BACKFILL_SOURCE_NOT_QUIESCENT',blockers:error.blockers});
-      return response;
+      const status=Number(error?.httpStatus)||500;
+      return res.status(status).set('Cache-Control','no-store').json({
+        success:false,
+        error:status>=500?'Unable to import the legacy Wallet data page.':String(error?.message||'Unable to import the legacy Wallet data page.'),
+        code:String(error?.code||'WALLET_BACKFILL_ERROR'),
+        ...(Array.isArray(error?.blockers)?{blockers:error.blockers}:{})
+      });
     }
   });
 
