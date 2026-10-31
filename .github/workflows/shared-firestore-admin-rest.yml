@@ -1,0 +1,33 @@
+name: Shared Firestore Admin REST adapter contract tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-queues-payment-email-20261031
+    paths:
+      - 'shared/backend-platform/firestore-admin-rest.mjs'
+      - 'shared/backend-platform/google-service-account-token.mjs'
+      - 'cloudflare/backend-api/test/firestore-admin-rest.test.mjs'
+      - '.github/workflows/shared-firestore-admin-rest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-admin-rest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Firestore Admin adapter syntax
+        run: |
+          node --check shared/backend-platform/firestore-admin-rest.mjs
+          node --check cloudflare/backend-api/test/firestore-admin-rest.test.mjs
+      - name: Run mocked Firestore document/query/transaction parity tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/firestore-admin-rest.test.mjs
