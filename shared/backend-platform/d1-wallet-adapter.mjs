@@ -466,7 +466,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
               o.start_at_ms, o.end_at_ms, o.payload_json,
               COALESCE(u.redemption_count, 0) AS customer_redemption_count
        FROM smv_domain_wallet_offers o
-       LEFT JOIN smv_domain_wallet_offer_redemption_usage u
+       LEFT JOIN smv_domain_offer_usage u
          ON u.offer_id=o.offer_id AND u.customer_uid=?
        WHERE o.enabled=1 AND o.minimum_recharge_paise<=?
          AND (o.start_at_ms IS NULL OR o.start_at_ms<=?)
@@ -526,17 +526,20 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       offerName: selectedOffer?.name || null,
       paymentSource: String(source).slice(0, 80)
     };
-    batchStatements.push(statement(
-      `UPDATE smv_domain_wallet_recharges
-       SET status='paid', razorpay_payment_id=?, paid_at_ms=?, payload_json=?, updated_at_ms=?
-       WHERE recharge_id=? AND customer_uid=? AND status='order_created'`,
-      [pid, nowMs, JSON.stringify(payload), nowMs, rid, owner.ownerUid]
-    ));
+    // Mark the Razorpay order paid before the recharge transition. The
+    // recharge BEFORE UPDATE trigger then requires this order plus the cash
+    // ledger row, all inside the same D1 batch transaction.
     batchStatements.push(statement(
       `UPDATE smv_domain_razorpay_orders
        SET status='paid', payment_id=?, payload_json=?, updated_at_ms=?
        WHERE order_id=? AND owner_uid=? AND service_name='SMV ASTRO Wallet Recharge'`,
       [pid, JSON.stringify({rechargeId:rid}), nowMs, oid, owner.ownerUid]
+    ));
+    batchStatements.push(statement(
+      `UPDATE smv_domain_wallet_recharges
+       SET status='paid', razorpay_payment_id=?, paid_at_ms=?, payload_json=?, updated_at_ms=?
+       WHERE recharge_id=? AND customer_uid=? AND status='order_created'`,
+      [pid, nowMs, JSON.stringify(payload), nowMs, rid, owner.ownerUid]
     ));
     try {
       const results = await db.batch(batchStatements);
