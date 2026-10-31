@@ -12,6 +12,7 @@ CREATE INDEX IF NOT EXISTS idx_smv_domain_earnings_astrologer_created
 
 CREATE TRIGGER IF NOT EXISTS smv_domain_withdrawal_validate
 BEFORE INSERT ON smv_domain_withdrawals
+WHEN COALESCE(json_extract(NEW.payload_json,'$.migrationSource'),'')<>'legacy_import'
 BEGIN
   SELECT CASE WHEN NEW.amount_paise<30000
     THEN RAISE(ABORT,'WITHDRAWAL_MINIMUM_NOT_MET') END;
@@ -65,8 +66,12 @@ CREATE INDEX IF NOT EXISTS idx_smv_domain_live_connections_deadline
 
 -- Realtime messages/signals are accepted only from the correct participants,
 -- during the right Live mode/state. This closes read-then-write end-session races.
+ALTER TABLE smv_domain_live_messages ADD COLUMN source TEXT NOT NULL DEFAULT 'live';
+ALTER TABLE smv_domain_live_signals ADD COLUMN source TEXT NOT NULL DEFAULT 'live';
+
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_message_validate
 BEFORE INSERT ON smv_domain_live_messages
+WHEN NEW.source<>'legacy_import'
 BEGIN
   SELECT CASE WHEN NOT EXISTS (
     SELECT 1 FROM smv_domain_live_sessions s
@@ -81,6 +86,7 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_signal_validate
 BEFORE INSERT ON smv_domain_live_signals
+WHEN NEW.source<>'legacy_import'
 BEGIN
   SELECT CASE WHEN NOT EXISTS (
     SELECT 1 FROM smv_domain_live_sessions s
@@ -115,8 +121,7 @@ END;
 -- batch. A booking-accepted session reuses its existing booking reservation.
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_session_reserve_validate
 BEFORE INSERT ON smv_domain_live_sessions
-WHEN NEW.reserved_amount_paise>0 OR NEW.reserved_bonus_minutes>0 OR
-     json_extract(NEW.payload_json,'$.origin') NOT IN ('legacy_unreserved')
+WHEN COALESCE(json_extract(NEW.payload_json,'$.origin'),'') NOT IN ('legacy_unreserved','legacy_import')
 BEGIN
   SELECT CASE WHEN NOT EXISTS (
     SELECT 1 FROM smv_domain_wallet_ledger l
@@ -211,6 +216,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_booking_reserve_validate
 BEFORE INSERT ON smv_domain_live_bookings
 WHEN NEW.wallet_reservation_state='reserved'
+ AND COALESCE(json_extract(NEW.payload_json,'$.origin'),'')<>'legacy_import'
 BEGIN
   SELECT CASE WHEN NOT EXISTS (
     SELECT 1 FROM smv_domain_wallet_ledger l
@@ -277,6 +283,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_earning_validate
 BEFORE INSERT ON smv_domain_earnings
 WHEN NEW.source_type='live_session'
+ AND COALESCE(json_extract(NEW.payload_json,'$.migrationSource'),'')<>'legacy_import'
 BEGIN
   SELECT CASE WHEN NOT EXISTS (
     SELECT 1 FROM smv_domain_live_sessions s
