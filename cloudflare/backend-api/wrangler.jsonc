@@ -20,7 +20,7 @@
     "SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED": "false",
     "SMV_LIVE_SESSION_ROUTES_ENABLED": "false",
     "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
-    "ALLOWED_ORIGINS": "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastroservices.pages.dev,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in"
+    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com"
   },
   "d1_databases": [
     {
