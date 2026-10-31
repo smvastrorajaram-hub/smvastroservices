@@ -41,6 +41,10 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npm run check
 
+      - name: Run Firebase ID-token verifier security tests
+        working-directory: cloudflare/backend-api
+        run: npm run test:auth
+
       - name: Validate Cloudflare Worker bundle without deploying
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
