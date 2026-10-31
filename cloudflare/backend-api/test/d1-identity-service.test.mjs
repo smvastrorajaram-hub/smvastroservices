@@ -36,10 +36,10 @@ const verifiedIdentity = Object.freeze({
 function serviceFor({ db = createDb(), identity = verifiedIdentity, verifyError = false, ...options } = {}) {
   return createD1IdentityService({
     db,
-    projectIds: ['smv-astro-staging'],
+    projectIds: ['smv-astro-staging', 'smv-astro-other'],
     verifyIdToken: async (token, allowedProjects) => {
       assert.equal(token, 'valid-token');
-      assert.deepEqual(allowedProjects, ['smv-astro-staging']);
+      assert.deepEqual(allowedProjects, ['smv-astro-staging', 'smv-astro-other']);
       if (verifyError) throw new Error('invalid token');
       return identity;
     },
@@ -114,15 +114,35 @@ test('resolves Admin only from a separate project-scoped D1 allowlist or trusted
 
   const configuredUid = await serviceFor({
     db: createDb(),
-    adminUids: ['firebase-uid-1']
+    adminUids: ['smv-astro-staging:firebase-uid-1']
   }).authenticateAuthorization('Bearer valid-token');
   assert.equal(configuredUid.isAdmin, true);
 
   const configuredEmail = await serviceFor({
     db: createDb(),
-    adminEmails: ['person@example.com']
+    adminEmails: ['smv-astro-staging:person@example.com']
   }).authenticateAuthorization('Bearer valid-token');
   assert.equal(configuredEmail.isAdmin, true);
+});
+
+test('configured Admin identities cannot cross Firebase projects', async () => {
+  const otherProjectIdentity = {
+    ...verifiedIdentity,
+    projectId: 'smv-astro-other'
+  };
+  const uidFromOtherProject = await serviceFor({
+    db: createDb(),
+    identity: otherProjectIdentity,
+    adminUids: ['smv-astro-staging:firebase-uid-1']
+  }).authenticateAuthorization('Bearer valid-token');
+  assert.equal(uidFromOtherProject.isAdmin, false);
+
+  const emailFromOtherProject = await serviceFor({
+    db: createDb(),
+    identity: otherProjectIdentity,
+    adminEmails: ['smv-astro-staging:person@example.com']
+  }).authenticateAuthorization('Bearer valid-token');
+  assert.equal(emailFromOtherProject.isAdmin, false);
 });
 
 test('does not grant configured-email Admin access when the email is unverified', async () => {
@@ -130,7 +150,7 @@ test('does not grant configured-email Admin access when the email is unverified'
   const user = await serviceFor({
     db: createDb(),
     identity,
-    adminEmails: ['person@example.com']
+    adminEmails: ['smv-astro-staging:person@example.com']
   }).authenticateAuthorization('Bearer valid-token');
   assert.equal(user.isAdmin, false);
 });
