@@ -411,16 +411,48 @@ app.use((req,res,next)=>{
   next();
 });
 
+// Shared cross-runtime Firebase identity and Firestore transport. Render continues
+// to use its existing Express service and Firebase project; Cloudflare Workers imports
+// these same platform-neutral modules from shared/backend-platform/.
+const verifiedFirebaseTokens = new WeakMap();
+let sharedFirebaseTokenVerifierPromise = null;
+let sharedFirestoreRestClientPromise = null;
+
+function getSharedFirebaseTokenVerifier() {
+  if (!sharedFirebaseTokenVerifierPromise) {
+    sharedFirebaseTokenVerifierPromise = import('./shared/backend-platform/firebase-id-token.mjs')
+      .then(({ createFirebaseIdTokenVerifier }) => createFirebaseIdTokenVerifier());
+  }
+  return sharedFirebaseTokenVerifierPromise;
+}
+
+function getSharedFirestoreRestClient() {
+  if (!sharedFirestoreRestClientPromise) {
+    sharedFirestoreRestClientPromise = import('./shared/backend-platform/firebase-firestore-rest.mjs')
+      .then(({ createFirebaseFirestoreRestClient }) => createFirebaseFirestoreRestClient());
+  }
+  return sharedFirestoreRestClientPromise;
+}
+
 async function requireUser(req, res) {
   const header = String(req.get("Authorization") || "");
   if (!header.startsWith("Bearer ")) {
     res.status(401).json({ error: "Login session is missing. Please login again." });
     return null;
   }
+  const idToken = header.slice(7).trim();
+  const projectId = String(process.env.FIREBASE_PROJECT_ID || '').trim();
+  if (!projectId || !idToken || idToken.length > 16 * 1024) {
+    res.status(401).json({ error: "Login session expired. Please login again." });
+    return null;
+  }
   try {
-    return await admin.auth().verifyIdToken(header.slice(7));
+    const verify = await getSharedFirebaseTokenVerifier();
+    const user = await verify(idToken, [projectId]);
+    verifiedFirebaseTokens.set(user, idToken);
+    return user;
   } catch (e) {
-    console.error("Firebase token verification failed:", e?.message || e);
+    console.error("Firebase token verification failed:", e?.code || e?.message || e);
     res.status(401).json({ error: "Login session expired. Please login again." });
     return null;
   }
@@ -436,10 +468,18 @@ async function isAdminUser(user) {
     adminEmails: ADMIN_AUTH_EMAILS
   })) return true;
   try {
-    const snap = await db.collection('smv_admins').doc(user.uid).get();
-    return snap.exists;
+    const idToken = verifiedFirebaseTokens.get(user);
+    const projectId = String(user.projectId || process.env.FIREBASE_PROJECT_ID || '').trim();
+    if (!idToken || !projectId) return false;
+    const firestore = await getSharedFirestoreRestClient();
+    const document = await firestore.getDocument({
+      projectId,
+      documentPath: 'smv_admins/' + user.uid,
+      idToken
+    });
+    return document.exists;
   } catch (e) {
-    console.error('Admin allowlist lookup failed:', e?.message || e);
+    console.error('Admin allowlist lookup failed:', e?.code || e?.message || e);
     return false;
   }
 }

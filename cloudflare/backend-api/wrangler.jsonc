@@ -1,0 +1,24 @@
+{
+  "name": "smvastro-backend-api-staging",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SMV_ENVIRONMENT": "staging",
+    "SMV_BACKEND_CLOUDFLARE_ACTIVE": "false",
+    "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
+    "ALLOWED_ORIGINS": "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastroservices.pages.dev,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "smvastro-wallet-staging",
+      "database_id": "0ddb87a9-8a16-4e39-a806-c9137c64959a"
+    }
+  ]
+}
