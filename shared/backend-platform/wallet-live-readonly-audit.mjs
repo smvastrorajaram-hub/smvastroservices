@@ -747,15 +747,23 @@ function buildFinancialReconciliation(refs) {
   }
 
   const commissionSetting = refs.billingSettings.find(item => item.settingId === 'commission');
+  const pricingSettingPresent = refs.billingSettings.some(item => item.settingId === 'liveSessionPricing');
+  const commissionSettingPresent = !!commissionSetting;
   const commissionData = commissionSetting?.data || {};
   const astroPercent = Number(commissionData.astroPercent ?? 20);
   const adminPercent = Number(commissionData.adminPercent ?? (100 - astroPercent));
+  const commissionPercentValid = commissionSettingPresent &&
+    Number.isFinite(astroPercent) && Number.isFinite(adminPercent) &&
+    astroPercent >= 0 && astroPercent <= 100 && adminPercent >= 0 && adminPercent <= 100 &&
+    Math.abs(astroPercent + adminPercent - 100) <= 0.001;
+  const missingSettings = [];
+  if (!pricingSettingPresent) missingSettings.push('smv_settings/liveSessionPricing');
+  if (!commissionSettingPresent) missingSettings.push('smv_settings/commission');
   const billingConfiguration = {
-    pricingSettingPresent: refs.billingSettings.some(item => item.settingId === 'liveSessionPricing'),
-    commissionSettingPresent: !!commissionSetting,
-    commissionPercentValid: Number.isFinite(astroPercent) && Number.isFinite(adminPercent) &&
-      astroPercent >= 0 && astroPercent <= 100 && adminPercent >= 0 && adminPercent <= 100 &&
-      Math.abs(astroPercent + adminPercent - 100) <= 0.001
+    pricingSettingPresent,
+    commissionSettingPresent,
+    commissionPercentValid,
+    missingSettings
   };
 
   const withdrawal = {
@@ -990,7 +998,13 @@ export function createWalletLiveReadOnlyAudit({
       securityBlockers: [
         'withdrawalPayouts are withheld: the existing Wallet mapper stores private payout JSON without AES-GCM encryption; rotate/use a new private staging key and add encrypted mapping before any import.',
         'razorpay_orders currently have raw-archive-only mapping; normalized order status, payment linkage and idempotency history are not yet ready for D1 business use.',
-        'Records containing sensitive-keyed fields are withheld from planned D1 statements until field-level redaction/encryption rules are reviewed.'
+        'Records containing sensitive-keyed fields are withheld from planned D1 statements until field-level redaction/encryption rules are reviewed.',
+        ...financialReconciliation.billingConfiguration.missingSettings.map(setting =>
+          setting + ' is missing from the staging Firestore source; billing configuration readiness cannot be verified.'
+        ),
+        ...(!financialReconciliation.billingConfiguration.commissionPercentValid &&
+          financialReconciliation.billingConfiguration.commissionSettingPresent
+          ? ['The staging commission percentages are invalid or do not add up to 100%.'] : [])
       ],
       writesPerformed: 0,
       sourceWritesPerformed: 0,
