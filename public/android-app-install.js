@@ -1,23 +1,17 @@
-/* Public Android APK download/update UI.
- * The Cloudflare release API becomes authoritative only after R2 + D1 are ready
- * and Admin publishing has explicitly been enabled. Otherwise keep the current
- * Render/Firebase release route as a compatibility fallback. */
+/* Public Android APK version and download/update card for SMV ASTRO.
+ * The Homepage uses a dedicated Android application icon and release card.
+ * D1 is the release pointer; the Cloudflare Worker streams the APK from R2. */
 (function () {
   'use strict';
-  const pwaSection = document.getElementById('smvInstallAppSection');
+
   const section = document.getElementById('smvPermanentAndroidAppSection');
-  const download = document.getElementById('smvPermanentApkDownload');
   const heading = document.getElementById('smvPermanentAndroidApkHeading');
   const description = document.getElementById('smvPermanentApkDescription');
   const status = document.getElementById('smvPermanentApkStatus');
+  const download = document.getElementById('smvPermanentApkDownload');
   const nativeApp = !!(window.SMVNativeCalls &&
     typeof window.SMVNativeCalls.isNativeApp === 'function' &&
     window.SMVNativeCalls.isNativeApp());
-
-  const LEGACY_BUCKETS = new Set([
-    'smv-astro.firebasestorage.app',
-    'smv-astro-staging.firebasestorage.app'
-  ]);
 
   function hide(element) {
     if (!element) return;
@@ -27,12 +21,10 @@
   }
 
   if (nativeApp) {
-    hide(pwaSection);
     hide(section);
-    hide(document.getElementById('adminGroupAppManagement'));
     return;
   }
-  if (!section || !download || !heading || !description || !status) return;
+  if (!section || !heading || !description || !status || !download) return;
   if (!/android/i.test(navigator.userAgent || '')) {
     hide(section);
     return;
@@ -43,6 +35,10 @@
       ? 'https://smv-astro-phase1-staging.onrender.com'
       : 'https://smvastroservices.onrender.com');
   const packageId = 'in.smvastroservices.smvastro';
+  const LEGACY_BUCKETS = new Set([
+    'smv-astro.firebasestorage.app',
+    'smv-astro-staging.firebasestorage.app'
+  ]);
 
   function versionCode(value) {
     const text = String(value == null ? '' : value).trim();
@@ -82,7 +78,7 @@
           return { base: candidate, cloudflare: true };
         }
       } catch (_) {
-        // Not ready/deployed: keep the existing release endpoint.
+        // Compatibility fallback is retained if the dedicated Worker is unavailable.
       }
     }
     return { base: backend, cloudflare: false };
@@ -94,7 +90,7 @@
     }
     try {
       const installed = await navigator.getInstalledRelatedApps();
-      if (!Array.isArray(installed)) return { supported: false, app: null };
+      if (!Array.isArray(installed)) return { supported: true, app: null };
       return {
         supported: true,
         app: installed.find(app => app && app.platform === 'play' && app.id === packageId) || null
@@ -111,7 +107,8 @@
     if (url.protocol !== 'https:' || url.username || url.password || url.hash) return null;
 
     if (source.cloudflare) {
-      if (url.origin !== source.base || !/^\/(?:api\/android-app\/)?download\/[1-9][0-9]{2,9}$/.test(url.pathname) ||
+      if (url.origin !== source.base ||
+          !/^\/(?:api\/android-app\/)?download\/[1-9][0-9]{2,9}$/.test(url.pathname) ||
           url.search) return null;
       return url;
     }
@@ -124,49 +121,64 @@
     return url;
   }
 
-  function setDownloadState({ release, installed, source }) {
+  function uploadedAtLabel(value) {
+    const timestamp = Number(value);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return 'Release date unavailable';
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Release date unavailable';
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    }).format(date).replace(/\u202f/g, ' ');
+  }
+
+  function showRelease({ release, installed, source }) {
     const latestCode = Number(release.versionCode);
-    if (installed.supported && installed.app) {
-      const installedCode = versionCode(installed.app.versionCode || installed.app.version || installed.app.versionName);
-      if (installedCode != null && installedCode >= latestCode) {
-        heading.textContent = 'SMV ASTRO IS UP TO DATE';
-        description.textContent = 'The latest SMV ASTRO Android version is already installed on this device.';
-        status.textContent = 'Installed version: ' + String(installed.app.version || release.versionName) +
-          ' · Latest version: ' + String(release.versionName || 'Current');
-        download.hidden = true;
-        download.removeAttribute('href');
-        section.hidden = false;
-        section.removeAttribute('aria-hidden');
-        section.style.display = '';
-        hide(pwaSection);
-        return;
-      }
-      heading.textContent = 'SMV ASTRO UPDATE AVAILABLE';
-      description.textContent = 'A newer permanent SMV ASTRO version is available. Download and install it over the existing app; do not uninstall first.';
-      download.textContent = 'UPDATE APP';
-      status.textContent = 'Installed version: ' +
-        String(installed.app.version || installed.app.versionName || 'Older version') +
-        ' · Latest version: ' + String(release.versionName || 'New version');
-    } else if (installed.supported) {
-      heading.textContent = 'SMV ASTRO ANDROID APP';
-      description.textContent = 'Install the official SMV ASTRO Android application on this device.';
-      download.textContent = 'INSTALL APP';
-      status.textContent = 'Latest version: ' + String(release.versionName || 'Available');
-    } else {
-      heading.textContent = 'SMV ASTRO ANDROID APP';
-      description.textContent = 'Download the latest official Android APK. This browser cannot confirm whether an older version is installed.';
-      download.textContent = 'DOWNLOAD APP';
-      status.textContent = 'Latest version: ' + String(release.versionName || 'Available') +
-        ' · Installed version check is not supported in this browser.';
-    }
-    download.href = source.cloudflare
-      ? (new URL(release.downloadUrl)).href
-      : release.downloadUrl;
-    download.hidden = false;
+    const latestName = String(release.versionName || 'Current');
+    const storage = String(release.storageProvider || (source.cloudflare ? 'r2' : 'firebase')).toLowerCase();
+
+    heading.textContent = 'SMV ASTRO ' + latestName + ' · code ' + String(latestCode);
+    description.textContent = uploadedAtLabel(release.uploadedAt) + ' · ' + storage;
     section.hidden = false;
     section.removeAttribute('aria-hidden');
     section.style.display = '';
-    hide(pwaSection);
+
+    if (!installed.supported) {
+      status.textContent = 'Open this page in Chrome to check your installed app version.';
+      download.hidden = true;
+      download.removeAttribute('href');
+      return;
+    }
+
+    const app = installed.app;
+    const installedCode = app
+      ? versionCode(app.versionCode || app.version || app.versionName)
+      : null;
+
+    if (app && installedCode !== null && installedCode >= latestCode) {
+      status.textContent = 'Using Latest Version';
+      download.hidden = true;
+      download.removeAttribute('href');
+      return;
+    }
+
+    if (app && installedCode === null) {
+      status.textContent = 'Installed app version could not be verified';
+      download.hidden = true;
+      download.removeAttribute('href');
+      return;
+    }
+
+    status.textContent = '';
+    download.textContent = app ? 'UPDATE' : 'DOWNLOAD APK';
+    download.href = release.downloadUrl;
+    download.hidden = false;
+    download.setAttribute('aria-label', (app ? 'Update' : 'Download APK') + ' SMV ASTRO ' + latestName);
   }
 
   async function initialize() {
@@ -192,7 +204,7 @@
       if (!url) throw new Error('The Android APK download URL is not a trusted SMV ASTRO release.');
       release.downloadUrl = url.href;
       const installed = await installedNativeApp();
-      setDownloadState({ release, installed, source });
+      showRelease({ release, installed, source });
     } catch (error) {
       console.warn('SMV ASTRO APK availability could not be checked:', error?.message || error);
       hide(section);

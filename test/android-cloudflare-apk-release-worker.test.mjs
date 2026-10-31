@@ -370,32 +370,106 @@ test('an explicitly archived Firebase row in D1 remains available as historical 
 });
 
 
-test('Homepage shows install/update states and only trusts the configured Cloudflare APK release origin', async () => {
+test('Homepage uses the dedicated Android APK icon/card and hides Download when the current version is installed', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
-  const moduleSource = fs.readFileSync(path.join(root, 'public/smvastro.mjs'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(root, 'public/android-app-install.css'), 'utf8');
 
-  assert.ok(installer.includes('SMV ASTRO IS UP TO DATE'));
-  assert.ok(installer.includes('UPDATE APP'));
-  assert.ok(installer.includes('INSTALL APP'));
-  assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('health?.success === true && health.ready === true'));
+  assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
+  assert.ok(html.includes('id="smvPermanentApkDownload"'));
+  assert.ok(html.includes('assets/icon-192.png'));
+  assert.doesNotMatch(html, /smvInstallAppSection|smvInstallAppBtn|smvInstallAppHelp|smv-install-app-prompt/);
+  assert.ok(html.includes('window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
+  assert.ok(html.includes('window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
+  assert.ok(html.includes('android-app-install.css?v=20261030-admin-apk-manager-v2'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
-  assert.ok(installer.includes('firebasestorage.googleapis.com'));
-  assert.ok(moduleSource.includes('smvAndroidApkWorkerStatus'));
-  assert.ok(moduleSource.includes('/admin/android-app/versions'));
-  assert.ok(moduleSource.includes('DOWNLOAD APK'));
-  assert.ok(html.includes('id="adminAndroidAppHistory"'));
-  assert.ok(html.includes('id="adminAndroidApkBackendStatus"'));
-  assert.ok(html.includes('id="adminAndroidAppFileInfo"'));
-  assert.ok(html.includes('APK Install &amp; Update Manager'));
-  assert.ok(moduleSource.includes('Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.'));
-  assert.ok(moduleSource.includes('Selected APK: '));
-  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
+  assert.ok(installer.includes('Using Latest Version'));
+  assert.ok(installer.includes("'UPDATE'"));
+  assert.ok(installer.includes("'DOWNLOAD APK'"));
+  assert.ok(installer.includes('uploadedAtLabel'));
+  assert.ok(installer.includes("timeZone: 'Asia/Kolkata'"));
+  assert.ok(installer.includes("source.cloudflare ? 'r2' : 'firebase'"));
+  assert.ok(styles.includes('.smv-android-apk-card'));
+  assert.ok(styles.includes('.smv-android-apk-download'));
+
+  const vm = await import('node:vm');
+  const release = {
+    success: true,
+    available: true,
+    packageName: PACKAGE,
+    versionName: 'v1.1',
+    versionCode: 1001,
+    downloadUrl: 'https://smv-astro-apk-release-api.astroservices.workers.dev/download/1001',
+    size: 2996276,
+    uploadedAt: 1793451612279
+  };
+  async function renderFor(installedApps, supportsInstalledApps = true) {
+    const heading = { textContent: '' };
+    const description = { textContent: '' };
+    const status = { textContent: '' };
+    const download = {
+      textContent: 'DOWNLOAD APK', hidden: true, href: '',
+      setAttribute() {}, removeAttribute(name) { if (name === 'href') this.href = ''; }
+    };
+    const section = { hidden: true, style: { display: 'none' }, removeAttribute() {} };
+    const document = {
+      getElementById(id) {
+        return ({
+          smvPermanentAndroidAppSection: section,
+          smvPermanentAndroidApkHeading: heading,
+          smvPermanentApkDescription: description,
+          smvPermanentApkStatus: status,
+          smvPermanentApkDownload: download
+        })[id] || null;
+      }
+    };
+    const navigator = {
+      userAgent: 'Mozilla/5.0 (Linux; Android 10) Chrome/131.0.0.0'
+    };
+    if (supportsInstalledApps) navigator.getInstalledRelatedApps = async () => installedApps;
+    const fetchImpl = async url => url.endsWith('/health')
+      ? { ok: true, json: async () => ({ success: true, ready: true }) }
+      : { ok: true, json: async () => release };
+    const sandbox = {
+      document, navigator,
+      window: { SMV_APK_RELEASE_API_URL: 'https://smv-astro-apk-release-api.astroservices.workers.dev' },
+      location: { hostname: 'smvastroservices.in' },
+      fetch: fetchImpl, URL, AbortSignal, Intl, Date, Set,
+      console: { info() {}, warn() {}, error() {} }
+    };
+    vm.runInNewContext(installer, sandbox);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    return { section, heading, description, status, download };
+  }
+
+  const latest = await renderFor([{ platform: 'play', id: PACKAGE, version: 'v1.1' }]);
+  assert.equal(latest.heading.textContent, 'SMV ASTRO v1.1 · code 1001');
+  assert.equal(latest.description.textContent, '31 Oct 2026, 6:30 pm · r2');
+  assert.equal(latest.status.textContent, 'Using Latest Version');
+  assert.equal(latest.download.hidden, true);
+  assert.equal(latest.download.href, '');
+
+  const older = await renderFor([{ platform: 'play', id: PACKAGE, version: 'v1.0' }]);
+  assert.equal(older.download.hidden, false);
+  assert.equal(older.download.textContent, 'UPDATE');
+  assert.equal(older.download.href, release.downloadUrl);
+
+  const notInstalled = await renderFor([]);
+  assert.equal(notInstalled.download.hidden, false);
+  assert.equal(notInstalled.download.textContent, 'DOWNLOAD APK');
+  assert.equal(notInstalled.download.href, release.downloadUrl);
+
+  const installedUnknownVersion = await renderFor([{ platform: 'play', id: PACKAGE }]);
+  assert.equal(installedUnknownVersion.download.hidden, true);
+  assert.equal(installedUnknownVersion.status.textContent, 'Installed app version could not be verified');
+
+  const unsupportedBrowser = await renderFor([], false);
+  assert.equal(unsupportedBrowser.download.hidden, true);
+  assert.equal(unsupportedBrowser.status.textContent, 'Open this page in Chrome to check your installed app version.');
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
@@ -415,7 +489,7 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(config, /database_id\s*=\s*"5105ebb3-435c-47b7-9983-2e171fa911cd"/);
   assert.match(config, /bucket_name\s*=\s*"smv-astro-apk-releases"/);
   assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"true"/);
-  assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*""/);
+  assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
   assert.match(html, /window\.SMV_APK_RELEASE_ADMIN_API_URL\s*=\s*window\.SMV_APK_RELEASE_ADMIN_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
   assert.match(moduleSource, /window\.SMV_APK_RELEASE_ADMIN_API_URL\|\|window\.SMV_APK_RELEASE_API_URL/);
   assert.doesNotMatch(installer, /SMV_APK_RELEASE_ADMIN_API_URL|smv-astro-apk-release-api\.astroservices\.workers\.dev/);
