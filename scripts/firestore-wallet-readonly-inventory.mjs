@@ -77,6 +77,22 @@ const SETTINGS_DOCUMENTS = Object.freeze([
   'commission'
 ]);
 
+const NON_TERMINAL_RECHARGE_STATES = Object.freeze([
+  'creating',
+  'order_created',
+  'payment_pending',
+  'created',
+  'pending',
+  'processing'
+]);
+
+const REFUND_STATUS_VALUES = Object.freeze([
+  'pending',
+  'processed',
+  'completed',
+  'failed'
+]);
+
 function assertProjectId(projectId) {
   const value = String(projectId || '').trim();
   if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(value)) {
@@ -283,6 +299,49 @@ export async function runInventory({
     quiescence.noNonTerminalWalletRecharges
   ].every(Boolean);
 
+  const nonTerminalRechargeStatusBreakdown = {};
+  for (const status of NON_TERMINAL_RECHARGE_STATES) {
+    nonTerminalRechargeStatusBreakdown[status] = await countDocuments('smv_wallet_recharges', {
+      field: 'status', op: 'EQUAL', value: status
+    });
+  }
+  const classifiedNonTerminalRecharges = Object.values(nonTerminalRechargeStatusBreakdown)
+    .reduce((sum, count) => sum + count, 0);
+  nonTerminalRechargeStatusBreakdown.knownStatusTotal = classifiedNonTerminalRecharges;
+  nonTerminalRechargeStatusBreakdown.unclassifiedCount =
+    quiescence.nonTerminalWalletRecharges - classifiedNonTerminalRecharges;
+
+  const offerAuditDiagnostics = {
+    totalDocuments: collections.walletOfferAudit.totalDocuments,
+    serviceWalletRechargeMatches: collections.walletOfferAudit.matchingDocuments,
+    offerTypeWalletRechargeMatches: await countDocuments('smv_offer_audit', {
+      field: 'offerType', op: 'EQUAL', value: 'wallet_recharge_bonus_minutes'
+    })
+  };
+
+  const refundCandidates = {};
+  for (const [key, collectionPath] of [
+    ['questions', 'smv_questions'],
+    ['privateConsultations', 'smv_private_consultations']
+  ]) {
+    const collectionKey = key === 'questions'
+      ? 'questionsRefundSourceCandidate'
+      : 'privateConsultationsRefundSourceCandidate';
+    const statusCounts = {};
+    for (const status of REFUND_STATUS_VALUES) {
+      statusCounts[status] = await countDocuments(collectionPath, {
+        field: 'refundStatus', op: 'EQUAL', value: status
+      });
+    }
+    refundCandidates[key] = {
+      totalDocuments: collections[collectionKey].totalDocuments,
+      rejectedByAdminStatusCount: await countDocuments(collectionPath, {
+        field: 'status', op: 'EQUAL', value: 'question_rejected'
+      }),
+      refundStatusCounts: statusCounts
+    };
+  }
+
   const collectionGroups = {};
   for (const collectionId of ['messages', 'signals']) {
     collectionGroups[collectionId] = {
@@ -327,6 +386,9 @@ export async function runInventory({
     collectionGroups,
     settingsDocuments,
     quiescence,
+    nonTerminalRechargeStatusBreakdown,
+    offerAuditDiagnostics,
+    refundCandidates,
     interpretation: {
       sourceCountInventoryCompleteForRegistry: true,
       collectionGroupCountsAreDatabaseWideByName: true,
@@ -368,6 +430,10 @@ async function main() {
     ])),
     settingsDocuments: report.settingsDocuments,
     quiescence: report.quiescence,
+    nonTerminalRechargeStatusBreakdown: report.nonTerminalRechargeStatusBreakdown,
+    offerAuditDiagnostics: report.offerAuditDiagnostics,
+    refundCandidates: report.refundCandidates,
+    collectionGroups: report.collectionGroups,
     noDocumentPayloadExported: report.noDocumentPayloadExported,
     noFirestoreWritesAttempted: report.noFirestoreWritesAttempted
   }));

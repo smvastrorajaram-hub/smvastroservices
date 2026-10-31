@@ -79,8 +79,15 @@ test('inventory uses only Firestore aggregation reads and settings GETs, and nev
     if (url.pathname.endsWith(':runAggregationQuery')) {
       assert.equal(method, 'POST');
       const structured = requests.at(-1).body.structuredAggregationQuery;
-      const count = structured.structuredQuery.from[0].allDescendants ? 3 :
-        structured.structuredQuery.where ? 1 : 12;
+      const source = structured.structuredQuery.from[0];
+      const filter = structured.structuredQuery.where?.fieldFilter;
+      let count = source.allDescendants ? 3 : filter ? 1 : 12;
+      if (source.collectionId === 'smv_wallet_recharges' &&
+          filter?.field?.fieldPath === 'status' && filter.op === 'IN') count = 6;
+      if (source.collectionId === 'smv_wallet_recharges' &&
+          filter?.field?.fieldPath === 'status' && filter.op === 'EQUAL') count = 1;
+      if (source.collectionId === 'smv_offer_audit' &&
+          filter?.field?.fieldPath === 'offerType') count = 1;
       return new Response(JSON.stringify([{
         result: { aggregateFields: { documentCount: { integerValue: String(count) } } }
       }]), { status: 200 });
@@ -108,6 +115,13 @@ test('inventory uses only Firestore aggregation reads and settings GETs, and nev
   assert.equal(report.collections.wallets.totalDocuments, 12);
   assert.equal(report.collections.walletRechargeOffers.matchingDocuments, 1);
   assert.equal(report.collectionGroups.messages.documents, 3);
+  assert.equal(report.quiescence.nonTerminalWalletRecharges, 6);
+  assert.equal(report.nonTerminalRechargeStatusBreakdown.knownStatusTotal, 6);
+  assert.equal(report.nonTerminalRechargeStatusBreakdown.unclassifiedCount, 0);
+  assert.equal(report.offerAuditDiagnostics.serviceWalletRechargeMatches, 1);
+  assert.equal(report.offerAuditDiagnostics.offerTypeWalletRechargeMatches, 1);
+  assert.equal(report.refundCandidates.questions.totalDocuments, 12);
+  assert.equal(report.refundCandidates.questions.refundStatusCounts.pending, 1);
   assert.equal(report.settingsDocuments.commission.exists, true);
   assert.equal(report.settingsDocuments.commission.updateTime, '2026-10-30T12:00:00Z');
   assert.equal(JSON.stringify(report).includes('secretBalanceValue'), false);
