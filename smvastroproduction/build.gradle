@@ -9,7 +9,7 @@ def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidApp
 def googleWebClientId = providers.gradleProperty("smvGoogleWebClientId")
         .orElse(providers.environmentVariable("SMV_GOOGLE_WEB_CLIENT_ID"))
         .getOrElse("299081899217-ht47n60l8t2c7gbo07nd4lpm8i51jk3m.apps.googleusercontent.com")
-if (!(googleWebClientId ==~ /^[0-9]+-[A-Za-z0-9_-]+\\.apps\\.googleusercontent\\.com$/)) {
+if (!googleWebClientId.contains("-") || !googleWebClientId.endsWith(".apps.googleusercontent.com")) {
     throw new GradleException("SMV_GOOGLE_WEB_CLIENT_ID must be a valid Google OAuth Web Client ID.")
 }
 
@@ -93,7 +93,6 @@ android {
 
 dependencies {
     implementation platform("com.google.firebase:firebase-bom:35.1.0")
-    implementation "com.google.firebase:firebase-auth"
     implementation "com.google.firebase:firebase-messaging"
     implementation "androidx.webkit:webkit:1.18.0"
     implementation "androidx.credentials:credentials:1.6.0"
