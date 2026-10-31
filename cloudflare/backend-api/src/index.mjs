@@ -233,7 +233,7 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
   const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
   if (razorpayKeyId.startsWith('rzp_test_') && razorpayKeySecret && razorpayWebhookSecret) {
     const razorpay = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
-    const walletRechargeSchemaReady = async () => {
+    const checkWalletRechargeSchemaReady = async () => {
       if (!(await walletSchemaReady())) return false;
       try {
         const row = await env.DB.prepare(
@@ -253,7 +253,7 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
       razorpay,
       razorpayKeyId,
       razorpayWebhookSecret,
-      isReady: walletRechargeSchemaReady
+      isReady: checkWalletRechargeSchemaReady
     });
     walletRechargeRoutesRegistered = true;
   }
