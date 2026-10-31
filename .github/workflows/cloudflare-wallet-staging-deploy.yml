@@ -17,79 +17,52 @@ jobs:
       - name: Verify required secrets without displaying their values
         id: preflight
         env:
-          CF_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_D1_ID: \${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
-          ALLOWED_ORIGINS: \${{ secrets.ALLOWED_ORIGINS }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         shell: bash
         run: |
           missing=()
-          for name in CF_API_TOKEN CF_ACCOUNT_ID CF_D1_ID ALLOWED_ORIGINS; do
-            if [[ -z "\${!name}" ]]; then missing+=("$name"); fi
+          for name in CF_API_TOKEN CF_ACCOUNT_ID; do
+            if [[ -z "${!name}" ]]; then missing+=("$name"); fi
           done
-          if (( \${#missing[@]} )); then
+          if (( ${#missing[@]} )); then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Staging deployment skipped because required GitHub Actions secrets are missing."
-            printf 'Missing secret name(s): %s\\n' "\${missing[*]}"
+            printf 'Missing secret name(s): %s\n' "${missing[*]}"
           else
-            if [[ ! "$CF_D1_ID" =~ ^[0-9a-fA-F-]{36}$ ]]; then
-              echo "D1 database ID does not have the expected UUID form." >&2
-              exit 1
-            fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "Required deployment secrets are present."
           fi
-
-      - name: Create temporary config with the selected staging D1 ID
-        if: steps.preflight.outputs.ready == 'true'
-        env:
-          D1_ID: \${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
-        run: |
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const path = 'cloudflare/wallet-api/wrangler.jsonc';
-          const output = 'cloudflare/wallet-api/wrangler.deploy.jsonc';
-          const placeholder = '00000000-0000-4000-8000-000000000000';
-          const id = String(process.env.D1_ID || '');
-          if (!/^[0-9a-fA-F-]{36}$/.test(id)) throw new Error('Invalid D1 database ID.');
-          const source = fs.readFileSync(path, 'utf8');
-          if (!source.includes(placeholder)) throw new Error('Expected staging D1 placeholder was not found.');
-          fs.writeFileSync(output, source.replace(placeholder, id));
-          NODE
 
       - name: Apply schema migration to the named staging D1 database
         if: steps.preflight.outputs.ready == 'true'
         uses: cloudflare/wrangler-action@v4
         with:
-          apiToken: \${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4.156.0'
           workingDirectory: cloudflare/wallet-api
-          command: d1 migrations apply smvastro-wallet-staging --remote --config wrangler.deploy.jsonc
+          command: d1 migrations apply smvastro-wallet-staging --remote --config wrangler.jsonc
 
-      - name: Deploy staging Worker and set allowed origins
+      - name: Deploy staging Worker
         if: steps.preflight.outputs.ready == 'true'
         id: deploy-worker
         uses: cloudflare/wrangler-action@v4
         with:
-          apiToken: \${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4.156.0'
           workingDirectory: cloudflare/wallet-api
-          secrets: |
-            ALLOWED_ORIGINS
-          command: deploy --config wrangler.deploy.jsonc
-        env:
-          ALLOWED_ORIGINS: \${{ secrets.ALLOWED_ORIGINS }}
+          command: deploy --config wrangler.jsonc
 
       - name: Verify staging Worker and D1 schema
         if: steps.preflight.outputs.ready == 'true'
         env:
-          WORKER_URL: \${{ steps.deploy-worker.outputs.deployment-url }}
+          WORKER_URL: ${{ steps.deploy-worker.outputs.deployment-url }}
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          const base = String(process.env.WORKER_URL || '').replace(/\\/$/, '');
+          const base = String(process.env.WORKER_URL || '').replace(/\/$/, '');
           if (!base) throw new Error('Cloudflare did not return a staging deployment URL.');
 
           async function get(path) {
