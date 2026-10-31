@@ -1,0 +1,65 @@
+name: Shared Wallet domain adapters and D1 migration tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-route-inventory-guard-20261031
+    paths:
+      - 'shared/backend-platform/wallet-domain.mjs'
+      - 'shared/backend-platform/d1-wallet-adapter.mjs'
+      - 'shared/backend-platform/firestore-wallet-adapter.mjs'
+      - 'cloudflare/backend-api/migrations/**'
+      - 'cloudflare/backend-api/test/wallet-*.test.mjs'
+      - 'cloudflare/backend-api/test/fixtures/d1-wallet-*.sql'
+      - '.github/workflows/cloudflare-wallet-domain-adapter.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check shared Wallet adapter syntax
+        working-directory: cloudflare/backend-api
+        run: npm run check
+      - name: Run shared business-rule and adapter conformance tests
+        working-directory: cloudflare/backend-api
+        run: npm run test:wallet-domain
+      - name: Apply D1 migrations to a local ephemeral database only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Exercise D1 Wallet balance triggers and ledger snapshots locally
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-trigger-smoke.sql
+      - name: Verify insufficient-funds trigger aborts the ledger insert
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set +e
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-overdraft.sql > "$RUNNER_TEMP/d1-overdraft.log" 2>&1
+          result=$?
+          set -e
+          if [[ $result -eq 0 ]]; then
+            echo "::error::D1 overdraft was unexpectedly accepted."
+            exit 1
+          fi
+          if ! grep -q 'WALLET_INSUFFICIENT_BALANCE' "$RUNNER_TEMP/d1-overdraft.log"; then
+            cat "$RUNNER_TEMP/d1-overdraft.log"
+            echo "::error::D1 overdraft failed for an unexpected reason."
+            exit 1
+          fi
+      - name: Clean local D1 smoke data
+        if: always()
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-trigger-cleanup.sql
