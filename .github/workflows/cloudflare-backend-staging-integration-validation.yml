@@ -55,7 +55,7 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' file; do
             node --check "$file"
-          done < <(find cloudflare/backend-api/src shared/backend-platform cloudflare/backend-api/test -type f -name '*.mjs' -print0)
+          done < <(find cloudflare/backend-api/src cloudflare/backend-api/scripts shared/backend-platform cloudflare/backend-api/test -type f -name '*.mjs' -print0)
 
       - name: Run the complete Cloudflare backend contract test suite
         working-directory: cloudflare/backend-api
