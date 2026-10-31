@@ -378,7 +378,7 @@ function buildConsistency(refs) {
   const sourcePaymentDuplicates = duplicateGroups(
     refs.orders,
     item => item.paymentId,
-    item => [item.orderId, item.amount, item.status].join('|')
+    item => [item.orderId, item.amountPaise, item.status].join('|')
   );
   const webhookDuplicates = duplicateGroups(
     refs.webhooks,
@@ -417,7 +417,7 @@ function buildConsistency(refs) {
         ['accepted', 'confirmed', 'completed', 'finished', 'connected'].includes(item.status)
     ).length,
     liveSessionEarningsMissingSession: refs.earnings.filter(
-      id => id && !refs.sessions.has(id)
+      item => item.sessionId && !refs.sessions.has(item.sessionId)
     ).length,
     withdrawalPayoutsMissingWithdrawal: refs.withdrawalPayouts.filter(
       id => id && !refs.withdrawals.has(id)
@@ -788,7 +788,6 @@ function buildFinancialReconciliation(refs) {
  */
 export function createWalletLiveReadOnlyAudit({
   firestore,
-  db = createStrictReadOnlyD1Guard(),
   expectedProjectId = 'smv-astro-staging',
   pageSize = 100,
   maxPageRequests = 100000,
@@ -810,6 +809,7 @@ export function createWalletLiveReadOnlyAudit({
     listDocuments: (...args) => firestore.listDocuments(...args),
     getDocument: (...args) => firestore.getDocument(...args)
   });
+  const db = createStrictReadOnlyD1Guard();
   const backfill = createWalletDomainBackfillService({
     db,
     firestore: readOnlyFirestore,
