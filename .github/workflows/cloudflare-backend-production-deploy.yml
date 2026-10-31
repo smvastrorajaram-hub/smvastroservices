@@ -1,0 +1,198 @@
+name: Deploy SMV ASTRO Production Backend Worker
+
+on:
+  pull_request:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - ".github/config/wrangler.production.jsonc"
+      - ".github/scripts/verify-cloudflare-production-worker-preflight.mjs"
+      - ".github/workflows/cloudflare-backend-production-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      confirm_production_binding:
+        description: "Confirm deployment to smvastroservices.astroservices.workers.dev with smvastro-wallet-production"
+        required: true
+        type: choice
+        options:
+          - "yes"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smvastroservices-production-worker
+  cancel-in-progress: false
+
+jobs:
+  validate-production-worker:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout the exact proposed integration revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Check Worker and production preflight syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check cloudflare/backend-api/src/index.mjs
+          node --check .github/scripts/verify-cloudflare-production-worker-preflight.mjs
+
+      - name: Run the complete Cloudflare backend contract test suite
+        working-directory: cloudflare/backend-api
+        run: node --test test/*.test.mjs
+
+      - name: Validate the production Worker bundle without deploying
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config ../../.github/config/wrangler.production.jsonc
+
+  deploy-production-worker:
+    needs: validate-production-worker
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031' &&
+      inputs.confirm_production_binding == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout the approved integration revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Revalidate the exact production bundle
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config ../../.github/config/wrangler.production.jsonc
+
+      - name: Verify the existing Production D1 and Worker target (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node .github/scripts/verify-cloudflare-production-worker-preflight.mjs
+
+      - name: Deploy only the Production Backend Worker with the Production D1 binding
+        working-directory: cloudflare/backend-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.156.0 deploy --config ../../.github/config/wrangler.production.jsonc
+
+      - name: Verify the deployed Worker has the exact Production D1 binding
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node .github/scripts/verify-cloudflare-production-worker-preflight.mjs --verify-binding
+
+      - name: Smoke-test the production endpoint and fail-closed business routes
+        env:
+          WORKER_URL: https://smvastroservices.astroservices.workers.dev
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+
+          const base = String(process.env.WORKER_URL || '').replace(/\/$/, '');
+          async function request(path) {
+            const response = await fetch(base + path, {
+              headers: { Accept: 'application/json' },
+              signal: AbortSignal.timeout(10000)
+            });
+            const raw = await response.text();
+            let body = {};
+            try { body = raw ? JSON.parse(raw) : {}; } catch {}
+            return { response, body };
+          }
+
+          let health;
+          let lastError = 'no response';
+          for (let attempt = 1; attempt <= 16; attempt += 1) {
+            try {
+              const result = await request('/healthz');
+              if (result.response.ok) { health = result.body; break; }
+              lastError = 'HTTP ' + result.response.status;
+            } catch (error) {
+              lastError = error instanceof Error ? error.message : String(error);
+            }
+            if (attempt < 16) await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          assert.ok(health, 'Production Worker health check failed: ' + lastError);
+          assert.equal(health.ok, true);
+          assert.equal(health.runtime, 'cloudflare-workers-express-http-bridge');
+          assert.equal(health.environment, 'production');
+          assert.equal(health.backendActive, false);
+          assert.equal(health.walletReadRoutesRegistered, false);
+          assert.equal(health.walletRechargeRoutesRegistered, false);
+          assert.equal(health.walletOfferRoutesRegistered, false);
+          assert.equal(health.liveSessionRoutesRegistered, false);
+          assert.equal(health.identityProfileBackfillRoutesRegistered, false);
+          assert.equal(health.identityProfileBackfillToolsEnabled, false);
+          assert.equal(health.identityProfileD1AuthorizationEnabled, false);
+          assert.equal(health.productionTrafficEnabled, false);
+
+          const readiness = await request('/api/backend/readiness');
+          assert.equal(readiness.response.status, 503,
+            'The schema-only production D1 must not be mistaken for the legacy Wallet cutover schema.');
+          assert.equal(readiness.body.checks?.expressRuntime, true);
+          assert.equal(readiness.body.checks?.d1Binding, true);
+          assert.equal(readiness.body.checks?.walletSchema, false);
+
+          const migration = await request('/api/backend/migration-status');
+          assert.equal(migration.response.status, 200);
+          assert.equal(migration.body.legacyServerLoaded, false);
+          assert.equal(migration.body.productionTrafficEnabled, false);
+          assert.equal(migration.body.walletReadRoutesEnabled, false);
+          assert.equal(migration.body.walletRechargeRoutesEnabled, false);
+          assert.equal(migration.body.callChatRoutesEnabled, false);
+
+          for (const path of ['/api/auth/session', '/api/auth/authorization']) {
+            const result = await request(path);
+            assert.equal(result.response.status, 401, path + ' must reject unauthenticated access.');
+            assert.equal(result.body.code, 'AUTH_REQUIRED');
+          }
+
+          const wallet = await request('/api/wallet/v1/wallet/balance');
+          assert.equal(wallet.response.status, 503);
+          assert.equal(wallet.body.code, 'BACKEND_MIGRATION_NOT_CUT_OVER');
+
+          console.log('PASS: ' + base + ' serves the production Cloudflare Worker runtime.');
+          console.log('PASS: production environment and Firebase project allowlist are configured.');
+          console.log('PASS: unauthenticated auth endpoints reject requests.');
+          console.log('PASS: Wallet, Razorpay and Live Call/Chat business routes remain disabled.');
+          console.log('PASS: legacy Wallet cutover readiness remains false; no production traffic switch occurred.');
+          NODE
+
+      - name: Publish production Worker deployment summary
+        if: always()
+        run: |
+          {
+            echo "## SMV ASTRO Production Backend Worker"
+            echo ""
+            echo "- Endpoint: https://smvastroservices.astroservices.workers.dev"
+            echo "- D1 binding: DB → smvastro-wallet-production"
+            echo "- Environment: production"
+            echo "- Wallet / Razorpay / Live Call-Chat routes: disabled"
+            echo "- Frontend API URL / DNS / Render / Firebase data: unchanged"
+            echo "- No D1 migrations or data imports were run by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
