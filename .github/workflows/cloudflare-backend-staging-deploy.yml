@@ -103,6 +103,12 @@ jobs:
             throw new Error('Cloudflare Express runtime health verification failed.');
           }
 
+          const authGate = await fetch(base + '/api/auth/session');
+          const authGateBody = await authGate.json().catch(() => ({}));
+          if (authGate.status !== 401 || authGateBody.code !== 'AUTH_REQUIRED') {
+            throw new Error('Firebase ID-token route must reject unauthenticated requests.');
+          }
+
           const readiness = await get('/api/backend/readiness');
           if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
               readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
