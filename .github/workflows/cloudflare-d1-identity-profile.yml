@@ -1,0 +1,46 @@
+name: Cloudflare D1 identity profile foundation
+
+on:
+  push:
+    branches:
+      - feature/cloudflare-d1-identity-profile-domain-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0007_identity_profile_domain.sql'
+      - 'shared/backend-platform/d1-identity-service.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-service.test.mjs'
+      - '.github/workflows/cloudflare-d1-identity-profile.yml'
+  pull_request:
+    branches:
+      - feature/cloudflare-live-wallet-settlement-guard-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0007_identity_profile_domain.sql'
+      - 'shared/backend-platform/d1-identity-service.mjs'
+      - 'cloudflare/backend-api/test/d1-identity-service.test.mjs'
+      - '.github/workflows/cloudflare-d1-identity-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  identity-profile-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check D1 identity service syntax
+        run: node --check shared/backend-platform/d1-identity-service.mjs
+      - name: Run D1 identity authorization contract tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/d1-identity-service.test.mjs
+      - name: Apply all D1 migrations locally only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
