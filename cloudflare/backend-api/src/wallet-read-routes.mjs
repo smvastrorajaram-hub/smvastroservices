@@ -1,5 +1,11 @@
 import { safePaise, safeMinutes, walletError } from '../../../shared/backend-platform/wallet-domain.mjs';
 
+export function isWalletReadRouteGateOpen(env = {}) {
+  return String(env.WALLET_READ_ROUTES_ENABLED || '').toLowerCase() === 'true' &&
+    String(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE || '').toLowerCase() === 'true' &&
+    String(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE || '').toLowerCase() === 'true';
+}
+
 function rupees(value) {
   return Math.round(safePaise(value)) / 100;
 }
