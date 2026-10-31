@@ -39,7 +39,8 @@ function fixtureCollections() {
     smv_offers: [
       doc('offer-1', { offerType:'wallet_recharge_bonus_minutes', name:'Test bonus',
         enabled:true, minimumRechargeAmountPaise:5000, bonusMinutes:3,
-        perCustomerLimit:1, totalUsageLimit:100, usedCount:1, priority:1 })
+        perCustomerLimit:1, totalUsageLimit:100, usedCount:1, priority:1 }),
+      doc('offer-unrelated', { offerType:'other_campaign', name:'Out of scope fixture' })
     ],
     smv_offer_audit: [
       doc('offer-audit-1', { service:'wallet_recharge', action:'redeemed', createdAt:new Date() })
@@ -154,8 +155,11 @@ test('full audit paginates every collection and discovers every session child co
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/messages'));
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/signals'));
   assert.equal(byKey.billingSettings.totalSourceDocuments,2);
-  assert.equal(report.totals.sourceDocuments,21);
-  assert.equal(report.totals.pagesScanned,21);
+  assert.equal(byKey.walletRechargeOffers.totalSourceDocuments,2);
+  assert.equal(byKey.walletRechargeOffers.domainMappableRecords,1);
+  assert.equal(byKey.walletRechargeOffers.outOfScopeRecords,1);
+  assert.equal(report.totals.sourceDocuments,22);
+  assert.equal(report.totals.pagesScanned,22);
 });
 
 test('audit surfaces unmappable private payouts and raw-only Razorpay order mapping without leaking data', async () => {
