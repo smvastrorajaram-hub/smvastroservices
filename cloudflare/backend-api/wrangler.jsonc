@@ -2,7 +2,9 @@
   "name": "smvastro-backend-api-staging",
   "main": "src/index.mjs",
   "compatibility_date": "2026-10-31",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": true,
   "preview_urls": false,
   "observability": {
@@ -19,6 +21,27 @@
       "binding": "DB",
       "database_name": "smvastro-wallet-staging",
       "database_id": "0ddb87a9-8a16-4e39-a806-c9137c64959a"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIVE_SESSION_COORDINATOR",
+        "class_name": "LiveSessionCoordinator"
+      },
+      {
+        "name": "LIVE_USER_EVENT_HUB",
+        "class_name": "LiveUserEventHub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1_live_session_coordinator",
+      "new_sqlite_classes": [
+        "LiveSessionCoordinator",
+        "LiveUserEventHub"
+      ]
     }
   ]
 }

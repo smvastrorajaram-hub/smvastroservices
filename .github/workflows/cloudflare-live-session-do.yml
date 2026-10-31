@@ -1,0 +1,43 @@
+name: Cloudflare Durable Object live-session foundation tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/shared-wallet-domain-d1-20261031
+    paths:
+      - 'cloudflare/backend-api/src/live-session-coordinator.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/wrangler.jsonc'
+      - 'cloudflare/backend-api/test/live-session-coordinator.test.mjs'
+      - 'cloudflare/backend-api/package.json'
+      - '.github/workflows/cloudflare-live-session-do.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-session-do:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check Durable Object module syntax
+        working-directory: cloudflare/backend-api
+        run: |
+          node --check src/index.mjs
+          node --check src/live-session-coordinator.mjs
+          node --check test/live-session-coordinator.test.mjs
+      - name: Run Durable Object deadline, queue and event hub tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/live-session-coordinator.test.mjs
+      - name: Validate Worker bundle with Durable Object classes (dry run only)
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
