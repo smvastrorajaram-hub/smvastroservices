@@ -29,19 +29,22 @@ function deadline(type,atMs,id,generation=0) {
 }
 
 export function registerD1LiveSessionRoutes({
-  app,identityService,liveService,env,isReady=async()=>false,
+  app,identityService,liveService,withdrawalService,env,isReady=async()=>false,
   routesEnabled=false,environment='unknown',sourceProjectId=''
 }={}) {
   if(!app||typeof app.get!=='function'||typeof app.post!=='function'||
      !identityService||typeof identityService.authenticateAuthorization!=='function'||
      !liveService||typeof liveService.createRequest!=='function'||
+     !withdrawalService||typeof withdrawalService.getEarningsDashboard!=='function'||
+     typeof withdrawalService.createRequest!=='function'||
      !env?.LIVE_SESSION_COORDINATOR||!env?.LIVE_USER_EVENT_HUB) {
     throw new TypeError('Live Session routes require an Admin identity service, D1 Live service and both Durable Object bindings.');
   }
 
   async function requireRole(req,allowed) {
     const user=await identityService.authenticateAuthorization(req.get('Authorization'));
-    if(!allowed.includes(String(user.role||''))) {
+    const role=String(user.role||'').trim().toLowerCase();
+    if(!(allowed.includes(role)||(allowed.includes('admin')&&user.isAdmin===true))) {
       throw httpError('LIVE_ROLE_FORBIDDEN','This action is not allowed for your SMV ASTRO role.',403);
     }
     return user;
@@ -157,6 +160,86 @@ export function registerD1LiveSessionRoutes({
       if(!res.writableEnded) res.end();
     }
   }
+
+  app.get('/astrologer/earnings',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['astrologer']);
+      const result=await withdrawalService.getEarningsDashboard(user.uid);
+      return res.set('Cache-Control','no-store').json(result);
+    } catch(error) { return replyError(res,error,'Unable to load Astrologer earnings and withdrawal history.'); }
+  });
+
+  app.post('/astrologer/withdrawal-request',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['astrologer']);
+      const amount=parseRupeesToPaise(req.body?.amount);
+      if(amount===null) throw httpError('WITHDRAWAL_AMOUNT_INVALID','Enter a valid withdrawal amount in Rupees.',400);
+      const result=await withdrawalService.createRequest({
+        astrologerUid:user.uid,
+        astrologerName:user.name||user.displayName||'Astrologer',
+        amountPaise:amount
+      });
+      return res.set('Cache-Control','no-store').json({ok:true,...result});
+    } catch(error) { return replyError(res,error,'Unable to create the Astrologer withdrawal request.'); }
+  });
+
+  app.get('/admin/withdrawals-data',async(req,res)=>{
+    try {
+      await assertReady();
+      await requireRole(req,['admin']);
+      const withdrawals=await withdrawalService.listAdminWithdrawals();
+      return res.set('Cache-Control','no-store').json({success:true,withdrawals});
+    } catch(error) { return replyError(res,error,'Unable to load Admin withdrawal data.'); }
+  });
+
+  app.get('/admin/withdrawal-payout/:withdrawalDocId',async(req,res)=>{
+    try {
+      await assertReady();
+      await requireRole(req,['admin']);
+      const result=await withdrawalService.getPrivatePayout(req.params.withdrawalDocId);
+      return res.set('Cache-Control','no-store').json({ok:true,...result});
+    } catch(error) { return replyError(res,error,'Unable to load private payout details.'); }
+  });
+
+  app.post('/admin/withdrawal-mark-processing',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['admin']);
+      const result=await withdrawalService.markProcessing({
+        withdrawalId:req.body?.withdrawalDocId,adminUid:user.uid
+      });
+      return res.set('Cache-Control','no-store').json({ok:true,...result});
+    } catch(error) { return replyError(res,error,'Unable to mark the withdrawal as processing.'); }
+  });
+
+  app.post('/admin/withdrawal-reject',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['admin']);
+      const result=await withdrawalService.rejectWithdrawal({
+        withdrawalId:req.body?.withdrawalDocId,adminUid:user.uid
+      });
+      return res.set('Cache-Control','no-store').json({ok:true,...result});
+    } catch(error) { return replyError(res,error,'Unable to reject the withdrawal request.'); }
+  });
+
+  app.post('/admin/withdrawal-mark-paid',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['admin']);
+      const result=await withdrawalService.markPaid({
+        withdrawalId:req.body?.withdrawalDocId,adminUid:user.uid
+      });
+      return res.set('Cache-Control','no-store').json({
+        ok:true,paymentId:result.paymentId,
+        withdrawalId:result.withdrawal?.withdrawalId||'',
+        amount:result.withdrawal?.amount||0,
+        repaired:result.alreadyProcessed===true
+      });
+    } catch(error) { return replyError(res,error,'Unable to mark the withdrawal as paid.'); }
+  });
 
   app.get('/live/pricing',async(_req,res)=>{
     try {
@@ -500,6 +583,9 @@ export function registerD1LiveSessionRoutes({
   });
 
   return Object.freeze({paths:Object.freeze([
+    'GET /astrologer/earnings','POST /astrologer/withdrawal-request',
+    'GET /admin/withdrawals-data','GET /admin/withdrawal-payout/:withdrawalDocId',
+    'POST /admin/withdrawal-mark-processing','POST /admin/withdrawal-reject','POST /admin/withdrawal-mark-paid',
     'GET /live/pricing','GET /live/ice-config','GET /live/events',
     'POST /live/requests','GET /live/sessions','GET /live/bookings/pending','GET /live/bookings/mine',
     'POST /live/bookings/:id/accept','POST /live/bookings/:id/reject','POST /live/bookings/:id/cancel',
