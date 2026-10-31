@@ -58,6 +58,7 @@ test('single-statement domain mappings are counted as normalized records during 
       state:'ended',actualChargePaise:1000
     }
   });
-  assert.equal(mapped.statements.length,1);
+  assert.equal(mapped.statements.filter(item=>item.kind==='live_session').length,1);
+  assert.equal(mapped.statements.filter(item=>item.kind==='legacy_document_archive').length,1);
   assert.equal(mapped.mapped,true);
 });
