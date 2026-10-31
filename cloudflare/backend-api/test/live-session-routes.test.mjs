@@ -123,7 +123,7 @@ test('Offline booking response schedules its seven-day expiry instead of a ringi
 
 test('Live disconnect status persists a generation-scoped grace deadline',async()=>{
   const f=fixture(),res=responseHarness();
-  await f.app.handlers.post('POST /live/sessions/:id/connection')(req({connected:false}),res);
+  await f.app.handlers.get('POST /live/sessions/:id/connection')(req({connected:false}),res);
   assert.equal(res.statusCode,200);
   assert.ok(f.calls.some(x=>x.service==='setConnection'&&x.input.connected===false));
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/connection')&&x.body.generation===2));
@@ -147,7 +147,7 @@ test('Admin withdrawal actions are routed through the D1 withdrawal service',asy
   ];
   for(const [path,method] of actions) {
     const res=responseHarness();
-    await f.app.handlers.post(path)(req({withdrawalDocId:'withdraw-1'},'admin'),res);
+    await f.app.handlers.get(path)(req({withdrawalDocId:'withdraw-1'},'admin'),res);
     assert.equal(res.statusCode,200,path);
     assert.ok(f.calls.some(x=>x.service===method),method);
   }
@@ -160,7 +160,7 @@ test('Astrologer earnings and withdrawal requests require the Astrologer role',a
 
   const f2=fixture({role:'astrologer',user:{uid:'astro-1',role:'astrologer'}});
   const withdrawal=responseHarness();
-  await f2.app.handlers.post('POST /astrologer/withdrawal-request')(req({amount:300},'astrologer'),withdrawal);
+  await f2.app.handlers.get('POST /astrologer/withdrawal-request')(req({amount:300},'astrologer'),withdrawal);
   assert.equal(withdrawal.statusCode,200);
   assert.equal(f2.calls.find(x=>x.service==='createWithdrawal').input.amountPaise,30000);
 });
@@ -168,7 +168,7 @@ test('Astrologer earnings and withdrawal requests require the Astrologer role',a
 test('Live accept route enforces Astrologer identity and books a preparation timer',async()=>{
   const f=fixture({role:'astrologer',user:{uid:'astro-1',role:'astrologer'}});
   const res=responseHarness();
-  await f.app.handlers.post('POST /live/sessions/:id/accept')(req({},'astrologer'),res);
+  await f.app.handlers.get('POST /live/sessions/:id/accept')(req({},'astrologer'),res);
   assert.equal(res.statusCode,200);
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout'));
 });
