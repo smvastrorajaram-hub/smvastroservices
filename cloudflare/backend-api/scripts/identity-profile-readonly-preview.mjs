@@ -9,6 +9,7 @@ import {
 const PROJECT_ID = 'smv-astro-staging';
 const PAGE_SIZE = 25;
 const MAX_PAGES_PER_COLLECTION = 2000;
+const preflightOnly = process.argv.includes('--preflight');
 const credentialsText = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
 
 function fail(message) {
@@ -80,7 +81,7 @@ if (!credentialsText) {
         for (let index = 0; index < MAX_PAGES_PER_COLLECTION; index += 1) {
           const page = await service.previewPage({
             collection,
-            pageSize: PAGE_SIZE,
+            pageSize: preflightOnly ? 1 : PAGE_SIZE,
             pageToken
           });
           pages += 1;
@@ -92,8 +93,8 @@ if (!credentialsText) {
             warnings.set(code, (warnings.get(code) || 0) + Number(item.count || 0));
           }
           pageToken = String(page.nextPageToken || '');
-          if (!pageToken) {
-            complete = true;
+          if (!pageToken || preflightOnly) {
+            complete = !pageToken;
             break;
           }
         }
@@ -108,6 +109,8 @@ if (!credentialsText) {
           plannedD1Statements,
           warningCounts: Object.fromEntries([...warnings.entries()].sort(([a], [b]) => a.localeCompare(b))),
           complete,
+          preflightOnly,
+          morePagesAvailable: preflightOnly && !!pageToken,
           writesPerformed: 0,
           personalDataReturned: false,
           sourceDataDeleted: false,
@@ -116,7 +119,7 @@ if (!credentialsText) {
         report.push(result);
         console.log(JSON.stringify(result));
 
-        if (!complete) {
+        if (!complete && !preflightOnly) {
           throw new Error('PAGE_LIMIT_REACHED:' + collection);
         }
       }
@@ -134,10 +137,10 @@ if (!credentialsText) {
       });
 
       const summary = [
-        '## SMV ASTRO staging Identity/Profile read-only preview',
+        preflightOnly ? '## SMV ASTRO staging Identity/Profile read-only preflight' : '## SMV ASTRO staging Identity/Profile read-only preview',
         '',
         '- Firebase project: `smv-astro-staging`',
-        '- Mode: read-only preview; no Firestore writes or D1 writes performed',
+        preflightOnly ? '- Mode: first-page access preflight; only the first document page was checked for each collection' : '- Mode: full paginated read-only preview; no Firestore writes or D1 writes performed',
         '- Source data deleted: no',
         '- D1 authorization cutover: disabled',
         '',
@@ -152,7 +155,8 @@ if (!credentialsText) {
           Object.entries(item.warningCounts).map(([code, count]) => code + ': ' + count).join('; ') || 'None'
         ].join(' | ')),
         '',
-        '**Totals:** ' + totals.collections + ' collections, ' + totals.pagesPreviewed +
+        preflightOnly ? '**Preflight totals:** ' + totals.collections + ' collections checked, ' + totals.sourceDocuments +
+          ' documents sampled; this is not the final full preview.' : '**Totals:** ' + totals.collections + ' collections, ' + totals.pagesPreviewed +
           ' pages, ' + totals.sourceDocuments + ' documents; ' + totals.mappableDocuments +
           ' mappable, ' + totals.unmappableDocuments + ' unmappable.',
         '',
@@ -162,7 +166,7 @@ if (!credentialsText) {
       if (process.env.GITHUB_STEP_SUMMARY) {
         appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
       }
-      console.log('READ_ONLY_PREVIEW_COMPLETE');
+      console.log(preflightOnly ? 'READ_ONLY_PREVIEW_PREFLIGHT_COMPLETE' : 'READ_ONLY_PREVIEW_COMPLETE');
     } catch (error) {
       const code = String(error?.code || error?.message || 'PREVIEW_FAILED');
       fail('Read-only Identity/Profile preview failed safely (' + code + '). No D1 writes were executed.');
