@@ -468,8 +468,10 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
   assert.equal(installedUnknownVersion.status.textContent, 'Installed app version could not be verified');
 
   const unsupportedBrowser = await renderFor([], false);
-  assert.equal(unsupportedBrowser.download.hidden, true);
-  assert.equal(unsupportedBrowser.status.textContent, 'Open this page in Chrome to check your installed app version.');
+  assert.equal(unsupportedBrowser.download.hidden, false);
+  assert.equal(unsupportedBrowser.download.textContent, 'DOWNLOAD APK');
+  assert.equal(unsupportedBrowser.download.href, release.downloadUrl);
+  assert.equal(unsupportedBrowser.status.textContent, '');
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
