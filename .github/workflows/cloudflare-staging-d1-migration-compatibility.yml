@@ -1,0 +1,58 @@
+name: Cloudflare D1 migration collision compatibility
+
+on:
+  push:
+    branches:
+      - fix/cloudflare-staging-d1-schema-collision-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0002_shared_domain_repository.sql'
+      - 'shared/backend-platform/d1-outbox-adapter.mjs'
+      - 'cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs'
+      - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema.sql'
+      - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema-assert.sql'
+      - '.github/workflows/cloudflare-staging-d1-migration-compatibility.yml'
+  pull_request:
+    branches:
+      - feature/cloudflare-live-wallet-settlement-guard-20261031
+    paths:
+      - 'cloudflare/backend-api/migrations/0002_shared_domain_repository.sql'
+      - 'shared/backend-platform/d1-outbox-adapter.mjs'
+      - 'cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs'
+      - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema.sql'
+      - 'cloudflare/backend-api/test/fixtures/d1-staging-legacy-schema-assert.sql'
+      - '.github/workflows/cloudflare-staging-d1-migration-compatibility.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  migration-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check changed JavaScript syntax
+        run: |
+          node --check shared/backend-platform/d1-outbox-adapter.mjs
+          node --check cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs
+      - name: Run queue, webhook and email adapter tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/payment-email-queue-adapters.test.mjs
+      - name: Seed legacy schema collision fixture into local D1 only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-staging-legacy-schema.sql
+      - name: Apply pending migrations to local D1 only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Assert legacy rows remain and new tables have the expected schema (local D1 only)
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-staging-legacy-schema-assert.sql
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
