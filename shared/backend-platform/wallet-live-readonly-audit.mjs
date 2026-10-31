@@ -120,16 +120,17 @@ function duplicateGroups(rows, keyOf, fingerprintOf) {
   for (const row of rows) {
     const key = primitiveString(keyOf(row));
     if (!key) continue;
-    const group = groups.get(key) || new Set();
-    group.add(primitiveString(fingerprintOf(row)));
+    const group = groups.get(key) || { count: 0, fingerprints: new Set() };
+    group.count += 1;
+    group.fingerprints.add(primitiveString(fingerprintOf(row)));
     groups.set(key, group);
   }
   let duplicateGroupCount = 0;
   let conflictingGroupCount = 0;
   for (const group of groups.values()) {
-    if (group.size > 1) {
+    if (group.count > 1) {
       duplicateGroupCount += 1;
-      if (new Set(group).size > 1) conflictingGroupCount += 1;
+      if (group.fingerprints.size > 1) conflictingGroupCount += 1;
     }
   }
   return { duplicateGroupCount, conflictingGroupCount };
@@ -174,6 +175,7 @@ function collectReferences(key, document, refs) {
       break;
     case 'walletRecharges':
       refs.recharges.push({
+        rechargeId: id,
         customerUid: primitiveString(data.customerUid),
         orderId: primitiveString(data.razorpayOrderId || data.orderId),
         paymentId: primitiveString(data.razorpayPaymentId || data.paymentId),
@@ -182,7 +184,7 @@ function collectReferences(key, document, refs) {
       });
       break;
     case 'walletRechargeOffers':
-      refs.offers.add(id);
+      if (data.offerType === 'wallet_recharge_bonus_minutes') refs.offers.add(id);
       break;
     case 'walletOfferUsageCounters':
       refs.offerUsage.push({
@@ -295,8 +297,7 @@ function buildConsistency(refs) {
     ).length,
     walletOfferUsageMissingRecharge: refs.offerUsage.filter(
       item => item.lastRechargeId &&
-        !refs.recharges.some(recharge => recharge.orderId !== item.lastRechargeId &&
-          recharge.paymentId !== item.lastRechargeId)
+        !refs.recharges.some(recharge => recharge.rechargeId === item.lastRechargeId)
     ).length,
     liveSessionsMissingScheduledAppointment: refs.sessionAppointments.filter(
       id => id && !refs.scheduledAppointments.has(id)
