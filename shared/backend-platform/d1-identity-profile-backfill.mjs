@@ -50,7 +50,7 @@ function stable(value) {
 const stableJson = value => JSON.stringify(stable(value ?? {}));
 
 function safeProfileJson(value) {
-  const blocked = /^(?:password|passwd|token|idtoken|accesstoken|refreshtoken|secret|privatekey|accountnumber|ifsc|upi|bankname|accountname)$/i;
+  const blocked = /password|passwd|token|secret|private.?key|bank|account|ifsc|upi|payout/i;
   function clean(node, depth = 0) {
     if (depth > 16) return null;
     if (Array.isArray(node)) return node.slice(0, 1000).map(item => clean(item, depth + 1));
@@ -79,6 +79,14 @@ async function sha256(value, cryptoImpl) {
   const digest = await cryptoImpl.subtle.digest('SHA-256', new TextEncoder().encode(String(value)));
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
 }
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, Math.min(bytes.length, i + 0x8000)));
+  }
+  return btoa(binary);
+}
 function validId(value, max = 160) {
   const id = str(value);
   return id && id.length <= max && /^[A-Za-z0-9_-]+$/.test(id) ? id : '';
@@ -101,6 +109,7 @@ function warningsSummary(items) {
  */
 export function createIdentityProfileBackfillService({
   db, firestore, sourceProjectId, environment = 'unknown',
+  payoutEncryptionKey = '', payoutKeyVersion = 'v1',
   now = Date.now, cryptoImpl = globalThis.crypto
 } = {}) {
   const project = str(sourceProjectId);
@@ -116,6 +125,40 @@ export function createIdentityProfileBackfillService({
   if (typeof cryptoImpl?.subtle?.digest !== 'function') throw new TypeError('Web Crypto SHA-256 is required.');
 
   const statement = (sql, values = []) => db.prepare(sql).bind(...values);
+  let payoutKeyPromise = null;
+  async function getPayoutKey() {
+    const encoded = str(payoutEncryptionKey);
+    if (!encoded) return null;
+    if (!payoutKeyPromise) {
+      payoutKeyPromise = (async () => {
+        let binary;
+        try {
+          const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
+          binary = atob(normalized);
+        } catch {
+          throw new TypeError('SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY must be base64-encoded 32-byte key material.');
+        }
+        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+        if (bytes.length !== 32) throw new TypeError('SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY must decode to exactly 32 bytes.');
+        return cryptoImpl.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt']);
+      })();
+    }
+    return payoutKeyPromise;
+  }
+  async function encryptPayoutPayload(data, uid) {
+    const key = await getPayoutKey();
+    if (!key) return null;
+    const iv = cryptoImpl.getRandomValues(new Uint8Array(12));
+    const additionalData = new TextEncoder().encode(project + ':' + uid);
+    const plaintext = new TextEncoder().encode(stableJson(data));
+    const ciphertext = await cryptoImpl.subtle.encrypt(
+      { name: 'AES-GCM', iv, additionalData, tagLength: 128 }, key, plaintext
+    );
+    return JSON.stringify({
+      version: 1, algorithm: 'A256GCM', keyVersion: str(payoutKeyVersion) || 'v1',
+      iv: bytesToBase64(iv), ciphertext: bytesToBase64(new Uint8Array(ciphertext))
+    });
+  }
 
   async function readPage({ collection, pageToken = '', pageSize = 20 } = {}) {
     const path = IDENTITY_PROFILE_SOURCE_COLLECTIONS[collection];
@@ -270,16 +313,20 @@ export function createIdentityProfileBackfillService({
       } else addPublicId(publicId, owner, role);
     } else if (collection === 'payouts') {
       if (!validId(uid)) warnings.push('PAYOUT_UID_INVALID');
-      else statements.push({
-        kind: 'payout',
-        sql: `INSERT INTO smv_domain_identity_payout_profiles
-          (firebase_project_id,uid,payload_json,created_at_ms,updated_at_ms) VALUES (?,?,?,?,?)
-          ON CONFLICT(firebase_project_id,uid) DO UPDATE SET
-            payload_json=excluded.payload_json,
-            updated_at_ms=MAX(smv_domain_identity_payout_profiles.updated_at_ms,excluded.updated_at_ms)
-          WHERE excluded.updated_at_ms>=smv_domain_identity_payout_profiles.updated_at_ms`,
-        values: [project, uid, stableJson(data), createdAt, updatedAt]
-      });
+      else {
+        const encryptedPayload = await encryptPayoutPayload(data, uid);
+        if (!encryptedPayload) warnings.push('PAYOUT_ENCRYPTION_KEY_MISSING');
+        else statements.push({
+          kind: 'payout',
+          sql: `INSERT INTO smv_domain_identity_payout_profiles
+            (firebase_project_id,uid,payload_json,created_at_ms,updated_at_ms) VALUES (?,?,?,?,?)
+            ON CONFLICT(firebase_project_id,uid) DO UPDATE SET
+              payload_json=excluded.payload_json,
+              updated_at_ms=MAX(smv_domain_identity_payout_profiles.updated_at_ms,excluded.updated_at_ms)
+            WHERE excluded.updated_at_ms>=smv_domain_identity_payout_profiles.updated_at_ms`,
+          values: [project, uid, encryptedPayload, createdAt, updatedAt]
+        });
+      }
     }
 
     statements.push({
