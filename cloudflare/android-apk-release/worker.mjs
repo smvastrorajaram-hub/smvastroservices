@@ -326,10 +326,12 @@ export function createAndroidApkReleaseWorker({
       try {
         if (path === '/health' && request.method === 'GET') {
           const ready = await hasReleaseSchema(env);
+          const hasReleaseRecords = ready ? Boolean(await latestRow(env.DB)) : false;
           return json(request, env, {
             success: true,
             ready,
-            uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true'
+            uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true',
+            hasReleaseRecords
           }, 200, { 'Cache-Control': 'no-store' });
         }
 
