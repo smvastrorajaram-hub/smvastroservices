@@ -72,7 +72,7 @@ The database ID is configuration, not an API credential; it is already wired int
 
 ## Staging deployment
 
-On the dedicated Draft PR/branch, open Actions → **Cloudflare Wallet API staging deployment** → **Run workflow**. This repository deploy workflow uses `CLOUDFLARE_ACCOUNT_ID` from Actions Variables and `CLOUDFLARE_API_TOKEN` from Actions Secrets. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If the Cloudflare Account ID or API token secret is missing, it skips deployment. It does not enable Wallet business routes.
+The staging workflow runs automatically only when PR #253 is opened or updated on its dedicated same-repository branch. The `workflow_dispatch` option is retained as a fallback for later, after the workflow is registered on the default branch. For the current Draft PR, do not look for the Run workflow button; simply push a PR update and inspect the resulting Actions run. This deploy workflow uses `CLOUDFLARE_ACCOUNT_ID` from Actions Variables and `CLOUDFLARE_API_TOKEN` from Actions Secrets. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If the Cloudflare Account ID or API token secret is missing, it skips deployment. It does not enable Wallet business routes.
 
 Expected checks after a successful deployment:
 
