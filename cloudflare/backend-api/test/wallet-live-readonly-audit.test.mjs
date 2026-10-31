@@ -175,9 +175,9 @@ test('audit surfaces unmappable private payouts and raw-only Razorpay order mapp
   assert.equal(byKey.withdrawalPayouts.unmappableRecords,1);
   assert.equal(byKey.withdrawalPayouts.plannedD1Statements,0);
   assert.equal(byKey.withdrawalPayouts.warningCounts.PAYOUT_ENCRYPTION_REQUIRED,1);
-  assert.equal(byKey.walletRechargeOrders.rawArchiveOnlyRecords,1);
-  assert.equal(byKey.walletRechargeOrders.plannedD1Statements,1);
-  assert.ok(report.securityBlockers.some(item=>item.includes('AES-GCM')));
+  assert.equal(byKey.walletRechargeOrders.domainMappableRecords,1);
+  assert.equal(byKey.walletRechargeOrders.plannedD1Statements,2);
+  assert.ok(report.securityBlockers.some(item=>item.includes('AES-256-GCM')));
   const json = JSON.stringify(report);
   for (const value of [
     'SENSITIVE-BANK-VALUE','SENSITIVE-IFSC-VALUE','wallet-1','astro-1',
