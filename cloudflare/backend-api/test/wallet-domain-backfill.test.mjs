@@ -112,8 +112,8 @@ test('Offer definitions and usage counters preserve existing successful redempti
   const offerSql = offer.statements.find(row=>row.kind==='wallet_offer');
   assert.ok(offerSql);
   assert.match(offerSql.sql,/legacy_successful_redemptions/);
-  assert.equal(offerSql.values[12],18);
-  assert.equal(offerSql.values[13],180);
+  assert.equal(offerSql.values[13],18);
+  assert.equal(offerSql.values[14],180);
 
   const usage = mapLegacyWalletDomainDocument('walletOfferUsageCounters', {
     id:'usage-hash',
