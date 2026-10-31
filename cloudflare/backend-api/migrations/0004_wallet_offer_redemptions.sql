@@ -71,3 +71,9 @@ BEGIN
     last_recharge_id = excluded.last_recharge_id,
     updated_at_ms = excluded.updated_at_ms;
 END;
+
+INSERT INTO smv_domain_schema_meta (schema_key, schema_version, applied_at_ms)
+VALUES ('wallet-recharges', '0004_wallet_offer_redemptions', CAST(strftime('%s','now') AS INTEGER) * 1000)
+ON CONFLICT(schema_key) DO UPDATE SET
+  schema_version = excluded.schema_version,
+  applied_at_ms = excluded.applied_at_ms;
