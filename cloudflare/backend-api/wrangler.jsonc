@@ -11,6 +11,7 @@
   "vars": {
     "SMV_ENVIRONMENT": "staging",
     "SMV_BACKEND_CLOUDFLARE_ACTIVE": "false",
+    "FIREBASE_AUTH_PROJECT_IDS": "smv-astro,astro-service-ae9e7,smv-astro-services,svm-astro,smvastro-services,smv-astro-staging",
     "ALLOWED_ORIGINS": "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastroservices.pages.dev,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in"
   },
   "d1_databases": [
