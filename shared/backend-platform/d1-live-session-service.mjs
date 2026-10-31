@@ -26,7 +26,7 @@ const LEDGER_TABLE='smv_domain_wallet_ledger';
 const ACTIVE_STATES=['ringing','preparing','connecting','active'];
 const END_REASONS=new Set([
   'duration_complete','no_answer','connection_failed','network_disconnect',
-  'low_wallet_balance','rejected','booking_expired','participant_ended','server_ended'
+  'low_wallet_balance','rejected','booking_expired','scheduled_connection_timeout','participant_ended','server_ended'
 ]);
 
 function parseJson(value) {
