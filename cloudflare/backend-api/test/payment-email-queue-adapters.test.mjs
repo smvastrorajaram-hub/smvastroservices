@@ -209,7 +209,7 @@ test('Resend email adapter validates recipients and sends through the HTTPS API'
   assert.equal(captured.options.headers.Authorization, 'Bearer re_test_key');
   assert.equal(captured.body.reply_to[0], 'support@example.com');
   await assert.rejects(client.send({ to: 'bad-address', subject: 'Test', text: 'Hello' }), /recipients are invalid/);
-  await assert.rejects(client.send({ to: 'user@example.com', subject: 'bad\\r\\nheader', text: 'Hello' }), /header value is invalid/);
+  await assert.rejects(client.send({ to: 'user@example.com', subject: 'bad\r\nheader', text: 'Hello' }), /header value is invalid/);
 });
 
 class FakeOutboxD1 {
