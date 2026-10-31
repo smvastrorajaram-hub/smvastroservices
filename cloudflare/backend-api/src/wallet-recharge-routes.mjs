@@ -47,6 +47,7 @@ export function registerWalletRechargeRoutes({
       typeof walletAdapter.finalizeRecharge !== 'function' ||
       !razorpay || typeof razorpay.createOrder !== 'function' ||
       typeof razorpay.verifyPaymentSignature !== 'function' ||
+      typeof razorpay.verifyWebhookSignature !== 'function' ||
       typeof razorpay.fetchPayment !== 'function' || typeof razorpay.capturePayment !== 'function') {
     throw new TypeError('Wallet recharge routes require shared identity, D1 Wallet and Razorpay adapters.');
   }
@@ -81,7 +82,7 @@ export function registerWalletRechargeRoutes({
       if (intent.alreadyPaid) {
         return res.set('Cache-Control', 'no-store').json({
           success: true, alreadyPaid: true, rechargeId: intent.rechargeId,
-          amount: paiseToRupees(amountPaise)
+          amount: paiseToRupees(amountPaise), amountPaise
         });
       }
       if (intent.inProgress) {
@@ -99,7 +100,7 @@ export function registerWalletRechargeRoutes({
       if (!intent.acquired && intent.orderId) {
         return res.set('Cache-Control', 'no-store').json({
           success: true, rechargeId: intent.rechargeId, orderId: intent.orderId,
-          keyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise),
+          keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise),
           currency: 'INR', reusedOrder: true
         });
       }
@@ -118,7 +119,7 @@ export function registerWalletRechargeRoutes({
         });
         return res.set('Cache-Control', 'no-store').json({
           success: true, rechargeId: intent.rechargeId, orderId: order.id,
-          keyId, amount: amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR'
+          keyId, amount: amountPaise / 100, amountPaise, amountRupees: paiseToRupees(amountPaise), currency: 'INR'
         });
       } catch (error) {
         await walletAdapter.markRechargeOrderFailed({
