@@ -31,7 +31,7 @@ jobs:
       - name: Checkout the isolated audit branch
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -56,6 +56,6 @@ jobs:
       - name: Run full-paginated Firebase staging audit (read-only; no D1 binding)
         working-directory: cloudflare/backend-api
         env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: \${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         shell: bash
         run: node scripts/wallet-live-readonly-preview.mjs
