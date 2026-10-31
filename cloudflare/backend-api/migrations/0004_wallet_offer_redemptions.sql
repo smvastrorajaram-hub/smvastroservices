@@ -72,6 +72,39 @@ BEGIN
     updated_at_ms = excluded.updated_at_ms;
 END;
 
+-- A Wallet order may only be attached to a pending recharge record that
+-- already contains the same order ID, owner and amount.
+CREATE TRIGGER IF NOT EXISTS smv_domain_wallet_order_attach_validate
+BEFORE INSERT ON smv_domain_razorpay_orders
+WHEN NEW.service_name = 'SMV ASTRO Wallet Recharge'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_wallet_recharges r
+    WHERE r.recharge_id = json_extract(NEW.payload_json, '$.rechargeId')
+      AND r.customer_uid = NEW.owner_uid
+      AND r.amount_paise = NEW.amount_paise
+      AND r.razorpay_order_id = NEW.order_id
+      AND r.status = 'order_created'
+  ) THEN RAISE(ABORT, 'WALLET_RECHARGE_ORDER_LINK_INVALID') END;
+END;
+
+-- A Wallet Razorpay order cannot be marked paid unless the corresponding
+-- recharge is still pending and the same order/payment/amount are recorded.
+CREATE TRIGGER IF NOT EXISTS smv_domain_wallet_order_paid_validate
+BEFORE UPDATE OF status ON smv_domain_razorpay_orders
+WHEN NEW.service_name = 'SMV ASTRO Wallet Recharge'
+ AND NEW.status = 'paid' AND OLD.status <> 'paid'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_wallet_recharges r
+    WHERE r.recharge_id = json_extract(NEW.payload_json, '$.rechargeId')
+      AND r.customer_uid = NEW.owner_uid
+      AND r.amount_paise = NEW.amount_paise
+      AND r.razorpay_order_id = NEW.order_id
+      AND r.status = 'order_created'
+  ) THEN RAISE(ABORT, 'WALLET_RECHARGE_ORDER_LINK_INVALID') END;
+END;
+
 -- A recharge cash-ledger entry may only be inserted for the exact pending
 -- recharge order/owner/amount. This prevents an orphan ledger credit.
 CREATE TRIGGER IF NOT EXISTS smv_domain_recharge_ledger_validate
