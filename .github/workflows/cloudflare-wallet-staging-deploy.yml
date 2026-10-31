@@ -1,6 +1,12 @@
 name: Cloudflare Wallet API staging deployment
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'cloudflare/wallet-api/**'
+      - '.github/workflows/cloudflare-wallet-staging-deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -8,11 +14,19 @@ permissions:
 
 jobs:
   deploy-wallet-staging:
-    if: github.ref == 'refs/heads/feature/cloudflare-wallet-d1-api-scaffold-20261031'
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/feature/cloudflare-wallet-d1-api-scaffold-20261031') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.number == 253 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'feature/cloudflare-wallet-d1-api-scaffold-20261031')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Checkout exact PR head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify required secrets without displaying their values
         id: preflight
