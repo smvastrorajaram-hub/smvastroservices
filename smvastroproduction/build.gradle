@@ -8,7 +8,7 @@ def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidApp
 def googleWebClientId = providers.gradleProperty("smvGoogleWebClientId")
         .orElse(providers.environmentVariable("SMV_GOOGLE_WEB_CLIENT_ID"))
         .getOrElse("299081899217-ht47n60l8t2c7gbo07nd4lpm8i51jk3m.apps.googleusercontent.com")
-if (!(googleWebClientId ==~ /^[0-9]+-[A-Za-z0-9_-]+\\.apps\\.googleusercontent\\.com$/)) {
+if (!(googleWebClientId ==~ /^[0-9]+-[A-Za-z0-9_-]+\.apps\\.googleusercontent\\.com$/)) {
     throw new GradleException("SMV_GOOGLE_WEB_CLIENT_ID must be a valid Google OAuth Web Client ID.")
 }
 
@@ -62,6 +62,7 @@ android {
         buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
         buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
         buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
+        buildConfigField "String", "SMV_GOOGLE_WEB_CLIENT_ID", '"' + googleWebClientId + '"'
     }
 
     signingConfigs {
