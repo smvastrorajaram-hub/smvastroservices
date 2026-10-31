@@ -6,7 +6,7 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 - APK publishing is deliberately disabled by default (ALLOW_APK_UPLOADS = "false").
 - The Worker has no Firebase Admin service-account key and does not change existing Firebase, Razorpay, Render, Horoscope, Calendar, or Android signing configuration.
-- The initial D1 baseline import copies only the currently published Firebase release metadata. It does not download, delete, or bulk-migrate historical APK objects. Previous Firebase APKs remain available through their existing links; nothing is deleted.
+- On the first successful Cloudflare APK upload, D1 records the currently published Firebase release as a history baseline in the same atomic D1 batch as the new R2 release. A rejected/failed upload does not create the baseline. This records metadata only; it does not download, delete, or bulk-migrate historical APK objects. Previous Firebase APKs remain available through their existing links; nothing is deleted.
 - Staging and local CI do not publish real APKs or upload anything to Cloudflare.
 - Do not set ALLOW_APK_UPLOADS = "true" until R2/D1 bindings, Admin authorization, release lookup, download and version monotonicity have been verified in an isolated staging deployment.
 
