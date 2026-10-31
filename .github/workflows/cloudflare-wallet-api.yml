@@ -1,0 +1,30 @@
+name: Cloudflare Wallet API scaffold validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cloudflare/wallet-api/**'
+      - 'test/cloudflare-wallet-api.test.mjs'
+      - '.github/workflows/cloudflare-wallet-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-wallet-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Worker syntax
+        run: node --check cloudflare/wallet-api/src/index.mjs
+      - name: Run Wallet Worker tests
+        run: node --test test/cloudflare-wallet-api.test.mjs
+      - name: Validate Cloudflare bundle without deploying
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config cloudflare/wallet-api/wrangler.jsonc
