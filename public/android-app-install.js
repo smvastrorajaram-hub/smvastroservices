@@ -156,7 +156,7 @@
     } else {
       heading.textContent = 'SMV ASTRO ANDROID APP';
       description.textContent = 'Download the latest official Android APK. This browser cannot confirm whether an older version is installed.';
-      download.textContent = 'DOWNLOAD / UPDATE APP';
+      download.textContent = 'DOWNLOAD APP';
       status.textContent = 'Latest version: ' + String(release.versionName || 'Available') +
         ' · Installed version check is not supported in this browser.';
     }
