@@ -713,9 +713,12 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     // order may still be captured and credited later.
     const result = await statement(
       `UPDATE smv_domain_razorpay_orders
-       SET status='failed',payment_id=?,payload_json=?,updated_at_ms=?
+       SET status='failed',payment_id=?,
+           payload_json=json_set(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END,
+             '$.failureReason',?,'$.failedPaymentId',?),
+           updated_at_ms=?
        WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge' AND status <> 'paid'`,
-      [pid || null,JSON.stringify({failureReason:String(reason).slice(0,160)}),timestamp,oid]
+      [pid || null,String(reason).slice(0,160),pid,timestamp,oid]
     ).run();
     return { success:true, result };
   }
