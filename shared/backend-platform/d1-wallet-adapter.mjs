@@ -7,6 +7,7 @@ import {
   safeMinutes,
   validateWalletEntry,
   validateWalletOwner,
+  walletReservationSettlementKeys,
   walletError
 } from './wallet-domain.mjs';
 
@@ -212,6 +213,16 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const owner = validateWalletOwner(ownerUid, ownerRole);
     const id = String(sessionId || '').trim();
     if (!id) throw walletError('LIVE_SESSION_ID_REQUIRED', 'Live Session ID is required.', 400);
+    const expectedKeys = walletReservationSettlementKeys({
+      sessionId: id, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed
+    });
+    const existingRows = await Promise.all(expectedKeys.map(item => findLedger(owner.ownerUid, item.idempotencyKey)));
+    if (existingRows.length && existingRows.every(Boolean)) {
+      return { success: true, alreadyProcessed: true, wallet: await getWallet(owner.ownerUid) };
+    }
+    if (existingRows.some(Boolean)) {
+      throw walletError('WALLET_LEDGER_PARTIAL_SETTLEMENT', 'Wallet settlement ledger is incomplete and requires reconciliation.');
+    }
     const wallet = await getWallet(owner.ownerUid);
     if (!wallet) throw walletError('WALLET_NOT_FOUND', 'Wallet not found.', 409);
     const settlement = calculateWalletReservationSettlement({
@@ -221,13 +232,12 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (settlement.chargedAmountPaise > 0) specs.push({
       type: 'live_session_usage', direction: 'debit', amountPaise: settlement.chargedAmountPaise,
       idempotencyKey: 'live-session-usage:' + id, availableDeltaPaise: 0,
-      reservedDeltaPaise: -settlement.chargedAmountPaise,
-      note: 'Live session paid usage'
+      reservedDeltaPaise: -settlement.chargedAmountPaise, note: 'Live session paid usage'
     });
     if (settlement.freeMinutesUsed > 0) specs.push({
       type: 'live_session_bonus_minutes', direction: 'debit', amountPaise: 0,
-      idempotencyKey: 'live-session-bonus-used:' + id, reservedBonusMinutesDelta: -settlement.freeMinutesUsed,
-      note: 'Promotional free minutes used'
+      idempotencyKey: 'live-session-bonus-used:' + id,
+      reservedBonusMinutesDelta: -settlement.freeMinutesUsed, note: 'Promotional free minutes used'
     });
     if (settlement.bonusMinutesReleased > 0) specs.push({
       type: 'live_session_bonus_minutes_release', direction: 'credit', amountPaise: 0,
@@ -243,15 +253,12 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       reservedDeltaPaise: -settlement.releasedAmountPaise,
       note: 'Unused Live Wallet reserve released'
     });
-    if (!specs.length) return { success: true, alreadyProcessed: true, wallet };
+    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement };
     const rows = [];
     for (const spec of specs) rows.push(await buildLedgerRow({
       ...owner, ...spec, ledgerId: await sha256Hex(spec.type + ':' + id, cryptoImpl),
       referenceType: 'live_session', referenceId: id
     }));
-    const existingRows = await Promise.all(rows.map(row => findLedger(owner.ownerUid, row.idempotencyKey)));
-    if (existingRows.every(Boolean)) return { success: true, alreadyProcessed: true, wallet: await getWallet(owner.ownerUid), settlement };
-    if (existingRows.some(Boolean)) throw walletError('WALLET_LEDGER_PARTIAL_SETTLEMENT', 'Wallet settlement ledger is incomplete and requires reconciliation.');
     try {
       const results = await db.batch(rows.map(insertStatement));
       if (results.length !== rows.length || results.some(result => result?.success === false)) {
@@ -266,7 +273,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return { success: true, alreadyProcessed: false, wallet: await getWallet(owner.ownerUid), settlement };
   }
 
-  async function listTransactions(ownerUid, limit = 30) {
+    async function listTransactions(ownerUid, limit = 30) {
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const max = Math.max(1, Math.min(100, Math.floor(Number(limit) || 30)));
