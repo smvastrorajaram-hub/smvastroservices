@@ -49,7 +49,7 @@ That is deployment resilience, not yet live traffic failover. The Worker remains
 
 The staging Worker now exposes `GET /api/auth/session`. It accepts a Firebase ID token in the `Authorization: Bearer` header and verifies its RS256 signature using Google's published Secure Token JWKs, then checks the token's Firebase project audience/issuer against the explicit `FIREBASE_AUTH_PROJECT_IDS` allowlist, UID, expiry, issued-at time, authentication time and Firebase sign-in metadata.
 
-The current staging allowlist is sourced from the existing multi-project Firebase configuration: `smv-astro`, `astro-service-ae9e7`, `smv-astro-services`, `svm-astro`, `smvastro-services`, and `smv-astro-staging`. Add any other currently-used Auth project only after confirming its exact Firebase project ID.
+The current Cloudflare staging allowlist is restricted to `smv-astro-staging`. Render uses only its existing `FIREBASE_PROJECT_ID` value, so each deployment verifies tokens for its own configured Firebase project. Do not add cross-environment Firebase project IDs to the staging allowlist.
 
 This is **ID-token signature verification only**. It does not call Firebase Admin's user-management API, check disabled/revoked users, read Firestore roles, perform Admin allowlist lookup, or authorize Wallet/Call/Chat operations. The endpoint returns only the signed token's UID, project ID, email-verified flag and sign-in provider. All privileged endpoints remain disabled until authoritative role/profile verification is implemented against the correct Firebase project and independently tested.
 
