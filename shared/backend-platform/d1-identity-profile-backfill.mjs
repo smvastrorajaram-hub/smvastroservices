@@ -495,41 +495,58 @@ export function createIdentityProfileBackfillService({
         }
 
         let matches = true;
+        let mismatchFields = [];
         if (entry.kind === 'user') {
           const v = entry.values;
-          matches = str(row.email) === str(v[2]) &&
-            str(row.role) === str(v[3]) &&
-            str(row.status) === str(v[4]) &&
-            str(row.public_id || '') === str(v[5] || '') &&
-            str(row.name) === str(v[6]) &&
-            str(row.phone_e164 || '') === str(v[7] || '') &&
-            str(row.phone_hash || '') === str(v[8] || '') &&
-            Number(row.email_verified) === Number(v[9]) &&
-            str(row.profile_json) === str(v[10]);
+          const checks = [
+            ['email', str(row.email) === str(v[2])],
+            ['role', str(row.role) === str(v[3])],
+            ['status', str(row.status) === str(v[4])],
+            ['public_id', str(row.public_id || '') === str(v[5] || '')],
+            ['name', str(row.name) === str(v[6])],
+            ['phone_e164', str(row.phone_e164 || '') === str(v[7] || '')],
+            ['phone_hash', str(row.phone_hash || '') === str(v[8] || '')],
+            ['email_verified', Number(row.email_verified) === Number(v[9])],
+            ['profile_json', str(row.profile_json) === str(v[10])]
+          ];
+          mismatchFields = checks.filter(([, equal]) => !equal).map(([field]) => field);
+          matches = mismatchFields.length === 0;
         } else if (entry.kind === 'astrologer') {
           const v = entry.values;
-          matches = str(row.public_id || '') === str(v[2] || '') &&
-            str(row.status) === str(v[3]) &&
-            str(row.profile_json) === str(v[4]);
+          const checks = [
+            ['public_id', str(row.public_id || '') === str(v[2] || '')],
+            ['status', str(row.status) === str(v[3])],
+            ['profile_json', str(row.profile_json) === str(v[4])]
+          ];
+          mismatchFields = checks.filter(([, equal]) => !equal).map(([field]) => field);
+          matches = mismatchFields.length === 0;
         } else if (entry.kind === 'admin') {
           matches = str(row.source) === str(entry.values[2]);
+          if (!matches) mismatchFields = ['source'];
         } else if (entry.kind === 'payout') {
           const restored = await decryptPayoutPayload(row.payload_json, item.uid);
           matches = !!restored && stableJson(restored) === stableJson(item.sourceData);
+          if (!matches) mismatchFields = ['encrypted_payload'];
         } else if (entry.kind === 'phone') {
           const v = entry.values;
-          matches = str(row.phone_e164) === str(v[3]) &&
-            str(row.role) === str(v[4]) &&
-            str(row.verification_mode) === str(v[5]) &&
-            Number(row.phone_verified) === Number(v[6]);
+          const checks = [
+            ['phone_e164', str(row.phone_e164) === str(v[3])],
+            ['role', str(row.role) === str(v[4])],
+            ['verification_mode', str(row.verification_mode) === str(v[5])],
+            ['phone_verified', Number(row.phone_verified) === Number(v[6])]
+          ];
+          mismatchFields = checks.filter(([, equal]) => !equal).map(([field]) => field);
+          matches = mismatchFields.length === 0;
         } else if (entry.kind === 'public_id') {
           const v = entry.values;
           matches = str(row.role) === str(v[3]);
+          if (!matches) mismatchFields = ['role'];
         }
 
         if (!matches) {
           targetMappingMismatches += 1;
-          recordSample('targetMappingMismatches', entry.kind);
+          recordSample('targetMappingMismatches',
+            entry.kind + ':' + mismatchFields.join(','));
         }
       }
     }
