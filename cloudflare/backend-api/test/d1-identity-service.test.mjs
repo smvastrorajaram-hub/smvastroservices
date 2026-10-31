@@ -50,28 +50,22 @@ function serviceFor({ db = createDb(), identity = verifiedIdentity, verifyError 
 test('rejects a missing or malformed bearer token before D1 access', async () => {
   const db = createDb();
   const service = serviceFor({ db });
-  await assert.rejects(
-    service.authenticateAuthorization(''),
-    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401
-  );
-  await assert.rejects(
-    service.authenticateAuthorization('Bearer '),
-    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401
-  );
+  await assert.rejects(service.authenticateAuthorization(''),
+    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401);
+  await assert.rejects(service.authenticateAuthorization('Bearer '),
+    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401);
   assert.equal(db.calls.length, 0);
 });
 
 test('rejects an invalid Firebase ID token before D1 access', async () => {
   const db = createDb();
   const service = serviceFor({ db, verifyError: true });
-  await assert.rejects(
-    service.authenticateAuthorization('Bearer valid-token'),
-    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401
-  );
+  await assert.rejects(service.authenticateAuthorization('Bearer valid-token'),
+    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401);
   assert.equal(db.calls.length, 0);
 });
 
-test('resolves an active Customer from D1 and preserves verified Firebase email', async () => {
+test('resolves an active Customer from project-scoped D1 profile data', async () => {
   const db = createDb({
     user: {
       uid: 'firebase-uid-1',
@@ -85,9 +79,7 @@ test('resolves an active Customer from D1 and preserves verified Firebase email'
       profile_json: '{"displayName":"Test Customer"}'
     }
   });
-  const service = serviceFor({ db });
-  const user = await service.authenticateAuthorization('Bearer valid-token');
-
+  const user = await serviceFor({ db }).authenticateAuthorization('Bearer valid-token');
   assert.equal(user.uid, 'firebase-uid-1');
   assert.equal(user.role, 'customer');
   assert.equal(user.name, 'Test Customer');
@@ -97,27 +89,33 @@ test('resolves an active Customer from D1 and preserves verified Firebase email'
   assert.equal(user.isAdmin, false);
   assert.equal(user.astrologerApproved, false);
   assert.equal(db.calls.length, 3);
+  assert.deepEqual(db.calls.map(call => call.values), [
+    ['smv-astro-staging', 'firebase-uid-1'],
+    ['smv-astro-staging', 'firebase-uid-1'],
+    ['smv-astro-staging', 'firebase-uid-1']
+  ]);
 });
 
 test('does not trust an Admin-looking value in an ordinary user profile', async () => {
   const db = createDb({
     user: { uid: 'firebase-uid-1', role: 'unknown', status: 'active', profile_json: '{"role":"admin"}' }
   });
-  const service = serviceFor({ db });
-  const user = await service.authenticateAuthorization('Bearer valid-token');
+  const user = await serviceFor({ db }).authenticateAuthorization('Bearer valid-token');
   assert.equal(user.isAdmin, false);
   assert.equal(user.role, 'unknown');
 });
 
-test('resolves Admin only from a separate D1 allowlist or trusted verified identity', async () => {
-  const allowlistDb = createDb({ admin: { uid: 'firebase-uid-1' } });
-  const allowlisted = await serviceFor({ db: allowlistDb })
-    .authenticateAuthorization('Bearer valid-token');
+test('resolves Admin only from a separate project-scoped D1 allowlist or trusted identity', async () => {
+  const allowlisted = await serviceFor({
+    db: createDb({ admin: { uid: 'firebase-uid-1' } })
+  }).authenticateAuthorization('Bearer valid-token');
   assert.equal(allowlisted.isAdmin, true);
   assert.equal(allowlisted.role, 'admin');
 
-  const configuredUid = await serviceFor({ db: createDb(), adminUids: ['firebase-uid-1'] })
-    .authenticateAuthorization('Bearer valid-token');
+  const configuredUid = await serviceFor({
+    db: createDb(),
+    adminUids: ['firebase-uid-1']
+  }).authenticateAuthorization('Bearer valid-token');
   assert.equal(configuredUid.isAdmin, true);
 
   const configuredEmail = await serviceFor({
@@ -127,7 +125,7 @@ test('resolves Admin only from a separate D1 allowlist or trusted verified ident
   assert.equal(configuredEmail.isAdmin, true);
 });
 
-test('does not grant configured-email Admin access when Firebase says the email is unverified', async () => {
+test('does not grant configured-email Admin access when the email is unverified', async () => {
   const identity = { ...verifiedIdentity, emailVerified: false };
   const user = await serviceFor({
     db: createDb(),
@@ -142,8 +140,7 @@ test('marks only an active, approved Astrologer as approved', async () => {
     user: { uid: 'firebase-uid-1', role: 'astrologer', status: 'active', profile_json: '{}' },
     astrologer: { uid: 'firebase-uid-1', status: 'approved' }
   });
-  const approved = await serviceFor({ db })
-    .authenticateAuthorization('Bearer valid-token');
+  const approved = await serviceFor({ db }).authenticateAuthorization('Bearer valid-token');
   assert.equal(approved.role, 'astrologer');
   assert.equal(approved.astrologerApproved, true);
 
@@ -151,26 +148,21 @@ test('marks only an active, approved Astrologer as approved', async () => {
     user: { uid: 'firebase-uid-1', role: 'astrologer', status: 'pending' },
     astrologer: { uid: 'firebase-uid-1', status: 'pending' }
   });
-  const pending = await serviceFor({ db: pendingDb })
-    .authenticateAuthorization('Bearer valid-token');
+  const pending = await serviceFor({ db: pendingDb }).authenticateAuthorization('Bearer valid-token');
   assert.equal(pending.role, 'astrologer');
   assert.equal(pending.astrologerApproved, false);
 });
 
-test('rejects an identity returned for a project outside the configured allowlist', async () => {
+test('rejects an identity returned for a project outside the allowlist', async () => {
   const service = serviceFor({
     identity: { ...verifiedIdentity, projectId: 'unexpected-project' }
   });
-  await assert.rejects(
-    service.authenticateAuthorization('Bearer valid-token'),
-    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401
-  );
+  await assert.rejects(service.authenticateAuthorization('Bearer valid-token'),
+    error => error.code === 'AUTH_REQUIRED' && error.httpStatus === 401);
 });
 
 test('fails closed when the D1 identity schema or data is unavailable', async () => {
   const service = serviceFor({ db: createDb({ fail: true }) });
-  await assert.rejects(
-    service.authenticateAuthorization('Bearer valid-token'),
-    error => error.code === 'IDENTITY_PROFILE_UNAVAILABLE' && error.httpStatus === 503
-  );
+  await assert.rejects(service.authenticateAuthorization('Bearer valid-token'),
+    error => error.code === 'IDENTITY_PROFILE_UNAVAILABLE' && error.httpStatus === 503);
 });
