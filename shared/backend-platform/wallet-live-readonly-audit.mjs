@@ -24,8 +24,7 @@ export const WALLET_LIVE_READONLY_AUDIT_COLLECTIONS = Object.freeze([
   'liveSessionSignals'
 ]);
 
-const ARCHIVE_ONLY_WARNING = code =>
-  code === 'RAW_ARCHIVE_ONLY' || String(code || '').startsWith('NOT_');
+const OUT_OF_SCOPE_WARNING = code => String(code || '').startsWith('NOT_');
 
 const SENSITIVE_FIELD_NAME =
   /password|passwd|token|secret|private.?key|bank|account|ifsc|upi|vpa|phone|mobile|email|address|contact/i;
@@ -67,6 +66,7 @@ function emptyCollection(key) {
     totalSourceDocuments: 0,
     domainMappableRecords: 0,
     rawArchiveOnlyRecords: 0,
+    outOfScopeRecords: 0,
     unmappableRecords: 0,
     sensitivePayloadRecords: 0,
     plannedD1Statements: 0,
@@ -859,9 +859,11 @@ export function createWalletLiveReadOnlyAudit({
       if (warning) increment(accumulator.warningCounts, warning);
       if (mapped.mapped === true) {
         accumulator.domainMappableRecords += 1;
-      } else if (ARCHIVE_ONLY_WARNING(warning)) {
+      } else if (warning === 'RAW_ARCHIVE_ONLY') {
         accumulator.rawArchiveOnlyRecords += 1;
         increment(accumulator.rawArchiveOnlyReasons, warning);
+      } else if (OUT_OF_SCOPE_WARNING(warning)) {
+        accumulator.outOfScopeRecords += 1;
       } else {
         accumulator.unmappableRecords += 1;
       }
@@ -962,6 +964,7 @@ export function createWalletLiveReadOnlyAudit({
       sourceDocuments: sum.sourceDocuments + item.totalSourceDocuments,
       domainMappableRecords: sum.domainMappableRecords + item.domainMappableRecords,
       rawArchiveOnlyRecords: sum.rawArchiveOnlyRecords + item.rawArchiveOnlyRecords,
+      outOfScopeRecords: sum.outOfScopeRecords + item.outOfScopeRecords,
       unmappableRecords: sum.unmappableRecords + item.unmappableRecords,
       sensitivePayloadRecords: sum.sensitivePayloadRecords + item.sensitivePayloadRecords,
       plannedD1Statements: sum.plannedD1Statements + item.plannedD1Statements
@@ -971,6 +974,7 @@ export function createWalletLiveReadOnlyAudit({
       sourceDocuments: 0,
       domainMappableRecords: 0,
       rawArchiveOnlyRecords: 0,
+      outOfScopeRecords: 0,
       unmappableRecords: 0,
       sensitivePayloadRecords: 0,
       plannedD1Statements: 0
