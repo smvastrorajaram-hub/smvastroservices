@@ -1,0 +1,53 @@
+name: SMV ASTRO Production Firestore Wallet read-only inventory
+
+on:
+  push:
+    branches:
+      - feature/firestore-wallet-readonly-inventory-20261031
+    paths:
+      - 'scripts/firestore-wallet-readonly-inventory.mjs'
+      - 'test/firestore-wallet-readonly-inventory.test.mjs'
+      - 'docs/firestore-wallet-readonly-inventory.md'
+      - '.github/workflows/firestore-wallet-readonly-inventory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-wallet-source-inventory:
+    name: Count Production Wallet sources (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: firestore-wallet-readonly
+    steps:
+      - name: Checkout the approved inventory branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate source and test syntax
+        run: |
+          node --check scripts/firestore-wallet-readonly-inventory.mjs
+          node --check test/firestore-wallet-readonly-inventory.test.mjs
+
+      - name: Test the read-only query and report safeguards
+        run: node --test test/firestore-wallet-readonly-inventory.test.mjs
+
+      - name: Read Production Firestore aggregate counts only
+        env:
+          SMV_FIRESTORE_SOURCE_PROJECT_ID: ${{ vars.SMV_FIRESTORE_SOURCE_PROJECT_ID }}
+          SMV_FIRESTORE_SOURCE_READONLY_CREDENTIALS: ${{ secrets.SMV_FIRESTORE_SOURCE_READONLY_CREDENTIALS }}
+        run: node scripts/firestore-wallet-readonly-inventory.mjs
+
+      - name: Upload count-only inventory report
+        if: always() && hashFiles('artifacts/firestore-wallet-source-inventory.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: firestore-wallet-source-inventory
+          path: artifacts/firestore-wallet-source-inventory.json
+          if-no-files-found: error
+          retention-days: 14
