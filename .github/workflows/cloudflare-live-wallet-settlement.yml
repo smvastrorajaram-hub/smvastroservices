@@ -1,6 +1,9 @@
 name: Cloudflare Live Wallet settlement contract tests
 
 on:
+  push:
+    branches:
+      - feature/cloudflare-live-wallet-settlement-guard-20261031
   pull_request:
     branches:
       - feature/cloudflare-wallet-d1-backfill-reconciliation-20261031
