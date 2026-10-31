@@ -105,7 +105,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
 // Do not let an unfinished endpoint masquerade as a working backend route.
 // Route families are enabled only after their Cloudflare implementation and
 // security/conformance tests have been reviewed in a later staging phase.
-app.all('/api/*', (_req, res) => {
+app.all(/^\\/api(?:\\/.*)?$/, (_req, res) => {
   return res.status(503).set(JSON_HEADERS).json({
     ok: false,
     code: 'BACKEND_MIGRATION_NOT_CUT_OVER',
