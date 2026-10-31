@@ -77,6 +77,24 @@ const SETTINGS_DOCUMENTS = Object.freeze([
   'commission'
 ]);
 
+
+
+const NON_TERMINAL_RECHARGE_STATES = Object.freeze([
+  'creating',
+  'order_created',
+  'payment_pending',
+  'created',
+  'pending',
+  'processing'
+]);
+
+const REFUND_STATUS_VALUES = Object.freeze([
+  'pending',
+  'processed',
+  'completed',
+  'failed'
+]);
+
 const PROJECTION_POLICIES = Object.freeze({
   smv_wallet_recharges: Object.freeze({
     allowedFields: new Set(['status','createdAt','updatedAt','paidAt','amountPaise','paidAmountPaise','razorpayOrderId','razorpayPaymentId']),
@@ -97,22 +115,6 @@ const PROJECTION_POLICIES = Object.freeze({
     filterValues: new Set()
   })
 });
-
-const NON_TERMINAL_RECHARGE_STATES = Object.freeze([
-  'creating',
-  'order_created',
-  'payment_pending',
-  'created',
-  'pending',
-  'processing'
-]);
-
-const REFUND_STATUS_VALUES = Object.freeze([
-  'pending',
-  'processed',
-  'completed',
-  'failed'
-]);
 
 function assertProjectId(projectId) {
   const value = String(projectId || '').trim();
