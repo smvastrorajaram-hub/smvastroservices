@@ -140,12 +140,41 @@ async function main() {
   if (existingWorker) {
     const settings = await cloudflareRequest("/workers/scripts/" + encodeURIComponent(WORKER_NAME) + "/settings");
     existingBindings = Array.isArray(settings.result?.bindings) ? settings.result.bindings : [];
-    const priorDb = existingBindings.find(binding =>
-      String(binding?.type || "").toLowerCase() === "d1" && String(binding?.name || "") === "DB"
+    const configuredVars = new Set([
+      "SMV_ENVIRONMENT",
+      "SMV_BACKEND_CLOUDFLARE_ACTIVE",
+      "SMV_WALLET_BACKFILL_TOOLS_ENABLED",
+      "SMV_WALLET_DOMAIN_QUIESCED",
+      "SMV_WALLET_DOMAIN_CUTOVER_COMPLETE",
+      "SMV_WALLET_PAYOUT_KEY_VERSION",
+      "SMV_IDENTITY_PROFILE_BACKFILL_ENABLED",
+      "SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE",
+      "SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY",
+      "SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED",
+      "SMV_LIVE_SESSION_ROUTES_ENABLED",
+      "FIREBASE_AUTH_PROJECT_IDS",
+      "ALLOWED_ORIGINS"
+    ]);
+    const secretConflicts = existingBindings
+      .filter(binding => configuredVars.has(String(binding?.name || "")) &&
+        String(binding?.type || "").toLowerCase().startsWith("secret"));
+    assert.deepEqual(
+      secretConflicts.map(binding => String(binding.name)),
+      [],
+      "An existing production Worker secret conflicts with a production config variable; refusing to overwrite it."
     );
-    const priorDatabaseId = String(priorDb?.id || priorDb?.database_id || "");
-    if (priorDatabaseId && priorDatabaseId !== DATABASE_ID) {
-      throw new Error("The existing production Worker DB binding points to a different database; refusing to overwrite it.");
+    const existingD1Bindings = existingBindings.filter(binding =>
+      String(binding?.type || "").toLowerCase() === "d1"
+    );
+    for (const binding of existingD1Bindings) {
+      const priorDatabaseId = String(binding?.id || binding?.database_id || "");
+      if (String(binding?.name || "") !== "DB" || priorDatabaseId !== DATABASE_ID) {
+        throw new Error("The existing production Worker has a different D1 binding; refusing to overwrite it.");
+      }
+    }
+    const namedDbBinding = existingBindings.find(binding => String(binding?.name || "") === "DB");
+    if (namedDbBinding && String(namedDbBinding?.type || "").toLowerCase() !== "d1") {
+      throw new Error("The existing production Worker already uses the DB binding name for another resource; refusing to overwrite it.");
     }
   }
 
