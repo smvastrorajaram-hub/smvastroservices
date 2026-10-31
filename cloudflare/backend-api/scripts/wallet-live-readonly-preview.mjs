@@ -56,7 +56,9 @@ if (!credentialsText) {
         expectedProjectId: PROJECT_ID,
         pageSize: PAGE_SIZE,
         maxPageRequests: MAX_PAGE_REQUESTS,
-        cryptoImpl: webcrypto
+        cryptoImpl: webcrypto,
+        payoutEncryptionKey: String(process.env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || ''),
+        payoutKeyVersion: String(process.env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1')
       });
       const report = await audit.run();
 
