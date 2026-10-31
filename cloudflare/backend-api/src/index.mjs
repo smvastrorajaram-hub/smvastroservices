@@ -6,6 +6,10 @@ import { httpServerHandler } from 'cloudflare:node';
 import { createFirebaseIdTokenVerifier } from '../../../shared/backend-platform/firebase-id-token.mjs';
 import { createFirebaseFirestoreRestClient } from '../../../shared/backend-platform/firebase-firestore-rest.mjs';
 import { resolveFirebaseAuthorization } from '../../../shared/backend-platform/firebase-authorization.mjs';
+import { createFirestoreAdminRestClient } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
+import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
+import { createFirebaseIdentityService } from '../../../shared/backend-platform/firebase-identity-service.mjs';
+import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
 const app = express();
@@ -148,6 +152,73 @@ app.get('/api/auth/authorization', async (req, res) => {
   }
 });
 
+
+const walletReadRouteGateOpen = isWalletReadRouteGateOpen(env);
+let walletReadRoutesRegistered = false;
+let walletDomainSchemaReady = false;
+
+function walletFirebaseServiceAccount() {
+  const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
+  if (raw) {
+    const credentials = JSON.parse(raw);
+    if (!credentials || typeof credentials !== 'object' || Array.isArray(credentials)) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON must contain a service-account object.');
+    }
+    return credentials;
+  }
+  return {
+    project_id: String(env.FIREBASE_PROJECT_ID || '').trim(),
+    client_email: String(env.FIREBASE_CLIENT_EMAIL || '').trim(),
+    private_key: String(env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim()
+  };
+}
+
+// Read-only Wallet endpoints are registered only after explicit domain backfill
+// and cutover gates. A second per-request D1 schema check remains fail-closed.
+if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
+  const credentials = walletFirebaseServiceAccount();
+  const projectId = String(env.FIREBASE_PROJECT_ID || credentials.project_id || '').trim();
+  const configuredProjectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || projectId)
+    .split(',').map(value => value.trim()).filter(Boolean);
+  if (!projectId || !configuredProjectIds.includes(projectId)) {
+    throw new Error('Wallet identity project must be included in FIREBASE_AUTH_PROJECT_IDS.');
+  }
+  const firestoreAdmin = createFirestoreAdminRestClient({
+    projectId,
+    allowedProjectIds: [projectId],
+    credentials
+  });
+  const walletIdentity = createFirebaseIdentityService({
+    verifyIdToken: verifyFirebaseIdToken,
+    firestore: firestoreAdmin,
+    projectIds: [projectId],
+    adminUids: [env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')],
+    adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
+  });
+  const walletAdapter = createD1WalletAdapter({ db: env.DB });
+  const walletSchemaReady = async () => {
+    try {
+      const row = await env.DB.prepare(
+        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+      ).bind('shared-domain').first();
+      const ready = row?.schema_version === '0002_shared_domain_repository';
+      walletDomainSchemaReady = ready;
+      return ready;
+    } catch {
+      walletDomainSchemaReady = false;
+      return false;
+    }
+  };
+  registerWalletReadRoutes({
+    app,
+    identityService: walletIdentity,
+    walletAdapter,
+    adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || ''),
+    isReady: walletSchemaReady
+  });
+  walletReadRoutesRegistered = true;
+}
+
 app.get('/healthz', (_req, res) => {
   return res.set(JSON_HEADERS).json({
     ok: true,
@@ -155,6 +226,7 @@ app.get('/healthz', (_req, res) => {
     runtime: 'cloudflare-workers-express-http-bridge',
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
+    walletReadRoutesRegistered,
     productionTrafficEnabled: false
   });
 });
@@ -174,13 +246,30 @@ app.get('/api/backend/readiness', async (_req, res) => {
     ).bind('primary').first();
 
     const ready = row?.schema_version === '0001_wallet_live_domain';
+    let domainSchemaVersion = null;
+    try {
+      const domain = await env.DB.prepare(
+        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+      ).bind('shared-domain').first();
+      domainSchemaVersion = domain?.schema_version || null;
+      walletDomainSchemaReady = domainSchemaVersion === '0002_shared_domain_repository';
+    } catch {
+      walletDomainSchemaReady = false;
+    }
+    const walletReadEnabled = walletReadRoutesRegistered &&
+      walletReadRouteGateOpen && walletDomainSchemaReady;
     return res.status(ready ? 200 : 503).set(JSON_HEADERS).json({
       ok: ready,
       ready,
       schemaVersion: row?.schema_version || null,
-      checks: { expressRuntime: true, d1Binding: true, walletSchema: ready },
+      sharedDomainSchemaVersion: domainSchemaVersion,
+      checks: {
+        expressRuntime: true, d1Binding: true, walletSchema: ready,
+        sharedDomainSchema: walletDomainSchemaReady
+      },
       firebaseConnected: false,
       razorpayConnected: false,
+      walletReadRoutesEnabled: walletReadEnabled,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: false
     });
@@ -204,6 +293,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
+    walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: false,
     renderDependency: false,
