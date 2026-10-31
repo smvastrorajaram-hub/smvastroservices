@@ -74,7 +74,7 @@ export function registerWalletRechargeRoutes({
       if (amountPaise === null || amountPaise < 100) {
         return res.status(400).json({ success: false, error: 'Enter a recharge amount of at least ₹1.00.', code: 'WALLET_RECHARGE_AMOUNT_INVALID' });
       }
-      const requestedKey = String(req.body?.idempotencyKey || '').trim();
+      const requestedKey = String(req.body?.idempotencyKey || req.get('Idempotency-Key') || '').trim();
       const idempotencyKey = requestedKey || cryptoImpl.randomUUID();
       const intent = await walletAdapter.createRechargeIntent({
         ownerUid: user.uid, ownerRole: 'customer', amountPaise, idempotencyKey
