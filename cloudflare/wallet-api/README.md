@@ -40,16 +40,25 @@ Open GitHub → repository → Settings → Secrets and variables → Actions an
 
 | Secret | Value |
 |---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID |
+**Repository Actions variable** (not a secret):
+
+| Variable | Value |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare Account ID |
+
+**Repository Actions secret:**
+
+| Secret | Value |
+|---|---|
 | `CLOUDFLARE_API_TOKEN` | Narrowly scoped token for the named Worker and D1 database |
 
-Use the least privilege available for the existing Worker and D1. Do not grant Zone DNS, account administration, billing, R2, or unrelated permissions. Keep the token only in GitHub Actions secrets. Never paste or commit secret values.
+Add the Account ID under Settings → Secrets and variables → Actions → Variables → New repository variable. Add the token under the Secrets tab. Use the least privilege available for the existing Worker and D1. Do not grant Zone DNS, account administration, billing, R2, or unrelated permissions. Keep the token only in GitHub Actions secrets. Never paste or commit token values.
 
 The database ID is configuration, not an API credential; it is already wired into `wrangler.jsonc`. The CORS origin is also configured as a non-secret staging variable.
 
 ## Staging deployment
 
-On the dedicated Draft PR/branch, open Actions → **Cloudflare Wallet API staging deployment** → **Run workflow**. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If the Cloudflare Account ID or API token secret is missing, it skips deployment. It does not enable Wallet business routes.
+On the dedicated Draft PR/branch, open Actions → **Cloudflare Wallet API staging deployment** → **Run workflow**. This repository deploy workflow uses `CLOUDFLARE_ACCOUNT_ID` from Actions Variables and `CLOUDFLARE_API_TOKEN` from Actions Secrets. The workflow is restricted to the exact feature branch, deploys only `smvastro-wallet-api-staging`, applies the versioned migration only to `smvastro-wallet-staging`, and smoke-tests health/schema readiness. If the Cloudflare Account ID or API token secret is missing, it skips deployment. It does not enable Wallet business routes.
 
 Expected checks after a successful deployment:
 
