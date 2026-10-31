@@ -134,10 +134,52 @@ export function createRazorpayRestClient({
     });
   }
 
+  async function findOrderByReceipt(receipt, { amountPaise, currency = 'INR' } = {}) {
+    const receiptId = String(receipt || '').trim();
+    const amount = validPaise(amountPaise);
+    if (!receiptId || receiptId.length > 40 || /[^A-Za-z0-9_-]/.test(receiptId) ||
+        amount === null || String(currency).toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay order recovery details are invalid.'), { code: 'RAZORPAY_ORDER_RECOVERY_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/orders?receipt=' + encodeURIComponent(receiptId) + '&count=10');
+    const candidates = (Array.isArray(payload?.items) ? payload.items : []).filter(item =>
+      String(item?.receipt || '') === receiptId &&
+      Number(item?.amount) === amount &&
+      String(item?.currency || '').toUpperCase() === 'INR'
+    );
+    if (candidates.length > 1) {
+      throw Object.assign(new Error('Multiple Razorpay orders share the same recharge receipt.'), { code: 'RAZORPAY_ORDER_RECOVERY_AMBIGUOUS', httpStatus: 409 });
+    }
+    if (!candidates.length) return null;
+    const order = candidates[0];
+    if (!cleanId(order.id, 64)) throw Object.assign(new Error('Razorpay order recovery returned an invalid order ID.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    return Object.freeze({
+      id: String(order.id), amount: Number(order.amount), currency: String(order.currency),
+      status: String(order.status || ''), receipt: receiptId
+    });
+  }
+
   async function fetchPayment(paymentId) {
     const idValue = cleanId(paymentId, 64);
     if (!idValue) throw Object.assign(new Error('Razorpay payment ID is invalid.'), { code: 'RAZORPAY_PAYMENT_ID_INVALID', httpStatus: 400 });
     return request('/payments/' + encodeURIComponent(idValue));
+  }
+
+  async function capturePayment(paymentId, amountPaise, currency = 'INR') {
+    const idValue = cleanId(paymentId, 64);
+    const amount = validPaise(amountPaise);
+    if (!idValue || amount === null || String(currency).toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay capture details are invalid.'), { code: 'RAZORPAY_CAPTURE_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/payments/' + encodeURIComponent(idValue) + '/capture', {
+      method: 'POST',
+      body: { amount, currency: 'INR' }
+    });
+    if (String(payload.id || '') !== idValue || Number(payload.amount) !== amount ||
+        String(payload.currency || '') !== 'INR') {
+      throw Object.assign(new Error('Razorpay returned an invalid capture response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return payload;
   }
 
   async function fetchRefund(refundId) {
@@ -166,5 +208,5 @@ export function createRazorpayRestClient({
     return Object.freeze({ id: String(payload.id), paymentId: pid, amount: Number(payload.amount), status: String(payload.status || '') });
   }
 
-  return Object.freeze({ createOrder, fetchPayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
+  return Object.freeze({ createOrder, findOrderByReceipt, fetchPayment, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
 }
