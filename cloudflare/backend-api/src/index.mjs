@@ -313,7 +313,9 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || identityProfileBackfi
       db: env.DB,
       firestore: firestoreAdmin,
       sourceProjectId: projectId,
-      environment: String(env.SMV_ENVIRONMENT || '')
+      environment: String(env.SMV_ENVIRONMENT || ''),
+      payoutEncryptionKey: String(env.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY || ''),
+      payoutKeyVersion: String(env.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1')
     });
     registerIdentityProfileBackfillRoutes({
       app,
