@@ -162,6 +162,69 @@ export function buildAggregationRequest(collectionId, filter = null, { allDescen
   };
 }
 
+export function buildProjectionQuery(collectionId, filter, fieldNames) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(collectionId || ''))) {
+    throw new TypeError('Collection ID is invalid.');
+  }
+  if (!Array.isArray(fieldNames) || !fieldNames.length ||
+      fieldNames.some(field => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(field || '')))) {
+    throw new TypeError('Projection fields are invalid.');
+  }
+  if (filter && (!filter.field || !['EQUAL', 'IN'].includes(filter.op))) {
+    throw new TypeError('Projection filter is not allowlisted.');
+  }
+  const structuredQuery = {
+    select: { fields: fieldNames.map(fieldPath => ({ fieldPath })) },
+    from: [{ collectionId }],
+    limit: 1000
+  };
+  if (filter) {
+    const filterValue = filter.op === 'IN'
+      ? { arrayValue: { values: filter.value.map(value => ({ stringValue: String(value) })) } }
+      : { stringValue: String(filter.value) };
+    structuredQuery.where = {
+      fieldFilter: {
+        field: { fieldPath: String(filter.field) },
+        op: filter.op,
+        value: filterValue
+      }
+    };
+  }
+  return { structuredQuery };
+}
+
+function decodeFirestoreFieldValue(value) {
+  if (!value || typeof value !== 'object') return null;
+  if ('stringValue' in value) return value.stringValue;
+  if ('integerValue' in value) return Number(value.integerValue);
+  if ('doubleValue' in value) return Number(value.doubleValue);
+  if ('booleanValue' in value) return Boolean(value.booleanValue);
+  if ('timestampValue' in value) return value.timestampValue;
+  if ('nullValue' in value) return null;
+  return null;
+}
+
+function projectedData(document) {
+  return Object.fromEntries(Object.entries(document?.fields || {})
+    .map(([key, value]) => [key, decodeFirestoreFieldValue(value)]));
+}
+
+function timestampMilliseconds(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value < 10_000_000_000 ? value * 1000 : value;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function hasNonEmptyValue(value) {
+  return value != null && String(value).trim() !== '';
+}
+
+function documentIdFromName(name) {
+  const parts = String(name || '').split('/');
+  return parts.at(-1) || '';
+}
+
 export function parseAggregationCount(payload) {
   const rows = Array.isArray(payload) ? payload : [payload];
   for (const row of rows) {
@@ -248,6 +311,8 @@ export async function runInventory({
   now = () => new Date()
 } = {}) {
   const config = validateInventoryConfig(projectId, credentials);
+  const generatedAt = now();
+  const generatedAtMs = generatedAt.getTime();
   const token = await createAccessToken(config, fetchImpl);
   const documentsRoot = FIRESTORE_API + '/projects/' + encodeURIComponent(config.projectId) + '/databases/(default)/documents';
   const countCache = new Map();
@@ -266,6 +331,20 @@ export async function runInventory({
     const count = parseAggregationCount(payload);
     countCache.set(cacheKey, count);
     return count;
+  }
+
+  async function readProjectedDocuments(collectionId, filter, fieldNames) {
+    const response = await getJson(fetchImpl, documentsRoot + ':runQuery', token, {
+      method: 'POST',
+      body: buildProjectionQuery(collectionId, filter, fieldNames),
+      label: 'Projected metadata query for ' + collectionId
+    });
+    return (Array.isArray(response) ? response : [])
+      .filter(row => row?.document)
+      .map(row => ({
+        id: documentIdFromName(row.document.name),
+        data: projectedData(row.document)
+      }));
   }
 
   const collections = {};
@@ -317,6 +396,94 @@ export async function runInventory({
     offerTypeWalletRechargeMatches: await countDocuments('smv_offer_audit', {
       field: 'offerType', op: 'EQUAL', value: 'wallet_recharge_bonus_minutes'
     })
+  };
+
+  // A no-filter projection is limited to field names already on the allowlist; document values and IDs never leave memory.
+  const allAuditMetadata = await readProjectedDocuments('smv_offer_audit', null,
+    ['service', 'offerType', 'type', 'action', 'status', 'createdAt', 'usedAt', 'referenceType', 'eventType']);
+  const offerAuditFieldPresence = {
+    ...Object.fromEntries(['service','offerType','type','action','status','createdAt','usedAt','referenceType','eventType']
+      .map(key => [key, 0])),
+    projectedDocuments: allAuditMetadata.length,
+    serviceWalletRechargeMatchesInProjection: allAuditMetadata.filter(row => row.data.service === 'wallet_recharge').length,
+    offerTypeWalletRechargeMatchesInProjection: allAuditMetadata.filter(row => row.data.offerType === 'wallet_recharge_bonus_minutes').length
+  };
+  for (const row of allAuditMetadata) {
+    for (const key of Object.keys(offerAuditFieldPresence)) {
+      if (key !== 'projectedDocuments' &&
+          key !== 'serviceWalletRechargeMatchesInProjection' &&
+          key !== 'offerTypeWalletRechargeMatchesInProjection' &&
+          Object.prototype.hasOwnProperty.call(row.data, key)) {
+        offerAuditFieldPresence[key] += 1;
+      }
+    }
+  }
+
+  const nonTerminalRechargeRows = await readProjectedDocuments('smv_wallet_recharges', {
+    field: 'status', op: 'IN', value: NON_TERMINAL_RECHARGE_STATES
+  }, ['status','createdAt','updatedAt','paidAt','amountPaise','paidAmountPaise','razorpayOrderId','razorpayPaymentId']);
+  const walletOrderRows = await readProjectedDocuments('razorpay_orders', {
+    field: 'serviceName', op: 'EQUAL', value: 'SMV ASTRO Wallet Recharge'
+  }, ['serviceName','razorpayOrderId','walletRechargeId','status','createdAt','updatedAt','amount','currency']);
+  const ordersById = new Map();
+  for (const row of walletOrderRows) {
+    const orderId = String(row.data.razorpayOrderId || row.id || '');
+    if (orderId) ordersById.set(orderId, row.data);
+  }
+  const rechargeByStatus = {};
+  const rechargeAgeBuckets = { within24Hours: 0, oneToSevenDays: 0, olderThanSevenDays: 0, unknown: 0, futureTimestamp: 0 };
+  const providerOrderStatusCounts = {};
+  let rechargeWithOrderId = 0;
+  let rechargeWithPaymentId = 0;
+  let rechargeWithBothOrderAndPaymentIds = 0;
+  let rechargeWithAmount = 0;
+  let rechargeWithPositivePaidAmount = 0;
+  let rechargeMatchedToOrderRegistry = 0;
+  let rechargeMissingOrderRegistry = 0;
+  const ageMs = 24 * 60 * 60 * 1000;
+  for (const row of nonTerminalRechargeRows) {
+    const data = row.data;
+    const status = String(data.status || 'unknown').toLowerCase();
+    rechargeByStatus[status] = (rechargeByStatus[status] || 0) + 1;
+    const timestamp = timestampMilliseconds(data.createdAt ?? data.updatedAt);
+    if (timestamp === null) rechargeAgeBuckets.unknown += 1;
+    else if (timestamp > generatedAtMs) rechargeAgeBuckets.futureTimestamp += 1;
+    else if (generatedAtMs - timestamp <= ageMs) rechargeAgeBuckets.within24Hours += 1;
+    else if (generatedAtMs - timestamp <= 7 * ageMs) rechargeAgeBuckets.oneToSevenDays += 1;
+    else rechargeAgeBuckets.olderThanSevenDays += 1;
+    const orderId = String(data.razorpayOrderId || '').trim();
+    const paymentId = String(data.razorpayPaymentId || '').trim();
+    if (hasNonEmptyValue(data.amountPaise)) rechargeWithAmount += 1;
+    if (hasNonEmptyValue(data.paidAmountPaise) && Number(data.paidAmountPaise) > 0) rechargeWithPositivePaidAmount += 1;
+    if (orderId) rechargeWithOrderId += 1;
+    if (paymentId) rechargeWithPaymentId += 1;
+    if (orderId && paymentId) rechargeWithBothOrderAndPaymentIds += 1;
+    if (!orderId) continue;
+    const order = ordersById.get(orderId);
+    if (!order) {
+      rechargeMissingOrderRegistry += 1;
+      continue;
+    }
+    rechargeMatchedToOrderRegistry += 1;
+    const orderStatus = String(order.status || 'unknown').toLowerCase();
+    providerOrderStatusCounts[orderStatus] = (providerOrderStatusCounts[orderStatus] || 0) + 1;
+  }
+  const nonTerminalRechargeDiagnostics = {
+    projectedDocumentCount: nonTerminalRechargeRows.length,
+    countQueryDocumentCount: quiescence.nonTerminalWalletRecharges,
+    countQueryAndProjectionAgree: nonTerminalRechargeRows.length === quiescence.nonTerminalWalletRecharges,
+    statusCounts: rechargeByStatus,
+    ageBuckets: rechargeAgeBuckets,
+    withOrderId: rechargeWithOrderId,
+    withPaymentId: rechargeWithPaymentId,
+    withBothOrderAndPaymentIds: rechargeWithBothOrderAndPaymentIds,
+    withAmountPaise: rechargeWithAmount,
+    withPositivePaidAmountPaise: rechargeWithPositivePaidAmount,
+    matchingWalletOrderRegistryDocuments: rechargeMatchedToOrderRegistry,
+    missingWalletOrderRegistryDocuments: rechargeMissingOrderRegistry,
+    matchedOrderStatusCounts: providerOrderStatusCounts,
+    queriedWalletOrderRegistryDocuments: walletOrderRows.length,
+    queryWindowIsNotTransactional: true
   };
 
   const refundCandidates = {};
@@ -375,7 +542,7 @@ export async function runInventory({
     reportType: 'SMV_ASTRO_FIRESTORE_WALLET_SOURCE_INVENTORY',
     schemaVersion: 1,
     mode: 'read-only-counts-and-settings-metadata',
-    generatedAt: now().toISOString(),
+    generatedAt: generatedAt.toISOString(),
     sourceProjectId: config.projectId,
     serviceAccountProjectMatches: true,
     readMethod: 'Firestore server-side count aggregations plus two settings-document metadata reads',

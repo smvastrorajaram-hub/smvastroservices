@@ -58,6 +58,21 @@ test('aggregation request supports the allowlisted equality and IN filters', () 
   assert.throws(() => buildAggregationRequest('bad/path'), /Collection ID is invalid/);
 });
 
+test('projection queries return only an explicit allowlist of fields and never include writes', () => {
+  const query = buildProjectionQuery('smv_wallet_recharges', {
+    field: 'status', op: 'IN', value: ['order_created', 'pending']
+  }, ['status', 'createdAt', 'razorpayOrderId']);
+  assert.deepEqual(query.structuredQuery.select.fields, [
+    { fieldPath: 'status' }, { fieldPath: 'createdAt' }, { fieldPath: 'razorpayOrderId' }
+  ]);
+  assert.equal(query.structuredQuery.where.fieldFilter.op, 'IN');
+  assert.equal('writes' in query, false);
+  assert.throws(() => buildProjectionQuery('smv_wallet_recharges', null, ['status']), /filter is not allowlisted/);
+  assert.throws(() => buildProjectionQuery('smv_wallet_recharges', {
+    field: 'status', op: 'EQUAL', value: 'pending'
+  }, ['customerUid']), /Projection fields are invalid/);
+});
+
 test('aggregation result parser accepts count values and rejects incomplete responses', () => {
   assert.equal(parseAggregationCount([{ result: { aggregateFields: { documentCount: { integerValue: '42' } } } }]), 42);
   assert.equal(parseAggregationCount({ result: { aggregateFields: { documentCount: { integerValue: '0' } } } }), 0);
@@ -89,8 +104,54 @@ test('inventory uses only Firestore aggregation reads and settings GETs, and nev
       if (source.collectionId === 'smv_offer_audit' &&
           filter?.field?.fieldPath === 'offerType') count = 1;
       return new Response(JSON.stringify([{
-        result: { aggregateFields: { documentCount: { integerValue: String(count) } } }
-      }]), { status: 200 });
+        result: { aggregateFields: { documentCount: { integerValue: String(count) } }
+      } }]), { status: 200 });
+    }
+    if (url.pathname.endsWith(':runQuery')) {
+      assert.equal(method, 'POST');
+      const query = requests.at(-1).body.structuredQuery;
+      assert.ok(query.select.fields.length > 0);
+      assert.ok(query.select.fields.every(field => [
+        'status','createdAt','updatedAt','paidAt','amountPaise','paidAmountPaise',
+        'razorpayOrderId','razorpayPaymentId','serviceName','walletRechargeId',
+        'amount','currency','offerType','service','type','action','usedAt',
+        'referenceType','eventType'
+      ].includes(field.fieldPath)));
+      if (query.from[0].collectionId === 'smv_wallet_recharges') {
+        const docs = [];
+        for (let i = 1; i <= 6; i += 1) {
+          const fields = {
+            status: { stringValue: 'order_created' },
+            createdAt: { timestampValue: i === 1 ? '2026-10-30T12:00:00Z' : i === 2 ? '2026-10-20T12:00:00Z' : '2026-10-29T12:00:00Z' },
+            amountPaise: { integerValue: '10000' }
+          };
+          if (i <= 4) fields.razorpayOrderId = { stringValue: 'order-' + i };
+          if (i === 1) fields.razorpayPaymentId = { stringValue: 'payment-secret-id' };
+          docs.push({ document: { name: 'projects/' + projectId + '/databases/(default)/documents/smv_wallet_recharges/recharge-secret-' + i, fields } });
+        }
+        return new Response(JSON.stringify(docs), { status: 200 });
+      }
+      if (query.from[0].collectionId === 'razorpay_orders') {
+        return new Response(JSON.stringify([
+          { document: { name: 'projects/' + projectId + '/databases/(default)/documents/razorpay_orders/order-1', fields: {
+            razorpayOrderId: { stringValue: 'order-1' }, status: { stringValue: 'created' }
+          } } },
+          { document: { name: 'projects/' + projectId + '/databases/(default)/documents/razorpay_orders/order-2', fields: {
+            razorpayOrderId: { stringValue: 'order-2' }, status: { stringValue: 'captured' }
+          } } }
+        ]), { status: 200 });
+      }
+      if (query.from[0].collectionId === 'smv_offer_audit') {
+        return new Response(JSON.stringify([
+          { document: { name: 'projects/' + projectId + '/databases/(default)/documents/smv_offer_audit/audit-secret-a', fields: {
+            action: { stringValue: 'redemption' }, createdAt: { timestampValue: '2026-10-30T12:00:00Z' }
+          } } },
+          { document: { name: 'projects/' + projectId + '/databases/(default)/documents/smv_offer_audit/audit-secret-b', fields: {
+            type: { stringValue: 'legacy' }, status: { stringValue: 'used' }
+          } } }
+        ]), { status: 200 });
+      }
+      throw new Error('Unexpected projected query collection');
     }
     assert.equal(method, 'GET');
     assert.match(url.pathname, /\/documents\/smv_settings\/(liveSessionPricing|commission)$/);
@@ -120,18 +181,33 @@ test('inventory uses only Firestore aggregation reads and settings GETs, and nev
   assert.equal(report.nonTerminalRechargeStatusBreakdown.unclassifiedCount, 0);
   assert.equal(report.offerAuditDiagnostics.serviceWalletRechargeMatches, 1);
   assert.equal(report.offerAuditDiagnostics.offerTypeWalletRechargeMatches, 1);
+  assert.equal(report.offerAuditFieldPresence.projectedDocuments, 2);
+  assert.equal(report.offerAuditFieldPresence.service, 0);
+  assert.equal(report.offerAuditFieldPresence.offerType, 0);
+  assert.equal(report.offerAuditFieldPresence.action, 1);
+  assert.equal(report.nonTerminalRechargeDiagnostics.projectedDocumentCount, 6);
+  assert.equal(report.nonTerminalRechargeDiagnostics.withOrderId, 4);
+  assert.equal(report.nonTerminalRechargeDiagnostics.withPaymentId, 1);
+  assert.equal(report.nonTerminalRechargeDiagnostics.matchingWalletOrderRegistryDocuments, 2);
+  assert.equal(report.nonTerminalRechargeDiagnostics.missingWalletOrderRegistryDocuments, 2);
+  assert.equal(report.nonTerminalRechargeDiagnostics.matchedOrderStatusCounts.created, 1);
+  assert.equal(report.nonTerminalRechargeDiagnostics.matchedOrderStatusCounts.captured, 1);
   assert.equal(report.refundCandidates.questions.totalDocuments, 12);
   assert.equal(report.refundCandidates.questions.refundStatusCounts.pending, 1);
   assert.equal(report.settingsDocuments.commission.exists, true);
   assert.equal(report.settingsDocuments.commission.updateTime, '2026-10-30T12:00:00Z');
   assert.equal(JSON.stringify(report).includes('secretBalanceValue'), false);
   assert.equal(JSON.stringify(report).includes('999999'), false);
+  assert.equal(JSON.stringify(report).includes('recharge-secret-'), false);
+  assert.equal(JSON.stringify(report).includes('order-1'), false);
+  assert.equal(JSON.stringify(report).includes('payment-secret-id'), false);
+  assert.equal(JSON.stringify(report).includes('audit-secret'), false);
 
   const firestoreRequests = requests.filter(request => request.url.startsWith('https://firestore.googleapis.com/'));
   assert.ok(firestoreRequests.length > 0);
   assert.ok(firestoreRequests.every(request =>
     request.method === 'POST'
-      ? request.url.endsWith(':runAggregationQuery')
+      ? (request.url.endsWith(':runAggregationQuery') || request.url.endsWith(':runQuery'))
       : request.method === 'GET' && /\/documents\/smv_settings\//.test(new URL(request.url).pathname)
   ));
   assert.ok(firestoreRequests.every(request => !/:(commit|batchWrite|write|beginTransaction|rollback)$/.test(new URL(request.url).pathname)));
