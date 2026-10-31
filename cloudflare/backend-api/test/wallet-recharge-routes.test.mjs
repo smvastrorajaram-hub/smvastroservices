@@ -159,6 +159,24 @@ test('webhook verifies raw body signature and atomically finalizes only Wallet o
   assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
 });
 
+test('late payment.failed webhook cannot downgrade an already paid Wallet recharge', async () => {
+  const state=baseDeps();
+  state.walletAdapter.getRechargeByOrderId=async input=>{
+    state.calls.push(['byOrder',input]);
+    return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'paid',orderId:'order_1',paymentId:'pay_success'};
+  };
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.failed',
+    payload:{payment:{entity:{id:'pay_late_failed',order_id:'order_1',amount:5000,currency:'INR',status:'failed'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(request(raw,{headers:{'X-Razorpay-Signature':'valid'}}),response);
+  assert.equal(response.statusCode,200);
+  assert.equal(response.body,'OK');
+  assert.equal(state.calls.some(call=>call[0]==='paymentFailed'),false);
+  assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
+});
+
 test('webhook rejects an invalid signature before reading order or changing Wallet', async () => {
   const state=baseDeps({razorpay:{...baseDeps().razorpay,async verifyWebhookSignature(){return false;}}});
   const raw=new TextEncoder().encode('{"event":"payment.captured"}');
