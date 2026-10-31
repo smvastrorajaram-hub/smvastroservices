@@ -4,7 +4,8 @@ import {
   LIVE_RING_TIMEOUT_MS,
   LIVE_PREPARATION_DURATION_MS,
   LIVE_CALL_CONNECT_TIMEOUT_MS,
-  LIVE_CHAT_CONNECT_TIMEOUT_MS
+  LIVE_CHAT_CONNECT_TIMEOUT_MS,
+  LIVE_BOOKING_EXPIRY_MS
 } from '../../../shared/backend-platform/live-session-domain.mjs';
 
 function httpError(code,message,status=400) {
@@ -227,7 +228,7 @@ export function registerD1LiveSessionRoutes({
             deadline('booking_expiry',expiresAt,'booking:'+result.booking.id)
           ]);
         } catch(error) {
-          await liveService.expireBooking(result.booking.id).catch(releaseError=>
+          await liveService.expireBooking(result.booking.id,{force:true}).catch(releaseError=>
             console.error('[Live Session] Booking timer failure release deferred:',releaseError?.message||releaseError));
           throw error;
         }
