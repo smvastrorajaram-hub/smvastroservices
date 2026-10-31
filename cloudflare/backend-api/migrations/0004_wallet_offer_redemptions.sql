@@ -1,13 +1,4 @@
 -- Offer redemption claims protect total/per-customer bonus-minute limits under concurrent recharges.
-CREATE TABLE IF NOT EXISTS smv_domain_wallet_offer_redemption_usage (
-  offer_id TEXT NOT NULL,
-  customer_uid TEXT NOT NULL,
-  redemption_count INTEGER NOT NULL DEFAULT 0 CHECK (redemption_count >= 0),
-  last_recharge_id TEXT,
-  updated_at_ms INTEGER NOT NULL,
-  PRIMARY KEY (offer_id, customer_uid)
-);
-
 CREATE TABLE IF NOT EXISTS smv_domain_offer_redemptions (
   redemption_id TEXT PRIMARY KEY NOT NULL,
   offer_id TEXT NOT NULL,
@@ -55,7 +46,7 @@ BEGIN
   SELECT CASE WHEN EXISTS (
     SELECT 1
     FROM smv_domain_wallet_offers o
-    LEFT JOIN smv_domain_wallet_offer_redemption_usage u
+    LEFT JOIN smv_domain_offer_usage u
       ON u.offer_id = o.offer_id AND u.customer_uid = NEW.customer_uid
     WHERE o.offer_id = NEW.offer_id
       AND o.per_customer_limit > 0
@@ -71,7 +62,7 @@ BEGIN
       updated_at_ms = NEW.created_at_ms
   WHERE offer_id = NEW.offer_id;
 
-  INSERT INTO smv_domain_wallet_offer_redemption_usage
+  INSERT INTO smv_domain_offer_usage
     (offer_id, customer_uid, redemption_count, last_recharge_id, updated_at_ms)
   VALUES
     (NEW.offer_id, NEW.customer_uid, 1, NEW.recharge_id, NEW.created_at_ms)
@@ -79,6 +70,49 @@ BEGIN
     redemption_count = redemption_count + 1,
     last_recharge_id = excluded.last_recharge_id,
     updated_at_ms = excluded.updated_at_ms;
+END;
+
+-- A recharge cash-ledger entry may only be inserted for the exact pending
+-- recharge order/owner/amount. This prevents an orphan ledger credit.
+CREATE TRIGGER IF NOT EXISTS smv_domain_recharge_ledger_validate
+BEFORE INSERT ON smv_domain_wallet_ledger
+WHEN NEW.type = 'recharge'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_wallet_recharges r
+    WHERE r.recharge_id = json_extract(NEW.metadata_json, '$.rechargeId')
+      AND r.customer_uid = NEW.owner_uid
+      AND r.amount_paise = NEW.amount_paise
+      AND r.status = 'order_created'
+      AND r.razorpay_order_id = json_extract(NEW.metadata_json, '$.orderId')
+  ) THEN RAISE(ABORT, 'WALLET_RECHARGE_NOT_READY') END;
+END;
+
+-- A recharge cannot become paid unless the exact cash ledger row and the
+-- corresponding Razorpay order have both been marked paid in the same D1 batch.
+CREATE TRIGGER IF NOT EXISTS smv_domain_recharge_paid_validate
+BEFORE UPDATE OF status ON smv_domain_wallet_recharges
+WHEN NEW.status = 'paid' AND OLD.status <> 'paid'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid = NEW.customer_uid
+      AND l.type = 'recharge'
+      AND l.direction = 'credit'
+      AND l.amount_paise = NEW.amount_paise
+      AND l.reference_id = NEW.razorpay_payment_id
+      AND l.idempotency_key = 'recharge:' || NEW.razorpay_payment_id
+      AND json_extract(l.metadata_json, '$.rechargeId') = NEW.recharge_id
+  ) THEN RAISE(ABORT, 'WALLET_RECHARGE_LEDGER_MISSING') END;
+
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_razorpay_orders o
+    WHERE o.order_id = NEW.razorpay_order_id
+      AND o.owner_uid = NEW.customer_uid
+      AND o.amount_paise = NEW.amount_paise
+      AND o.status = 'paid'
+      AND o.payment_id = NEW.razorpay_payment_id
+  ) THEN RAISE(ABORT, 'WALLET_RECHARGE_ORDER_NOT_PAID') END;
 END;
 
 INSERT INTO smv_domain_schema_meta (schema_key, schema_version, applied_at_ms)
