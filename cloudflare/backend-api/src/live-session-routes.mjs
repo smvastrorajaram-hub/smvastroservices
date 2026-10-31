@@ -5,7 +5,8 @@ import {
   LIVE_PREPARATION_DURATION_MS,
   LIVE_CALL_CONNECT_TIMEOUT_MS,
   LIVE_CHAT_CONNECT_TIMEOUT_MS,
-  LIVE_BOOKING_EXPIRY_MS
+  LIVE_BOOKING_EXPIRY_MS,
+  LIVE_DISCONNECT_GRACE_MS
 } from '../../../shared/backend-platform/live-session-domain.mjs';
 
 function httpError(code,message,status=400) {
@@ -173,6 +174,7 @@ export function registerD1LiveSessionRoutes({
     try {
       await assertReady();
       await requireRole(req,['customer','astrologer']);
+      const user=await requireRole(req,['customer','astrologer']);
       const iceServers=[{urls:'stun:stun.l.google.com:19302'}];
       const urls=String(env.LIVE_TURN_URLS||env.LIVE_TURN_URL||'')
         .split(',').map(value=>value.trim()).filter(value=>/^turns?:/i.test(value));
@@ -180,7 +182,7 @@ export function registerD1LiveSessionRoutes({
       let turnConfigured=false;
       if(urls.length&&secret) {
         const expiry=Math.floor(Date.now()/1000)+600;
-        const uid=String((await identityService.authenticateAuthorization(req.get('Authorization'))).uid);
+        const uid=String(user.uid);
         const username=expiry+':'+uid;
         const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
         const signature=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username));
@@ -323,7 +325,7 @@ export function registerD1LiveSessionRoutes({
     try {
       await assertReady();
       const user=await requireRole(req,['astrologer']);
-      const result=await liveService.endSession({sessionId:req.params.id,actorUid:user.uid,reason:'rejected',system:true});
+      const result=await liveService.rejectSession({sessionId:req.params.id,astrologerUid:user.uid});
       await cancelAll(req.params.id);
       await publishSession(result.session);
       return res.set('Cache-Control','no-store').json({success:true,alreadyProcessed:result.alreadyProcessed,session:result.session});
@@ -344,6 +346,41 @@ export function registerD1LiveSessionRoutes({
       if(result.session?.customerUid===user.uid) response.wallet=result.wallet;
       return res.set('Cache-Control','no-store').json(response);
     } catch(error) { return replyError(res,error,'Unable to end the Live Session safely.'); }
+  });
+
+  app.post('/live/sessions/:id/connection',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['customer','astrologer']);
+      if(typeof req.body?.connected!=='boolean') throw httpError('LIVE_CONNECTION_INVALID','Connection state must be true or false.',400);
+      const result=await liveService.setConnection({
+        sessionId:req.params.id,uid:user.uid,connected:req.body.connected
+      });
+      const stub=coordinator(req.params.id);
+      const response=await stub.fetch('https://live-session.internal/connection',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          uid:user.uid,connected:result.connected,
+          disconnectDeadlineAtMs:result.deadlineAtMs,
+          generation:result.generation
+        })
+      });
+      const scheduled=await response.json().catch(()=>({}));
+      if(!response.ok||scheduled.ok!==true) {
+        if(!result.connected) {
+          const settled=await liveService.endSession({
+            sessionId:req.params.id,reason:'network_disconnect',system:true
+          });
+          await cancelAll(req.params.id);
+          await publishSession(settled.session);
+        }
+        throw httpError('LIVE_DISCONNECT_TIMER_FAILED','The Live disconnect grace timer could not be persisted; the session was safely ended and unused Wallet reserve was released.',503);
+      }
+      const session=await liveService.listSessions({uid:user.uid,role:user.role});
+      const current=session.find(item=>item.id===req.params.id)||null;
+      if(current) await publishSession(current);
+      return res.set('Cache-Control','no-store').json({success:true,...result});
+    } catch(error) { return replyError(res,error,'Unable to update Live connection state.'); }
   });
 
   app.post('/live/sessions/:id/ready',async(req,res)=>{
@@ -467,7 +504,7 @@ export function registerD1LiveSessionRoutes({
     'POST /live/requests','GET /live/sessions','GET /live/bookings/pending','GET /live/bookings/mine',
     'POST /live/bookings/:id/accept','POST /live/bookings/:id/reject','POST /live/bookings/:id/cancel',
     'POST /live/sessions/:id/accept','POST /live/sessions/:id/reject','POST /live/sessions/:id/end',
-    'POST /live/sessions/:id/ready','POST /live/sessions/:id/messages','GET /live/sessions/:id/messages',
+    'POST /live/sessions/:id/ready','POST /live/sessions/:id/connection','POST /live/sessions/:id/messages','GET /live/sessions/:id/messages',
     'POST /live/sessions/:id/signal','GET /live/sessions/:id/signals',
     'POST /admin/live/pricing','POST /admin/live/commission'
   ])});
