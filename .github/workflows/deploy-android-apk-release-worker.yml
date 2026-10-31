@@ -206,7 +206,7 @@ jobs:
           METADATA_FILE="$RUNNER_TEMP/apk-release-public.json"
           METADATA_OK=0
           for attempt in {1..2}; do
-            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 25000 \
+            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 25 \
               --output "$METADATA_FILE" --write-out '%{http_code}' "$WORKER_URL/public/android-app" || true)"
             if [[ "$HTTP_CODE" == "200" ]]; then
               if node - "$METADATA_FILE" <<'NODE'
@@ -221,7 +221,7 @@ jobs:
             if (data.packageName !== 'in.smvastroservices.smvastro' ||
                 !Number.isSafeInteger(Number(data.versionCode)) ||
                 Number(data.versionCode) < 1001 ||
-                !/^v[1-9][0-9]*\\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
+                !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
                 download.origin !== expectedOrigin ||
                 download.pathname !== '/download/' + String(data.versionCode)) {
               throw new Error('Public APK release metadata failed package, version or download-origin validation.');
