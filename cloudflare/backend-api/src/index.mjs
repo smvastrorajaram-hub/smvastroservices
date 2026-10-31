@@ -11,6 +11,7 @@ import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-walle
 import { createFirebaseIdentityService } from '../../../shared/backend-platform/firebase-identity-service.mjs';
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
+import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
@@ -165,6 +166,7 @@ let walletReadRoutesRegistered = false;
 let walletDomainSchemaReady = false;
 let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
+let walletOfferRoutesRegistered = false;
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
 
@@ -220,6 +222,27 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
       return false;
     }
   };
+
+  const checkWalletRechargeSchemaReady = async () => {
+    if (!(await walletSchemaReady())) return false;
+    try {
+      const row = await env.DB.prepare(
+        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+      ).bind('wallet-recharges').first();
+      walletRechargeSchemaReady = row?.schema_version === '0004_wallet_offer_redemptions';
+      return walletRechargeSchemaReady;
+    } catch {
+      walletRechargeSchemaReady = false;
+      return false;
+    }
+  };
+  registerWalletOfferRoutes({
+    app,
+    identityService: walletIdentityService,
+    walletAdapter: sharedWalletAdapter,
+    isReady: checkWalletRechargeSchemaReady
+  });
+  walletOfferRoutesRegistered = true;
   registerWalletReadRoutes({
     app,
     identityService: walletIdentityService,
@@ -233,19 +256,6 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
   const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
   if (razorpayKeyId.startsWith('rzp_test_') && razorpayKeySecret && razorpayWebhookSecret) {
     const razorpay = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
-    const checkWalletRechargeSchemaReady = async () => {
-      if (!(await walletSchemaReady())) return false;
-      try {
-        const row = await env.DB.prepare(
-          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-        ).bind('wallet-recharges').first();
-        walletRechargeSchemaReady = row?.schema_version === '0004_wallet_offer_redemptions';
-        return walletRechargeSchemaReady;
-      } catch {
-        walletRechargeSchemaReady = false;
-        return false;
-      }
-    };
     registerWalletRechargeRoutes({
       app,
       identityService: walletIdentityService,
@@ -268,6 +278,7 @@ app.get('/healthz', (_req, res) => {
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
+    walletOfferRoutesRegistered,
     productionTrafficEnabled: false
   });
 });
@@ -312,6 +323,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
       razorpayConnected: false,
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+    walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+      walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: false
     });
