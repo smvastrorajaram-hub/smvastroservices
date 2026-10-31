@@ -17,7 +17,8 @@ import {
   LIVE_PREPARATION_DURATION_MS,
   LIVE_CALL_CONNECT_TIMEOUT_MS,
   LIVE_CHAT_CONNECT_TIMEOUT_MS,
-  LIVE_BOOKING_EXPIRY_MS
+  LIVE_BOOKING_EXPIRY_MS,
+  LIVE_DISCONNECT_GRACE_MS
 } from './live-session-domain.mjs';
 
 const SESSION_TABLE='smv_domain_live_sessions';
@@ -439,7 +440,7 @@ export function createD1LiveSessionService({
     throw liveError('LIVE_SESSION_CONCURRENT_UPDATE','The Live Session changed while confirming connection. Retry.',409);
   }
 
-  async function endSession({sessionId,actorUid='',reason='participant_ended',system=false}={}) {
+  async function endSession({sessionId,actorUid='',reason='participant_ended',system=false,connectionGuard=null}={}) {
     const id=checkSessionId(sessionId),actor=checkUid(actorUid)||'';
     if(!id) throw liveError('LIVE_SESSION_ID_REQUIRED','Live Session ID is required.',400);
     const session=await getSession(id);
@@ -476,7 +477,12 @@ export function createD1LiveSessionService({
       astrologerCommissionAmount:settlement.astrologerAmountPaise/100,
       adminCommissionAmount:settlement.adminAmountPaise/100,
       availableBalanceAfterPaise:safePaise(wallet.availableBalancePaise)+settlement.releasedAmountPaise,
-      reservedBalanceAfterPaise:safePaise(wallet.reservedBalancePaise)-settlement.reservedAmountPaise
+      reservedBalanceAfterPaise:safePaise(wallet.reservedBalancePaise)-settlement.reservedAmountPaise,
+      ...(connectionGuard?{
+        settlementConnectionUid:String(connectionGuard.uid||''),
+        settlementConnectionGeneration:Number(connectionGuard.generation||0),
+        settlementDeadlineAtMs:Number(connectionGuard.deadlineAtMs||0)
+      }:{})
     };
     const ledger=[];
     const adminUid=String(adminWalletUid||'').trim();
@@ -535,12 +541,27 @@ export function createD1LiveSessionService({
       idempotencyKey:'live-session-release:'+id,referenceType,referenceId:id,
       note:'Unused Live '+session.mode+' Wallet reserve released'
     }));
-    const statements=[...ledger];
+    // First move the session into a transaction-local settling state. SQLite
+    // triggers verify a pending disconnect generation here, and the full D1 batch
+    // rolls back this state if any ledger/earning write fails.
+    const statements=[statement(
+      `UPDATE ${SESSION_TABLE}
+       SET state='settling',payload_json=?,updated_at_ms=?
+       WHERE session_id=? AND state<>'ended'`,
+      [livePayload(finalSession),timestamp,id]
+    ),...ledger];
+    if(!ledger.length) {
+      statements.push(await buildLedger({
+        ownerUid:session.customerUid,type:'live_session_settlement_marker',direction:'credit',
+        amountPaise:0,idempotencyKey:'live-session-settlement-marker:'+id,
+        referenceType,referenceId:id,note:'Live Session settlement marker'
+      }));
+    }
     statements.push(statement(
       `UPDATE ${SESSION_TABLE}
        SET state='ended',ended_at_ms=?,actual_charge_paise=?,settlement_operation_id=?,
            payload_json=?,updated_at_ms=?
-       WHERE session_id=? AND state<>'ended'`,
+       WHERE session_id=? AND state='settling'`,
       [timestamp,settlement.chargedAmountPaise,'live-session-settle:'+id,
         livePayload(finalSession),timestamp,id]
     ));
@@ -680,7 +701,45 @@ export function createD1LiveSessionService({
     };
   }
 
-  async function processDeadline({sessionId,deadlineType,deadlineAtMs}={}) {
+  async function setConnection({sessionId,uid,connected}={}) {
+    const id=checkSessionId(sessionId),actor=checkUid(uid);
+    if(!id||!actor||typeof connected!=='boolean') {
+      throw liveError('LIVE_CONNECTION_INVALID','Live Session connection state is invalid.',400);
+    }
+    const session=await getSession(id);
+    if(!session) throw liveError('LIVE_SESSION_NOT_FOUND','Live session was not found.',404);
+    if(session.customerUid!==actor&&session.astrologerUid!==actor) {
+      throw liveError('LIVE_SESSION_FORBIDDEN','This Live Session belongs to another account.',403);
+    }
+    if(!['connecting','active'].includes(session.state)) {
+      throw liveError('LIVE_SESSION_NOT_CONNECTING','Connection changes are accepted only while the Live Session is connecting or active.',409);
+    }
+    const timestamp=Number(now());
+    const deadlineAtMs=connected?null:timestamp+LIVE_DISCONNECT_GRACE_MS;
+    await statement(
+      `INSERT INTO smv_domain_live_connections
+       (session_id,uid,connected,generation,deadline_at_ms,updated_at_ms)
+       VALUES (?,?,?,1,?,?)
+       ON CONFLICT(session_id,uid) DO UPDATE SET
+         connected=excluded.connected,
+         generation=smv_domain_live_connections.generation+1,
+         deadline_at_ms=excluded.deadline_at_ms,
+         updated_at_ms=excluded.updated_at_ms`,
+      [id,actor,connected?1:0,deadlineAtMs,timestamp]
+    ).run();
+    const row=await first(
+      'SELECT connected,generation,deadline_at_ms,updated_at_ms FROM smv_domain_live_connections WHERE session_id=? AND uid=? LIMIT 1',
+      [id,actor]
+    );
+    return {
+      success:true,sessionId:id,uid:actor,connected:row?.connected===1,
+      generation:Number(row?.generation||0),
+      deadlineAtMs:Number(row?.deadline_at_ms||0),
+      graceMs:connected?0:LIVE_DISCONNECT_GRACE_MS
+    };
+  }
+
+  async function processDeadline({sessionId,deadlineType,deadlineAtMs,participantUid='',generation=0}={}) {
     const id=checkSessionId(sessionId);
     const type=String(deadlineType||'').trim();
     const deadline=Number(deadlineAtMs);
@@ -713,7 +772,25 @@ export function createD1LiveSessionService({
         (type==='chat_accept_timeout'?LIVE_CHAT_CONNECT_TIMEOUT_MS:LIVE_CALL_CONNECT_TIMEOUT_MS)) return {success:true,skipped:true};
     }
     if(type==='session_duration'&&(session.state!=='active'||deadline<session.startedAtMs+Number(session.minutes||1)*60_000)) return {success:true,skipped:true};
-    if(type==='disconnect_grace'&&!['connecting','active'].includes(session.state)) return {success:true,skipped:true};
+    if(type==='disconnect_grace') {
+      if(!['connecting','active'].includes(session.state)) return {success:true,skipped:true};
+      const uid=checkUid(participantUid);
+      if(!uid) return {success:true,skipped:true};
+      const connection=await first(
+        'SELECT connected,generation,deadline_at_ms FROM smv_domain_live_connections WHERE session_id=? AND uid=? LIMIT 1',
+        [id,uid]
+      );
+      if(!connection||Number(connection.connected)!==0||
+         Number(connection.generation)!==Number(generation)||
+         Number(connection.deadline_at_ms)!==deadline||
+         Number(now())<Number(connection.deadline_at_ms)) {
+        return {success:true,skipped:true};
+      }
+      return endSession({
+        sessionId:id,reason,system:true,
+        connectionGuard:{uid,generation:Number(generation),deadlineAtMs:deadline}
+      });
+    }
     return endSession({sessionId:id,reason,system:true});
   }
 
@@ -852,7 +929,7 @@ export function createD1LiveSessionService({
   }
 
   return Object.freeze({
-    createRequest,acceptBooking,acceptSession,readySession,endSession,
+    createRequest,acceptBooking,acceptSession,readySession,endSession,setConnection,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
     listSessions,listBookings,listCustomerBookings,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting
