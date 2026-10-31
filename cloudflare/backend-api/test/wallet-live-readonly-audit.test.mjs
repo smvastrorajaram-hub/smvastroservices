@@ -226,6 +226,29 @@ test('consistency audit detects wallet idempotency conflicts and broken booking/
   assert.equal(finance.withdrawal.withdrawalsWithInvalidAmount,0);
 });
 
+test('missing commission setting fails closed and is reported as a billing readiness blocker', async () => {
+  const { firestore } = firestoreFixture();
+  const scopedFirestore = {
+    projectId: firestore.projectId,
+    listDocuments: (...args) => firestore.listDocuments(...args),
+    getDocument: async path => path === 'smv_settings/commission'
+      ? { exists:false, id:'commission', data:null }
+      : firestore.getDocument(path)
+  };
+  const report = await createWalletLiveReadOnlyAudit({
+    firestore:scopedFirestore, pageSize:3, cryptoImpl:webcrypto
+  }).run();
+  const billing = report.financialReconciliation.billingConfiguration;
+
+  assert.equal(billing.pricingSettingPresent,true);
+  assert.equal(billing.commissionSettingPresent,false);
+  assert.equal(billing.commissionPercentValid,false);
+  assert.ok(billing.missingSettings.includes('smv_settings/commission'));
+  assert.ok(report.securityBlockers.some(item =>
+    item.includes('smv_settings/commission is missing')
+  ));
+});
+
 test('read-only D1 guard rejects batch, exec and prepared statement execution', () => {
   const db=createStrictReadOnlyD1Guard();
   assert.throws(()=>db.batch([]),/READ_ONLY_PREVIEW_WRITE_GUARD/);
