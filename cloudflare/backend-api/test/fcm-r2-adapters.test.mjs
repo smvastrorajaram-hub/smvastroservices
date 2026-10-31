@@ -78,7 +78,7 @@ test('FCM HTTP v1 client validates targets and sends the expected request', asyn
   assert.equal(sent.options.headers.Authorization, 'Bearer access-token');
   assert.equal(sent.body.message.token, 'device-token');
   assert.equal(sent.body.message.data.type, 'live_call');
-  assert.throws(() => client.send({ token: 'one', topic: 'also-one' }), /Exactly one FCM target/);
+  await assert.rejects(client.send({ token: 'one', topic: 'also-one' }), /Exactly one FCM target/);
 });
 
 test('FCM returns a stable error for unregistered device tokens', async () => {
