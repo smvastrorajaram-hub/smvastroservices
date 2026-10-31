@@ -217,7 +217,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
 // ported and passes its Cloudflare conformance suite. Unknown non-API paths stay 404.
 app.use((req, res) => {
   const legacyPath = isLegacyBackendPath(req.path);
-  const apiPath = /^\\/api(?:\\/.*)?$/.test(req.path);
+  const apiPath = req.path === '/api' || req.path.startsWith('/api/');
   if (legacyPath || apiPath) {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
