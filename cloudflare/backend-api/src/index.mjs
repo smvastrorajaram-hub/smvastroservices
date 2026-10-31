@@ -14,6 +14,8 @@ import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
+import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
+import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
@@ -170,7 +172,10 @@ let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
 let walletOfferRoutesRegistered = false;
 let walletBackfillRoutesRegistered = false;
+let liveSessionRoutesRegistered = false;
+let liveSessionSchemaReady = false;
 const walletBackfillToolsOpen = String(env.SMV_WALLET_BACKFILL_TOOLS_ENABLED || '').toLowerCase() === 'true';
+const liveSessionRoutesOpen = String(env.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() === 'true';
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
 
@@ -192,7 +197,7 @@ function walletFirebaseServiceAccount() {
 
 // Read-only Wallet endpoints are registered only after explicit domain backfill
 // and cutover gates. A second per-request D1 schema check remains fail-closed.
-if ((walletReadRouteGateOpen || walletBackfillToolsOpen) && env.DB && typeof env.DB.prepare === 'function') {
+if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen) && env.DB && typeof env.DB.prepare === 'function') {
   const credentials = walletFirebaseServiceAccount();
   const projectId = String(env.FIREBASE_PROJECT_ID || credentials.project_id || '').trim();
   const configuredProjectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || projectId)
@@ -252,6 +257,20 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen) && env.DB && typeof env
     }
   };
 
+  const checkLiveSessionSchemaReady = async () => {
+    if (!(await walletSchemaReady())) return false;
+    try {
+      const row = await env.DB.prepare(
+        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+      ).bind('live-sessions').first();
+      liveSessionSchemaReady = row?.schema_version === '0006_d1_live_wallet_settlement';
+      return liveSessionSchemaReady;
+    } catch {
+      liveSessionSchemaReady = false;
+      return false;
+    }
+  };
+
   if (walletBackfillToolsOpen) {
     const backfillService = createWalletDomainBackfillService({
       db: env.DB,
@@ -271,6 +290,25 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen) && env.DB && typeof env
       isReady: checkWalletBackfillSchemaReady
     });
     walletBackfillRoutesRegistered = true;
+  }
+
+  if (liveSessionRoutesOpen) {
+    const liveService = createD1LiveSessionService({
+      db: env.DB,
+      walletAdapter: sharedWalletAdapter,
+      firestore: firestoreAdmin
+    });
+    registerD1LiveSessionRoutes({
+      app,
+      identityService: walletIdentityService,
+      liveService,
+      env,
+      routesEnabled: liveSessionRoutesOpen,
+      environment: String(env.SMV_ENVIRONMENT || ''),
+      sourceProjectId: projectId,
+      isReady: checkLiveSessionSchemaReady
+    });
+    liveSessionRoutesRegistered = true;
   }
 
   if (walletReadRouteGateOpen) {
@@ -318,6 +356,8 @@ app.get('/healthz', (_req, res) => {
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
     walletOfferRoutesRegistered,
+    liveSessionRoutesRegistered,
+    liveSessionSchemaReady,
     productionTrafficEnabled: false
   });
 });
@@ -366,7 +406,7 @@ app.get('/api/backend/readiness', async (_req, res) => {
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
       walletBusinessRoutesEnabled: false,
-      liveCallChatRoutesEnabled: false
+      liveCallChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady
     });
   } catch (_error) {
     return res.status(503).set(JSON_HEADERS).json({
@@ -394,10 +434,11 @@ app.get('/api/backend/migration-status', (_req, res) => {
     walletBackfillRoutesRegistered,
     walletBackfillToolsEnabled: walletBackfillToolsOpen,
     walletBusinessRoutesEnabled: false,
-    callChatRoutesEnabled: false,
+    callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
+    liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     renderDependency: false,
     productionTrafficEnabled: false,
-    nextGate: walletBackfillRoutesRegistered ? 'wallet-backfill-preview-and-reconciliation' : 'enable-staging-wallet-backfill-tools'
+    nextGate: liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
   });
 });
 
