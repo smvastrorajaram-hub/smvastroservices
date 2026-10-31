@@ -1,0 +1,12 @@
+{
+  "name": "smvastro-backend-api-staging",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/index.mjs"
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  }
+}
