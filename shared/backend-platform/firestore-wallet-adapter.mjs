@@ -5,6 +5,7 @@ import {
   normalizeWallet,
   validateWalletEntry,
   validateWalletOwner,
+  walletReservationSettlementKeys,
   walletError
 } from './wallet-domain.mjs';
 
@@ -157,6 +158,8 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     const type = booking ? 'live_booking_reserve' : 'live_session_reserve';
     const key = (booking ? 'live-booking:' : 'live-session:') + id;
     const idValue = await ledgerId(type, owner.ownerUid, key, id);
+    const previous = await ledgerRef(idValue).get();
+    if (previous.exists) return { success: true, alreadyProcessed: true, wallet: await getWallet(owner.ownerUid), reserve: previous.data() || {} };
     const wallet = await getWallet(owner.ownerUid);
     const reserve = calculateWalletReservation({ wallet, minutes, ratePerMinutePaise });
     const result = await executeOne({ owner, row: {
@@ -171,13 +174,28 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     return { success: true, ...result, reserve };
   }
 
-  async function settleReservation({ ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusMinutes,
+    async function settleReservation({ ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusMinutes,
     chargedAmountPaise, freeMinutesUsed = 0 } = {}) {
     const owner = validateWalletOwner(ownerUid, ownerRole);
     const id = String(sessionId || '').trim();
     if (!id) throw walletError('LIVE_SESSION_ID_REQUIRED', 'Live Session ID is required.', 400);
+    const expectedKeys = walletReservationSettlementKeys({
+      sessionId: id, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed
+    });
+    const expectedRefs = await Promise.all(expectedKeys.map(async item =>
+      ledgerRef(await ledgerId(item.type, owner.ownerUid, item.idempotencyKey, id))
+    ));
+    const found = await Promise.all(expectedRefs.map(async ref => (await ref.get()).exists));
+    if (found.length && found.every(Boolean)) {
+      return { success: true, alreadyProcessed: true, wallet: await getWallet(owner.ownerUid) };
+    }
+    if (found.some(Boolean)) {
+      throw walletError('WALLET_LEDGER_PARTIAL_SETTLEMENT', 'Wallet settlement ledger is incomplete and requires reconciliation.');
+    }
+    const wallet = await getWallet(owner.ownerUid);
+    if (!wallet) throw walletError('WALLET_NOT_FOUND', 'Wallet not found.', 409);
     const usage = calculateWalletReservationSettlement({
-      wallet: await getWallet(owner.ownerUid), reservedAmountPaise, reservedBonusMinutes,
+      wallet, reservedAmountPaise, reservedBonusMinutes,
       chargedAmountPaise, freeMinutesUsed
     });
     const specs = [];
@@ -199,7 +217,7 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       idempotencyKey: 'live-session-release:' + id,
       availableDeltaPaise: usage.releasedAmountPaise, reservedDeltaPaise: -usage.releasedAmountPaise
     });
-    if (!specs.length) return { success: true, alreadyProcessed: true, wallet: await getWallet(owner.ownerUid), settlement: usage };
+    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement: usage };
     const rows = [];
     for (const spec of specs) rows.push({
       ...spec, ownerUid: owner.ownerUid, ownerRole: owner.ownerRole,
@@ -209,9 +227,9 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     const refs = rows.map(row => ledgerRef(row.ledgerId));
     const result = await db.runTransaction(async tx => {
       const [walletSnap, ...ledgerSnaps] = await Promise.all([tx.get(walletRef(owner.ownerUid)), ...refs.map(ref => tx.get(ref))]);
-      const found = ledgerSnaps.filter(snap => snap.exists).length;
-      if (found === rows.length) return { alreadyProcessed: true, wallet: walletView(walletSnap, owner) };
-      if (found > 0) throw walletError('WALLET_LEDGER_PARTIAL_SETTLEMENT', 'Wallet settlement ledger is incomplete and requires reconciliation.');
+      const foundCount = ledgerSnaps.filter(snap => snap.exists).length;
+      if (foundCount === rows.length) return { alreadyProcessed: true, wallet: walletView(walletSnap, owner) };
+      if (foundCount > 0) throw walletError('WALLET_LEDGER_PARTIAL_SETTLEMENT', 'Wallet settlement ledger is incomplete and requires reconciliation.');
       const current = walletView(walletSnap, owner);
       const nowTimestamp = FieldValue.serverTimestamp();
       let next = current;
@@ -232,7 +250,7 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     return { success: true, ...result, settlement: usage };
   }
 
-  async function listTransactions(ownerUid, limit = 30) {
+    async function listTransactions(ownerUid, limit = 30) {
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const max = Math.max(1, Math.min(100, Math.floor(Number(limit) || 30)));
