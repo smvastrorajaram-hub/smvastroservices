@@ -141,6 +141,22 @@ test('verify fails when the user token is not an authenticated Customer', async 
   assert.equal(response.body.code,'WALLET_CUSTOMER_REQUIRED');
 });
 
+test('webhook deduplication prefers the provider event ID header', async () => {
+  const state=baseDeps();
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.captured',
+    payload:{payment:{entity:{id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(
+    request(raw,{headers:{'X-Razorpay-Signature':'valid','X-Razorpay-Event-Id':'evt_razorpay_123'}}),
+    response
+  );
+  assert.equal(response.statusCode,200);
+  const recorded=state.calls.find(call=>call[0]==='recordWebhook');
+  assert.equal(recorded[1].eventKey,'razorpay_evt_razorpay_123');
+});
+
 test('webhook verifies raw body signature and atomically finalizes only Wallet order events', async () => {
   const state=baseDeps();
   state.razorpay.fetchPayment=async id=>{
