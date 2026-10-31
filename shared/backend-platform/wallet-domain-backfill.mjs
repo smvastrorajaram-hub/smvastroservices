@@ -296,7 +296,7 @@ function insertLiveSession(data, id) {
     values: [id,customerUid,astrologerUid,mode,string(data.state || data.status || 'unknown'),
       string(data.appointmentId) || null,nonNegativeInteger(data.reservedAmountPaise) ?? 0,
       nonNegativeInteger(data.reservedBonusMinutes) ?? 0,nonNegativeInteger(data.actualChargePaise) ?? 0,
-      started,ended,json(data),created,updated]
+      started,ended,json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
   }]);
 }
 
@@ -316,7 +316,7 @@ function insertLiveBooking(data, id) {
     values: [id,customerUid,astrologerUid,mode,string(data.status || 'unknown'),
       string(data.walletReservationState || 'none'),
       nonNegativeInteger(data.reservedAmountPaise) ?? 0,nonNegativeInteger(data.reservedBonusMinutes) ?? 0,
-      dateField(data,'expiresAt'),json(data),created,updated]
+      dateField(data,'expiresAt'),json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
   }]);
 }
 
@@ -406,7 +406,7 @@ function insertLiveEarning(data, id) {
        astrologer_amount_paise,admin_amount_paise,status,payload_json,created_at_ms,updated_at_ms)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     values: [id,astrologerUid,string(data.customerUid || data.customerId) || null,'live_session',
-      referenceId,gross,astro,admin,string(data.status || 'completed'),json(data),created,updated]
+      referenceId,gross,astro,admin,string(data.status || 'completed'),json({...data,migrationSource:'legacy_import'}),created,updated]
   }]);
 }
 
@@ -421,7 +421,7 @@ function insertWithdrawal(data, id) {
     sql: `INSERT OR IGNORE INTO smv_domain_withdrawals
       (withdrawal_id,astrologer_uid,amount_paise,status,available_at_ms,payload_json,created_at_ms,updated_at_ms)
       VALUES (?,?,?,?,?,?,?,?)`,
-    values: [id,uid,amount,string(data.status || 'pending'),dateField(data,'availableAt'),json(data),created,updated]
+    values: [id,uid,amount,string(data.status || 'pending'),dateField(data,'availableAt'),json({...data,migrationSource:'legacy_import'}),created,updated]
   }]);
 }
 
