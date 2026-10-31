@@ -24,7 +24,7 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 ## Admin upload activation
 
-Initially leave ALLOW_APK_UPLOADS = "false". In that state the website continues using the existing Render/Firebase APK flow. The R2 release API reports uploadsEnabled=false; the new UI intentionally does not switch its source of truth to an empty or stale D1 database.
+Initially leave ALLOW_APK_UPLOADS = "false". In that state the existing Render/Firebase upload endpoint remains available only while D1 has no release records. Once the Worker is ready, Homepage and Admin read-only release metadata come from Cloudflare regardless of the upload gate, so an existing R2 version is never replaced by a stale Firebase pointer. If Cloudflare already has release records and uploads are disabled, new publishing is blocked instead of silently writing a newer release to the legacy store.
 
 Enable ALLOW_APK_UPLOADS = "true" only after:
 - GET /health returns ready=true;
