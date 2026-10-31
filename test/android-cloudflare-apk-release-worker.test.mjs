@@ -396,6 +396,91 @@ test('Homepage reuses the single PWA icon and renders APK version/date with vers
   assert.ok(installer.includes("source.cloudflare ? 'r2' : 'firebase'"));
   assert.ok(installer.includes('smv-apk-release-active'));
   assert.ok(styles.includes('.smv-install-app-section.smv-apk-release-active .smv-install-app-card'));
+  assert.ok(html.includes('window.location.assign(installBtn.dataset.smvApkDownloadUrl)'));
+
+  const vm = await import('node:vm');
+  const release = {
+    success: true,
+    available: true,
+    packageName: PACKAGE,
+    versionName: 'v1.1',
+    versionCode: 1001,
+    downloadUrl: 'https://smv-astro-apk-release-api.astroservices.workers.dev/download/1001',
+    size: 2996276,
+    uploadedAt: 1793451612279
+  };
+  async function renderFor(installedApps) {
+    const heading = { textContent: '' };
+    const description = { textContent: '' };
+    const help = { textContent: '' };
+    const button = {
+      textContent: 'INSTALL APP', hidden: false, disabled: false, dataset: {},
+      setAttribute() {}, removeAttribute() {}
+    };
+    const section = {
+      hidden: false, style: { display: '' },
+      classList: { add() {} },
+      querySelector(selector) {
+        if (selector.endsWith('h2')) return heading;
+        return description;
+      },
+      removeAttribute() {}
+    };
+    const document = {
+      getElementById(id) {
+        return ({
+          smvInstallAppSection: section,
+          smvInstallAppBtn: button,
+          smvInstallAppHelp: help
+        })[id] || null;
+      },
+      documentElement: { classList: { remove() {} } }
+    };
+    const navigator = {
+      userAgent: 'Mozilla/5.0 (Linux; Android 10) Chrome/131.0.0.0',
+      getInstalledRelatedApps: async () => installedApps
+    };
+    const fetchImpl = async url => url.endsWith('/health')
+      ? { ok: true, json: async () => ({ success: true, ready: true }) }
+      : { ok: true, json: async () => release };
+    const sandbox = {
+      document, navigator,
+      window: { SMV_APK_RELEASE_API_URL: 'https://smv-astro-apk-release-api.astroservices.workers.dev' },
+      location: { hostname: 'smvastroservices.in' },
+      fetch: fetchImpl, URL, AbortSignal, Intl, Date, Set,
+      console: { info() {}, warn() {}, error() {} }
+    };
+    vm.runInNewContext(installer, sandbox);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    return { heading, description, help, button };
+  }
+
+  const latest = await renderFor([{
+    platform: 'play', id: PACKAGE, version: 'v1.1'
+  }]);
+  assert.equal(latest.heading.textContent, 'SMV ASTRO v1.1 · code 1001');
+  assert.equal(latest.description.textContent, '31 Oct 2026, 6:30 pm · r2');
+  assert.equal(latest.help.textContent, 'Using Latest Version');
+  assert.equal(latest.button.hidden, true);
+  assert.equal(latest.button.dataset.smvApkDownloadUrl, '');
+
+  const older = await renderFor([{
+    platform: 'play', id: PACKAGE, version: 'v1.0'
+  }]);
+  assert.equal(older.button.hidden, false);
+  assert.equal(older.button.textContent, 'UPDATE');
+  assert.equal(older.button.dataset.smvApkDownloadUrl, release.downloadUrl);
+
+  const notInstalled = await renderFor([]);
+  assert.equal(notInstalled.button.hidden, false);
+  assert.equal(notInstalled.button.textContent, 'DOWNLOAD APK');
+  assert.equal(notInstalled.button.dataset.smvApkDownloadUrl, release.downloadUrl);
+
+  const installedUnknownVersion = await renderFor([{
+    platform: 'play', id: PACKAGE
+  }]);
+  assert.equal(installedUnknownVersion.button.hidden, true);
+  assert.equal(installedUnknownVersion.help.textContent, 'Installed app version could not be verified');
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
