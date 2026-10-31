@@ -106,6 +106,36 @@ BEGIN
   ) THEN RAISE(ABORT,'LIVE_BOOKING_RESERVE_MISSING') END;
 END;
 
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_session_booking_transfer_validate
+BEFORE INSERT ON smv_domain_live_sessions
+WHEN json_extract(NEW.payload_json,'$.origin')='accepted_booking'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_bookings b
+    WHERE b.booking_id=NEW.session_id
+      AND b.customer_uid=NEW.customer_uid
+      AND b.astrologer_uid=NEW.astrologer_uid
+      AND b.status='pending'
+      AND b.wallet_reservation_state='reserved'
+      AND b.reserved_amount_paise=NEW.reserved_amount_paise
+      AND b.reserved_bonus_minutes=NEW.reserved_bonus_minutes
+  ) THEN RAISE(ABORT,'LIVE_BOOKING_TRANSFER_INVALID') END;
+END;
+
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_booking_accept_validate
+BEFORE UPDATE OF status ON smv_domain_live_bookings
+WHEN NEW.status='accepted' AND OLD.status<>'accepted'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_sessions s
+    WHERE s.session_id=NEW.booking_id
+      AND s.customer_uid=NEW.customer_uid
+      AND s.astrologer_uid=NEW.astrologer_uid
+      AND s.state='preparing'
+      AND json_extract(s.payload_json,'$.origin')='accepted_booking'
+  ) THEN RAISE(ABORT,'LIVE_BOOKING_SESSION_MISSING') END;
+END;
+
 -- Cancellation/rejection/expiry releases the exact booking reserve. A booking
 -- accepted into a Live Session transfers the reservation to that session.
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_booking_release_validate
