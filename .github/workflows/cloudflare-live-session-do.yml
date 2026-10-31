@@ -26,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
       - name: Check Durable Object module syntax
         working-directory: cloudflare/backend-api
         run: |
