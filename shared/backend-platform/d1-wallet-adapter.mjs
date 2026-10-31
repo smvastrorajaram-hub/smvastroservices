@@ -718,7 +718,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       statement(
         `UPDATE smv_domain_razorpay_orders
          SET status='failed',payment_id=?,payload_json=?,updated_at_ms=?
-         WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge'`,
+         WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge' AND status <> 'paid'`,
         [pid || null,JSON.stringify({failureReason:String(reason).slice(0,160)}),timestamp,oid]
       )
     ]);
