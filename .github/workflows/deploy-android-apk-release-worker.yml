@@ -162,9 +162,9 @@ jobs:
           const fs = require('node:fs');
           const health = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-health.json', 'utf8'));
           if (health.success !== true || health.ready !== true || health.uploadsEnabled !== true) {
-            throw new Error('Worker health is not ready or APK uploads are not safely disabled: ' + JSON.stringify(health));
+            throw new Error('Worker health is not ready or the Admin APK upload gate is not enabled: ' + JSON.stringify(health));
           }
-          console.log('Worker health: ready=true; uploadsEnabled=true.');
+          console.log('Worker health: ready=true; uploadsEnabled=true; authenticated Admin APK publishing is enabled.');
           NODE
 
       - name: Check public APK metadata endpoint
