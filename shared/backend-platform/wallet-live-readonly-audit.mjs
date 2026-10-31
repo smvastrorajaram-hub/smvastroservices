@@ -1,7 +1,4 @@
-import {
-  WALLET_DOMAIN_BACKFILL_COLLECTIONS,
-  mapLegacyWalletDomainDocument
-} from './wallet-domain-backfill.mjs';
+import { WALLET_DOMAIN_BACKFILL_COLLECTIONS } from './wallet-domain-backfill.mjs';
 import { createWalletDomainBackfillService } from './d1-wallet-domain-backfill.mjs';
 
 export const WALLET_LIVE_READONLY_AUDIT_COLLECTIONS = Object.freeze([
@@ -815,6 +812,8 @@ export function createWalletLiveReadOnlyAudit({
   pageSize = 100,
   maxPageRequests = 100000,
   cryptoImpl = globalThis.crypto,
+  payoutEncryptionKey = '',
+  payoutKeyVersion = 'v1',
   now = Date.now
 } = {}) {
   if (!firestore || typeof firestore.listDocuments !== 'function' ||
@@ -837,7 +836,10 @@ export function createWalletLiveReadOnlyAudit({
     db,
     firestore: readOnlyFirestore,
     now,
-    cryptoImpl
+    cryptoImpl,
+    payoutEncryptionKey,
+    payoutKeyVersion,
+    sourceProjectId: expectedProjectId
   });
 
   async function run() {
@@ -848,20 +850,16 @@ export function createWalletLiveReadOnlyAudit({
     const sessionParents = [];
     let totalPageRequests = 0;
 
-    function recordDocument(key, document, parentId = '') {
+    async function recordDocument(key, document, parentId = '') {
       const accumulator = accumulators[key];
       const data = document.data || {};
       collectReferences(key, document, refs);
+      if (hasSensitiveField(data)) accumulator.sensitivePayloadRecords += 1;
 
-      let mapped;
-      if (key === 'withdrawalPayouts') {
-        mapped = { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_REQUIRED' };
-      } else if (hasSensitiveField(data)) {
-        mapped = { statements: [], mapped: false, warning: 'SENSITIVE_PAYLOAD_REVIEW_REQUIRED' };
-        accumulator.sensitivePayloadRecords += 1;
-      } else {
-        mapped = mapLegacyWalletDomainDocument(key, document, { parentId, nowMs: Number(now()) });
-      }
+      // Domain mappers retain only validated business fields and the common
+      // archive serializer removes sensitive-keyed values. Payout details use
+      // a separate AES-256-GCM mapper and never enter a plaintext archive.
+      const mapped = await backfill.mapDocument(key, document, { parentId, nowMs: Number(now()) });
 
       const warning = String(mapped.warning || '');
       if (warning) increment(accumulator.warningCounts, warning);
@@ -913,7 +911,7 @@ export function createWalletLiveReadOnlyAudit({
         accumulator.totalSourceDocuments += page.documents.length;
 
         for (const document of page.documents) {
-          recordDocument(key, document, parentId);
+          await recordDocument(key, document, parentId);
           if (key === 'liveSessions') sessionParents.push(primitiveString(document.id));
         }
 
@@ -996,9 +994,16 @@ export function createWalletLiveReadOnlyAudit({
       relatedRecordsConsistency: consistency,
       financialReconciliation,
       securityBlockers: [
-        'withdrawalPayouts are withheld: the existing Wallet mapper stores private payout JSON without AES-GCM encryption; rotate/use a new private staging key and add encrypted mapping before any import.',
-        'razorpay_orders currently have raw-archive-only mapping; normalized order status, payment linkage and idempotency history are not yet ready for D1 business use.',
-        'Records containing sensitive-keyed fields are withheld from planned D1 statements until field-level redaction/encryption rules are reviewed.',
+        ...(accumulators.withdrawalPayouts.totalSourceDocuments > 0 &&
+          accumulators.withdrawalPayouts.unmappableRecords > 0
+          ? ['One or more withdrawal payout records could not be encrypted with the configured staging AES-256-GCM key.']
+          : []),
+        ...(accumulators.walletRechargeOrders.unmappableRecords > 0
+          ? ['One or more wallet Razorpay orders lack valid normalized amount, currency, order ID or idempotency data.']
+          : []),
+        ...(accumulators.scheduledCallChatAppointments.unmappableRecords > 0
+          ? ['One or more scheduled Call/Chat appointments have invalid required identities or booking fields.']
+          : []),
         ...financialReconciliation.billingConfiguration.missingSettings.map(setting =>
           setting + ' is missing from the staging Firestore source; billing configuration readiness cannot be verified.'
         ),
