@@ -97,7 +97,9 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
        VALUES (?, ?, 'INR', 0, 0, 0, 0, 1, ?, ?)`,
       [owner.ownerUid, owner.ownerRole, timestamp, timestamp]
     ).run();
-    return getWallet(owner.ownerUid);
+    const wallet = await getWallet(owner.ownerUid);
+    if (wallet.ownerRole !== owner.ownerRole) throw walletError('WALLET_OWNER_ROLE_MISMATCH', 'Wallet owner role does not match the stored Wallet.');
+    return wallet;
   }
 
   async function getWallet(ownerUid) {
@@ -127,7 +129,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return {
       ledgerId: id, ownerUid, ownerRole, type, direction, amountPaise,
       idempotencyKey, availableDeltaPaise, reservedDeltaPaise, bonusMinutesDelta, reservedBonusMinutesDelta,
-      referenceType, referenceId, note: String(note || '').slice(0, 240),
+      referenceType: referenceType == null ? null : String(referenceType),
+      referenceId: referenceId == null ? null : String(referenceId), note: String(note || '').slice(0, 240),
       metadataJson: JSON.stringify(metadata && typeof metadata === 'object' ? metadata : {}),
       source: source ? String(source).slice(0, 80) : null,
       createdAtMs: Number(now())
