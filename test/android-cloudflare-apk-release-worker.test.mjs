@@ -125,23 +125,11 @@ function envFor({ uploadsEnabled = true } = {}) {
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
     ALLOWED_ORIGINS: 'https://smvastroservices.in',
-    LEGACY_ANDROID_RELEASE_URL: 'https://smvastroservices.onrender.com/public/android-app'
   };
 }
 
-function legacyFetch(versionCode = 1005) {
-  return async url => {
-    assert.equal(String(url), 'https://smvastroservices.onrender.com/public/android-app');
-    if (!versionCode) return Response.json({ success: true, available: false });
-    return Response.json({
-      success: true, available: true, packageName: PACKAGE,
-      versionName: 'v' + Math.floor(versionCode / 1000) + '.' + (versionCode % 1000),
-      versionCode, downloadUrl: LEGACY_URL, size: 2300, uploadedAt: 1700000000000
-    });
-  };
-}
 
-function makeWorker(env, { legacyVersionCode = 0, logger = { error() {} } } = {}) {
+function makeWorker(env, { logger = { error() {} } } = {}) {
   const worker = createAndroidApkReleaseWorker({
     verifyToken: async token => {
       if (token !== 'admin-token') throw new Error('invalid token');
@@ -158,7 +146,6 @@ function makeWorker(env, { legacyVersionCode = 0, logger = { error() {} } } = {}
         certificateSha256: '7A3BE159218A38083986DEC117C0BD281B3EF42BDA65F2BB7B8C9946B5293401'
       };
     },
-    fetchImpl: legacyFetch(legacyVersionCode),
     logger
   });
   return { worker, env };
@@ -222,50 +209,32 @@ test('health performs a read-only R2 binding probe and fails closed when R2 is u
   assert.doesNotMatch(logged[0], /do-not-log-this/);
 });
 
-test('transient legacy metadata lookup network errors are retried once before returning the empty-release state', async () => {
+test('empty D1 metadata is healthy and never calls the unavailable Render service', async () => {
   const env = envFor();
-  let calls = 0;
-  const worker = createAndroidApkReleaseWorker({
-    fetchImpl: async () => {
-      calls += 1;
-      if (calls === 1) throw new TypeError('temporary connection reset');
-      return Response.json({ success: true, available: false });
-    },
-    logger: { error() {} }
-  });
+  const { worker } = makeWorker(env);
   const response = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { success: true, available: false });
-  assert.equal(calls, 2);
 });
 
-test('persistent legacy lookup failures expose a safe diagnostic code and request id without leaking secrets', async () => {
+test('empty Admin history and unknown downloads are resolved from D1 without Render access', async () => {
   const env = envFor();
-  const logged = [];
-  let calls = 0;
-  const worker = createAndroidApkReleaseWorker({
-    fetchImpl: async () => {
-      calls += 1;
-      throw new TypeError('request to https://smvastroservices.onrender.com/public/android-app?token=do-not-log-this failed');
-    },
-    logger: { error: message => logged.push(message) }
-  });
-  const response = await worker.fetch(new Request('https://apk.example/public/android-app', {
-    headers: { 'cf-ray': 'metadata-error-ray-5678' }
+  const { worker } = makeWorker(env);
+  const current = await worker.fetch(new Request('https://apk.example/admin/android-app', {
+    headers: { Authorization: 'Bearer admin-token' }
   }), env);
-  assert.equal(response.status, 503);
-  const body = await response.json();
-  assert.equal(body.success, false);
-  assert.equal(body.code, 'LEGACY_RELEASE_NETWORK_ERROR');
-  assert.equal(body.requestId, 'metadata-error-ray-5678');
-  assert.equal(calls, 2);
-  assert.equal(logged.length, 1);
-  assert.match(logged[0], /metadata-error-ray-5678/);
-  assert.match(logged[0], /LEGACY_RELEASE_NETWORK_ERROR/);
-  assert.doesNotMatch(logged[0], /do-not-log-this/);
-  assert.doesNotMatch(JSON.stringify(body), /do-not-log-this/);
-});
+  assert.equal(current.status, 200);
+  assert.deepEqual(await current.json(), { success: true, available: false });
 
+  const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
+    headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(history.status, 200);
+  assert.deepEqual((await history.json()).versions, []);
+
+  const missing = await worker.fetch(new Request('https://apk.example/download/1001'), env);
+  assert.equal(missing.status, 404);
+});
 test('admin-only upload rejects unauthenticated requests and respects disabled upload gate', async () => {
   const env = envFor({ uploadsEnabled: true });
   const { worker } = makeWorker(env);
@@ -323,39 +292,39 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
   assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
 });
 
-test('version downgrade is rejected without creating a baseline record or uploading an object', async () => {
+test('versionCode 1000 is rejected as the pre-release baseline without writing D1 or R2', async () => {
   const env = envFor();
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
-  const response = await upload(worker, env, 'v1.4', 1004);
+  const { worker } = makeWorker(env);
+  const response = await upload(worker, env, 'v1.0', 1000);
   assert.equal(response.status, 409);
-  assert.equal((await response.json()).currentVersionCode, 1005);
+  assert.equal((await response.json()).currentVersionCode, 1000);
   assert.equal(env.DB.releases.size, 0);
   assert.equal(env.APK_RELEASES.objects.size, 0);
-
   const download = await worker.fetch(new Request('https://apk.example/download/1005'), env);
-  assert.equal(download.status, 302);
-  assert.equal(download.headers.get('location'), LEGACY_URL);
+  assert.equal(download.status, 404);
 });
 
-test('first successful Cloudflare upload records the existing Firebase release baseline atomically', async () => {
+test('first Cloudflare APK upload writes only an R2 object and its D1 release record', async () => {
   const env = envFor();
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
-  const response = await upload(worker, env, 'v1.6', 1006);
+  const { worker } = makeWorker(env);
+  const postedBytes = apkPayload('v1.1', 1001);
+  const response = await upload(worker, env, 'v1.1', 1001);
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).versionCode, 1006);
-  assert.equal(env.DB.releases.size, 2);
-  assert.equal(env.DB.releases.get(1005).storage_provider, 'firebase');
-  assert.equal(env.DB.releases.get(1006).storage_provider, 'r2');
+  const metadata = await response.json();
+  assert.equal(metadata.versionCode, 1001);
+  assert.equal(metadata.storageProvider, 'r2');
+  assert.equal(env.DB.releases.size, 1);
+  assert.equal(env.DB.releases.get(1001).storage_provider, 'r2');
   assert.equal(env.APK_RELEASES.objects.size, 1);
 
-  const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
-    headers: { Authorization: 'Bearer admin-token' }
-  }), env);
-  const versions = (await history.json()).versions;
-  assert.deepEqual(versions.map(row => row.versionCode), [1006, 1005]);
-  const oldDownload = await worker.fetch(new Request('https://apk.example/download/1005'), env);
-  assert.equal(oldDownload.status, 302);
-  assert.equal(oldDownload.headers.get('location'), LEGACY_URL);
+  const publicMetadata = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
+  assert.equal(publicMetadata.status, 200);
+  assert.equal((await publicMetadata.json()).versionCode, 1001);
+
+  const downloaded = await worker.fetch(new Request('https://apk.example/download/1001'), env);
+  assert.equal(downloaded.status, 200);
+  assert.equal(downloaded.headers.get('content-type'), 'application/vnd.android.package-archive');
+  assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
 });
 
 test('invalid Admin identity cannot write release metadata', async () => {
@@ -363,7 +332,6 @@ test('invalid Admin identity cannot write release metadata', async () => {
   const deniedWorker = createAndroidApkReleaseWorker({
     verifyToken: async () => ({ uid: 'customer-uid', projectId: 'smv-astro' }),
     inspectApk: () => { throw new Error('must not validate an unauthorized upload'); },
-    fetchImpl: legacyFetch(0)
   });
   const denied = await deniedWorker.fetch(new Request('https://apk.example/admin/android-app/upload', {
     method: 'POST',
@@ -378,33 +346,27 @@ test('invalid Admin identity cannot write release metadata', async () => {
   assert.equal(env.DB.releases.size, 0);
 });
 
-test('legacy public release metadata and redirect URL are validated before use', async () => {
-  const env = envFor({ uploadsEnabled: false });
-  const { worker } = makeWorker(env, { legacyVersionCode: 1005 });
+test('an explicitly archived Firebase row in D1 remains available as historical compatibility', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  env.DB.releases.set(1005, {
+    package_name: PACKAGE, version_name: 'v1.5', version_code: 1005,
+    storage_provider: 'firebase', object_key: null, external_download_url: LEGACY_URL,
+    sha256: null, certificate_sha256: null, size_bytes: 2300,
+    uploaded_by: 'legacy-migration', uploaded_at: 1700000000000
+  });
   const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(current.status, 200);
   const metadata = await current.json();
   assert.equal(metadata.versionCode, 1005);
-  assert.equal(metadata.packageName, PACKAGE);
-  assert.match(metadata.downloadUrl, /\/download\/1005$/);
-  const legacyDownload = await worker.fetch(new Request(metadata.downloadUrl), env);
-  assert.equal(legacyDownload.status, 302);
-  assert.equal(legacyDownload.headers.get('location'), LEGACY_URL);
+  assert.ok(metadata.downloadUrl.endsWith('/download/1005'));
+  const download = await worker.fetch(new Request(metadata.downloadUrl), env);
+  assert.equal(download.status, 302);
+  assert.equal(download.headers.get('location'), LEGACY_URL);
 
-  const badWorker = createAndroidApkReleaseWorker({
-    verifyToken: async () => ({ uid: 'admin-uid', projectId: 'smv-astro' }),
-    inspectApk: () => ({}),
-    fetchImpl: async () => Response.json({
-      success: true, available: true, packageName: PACKAGE,
-      versionName: 'v1.5', versionCode: 1005,
-      downloadUrl: 'https://evil.example/file.apk', size: 1, uploadedAt: 1
-    })
-  });
-  const bad = await badWorker.fetch(new Request('https://apk.example/public/android-app'), env);
+  env.DB.releases.get(1005).external_download_url = 'https://evil.example/file.apk';
+  const bad = await worker.fetch(new Request('https://apk.example/download/1005'), env);
   assert.equal(bad.status, 503);
-  const badBody = await bad.json();
-  assert.equal(badBody.success, false);
-  assert.equal(badBody.code, 'LEGACY_RELEASE_METADATA_INVALID');
 });
 
 
@@ -447,6 +409,7 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
   const moduleSource = fs.readFileSync(path.join(root, 'public/smvastro.mjs'), 'utf8');
   const readme = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/README.md'), 'utf8');
+  const worker = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/worker.mjs'), 'utf8');
   assert.match(example, /ALLOW_APK_UPLOADS\s*=\s*"false"/);
   assert.match(example, /database_id\s*=\s*"00000000-0000-0000-0000-000000000000"/);
   assert.match(config, /database_id\s*=\s*"5105ebb3-435c-47b7-9983-2e171fa911cd"/);
@@ -458,6 +421,10 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(readme, /5105ebb3-435c-47b7-9983-2e171fa911cd/);
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
   assert.match(readme, /Use only the existing D1 database/);
+  assert.match(readme, /available=false/);
+  assert.doesNotMatch(config + example, /LEGACY_ANDROID_RELEASE_URL/);
+  assert.doesNotMatch(worker, /smvastroservices\.onrender\.com|fetchLegacyRelease|DEFAULT_LEGACY_URL/);
+  assert.match(readme, /Cloudflare R2/);
   assert.match(readme, /Do not add secrets or APK binaries/);
 });
 

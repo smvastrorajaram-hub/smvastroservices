@@ -10,7 +10,6 @@ SMV_ANDROID_RELEASE_ADMIN_UIDS = "TwjeEIFS3Zcf1SxboLZoujm91Ky2"
 SMV_ANDROID_RELEASE_ADMIN_EMAILS = ""
 ALLOWED_ORIGINS = "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev"
 ALLOW_APK_UPLOADS = "true"
-LEGACY_ANDROID_RELEASE_URL = "https://smvastroservices.onrender.com/public/android-app"
 MAX_APK_BYTES = "104857600"
 
 [[r2_buckets]]

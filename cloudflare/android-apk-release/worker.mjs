@@ -5,7 +5,6 @@ import { createFirebaseIdTokenVerifier } from '../../shared/backend-platform/fir
 import androidReleaseModule from '../../android-app-release.js';
 
 const { inspectSmvAndroidApk, MAX_APK_BYTES, SMV_ANDROID_PACKAGE } = androidReleaseModule;
-const DEFAULT_LEGACY_URL = 'https://smvastroservices.onrender.com/public/android-app';
 const DEFAULT_WORKER_ADMIN_UID = 'TwjeEIFS3Zcf1SxboLZoujm91Ky2';
 const FIREBASE_BUCKETS = new Set([
   'smv-astro.firebasestorage.app',
@@ -187,93 +186,6 @@ function safeLegacyDownloadUrl(value, expectedVersionCode) {
   return url.href;
 }
 
-async function fetchLegacyRelease(env, fetchImpl) {
-  const endpoint = String(env.LEGACY_ANDROID_RELEASE_URL || DEFAULT_LEGACY_URL).trim();
-  let parsed;
-  try {
-    parsed = new URL(endpoint);
-  } catch (_) {
-    throw serviceError('LEGACY_RELEASE_CONFIGURATION_INVALID', 'Legacy Android release endpoint is invalid.');
-  }
-  if (parsed.origin !== new URL(DEFAULT_LEGACY_URL).origin || parsed.pathname !== '/public/android-app' || parsed.search) {
-    throw serviceError('LEGACY_RELEASE_CONFIGURATION_INVALID', 'Legacy Android release endpoint is not allowlisted.');
-  }
-
-  let response = null;
-  let lastNetworkError = null;
-  const attempts = 2;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(8000) : undefined;
-      response = await fetchImpl(endpoint, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-        redirect: 'error',
-        ...(signal ? { signal } : {})
-      });
-      if (response.status >= 500 && attempt < attempts) {
-        try { await response.body?.cancel(); } catch (_) {}
-        await new Promise(resolve => setTimeout(resolve, 250));
-        continue;
-      }
-      break;
-    } catch (error) {
-      lastNetworkError = error;
-      if (attempt < attempts) {
-        await new Promise(resolve => setTimeout(resolve, 250));
-        continue;
-      }
-    }
-  }
-
-  if (!response) {
-    throw serviceError(
-      'LEGACY_RELEASE_NETWORK_ERROR',
-      'Legacy Android release lookup failed after a bounded retry.',
-      lastNetworkError
-    );
-  }
-  if (!response.ok) {
-    throw serviceError(
-      'LEGACY_RELEASE_HTTP_ERROR',
-      'Legacy Android release lookup returned HTTP ' + response.status + '.'
-    );
-  }
-
-  let data;
-  try {
-    data = await response.json();
-  } catch (error) {
-    throw serviceError('LEGACY_RELEASE_RESPONSE_INVALID', 'Legacy Android release response is invalid.', error);
-  }
-  if (data?.success !== true || data.available !== true) return null;
-
-  const versionCode = Number(data.versionCode);
-  const size = Number(data.size || 0);
-  const uploadedAt = Number(data.uploadedAt || 0);
-  const downloadUrl = safeLegacyDownloadUrl(data.downloadUrl, versionCode);
-  if (data.packageName !== SMV_ANDROID_PACKAGE ||
-      !Number.isSafeInteger(versionCode) || versionCode < 1001 ||
-      !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
-      !downloadUrl || !Number.isSafeInteger(size) || size < 0 ||
-      !Number.isSafeInteger(uploadedAt) || uploadedAt < 0) {
-    throw serviceError('LEGACY_RELEASE_METADATA_INVALID', 'Legacy Android release metadata failed validation.');
-  }
-  return {
-    success: true,
-    available: true,
-    packageName: SMV_ANDROID_PACKAGE,
-    versionName: String(data.versionName),
-    versionCode,
-    downloadUrl,
-    size,
-    uploadedAt,
-    sha256: '',
-    certificateSha256: '',
-    uploadedBy: 'legacy-migration'
-  };
-}
 
 function publicDownloadUrl(request, versionCode) {
   const url = new URL(request.url);
@@ -301,26 +213,17 @@ function publicReleaseFromRow(row, request, includeAdminFields = false) {
   return data;
 }
 
-async function currentRelease(env, request, fetchImpl) {
+async function currentRelease(env, request) {
   const row = await latestRow(env.DB);
-  if (row) return publicReleaseFromRow(row, request, false);
-  const legacy = await fetchLegacyRelease(env, fetchImpl);
-  return legacy
-    ? { ...legacy, downloadUrl: publicDownloadUrl(request, legacy.versionCode) }
-    : { success: true, available: false };
+  return publicReleaseFromRow(row, request, false);
 }
 
-async function listReleaseHistory(env, request, fetchImpl) {
+async function listReleaseHistory(env, request) {
   const result = await env.DB.prepare(
     'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 100'
   ).all();
   const rows = Array.isArray(result?.results) ? result.results : [];
-  if (rows.length) return rows.map(row => publicReleaseFromRow(row, request, true));
-  const legacy = await fetchLegacyRelease(env, fetchImpl);
-  return legacy ? [{
-    ...legacy,
-    storageProvider: 'firebase'
-  }] : [];
+  return rows.map(row => publicReleaseFromRow(row, request, true));
 }
 
 async function recordUploadAttempt(env, uid, now) {
@@ -348,21 +251,16 @@ function safeMaximumBytes(env) {
     ? configured : MAX_APK_BYTES;
 }
 
-async function handleDownload(request, env, versionCode, fetchImpl) {
+async function handleDownload(request, env, versionCode) {
   if (!/^[1-9][0-9]{2,9}$/.test(versionCode)) {
     return json(request, env, { success: false, error: 'Invalid Android versionCode.' }, 400);
   }
   const row = await rowByVersion(env.DB, Number(versionCode));
   if (!row) {
-    const legacy = await fetchLegacyRelease(env, fetchImpl);
-    if (legacy && legacy.versionCode === Number(versionCode)) {
-      return respond(request, env, null, 302, {
-        Location: legacy.downloadUrl,
-        'Cache-Control': 'no-store'
-      });
-    }
     return json(request, env, { success: false, error: 'This Android APK version was not found.' }, 404);
   }
+  // Existing Firebase rows are served only when explicitly present in D1 as
+  // archived history. New releases are stored and streamed from Cloudflare R2.
   if (row.storage_provider === 'firebase') {
     const target = safeLegacyDownloadUrl(row.external_download_url, row.version_code);
     if (!target) return json(request, env, { success: false, error: 'The archived APK download target failed validation.' }, 503);
@@ -384,7 +282,6 @@ async function handleDownload(request, env, versionCode, fetchImpl) {
 export function createAndroidApkReleaseWorker({
   verifyToken = verifyFirebaseIdToken,
   inspectApk = inspectSmvAndroidApk,
-  fetchImpl = globalThis.fetch,
   logger = console
 } = {}) {
   return {
@@ -423,7 +320,7 @@ export function createAndroidApkReleaseWorker({
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, available: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
-          const release = await currentRelease(env, request, fetchImpl);
+          const release = await currentRelease(env, request);
           return json(request, env, release, 200, {
             'Cache-Control': 'public, max-age=30, stale-while-revalidate=120'
           });
@@ -434,7 +331,7 @@ export function createAndroidApkReleaseWorker({
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
-          return await handleDownload(request, env, downloadMatch[1], fetchImpl);
+          return await handleDownload(request, env, downloadMatch[1]);
         }
 
         if (path === '/admin/android-app' && request.method === 'GET') {
@@ -444,9 +341,9 @@ export function createAndroidApkReleaseWorker({
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
           const row = await latestRow(env.DB);
-          if (row) return json(request, env, publicReleaseFromRow(row, request, true));
-          const legacy = await fetchLegacyRelease(env, fetchImpl);
-          return json(request, env, legacy ? { ...legacy, storageProvider: 'firebase' } : { success: true, available: false });
+          return json(request, env, row
+            ? publicReleaseFromRow(row, request, true)
+            : { success: true, available: false });
         }
 
         if (path === '/admin/android-app/versions' && request.method === 'GET') {
@@ -457,7 +354,7 @@ export function createAndroidApkReleaseWorker({
           }
           return json(request, env, {
             success: true,
-            versions: await listReleaseHistory(env, request, fetchImpl)
+            versions: await listReleaseHistory(env, request)
           });
         }
 
@@ -499,14 +396,12 @@ export function createAndroidApkReleaseWorker({
           }
 
           let current;
-          let legacyBaseline = null;
           try {
             current = await latestRow(env.DB);
-            if (!current) legacyBaseline = await fetchLegacyRelease(env, fetchImpl);
           } catch (error) {
             return json(request, env, { success: false, error: error?.message || 'Unable to establish the current APK version.' }, 503);
           }
-          const currentCode = Math.max(1000, Number(current?.version_code || legacyBaseline?.versionCode || 0));
+          const currentCode = Math.max(1000, Number(current?.version_code || 0));
           if (Number(apk.versionCode) <= currentCode) {
             return json(request, env, {
               success: false,
@@ -534,18 +429,6 @@ export function createAndroidApkReleaseWorker({
             });
             stored = true;
             const insertStatements = [];
-            if (!current && legacyBaseline) {
-              insertStatements.push(env.DB.prepare(
-                "INSERT OR IGNORE INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'firebase', NULL, ?, NULL, NULL, ?, 'legacy-migration', ?)"
-              ).bind(
-                legacyBaseline.packageName,
-                legacyBaseline.versionName,
-                Number(legacyBaseline.versionCode),
-                legacyBaseline.downloadUrl,
-                Number(legacyBaseline.size || 0),
-                Number(legacyBaseline.uploadedAt || now)
-              ));
-            }
             insertStatements.push(env.DB.prepare(
               "INSERT INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)"
             ).bind(
