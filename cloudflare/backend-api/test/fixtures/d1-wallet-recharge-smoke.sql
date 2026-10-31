@@ -1,5 +1,5 @@
 DELETE FROM smv_domain_offer_redemptions WHERE recharge_id='ci-recharge-smoke';
-DELETE FROM smv_domain_offer_usage WHERE offer_id='ci-offer-smoke';
+DELETE FROM smv_domain_wallet_offer_redemption_usage WHERE offer_id='ci-offer-smoke';
 DELETE FROM smv_domain_wallet_ledger WHERE owner_uid='ci-wallet-recharge-smoke';
 DELETE FROM smv_domain_wallet_recharges WHERE recharge_id='ci-recharge-smoke';
 DELETE FROM smv_domain_razorpay_orders WHERE order_id='order_ci_wallet_smoke';
@@ -59,7 +59,7 @@ SELECT 1, CASE WHEN
   AND (SELECT COUNT(*)=2 FROM smv_domain_wallet_ledger WHERE owner_uid='ci-wallet-recharge-smoke')
   AND (SELECT COUNT(*)=1 FROM smv_domain_offer_redemptions WHERE recharge_id='ci-recharge-smoke')
   AND (SELECT used_count=1 FROM smv_domain_wallet_offers WHERE offer_id='ci-offer-smoke')
-  AND (SELECT redemption_count=1 FROM smv_domain_offer_usage WHERE offer_id='ci-offer-smoke' AND customer_uid='ci-wallet-recharge-smoke')
+  AND (SELECT redemption_count=1 FROM smv_domain_wallet_offer_redemption_usage WHERE offer_id='ci-offer-smoke' AND customer_uid='ci-wallet-recharge-smoke')
   AND (SELECT status='paid' AND razorpay_payment_id='pay_ci_smoke' FROM smv_domain_wallet_recharges WHERE recharge_id='ci-recharge-smoke')
   AND (SELECT status='paid' AND payment_id='pay_ci_smoke' FROM smv_domain_razorpay_orders WHERE order_id='order_ci_wallet_smoke')
   THEN 1 ELSE 0 END;
