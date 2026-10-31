@@ -14,7 +14,6 @@
     typeof window.SMVNativeCalls.isNativeApp === 'function' &&
     window.SMVNativeCalls.isNativeApp());
 
-  const DEFAULT_WORKER_BASE = 'https://smv-astro-apk-release-api.smvastro.workers.dev';
   const LEGACY_BUCKETS = new Set([
     'smv-astro.firebasestorage.app',
     'smv-astro-staging.firebasestorage.app'
@@ -57,7 +56,8 @@
   function workerBase() {
     if (location.hostname.includes('phase1-staging') ||
         location.hostname.includes('phase1-browser')) return null;
-    const configured = String(window.SMV_APK_RELEASE_API_URL || DEFAULT_WORKER_BASE).trim();
+    const configured = String(window.SMV_APK_RELEASE_API_URL || '').trim();
+    if (!configured) return null;
     try {
       const url = new URL(configured);
       if (url.protocol !== 'https:' || url.username || url.password ||

@@ -2437,14 +2437,14 @@ function initContentManager(){
   }));
 }
 initContentManager();
-const SMV_ANDROID_APK_WORKER_DEFAULT='https://smv-astro-apk-release-api.smvastro.workers.dev';
 let smvAndroidApkLastTransport='existing Firebase/Render storage';
 function smvAndroidApkIsStaging(){
   return location.hostname.includes('phase1-staging')||location.hostname.includes('phase1-browser');
 }
 function smvAndroidApkWorkerBase(){
   if(smvAndroidApkIsStaging())return null;
-  const configured=String(window.SMV_APK_RELEASE_API_URL||SMV_ANDROID_APK_WORKER_DEFAULT).trim();
+  const configured=String(window.SMV_APK_RELEASE_API_URL||'').trim();
+  if(!configured)return null;
   try{
     const url=new URL(configured);
     if(url.protocol!=='https:'||url.username||url.password||url.pathname!=='/'||url.search||url.hash)return null;
