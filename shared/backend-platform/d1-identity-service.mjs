@@ -25,6 +25,10 @@ function parseProfile(value) {
  * email verification and provider sign-in. This service only verifies a
  * Firebase ID token and resolves application authorization from D1.
  * It deliberately does not read Firestore or manage Firebase Auth users.
+ *
+ * Configured Admin UID/email entries must be project-scoped strings in the
+ * form "<firebaseProjectId>:<uid-or-email>" to prevent cross-project privilege
+ * leakage when the Worker accepts more than one Firebase project.
  */
 export function createD1IdentityService({
   verifyIdToken,
@@ -101,9 +105,9 @@ export function createD1IdentityService({
     const emailVerified = identity.emailVerified === true || identity.email_verified === true;
     const claimsAdmin = identity.admin === true ||
       String(identity.role || '').trim().toLowerCase() === 'admin';
-    const configuredUidAdmin = configuredAdminUids.has(uid);
+    const configuredUidAdmin = configuredAdminUids.has(projectId + ':' + uid);
     const configuredEmailAdmin = emailVerified && !!email &&
-      configuredAdminEmails.has(email.toLowerCase());
+      configuredAdminEmails.has((projectId + ':' + email).toLowerCase());
     const isAdmin = claimsAdmin || configuredUidAdmin || configuredEmailAdmin || !!adminRow;
 
     const profileRole = String(profileRow?.role || '').trim().toLowerCase();
