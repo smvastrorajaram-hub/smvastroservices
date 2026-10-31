@@ -42,7 +42,7 @@ function fixture(overrides={}) {
     quiesced:overrides.quiesced??false,
     cutoverComplete:overrides.cutoverComplete??false,
     backendActive:overrides.backendActive??false,
-    isReady:overrides.isReady||async()=>true
+    isReady:overrides.isReady||(async()=>true)
   };
   registerWalletDomainBackfillRoutes(state);
   return state;
