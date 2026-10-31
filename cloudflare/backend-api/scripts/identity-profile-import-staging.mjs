@@ -114,13 +114,28 @@ function warningTotal(items) {
   return (Array.isArray(items) ? items : []).reduce((total, item) => total + Number(item?.count || 0), 0);
 }
 
-function failOnReconciliation(result) {
+function failOnReconciliation(result, collection) {
   const counters = [
     'auditMissing', 'payloadMismatches', 'targetMappingsMissing',
     'targetMappingMismatches', 'warningCount'
   ];
+  const diagnostic = {
+    phase: 'identity_profile_reconciliation',
+    collection,
+    sourceDocuments: Number(result?.sourceDocuments || 0),
+    auditMissing: Number(result?.auditMissing || 0),
+    payloadMismatches: Number(result?.payloadMismatches || 0),
+    targetMappingsMissing: Number(result?.targetMappingsMissing || 0),
+    targetMappingMismatches: Number(result?.targetMappingMismatches || 0),
+    warningCount: Number(result?.warningCount || 0),
+    mismatchKinds: Array.isArray(result?.samples?.targetMappingMismatches)
+      ? result.samples.targetMappingMismatches.slice(0, 10) : []
+  };
+  console.log(JSON.stringify(diagnostic));
   const failed = counters.filter(key => Number(result?.[key] || 0) !== 0);
-  if (failed.length) throw new Error('Identity/Profile reconciliation failed: ' + failed.join(', ') + '.');
+  if (failed.length) {
+    throw new Error('Identity/Profile reconciliation failed for ' + collection + ': ' + failed.join(', ') + '.');
+  }
 }
 
 async function main() {
@@ -224,7 +239,7 @@ async function main() {
       const result = await service.reconcilePage({
         collection: inventory.collection, pageSize: PAGE_SIZE, pageToken
       });
-      failOnReconciliation(result);
+      failOnReconciliation(result, inventory.collection);
       reconciledDocuments += Number(result.sourceDocuments || 0);
     }
   }
