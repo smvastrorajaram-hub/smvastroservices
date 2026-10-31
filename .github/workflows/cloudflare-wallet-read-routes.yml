@@ -28,6 +28,9 @@ jobs:
       - name: Check shared identity and Wallet route syntax
         run: |
           node --check shared/backend-platform/firebase-identity-service.mjs
+          node --check shared/backend-platform/firestore-admin-rest.mjs
+          node --check shared/backend-platform/d1-wallet-adapter.mjs
+          node --check cloudflare/backend-api/src/index.mjs
           node --check cloudflare/backend-api/src/wallet-read-routes.mjs
           node --check cloudflare/backend-api/test/wallet-read-routes.test.mjs
       - name: Run identity and Wallet read-route contract tests
