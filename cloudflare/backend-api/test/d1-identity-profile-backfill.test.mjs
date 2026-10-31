@@ -283,7 +283,11 @@ test('reconciliation accepts a profile only when the imported target values matc
         return {
           email: source.email, role: source.role, status: source.status,
           public_id: null, name: source.name, phone_e164: null, phone_hash: null,
-          email_verified: 0, profile_json: canonical
+          email_verified: 0,
+          profile_json: JSON.stringify({
+            uid: source.uid, status: source.status, role: source.role,
+            name: source.name, email: source.email
+          })
         };
       }
       return null;
