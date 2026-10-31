@@ -86,6 +86,7 @@ if (!credentialsText) {
         complete: report.complete,
         totals: report.totals,
         relatedRecordsConsistency: report.relatedRecordsConsistency,
+        financialReconciliation: report.financialReconciliation,
         securityBlockers: report.securityBlockers,
         writesPerformed: 0,
         sourceWritesPerformed: 0,
@@ -142,6 +143,31 @@ if (!credentialsText) {
         '## Readiness blockers',
         '',
         ...report.securityBlockers.map(item => '- ' + item),
+        '',
+        '',
+        '## Financial reconciliation',
+        '',
+        '- Wallet snapshot checks: ' + report.financialReconciliation.walletBalance.balanceSnapshotsChecked +
+          '; mismatches: ' + report.financialReconciliation.walletBalance.snapshotMismatches +
+          '; non-initial wallets without ledger: ' + report.financialReconciliation.walletBalance.nonInitialWalletsMissingLedger,
+        '- Paid recharge consistency: ' + report.financialReconciliation.paidRecharge.paidRechargesChecked +
+          ' paid recharges checked; missing order: ' + report.financialReconciliation.paidRecharge.missingWalletRechargeOrders +
+          '; missing credit ledger: ' + report.financialReconciliation.paidRecharge.missingRechargeCreditLedger +
+          '; amount conflicts: ' + report.financialReconciliation.paidRecharge.rechargeCreditAmountMismatches,
+        '- Live reservation/settlement: missing reserve ledger: ' +
+          report.financialReconciliation.liveReservationSettlement.sessionsMissingReservationLedger +
+          '; missing usage ledger: ' + report.financialReconciliation.liveReservationSettlement.endedSessionsMissingUsageLedger +
+          '; missing cash release: ' + report.financialReconciliation.liveReservationSettlement.sessionsMissingCashReleaseLedger +
+          '; bonus settlement mismatch: ' + report.financialReconciliation.liveReservationSettlement.sessionBonusMinutesNotReconciled,
+        '- Commission setting valid: ' + report.financialReconciliation.billingConfiguration.commissionPercentValid,
+        '- Withdrawals checked: ' + report.financialReconciliation.withdrawal.withdrawalsChecked +
+          '; invalid amounts: ' + report.financialReconciliation.withdrawal.withdrawalsWithInvalidAmount,
+        '',
+        '| Status group | State counts |',
+        '|---|---|',
+        ...Object.entries(report.financialReconciliation.statusCounts).map(([name, values]) =>
+          '| ' + name + ' | ' + Object.entries(values).map(([state, count]) => state + ': ' + count).join(', ') + ' |'
+        ),
         '',
         'This audit does not authorize import, cutover, or production changes.'
       ].join('\n');
