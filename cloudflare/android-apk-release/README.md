@@ -12,15 +12,14 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 
 ## Cloudflare resources
 
-1. Create an R2 bucket named **smv-astro-apk-releases**.
-2. Create a D1 database named **smv-astro-apk-releases**.
-3. Copy wrangler.toml.example to wrangler.toml locally. Replace the all-zero placeholder for database_id with the database's real ID. Never commit account-specific IDs if your deployment policy treats them as environment-specific.
-4. Keep the APK_RELEASES R2 binding and DB D1 binding names exactly as shown in the config.
-5. Apply migrations/0001_android_app_releases.sql to the new D1 database. After reviewing the target ID, run Wrangler's remote migration command against the explicitly named APK release database only. Do not point it at Wallet or any other existing D1 database.
-6. Add every existing production Admin UID that should be able to manage releases to SMV_ANDROID_RELEASE_ADMIN_UIDS, or configure an explicitly verified Admin custom claim / verified email. Do not rely on a mutable user profile role.
-7. Configure FIREBASE_ALLOWED_PROJECT_IDS with the Firebase Auth project IDs that legitimately issue SMV ASTRO Admin ID tokens. Keep it narrow.
-8. Deploy this dedicated Worker only after the previous steps and the local CI pass. A workers.dev URL has the shape https://worker-name.account-subdomain.workers.dev; use the actual URL from your Cloudflare dashboard.
-9. Configure the front-end runtime value window.SMV_APK_RELEASE_API_URL to that exact Worker origin. The checked-in default is a convenience, not proof that your account owns that hostname.
+1. Confirm that the existing R2 bucket is named **smv-astro-apk-releases** and the D1 database is named **smv-astro-apk-releases** with ID `5105ebb3-435c-47b7-9983-2e171fa911cd`. Do not create duplicates if these resources already exist.
+3. The checked-in wrangler.toml is configured with the supplied D1 database ID `5105ebb3-435c-47b7-9983-2e171fa911cd`, database name `smv-astro-apk-releases`, and R2 bucket `smv-astro-apk-releases`. These IDs/names identify resources and are not credentials; the config contains no Cloudflare API token.
+4. Keep the APK_RELEASES R2 binding and DB D1 binding names exactly as shown. Keep ALLOW_APK_UPLOADS set to `false`.
+5. After checking the current directory and database name, apply the migration only to this APK-release database: `npx wrangler d1 migrations apply smv-astro-apk-releases --remote --config cloudflare/android-apk-release/wrangler.toml`. Do not point it at Wallet or any other existing D1 database.
+6. Add every production Admin UID that should be allowed to manage APK releases to SMV_ANDROID_RELEASE_ADMIN_UIDS, or configure explicitly verified Admin custom claims / verified emails. Do not rely on mutable profile roles.
+7. Configure FIREBASE_ALLOWED_PROJECT_IDS with only the Firebase Auth projects that legitimately issue the Admin ID tokens.
+8. Run the CI checks, then deploy the dedicated Worker with `npx wrangler deploy --config cloudflare/android-apk-release/wrangler.toml`. A workers.dev URL is assigned by your Cloudflare account; copy the exact URL printed by Wrangler/Cloudflare after deployment.
+9. Only after the Worker is deployed and `/health` confirms the D1 migration/R2 binding, set `window.SMV_APK_RELEASE_API_URL` in `public/index.html` to that exact Worker origin, then deploy the website. It is deliberately blank until the real Worker URL is known; no unverified `workers.dev` hostname is assumed.
 
 ## Admin upload activation
 
@@ -45,4 +44,4 @@ After successful validation, Admin uploads are stored at immutable versioned R2 
 - GET /admin/android-app/versions — verified Admin release history.
 - POST /admin/android-app/upload — verified Admin, exact APK content type, up to 100 MiB, APK package/version/permanent signing validation, strictly increasing versionCode, and per-UID rate limiting.
 
-There is no automatic upload of the APK in CI and no automatic Cloudflare deployment in this PR. Do not add secrets or APK binaries to this repository.
+CI only validates the bundle with a non-deploying Wrangler dry-run. It does not apply remote migrations, upload APKs, or deploy to Cloudflare. Do not add secrets or APK binaries to this repository.
