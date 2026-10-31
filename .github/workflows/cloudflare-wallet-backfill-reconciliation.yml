@@ -1,0 +1,68 @@
+name: Cloudflare Wallet D1 backfill and reconciliation tests
+
+on:
+  pull_request:
+    branches:
+      - feature/cloudflare-wallet-recharge-d1-20261031
+    paths:
+      - 'shared/backend-platform/wallet-domain-backfill.mjs'
+      - 'shared/backend-platform/d1-wallet-domain-backfill.mjs'
+      - 'shared/backend-platform/d1-wallet-adapter.mjs'
+      - 'shared/backend-platform/wallet-domain.mjs'
+      - 'cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/migrations/0005_legacy_wallet_backfill.sql'
+      - 'cloudflare/backend-api/test/*backfill*.test.mjs'
+      - 'cloudflare/backend-api/test/fixtures/d1-backfill-*.sql'
+      - 'shared/backend-platform/legacy-backend-route-inventory.mjs'
+      - 'cloudflare/backend-api/wrangler.jsonc'
+      - '.github/workflows/cloudflare-wallet-backfill-reconciliation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-backfill-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check backfill source syntax
+        run: |
+          node --check shared/backend-platform/wallet-domain-backfill.mjs
+          node --check shared/backend-platform/d1-wallet-domain-backfill.mjs
+          node --check shared/backend-platform/d1-wallet-adapter.mjs
+          node --check cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs
+          node --check cloudflare/backend-api/src/index.mjs
+          node --check cloudflare/backend-api/test/wallet-domain-backfill.test.mjs
+          node --check cloudflare/backend-api/test/d1-wallet-domain-backfill.test.mjs
+          node --check cloudflare/backend-api/test/wallet-domain-backfill-routes.test.mjs
+      - name: Run Wallet backfill contract tests
+        working-directory: cloudflare/backend-api
+        run: |
+          node --test \
+            test/wallet-domain-backfill.test.mjs \
+            test/d1-wallet-domain-backfill.test.mjs \
+            test/wallet-domain-backfill-routes.test.mjs \
+            test/wallet-recharge-domain.test.mjs \
+            test/wallet-recharge-routes.test.mjs \
+            test/wallet-offer-routes.test.mjs
+      - name: Apply migrations to local D1 only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Verify legacy Wallet snapshots and immutable history locally
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-backfill-smoke.sql
+      - name: Clean local backfill smoke data
+        if: always()
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-backfill-cleanup.sql || true
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc

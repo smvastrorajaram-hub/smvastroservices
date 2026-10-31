@@ -401,8 +401,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const values = activeOnly ? [timestamp, timestamp] : [];
     const result = await statement(
       "SELECT o.*, " +
-      "(SELECT COUNT(*) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id) AS successful_redemptions, " +
-      "COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_minutes_awarded " +
+      "COALESCE(o.legacy_successful_redemptions,0) + (SELECT COUNT(*) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id) AS successful_redemptions, " +
+      "COALESCE(o.legacy_total_bonus_minutes,0) + COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_minutes_awarded " +
       "FROM smv_domain_wallet_offers o" + where +
       " ORDER BY priority DESC, bonus_minutes DESC, offer_id ASC LIMIT 100",
       values
@@ -765,11 +765,48 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const max = Math.max(1, Math.min(100, Math.floor(Number(limit) || 30)));
-    const result = await statement(
-      `SELECT * FROM ${LEDGER_TABLE} WHERE owner_uid = ? ORDER BY created_at_ms DESC, ledger_id DESC LIMIT ?`,
-      [uid, max]
-    ).all();
-    return (result?.results || []).map(mapLedger);
+    const [current, legacy] = await Promise.all([
+      statement(
+        `SELECT * FROM ${LEDGER_TABLE} WHERE owner_uid = ? ORDER BY created_at_ms DESC, ledger_id DESC LIMIT ?`,
+        [uid, max]
+      ).all(),
+      statement(
+        `SELECT * FROM smv_domain_legacy_wallet_transactions
+         WHERE owner_uid=? ORDER BY created_at_ms DESC, source_document_id DESC LIMIT ?`,
+        [uid,max]
+      ).all()
+    ]);
+    const currentRows = (current?.results || []).map(mapLedger);
+    const legacyRows = (legacy?.results || []).map(row => {
+      let metadata = {};
+      try { metadata = JSON.parse(String(row.metadata_json || '{}')); } catch {}
+      return {
+        id: String(row.source_document_id),
+        ownerUid: String(row.owner_uid),
+        ownerRole: String(row.owner_role || ''),
+        currency: 'INR',
+        type: String(row.type || ''),
+        direction: String(row.direction || ''),
+        amountPaise: safePaise(row.amount_paise),
+        balanceAfterPaise: safePaise(row.balance_after_paise),
+        reservedBalanceAfterPaise: safePaise(row.reserved_balance_after_paise),
+        bonusMinutes: safeMinutes(row.bonus_minutes),
+        bonusMinutesCredited: safeMinutes(row.bonus_minutes_credited),
+        bonusMinutesBalanceAfter: safeMinutes(row.bonus_minutes_balance_after),
+        reservedBonusMinutesAfter: safeMinutes(row.reserved_bonus_minutes_after),
+        idempotencyKey: String(row.idempotency_key || ''),
+        referenceType: row.reference_type || null,
+        referenceId: row.reference_id || null,
+        note: String(row.note || ''),
+        metadata,
+        status: String(row.status || 'posted'),
+        source: 'legacy_firestore',
+        createdAt: Number(row.created_at_ms || 0)
+      };
+    });
+    return [...currentRows,...legacyRows]
+      .sort((a,b) => Number(b.createdAt || 0)-Number(a.createdAt || 0) || String(b.id).localeCompare(String(a.id)))
+      .slice(0,max);
   }
 
   return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, reserveWallet, settleReservation, listTransactions });
