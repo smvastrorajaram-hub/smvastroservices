@@ -148,6 +148,13 @@
     section.removeAttribute('aria-hidden');
     section.style.display = '';
 
+    if (!installed.supported) {
+      status.textContent = 'Open this page in Chrome to check your installed app version.';
+      download.hidden = true;
+      download.removeAttribute('href');
+      return;
+    }
+
     const app = installed.app;
     const installedCode = app
       ? versionCode(app.versionCode || app.version || app.versionName)

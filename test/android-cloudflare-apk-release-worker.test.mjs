@@ -407,7 +407,7 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
     size: 2996276,
     uploadedAt: 1793451612279
   };
-  async function renderFor(installedApps) {
+  async function renderFor(installedApps, supportsInstalledApps = true) {
     const heading = { textContent: '' };
     const description = { textContent: '' };
     const status = { textContent: '' };
@@ -428,9 +428,9 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
       }
     };
     const navigator = {
-      userAgent: 'Mozilla/5.0 (Linux; Android 10) Chrome/131.0.0.0',
-      getInstalledRelatedApps: async () => installedApps
+      userAgent: 'Mozilla/5.0 (Linux; Android 10) Chrome/131.0.0.0'
     };
+    if (supportsInstalledApps) navigator.getInstalledRelatedApps = async () => installedApps;
     const fetchImpl = async url => url.endsWith('/health')
       ? { ok: true, json: async () => ({ success: true, ready: true }) }
       : { ok: true, json: async () => release };
@@ -466,6 +466,10 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
   const installedUnknownVersion = await renderFor([{ platform: 'play', id: PACKAGE }]);
   assert.equal(installedUnknownVersion.download.hidden, true);
   assert.equal(installedUnknownVersion.status.textContent, 'Installed app version could not be verified');
+
+  const unsupportedBrowser = await renderFor([], false);
+  assert.equal(unsupportedBrowser.download.hidden, true);
+  assert.equal(unsupportedBrowser.status.textContent, 'Open this page in Chrome to check your installed app version.');
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
