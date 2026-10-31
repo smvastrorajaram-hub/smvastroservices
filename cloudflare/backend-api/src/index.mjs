@@ -9,6 +9,8 @@ import { resolveFirebaseAuthorization } from '../../../shared/backend-platform/f
 import { createFirestoreAdminRestClient } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
 import { createFirebaseIdentityService } from '../../../shared/backend-platform/firebase-identity-service.mjs';
+import { createD1IdentityService } from '../../../shared/backend-platform/d1-identity-service.mjs';
+import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platform/d1-identity-authorization-gate.mjs';
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
@@ -102,6 +104,29 @@ app.get('/api/auth/session', async (req, res) => {
 
 app.get('/api/auth/authorization', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
+  if (identityProfileD1AuthorizationOpen) {
+    if (!d1IdentityAuthorizationService) {
+      return res.status(503).set(JSON_HEADERS).json({
+        ok: false, code: 'IDENTITY_D1_AUTHORIZATION_NOT_READY'
+      });
+    }
+    try {
+      const authorizationState = await d1IdentityAuthorizationService.authenticateAuthorization(authorization);
+      d1IdentityAuthorizationReady = true;
+      return res.set(JSON_HEADERS).json({
+        ok: true,
+        ...authorizationState,
+        firebaseProjectId: authorizationState.firebaseProjectId || authorizationState.projectId,
+        signInProvider: authorizationState.signInProvider || ''
+      });
+    } catch (error) {
+      if (error?.code === 'IDENTITY_D1_AUTHORIZATION_NOT_READY') d1IdentityAuthorizationReady = false;
+      const status = error?.httpStatus === 401 ? 401 : error?.httpStatus === 403 ? 403 : 503;
+      return res.status(status).set(JSON_HEADERS).json({
+        ok: false, code: String(error?.code || 'IDENTITY_D1_AUTHORIZATION_UNAVAILABLE')
+      });
+    }
+  }
   const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(authorization);
   if (!match) {
     return res.status(401).set(JSON_HEADERS).json({ ok: false, code: 'AUTH_REQUIRED' });
@@ -180,9 +205,13 @@ let liveSessionRoutesRegistered = false;
 let liveSessionSchemaReady = false;
 const walletBackfillToolsOpen = String(env.SMV_WALLET_BACKFILL_TOOLS_ENABLED || '').toLowerCase() === 'true';
 const identityProfileBackfillToolsOpen = String(env.SMV_IDENTITY_PROFILE_BACKFILL_ENABLED || '').toLowerCase() === 'true';
+const identityProfileD1AuthorizationOpen = String(env.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED || '').toLowerCase() === 'true';
 const liveSessionRoutesOpen = String(env.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() === 'true';
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
+let firebaseIdentityService = null;
+let d1IdentityAuthorizationService = null;
+let d1IdentityAuthorizationReady = false;
 
 function walletFirebaseServiceAccount() {
   const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
@@ -201,28 +230,38 @@ function walletFirebaseServiceAccount() {
 }
 
 // Read-only Wallet endpoints are registered only after explicit domain backfill
-// and cutover gates. A second per-request D1 schema check remains fail-closed.
-if ((walletReadRouteGateOpen || walletBackfillToolsOpen || identityProfileBackfillToolsOpen || liveSessionRoutesOpen) && env.DB && typeof env.DB.prepare === 'function') {
-  const credentials = walletFirebaseServiceAccount();
-  const projectId = String(env.FIREBASE_PROJECT_ID || credentials.project_id || '').trim();
+// and cutover gates. D1 Identity/Profile authorization is separately opt-in and
+// remains fail-closed until its full staging import is attested.
+const requiresFirestoreAdmin = walletReadRouteGateOpen || walletBackfillToolsOpen ||
+  identityProfileBackfillToolsOpen || liveSessionRoutesOpen;
+if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && typeof env.DB.prepare === 'function') {
+  let credentials = null;
+  let projectId = String(env.FIREBASE_PROJECT_ID || '').trim();
   const configuredProjectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || projectId)
     .split(',').map(value => value.trim()).filter(Boolean);
-  if (!projectId || !configuredProjectIds.includes(projectId)) {
-    throw new Error('Wallet identity project must be included in FIREBASE_AUTH_PROJECT_IDS.');
+  let firestoreAdmin = null;
+
+  if (requiresFirestoreAdmin) {
+    credentials = walletFirebaseServiceAccount();
+    projectId = String(projectId || credentials.project_id || '').trim();
+    if (!projectId || !configuredProjectIds.includes(projectId)) {
+      throw new Error('Wallet identity project must be included in FIREBASE_AUTH_PROJECT_IDS.');
+    }
+    firestoreAdmin = createFirestoreAdminRestClient({
+      projectId,
+      allowedProjectIds: [projectId],
+      credentials
+    });
+    firebaseIdentityService = createFirebaseIdentityService({
+      verifyIdToken: verifyFirebaseIdToken,
+      firestore: firestoreAdmin,
+      projectIds: [projectId],
+      adminUids: [env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')],
+      adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
+    });
+    walletIdentityService = firebaseIdentityService;
+    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
   }
-  const firestoreAdmin = createFirestoreAdminRestClient({
-    projectId,
-    allowedProjectIds: [projectId],
-    credentials
-  });
-  walletIdentityService = createFirebaseIdentityService({
-    verifyIdToken: verifyFirebaseIdToken,
-    firestore: firestoreAdmin,
-    projectIds: [projectId],
-    adminUids: [env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')],
-    adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
-  });
-  sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
   const walletSchemaReady = async () => {
     try {
       const row = await env.DB.prepare(
@@ -319,7 +358,7 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || identityProfileBackfi
     });
     registerIdentityProfileBackfillRoutes({
       app,
-      identityService: walletIdentityService,
+      identityService: firebaseIdentityService || walletIdentityService,
       backfillService: identityBackfillService,
       toolsEnabled: identityProfileBackfillToolsOpen,
       environment: String(env.SMV_ENVIRONMENT || ''),
@@ -389,9 +428,42 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || identityProfileBackfi
       walletRechargeRoutesRegistered = true;
     }
   }
+
+  if (identityProfileD1AuthorizationOpen) {
+    const identityProjectId = String(projectId ||
+      (configuredProjectIds.length === 1 ? configuredProjectIds[0] : '')).trim();
+    if (configuredProjectIds.length > 0) {
+      const projectScopedAdminEntries = items => items.map(value => {
+        const item = String(value || '').trim();
+        if (!item) return '';
+        return item.includes(':') ? item : identityProjectId + ':' + item;
+      });
+      const d1IdentityService = createD1IdentityService({
+        verifyIdToken: verifyFirebaseIdToken,
+        db: env.DB,
+        projectIds: configuredProjectIds,
+        adminUids: projectScopedAdminEntries([env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')]),
+        adminEmails: projectScopedAdminEntries(String(env.ADMIN_AUTH_EMAILS || '').split(','))
+      });
+      d1IdentityAuthorizationService = createD1IdentityAuthorizationGate({
+        identityService: d1IdentityService,
+        db: env.DB,
+        enabled: true,
+        environment: String(env.SMV_ENVIRONMENT || ''),
+        sourceProjectId: identityProjectId,
+        projectIds: configuredProjectIds
+      });
+      walletIdentityService = d1IdentityAuthorizationService;
+    }
+  }
 }
 
-app.get('/healthz', (_req, res) => {
+app.get('/healthz', async (_req, res) => {
+  const identityGate = d1IdentityAuthorizationService
+    ? await d1IdentityAuthorizationService.readiness()
+    : { enabled: identityProfileD1AuthorizationOpen, ready: false,
+        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
+  d1IdentityAuthorizationReady = identityGate.ready === true;
   return res.set(JSON_HEADERS).json({
     ok: true,
     service: 'smvastro-backend-api',
@@ -403,6 +475,8 @@ app.get('/healthz', (_req, res) => {
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
     liveSessionSchemaReady,
+    identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
+    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
     productionTrafficEnabled: false
   });
 });
@@ -434,6 +508,11 @@ app.get('/api/backend/readiness', async (_req, res) => {
     }
     const walletReadEnabled = walletReadRoutesRegistered &&
       walletReadRouteGateOpen && walletDomainSchemaReady;
+    const identityGate = d1IdentityAuthorizationService
+      ? await d1IdentityAuthorizationService.readiness()
+      : { enabled: identityProfileD1AuthorizationOpen, ready: false,
+          reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
+    d1IdentityAuthorizationReady = identityGate.ready === true;
     return res.status(ready ? 200 : 503).set(JSON_HEADERS).json({
       ok: ready,
       ready,
@@ -450,6 +529,9 @@ app.get('/api/backend/readiness', async (_req, res) => {
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
+      identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
+      identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+      identityProfileD1AuthorizationReason: identityGate.reason,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady
     });
@@ -480,6 +562,8 @@ app.get('/api/backend/migration-status', (_req, res) => {
     walletBackfillToolsEnabled: walletBackfillToolsOpen,
     identityProfileBackfillRoutesRegistered,
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
+    identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
+    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
