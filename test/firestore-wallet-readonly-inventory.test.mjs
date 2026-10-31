@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
 import {
   buildAggregationRequest,
+  buildProjectionQuery,
   parseAggregationCount,
   runInventory,
   validateInventoryConfig
