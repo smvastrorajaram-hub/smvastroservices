@@ -87,7 +87,7 @@ jobs:
             [/^bucket_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'R2 bucket'],
             [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
             [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
-            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'false', 'APK upload safety gate']
+            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate']
           ];
           for (const [pattern, expected, label] of checks) {
             const match = config.match(pattern);
@@ -95,7 +95,7 @@ jobs:
               throw new Error(`${label} mismatch in ${file}; refusing deployment.`);
             }
           }
-          console.log('Exact APK Worker, R2 bucket and D1 identity verified; APK uploads remain disabled.');
+          console.log('Exact APK Worker, R2 bucket and D1 identity verified; APK Admin APK uploads are enabled.');
           NODE
 
       - name: Verify the live D1 database identity before migration
@@ -161,10 +161,10 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const health = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-health.json', 'utf8'));
-          if (health.success !== true || health.ready !== true || health.uploadsEnabled !== false) {
+          if (health.success !== true || health.ready !== true || health.uploadsEnabled !== true) {
             throw new Error('Worker health is not ready or APK uploads are not safely disabled: ' + JSON.stringify(health));
           }
-          console.log('Worker health: ready=true; uploadsEnabled=false.');
+          console.log('Worker health: ready=true; uploadsEnabled=true.');
           NODE
 
       - name: Check public APK metadata endpoint
@@ -199,7 +199,7 @@ jobs:
             else
               echo "- Worker URL: not captured; inspect the deployment step."
             fi
-            echo "- APK upload gate: `ALLOW_APK_UPLOADS=false`."
+            echo "- APK upload gate: `ALLOW_APK_UPLOADS=true` (Admin-only, signed-APK validation enforced)."
             echo "- Homepage API URL: unchanged; connect only after successful verification."
             echo "- Public metadata check: ${PUBLIC_METADATA_STATUS:-not completed}."
             echo "- Scope: dedicated APK Release D1 only, plus the APK Release Worker."
