@@ -92,6 +92,4 @@ jobs:
 
       - name: Validate Wrangler Worker bundle without deploying
         run: |
-          cp cloudflare/android-apk-release/wrangler.toml.example cloudflare/android-apk-release/wrangler.toml
-          trap 'rm -f cloudflare/android-apk-release/wrangler.toml' EXIT
           npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml
