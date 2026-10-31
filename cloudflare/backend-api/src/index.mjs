@@ -6,6 +6,7 @@ import { httpServerHandler } from 'cloudflare:node';
 import { createFirebaseIdTokenVerifier } from '../../../shared/backend-platform/firebase-id-token.mjs';
 import { createFirebaseFirestoreRestClient } from '../../../shared/backend-platform/firebase-firestore-rest.mjs';
 import { resolveFirebaseAuthorization } from '../../../shared/backend-platform/firebase-authorization.mjs';
+import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -196,7 +197,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
-    legacyRouteInventory: 117,
+    legacyRouteInventory: LEGACY_BACKEND_ROUTE_INVENTORY.length,
     legacyServerLoaded: false,
     firebaseIdTokenVerification: true,
     firebaseUserScopedFirestoreRestAdapter: true,
@@ -211,18 +212,19 @@ app.get('/api/backend/migration-status', (_req, res) => {
   });
 });
 
-// Do not let an unfinished endpoint masquerade as a working backend route.
-// Route families are enabled only after their Cloudflare implementation and
-// security/conformance tests have been reviewed in a later staging phase.
-app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
-  return res.status(503).set(JSON_HEADERS).json({
-    ok: false,
-    code: 'BACKEND_MIGRATION_NOT_CUT_OVER',
-    error: 'This API route is not enabled in the Cloudflare staging runtime yet.'
-  });
-});
-
-app.use((_req, res) => {
+// Do not let an unfinished legacy endpoint masquerade as a working backend route.
+// Known legacy paths are explicitly fail-closed until each business family is
+// ported and passes its Cloudflare conformance suite. Unknown non-API paths stay 404.
+app.use((req, res) => {
+  const legacyPath = isLegacyBackendPath(req.path);
+  const apiPath = /^\\/api(?:\\/.*)?$/.test(req.path);
+  if (legacyPath || apiPath) {
+    return res.status(503).set(JSON_HEADERS).json({
+      ok: false,
+      code: 'BACKEND_MIGRATION_NOT_CUT_OVER',
+      error: 'This API route is not enabled in the Cloudflare staging runtime yet.'
+    });
+  }
   return res.status(404).set(JSON_HEADERS).json({ ok: false, code: 'NOT_FOUND' });
 });
 
