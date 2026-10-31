@@ -12,8 +12,6 @@ import { createFirebaseIdentityService } from '../../../shared/backend-platform/
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
-import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
-import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
 const app = express();
@@ -169,8 +167,6 @@ let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
-let walletRechargeSchemaReady = false;
-let walletRechargeRoutesRegistered = false;
 
 function walletFirebaseServiceAccount() {
   const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
