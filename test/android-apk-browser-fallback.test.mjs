@@ -63,6 +63,7 @@ async function renderCard({ installedApi = 'missing', apps = [] } = {}) {
     navigator,
     document: { getElementById: id => elements.get(id) || null },
     location: { hostname: 'smvastroservices.in' },
+    URL,
     fetch: async input => {
       const url = new URL(String(input));
       requested.push(url.href);
