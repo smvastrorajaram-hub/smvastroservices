@@ -307,7 +307,7 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(installer.includes('UPDATE APP'));
   assert.ok(installer.includes('INSTALL APP'));
   assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('health.uploadsEnabled === true'));
+  assert.ok(installer.includes('health?.success === true && health.ready === true'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('firebasestorage.googleapis.com'));
   assert.ok(moduleSource.includes('smvAndroidApkWorkerStatus'));
