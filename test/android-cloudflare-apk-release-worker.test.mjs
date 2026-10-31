@@ -355,7 +355,7 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v1'));
 });
 
-test('Cloudflare publishing is opt-in and deployment example does not contain credentials', async () => {
+test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
