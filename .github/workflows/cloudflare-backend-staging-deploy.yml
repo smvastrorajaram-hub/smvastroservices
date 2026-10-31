@@ -35,6 +35,7 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository &&
        github.event.pull_request.head.ref == 'feature/cloudflare-backend-runtime-staging-20261031')
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout exact staging branch
         uses: actions/checkout@v4
@@ -52,7 +53,7 @@ jobs:
 
       - name: Check Worker source syntax
         working-directory: cloudflare/backend-api
-        run: npm run check
+        run: npm run check && node --check scripts/identity-profile-readonly-preview.mjs
 
       - name: Run Firebase ID-token verifier security tests
         working-directory: cloudflare/backend-api
@@ -76,6 +77,15 @@ jobs:
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
+      - name: Preflight read-only access to all seven staging source collections
+        working-directory: cloudflare/backend-api
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY }}
+          SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
+        shell: bash
+        run: node scripts/identity-profile-readonly-preview.mjs --preflight
+
       - name: Provision a staging-scoped service account from an existing Actions secret when available
         working-directory: cloudflare/backend-api
         env:
@@ -86,8 +96,8 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]]; then
-            echo "No existing GitHub Actions staging service-account secret was supplied; no secret has been changed."
-            exit 0
+            echo "::error::Set FIREBASE_STAGING_SERVICE_ACCOUNT_JSON in GitHub Actions Secrets to a read-only service account from smv-astro-staging. No remote migration or deploy will run."
+            exit 1
           fi
           export FIREBASE_SERVICE_ACCOUNT_JSON
           node --input-type=module <<'NODE'
@@ -209,3 +219,12 @@ jobs:
           console.log('PASS unfinished business route fail-closed guard');
           console.log('Staging Worker URL: ' + base);
           NODE
+
+      - name: Run full paginated seven-collection read-only preview
+        working-directory: cloudflare/backend-api
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY }}
+          SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
+        shell: bash
+        run: node scripts/identity-profile-readonly-preview.mjs
