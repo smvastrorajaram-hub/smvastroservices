@@ -347,6 +347,11 @@ test('Homepage shows install/update states and only trusts the configured Cloudf
   assert.ok(moduleSource.includes('/admin/android-app/versions'));
   assert.ok(moduleSource.includes('DOWNLOAD APK'));
   assert.ok(html.includes('id="adminAndroidAppHistory"'));
+  assert.ok(html.includes('id="adminAndroidApkBackendStatus"'));
+  assert.ok(html.includes('id="adminAndroidAppFileInfo"'));
+  assert.ok(html.includes('APK Install &amp; Update Manager'));
+  assert.ok(moduleSource.includes('Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.'));
+  assert.ok(moduleSource.includes('Selected APK: '));
   assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v1'));
 });
 
