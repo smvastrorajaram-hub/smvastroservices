@@ -49,6 +49,22 @@ function stable(value) {
 }
 const stableJson = value => JSON.stringify(stable(value ?? {}));
 
+function canonicalJsonValue(value) {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return JSON.stringify(stable(parsed));
+  } catch {
+    return null;
+  }
+}
+
+function sameJsonValue(left, right) {
+  const canonicalLeft = canonicalJsonValue(left);
+  const canonicalRight = canonicalJsonValue(right);
+  return canonicalLeft !== null && canonicalRight !== null && canonicalLeft === canonicalRight;
+}
+
 function safeProfileJson(value) {
   const blocked = /password|passwd|token|secret|private.?key|bank|account|ifsc|upi|payout/i;
   function clean(node, depth = 0) {
@@ -507,7 +523,7 @@ export function createIdentityProfileBackfillService({
             ['phone_e164', str(row.phone_e164 || '') === str(v[7] || '')],
             ['phone_hash', str(row.phone_hash || '') === str(v[8] || '')],
             ['email_verified', Number(row.email_verified) === Number(v[9])],
-            ['profile_json', str(row.profile_json) === str(v[10])]
+            ['profile_json', sameJsonValue(row.profile_json, v[10])]
           ];
           mismatchFields = checks.filter(([, equal]) => !equal).map(([field]) => field);
           matches = mismatchFields.length === 0;
@@ -516,7 +532,7 @@ export function createIdentityProfileBackfillService({
           const checks = [
             ['public_id', str(row.public_id || '') === str(v[2] || '')],
             ['status', str(row.status) === str(v[3])],
-            ['profile_json', str(row.profile_json) === str(v[4])]
+            ['profile_json', sameJsonValue(row.profile_json, v[4])]
           ];
           mismatchFields = checks.filter(([, equal]) => !equal).map(([field]) => field);
           matches = mismatchFields.length === 0;
