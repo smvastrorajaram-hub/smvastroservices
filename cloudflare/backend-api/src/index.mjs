@@ -10,6 +10,8 @@ import { createFirestoreAdminRestClient } from '../../../shared/backend-platform
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
 import { createFirebaseIdentityService } from '../../../shared/backend-platform/firebase-identity-service.mjs';
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
+import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
+import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
 const app = express();
@@ -48,7 +50,12 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use(express.json({ limit: '1mb', strict: true }));
+const jsonBodyParser = express.json({ limit: '1mb', strict: true });
+const walletWebhookRawParser = express.raw({ type: 'application/json', limit: '1mb' });
+app.use((req, res, next) => {
+  if (req.path === '/wallet/recharge/webhook') return walletWebhookRawParser(req, res, next);
+  return jsonBodyParser(req, res, next);
+});
 
 app.get('/api/auth/session', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
@@ -156,6 +163,10 @@ app.get('/api/auth/authorization', async (req, res) => {
 const walletReadRouteGateOpen = isWalletReadRouteGateOpen(env);
 let walletReadRoutesRegistered = false;
 let walletDomainSchemaReady = false;
+let walletRechargeSchemaReady = false;
+let walletRechargeRoutesRegistered = false;
+let sharedWalletAdapter = null;
+let walletIdentityService = null;
 
 function walletFirebaseServiceAccount() {
   const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
@@ -188,14 +199,14 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
     allowedProjectIds: [projectId],
     credentials
   });
-  const walletIdentity = createFirebaseIdentityService({
+  walletIdentityService = createFirebaseIdentityService({
     verifyIdToken: verifyFirebaseIdToken,
     firestore: firestoreAdmin,
     projectIds: [projectId],
     adminUids: [env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')],
     adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
   });
-  const walletAdapter = createD1WalletAdapter({ db: env.DB });
+  sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
   const walletSchemaReady = async () => {
     try {
       const row = await env.DB.prepare(
@@ -211,12 +222,41 @@ if (walletReadRouteGateOpen && env.DB && typeof env.DB.prepare === 'function') {
   };
   registerWalletReadRoutes({
     app,
-    identityService: walletIdentity,
-    walletAdapter,
+    identityService: walletIdentityService,
+    walletAdapter: sharedWalletAdapter,
     adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || ''),
     isReady: walletSchemaReady
   });
   walletReadRoutesRegistered = true;
+  const razorpayKeyId = String(env.RAZORPAY_KEY_ID || '').trim();
+  const razorpayKeySecret = String(env.RAZORPAY_KEY_SECRET || '').trim();
+  const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
+  if (razorpayKeyId.startsWith('rzp_test_') && razorpayKeySecret && razorpayWebhookSecret) {
+    const razorpay = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+    const walletRechargeSchemaReady = async () => {
+      if (!(await walletSchemaReady())) return false;
+      try {
+        const row = await env.DB.prepare(
+          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+        ).bind('wallet-recharges').first();
+        walletRechargeSchemaReady = row?.schema_version === '0004_wallet_offer_redemptions';
+        return walletRechargeSchemaReady;
+      } catch {
+        walletRechargeSchemaReady = false;
+        return false;
+      }
+    };
+    registerWalletRechargeRoutes({
+      app,
+      identityService: walletIdentityService,
+      walletAdapter: sharedWalletAdapter,
+      razorpay,
+      razorpayKeyId,
+      razorpayWebhookSecret,
+      isReady: walletRechargeSchemaReady
+    });
+    walletRechargeRoutesRegistered = true;
+  }
 }
 
 app.get('/healthz', (_req, res) => {
@@ -227,6 +267,7 @@ app.get('/healthz', (_req, res) => {
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     walletReadRoutesRegistered,
+    walletRechargeRoutesRegistered,
     productionTrafficEnabled: false
   });
 });
@@ -270,6 +311,7 @@ app.get('/api/backend/readiness', async (_req, res) => {
       firebaseConnected: false,
       razorpayConnected: false,
       walletReadRoutesEnabled: walletReadEnabled,
+      walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: false
     });
@@ -294,6 +336,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firestoreConnected: false,
     razorpayConnected: false,
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
+    walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: false,
     renderDependency: false,
