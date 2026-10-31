@@ -67,7 +67,7 @@ test('projection queries return only an explicit allowlist of fields and never i
   ]);
   assert.equal(query.structuredQuery.where.fieldFilter.op, 'IN');
   assert.equal('writes' in query, false);
-  assert.throws(() => buildProjectionQuery('smv_wallet_recharges', null, ['status']), /filter is not allowlisted/);
+  assert.throws(() => buildProjectionQuery('smv_wallet_recharges', { field: 'status', op: 'unsupported', value: '' }, ['status']), /filter is not allowlisted/);
   assert.throws(() => buildProjectionQuery('smv_wallet_recharges', {
     field: 'status', op: 'EQUAL', value: 'pending'
   }, ['customerUid']), /Projection fields are invalid/);
