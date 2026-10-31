@@ -14,6 +14,8 @@ import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
+import { createIdentityProfileBackfillService } from '../../../shared/backend-platform/d1-identity-profile-backfill.mjs';
+import { registerIdentityProfileBackfillRoutes } from './identity-profile-backfill-routes.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
 import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
@@ -173,9 +175,11 @@ let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
 let walletOfferRoutesRegistered = false;
 let walletBackfillRoutesRegistered = false;
+let identityProfileBackfillRoutesRegistered = false;
 let liveSessionRoutesRegistered = false;
 let liveSessionSchemaReady = false;
 const walletBackfillToolsOpen = String(env.SMV_WALLET_BACKFILL_TOOLS_ENABLED || '').toLowerCase() === 'true';
+const identityProfileBackfillToolsOpen = String(env.SMV_IDENTITY_PROFILE_BACKFILL_ENABLED || '').toLowerCase() === 'true';
 const liveSessionRoutesOpen = String(env.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() === 'true';
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
@@ -198,7 +202,7 @@ function walletFirebaseServiceAccount() {
 
 // Read-only Wallet endpoints are registered only after explicit domain backfill
 // and cutover gates. A second per-request D1 schema check remains fail-closed.
-if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen) && env.DB && typeof env.DB.prepare === 'function') {
+if ((walletReadRouteGateOpen || walletBackfillToolsOpen || identityProfileBackfillToolsOpen || liveSessionRoutesOpen) && env.DB && typeof env.DB.prepare === 'function') {
   const credentials = walletFirebaseServiceAccount();
   const projectId = String(env.FIREBASE_PROJECT_ID || credentials.project_id || '').trim();
   const configuredProjectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || projectId)
@@ -258,6 +262,17 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen
     }
   };
 
+  const checkIdentityProfileBackfillSchemaReady = async () => {
+    try {
+      const row = await env.DB.prepare(
+        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+      ).bind('identity-profiles').first();
+      return row?.schema_version === '0008_identity_profile_backfill_audit';
+    } catch {
+      return false;
+    }
+  };
+
   const checkLiveSessionSchemaReady = async () => {
     if (!(await walletSchemaReady())) return false;
     try {
@@ -291,6 +306,28 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen
       isReady: checkWalletBackfillSchemaReady
     });
     walletBackfillRoutesRegistered = true;
+  }
+
+  if (identityProfileBackfillToolsOpen) {
+    const identityBackfillService = createIdentityProfileBackfillService({
+      db: env.DB,
+      firestore: firestoreAdmin,
+      sourceProjectId: projectId,
+      environment: String(env.SMV_ENVIRONMENT || ''),
+      payoutEncryptionKey: String(env.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY || ''),
+      payoutKeyVersion: String(env.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1')
+    });
+    registerIdentityProfileBackfillRoutes({
+      app,
+      identityService: walletIdentityService,
+      backfillService: identityBackfillService,
+      toolsEnabled: identityProfileBackfillToolsOpen,
+      environment: String(env.SMV_ENVIRONMENT || ''),
+      sourceProjectId: projectId,
+      cutoverComplete: String(env.SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE || '').toLowerCase() === 'true',
+      isReady: checkIdentityProfileBackfillSchemaReady
+    });
+    identityProfileBackfillRoutesRegistered = true;
   }
 
   if (liveSessionRoutesOpen) {
@@ -441,12 +478,14 @@ app.get('/api/backend/migration-status', (_req, res) => {
     walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletBackfillRoutesRegistered,
     walletBackfillToolsEnabled: walletBackfillToolsOpen,
+    identityProfileBackfillRoutesRegistered,
+    identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     renderDependency: false,
     productionTrafficEnabled: false,
-    nextGate: liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
+    nextGate: identityProfileBackfillRoutesRegistered ? 'identity-profile-staging-preview-and-reconciliation' : liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
   });
 });
 
