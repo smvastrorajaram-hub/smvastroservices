@@ -142,3 +142,28 @@ test('reconciliation returns conflict rather than declaring a mismatched page sa
   assert.equal(res.body.success,false);
   assert.equal(res.body.cutoverSafe,false);
 });
+
+
+test('nested Live preview accepts Firestore document IDs with dots and punctuation',async()=>{
+  const state=fixture();
+  const res=responseHarness();
+  await state.app.handlers.get('POST /admin/wallet/backfill/preview')(
+    request({collection:'liveSessionMessages',parentId:'session.with.dot',pageSize:25}),res
+  );
+  assert.equal(res.statusCode,200);
+  const call=state.calls.find(item=>item[0]==='preview');
+  assert.equal(call[1].parentId,'session.with.dot');
+});
+
+test('nested Live preview rejects path separators and document IDs over 1500 UTF-8 bytes',async()=>{
+  for(const parentId of ['bad/session','x'.repeat(1501)]) {
+    const state=fixture();
+    const res=responseHarness();
+    await state.app.handlers.get('POST /admin/wallet/backfill/preview')(
+      request({collection:'liveSessionSignals',parentId}),res
+    );
+    assert.equal(res.statusCode,400);
+    assert.equal(res.body.code,'BACKFILL_PARENT_INVALID');
+    assert.equal(state.calls.some(call=>call[0]==='preview'),false);
+  }
+});
