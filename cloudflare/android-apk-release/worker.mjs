@@ -121,13 +121,13 @@ async function rowByVersion(db, versionCode) {
   ).bind(versionCode).first();
 }
 
-function safeLegacyDownloadUrl(value) {
+function safeLegacyDownloadUrl(value, expectedVersionCode) {
   let url;
   try { url = new URL(String(value || '')); } catch (_) { return null; }
   if (url.protocol !== 'https:' || url.hostname !== 'firebasestorage.googleapis.com') return null;
   const path = decodeURIComponent(url.pathname);
-  const bucketMatch = /^\/v0\/b\/([^/]+)\/o\/smv-astro\/android\/releases\/[1-9][0-9]*\/[^/]+\.apk$/.exec(path);
-  if (!bucketMatch || !FIREBASE_BUCKETS.has(bucketMatch[1])) return null;
+  const bucketMatch = /^\/v0\/b\/([^/]+)\/o\/smv-astro\/android\/releases\/([1-9][0-9]*)\/[^/]+\.apk$/.exec(path);
+  if (!bucketMatch || !FIREBASE_BUCKETS.has(bucketMatch[1]) || Number(bucketMatch[2]) !== Number(expectedVersionCode)) return null;
   if (url.searchParams.get('alt') !== 'media' || !url.searchParams.get('token')) return null;
   return url.href;
 }
@@ -158,7 +158,7 @@ async function fetchLegacyRelease(env, fetchImpl) {
   const versionCode = Number(data.versionCode);
   const size = Number(data.size || 0);
   const uploadedAt = Number(data.uploadedAt || 0);
-  const downloadUrl = safeLegacyDownloadUrl(data.downloadUrl);
+  const downloadUrl = safeLegacyDownloadUrl(data.downloadUrl, versionCode);
   if (data.packageName !== SMV_ANDROID_PACKAGE ||
       !Number.isSafeInteger(versionCode) || versionCode < 1001 ||
       !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
@@ -270,7 +270,7 @@ async function handleDownload(request, env, versionCode, fetchImpl) {
     return json(request, env, { success: false, error: 'This Android APK version was not found.' }, 404);
   }
   if (row.storage_provider === 'firebase') {
-    const target = safeLegacyDownloadUrl(row.external_download_url);
+    const target = safeLegacyDownloadUrl(row.external_download_url, row.version_code);
     if (!target) return json(request, env, { success: false, error: 'The archived APK download target failed validation.' }, 503);
     return respond(request, env, null, 302, { Location: target, 'Cache-Control': 'no-store' });
   }
