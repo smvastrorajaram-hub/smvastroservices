@@ -1,0 +1,77 @@
+name: Cloudflare Wallet recharge and bonus-offer D1 tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/cloudflare-wallet-read-route-integration-20261031
+    paths:
+      - 'shared/backend-platform/wallet-recharge-domain.mjs'
+      - 'shared/backend-platform/d1-wallet-adapter.mjs'
+      - 'shared/backend-platform/razorpay-rest-adapter.mjs'
+      - 'cloudflare/backend-api/src/wallet-recharge-routes.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - 'cloudflare/backend-api/migrations/0004_wallet_offer_redemptions.sql'
+      - 'cloudflare/backend-api/test/wallet-recharge-*.test.mjs'
+      - 'cloudflare/backend-api/test/fixtures/d1-wallet-recharge-*.sql'
+      - 'cloudflare/backend-api/test/fixtures/d1-wallet-offer-limit.sql'
+      - '.github/workflows/cloudflare-wallet-recharge-d1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-recharge-d1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Check Wallet recharge source syntax
+        run: |
+          node --check shared/backend-platform/wallet-recharge-domain.mjs
+          node --check shared/backend-platform/d1-wallet-adapter.mjs
+          node --check shared/backend-platform/razorpay-rest-adapter.mjs
+          node --check cloudflare/backend-api/src/wallet-recharge-routes.mjs
+          node --check cloudflare/backend-api/src/index.mjs
+          node --check cloudflare/backend-api/test/wallet-recharge-domain.test.mjs
+          node --check cloudflare/backend-api/test/wallet-recharge-routes.test.mjs
+      - name: Run pure recharge and route contract tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/wallet-recharge-domain.test.mjs test/wallet-recharge-routes.test.mjs
+      - name: Apply additive Wallet migrations to local D1 only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+      - name: Exercise Wallet cash, bonus, and offer redemption triggers locally
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-recharge-smoke.sql
+      - name: Verify concurrent offer redemption limit aborts atomically
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set +e
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-offer-limit.sql > "$RUNNER_TEMP/wallet-offer-limit.log" 2>&1
+          result=$?
+          set -e
+          if [[ $result -eq 0 ]]; then
+            echo "::error::A second redemption over the Customer limit was unexpectedly accepted."
+            exit 1
+          fi
+          if ! grep -q 'WALLET_OFFER_CUSTOMER_LIMIT_REACHED' "$RUNNER_TEMP/wallet-offer-limit.log"; then
+            cat "$RUNNER_TEMP/wallet-offer-limit.log"
+            echo "::error::Offer redemption failed for an unexpected reason."
+            exit 1
+          fi
+      - name: Clean local Wallet recharge smoke data
+        if: always()
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.jsonc --file test/fixtures/d1-wallet-recharge-cleanup.sql || true
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
