@@ -243,7 +243,11 @@ export function registerWalletRechargeRoutes({
         return res.status(200).send('OK');
       }
       if (eventType === 'payment.failed') {
-        await walletAdapter.markRechargePaymentFailed({ orderId, paymentId, reason: 'razorpay_payment_failed' });
+        // A late failure from another payment attempt must not downgrade a
+        // recharge that has already been atomically credited as paid.
+        if (recharge.status !== 'paid') {
+          await walletAdapter.markRechargePaymentFailed({ orderId, paymentId, reason: 'razorpay_payment_failed' });
+        }
         await walletAdapter.completeWebhookEvent(eventKey);
         return res.status(200).send('OK');
       }
