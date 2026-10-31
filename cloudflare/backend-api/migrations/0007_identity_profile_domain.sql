@@ -1,9 +1,10 @@
 -- Additive Identity/Profile domain for Cloudflare D1.
 -- Firebase Authentication remains the identity provider. This schema stores
 -- application profile/authorization data; it does not create/manage Auth users.
+-- User identity keys include the Firebase project because UIDs are project-scoped.
 CREATE TABLE IF NOT EXISTS smv_domain_identity_users (
-  uid TEXT PRIMARY KEY NOT NULL,
   firebase_project_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
   email TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'unknown'
     CHECK (role IN ('customer','astrologer','unknown')),
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS smv_domain_identity_users (
   email_verified INTEGER NOT NULL DEFAULT 0 CHECK (email_verified IN (0,1)),
   profile_json TEXT NOT NULL DEFAULT '{}',
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (firebase_project_id, uid)
 );
 CREATE INDEX IF NOT EXISTS idx_smv_domain_identity_users_project_role
   ON smv_domain_identity_users(firebase_project_id, role, status);
@@ -24,12 +26,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_smv_domain_identity_users_public_id
   WHERE public_id IS NOT NULL AND public_id <> '';
 
 CREATE TABLE IF NOT EXISTS smv_domain_identity_astrologers (
-  uid TEXT PRIMARY KEY NOT NULL,
+  firebase_project_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
   public_id TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending',
   profile_json TEXT NOT NULL DEFAULT '{}',
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (firebase_project_id, uid)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_smv_domain_identity_astrologers_public_id
   ON smv_domain_identity_astrologers(public_id)
@@ -37,38 +41,45 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_smv_domain_identity_astrologers_public_id
 
 -- Admin authority is separate from the mutable user profile role.
 CREATE TABLE IF NOT EXISTS smv_domain_identity_admins (
-  uid TEXT PRIMARY KEY NOT NULL,
+  firebase_project_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT 'migrated_admin_allowlist',
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (firebase_project_id, uid)
 );
 
 -- Global one-phone-one-account registry; the digest is used for uniqueness.
 CREATE TABLE IF NOT EXISTS smv_domain_identity_phones (
   phone_hash TEXT PRIMARY KEY NOT NULL,
-  uid TEXT NOT NULL UNIQUE,
+  firebase_project_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
   phone_e164 TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('customer','astrologer')),
   verification_mode TEXT NOT NULL DEFAULT 'email_unique',
   phone_verified INTEGER NOT NULL DEFAULT 0 CHECK (phone_verified IN (0,1)),
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
+  updated_at_ms INTEGER NOT NULL,
+  UNIQUE(firebase_project_id, uid)
 );
 
 CREATE TABLE IF NOT EXISTS smv_domain_identity_public_ids (
   public_id TEXT PRIMARY KEY NOT NULL,
+  firebase_project_id TEXT NOT NULL,
   uid TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('customer','astrologer')),
   created_at_ms INTEGER NOT NULL,
-  UNIQUE(uid, role)
+  UNIQUE(firebase_project_id, uid, role)
 );
 
 -- Sensitive bank/payout fields are isolated from ordinary profile reads.
 CREATE TABLE IF NOT EXISTS smv_domain_identity_payout_profiles (
-  uid TEXT PRIMARY KEY NOT NULL,
+  firebase_project_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
   payload_json TEXT NOT NULL,
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (firebase_project_id, uid)
 );
 
 CREATE TABLE IF NOT EXISTS smv_domain_identity_migration_meta (
