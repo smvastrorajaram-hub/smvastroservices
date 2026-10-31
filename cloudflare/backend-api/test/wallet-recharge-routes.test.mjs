@@ -66,6 +66,28 @@ test('create-order validates paise amount and reuses deterministic recharge inte
   assert.equal(state.calls.find(call=>call[0]==='attach')[1].orderId,'order_1');
 });
 
+
+test('create-order recovers an orphaned Razorpay order after a stale recharge retry', async () => {
+  const state=baseDeps();
+  state.walletAdapter.createRechargeIntent=async()=>({
+    success:true,acquired:true,retrying:true,rechargeId:'a'.repeat(64),amountPaise:5000
+  });
+  let lookupReceipt='';
+  state.razorpay.findOrderByReceipt=async(receipt,options)=>{
+    lookupReceipt=receipt;
+    assert.equal(options.amountPaise,5000);
+    return {id:'order_recovered',amount:5000,currency:'INR',receipt};
+  };
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/create-order')(request({amount:'50.00',idempotencyKey:'request-key-123'}),response);
+  assert.equal(response.statusCode,200);
+  assert.equal(response.body.orderId,'order_recovered');
+  assert.equal(response.body.recoveredOrder,true);
+  assert.equal(state.calls.some(call=>call[0]==='createOrder'),false);
+  assert.equal(state.calls.find(call=>call[0]==='attach')[1].orderId,'order_recovered');
+  assert.ok(lookupReceipt.startsWith('SMV_WR_'));
+});
+
 test('create-order rejects invalid amounts and does not create external orders', async () => {
   const state=baseDeps();
   const response=responseHarness();
