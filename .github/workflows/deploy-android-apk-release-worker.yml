@@ -199,7 +199,7 @@ jobs:
             else
               echo "- Worker URL: not captured; inspect the deployment step."
             fi
-            echo "- APK upload gate: `ALLOW_APK_UPLOADS=true` (Admin-only, signed-APK validation enforced)."
+            echo '- APK upload gate: ALLOW_APK_UPLOADS=true (Admin-only, signed-APK validation enforced).'
             echo "- Homepage API URL: unchanged; connect only after successful verification."
             echo "- Public metadata check: ${PUBLIC_METADATA_STATUS:-not completed}."
             echo "- Scope: dedicated APK Release D1 only, plus the APK Release Worker."
