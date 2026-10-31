@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerIdentityProfileBackfillRoutes } from '../src/identity-profile-backfill-routes.mjs';
 
-function setup(reconciliation) {
+function setup(reconciliation, { previewOnly = true } = {}) {
   const routes = { get: new Map(), post: new Map() };
   const app = {
     get(path, handler) { routes.get.set(path, handler); },
@@ -25,6 +25,7 @@ function setup(reconciliation) {
     identityService,
     backfillService,
     toolsEnabled: true,
+    previewOnly,
     environment: 'staging',
     sourceProjectId: 'smv-astro-staging',
     cutoverComplete: false,
@@ -86,4 +87,27 @@ test('Identity reconciliation route reports clean only when every parity counter
   assert.equal(response.statusCode, 200);
   assert.equal(response.payload.success, true);
   assert.equal(response.payload.cutoverSafe, false);
+});
+
+test('Identity apply endpoint is blocked in staging preview-only mode', async () => {
+  const routes = setup({ sourceDocuments: 1, importedDocuments: 1 });
+  const response = await invoke(routes.post.get('/admin/identity-profile/backfill/apply'), {
+    collection: 'users',
+    confirmSourceProjectId: 'smv-astro-staging'
+  });
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.payload.success, false);
+  assert.equal(response.payload.code, 'IDENTITY_BACKFILL_PREVIEW_ONLY');
+});
+
+test('read-only Identity preview endpoint remains available in preview-only mode', async () => {
+  const routes = setup({ sourceDocuments: 1, plannedD1Statements: 2, writesPerformed: 0, personalDataReturned: false });
+  const response = await invoke(routes.post.get('/admin/identity-profile/backfill/preview'), {
+    collection: 'users',
+    pageSize: 10
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.payload.mode, 'read_only_preview');
+  assert.equal(response.payload.writesPerformed, 0);
+  assert.equal(response.payload.personalDataReturned, false);
 });
