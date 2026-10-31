@@ -109,6 +109,10 @@ class FakeR2 {
       httpEtag: '"fake-etag"'
     };
   }
+  async head(key) {
+    const found = this.objects.get(key);
+    return found ? { size: found.bytes.byteLength } : null;
+  }
   async delete(key) { this.objects.delete(key); }
 }
 
@@ -137,7 +141,7 @@ function legacyFetch(versionCode = 1005) {
   };
 }
 
-function makeWorker(env, { legacyVersionCode = 0 } = {}) {
+function makeWorker(env, { legacyVersionCode = 0, logger = { error() {} } } = {}) {
   const worker = createAndroidApkReleaseWorker({
     verifyToken: async token => {
       if (token !== 'admin-token') throw new Error('invalid token');
@@ -154,7 +158,8 @@ function makeWorker(env, { legacyVersionCode = 0 } = {}) {
         certificateSha256: '7A3BE159218A38083986DEC117C0BD281B3EF42BDA65F2BB7B8C9946B5293401'
       };
     },
-    fetchImpl: legacyFetch(legacyVersionCode)
+    fetchImpl: legacyFetch(legacyVersionCode),
+    logger
   });
   return { worker, env };
 }
@@ -184,7 +189,81 @@ test('health exposes readiness but never enables publishing by default', async (
   const { worker } = makeWorker(env);
   const response = await worker.fetch(new Request('https://apk.example/health'), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { success: true, ready: true, uploadsEnabled: false, hasReleaseRecords: false });
+  assert.deepEqual(await response.json(), {
+    success: true,
+    ready: true,
+    d1Ready: true,
+    r2Ready: true,
+    uploadsEnabled: false,
+    hasReleaseRecords: false
+  });
+});
+
+test('health performs a read-only R2 binding probe and fails closed when R2 is unreachable', async () => {
+  const env = envFor({ uploadsEnabled: true });
+  const logged = [];
+  env.APK_RELEASES.head = async () => { throw new Error('R2 bucket access denied token=do-not-log-this'); };
+  const { worker } = makeWorker(env, { logger: { error: message => logged.push(message) } });
+  const response = await worker.fetch(new Request('https://apk.example/health', {
+    headers: { 'cf-ray': 'health-probe-ray-1234' }
+  }), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    success: true,
+    ready: false,
+    d1Ready: true,
+    r2Ready: false,
+    uploadsEnabled: false,
+    hasReleaseRecords: false
+  });
+  assert.equal(logged.length, 1);
+  assert.match(logged[0], /health-probe-ray-1234/);
+  assert.match(logged[0], /r2-health/);
+  assert.doesNotMatch(logged[0], /do-not-log-this/);
+});
+
+test('transient legacy metadata lookup network errors are retried once before returning the empty-release state', async () => {
+  const env = envFor();
+  let calls = 0;
+  const worker = createAndroidApkReleaseWorker({
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) throw new TypeError('temporary connection reset');
+      return Response.json({ success: true, available: false });
+    },
+    logger: { error() {} }
+  });
+  const response = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { success: true, available: false });
+  assert.equal(calls, 2);
+});
+
+test('persistent legacy lookup failures expose a safe diagnostic code and request id without leaking secrets', async () => {
+  const env = envFor();
+  const logged = [];
+  let calls = 0;
+  const worker = createAndroidApkReleaseWorker({
+    fetchImpl: async () => {
+      calls += 1;
+      throw new TypeError('request to https://smvastroservices.onrender.com/public/android-app?token=do-not-log-this failed');
+    },
+    logger: { error: message => logged.push(message) }
+  });
+  const response = await worker.fetch(new Request('https://apk.example/public/android-app', {
+    headers: { 'cf-ray': 'metadata-error-ray-5678' }
+  }), env);
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.success, false);
+  assert.equal(body.code, 'LEGACY_RELEASE_NETWORK_ERROR');
+  assert.equal(body.requestId, 'metadata-error-ray-5678');
+  assert.equal(calls, 2);
+  assert.equal(logged.length, 1);
+  assert.match(logged[0], /metadata-error-ray-5678/);
+  assert.match(logged[0], /LEGACY_RELEASE_NETWORK_ERROR/);
+  assert.doesNotMatch(logged[0], /do-not-log-this/);
+  assert.doesNotMatch(JSON.stringify(body), /do-not-log-this/);
 });
 
 test('admin-only upload rejects unauthenticated requests and respects disabled upload gate', async () => {
@@ -323,7 +402,9 @@ test('legacy public release metadata and redirect URL are validated before use',
   });
   const bad = await badWorker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(bad.status, 503);
-  assert.equal((await bad.json()).success, false);
+  const badBody = await bad.json();
+  assert.equal(badBody.success, false);
+  assert.equal(badBody.code, 'LEGACY_RELEASE_METADATA_INVALID');
 });
 
 
@@ -378,4 +459,19 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
   assert.match(readme, /Use only the existing D1 database/);
   assert.match(readme, /Do not add secrets or APK binaries/);
+});
+
+test('deployment workflow retries edge-propagation failures and requires D1/R2 readiness plus valid public metadata', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-android-apk-release-worker.yml'), 'utf8');
+  assert.ok(workflow.includes('for attempt in {1..10}'));
+  assert.ok(workflow.includes('health.d1Ready !== true'));
+  assert.ok(workflow.includes('health.r2Ready !== true'));
+  assert.ok(workflow.includes('Worker health did not become ready after bounded propagation retries'));
+  assert.ok(workflow.includes('public metadata'));
+  assert.ok(workflow.includes('d.available !== true && d.available !== false'));
+  assert.ok(workflow.includes('Public APK metadata did not pass validation'));
 });
