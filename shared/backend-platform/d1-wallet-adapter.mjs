@@ -562,6 +562,85 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     };
   }
 
+  async function getRechargeByOrderId(orderId) {
+    const oid = String(orderId || '').trim();
+    if (!oid) return null;
+    const row = await statement(
+      `SELECT recharge_id, customer_uid, amount_paise, currency, status, razorpay_order_id,
+              razorpay_payment_id, paid_at_ms, payload_json
+       FROM smv_domain_wallet_recharges
+       WHERE razorpay_order_id=? LIMIT 1`,
+      [oid]
+    ).first();
+    if (!row) return null;
+    return {
+      rechargeId:String(row.recharge_id), customerUid:String(row.customer_uid),
+      amountPaise:safePaise(row.amount_paise), currency:String(row.currency || 'INR'),
+      status:String(row.status || ''), orderId:String(row.razorpay_order_id || ''),
+      paymentId:row.razorpay_payment_id || null, paidAt:Number(row.paid_at_ms || 0)
+    };
+  }
+
+  async function markRechargePaymentFailed({ orderId, paymentId, reason = 'payment_failed' } = {}) {
+    const oid = String(orderId || '').trim();
+    const pid = String(paymentId || '').trim();
+    if (!oid) return { success:false, skipped:true };
+    const timestamp = Number(now());
+    const results = await db.batch([
+      statement(
+        `UPDATE smv_domain_wallet_recharges
+         SET status='failed', payload_json=?, updated_at_ms=?
+         WHERE razorpay_order_id=? AND status='order_created'`,
+        [JSON.stringify({ failureReason:String(reason).slice(0,160),paymentId:pid }),timestamp,oid]
+      ),
+      statement(
+        `UPDATE smv_domain_razorpay_orders
+         SET status='failed',payment_id=?,payload_json=?,updated_at_ms=?
+         WHERE order_id=? AND service_name='SMV ASTRO Wallet Recharge'`,
+        [pid || null,JSON.stringify({failureReason:String(reason).slice(0,160)}),timestamp,oid]
+      )
+    ]);
+    return { success:true, results };
+  }
+
+  async function recordWebhookEvent({ eventKey, eventType, paymentId = null, orderId = null, payload = {} } = {}) {
+    const key = String(eventKey || '').trim();
+    const type = String(eventType || '').trim();
+    if (!/^[A-Za-z0-9:_-]{1,240}$/.test(key) || !/^[A-Za-z0-9._-]{1,100}$/.test(type)) {
+      throw walletError('WALLET_WEBHOOK_EVENT_INVALID', 'Razorpay webhook event identity is invalid.', 400);
+    }
+    const timestamp = Number(now());
+    await statement(
+      `INSERT OR IGNORE INTO smv_domain_razorpay_webhook_events
+       (event_key,event_type,payment_id,order_id,processed,retry_count,payload_json,received_at_ms,processed_at_ms)
+       VALUES (?,?,?,?,0,0,?,?,NULL)`,
+      [key,type,paymentId,orderId,JSON.stringify(payload && typeof payload === 'object' ? payload : {}),timestamp]
+    ).run();
+    const row = await statement(
+      'SELECT processed,retry_count FROM smv_domain_razorpay_webhook_events WHERE event_key=? LIMIT 1',
+      [key]
+    ).first();
+    if (Number(row?.processed) === 1) return { success:true, alreadyProcessed:true, eventKey:key };
+    await statement(
+      `UPDATE smv_domain_razorpay_webhook_events
+       SET retry_count=retry_count+1,payload_json=?,payment_id=COALESCE(?,payment_id),
+           order_id=COALESCE(?,order_id)
+       WHERE event_key=? AND processed=0`,
+      [JSON.stringify(payload && typeof payload === 'object' ? payload : {}),paymentId,orderId,key]
+    ).run();
+    return { success:true, alreadyProcessed:false, eventKey:key, retryCount:Number(row?.retry_count || 0) + 1 };
+  }
+
+  async function completeWebhookEvent(eventKey) {
+    const key = String(eventKey || '').trim();
+    const timestamp = Number(now());
+    const result = await statement(
+      'UPDATE smv_domain_razorpay_webhook_events SET processed=1,processed_at_ms=? WHERE event_key=?',
+      [timestamp,key]
+    ).run();
+    return { success:true, changed:Number(result?.meta?.changes || 0) };
+  }
+
   async function listTransactions(ownerUid, limit = 30) {
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
@@ -573,5 +652,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return (result?.results || []).map(mapLedger);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, finalizeRecharge, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }
