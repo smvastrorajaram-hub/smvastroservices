@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WALLET_RECHARGE_OFFER_TYPE,
-  classifyRechargeIntent,\n  offerDateMilliseconds,
+  classifyRechargeIntent,
+  offerDateMilliseconds,
   parseRupeesToPaise,
   rechargeOfferMatches,
   selectRechargeBonusOffer,
