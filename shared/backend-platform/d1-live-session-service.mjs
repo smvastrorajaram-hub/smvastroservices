@@ -859,7 +859,7 @@ export function createD1LiveSessionService({
     }
     const messageId=cryptoImpl.randomUUID();
     await statement(
-      'INSERT INTO smv_domain_live_messages(session_id,message_id,sender_uid,text,created_at_ms,source) VALUES (?,?,?,?,?,'cloudflare_live')',
+      "INSERT INTO smv_domain_live_messages(session_id,message_id,sender_uid,text,created_at_ms,source) VALUES (?,?,?,?,?,'cloudflare_live')",
       [id,messageId,uid,body,timestamp]
     ).run();
     return {success:true,message:{id:messageId,sessionId:id,senderUid:uid,text:body,createdAt:iso(timestamp)},
@@ -904,7 +904,7 @@ export function createD1LiveSessionService({
     }
     const signalId=cryptoImpl.randomUUID();
     await statement(
-      'INSERT INTO smv_domain_live_signals(session_id,signal_id,sender_uid,signal_type,payload_json,created_at_ms,source) VALUES (?,?,?,?,?,?,'cloudflare_live')',
+      "INSERT INTO smv_domain_live_signals(session_id,signal_id,sender_uid,signal_type,payload_json,created_at_ms,source) VALUES (?,?,?,?,?,?,'cloudflare_live')",
       [id,signalId,uid,kind,serialized,timestamp]
     ).run();
     return {success:true,signalId,recipientUid:uid===session.customerUid?session.astrologerUid:session.customerUid};
