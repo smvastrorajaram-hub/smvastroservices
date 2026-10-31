@@ -163,6 +163,23 @@ export function createD1LiveSessionService({
     );
     return safePaise(row?.total);
   }
+
+  async function syncAstrologerAvailability(astrologerUid) {
+    const uid=checkUid(astrologerUid);
+    if(!uid||typeof firestore.setDocument!=='function') return {skipped:true};
+    const count=await activeSessionCount(uid);
+    const profile=await firestore.getDocument('smv_astrologers/'+uid);
+    if(!profile.exists) return {skipped:true};
+    const astro=profile.data||{};
+    const availability=count>0?'busy':
+      (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
+    await firestore.setDocument('smv_astrologers/'+uid,{
+      activeSessionCount:count,
+      availabilityStatus:availability,
+      liveSessionBusyManaged:count>0
+    },{merge:true});
+    return {activeSessionCount:count,availabilityStatus:availability};
+  }
   async function buildLedger({
     ownerUid,ownerRole='customer',type,direction,amountPaise=0,
     availableDeltaPaise=0,reservedDeltaPaise=0,bonusMinutesDelta=0,
@@ -209,7 +226,9 @@ export function createD1LiveSessionService({
     const kind=String(mode||'').trim().toLowerCase();
     const length=Number(minutes);
     const reqId=String(requestId||'').trim();
+    const appointment=String(appointmentId||'').trim();
     const name=String(customerName||'').trim();
+    if(appointment.length>180) throw liveError('LIVE_APPOINTMENT_ID_INVALID','Scheduled booking ID is invalid.',400);
     if(!uid||!astroUid) throw liveError('LIVE_ASTROLOGER_REQUIRED','Select an Astrologer to continue.',400);
     if(!['call','chat'].includes(kind)) throw liveError('LIVE_MODE_INVALID','Choose Call or Chat.',400);
     if(!Number.isSafeInteger(length)||length<1||length>1440) throw liveError('LIVE_DURATION_INVALID','Enter a whole duration from 1 to 1440 minutes.',400);
@@ -218,7 +237,7 @@ export function createD1LiveSessionService({
     const birth=validateLiveBirthDetails(birthDetails||{},Number(now()));
     const id=await sha256(uid+':'+reqId);
     const fingerprint=await sha256(JSON.stringify({
-      customerUid:uid,astrologerId:astroUid,mode:kind,minutes:length,customerName:name,birthDetails:birth
+      customerUid:uid,astrologerId:astroUid,mode:kind,minutes:length,customerName:name,birthDetails:birth,appointmentId:appointment
     }));
     const [oldSession,oldBooking]=await Promise.all([getSession(id),getBooking(id)]);
     const existing=oldSession||oldBooking;
@@ -274,8 +293,8 @@ export function createD1LiveSessionService({
              (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,
               reserved_amount_paise,reserved_bonus_minutes,actual_charge_paise,
               started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
-             VALUES (?,?,?,?,'ringing',NULL,?,?,0,NULL,NULL,NULL,?,?,?)`,
-            [id,uid,astroUid,kind,reserve.reservedAmountPaise,reserve.reservedBonusMinutes,
+             VALUES (?,?,?,?,'ringing',?,?,?,0,NULL,NULL,NULL,?,?,?)`,
+            [id,uid,astroUid,kind,appointment||null,reserve.reservedAmountPaise,reserve.reservedBonusMinutes,
               livePayload(session),timestamp,timestamp]
           )
         ]);
@@ -286,6 +305,7 @@ export function createD1LiveSessionService({
         throw mapLiveD1Error(error);
       }
       const created=await getSession(id);
+      await syncAstrologerAvailability(astroUid).catch(error=>console.warn('[Live Session] Astrologer availability sync deferred:',error?.message||error));
       return {success:true,kind:'session',alreadyProcessed:false,session:sessionView(created),wallet:await walletAdapter.getWallet(uid)};
     }
     const expiresAt=timestamp+LIVE_BOOKING_EXPIRY_MS;
@@ -383,6 +403,7 @@ export function createD1LiveSessionService({
       if(current) return {success:true,alreadyProcessed:true,session:sessionView(current)};
       throw mapLiveD1Error(error);
     }
+    await syncAstrologerAvailability(uid).catch(error=>console.warn('[Live Session] Astrologer availability sync deferred:',error?.message||error));
     return {success:true,alreadyProcessed:false,session:sessionView(await getSession(id)),wallet:await walletAdapter.getWallet(booking.customerUid)};
   }
 
@@ -626,7 +647,9 @@ export function createD1LiveSessionService({
       if(latest?.state==='ended') return {success:true,alreadyProcessed:true,session:sessionView(latest),wallet:await walletAdapter.getWallet(session.customerUid)};
       throw mapLiveD1Error(error);
     }
-    return {success:true,alreadyProcessed:false,session:sessionView(await getSession(id)),wallet:await walletAdapter.getWallet(session.customerUid)};
+    const settledSession=await getSession(id);
+    await syncAstrologerAvailability(session.astrologerUid).catch(error=>console.warn('[Live Session] Astrologer availability sync deferred:',error?.message||error));
+    return {success:true,alreadyProcessed:false,session:sessionView(settledSession),wallet:await walletAdapter.getWallet(session.customerUid)};
   }
 
   async function releaseBooking({bookingId,status='cancelled',endReason='cancelled',actorUid=''}={}) {
