@@ -124,6 +124,16 @@ export function createD1LiveSessionService({
   async function getCommission() {
     return commissionFromPayload((await getSetting('commission'))||{});
   }
+  async function isApprovedAstrologer(uid) {
+    const actor=checkUid(uid);
+    if(!actor) return false;
+    const profile=await firestore.getDocument('smv_astrologers/'+actor);
+    if(!profile.exists) return false;
+    const data=profile.data||{};
+    const status=String(data.status||'').trim().toLowerCase();
+    return (!data.uid||String(data.uid)===actor)&&['approved','active'].includes(status);
+  }
+
   async function getProfiles(customerUid,astrologerUid) {
     const [customer,astroUser,astroProfile]=await Promise.all([
       firestore.getDocument('smv_users/'+customerUid),
@@ -939,7 +949,7 @@ export function createD1LiveSessionService({
   }
 
   return Object.freeze({
-    createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,
+    createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
     listSessions,listBookings,listCustomerBookings,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting
