@@ -49,6 +49,61 @@ Only after staging access is explicitly approved, configure through Cloudflare's
 
 The current PR does not set these values or deploy the Worker. The API checks project IDs and environment at construction time, and route registration remains off while the backfill flag is false.
 
+## D1 authorization integration — disabled until verified
+
+The Worker contains a D1 authorization path behind
+`SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED`. The staging Wrangler config
+sets this flag to `false`. While disabled, the existing Firebase/Firestore
+authorization path remains unchanged. When enabled, the Worker switches
+`/api/auth/authorization` and any enabled Wallet/Live route identity checks to
+the project-scoped D1 resolver; it does not silently fall back to Firestore.
+
+The D1 path is restricted in code to `SMV_ENVIRONMENT=staging`,
+`FIREBASE_PROJECT_ID=smv-astro-staging`, and the single-project
+`FIREBASE_AUTH_PROJECT_IDS=smv-astro-staging` allowlist. Every request checks
+the D1 schema marker and three migration attestations. It returns HTTP 503
+until all are true:
+
+- `inventory_complete=1`: every page of all seven source collections has been
+  previewed and imported, including both Astrologer collections.
+- `reconciliation_complete=1`: every imported source page has been reconciled
+  after the final source update, with zero missing audit entries, hash
+  mismatches, missing target mappings or warnings.
+- `source_quiesced=1`: profile/role/admin/phone/public-ID/payout writes in the
+  staging Firestore source have been paused for final reconciliation and
+  remain paused while D1 authorization is used.
+
+These values are operator attestations, not facts inferred from partial page
+imports. Do not set them merely to make the gate green. Only after the complete
+evidence above exists, use the isolated staging D1 SQL console:
+
+```sql
+INSERT INTO smv_domain_identity_migration_meta
+  (source_project_id, inventory_complete, reconciliation_complete,
+   source_quiesced, last_source_update_time, updated_at_ms)
+VALUES
+  ('smv-astro-staging', 1, 1, 1,
+   strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+   CAST(strftime('%s', 'now') AS INTEGER) * 1000)
+ON CONFLICT(source_project_id) DO UPDATE SET
+  inventory_complete = excluded.inventory_complete,
+  reconciliation_complete = excluded.reconciliation_complete,
+  source_quiesced = excluded.source_quiesced,
+  last_source_update_time = excluded.last_source_update_time,
+  updated_at_ms = excluded.updated_at_ms;
+```
+
+Then, and only for the isolated staging Worker, set the protected variable
+`SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED=true`. Keep
+`SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE=false` while backfill tools remain
+needed. If the D1 gate becomes unavailable after activation, authorization
+fails closed with HTTP 503; there is no automatic Firestore fallback. Firebase
+Auth itself remains unchanged.
+
+This repository change does not run a real Firestore import, set these
+attestation fields, set Cloudflare secrets/variables, apply remote migrations,
+or deploy the staging Worker.
+
 ## Admin routes
 
 All routes require a Firebase ID token whose application identity resolves as Admin using the existing trusted Admin mechanism. Routes are registered only while the staging flag is true.
