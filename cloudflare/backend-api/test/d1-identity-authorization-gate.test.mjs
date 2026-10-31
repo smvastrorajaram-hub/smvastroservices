@@ -81,7 +81,7 @@ test('D1 authorization delegates only after schema, inventory, reconciliation an
     uid: 'staging-user', role: 'customer', isAdmin: false, header: 'Bearer test-token'
   });
   assert.equal(state.authCalls, 1);
-  assert.equal(state.calls.length, 2);
+  assert.equal(state.calls.length, 4); // readiness + authenticated request each verify schema and migration state
 });
 
 test('D1 readiness failures fail closed without delegating to the identity resolver', async () => {
