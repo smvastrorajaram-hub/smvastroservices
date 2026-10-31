@@ -97,6 +97,31 @@ async function expectedObjects() {
   return objects;
 }
 
+
+async function verifyDeployedBinding() {
+  const workerInventory = await cloudflareRequest("/workers/scripts?per_page=1000");
+  const scripts = Array.isArray(workerInventory.result) ? workerInventory.result : [];
+  const deployed = scripts.find(item => String(item?.id || item?.name || "") === WORKER_NAME);
+  assert.ok(deployed, "The production Worker script was not found after deployment.");
+  const settings = await cloudflareRequest("/workers/scripts/" + encodeURIComponent(WORKER_NAME) + "/settings");
+  const bindings = Array.isArray(settings.result?.bindings) ? settings.result.bindings : [];
+  const matches = bindings.filter(binding =>
+    String(binding?.type || "").toLowerCase() === "d1" &&
+    String(binding?.name || "") === "DB"
+  );
+  assert.equal(matches.length, 1, "The production Worker must have exactly one DB D1 binding.");
+  const databaseId = String(matches[0]?.id || matches[0]?.database_id || "");
+  assert.equal(databaseId, DATABASE_ID, "The deployed Worker DB binding does not point to the reviewed Production D1.");
+  console.log("PRODUCTION_WORKER_D1_BINDING_VERIFIED");
+  console.log(JSON.stringify({
+    workerName: WORKER_NAME,
+    workersDevHostname: WORKER_NAME + "." + EXPECTED_SUBDOMAIN + ".workers.dev",
+    bindingName: "DB",
+    databaseName: DATABASE_NAME,
+    databaseId: DATABASE_ID
+  }));
+}
+
 async function main() {
   const subdomain = await cloudflareRequest("/workers/subdomain");
   assert.equal(
@@ -187,4 +212,4 @@ async function main() {
   console.log(JSON.stringify(summary));
 }
 
-await main();
+if (process.argv[2] === "--verify-binding") await verifyDeployedBinding();\nelse await main();
