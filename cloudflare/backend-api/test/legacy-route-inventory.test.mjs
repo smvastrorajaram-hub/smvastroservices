@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LEGACY_BACKEND_ROUTE_INVENTORY, isLegacyBackendPath } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 
-test('legacy route inventory remains exactly 144 unique method/path pairs', () => {
-  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.length, 144);
-  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.filter(route => route.method === 'GET').length, 54);
-  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.filter(route => route.method === 'POST').length, 90);
-  assert.equal(new Set(LEGACY_BACKEND_ROUTE_INVENTORY.map(route => route.method + ' ' + route.path)).size, 144);
+test('legacy route inventory remains exactly 149 unique method/path pairs', () => {
+  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.length, 149);
+  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.filter(route => route.method === 'GET').length, 55);
+  assert.equal(LEGACY_BACKEND_ROUTE_INVENTORY.filter(route => route.method === 'POST').length, 94);
+  assert.equal(new Set(LEGACY_BACKEND_ROUTE_INVENTORY.map(route => route.method + ' ' + route.path)).size, 149);
 });
 
 test('known literal legacy paths are recognized', () => {

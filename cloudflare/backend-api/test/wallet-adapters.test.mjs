@@ -4,7 +4,7 @@ import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-walle
 import { createFirestoreWalletAdapter } from '../../../shared/backend-platform/firestore-wallet-adapter.mjs';
 
 class FakeD1 {
-  constructor() { this.wallets = new Map(); this.ledger = new Map(); }
+  constructor() { this.wallets = new Map(); this.ledger = new Map(); this.legacyTransactions = []; }
   prepare(sql) {
     const db = this;
     return {
@@ -80,6 +80,13 @@ class FakeD1 {
       };
       this.ledger.set(ledgerId, row);
       return { success: true, meta: { changes: 1 } };
+    }
+    if (sql.includes('FROM smv_domain_legacy_wallet_transactions')) {
+      const rows = this.legacyTransactions.filter(row => row.owner_uid === values[0])
+        .sort((a,b) => Number(b.created_at_ms) - Number(a.created_at_ms) ||
+          String(b.source_document_id).localeCompare(String(a.source_document_id)))
+        .slice(0, values[1]);
+      return { results: rows.map(row => ({ ...row })) };
     }
     throw new Error('FakeD1 does not recognize query: ' + sql);
   }
@@ -218,6 +225,46 @@ test('D1 Wallet adapter conforms to shared reserve, settlement and idempotency s
   await runWalletParity('D1', () => createD1WalletAdapter({ db, now: () => 1000 }), async () => {
     db.wallets.get('customer-1').bonus_minutes_balance = 2;
   });
+});
+
+test('D1 Wallet history merges archived Firestore transactions with the live D1 ledger', async () => {
+  const db = new FakeD1();
+  const adapter = createD1WalletAdapter({ db, now: () => 1000 });
+  await adapter.postWalletEntry({
+    ownerUid: 'customer-1', ownerRole: 'customer',
+    type: 'recharge', direction: 'credit', amountPaise: 5000,
+    idempotencyKey: 'current:recharge:1', referenceType: 'recharge', referenceId: 'order-1'
+  });
+  db.legacyTransactions.push({
+    source_document_id: 'legacy-firestore-tx-1',
+    owner_uid: 'customer-1',
+    owner_role: 'customer',
+    type: 'recharge',
+    direction: 'credit',
+    amount_paise: 2500,
+    balance_after_paise: 2500,
+    reserved_balance_after_paise: 0,
+    bonus_minutes: 0,
+    bonus_minutes_credited: 0,
+    bonus_minutes_balance_after: 0,
+    reserved_bonus_minutes_after: 0,
+    idempotency_key: 'legacy:recharge:1',
+    reference_type: 'recharge',
+    reference_id: 'legacy-order-1',
+    note: 'Historical Firestore recharge',
+    metadata_json: '{"origin":"Firestore"}',
+    status: 'posted',
+    created_at_ms: 1500
+  });
+
+  const history = await adapter.listTransactions('customer-1', 10);
+  assert.equal(history.length, 2);
+  assert.equal(history[0].id, 'legacy-firestore-tx-1');
+  assert.equal(history[0].source, 'legacy_firestore');
+  assert.equal(history[0].metadata.origin, 'Firestore');
+  assert.equal(history[1].source, null);
+  assert.equal(history[1].type, 'recharge');
+  assert.equal(history[1].amountPaise, 5000);
 });
 
 test('Firestore Admin Wallet adapter conforms to shared reserve, settlement and idempotency semantics', async () => {
