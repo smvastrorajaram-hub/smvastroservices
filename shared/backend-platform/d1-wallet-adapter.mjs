@@ -497,7 +497,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       throw walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.', 409);
     }
     const cashRow = await buildLedgerRow({
-      ...owner, type:'recharge', direction:'credit', amountPaise:amount,
+      owner, ...owner, type:'recharge', direction:'credit', amountPaise:amount,
       idempotencyKey:cashKey, ledgerId:await sha256Hex('recharge:' + owner.ownerUid + ':' + pid, cryptoImpl),
       availableDeltaPaise:amount, referenceType:'razorpay_payment', referenceId:pid,
       note:'Wallet recharge successful', metadata:{rechargeId:rid,orderId:oid}, source
@@ -505,7 +505,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const batchStatements = [insertStatement(cashRow)];
     if (selectedOffer && bonusMinutes > 0) {
       const bonusRow = await buildLedgerRow({
-        ...owner, type:'recharge_bonus_minutes', direction:'credit', amountPaise:0,
+        owner, ...owner, type:'recharge_bonus_minutes', direction:'credit', amountPaise:0,
         idempotencyKey:bonusKey, ledgerId:await sha256Hex('recharge-bonus:' + owner.ownerUid + ':' + pid, cryptoImpl),
         bonusMinutesDelta:bonusMinutes, referenceType:'razorpay_payment', referenceId:pid,
         note:'Wallet recharge bonus: ' + bonusMinutes + ' free Live minute(s)',
