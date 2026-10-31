@@ -67,7 +67,7 @@ function watchDashboardEvents({url,getToken,onChange,onStatus,isVisible=()=>true
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, deleteUser, updateProfile, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, signInWithCredential } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
@@ -847,12 +847,50 @@ function openAuth(mode="login"){
 window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegister;
 
 // Google Sign-In is a customer login method. Existing Email/Password, Customer ID,
-// and Astrologer ID flows remain unchanged.
-// We therefore use Firebase signInWithPopup() only here. The redirect flow was
-// removed because storage partitioning caused Firebase "missing initial state"
-// errors on the production domain.
+// and Astrologer ID flows remain unchanged. Native Android obtains a Google ID
+// token through Credential Manager; the Firebase Web SDK then signs into this
+// same WebView Auth instance so existing role checks and routing remain intact.
+// Ordinary browsers retain Firebase's supported popup flow.
 let smvGoogleLoginInProgress=false;
+let smvNativeGoogleRequestSequence=0;
 let smvEmailLoginInProgress=false;
+
+function smvRequestNativeGoogleIdToken(){
+  const bridge=window.SMVNativeCalls;
+  if(!bridge||typeof bridge.signInWithGoogle!=='function'){
+    return Promise.reject(new Error('Please update the SMV ASTRO app to the latest version before using Google Login.'));
+  }
+  const requestId='smv-google-'+Date.now().toString(36)+'-'+(++smvNativeGoogleRequestSequence);
+  return new Promise((resolve,reject)=>{
+    let settled=false,timer=null;
+    const cleanup=()=>{
+      if(timer)clearTimeout(timer);
+      window.removeEventListener('smv:native-google-token',onToken);
+      window.removeEventListener('smv:native-google-error',onError);
+    };
+    const finish=(callback,value)=>{
+      if(settled)return;
+      settled=true;cleanup();callback(value);
+    };
+    const onToken=event=>{
+      const detail=event?.detail||{};
+      if(String(detail.requestId||'')!==requestId)return;
+      const idToken=String(detail.idToken||'').trim();
+      if(!idToken){finish(reject,new Error('Google returned an empty sign-in token. Please try again.'));return;}
+      finish(resolve,idToken);
+    };
+    const onError=event=>{
+      const detail=event?.detail||{};
+      if(String(detail.requestId||'')!==requestId)return;
+      finish(reject,new Error(String(detail.message||'Google Sign-In failed. Please try again.')));
+    };
+    window.addEventListener('smv:native-google-token',onToken);
+    window.addEventListener('smv:native-google-error',onError);
+    timer=setTimeout(()=>finish(reject,new Error('Google Sign-In timed out. Please try again.')),120000);
+    try{bridge.signInWithGoogle(requestId);}
+    catch(error){finish(reject,new Error(error?.message||'Unable to open native Google Sign-In.'));}
+  });
+}
 // The first Firebase auth callback after a fresh page/app start is session
 // restoration, not an explicit Login action. Keep the authenticated session,
 // but start on Home. Explicit Email/Google login continues to own Dashboard routing.
@@ -931,9 +969,18 @@ async function signInWithGoogle(){
   btn.disabled=true; btn.querySelector('span:last-child').textContent='Signing in with Google...';
   try{
     smvGoogleLoginInProgress=true;
-    const provider=new GoogleAuthProvider();
-    provider.setCustomParameters({prompt:"select_account"});
-    const result=await withTimeout(signInWithPopup(auth,provider),30000);
+    let result;
+    if(window.SMVNativeCalls?.isNativeApp?.()===true){
+      const idToken=await smvRequestNativeGoogleIdToken();
+      result=await withTimeout(
+        signInWithCredential(auth,GoogleAuthProvider.credential(idToken)),
+        30000
+      );
+    }else{
+      const provider=new GoogleAuthProvider();
+      provider.setCustomParameters({prompt:"select_account"});
+      result=await withTimeout(signInWithPopup(auth,provider),30000);
+    }
     await finishGoogleRoleLogin(result?.user);
     smvGoogleLoginInProgress=false;
   }catch(e){
