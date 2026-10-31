@@ -29,6 +29,21 @@ The installed app displays versions in this order:
 
 The Gradle build derives Android's required increasing integer `versionCode` from the `vMAJOR.MINOR` name: `MAJOR * 1000 + MINOR`. Minor values are from 0 to 999. The workflow validates the version format before building. When creating a Release, enter the next version in the `version_name` workflow input. Example: after `v1.0`, use `v1.1`; after `v1.9`, use `v1.10`; after `v1.999`, use `v2.0`.
 
+## Native Android Google Login (v1.2)
+
+The Production Android WebView does not use Google's OAuth popup or redirect flow. It uses the Android **Credential Manager** account picker to obtain a Google ID token. The token is passed over the origin-restricted native WebMessage bridge to the Firebase JavaScript SDK, which signs into the existing WebView Auth instance. The existing `smv_users` role verification and Customer / Astrologer / Admin dashboard routing remain the source of authorization.
+
+- OAuth Web Client ID (public client configuration): `299081899217-ht47n60l8t2c7gbo07nd4lpm8i51jk3m.apps.googleusercontent.com`
+- Android `setServerClientId()` must use the **Web application** Client ID, not the Firebase Android App ID and never a Client Secret.
+- Credential Manager dependencies are pinned to `androidx.credentials:1.3.0` and `googleid:1.1.1`; Firebase Auth dependencies remain managed by the existing Firebase BoM.
+- The native bridge is restricted to the main frame on `https://smvastroservices.in` and `https://www.smvastroservices.in`. The Google ID token is not logged or stored by the native bridge.
+- Normal website and PWA visits continue to use Firebase's browser popup flow. Only the installed native Android app uses Credential Manager.
+- The v1.2 native implementation requires a new APK. The website-only source path is not enough to update an already-installed v1.1 APK.
+
+**Firebase Console prerequisite:** in Firebase project `smv-astro`, Google must remain enabled under Authentication → Sign-in providers. Under Project settings → Your apps → Android app `in.smvastroservices.smvastro`, verify that the SHA-1 fingerprint for the permanent Release signing certificate is registered. Keep the existing Release signing key; do not generate a new keystore. If the SHA-1 is missing, add the fingerprint from the same permanent Release certificate before testing native Google Login. Do not substitute the Android app ID for the Web OAuth Client ID.
+
+**Test boundary:** CI verifies source wiring and compiles Debug plus unsigned Release variants. A successful compile does not prove the Firebase SHA-1 setup or real-device Google account selection. Test on a phone after installing the signed v1.2 APK and confirming the SHA-1 / Google provider setup. No Firebase project settings, production backend, wallet, Razorpay, Render or Cloudflare resources are modified by the source change.
+
 ## One-time permanent Release signing setup — Android phone + GitHub Cloud
 
 The permanent Release key is generated once by the dedicated manual mode in the existing GitHub Actions workflow. No PC or local Android terminal is required. The generated keystore uses **PKCS12** format and a strong password.
