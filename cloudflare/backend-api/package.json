@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "check": "node --check src/index.mjs && node --check src/firebase-id-token.mjs && node --check ../../server.js",
-    "test:auth": "node --test test/firebase-id-token.test.mjs test/firebase-firestore-rest.test.mjs test/firebase-authorization.test.mjs"
+    "test:auth": "node --test test/firebase-id-token.test.mjs test/firebase-firestore-rest.test.mjs test/firebase-authorization.test.mjs",
+    "test:inventory": "node --test test/legacy-route-inventory.test.mjs"
   },
   "dependencies": {
     "express": "5.1.0"
