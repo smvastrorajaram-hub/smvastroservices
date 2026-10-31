@@ -172,7 +172,7 @@ test('health exposes readiness but never enables publishing by default', async (
   const { worker } = makeWorker(env);
   const response = await worker.fetch(new Request('https://apk.example/health'), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { success: true, ready: true, uploadsEnabled: false });
+  assert.deepEqual(await response.json(), { success: true, ready: true, uploadsEnabled: false, hasReleaseRecords: false });
 });
 
 test('admin-only upload rejects unauthenticated requests and respects disabled upload gate', async () => {
