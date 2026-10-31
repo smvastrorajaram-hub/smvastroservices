@@ -98,6 +98,40 @@ BEGIN
   ) THEN RAISE(ABORT,'LIVE_SESSION_RESERVE_MISSING') END;
 END;
 
+-- A network-disconnect settlement must still match the exact participant
+-- generation/deadline when the D1 batch begins; reconnecting invalidates stale alarms.
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_disconnect_generation_validate
+BEFORE UPDATE OF state ON smv_domain_live_sessions
+WHEN NEW.state='settling'
+ AND json_extract(NEW.payload_json,'$.endReason')='network_disconnect'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_connections c
+    WHERE c.session_id=NEW.session_id
+      AND c.uid=json_extract(NEW.payload_json,'$.settlementConnectionUid')
+      AND c.connected=0
+      AND c.generation=json_extract(NEW.payload_json,'$.settlementConnectionGeneration')
+      AND c.deadline_at_ms=json_extract(NEW.payload_json,'$.settlementDeadlineAtMs')
+      AND c.deadline_at_ms<=NEW.updated_at_ms
+  ) THEN RAISE(ABORT,'LIVE_DISCONNECT_CANCELLED') END;
+END;
+
+-- Settlement ledger rows may only be written after the owning session has
+-- entered the same atomic D1 batch's guarded 'settling' state.
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_settlement_ledger_validate
+BEFORE INSERT ON smv_domain_wallet_ledger
+WHEN NEW.type IN (
+  'live_session_usage','live_session_bonus_minutes',
+  'live_session_bonus_minutes_release','live_session_unused_release',
+  'live_session_settlement_marker'
+)
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_sessions s
+    WHERE s.session_id=NEW.reference_id AND s.state='settling'
+  ) THEN RAISE(ABORT,'LIVE_SESSION_NOT_SETTLING') END;
+END;
+
 -- Sessions cannot be reopened, and they cannot be ended while any cash or
 -- promotional-minute reserve remains unreconciled in the Wallet ledger.
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_session_settlement_validate
@@ -217,6 +251,33 @@ BEGIN
   ) THEN RAISE(ABORT,'LIVE_EARNING_SESSION_SETTLEMENT_MISMATCH') END;
   SELECT CASE WHEN NEW.gross_amount_paise<>NEW.astrologer_amount_paise+NEW.admin_amount_paise
     THEN RAISE(ABORT,'LIVE_EARNING_COMMISSION_MISMATCH') END;
+
+  SELECT CASE WHEN NEW.astrologer_amount_paise>0 AND NOT EXISTS (
+    SELECT 1 FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid=NEW.astrologer_uid AND l.reference_id=NEW.reference_id
+      AND l.type='live_session_earning' AND l.direction='credit'
+      AND l.amount_paise=NEW.astrologer_amount_paise
+      AND l.available_delta_paise=NEW.astrologer_amount_paise
+  ) THEN RAISE(ABORT,'LIVE_ASTROLOGER_WALLET_CREDIT_MISSING') END;
+
+  SELECT CASE WHEN NEW.astrologer_amount_paise=0 AND EXISTS (
+    SELECT 1 FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid=NEW.astrologer_uid AND l.reference_id=NEW.reference_id
+      AND l.type='live_session_earning'
+  ) THEN RAISE(ABORT,'LIVE_ASTROLOGER_WALLET_CREDIT_INVALID') END;
+
+  SELECT CASE WHEN NEW.admin_amount_paise>0 AND (
+    SELECT COUNT(*) FROM smv_domain_wallet_ledger l
+    WHERE l.reference_id=NEW.reference_id
+      AND l.type='live_session_admin_commission' AND l.direction='credit'
+      AND l.amount_paise=NEW.admin_amount_paise
+      AND l.available_delta_paise=NEW.admin_amount_paise
+  )<>1 THEN RAISE(ABORT,'LIVE_ADMIN_WALLET_CREDIT_MISSING') END;
+
+  SELECT CASE WHEN NEW.admin_amount_paise=0 AND EXISTS (
+    SELECT 1 FROM smv_domain_wallet_ledger l
+    WHERE l.reference_id=NEW.reference_id AND l.type='live_session_admin_commission'
+  ) THEN RAISE(ABORT,'LIVE_ADMIN_WALLET_CREDIT_INVALID') END;
 END;
 
 INSERT INTO smv_domain_schema_meta (schema_key,schema_version,applied_at_ms)
