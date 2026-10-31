@@ -31,7 +31,7 @@ function fakeD1() {
 }
 
 function setup({ collection = 'smv_users', documents = [], projectId = 'smv-astro-staging',
-  environment = 'staging' } = {}) {
+  environment = 'staging', payoutEncryptionKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' } = {}) {
   const db = fakeD1();
   const reads = [];
   const firestore = {
@@ -43,7 +43,7 @@ function setup({ collection = 'smv_users', documents = [], projectId = 'smv-astr
     }
   };
   const service = createIdentityProfileBackfillService({
-    db, firestore, sourceProjectId: projectId, environment, cryptoImpl: webcrypto,
+    db, firestore, sourceProjectId: projectId, environment, payoutEncryptionKey, cryptoImpl: webcrypto,
     now: () => 1800000000000
   });
   return { db, firestore, reads, service };
@@ -142,6 +142,18 @@ test('payout records are isolated from ordinary profile JSON and never returned'
   assert.equal(db.batches[0].some(item => item.sql.includes('smv_domain_identity_users')), false);
   assert.equal(result.personalDataReturned, false);
   assert.equal(JSON.stringify(result).includes('123456789012'), false);
+  const envelope = JSON.parse(payoutWrite.values[2]);
+  assert.equal(envelope.algorithm, 'A256GCM');
+  assert.equal(envelope.version, 1);
+  assert.equal(payoutWrite.values[2].includes('123456789012'), false);
+  const key = await webcrypto.subtle.importKey('raw', new Uint8Array(32), { name: 'AES-GCM' }, false, ['decrypt']);
+  const iv = Uint8Array.from(atob(envelope.iv), ch => ch.charCodeAt(0));
+  const ciphertext = Uint8Array.from(atob(envelope.ciphertext), ch => ch.charCodeAt(0));
+  const plaintext = await webcrypto.subtle.decrypt({ name: 'AES-GCM', iv,
+    additionalData: new TextEncoder().encode('smv-astro-staging:astro-1'), tagLength: 128 }, key, ciphertext);
+  const restored = new TextDecoder().decode(plaintext);
+  assert.match(restored, /123456789012/);
+  assert.match(restored, /Private Bank/);
 });
 
 test('rejects phone registry entries whose SHA-256 document ID does not match the canonical phone', async () => {
@@ -189,5 +201,18 @@ test('reconciliation is read-only and never declares cutover safe', async () => 
   assert.equal(result.writesPerformed, 0);
   assert.equal(result.cutoverSafe, false);
   assert.equal(result.personalDataReturned, false);
+  assert.equal(db.batches.length, 0);
+});
+
+test('blocks payout import when the protected AES-GCM key is not configured', async () => {
+  const { db, service } = setup({
+    collection: 'smv_payouts', payoutEncryptionKey: '',
+    documents: [{ id: 'astro-1', data: { uid: 'astro-1', accountNumber: '123456789012' } }]
+  });
+  const preview = await service.previewPage({ collection: 'payouts' });
+  assert.equal(preview.mappableDocuments, 0);
+  assert.equal(preview.warningCounts[0].code, 'PAYOUT_ENCRYPTION_KEY_MISSING');
+  await assert.rejects(service.applyPage({ collection: 'payouts' }),
+    error => error.code === 'IDENTITY_BACKFILL_SOURCE_WARNINGS');
   assert.equal(db.batches.length, 0);
 });
