@@ -2443,7 +2443,7 @@ function smvAndroidApkIsStaging(){
 }
 function smvAndroidApkWorkerBase(){
   if(smvAndroidApkIsStaging())return null;
-  const configured=String(window.SMV_APK_RELEASE_API_URL||'').trim();
+  const configured=String(window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
   if(!configured)return null;
   try{
     const url=new URL(configured);
