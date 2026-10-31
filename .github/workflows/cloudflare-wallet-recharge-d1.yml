@@ -10,9 +10,11 @@ on:
       - 'shared/backend-platform/d1-wallet-adapter.mjs'
       - 'shared/backend-platform/razorpay-rest-adapter.mjs'
       - 'cloudflare/backend-api/src/wallet-recharge-routes.mjs'
+      - 'cloudflare/backend-api/src/wallet-offer-routes.mjs'
       - 'cloudflare/backend-api/src/index.mjs'
       - 'cloudflare/backend-api/migrations/0004_wallet_offer_redemptions.sql'
       - 'cloudflare/backend-api/test/wallet-recharge-*.test.mjs'
+      - 'cloudflare/backend-api/test/wallet-offer-routes.test.mjs'
       - 'cloudflare/backend-api/test/fixtures/d1-wallet-recharge-*.sql'
       - 'cloudflare/backend-api/test/fixtures/d1-wallet-offer-limit.sql'
       - 'cloudflare/backend-api/test/fixtures/d1-wallet-premature-paid.sql'
@@ -40,12 +42,13 @@ jobs:
           node --check shared/backend-platform/d1-wallet-adapter.mjs
           node --check shared/backend-platform/razorpay-rest-adapter.mjs
           node --check cloudflare/backend-api/src/wallet-recharge-routes.mjs
+          node --check cloudflare/backend-api/src/wallet-offer-routes.mjs
           node --check cloudflare/backend-api/src/index.mjs
           node --check cloudflare/backend-api/test/wallet-recharge-domain.test.mjs
           node --check cloudflare/backend-api/test/wallet-recharge-routes.test.mjs
       - name: Run pure recharge and route contract tests
         working-directory: cloudflare/backend-api
-        run: node --test test/wallet-recharge-domain.test.mjs test/wallet-recharge-routes.test.mjs
+        run: node --test test/wallet-recharge-domain.test.mjs test/wallet-recharge-routes.test.mjs test/wallet-offer-routes.test.mjs
       - name: Apply additive Wallet migrations to local D1 only
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
