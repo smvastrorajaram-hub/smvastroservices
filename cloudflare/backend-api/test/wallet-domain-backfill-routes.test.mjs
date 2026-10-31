@@ -144,6 +144,7 @@ test('reconciliation returns conflict rather than declaring a mismatched page sa
 });
 
 
+// Keep route validation aligned with Firestore's 1,500-byte document-ID contract.
 test('nested Live preview accepts Firestore document IDs with dots and punctuation',async()=>{
   const state=fixture();
   const res=responseHarness();
