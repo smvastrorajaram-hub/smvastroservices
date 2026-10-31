@@ -30,7 +30,7 @@ test('identity service combines verified token, Admin allowlist and authoritativ
       return { uid: 'customer-1', email: 'customer@example.com', emailVerified: true, projectId: 'smv-astro-staging' };
     },
     firestore: {
-      async getDocument({ documentPath }) {
+      async getDocument(documentPath) {
         calls.push(documentPath);
         if (documentPath === 'smv_users/customer-1') return { exists: true, data: { role: 'customer' } };
         return { exists: false, data: null };
