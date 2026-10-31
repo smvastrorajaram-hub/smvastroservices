@@ -44,8 +44,8 @@ export function createFirebaseIdentityService({
     let profileDocument, adminDocument;
     try {
       [profileDocument, adminDocument] = await Promise.all([
-        firestore.getDocument({ projectId: identity.projectId, documentPath: 'smv_users/' + uid }),
-        firestore.getDocument({ projectId: identity.projectId, documentPath: 'smv_admins/' + uid })
+        firestore.getDocument('smv_users/' + uid),
+        firestore.getDocument('smv_admins/' + uid)
       ]);
     } catch {
       throw identityError('IDENTITY_PROFILE_UNAVAILABLE', 503, 'Account permissions are temporarily unavailable.');
