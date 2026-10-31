@@ -7,6 +7,6 @@
     "check": "node --check src/index.mjs"
   },
   "dependencies": {
-    "express": "4.21.2"
+    "express": "5.1.0"
   }
 }
