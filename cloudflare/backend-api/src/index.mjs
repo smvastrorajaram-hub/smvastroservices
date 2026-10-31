@@ -296,7 +296,8 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen
     const liveService = createD1LiveSessionService({
       db: env.DB,
       walletAdapter: sharedWalletAdapter,
-      firestore: firestoreAdmin
+      firestore: firestoreAdmin,
+      adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
     });
     registerD1LiveSessionRoutes({
       app,
