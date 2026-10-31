@@ -30,24 +30,22 @@ Admin authority is imported only from `smv_admins`. A mutable `role: "admin"` va
 
 ## Payout data protection
 
-Bank/UPI data is never stored in the ordinary user or Astrologer JSON profile and is never included in preview, status, apply or reconciliation responses. Before payout pages can be applied, configure a **32-byte AES-GCM key**, base64-encoded, as the protected Cloudflare Worker secret `SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY`. The importer encrypts the payout document with AES-256-GCM and binds its additional authenticated data to `firebaseProjectId:uid`. The D1 `payload_json` column contains only the versioned encrypted envelope. Without the key, payout import produces `PAYOUT_ENCRYPTION_KEY_MISSING` and apply is blocked.
+Bank/UPI data is never stored in the ordinary user or Astrologer JSON profile and is never included in preview, status, apply or reconciliation responses. Before payout pages can be applied, configure a **staging-only 32-byte AES-GCM key**, base64-encoded, as the GitHub Actions secret `SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY`. The staging deployment workflow validates that it decodes to exactly 32 bytes and mirrors it to the Cloudflare Worker secret with the same name; it never prints or reads back the key. Optionally set `SMV_IDENTITY_PAYOUT_KEY_VERSION` as another GitHub Actions secret (default `v1`); the workflow mirrors the version alongside the key. Use a newly generated staging key, never a production payout key. The importer encrypts the payout document with AES-256-GCM and binds its additional authenticated data to `firebaseProjectId:uid`. The D1 `payload_json` column contains only the versioned encrypted envelope. Without the key, payout records produce `PAYOUT_ENCRYPTION_KEY_MISSING`, remain unmappable, and must not be imported or reconciled as complete.
 
 Keep this key outside source control and do not paste it into chat, PR comments, or ordinary Worker variables. Back it up securely; losing it makes the imported payout data unreadable. `SMV_IDENTITY_PAYOUT_KEY_VERSION` labels the key version (default `v1`).
 
-## Protected staging configuration (not changed by this PR)
+## Protected staging configuration
 
-Only after staging access is explicitly approved, configure through Cloudflare's protected secrets/variables:
+The following non-secret staging values are already pinned in `cloudflare/backend-api/wrangler.jsonc`; do not redirect this Worker to a production Firebase project or database. For the operator-managed credentials, use GitHub repository Settings → Secrets and variables → Actions:
 
 - `SMV_ENVIRONMENT=staging`
 - `FIREBASE_PROJECT_ID=smv-astro-staging`
 - `FIREBASE_AUTH_PROJECT_IDS=smv-astro-staging`
-- `FIREBASE_SERVICE_ACCOUNT_JSON`: a service account from the staging project with Firestore read-only access
-- `SMV_IDENTITY_PROFILE_BACKFILL_ENABLED=true`
-- `SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE=false`
-- `SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY`: protected secret, base64 of exactly 32 random bytes
-- optionally `SMV_IDENTITY_PAYOUT_KEY_VERSION=v1`
+- `FIREBASE_STAGING_SERVICE_ACCOUNT_JSON`: a service account from `smv-astro-staging` with read-only Firestore access; the workflow validates `project_id` and mirrors it to the staging Worker secret `FIREBASE_SERVICE_ACCOUNT_JSON`.
+- `SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY`: a staging-only, newly generated key encoded as base64 from exactly 32 random bytes. The workflow mirrors it to the Worker secret only when present. Do not paste it into chat, issues, logs or source control.
+- optionally `SMV_IDENTITY_PAYOUT_KEY_VERSION`: short version label such as `v1`; defaults to `v1`.
 
-The current PR does not set these values or deploy the Worker. The API checks project IDs and environment at construction time, and route registration remains off while the backfill flag is false.
+If the payout key is absent, deployment may still finish for read-only inspection, but the preview reports `PAYOUT_ENCRYPTION_KEY_MISSING` for payout records. This warning is a hard data-reconciliation blocker, not a reason to skip those records or claim the migration complete. The Worker still sets `SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY=true` and `SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED=false`; no importer is activated by setting these secrets.
 
 ## D1 authorization integration — disabled until verified
 
