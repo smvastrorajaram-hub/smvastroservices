@@ -143,6 +143,10 @@ test('verify fails when the user token is not an authenticated Customer', async 
 
 test('webhook verifies raw body signature and atomically finalizes only Wallet order events', async () => {
   const state=baseDeps();
+  state.razorpay.fetchPayment=async id=>{
+    state.calls.push(['fetchPayment',id]);
+    return {id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'};
+  };
   const raw=new TextEncoder().encode(JSON.stringify({
     event:'payment.captured',
     payload:{payment:{entity:{id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'}}}
