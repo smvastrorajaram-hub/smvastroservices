@@ -256,9 +256,14 @@ async function recordUploadAttempt(env, uid, now) {
     'SELECT COUNT(*) AS count FROM android_apk_upload_attempts WHERE uid = ? AND attempted_at >= ?'
   ).bind(uid, now - UPLOAD_WINDOW_MS).first();
   if (Number(result?.count || 0) >= MAX_UPLOADS_PER_HOUR) return false;
-  await env.DB.prepare(
-    'INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)'
-  ).bind(uid, now).run();
+  try {
+    await env.DB.prepare(
+      'INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)'
+    ).bind(uid, now).run();
+  } catch (error) {
+    if (/APK_UPLOAD_RATE_LIMIT/i.test(String(error?.message || error))) return false;
+    throw error;
+  }
   await env.DB.prepare(
     'DELETE FROM android_apk_upload_attempts WHERE attempted_at < ?'
   ).bind(now - 2 * UPLOAD_WINDOW_MS).run();
