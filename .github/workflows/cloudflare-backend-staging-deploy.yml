@@ -2,15 +2,7 @@ name: Cloudflare Backend API staging deployment
 
 on:
   push:
-    branches: [main, integration/cloudflare-backend-staging-stack-20261031]
-    paths:
-      - 'cloudflare/backend-api/**'
-      - 'shared/backend-platform/**'
-      - 'server.js'
-      - '.github/workflows/cloudflare-backend-staging-deploy.yml'
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+    branches: [integration/cloudflare-backend-staging-stack-20261031]
     paths:
       - 'cloudflare/backend-api/**'
       - 'shared/backend-platform/**'
@@ -26,14 +18,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031') ||
-      (github.event_name == 'workflow_dispatch' &&
-       github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.number == 254 &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.head.ref == 'feature/cloudflare-backend-runtime-staging-20261031')
+      (github.event_name == 'push' && github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -147,6 +132,45 @@ jobs:
           printf '%s' "$SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY" | npx --yes wrangler@4.156.0 secret put SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY --config wrangler.jsonc
           printf '%s' "$SMV_IDENTITY_PAYOUT_KEY_VERSION" | npx --yes wrangler@4.156.0 secret put SMV_IDENTITY_PAYOUT_KEY_VERSION --config wrangler.jsonc
 
+      - name: Generate a fresh Wallet payout key once and store it on the staging Worker
+        working-directory: cloudflare/backend-api
+        env:
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 secret list --format json --config wrangler.jsonc > /tmp/wallet-worker-secrets.json
+          if node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const entries = JSON.parse(readFileSync('/tmp/wallet-worker-secrets.json','utf8'));
+          process.exit((Array.isArray(entries) ? entries : []).some(item => item?.name === 'SMV_WALLET_PAYOUT_ENCRYPTION_KEY') ? 0 : 1);
+          NODE
+          then
+            echo "PASS: dedicated Wallet payout key already exists on staging Worker; no rotation was attempted."
+          else
+            if [[ -n "${SMV_WALLET_PAYOUT_ENCRYPTION_KEY:-}" ]]; then
+              KEY="$SMV_WALLET_PAYOUT_ENCRYPTION_KEY"
+            else
+              KEY="$(node --input-type=module -e "import { randomBytes } from 'node:crypto'; process.stdout.write(randomBytes(32).toString('base64'))")"
+            fi
+            export KEY
+            node --input-type=module <<'NODE'
+          const value = String(process.env.KEY || '').trim();
+          const decoded = Buffer.from(value, 'base64');
+          if (decoded.length !== 32 || decoded.toString('base64') !== value) {
+            console.error('Refusing Wallet payout key: it must be base64 for exactly 32 random bytes.');
+            process.exit(1);
+          }
+          console.log('::add-mask::' + value);
+          NODE
+            printf '%s' "$KEY" | npx --yes wrangler@4.156.0 secret put SMV_WALLET_PAYOUT_ENCRYPTION_KEY --config wrangler.jsonc
+            printf 'SMV_WALLET_PAYOUT_ENCRYPTION_KEY=%s\n' "$KEY" >> "$GITHUB_ENV"
+            unset KEY
+            echo "PASS: new AES-256-GCM key is stored as a private Cloudflare staging Worker secret; key bytes were masked."
+          fi
+
       - name: Verify the staging Firebase service-account secret exists
         working-directory: cloudflare/backend-api
         env:
@@ -239,7 +263,8 @@ jobs:
               readiness.sharedDomainSchemaVersion !== '0002_shared_domain_repository' ||
               readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
               readiness.walletBusinessRoutesEnabled !== false ||
-              readiness.walletBackfillToolsEnabled !== false ||
+              readiness.walletBackfillRoutesRegistered !== true ||
+              readiness.walletBackfillToolsEnabled !== true ||
               readiness.liveCallChatRoutesEnabled !== false) {
             throw new Error('Shared staging D1 readiness, additive migration or safety checks failed.');
           }
@@ -264,3 +289,12 @@ jobs:
           SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
         shell: bash
         run: node scripts/identity-profile-readonly-preview.mjs
+
+      - name: Run full paginated Wallet + Live historical read-only audit
+        working-directory: cloudflare/backend-api
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
+          SMV_WALLET_PAYOUT_KEY_VERSION: 'v1'
+        shell: bash
+        run: node scripts/wallet-live-readonly-preview.mjs

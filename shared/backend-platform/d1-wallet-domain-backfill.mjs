@@ -1,6 +1,6 @@
 import {
   WALLET_DOMAIN_BACKFILL_COLLECTIONS,
-  mapLegacyWalletDomainDocument
+  mapLegacyWalletDomainDocumentWithPayoutEncryption
 } from './wallet-domain-backfill.mjs';
 
 function backfillError(code, message, status = 400) {
@@ -33,8 +33,12 @@ async function sha256(value, cryptoImpl) {
 }
 
 function safeParentId(value) {
-  const id = String(value || '').trim();
-  return /^[A-Za-z0-9_-]{1,180}$/.test(id) ? id : '';
+  // Firestore document IDs may contain punctuation and Unicode; the Firestore
+  // path-segment limit is 1,500 bytes, not a 180-character ASCII regex.
+  const id = String(value ?? '');
+  const byteLength = new TextEncoder().encode(id).byteLength;
+  return id && byteLength <= 1500 && id !== '.' && id !== '..' && !id.includes('/')
+    ? id : '';
 }
 
 function sourceCollectionPath(key, parentId = '') {
@@ -70,14 +74,18 @@ function mappedTargetPath(key, document, parentId = '') {
     case 'scheduledCallChatAppointments': return { table:'smv_domain_scheduled_appointments', sql:'SELECT appointment_id FROM smv_domain_scheduled_appointments WHERE appointment_id=?', values:[id] };
     case 'liveSessionEarnings': return { table:'smv_domain_earnings', sql:'SELECT earning_id FROM smv_domain_earnings WHERE earning_id=?', values:[id] };
     case 'withdrawals': return { table:'smv_domain_withdrawals', sql:'SELECT withdrawal_id FROM smv_domain_withdrawals WHERE withdrawal_id=?', values:[id] };
-    case 'withdrawalPayouts': return { table:'smv_domain_withdrawal_payouts', sql:'SELECT withdrawal_id FROM smv_domain_withdrawal_payouts WHERE withdrawal_id=?', values:[id] };
+    case 'withdrawalPayouts': return { table:'smv_domain_withdrawal_payouts_encrypted', sql:'SELECT withdrawal_id FROM smv_domain_withdrawal_payouts_encrypted WHERE withdrawal_id=?', values:[String(data.withdrawalId || id)] };
+    case 'walletRechargeOrders': return { table:'smv_domain_razorpay_orders', sql:'SELECT order_id FROM smv_domain_razorpay_orders WHERE order_id=?', values:[String(data.razorpayOrderId || data.orderId || id)] };
     case 'razorpayWebhookEvents': return { table:'smv_domain_razorpay_webhook_events', sql:'SELECT event_key FROM smv_domain_razorpay_webhook_events WHERE event_key=?', values:[id] };
     case 'billingSettings': return { table:'smv_domain_settings', sql:'SELECT setting_id FROM smv_domain_settings WHERE setting_id=?', values:[id] };
     default: return null;
   }
 }
 
-export function createWalletDomainBackfillService({ db, firestore, now = Date.now, cryptoImpl = globalThis.crypto } = {}) {
+export function createWalletDomainBackfillService({
+  db, firestore, now = Date.now, cryptoImpl = globalThis.crypto,
+  payoutEncryptionKey = '', payoutKeyVersion = 'v1', sourceProjectId = 'smv-astro-staging'
+} = {}) {
   if (!db || typeof db.prepare !== 'function' || typeof db.batch !== 'function' ||
       !firestore || typeof firestore.listDocuments !== 'function' ||
       typeof firestore.getDocument !== 'function' ||
@@ -89,7 +97,17 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     return db.prepare(sql).bind(...values);
   }
 
-  async function readPage({ collection, pageToken = '', parentId = '', pageSize = 40 } = {}) {
+  async function mapDocument(collection, document, options = {}) {
+    return mapLegacyWalletDomainDocumentWithPayoutEncryption(collection, document, {
+      ...options,
+      payoutEncryptionKey,
+      payoutKeyVersion,
+      sourceProjectId,
+      cryptoImpl
+    });
+  }
+
+  async function readPage({ collection, pageToken = '', parentId = '', pageSize = 40, includeFilteredOut = false } = {}) {
     const definition = WALLET_DOMAIN_BACKFILL_COLLECTIONS[collection];
     if (!definition) throw backfillError('BACKFILL_COLLECTION_UNSUPPORTED', 'The requested migration collection is not supported.');
     const size = Math.max(1, Math.min(100, Math.floor(Number(pageSize) || 40)));
@@ -108,20 +126,20 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     const path = sourceCollectionPath(collection,parentId);
     const page = await firestore.listDocuments(path,{pageSize:size,pageToken:String(pageToken || '')});
     return {
-      documents:filterDocuments(collection,page.documents || []),
+      documents:includeFilteredOut === true ? (page.documents || []) : filterDocuments(collection,page.documents || []),
       nextPageToken:String(page.nextPageToken || ''),
       sourceCollection:path
     };
   }
 
-  async function preparePageDocuments({ collection, pageToken = '', parentId = '', pageSize = 40 } = {}) {
-    const page = await readPage({collection,pageToken,parentId,pageSize});
+  async function preparePageDocuments({ collection, pageToken = '', parentId = '', pageSize = 40, includeFilteredOut = false } = {}) {
+    const page = await readPage({collection,pageToken,parentId,pageSize,includeFilteredOut});
     const items = [];
     for (const document of page.documents) {
       const canonical = stableJson(document.data || {});
       const digest = await sha256(canonical,cryptoImpl);
       const prepared = { ...document, payloadSha256:digest };
-      const mapped = mapLegacyWalletDomainDocument(collection,prepared,{parentId,nowMs:Number(now())});
+      const mapped = await mapDocument(collection,prepared,{parentId,nowMs:Number(now())});
       items.push({ document:prepared, mapped, canonical });
     }
     return { ...page, items };
@@ -257,10 +275,13 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
         (SELECT COUNT(*) FROM smv_domain_wallet_offers) AS wallet_offers,
         (SELECT COUNT(*) FROM smv_domain_live_sessions) AS live_sessions,
         (SELECT COUNT(*) FROM smv_domain_live_bookings) AS live_bookings,
+        (SELECT COUNT(*) FROM smv_domain_scheduled_appointments) AS scheduled_appointments,
+        (SELECT COUNT(*) FROM smv_domain_razorpay_orders) AS razorpay_wallet_orders,
+        (SELECT COUNT(*) FROM smv_domain_withdrawal_payouts_encrypted) AS encrypted_withdrawal_payouts,
         (SELECT COUNT(*) FROM smv_domain_legacy_documents) AS archived_documents`
     ).first();
     return { collections:result?.results || [], target:target || {} };
   }
 
-  return Object.freeze({ readPage,previewPage,applyPage,reconcilePage,assertSourceQuiescent,status });
+  return Object.freeze({ readPage,mapDocument,previewPage,applyPage,reconcilePage,assertSourceQuiescent,status });
 }
