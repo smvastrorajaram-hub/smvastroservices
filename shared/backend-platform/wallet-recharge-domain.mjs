@@ -37,8 +37,17 @@ export function classifyRechargeIntent({ status, storedAmountPaise, requestedAmo
 
 export function offerDateMilliseconds(value) {
   if (value == null || value === '') return null;
-  if (Number.isFinite(Number(value))) return Number(value);
-  const parsed = Date.parse(value);
+  if (value && typeof value.toMillis === 'function') {
+    const timestamp = Number(value.toMillis());
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  // Match the legacy Admin Offer contract: datetime-local values are India time.
+  const ist = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw);
+  const parsed = Date.parse(ist ? raw + '+05:30' : raw);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
