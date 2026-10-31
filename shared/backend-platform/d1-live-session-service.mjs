@@ -355,7 +355,7 @@ export function createD1LiveSessionService({
            (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,
             reserved_amount_paise,reserved_bonus_minutes,actual_charge_paise,
             started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
-           VALUES (?,?,?,?,'preparing',?,?,?,?,NULL,NULL,NULL,?,?,?)`,
+           VALUES (?,?,?,?,'preparing',?,?,?,0,NULL,NULL,NULL,?,?,?)`,
           [id,booking.customerUid,uid,booking.mode,booking.appointmentId||null,
             booking.reservedAmountPaise,booking.reservedBonusMinutes,livePayload(session),
             Number(booking.createdAtMs||timestamp),timestamp]
