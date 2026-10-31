@@ -226,6 +226,24 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
     };
   }
 
+  async function assertSourceQuiescent() {
+    if (typeof firestore.runQuery !== 'function') {
+      throw backfillError('BACKFILL_PREFLIGHT_UNAVAILABLE','Firestore query support is required for the cutover preflight.',503);
+    }
+    const [activeSessions,pendingBookings,reservedBookings,pendingRecharges] = await Promise.all([
+      firestore.runQuery({collectionPath:'smv_live_sessions',filters:[{field:'state',op:'in',value:['ringing','preparing','connecting','active']}],limit:1}),
+      firestore.runQuery({collectionPath:'smv_live_bookings',filters:[{field:'status',op:'==',value:'pending'}],limit:1}),
+      firestore.runQuery({collectionPath:'smv_live_bookings',filters:[{field:'walletReservationState',op:'==',value:'reserved'}],limit:1}),
+      firestore.runQuery({collectionPath:'smv_wallet_recharges',filters:[{field:'status',op:'in',value:['creating','order_created','payment_pending','created','pending','processing']}],limit:1})
+    ]);
+    const blockers = [];
+    if (activeSessions.length) blockers.push('active_or_connecting_live_session');
+    if (pendingBookings.length) blockers.push('pending_live_booking');
+    if (reservedBookings.length) blockers.push('wallet_reserved_live_booking');
+    if (pendingRecharges.length) blockers.push('non_terminal_wallet_recharge');
+    return { ok:blockers.length===0,blockers };
+  }
+
   async function status() {
     const result = await statement(
       `SELECT source_collection,COUNT(*) AS imported_documents,MAX(imported_at_ms) AS latest_import_at_ms
