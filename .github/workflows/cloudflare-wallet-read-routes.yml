@@ -25,6 +25,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
       - name: Check shared identity and Wallet route syntax
         run: |
           node --check shared/backend-platform/firebase-identity-service.mjs
@@ -36,3 +39,6 @@ jobs:
       - name: Run identity and Wallet read-route contract tests
         working-directory: cloudflare/backend-api
         run: node --test test/wallet-read-routes.test.mjs
+      - name: Validate Worker bundle without deployment
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
