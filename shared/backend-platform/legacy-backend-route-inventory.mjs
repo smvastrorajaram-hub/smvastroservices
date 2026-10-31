@@ -10,9 +10,9 @@ export const LEGACY_BACKEND_ROUTE_INVENTORY = Object.freeze(
 );
 
 function normalizePath(pathname) {
-  const value = String(pathname || '/').split('?')[0];
-  if (!value || value === '/') return '/';
-  return value.replace(/\\/+$/, '') || '/';
+  let value = String(pathname || '/').split('?')[0];
+  while (value.length > 1 && value.endsWith('/')) value = value.slice(0, -1);
+  return value || '/';
 }
 
 function matchesRoutePath(pattern, pathname) {
