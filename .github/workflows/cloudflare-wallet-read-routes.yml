@@ -1,0 +1,35 @@
+name: Cloudflare Wallet read route shared integration tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/shared-firestore-admin-rest-adapter-20261031
+    paths:
+      - 'shared/backend-platform/firebase-identity-service.mjs'
+      - 'cloudflare/backend-api/src/wallet-read-routes.mjs'
+      - 'cloudflare/backend-api/test/wallet-read-routes.test.mjs'
+      - 'cloudflare/backend-api/src/index.mjs'
+      - '.github/workflows/cloudflare-wallet-read-routes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-read-routes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check shared identity and Wallet route syntax
+        run: |
+          node --check shared/backend-platform/firebase-identity-service.mjs
+          node --check cloudflare/backend-api/src/wallet-read-routes.mjs
+          node --check cloudflare/backend-api/test/wallet-read-routes.test.mjs
+      - name: Run identity and Wallet read-route contract tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/wallet-read-routes.test.mjs
