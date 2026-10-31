@@ -140,6 +140,23 @@ export function createRazorpayRestClient({
     return request('/payments/' + encodeURIComponent(idValue));
   }
 
+  async function capturePayment(paymentId, amountPaise, currency = 'INR') {
+    const idValue = cleanId(paymentId, 64);
+    const amount = validPaise(amountPaise);
+    if (!idValue || amount === null || String(currency).toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay capture details are invalid.'), { code: 'RAZORPAY_CAPTURE_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/payments/' + encodeURIComponent(idValue) + '/capture', {
+      method: 'POST',
+      body: { amount, currency: 'INR' }
+    });
+    if (String(payload.id || '') !== idValue || Number(payload.amount) !== amount ||
+        String(payload.currency || '') !== 'INR') {
+      throw Object.assign(new Error('Razorpay returned an invalid capture response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return payload;
+  }
+
   async function fetchRefund(refundId) {
     const idValue = cleanId(refundId, 64);
     if (!idValue) throw Object.assign(new Error('Razorpay refund ID is invalid.'), { code: 'RAZORPAY_REFUND_ID_INVALID', httpStatus: 400 });
@@ -166,5 +183,5 @@ export function createRazorpayRestClient({
     return Object.freeze({ id: String(payload.id), paymentId: pid, amount: Number(payload.amount), status: String(payload.status || '') });
   }
 
-  return Object.freeze({ createOrder, fetchPayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
+  return Object.freeze({ createOrder, fetchPayment, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
 }
