@@ -370,32 +370,32 @@ test('an explicitly archived Firebase row in D1 remains available as historical 
 });
 
 
-test('Homepage shows install/update states and only trusts the configured Cloudflare APK release origin', async () => {
+test('Homepage reuses the single PWA icon and renders APK version/date with version-aware actions', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
-  const moduleSource = fs.readFileSync(path.join(root, 'public/smvastro.mjs'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(root, 'public/smv-ui.css'), 'utf8');
 
-  assert.ok(installer.includes('SMV ASTRO IS UP TO DATE'));
-  assert.ok(installer.includes('UPDATE APP'));
-  assert.ok(installer.includes('INSTALL APP'));
-  assert.ok(installer.includes('DOWNLOAD APP'));
-  assert.ok(installer.includes('health?.success === true && health.ready === true'));
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('icon-512-transparent.svg?v=20261023-transparent-pwa-v1'));
+  assert.doesNotMatch(html, /smvPermanentAndroidAppSection|smvPermanentApkDownload|smv-android-apk-icon-wrap/);
+  assert.ok(html.includes('window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
+  assert.ok(html.includes('window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
+
   assert.ok(installer.includes('getInstalledRelatedApps'));
-  assert.ok(installer.includes('firebasestorage.googleapis.com'));
-  assert.ok(moduleSource.includes('smvAndroidApkWorkerStatus'));
-  assert.ok(moduleSource.includes('/admin/android-app/versions'));
-  assert.ok(moduleSource.includes('DOWNLOAD APK'));
-  assert.ok(html.includes('id="adminAndroidAppHistory"'));
-  assert.ok(html.includes('id="adminAndroidApkBackendStatus"'));
-  assert.ok(html.includes('id="adminAndroidAppFileInfo"'));
-  assert.ok(html.includes('APK Install &amp; Update Manager'));
-  assert.ok(moduleSource.includes('Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.'));
-  assert.ok(moduleSource.includes('Selected APK: '));
-  assert.ok(html.includes('v=20261031-cloudflare-r2-apk-release-v3-admin-worker-route'));
+  assert.ok(installer.includes('Using Latest Version'));
+  assert.ok(installer.includes("'UPDATE'"));
+  assert.ok(installer.includes("'DOWNLOAD APK'"));
+  assert.ok(installer.includes('smvApkDownloadUrl'));
+  assert.ok(installer.includes('uploadedAtLabel'));
+  assert.ok(installer.includes("timeZone: 'Asia/Kolkata'"));
+  assert.ok(installer.includes("source.cloudflare ? 'r2' : 'firebase'"));
+  assert.ok(installer.includes('smv-apk-release-active'));
+  assert.ok(styles.includes('.smv-install-app-section.smv-apk-release-active .smv-install-app-card'));
 });
 
 test('Admin APK uploads are enabled in the deploy config while the example stays disabled', async () => {
