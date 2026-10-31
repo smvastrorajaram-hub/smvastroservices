@@ -46,7 +46,7 @@ export function offerDateMilliseconds(value) {
   const raw = String(value).trim();
   if (!raw) return null;
   // Match the legacy Admin Offer contract: datetime-local values are India time.
-  const ist = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(raw);
+  const ist = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw);
   const parsed = Date.parse(ist ? raw + '+05:30' : raw);
   return Number.isFinite(parsed) ? parsed : null;
 }
