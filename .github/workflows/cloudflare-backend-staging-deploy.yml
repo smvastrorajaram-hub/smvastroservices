@@ -2,15 +2,7 @@ name: Cloudflare Backend API staging deployment
 
 on:
   push:
-    branches: [main, integration/cloudflare-backend-staging-stack-20261031]
-    paths:
-      - 'cloudflare/backend-api/**'
-      - 'shared/backend-platform/**'
-      - 'server.js'
-      - '.github/workflows/cloudflare-backend-staging-deploy.yml'
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+    branches: [integration/cloudflare-backend-staging-stack-20261031]
     paths:
       - 'cloudflare/backend-api/**'
       - 'shared/backend-platform/**'
@@ -26,14 +18,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031') ||
-      (github.event_name == 'workflow_dispatch' &&
-       github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.number == 254 &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.head.ref == 'feature/cloudflare-backend-runtime-staging-20261031')
+      (github.event_name == 'push' && github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
