@@ -205,6 +205,7 @@ let liveSessionRoutesRegistered = false;
 let liveSessionSchemaReady = false;
 const walletBackfillToolsOpen = String(env.SMV_WALLET_BACKFILL_TOOLS_ENABLED || '').toLowerCase() === 'true';
 const identityProfileBackfillToolsOpen = String(env.SMV_IDENTITY_PROFILE_BACKFILL_ENABLED || '').toLowerCase() === 'true';
+const identityProfileBackfillPreviewOnly = String(env.SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY || 'true').toLowerCase() !== 'false';
 const identityProfileD1AuthorizationOpen = String(env.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED || '').toLowerCase() === 'true';
 const liveSessionRoutesOpen = String(env.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() === 'true';
 let sharedWalletAdapter = null;
@@ -361,6 +362,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       identityService: firebaseIdentityService || walletIdentityService,
       backfillService: identityBackfillService,
       toolsEnabled: identityProfileBackfillToolsOpen,
+      previewOnly: identityProfileBackfillPreviewOnly,
       environment: String(env.SMV_ENVIRONMENT || ''),
       sourceProjectId: projectId,
       cutoverComplete: String(env.SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE || '').toLowerCase() === 'true',
@@ -475,6 +477,9 @@ app.get('/healthz', async (_req, res) => {
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
     liveSessionSchemaReady,
+    identityProfileBackfillRoutesRegistered,
+    identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
+    identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
     identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
     productionTrafficEnabled: false
@@ -529,6 +534,9 @@ app.get('/api/backend/readiness', async (_req, res) => {
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
+      identityProfileBackfillRoutesRegistered,
+      identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
+      identityProfileBackfillPreviewOnly,
       identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
       identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
       identityProfileD1AuthorizationReason: identityGate.reason,
@@ -562,6 +570,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     walletBackfillToolsEnabled: walletBackfillToolsOpen,
     identityProfileBackfillRoutesRegistered,
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
+    identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
     identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
     walletBusinessRoutesEnabled: false,
