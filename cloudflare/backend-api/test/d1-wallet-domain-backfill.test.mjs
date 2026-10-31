@@ -24,6 +24,8 @@ function makeFixture({ documents = [], nextPageToken = '', blocker = false } = {
     prepare(sql) {
       let values=[];
       return {
+        sql,
+        get values() { return values; },
         bind(...input) { values=input; return this; },
         async run() { writes++; return {success:true,meta:{changes:1}}; },
         async all() {
