@@ -355,10 +355,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <p class="admin-workgroup-description">Upload a new permanent signed Android APK. The website checks the installed app version and shows DOWNLOAD APP or UPDATE APP automatically.</p>
 <div class="card" id="adminAndroidAppManagementCard">
   <h3>SMV ASTRO APK Install &amp; Update Manager</h3>
-  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. When the dedicated Cloudflare Worker, R2 and D1 are ready, Homepage latest-version status and saved version history use Cloudflare. New APKs are saved to R2 when uploads are enabled. The existing Render/Firebase upload is used only before the release service is ready or has taken ownership of a release.</p>
+  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, increasing versionCode and permanent Release signing certificate before publishing. Once the Cloudflare Worker is ready, the latest version and saved history use the dedicated R2 bucket and D1 database.</p>
+  <div class="small" id="adminAndroidApkBackendStatus" role="status" aria-live="polite">Checking Cloudflare APK publishing service…</div>
   <div class="grid">
-    <label><b>Select signed APK file</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
+    <label><b>Select signed production APK</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
   </div>
+  <div class="small" id="adminAndroidAppFileInfo" aria-live="polite">APK limit: 100 MB. The server verifies package, versionCode and permanent Release signature.</div>
   <div class="action-row">
     <button class="btn" id="adminAndroidAppUpload" type="button">UPLOAD NEW APP VERSION</button>
     <button class="btn gray" id="adminAndroidAppRefresh" type="button">REFRESH CURRENT VERSION</button>
