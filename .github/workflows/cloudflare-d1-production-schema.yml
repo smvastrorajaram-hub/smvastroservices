@@ -1,6 +1,12 @@
 name: Provision Cloudflare Production D1 schema only
 
 on:
+  pull_request:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - ".github/workflows/cloudflare-d1-production-schema.yml"
+      - ".github/scripts/provision-cloudflare-production-d1-schema.mjs"
   push:
     branches:
       - integration/cloudflare-backend-staging-stack-20261031
@@ -12,7 +18,29 @@ permissions:
   contents: read
 
 jobs:
+  validate-only:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout the proposed integration changes
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check provisioning script syntax
+        run: node --check .github/scripts/provision-cloudflare-production-d1-schema.mjs
+
+      - name: Validate migrations on a fresh local D1
+        run: node .github/scripts/provision-cloudflare-production-d1-schema.mjs --local-check
+
   provision-schema-only:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -25,6 +53,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Recheck provisioning script syntax
+        run: node --check .github/scripts/provision-cloudflare-production-d1-schema.mjs
 
       - name: Validate production schema migrations on a fresh local D1
         run: node .github/scripts/provision-cloudflare-production-d1-schema.mjs --local-check
