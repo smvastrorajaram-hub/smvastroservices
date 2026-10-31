@@ -42,13 +42,13 @@ INSERT INTO smv_domain_offer_redemptions
 (redemption_id,offer_id,customer_uid,recharge_id,amount_paise,bonus_minutes,created_at_ms)
 VALUES ('ci-redemption-smoke','ci-offer-smoke','ci-wallet-recharge-smoke','ci-recharge-smoke',5000,3,2000);
 
-UPDATE smv_domain_wallet_recharges
-SET status='paid',razorpay_payment_id='pay_ci_smoke',paid_at_ms=2000,updated_at_ms=2000
-WHERE recharge_id='ci-recharge-smoke';
-
 UPDATE smv_domain_razorpay_orders
 SET status='paid',payment_id='pay_ci_smoke',updated_at_ms=2000
 WHERE order_id='order_ci_wallet_smoke';
+
+UPDATE smv_domain_wallet_recharges
+SET status='paid',razorpay_payment_id='pay_ci_smoke',paid_at_ms=2000,updated_at_ms=2000
+WHERE recharge_id='ci-recharge-smoke';
 
 CREATE TABLE IF NOT EXISTS _smv_recharge_smoke_assert (assert_id INTEGER PRIMARY KEY,ok INTEGER NOT NULL CHECK(ok=1));
 DELETE FROM _smv_recharge_smoke_assert;
