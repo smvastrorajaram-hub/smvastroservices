@@ -68,7 +68,7 @@ until all are true:
   previewed and imported, including both Astrologer collections.
 - `reconciliation_complete=1`: every imported source page has been reconciled
   after the final source update, with zero missing audit entries, hash
-  mismatches, missing target mappings or warnings.
+  mismatches, missing target mappings, target-value mismatches or warnings.
 - `source_quiesced=1`: profile/role/admin/phone/public-ID/payout writes in the
   staging Firestore source have been paused for final reconciliation and
   remain paused while D1 authorization is used.
