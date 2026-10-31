@@ -4,7 +4,7 @@ import { webcrypto } from 'node:crypto';
 import {
   createFirebaseIdTokenVerifier,
   FIREBASE_SECURETOKEN_JWKS_ENDPOINT
-} from '../src/firebase-id-token.mjs';
+} from '../../../shared/backend-platform/firebase-id-token.mjs';
 
 const PROJECT_ID = 'smv-astro-staging';
 const NOW = 1_800_000_000;
