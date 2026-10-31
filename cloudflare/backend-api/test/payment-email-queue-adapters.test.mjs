@@ -225,7 +225,7 @@ class FakeOutboxD1 {
     };
   }
   async run(sql, v) {
-    if (sql.includes('INSERT OR IGNORE INTO smv_domain_outbox')) {
+    if (sql.includes('INSERT OR IGNORE INTO smv_domain_event_outbox')) {
       const [id,type,key,payload,at,created,updated] = v;
       if ([...this.rows.values()].some(row => row.event_type === type && row.event_key === key)) return { meta:{changes:0} };
       this.rows.set(id,{outbox_id:id,event_type:type,event_key:key,payload_json:payload,status:'pending',attempt_count:0,next_attempt_at_ms:at,created_at_ms:created,updated_at_ms:updated});
@@ -255,7 +255,7 @@ class FakeOutboxD1 {
     throw new Error('Unknown outbox first: '+sql);
   }
   async all(sql,v) {
-    if(sql.includes('FROM smv_domain_outbox')){
+    if(sql.includes('FROM smv_domain_event_outbox')){
       return {results:[...this.rows.values()].filter(row=>['pending','failed'].includes(row.status)&&row.next_attempt_at_ms<=v[0])
         .sort((a,b)=>a.created_at_ms-b.created_at_ms).slice(0,v[1]).map(row=>({...row}))};
     }
