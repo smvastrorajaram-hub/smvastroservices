@@ -24,6 +24,25 @@ INSERT INTO smv_domain_razorpay_orders
 (order_id,owner_uid,service_name,amount_paise,currency,status,payload_json,created_at_ms,updated_at_ms)
 VALUES ('order_ci_wallet_smoke','ci-wallet-recharge-smoke','SMV ASTRO Wallet Recharge',5000,'INR','created','{"rechargeId":"ci-recharge-smoke"}',1000,1000);
 
+-- Legacy payment.failed semantics: mark only the payment-order attempt failed;
+-- keep the recharge intent pending so a later captured attempt can settle it.
+UPDATE smv_domain_razorpay_orders
+SET status='failed',payment_id='pay_failed_attempt',payload_json='{"failureReason":"payment_failed"}',updated_at_ms=1500
+WHERE order_id='order_ci_wallet_smoke'
+  AND service_name='SMV ASTRO Wallet Recharge'
+  AND status <> 'paid';
+
+CREATE TABLE IF NOT EXISTS _smv_recharge_failure_recovery_assert (
+  assert_id INTEGER PRIMARY KEY,
+  ok INTEGER NOT NULL CHECK(ok=1)
+);
+DELETE FROM _smv_recharge_failure_recovery_assert;
+INSERT INTO _smv_recharge_failure_recovery_assert(assert_id,ok)
+SELECT 1,CASE WHEN
+  (SELECT status='order_created' FROM smv_domain_wallet_recharges WHERE recharge_id='ci-recharge-smoke')
+  AND (SELECT status='failed' AND payment_id='pay_failed_attempt' FROM smv_domain_razorpay_orders WHERE order_id='order_ci_wallet_smoke')
+  THEN 1 ELSE 0 END;
+
 INSERT INTO smv_domain_wallet_ledger
 (ledger_id,owner_uid,owner_role,currency,type,direction,amount_paise,available_delta_paise,
  reserved_delta_paise,bonus_minutes_delta,reserved_bonus_minutes_delta,idempotency_key,
