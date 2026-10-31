@@ -35,6 +35,8 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "public/smvastro.mjs"
+      - "test/android-google-native-signin.test.mjs"
       - "docs/android-native-call-ringtone.md"
 
 permissions:
