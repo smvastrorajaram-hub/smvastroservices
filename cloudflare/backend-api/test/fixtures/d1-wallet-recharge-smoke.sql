@@ -50,6 +50,21 @@ UPDATE smv_domain_wallet_recharges
 SET status='paid',razorpay_payment_id='pay_ci_smoke',paid_at_ms=2000,updated_at_ms=2000
 WHERE recharge_id='ci-recharge-smoke';
 
+-- Emit each invariant separately so CI logs identify any failed condition.
+SELECT
+  (SELECT available_balance_paise FROM smv_domain_wallets WHERE owner_uid='ci-wallet-recharge-smoke') AS cash_balance_paise,
+  (SELECT bonus_minutes_balance FROM smv_domain_wallets WHERE owner_uid='ci-wallet-recharge-smoke') AS bonus_minutes_balance,
+  (SELECT reserved_balance_paise FROM smv_domain_wallets WHERE owner_uid='ci-wallet-recharge-smoke') AS cash_reserved_paise,
+  (SELECT version FROM smv_domain_wallets WHERE owner_uid='ci-wallet-recharge-smoke') AS wallet_version,
+  (SELECT COUNT(*) FROM smv_domain_wallet_ledger WHERE owner_uid='ci-wallet-recharge-smoke') AS ledger_count,
+  (SELECT COUNT(*) FROM smv_domain_offer_redemptions WHERE recharge_id='ci-recharge-smoke') AS redemption_count,
+  (SELECT used_count FROM smv_domain_wallet_offers WHERE offer_id='ci-offer-smoke') AS offer_used_count,
+  (SELECT redemption_count FROM smv_domain_wallet_offer_redemption_usage WHERE offer_id='ci-offer-smoke' AND customer_uid='ci-wallet-recharge-smoke') AS customer_redemption_count,
+  (SELECT status FROM smv_domain_wallet_recharges WHERE recharge_id='ci-recharge-smoke') AS recharge_status,
+  (SELECT razorpay_payment_id FROM smv_domain_wallet_recharges WHERE recharge_id='ci-recharge-smoke') AS recharge_payment_id,
+  (SELECT status FROM smv_domain_razorpay_orders WHERE order_id='order_ci_wallet_smoke') AS razorpay_order_status,
+  (SELECT payment_id FROM smv_domain_razorpay_orders WHERE order_id='order_ci_wallet_smoke') AS razorpay_payment_id;
+  
 CREATE TABLE IF NOT EXISTS _smv_recharge_smoke_assert (assert_id INTEGER PRIMARY KEY,ok INTEGER NOT NULL CHECK(ok=1));
 DELETE FROM _smv_recharge_smoke_assert;
 INSERT INTO _smv_recharge_smoke_assert(assert_id,ok)
