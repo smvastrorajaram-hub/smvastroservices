@@ -9,13 +9,14 @@
   },
   "vars": {
     "SMV_ENVIRONMENT": "staging",
-    "SMV_WALLET_CLOUDFLARE_ACTIVE": "false"
+    "SMV_WALLET_CLOUDFLARE_ACTIVE": "false",
+    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "smvastro-wallet-staging",
-      "database_id": "00000000-0000-4000-8000-000000000000",
+      "database_id": "0ddb87a9-8a16-4e39-a806-c9137c64959a",
       "migrations_dir": "migrations"
     }
   ]
