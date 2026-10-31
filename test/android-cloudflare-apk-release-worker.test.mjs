@@ -468,8 +468,8 @@ test('deployment workflow retries edge-propagation failures and requires D1/R2 r
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-android-apk-release-worker.yml'), 'utf8');
   assert.ok(workflow.includes('for attempt in {1..10}'));
-  assert.ok(workflow.includes('health.d1Ready !== true'));
-  assert.ok(workflow.includes('health.r2Ready !== true'));
+  assert.ok(workflow.includes('health.d1Ready === true'));
+  assert.ok(workflow.includes('health.r2Ready === true'));
   assert.ok(workflow.includes('Worker health did not become ready after bounded propagation retries'));
   assert.ok(workflow.includes('Public APK metadata'));
   assert.ok(workflow.includes("typeof data.available !== 'boolean'"));
