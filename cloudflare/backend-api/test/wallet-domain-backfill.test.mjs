@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   WALLET_DOMAIN_BACKFILL_COLLECTIONS,
   legacyTimestampMilliseconds,
-  mapLegacyWalletDomainDocument
+  mapLegacyWalletDomainDocument,
+  mapLegacyWalletDomainDocumentWithPayoutEncryption
 } from '../../../shared/backend-platform/wallet-domain-backfill.mjs';
+import { webcrypto } from 'node:crypto';
 
 test('legacy datetime-local dates retain the original India Standard Time meaning', () => {
   assert.equal(
@@ -148,4 +150,95 @@ test('unsupported or malformed records produce explicit warnings instead of sile
   assert.equal(wallet.warning,'WALLET_SNAPSHOT_INVALID');
   const unsupported = mapLegacyWalletDomainDocument('unknownCollection', { id:'x', data:{} });
   assert.equal(unsupported.warning,'BACKFILL_COLLECTION_UNSUPPORTED');
+});
+
+
+test('scheduled appointments redact contact fields while retaining normalized booking data', () => {
+  const mapped = mapLegacyWalletDomainDocument('scheduledCallChatAppointments', {
+    id:'appointment-safe-1',
+    data:{
+      customerUid:'customer-1',astrologerUid:'astro-1',
+      bookingKind:'scheduled_call_request',status:'confirmed',
+      preferredDate:'2026-11-05',preferredTime:'18:30',
+      customerPhone:'+919999999999',customerEmail:'person@example.test',
+      createdAt:new Date('2026-11-01T00:00:00Z')
+    }
+  });
+  assert.equal(mapped.mapped,true);
+  const row=mapped.statements.find(item=>item.kind==='scheduled_appointment');
+  assert.ok(row);
+  assert.doesNotMatch(row.values[7],/9999999999|person@example\.test/);
+  assert.match(row.values[7],/scheduled_call_request/);
+});
+
+test('wallet Razorpay orders map normalized order, payment and deterministic idempotency fields', () => {
+  const mapped = mapLegacyWalletDomainDocument('walletRechargeOrders', {
+    id:'doc-order-1',
+    data:{
+      service:'SMV ASTRO Wallet Recharge',orderId:'order_123',
+      amount:5000,currency:'INR',status:'paid',paymentId:'pay_123',
+      walletRechargeId:'recharge-123',customerUid:'customer-1',
+      createdAt:new Date('2026-11-01T00:00:00Z')
+    }
+  });
+  assert.equal(mapped.mapped,true);
+  const row=mapped.statements.find(item=>item.kind==='wallet_recharge_order');
+  assert.ok(row);
+  assert.match(row.sql,/INSERT OR IGNORE INTO smv_domain_razorpay_orders/);
+  assert.deepEqual(row.values.slice(0,7),['order_123','customer-1','SMV ASTRO Wallet Recharge',5000,'INR','paid','pay_123']);
+  assert.equal(row.values[10],'recharge-123');
+  assert.equal(row.values[11],'legacy-order:order_123');
+});
+
+test('legacy payout records never map to the old plaintext table', () => {
+  const mapped=mapLegacyWalletDomainDocument('withdrawalPayouts',{
+    id:'withdrawal-plaintext-guard',
+    data:{withdrawalId:'withdrawal-plaintext-guard',bankAccountNumber:'do-not-store'}
+  });
+  assert.equal(mapped.mapped,false);
+  assert.equal(mapped.warning,'PAYOUT_ENCRYPTION_REQUIRED');
+  assert.equal(mapped.statements.length,0);
+});
+
+test('private payout payload uses AES-256-GCM and never enters plaintext archive', async () => {
+  const privateValue='private-account-number-12345';
+  const rawKey=webcrypto.getRandomValues(new Uint8Array(32));
+  const key=btoa(String.fromCharCode(...rawKey));
+  const document={
+    id:'withdrawal-encrypted-1',
+    data:{withdrawalId:'withdrawal-encrypted-1',bankAccountNumber:privateValue,ifsc:'TEST0001',
+      createdAt:new Date('2026-11-01T00:00:00Z')}
+  };
+  const mapped=await mapLegacyWalletDomainDocumentWithPayoutEncryption('withdrawalPayouts',document,{
+    payoutEncryptionKey:key,payoutKeyVersion:'v2',sourceProjectId:'smv-astro-staging',cryptoImpl:webcrypto
+  });
+  assert.equal(mapped.mapped,true);
+  const encrypted=mapped.statements.find(item=>item.kind==='encrypted_withdrawal_payout');
+  const archive=mapped.statements.find(item=>item.kind==='legacy_document_archive');
+  assert.ok(encrypted && archive);
+  assert.match(encrypted.sql,/smv_domain_withdrawal_payouts_encrypted/);
+  assert.equal(encrypted.values[1],'AES-256-GCM');
+  assert.equal(encrypted.values[2],'v2');
+  assert.equal(encrypted.values[3].length,24);
+  assert.equal(encrypted.values[5].length,32);
+  assert.doesNotMatch(archive.values[4],/private-account-number-12345|TEST0001/);
+  assert.doesNotMatch(JSON.stringify(mapped),/private-account-number-12345|TEST0001/);
+  const imported=await webcrypto.subtle.importKey('raw',rawKey,{name:'AES-GCM'},false,['decrypt']);
+  const nonce=Uint8Array.from(encrypted.values[3].match(/../g),v=>parseInt(v,16));
+  const ciphertext=Uint8Array.from((encrypted.values[4]+encrypted.values[5]).match(/../g),v=>parseInt(v,16));
+  const aad=new TextEncoder().encode('smv-astro-wallet-payout:v1:smv-astro-staging:withdrawal-encrypted-1:v2');
+  const clear=await webcrypto.subtle.decrypt({name:'AES-GCM',iv:nonce,additionalData:aad,tagLength:128},imported,ciphertext);
+  assert.equal(new TextDecoder().decode(clear),JSON.stringify(document.data));
+});
+
+test('private payout mapping fails closed when staging key is missing or invalid', async () => {
+  const document={id:'withdrawal-key-needed',data:{withdrawalId:'withdrawal-key-needed',accountNumber:'secret'}};
+  const missing=await mapLegacyWalletDomainDocumentWithPayoutEncryption('withdrawalPayouts',document,{cryptoImpl:webcrypto});
+  assert.equal(missing.mapped,false);
+  assert.equal(missing.warning,'PAYOUT_ENCRYPTION_KEY_MISSING');
+  const invalid=await mapLegacyWalletDomainDocumentWithPayoutEncryption('withdrawalPayouts',document,{
+    payoutEncryptionKey:'not-a-key',cryptoImpl:webcrypto
+  });
+  assert.equal(invalid.mapped,false);
+  assert.equal(invalid.warning,'PAYOUT_ENCRYPTION_FAILED');
 });
