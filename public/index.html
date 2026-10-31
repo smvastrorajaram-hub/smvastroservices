@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <p class="admin-workgroup-description">Upload a new permanent signed Android APK. The website checks the installed app version and shows DOWNLOAD APP or UPDATE APP automatically.</p>
 <div class="card" id="adminAndroidAppManagementCard">
   <h3>SMV ASTRO Permanent Android APK</h3>
-  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. When the dedicated Cloudflare Worker, R2 and D1 are ready and uploads are enabled, new APKs are saved to Cloudflare and version history is available below. Until that setup is verified, the existing Render/Firebase upload remains the fallback.</p>
+  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. When the dedicated Cloudflare Worker, R2 and D1 are ready, Homepage latest-version status and saved version history use Cloudflare. New APKs are saved to R2 when uploads are enabled. The existing Render/Firebase upload is used only before the release service is ready or has taken ownership of a release.</p>
   <div class="grid">
     <label><b>Select signed APK file</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
   </div>
