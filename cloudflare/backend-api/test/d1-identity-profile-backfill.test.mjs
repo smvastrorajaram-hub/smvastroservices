@@ -244,7 +244,10 @@ test('reconciliation detects target profile field mismatches even when source au
           phone_e164: null,
           phone_hash: null,
           email_verified: 0,
-          profile_json: canonical
+          profile_json: JSON.stringify({
+            uid: source.uid, status: source.status, role: source.role,
+            name: source.name, email: source.email
+          })
         };
       }
       return null;
