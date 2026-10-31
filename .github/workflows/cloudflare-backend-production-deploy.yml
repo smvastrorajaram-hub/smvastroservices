@@ -1,6 +1,12 @@
 name: Deploy SMV ASTRO Production Backend Worker
 
 on:
+  push:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - ".github/config/wrangler.production.jsonc"
+      - ".github/workflows/cloudflare-backend-production-deploy.yml"
   pull_request:
     branches:
       - integration/cloudflare-backend-staging-stack-20261031
@@ -26,7 +32,7 @@ concurrency:
 
 jobs:
   validate-production-worker:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -62,9 +68,11 @@ jobs:
   deploy-production-worker:
     needs: validate-production-worker
     if: >-
-      github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031' &&
-      inputs.confirm_production_binding == 'yes'
+      (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.confirm_production_binding == 'yes')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
