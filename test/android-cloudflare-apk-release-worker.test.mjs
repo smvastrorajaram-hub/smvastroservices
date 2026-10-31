@@ -409,6 +409,7 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   const installer = fs.readFileSync(path.join(root, 'public/android-app-install.js'), 'utf8');
   const moduleSource = fs.readFileSync(path.join(root, 'public/smvastro.mjs'), 'utf8');
   const readme = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/README.md'), 'utf8');
+  const worker = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/worker.mjs'), 'utf8');
   assert.match(example, /ALLOW_APK_UPLOADS\s*=\s*"false"/);
   assert.match(example, /database_id\s*=\s*"00000000-0000-0000-0000-000000000000"/);
   assert.match(config, /database_id\s*=\s*"5105ebb3-435c-47b7-9983-2e171fa911cd"/);
@@ -420,6 +421,10 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(readme, /5105ebb3-435c-47b7-9983-2e171fa911cd/);
   assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
   assert.match(readme, /Use only the existing D1 database/);
+  assert.match(readme, /available=false/);
+  assert.doesNotMatch(config + example, /LEGACY_ANDROID_RELEASE_URL/);
+  assert.doesNotMatch(worker, /smvastroservices\.onrender\.com|fetchLegacyRelease|DEFAULT_LEGACY_URL/);
+  assert.match(readme, /Cloudflare R2/);
   assert.match(readme, /Do not add secrets or APK binaries/);
 });
 
