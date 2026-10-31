@@ -8,6 +8,9 @@ const ALLOWED_DEADLINE_TYPES = new Set([
   'scheduled_start_deadline',
   'booking_expiry'
 ]);
+import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
+import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
+
 const MAX_DEADLINES = 16;
 const MAX_RECENT_IDS = 256;
 const RETRY_BASE_MS = 5000;
@@ -77,6 +80,13 @@ export class LiveSessionCoordinator {
     this.ctx = ctx;
     this.env = env;
     this.sseClients = new Set();
+    this.liveService = env.DB && typeof env.DB.prepare === 'function' && typeof env.DB.batch === 'function'
+      ? createD1LiveSessionService({
+          db: env.DB,
+          walletAdapter: createD1WalletAdapter({ db: env.DB }),
+          firestore: { async getDocument() { throw new Error('Firestore is not used by Live deadline settlement.'); } }
+        })
+      : null;
   }
 
   async fetch(request) {
@@ -303,7 +313,81 @@ export class LiveSessionCoordinator {
     await this.armNextAlarm(record);
   }
 
+  async publishUserEvent(uid, event) {
+    const hub = this.env.LIVE_USER_EVENT_HUB;
+    if (!hub || typeof hub.idFromName !== 'function') return;
+    try {
+      const stub = hub.get(hub.idFromName(String(uid)));
+      await stub.fetch('https://live-user-hub.internal/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-smv-internal-caller': 'smv-backend'
+        },
+        body: JSON.stringify({
+          targetUid: String(uid),
+          eventId: String(event.eventId),
+          type: String(event.type),
+          data: event.data ?? null
+        })
+      });
+    } catch (error) {
+      console.warn('[Live Session DO] User event fan-out deferred:', error?.message || error);
+    }
+  }
+
+  async deliverViaD1(record) {
+    const now = Date.now();
+    for (const event of record.pendingEvents) {
+      if (event.deliveredAtMs || Number(event.nextAttemptAtMs || 0) > now) continue;
+      try {
+        const result = await this.liveService.processDeadline({
+          sessionId: event.sessionId,
+          deadlineType: event.deadlineType,
+          deadlineAtMs: event.deadlineAtMs
+        });
+        if (result?.nextDeadline) {
+          const next = deadlineFrom({
+            ...result.nextDeadline,
+            generation: Number(event.generation || 0) + 1
+          });
+          if (next) {
+            record.deadlines = record.deadlines.filter(item => item.type !== next.type);
+            record.deadlines.push(next);
+            record.deadlines.sort((a,b)=>a.atMs-b.atMs);
+          }
+        }
+        const session = result?.session;
+        const booking = result?.booking;
+        const recipients = session
+          ? [session.customerUid,session.astrologerUid]
+          : booking ? [booking.customerUid,booking.astrologerUid] : [];
+        for (const uid of [...new Set(recipients.filter(Boolean))]) {
+          await this.publishUserEvent(uid, {
+            eventId: event.eventId + ':' + uid,
+            type: session ? 'live.session.updated' : 'live.booking.updated',
+            data: session ? { session } : { booking }
+          });
+        }
+        event.deliveredAtMs = Date.now();
+        event.lastError = '';
+      } catch (error) {
+        event.attempts = Number(event.attempts || 0) + 1;
+        const retry = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * (2 ** Math.min(event.attempts - 1, 4)));
+        event.nextAttemptAtMs = Date.now() + retry;
+        event.lastError = String(error?.message || error).slice(0, 240);
+      }
+    }
+    const delivered = record.pendingEvents.filter(item => item.deliveredAtMs);
+    for (const event of delivered) record.deliveredEventIds = remember(record.deliveredEventIds, event.eventId);
+    record.pendingEvents = record.pendingEvents.filter(item => !item.deliveredAtMs);
+    await this.ctx.storage.put('live-session-record', record);
+  }
+
   async deliverPending(record) {
+    // On the Free SQLite Durable Object plan, process deadline commands directly
+    // against D1. No paid queue or separately deployed consumer is required.
+    if (this.liveService) return this.deliverViaD1(record);
     const queue = this.env.LIVE_SESSION_EVENTS;
     const now = Date.now();
     if (!queue || typeof queue.send !== 'function') {
@@ -311,7 +395,7 @@ export class LiveSessionCoordinator {
         if (event.deliveredAtMs) continue;
         event.attempts = Number(event.attempts || 0) + 1;
         event.nextAttemptAtMs = now + Math.min(30000, RETRY_BASE_MS * (2 ** Math.min(event.attempts - 1, 3)));
-        event.lastError = 'LIVE_SESSION_EVENTS queue binding is not configured';
+        event.lastError = 'D1 binding and LIVE_SESSION_EVENTS queue binding are not configured';
       }
       await this.ctx.storage.put('live-session-record', record);
       return;
