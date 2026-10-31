@@ -1,0 +1,119 @@
+name: Cloudflare Backend API staging deployment
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'cloudflare/backend-api/**'
+      - '.github/workflows/cloudflare-backend-staging-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/feature/cloudflare-backend-runtime-staging-20261031') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.number == 254 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'feature/cloudflare-backend-runtime-staging-20261031')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install isolated Express dependency
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Check Worker source syntax
+        working-directory: cloudflare/backend-api
+        run: npm run check
+
+      - name: Validate Cloudflare Worker bundle without deploying
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
+
+      - name: Verify deployment credentials are present
+        id: preflight
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          if [[ -z "$CF_API_TOKEN" || -z "$CF_ACCOUNT_ID" ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Cloudflare staging credentials are not configured."
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy only the Cloudflare backend staging Worker
+        id: deploy-worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.156.0'
+          workingDirectory: cloudflare/backend-api
+          command: deploy --config wrangler.jsonc
+
+      - name: Verify Cloudflare Express runtime and shared D1 readiness
+        env:
+          WORKER_URL: https://smvastro-backend-api-staging.astroservices.workers.dev
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const base = String(process.env.WORKER_URL || '').replace(/\/$/, '');
+          async function get(path) {
+            let last = 'no response';
+            for (let attempt = 1; attempt <= 16; attempt += 1) {
+              try {
+                const response = await fetch(base + path, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+                const raw = await response.text();
+                let body = {};
+                try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
+                if (response.ok) return body;
+                last = 'HTTP ' + response.status;
+              } catch (error) {
+                last = error instanceof Error ? error.message : String(error);
+              }
+              if (attempt < 16) await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            throw new Error(path + ' did not become ready: ' + last);
+          }
+
+          const health = await get('/healthz');
+          if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false) {
+            throw new Error('Cloudflare Express runtime health verification failed.');
+          }
+
+          const readiness = await get('/api/backend/readiness');
+          if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
+              readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
+              readiness.walletBusinessRoutesEnabled !== false) {
+            throw new Error('Shared staging D1 readiness or safety checks failed.');
+          }
+
+          const disabled = await fetch(base + '/api/wallet/v1/wallet/balance');
+          const disabledBody = await disabled.json().catch(() => ({}));
+          if (disabled.status !== 503 || disabledBody.code !== 'BACKEND_MIGRATION_NOT_CUT_OVER') {
+            throw new Error('Unmigrated backend business route is not safely disabled.');
+          }
+
+          console.log('PASS Express HTTP bridge /healthz');
+          console.log('PASS existing staging D1 schema readiness');
+          console.log('PASS unfinished business route fail-closed guard');
+          console.log('Staging Worker URL: ' + base);
+          NODE
