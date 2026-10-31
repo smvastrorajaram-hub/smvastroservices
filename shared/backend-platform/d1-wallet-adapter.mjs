@@ -13,6 +13,12 @@ import {
 
 const WALLET_TABLE = 'smv_domain_wallets';
 const LEDGER_TABLE = 'smv_domain_wallet_ledger';
+import {
+  classifyRechargeIntent,
+  selectRechargeBonusOffer,
+  walletRechargeId,
+  walletRechargeError
+} from './wallet-recharge-domain.mjs';
 
 function mapLedger(row) {
   if (!row) return null;
@@ -70,6 +76,9 @@ function d1Error(error) {
   if (message.includes('WALLET_BONUS_BALANCE_MISMATCH') || message.includes('WALLET_RESERVED_BONUS_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet promotional minute reserve does not reconcile with this operation.');
   if (message.includes('WALLET_BALANCE_OVERFLOW')) return walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.');
   if (message.includes('WALLET_OWNER_ROLE_MISMATCH')) return walletError('WALLET_OWNER_ROLE_MISMATCH', 'Wallet owner role does not match the stored Wallet.');
+  if (message.includes('WALLET_OFFER_TOTAL_LIMIT_REACHED')) return walletError('WALLET_OFFER_TOTAL_LIMIT_REACHED', 'This Wallet offer has reached its total redemption limit.');
+  if (message.includes('WALLET_OFFER_CUSTOMER_LIMIT_REACHED')) return walletError('WALLET_OFFER_CUSTOMER_LIMIT_REACHED', 'This Wallet offer has reached your redemption limit.');
+  if (message.includes('WALLET_OFFER_NOT_ELIGIBLE')) return walletError('WALLET_OFFER_NOT_ELIGIBLE', 'The Wallet offer is no longer eligible for this recharge.');
   return error;
 }
 
@@ -276,7 +285,284 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return { success: true, alreadyProcessed: false, wallet: await getWallet(owner.ownerUid), settlement };
   }
 
-    async function listTransactions(ownerUid, limit = 30) {
+    async function createRechargeIntent({ ownerUid, ownerRole = 'customer', amountPaise, idempotencyKey } = {}) {
+    const owner = validateWalletOwner(ownerUid, ownerRole);
+    if (owner.ownerRole !== 'customer') throw walletError('WALLET_CUSTOMER_REQUIRED', 'Only a Customer can recharge a Wallet.', 403);
+    const amount = Number(amountPaise);
+    if (!Number.isSafeInteger(amount) || amount < 100) throw walletError('WALLET_RECHARGE_AMOUNT_INVALID', 'Recharge amount must be at least ₹1.00.', 400);
+    await ensureWallet(owner.ownerUid, owner.ownerRole);
+    const rechargeId = await walletRechargeId(owner.ownerUid, idempotencyKey, cryptoImpl);
+    const timestamp = Number(now());
+    const payloadJson = JSON.stringify({ idempotencyKey: String(idempotencyKey) });
+    const inserted = await statement(
+      `INSERT OR IGNORE INTO smv_domain_wallet_recharges
+       (recharge_id, customer_uid, amount_paise, currency, status, payload_json, created_at_ms, updated_at_ms)
+       VALUES (?, ?, ?, 'INR', 'order_creating', ?, ?, ?)`,
+      [rechargeId, owner.ownerUid, amount, payloadJson, timestamp, timestamp]
+    ).run();
+    let row = await statement(
+      'SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id = ? LIMIT 1',
+      [rechargeId]
+    ).first();
+    if (!row || String(row.customer_uid || '') !== owner.ownerUid) {
+      throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge request was not found.', 404);
+    }
+    const disposition = classifyRechargeIntent({
+      status: row.status, storedAmountPaise: row.amount_paise, requestedAmountPaise: amount
+    });
+    if (disposition === 'amount_conflict') {
+      throw walletError('WALLET_IDEMPOTENCY_CONFLICT', 'This recharge request key was already used for a different amount.', 409);
+    }
+    if (disposition === 'already_paid') {
+      return { success: true, acquired: false, alreadyPaid: true, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id || null };
+    }
+    if (disposition === 'reuse_order') {
+      return { success: true, acquired: false, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id };
+    }
+    if (Number(inserted?.meta?.changes || 0) === 1) {
+      return { success: true, acquired: true, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: null };
+    }
+    const currentState = String(row.status || '');
+    const stale = currentState === 'order_creating' && timestamp - Number(row.updated_at_ms || 0) >= 60000;
+    if (currentState === 'failed' || stale) {
+      const updated = await statement(
+        `UPDATE smv_domain_wallet_recharges
+         SET status='order_creating', updated_at_ms=?, payload_json=?
+         WHERE recharge_id=? AND status=? AND updated_at_ms=?`,
+        [timestamp, payloadJson, rechargeId, currentState, Number(row.updated_at_ms || 0)]
+      ).run();
+      if (Number(updated?.meta?.changes || 0) === 1) {
+        return { success: true, acquired: true, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: null, retrying: true };
+      }
+      row = await statement('SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id = ? LIMIT 1',[rechargeId]).first();
+    }
+    if (String(row?.status || '') === 'paid') {
+      return { success: true, acquired: false, alreadyPaid: true, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id || null };
+    }
+    if (String(row?.status || '') === 'order_created' && row.razorpay_order_id) {
+      return { success: true, acquired: false, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id };
+    }
+    return { success: true, acquired: false, inProgress: true, rechargeId, amountPaise: amount, orderId: row?.razorpay_order_id || null };
+  }
+
+  async function attachRechargeOrder({ ownerUid, rechargeId, orderId, amountPaise, currency = 'INR', receipt = '' } = {}) {
+    const owner = validateWalletOwner(ownerUid, 'customer');
+    const rid = String(rechargeId || '').trim();
+    const oid = String(orderId || '').trim();
+    const amount = Number(amountPaise);
+    if (!rid || !oid || !Number.isSafeInteger(amount) || amount < 100 || String(currency).toUpperCase() !== 'INR') {
+      throw walletError('WALLET_RECHARGE_INVALID', 'Razorpay order details are invalid.', 400);
+    }
+    const timestamp = Number(now());
+    const results = await db.batch([
+      statement(
+        `UPDATE smv_domain_wallet_recharges
+         SET razorpay_order_id=?, status='order_created', updated_at_ms=?
+         WHERE recharge_id=? AND customer_uid=? AND amount_paise=? AND status='order_creating'`,
+        [oid, timestamp, rid, owner.ownerUid, amount]
+      ),
+      statement(
+        `INSERT OR IGNORE INTO smv_domain_razorpay_orders
+         (order_id, owner_uid, service_name, amount_paise, currency, status, payment_id, payload_json, created_at_ms, updated_at_ms)
+         VALUES (?, ?, 'SMV ASTRO Wallet Recharge', ?, 'INR', 'created', NULL, ?, ?, ?)`,
+        [oid, owner.ownerUid, amount, JSON.stringify({ rechargeId: rid, receipt: String(receipt || '') }), timestamp, timestamp]
+      )
+    ]);
+    if (results.some(result => result?.success === false)) throw walletError('WALLET_ORDER_SAVE_FAILED', 'Unable to save the Wallet recharge order.', 503);
+    const row = await statement(
+      'SELECT status, razorpay_order_id, amount_paise FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+      [rid, owner.ownerUid]
+    ).first();
+    if (!row || Number(row.amount_paise) !== amount || String(row.razorpay_order_id || '') !== oid ||
+        !['order_created','paid'].includes(String(row.status || ''))) {
+      throw walletError('WALLET_RECHARGE_STATE_CONFLICT', 'Wallet recharge order state could not be confirmed.', 409);
+    }
+    return { success: true, rechargeId: rid, orderId: oid, status: row.status };
+  }
+
+  async function markRechargeOrderFailed({ ownerUid, rechargeId, reason = 'order_create_failed' } = {}) {
+    const owner = validateWalletOwner(ownerUid, 'customer');
+    const rid = String(rechargeId || '').trim();
+    const timestamp = Number(now());
+    await statement(
+      `UPDATE smv_domain_wallet_recharges
+       SET status='failed', payload_json=?, updated_at_ms=?
+       WHERE recharge_id=? AND customer_uid=? AND status='order_creating'`,
+      [JSON.stringify({ failureReason: String(reason).slice(0, 200) }), timestamp, rid, owner.ownerUid]
+    ).run();
+    return { success: true };
+  }
+
+  async function getRechargeForOwner({ ownerUid, rechargeId } = {}) {
+    const owner = validateWalletOwner(ownerUid, 'customer');
+    const rid = String(rechargeId || '').trim();
+    if (!rid) throw walletError('WALLET_RECHARGE_INVALID', 'Wallet recharge ID is required.', 400);
+    const row = await statement(
+      'SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+      [rid, owner.ownerUid]
+    ).first();
+    if (!row) throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge was not found.', 404);
+    let payload = {};
+    try { payload = JSON.parse(String(row.payload_json || '{}')); } catch {}
+    return {
+      rechargeId: String(row.recharge_id),
+      customerUid: String(row.customer_uid),
+      amountPaise: safePaise(row.amount_paise),
+      currency: String(row.currency || 'INR'),
+      status: String(row.status || ''),
+      orderId: row.razorpay_order_id || null,
+      paymentId: row.razorpay_payment_id || null,
+      paidAt: Number(row.paid_at_ms || 0),
+      bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
+      offerId: payload.offerId || null,
+      offerName: payload.offerName || null
+    };
+  }
+
+  async function finalizeRecharge({ ownerUid, rechargeId, orderId, paymentId, amountPaise, currency = 'INR', source = 'payment_verification' } = {}) {
+    const owner = validateWalletOwner(ownerUid, 'customer');
+    const rid = String(rechargeId || '').trim();
+    const oid = String(orderId || '').trim();
+    const pid = String(paymentId || '').trim();
+    const amount = Number(amountPaise);
+    if (!rid || !oid || !pid || !Number.isSafeInteger(amount) || amount < 100 || String(currency).toUpperCase() !== 'INR') {
+      throw walletError('WALLET_RECHARGE_INVALID', 'Wallet recharge verification data is incomplete or invalid.', 400);
+    }
+    await ensureWallet(owner.ownerUid, owner.ownerRole);
+    let recharge = await statement(
+      'SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+      [rid, owner.ownerUid]
+    ).first();
+    if (!recharge) throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge record was not found.', 404);
+    if (String(recharge.razorpay_order_id || '') !== oid) throw walletError('WALLET_ORDER_MISMATCH', 'Razorpay order does not match this Wallet recharge.', 409);
+    if (safePaise(recharge.amount_paise) !== amount) throw walletError('WALLET_AMOUNT_MISMATCH', 'Razorpay amount does not match this Wallet recharge.', 409);
+    if (String(recharge.status || '') === 'paid') {
+      if (String(recharge.razorpay_payment_id || '') !== pid) throw walletError('WALLET_RECHARGE_ALREADY_PAID', 'This Wallet recharge was paid with another payment.', 409);
+      const wallet = await getWallet(owner.ownerUid);
+      let payload = {};
+      try { payload = JSON.parse(String(recharge.payload_json || '{}')); } catch {}
+      return {
+        success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount,
+        availableBalancePaise: wallet.availableBalancePaise,
+        bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
+        bonusMinutesBalance: wallet.bonusMinutesBalance
+      };
+    }
+    if (String(recharge.status || '') !== 'order_created') {
+      throw walletError('WALLET_RECHARGE_NOT_READY', 'This Wallet recharge is not ready to be credited.', 409);
+    }
+    const cashKey = 'recharge:' + pid;
+    const bonusKey = 'recharge-bonus:' + pid;
+    const [cashLedger, bonusLedger, wallet] = await Promise.all([
+      findLedger(owner.ownerUid, cashKey),
+      findLedger(owner.ownerUid, bonusKey),
+      getWallet(owner.ownerUid)
+    ]);
+    if (cashLedger || bonusLedger) throw walletError('WALLET_LEDGER_CONFLICT', 'A Wallet recharge ledger already exists and requires reconciliation.', 409);
+    const nowMs = Number(now());
+    const offersResult = await statement(
+      `SELECT o.offer_id, o.enabled, o.minimum_recharge_paise, o.bonus_minutes,
+              o.per_customer_limit, o.total_usage_limit, o.used_count, o.priority,
+              o.start_at_ms, o.end_at_ms, o.payload_json,
+              COALESCE(u.redemption_count, 0) AS customer_redemption_count
+       FROM smv_domain_wallet_offers o
+       LEFT JOIN smv_domain_offer_usage u
+         ON u.offer_id=o.offer_id AND u.customer_uid=?
+       WHERE o.enabled=1 AND o.minimum_recharge_paise<=?
+         AND (o.start_at_ms IS NULL OR o.start_at_ms<=?)
+         AND (o.end_at_ms IS NULL OR o.end_at_ms>?)
+         AND (o.total_usage_limit=0 OR o.used_count<o.total_usage_limit)
+         AND (o.per_customer_limit=0 OR COALESCE(u.redemption_count,0)<o.per_customer_limit)
+       ORDER BY o.priority DESC, o.bonus_minutes DESC, o.offer_id ASC LIMIT 100`,
+      [owner.ownerUid, amount, nowMs, nowMs]
+    ).all();
+    const offerRows = (offersResult?.results || []).map(row => {
+      let payload = {};
+      try { payload = JSON.parse(String(row.payload_json || '{}')); } catch {}
+      return {
+        id: String(row.offer_id), offerType: 'wallet_recharge_bonus_minutes', enabled: Number(row.enabled) === 1,
+        minimumRechargeAmountPaise: Number(row.minimum_recharge_paise),
+        bonusMinutes: Number(row.bonus_minutes), perCustomerLimit: Number(row.per_customer_limit),
+        totalUsageLimit: Number(row.total_usage_limit), usedCount: Number(row.used_count),
+        priority: Number(row.priority), startAt: row.start_at_ms == null ? null : Number(row.start_at_ms),
+        endAt: row.end_at_ms == null ? null : Number(row.end_at_ms),
+        name: String(payload.name || ''), bannerTheme: String(payload.bannerTheme || 'auto')
+      };
+    });
+    const usageCounts = Object.fromEntries((offersResult?.results || []).map(row => [String(row.offer_id), Number(row.customer_redemption_count || 0)]));
+    const selectedOffer = selectRechargeBonusOffer({ offers: offerRows, amountPaise: amount, nowMs, usageCounts });
+    const bonusMinutes = selectedOffer ? Number(selectedOffer.bonusMinutes) : 0;
+    if (safePaise(wallet.availableBalancePaise) + amount > Number.MAX_SAFE_INTEGER ||
+        safeMinutes(wallet.bonusMinutesBalance) + bonusMinutes > 1_000_000) {
+      throw walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.', 409);
+    }
+    const cashRow = await buildLedgerRow({
+      ...owner, type:'recharge', direction:'credit', amountPaise:amount,
+      idempotencyKey:cashKey, ledgerId:await sha256Hex('recharge:' + owner.ownerUid + ':' + pid, cryptoImpl),
+      availableDeltaPaise:amount, referenceType:'razorpay_payment', referenceId:pid,
+      note:'Wallet recharge successful', metadata:{rechargeId:rid,orderId:oid}, source
+    });
+    const batchStatements = [insertStatement(cashRow)];
+    if (selectedOffer && bonusMinutes > 0) {
+      const bonusRow = await buildLedgerRow({
+        ...owner, type:'recharge_bonus_minutes', direction:'credit', amountPaise:0,
+        idempotencyKey:bonusKey, ledgerId:await sha256Hex('recharge-bonus:' + owner.ownerUid + ':' + pid, cryptoImpl),
+        bonusMinutesDelta:bonusMinutes, referenceType:'razorpay_payment', referenceId:pid,
+        note:'Wallet recharge bonus: ' + bonusMinutes + ' free Live minute(s)',
+        metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name}, source
+      });
+      batchStatements.push(insertStatement(bonusRow));
+      batchStatements.push(statement(
+        `INSERT INTO smv_domain_offer_redemptions
+         (redemption_id,offer_id,customer_uid,recharge_id,amount_paise,bonus_minutes,created_at_ms)
+         VALUES (?,?,?,?,?,?,?)`,
+        [await sha256Hex('wallet-recharge-offer:' + rid + ':' + selectedOffer.id, cryptoImpl),
+         selectedOffer.id, owner.ownerUid, rid, amount, bonusMinutes, nowMs]
+      ));
+    }
+    const payload = {
+      bonusMinutesCredited: bonusMinutes,
+      offerId: selectedOffer?.id || null,
+      offerName: selectedOffer?.name || null,
+      paymentSource: String(source).slice(0, 80)
+    };
+    batchStatements.push(statement(
+      `UPDATE smv_domain_wallet_recharges
+       SET status='paid', razorpay_payment_id=?, paid_at_ms=?, payload_json=?, updated_at_ms=?
+       WHERE recharge_id=? AND customer_uid=? AND status='order_created'`,
+      [pid, nowMs, JSON.stringify(payload), nowMs, rid, owner.ownerUid]
+    ));
+    batchStatements.push(statement(
+      `UPDATE smv_domain_razorpay_orders
+       SET status='paid', payment_id=?, payload_json=?, updated_at_ms=?
+       WHERE order_id=? AND owner_uid=? AND service_name='SMV ASTRO Wallet Recharge'`,
+      [pid, JSON.stringify({rechargeId:rid}), nowMs, oid, owner.ownerUid]
+    ));
+    try {
+      const results = await db.batch(batchStatements);
+      if (results.some(result => result?.success === false)) throw new Error('D1_WALLET_RECHARGE_BATCH_INCOMPLETE');
+    } catch (error) {
+      const fresh = await statement(
+        'SELECT status, razorpay_payment_id FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+        [rid, owner.ownerUid]
+      ).first();
+      if (fresh?.status === 'paid' && fresh.razorpay_payment_id === pid) {
+        const current = await getWallet(owner.ownerUid);
+        return { success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,amountPaise:amount,
+          availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
+          bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null };
+      }
+      throw d1Error(error);
+    }
+    const current = await getWallet(owner.ownerUid);
+    return {
+      success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,amountPaise:amount,
+      availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
+      bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null
+    };
+  }
+
+  async function listTransactions(ownerUid, limit = 30) {
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const max = Math.max(1, Math.min(100, Math.floor(Number(limit) || 30)));
@@ -287,5 +573,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return (result?.results || []).map(mapLedger);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, finalizeRecharge, reserveWallet, settleReservation, listTransactions });
 }
