@@ -11,6 +11,7 @@ on:
       - 'shared/backend-platform/d1-outbox-adapter.mjs'
       - 'shared/backend-platform/d1-notification-queue-consumer.mjs'
       - 'cloudflare/backend-api/migrations/0003_notification_inbox.sql'
+      - 'cloudflare/backend-api/migrations/0003_notification_inbox.sql'
       - 'cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs'
       - '.github/workflows/cloudflare-payment-email-queue.yml'
   workflow_dispatch:
@@ -34,6 +35,9 @@ jobs:
           node --check shared/backend-platform/d1-outbox-adapter.mjs
           node --check shared/backend-platform/d1-notification-queue-consumer.mjs
           node --check cloudflare/backend-api/test/payment-email-queue-adapters.test.mjs
+      - name: Apply D1 inbox migration to an ephemeral local database only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
       - name: Run mock payment, email, outbox and Queue idempotency tests
         working-directory: cloudflare/backend-api
         run: node --test test/payment-email-queue-adapters.test.mjs
