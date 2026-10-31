@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/index.mjs"
+    "check": "node --check src/index.mjs && node --check src/firebase-id-token.mjs",
+    "test:auth": "node --test test/firebase-id-token.test.mjs"
   },
   "dependencies": {
     "express": "5.1.0"
