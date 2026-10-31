@@ -14,8 +14,8 @@ function doc(id, data) {
 function fixtureCollections() {
   return {
     smv_wallets: [
-      doc('wallet-1', { ownerUid:'wallet-1', ownerRole:'customer', availableBalancePaise:5000,
-        reservedBalancePaise:0, bonusMinutesBalance:3, reservedBonusMinutes:0, version:2 }),
+      doc('wallet-1', { ownerUid:'wallet-1', ownerRole:'customer', availableBalancePaise:11000,
+        reservedBalancePaise:0, bonusMinutesBalance:6, reservedBonusMinutes:0, version:2 }),
       doc('wallet-2', { ownerUid:'wallet-2', ownerRole:'customer', availableBalancePaise:7000,
         reservedBalancePaise:500, bonusMinutesBalance:0, reservedBonusMinutes:0, version:4 })
     ],
@@ -23,15 +23,18 @@ function fixtureCollections() {
       doc('ledger-1', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
         amountPaise:5000, balanceAfterPaise:5000, reservedBalanceAfterPaise:0,
         bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:3,
-        reservedBonusMinutesAfter:0, idempotencyKey:'same-key', referenceId:'recharge-1' }),
+        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        referenceId:'payment-1', createdAt:new Date('2026-10-30T00:00:00Z') }),
       doc('ledger-2', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
         amountPaise:6000, balanceAfterPaise:11000, reservedBalanceAfterPaise:0,
         bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:6,
-        reservedBonusMinutesAfter:0, idempotencyKey:'same-key', referenceId:'recharge-2' })
+        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        referenceId:'payment-2', createdAt:new Date('2026-10-30T00:01:00Z') })
     ],
     smv_wallet_recharges: [
       doc('recharge-1', { customerUid:'wallet-1', amountPaise:5000, status:'paid',
-        razorpayOrderId:'order-1', razorpayPaymentId:'payment-1', paidAmountPaise:5000 })
+        razorpayOrderId:'order-1', razorpayPaymentId:'payment-1', paidAmountPaise:5000,
+        bonusMinutesCredited:3, bonusMinutesBalanceAfter:3 })
     ],
     smv_offers: [
       doc('offer-1', { offerType:'wallet_recharge_bonus_minutes', name:'Test bonus',
@@ -48,7 +51,10 @@ function fixtureCollections() {
     smv_live_sessions: [
       doc('session.with.dot', { customerUid:'wallet-1', astrologerUid:'astro-1',
         mode:'chat', state:'completed', appointmentId:'appointment-1',
-        reservedAmountPaise:500, reservedBonusMinutes:1, actualChargePaise:300 })
+        reservedAmountPaise:500, reservedBonusMinutes:1, actualChargePaise:300,
+        releasedAmountPaise:200, freeMinutesUsed:0, bonusMinutesReleased:1,
+        astrologerCommissionPercent:20, adminCommissionPercent:80,
+        astrologerCommissionPaise:60, adminCommissionPaise:240 })
     ],
     smv_live_bookings: [
       doc('booking-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
@@ -63,7 +69,7 @@ function fixtureCollections() {
     smv_payments: [
       doc('earning-1', { source:'live_session', astrologerUid:'astro-1',
         customerUid:'wallet-1', sessionId:'missing-earning-session',
-        grossAmountPaise:10000, astrologerAmountPaise:8000, adminAmountPaise:2000,
+        grossAmountPaise:10000, earningAmountPaise:8000, commissionPercent:80, adminCommissionPercent:20,
         status:'completed' })
     ],
     smv_withdrawals: [
@@ -75,7 +81,8 @@ function fixtureCollections() {
     ],
     razorpay_orders: [
       doc('order-1', { serviceName:'SMV ASTRO Wallet Recharge',
-        amountPaise:5000, status:'paid', razorpayPaymentId:'payment-1' })
+        amountPaise:5000, status:'paid', razorpayPaymentId:'payment-1',
+        walletRechargeId:'recharge-1', firebaseUid:'wallet-1', idempotencyKey:'recharge-1' })
     ],
     razorpay_webhook_events: [
       doc('webhook-1', { event:'payment.captured', eventId:'event-1',
@@ -112,7 +119,7 @@ function firestoreFixture() {
     async getDocument(path) {
       const id = path.split('/').pop();
       return { exists:['liveSessionPricing','commission'].includes(id), id,
-        data:id === 'liveSessionPricing' ? { callRatePaisePerMinute:100 } : { adminPercent:20 } };
+        data:id === 'liveSessionPricing' ? { callRatePaisePerMinute:100 } : { astroPercent:20, adminPercent:80 } };
     }
   };
   return { firestore, calls };
@@ -189,6 +196,27 @@ test('consistency audit detects wallet idempotency conflicts and broken booking/
   assert.equal(checks.walletOfferUsageMissingRecharge,0);
   assert.equal(checks.liveSessionsMissingScheduledAppointment,0);
   assert.equal(checks.scheduledAppointmentsMissingSession,0);
+
+  const finance = report.financialReconciliation;
+  assert.equal(finance.walletBalance.walletsChecked,2);
+  assert.equal(finance.walletBalance.walletsWithLedger,1);
+  assert.equal(finance.walletBalance.nonInitialWalletsMissingLedger,1);
+  assert.equal(finance.walletBalance.snapshotMismatches,0);
+  assert.equal(finance.walletBalance.conflictingLatestTimestampSnapshots,0);
+  assert.equal(finance.paidRecharge.paidRechargesChecked,1);
+  assert.equal(finance.paidRecharge.missingWalletRechargeOrders,0);
+  assert.equal(finance.paidRecharge.missingRechargeCreditLedger,0);
+  assert.equal(finance.paidRecharge.rechargeCreditAmountMismatches,0);
+  assert.equal(finance.paidRecharge.rechargeBonusMinuteMismatches,0);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingReservationLedger,1);
+  assert.equal(finance.liveReservationSettlement.endedSessionsMissingUsageLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingCashReleaseLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingBonusReleaseLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionBonusMinutesNotReconciled,0);
+  assert.equal(finance.liveReservationSettlement.sessionCommissionAmountMismatches,0);
+  assert.equal(finance.liveReservationSettlement.chargedSessionsMissingEarning,1);
+  assert.equal(finance.billingConfiguration.commissionPercentValid,true);
+  assert.equal(finance.withdrawal.withdrawalsWithInvalidAmount,0);
 });
 
 test('read-only D1 guard rejects batch, exec and prepared statement execution', () => {
