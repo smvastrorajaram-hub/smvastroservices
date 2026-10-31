@@ -65,5 +65,3 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
 
-      - name: Confirm validation scope
-        run: echo "PASS: this workflow uses local D1 migrations and Worker dry-run only."
