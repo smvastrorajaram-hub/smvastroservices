@@ -4,8 +4,12 @@ on:
   pull_request:
     branches:
       - feature/cloudflare-wallet-recharge-d1-20261031
+      - integration/cloudflare-backend-staging-stack-20261031
     paths:
       - 'shared/backend-platform/wallet-domain-backfill.mjs'
+      - 'shared/backend-platform/wallet-live-readonly-audit.mjs'
+      - 'cloudflare/backend-api/scripts/wallet-live-readonly-preview.mjs'
+      - 'cloudflare/backend-api/test/wallet-live-readonly-audit.test.mjs'
       - 'shared/backend-platform/d1-wallet-domain-backfill.mjs'
       - 'shared/backend-platform/d1-wallet-adapter.mjs'
       - 'shared/backend-platform/wallet-domain.mjs'
@@ -37,6 +41,9 @@ jobs:
         run: |
           node --check shared/backend-platform/wallet-domain-backfill.mjs
           node --check shared/backend-platform/d1-wallet-domain-backfill.mjs
+          node --check shared/backend-platform/wallet-live-readonly-audit.mjs
+          node --check cloudflare/backend-api/scripts/wallet-live-readonly-preview.mjs
+          node --check cloudflare/backend-api/test/wallet-live-readonly-audit.test.mjs
           node --check shared/backend-platform/d1-wallet-adapter.mjs
           node --check cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs
           node --check cloudflare/backend-api/src/index.mjs
@@ -48,6 +55,7 @@ jobs:
         run: |
           node --test \
             test/wallet-domain-backfill.test.mjs \
+            test/wallet-live-readonly-audit.test.mjs \
             test/d1-wallet-domain-backfill.test.mjs \
             test/wallet-domain-backfill-routes.test.mjs \
             test/wallet-recharge-domain.test.mjs \
