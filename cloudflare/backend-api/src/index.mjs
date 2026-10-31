@@ -15,6 +15,7 @@ import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
+import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
@@ -293,16 +294,22 @@ if ((walletReadRouteGateOpen || walletBackfillToolsOpen || liveSessionRoutesOpen
   }
 
   if (liveSessionRoutesOpen) {
+    const adminWalletUid = String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '');
     const liveService = createD1LiveSessionService({
       db: env.DB,
       walletAdapter: sharedWalletAdapter,
       firestore: firestoreAdmin,
-      adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
+      adminWalletUid
+    });
+    const withdrawalService = createD1WithdrawalService({
+      db: env.DB,
+      firestore: firestoreAdmin
     });
     registerD1LiveSessionRoutes({
       app,
       identityService: walletIdentityService,
       liveService,
+      withdrawalService,
       env,
       routesEnabled: liveSessionRoutesOpen,
       environment: String(env.SMV_ENVIRONMENT || ''),
