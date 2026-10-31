@@ -43,11 +43,16 @@ export function registerD1LiveSessionRoutes({
 
   async function requireRole(req,allowed) {
     const user=await identityService.authenticateAuthorization(req.get('Authorization'));
-    const role=String(user.role||'').trim().toLowerCase();
+    let role=String(user.role||'').trim().toLowerCase();
+    // Keep the legacy approved-Astrologer document authoritative when an older
+    // Firebase user profile still contains the Customer role.
+    if(allowed.includes('astrologer')&&role!=='astrologer'&&
+       typeof liveService.isApprovedAstrologer==='function'&&
+       await liveService.isApprovedAstrologer(user.uid)) role='astrologer';
     if(!(allowed.includes(role)||(allowed.includes('admin')&&user.isAdmin===true))) {
       throw httpError('LIVE_ROLE_FORBIDDEN','This action is not allowed for your SMV ASTRO role.',403);
     }
-    return user;
+    return role===user.role?user:{...user,role};
   }
   async function assertReady() {
     if(routesEnabled!==true||environment!=='staging'||sourceProjectId!=='smv-astro-staging') {
