@@ -159,12 +159,18 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     if(!Number.isSafeInteger(amount)||amount<MINIMUM_WITHDRAWAL_PAISE) {
       throw withdrawalError('WITHDRAWAL_MINIMUM_NOT_MET','Minimum withdrawal is ₹300.',400);
     }
-    const [profile,summary]=await Promise.all([
+    const [profile,astroProfile,summary]=await Promise.all([
       firestore.getDocument('smv_users/'+uid),
+      firestore.getDocument('smv_astrologers/'+uid),
       overview(uid)
     ]);
-    if(!profile.exists||String(profile.data?.role||'').toLowerCase()!=='astrologer') {
-      throw withdrawalError('WITHDRAWAL_ASTROLOGER_REQUIRED','Only an Astrologer account can request a withdrawal.',403);
+    const profileRole=String(profile.data?.role||'').toLowerCase();
+    const astro=astroProfile.data||{};
+    const approvedAstrologer=astroProfile.exists&&
+      (!astro.uid||String(astro.uid)===uid)&&
+      ['approved','active'].includes(String(astro.status||'').toLowerCase());
+    if((!profile.exists||profileRole!=='astrologer')&&!approvedAstrologer) {
+      throw withdrawalError('WITHDRAWAL_ASTROLOGER_REQUIRED','Only an approved Astrologer account can request a withdrawal.',403);
     }
     if(amount>summary.availableToWithdrawPaise) {
       throw withdrawalError('WITHDRAWAL_EARNINGS_INSUFFICIENT',
