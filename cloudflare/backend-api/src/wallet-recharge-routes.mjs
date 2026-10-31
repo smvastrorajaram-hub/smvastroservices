@@ -230,7 +230,13 @@ export function registerWalletRechargeRoutes({
       const orderId = String(orderEntity?.id || paymentEntity?.order_id || '').trim();
       if (!orderId) return res.status(200).send('OK');
       const eventKeyPart = paymentId || orderId;
-      const eventKey = (eventType + '_' + eventKeyPart).replace(/[^A-Za-z0-9:_-]/g, '_').slice(0, 240);
+      // Prefer Razorpay's stable delivery event ID for duplicate detection;
+      // retain a deterministic fallback for older webhook deliveries.
+      const providerEventId = String(req.get('X-Razorpay-Event-Id') || '').trim();
+      const safeProviderEventId = /^[A-Za-z0-9:_-]{1,230}$/.test(providerEventId) ? providerEventId : '';
+      const eventKey = safeProviderEventId
+        ? ('razorpay_' + safeProviderEventId)
+        : (eventType + '_' + eventKeyPart).replace(/[^A-Za-z0-9:_-]/g, '_').slice(0, 240);
       const recorded = await walletAdapter.recordWebhookEvent({
         eventKey, eventType, paymentId: paymentId || null, orderId,
         payload: { event: eventType, paymentId, orderId }
