@@ -156,7 +156,7 @@
       : null;
 
     button.disabled = false;
-    button.dataset.smvApkReleaseAction = '';
+    button.dataset.smvApkReleaseAction = 'LATEST';
     button.dataset.smvApkDownloadUrl = '';
 
     if (app && installedCode !== null && installedCode >= latestCode) {
@@ -170,6 +170,7 @@
       // The browser confirmed the package is installed but did not expose a
       // readable version. Never offer a duplicate Download/Update guess.
       status.textContent = 'Installed app version could not be verified';
+      button.dataset.smvApkReleaseAction = 'UNKNOWN';
       button.hidden = true;
       button.removeAttribute('aria-label');
       return;
