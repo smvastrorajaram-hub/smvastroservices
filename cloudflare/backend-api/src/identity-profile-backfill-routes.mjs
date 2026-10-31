@@ -38,7 +38,7 @@ function optionsFrom(body = {}) {
  */
 export function registerIdentityProfileBackfillRoutes({
   app, identityService, backfillService,
-  toolsEnabled = false, environment = 'unknown', sourceProjectId = '',
+  toolsEnabled = false, previewOnly = true, environment = 'unknown', sourceProjectId = '',
   cutoverComplete = false, isReady = async () => false
 } = {}) {
   if (!app || typeof app.get !== 'function' || typeof app.post !== 'function' ||
@@ -116,6 +116,11 @@ export function registerIdentityProfileBackfillRoutes({
     try {
       await requireAdmin(req);
       await requireTools();
+      if (previewOnly !== false) {
+        throw Object.assign(new Error('Identity/Profile staging is in read-only preview mode.'), {
+          code: 'IDENTITY_BACKFILL_PREVIEW_ONLY', httpStatus: 403
+        });
+      }
       const confirmation = String(req.body?.confirmSourceProjectId || '').trim();
       if (confirmation !== String(sourceProjectId)) {
         throw Object.assign(new Error('Explicit staging Firebase project confirmation is required.'), {
