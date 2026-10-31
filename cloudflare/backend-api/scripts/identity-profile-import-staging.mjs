@@ -71,6 +71,8 @@ function createCloudflareD1HttpClient({ accountId, apiToken, databaseId }) {
         bind(...values) {
           const boundSql = bindSql(sql, values);
           return Object.freeze({
+            sql: String(sql),
+            values: [...values],
             async first() {
               const result = await execute({ sql: boundSql });
               const rows = result[0]?.results;
