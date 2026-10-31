@@ -55,7 +55,9 @@ function fixtureCollections() {
         reservedAmountPaise:500, reservedBonusMinutes:1, actualChargePaise:300,
         releasedAmountPaise:200, freeMinutesUsed:0, bonusMinutesReleased:1,
         astrologerCommissionPercent:20, adminCommissionPercent:80,
-        astrologerCommissionPaise:60, adminCommissionPaise:240 })
+        astrologerCommissionPaise:60, adminCommissionPaise:240 }),
+      doc('s'.repeat(200), { customerUid:'wallet-1', astrologerUid:'astro-1',
+        mode:'call', state:'active', reservedAmountPaise:0, reservedBonusMinutes:0 })
     ],
     smv_live_bookings: [
       doc('booking-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
@@ -148,18 +150,19 @@ test('full audit paginates every collection and discovers every session child co
   assert.equal(byKey.wallets.totalSourceDocuments,2);
   assert.equal(byKey.wallets.pagesScanned,2);
   assert.equal(byKey.liveSessionMessages.totalSourceDocuments,2);
-  assert.equal(byKey.liveSessionMessages.pagesScanned,2);
-  assert.equal(byKey.liveSessionMessages.parentSessionsScanned,1);
+  assert.equal(byKey.liveSessionMessages.pagesScanned,3);
+  assert.equal(byKey.liveSessionMessages.parentSessionsScanned,2);
   assert.equal(byKey.liveSessionSignals.totalSourceDocuments,1);
-  assert.equal(byKey.liveSessionSignals.parentSessionsScanned,1);
+  assert.equal(byKey.liveSessionSignals.parentSessionsScanned,2);
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/messages'));
   assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/signals'));
+  assert.ok(calls.some(call=>call.path==='smv_live_sessions/'+'s'.repeat(200)+'/messages'));
   assert.equal(byKey.billingSettings.totalSourceDocuments,2);
   assert.equal(byKey.walletRechargeOffers.totalSourceDocuments,2);
   assert.equal(byKey.walletRechargeOffers.domainMappableRecords,1);
   assert.equal(byKey.walletRechargeOffers.outOfScopeRecords,1);
-  assert.equal(report.totals.sourceDocuments,22);
-  assert.equal(report.totals.pagesScanned,22);
+  assert.equal(report.totals.sourceDocuments,23);
+  assert.equal(report.totals.pagesScanned,25);
 });
 
 test('audit surfaces unmappable private payouts and raw-only Razorpay order mapping without leaking data', async () => {
