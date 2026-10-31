@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <p class="admin-workgroup-description">Upload a new permanent signed Android APK. The website checks the installed app version and shows DOWNLOAD APP or UPDATE APP automatically.</p>
 <div class="card" id="adminAndroidAppManagementCard">
   <h3>SMV ASTRO Permanent Android APK</h3>
-  <p class="small">Select the production Release APK only. The server verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. Every upload must be newer than the current version.</p>
+  <p class="small">Select the production Release APK only. The service verifies the SMV ASTRO package name, ordered versionCode and permanent Release signing certificate before publishing. When the dedicated Cloudflare Worker, R2 and D1 are ready and uploads are enabled, new APKs are saved to Cloudflare and version history is available below. Until that setup is verified, the existing Render/Firebase upload remains the fallback.</p>
   <div class="grid">
     <label><b>Select signed APK file</b><input id="adminAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label>
   </div>
@@ -365,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
   <div class="small" id="adminAndroidAppMsg" role="status" aria-live="polite">Current Android release has not been loaded.</div>
   <div id="adminAndroidAppCurrent"><div class="empty">Loading current Android release…</div></div>
+  <div id="adminAndroidAppHistory" class="small" aria-live="polite"><div class="empty">Cloudflare APK history is available after the release service is configured.</div></div>
 </div>
 </section>
 
@@ -437,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 </div>
 <script src="./dashboard-window.js"></script>
-<script src="./smvastro.mjs?v=20261030-native-call-ring-production-v2" type="module"></script>
+<script src="./smvastro.mjs?v=20261031-cloudflare-r2-apk-release-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -1136,7 +1137,7 @@ else initFAQ();
   else help.textContent='Install from your browser menu, or tap INSTALL APP when the browser provides the install prompt.';
 })();
 </script>
-<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261030-admin-apk-manager-v2"></script>
+<script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261031-cloudflare-r2-apk-release-v1"></script>
 <script src="./public-navigation.js?v=20261025-phase1-directory-dashboard-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{
