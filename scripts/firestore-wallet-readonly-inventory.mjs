@@ -77,6 +77,27 @@ const SETTINGS_DOCUMENTS = Object.freeze([
   'commission'
 ]);
 
+const PROJECTION_POLICIES = Object.freeze({
+  smv_wallet_recharges: Object.freeze({
+    allowedFields: new Set(['status','createdAt','updatedAt','paidAt','amountPaise','paidAmountPaise','razorpayOrderId','razorpayPaymentId']),
+    filterField: 'status',
+    filterOp: 'IN',
+    filterValues: new Set(NON_TERMINAL_RECHARGE_STATES)
+  }),
+  razorpay_orders: Object.freeze({
+    allowedFields: new Set(['serviceName','razorpayOrderId','walletRechargeId','status','createdAt','updatedAt','amount','currency']),
+    filterField: 'serviceName',
+    filterOp: 'EQUAL',
+    filterValues: new Set(['SMV ASTRO Wallet Recharge'])
+  }),
+  smv_offer_audit: Object.freeze({
+    allowedFields: new Set(['service','offerType','type','action','status','createdAt','usedAt','referenceType','eventType']),
+    filterField: null,
+    filterOp: null,
+    filterValues: new Set()
+  })
+});
+
 const NON_TERMINAL_RECHARGE_STATES = Object.freeze([
   'creating',
   'order_created',
@@ -163,19 +184,31 @@ export function buildAggregationRequest(collectionId, filter = null, { allDescen
 }
 
 export function buildProjectionQuery(collectionId, filter, fieldNames) {
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(collectionId || ''))) {
-    throw new TypeError('Collection ID is invalid.');
-  }
+  const collection = String(collectionId || '');
+  const policy = PROJECTION_POLICIES[collection];
+  if (!policy) throw new TypeError('Projection collection is not allowlisted.');
   if (!Array.isArray(fieldNames) || !fieldNames.length ||
-      fieldNames.some(field => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(field || '')))) {
+      fieldNames.some(field => !policy.allowedFields.has(String(field || '')))) {
     throw new TypeError('Projection fields are invalid.');
   }
-  if (filter && (!filter.field || !['EQUAL', 'IN'].includes(filter.op))) {
-    throw new TypeError('Projection filter is not allowlisted.');
+  if (collection === 'smv_offer_audit') {
+    if (filter !== null && filter !== undefined) {
+      throw new TypeError('Unfiltered offer-audit metadata projection is the only allowed audit query.');
+    }
+  } else {
+    if (!filter || filter.field !== policy.filterField || filter.op !== policy.filterOp) {
+      throw new TypeError('Projection filter is not allowlisted.');
+    }
+    const values = filter.op === 'IN'
+      ? (Array.isArray(filter.value) ? filter.value : [])
+      : [filter.value];
+    if (!values.length || values.some(value => !policy.filterValues.has(String(value)))) {
+      throw new TypeError('Projection filter values are not allowlisted.');
+    }
   }
   const structuredQuery = {
     select: { fields: fieldNames.map(fieldPath => ({ fieldPath })) },
-    from: [{ collectionId }],
+    from: [{ collectionId: collection }],
     limit: 1000
   };
   if (filter) {
