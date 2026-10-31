@@ -181,30 +181,6 @@ async function fetchLegacyRelease(env, fetchImpl) {
   };
 }
 
-async function ensureLegacyBaseline(env, fetchImpl) {
-  let current = await latestRow(env.DB);
-  if (current) return current;
-  const legacy = await fetchLegacyRelease(env, fetchImpl);
-  if (!legacy) return null;
-  try {
-    await env.DB.prepare(
-      "INSERT OR IGNORE INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'firebase', NULL, ?, NULL, NULL, ?, 'legacy-migration', ?)"
-    ).bind(
-      legacy.packageName,
-      legacy.versionName,
-      legacy.versionCode,
-      legacy.downloadUrl,
-      legacy.size,
-      legacy.uploadedAt || Date.now()
-    ).run();
-  } catch (error) {
-    const concurrent = await latestRow(env.DB);
-    if (!concurrent) throw error;
-  }
-  current = await latestRow(env.DB);
-  return current;
-}
-
 function publicDownloadUrl(request, versionCode) {
   const url = new URL(request.url);
   return url.origin + routePrefix(url) + '/download/' + String(versionCode);
@@ -415,12 +391,14 @@ export function createAndroidApkReleaseWorker({
           }
 
           let current;
+          let legacyBaseline = null;
           try {
-            current = await ensureLegacyBaseline(env, fetchImpl);
+            current = await latestRow(env.DB);
+            if (!current) legacyBaseline = await fetchLegacyRelease(env, fetchImpl);
           } catch (error) {
             return json(request, env, { success: false, error: error?.message || 'Unable to establish the current APK version.' }, 503);
           }
-          const currentCode = Math.max(1000, Number(current?.version_code || 0));
+          const currentCode = Math.max(1000, Number(current?.version_code || legacyBaseline?.versionCode || 0));
           if (Number(apk.versionCode) <= currentCode) {
             return json(request, env, {
               success: false,
@@ -447,7 +425,20 @@ export function createAndroidApkReleaseWorker({
               }
             });
             stored = true;
-            await env.DB.prepare(
+            const insertStatements = [];
+            if (!current && legacyBaseline) {
+              insertStatements.push(env.DB.prepare(
+                "INSERT OR IGNORE INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'firebase', NULL, ?, NULL, NULL, ?, 'legacy-migration', ?)"
+              ).bind(
+                legacyBaseline.packageName,
+                legacyBaseline.versionName,
+                Number(legacyBaseline.versionCode),
+                legacyBaseline.downloadUrl,
+                Number(legacyBaseline.size || 0),
+                Number(legacyBaseline.uploadedAt || now)
+              ));
+            }
+            insertStatements.push(env.DB.prepare(
               "INSERT INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)"
             ).bind(
               apk.packageName,
@@ -459,7 +450,9 @@ export function createAndroidApkReleaseWorker({
               Number(apk.size || arrayBuffer.byteLength),
               String(auth.identity.uid),
               now
-            ).run();
+            ));
+            if (insertStatements.length > 1) await env.DB.batch(insertStatements);
+            else await insertStatements[0].run();
           } catch (error) {
             if (stored) {
               try { await env.APK_RELEASES.delete(objectKey); } catch (_) {}
