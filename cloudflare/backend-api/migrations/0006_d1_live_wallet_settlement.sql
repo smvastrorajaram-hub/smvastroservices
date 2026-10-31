@@ -12,6 +12,49 @@ CREATE INDEX IF NOT EXISTS idx_smv_domain_earnings_astrologer_created
 CREATE INDEX IF NOT EXISTS idx_smv_domain_earnings_source_reference
   ON smv_domain_earnings(source_type,reference_id);
 
+CREATE TABLE IF NOT EXISTS smv_domain_live_connections (
+  session_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
+  connected INTEGER NOT NULL DEFAULT 0 CHECK (connected IN (0,1)),
+  generation INTEGER NOT NULL DEFAULT 0 CHECK (generation>=0),
+  deadline_at_ms INTEGER,
+  updated_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (session_id,uid)
+);
+CREATE INDEX IF NOT EXISTS idx_smv_domain_live_connections_deadline
+  ON smv_domain_live_connections(session_id,connected,deadline_at_ms);
+
+-- Realtime messages/signals are accepted only from the correct participants,
+-- during the right Live mode/state. This closes read-then-write end-session races.
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_message_validate
+BEFORE INSERT ON smv_domain_live_messages
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_sessions s
+    WHERE s.session_id=NEW.session_id
+      AND s.mode='chat' AND s.state='active'
+      AND NEW.sender_uid IN (s.customer_uid,s.astrologer_uid)
+      AND s.started_at_ms IS NOT NULL
+      AND NEW.created_at_ms < s.started_at_ms +
+        CAST(json_extract(s.payload_json,'$.minutes') AS INTEGER)*60000
+  ) THEN RAISE(ABORT,'LIVE_MESSAGE_SESSION_INVALID') END;
+END;
+
+CREATE TRIGGER IF NOT EXISTS smv_domain_live_signal_validate
+BEFORE INSERT ON smv_domain_live_signals
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_sessions s
+    WHERE s.session_id=NEW.session_id
+      AND s.mode='call' AND s.state IN ('connecting','active')
+      AND NEW.sender_uid IN (s.customer_uid,s.astrologer_uid)
+      AND (NEW.signal_type<>'offer' OR NEW.sender_uid=s.customer_uid)
+      AND (NEW.signal_type<>'answer' OR NEW.sender_uid=s.astrologer_uid)
+      AND (s.state<>'active' OR NEW.created_at_ms <
+        s.started_at_ms+CAST(json_extract(s.payload_json,'$.minutes') AS INTEGER)*60000)
+  ) THEN RAISE(ABORT,'LIVE_SIGNAL_SESSION_INVALID') END;
+END;
+
 -- Enforce per-Astrologer concurrent Live session capacity inside the same D1
 -- write transaction that creates the session. Pricing defaults to one slot.
 CREATE TRIGGER IF NOT EXISTS smv_domain_live_session_capacity_validate
