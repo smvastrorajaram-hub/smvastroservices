@@ -466,7 +466,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
               o.start_at_ms, o.end_at_ms, o.payload_json,
               COALESCE(u.redemption_count, 0) AS customer_redemption_count
        FROM smv_domain_wallet_offers o
-       LEFT JOIN smv_domain_offer_usage u
+       LEFT JOIN smv_domain_wallet_offer_redemption_usage u
          ON u.offer_id=o.offer_id AND u.customer_uid=?
        WHERE o.enabled=1 AND o.minimum_recharge_paise<=?
          AND (o.start_at_ms IS NULL OR o.start_at_ms<=?)
