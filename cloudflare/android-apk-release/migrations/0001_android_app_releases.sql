@@ -32,3 +32,16 @@ CREATE TABLE IF NOT EXISTS android_apk_upload_attempts (
 
 CREATE INDEX IF NOT EXISTS android_apk_upload_attempts_uid_time
 ON android_apk_upload_attempts(uid, attempted_at);
+
+
+-- Enforce the per-Admin upload cap at the database boundary as well as the
+-- application check, so simultaneous requests cannot exceed the hourly limit.
+CREATE TRIGGER IF NOT EXISTS android_apk_upload_attempts_hourly_limit
+BEFORE INSERT ON android_apk_upload_attempts
+WHEN (
+  SELECT COUNT(*) FROM android_apk_upload_attempts
+  WHERE uid = NEW.uid AND attempted_at >= NEW.attempted_at - 3600000
+) >= 5
+BEGIN
+  SELECT RAISE(ABORT, 'APK_UPLOAD_RATE_LIMIT');
+END;
