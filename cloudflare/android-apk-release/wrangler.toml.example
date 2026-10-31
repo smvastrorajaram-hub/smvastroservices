@@ -1,0 +1,24 @@
+name = "smv-astro-apk-release-api"
+main = "./worker.mjs"
+compatibility_date = "2026-10-31"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+FIREBASE_ALLOWED_PROJECT_IDS = "smv-astro"
+SMV_ANDROID_RELEASE_ADMIN_UIDS = "TwjeEIFS3Zcf1SxboLZoujm91Ky2"
+SMV_ANDROID_RELEASE_ADMIN_EMAILS = ""
+ALLOWED_ORIGINS = "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev"
+ALLOW_APK_UPLOADS = "false"
+LEGACY_ANDROID_RELEASE_URL = "https://smvastroservices.onrender.com/public/android-app"
+MAX_APK_BYTES = "104857600"
+
+[[r2_buckets]]
+binding = "APK_RELEASES"
+bucket_name = "smv-astro-apk-releases"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smv-astro-apk-releases"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "./migrations"
