@@ -1,6 +1,6 @@
 import {
   WALLET_DOMAIN_BACKFILL_COLLECTIONS,
-  mapLegacyWalletDomainDocument
+  mapLegacyWalletDomainDocumentWithPayoutEncryption
 } from './wallet-domain-backfill.mjs';
 
 function backfillError(code, message, status = 400) {
@@ -74,14 +74,18 @@ function mappedTargetPath(key, document, parentId = '') {
     case 'scheduledCallChatAppointments': return { table:'smv_domain_scheduled_appointments', sql:'SELECT appointment_id FROM smv_domain_scheduled_appointments WHERE appointment_id=?', values:[id] };
     case 'liveSessionEarnings': return { table:'smv_domain_earnings', sql:'SELECT earning_id FROM smv_domain_earnings WHERE earning_id=?', values:[id] };
     case 'withdrawals': return { table:'smv_domain_withdrawals', sql:'SELECT withdrawal_id FROM smv_domain_withdrawals WHERE withdrawal_id=?', values:[id] };
-    case 'withdrawalPayouts': return { table:'smv_domain_withdrawal_payouts', sql:'SELECT withdrawal_id FROM smv_domain_withdrawal_payouts WHERE withdrawal_id=?', values:[id] };
+    case 'withdrawalPayouts': return { table:'smv_domain_withdrawal_payouts_encrypted', sql:'SELECT withdrawal_id FROM smv_domain_withdrawal_payouts_encrypted WHERE withdrawal_id=?', values:[String(data.withdrawalId || id)] };
+    case 'walletRechargeOrders': return { table:'smv_domain_razorpay_orders', sql:'SELECT order_id FROM smv_domain_razorpay_orders WHERE order_id=?', values:[String(data.razorpayOrderId || data.orderId || id)] };
     case 'razorpayWebhookEvents': return { table:'smv_domain_razorpay_webhook_events', sql:'SELECT event_key FROM smv_domain_razorpay_webhook_events WHERE event_key=?', values:[id] };
     case 'billingSettings': return { table:'smv_domain_settings', sql:'SELECT setting_id FROM smv_domain_settings WHERE setting_id=?', values:[id] };
     default: return null;
   }
 }
 
-export function createWalletDomainBackfillService({ db, firestore, now = Date.now, cryptoImpl = globalThis.crypto } = {}) {
+export function createWalletDomainBackfillService({
+  db, firestore, now = Date.now, cryptoImpl = globalThis.crypto,
+  payoutEncryptionKey = '', payoutKeyVersion = 'v1', sourceProjectId = 'smv-astro-staging'
+} = {}) {
   if (!db || typeof db.prepare !== 'function' || typeof db.batch !== 'function' ||
       !firestore || typeof firestore.listDocuments !== 'function' ||
       typeof firestore.getDocument !== 'function' ||
@@ -91,6 +95,16 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
 
   function statement(sql, values = []) {
     return db.prepare(sql).bind(...values);
+  }
+
+  async function mapDocument(collection, document, options = {}) {
+    return mapLegacyWalletDomainDocumentWithPayoutEncryption(collection, document, {
+      ...options,
+      payoutEncryptionKey,
+      payoutKeyVersion,
+      sourceProjectId,
+      cryptoImpl
+    });
   }
 
   async function readPage({ collection, pageToken = '', parentId = '', pageSize = 40, includeFilteredOut = false } = {}) {
@@ -125,7 +139,7 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
       const canonical = stableJson(document.data || {});
       const digest = await sha256(canonical,cryptoImpl);
       const prepared = { ...document, payloadSha256:digest };
-      const mapped = mapLegacyWalletDomainDocument(collection,prepared,{parentId,nowMs:Number(now())});
+      const mapped = await mapDocument(collection,prepared,{parentId,nowMs:Number(now())});
       items.push({ document:prepared, mapped, canonical });
     }
     return { ...page, items };
@@ -261,10 +275,13 @@ export function createWalletDomainBackfillService({ db, firestore, now = Date.no
         (SELECT COUNT(*) FROM smv_domain_wallet_offers) AS wallet_offers,
         (SELECT COUNT(*) FROM smv_domain_live_sessions) AS live_sessions,
         (SELECT COUNT(*) FROM smv_domain_live_bookings) AS live_bookings,
+        (SELECT COUNT(*) FROM smv_domain_scheduled_appointments) AS scheduled_appointments,
+        (SELECT COUNT(*) FROM smv_domain_razorpay_orders) AS razorpay_wallet_orders,
+        (SELECT COUNT(*) FROM smv_domain_withdrawal_payouts_encrypted) AS encrypted_withdrawal_payouts,
         (SELECT COUNT(*) FROM smv_domain_legacy_documents) AS archived_documents`
     ).first();
     return { collections:result?.results || [], target:target || {} };
   }
 
-  return Object.freeze({ readPage,previewPage,applyPage,reconcilePage,assertSourceQuiescent,status });
+  return Object.freeze({ readPage,mapDocument,previewPage,applyPage,reconcilePage,assertSourceQuiescent,status });
 }
