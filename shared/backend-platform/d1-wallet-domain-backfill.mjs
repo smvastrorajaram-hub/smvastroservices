@@ -33,9 +33,12 @@ async function sha256(value, cryptoImpl) {
 }
 
 function safeParentId(value) {
-  const id = String(value || '').trim();
-  return id && id.length <= 180 && id !== '.' && id !== '..' &&
-    !id.includes('/') && !/[\\u0000-\\u001f\\u007f]/.test(id) ? id : '';
+  // Firestore document IDs may contain punctuation and Unicode; the Firestore
+  // path-segment limit is 1,500 bytes, not a 180-character ASCII regex.
+  const id = String(value ?? '');
+  const byteLength = new TextEncoder().encode(id).byteLength;
+  return id && byteLength <= 1500 && id !== '.' && id !== '..' && !id.includes('/')
+    ? id : '';
 }
 
 function sourceCollectionPath(key, parentId = '') {
