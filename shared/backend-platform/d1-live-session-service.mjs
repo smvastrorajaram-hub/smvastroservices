@@ -57,7 +57,7 @@ function checkSessionId(value) {
 }
 
 export function createD1LiveSessionService({
-  db,walletAdapter,firestore,cryptoImpl=globalThis.crypto,now=Date.now
+  db,walletAdapter,firestore,adminWalletUid='',cryptoImpl=globalThis.crypto,now=Date.now
 }={}) {
   if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function'||
      !walletAdapter||typeof walletAdapter.ensureWallet!=='function'||
@@ -192,7 +192,7 @@ export function createD1LiveSessionService({
     return JSON.stringify(data);
   }
   async function createRequest({
-    customerUid,astrologerId,mode,minutes,requestId,customerName,birthDetails
+    customerUid,astrologerId,mode,minutes,requestId,customerName,birthDetails,appointmentId=''
   }={}) {
     const uid=checkUid(customerUid),astroUid=checkUid(astrologerId);
     const kind=String(mode||'').trim().toLowerCase();
@@ -234,12 +234,13 @@ export function createD1LiveSessionService({
     const reserve=reserveLiveWallet({wallet,minutes:length,ratePerMinutePaise:rate});
     // Match the legacy rule: the Astrologer is considered Online only when the
     // selected live mode is enabled and no other Live Session is active.
-    const availability=count>0?'busy':'online';
+    const profileAvailability=String(astro.availabilityStatus||astro.onlineStatus||'offline').trim().toLowerCase();
+    const availability=count>0?'busy':profileAvailability;
     const canStartNow=availability==='online'&&count<pricing.maxConcurrentSessions;
     const timestamp=Number(now());
     const common={
       sessionId:id,customerUid:uid,astrologerUid:astroUid,astrologerId:astroUid,
-      customerName:name,
+      appointmentId:String(appointmentId||''),customerName:name,
       astrologerName:safeName(astro.name,astro.fullName,astro.displayName,astro.astrologerName,
         profiles.astroUser.name,profiles.astroUser.fullName,profiles.astroUser.displayName)||'Astrologer',
       birthDetails:birth,mode:kind,minutes:length,ratePerMinutePaise:rate,
@@ -478,7 +479,37 @@ export function createD1LiveSessionService({
       reservedBalanceAfterPaise:safePaise(wallet.reservedBalancePaise)-settlement.reservedAmountPaise
     };
     const ledger=[];
-    if(settlement.chargedAmountPaise>0) ledger.push(await buildLedger({
+    const adminUid=String(adminWalletUid||'').trim();
+    if(settlement.chargedAmountPaise>0) {
+      if(settlement.astrologerAmountPaise>0) {
+        await walletAdapter.ensureWallet(session.astrologerUid,'astrologer');
+        ledger.push(await buildLedger({
+          ownerUid:session.astrologerUid,ownerRole:'astrologer',
+          type:'live_session_earning',direction:'credit',
+          amountPaise:settlement.astrologerAmountPaise,
+          availableDeltaPaise:settlement.astrologerAmountPaise,
+          idempotencyKey:'live-session-earning:'+id,
+          referenceType:'live_session',referenceId:id,
+          note:'Astrologer commission for Live '+session.mode
+        }));
+      }
+      if(settlement.adminAmountPaise>0) {
+        if(!adminUid||adminUid===session.customerUid||adminUid===session.astrologerUid) {
+          throw liveError('LIVE_ADMIN_WALLET_NOT_CONFIGURED','The Admin Wallet UID is not configured separately from the Live participants. Settlement was not posted.',503);
+        }
+        await walletAdapter.ensureWallet(adminUid,'admin');
+        ledger.push(await buildLedger({
+          ownerUid:adminUid,ownerRole:'admin',
+          type:'live_session_admin_commission',direction:'credit',
+          amountPaise:settlement.adminAmountPaise,
+          availableDeltaPaise:settlement.adminAmountPaise,
+          idempotencyKey:'live-session-admin-commission:'+id,
+          referenceType:'live_session',referenceId:id,
+          note:'Admin commission for Live '+session.mode
+        }));
+      }
+    }
+    if(settlement.chargedAmountPaise>0) ledger.unshift(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_usage',direction:'debit',
       amountPaise:settlement.chargedAmountPaise,reservedDeltaPaise:-settlement.chargedAmountPaise,
       idempotencyKey:'live-session-usage:'+id,referenceType,referenceId:id,
@@ -891,5 +922,6 @@ function mapLiveD1Error(error) {
   if(message.includes('LIVE_BOOKING_RESERVE_MISSING')) return liveError('LIVE_BOOKING_RESERVE_MISSING','Live booking Wallet reserve could not be verified.',409);
   if(message.includes('LIVE_SESSION_CASH_RESERVE_NOT_SETTLED')||message.includes('LIVE_SESSION_BONUS_RESERVE_NOT_SETTLED')) return liveError('LIVE_WALLET_RESERVE_MISMATCH','Live Session Wallet reserve did not reconcile.',409);
   if(message.includes('LIVE_BOOKING_CASH_RESERVE_NOT_RELEASED')||message.includes('LIVE_BOOKING_BONUS_RESERVE_NOT_RELEASED')) return liveError('LIVE_BOOKING_WALLET_RESERVE_MISMATCH','Booking Wallet reserve did not reconcile.',409);
+  if(message.includes('LIVE_EARNING_SESSION_SETTLEMENT_MISMATCH')||message.includes('LIVE_EARNING_COMMISSION_MISMATCH')) return liveError('LIVE_EARNING_SETTLEMENT_MISMATCH','The Astrologer/Admin earning split did not match the final Live Wallet settlement.',409);
   return error;
 }
