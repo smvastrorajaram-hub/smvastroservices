@@ -103,6 +103,12 @@ jobs:
             throw new Error('Cloudflare Express runtime health verification failed.');
           }
 
+          const authorizationGate = await fetch(base + '/api/auth/authorization');
+          const authorizationGateBody = await authorizationGate.json().catch(() => ({}));
+          if (authorizationGate.status !== 401 || authorizationGateBody.code !== 'AUTH_REQUIRED') {
+            throw new Error('Firebase Firestore authorization route must reject unauthenticated requests.');
+          }
+
           const authGate = await fetch(base + '/api/auth/session');
           const authGateBody = await authGate.json().catch(() => ({}));
           if (authGate.status !== 401 || authGateBody.code !== 'AUTH_REQUIRED') {
