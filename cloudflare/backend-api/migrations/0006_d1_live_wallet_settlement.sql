@@ -9,8 +9,47 @@ CREATE INDEX IF NOT EXISTS idx_smv_domain_live_bookings_expiry
   ON smv_domain_live_bookings(status,expires_at_ms);
 CREATE INDEX IF NOT EXISTS idx_smv_domain_earnings_astrologer_created
   ON smv_domain_earnings(astrologer_uid,created_at_ms DESC);
+
+CREATE TRIGGER IF NOT EXISTS smv_domain_withdrawal_validate
+BEFORE INSERT ON smv_domain_withdrawals
+BEGIN
+  SELECT CASE WHEN NEW.amount_paise<30000
+    THEN RAISE(ABORT,'WITHDRAWAL_MINIMUM_NOT_MET') END;
+
+  SELECT CASE WHEN NEW.amount_paise + COALESCE((
+    SELECT SUM(w.amount_paise) FROM smv_domain_withdrawals w
+    WHERE w.astrologer_uid=NEW.astrologer_uid
+      AND w.status IN ('pending','processing','paid')
+  ),0) > COALESCE((
+    SELECT SUM(e.astrologer_amount_paise) FROM smv_domain_earnings e
+    WHERE e.astrologer_uid=NEW.astrologer_uid AND e.status='credited'
+  ),0) + COALESCE((
+    SELECT s.total_earned_paise FROM smv_domain_legacy_earning_snapshots s
+    WHERE s.astrologer_uid=NEW.astrologer_uid
+  ),0)
+  THEN RAISE(ABORT,'WITHDRAWAL_EARNINGS_INSUFFICIENT') END;
+
+  SELECT CASE WHEN EXISTS (
+    SELECT 1 FROM smv_domain_withdrawals w
+    WHERE w.astrologer_uid=NEW.astrologer_uid
+      AND w.status IN ('pending','processing','paid')
+      AND NEW.created_at_ms-w.created_at_ms < 604800000
+  ) THEN RAISE(ABORT,'WITHDRAWAL_SEVEN_DAY_COOLDOWN') END;
+END;
 CREATE INDEX IF NOT EXISTS idx_smv_domain_earnings_source_reference
   ON smv_domain_earnings(source_type,reference_id);
+
+-- Legacy question/private-consultation earnings remain Firestore-authoritative
+-- until the domain backfill imports them. A server-refreshed aggregate makes
+-- them available to the D1 withdrawal invariant without replaying every session.
+CREATE TABLE IF NOT EXISTS smv_domain_legacy_earning_snapshots (
+  astrologer_uid TEXT PRIMARY KEY NOT NULL,
+  total_earned_paise INTEGER NOT NULL DEFAULT 0 CHECK (total_earned_paise>=0),
+  question_count INTEGER NOT NULL DEFAULT 0 CHECK (question_count>=0),
+  private_consultation_count INTEGER NOT NULL DEFAULT 0 CHECK (private_consultation_count>=0),
+  source_update_time_ms INTEGER NOT NULL,
+  updated_at_ms INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS smv_domain_live_connections (
   session_id TEXT NOT NULL,
