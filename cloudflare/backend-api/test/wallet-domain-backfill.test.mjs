@@ -64,6 +64,8 @@ test('legacy Wallet transactions are archived separately and never replay the li
   const legacy = mapped.statements.find(row => row.kind === 'legacy_wallet_transaction');
   assert.ok(legacy);
   assert.match(legacy.sql, /smv_domain_legacy_wallet_transactions/);
+  assert.match(legacy.sql, /INSERT OR IGNORE INTO smv_domain_legacy_wallet_transactions/);
+  assert.doesNotMatch(legacy.sql, /DO UPDATE SET/);
   assert.equal(mapped.statements.some(row => /INSERT INTO smv_domain_wallet_ledger/.test(row.sql)), false);
   assert.deepEqual(legacy.values.slice(0, 6), ['legacy-ledger-1','customer-1','customer','recharge','credit',5000]);
 });
