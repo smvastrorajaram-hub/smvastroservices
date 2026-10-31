@@ -322,7 +322,7 @@ test('Cloudflare publishing is opt-in and deployment example does not contain cr
   const readme = fs.readFileSync(path.join(root, 'cloudflare/android-apk-release/README.md'), 'utf8');
   assert.match(example, /ALLOW_APK_UPLOADS\s*=\s*"false"/);
   assert.match(example, /database_id\s*=\s*"00000000-0000-0000-0000-000000000000"/);
-  assert.match(readme, /do not change existing Firebase, Razorpay, Render/);
+  assert.match(readme, /does not change existing Firebase, Razorpay, Render/);
   assert.match(readme, /Do not point it at Wallet or any other existing D1 database/);
   assert.match(readme, /Do not add secrets or APK binaries/);
 });
