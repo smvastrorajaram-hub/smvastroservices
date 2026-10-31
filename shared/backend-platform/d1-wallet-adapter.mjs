@@ -393,6 +393,125 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return { success: true };
   }
 
+  async function listWalletOffers({ activeOnly = false } = {}) {
+    const timestamp = Number(now());
+    const where = activeOnly
+      ? " WHERE enabled=1 AND (start_at_ms IS NULL OR start_at_ms<=?) AND (end_at_ms IS NULL OR end_at_ms>?) AND (total_usage_limit=0 OR used_count<total_usage_limit)"
+      : "";
+    const values = activeOnly ? [timestamp, timestamp] : [];
+    const result = await statement(
+      "SELECT o.*, " +
+      "(SELECT COUNT(*) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id) AS successful_redemptions, " +
+      "COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_minutes_awarded " +
+      "FROM smv_domain_wallet_offers o" + where +
+      " ORDER BY priority DESC, bonus_minutes DESC, offer_id ASC LIMIT 100",
+      values
+    ).all();
+    return (result?.results || []).map(row => {
+      let payload = {};
+      try { payload = JSON.parse(String(row.payload_json || '{}')); } catch {}
+      const date = value => value == null ? null : new Date(Number(value)).toISOString();
+      return {
+        id: String(row.offer_id),
+        offerType: 'wallet_recharge_bonus_minutes',
+        name: String(payload.name || ''),
+        bannerTheme: String(payload.bannerTheme || 'auto'),
+        enabled: Number(row.enabled) === 1,
+        minimumRechargeAmountPaise: safePaise(row.minimum_recharge_paise),
+        bonusMinutes: safeMinutes(row.bonus_minutes),
+        perCustomerLimit: safePaise(row.per_customer_limit),
+        totalUsageLimit: safePaise(row.total_usage_limit),
+        priority: Number(row.priority || 0),
+        usedCount: safePaise(row.used_count),
+        successfulRedemptions: safePaise(row.successful_redemptions),
+        totalBonusMinutesAwarded: safeMinutes(row.total_bonus_minutes_awarded),
+        startAt: date(row.start_at_ms),
+        endAt: date(row.end_at_ms),
+        createdAt: date(row.created_at_ms),
+        updatedAt: date(row.updated_at_ms),
+        updatedBy: String(payload.updatedBy || '')
+      };
+    }).sort((a, b) =>
+      b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
+    );
+  }
+
+  async function saveWalletOffer({
+    id, name, bannerTheme = 'auto', enabled = false,
+    minimumRechargeAmountPaise = 0, bonusMinutes, perCustomerLimit = 1,
+    totalUsageLimit = 0, priority = 0, startAtMs = null, endAtMs = null,
+    updatedBy = ''
+  } = {}) {
+    const offerId = String(id || cryptoImpl.randomUUID()).trim();
+    const offerName = String(name || '').trim();
+    const theme = String(bannerTheme || 'auto');
+    const minimum = Number(minimumRechargeAmountPaise);
+    const bonus = Number(bonusMinutes);
+    const perCustomer = Number(perCustomerLimit);
+    const total = Number(totalUsageLimit);
+    const rank = Number(priority);
+    const validDate = value => value == null || Number.isSafeInteger(Number(value));
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(offerId) || !offerName || offerName.length > 120 ||
+        !Number.isSafeInteger(minimum) || minimum < 0 ||
+        !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+        !Number.isSafeInteger(perCustomer) || perCustomer < 0 || perCustomer > 10000 ||
+        !Number.isSafeInteger(total) || total < 0 || total > 1000000 ||
+        !Number.isSafeInteger(rank) || rank < -1000 || rank > 1000 ||
+        !validDate(startAtMs) || !validDate(endAtMs) ||
+        (startAtMs != null && endAtMs != null && Number(startAtMs) >= Number(endAtMs))) {
+      throw walletRechargeError('WALLET_OFFER_INVALID', 'Wallet Offer details are invalid.', 400);
+    }
+    const existing = await statement(
+      'SELECT offer_id FROM smv_domain_wallet_offers WHERE offer_id=? LIMIT 1', [offerId]
+    ).first();
+    if (id && !existing) {
+      throw walletRechargeError('WALLET_OFFER_NOT_FOUND', 'Wallet Offer was not found.', 404);
+    }
+    const timestamp = Number(now());
+    const payload = JSON.stringify({ name: offerName, bannerTheme: theme, updatedBy: String(updatedBy || '').slice(0, 160) });
+    await statement(
+      "INSERT INTO smv_domain_wallet_offers " +
+      "(offer_id,enabled,minimum_recharge_paise,bonus_minutes,per_customer_limit,total_usage_limit,used_count,priority,start_at_ms,end_at_ms,payload_json,created_at_ms,updated_at_ms) " +
+      "VALUES (?,?,?,?,?,?,0,?,?,?,?,?,?) " +
+      "ON CONFLICT(offer_id) DO UPDATE SET " +
+      "enabled=excluded.enabled,minimum_recharge_paise=excluded.minimum_recharge_paise," +
+      "bonus_minutes=excluded.bonus_minutes,per_customer_limit=excluded.per_customer_limit," +
+      "total_usage_limit=excluded.total_usage_limit,priority=excluded.priority," +
+      "start_at_ms=excluded.start_at_ms,end_at_ms=excluded.end_at_ms," +
+      "payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms",
+      [offerId, enabled === true ? 1 : 0, minimum, bonus, perCustomer, total, rank,
+       startAtMs == null ? null : Number(startAtMs), endAtMs == null ? null : Number(endAtMs),
+       payload, existing ? timestamp : timestamp, timestamp]
+    ).run();
+    const saved = (await listWalletOffers()).find(offer => offer.id === offerId);
+    if (!saved) throw walletRechargeError('WALLET_OFFER_SAVE_FAILED', 'Wallet Offer could not be confirmed after saving.', 503);
+    return saved;
+  }
+
+  async function deleteWalletOffer(id) {
+    const offerId = String(id || '').trim();
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(offerId)) {
+      throw walletRechargeError('WALLET_OFFER_INVALID', 'Wallet Offer ID is invalid.', 400);
+    }
+    const row = await statement(
+      'SELECT used_count FROM smv_domain_wallet_offers WHERE offer_id=? LIMIT 1', [offerId]
+    ).first();
+    if (!row) throw walletRechargeError('WALLET_OFFER_NOT_FOUND', 'Wallet Offer was not found.', 404);
+    const redemptions = await statement(
+      'SELECT COUNT(*) AS count FROM smv_domain_offer_redemptions WHERE offer_id=?', [offerId]
+    ).first();
+    if (safePaise(row.used_count) > 0 || safePaise(redemptions?.count) > 0) {
+      throw walletRechargeError('WALLET_OFFER_HAS_REDEMPTIONS', 'This Offer has redemption history. Turn it OFF instead of deleting it.', 409);
+    }
+    const result = await statement(
+      'DELETE FROM smv_domain_wallet_offers WHERE offer_id=? AND used_count=0', [offerId]
+    ).run();
+    if (Number(result?.meta?.changes || 0) !== 1) {
+      throw walletRechargeError('WALLET_OFFER_HAS_REDEMPTIONS', 'This Offer has redemption history. Turn it OFF instead of deleting it.', 409);
+    }
+    return { success: true, id: offerId };
+  }
+
   async function getRechargeForOwner({ ownerUid, rechargeId } = {}) {
     const owner = validateWalletOwner(ownerUid, 'customer');
     const rid = String(rechargeId || '').trim();
@@ -655,5 +774,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return (result?.results || []).map(mapLedger);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }
