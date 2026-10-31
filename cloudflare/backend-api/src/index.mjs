@@ -3,10 +3,13 @@
 import express from 'express';
 import { env } from 'cloudflare:workers';
 import { httpServerHandler } from 'cloudflare:node';
-import { createFirebaseIdTokenVerifier } from './firebase-id-token.mjs';
+import { createFirebaseIdTokenVerifier } from '../../../shared/backend-platform/firebase-id-token.mjs';
+import { createFirebaseFirestoreRestClient } from '../../../shared/backend-platform/firebase-firestore-rest.mjs';
+import { resolveFirebaseAuthorization } from '../../../shared/backend-platform/firebase-authorization.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
+const firebaseFirestore = createFirebaseFirestoreRestClient();
 const JSON_HEADERS = Object.freeze({ 'Cache-Control': 'no-store' });
 const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
 const ALLOWED_HEADERS = 'Authorization, Content-Type, Idempotency-Key';
@@ -73,6 +76,69 @@ app.get('/api/auth/session', async (req, res) => {
     return res.status(401).set(JSON_HEADERS).json({
       ok: false,
       code: 'AUTH_TOKEN_INVALID'
+    });
+  }
+});
+
+app.get('/api/auth/authorization', async (req, res) => {
+  const authorization = String(req.get('Authorization') || '');
+  const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(authorization);
+  if (!match) {
+    return res.status(401).set(JSON_HEADERS).json({ ok: false, code: 'AUTH_REQUIRED' });
+  }
+
+  const projectIds = String(env.FIREBASE_AUTH_PROJECT_IDS || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+
+  let identity;
+  try {
+    identity = await verifyFirebaseIdToken(match[1], projectIds);
+  } catch (_error) {
+    return res.status(401).set(JSON_HEADERS).json({ ok: false, code: 'AUTH_TOKEN_INVALID' });
+  }
+
+  try {
+    const uid = identity.uid;
+    const [profileDocument, adminDocument, astrologerDocument] = await Promise.all([
+      firebaseFirestore.getDocument({
+        projectId: identity.projectId,
+        documentPath: 'smv_users/' + uid,
+        idToken: match[1]
+      }),
+      firebaseFirestore.getDocument({
+        projectId: identity.projectId,
+        documentPath: 'smv_admins/' + uid,
+        idToken: match[1]
+      }),
+      firebaseFirestore.getDocument({
+        projectId: identity.projectId,
+        documentPath: 'smv_astrologers/' + uid,
+        idToken: match[1]
+      })
+    ]);
+
+    const authorizationState = resolveFirebaseAuthorization({
+      identity,
+      profileDocument,
+      adminDocument,
+      astrologerDocument,
+      adminUids: String(env.ADMIN_UIDS || '').split(','),
+      adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
+    });
+
+    return res.set(JSON_HEADERS).json({
+      ok: true,
+      ...authorizationState,
+      firebaseProjectId: identity.projectId,
+      signInProvider: identity.signInProvider
+    });
+  } catch (error) {
+    const status = error?.httpStatus === 401 || error?.httpStatus === 403 ? 403 : 503;
+    return res.status(status).set(JSON_HEADERS).json({
+      ok: false,
+      code: status === 403 ? 'FIRESTORE_PROFILE_ACCESS_DENIED' : 'FIRESTORE_AUTHORIZATION_UNAVAILABLE'
     });
   }
 });
