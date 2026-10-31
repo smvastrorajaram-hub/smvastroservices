@@ -195,6 +195,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     legacyRouteInventory: 117,
     legacyServerLoaded: false,
     firebaseIdTokenVerification: true,
+    firebaseUserScopedFirestoreRestAdapter: true,
     firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
