@@ -141,7 +141,8 @@ export function registerIdentityProfileBackfillRoutes({
       const options = optionsFrom(req.body || {});
       const result = await backfillService.reconcilePage(options);
       const clean = result.auditMissing === 0 && result.payloadMismatches === 0 &&
-        result.targetMappingsMissing === 0 && result.warningCount === 0;
+        result.targetMappingsMissing === 0 && (result.targetMappingMismatches || 0) === 0 &&
+        result.warningCount === 0;
       return res.status(clean ? 200 : 409).set('Cache-Control', 'no-store').json({
         success: clean, mode: 'read_only_reconciliation', sourceProjectId,
         ...result, cutoverSafe: false, writesPerformed: 0,
