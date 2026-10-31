@@ -23,11 +23,11 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 6. For GitHub Actions, use a dedicated Cloudflare API token stored as the repository secret `CLOUDFLARE_APK_RELEASE_API_TOKEN`. Leave the existing `CLOUDFLARE_API_TOKEN` secret unchanged. The workflow also reads the already configured `CLOUDFLARE_ACCOUNT_ID` repository variable.
 7. The dedicated token needs D1 Read (to inspect the database identity and migration state), D1 Edit (to apply migrations), and Workers product-level Admin for the first creation/deployment of this Worker. After the Worker exists, a narrower token with D1 Read, D1 Edit and Editor access scoped to this Worker is sufficient for later migration checks and deployments.
 8. Only run the manual GitHub Actions workflow from `main`, after explicitly selecting `yes`. It reports the exact `workers.dev` URL after deployment.
-9. Keep `window.SMV_APK_RELEASE_API_URL` blank in `public/index.html` until the first Cloudflare R2 release is published and its public metadata and download have been verified. Then set it to the exact Worker origin and deploy the website.
+9. The Admin Dashboard uses the separate `window.SMV_APK_RELEASE_ADMIN_API_URL` setting, currently pointed at `https://smv-astro-apk-release-api.astroservices.workers.dev`, so signed APKs can be published to R2/D1. Keep the public installer setting `window.SMV_APK_RELEASE_API_URL` blank until a first R2 APK has been uploaded and its metadata and byte-for-byte download have been verified. Then point the public installer to the same Worker origin and deploy the public download switch.
 
 ## Admin upload activation
 
-The owner has explicitly approved `ALLOW_APK_UPLOADS = "true"` in the dedicated APK Release Worker config. Once the Worker passes D1/R2 readiness checks, the Admin APK manager can publish signed releases directly to R2 and save version metadata/history in D1.
+The owner has explicitly approved `ALLOW_APK_UPLOADS = "true"` in the dedicated APK Release Worker config. Once the Worker passes D1/R2 readiness checks and the Admin-only API setting is deployed with the website, the Admin APK manager can publish signed releases directly to R2 and save version metadata/history in D1. The public install/download card remains on its existing source until the R2 APK has been verified.
 
 Before connecting the homepage to the Worker, complete these checks:
 - GET `/health` returns `ready=true` and `uploadsEnabled=true`;
