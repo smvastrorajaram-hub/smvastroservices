@@ -101,7 +101,12 @@ test('in-flight notification lease prevents concurrent duplicate sending', async
   const first=queueMessage(body), second=queueMessage(body);
   const [a,b]=await Promise.all([consumer.processMessage(first),consumer.processMessage(second)]);
   assert.equal(a.status,'sent');
-  assert.equal(b.status,'duplicate_acknowledged');
+  assert.equal(b.status,'lease_busy_retry');
+  assert.equal(second.state.acked,false);
+  assert.ok(second.state.retries.length===1);
+  const replay=queueMessage(body);
+  assert.equal((await consumer.processMessage(replay)).status,'duplicate_acknowledged');
+  assert.equal(replay.state.acked,true);
 });
 
 test('malformed messages are acknowledged instead of retrying poison payloads forever', async () => {
