@@ -39,14 +39,10 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-staging --remote --config wrangler.jsonc
 
-      - name: Inspect existing table definitions and migration metadata (read-only)
+      - name: Inspect all existing D1 schema objects (read-only)
         working-directory: cloudflare/backend-api
-        shell: bash
-        run: |
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --remote --config wrangler.jsonc --command "SELECT type, name, sql FROM sqlite_schema WHERE name IN ('d1_migrations','smv_domain_schema_meta','smv_domain_wallets','smv_domain_wallet_recharges','smv_domain_wallet_offers','smv_domain_live_bookings','smv_domain_live_sessions','smv_domain_live_messages','smv_domain_live_signals','smv_domain_earnings','smv_domain_withdrawals') ORDER BY type, name"
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --remote --config wrangler.jsonc --command "SELECT type, name, sql FROM sqlite_schema ORDER BY type, name"
 
-      - name: Inspect status and booking-related columns (read-only)
+      - name: Read recorded migration history (read-only)
         working-directory: cloudflare/backend-api
-        shell: bash
-        run: |
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --remote --config wrangler.jsonc --command "SELECT 'smv_domain_live_bookings' AS table_name, cid, name, type FROM pragma_table_info('smv_domain_live_bookings') UNION ALL SELECT 'smv_domain_wallet_recharges', cid, name, type FROM pragma_table_info('smv_domain_wallet_recharges') UNION ALL SELECT 'smv_domain_wallet_offers', cid, name, type FROM pragma_table_info('smv_domain_wallet_offers') ORDER BY table_name, cid"
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --remote --config wrangler.jsonc --command "SELECT id, name, applied_at FROM d1_migrations ORDER BY id"
