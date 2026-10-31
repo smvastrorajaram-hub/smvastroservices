@@ -8,7 +8,7 @@ This isolated Worker is the APK release API for the SMV ASTRO production package
 - The Worker has no Firebase Admin service-account key and does not change existing Firebase, Razorpay, Render, Horoscope, Calendar, or Android signing configuration.
 - On the first successful Cloudflare APK upload, D1 records the currently published Firebase release as a history baseline in the same atomic D1 batch as the new R2 release. A rejected/failed upload does not create the baseline. This records metadata only; it does not download, delete, or bulk-migrate historical APK objects. Previous Firebase APKs remain available through their existing links; nothing is deleted.
 - Staging and local CI do not publish real APKs or upload anything to Cloudflare.
-- Before the first Admin upload, verify the deployed Worker `/health` response reports `ready=true` and `uploadsEnabled=true`, then confirm the Admin release card can load the current APK and history.
+- Before the first Admin upload, verify the deployed Worker `/health` response reports `ready=true`, `d1Ready=true`, `r2Ready=true` and `uploadsEnabled=true`, then confirm the Admin release card can load the current APK and history. The health check uses a read-only R2 `HEAD` against a reserved non-written key; it does not create or delete bucket objects.
 
 ## Cloudflare resources
 
@@ -35,10 +35,18 @@ Before uploading the first real APK, complete these checks:
 
 After successful validation, Admin uploads are stored at immutable versioned R2 keys. D1 only moves the latest release pointer forward. A failed metadata write triggers a best-effort cleanup of the not-published R2 object. Old release records and objects are retained.
 
+## Deployment health and diagnostics
+
+- The manual deployment workflow retries the Worker health URL up to 10 times with a 3-second interval so a short Cloudflare edge-propagation delay does not fail an otherwise successful deployment.
+- Health is considered ready only when the dedicated D1 tables can be queried and the R2 binding answers a read-only `HEAD` probe. The response exposes `d1Ready` and `r2Ready` separately; the probe does not write or delete R2 objects.
+- The public metadata endpoint is validated after deployment. A successful response must include `success: true` and a boolean `available`; when a release is available, the package, version and same-Worker download origin are validated.
+- Legacy Render metadata lookup is retried once for transient network errors or HTTP 5xx responses. Persistent failures return a stable diagnostic code and request ID.
+- Worker runtime errors are written to Cloudflare Worker logs as structured records containing request ID, route, stage and sanitized error/cause details. URLs, bearer values, tokens and long credential-like strings are redacted. The public JSON response never includes raw exception messages or credentials.
+
 ## API
 
-- GET /health — reports D1/R2 binding readiness and the explicit upload flag.
-- GET /public/android-app — public latest-release metadata.
+- GET /health — reports D1 schema readiness, a read-only live R2 binding probe, and the explicit upload flag.
+- GET /public/android-app — public latest-release metadata. If the legacy metadata fallback remains unavailable after its retry, the response fails closed with a diagnostic code and request ID instead of pretending that no APK exists.
 - GET /download/:versionCode — streams an R2 APK or redirects to a validated legacy Firebase Storage URL for a previously published release.
 - GET /admin/android-app — verified Firebase ID token and Admin allowlist required.
 - GET /admin/android-app/versions — verified Admin release history.
