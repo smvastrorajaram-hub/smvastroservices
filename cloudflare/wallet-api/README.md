@@ -34,12 +34,26 @@ Money is integer paise. The schema applies uniqueness/idempotency constraints to
 
 If the Worker has not yet been created, in Cloudflare Dashboard → **Workers & Pages**, create a Worker named exactly `smvastro-wallet-api-staging`. Keep it on `workers.dev`; do not configure a custom domain, route, or production DNS. Do not import any Firebase/production data into the staging D1.
 
-## GitHub Actions secrets needed to deploy
+## Cloudflare Git Builds versus the GitHub Actions deployment used here
 
-Open GitHub → repository → Settings → Secrets and variables → Actions and add only:
+This PR uses the **manual GitHub Actions deployment workflow** because that single workflow applies the D1 migration, deploys the Worker, and verifies the staging API. Avoid running two independent deployment pipelines against the same Worker.
 
-| Secret | Value |
-|---|---|
+If you attempted to deploy by connecting this monorepo in Cloudflare Workers Builds and saw `npm ci` / `npm clean-install` fail, the build was running at the repository root and reading the main SMV ASTRO `package.json` / `package-lock.json`. That mismatch is unrelated to the standalone Wallet Worker. Do not change the repository-root lockfile to solve this Worker-specific build.
+
+For the deployment method in this PR:
+1. Keep the Cloudflare Worker resource `smvastro-wallet-api-staging`.
+2. In Workers & Pages → select that Worker → Settings → Builds → select **Disconnect** for the repository build integration, so it does not independently deploy on pushes.
+3. The GitHub Actions workflow below deploys to the existing Worker using the token stored in GitHub Actions. If the Worker was not actually created because its first build failed, create a blank/Hello World Worker named exactly `smvastro-wallet-api-staging` in the Cloudflare dashboard without connecting the Git repository.
+4. Do not delete the D1 database. The deployment workflow applies the migration only to the configured staging D1 database.
+
+Cloudflare documents the Root directory, optional Build command, Deploy command, and Disconnect controls here:
+- https://developers.cloudflare.com/workers/ci-cd/builds/configuration/
+- https://developers.cloudflare.com/workers/ci-cd/builds/
+
+## GitHub Actions settings needed to deploy
+
+Open GitHub → repository → Settings → Secrets and variables → Actions:
+
 **Repository Actions variable** (not a secret):
 
 | Variable | Value |
