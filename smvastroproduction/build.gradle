@@ -4,6 +4,15 @@ def nativeFirebaseAndroidAppId = providers.gradleProperty("smvFirebaseAndroidApp
         .orElse(providers.environmentVariable("SMV_FIREBASE_ANDROID_APP_ID"))
         .getOrElse("1:299081899217:android:09e43164cfdd015ba539f0")
 
+// Public OAuth Web application client ID used by Android Credential Manager.
+// This is an OAuth client identifier, not a client secret.
+def googleWebClientId = providers.gradleProperty("smvGoogleWebClientId")
+        .orElse(providers.environmentVariable("SMV_GOOGLE_WEB_CLIENT_ID"))
+        .getOrElse("299081899217-ht47n60l8t2c7gbo07nd4lpm8i51jk3m.apps.googleusercontent.com")
+if (!(googleWebClientId ==~ /^[0-9]+-[A-Za-z0-9_-]+\\.apps\\.googleusercontent\\.com$/)) {
+    throw new GradleException("SMV_GOOGLE_WEB_CLIENT_ID must be a valid Google OAuth Web Client ID.")
+}
+
 def releaseKeystorePath = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PATH").orNull
 def releaseKeystorePassword = providers.environmentVariable("SMV_ANDROID_KEYSTORE_PASSWORD").orNull
 def releaseKeyAlias = providers.environmentVariable("SMV_ANDROID_KEY_ALIAS").orNull
@@ -54,6 +63,7 @@ android {
         buildConfigField "String", "SMV_FIREBASE_API_KEY", "\"AIzaSyAMadKqrgdqgF3NrRsS_cLySDiNrRsl6kM\""
         buildConfigField "String", "SMV_FIREBASE_PROJECT_ID", "\"smv-astro\""
         buildConfigField "String", "SMV_FIREBASE_SENDER_ID", "\"299081899217\""
+        buildConfigField "String", "SMV_GOOGLE_WEB_CLIENT_ID", '"' + googleWebClientId + '"'
     }
 
     signingConfigs {
@@ -83,6 +93,10 @@ android {
 
 dependencies {
     implementation platform("com.google.firebase:firebase-bom:35.1.0")
+    implementation "com.google.firebase:firebase-auth"
     implementation "com.google.firebase:firebase-messaging"
     implementation "androidx.webkit:webkit:1.18.0"
+    implementation "androidx.credentials:credentials:1.6.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+    implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
 }
