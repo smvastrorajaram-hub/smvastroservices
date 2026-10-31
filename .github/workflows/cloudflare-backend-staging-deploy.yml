@@ -13,6 +13,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - 'server.js'
       - '.github/workflows/cloudflare-backend-staging-deploy.yml'
   workflow_dispatch:
 
