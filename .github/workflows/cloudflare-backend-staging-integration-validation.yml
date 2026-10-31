@@ -7,6 +7,8 @@ on:
     paths:
       - 'cloudflare/backend-api/**'
       - 'shared/backend-platform/**'
+      - 'public/smvastro.mjs'
+      - 'smvastroproduction/**'
       - 'server.js'
       - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
   pull_request:
@@ -15,6 +17,8 @@ on:
     paths:
       - 'cloudflare/backend-api/**'
       - 'shared/backend-platform/**'
+      - 'public/smvastro.mjs'
+      - 'smvastroproduction/**'
       - 'server.js'
       - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
   workflow_dispatch:
