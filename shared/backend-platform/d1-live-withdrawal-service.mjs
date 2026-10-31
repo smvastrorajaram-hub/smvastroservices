@@ -227,16 +227,89 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     };
   }
 
+  async function getEarningsDashboard(uid) {
+    const summary=await overview(uid);
+    const [liveRows,withdrawalRows]=await Promise.all([
+      all(
+        `SELECT * FROM smv_domain_earnings
+         WHERE astrologer_uid=? AND source_type='live_session' AND status='credited'
+         ORDER BY created_at_ms DESC LIMIT 50`,
+        [String(uid)]
+      ),
+      all(
+        `SELECT * FROM smv_domain_withdrawals
+         WHERE astrologer_uid=? ORDER BY created_at_ms DESC LIMIT 100`,
+        [String(uid)]
+      )
+    ]);
+    const ledger=(liveRows.results||[]).map(row=>{
+      const payload=readJson(row.payload_json);
+      return {
+        id:String(payload.sessionId||row.reference_id||row.earning_id),
+        question:String(payload.question||('Live '+String(payload.mode||'chat').toUpperCase())),
+        commission:safePaise(row.astrologer_amount_paise)/100,
+        date:Number(row.created_at_ms||0)?new Date(Number(row.created_at_ms)).toISOString():null
+      };
+    });
+    const withdrawals=(withdrawalRows.results||[]).map(row=>{
+      const item=mapWithdrawal(row);
+      const payload=readJson(row.payload_json);
+      return {
+        id:item.id,withdrawalId:item.withdrawalId,astrologerId:item.astrologerUid,
+        astrologerName:item.astrologerName,amount:item.amount,status:item.status,
+        adminPaymentId:item.adminPaymentId,
+        createdAt:new Date(item.createdAtMs).toISOString(),
+        requestedAt:new Date(item.createdAtMs).toISOString(),
+        paidAt:payload.paidAtMs?new Date(Number(payload.paidAtMs)).toISOString():null
+      };
+    });
+    return {
+      success:true,totalEarnings:summary.totalEarnings,
+      totalWithdrawals:summary.totalWithdrawals,
+      availableToWithdraw:summary.availableToWithdraw,
+      minimumWithdrawal:summary.minimumWithdrawal,
+      withdrawalCooldownActive:summary.withdrawalCooldownActive,
+      withdrawalCooldownEndsAt:summary.withdrawalCooldownEndsAt,
+      withdrawalEligible:summary.withdrawalEligible,
+      ledger,withdrawals
+    };
+  }
+
   async function listAdminWithdrawals({status=''}={}) {
     const where=String(status||'').trim().toLowerCase();
     const valid=['pending','processing','paid','rejected'];
     if(where&&!valid.includes(where)) throw withdrawalError('WITHDRAWAL_STATUS_INVALID','Unsupported withdrawal status.',400);
     const result=await all(
-      `SELECT * FROM smv_domain_withdrawals ${where?'WHERE status=?':''}
-       ORDER BY created_at_ms DESC LIMIT 500`,
+      `SELECT w.*,p.private_payout_json
+       FROM smv_domain_withdrawals w
+       LEFT JOIN smv_domain_withdrawal_payouts p ON p.withdrawal_id=w.withdrawal_id
+       ${where?'WHERE w.status=?':''}
+       ORDER BY w.created_at_ms DESC LIMIT 50`,
       where?[where]:[]
     );
-    return (result.results||[]).map(mapWithdrawal);
+    return (result.results||[]).map(row=>{
+      const item=mapWithdrawal(row);
+      const payload=readJson(row.private_payout_json);
+      const payout={
+        bankName:String(payload.bankName||'').trim(),
+        accountName:String(payload.accountName||'').trim(),
+        accountNumber:String(payload.accountNumber||'').trim(),
+        ifsc:String(payload.ifsc||'').trim().toUpperCase(),
+        upi:String(payload.upi||'').trim()
+      };
+      payout.available=!!(payout.bankName||payout.accountName||payout.accountNumber||payout.ifsc||payout.upi);
+      const data=readJson(row.payload_json);
+      return {
+        id:item.id,withdrawalId:item.withdrawalId,
+        astrologerId:item.astrologerUid,astrologerUid:item.astrologerUid,
+        astrologerName:item.astrologerName,amount:item.amount,status:item.status,
+        adminPaymentId:item.adminPaymentId,
+        createdAt:new Date(item.createdAtMs).toISOString(),
+        requestedAt:new Date(item.createdAtMs).toISOString(),
+        paidAt:data.paidAtMs?new Date(Number(data.paidAtMs)).toISOString():null,
+        payout
+      };
+    });
   }
 
   async function getPrivatePayout(withdrawalId) {
@@ -275,6 +348,22 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     return {success:true,alreadyProcessed:false,withdrawal:mapWithdrawal(updated)};
   }
 
+  async function rejectWithdrawal({withdrawalId,adminUid}={}) {
+    const id=String(withdrawalId||'').trim(),actor=String(adminUid||'').trim();
+    if(!id||!actor) throw withdrawalError('WITHDRAWAL_ID_REQUIRED','Withdrawal ID is required.',400);
+    const row=await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=? LIMIT 1',[id]);
+    if(!row) throw withdrawalError('WITHDRAWAL_NOT_FOUND','Withdrawal request was not found.',404);
+    if(row.status==='rejected') return {success:true,alreadyProcessed:true,withdrawal:mapWithdrawal(row)};
+    if(row.status!=='pending') throw withdrawalError('WITHDRAWAL_STATUS_INVALID','Only a pending withdrawal can be rejected.',409);
+    const timestamp=Number(now()),payload=readJson(row.payload_json);
+    await statement(
+      `UPDATE smv_domain_withdrawals SET status='rejected',
+       payload_json=?,updated_at_ms=? WHERE withdrawal_id=? AND status='pending'`,
+      [JSON.stringify({...payload,rejectedAtMs:timestamp,rejectedBy:actor}),timestamp,id]
+    ).run();
+    return {success:true,alreadyProcessed:false,withdrawal:mapWithdrawal(await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=?',[id]))};
+  }
+
   async function markPaid({withdrawalId,adminUid}={}) {
     const id=String(withdrawalId||'').trim(),actor=String(adminUid||'').trim();
     if(!id||!actor) throw withdrawalError('WITHDRAWAL_ID_REQUIRED','Withdrawal ID is required.',400);
@@ -299,5 +388,5 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     return {success:true,alreadyProcessed:false,paymentId,withdrawal:mapWithdrawal(updated)};
   }
 
-  return Object.freeze({overview,createRequest,listAdminWithdrawals,getPrivatePayout,markProcessing,markPaid});
+  return Object.freeze({overview,getEarningsDashboard,createRequest,listAdminWithdrawals,getPrivatePayout,markProcessing,rejectWithdrawal,markPaid});
 }
