@@ -31,8 +31,9 @@ function baseDeps(overrides={}) {
     async getWallet(){return {availableBalancePaise:5000,bonusMinutesBalance:3};},
     async finalizeRecharge(input){calls.push(['finalize',input]);return {success:true,alreadyProcessed:false,amountPaise:5000,availableBalancePaise:5000,bonusMinutesCredited:3,bonusMinutesBalance:3};},
     async getRechargeByOrderId(input){calls.push(['byOrder',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1'};},
-    async recordWebhookEvent(input){calls.push(['recordWebhook',input]);return {success:true,alreadyProcessed:false};},
-    async completeWebhookEvent(input){calls.push(['completeWebhook',input]);return {success:true};},
+    async recordWebhookEvent(input){calls.push(['recordWebhook',input]);return {success:true,alreadyProcessed:false,inProgress:false,claimToken:'claim-token-1'};},
+    async completeWebhookEvent(eventKey,claimToken){calls.push(['completeWebhook',{eventKey,claimToken}]);return {success:true,changed:1};},
+    async releaseWebhookEvent(eventKey,claimToken,reason){calls.push(['releaseWebhook',{eventKey,claimToken,reason}]);return {success:true,changed:1};},
     async markRechargePaymentFailed(input){calls.push(['paymentFailed',input]);return {success:true};}
   };
   const razorpay={
@@ -225,4 +226,72 @@ test('webhook acknowledges non-Wallet orders without mutating the Wallet ledger'
   assert.equal(response.statusCode,200);
   assert.equal(state.calls.some(call=>call[0]==='finalize'),false);
   assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
+});
+
+
+test('webhook duplicate delivery while the event lease is active asks the provider to retry', async () => {
+  const state=baseDeps();
+  state.walletAdapter.recordWebhookEvent=async input=>{
+    state.calls.push(['recordWebhook',input]);
+    return {success:true,alreadyProcessed:false,inProgress:true,eventKey:input.eventKey,leaseUntilMs:999999};
+  };
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.captured',
+    payload:{payment:{entity:{id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(
+    request(raw,{headers:{'X-Razorpay-Signature':'valid','X-Razorpay-Event-Id':'evt_busy_1'}}),
+    response
+  );
+  assert.equal(response.statusCode,503);
+  assert.equal(response.headers['Retry-After'],'5');
+  assert.equal(response.body.code,'RAZORPAY_WEBHOOK_IN_PROGRESS');
+  assert.equal(state.calls.some(call=>call[0]==='byOrder'),false);
+  assert.equal(state.calls.some(call=>call[0]==='finalize'),false);
+});
+
+test('payment.authorized webhook captures then credits only after provider reports captured', async () => {
+  const state=baseDeps();
+  let fetchCount=0;
+  state.razorpay.fetchPayment=async id=>{
+    fetchCount++;
+    state.calls.push(['fetchPayment',id]);
+    return {id,order_id:'order_1',amount:5000,currency:'INR',status:fetchCount===1?'authorized':'captured'};
+  };
+  state.razorpay.capturePayment=async(id,amount,currency)=>{
+    state.calls.push(['capturePayment',{id,amount,currency}]);
+    throw new Error('simulated network timeout');
+  };
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.authorized',
+    payload:{payment:{entity:{id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'authorized'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(
+    request(raw,{headers:{'X-Razorpay-Signature':'valid','X-Razorpay-Event-Id':'evt_authorized_recovery'}}),
+    response
+  );
+  assert.equal(response.statusCode,200);
+  assert.equal(fetchCount,2);
+  assert.equal(state.calls.some(call=>call[0]==='capturePayment'),true);
+  assert.equal(state.calls.some(call=>call[0]==='finalize'),true);
+  assert.equal(state.calls.some(call=>call[0]==='completeWebhook'),true);
+});
+
+test('webhook processing failure releases the owned event claim for safe retry', async () => {
+  const state=baseDeps();
+  state.razorpay.fetchPayment=async()=>{throw new Error('temporary Razorpay network failure');};
+  const raw=new TextEncoder().encode(JSON.stringify({
+    event:'payment.captured',
+    payload:{payment:{entity:{id:'pay_1',order_id:'order_1',amount:5000,currency:'INR',status:'captured'}}}
+  }));
+  const response=responseHarness();
+  await state.app.handlers.get('/wallet/recharge/webhook')(
+    request(raw,{headers:{'X-Razorpay-Signature':'valid','X-Razorpay-Event-Id':'evt_retry_after_failure'}}),
+    response
+  );
+  assert.equal(response.statusCode,500);
+  assert.equal(state.calls.some(call=>call[0]==='finalize'),false);
+  assert.equal(state.calls.some(call=>call[0]==='releaseWebhook'),true);
 });
