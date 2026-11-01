@@ -493,7 +493,8 @@ test('Admin APK uploads are enabled in the deploy config while the example stays
   assert.match(config, /ALLOW_APK_UPLOADS\s*=\s*"true"/);
   assert.match(html, /window\.SMV_APK_RELEASE_API_URL\s*=\s*window\.SMV_APK_RELEASE_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
   assert.match(html, /window\.SMV_APK_RELEASE_ADMIN_API_URL\s*=\s*window\.SMV_APK_RELEASE_ADMIN_API_URL\s*\|\|\s*"https:\/\/smv-astro-apk-release-api\.astroservices\.workers\.dev"/);
-  assert.match(moduleSource, /window\.SMV_APK_RELEASE_STAGING_API_URL/);\n  assert.match(moduleSource, /window\.SMV_APK_RELEASE_ADMIN_API_URL\|\|window\.SMV_APK_RELEASE_API_URL/);
+  assert.match(moduleSource, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
+  assert.match(moduleSource, /window\.SMV_APK_RELEASE_ADMIN_API_URL\|\|window\.SMV_APK_RELEASE_API_URL/);
   assert.doesNotMatch(installer, /SMV_APK_RELEASE_ADMIN_API_URL|smv-astro-apk-release-api\.astroservices\.workers\.dev/);
   assert.doesNotMatch(moduleSource, /smv-astro-apk-release-api\.astroservices\.workers\.dev/);
   assert.doesNotMatch(installer + moduleSource, /DEFAULT_WORKER_BASE|SMV_ANDROID_APK_WORKER_DEFAULT/);
