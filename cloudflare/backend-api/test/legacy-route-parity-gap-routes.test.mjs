@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {
   createFirebaseAuthAdminClient,
@@ -456,4 +457,18 @@ test('FCM HTTP v1 sender uses the Firebase project endpoint and rejects invalid 
   assert.equal(name,'projects/smv-astro-staging/messages/1');
   assert.match(calls[0].url,/fcm\.googleapis\.com\/v1\/projects\/smv-astro-staging\/messages:send/);
   assert.equal(calls[0].options.headers.Authorization,'Bearer access-token');
+});
+
+
+test('Worker registers parity-gap routes at initialization, outside the authorization request handler', async () => {
+  const source = await readFile(new URL('../src/index.mjs', import.meta.url), 'utf8');
+  const authorizationStart = source.indexOf("app.get('/api/auth/authorization'");
+  assert.ok(authorizationStart >= 0, 'Authorization endpoint must remain present');
+  const authorizationEnd = source.indexOf('\n});', authorizationStart);
+  const registration = source.indexOf('registerLegacyRouteParityGapRoutes({');
+  const readiness = source.indexOf('const checkLiveSessionSchemaReady = async');
+  const firestoreScope = source.indexOf('const requiresFirestoreAdmin =');
+  assert.ok(registration > authorizationEnd, 'Parity routes must not be lazily registered by an incoming auth request');
+  assert.ok(readiness >= 0 && registration > readiness, 'Parity routes must be registered after Live schema readiness helpers exist');
+  assert.ok(firestoreScope >= 0 && registration > firestoreScope, 'Parity routes must be wired inside the Firebase/D1 service construction scope');
 });
