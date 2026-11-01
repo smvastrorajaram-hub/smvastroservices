@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { Worker } from 'node:worker_threads';
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
 
 async function walk(directory, depth = 0) {
@@ -46,7 +47,7 @@ function openMigratedLocalD1() {
           sqlite.close();
           continue;
         }
-        return sqlite;
+        return { sqlite, file };
       } catch {
         try { sqlite?.close(); } catch {}
       }
@@ -56,6 +57,28 @@ function openMigratedLocalD1() {
       'Run the staging workflow migration step before this test; never point this test at remote Production D1.'
     );
   })();
+}
+
+
+function claimInIndependentWorker({ dbPath, nowMs, input }) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./local-d1-claim-worker.mjs', import.meta.url), {
+      workerData: { dbPath, nowMs, input },
+      execArgv: []
+    });
+    let settled = false;
+    worker.once('message', message => {
+      settled = true;
+      if (message?.ok) resolve(message.result);
+      else reject(new Error(message?.error || 'Local D1 claim worker failed.'));
+    });
+    worker.once('error', error => {
+      if (!settled) reject(error);
+    });
+    worker.once('exit', code => {
+      if (code !== 0 && !settled) reject(new Error('Local D1 claim worker exited with code ' + code));
+    });
+  });
 }
 
 function makeD1Binding(sqlite) {
@@ -93,19 +116,23 @@ function makeD1Binding(sqlite) {
 }
 
 test('local D1 atomically grants one claim to concurrent duplicate webhook deliveries', async () => {
-  const sqlite = await openMigratedLocalD1();
-  const db = makeD1Binding(sqlite);
+  const { sqlite, file: dbPath } = await openMigratedLocalD1();
   const nowMs = Date.now();
-  const adapter = createD1WalletAdapter({ db, now: () => nowMs });
   const eventKey = 'parallel_event_' + crypto.randomUUID();
 
   try {
-    const results = await Promise.all(Array.from({ length: 24 }, () => adapter.recordWebhookEvent({
-      eventKey,
-      eventType: 'payment.captured',
-      paymentId: 'pay_local_fixture',
-      orderId: 'order_local_fixture',
-      payload: { event: 'payment.captured', fixture: true }
+    // Every caller opens a separate SQLite connection in a Worker Thread, so
+    // lock/claim behavior is exercised across independent concurrent clients.
+    const results = await Promise.all(Array.from({ length: 24 }, () => claimInIndependentWorker({
+      dbPath,
+      nowMs,
+      input: {
+        eventKey,
+        eventType: 'payment.captured',
+        paymentId: 'pay_local_fixture',
+        orderId: 'order_local_fixture',
+        payload: { event: 'payment.captured', fixture: true }
+      }
     })));
     const owners = results.filter(result => result.claimToken);
     assert.equal(owners.length, 1, 'only one concurrent delivery may own the event claim');
@@ -137,7 +164,7 @@ test('local D1 atomically grants one claim to concurrent duplicate webhook deliv
 });
 
 test('local D1 recovers expired claims and rejects stale owners after lease takeover', async () => {
-  const sqlite = await openMigratedLocalD1();
+  const { sqlite } = await openMigratedLocalD1();
   const db = makeD1Binding(sqlite);
   let clock = 1_700_000_000_000;
   const adapter = createD1WalletAdapter({ db, now: () => clock });
