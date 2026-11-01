@@ -170,6 +170,29 @@ test("readiness gates require real Firebase, Razorpay and route proofs", () => {
   assert.equal(isCloudflareRouteFamilyReady("publicConfig", { ready: true }), true);
 });
 
+test("Cloudflare-primary business writes stay on Render until the explicit backend cutover gate is enabled", async () => {
+  const calls = [];
+  const router = createBackendApiRouter({
+    staging: true, renderBaseUrl, cloudflareBaseUrl,
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      if (url === cloudflareBaseUrl + "/api/backend/readiness") {
+        return jsonResponse({ ...ready, backendActive: false });
+      }
+      if (url === renderBaseUrl + "/wallet/recharge/create-order") {
+        return jsonResponse({ source: "render-secondary-before-cutover" });
+      }
+      throw new Error("Wallet writes must stay on Render until Cloudflare backend cutover is enabled.");
+    }
+  });
+  const response = await router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" });
+  assert.deepEqual(await response.json(), { source: "render-secondary-before-cutover" });
+  assert.deepEqual(calls, [
+    { url: cloudflareBaseUrl + "/api/backend/readiness", method: "GET" },
+    { url: renderBaseUrl + "/wallet/recharge/create-order", method: "POST" }
+  ]);
+});
+
 test("Cloudflare-primary payment writes use Render secondary only when readiness fails before dispatch", async () => {
   const calls = [];
   const router = createBackendApiRouter({
