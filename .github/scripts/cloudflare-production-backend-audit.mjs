@@ -89,7 +89,7 @@ async function main() {
     assert.equal(String(config.vars?.[key] ?? 'false').toLowerCase(), 'false',
       'Production business flag must remain disabled: ' + key);
   }
-  assert.equal(config.vars?.SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY, true,
+  assert.equal(String(config.vars?.SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY).toLowerCase(), 'true',
     'Identity/Profile backfill must stay preview-only in Production.');
   assert.equal(config.vars?.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro',
     'Production Firebase project allowlist must remain scoped to smv-astro.');
