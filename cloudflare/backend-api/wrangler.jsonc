@@ -24,6 +24,8 @@
     "SMV_LIVE_SESSION_ROUTES_ENABLED": "false",
     "SMV_RAZORPAY_LIVE_MODE_ENABLED": "false",
     "SMV_RAZORPAY_TEST_MODE_ENABLED": "true",
+    "SMV_NEW_QUESTION_PAYMENTS_ENABLED": "true",
+    "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "true",
     "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
     "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com"
   },
