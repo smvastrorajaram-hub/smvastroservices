@@ -69,6 +69,7 @@ jobs:
           npm run check
           npm run test:auth
           npm run test:readiness
+          npm run test:razorpay-connectivity
           npm run test:inventory
           npm run test:wallet-domain
           npm run test:live-session-do
