@@ -30,6 +30,7 @@ function transactionalFirestore({docs={}}={}) {
   const updates=[];
   return {
     writes,updates,
+    async getDocument(path){return docs[path]||{exists:false,data:null};},
     async runTransaction(callback) {
       const tx={
         async getDocument(path){return docs[path]||{exists:false,data:null};},
