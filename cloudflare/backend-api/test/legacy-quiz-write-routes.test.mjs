@@ -98,7 +98,7 @@ test('Quiz defaults protect non-empty manual bank and fill only missing default 
 
  const fill=response();
  await app.handlers.get('POST /admin/astrologer-quiz/load-defaults')(request({fillMissing:true}),fill);
- assert.equal(fill.statusCode,200);
+ assert.equal(fill.statusCode,200, JSON.stringify(fill.body));
  assert.equal(fill.body.total,25);
  assert.equal(fill.body.created,24);
  assert.equal(firestore.writes.filter(x=>x.type==='create').length,24);
