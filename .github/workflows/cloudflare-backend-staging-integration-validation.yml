@@ -74,6 +74,10 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
 
+      - name: Test atomic Razorpay webhook claims against migrated local D1
+        working-directory: cloudflare/backend-api
+        run: node --test test/local-d1-razorpay-claim.local.mjs
+
       - name: Validate Cloudflare Worker bundle without deployment
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 deploy --dry-run --config wrangler.jsonc
