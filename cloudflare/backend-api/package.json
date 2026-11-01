@@ -22,6 +22,7 @@
     "test:appointment-booking": "node --test test/appointment-booking-route.test.mjs",
     "test:admin-dashboard": "node --test test/admin-dashboard-routes.test.mjs",
     "test:astro-approval": "node --test test/legacy-astrologer-approval-routes.test.mjs",
+    "test:question-actions": "node --test test/legacy-question-action-routes.test.mjs",
     "test:wallet-domain": "node --test test/wallet-domain.test.mjs test/wallet-adapters.test.mjs",
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs"
