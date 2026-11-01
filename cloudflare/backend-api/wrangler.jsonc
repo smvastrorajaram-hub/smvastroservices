@@ -57,5 +57,11 @@
         "LiveUserEventHub"
       ]
     }
+  ],
+  "services": [
+    {
+      "binding": "APK_RELEASE_WORKER",
+      "service": "smv-astro-apk-release-api-staging"
+    }
   ]
 }
