@@ -126,11 +126,11 @@ test('Customer registration claims a normalized unique phone and creates public 
   const firestore=fixture();
   const {app}=register({firestore,env:{SMV_WALLET_DOMAIN_CUTOVER_COMPLETE:'false'}});
   const res=response();
-  await app.handlers.get('POST /register-customer-profile')?.(request({body:{name:'Customer One',phone:'+91 98765 43210'}}),res);
+  await app.handlers.get('POST /register-customer-profile')?.(request({token:'customer',body:{name:'Customer One',phone:'+91 98765 43210'}}),res);
   assert.equal(res.statusCode,200,JSON.stringify(res.body));
   assert.match(res.body.publicId,/^smvcr-\d{5}$/);
   assert.equal(res.body.phone,'+919876543210');
-  assert.ok(firestore.calls.writes.some(w=>w.path==='smv_phone_registry/'+w.path.split('/').pop()));
+  assert.ok(firestore.calls.writes.some(w=>w.path.startsWith('smv_phone_registry/')));
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_users/customer-1'&&w.data.role==='customer'));
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_wallets/customer-1'&&w.data.ownerRole==='customer'));
   const firstWrite=firestore.calls.writes.findIndex(w=>w.type!=='read');
@@ -141,7 +141,7 @@ test('Customer registration cannot overwrite an existing Astrologer role or clai
   const roleStore=fixture({docs:{'smv_users/customer-1':{exists:true,data:{role:'astrologer'}}}});
   const roleResult=register({firestore:roleStore});
   const roleRes=response();
-  await roleResult.app.handlers.get('POST /register-customer-profile')(request({body:{name:'X',phone:'9876543210'}}),roleRes);
+  await roleResult.app.handlers.get('POST /register-customer-profile')(request({token:'customer',body:{name:'X',phone:'9876543210'}}),roleRes);
   assert.equal(roleRes.statusCode,409);
   assert.equal(roleStore.calls.writes.length,0);
 
@@ -369,7 +369,7 @@ test('Push registration hashes tokens and refuses tokens owned by another accoun
   assert.notEqual(saved.path,'smv_push_tokens/'+'f'.repeat(48));
   assert.equal(saved.data.platform,'native-android');
 
-  const takenStore=fixture({docs:{['smv_push_tokens/'+(await sha256('g'.repeat(48)))]:{exists:true,data:{uid:'someone-else'}}}});
+  const takenStore=fixture({docs:{['smv_push_tokens/'+(await sha('g'.repeat(48)))]:{exists:true,data:{uid:'someone-else'}}}});
   const taken=register({firestore:takenStore});
   const takenRes=response();
   await taken.app.handlers.get('POST /live/push/register')(request({token:'astro',body:{token:'g'.repeat(48)}}),takenRes);
