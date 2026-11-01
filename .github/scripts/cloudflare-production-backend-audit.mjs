@@ -13,16 +13,17 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/live-session-routes.mjs',
   'cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs',
   'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs',
-  'cloudflare/backend-api/src/core-read-routes.mjs'
+  'cloudflare/backend-api/src/core-read-routes.mjs',
+  'cloudflare/backend-api/src/legacy-razorpay-routes.mjs'
 ];
 const BASELINE = Object.freeze({
   inventoryRoutes: 149,
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 54,
-  exactLegacyMatches: 41,
-  missingLegacyHandlers: 108
+  sourceHandlerPairs: 70,
+  exactLegacyMatches: 57,
+  missingLegacyHandlers: 92
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
