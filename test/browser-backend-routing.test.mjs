@@ -33,7 +33,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-test("all 119 eligible literal Worker route pairs are Cloudflare-primary with exact method/path matching", () => {
+test("all 122 audited literal Worker route pairs are Cloudflare-primary with exact method/path matching", () => {
   assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 122);
   for (const route of CLOUDFLARE_LEGACY_ROUTE_PAIRS) {
     assert.equal(
