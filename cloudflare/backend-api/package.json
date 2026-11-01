@@ -27,6 +27,7 @@
     "test:appointment-read-response": "node --test test/legacy-appointment-read-response-routes.test.mjs",
     "test:legacy-email": "node --test test/legacy-email-routes.test.mjs",
     "test:resend-adapter": "node --test ../../shared/backend-platform/test/resend-email-adapter.test.mjs",
+    "test:answer-submit": "node --test test/astrologer-submit-answer-route.test.mjs",
     "test:wallet-domain": "node --test test/wallet-domain.test.mjs test/wallet-adapters.test.mjs",
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs"
