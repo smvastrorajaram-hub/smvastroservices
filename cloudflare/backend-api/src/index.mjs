@@ -14,7 +14,7 @@ import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platf
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { resolveRazorpayMode } from '../../../shared/backend-platform/razorpay-mode-policy.mjs';
-import { registerAdminAccessRoute, registerPublicRuntimeReadRoutes } from './core-read-routes.mjs';
+import { registerAccountRoleRoute, registerAdminAccessRoute, registerPublicRuntimeReadRoutes } from './core-read-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
@@ -268,6 +268,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     walletIdentityService = firebaseIdentityService;
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
+    registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
   }
   const walletSchemaReady = async () => {
     try {
