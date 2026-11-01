@@ -1779,6 +1779,36 @@ if(profileResult.snapshot?.exists()){
 
 // If the profile is unavailable, preserve the known role without guessing approval status.
 if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
+  // A transient read failure during a live-session/profile invalidation must not
+  // replace a previously rendered Astrologer Dashboard with the retry-only shell.
+  // Keep the last successful dashboard visible and offer a non-destructive retry.
+  if(box?.querySelector('.smv-astrologer-dashboard')){
+    let notice=$('smvAstroProfileRefreshWarning');
+    if(!notice){
+      notice=document.createElement('div');
+      notice.id='smvAstroProfileRefreshWarning';
+      notice.className='card';
+      const message=document.createElement('p');
+      message.className='small';
+      message.textContent='Astrologer profile data could not be refreshed just now. Your previously loaded Dashboard is still available.';
+      const retry=document.createElement('button');
+      retry.className='btn gray';
+      retry.type='button';
+      retry.textContent='RETRY DASHBOARD UPDATE';
+      retry.onclick=async()=>{
+        retry.disabled=true;
+        message.textContent='Retrying Astrologer Dashboard update…';
+        smvProfiles.delete(loadUid);
+        try{await loadDashboard('astrologer',true,false);}
+        catch(error){console.warn('Astrologer Dashboard retry skipped:',error?.message||error);}
+        finally{if(retry.isConnected)retry.disabled=false;}
+      };
+      notice.append(message,retry);
+      box.prepend(notice);
+    }
+    smvLiveStatus('Showing the last successfully loaded Astrologer Dashboard.');
+    return;
+  }
   box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
   $('smvAstroDataRetry')?.addEventListener('click',()=>{
     smvProfiles.delete(loadUid);
