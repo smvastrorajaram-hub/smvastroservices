@@ -55,6 +55,19 @@ function baseDeps(overrides={}) {
   return { ...dependencies, calls };
 }
 
+test('Wallet recharge route constructor enforces the selected Razorpay key mode', () => {
+  assert.throws(
+    () => baseDeps({ razorpayKeyId: 'rzp_live_fixture', razorpayMode: 'test' }),
+    /matching Test\/Live Razorpay key mode/
+  );
+  assert.throws(
+    () => baseDeps({ razorpayKeyId: 'rzp_test_fixture', razorpayMode: 'live' }),
+    /matching Test\/Live Razorpay key mode/
+  );
+  const live = baseDeps({ razorpayKeyId: 'rzp_live_fixture', razorpayMode: 'live' });
+  assert.equal(live.app.handlers.has('/wallet/recharge/webhook'), true);
+});
+
 test('create-order validates paise amount and reuses deterministic recharge intent', async () => {
   const state=baseDeps();
   const response=responseHarness();
