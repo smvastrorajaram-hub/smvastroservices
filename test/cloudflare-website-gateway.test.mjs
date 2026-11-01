@@ -95,6 +95,19 @@ test("Cloudflare static fallback is configured to serve the website SPA shell fo
   assert.match(config, /"run_worker_first": true/);
 });
 
+test("Staging HTML responses rewrite canonical metadata and remove legacy APK controls", async () => {
+  const fs = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const sourcePath = new URL("../cloudflare/website-gateway/src/index.mjs", import.meta.url);
+  const source = fs.readFileSync(fileURLToPath(sourcePath), "utf8");
+  assert.match(source, /link\[rel="canonical"\]/);
+  assert.match(source, /meta\[property="og:url"\]/);
+  assert.match(source, /#smvPermanentAndroidAppSection[\s\S]*?element\(element\) \{ element\.remove\(\); \}/);
+  assert.match(source, /#adminGroupAppManagement[\s\S]*?element\(element\) \{ element\.remove\(\); \}/);
+  assert.match(source, /Live Call & Chat Booking/);
+  assert.match(source, /VIEW CALL & CHAT OPTIONS/);
+});
+
 test("gateway health is available without contacting Render", async () => {
   let fetchCalls = 0;
   const result = await handleWebsiteRequest(
