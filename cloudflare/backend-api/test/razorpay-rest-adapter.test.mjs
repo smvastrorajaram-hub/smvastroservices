@@ -118,3 +118,37 @@ test('payment refund listing rejects a malformed provider response', async () =>
     error => error.code === 'RAZORPAY_RESPONSE_INVALID' && error.httpStatus === 502
   );
 });
+
+
+test('fetchOrder validates the provider order and returns canonical INR order state', async () => {
+  const { client, calls } = clientWithFetch(async () => response({
+    id: 'order_123456', amount: 2500, currency: 'INR', status: 'paid'
+  }));
+  const order = await client.fetchOrder('order_123456');
+  assert.equal(order.id, 'order_123456');
+  assert.equal(order.amount, 2500);
+  assert.equal(order.status, 'paid');
+  assert.equal(new URL(calls[0].url).pathname, '/v1/orders/order_123456');
+});
+
+test('fetchOrderPayments follows the order payments collection contract and paginates', async () => {
+  const { client, calls } = clientWithFetch(async () => response({
+    entity: 'collection',
+    count: 1,
+    items: [{ id: 'pay_123456', order_id: 'order_123456', amount: 2500, currency: 'INR', status: 'captured' }]
+  }));
+  const page = await client.fetchOrderPayments('order_123456', { count: 25, skip: 50 });
+  const url = new URL(calls[0].url);
+  assert.equal(url.pathname, '/v1/orders/order_123456/payments');
+  assert.equal(url.searchParams.get('count'), '25');
+  assert.equal(url.searchParams.get('skip'), '50');
+  assert.equal(page.items[0].order_id, 'order_123456');
+});
+
+test('fetchOrderPayments rejects invalid IDs and malformed pagination before network I/O', async () => {
+  const { client, calls } = clientWithFetch(async () => response({ items: [] }));
+  await assert.rejects(client.fetchOrderPayments('../order'), error => error.code === 'RAZORPAY_ORDER_PAYMENT_LIST_INVALID');
+  await assert.rejects(client.fetchOrderPayments('order_123456', { count: 101 }), error => error.code === 'RAZORPAY_ORDER_PAYMENT_LIST_INVALID');
+  await assert.rejects(client.fetchOrderPayments('order_123456', { skip: -1 }), error => error.code === 'RAZORPAY_ORDER_PAYMENT_LIST_INVALID');
+  assert.equal(calls.length, 0);
+});
