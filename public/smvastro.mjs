@@ -85,6 +85,8 @@ try{
   console.error("SMV ASTRO Firebase initialization failed",initError);
 }
 const RAZORPAY_BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+ // Admin-only read-only check: staging probes Cloudflare without changing normal Render routing.
+const CLOUDFLARE_STAGING_BACKEND_URL = "https://smvastro-backend-api-staging.astroservices.workers.dev";
 // Single backend URL used by all protected API calls, including astrologer answer submission.
 // Keep this in the main Firebase module so it is available to the answer-submit handler.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
@@ -157,7 +159,7 @@ function smvAssertLiveCheckout(key){
 }
 // Shared authenticated transport for Admin, Customer and Astrologer actions.
 // Firebase reuses a valid ID token; payment/refund mutations are never replayed here.
-async function renderApi(path, options={}, authUserOverride=null){
+async function renderApi(path, options={}, authUserOverride=null, backendOverride=RAZORPAY_BACKEND_URL){
   const user=authUserOverride||auth?.currentUser;
   if(!user)throw new Error('Please log in to continue.');
   if(typeof path!=='string'||!path.startsWith('/')||path.startsWith('//'))throw new Error('Invalid API path.');
@@ -174,7 +176,7 @@ async function renderApi(path, options={}, authUserOverride=null){
     headers.set('Authorization','Bearer '+token);
     headers.set('Accept','application/json');
     if(request.body!=null&&!(request.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
-    const response=await fetch(RAZORPAY_BACKEND_URL+path,{...request,headers,cache:'no-store',signal:controller.signal});
+    const response=await fetch(String(backendOverride||RAZORPAY_BACKEND_URL).replace(/\/$/,'')+path,{...request,headers,cache:'no-store',signal:controller.signal});
     if(auth?.currentUser?.uid!==user.uid)throw new Error('Your login changed. Please try again.');
     if(response.status===204)return {};
     let data;
@@ -2998,7 +3000,7 @@ async function loadAdminPanelData(background=false){
     msg.innerHTML='<span class="error">Unable to save commission settings: '+escapeHtml(error?.message||String(error))+'</span>';
    }finally{btn.disabled=false;btn.textContent='SAVE COMMISSION';}
   };
-  $('testRazorpayBtn').onclick=async()=>{const b=$('testRazorpayBtn');b.disabled=true;b.textContent='TESTING...';try{const r=await withTimeout(renderApi('/test-razorpay',{method:'GET'}),60000);$('razorpayTestMsg').innerHTML='<span class="success"><b>Razorpay connection OK.</b> '+escapeHtml(r?.message||'Render payment server and Razorpay API are working.')+'</span>';}catch(e){$('razorpayTestMsg').innerHTML='<span class="error"><b>Razorpay test failed:</b> '+escapeHtml(e.message||String(e))+'</span>';}b.disabled=false;b.textContent='TEST RAZORPAY CONNECTION';};
+  $('testRazorpayBtn').onclick=async()=>{const b=$('testRazorpayBtn');b.disabled=true;b.textContent='TESTING...';try{const probeBackend=IS_SMV_PHASE1_STAGING?CLOUDFLARE_STAGING_BACKEND_URL:RAZORPAY_BACKEND_URL;const r=await withTimeout(renderApi('/test-razorpay',{method:'GET'},null,probeBackend),60000);const backendLabel=IS_SMV_PHASE1_STAGING?'Cloudflare Staging Worker':'Render Primary Backend';$('razorpayTestMsg').innerHTML='<span class="success"><b>Razorpay connection OK.</b> '+escapeHtml(r?.message||backendLabel+' and Razorpay API are working.')+'</span>';}catch(e){$('razorpayTestMsg').innerHTML='<span class="error"><b>Razorpay test failed:</b> '+escapeHtml(e.message||String(e))+'</span>';}b.disabled=false;b.textContent='TEST RAZORPAY CONNECTION';};
 
   const box=$('pendingAstros');
   box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(a.adminContactEmail||'')}</p><p><b>Mobile:</b> ${escapeHtml(a.adminContactMobile||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
