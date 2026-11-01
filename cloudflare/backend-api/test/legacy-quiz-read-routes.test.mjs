@@ -37,10 +37,11 @@ function fixture({docs={},queries={}}={}) {
 
 test('Google Form quiz config requires secret and never returns the stored secret', async()=>{
  const app=harness(), firestore=fixture({
-   docs:{'smv_settings/astrologerAutoApproval':{exists:true,data:{webhookSecret:'long-private-secret',passMark:17}}}
- },queries:{smv_astrologer_quiz_questions:[
-   {id:'q2',data:{enabled:true,order:2}},{id:'q1',data:{enabled:true,order:1}}
- ]});
+   docs:{'smv_settings/astrologerAutoApproval':{exists:true,data:{webhookSecret:'long-private-secret',passMark:17}}},
+   queries:{smv_astrologer_quiz_questions:[
+     {id:'q2',data:{enabled:true,order:2}},{id:'q1',data:{enabled:true,order:1}}
+   ]}
+ });
  registerLegacyQuizReadRoutes({app,firestore,identityService:{async authenticateAuthorization(){throw new Error('not used');}}});
  const denied=response();
  await app.handlers.get('GET /google-form/astrologer-quiz-config')(request(),denied);
