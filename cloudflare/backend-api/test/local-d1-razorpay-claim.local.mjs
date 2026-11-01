@@ -1,0 +1,181 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
+
+async function walk(directory, depth = 0) {
+  if (depth > 12) return [];
+  let entries;
+  try { entries = await readdir(directory, { withFileTypes: true }); }
+  catch { return []; }
+  const found = [];
+  for (const entry of entries) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!['node_modules', '.git'].includes(entry.name)) {
+        found.push(...await walk(fullPath, depth + 1));
+      }
+    } else if (/\.(?:sqlite|sqlite3|db)$/i.test(entry.name)) {
+      found.push(fullPath);
+    }
+  }
+  return found;
+}
+
+function openMigratedLocalD1() {
+  const roots = [
+    path.resolve(process.cwd(), '.wrangler'),
+    path.resolve(process.cwd(), '../.wrangler')
+  ];
+  return (async () => {
+    const files = [...new Set((await Promise.all(roots.map(root => walk(root)))).flat())];
+    for (const file of files) {
+      let sqlite;
+      try {
+        sqlite = new DatabaseSync(file);
+        const tables = sqlite.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='smv_domain_razorpay_webhook_events'"
+        ).all();
+        if (!tables.length) { sqlite.close(); continue; }
+        const columns = new Set(sqlite.prepare(
+          'PRAGMA table_info(smv_domain_razorpay_webhook_events)'
+        ).all().map(row => String(row.name)));
+        if (!columns.has('claim_token') || !columns.has('lease_until_ms')) {
+          sqlite.close();
+          continue;
+        }
+        return sqlite;
+      } catch {
+        try { sqlite?.close(); } catch {}
+      }
+    }
+    throw new Error(
+      'No migrated Wrangler local D1 SQLite database with Razorpay claim lease columns was found. ' +
+      'Run the staging workflow migration step before this test; never point this test at remote Production D1.'
+    );
+  })();
+}
+
+function makeD1Binding(sqlite) {
+  return {
+    prepare(sql) {
+      let values = [];
+      const statement = {
+        bind(...args) { values = args; return statement; },
+        async run() {
+          const result = sqlite.prepare(sql).run(...values);
+          return { success: true, meta: { changes: Number(result.changes || 0) } };
+        },
+        async first() {
+          return sqlite.prepare(sql).get(...values) || null;
+        },
+        async all() {
+          return { success: true, results: sqlite.prepare(sql).all(...values) };
+        }
+      };
+      return statement;
+    },
+    async batch(statements) {
+      sqlite.exec('BEGIN IMMEDIATE');
+      try {
+        const result = [];
+        for (const statement of statements) result.push(await statement.run());
+        sqlite.exec('COMMIT');
+        return result;
+      } catch (error) {
+        sqlite.exec('ROLLBACK');
+        throw error;
+      }
+    }
+  };
+}
+
+test('local D1 atomically grants one claim to concurrent duplicate webhook deliveries', async () => {
+  const sqlite = await openMigratedLocalD1();
+  const db = makeD1Binding(sqlite);
+  const nowMs = Date.now();
+  const adapter = createD1WalletAdapter({ db, now: () => nowMs });
+  const eventKey = 'parallel_event_' + crypto.randomUUID();
+
+  try {
+    const results = await Promise.all(Array.from({ length: 24 }, () => adapter.recordWebhookEvent({
+      eventKey,
+      eventType: 'payment.captured',
+      paymentId: 'pay_local_fixture',
+      orderId: 'order_local_fixture',
+      payload: { event: 'payment.captured', fixture: true }
+    })));
+    const owners = results.filter(result => result.claimToken);
+    assert.equal(owners.length, 1, 'only one concurrent delivery may own the event claim');
+    assert.equal(results.filter(result => result.inProgress).length, 23);
+    const row = sqlite.prepare(
+      'SELECT processed,retry_count,claim_token,lease_until_ms FROM smv_domain_razorpay_webhook_events WHERE event_key=?'
+    ).get(eventKey);
+    assert.equal(Number(row.processed), 0);
+    assert.equal(Number(row.retry_count), 1);
+    assert.equal(row.claim_token, owners[0].claimToken);
+    assert.ok(Number(row.lease_until_ms) > nowMs);
+
+    const staleComplete = await adapter.completeWebhookEvent(eventKey, 'not-the-owner');
+    assert.equal(staleComplete.changed, 0, 'a non-owner must not complete the claim');
+    const completed = await adapter.completeWebhookEvent(eventKey, owners[0].claimToken);
+    assert.equal(completed.changed, 1);
+    const replay = await adapter.recordWebhookEvent({
+      eventKey, eventType: 'payment.captured', paymentId: 'pay_local_fixture',
+      orderId: 'order_local_fixture', payload: { event: 'payment.captured', fixture: true }
+    });
+    assert.equal(replay.alreadyProcessed, true);
+    assert.equal(sqlite.prepare(
+      'SELECT COUNT(*) AS count FROM smv_domain_razorpay_webhook_events WHERE event_key=?'
+    ).get(eventKey).count, 1);
+  } finally {
+    sqlite.prepare('DELETE FROM smv_domain_razorpay_webhook_events WHERE event_key=?').run(eventKey);
+    sqlite.close();
+  }
+});
+
+test('local D1 recovers expired claims and rejects stale owners after lease takeover', async () => {
+  const sqlite = await openMigratedLocalD1();
+  const db = makeD1Binding(sqlite);
+  let clock = 1_700_000_000_000;
+  const adapter = createD1WalletAdapter({ db, now: () => clock });
+  const eventKey = 'lease_recovery_' + crypto.randomUUID();
+
+  try {
+    const first = await adapter.recordWebhookEvent({
+      eventKey, eventType: 'payment.authorized', paymentId: 'pay_local_recovery',
+      orderId: 'order_local_recovery', payload: { event: 'payment.authorized', fixture: true }
+    });
+    assert.ok(first.claimToken);
+    clock += 119_999;
+    const beforeExpiry = await adapter.recordWebhookEvent({
+      eventKey, eventType: 'payment.authorized', paymentId: 'pay_local_recovery',
+      orderId: 'order_local_recovery', payload: { event: 'payment.authorized', fixture: true }
+    });
+    assert.equal(beforeExpiry.inProgress, true);
+    assert.equal(beforeExpiry.claimToken, undefined);
+
+    clock += 1;
+    const recovered = await adapter.recordWebhookEvent({
+      eventKey, eventType: 'payment.authorized', paymentId: 'pay_local_recovery',
+      orderId: 'order_local_recovery', payload: { event: 'payment.authorized', fixture: true }
+    });
+    assert.ok(recovered.claimToken);
+    assert.notEqual(recovered.claimToken, first.claimToken);
+    assert.equal(recovered.retryCount, 2);
+    assert.equal((await adapter.completeWebhookEvent(eventKey, first.claimToken)).changed, 0);
+    assert.equal((await adapter.releaseWebhookEvent(eventKey, first.claimToken, 'stale worker')).changed, 0);
+    assert.equal((await adapter.completeWebhookEvent(eventKey, recovered.claimToken)).changed, 1);
+    const row = sqlite.prepare(
+      'SELECT processed,retry_count,claim_token FROM smv_domain_razorpay_webhook_events WHERE event_key=?'
+    ).get(eventKey);
+    assert.equal(Number(row.processed), 1);
+    assert.equal(Number(row.retry_count), 2);
+    assert.equal(row.claim_token, null);
+  } finally {
+    sqlite.prepare('DELETE FROM smv_domain_razorpay_webhook_events WHERE event_key=?').run(eventKey);
+    sqlite.close();
+  }
+});
