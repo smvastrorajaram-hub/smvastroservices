@@ -14,16 +14,37 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs',
   'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs',
   'cloudflare/backend-api/src/core-read-routes.mjs',
-  'cloudflare/backend-api/src/legacy-razorpay-routes.mjs'
+  'cloudflare/backend-api/src/legacy-razorpay-routes.mjs',
+  'cloudflare/backend-api/src/geonames-location-routes.mjs',
+  'cloudflare/backend-api/src/public-legacy-routes.mjs',
+  'cloudflare/backend-api/src/razorpay-connectivity-routes.mjs',
+  'cloudflare/backend-api/src/legacy-read-routes.mjs',
+  'cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs',
+  'cloudflare/backend-api/src/legacy-quiz-read-routes.mjs',
+  'cloudflare/backend-api/src/legacy-business-routes.mjs',
+  'cloudflare/backend-api/src/admin-astrologer-profile-routes.mjs',
+  'cloudflare/backend-api/src/legacy-quiz-write-routes.mjs',
+  'cloudflare/backend-api/src/astrologer-answer-edit-route.mjs',
+  'cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs',
+  'cloudflare/backend-api/src/legacy-question-workflow-routes.mjs',
+  'cloudflare/backend-api/src/appointment-booking-route.mjs',
+  'cloudflare/backend-api/src/admin-dashboard-routes.mjs',
+  'cloudflare/backend-api/src/legacy-astrologer-approval-routes.mjs',
+  'cloudflare/backend-api/src/legacy-question-action-routes.mjs',
+  'cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs',
+  'cloudflare/backend-api/src/legacy-email-routes.mjs',
+  'cloudflare/backend-api/src/astrologer-submit-answer-route.mjs',
+  'cloudflare/backend-api/src/customer-answer-credit-route.mjs',
+  'cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs'
 ];
 const BASELINE = Object.freeze({
   inventoryRoutes: 149,
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 70,
-  exactLegacyMatches: 57,
-  missingLegacyHandlers: 92
+  sourceHandlerPairs: 144,
+  exactLegacyMatches: 131,
+  missingLegacyHandlers: 18
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 

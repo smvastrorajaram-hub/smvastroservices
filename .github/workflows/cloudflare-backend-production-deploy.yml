@@ -69,10 +69,8 @@ jobs:
     needs: validate-production-worker
     if: >-
       github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031' &&
-      (
-        github.event_name == 'push' ||
-        (github.event_name == 'workflow_dispatch' && inputs.confirm_production_binding == 'yes')
-      )
+      github.event_name == 'workflow_dispatch' &&
+      inputs.confirm_production_binding == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

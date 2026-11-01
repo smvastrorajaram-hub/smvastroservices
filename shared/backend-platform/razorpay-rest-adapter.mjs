@@ -113,6 +113,21 @@ export function createRazorpayRestClient({
     return fixedCompare(provided, fromHex(await hmacHex(raw, secretValue)));
   }
 
+  /**
+   * Read-only credential probe. GET /orders?count=1 validates provider
+   * authentication without creating a payment/order or moving money.
+   */
+  async function testConnection() {
+    const payload = await request('/orders?count=1');
+    if (!payload || !Array.isArray(payload.items)) {
+      throw Object.assign(new Error('Razorpay returned an invalid order-list response.'), {
+        code: 'RAZORPAY_RESPONSE_INVALID',
+        httpStatus: 502
+      });
+    }
+    return Object.freeze({ ok: true, visibleOrders: payload.items.length });
+  }
+
   async function createOrder({ amountPaise, currency = 'INR', receipt, notes = {} } = {}) {
     const amount = validPaise(amountPaise);
     const receiptId = String(receipt || '').trim();
@@ -265,5 +280,5 @@ export function createRazorpayRestClient({
     return Object.freeze({ id: String(payload.id), paymentId: pid, amount: Number(payload.amount), status: String(payload.status || '') });
   }
 
-  return Object.freeze({ createOrder, findOrderByReceipt, fetchOrder, fetchOrderPayments, fetchPayment, fetchPaymentRefunds, fetchMultipleRefund, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
+  return Object.freeze({ testConnection, createOrder, findOrderByReceipt, fetchOrder, fetchOrderPayments, fetchPayment, fetchPaymentRefunds, fetchMultipleRefund, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
 }

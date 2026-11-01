@@ -26,6 +26,30 @@ import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-l
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
+import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
+import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
+import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
+import { registerRootRuntimeRoute } from './root-runtime-route.mjs';
+import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
+import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-routes.mjs';
+import { registerLegacyQuizReadRoutes } from './legacy-quiz-read-routes.mjs';
+import { registerLegacyBusinessRoutes } from './legacy-business-routes.mjs';
+import { registerAdminAstrologerProfileRoutes } from './admin-astrologer-profile-routes.mjs';
+import { registerLegacyQuizWriteRoutes } from './legacy-quiz-write-routes.mjs';
+import { registerAstrologerAnswerEditRoute } from './astrologer-answer-edit-route.mjs';
+import { registerAdminAstrologerCatalogRoutes } from './admin-astrologer-catalog-routes.mjs';
+import { registerLegacyQuestionWorkflowRoutes } from './legacy-question-workflow-routes.mjs';
+import { registerAppointmentBookingRoute } from './appointment-booking-route.mjs';
+import { registerAdminDashboardRoutes } from './admin-dashboard-routes.mjs';
+import { registerLegacyAstrologerApprovalRoutes } from './legacy-astrologer-approval-routes.mjs';
+import { registerLegacyQuestionActionRoutes } from './legacy-question-action-routes.mjs';
+import { createResendEmailClient } from '../../../shared/backend-platform/resend-email-adapter.mjs';
+import { registerLegacyEmailRoutes } from './legacy-email-routes.mjs';
+import { registerAstrologerSubmitAnswerRoute } from './astrologer-submit-answer-route.mjs';
+import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appointment-read-response-routes.mjs';
+import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
+import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend-platform/google-service-account-token.mjs';
+import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -71,6 +95,9 @@ app.use((req, res, next) => {
 });
 
 registerPublicRuntimeReadRoutes({ app, env });
+registerRootRuntimeRoute({ app, env });
+registerGeoNamesRoutes({ app, env });
+registerPublicLegacyRoutes({ app, env });
 
 app.get('/api/auth/session', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
@@ -109,6 +136,7 @@ app.get('/api/auth/session', async (req, res) => {
 
 app.get('/api/auth/authorization', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
+
   if (identityProfileD1AuthorizationOpen) {
     if (!d1IdentityAuthorizationService) {
       return res.status(503).set(JSON_HEADERS).json({
@@ -289,6 +317,39 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
+    registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
+    registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuizWriteRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAstrologerAnswerEditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAdminAstrologerCatalogRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuestionWorkflowRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAppointmentBookingRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAdminDashboardRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    const resendEmailClient = env.RESEND_API_KEY && env.RESEND_FROM
+      ? createResendEmailClient({
+          apiKey: String(env.RESEND_API_KEY),
+          from: String(env.RESEND_FROM)
+        })
+      : null;
+    registerLegacyEmailRoutes({
+      app,
+      firestore: firestoreAdmin,
+      identityService: walletIdentityService,
+      emailClient: resendEmailClient,
+      adminEmail: String(env.ADMIN_EMAIL || '')
+    });
+
+    registerAstrologerSubmitAnswerRoute({
+      app, firestore: firestoreAdmin, identityService: walletIdentityService,
+      emailClient: resendEmailClient, adminEmail: String(env.ADMIN_EMAIL || ''),
+      siteUrl: String(env.PUBLIC_SITE_URL || 'https://smvastroservices.in')
+    });    registerCustomerAnswerCreditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
@@ -353,6 +414,52 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       return false;
     }
   };
+
+  // Register the remaining active legacy API contracts only after the staging
+  // Firebase Admin/Firestore transport and D1 repositories have been constructed.
+  // Credentials are used only to mint short-lived scoped OAuth tokens; no key
+  // material is stored in source or returned to callers.
+  const firebaseAdminOAuth = createGoogleServiceAccountTokenProvider({
+    credentials,
+    scope: 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/firebase.messaging'
+  });
+  const firebaseAuthAdmin = createFirebaseAuthAdminClient({
+    projectId,
+    tokenProvider: firebaseAdminOAuth
+  });
+  const fcmSender = createFcmSender({
+    projectId,
+    tokenProvider: firebaseAdminOAuth
+  });
+  const gapLiveService = env.DB && sharedWalletAdapter
+    ? createD1LiveSessionService({
+        db: env.DB,
+        walletAdapter: sharedWalletAdapter,
+        firestore: firestoreAdmin,
+        adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
+      })
+    : null;
+  registerLegacyRouteParityGapRoutes({
+    app,
+    firestore: firestoreAdmin,
+    identityService: walletIdentityService,
+    projectId,
+    authAdmin: firebaseAuthAdmin,
+    walletAdapter: sharedWalletAdapter,
+    db: env.DB,
+    isWalletReady: walletSchemaReady,
+    isWalletBackfillReady: checkWalletBackfillSchemaReady,
+    fcmSender,
+    env,
+    apkReleaseService: env.APK_RELEASE_WORKER || null,
+    rawUploadParser: express.raw({
+      type: 'application/vnd.android.package-archive',
+      limit: 100 * 1024 * 1024
+    }),
+    liveService: gapLiveService,
+    isLiveReady: checkLiveSessionSchemaReady,
+    contentMirrorFirestore: null
+  });
 
   if (walletBackfillToolsOpen) {
     const backfillService = createWalletDomainBackfillService({
@@ -428,6 +535,14 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
 
   if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService) {
+    registerRazorpayConnectivityRoute({
+      app,
+      identityService: walletIdentityService,
+      razorpay: sharedRazorpayClient,
+      mode: razorpayPolicy.mode,
+      keyId: razorpayKeyId,
+      credentialsConfigured: true
+    });
     registerLegacyRazorpayRoutes({
       app,
       identityService: walletIdentityService,
@@ -438,12 +553,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpayKeySecretPresent: !!razorpayKeySecret,
       razorpayWebhookSecret,
       razorpayMode: razorpayPolicy.mode,
-      enablePrivateConsultation:
-        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
-        String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
-      allowNewQuestions:
-        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
-        String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true',
+      // Retired product surfaces stay disabled regardless of dashboard variable drift.
+      enablePrivateConsultation: false,
+      allowNewQuestions: false,
       isD1Ready: checkWalletRechargeSchemaReady
     });
     legacyRazorpayRoutesRegistered = true;
@@ -579,8 +691,12 @@ app.get('/api/backend/readiness', async (_req, res) => {
       },
       firebaseConnected: false,
       razorpayConnected: false,
+      razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
+      razorpayProviderConnectionVerified: false,
+      razorpayMode: razorpayPolicy.mode,
+      razorpayPolicyReason: razorpayPolicy.reason,
       legacyRazorpayRoutesRegistered,
-      legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
+      legacyPrivateConsultationRoutesEnabled: false,
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletRechargeMode,
@@ -616,8 +732,12 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
+    razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
+    razorpayProviderConnectionVerified: false,
+    razorpayMode: razorpayPolicy.mode,
+    razorpayPolicyReason: razorpayPolicy.reason,
     legacyRazorpayRoutesRegistered,
-    legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
+    legacyPrivateConsultationRoutesEnabled: false,
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletRechargeMode,

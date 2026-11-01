@@ -1066,10 +1066,16 @@ export function registerLegacyRazorpayRoutes({
 
   app.post('/razorpay/webhook', webhookMiddlewareRoute);
   app.post('/create-order', async (req, res) => {
+    if (!allowNewQuestions) return res.status(410).set('Cache-Control', 'no-store').json({
+      success: false, code: 'ASK_NOW_RETIRED', error: 'Ask Now question payments are retired.'
+    });
     try { return await safeCreateQuestionOrder(req, res); }
     catch (error) { return sendError(res, error, 'Unable to create Razorpay order.'); }
   });
   app.post('/verify-payment', async (req, res) => {
+    if (!allowNewQuestions) return res.status(410).set('Cache-Control', 'no-store').json({
+      success: false, code: 'ASK_NOW_RETIRED', error: 'Ask Now question payments are retired.'
+    });
     try { return await verifyQuestionPayment(req, res); }
     catch (error) { return sendError(res, error, 'Payment verification failed.'); }
   });

@@ -7,6 +7,39 @@
 **Production D1:** `smvastro-wallet-production`  
 **Production D1 ID:** `b1d5684c-3fcd-48fe-9571-ea41fc605c7d`
 
+**PR #298 verified source/test revision:** `e4f83ed5cedf035e930d4fedbd678c36158bd1e6`
+
+### Latest PR #298 CI evidence
+
+- Complete Cloudflare backend contract suite: **378/378 PASS** in both Staging integration and Production parity/security audit.
+- Route source audit: **149 legacy routes / 144 literal Worker handler pairs / 131 exact legacy method-path matches / 18 unmatched legacy pairs**. All remaining unmatched pairs are intentionally out of scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The 18 active routes that were previously missing now have literal handlers and contract coverage.
+- Wallet backfill/reconciliation suite: **65/65 PASS**; all 10 migrations applied to an ephemeral local D1 database only.
+- Local-D1 Razorpay atomic webhook claims: **3/3 PASS**.
+- Local-D1 Live capacity, booking-race and settlement invariants: **4/4 PASS**.
+- Dedicated APK-release Worker suite: **108/108 PASS**; Production and Staging APK Worker Wrangler bundles both pass dry-run validation.
+- Backend Staging Worker bundle dry-run: PASS.
+- Isolated Production Worker bundle dry-run: PASS.
+- Production Worker validation: PASS; **deploy-production-worker SKIPPED**.
+
+CI workflow runs for this verified revision:
+- [Staging integration validation — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083092)
+- [Production parity/security audit — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083103)
+- [Wallet local-D1 reconciliation — 65/65](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083094)
+- [APK release Worker CI — 108/108](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083117)
+- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083178)
+
+The 29 legacy route-parity tests use injected Firestore/D1/FCM/Auth adapters and cover route registration, role/authorization checks, field validation, transaction intent, idempotent retry, read-only Wallet queries and fail-closed provider gates. They do **not** prove live Firebase Auth Admin permissions, actual FCM device delivery, remotely provisioned Live Durable Objects, deployed backend-to-APK Worker service connectivity, or a browser-to-Worker end-to-end cutover.
+
+### Live Staging provider and resource status (read-only)
+
+At the verification time, the Staging Worker reports D1 schema/runtime checks ready, but `firebaseConnected=false`, `firestoreConnected=false`, and `razorpayConnected=false`. Wallet business and Live Call/Chat route flags remain false; `liveSessionRoutesRegistered=false`. The Razorpay Test-mode configuration flag is true, while Live mode remains false; no authenticated `GET /test-razorpay` probe was performed, so neither mode is marked provider-verified.
+
+The backend Staging Wrangler file declares D1, two Durable Object class bindings and the `APK_RELEASE_WORKER` service binding to the isolated `smv-astro-apk-release-api-staging` service. The separate APK-release Staging Worker is not yet deployed/provisioned: its Staging D1 ID remains the all-zero placeholder and uploads remain disabled by default. Its APK Worker CI/dry-runs prove source/build validation only, not remote D1/R2 readiness or service-to-service connectivity. The backend Live feature flag remains false and Live schema/DO runtime readiness is unverified. No Queue binding appears in the reviewed Staging/Production main backend configs; Production has only its D1 binding and no DO, R2, Queue or APK service binding. FCM delivery is not verified. Do not infer provisioning or working connectivity from class declarations alone.
+
+The live Staging readiness response also reports `legacyPrivateConsultationRoutesEnabled=true`, while the reviewed Staging config declares that legacy flag false. Treat this as config/deployment drift; it must be reconciled before any Staging rollout that could expose legacy consultation behavior.
+
+The migration-status endpoint reports `renderDependency=false`; no Render service, DNS, Firebase Production, Production D1, Wallet, Horoscope or Calendar configuration was changed by this PR work.
+
 ## Executive result
 
 **Do not switch production traffic or enable Wallet, Razorpay, Live Call/Chat, or backfill flags yet.**
@@ -18,22 +51,22 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 70 |
-| Exact legacy method+path pairs with a Worker handler | 57 (38.3%) |
-| Legacy pairs with no exact Worker handler | 92 (61.7%) |
+| Literal Worker handler pairs in reviewed route source files | 144 |
+| Exact legacy method+path pairs with a Worker handler | 131 (87.9%) |
+| Legacy pairs with no exact Worker handler | 18 (12.1%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
 
 A matching source handler is **not** counted as parity: parity also requires request/response contract equivalence, authorization equivalence, persistence/reconciliation behavior, and conformance tests.
 
-The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviewed `index.mjs`, Wallet, offer, recharge, Live, Wallet backfill, Identity/Profile backfill, core read, and the new `legacy-razorpay-routes.mjs` module. The latter adds 16 exact legacy method/path pairs.
+The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviews `index.mjs` and the registered Worker route modules, including Wallet, offer, recharge, Live, backfill, core/public read and legacy route families. The 144 literal Worker handler pairs include the restored `legacy-route-parity-gap-routes.mjs` family.
 
 ## Priority findings
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 57 have an exact method/path handler literal in the reviewed Worker source files; 92 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. The Worker now has 144 literal handler pairs and 131 exact method/path matches. The remaining 18 unmatched pairs are all explicitly out of this migration scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The 18 active route gaps identified in the previous audit now have source handlers and contract tests. Literal source matches and injected adapters are not proof of live provider integration or full Production parity. Retired consultation paths must not be reintroduced; Horoscope and Calendar remain untouched.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -93,7 +126,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 57 exact source pairs and 92 missing pairs | Contract equivalence for all remaining 92 routes and full legacy parity for every source match |
+| Route inventory | `test/legacy-route-inventory.test.mjs` and `.github/scripts/cloudflare-production-backend-audit.mjs`: 149 unique pairs; 144 literal Worker handlers, 131 exact source pairs and 18 unmatched paths | Full request/response and live-provider parity for the source-matched paths; the 18 unmatched routes are retired Private Consultation/Ask Now (11) and Horoscope (7), intentionally out of scope |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -103,80 +136,80 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 |---:|---|---|---|---|---|
 | 1 | Admin / configuration | GET | `/admin/access` | Exact source handler; verified Firebase Admin claim/allowlist only | `cloudflare/backend-api/src/core-read-routes.mjs` |
 | 2 | Authentication / profile | GET | `/account/role` | Exact source handler; verified profile role plus UID/publicId-bound Astrologer lookup | `cloudflare/backend-api/src/core-read-routes.mjs` |
-| 3 | Authentication / profile | POST | `/lookup-customer-login` | No exact source handler; fails closed | — |
-| 4 | Authentication / profile | POST | `/lookup-id-login` | No exact source handler; fails closed | — |
-| 5 | Authentication / profile | POST | `/register-customer-profile` | No exact source handler; fails closed | — |
-| 6 | Authentication / profile | POST | `/register-astrologer-profile` | No exact source handler; fails closed | — |
-| 7 | Public config / content | GET | `/public/registration-config` | No exact source handler; fails closed | — |
-| 8 | Public config / content | GET | `/api/smv-mode` | No exact source handler; fails closed | — |
-| 9 | Public config / content | GET | `/` | No exact source handler; fails closed | — |
-| 10 | Payments / earnings / withdrawals | GET | `/test-razorpay` | No exact source handler; fails closed | — |
-| 11 | Contact | POST | `/contact-query` | No exact source handler; fails closed | — |
-| 12 | Appointments / Q&A / consultations | POST | `/astrologer/edit-answer` | No exact source handler; fails closed | — |
-| 13 | Appointments / Q&A / consultations | POST | `/submit-answer` | No exact source handler; fails closed | — |
-| 14 | Appointments / Q&A / consultations | POST | `/question-notify` | No exact source handler; fails closed | — |
-| 15 | Appointments / Q&A / consultations | GET | `/astrologer/appointments` | No exact source handler; fails closed | — |
-| 16 | Appointments / Q&A / consultations | GET | `/customer/appointments` | No exact source handler; fails closed | — |
-| 17 | Appointments / Q&A / consultations | POST | `/astrologer/appointments/:id/respond` | No exact source handler; fails closed | — |
-| 18 | Appointments / Q&A / consultations | POST | `/appointment-booking` | No exact source handler; fails closed | — |
-| 19 | Other | GET | `/public/astrologers` | No exact source handler; fails closed | — |
-| 20 | Other | POST | `/astrologer/availability` | No exact source handler; fails closed | — |
-| 21 | Appointments / Q&A / consultations | GET | `/public/astrologers/:astrologerId/reviews` | No exact source handler; fails closed | — |
-| 22 | Appointments / Q&A / consultations | GET | `/customer/reviews` | No exact source handler; fails closed | — |
-| 23 | Appointments / Q&A / consultations | POST | `/customer/submit-review` | No exact source handler; fails closed | — |
-| 24 | Admin / configuration | GET | `/admin/appointments` | No exact source handler; fails closed | — |
-| 25 | Admin / configuration | POST | `/admin/appointment-status` | No exact source handler; fails closed | — |
-| 26 | Admin / configuration | POST | `/admin/approve-question` | No exact source handler; fails closed | — |
-| 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | No exact source handler; fails closed | — |
-| 28 | Public config / content | GET | `/api-version` | No exact source handler; fails closed | — |
+| 3 | Authentication / profile | POST | `/lookup-customer-login` | Exact source handler; normalizes Customer ID, checks public ID role and uses Firebase Auth Admin account lookup; never returns UID | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 4 | Authentication / profile | POST | `/lookup-id-login` | Exact source handler; validates Customer/Astrologer ID role and uses Firebase Auth Admin account lookup | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 5 | Authentication / profile | POST | `/register-customer-profile` | Exact source handler; authenticated UID, canonical phone registry, public ID and initial Wallet transaction; D1 Wallet cutover-aware | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 6 | Authentication / profile | POST | `/register-astrologer-profile` | Exact source handler; authenticated UID, phone/public ID transaction, pending approval and payout-review record | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 7 | Public config / content | GET | `/public/registration-config` | Exact source handler; email/phone policy and WhatsApp provider fail-safe | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
+| 8 | Public config / content | GET | `/api/smv-mode` | Exact source handler; HTTPS Worker URL required | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
+| 9 | Public config / content | GET | `/` | Exact source handler; reports gated provider status | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
+| 10 | Payments / earnings / withdrawals | GET | `/test-razorpay` | Exact source handler; Admin-only GET /orders?count=1 read-only probe | `cloudflare/backend-api/src/razorpay-connectivity-routes.mjs` |
+| 11 | Contact | POST | `/contact-query` | Exact source handler; validates and stores contact, sends Admin email with Resend idempotency | `cloudflare/backend-api/src/legacy-email-routes.mjs` |
+| 12 | Appointments / Q&A / consultations | POST | `/astrologer/edit-answer` | Exact source handler; owner check, unseen/uncredited bypass, transactional audit | `cloudflare/backend-api/src/astrologer-answer-edit-route.mjs` |
+| 13 | Appointments / Q&A / consultations | POST | `/submit-answer` | Exact source handler; owner, word-count, Auto-Allow and Customer-view/commission guards | `cloudflare/backend-api/src/astrologer-submit-answer-route.mjs` |
+| 14 | Appointments / Q&A / consultations | POST | `/question-notify` | Exact source handler; owner/Admin/assigned-Astrologer permissions and idempotent Resend delivery | `cloudflare/backend-api/src/legacy-email-routes.mjs` |
+| 15 | Appointments / Q&A / consultations | GET | `/astrologer/appointments` | Exact source handler; verifies UID/profile and scheduled status | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 16 | Appointments / Q&A / consultations | GET | `/customer/appointments` | Exact source handler; Customer UID scoped and Call/Chat only | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 17 | Appointments / Q&A / consultations | POST | `/astrologer/appointments/:id/respond` | Exact source handler; owner check, Call/Chat-only status and IST 2-minute grace | `cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs` |
+| 18 | Appointments / Q&A / consultations | POST | `/appointment-booking` | Exact source handler; transactional Call/Chat booking, no Wallet charge | `cloudflare/backend-api/src/appointment-booking-route.mjs` |
+| 19 | Other | GET | `/public/astrologers` | Exact source handler; approved profiles only, Firebase email verification, bounded results and short cache | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 20 | Other | POST | `/astrologer/availability` | Exact source handler; approved profile, busy-session and pricing checks | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
+| 21 | Appointments / Q&A / consultations | GET | `/public/astrologers/:astrologerId/reviews` | Exact source handler; approved reviews only | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 22 | Appointments / Q&A / consultations | GET | `/customer/reviews` | Exact source handler; Customer UID scoped | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 23 | Appointments / Q&A / consultations | POST | `/customer/submit-review` | Exact source handler; transactionally enforces ownership and one-review rule | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
+| 24 | Admin / configuration | GET | `/admin/appointments` | Exact source handler; Admin-only and bounded | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 25 | Admin / configuration | POST | `/admin/appointment-status` | Exact source handler; Admin-only allowed status transitions | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
+| 26 | Admin / configuration | POST | `/admin/approve-question` | Exact source handler; paid-only, approved Astrologer, atomic commission allocation | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
+| 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | Exact source handler; approved Astrologer, paid question and transactional claim | `cloudflare/backend-api/src/legacy-question-action-routes.mjs` |
+| 28 | Public config / content | GET | `/api-version` | Exact source handler; retains legacy feature/version contract | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
 | 29 | Admin / configuration | POST | `/admin/reject-question` | Exact source route; admin-only Question rejection/refund | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 30 | Admin / configuration | POST | `/admin/retry-refund` | Exact legacy Question refund retry route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 31 | Admin / configuration | GET | `/admin/refund-trace/:questionId` | Exact source route; admin-only refund trace | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 32 | Other | POST | `/customer/sync-refund` | Exact source route; customer ownership checked | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 33 | Admin / configuration | POST | `/admin/sync-refund` | Exact source Question refund sync route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
-| 34 | Admin / configuration | POST | `/admin/reallocate-question` | No exact source handler; fails closed | — |
-| 35 | Admin / configuration | POST | `/admin/edit-question` | No exact source handler; fails closed | — |
-| 36 | Admin / configuration | POST | `/admin/takeover-answer` | No exact source handler; fails closed | — |
-| 37 | Payments / earnings / withdrawals | POST | `/astrologer/change-payout` | No exact source handler; fails closed | — |
-| 38 | Admin / configuration | POST | `/admin/payout-change-status` | No exact source handler; fails closed | — |
-| 39 | Admin / configuration | POST | `/admin/set-open-workflow` | No exact source handler; fails closed | — |
-| 40 | Appointments / Q&A / consultations | GET | `/astrologer/open-questions` | No exact source handler; fails closed | — |
-| 41 | Appointments / Q&A / consultations | POST | `/customer/mark-answer-viewed` | No exact source handler; fails closed | — |
-| 42 | Appointments / Q&A / consultations | GET | `/customer/consultations` | No exact source handler; fails closed | — |
+| 34 | Admin / configuration | POST | `/admin/reallocate-question` | Exact source handler; blocks settled commission and reallocates atomically | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
+| 35 | Admin / configuration | POST | `/admin/edit-question` | Exact source handler; Admin-only and closed-question guarded | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
+| 36 | Admin / configuration | POST | `/admin/takeover-answer` | Exact source handler; minimum word count, Admin-retained commission | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
+| 37 | Payments / earnings / withdrawals | POST | `/astrologer/change-payout` | Exact source handler; approved Astrologer only; bank changes reset to pending Admin review and notify | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 38 | Admin / configuration | POST | `/admin/payout-change-status` | Exact source handler; Admin-only pending-state transition, notification and audit in one transaction | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 39 | Admin / configuration | POST | `/admin/set-open-workflow` | Exact source handler; atomic paid/unassigned release/close with bounded writes | `cloudflare/backend-api/src/legacy-question-action-routes.mjs` |
+| 40 | Appointments / Q&A / consultations | GET | `/astrologer/open-questions` | Exact source handler; paid/unallocated and workflow-gated | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 41 | Appointments / Q&A / consultations | POST | `/customer/mark-answer-viewed` | Exact source handler; Customer ownership and atomic idempotent commission settlement | `cloudflare/backend-api/src/customer-answer-credit-route.mjs` |
+| 42 | Appointments / Q&A / consultations | GET | `/customer/consultations` | Exact source handler; Customer UID-scoped and bounded | `cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs` |
 | 43 | Appointments / Q&A / consultations | GET | `/customer/private-consultations` | No exact source handler; fails closed | — |
 | 44 | Appointments / Q&A / consultations | POST | `/customer/private-consultation/mark-viewed` | No exact source handler; fails closed | — |
-| 45 | Admin / configuration | POST | `/admin/astrologer-quiz/load-defaults` | No exact source handler; fails closed | — |
-| 46 | Admin / configuration | GET | `/admin/astrologer-quiz/questions` | No exact source handler; fails closed | — |
-| 47 | Admin / configuration | POST | `/admin/astrologer-quiz/questions` | No exact source handler; fails closed | — |
-| 48 | Admin / configuration | POST | `/admin/astrologer-quiz/questions/delete` | No exact source handler; fails closed | — |
-| 49 | Appointments / Q&A / consultations | GET | `/google-form/astrologer-quiz-config` | No exact source handler; fails closed | — |
-| 50 | Admin / configuration | POST | `/admin/astrologer-auto-approval/settings` | No exact source handler; fails closed | — |
-| 51 | Admin / configuration | POST | `/admin/astrologer-quiz/sync-google-form` | No exact source handler; fails closed | — |
-| 52 | Appointments / Q&A / consultations | GET | `/astrologer/qualification-config` | No exact source handler; fails closed | — |
-| 53 | Appointments / Q&A / consultations | POST | `/webhooks/google-form/astrologer-qualification` | No exact source handler; fails closed | — |
+| 45 | Admin / configuration | POST | `/admin/astrologer-quiz/load-defaults` | Exact source handler; protects manual bank, fills missing defaults only | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
+| 46 | Admin / configuration | GET | `/admin/astrologer-quiz/questions` | Exact source handler; verified Admin only | `cloudflare/backend-api/src/legacy-quiz-read-routes.mjs` |
+| 47 | Admin / configuration | POST | `/admin/astrologer-quiz/questions` | Exact source handler; Admin-only bilingual question validation | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
+| 48 | Admin / configuration | POST | `/admin/astrologer-quiz/questions/delete` | Exact source handler; Admin-only bounded ID delete | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
+| 49 | Appointments / Q&A / consultations | GET | `/google-form/astrologer-quiz-config` | Exact source handler; secret-gated, secret never returned | `cloudflare/backend-api/src/legacy-quiz-read-routes.mjs` |
+| 50 | Admin / configuration | POST | `/admin/astrologer-auto-approval/settings` | Exact source handler; validates URLs and preserves webhook secret unless rotated | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
+| 51 | Admin / configuration | POST | `/admin/astrologer-quiz/sync-google-form` | Exact source handler; Admin-only, Google Apps Script URL allow-pattern, server-side secret, bounded 90s request; contract tests added | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
+| 52 | Appointments / Q&A / consultations | GET | `/astrologer/qualification-config` | Exact source handler; UID-scoped profile status, no webhook secret | `cloudflare/backend-api/src/legacy-quiz-read-routes.mjs` |
+| 53 | Appointments / Q&A / consultations | POST | `/webhooks/google-form/astrologer-qualification` | Exact source handler; constant-time shared-secret compare, active-question max validation, transaction/idempotency, role check and approval state writes; contract tests added | `cloudflare/backend-api/src/legacy-quiz-write-routes.mjs` |
 | 54 | Admin / configuration | GET | `/admin/private-consultations-data` | No exact source handler; fails closed | — |
-| 55 | Admin / configuration | GET | `/admin/settings-data` | No exact source handler; fails closed | — |
+| 55 | Admin / configuration | GET | `/admin/settings-data` | Exact source handler; current commission/workflow/quiz settings only | `cloudflare/backend-api/src/admin-dashboard-routes.mjs` |
 | 56 | Admin / configuration | GET | `/admin/withdrawals-data` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:194` |
-| 57 | Admin / configuration | GET | `/admin/reviews-data` | No exact source handler; fails closed | — |
-| 58 | Admin / configuration | POST | `/admin/approve-astrologer` | No exact source handler; fails closed | — |
-| 59 | Admin / configuration | POST | `/admin/reject-astrologer` | No exact source handler; fails closed | — |
-| 60 | Other | POST | `/astrologer/sync-approval` | No exact source handler; fails closed | — |
-| 61 | Admin / configuration | POST | `/admin/astrologer-profile-permission` | No exact source handler; fails closed | — |
-| 62 | Admin / configuration | POST | `/admin/astrologer-profile-description` | No exact source handler; fails closed | — |
-| 63 | Public config / content | GET | `/public/android-app` | No exact source handler; fails closed | — |
-| 64 | Admin / configuration | GET | `/admin/android-app` | No exact source handler; fails closed | — |
-| 65 | Admin / configuration | POST | `/admin/android-app/upload` | No exact source handler; fails closed | — |
-| 66 | Public config / content | GET | `/public/content` | No exact source handler; fails closed | — |
-| 67 | Admin / configuration | GET | `/admin/content` | No exact source handler; fails closed | — |
-| 68 | Admin / configuration | POST | `/admin/content/save` | No exact source handler; fails closed | — |
-| 69 | Admin / configuration | POST | `/admin/content/toggle` | No exact source handler; fails closed | — |
-| 70 | Admin / configuration | POST | `/admin/content/delete` | No exact source handler; fails closed | — |
-| 71 | Admin / configuration | POST | `/admin/astrologer-languages` | No exact source handler; fails closed | — |
-| 72 | Admin / configuration | POST | `/admin/astrologer-pricing` | No exact source handler; fails closed | — |
-| 73 | Admin / configuration | GET | `/admin/astrologers-data` | No exact source handler; fails closed | — |
-| 74 | Admin / configuration | GET | `/admin/questions-data` | No exact source handler; fails closed | — |
-| 75 | Admin / configuration | POST | `/admin/dashboard-touch` | No exact source handler; fails closed | — |
-| 76 | Admin / configuration | GET | `/admin-data` | No exact source handler; fails closed | — |
+| 57 | Admin / configuration | GET | `/admin/reviews-data` | Exact source handler; Admin-only and bounded | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
+| 58 | Admin / configuration | POST | `/admin/approve-astrologer` | Exact source handler; Admin-only linked user profile approval transaction | `cloudflare/backend-api/src/legacy-astrologer-approval-routes.mjs` |
+| 59 | Admin / configuration | POST | `/admin/reject-astrologer` | Exact source handler; pending-only rejection with reason and notification | `cloudflare/backend-api/src/legacy-astrologer-approval-routes.mjs` |
+| 60 | Other | POST | `/astrologer/sync-approval` | Exact source handler; reconciles only pre-approved linked records | `cloudflare/backend-api/src/legacy-astrologer-approval-routes.mjs` |
+| 61 | Admin / configuration | POST | `/admin/astrologer-profile-permission` | Exact source handler; Admin-only transaction updates linked UID profiles | `cloudflare/backend-api/src/admin-astrologer-profile-routes.mjs` |
+| 62 | Admin / configuration | POST | `/admin/astrologer-profile-description` | Exact source handler; Admin-only transactional save/approve/reject | `cloudflare/backend-api/src/admin-astrologer-profile-routes.mjs` |
+| 63 | Public config / content | GET | `/public/android-app` | Exact source handler; public release fields only | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
+| 64 | Admin / configuration | GET | `/admin/android-app` | Exact source handler; requires verified Admin | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
+| 65 | Admin / configuration | POST | `/admin/android-app/upload` | Exact source handler; binary upload proxied to dedicated APK-release Worker; **503 until `APK_RELEASE_WORKER` service binding is provisioned** | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 66 | Public config / content | GET | `/public/content` | Exact source handler; published English content only | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
+| 67 | Admin / configuration | GET | `/admin/content` | Exact source handler; verified Admin may read drafts | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
+| 68 | Admin / configuration | POST | `/admin/content/save` | Exact source handler; Admin-only allowlisted English fields, transactional save; archive cutover is fail-closed without archive adapter | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 69 | Admin / configuration | POST | `/admin/content/toggle` | Exact source handler; Admin-only existing-document publish toggle, transaction and archive gate | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 70 | Admin / configuration | POST | `/admin/content/delete` | Exact source handler; Admin-only validated single-document delete and archive gate | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 71 | Admin / configuration | POST | `/admin/astrologer-languages` | Exact source handler; Admin-only UID-linked profiles updated transactionally | `cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs` |
+| 72 | Admin / configuration | POST | `/admin/astrologer-pricing` | Exact source handler; Admin-only approved profile and per-minute price validation | `cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs` |
+| 73 | Admin / configuration | GET | `/admin/astrologers-data` | Exact source handler; Admin-only and bounded | `cloudflare/backend-api/src/admin-dashboard-routes.mjs` |
+| 74 | Admin / configuration | GET | `/admin/questions-data` | Exact source handler; Admin-only questions, approved astrologers and settings | `cloudflare/backend-api/src/legacy-quiz-read-routes.mjs` |
+| 75 | Admin / configuration | POST | `/admin/dashboard-touch` | Exact source handler; Admin-only dashboard version increment and audit transaction | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 76 | Admin / configuration | GET | `/admin-data` | Exact source handler; Admin landing dashboard and bounded live payments | `cloudflare/backend-api/src/admin-dashboard-routes.mjs` |
 | 77 | Admin / configuration | POST | `/admin/private-consultation/set-commission` | No exact source handler; fails closed | — |
 | 78 | Admin / configuration | POST | `/admin/private-consultation/set-word-count` | No exact source handler; fails closed | — |
 | 79 | Admin / configuration | POST | `/admin/private-consultation/set-workflow` | No exact source handler; fails closed | — |
@@ -207,7 +240,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 104 | Payments / earnings / withdrawals | POST | `/horoscope-payment/verify` | No exact source handler; fails closed | — |
 | 105 | Horoscope / predictions | POST | `/api/prediction/horoscope` | No exact source handler; fails closed | — |
 | 106 | Horoscope / predictions | POST | `/api/prediction/matching` | No exact source handler; fails closed | — |
-| 107 | Admin / configuration | GET | `/admin/wallet/transactions` | No exact source handler; fails closed | — |
+| 107 | Admin / configuration | GET | `/admin/wallet/transactions` | Exact source handler; bounded, read-only D1 current/legacy ledger query; requires Wallet schema + backfill gates | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 108 | Wallet / offers / migration | GET | `/wallet/recharge-offers` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:67` |
 | 109 | Admin / configuration | GET | `/admin/offers` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:83` |
 | 110 | Admin / configuration | POST | `/admin/offers/save` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:98` |
@@ -222,19 +255,19 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 119 | Admin / configuration | POST | `/admin/wallet/backfill/preview` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:112` |
 | 120 | Admin / configuration | POST | `/admin/wallet/backfill/apply` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:122` |
 | 121 | Admin / configuration | POST | `/admin/wallet/backfill/reconcile` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:143` |
-| 122 | Locations | GET | `/api/locations/status` | No exact source handler; fails closed | — |
-| 123 | Locations | GET | `/api/locations/search` | No exact source handler; fails closed | — |
-| 124 | Locations | GET | `/api/locations/timezone` | No exact source handler; fails closed | — |
-| 125 | Live Call / Chat / push | GET | `/live/push/status` | No exact source handler; fails closed | — |
-| 126 | Live Call / Chat / push | POST | `/live/push/register` | No exact source handler; fails closed | — |
-| 127 | Live Call / Chat / push | POST | `/live/push/unregister` | No exact source handler; fails closed | — |
-| 128 | Live Call / Chat / push | POST | `/live/push/test` | No exact source handler; fails closed | — |
+| 122 | Locations | GET | `/api/locations/status` | Exact source handler; exposes provider readiness only | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
+| 123 | Locations | GET | `/api/locations/search` | Exact source handler; validates and bounds GeoNames results | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
+| 124 | Locations | GET | `/api/locations/timezone` | Exact source handler; returns IANA zone without offset guesses | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
+| 125 | Live Call / Chat / push | GET | `/live/push/status` | Exact source handler; Astrologer-only UID-scoped device count | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 126 | Live Call / Chat / push | POST | `/live/push/register` | Exact source handler; validates platform/token, hashes token ID and transactionally protects token ownership | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 127 | Live Call / Chat / push | POST | `/live/push/unregister` | Exact source handler; Astrologer-only hashed-token delete with transaction ownership check | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 128 | Live Call / Chat / push | POST | `/live/push/test` | Exact source handler; sends Firebase FCM HTTP v1 test only when OAuth provider is configured; live delivery not yet verified | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 129 | Live Call / Chat / push | GET | `/live/pricing` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:250` |
 | 130 | Live Call / Chat / push | GET | `/live/ice-config` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:262` |
 | 131 | Admin / configuration | POST | `/admin/live/pricing` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:552` |
 | 132 | Admin / configuration | POST | `/admin/live/commission` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:579` |
 | 133 | Live Call / Chat / push | GET | `/live/events` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:286` |
-| 134 | Appointments / Q&A / consultations | POST | `/live/scheduled-appointments/:id/start` | No exact source handler; fails closed | — |
+| 134 | Appointments / Q&A / consultations | POST | `/live/scheduled-appointments/:id/start` | Exact source handler; owner/status/IST 2-minute grace/capacity checks and D1 session + DO timers/events; **503 until Live schema and both DO bindings are ready** | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 135 | Live Call / Chat / push | POST | `/live/requests` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:294` |
 | 136 | Live Call / Chat / push | GET | `/live/sessions` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:334` |
 | 137 | Live Call / Chat / push | GET | `/live/bookings/pending` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:343` |
@@ -253,12 +286,12 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 
 ## Recommended completion gates
 
-1. Build missing route modules in small family-by-family changes; compare response contracts and authorization rules against Render with fixtures. Keep all production flags off.
-2. Add real local-D1 migration/trigger transaction tests, deterministic race tests, rollback tests and financial ledger reconciliation assertions.
-3. Harden Razorpay webhook inbox claiming/recovery; add replay, duplicate parallel delivery, out-of-order, capture recovery and refund idempotency tests.
-4. Establish staging-only end-to-end Firebase auth/role/approval tests and a policy/test for disabled/revoked users.
-5. Make production payment/live support a separate reviewed design with production-only environment guards and secrets; no live keys in plain-text config or test scripts.
-6. Only after all required route families reach tested parity, reconciliation is clean, and independent approval is recorded should a reversible Production cutover be planned.
+1. Perform Staging-only remote Firebase Auth Admin/Firestore verification using dedicated staging accounts, including disabled/revoked users and role/approval policies; no Production accounts or rules.
+2. Provision and verify the isolated APK-release Staging D1, R2 bucket, and Worker service. Then verify backend-to-APK service binding plus APK metadata/download in Staging; keep upload gate off until verified.
+3. Provision Staging Live D1 migrations and Durable Object namespaces; verify actual scheduled Call/Chat start, timer delivery, realtime events, idempotent retry, reservation/rollback and customer/astrologer closure end-to-end.
+4. Verify FCM with a dedicated staging Android device and confirm actual device receipt; verify Firebase IAM for Auth Admin, Firestore and Messaging with least privilege.
+5. Perform the authenticated read-only Razorpay Test-mode provider probe and then staging-only webhook replay/duplicate/out-of-order/refund-idempotency tests. Do not send real payments or refunds.
+6. Finish independent route-by-route request/response and data-reconciliation review. Only after all provider and financial gates are clean and independent approval is recorded should a reversible Production cutover be planned.
 
 ## Safety statement
 

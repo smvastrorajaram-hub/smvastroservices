@@ -25,6 +25,7 @@
     "SMV_RAZORPAY_LIVE_MODE_ENABLED": "false",
     "SMV_RAZORPAY_TEST_MODE_ENABLED": "false",
     "FIREBASE_AUTH_PROJECT_IDS": "smv-astro",
+    "SMV_PUBLIC_BACKEND_URL": "https://smvastroservices.astroservices.workers.dev",
     "ALLOWED_ORIGINS": "https://smvastroservices.in"
   },
   "d1_databases": [
