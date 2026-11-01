@@ -15,7 +15,7 @@ test('Firestore document exists proves service-account data-plane connectivity',
   });
 
   assert.equal(await probe(), true);
-  assert.deepEqual(calls, ['smv_runtime/readiness']);
+  assert.deepEqual(calls, ['smv_users/__smv_runtime_readiness_probe__']);
 });
 
 test('Firestore NOT_FOUND snapshot also proves service-account data-plane connectivity', async () => {

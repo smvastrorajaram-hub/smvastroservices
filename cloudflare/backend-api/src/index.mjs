@@ -659,7 +659,6 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.get('/api/backend/readiness', async (_req, res) => {
-  const firebaseConnected = await firebaseConnectivityProbe();
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
@@ -669,6 +668,7 @@ app.get('/api/backend/readiness', async (_req, res) => {
   }
 
   try {
+    const firebaseConnected = await firebaseConnectivityProbe();
     const row = await env.DB.prepare(
       'SELECT schema_version FROM smv_wallet_schema_meta WHERE id = ? LIMIT 1'
     ).bind('primary').first();

@@ -1,14 +1,14 @@
 /**
  * Read-only Firestore Admin connectivity proof for the Staging Worker.
  *
- * A GET of a reserved, non-existent sentinel document verifies that the
+ * A GET of a reserved, non-existent sentinel document in the existing smv_users collection verifies that the
  * service-account token can reach the Firestore data plane without reading
  * customer/admin records or writing data. Firestore 404 is represented by
  * the Admin REST adapter as { exists: false }, and still proves connectivity.
  */
 export function createFirebaseConnectivityProbe({
   firestore,
-  documentPath = 'smv_runtime/readiness',
+  documentPath = 'smv_users/__smv_runtime_readiness_probe__',
   ttlMs = 30000,
   now = () => Date.now()
 } = {}) {
